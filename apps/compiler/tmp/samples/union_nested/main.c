@@ -49,18 +49,10 @@ US1 US1_B(int32_t v0) { // B
 }
 static inline void USIncrefBody0(US0 * x){
     switch (x->tag) {
-        case 0: {
-            USIncref1(&(x->case0.v0));
-            break;
-        }
     }
 }
 static inline void USDecrefBody0(US0 * x){
     switch (x->tag) {
-        case 0: {
-            USDecref1(&(x->case0.v0));
-            break;
-        }
     }
 }
 void USIncref0(US0 * x){ USIncrefBody0(x); }
@@ -84,14 +76,14 @@ int32_t score_inner1(US1 v0){
         case 0: { // A
             int32_t v1 = v0.case0.v0;
             
-            USDecref1(&(v0));
+            
             return v1;
             break;
         }
         default: { // B
             int32_t v2 = v0.case1.v0;
             
-            USDecref1(&(v0));
+            
             int32_t v3;
             v3 = -v2;
             
@@ -108,14 +100,14 @@ int32_t score0(US0 v0){
         case 1: { // Other
             int32_t v3 = v0.case1.v0;
             
-            USDecref0(&(v0));
+            
             return v3;
             break;
         }
         default: { // Wrap
             US1 v1 = v0.case0.v0;
-            USIncref1(&(v1));
-            USDecref0(&(v0));
+            
+            
             return score_inner1(v1);
             break;
         }
@@ -158,19 +150,19 @@ int32_t main(){
         
         v8 = US0_Wrap(v6);
     }
-    USIncref0(&(v4));
+    
     
     int32_t v9;
     v9 = score0(v4);
     
-    USDecref0(&(v4));
+    
     bool v10;
     v10 = v9 == 7l;
     
     
     bool v13;
     if (v10){
-        USIncref0(&(v8));
+        
         
         int32_t v11;
         v11 = score0(v8);
@@ -187,7 +179,7 @@ int32_t main(){
         v13 = false;
     }
     
-    USDecref0(&(v8));
+    
     if (v13){
         
         

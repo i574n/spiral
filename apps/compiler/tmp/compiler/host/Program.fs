@@ -300,7 +300,7 @@ module Program =
             | Cons(_, next) -> drain next
         drain state.bundler
 
-#if SPIRAL_CORE_HOPAC
+#if SPIRAL_CORE_GPT5PARALLEL
     let private directProjectCompileFsharp (_input : string) (_output : string) : Result<int * string * string, string> =
         Error "SPIRAL_DIRECT_PROJECT_BUILD is only available in single-flight mode"
 #else
@@ -669,7 +669,7 @@ module Program =
             try if File.Exists path then File.Delete path with _ -> ()
 
     let private runCheck inputPath =
-#if SPIRAL_CORE_HOPAC
+#if SPIRAL_CORE_GPT5PARALLEL
         eprintfn "Package attestation currently requires the single-flight compiler"
         5
 #else
@@ -773,7 +773,7 @@ module Program =
         | other -> failwith $"cannot infer a backend from output extension '{other}'; pass --backend"
 
     let private stallDetail () =
-#if SPIRAL_CORE_HOPAC
+#if SPIRAL_CORE_GPT5PARALLEL
         try $"; stalled at stage {buildFileInitializationStageNow ()}" with _ -> ""
 #else
         ""
@@ -879,7 +879,7 @@ module Program =
             try File.Delete pidPath with _ -> ()
 
     let private configureHopacFromEnvironment () =
-#if SPIRAL_CORE_HOPAC
+#if SPIRAL_CORE_GPT5PARALLEL
         let positive name =
             match Int32.TryParse(Environment.GetEnvironmentVariable name) with
             | true, value when value > 0 -> Some value
@@ -950,7 +950,8 @@ module Program =
 
     let private defaultTypeFlags =
         [ "--default-int", "SPIRAL_DEFAULT_INT", [ "i8"; "i16"; "i32"; "i64"; "u8"; "u16"; "u32"; "u64" ]
-          "--default-float", "SPIRAL_DEFAULT_FLOAT", [ "f32"; "f64" ] ]
+          "--default-float", "SPIRAL_DEFAULT_FLOAT", [ "f32"; "f64" ]
+          "--edition", "SPIRAL_EDITION", [ "2"; "3" ] ]
 
     let private takeDefaultTypeFlags (argv : string []) : Result<string [], string> =
         let flagOf (text : string) = defaultTypeFlags |> List.tryFind (fun (name, _, _) -> name = text)

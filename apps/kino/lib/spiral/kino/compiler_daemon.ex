@@ -40,10 +40,16 @@ defmodule Spiral.Kino.CompilerDaemon do
     GenServer.start_link(__MODULE__, opts, name: name)
   end
 
+  @spec serve_app() :: no_return()
+  def serve_app do
+    {:ok, _} = Application.ensure_all_started(:spiral_kino)
+    serve()
+  end
+
   @spec serve() :: no_return()
   def serve do
     listen = port()
-    {:ok, _} = start_link(name: __MODULE__, port: listen, on_retire: fn -> System.stop(0) end)
+    {:ok, _} = start_link(name: __MODULE__, port: listen, on_retire: fn -> System.stop(0) end, pool: System.get_env("SPIRAL_KINO_DAEMON_POOL") || "auto")
     IO.puts("spiral-kino-compiler listening port=#{listen} pid=#{System.pid()}")
     Process.sleep(:infinity)
   end
@@ -77,6 +83,28 @@ defmodule Spiral.Kino.CompilerDaemon do
   def init(opts) do
     Process.flag(:trap_exit, true)
     :persistent_term.put({__MODULE__, :source_stamp}, source_stamp())
+    if opts[:worker], do: {:ok, worker_state(opts)}, else: listen_init(opts)
+  end
+
+  defp worker_state(opts) do
+    %{
+      listen_port: nil,
+      listen: nil,
+      acceptor: nil,
+      retiring: false,
+      idle_ms: nil,
+      idle_check_ms: @idle_check_ms,
+      last_used: System.monotonic_time(:millisecond),
+      on_retire: nil,
+      compile: opts[:compile],
+      compiler: nil,
+      log: "",
+      toolchain: Keyword.take(opts, [:dotnet, :compiler_dll, :workspace, :package_dir]),
+      limits: Keyword.get(opts, :limits) || limits()
+    }
+  end
+
+  defp listen_init(opts) do
     port = Keyword.get(opts, :port, port())
 
     case :gen_tcp.listen(port, listen_opts()) do
@@ -92,6 +120,7 @@ defmodule Spiral.Kino.CompilerDaemon do
           end)
 
         :ok = :gen_tcp.controlling_process(listen, acceptor)
+        start_pool(server, opts)
         send(acceptor, :go)
         idle_ms = if opts[:on_retire], do: Keyword.get(opts, :idle_ms, idle_ms()), else: nil
         idle_check_ms = Keyword.get(opts, :idle_check_ms, @idle_check_ms)
@@ -111,7 +140,7 @@ defmodule Spiral.Kino.CompilerDaemon do
            compiler: nil,
            log: "",
            toolchain: Keyword.take(opts, [:dotnet, :compiler_dll, :workspace, :package_dir]),
-           limits: Keyword.get(opts, :limits) || limits()
+           limits: pool_limits(opts, Spiral.Kino.CompilerPool.settings(opts[:pool]).max_workers)
          }}
 
       {:error, reason} ->
@@ -124,6 +153,7 @@ defmodule Spiral.Kino.CompilerDaemon do
 
   def handle_call({:compile, req}, _from, state) do
     started = System.monotonic_time(:millisecond)
+    IO.puts("#{clock()} started #{Map.get(req, :client, "anonymous")} #{Path.basename(req.input)} #{req.input}")
 
     {result, state} =
       try do
@@ -314,12 +344,13 @@ defmodule Spiral.Kino.CompilerDaemon do
       state.retiring == false ->
         reply
 
-      queued() > 0 or System.monotonic_time(:millisecond) - state.retiring < @retire_grace_ms ->
+      queued() > 0 or pool_busy?() or System.monotonic_time(:millisecond) - state.retiring < @retire_grace_ms ->
         Process.send_after(self(), :retire_check, 500)
         reply
 
       true ->
         IO.puts("retired; stopping")
+        stop_pool_workers()
         state = safe_stop_compiler(state)
         if is_function(state.on_retire, 0), do: state.on_retire.()
 
@@ -327,6 +358,20 @@ defmodule Spiral.Kino.CompilerDaemon do
           {:reply, value, _} -> {:stop, :normal, value, state}
           {:noreply, _} -> {:stop, :normal, state}
         end
+    end
+  end
+
+  defp pool_busy? do
+    case :persistent_term.get({__MODULE__, :pool, self()}, nil) do
+      nil -> false
+      pool -> match?(%{queued: q, idle: i, workers: w} when q > 0 or i < w, Spiral.Kino.CompilerPool.stats(pool))
+    end
+  end
+
+  defp stop_pool_workers do
+    case :persistent_term.get({__MODULE__, :pool, self()}, nil) do
+      nil -> :ok
+      pool -> pool |> Spiral.Kino.CompilerPool.stats() |> Map.get(:extra_workers, []) |> Enum.each(&GenServer.stop(&1, :normal, 30_000))
     end
   end
 
@@ -784,10 +829,11 @@ defmodule Spiral.Kino.CompilerDaemon do
           "compile\t" <> rest ->
             req = parse_request(rest)
             started = System.monotonic_time(:millisecond)
+            IO.puts("#{clock()} received #{req.client} #{Path.basename(req.input)} #{req.input}")
 
             reply =
               try do
-                case GenServer.call(server, {:compile, req}, :infinity) do
+                case compile_call(server, req) do
                   {:compiled, result, compile_ms} ->
                     encode(
                       result,
@@ -811,6 +857,37 @@ defmodule Spiral.Kino.CompilerDaemon do
 
       _ ->
         :gen_tcp.close(sock)
+    end
+  end
+
+  defp start_pool(server, opts) do
+    settings = Spiral.Kino.CompilerPool.settings(opts[:pool])
+
+    if settings.max_workers > 1 or settings.fair_single do
+      toolchain = Keyword.take(opts, [:dotnet, :compiler_dll, :workspace, :package_dir, :compile])
+
+      {:ok, pool} =
+        Spiral.Kino.CompilerPool.start_link(
+          first: server,
+          max_workers: settings.max_workers,
+          fair: settings.fair,
+          start_worker: Spiral.Kino.CompilerPool.worker_starter(toolchain, pool_limits(opts, settings.max_workers))
+        )
+
+      :persistent_term.put({__MODULE__, :pool, server}, pool)
+      IO.puts("compiler pool: up to #{settings.max_workers} compiler(s), #{if settings.fair, do: "fair per client", else: "first come first served"}")
+    end
+  end
+
+  defp pool_limits(opts, workers) do
+    base = Keyword.get(opts, :limits) || limits()
+    if workers > 1, do: %{base | max_mb: max(div(base.max_mb, workers), 1_200)}, else: base
+  end
+
+  defp compile_call(server, req) do
+    case :persistent_term.get({__MODULE__, :pool, server}, nil) do
+      nil -> GenServer.call(server, {:compile, req}, :infinity)
+      pool -> Spiral.Kino.CompilerPool.compile(pool, req.client, req)
     end
   end
 
@@ -879,14 +956,16 @@ defmodule Spiral.Kino.CompilerDaemon do
     error -> ["error\t" <> JSON.encode!(Exception.message(error)), "end\t1"]
   end
 
-  defp parse_request(rest) do    [backend, input, output, timeout, mtime] = String.split(String.trim(rest), "\t")
+  defp parse_request(rest) do
+    [backend, input, output, timeout, mtime | client] = String.split(String.trim(rest), "\t")
 
     %{
       backend: backend,
       input: input,
       output: output,
       timeout: parse_timeout(timeout),
-      mtime: String.to_integer(mtime)
+      mtime: String.to_integer(mtime),
+      client: List.first(client) || "anonymous"
     }
   end
 
@@ -931,7 +1010,7 @@ defmodule Spiral.Kino.CompilerDaemon do
   end
 
   defp socket_path do
-    path = Path.expand(Path.join(System.tmp_dir!(), "spiral-kino-#{System.pid()}.sock"))
+    path = Path.expand(Path.join(System.tmp_dir!(), "spiral-kino-#{System.pid()}-#{System.unique_integer([:positive])}.sock"))
 
     case :os.type() do
       {:win32, _} -> String.replace(path, "/", "\\")

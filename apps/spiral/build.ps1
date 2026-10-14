@@ -95,15 +95,19 @@ try {
     }
 
     $env:SPIRAL_JSON, $spiralJson = "1", $env:SPIRAL_JSON
+    $scoopErlang = Join-Path $HOME 'scoop/apps/erlang/current/bin'
+    if (Test-Path $scoopErlang) { $env:PATH = $scoopErlang + [IO.Path]::PathSeparator + $env:PATH }
     try {
-        New-Item -ItemType Directory -Force "$checkDir/rust", "$checkDir/cuda", "$checkDir/lua" | Out-Null
+        New-Item -ItemType Directory -Force "$checkDir/rust", "$checkDir/cuda", "$checkDir/lua", "$checkDir/gleam" | Out-Null
+        "import gleam/io`n`npub fn main() {`n  io.println(`"spiral-check-gleam 42`")`n}`n" | Set-Content "$checkDir/gleam/main.gleam" -NoNewline
         "print('spiral-check-lua', 6 * 7)`n" | Set-Content "$checkDir/lua/main.lua" -NoNewline
         "fn main() { println!(`"spiral-check-rust {}`", 6 * 7); }`n" | Set-Content "$checkDir/rust/main.rs" -NoNewline
         "print('spiral-check-cuda', 6 * 7)`n" | Set-Content "$checkDir/cuda/main.py" -NoNewline
         foreach ($case in @(
                 @{ name = "rust"; args = @("rust", "--rs-path", (GetFullPath "$checkDir/rust/main.rs")); expect = "spiral-check-rust 42" },
                 @{ name = "cuda"; args = @("cuda", "--py-path", (GetFullPath "$checkDir/cuda/main.py")); expect = "spiral-check-cuda 42" },
-                @{ name = "lua"; args = @("lua", "--lua-path", (GetFullPath "$checkDir/lua/main.lua")); expect = "spiral-check-lua`t42" })) {
+                @{ name = "lua"; args = @("lua", "--lua-path", (GetFullPath "$checkDir/lua/main.lua")); expect = "spiral-check-lua`t42" },
+                @{ name = "gleam"; args = @("gleam", "--gleam-path", (GetFullPath "$checkDir/gleam/main.gleam")); expect = "spiral-check-gleam 42"; exact = $true })) {
             $json = & $newExe @($case.args) 2> "$checkDir/$($case.name).err" | ForEach-Object { "$_" }
             $caseExit = $LASTEXITCODE
             $output = try {
@@ -112,7 +116,7 @@ try {
                 $result.output
             } catch { "<no JSON> $json" }
             Write-Output "spiral/apps/spiral/build.ps1 / run check / $($case.name): exit $caseExit / $("$output".Trim())"
-            if ($caseExit -ne 0 -or !("$output" -match [regex]::Escape($case.expect))) {
+            if ($caseExit -ne 0 -or !("$output" -match [regex]::Escape($case.expect)) -or ($case.exact -and "$output".Trim() -ne $case.expect)) {
                 Get-Content "$checkDir/$($case.name).err" -Tail 40 -ErrorAction Ignore | ForEach-Object { Write-Output "spiral/apps/spiral/build.ps1 / run check / $($case.name) stderr / $_" }
                 $failures += "$($case.name): exit $caseExit, expected '$($case.expect)' in the output: $output"
             }

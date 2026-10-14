@@ -45,8 +45,7 @@ defmodule Spiral.Kino.Targets do
   def build(%{tool: :c}, output_path, opts, timeout, deadline) do
     cc = Toolchain.cc(opts)
     exe = Path.join(Path.dirname(output_path), exe_name())
-    args = if cl?(cc || ""), do: ["/nologo", "/Fe:#{exe}", output_path], else: ["-o", exe, output_path]
-    run_program(cc, Path.basename(cc || "gcc"), args, opts, timeout, deadline, false)
+    run_program(cc, Path.basename(cc || "gcc"), c_args(cc || "gcc", output_path, exe, opts[:root]), opts, timeout, deadline, false)
   end
 
   def build(_builder, _output_path, _opts, _timeout, _deadline), do: {:ok, %{stdout: ""}}
@@ -109,6 +108,10 @@ defmodule Spiral.Kino.Targets do
 
       {:zig, path} ->
         run_program(Toolchain.zig(opts), "zig", ["run", path], opts, timeout, deadline, false)
+
+      {:lean, path} ->
+        {lean, args} = Toolchain.lean(opts)
+        run_program(lean, "lean", args ++ ["--run", path], opts, timeout, deadline, false)
 
       {:wgsl, path} ->
         run_wgsl(path, opts, timeout, deadline)
@@ -277,10 +280,9 @@ defmodule Spiral.Kino.Targets do
 
     if is_binary(cc) and File.regular?(cc) do
       exe = Path.join(Path.dirname(path), exe_name())
-      args = if cl?(cc), do: ["/nologo", "/Fe:#{exe}", path], else: ["-o", exe, path]
       shown = Path.basename(cc)
 
-      with {:ok, compiled} <- run_program(cc, shown, args, opts, timeout, deadline, false),
+      with {:ok, compiled} <- run_program(cc, shown, c_args(cc, path, exe, opts[:root]), opts, timeout, deadline, false),
            {:ok, ran} <- run_status(exe, exe_name(), [], opts, timeout, deadline, false) do
         {:ok, cell_exit(compiled, ran)}
       end
@@ -290,23 +292,37 @@ defmodule Spiral.Kino.Targets do
   end
 
   defp run_dcc(path, opts, timeout, deadline) do
+    case delphi_compiler(opts) do
+      {compiler, shown, args} -> run_delphi(compiler, shown, args ++ [path], path, opts, timeout, deadline)
+      nil -> {:error, %ProcessError{message: "`dcc32` was not found (nor fpc)", reason: :tool_missing}}
+    end
+  end
+
+  @doc false
+  @spec delphi_compiler(keyword()) :: {String.t(), String.t(), [String.t()]} | nil
+  def delphi_compiler(opts) do
     dcc = Toolchain.dcc(opts)
+    fpc = Toolchain.fpc(opts)
 
-    if is_binary(dcc) and File.regular?(dcc) do
-      with {:ok, compiled} <- run_program(dcc, "dcc32", [path], opts, timeout, deadline, false) do
-        exe = Path.join(Path.dirname(path), Path.basename(path, Path.extname(path)) <> ".exe")
+    cond do
+      is_binary(dcc) and File.regular?(dcc) -> {dcc, "dcc32", []}
+      is_binary(fpc) and File.regular?(fpc) -> {fpc, "fpc", ["-O2", "-Mdelphi"]}
+      true -> nil
+    end
+  end
 
-        if File.regular?(exe) do
-          case run_status(exe, Path.basename(exe), [], opts, timeout, deadline, false) do
-            {:ok, ran} -> {:ok, cell_exit(compiled, ran)}
-            error -> error
-          end
-        else
-          {:ok, compiled}
+  defp run_delphi(compiler, shown, args, path, opts, timeout, deadline) do
+    with {:ok, compiled} <- run_program(compiler, shown, args, opts, timeout, deadline, false) do
+      exe = Path.join(Path.dirname(path), Path.basename(path, Path.extname(path)) <> ".exe")
+
+      if File.regular?(exe) do
+        case run_status(exe, Path.basename(exe), [], opts, timeout, deadline, false) do
+          {:ok, ran} -> {:ok, cell_exit(compiled, ran)}
+          error -> error
         end
+      else
+        {:ok, compiled}
       end
-    else
-      {:error, %ProcessError{message: "`dcc32` was not found", reason: :tool_missing}}
     end
   end
 
@@ -637,6 +653,24 @@ defmodule Spiral.Kino.Targets do
 
   defp invoke(nil, _ctx, default), do: default.()
   defp invoke(fun, ctx, _default) when is_function(fun, 1), do: fun.(ctx)
+
+  @c_flags ["-std=c11", "-O2", "-w", "-fwrapv"]
+
+  @spec c_args(String.t(), String.t(), String.t(), String.t() | nil) :: [String.t()]
+  def c_args(cc, source, exe, notebook_dir) do
+    if cl?(cc) do
+      ["/nologo", "/O2", "/Fe:#{exe}", source]
+    else
+      @c_flags ++ c_shim(notebook_dir) ++ ["-o", exe, source, "-lm"]
+    end
+  end
+
+  defp c_shim(nil), do: []
+
+  defp c_shim(dir) do
+    shim = Path.join(dir, "c-shim.h")
+    if File.regular?(shim), do: ["-include", shim], else: []
+  end
 
   defp cl?(path) do
     path |> Path.basename() |> String.downcase() |> String.trim_trailing(".exe") == "cl"

@@ -21,7 +21,6 @@ inl max_melee_damage (mode : fight_mode) (attack_value : i32) (attack_skill : i3
 inl max_melee_damage_offensive (attack_value : i32) (attack_skill : i32) (level : i32) : i32 =
     max_melee_damage Offensive attack_value attack_skill level
 
-///> rust
 ///> c
 test max_melee_matches_canary_double_formula =
     inl ~value = 50i32
@@ -34,7 +33,6 @@ test max_melee_matches_canary_double_formula =
     max_melee_damage_offensive (value - 2) 99 250 |> _assert_eq 454i32
     max_melee_damage_offensive (value + 150) 130 1000 |> _assert_eq 2410i32
 
-///> rust
 ///> c
 test fight_mode_scales_max_melee_like_canary_attack_factor =
     inl ~skill = 30i32
@@ -43,7 +41,6 @@ test fight_mode_scales_max_melee_like_canary_attack_factor =
     max_melee_damage Defensive 21 skill 8 |> _assert_eq 28i32
     max_melee_damage Balanced 21 (skill - 19) 8 |> _assert_eq 16i32
 
-///> rust
 ///> c
 test level_bonus_truncates =
     inl ~level = 9i32

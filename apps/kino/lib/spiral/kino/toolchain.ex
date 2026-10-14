@@ -113,6 +113,42 @@ defmodule Spiral.Kino.Toolchain do
       System.find_executable("dcc64")
   end
 
+  @lean_toolchain "leanprover/lean4:v4.35.0-rc4"
+
+  @spec lean(keyword()) :: {String.t() | nil, [String.t()]}
+  def lean(opts) do
+    explicit = opts[:lean] || System.get_env("SPIRAL_LEAN")
+    exe = if match?({:win32, _}, :os.type()), do: "lean.exe", else: "lean"
+
+    elan_homes =
+      [System.get_env("ELAN_HOME"), Path.join(System.user_home!(), ".elan"), Path.join(System.user_home!(), "scoop/persist/elan/.elan")]
+      |> Enum.reject(&is_nil/1)
+
+    pinned =
+      Enum.find_value(elan_homes, fn home ->
+        path = Path.join([home, "toolchains", String.replace(@lean_toolchain, ["/", ":"], &if(&1 == "/", do: "--", else: "---")), "bin", exe])
+        if File.regular?(path), do: path
+      end)
+
+    cond do
+      explicit -> {explicit, ["+" <> @lean_toolchain]}
+      pinned -> {pinned, []}
+      true -> {System.find_executable("lean"), ["+" <> @lean_toolchain]}
+    end
+  end
+  @spec fpc(keyword()) :: String.t() | nil
+  def fpc(opts) do
+    opts[:fpc] || System.get_env("SPIRAL_FPC") || System.find_executable("fpc") || scoop_fpc()
+  end
+
+  defp scoop_fpc do
+    Enum.find(
+      ["scoop/apps/freepascal/current/bin/x86_64-win64/fpc.exe", "scoop/apps/freepascal/current/bin/i386-win32/fpc.exe"]
+      |> Enum.map(&Path.join(System.user_home!(), &1)),
+      &File.regular?/1
+    )
+  end
+
   @spec plot(keyword()) :: String.t() | nil
   def plot(opts) do
     opts[:plot] || System.get_env("SPIRAL_KINO_PLOT") || default_plot()

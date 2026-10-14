@@ -53,7 +53,7 @@ int32_t main(){
         }
     }
     
-    USDecref0(&(v0));
+    
     if (v2){
         
         

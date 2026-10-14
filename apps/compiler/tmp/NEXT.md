@@ -14,15 +14,15 @@ State at hand-off, and the open work in priority order. Details live in the lane
   compiler, rustc error above).
 - Verified: single-flight `runs/single-flight-20261005-220235` (`-Suite all -Native`: +2 rows for the fixture, 0
   changed rows vs `-190408`, outputs 1052 identical + the fixture's 2), re-blessed by `-220955` (row for row, 1054/1054
-  outputs identical; EXPECTED EE5D50A67221). Source 3CCCBD5D8346: projections single-flight 92e758a2, hopac daa4ca87.
-  Hopac (rebuilt): `runs/hopac-20261005-223154` (frontier+smoke, `-Parallel 1`, 72/72 parity, 0 changed rows vs
+  outputs identical; EXPECTED EE5D50A67221). Source 3CCCBD5D8346: projections single-flight 92e758a2, gpt5parallel daa4ca87.
+  gpt5parallel (rebuilt): `runs/hopac-20261005-223154` (frontier+smoke, `-Parallel 1`, 72/72 parity, 0 changed rows vs
   `-191036`) and `-223624` (78 Rust/string fixtures incl. the new one: all parity, DISAGREE 0, 0 changed rows vs
   `-192602`; the fixture's C and Rust residual hashes equal single-flight's).
 - Tracked outputs elsewhere: eoie's `authority_state_domain/authority.rs` and `eoie_legacy_operations/operations.rs`
   hold `std::rc::Rc::<str>::from("")` from a compiler older than the cache pass (their bare literals are uncached too);
   if regenerated, this fix caches it like the others. eoie's `rust_std_string/model.spi` workaround (`.unwrap_or_default()`) can be reverted.
 
-## Session 2026-10-05 (day): C forward declarations, Python NaN/concat, hopac start-up and parse speed
+## Session 2026-10-05 (day): C forward declarations, Python NaN/concat, gpt5parallel start-up and parse speed
 
 - C backend, recursive unions with closure fields: a `Fun` struct prints its range and domain types first, so a union
   among them named the `Fun` before its typedef (`union rec s = Cons : u64 * (() -> s)`: `unknown type name 'Fun0'`);
@@ -38,26 +38,26 @@ State at hand-off, and the open work in priority order. Details live in the lane
   (`sm.concat`) had no Python arm: `ts_string_concat` Python now builds and agrees with C (was a blessed error).
   The other `ts_*` C++/Python gaps are upstream representation limits (C++ strings are `const char *` without a
   length, arrays bare pointers; Python ints are unbounded, strings index by code point) and stay as they are.
-- Hopac start-up: every hopac row runs in a fresh process, which spent seconds JIT-compiling the compiler.
+- gpt5parallel start-up: every gpt5parallel row runs in a fresh process, which spent seconds JIT-compiling the compiler.
   `scripts/build.ps1` now ReadyToRun-compiles a Release build's managed dlls with the runtime's crossgen2 (from the
   NuGet cache, restored on first use; Hopac.dll crashes crossgen2 and stays IL, remembered in `<dll>.r2r-skip`).
   frontier_hello 6.0 -> 3.2 s per fresh process; with the parse fixes below the lib/spiral frontier samples
   (format_any_union, join_format_any, static_list_eq) went from 9-16 s to 7.4-8.9 s and the runaway rows from ~14 s
   to 6.5-7.3 s (`runs/hopac-20261005-083405`, `-Parallel 1`, frontier+smoke compiled in 299 s vs 554 s).
-- Hopac parse of lib/spiral: the parsed-AST seed telemetry summed every block under a lock for each parsed block
+- gpt5parallel parse of lib/spiral: the parsed-AST seed telemetry summed every block under a lock for each parsed block
   (O(blocks^2), threads spinning on the lock) and keyed blocks through `NativeCutoverStableRef.ref32` (a digest and a
   process-wide locked table per block): ~43% of parse CPU. Now a running aggregate keyed by the block's identity
   string. The tokenizer's `skip_string`/`chars_till_string` used the culture-aware `String.Compare` (~16% of parse
   CPU): ordinal now (shared section). The host skips the source-graph fingerprint (every .spi under the input and the
   package directory read and hashed) when a process compiles once: the CLI's single compile, `--plan-ir`, and one-job
-  batches (every hopac `-FreshProcess` row).
+  batches (every gpt5parallel `-FreshProcess` row).
 - Tokenizer (both cores): `tokenize_line` appended each token with `PersistentVector.conj`, which copied the vector's
   tail array every time (over half of the tokenizer's CPU on lib/spiral); tokens now collect in a ResizeArray that
   becomes the line's vector once. Infer (both cores) renders hover texts only when `SPIRAL_HOVERS` is not `0`; the
   CLI host sets `0` (it has no language-server mode; the rendering was ~6% of a fresh single-flight compile). A fresh
-  single-flight compile of frontier_format_any_union went from ~8.9 to ~5 s (ABBA, 4 pairs, identical outputs); hopac
+  single-flight compile of frontier_format_any_union went from ~8.9 to ~5 s (ABBA, 4 pairs, identical outputs); gpt5parallel
   gains less (its parse is already parallel).
-- Hopac `term_core_impl` split for the JIT: it was 225 KB of IL, past the JIT's 60 KB optimization limit, so every
+- gpt5parallel `term_core_impl` split for the JIT: it was 225 KB of IL, past the JIT's 60 KB optimization limit, so every
   fresh process compiled it (twice) with MinOpts into 1.1 MB of machine code. Its long arms are now `let rec` local
   functions (`termArm*`: fsc's TLR lifts them to static methods and, unlike plain single-use locals, does not inline
   them back), and the EOp arms, which carried most of the match's decision tree, live in `termOpArms1..3`, split by Op
@@ -65,7 +65,7 @@ State at hand-off, and the open work in priority order. Details live in the lane
   termOpArms 21/42/56 KB; `DOTNET_JitDisasmSummary` reports "Tier-0 switched to FullOpts" for them. ABBA (4 pairs,
   both ReadyToRun, outputs identical in every pair): lean_cic -1.5 s (-14%), runaway -0.7 s (-15%), brzozowski
   -0.3 s, format_any_union and spiral_proves unchanged. The edit was generated mechanically (pure code motion); the
-  single-flight projection is unchanged by it. `apps/spiral` on hopac (fresh process, ReadyToRun): 85 s with the split,
+  single-flight projection is unchanged by it. `apps/spiral` on gpt5parallel (fresh process, ReadyToRun): 85 s with the split,
   93 s without, byte-identical `spiral.fsx` (1,932,564 B; 359-888 s on 10-01).
 - TypeScript coverage: a sweep compiled every sample with a C oracle to TypeScript; 97 agree with C and now carry a
   TypeScript row (`tests/harness.psd1` `AlsoTypeScript`, appended in `test.ps1`'s New-Sample; frontier samples
@@ -80,7 +80,7 @@ State at hand-off, and the open work in priority order. Details live in the lane
   re-blessed by `-110215` (EXPECTED 979A16B45F19); `-113449` (tokenizer + hovers) reproduces it (outputs identical); re-blessed on the final source by `-185124` (EXPECTED
   49DDCDFFABDB; its only differences from `-113449` are format_any_union/join_format_any F#/Rust variable renumbering from
   lib/spiral edits made at 12:31).
-  Source 58D50F91F9AC: projections single-flight 6aae8632, hopac b867b6fb. Hopac `runs/hopac-20261005-083405` (frontier+smoke, 0 changed rows vs `-043523`), `-083905` (fixtures:
+  Source 58D50F91F9AC: projections single-flight 6aae8632, gpt5parallel b867b6fb. gpt5parallel `runs/hopac-20261005-083405` (frontier+smoke, 0 changed rows vs `-043523`), `-083905` (fixtures:
   every new/changed row's residual equals single-flight's), and with the split `-101039` (frontier+smoke incl. the new
   TypeScript smoke rows, 0 changed rows vs `-083405`), `-101617` (fixtures, 0 changed vs `-083905`) and `-101938`:
   `-Suite all -Native -Parallel 3`, 1279 rows, no missing/emitted/timeout, DISAGREE 0, 12 parity-residual-differs (the
@@ -89,7 +89,7 @@ State at hand-off, and the open work in priority order. Details live in the lane
   `-191036`/`-191413` (0 changed; slowest frontier row 6.4 s against the 17.9 s deadline) and `-192602` (`-Suite all -Parallel 3`: 1283 rows, no
   missing/emitted/timeout, DISAGREE 0, 0 changed rows vs `-101938`; slowest frontier row 9.9 s).
 
-- Open (hopac): under a saturated CPU the lib/spiral frontier samples (and a few small ones) can still hit the 17.9 s core
+- Open (gpt5parallel): under a saturated CPU the lib/spiral frontier samples (and a few small ones) can still hit the 17.9 s core
   deadline in `prepass_await_scheduled` (type checking done, partial evaluation not started): `runs/hopac-20261005-122158`
   had 16 such timeouts while other jobs held the machine at 100% CPU, where `-101938` an hour and a half earlier had none.
   The stall is before partial evaluation (prepass scheduling waits behind the loaded thread pool), so the next lever
@@ -99,12 +99,12 @@ State at hand-off, and the open work in priority order. Details live in the lane
 - Native Rust `failwith` panics (`std::panic::panic_any`); `fn main` maps a panicked main thread to exit 101.
 - Per-branch CSE scope at preprocessor directives (`module CseDirectiveBarrier`, shared, before HopacExtensions): an
   `#if/#ifdef/#ifndef/#elif/#else/#endif` line in macro text prunes the block's CSE table back to what was bound before
-  the region, at all 4 `push_typedop_no_rewrite (TyMacro ..)` sites (sf EMacro; hopac EMacro and the 2 replay thunks).
+  the region, at all 4 `push_typedop_no_rewrite (TyMacro ..)` sites (sf EMacro; gpt5parallel EMacro and the 2 replay thunks).
   Before, a value bound in the first `run_target` arm was reused by the other arms and after `#endif` (lib/spiral seq.dib
   cell 92: `v66` undefined in plain F#). Single-flight `runs/single-flight-20261004-235909`: 0 changed rows vs the oracle,
-  mega compile times unchanged; hopac smoke and the new fixtures all parity; hopac frontier parity with residuals
+  mega compile times unchanged; gpt5parallel smoke and the new fixtures all parity; gpt5parallel frontier parity with residuals
   identical to before, but the 4 slowest frontier samples needed `-TimeoutSec 60` on a saturated CPU (stalls before
-  partial evaluation, so load; rerun `-Mode hopac -Suite frontier` at the default budget on a quiet machine).
+  partial evaluation, so load; rerun `-Mode gpt5parallel -Suite frontier` at the default budget on a quiet machine).
 - Python+Cuda `kernels_aux`: the 0cb0fda0 corelib marks members `__host__ __device__` and guards `__host__`, and
   upstream's `Replace("__host__", "__device__")` turned that into `__device__ __device__` members and a second
   `#ifndef __device__` block (upstream has the same latent bug). The `__host__` guard is now dropped first, then
@@ -133,25 +133,25 @@ State at hand-off, and the open work in priority order. Details live in the lane
 - Seen, not fixed: the C backend can't declare a closure type inside a recursive union (`union rec s = Cons : u64 * (()
   -> s)`: `unknown type name 'Fun0'`); CodegenPython writes a NaN literal as `float()` (= 0.0; upstream too).
   Both fixed in the 2026-10-05 day session (above).
-- Verified on source `3D4D537BCE75` (projections: single-flight `dd28476f`, hopac `0eccfd3a`):
+- Verified on source `3D4D537BCE75` (projections: single-flight `dd28476f`, gpt5parallel `0eccfd3a`):
   `runs/single-flight-20261005-010846` (all 1178 rows parity, DISAGREE 0), re-blessed by `-011934`, which reproduces it
-  row for row with byte-identical outputs; hopac `runs/hopac-20261005-003930` (smoke 36/36, frontier parity except
+  row for row with byte-identical outputs; gpt5parallel `runs/hopac-20261005-003930` (smoke 36/36, frontier parity except
   timeouts on a CPU-saturated machine) + `-010115` (those rows at `-TimeoutSec 60`: all parity) + `-005400` (new
   fixtures 32/32).
 - Then verified on source `6AA9B2B3F775` (recursion_limit, NEAR store moves, fixtures; projections: single-flight
-  `de9c11d6`, hopac `d060e0b1`): `runs/single-flight-20261005-031327` (1182 rows, DISAGREE 0, REGRESSED 0; changed rows
+  `de9c11d6`, gpt5parallel `d060e0b1`): `runs/single-flight-20261005-031327` (1182 rows, DISAGREE 0, REGRESSED 0; changed rows
   only the 4 new and the 6 ts_float_nan/ts_while_loop rows above), re-blessed by `-033216`, which reproduces it row for
-  row with byte-identical outputs. Hopac on `6AA9B2B3F775`: `runs/hopac-20261005-035940` (smoke 36/36; frontier parity
+  row with byte-identical outputs. gpt5parallel on `6AA9B2B3F775`: `runs/hopac-20261005-035940` (smoke 36/36; frontier parity
   except 4 timeouts at the 17.9 s core deadline, the usual slow rows under load) + `-041213` (new fixtures 44/44, DISAGREE 0).
-- hopac-perf 01-04 (hopac-only: Op case table without per-case `MakeUnion`, value-keyed `EvalSiteCache`, fewer
+- gpt5parallel-perf 01-04 (gpt5parallel-only: Op case table without per-case `MakeUnion`, value-keyed `EvalSiteCache`, fewer
   evaluator allocations, and the `memoCreditDecision` fix: it keyed a ConcurrentDictionary by an option, so `None`
   threw `ArgumentNullException` in Hopac workers; now `voption`) on top: source `67D56F303BA9`, single-flight projection
-  unchanged (`de9c11d6`, so the bless above stands), hopac `50944649`. `runs/hopac-20261005-043523` (`-Parallel 1`):
+  unchanged (`de9c11d6`, so the bless above stands), gpt5parallel `50944649`. `runs/hopac-20261005-043523` (`-Parallel 1`):
   frontier 28/28 and smoke 36/36 parity, no timeouts. Against `-035940`, the 4 timeouts and the emitted
   frontier_static_list_eq row now return, with residuals identical to the `-TimeoutSec 60` run `-010115`. New fixtures
-  `-044750`: 44/44 parity, DISAGREE 0, row for row equal to `-041213`. Mega and timing: hopac-perf3's private runs
+  `-044750`: 44/44 parity, DISAGREE 0, row for row equal to `-041213`. Mega and timing: gpt5parallel-perf3's private runs
   (`hopac-20261005-032257` base vs `-035558` patched, frontier,smoke,mega: 0 rows differ, compile_ms sum 808 -> 627 s,
-  sequential under load; their ABBA timing is in `$CLAUDE_JOB_DIR/tmp/agents/hopac-perf3/LOG.md`).
+  sequential under load; their ABBA timing is in `$CLAUDE_JOB_DIR/tmp/agents/gpt5parallel-perf3/LOG.md`).
 
 ## Session 2026-10-03: Python indexing and notebook error reporting
 
@@ -165,7 +165,7 @@ State at hand-off, and the open work in priority order. Details live in the lane
 
 - Rust and Delphi are native backends in both cores (`codegenRust`, `codegenDelphi`, next to `codegenFsharp`).
   Neither core asks for C and translates it. Single-flight examples: Rust 103/104 and Delphi 102/102 agree
-  with C natively; hopac frontier+smoke: Rust 11/11, Delphi 11/11. See `lanes/single-flight/README.md`.
+  with C natively; gpt5parallel frontier+smoke: Rust 11/11, Delphi 11/11. See `lanes/single-flight/README.md`.
 - Compiler outputs live only next to their sources and are committed; a run replaces them and
   `git diff samples` shows what changed. `scripts/test.ps1` holds a named mutex per cache dir (a dead run abandons it).
 - C-isms removed from the fixtures: `samples/core/operators.spi` uses built-in ops; per-backend code goes
@@ -174,8 +174,8 @@ State at hand-off, and the open work in priority order. Details live in the lane
 - Split compiler (`scripts/gear-dev.ps1`): plans stay stable across body edits (planning weights), the host
   links against surface copies of the gears, module-level `do`s run through `GearRoot.initialize`.
   See `lanes/splitter/README.md`.
-- Hopac fix 16 (replayed `if` branches, `while_control`) and fix 17 (native backends ported); see
-  `lanes/hopac/FRONTIER.md`.
+- gpt5parallel fix 16 (replayed `if` branches, `while_control`) and fix 17 (native backends ported); see
+  `lanes/gpt5parallel/FRONTIER.md`.
 
 ## Session 2026-09-28 (late): eoie on the native backend, translator deleted
 
@@ -184,7 +184,7 @@ State at hand-off, and the open work in priority order. Details live in the lane
   `compiler-contracts/test-attestation.ps1`. The regenerated `.rs` are copied into `eoie/src` (the eoie repository) (uncommitted).
   Source fixes and the translator behaviours eoie relied on: `lanes/single-flight/RUST_LIBRARY_PLAN.md`, "Progress".
 - Core (`apps/compiler/spiral_compiler.fs`): a failed type check's fatal now lists the package's typer errors;
-  `codegenRust` emits `#![...]` globals before its `use`s (also in hopac); `params` renamed (reserved in F#).
+  `codegenRust` emits `#![...]` globals before its `use`s (also in gpt5parallel); `params` renamed (reserved in F#).
 - **Deleted**: `compiler/host/{PortableBackends,PortableUnionNormalizer,TuplePrune}.fs`, the older translator
   inside `Program.fs`, the typed-source path, C/F# output rewriting, `restoreC`, `--lower-portable*`,
   `lanes/single-flight/PORTABLE_BACKENDS.md`. Host builds clean (single-flight).
@@ -200,7 +200,7 @@ State at hand-off, and the open work in priority order. Details live in the lane
   check whether the core accepts these programs at all). NATIVE-DIFF [C]: six `native_closure_*` fixtures
   (C output changed now that it is no longer rewritten; check they still agree natively). Plus the two
   expected improvements listed in item 1. Do not bless before these are triaged.
-- Not done: hopac build (it has the unbuilt Export port, `params` rename and inner-attribute hoist; do one
+- Not done: gpt5parallel build (it has the unbuilt Export port, `params` rename and inner-attribute hoist; do one
   build + `-Suite frontier`); `--plan-ir` is still eoie-specific host code (move its parser into eoie, plan
   doc); `rewriteRustEmitExpr` stays for `lib/spiral`'s Fable `emitRustExpr`; a failing *dependency*
   package still yields "no code and no diagnostic"; `"""` strings are unsafe for code (process-wide
@@ -208,9 +208,9 @@ State at hand-off, and the open work in priority order. Details live in the lane
   `runtime_drift.spi`) pin hashes/sizes of edited files, but `eoie status` already failed at HEAD
   ("missing evidence root"), so they could not be refreshed here.
 
-## Session 2026-09-28 (evening): splitter + hopac iteration
+## Session 2026-09-28 (evening): splitter + gpt5parallel iteration
 
-- Hopac fixes 18-20 (`lanes/hopac/FRONTIER.md`): join point parameters permuted against their arguments
+- gpt5parallel fixes 18-20 (`lanes/gpt5parallel/FRONTIER.md`): join point parameters permuted against their arguments
   (`tuple_mixed`, `portable_composite`), tail calls lost for nominal returns
   (`native_managed_array_tail_recursion`), `if` conditions replayed ahead of earlier statements. All three
   verified on their fixtures and on frontier+smoke (8/8, 36/36, native 0 DISAGREE). A wide
@@ -218,89 +218,89 @@ State at hand-off, and the open work in priority order. Details live in the lane
   attempt at 2 workers was killed for low memory); read its result before calling fix 20 done.
 - Splitter: stable gears and part numbers across emissions (`spiral-split-gears/src/gear_anchors.rs`,
   `SPIRAL_GEAR_ANCHORS`) and surface-aware dependent rebuilds in `scripts/gear-dev.ps1`. Adding a
-  top-level `let` to the hopac core: 1 gear, 92 s end to end (was 75 gears, 1,056 s); removing two: 2 gears,
+  top-level `let` to the gpt5parallel core: 1 gear, 92 s end to end (was 75 gears, 1,056 s); removing two: 2 gears,
   103 s. The split compiler passes frontier+smoke (one `frontier_try_item` run hit the 15 s budget; the
   split gears are unoptimized, so they run close to it; 2 reruns passed). Details: `lanes/splitter/README.md`.
-- The split loop is now the fast path for hopac edits: `pwsh scripts/gear-dev.ps1`, then
-  `$env:SPIRAL_COMPILER_DLL = <printed path>; pwsh scripts/test.ps1 -Mode hopac ...`.
-- Hopac runs rewrite in-tree sample outputs: before committing, rerun single-flight on the touched suites
+- The split loop is now the fast path for gpt5parallel edits: `pwsh scripts/gear-dev.ps1`, then
+  `$env:SPIRAL_COMPILER_DLL = <printed path>; pwsh scripts/test.ps1 -Mode gpt5parallel ...`.
+- gpt5parallel runs rewrite in-tree sample outputs: before committing, rerun single-flight on the touched suites
   (`pwsh scripts/test.ps1 -Suite frontier,smoke,examples,contracts -Native`) so the committed outputs are
   single-flight's again.
 
 ## Session 2026-09-28 (night): both cores in one file
 
 - `apps/compiler/spiral_compiler.fs` now holds both cores: 6 shared sections and 33 whole-section
-  `#if SPIRAL_CORE_HOPAC` / `#else` pairs (rules in `AGENTS.md`, upstream strategy in `README.md`, "Upstream").
+  `#if SPIRAL_CORE_GPT5PARALLEL` / `#else` pairs (rules in `AGENTS.md`, upstream strategy in `README.md`, "Upstream").
   The merge was generated and checked without a build: projecting single-flight gives the old file byte for
-  byte, hopac gives the old hopac core up to whitespace-only lines (its notebook export put one after every
-  declaration). `compiler/cores/hopac/` is gone; the pre-merge files and the one-shot merge script are in
+  byte, gpt5parallel gives the old gpt5parallel core up to whitespace-only lines (its notebook export put one after every
+  declaration). `compiler/cores/gpt5parallel/` is gone; the pre-merge files and the one-shot merge script are in
   `<cache>/core-backups/20260928-203025/`. Single-flight builds from the merged file (0 warnings).
-- **Not yet done**: the hopac build from the merged file (waits for the memory-heavy wide run), then hopac
+- **Not yet done**: the gpt5parallel build from the merged file (waits for the memory-heavy wide run), then gpt5parallel
   frontier+smoke to confirm the projection builds and behaves like before; the first `gear-dev` run after
   the merge rebuilds most gears once (shared sections now have single-flight's blank lines).
 - **Unifying pairs** is where copying stops. Order: IR types (the `PartEval` type definitions: `Data`, `TyV`,
   `TypedOp`, join point keys), then codegens behind one small interface for fetching a method/closure body
   (dictionary vs `jpBodyCellAwait`), then the small pairs. Smallest by lines differing (single-flight-only /
-  hopac-only, blank lines ignored): VSCTypes 4/2, RefCounting 5/6, WDiffPrepass 7/7, startParentWatcher 4/4,
+  gpt5parallel-only, blank lines ignored): VSCTypes 4/2, RefCounting 5/6, WDiffPrepass 7/7, startParentWatcher 4/4,
   Graph 8/45, SpiralHub 15/16, SpiProj 18/17, CodegenDelphi 14/14, CodegenRust 21/23, Tokenize 17/35,
-  HashConsing 0/23, PersistentVectorExtensions 0/146. Keep the shared text single-flight's, move hopac
+  HashConsing 0/23, PersistentVectorExtensions 0/146. Keep the shared text single-flight's, move gpt5parallel
   telemetry (`DiagJson.emit`) out of shared sections, and treat single-flight's own lines as behaviour
-  changes for hopac (verify both builds and both lanes' tests per batch).
+  changes for gpt5parallel (verify both builds and both lanes' tests per batch).
 - Upstream: the i574n fork (`polyglot/deps/The-Spiral-Language`) is the sync pivot; record the fork commit the
   sections correspond to before the first sync (README, "Upstream"). `scripts/upstream.py` (status, import,
   export) moves edits between sections and the fork's files.
-- Unified so far: `VSCTypes`, `HashConsing` (hopac's locked version for both), `PersistentVectorExtensions`
-  (hopac's diagnostics helpers moved into a hopac-only `HopacRuntimeHelpers` section before it),
-  `CodegenUtils` (hopac's superset), `RefCounting`, and the Rust and Delphi backends through a new
+- Unified so far: `VSCTypes`, `HashConsing` (gpt5parallel's locked version for both), `PersistentVectorExtensions`
+  (gpt5parallel's diagnostics helpers moved into a gpt5parallel-only `HopacRuntimeHelpers` section before it),
+  `CodegenUtils` (gpt5parallel's superset), `RefCounting`, and the Rust and Delphi backends through a new
   `CodegenAdapter` section pair (before `CodegenRust`): union tag text, layout key matching, method key
   arguments, method/closure body lookup, memo tables and RefCounting's decrement table, each in the form
-  its core needs. Sharing single-flight's Rust text gives hopac single-flight's union case tags
-  (`case_tag`, where hopac used the case's position). Single-flight builds verified after each step; the
-  hopac build is pending. 26 pairs left.
-- `Tokenize` is a behaviour choice, not a merge: hopac's side changes triple-quoted strings (newline placed
+  its core needs. Sharing single-flight's Rust text gives gpt5parallel single-flight's union case tags
+  (`case_tag`, where gpt5parallel used the case's position). Single-flight builds verified after each step; the
+  gpt5parallel build is pending. 26 pairs left.
+- `Tokenize` is a behaviour choice, not a merge: gpt5parallel's side changes triple-quoted strings (newline placed
   before a continuation line instead of after it, empty lines handled) and drops `inline` on the lexer
   state. Decide the triple-string semantics with a test fixture first (no sample uses `"""` today).
-- `CodegenC` is shared too (single-flight's text through the adapter, plus hopac's
+- `CodegenC` is shared too (single-flight's text through the adapter, plus gpt5parallel's
   `preservesDuplicateGlobalFragment` fix): 26 of 29 sampled programs give byte-identical C before and after,
   the other 3 are the same expected rejections. 25 pairs left.
-- Left as pairs on purpose: `CodegenFsharp` (hopac's side carries ~560 lines of join point body resolution:
+- Left as pairs on purpose: `CodegenFsharp` (gpt5parallel's side carries ~560 lines of join point body resolution:
   owner materialization, replay drains, recovery; the adapter's simple await would bypass them),
-  `CodegenCpp`/`CodegenPython` (real feature differences, e.g. hopac's typed macro control, union tag tables
+  `CodegenCpp`/`CodegenPython` (real feature differences, e.g. gpt5parallel's typed macro control, union tag tables
   and object-dtype array literals in Python; no fixtures cover them), `Tokenize` (above).
-- Lua and Gleam are shared too (single-flight's text, so hopac gets single-flight's newer Lua union payload
-  handling); `#nowarn 40` moved above the prelude pair so hopac's build stops warning on the shared
+- Lua and Gleam are shared too (single-flight's text, so gpt5parallel gets single-flight's newer Lua union payload
+  handling); `#nowarn 40` moved above the prelude pair so gpt5parallel's build stops warning on the shared
   backends. All six native backends (C, Rust, Delphi, Lua, Gleam through the adapter; RefCounting) now have
   one copy. Pairs left (24): prelude, `spiral_compiler`, Utils, Tokenize, BlockParsing, HopacExtensions,
   BlockBundling, Infer, Prepass, PartEval, CodegenFsharp, CodegenAdapter (intended), CodegenCpp,
   CodegenPython, WDiff, WDiffPrepass, SpiProj, Graph, ServerUtils, SignalRSupervisor, new_server,
-  startParentWatcher, SpiralHub, main; one hopac-only section (HopacRuntimeHelpers). Their differences
-  are mostly hopac's concurrency/performance adaptations (`HopacExtensions.S.*` = `Array.*`,
+  startParentWatcher, SpiralHub, main; one gpt5parallel-only section (HopacRuntimeHelpers). Their differences
+  are mostly gpt5parallel's concurrency/performance adaptations (`HopacExtensions.S.*` = `Array.*`,
   `ConcurrentQueue` for `ResizeArray`, a tag allocator for `dict'.Count`, `FastRuntimeFormat` for `sprintf`)
-  plus a few real fixes to keep (e.g. hopac's `preservesDuplicateGlobalFragment` in `global`).
+  plus a few real fixes to keep (e.g. gpt5parallel's `preservesDuplicateGlobalFragment` in `global`).
 - The three single-flight "regressions" after the translator cut are translator-only features:
   `native_fptr_basic`/`native_fptr_reuse` need function pointers (`YFun .. FT_Pointer`), which upstream's C
   backend never had (only the C++/Cuda one: `typedef` + `FunPointerMethod{tag}`); `native_layout_stack_mutable`
   needs stack-mutable layouts, which the C and Rust backends reject by design. Like the 16 translator-only
   fixtures before, they are dropped (harness entries removed; delete the three directories once the running
-  wide hopac run has finished). Porting function pointers to C/Rust/Delphi from the C++ backend is an
+  wide gpt5parallel run has finished). Porting function pointers to C/Rust/Delphi from the C++ backend is an
   option if native callbacks are wanted.
 - IR plan (the codegen pairs): the IR types differ only systematically: union tags (`UnionTagId` vs
   `string`), layout keys (`LayoutFieldNameId` vs `string`), join point owners (`JpBodyOwnerIdentity` vs
   `string ConsedNode * E`, and the method key carries its range type), `ReFunction`'s annotation identity.
-  Give single-flight tiny definitions of hopac's names (`UnionTagId = string`, `UnionTagIdOps.text = id`,
+  Give single-flight tiny definitions of gpt5parallel's names (`UnionTagId = string`, `UnionTagIdOps.text = id`,
   `LayoutFieldNameIdOps.matchesText`, per-mode `method_body`/`closure_body`), then the IR types and the
   codegens can be shared text compiled by both.
 
 ## Session 2026-09-29: merged core verified on both lanes
 
-- Hopac builds from the merged file (0 errors) and gives the same frontier 8/8, smoke 36/36, native 0
+- gpt5parallel builds from the merged file (0 errors) and gives the same frontier 8/8, smoke 36/36, native 0
   `DISAGREE` as before the merge, with the unified sections and the shared Rust/Delphi/C backends. Single-
   flight: frontier, smoke and examples as before, minus the C closure `NATIVE-DIFF`s (fixed, below). The three
-  translator-only fixtures are deleted. In-tree outputs restored with single-flight after the hopac runs.
+  translator-only fixtures are deleted. In-tree outputs restored with single-flight after the gpt5parallel runs.
 
-## Session 2026-09-29: wide hopac run, C closure fix
+## Session 2026-09-29: wide gpt5parallel run, C closure fix
 
-- Wide hopac run after fixes 18-20 (`<cache>/runs/hopac-20260928-201051`, examples+contracts, 1 worker, 2h09):
+- Wide gpt5parallel run after fixes 18-20 (`<cache>/runs/hopac-20260928-201051`, examples+contracts, 1 worker, 2h09):
   examples 413/461 parity (44 missing), contracts 585/607 (21 missing, 4 crashes), native 7 build
   failures (21 before), 0 `DISAGREE`. Against the post-fix-16 run: `tuple_mixed`, `portable_composite` and
   `native_managed_array_tail_recursion` now agree on C/Rust/Delphi; `managed_string_codepoints` compiles for
@@ -308,7 +308,7 @@ State at hand-off, and the open work in priority order. Details live in the lane
   a stack overflow (exit 0xC00000FD: `contract_atomic_carbon_microgrid_clearing`,
   `contract_region_safe_robotic_surgery`, mega `antimirov_certificate`, `minimization_witness`; fix 20 now
   evaluates compound `if` conditions directly, on the stack, which is a suspect); 4 `WRITE_ABORT` on
-  `native_string_utf8_*` (hopac's residual is much smaller than the file on disk: 5 KB vs 28 KB);
+  `native_string_utf8_*` (gpt5parallel's residual is much smaller than the file on disk: 5 KB vs 28 KB);
   `native_cube_direct` now compiles but its C references an undeclared `v1`; stalls at the build budget
   (`frontier_fib`, `dynamic_array_growth_union_managed`, two contracts), possibly timing.
 - **C closure use-after-free (upstream bug, fixed in the shared `CodegenC`)**: `ClosureMethodN` copied the
@@ -322,7 +322,7 @@ State at hand-off, and the open work in priority order. Details live in the lane
 
 - **Fix 21** (compiler stack overflows in the BigStack spawn): `BigStack.StackBudget` measures the stack left
   with `GetCurrentThreadStackLimits`; 0 crashes in 5 runs of the crash-prone contracts.
-- **Fix 22** (`lanes/hopac/FRONTIER.md`): `native_cube_direct`'s `return v1` and `native_string_utf8_*`'s
+- **Fix 22** (`lanes/gpt5parallel/FRONTIER.md`): `native_cube_direct`'s `return v1` and `native_string_utf8_*`'s
   `return v25` (the `WRITE_ABORT`s) were not fixes 18-20 but the cooperative time-slicing of declared method
   bodies: resume continues in the previous slice's block while the body is read from a fresh one. Declared
   bodies no longer time-slice (budget 2^24); `SPIRAL_JP_SLICE_OPS` brings slicing back for repro. Both
@@ -330,16 +330,16 @@ State at hand-off, and the open work in priority order. Details live in the lane
   The wide run of it is incomplete (below).
 - `File main has a type error somewhere in its path.` now lists the typer's errors of every package, not just
   the entry's (both cores' `BuildFile`): an error in a dependency used to come with no detail at all.
-- `scripts/test.ps1 -Parallel` now defaults from the machine (hopac ~3/8 of the CPUs, single-flight half,
+- `scripts/test.ps1 -Parallel` now defaults from the machine (gpt5parallel ~3/8 of the CPUs, single-flight half,
   capped by free memory: 3 workers here); see `AGENTS.md`.
-- **Fixes 23 and 24** (`lanes/hopac/FRONTIER.md`): replay no longer repeats applications into a block the
+- **Fixes 23 and 24** (`lanes/gpt5parallel/FRONTIER.md`): replay no longer repeats applications into a block the
   direct evaluator is building, nor re-applies one it already applied (repro
   `samples/native_replay_repeat_call`: 1 call like single-flight, was 4; utf8 fixture 2, was 7); and replayed
   applications get their arguments in order (`Expected a string. Got: i32` in two utf8 fixtures, reduced to
   `f "abc" 1i32`). Verified on Debug builds with direct compiles; suite results below.
 - **Batch (late 2026-09-29)**: fix 28 (nominal-wrapped functions dyn like single-flight), more ledger and
   digest performance work, host accepts F# scripts ending in an expression; then one `-Suite all -Native`
-  hopac run (results in FRONTIER.md when it lands). The `native_source_package_prototype_*` rows are parity:
+  gpt5parallel run (results in FRONTIER.md when it lands). The `native_source_package_prototype_*` rows are parity:
   the oracle expects the rejection, and single-flight rejects them too (their nested packages use `+.`, which
   only the harness core defines).
 - **Evening 2026-09-29**: fix 25 (closures in runtime `if` branches, the `EJP0035` wall: two closures shared
@@ -352,10 +352,10 @@ State at hand-off, and the open work in priority order. Details live in the lane
 - **Wide run of fix 22 is incomplete** (superseded by the run above): stopped at the user's request. `<cache>/runs/hopac-20260929-071704`
   (`-Parallel 3`, Release = fix 22 only) reached 386 of ~1,154 jobs: ok 209, error 177, 0 timeouts, 0 crashes.
   An earlier 1-worker attempt (`hopac-20260929-065121`, 246 jobs) was stopped to switch to parallel. Rerun:
-  `pwsh scripts/test.ps1 -Mode hopac -Suite examples,contracts -Native` (the default is now 3 workers here),
+  `pwsh scripts/test.ps1 -Mode gpt5parallel -Suite examples,contracts -Native` (the default is now 3 workers here),
   after rebuilding Release (it will then include the unfinished replay edits above: finish or revert them
   first, or build fix 22 alone from a copy).
-- In-tree `samples/` outputs were rewritten by the hopac runs: restore with single-flight
+- In-tree `samples/` outputs were rewritten by the gpt5parallel runs: restore with single-flight
   (`pwsh scripts/test.ps1 -Suite frontier,smoke,examples,contracts -Native`) before committing.
 - The two single-flight `REGRESSED` contract rows of the last restore run
   (`mega_omniledger_erp_kernel/negative_direct_marker_sync`,
@@ -366,7 +366,7 @@ State at hand-off, and the open work in priority order. Details live in the lane
 - `scripts/build.ps1` stamps the staged core copy, so building an older file with `-CoreSource` (a backup)
   is no longer a silent no-op.
 
-## Session 2026-09-30 (night): batched hopac fixes 31-33
+## Session 2026-09-30 (night): batched gpt5parallel fixes 31-33
 
 - Full run `<cache>/runs/hopac-20260929-231443` (fixes 22-30 + perf): contracts 590/607 parity (was 578),
   examples 430/453 (was 409), mega 2/5, native 1 DISAGREE (Rust `managed_string_invalid_utf8_slice`,
@@ -405,7 +405,7 @@ State at hand-off, and the open work in priority order. Details live in the lane
 - Fixes 36-37 (FRONTIER.md): producer records compared by reference, lazy credit digests and snapshots,
   quiet-mode HUD/heartbeat/handoff savings, `file_build` setup guard. `spiral_proves` alone: 151 → 65 s.
   `SPIRAL_HOPAC_WORKERS=3` measured no better than the default. Full run `<cache>/runs/hopac-20260930-0413*`.
-- Estimate (2026-09-30, 04:00), how far hopac is from compiling everything single-flight does: ~700/1000.
+- Estimate (2026-09-30, 04:00), how far gpt5parallel is from compiling everything single-flight does: ~700/1000.
   Suite parity is ~97%, but the tail is the hard part:
   - mega roots take minutes against seconds;
   - the replay store keys values per AST node, not per evaluation (fix 34: timing-dependent wrong values);
@@ -433,7 +433,7 @@ State at hand-off, and the open work in priority order. Details live in the lane
   the in-tree outputs.
 - That single-flight run: contracts 597 parity, examples 430, frontier 4 + 4 new, mega 5/5. There are no
   `REGRESSED` rows and the same 3 NATIVE-DIFF rows (the Rust `managed_string_invalid_utf8_slice` DISAGREE is in
-  both lanes: a single-flight Rust backend issue). **The same 21 UNEXPECTED-OUTPUT rows as hopac**, all
+  both lanes: a single-flight Rust backend issue). **The same 21 UNEXPECTED-OUTPUT rows as gpt5parallel**, all
   `entry=(expression)`: the host now accepts F# scripts ending in an expression, in both lanes.
   Re-blessing the oracle (`pwsh scripts/test.ps1 -Suite all -Native -Bless`, single-flight) turns them into
   parity. Review first: they are
@@ -443,11 +443,11 @@ State at hand-off, and the open work in priority order. Details live in the lane
   `negative_*` sub-packages. Those last seven are mega fixtures whose "negative" programs single-flight
   compiles; oracle rows the earlier host only rejected by accident.
 - Git state: the working tree has single-flight's outputs. The **index** (staged by the user) still holds
-  94 sample outputs from an earlier hopac run. For example, the staged `dynamic_array_function_boundary/main.c`
+  94 sample outputs from an earlier gpt5parallel run. For example, the staged `dynamic_array_function_boundary/main.c`
   has the duplicated `method0` call of the replay bug fixed in fix 23. `git diff -- samples` shows them;
   restage the working tree's versions before committing.
 - Next targets: build fix 33's second half and fix 34; profile `mega_brzozowski_derivatives/finite_inventory_adversarial`
-  (hopac >28 s in partial evaluation); stack-dump `mega_lean_cic_bottom_up_kernel` (>172 s).
+  (gpt5parallel >28 s in partial evaluation); stack-dump `mega_lean_cic_bottom_up_kernel` (>172 s).
 
 ## Session 2026-09-30 (day): stability and speed toward apps/spiral
 
@@ -480,7 +480,7 @@ State at hand-off, and the open work in priority order. Details live in the lane
 - Quiet mode (`SPIRAL_DIAG_QUIET`) must keep `shouldEmitJsonLine`'s kind counters: ~150 retry decisions
   read them (`snapshotKindCount`).
 - Rust `string_slice` exits 3 on a split code point like C/Delphi: native DISAGREE 0 in both lanes.
-- **apps/spiral with hopac** (scratch copy, `$CLAUDE_JOB_DIR/tmp/apps_spiral_build.ps1`): type checking
+- **apps/spiral with gpt5parallel** (scratch copy, `$CLAUDE_JOB_DIR/tmp/apps_spiral_build.ps1`): type checking
   passes; partial evaluation stalled with 96 pending join points. Cause and fix 44 in FRONTIER.md: code
   matched on a join point's pending placeholder result (`++#?` → `format_real`). With fix 44 the fourth
   attempt (25 min) stalled with only 2 pending, both `run@file_system.spi:701`: `read_link`'s `run` join
@@ -489,7 +489,7 @@ State at hand-off, and the open work in priority order. Details live in the lane
   Reduced (`$CLAUDE_JOB_DIR/tmp/trace_repro.ps1 -Body`): a `main` that matches on
   `file_system.read_link "C:/nonexistent_dir_x" |> resultm.map_error' sm'.format |> resultm.unbox`.
   Single-flight overflows the stack on it (exit 0xC00000FD in 11 s): very likely the same wall as
-  single-flight's apps/spiral overflow. Hopac finishes partial evaluation and then hangs in codegen,
+  single-flight's apps/spiral overflow. gpt5parallel finishes partial evaluation and then hangs in codegen,
   past its 120 s build budget (the watchdog does not cover codegen): `codegenFsharp`'s
   `requireResolvedMethodCell` finds `CodegenJpMethodBodyCellPending` and blocks in
   `run (Hopac.IVar.read ivar)` on a cell nobody will fill (the JP graph is already quiescent). Two fixes,
@@ -500,9 +500,9 @@ State at hand-off, and the open work in priority order. Details live in the lane
      `run` → `루프` → `run` crosses two work units and the second `run` call defers to a placeholder
      of a cell whose owner is waiting on it; or the owner was retired as control-only replay work (seen
      in fix 44's trace) without filling it. Once fixed, add the repro as `samples/frontier_read_link`
-     (after single-flight stops overflowing on it, or as a hopac-only frontier row).
+     (after single-flight stops overflowing on it, or as a gpt5parallel-only frontier row).
 - **Evening results (2026-09-30)**, logs under `$CLAUDE_JOB_DIR/tmp/`:
-  - hopac fixes 44-47: no verdict change (FRONTIER status; the full run's 61 stalls were machine load);
+  - gpt5parallel fixes 44-47: no verdict change (FRONTIER status; the full run's 61 stalls were machine load);
   - single-flight with the restored peval thread (`runs/single-flight-20260930-210053`): identical to the
     18:02 run on all 1,081 rows (verdicts, residual hashes, exit codes, stdout); one consistent timeout
     (`mega_lean_cic.../negative_programmed_endpoint_cross_codomain`, 30 s, no oracle row);
@@ -510,23 +510,23 @@ State at hand-off, and the open work in priority order. Details live in the lane
     the oracle before the bless is backed up at `$CLAUDE_JOB_DIR/tmp/EXPECTED.before-bless.tsv`;
   - single-flight apps/spiral ran 32 min without overflowing, then hit the 30 min budget: rerun with
     a larger budget to see whether it finishes;
-  - hopac apps/spiral attempt 7 on the split build with fix 48 (`apps_spiral_hopac7.txt`).
-  Fix 48 is only in the split build: rebuild the monolith (`build.ps1 -Mode hopac`) before the next suite.
+  - gpt5parallel apps/spiral attempt 7 on the split build with fix 48 (`apps_spiral_hopac7.txt`).
+  Fix 48 is only in the split build: rebuild the monolith (`build.ps1 -Mode gpt5parallel`) before the next suite.
 - **Night 2026-10-01, outcome.** Single-flight builds apps/spiral again (exit 0, 738 s, 2.79 MB) after the
-  `sm'.span_from` library fix below. Hopac: suite at full parity on fixes 49-53 (FRONTIER status table);
+  `sm'.span_from` library fix below. gpt5parallel: suite at full parity on fixes 49-53 (FRONTIER status table);
   its last apps/spiral-specific wall was fix 54 (`VarIs` called every static union a variable;
   `samples/frontier_static_list_eq`, blessed). Attempt 13 with fix 54 ran 25 min and ended with "BuildFile
   returned no code and no diagnostic arrived": most likely `PevalInlineRestart` escaping after its two
   restarts; that now surfaces as an EJP0014 build error with the reason (rebuild + rerun to read it).
-  `SPIRAL_HOPAC_INLINE_JP=1` evaluates hopac's join points inline from the start (diagnostic switch).
+  `SPIRAL_HOPAC_INLINE_JP=1` evaluates gpt5parallel's join points inline from the start (diagnostic switch).
   Attempt 14 (06:10, fix 54 + restart-limit message): at 24 min `main` had returned and the root waited in
   `awaitJpQuiescence`; one JP work unit was still grinding in the asynchronous declared-body machinery
   (`resume_declared_apply` → `jpStoreDeclaredApplyContinuation` → `jpMaybePruneDeclaredResumeSnapshots` →
   `jpPruneUnreachableDeclaredResumeSnapshotsForJob`, a concurrent-dictionary walk per stored continuation:
-  likely quadratic), at under one core. Next for hopac apps/spiral: make that pruning incremental (or run
+  likely quadratic), at under one core. Next for gpt5parallel apps/spiral: make that pruning incremental (or run
   apps/spiral with `SPIRAL_HOPAC_INLINE_JP=1`, which skips the declared-body slicing, and compare).
   Stacks: `$CLAUDE_JOB_DIR/tmp/attempt14_stacks.txt` was not written; rerun `dotnet-stack report`.
-- **Night 2026-10-01: apps/spiral now fails the same way in both cores.** Hopac attempt 10 (fixes 44-53,
+- **Night 2026-10-01: apps/spiral now fails the same way in both cores.** gpt5parallel attempt 10 (fixes 44-53,
   fresh inline peval restart) failed after 624 s with `EJP0011: re-entrant term evaluation cycle` at
   `listm'.spi:33` (`inl rec try_item`, 1,025 re-entries, depth 7,240), reached from `main` through
   `trace.spi:221` (`trace`). An inline recursion whose index is a runtime value unrolls forever (one
@@ -534,7 +534,7 @@ State at hand-off, and the open work in priority order. Details live in the lane
   cycle (~75,000 deep). `listm'.try_item_` (`let rec`, a join point) is the runtime-safe variant. The
   three-call `trace` repro compiles in single-flight now (80 s), so the trigger is specific to
   apps/spiral's calls. Diagnostics added: single-flight `SPIRAL_IF_NESTING_LIMIT` (default 5,000) turns
-  the runaway into a traced type error; hopac's `legacy_build_retry_rejected` wrapper now keeps the
+  the runaway into a traced type error; gpt5parallel's `legacy_build_retry_rejected` wrapper now keeps the
   evaluation trace as text.
   **Root cause (03:30): a library change, not the compilers.** The guard's full trace in single-flight:
   `run` → `runtime.execute_with_options` → `split_command` → `runtime.split_args` → parsing combinators
@@ -553,7 +553,7 @@ State at hand-off, and the open work in priority order. Details live in the lane
   1.5 MB Hopac worker stack. `read_link` overflowed at ~240 frames: finite depth, from `term` frames of
   ~7-10 KB, join point bodies evaluated inline, and `BackendSwitch` evaluating every backend's branch
   (2 MB was already enough for the repro). The thread is back (`#else` Supervisor, `file_build`); the
-  repro compiles in 30 s (192,400 bytes, 26 methods, 12 closures, the same counts as hopac). The next
+  repro compiles in 30 s (192,400 bytes, 26 methods, 12 closures, the same counts as gpt5parallel). The next
   single-flight `-Suite all -Native` run is its regression check. Diagnosis logs:
   `$CLAUDE_JOB_DIR/tmp/cases/sf_readlink`.
 - **Splitter**: stale anchors collapsed the plan 137 → 9 gears (README "Anchor collapse"). Deployed: the
@@ -573,22 +573,22 @@ State at hand-off, and the open work in priority order. Details live in the lane
   program (FRONTIER.md, "Resolved (2026-09-29)") still record that program; fixing them is item 1 below.
   Backup of the previous oracle: `$CLAUDE_JOB_DIR/tmp/EXPECTED.before-bless.tsv`.
 
-## Session 2026-10-01 (morning): hopac compiles apps/spiral in its default mode
+## Session 2026-10-01 (morning): gpt5parallel compiles apps/spiral in its default mode
 
-Details: `lanes/hopac/FRONTIER.md` fix 55.
-- **apps/spiral, hopac default (async) mode: partial evaluation and codegen in 555 s**, the same 2,687,696
+Details: `lanes/gpt5parallel/FRONTIER.md` fix 55.
+- **apps/spiral, gpt5parallel default (async) mode: partial evaluation and codegen in 555 s**, the same 2,687,696
   bytes on two runs, 0 errors type-checked as .NET F# (`$CLAUDE_JOB_DIR/tmp/spiral.hopac-default.fsx`).
   It needed the snapshot-prune trigger made geometric (it ground for hours), the JP watchdog to count
   evaluation steps as progress (it aborted a busy 2-minute join point body, then the write guard refused the
   "unstable" run) and the write guard to stop judging stable runs by the size of the file already on disk.
   Inline-JP mode (`SPIRAL_HOPAC_INLINE_JP=1`) also builds it (879 s); its 7 suite gaps of the morning are closed
   (the write loop's own `unstable`, FRONTIER fix 56), but async is faster and stays the default.
-- Hopac's output is ~104 KB smaller than single-flight's only because single-flight's variable numbers run to
-  `v146264` (hopac numbers per method); same line and token counts. Method signatures differ in the order of
+- gpt5parallel's output is ~104 KB smaller than single-flight's only because single-flight's variable numbers run to
+  `v146264` (gpt5parallel numbers per method); same line and token counts. Method signatures differ in the order of
   captured variables, and the comparison base (`spiral.sf.fsx`, 03:48) predates the `listm'.exists'` change.
 - Runaway inline recursion: a rustc-style `error[EJP0040]` in both cores (span, repeating cycle, entry path,
   why, fix), registered as terminal; `samples/frontier_runaway_inline_recursion`; `SPIRAL_IF_NESTING_LIMIT`
-  default 1,000. Hopac evaluates ~15-20 ms per inline level, so it needs ~20 s to report (task: per-application
+  default 1,000. gpt5parallel evaluates ~15-20 ms per inline level, so it needs ~20 s to report (task: per-application
   overhead); quiet-mode telemetry and a quadratic cycle-guard count are already out of that path.
 - Splitter: a same-source `gear-dev` rerun after an anchor fallback crashed (`Part3817 is outside the plan`);
   fixed in `output_reset.rs` (README "Same-source rerun"), and `-Full` now starts from an empty `.out` (it built
@@ -596,14 +596,14 @@ Details: `lanes/hopac/FRONTIER.md` fix 55.
 
 ## Open, in order
 
-0. **Handoff 2026-10-01 21:00 — hopac meets the promotion criterion** (AGENTS.md):
+0. **Handoff 2026-10-01 21:00 — gpt5parallel meets the promotion criterion** (AGENTS.md):
    `runs/hopac-20261001-194016` reproduces every oracle row (no `missing`, no `emitted`, DISAGREE 0) and
    apps/spiral compiles in the default async mode (359 s, 2,687,696 bytes, 0 type errors). The single-flight
    run after it (20:50) is at full parity and the tracked sample outputs equal HEAD. Today's fixes: FRONTIER.md
    55-58. Pending work, in order (nothing else is in flight; the session's task list is closed):
    1. **Confirm the margin, then decide the default.** The 4 `frontier_runaway_inline_recursion` rows report
       `EJP0040` in 14.5-16.5 s under suite load against the 17 s core deadline. Repeat
-      `pwsh scripts/test.ps1 -Mode hopac -Suite all -Native` two or three times; if they hold, switch the
+      `pwsh scripts/test.ps1 -Mode gpt5parallel -Suite all -Native` two or three times; if they hold, switch the
       default lane per AGENTS.md "Promotion criterion". If they flap: the remaining per-level cost is replay
       registration (item 3), CSE lookups through the scope chain, and GC scans of the deep stack (the harness
       already sets `DOTNET_GCgen0size=0x10000000`).
@@ -612,7 +612,7 @@ Details: `lanes/hopac/FRONTIER.md` fix 55.
       DISAGREE 0, compiled in 2,325 s vs 2,985 s that morning; 33 rows moved from parity-residual-differs to exact
       parity, 64 left). A third run at 18:27 on a throttled CPU (70% of nominal) put them at 15.2-15.9 s: the margin
       depends on machine conditions, so the deadline is still the weak point. The criterion's rows hold; switching
-      the default lane is the user's call (hopac is still
+      the default lane is the user's call (gpt5parallel is still
       4-5x slower than single-flight on the mega roots: lean_cic 19.7 s, omniledger 22.2 s, spiral_proves_spiral
       43.6 s, brzozowski 3.9 s, zeta 7.2 s).
    2. **Warm processes (FRONTIER fix 57).** `-FreshProcess:$false` compiles a whole suite 12x faster (186 s vs
@@ -629,7 +629,7 @@ Details: `lanes/hopac/FRONTIER.md` fix 55.
       yet, so opt-in only. Two leaks across *successful* builds: (a) `tagged_union_*` match arms came out in another
       order — `UnionTagId` compared by intern slot, i.e. the process-wide first-seen order (fixed: ordinal text
       order, single-flight's; the 4 `tagged_union_*` samples now come out byte-identical to the committed
-      single-flight outputs, warm and fresh, where hopac's had been `parity-residual-differs`); (b) the `while_*`
+      single-flight outputs, warm and fresh, where gpt5parallel's had been `parity-residual-differs`); (b) the `while_*`
       samples stall on their 3rd-8th build in one process (any backend; 1-2 of 8 per round): main returns, then
       `jpAwaitCombinedQuiescence` (peval-main-orphan-check) waits on one operational node left `Running` with no job
       behind it — `JPMethod <anon> while_loop/main.spi:1:20-1:26` (the stall report now lists spawn leases and
@@ -651,7 +651,7 @@ Details: `lanes/hopac/FRONTIER.md` fix 55.
       BuildFile itself.
       2026-10-08: every leak seen so far surfaces as a failure, so the host now defers a failure from a process that
       already served a build (no result line, exit 4) and the runner's resume runs that job first in the fresh
-      process. `-WarmRecycle` is hopac's default since. Same DLL, `-Suite all`, 3 workers: 782 s vs 1,834 s fresh,
+      process. `-WarmRecycle` is gpt5parallel's default since. Same DLL, `-Suite all`, 3 workers: 782 s vs 1,834 s fresh,
       2,014/2,014 rows identical (status, residual hash, verdict; `cache-dev/runs/hopac-20261008-114617` vs
       `-120222`); 605 deferrals, 106 of them succeeded fresh (the 10-02 missing rows' class). The per-build
       session object is still the way to a fully warm process (~12x), not needed for correctness any more.
@@ -699,14 +699,14 @@ Details: `lanes/hopac/FRONTIER.md` fix 55.
       Judge allocation fixes by wall time and by frames' inclusive shares, not by PollGC. `scripts/test.ps1` still
       sets the 256 MB gen0 (it helped before today's allocation fixes); compare a suite with and without it before
       dropping it.
-      Mega roots, single-flight vs hopac (2026-10-01/02): brzozowski 2.0 vs 5.1-6.3 s, lean_cic 4.2 vs 30.9-47.8,
+      Mega roots, single-flight vs gpt5parallel (2026-10-01/02): brzozowski 2.0 vs 5.1-6.3 s, lean_cic 4.2 vs 30.9-47.8,
       omniledger 5.0 vs 33.3-33.8, spiral_proves_spiral 8.1 vs 51.8-64.7, zeta 2.3 vs 10.1-11.1.
-   5. Before any commit: a single-flight restore run (hopac suites rewrite the tracked sample outputs).
-   6. **Output convergence with single-flight (2026-10-02 evening).** Of the 65 rows whose hopac output differed
+   5. Before any commit: a single-flight restore run (gpt5parallel suites rewrite the tracked sample outputs).
+   6. **Output convergence with single-flight (2026-10-02 evening).** Of the 65 rows whose gpt5parallel output differed
       (`parity-residual-differs`), about 48 are now byte-identical to single-flight's (53 while BackendSwitch
       evaluated every branch, reverted below; confirm the count on the next full suite). Causes fixed:
       - pair traversal was tail-first in `dataPostorderChildRelation` (join point call arguments and renamed globals
-        came out reversed) and in hopac's `dyn` (`(0, 0)` and nested constructor arguments bound in reverse order);
+        came out reversed) and in gpt5parallel's `dyn` (`(0, 0)` and nested constructor arguments bound in reverse order);
       - single-flight's F# union declarations numbered cases by their index in the whole union while every use
         numbered them by position among the emitted cases (`US1_1` declared, `US1_0` used: the F# didn't compile for
         GADT-refined unions; single-flight fixed, outputs re-blessed);
@@ -725,10 +725,10 @@ Details: `lanes/hopac/FRONTIER.md` fix 55.
       - Onion steps 0-5 (restructuring the merged file layer by layer; the step inventory was a session note, not
         in the repo): `upstream.py` handles nested `#if` (Utils was cut at 6 lines);
         `scripts/projection-hash.ps1` hashes both cores' projections (a pure marker move must not change them);
-        `module HopacExtensions` re-paired so no pair straddles it; the Utils pair split (its hopac side was 36k lines
-        of hopac-only machinery, now a hopac-only region after a 61-line pair); the file header shared with hopac's
-        8k-line preamble kernel as a hopac-only region; SpiProj unified (single-flight's text, both cores).
-      - Dead code: 6.4k lines of hopac-only functions nothing referenced, removed to a fixed point (432, 118, 53, 27,
+        `module HopacExtensions` re-paired so no pair straddles it; the Utils pair split (its gpt5parallel side was 36k lines
+        of gpt5parallel-only machinery, now a gpt5parallel-only region after a 61-line pair); the file header shared with gpt5parallel's
+        8k-line preamble kernel as a gpt5parallel-only region; SpiProj unified (single-flight's text, both cores).
+      - Dead code: 6.4k lines of gpt5parallel-only functions nothing referenced, removed to a fixed point (432, 118, 53, 27,
         11, 4, 1 definitions per round; functions only, since a module-level value may run for its side effect);
         two modules left empty were dropped. Single-flight's projection unchanged.
       - TypeScript backend: shared section `/// ## CodegenTypescript` (after CodegenLua), `.ts` in the host, a
@@ -751,9 +751,9 @@ Details: `lanes/hopac/FRONTIER.md` fix 55.
         as above; `ts_float_nan`, `ts_while_loop`: no `Python` key in that `!!!!BackendSwitch`). Plus `python_macro_annotations` (agrees) and
         `python_foreign_array_index` (Python only, no C oracle).
       - Later the same night: onion steps 2 (HopacExtensions unified: single-flight's top-level opens and `>>**` shared,
-        hopac's nested module a hopac-only region) and 6 (BlockBundling residual: single-flight's text shared, hopac
-        keeps 3 opens); single-flight's projection unchanged (`c5d4c508694feff8`). Verified 2026-10-03: hopac builds and
-        `runs/hopac-20261003-050046` reproduces the whole oracle (every row parity, DISAGREE 0); 636 of 657 hopac `ok` rows
+        gpt5parallel's nested module a gpt5parallel-only region) and 6 (BlockBundling residual: single-flight's text shared, gpt5parallel
+        keeps 3 opens); single-flight's projection unchanged (`c5d4c508694feff8`). Verified 2026-10-03: gpt5parallel builds and
+        `runs/hopac-20261003-050046` reproduces the whole oracle (every row parity, DISAGREE 0); 636 of 657 gpt5parallel `ok` rows
         are byte-identical to single-flight (brzozowski x10, format_any x4, native_float_nan_is x3, ts_float_nan x2,
         ts_array_union Python, and another session's new python_foreign_array_index differ).
       - Oracle re-blessed `single-flight-20261003-030150` (reproduced row for row by `-031154`): adds the 28 ts_* Cpp/Python
@@ -772,13 +772,13 @@ Details: `lanes/hopac/FRONTIER.md` fix 55.
    cores: the entry's `inl main` block fails to parse (a backtick type application on the next line, which
    top-down code rejects) and is dropped without a message; `BuildFile` then finds the `main` that the
    entry's `open main` brought in from the dependency (single-flight `file_build` fold + `Map.tryFind "main"`;
-   hopac the same at its `BuildFile`). Hopac's earlier "errors" on these rows came from the host or stall
+   gpt5parallel the same at its `BuildFile`). gpt5parallel's earlier "errors" on these rows came from the host or stall
    messages. Patched in both cores (not yet built): when the entry does not define `main` itself and has
    tokenizer/parser errors, the build fails with `Cannot find main ... the file does not define it, and it
    has errors` plus `path:line:col` per error. Decision: these five are invalid programs and a valid
    rewrite (`inl v : T = f ()` for each `` f `T () ``, `assert_static false` for `failwith`) partially
    evaluates for >10 min (contracts timeout 30 s), so their oracle becomes `error`. Verify: full
-   single-flight run changes exactly these five rows; bless them with `-Filter`; hopac matches. Patches,
+   single-flight run changes exactly these five rows; bless them with `-Filter`; gpt5parallel matches. Patches,
    repro and the fixture rewrite: `$CLAUDE_JOB_DIR/tmp/entryfix/`. Also worth a look: two "negative"
    mega rows (`negative_nondefeq_authority_not_scoped_pi_authority`,
    `negative_recursive_beta_false_ready_domain_retag`) compile only because their negative block is a
@@ -789,16 +789,16 @@ Details: `lanes/hopac/FRONTIER.md` fix 55.
    remaining fixtures before removing it).
 3. **Split compiler rebuild**: the core gained top-level declarations, so the split plan moved.
    `pwsh scripts/gear-dev.ps1 -Force` (~20 min at `-MaxNodes 2`), then
-   `$env:SPIRAL_COMPILER_DLL = <printed path>; pwsh scripts/test.ps1 -Mode hopac -Suite frontier,smoke -Native`.
-   Then continue the user's goal: iterate on the splitter/hopac until every sample compiles with hopac.
-4. **Hopac**: the build-budget stalls. They fall into two groups:
+   `$env:SPIRAL_COMPILER_DLL = <printed path>; pwsh scripts/test.ps1 -Mode gpt5parallel -Suite frontier,smoke -Native`.
+   Then continue the user's goal: iterate on the splitter/gpt5parallel until every sample compiles with gpt5parallel.
+4. **gpt5parallel**: the build-budget stalls. They fall into two groups:
    - **Diagnosed (2026-09-29, late):** with the fatal message now listing every package's errors, these
-     "stalls" report instead: hopac rejects `+.`/`=.` inside the nested package
+     "stalls" report instead: gpt5parallel rejects `+.`/`=.` inside the nested package
      (`packages/shared/advance.spi:12:31: Unbound term variable: +.`, `consume.spi:16:43: ... =.`). Those
      operators come from the harness core `samples/core` (`operators-`); The-Spiral-Language's core
      (`SPIRAL_COMPILER_PACKAGE_DIR`, `deps/polyglot/.../VS Code Plugin/core`) has neither, and every
      package in these fixtures uses `|core-` (the real core). Single-flight rejects them the same way (a
-     fresh compile: `Unbound variable: +.` in `shared`), and the oracle expects the rejection, so hopac is at
+     fresh compile: `Unbound variable: +.` in `shared`), and the oracle expects the rejection, so gpt5parallel is at
      parity; whether the fixtures should use the harness core (`core-`) is a fixture question. (Earlier
      builds hung at `typecheck_await_scheduled` instead of reporting; which change ended that is not pinned
      down.) The notes below are the earlier analysis.
@@ -806,19 +806,19 @@ Details: `lanes/hopac/FRONTIER.md` fix 55.
      every `native_source_package_prototype_*` fixture and 4 mega `negative_*` sub-packages. The
      prototype isn't the cause: `native_source_package_prototype_record_callback` with a plain
      function instead still stalls. `main` → `shared` → `model` (each also on `|core-`) is enough.
-     A plain type error in `shared` is reported correctly by hopac (`FatalError ... type error
+     A plain type error in `shared` is reported correctly by gpt5parallel (`FatalError ... type error
      somewhere in its path`, 5 s). The reduced variant (in `shared/advance.spi`: `open model.state`, then
      `inl run () : i32 =` building a `state_t`, destructuring it with `inl (state_t s) = initial` and adding
-     its fields) is rejected by single-flight in 5 s and stalls hopac, while the original fixture compiles in
-     single-flight. Hopac compiles the same package graph with valid bodies (`open model.state` alone, a
+     its fields) is rejected by single-flight in 5 s and stalls gpt5parallel, while the original fixture compiles in
+     single-flight. gpt5parallel compiles the same package graph with valid bodies (`open model.state` alone, a
      `state_t` built and unused, a `match initial with | state_t s => ..`), and the destructuring
      `inl (state_t s) = initial` compiles in a single-file program in both cores. So the stall needs the
      destructuring of an imported nominal inside a dependency package. Next: instrument which package's
      type-check stream `BuildFile` waits on (`tc.files.uids_file.[mid]`: `a.state`, and the prepass `b`)
-     at the stall; a typechecker exception swallowed inside a Hopac stream would leave that promise unfilled.
+     at the stall; a typechecker exception swallowed inside a gpt5parallel stream would leave that promise unfilled.
    - Partial evaluation (`partial_evaluation_started`): the cube and utf8 fixtures, `frontier_fib`, and
      contract and mega sub-packages. Recheck these after fixes 22-25, since some cleared.
-   The mega sub-packages that "parse order-dependently" are a fixture problem, not hopac: see
+   The mega sub-packages that "parse order-dependently" are a fixture problem, not gpt5parallel: see
    FRONTIER.md ("Resolved (2026-09-29)") for the 5 oracle rows single-flight compiled from the wrong
    `main`. (`tuple_mixed`, `portable_composite` and `native_managed_array_tail_recursion` were fixed
    by fixes 18 and 19.)
@@ -832,7 +832,7 @@ Details: `lanes/hopac/FRONTIER.md` fix 55.
 
 - Rust/Delphi outputs are judged natively against C (`oracle` column); C is kept generic, as one backend
   among others (it is maintained upstream by Spiral's author).
-- One `scripts/test.ps1` run at a time; a hopac run rewrites the committed outputs with hopac's, so rerun
+- One `scripts/test.ps1` run at a time; a gpt5parallel run rewrites the committed outputs with gpt5parallel's, so rerun
   single-flight (or `git restore samples`) before committing.
 - Don't poll background jobs with sleeps; memory-killed jobs are retried after freeing leftover `dotnet`
   build processes (`dotnet build-server shutdown`, orphaned `dotnet build`).

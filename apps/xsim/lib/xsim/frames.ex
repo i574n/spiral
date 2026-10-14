@@ -1,10 +1,7 @@
 defmodule Xsim.Frames do
   @limit 280
-  @light [{0, 4351}, {8192, 8205}, {8208, 8223}, {8242, 8247}]
 
-  def weight(text), do: text |> String.to_charlist() |> Enum.reduce(0, &(&2 + code_point_weight(&1)))
-
-  defp code_point_weight(cp), do: if(Enum.any?(@light, fn {lo, hi} -> cp >= lo and cp <= hi end), do: 1, else: 2)
+  defdelegate weight(text), to: Spiral.Kino.XCompat
 
   def header(id, k, n), do: "#{id} #{k}/#{n}\n"
 

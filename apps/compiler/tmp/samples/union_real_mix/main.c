@@ -40,7 +40,7 @@ int32_t score0(US0 v0){
         case 1: { // Both
             double v1 = v0.case1.v0; int32_t v2 = v0.case1.v1;
             
-            USDecref0(&(v0));
+            
             bool v3;
             v3 = v1 == 1.5;
             
@@ -75,7 +75,7 @@ int32_t score0(US0 v0){
         default: { // None
             
             
-            USDecref0(&(v0));
+            
             return 1l;
             break;
         }

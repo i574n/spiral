@@ -267,19 +267,8 @@ inl union_to_string forall t. (x : t) : string =
             if has_case |> not
             then None
             else
-                inl separator =
-                    backend_switch {
-                        Gleam = fun () => "("
-                        Lua = fun () => "("
-                        Fsharp = fun () =>
-                            run_target function
-                                | Rust => fun () => join "("
-                                | _ => fun () => join " "
-                        Python = fun () => "("
-                        Rust = fun () => "("
-                        TypeScript = fun () => "("
-                    }
-                inl x' = #?x' |> sm'.split separator |> am'.index_base 0
+                inl x' = #?x' |> sm'.split "(" |> am'.index_base 0
+
                 if #?x |> sm'.starts_with x'
                 then Some key
                 else None

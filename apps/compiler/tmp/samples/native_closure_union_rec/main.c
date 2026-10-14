@@ -101,30 +101,38 @@ UH0 * build0(uint64_t v0){
     }
 }
 uint64_t sum1(UH0 * v0, uint64_t v1){
-    
-    
-    switch (v0->tag) {
-        case 0: { // Cons
-            uint64_t v2 = v0->case0.v0; Fun0 * v3 = v0->case0.v1;
-            (v3)->refc += 2;
-            UHDecref0(v0);
-            UH0 * v4;
-            v4 = v3->fptr(v3);
-            
-            (v3)->decref_fptr(v3);
-            uint64_t v5;
-            v5 = v1 + v2;
-            
-            
-            return sum1(v4, v5);
-            break;
-        }
-        default: { // Nil
-            
-            
-            UHDecref0(v0);
-            return v1;
-            break;
+    while (1) {
+        
+        
+        switch (v0->tag) {
+            case 0: { // Cons
+                uint64_t v2 = v0->case0.v0; Fun0 * v3 = v0->case0.v1;
+                (v3)->refc += 2;
+                UHDecref0(v0);
+                UH0 * v4;
+                v4 = v3->fptr(v3);
+                
+                (v3)->decref_fptr(v3);
+                uint64_t v5;
+                v5 = v1 + v2;
+                
+                
+                {
+                    UH0 * tmp0 = v4;
+                    uint64_t tmp1 = v5;
+                    v0 = tmp0;
+                    v1 = tmp1;
+                }
+                continue;
+                break;
+            }
+            default: { // Nil
+                
+                
+                UHDecref0(v0);
+                return v1;
+                break;
+            }
         }
     }
 }

@@ -1,0 +1,96 @@
+///- --package .
+test readiness static =
+    open testing
+
+nominal attack_group = ()
+nominal healing_group = ()
+nominal action_slot = ()
+
+union ready group =
+    | AttackReady :: quantity.amount quantity.milliseconds -> ready attack_group
+    | HealingReady :: quantity.amount quantity.milliseconds -> ready healing_group
+    | ActionReady :: quantity.amount quantity.milliseconds -> ready action_slot
+
+union gate group =
+    | Open : ready group
+    | ClosedUntil : quantity.amount quantity.milliseconds
+
+union command =
+    | Strike : ready attack_group
+    | Heal : ready healing_group
+    | Hold
+
+inl since forall group. (proof : ready group) : quantity.amount quantity.milliseconds =
+    match proof with
+    | AttackReady at => at
+    | HealingReady at => at
+    | ActionReady at => at
+
+inl attack_gate (now : quantity.amount quantity.milliseconds) (timers : cooldowns.timers) : gate attack_group =
+    inl spell = cooldowns.strike_spell ()
+    inl at = quantity.value_of now
+    if cooldowns.can_cast at spell timers then Open (AttackReady now)
+    else ClosedUntil (quantity.ms (cooldowns.ready_at spell timers))
+
+inl healing_gate (now : quantity.amount quantity.milliseconds) (timers : cooldowns.timers) : gate healing_group =
+    inl spell = vocations.as_cooldown (vocations.knight_heal ())
+    inl at = quantity.value_of now
+    if cooldowns.can_cast at spell timers then Open (HealingReady now)
+    else ClosedUntil (quantity.ms (cooldowns.ready_at spell timers))
+
+inl action_gate (now : quantity.amount quantity.milliseconds) (next_action_at : quantity.amount quantity.milliseconds) : gate action_slot =
+    if quantity.at_least now next_action_at then Open (ActionReady now) else ClosedUntil next_action_at
+
+inl command_code (c : command) : i32 =
+    match c with
+    | Strike _ => 1
+    | Heal _ => 2
+    | Hold => 0
+
+///> c
+test gates_open_only_when_the_group_is_ready =
+    inl ~now = 5000i32
+    inl idle = cooldowns.idle_timers ()
+    inl busy = cooldowns.after_cast now (cooldowns.strike_spell ()) idle
+    inl code g =
+        match g with
+        | Open proof => quantity.value_of (since proof)
+        | ClosedUntil until => 0 - quantity.value_of until
+    code (attack_gate (quantity.ms now) idle) |> _assert_eq 5000i32
+    code (attack_gate (quantity.ms (now + 100)) busy) |> _assert_eq -7000i32
+    code (healing_gate (quantity.ms (now + 100)) busy) |> _assert_eq 5100i32
+
+///> c
+test a_strike_needs_an_attack_proof =
+    inl ~now = 0i32
+    match attack_gate (quantity.ms now) (cooldowns.idle_timers ()) with
+    | Open proof => command_code (Strike proof) |> _assert_eq 1i32
+    | ClosedUntil _ => command_code Hold |> _assert_eq 1i32
+
+///> c
+test a_healing_proof_cannot_authorize_a_strike fails "Unification failure" =
+    Strike (HealingReady (quantity.ms 0))
+
+///> c
+test a_strike_cannot_be_issued_without_a_proof fails "Unification failure" =
+    Strike (quantity.ms 0)
+
+///> wgsl
+test gates_on_gpu =
+    inl ~now = 5000i32
+    inl idle = cooldowns.idle_timers ()
+    match attack_gate (quantity.ms now) idle with
+    | Open proof => if quantity.value_of (since proof) = 5000i32 then 0i32 else 1i32
+    | ClosedUntil _ => 2i32
+
+///> c
+test the_action_gate_opens_once_per_gap =
+    inl ~now = 1000i32
+    inl code g = match g with Open proof => quantity.value_of (since proof) | ClosedUntil until => 0 - quantity.value_of until
+    code (action_gate (quantity.ms now) (quantity.ms 1250)) |> _assert_eq -1250i32
+    code (action_gate (quantity.ms (now + 250)) (quantity.ms 1250)) |> _assert_eq 1250i32
+
+///> c
+test an_attack_proof_cannot_pay_for_an_action_slot fails "Unification failure" =
+    inl drink (slot : ready action_slot) = since slot
+    drink (AttackReady (quantity.ms 0))

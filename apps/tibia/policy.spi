@@ -19,6 +19,17 @@ type candidate = {is_current : bool; distance : i32; health_percent : i32}
 
 inl evolved_against_cyclops () : thresholds = {heal_below = 124; strike_above = 23}
 
+type adaptive = {heal_base : i32; heal_per_attacker : i32; strike_above : i32; retreat_at : i32}
+
+inl thresholds_of (a : adaptive) (attackers : i32) : thresholds =
+    {heal_below = a.heal_base + a.heal_per_attacker * attackers; strike_above = a.strike_above}
+
+inl never_retreat () : i32 = 99
+
+inl fixed (t : thresholds) : adaptive = {heal_base = t.heal_below; heal_per_attacker = 0; strike_above = t.strike_above; retreat_at = never_retreat ()}
+
+inl retreats (a : adaptive) (attackers : i32) : bool = attackers >= a.retreat_at
+
 inl heals (t : thresholds) (o : observation) : bool =
     o.heal_ready && o.health < t.heal_below
 
@@ -30,11 +41,36 @@ inl engages (t : thresholds) (o : observation) : engagement =
 
 inl in_reach (c : candidate) : bool = c.distance <= 1
 
-inl prefers (a : candidate) (b : candidate) : bool =
-    if in_reach a <> in_reach b then in_reach a
-    elif a.is_current <> b.is_current then a.is_current
-    elif a.health_percent <> b.health_percent then a.health_percent < b.health_percent
+type aim = {current : i32; reach : i32; health : i32; distance : i32}
+
+union targeting =
+    | ReachFirst
+    | CurrentFirst
+    | Scored : aim
+
+inl weaker_or_nearer (a : candidate) (b : candidate) : bool =
+    if a.health_percent <> b.health_percent then a.health_percent < b.health_percent
     else a.distance < b.distance
+
+inl aim_score (w : aim) (c : candidate) : i32 =
+    (if c.is_current then w.current else 0) + (if in_reach c then w.reach else 0) + w.health * c.health_percent / 100 + w.distance * c.distance
+
+inl prefers_by (order : targeting) (a : candidate) (b : candidate) : bool =
+    match order with
+    | ReachFirst =>
+        if in_reach a <> in_reach b then in_reach a
+        elif a.is_current <> b.is_current then a.is_current
+        else weaker_or_nearer a b
+    | CurrentFirst =>
+        if a.is_current <> b.is_current then a.is_current
+        elif in_reach a <> in_reach b then in_reach a
+        else weaker_or_nearer a b
+    | Scored w =>
+        inl sa = aim_score w a
+        inl sb = aim_score w b
+        if sa <> sb then sa > sb else weaker_or_nearer a b
+
+inl prefers (a : candidate) (b : candidate) : bool = prefers_by ReachFirst a b
 
 inl engagement_code (e : engagement) : i32 =
     match e with
@@ -42,7 +78,6 @@ inl engagement_code (e : engagement) : i32 =
     | Approach => 2
     | Hold => 0
 
-///> rust
 ///> c
 ///> lua
 test heals_only_below_threshold_when_ready =
@@ -52,7 +87,6 @@ test heals_only_below_threshold_when_ready =
     heals t {health = health; heal_ready = false; strike_ready = true; target = InReach} |> _assert_eq false
     heals t {health = health + 24; heal_ready = true; strike_ready = true; target = InReach} |> _assert_eq false
 
-///> rust
 ///> c
 ///> lua
 test strikes_only_in_reach_ready_and_healthy_enough =
@@ -65,10 +99,10 @@ test strikes_only_in_reach_ready_and_healthy_enough =
     engagement_code (engages t {health = health - 1; heal_ready = true; strike_ready = true; target = OutOfReach}) |> _assert_eq 0i32
     engagement_code (engages t {health = health; heal_ready = true; strike_ready = true; target = NoTarget}) |> _assert_eq 0i32
 
+///> c
 test strike_is_not_a_bool fails "Unification failure" =
     engages (evolved_against_cyclops ()) {health = 50; heal_ready = true; strike_ready = true; target = InReach} |> _assert_eq true
 
-///> rust
 ///> c
 ///> lua
 test prefers_reach_then_current_then_weakest_then_nearest =
@@ -85,3 +119,30 @@ test decisions_on_gpu =
     inl strike = engagement_code (engages t {health = health; heal_ready = true; strike_ready = true; target = InReach})
     inl approach = engagement_code (engages t {health = health; heal_ready = true; strike_ready = true; target = OutOfReach})
     if strike = 1i32 && approach = 2i32 && heals t {health = health; heal_ready = true; strike_ready = true; target = InReach} then 0i32 else 1i32
+
+///> c
+///> lua
+test current_first_keeps_a_fleeing_target =
+    inl ~far = 4i32
+    inl fleeing = {is_current = true; distance = far; health_percent = 20}
+    inl fresh = {is_current = false; distance = 1; health_percent = 100}
+    prefers_by CurrentFirst fleeing fresh |> _assert_eq true
+    prefers_by ReachFirst fleeing fresh |> _assert_eq false
+
+///> c
+test adaptive_healing_rises_with_attackers =
+    inl ~attackers = 3i32
+    inl a = {heal_base = 60; heal_per_attacker = 25; strike_above = 10; retreat_at = 2}
+    retreats a attackers |> _assert_eq true
+    retreats (fixed (evolved_against_cyclops ())) attackers |> _assert_eq false
+    (thresholds_of a attackers).heal_below |> _assert_eq 135i32
+    (thresholds_of a 0).heal_below |> _assert_eq 60i32
+    (thresholds_of (fixed (evolved_against_cyclops ())) attackers).heal_below |> _assert_eq 124i32
+
+///> c
+test a_scored_aim_can_express_reach_first =
+    inl ~d = 1i32
+    inl reachlike = Scored {current = 50; reach = 100; health = 0; distance = 0}
+    inl near = {is_current = false; distance = d; health_percent = 90}
+    inl far_current = {is_current = true; distance = d + 2; health_percent = 40}
+    (prefers_by reachlike near far_current, prefers_by ReachFirst near far_current, prefers_by CurrentFirst near far_current) |> _assert_eq (true, true, false)

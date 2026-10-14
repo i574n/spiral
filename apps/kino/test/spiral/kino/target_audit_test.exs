@@ -21,6 +21,7 @@ defmodule Spiral.Kino.TargetAuditTest do
     {"gleam", "gleam"},
     {"gleam_javascript", "gleam -t javascript"},
     {"zig", "zig"},
+    {"lean", "lean"},
     {"wgsl", "wgsl"}
   ]
 

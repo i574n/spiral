@@ -130,7 +130,7 @@ int32_t main(){
         }
     }
     
-    USDecref0(&(v7));
+    
     int32_t v19;
     if (v18){
         
@@ -180,7 +180,7 @@ int32_t main(){
         }
     }
     
-    USDecref0(&(v1));
+    
     int32_t v37;
     switch (v4.tag) {
         case 0: { // Circle
@@ -218,7 +218,7 @@ int32_t main(){
         }
     }
     
-    USDecref0(&(v4));
+    
     int32_t v38;
     v38 = v28 + v37;
     
@@ -260,7 +260,7 @@ int32_t main(){
         }
     }
     
-    USDecref0(&(v5));
+    
     int32_t v48;
     v48 = v38 + v47;
     

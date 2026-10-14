@@ -335,7 +335,7 @@ int32_t method0(Array0 * v0, double v1, double v2, double v3){
         case 1: { // Visible
             double v58 = v57.case1.v0; double v59 = v57.case1.v1; double v60 = v57.case1.v2;
             
-            USDecref0(&(v57));
+            
             bool v61;
             v61 = v58 >= 0.0;
             
@@ -405,7 +405,7 @@ int32_t method0(Array0 * v0, double v1, double v2, double v3){
         }
         default: {
             
-            ArrayDecref0(v0); USDecref0(&(v57));
+            ArrayDecref0(v0);
             return 0l;
         }
     }
@@ -657,7 +657,7 @@ int32_t method1(Array0 * v0, double v1, double v2, double v3){
         case 1: { // Visible
             double v58 = v57.case1.v0; double v59 = v57.case1.v1; double v60 = v57.case1.v2;
             
-            USDecref0(&(v57));
+            
             bool v61;
             v61 = v58 >= 0.0;
             
@@ -727,7 +727,7 @@ int32_t method1(Array0 * v0, double v1, double v2, double v3){
         }
         default: {
             
-            ArrayDecref0(v0); USDecref0(&(v57));
+            ArrayDecref0(v0);
             return 0l;
         }
     }
@@ -979,7 +979,7 @@ int32_t method2(Array0 * v0, double v1, double v2, double v3){
         case 1: { // Visible
             double v58 = v57.case1.v0; double v59 = v57.case1.v1; double v60 = v57.case1.v2;
             
-            USDecref0(&(v57));
+            
             bool v61;
             v61 = v58 >= 0.0;
             
@@ -1049,7 +1049,7 @@ int32_t method2(Array0 * v0, double v1, double v2, double v3){
         }
         default: {
             
-            ArrayDecref0(v0); USDecref0(&(v57));
+            ArrayDecref0(v0);
             return 0l;
         }
     }
@@ -1088,127 +1088,153 @@ static inline String * StringConcat(String * left, String * right){
     return result;
 }
 String * frame_text_loop3(Array0 * v0, int32_t v1, int32_t v2, int32_t v3, String * v4){
-    
-    
-    bool v5;
-    v5 = v3 == v2;
-    
-    
-    if (v5){
-        
-        ArrayDecref0(v0);
-        return v4;
-    } else {
+    while (1) {
         
         
-        int32_t v6;
-        v6 = v0->ptr[v3];
+        bool v5;
+        v5 = v3 == v2;
         
         
-        bool v7;
-        v7 = v6 == 35l;
-        
-        
-        String * v16;
-        if (v7){
+        if (v5){
             
-            
-            String * v8;
-            v8 = StringLit(2, "#");
-            
-            
-            v16 = v8;
+            ArrayDecref0(v0);
+            return v4;
         } else {
             
             
-            bool v9;
-            v9 = v6 == 43l;
+            int32_t v6;
+            v6 = v0->ptr[v3];
             
             
-            if (v9){
+            bool v7;
+            v7 = v6 == 35l;
+            
+            
+            String * v16;
+            if (v7){
                 
                 
-                String * v10;
-                v10 = StringLit(2, "+");
+                String * v8;
+                v8 = StringLit(2, "#");
                 
                 
-                v16 = v10;
+                v16 = v8;
             } else {
                 
                 
-                bool v11;
-                v11 = v6 == 64l;
+                bool v9;
+                v9 = v6 == 43l;
                 
                 
-                if (v11){
+                if (v9){
                     
                     
-                    String * v12;
-                    v12 = StringLit(2, "@");
+                    String * v10;
+                    v10 = StringLit(2, "+");
                     
                     
-                    v16 = v12;
+                    v16 = v10;
                 } else {
                     
                     
-                    String * v13;
-                    v13 = StringLit(2, ".");
+                    bool v11;
+                    v11 = v6 == 64l;
                     
                     
-                    v16 = v13;
+                    if (v11){
+                        
+                        
+                        String * v12;
+                        v12 = StringLit(2, "@");
+                        
+                        
+                        v16 = v12;
+                    } else {
+                        
+                        
+                        String * v13;
+                        v13 = StringLit(2, ".");
+                        
+                        
+                        v16 = v13;
+                    }
                 }
             }
-        }
-        
-        
-        String * v17;
-        v17 = StringConcat(v4, v16);
-        
-        StringDecref(v4); StringDecref(v16);
-        int32_t v18;
-        v18 = v3 + 1l;
-        
-        
-        int32_t v19;
-        v19 = v3 % v1;
-        
-        
-        int32_t v20;
-        v20 = v1 - 1l;
-        
-        
-        bool v21;
-        v21 = v19 == v20;
-        
-        
-        bool v23;
-        if (v21){
             
             
-            bool v22;
-            v22 = v18 < v2;
+            String * v17;
+            v17 = StringConcat(v4, v16);
+            
+            StringDecref(v4); StringDecref(v16);
+            int32_t v18;
+            v18 = v3 + 1l;
             
             
-            v23 = v22;
-        } else {
+            int32_t v19;
+            v19 = v3 % v1;
             
             
-            v23 = false;
-        }
-        
-        
-        if (v23){
+            int32_t v20;
+            v20 = v1 - 1l;
             
             
-            String * v24;
-            v24 = StringConcat(v17, StringLit(2, "\n"));
-            
-            StringDecref(v17);
-            return frame_text_loop3(v0, v1, v2, v18, v24);
-        } else {
+            bool v21;
+            v21 = v19 == v20;
             
             
-            return frame_text_loop3(v0, v1, v2, v18, v17);
+            bool v23;
+            if (v21){
+                
+                
+                bool v22;
+                v22 = v18 < v2;
+                
+                
+                v23 = v22;
+            } else {
+                
+                
+                v23 = false;
+            }
+            
+            
+            if (v23){
+                
+                
+                String * v24;
+                v24 = StringConcat(v17, StringLit(2, "\n"));
+                
+                StringDecref(v17);
+                {
+                    Array0 * tmp0 = v0;
+                    int32_t tmp1 = v1;
+                    int32_t tmp2 = v2;
+                    int32_t tmp3 = v18;
+                    String * tmp4 = v24;
+                    v0 = tmp0;
+                    v1 = tmp1;
+                    v2 = tmp2;
+                    v3 = tmp3;
+                    v4 = tmp4;
+                }
+                continue;
+            } else {
+                
+                
+                {
+                    Array0 * tmp5 = v0;
+                    int32_t tmp6 = v1;
+                    int32_t tmp7 = v2;
+                    int32_t tmp8 = v18;
+                    String * tmp9 = v17;
+                    v0 = tmp5;
+                    v1 = tmp6;
+                    v2 = tmp7;
+                    v3 = tmp8;
+                    v4 = tmp9;
+                }
+                continue;
+            }
         }
     }
 }
@@ -1760,84 +1786,96 @@ int32_t utf8_scalar_at_byte_offset5(String * v0, int32_t v1){
     }
 }
 int32_t loop4(String * v0, int32_t v1, int32_t v2, int32_t v3){
-    
-    
-    bool v4;
-    v4 = v2 == v1;
-    
-    
-    if (v4){
-        
-        StringDecref(v0);
-        return v3;
-    } else {
+    while (1) {
         
         
-        bool v5;
-        v5 = v2 > v1;
+        bool v4;
+        v4 = v2 == v1;
         
         
-        if (v5){
+        if (v4){
             
             StringDecref(v0);
-            fprintf(stderr, "%s\n", "UTF-8 scalar width exceeds the string.");
-            exit(EXIT_FAILURE);
+            return v3;
         } else {
-            (v0)->refc++;
-            
-            int32_t v7;
-            v7 = utf8_scalar_at_byte_offset5(v0, v2);
             
             
-            bool v8;
-            v8 = v7 < 128l;
+            bool v5;
+            v5 = v2 > v1;
             
             
-            int32_t v13;
-            if (v8){
+            if (v5){
                 
-                
-                v13 = 1l;
+                StringDecref(v0);
+                fprintf(stderr, "%s\n", "UTF-8 scalar width exceeds the string.");
+                exit(EXIT_FAILURE);
             } else {
+                (v0)->refc++;
+                
+                int32_t v7;
+                v7 = utf8_scalar_at_byte_offset5(v0, v2);
                 
                 
-                bool v9;
-                v9 = v7 < 2048l;
+                bool v8;
+                v8 = v7 < 128l;
                 
                 
-                if (v9){
+                int32_t v13;
+                if (v8){
                     
                     
-                    v13 = 2l;
+                    v13 = 1l;
                 } else {
                     
                     
-                    bool v10;
-                    v10 = v7 < 65536l;
+                    bool v9;
+                    v9 = v7 < 2048l;
                     
                     
-                    if (v10){
+                    if (v9){
                         
                         
-                        v13 = 3l;
+                        v13 = 2l;
                     } else {
                         
                         
-                        v13 = 4l;
+                        bool v10;
+                        v10 = v7 < 65536l;
+                        
+                        
+                        if (v10){
+                            
+                            
+                            v13 = 3l;
+                        } else {
+                            
+                            
+                            v13 = 4l;
+                        }
                     }
                 }
+                
+                
+                int32_t v14;
+                v14 = v2 + v13;
+                
+                
+                int32_t v15;
+                v15 = v3 + v7;
+                
+                
+                {
+                    String * tmp10 = v0;
+                    int32_t tmp11 = v1;
+                    int32_t tmp12 = v14;
+                    int32_t tmp13 = v15;
+                    v0 = tmp10;
+                    v1 = tmp11;
+                    v2 = tmp12;
+                    v3 = tmp13;
+                }
+                continue;
             }
-            
-            
-            int32_t v14;
-            v14 = v2 + v13;
-            
-            
-            int32_t v15;
-            v15 = v3 + v7;
-            
-            
-            return loop4(v0, v1, v14, v15);
         }
     }
 }
@@ -1845,11 +1883,11 @@ int32_t main(){
     
     
     Array0 * v0;
-    v0 = ArrayCreate0(7040l, false);
+    v0 = ArrayCreate0(7040l, true);
     
     
     Array0 * v1;
-    v1 = ArrayCreate0(3l, false);
+    v1 = ArrayCreate0(3l, true);
     
     
     int32_t v2;

@@ -65,26 +65,10 @@ US2 US2_Fallen(int32_t v0) { // Fallen
 }
 static inline void USIncrefBody0(US0 * x){
     switch (x->tag) {
-        case 0: {
-            USIncref1(&(x->case0.v0));
-            break;
-        }
-        case 1: {
-            USIncref2(&(x->case1.v0));
-            break;
-        }
     }
 }
 static inline void USDecrefBody0(US0 * x){
     switch (x->tag) {
-        case 0: {
-            USDecref1(&(x->case0.v0));
-            break;
-        }
-        case 1: {
-            USDecref2(&(x->case1.v0));
-            break;
-        }
     }
 }
 void USIncref0(US0 * x){ USIncrefBody0(x); }
@@ -136,19 +120,19 @@ int32_t main(){
         case 1: { // Slain
             
             
-            USDecref0(&(v6));
+            
             return 2l;
             break;
         }
         default: { // Survived
             US1 v7 = v6.case0.v0;
-            USIncref1(&(v7));
-            USDecref0(&(v6));
+            
+            
             switch (v7.tag) {
                 default: { // Living
                     int32_t v8 = v7.case0.v0;
                     
-                    USDecref1(&(v7));
+                    
                     bool v10;
                     v10 = v8 == 60l;
                     

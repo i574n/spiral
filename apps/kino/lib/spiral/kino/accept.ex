@@ -2,7 +2,6 @@ defmodule Spiral.Kino.Accept do
   alias Spiral.Kino.FileLock
 
   @mismatch ~r/__assert_eq \{ actual = (.*?); expected = (.*?) \}/
-  @literal ~r/_assert_eq\s+(-?\d+(?:\.\d+)?(?:e-?\d+)?|"(?:[^"\\]|\\.)*"|true|false)((?:[iuf](?:8|16|32|64))?)\b/
   @plain_value ~r/\A(-?\d+(?:\.\d+)?(?:e-?\d+)?|"(?:[^"\\]|\\.)*"|true|false)\z/
 
   @spec mismatch(String.t()) :: {:ok, String.t(), String.t()} | :none
@@ -13,14 +12,24 @@ defmodule Spiral.Kino.Accept do
     end
   end
 
-  @spec rewrite(String.t(), String.t(), String.t(), String.t()) :: {:ok, String.t()} | {:error, String.t()}
-  def rewrite(text, name, expected, actual) do
+  @passed ~r/\A__assert_eq \{ expected = .* \}\z/
+  @site ~r/(?<![\w'])_assert_eq(?![\w'])/
+  @site_literal ~r/\A_assert_eq\s+(-?\d+(?:\.\d+)?(?:e-?\d+)?|"(?:[^"\\]|\\.)*"|true|false)((?:[iuf](?:8|16|32|64))?)\b/
+
+  @spec passed_before(String.t()) :: non_neg_integer()
+  def passed_before(message) do
+    message |> String.split("\n") |> Enum.count(&Regex.match?(@passed, String.trim(&1)))
+  end
+
+  @spec rewrite(String.t(), String.t(), String.t(), String.t(), non_neg_integer()) :: {:ok, String.t()} | {:error, String.t()}
+  def rewrite(text, name, expected, actual, passed_before \\ 0) do
     lines = String.split(text, "\n")
 
     with {:ok, first, last} <- block(lines, name),
          :ok <- plain(actual),
-         {:ok, index, line} <- only_match(lines, first, last, expected) do
-      replaced = Regex.replace(@literal, line, &swap(&1, &2, &3, expected, actual))
+         {:ok, index, at, length, suffix} <- failing_site(lines, first, last, expected, passed_before) do
+      line = Enum.at(lines, index)
+      replaced = binary_part(line, 0, at) <> "_assert_eq " <> actual <> suffix <> binary_part(line, at + length, byte_size(line) - at - length)
       {:ok, lines |> List.replace_at(index, replaced) |> Enum.join("\n")}
     end
   end
@@ -31,7 +40,7 @@ defmodule Spiral.Kino.Accept do
       {text, results} =
         Enum.reduce(failures, {File.read!(path), []}, fn {name, message}, {text, results} ->
           with {:ok, actual, expected} <- mismatch(message),
-               {:ok, rewritten} <- rewrite(text, name, expected, actual) do
+               {:ok, rewritten} <- rewrite(text, name, expected, actual, passed_before(message)) do
             {rewritten, results ++ [{name, :ok}]}
           else
             :none -> {text, results ++ [{name, {:error, "no __assert_eq mismatch in its output"}}]}
@@ -66,21 +75,25 @@ defmodule Spiral.Kino.Accept do
     if Regex.match?(@plain_value, actual), do: :ok, else: {:error, "the actual value #{actual} is not a plain literal"}
   end
 
-  defp only_match(lines, first, last, expected) do
-    hits =
+  defp failing_site(lines, first, last, expected, passed_before) do
+    sites =
       for index <- first..last//1,
           line = Enum.at(lines, index),
-          Enum.any?(Regex.scan(@literal, line), fn [_, value, _suffix] -> value == expected end),
-          do: {index, line}
+          [{at, _}] <- Regex.scan(@site, line, return: :index),
+          do: {index, at}
 
-    case hits do
-      [{index, line}] -> {:ok, index, line}
-      [] -> {:error, "no _assert_eq #{expected} literal in the test body"}
-      _ -> {:error, "several _assert_eq #{expected} literals in the test body"}
+    case Enum.at(sites, passed_before) do
+      nil ->
+        {:error, "the failing _assert_eq is number #{passed_before + 1} but the test body writes #{length(sites)}; it ran more often than it is written (a loop or helper), so its literal is ambiguous"}
+
+      {index, at} ->
+        line = Enum.at(lines, index)
+        rest = binary_part(line, at, byte_size(line) - at)
+
+        case Regex.run(@site_literal, rest) do
+          [whole, ^expected, suffix] -> {:ok, index, at, byte_size(whole), suffix}
+          _ -> {:error, "the failing _assert_eq (number #{passed_before + 1} in the test body) is not the literal #{expected}"}
+        end
     end
-  end
-
-  defp swap(whole, value, suffix, expected, actual) do
-    if value == expected, do: String.replace(whole, value <> suffix, actual <> suffix), else: whole
   end
 end

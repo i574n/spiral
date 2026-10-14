@@ -48,7 +48,6 @@ inl adler_step (byte : u32) (state : adler) : adler =
 inl adler_value (state : adler) : u32 =
     (state.high <<< 16) ||| state.low
 
-///> rust
 ///> c
 test xtea_matches_published_vector =
     inl ~v0 = 1094861636u32
@@ -57,7 +56,6 @@ test xtea_matches_published_vector =
     a |> _assert_eq 1232991184u32
     b |> _assert_eq 1918971061u32
 
-///> rust
 ///> c
 test xtea_matches_reference_on_small_key =
     inl ~zero = 0u32
@@ -65,7 +63,6 @@ test xtea_matches_reference_on_small_key =
     a |> _assert_eq 2778180417u32
     b |> _assert_eq 1979796850u32
 
-///> rust
 ///> c
 test xtea_round_trips =
     inl ~v0 = 123456789u32
@@ -75,7 +72,6 @@ test xtea_round_trips =
     c |> _assert_eq v0
     d |> _assert_eq 987654321u32
 
-///> rust
 ///> c
 test adler32_of_wikipedia =
     inl ~first = 87u32

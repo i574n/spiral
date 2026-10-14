@@ -400,6 +400,8 @@
             'samples/rust_static_closure_chain'
             'samples/rust_string_literal_path'
             'samples/rust_union_non_clone_payload'
+            'samples/c_deep_list_decref'
+            'samples/c_self_tail_loop_heap'
         )
         'Python' = @(
             'samples/python_foreign_array_index'
@@ -1152,6 +1154,7 @@
         'samples/fixed_array_runtime_update'
         'samples/array_union'
         'samples/wgsl_array_tuple'
+        'samples/wgsl_unit_self_loop'
     )
     Calyx = @(
         'samples/backend_smoke'

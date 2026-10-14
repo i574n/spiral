@@ -52,6 +52,28 @@ inl blocked_hit (raw : i32) (defense : i32) (armor : i32) (has_block_charge : bo
         inl after_armor = after_defense - armor_block armor key
         if after_armor <= 0i32 then 0i32 else after_armor
 
+type gear = {armor : i32; defense : i32}
+
+inl balanced_defense_percent () : i32 = 75i32
+inl shield_scaling_per_mille () : i32 = 160i32
+
+inl shielded_defense (shield_skill : i32) (shield_defense : i32) : i32 =
+    (shield_skill * 25i32 + 223i32) * shield_defense * balanced_defense_percent () * shield_scaling_per_mille () / 10000000i32
+
+inl knight_sample_gear () : gear =
+    inl brass_helmet = 3i32
+    inl brass_armor = 8i32
+    inl brass_legs = 5i32
+    inl leather_boots = 1i32
+    inl dwarven_shield = 26i32
+    {armor = brass_helmet + brass_armor + brass_legs + leather_boots; defense = shielded_defense 11i32 dwarven_shield}
+
+inl max_block_charges () : i32 = 2i32
+inl block_charge_ms () : i32 = 1000i32
+
+inl creature_hit (melee_max : i32) (defender : gear) (shielded : bool) (key : rng.roll_key) : i32 =
+    blocked_hit (melee_roll 0i32 melee_max key) defender.defense defender.armor shielded key
+
 inl melee_hit (mode : damage.fight_mode) (level : i32) (attack_value : i32) (attack_skill : i32) (defense : i32) (armor : i32) (key : rng.roll_key) : i32 =
     inl high = damage.max_melee_damage mode attack_value attack_skill level
     inl low = if attack_value > 0i32 then level / 5i32 else 0i32
@@ -65,7 +87,16 @@ inl swing_stats (mode : damage.fight_mode) (level : i32) (attack_value : i32) (a
             loop (i + 1i32) (if hit > 0i32 then landed + 1i32 else landed) (total + hit)
     loop 0i32 0i32 0i32
 
-///> rust
+inl capped_hit_stats (mode : damage.fight_mode) (level : i32) (attack_value : i32) (attack_skill : i32) (defense : i32) (armor : i32) (max_health : i32) (seed : u32) (swings : i32) : i32 * i32 =
+    let rec loop (i : i32) (health : i32) (landed : i32) (total : i32) : i32 * i32 =
+        if i >= swings then landed, total
+        else
+            inl hit = melee_hit mode level attack_value attack_skill defense armor (rng.roll_key seed (conv i) 1u32 7u32)
+            inl taken = if hit > health then health else hit
+            inl left = health - taken
+            loop (i + 1i32) (if left <= 0i32 then max_health else left) (if taken > 0i32 then landed + 1i32 else landed) (total + taken)
+    loop 0i32 max_health 0i32 0i32
+
 ///> c
 test armor_block_follows_canary_bounds =
     inl ~armor = 10i32
@@ -75,7 +106,6 @@ test armor_block_follows_canary_bounds =
     armor_block (armor - 7i32) key |> _assert_eq 1i32
     armor_block (armor - 10i32) key |> _assert_eq 0i32
 
-///> rust
 ///> c
 test truncated_normal_stays_in_unit_range_with_mean_near_half =
     inl ~seed = 11u32
@@ -85,7 +115,6 @@ test truncated_normal_stays_in_unit_range_with_mean_near_half =
         low |> _assert_eq 0i32
         high |> _assert_eq 4093i32
 
-///> rust
 ///> c
 test level_8_knight_rarely_hurts_a_troll =
     inl ~seed = 5u32
@@ -94,7 +123,6 @@ test level_8_knight_rarely_hurts_a_troll =
         landed |> _assert_eq 435i32
         total |> _assert_eq 1393i32
 
-///> rust
 ///> c
 test axe_skill_30_hurts_a_troll_often =
     inl ~seed = 5u32
@@ -103,7 +131,6 @@ test axe_skill_30_hurts_a_troll_often =
         landed |> _assert_eq 1680i32
         total |> _assert_eq 28222i32
 
-///> rust
 ///> c
 test balanced_axe_skill_30_matches_live_troll_hits =
     inl ~seed = 5u32
@@ -117,3 +144,11 @@ test balanced_swing_stats_on_gpu =
     inl ~seed = 5u32
     match swing_stats (open damage in Balanced) 8i32 21i32 30i32 10i32 10i32 seed 2000i32 with
     | landed, total => if landed = 1435i32 && total = 15398i32 then 0i32 else 1i32
+
+///> c
+test hits_capped_at_remaining_health_match_live_skeleton_log =
+    inl ~seed = 5u32
+    match capped_hit_stats (open damage in Balanced) 8i32 21i32 30i32 10i32 10i32 50i32 seed 2000i32 with
+    | landed, total =>
+        landed |> _assert_eq 1435i32
+        total |> _assert_eq 13451i32

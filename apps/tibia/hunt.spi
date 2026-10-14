@@ -12,16 +12,19 @@ inl loot (outcome : vitality.struck) (bounty : i32) (held : coins.purse) : coins
     | vitality.Slain _ => coins.fewest_coins (coins.total_gold held + bounty)
     | vitality.Survived _ => held
 
+///> c
 test adjacent_attack_lands =
     inl ~damage = 40i32
     attack damage (geometry.position 100 100 7) (geometry.position 101 101 7) (vitality.spawn 100)
     |> vitality.survivor_health |> _assert_eq 60i32
 
+///> c
 test distant_attack_misses =
     inl ~damage = 40i32
     attack damage (geometry.position 100 100 7) (geometry.position 103 100 7) (vitality.spawn 100)
     |> vitality.survivor_health |> _assert_eq 100i32
 
+///> c
 test kill_pays_bounty =
     inl ~damage = 150i32
     inl outcome = attack damage (geometry.position 100 100 7) (geometry.position 100 99 7) (vitality.spawn 100)

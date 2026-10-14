@@ -38,7 +38,7 @@ US0 US0_Some(int32_t v0) { // Some
     return x;
 }
 static inline void HeapDecrefBody0(Heap0 * x){
-    USDecref0(&(x->v0));
+    (void)x;
 }
 void HeapDecref0(Heap0 * x){
     if (x != NULL && --(x->refc) == 0) { HeapDecrefBody0(x); free(x); }
@@ -62,28 +62,28 @@ int32_t main(){
     
     US0 v2;
     v2 = US0_Some(v0);
-    USIncref0(&(v2));
+    
     
     Heap0 * v3;
     v3 = HeapCreate0(v2, v1);
     
-    USDecref0(&(v2));
+    
     US0 v4; int32_t v5;
     v4 = v3->v0; v5 = v3->v1;
-    USIncref0(&(v4));
+    
     HeapDecref0(v3);
     switch (v4.tag) {
         case 0: { // None
             
             
-            USDecref0(&(v4));
+            
             return 1l;
             break;
         }
         default: { // Some
             int32_t v6 = v4.case1.v0;
             
-            USDecref0(&(v4));
+            
             int32_t v7;
             v7 = v6 + v5;
             

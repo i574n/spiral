@@ -36,7 +36,7 @@ Array0 * method0(int32_t v0){
     
     
     Array0 * v1;
-    v1 = ArrayCreate0(v0, false);
+    v1 = ArrayCreate0(v0, true);
     
     
     

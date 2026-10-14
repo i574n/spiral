@@ -59,7 +59,7 @@ Array0 * f_c0(Closure0 * x, int32_t v1){
     
     
     Array0 * v2;
-    v2 = ArrayCreate0(1l, false);
+    v2 = ArrayCreate0(1l, true);
     
     
     

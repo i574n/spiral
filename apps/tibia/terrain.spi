@@ -1,0 +1,160 @@
+///- --package .
+test terrain static =
+    open testing
+
+union layout =
+    | OpenField
+    | EastCorridor
+    | RoomAndCorridor
+    | ArenaSpot
+
+inl corridor_row () : i32 = 100
+inl corridor_mouth () : i32 = 99
+
+inl arena_spot_row (row : i32) : i32 =
+    if row = 0 then 13465
+    elif row = 1 then 8713
+    elif row = 2 then 28809
+    elif row = 3 then 13369
+    elif row = 4 then 9055
+    elif row = 5 then 10768
+    elif row = 6 then 12417
+    elif row = 7 then 11854
+    elif row = 8 then 24614
+    elif row = 9 then 6793
+    elif row = 10 then 80
+    elif row = 11 then 4089
+    elif row = 12 then 6156
+    elif row = 13 then 2052
+    elif row = 14 then 2052
+    else 32767
+
+inl arena_spot_radius () : i32 = 7
+
+inl arena_spot_blocked (p : geometry.position) : bool =
+    inl dx = p.x - 100
+    inl dy = p.y - 100
+    inl r = arena_spot_radius ()
+    if dx < 0 - r || dx > r || dy < 0 - r || dy > r then true
+    else ((arena_spot_row (dy + r) >>> (dx + r)) &&& 1) = 1
+
+inl blocked (l : layout) (p : geometry.position) : bool =
+    match l with
+    | OpenField => false
+    | EastCorridor => p.y <> corridor_row () || p.x < corridor_mouth ()
+    | RoomAndCorridor => p.x < 100 && p.y <> corridor_row ()
+    | ArenaSpot => arena_spot_blocked p
+
+inl free (l : layout) (taken : geometry.position -> bool) (p : geometry.position) : bool =
+    blocked l p = false && taken p = false
+
+inl direction_of (n : i32) : i32 = if n > 0 then 1 elif n < 0 then -1 else 0
+
+inl shifted (dx : i32) (dy : i32) (from : geometry.position) : geometry.position = geometry.position (from.x + dx) (from.y + dy) from.z
+
+inl best_step (l : layout) (taken : geometry.position -> bool) (improves : geometry.position -> bool) (sx : i32) (sy : i32) (from : geometry.position) : geometry.position =
+    inl usable p = free l taken p && improves p
+    inl both = shifted sx sy from
+    inl across = shifted sx 0 from
+    inl along = shifted 0 sy from
+    inl left = if sy = 0 then shifted sx 1 from else shifted 1 sy from
+    inl right = if sy = 0 then shifted sx -1 from else shifted -1 sy from
+    if usable both then both elif usable across then across elif usable along then along elif usable left then left elif usable right then right else from
+
+inl step_toward (l : layout) (taken : geometry.position -> bool) (target : geometry.position) (from : geometry.position) : geometry.position =
+    inl distance = geometry.chebyshev_distance target from
+    best_step l taken (fun p => geometry.chebyshev_distance target p < distance) (direction_of (target.x - from.x)) (direction_of (target.y - from.y)) from
+
+inl step_away (l : layout) (taken : geometry.position -> bool) (threat : geometry.position) (from : geometry.position) : geometry.position =
+    inl distance = geometry.chebyshev_distance threat from
+    best_step l taken (fun p => geometry.chebyshev_distance threat p > distance) (direction_of (from.x - threat.x)) (direction_of (from.y - threat.y)) from
+
+type footing = {away : i32; room : i32; crowd : i32; align : i32; diagonal : i32}
+
+inl neighbor (k : i32) (from : geometry.position) : geometry.position =
+    inl dx = if k = 0 || k = 3 || k = 5 then -1 elif k = 2 || k = 4 || k = 7 then 1 else 0
+    inl dy = if k = 0 || k = 1 || k = 2 then -1 elif k = 5 || k = 6 || k = 7 then 1 else 0
+    shifted dx dy from
+
+inl walkable_around (l : layout) (p : geometry.position) : i32 =
+    let rec count (k : i32) (acc : i32) : i32 =
+        if k >= 8 then acc else count (k + 1) (if blocked l (neighbor k p) then acc else acc + 1)
+    count 0 0
+
+inl footing_score (l : layout) (foes_near : geometry.position -> i32) (w : footing) (threat : geometry.position) (from : geometry.position) (c : geometry.position) : i32 =
+    inl alignment = (c.x - from.x) * direction_of (from.x - threat.x) + (c.y - from.y) * direction_of (from.y - threat.y)
+    inl slanted = if c.x <> from.x && c.y <> from.y then 1 else 0
+    w.away * geometry.chebyshev_distance threat c + w.room * walkable_around l c - w.crowd * foes_near c + w.align * alignment - w.diagonal * slanted
+
+inl scored_step (l : layout) (taken : geometry.position -> bool) (foes_near : geometry.position -> i32) (w : footing) (threat : geometry.position) (from : geometry.position) : geometry.position =
+    inl distance = geometry.chebyshev_distance threat from
+    let rec pick (k : i32) (best : geometry.position) (best_score : i32) (found : bool) : geometry.position =
+        if k >= 8 then best
+        else
+            inl c = neighbor k from
+            if free l taken c && geometry.chebyshev_distance threat c > distance then
+                inl s = footing_score l foes_near w threat from c
+                if found = false || s > best_score then pick (k + 1) c s true else pick (k + 1) best best_score found
+            else pick (k + 1) best best_score found
+    pick 0 from 0 false
+
+inl ground_step_percent (l : layout) : i32 =
+    match l with
+    | ArenaSpot => 108
+    | _ => 100
+
+inl on_ground (l : layout) (step_ms : i32) : i32 = step_ms * ground_step_percent l / 100
+
+inl player_start (l : layout) : geometry.position =
+    match l with
+    | ArenaSpot => geometry.position 99 99 7
+    | _ => geometry.position 100 100 7
+
+inl spawn_points (l : layout) : geometry.position * geometry.position * geometry.position =
+    match l with
+    | OpenField => geometry.position 106 103 7, geometry.position 104 107 7, geometry.position 108 98 7
+    | EastCorridor => geometry.position 102 100 7, geometry.position 104 100 7, geometry.position 106 100 7
+    | RoomAndCorridor => geometry.position 103 100 7, geometry.position 104 102 7, geometry.position 104 98 7
+    | ArenaSpot => geometry.position 99 101 7, geometry.position 98 102 7, geometry.position 98 103 7
+
+///> c
+test a_corridor_turns_a_diagonal_approach_into_a_straight_one =
+    inl ~x = 103i32
+    inl nobody (p : geometry.position) = false
+    inl step = step_toward EastCorridor nobody (geometry.position 100 100 7) (geometry.position x 100 7)
+    (step.x, step.y) |> _assert_eq (102i32, 100i32)
+    inl open_step = step_toward OpenField nobody (geometry.position 100 100 7) (geometry.position x 103 7)
+    (open_step.x, open_step.y) |> _assert_eq (102i32, 102i32)
+
+///> c
+test a_taken_tile_is_walked_around_or_waited_for =
+    inl ~x = 102i32
+    inl knight = geometry.position 100 100 7
+    inl ahead (p : geometry.position) = p.x = 101i32 && p.y = 100i32
+    inl in_corridor = step_toward EastCorridor ahead knight (geometry.position x 100 7)
+    (in_corridor.x, in_corridor.y) |> _assert_eq (102i32, 100i32)
+    inl in_field = step_toward OpenField ahead knight (geometry.position x 100 7)
+    (in_field.x, in_field.y) |> _assert_eq (101i32, 101i32)
+
+///> wgsl
+test corridor_steps_on_gpu =
+    inl ~x = 103i32
+    inl nobody (p : geometry.position) = false
+    inl step = step_toward EastCorridor nobody (geometry.position 100 100 7) (geometry.position x 100 7)
+    if step.x = 102i32 && step.y = 100i32 then 0i32 else 1i32
+
+///> c
+test the_arena_spot_matches_the_live_scan =
+    inl ~x = 100i32
+    inl at dx dy = blocked ArenaSpot (geometry.position (x + dx) (100 + dy) 7)
+    (at 0 0, at -1 0, at 1 0, at 4 -4, at -7 0, at 8 0, at -1 1) |> _assert_eq (false, true, false, false, false, true, false)
+
+///> c
+test a_scored_step_can_prefer_room_over_distance =
+    inl ~x = 100i32
+    inl nobody (p : geometry.position) = false
+    inl alone (p : geometry.position) = 0i32
+    inl threat = geometry.position (x + 1) 100 7
+    inl run = scored_step RoomAndCorridor nobody alone {away = 10; room = 0; crowd = 0; align = 0; diagonal = 0} threat (geometry.position x 100 7)
+    inl roomy = scored_step RoomAndCorridor nobody alone {away = 0; room = 10; crowd = 0; align = 0; diagonal = 0} threat (geometry.position x 100 7)
+    (run.x, walkable_around RoomAndCorridor (geometry.position 98 100 7), roomy.x) |> _assert_eq (99i32, 2i32, 99i32)

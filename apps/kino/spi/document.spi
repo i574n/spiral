@@ -313,11 +313,28 @@ inl clause_after (s : string) (marker : string) (shown : string) : string =
     inl k = text.find_from s marker 0i32
     if k >= 0i32 then shown ++ text.trim (text.drop s (k + text.length marker)) else ""
 
+inl quoted_end (s : string) : i32 =
+    if text.starts_with s " \"" then
+        inl close = text.find_char s 2i32 '"'
+        if close >= 2i32 then close + 1i32 else -1i32
+    else 0i32
+
+inl reason_after (s : string) (marker : string) : string =
+    inl k = text.find_from (s ++ " ") (marker ++ " ") 0i32
+    if k < 0i32 then ""
+    else
+        inl rest = text.drop s (k + text.length marker)
+        inl n = quoted_end rest
+        if n > 0i32 then text.take rest n else ""
+
+inl agree_mode (head : string) (word : string) (shown : string) : string =
+    if text.contains (" " ++ head ++ " ") (" " ++ word ++ " ") || text.contains (" " ++ head) (" " ++ word ++ " \"") then " " ++ shown ++ reason_after head word else ""
+
 let rec test_block_go (src : string) (i : i32) (targets : rows) (options : string) (body : rows) (name : string) : string =
     match text.next_line src i with
     | LineDone =>
         inl head = cut_before options " --fails "
-        inl header = "test " ++ name ++ test_mode head "static" "static" ++ test_mode head "--print-code" "print_code" ++ test_mode head "--ignore" "ignore" ++ test_mode head "--no-agree" "no_agree" ++ test_mode head "--build-only" "build_only" ++ clause_after options " --fails " " fails " ++ " ="
+        inl header = "test " ++ name ++ test_mode head "static" "static" ++ test_mode head "--print-code" "print_code" ++ test_mode head "--ignore" "ignore" ++ agree_mode head "--no-agree" "no_agree" ++ test_mode head "--build-only" "build_only" ++ clause_after options " --fails " " fails " ++ " ="
         inl lines = rev_rows (drop_blank_rows body) NoRow
         join_rows (append_rows (rev_rows targets NoRow) (Row (header, lines)))
     | LineGot (line, next) =>
@@ -350,12 +367,26 @@ inl first_line (source : string) : string =
     | LineDone => ""
     | LineGot (line, _) => line
 
+let rec only_opens_from (source : string) (i : i32) (seen : bool) : bool =
+    match text.next_line source i with
+    | LineDone => seen
+    | LineGot (line, next) =>
+        inl t = text.trim line
+        if t = "" || text.starts_with t "///" then only_opens_from source next seen
+        elif text.starts_with t "open " then only_opens_from source next true
+        else false
+
+inl opens_only_body (source : string) : bool =
+    match text.next_line source 0i32 with
+    | LineDone => false
+    | LineGot (_, next) => only_opens_from source next false
+
 inl test_mode_of (source : string) : string =
     inl head = " " ++ first_line source ++ " "
     if text.contains head " --ignore " then "ignore"
     elif text.contains head " --fails " then "fails"
     elif text.contains head " --build-only " then "build_only"
-    elif text.contains head " --test static " then "static"
+    elif text.contains head " --test static " then (if opens_only_body source then "prelude" else "static")
     else "test"
 
 let rec heading_marks_end (line : string) (i : i32) : i32 =
@@ -409,7 +440,10 @@ let rec flags_valid (s : string) : bool =
     elif text.starts_with s " static" then flags_valid (text.drop s 7i32)
     elif text.starts_with s " print_code" then flags_valid (text.drop s 11i32)
     elif text.starts_with s " ignore" then flags_valid (text.drop s 7i32)
-    elif text.starts_with s " no_agree" then flags_valid (text.drop s 9i32)
+    elif text.starts_with s " no_agree" then
+        inl rest = text.drop s 9i32
+        inl n = quoted_end rest
+        if n < 0i32 then false else flags_valid (text.drop rest n)
     elif text.starts_with s " build_only" then flags_valid (text.drop s 11i32)
     else false
 
@@ -444,7 +478,7 @@ inl test_options (real_mode : bool) (modes : string) : string =
     inl base = if real_mode then "--real " ++ run else run
     inl stat = if text.contains padded " static " then " static" else ""
     inl show = if text.contains padded " print_code " then " --print-code" else ""
-    inl agree = if text.contains padded " no_agree " then " --no-agree" else ""
+    inl agree = if text.contains padded " no_agree " || text.contains padded " no_agree \"" then " --no-agree" ++ reason_after modes " no_agree" else ""
     inl build = if text.contains padded " build_only " then " --build-only" else ""
     base ++ stat ++ show ++ agree ++ build ++ clause_after modes " fails " " --fails "
 

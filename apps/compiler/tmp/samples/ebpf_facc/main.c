@@ -4,28 +4,36 @@
 #include <stdlib.h>
 #include <string.h>
 float method1(int32_t v0, float v1){
-    
-    
-    int32_t v2;
-    v2 = v0 - 1l;
-    
-    
-    float v3;
-    v3 = v1 + 1.5f;
-    
-    
-    bool v4;
-    v4 = v2 == 0l;
-    
-    
-    if (v4){
+    while (1) {
         
         
-        return v3;
-    } else {
+        int32_t v2;
+        v2 = v0 - 1l;
         
         
-        return method1(v2, v3);
+        float v3;
+        v3 = v1 + 1.5f;
+        
+        
+        bool v4;
+        v4 = v2 == 0l;
+        
+        
+        if (v4){
+            
+            
+            return v3;
+        } else {
+            
+            
+            {
+                int32_t tmp0 = v2;
+                float tmp1 = v3;
+                v0 = tmp0;
+                v1 = tmp1;
+            }
+            continue;
+        }
     }
 }
 float method0(int32_t v0, float v1){

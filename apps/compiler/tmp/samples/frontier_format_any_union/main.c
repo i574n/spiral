@@ -6,14 +6,6 @@
 static char spiral_format_buffer[64];
 static inline uint32_t spiral_format_i64(long long x) { return (uint32_t)snprintf(spiral_format_buffer, sizeof spiral_format_buffer, "%lld", x) + 1u; }
 typedef struct {
-    int tag;
-    union {
-        struct {
-            int32_t v0;
-        } case0; // Some
-    };
-} US0;
-typedef struct {
     int refc;
     uint32_t len;
     char ptr[];
@@ -23,27 +15,6 @@ typedef struct {
     int refc;
     String * v0;
 } Mut0;
-static inline void USIncrefBody0(US0 * x){
-    switch (x->tag) {
-    }
-}
-static inline void USDecrefBody0(US0 * x){
-    switch (x->tag) {
-    }
-}
-void USIncref0(US0 * x){ USIncrefBody0(x); }
-void USDecref0(US0 * x){ USDecrefBody0(x); }
-US0 US0_Some(int32_t v0) { // Some
-    US0 x;
-    x.tag = 0;
-    x.case0.v0 = v0;
-    return x;
-}
-US0 US0_None() { // None
-    US0 x;
-    x.tag = 1;
-    return x;
-}
 static inline void ArrayDecrefBody0(Array0 * x){
     (void)x;
 }
@@ -89,64 +60,6 @@ static inline String * StringConcat(String * left, String * right){
     memcpy(result->ptr + left_len, right->ptr, right_len + 1);
     return result;
 }
-String * method1(US0 v0){
-    
-    
-    switch (v0.tag) {
-        case 1: { // None
-            
-            
-            USDecref0(&(v0));
-            String * v6;
-            v6 = StringLit(5, "None");
-            
-            
-            return v6;
-            break;
-        }
-        default: { // Some
-            int32_t v1 = v0.case0.v0;
-            
-            USDecref0(&(v0));
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            String * v2;
-            v2 = StringLit(spiral_format_i64((long long)(v1)), spiral_format_buffer);
-            
-            
-            String * v3;
-            v3 = StringConcat(v2, StringLit(2, ")"));
-            
-            StringDecref(v2);
-            String * v4;
-            v4 = StringConcat(StringLit(2, "("), v3);
-            
-            StringDecref(v3);
-            String * v5;
-            v5 = StringConcat(StringLit(5, "Some"), v4);
-            
-            StringDecref(v4);
-            return v5;
-            break;
-        }
-    }
-}
 static inline void AssignMut0(String * * a0, String * b0){
     (b0)->refc++;
     StringDecref(*a0);
@@ -169,7 +82,7 @@ void method2(Mut0 * v0, String * v1){
     MutDecref0(v0); StringDecref(v3);
     return ;
 }
-String * format_real0(US0 v0){
+String * format_real1(int32_t v0){
     
     
     String * v1;
@@ -178,12 +91,30 @@ String * format_real0(US0 v0){
     
     Mut0 * v2;
     v2 = MutCreate0(v1);
-    USIncref0(&(v0));
+    
     StringDecref(v1);
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     String * v3;
-    v3 = method1(v0);
+    v3 = StringLit(spiral_format_i64((long long)(v0)), spiral_format_buffer);
     (v2)->refc++; (v3)->refc++;
-    USDecref0(&(v0));
+    
     
     method2(v2, v3);
     
@@ -194,30 +125,43 @@ String * format_real0(US0 v0){
     MutDecref0(v2);
     return v4;
 }
-int32_t main(){
+String * method0(){
     
     
     int32_t v0;
     v0 = 1l;
     
     
-    US0 v1;
-    v1 = US0_Some(v0);
-    USIncref0(&(v1));
+    String * v1;
+    v1 = format_real1(v0);
+    
     
     String * v2;
-    v2 = format_real0(v1);
+    v2 = StringConcat(StringLit(6, "Some("), v1);
     
-    USDecref0(&(v1));
+    StringDecref(v1);
     String * v3;
-    v3 = StringConcat(StringLit(4, "x: "), v2);
+    v3 = StringConcat(v2, StringLit(2, ")"));
     
     StringDecref(v2);
-    bool v4;
-    v4 = strcmp(v3->ptr, "") == 0;
+    return v3;
+}
+int32_t main(){
     
-    StringDecref(v3);
-    if (v4){
+    
+    String * v0;
+    v0 = method0();
+    
+    
+    String * v1;
+    v1 = StringConcat(StringLit(4, "x: "), v0);
+    
+    StringDecref(v0);
+    bool v2;
+    v2 = strcmp(v1->ptr, "") == 0;
+    
+    StringDecref(v1);
+    if (v2){
         
         
         return 1l;

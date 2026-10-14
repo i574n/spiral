@@ -1,0 +1,2 @@
+inl pick forall t. (x : t) : i32 = if type t = i32 then 7i32 else 3i32
+inl main () : i32 = !!!!Sub(!!!!Add(pick 1i32, pick "a"), 3i32)

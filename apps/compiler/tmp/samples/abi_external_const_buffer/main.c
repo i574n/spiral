@@ -40,11 +40,11 @@ int32_t main(){
     
     
     Array0 * v1;
-    v1 = ArrayCreate0(v0, false);
+    v1 = ArrayCreate0(v0, true);
     
     
     Array0 * v2;
-    v2 = ArrayCreate0(v0, false);
+    v2 = ArrayCreate0(v0, true);
     
     
     

@@ -15,7 +15,8 @@ defmodule Spiral.Kino.NotebookCli do
     spi: :boolean,
     test: :keep,
     memo: :boolean,
-    accept: :boolean
+    accept: :boolean,
+    x_compat: :boolean
   ]
 
   @single_path_options [:output_path, :spi_path, :spir_path, :fs_path, :livemd_path]
@@ -82,12 +83,20 @@ defmodule Spiral.Kino.NotebookCli do
       end)
 
     reports = for {path, _status, report} <- results, report != nil, do: {path, report}
-    lines = if reports == [], do: [], else: Notebook.summary_lines(reports)
+    lines = x_compat_lines(paths, opts) ++ if(reports == [], do: [], else: Notebook.summary_lines(reports))
 
     case for({path, {:error, message}, _report} <- results, do: "#{path}: #{message}") do
       [] -> {:ok, lines}
       failures -> {{:error, Enum.join(failures, "\n")}, lines}
     end
+  end
+
+  @doc false
+  def x_compat_lines(paths, opts) do
+    for path <- paths,
+        opts[:x_compat] == true or Spiral.Kino.XCompat.edition3?(path),
+        finding <- path |> File.read!() |> Spiral.Kino.XCompat.rewrites(),
+        do: "x-compat " <> Spiral.Kino.XCompat.format(Path.expand(path), finding)
   end
 
   @doc false

@@ -74,7 +74,7 @@ int32_t main(){
     
     
     Array0 * v0;
-    v0 = ArrayCreate0(2l, false);
+    v0 = ArrayCreate0(2l, true);
     (v0)->refc++;
     
     Fun0 * v1;

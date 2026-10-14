@@ -24,9 +24,28 @@ defmodule Spiral.Kino.CompilerDaemonTest do
     assert CompilerClient.daemon_command_line(
              ~S"C:\e\elixir.bat",
              ~S"C:\r\k.log",
-             ~S"C:\r\k.err.log"
+             ~S"C:\r\k.err.log",
+             nil
            ) ==
              ~S{/d /c ""C:\e\elixir.bat" -S mix spiral.compiler_daemon 1>"C:\r\k.log" 2>"C:\r\k.err.log""}
+  end
+
+  test "a relaunch rotates the daemon log even while the retiring daemon still holds it open" do
+    dir = Spiral.Kino.TestHelpers.tmp_dir!("log_rotation")
+    log = Path.join(dir, "kino-1.log")
+    File.write!(log, "old daemon\n")
+    {:ok, held} = File.open(log, [:append])
+    spawn(fn -> Process.sleep(600); File.close(held) end)
+
+    assert CompilerClient.keep_previous(log, System.monotonic_time(:millisecond) + 10_000) == :ok
+    assert File.read!(Path.join(dir, "kino-1.prev.log")) == "old daemon\n"
+    refute File.exists?(log)
+  end
+  test "a compiled Kino starts the daemon straight from its ebin directories, so it never waits for mix's build lock" do
+    assert CompilerClient.daemon_command_line(~S"C:\e\elixir.bat", ~S"C:\r\k.log", ~S"C:\r\k.err.log", "C:/k/_build/dev/lib/*/ebin") ==
+             ~S{/d /c ""C:\e\elixir.bat" -pa "C:/k/_build/dev/lib/*/ebin" -e Spiral.Kino.CompilerDaemon.serve_app() 1>"C:\r\k.log" 2>"C:\r\k.err.log""}
+
+    assert CompilerClient.compiled_ebins() =~ ~r{/_build/[^/]+/lib/\*/ebin$}
   end
 
   test "queued clients share one compiler and do not overlap" do

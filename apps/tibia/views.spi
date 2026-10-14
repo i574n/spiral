@@ -1,0 +1,71 @@
+///- --package .
+test views static =
+    open testing
+
+nominal one a = a
+nominal lanes a = a * a * a * a
+nominal trio a = a * a * a
+nominal unmapped a = a
+
+prototype mapped f a : forall b. (a -> b) -> f a -> f b
+
+instance mapped one = fun g (one x) => one (g x)
+instance mapped lanes = fun g (lanes (a, b, c, d)) => lanes (g a, g b, g c, g d)
+instance mapped trio = fun g (trio (a, b, c)) => trio (g a, g b, g c)
+
+inl tally (holds : bool) : i32 = if holds then 1 else 0
+
+prototype counted f a : (a -> bool) -> f a -> i32
+
+instance counted one = fun p (one x) => tally (p x)
+instance counted lanes = fun p (lanes (a, b, c, d)) => tally (p a) + tally (p b) + tally (p c) + tally (p d)
+instance counted trio = fun p (trio (a, b, c)) => tally (p a) + tally (p b) + tally (p c)
+
+inl decide_all forall (f : * -> *) {mapped}. (t : policy.thresholds) (observations : f policy.observation) : f i32 =
+    mapped (fun o => policy.engagement_code (policy.engages t o)) observations
+
+inl observed (health : i32) (target : policy.reach) : policy.observation =
+    {health = health; heal_ready = true; strike_ready = true; target = target}
+
+///> c
+test one_decision_is_the_live_client_view =
+    open policy
+    inl ~health = 80i32
+    match decide_all (evolved_against_cyclops ()) (one (observed health InReach)) with
+    | one code => code |> _assert_eq 1i32
+
+///> c
+test four_lanes_decide_like_four_single_calls =
+    open policy
+    inl ~health = 80i32
+    inl t = evolved_against_cyclops ()
+    match decide_all t (lanes (observed health InReach, observed health OutOfReach, observed (health - 70) InReach, observed health NoTarget)) with
+    | lanes (a, b, c, d) =>
+        a |> _assert_eq 1i32
+        b |> _assert_eq 2i32
+        c |> _assert_eq 0i32
+        d |> _assert_eq 0i32
+
+///> c
+test a_view_without_mapped_is_rejected fails "mapped" =
+    open policy
+    decide_all (evolved_against_cyclops ()) (unmapped (observed 80 InReach))
+
+///> wgsl
+test lanes_on_gpu =
+    open policy
+    inl ~health = 80i32
+    match decide_all (evolved_against_cyclops ()) (lanes (observed health InReach, observed health OutOfReach, observed (health - 70) InReach, observed health NoTarget)) with
+    | lanes (a, b, c, d) => if a = 1i32 && b = 2i32 && c = 0i32 && d = 0i32 then 0i32 else 1i32
+
+///> c
+test counted_folds_every_view_the_same_way =
+    inl ~health = 80i32
+    inl low (h : i32) = h < 100
+    (counted low (one health), counted low (lanes (health, 120, 90, 300)), counted low (trio (150, health, 99))) |> _assert_eq (1i32, 2i32, 2i32)
+
+///> c
+test a_trio_maps_like_the_other_views =
+    inl ~health = 80i32
+    match mapped (fun h => h + 1) (trio (health, 1, 2)) with
+    | trio (a, b, c) => (a, b, c) |> _assert_eq (81i32, 2i32, 3i32)

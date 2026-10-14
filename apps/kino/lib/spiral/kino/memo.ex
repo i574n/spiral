@@ -237,9 +237,27 @@ defmodule Spiral.Kino.Memo do
 
   defp content_print(path) do
     case File.read(path) do
-      {:ok, text} -> :crypto.hash(:sha256, text)
+      {:ok, text} -> :crypto.hash(:sha256, compiled_part(text))
       _ -> :missing
     end
+  end
+
+  @doc false
+  def compiled_part(text) do
+    text
+    |> String.replace("\r\n", "\n")
+    |> String.split("\n")
+    |> Enum.reduce({[], false}, fn line, {kept, in_test} ->
+      cond do
+        String.starts_with?(line, "test ") -> {kept, true}
+        in_test and (line == "" or String.starts_with?(line, [" ", "\t"])) -> {kept, true}
+        String.starts_with?(line, "///") -> {kept, false}
+        true -> {[line | kept], false}
+      end
+    end)
+    |> elem(0)
+    |> Enum.reverse()
+    |> Enum.join("\n")
   end
 
   defp file_print(path) do

@@ -394,18 +394,10 @@ inl new_pair forall a b. (a : a) (b : b) : pair a b =
 /// ### from_pair
 inl from_pair forall a b. (pair : pair a b) : a * b =
     backend_switch {
-        Gleam = fun () =>
-            $'let \#(a, b) = !pair '
-            ($'a' : a), ($'b' : b)
-        Lua = fun () =>
-            $'local a, b = !pair[1], !pair[2]'
-            ($'a' : a), ($'b' : b)
-        Fsharp = fun () =>
-            $'let (a, b) = !pair '
-            ($'a' : a), ($'b' : b)
-        Python = fun () =>
-            $'a, b = !pair '
-            ($'a' : a), ($'b' : b)
+        Gleam = fun () => ($'!pair.0' : a), ($'!pair.1' : b)
+        Lua = fun () => ($'!pair[1]' : a), ($'!pair[2]' : b)
+        Fsharp = fun () => ($'fst !pair ' : a), ($'snd !pair ' : b)
+        Python = fun () => ($'!pair[0]' : a), ($'!pair[1]' : b)
         Rust = fun () => ($'!pair.0.clone()' : a), ($'!pair.1.clone()' : b)
         TypeScript = fun () => ($'!pair[0]' : a), ($'!pair[1]' : b)
     }
@@ -420,6 +412,17 @@ test from_pair =
     |> from_pair
     |> fun a, b => a, join from_pair b
     |> _assert_eq' ("a", (1i32, "b"))
+
+///> gleam
+///> lua
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test from_pair_twice =
+    inl x, y = new_pair (dyn 1i32) (dyn "a") |> from_pair
+    inl z, w = new_pair (dyn 2i32) (dyn "b") |> from_pair
+    (x, y, z, w) |> _assert_eq' (1i32, "a", 2i32, "b")
 
 /// ### (||>)
 inl (||>) (arg1, arg2) fn =
@@ -609,7 +612,7 @@ inl try forall t. (fn : () -> t) (ex_fn : exn -> option t) : option t =
 ///> cuda
 ///> rust
 ///> typescript
-test try no_agree =
+test try no_agree "exception text is backend-specific" =
     try
         fun () => a ;[ 0i32 ] |> am'.index 1i32 |> sm'.format
         (fun ex => $'!ex ' |> sm'.format_exception |> Some)

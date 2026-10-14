@@ -38,13 +38,11 @@ inl remaining_gold (outcome : payment) : i32 =
     | Paid held => total_gold held
     | ShortBy _ => -1
 
-///> rust
 ///> c
 test fewest_coins_conserves_value =
     inl ~amount = 1234567i32
     fewest_coins amount |> total_gold |> _assert_eq amount
 
-///> rust
 ///> c
 test fewest_coins_breakdown =
     inl ~amount = 123456i32
@@ -53,13 +51,11 @@ test fewest_coins_breakdown =
     held.platinum |> _assert_eq 34i32
     held.gold |> _assert_eq 56i32
 
-///> rust
 ///> c
 test paying_conserves_value =
     inl ~price = 2750i32
     purse 50 30 1 |> pay price |> remaining_gold |> _assert_eq 10300i32
 
-///> rust
 ///> c
 test paying_too_much_reports_shortfall =
     inl ~price = 20000i32

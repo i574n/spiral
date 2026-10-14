@@ -15,6 +15,39 @@ defmodule Spiral.Kino.TargetsTest do
     )
   end
 
+  test "gcc builds C with the compiler harness flags and links libm last" do
+    assert Targets.c_args("C:/mingw/bin/gcc.exe", "main.c", "cell.exe", nil) ==
+             ["-std=c11", "-O2", "-w", "-fwrapv", "-o", "cell.exe", "main.c", "-lm"]
+  end
+
+  test "Delphi cells build with dcc32 when present, else with fpc in Delphi mode like the compiler harness" do
+    dir = Spiral.Kino.TestHelpers.tmp_dir!("delphi-compiler")
+    dcc = Path.join(dir, "dcc32.exe")
+    fpc = Path.join(dir, "fpc.exe")
+    File.write!(fpc, "")
+    assert {^fpc, "fpc", ["-O2", "-Mdelphi"]} = Targets.delphi_compiler(dcc: dcc, fpc: fpc)
+    File.write!(dcc, "")
+    assert {^dcc, "dcc32", []} = Targets.delphi_compiler(dcc: dcc, fpc: fpc)
+  end
+
+  test "a c-shim.h next to the notebook is force-included like the harness's own shim" do
+    dir = Path.join(System.tmp_dir!(), "kino_c_shim_#{System.unique_integer([:positive])}")
+    File.mkdir_p!(dir)
+    shim = Path.join(dir, "c-shim.h")
+    File.write!(shim, "#define SHIMMED 1\n")
+
+    try do
+      assert Targets.c_args("gcc", "main.c", "cell", dir) ==
+               ["-std=c11", "-O2", "-w", "-fwrapv", "-include", shim, "-o", "cell", "main.c", "-lm"]
+    after
+      File.rm_rf(dir)
+    end
+  end
+
+  test "cl builds C optimized with its own flag spelling" do
+    assert Targets.c_args("C:/msvc/cl.exe", "main.c", "cell.exe", nil) == ["/nologo", "/O2", "/Fe:cell.exe", "main.c"]
+  end
+
   test "command_result output is kept and a trace line is dropped" do
     inner = JSON.encode!(%{"code" => "return 1", "extension" => "lua", "output" => "printed"})
     outer = "12:44:21 spiral.main / { args = [] }\n" <> JSON.encode!(%{"command_result" => inner})
@@ -143,6 +176,8 @@ defmodule Spiral.Kino.TargetsTest do
   test "zig runs its program; wgsl runs the shader: exit 0 passes, 3 (no adapter) or no runner is unsupported, others fail" do
     assert [%{tool: :zig}, %{tool: :wgsl}] = Spiral.Kino.Builders.commands("///> zig\n///> wgsl\nx")
     assert Spiral.Kino.Builders.backend(%{tool: :zig}) == "Zig"
+    assert [%{tool: :lean}] = Spiral.Kino.Builders.commands("///> lean\nx")
+    assert {Spiral.Kino.Builders.backend(%{tool: :lean}), Spiral.Kino.Builders.ext(%{tool: :lean})} == {"Lean", ".lean"}
     assert Spiral.Kino.Builders.backend(%{tool: :wgsl}) == "Wgsl"
     dir = Spiral.Kino.TestHelpers.tmp_dir!("zig-wgsl")
     missing = Path.join(dir, "no-tool.exe")

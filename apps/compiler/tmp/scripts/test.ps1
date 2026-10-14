@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('single-flight', 'sf', 'hopac', 'hp')][string]$Mode = 'single-flight',
+    [ValidateSet('single-flight', 'sf', 'gpt5parallel', 'gp')][string]$Mode = 'single-flight',
     [string[]]$Suite = @('smoke'),
     [string]$Filter,
     [string[]]$Backend,
@@ -22,12 +22,12 @@ foreach ($s in $Suite) { if ($s -notin 'frontier', 'smoke', 'examples', 'contrac
 foreach ($b in $Backend) { if ($b -notin 'Fsharp', 'C', 'Rust', 'Delphi', 'Zig', 'Wasm', 'Wgsl', 'Calyx', 'Kotlin', 'Swift', 'OpenQasm', 'Ebpf', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python') { throw "unknown backend '$b'" } }
 $mode = ConvertTo-SpiralMode $Mode
 $suiteTimeoutSec = @{ frontier = 20; smoke = 20; examples = 20; contracts = 30; mega = 180 }
-$recycleWarmBatches = $WarmRecycle -or ($mode -eq 'hopac' -and -not $PSBoundParameters.ContainsKey('FreshProcess'))
+$recycleWarmBatches = $WarmRecycle -or ($mode -eq 'gpt5parallel' -and -not $PSBoundParameters.ContainsKey('FreshProcess'))
 $freshProcess = if ($recycleWarmBatches) { $false } else { [bool]$FreshProcess }
 if ($recycleWarmBatches) { $env:SPIRAL_BATCH_RECYCLE_AFTER_ERROR = '1' }
 if ($Parallel -le 0) {
     $cpus = [Environment]::ProcessorCount
-    $byCpu = if ($mode -eq 'hopac') { [Math]::Ceiling($cpus * 3 / 8) } else { [Math]::Ceiling($cpus / 2) }
+    $byCpu = if ($mode -eq 'gpt5parallel') { [Math]::Ceiling($cpus * 3 / 8) } else { [Math]::Ceiling($cpus / 2) }
     $freeGb = try { (Get-CimInstance Win32_OperatingSystem -ErrorAction Stop).FreePhysicalMemory / 1MB } catch { 3 }
     $Parallel = [int][Math]::Max(1, [Math]::Min($byCpu, [Math]::Floor($freeGb / 1.5)))
 }
@@ -220,6 +220,15 @@ foreach ($p in $partials) { foreach ($k in $p.Keys) { $compiled[$k] = $p[$k] } }
 foreach ($k in @($compiled.Keys)) {
     $c = $compiled[$k]
     if ($c.Status -eq 'error' -and $c.Detail -match '^FatalError: BuildFile stalled') { $c.Status = 'timeout' }
+}
+foreach ($job in $jobs) {
+    $c = $compiled[$job.Key]
+    if (-not $c -or $c.Status -ne 'ok') { continue }
+    $written = Get-Item -LiteralPath $job.Output -ErrorAction SilentlyContinue
+    if (-not $written -or $written.Length -eq 0) {
+        $c.Status = 'error'
+        $c.Detail = "empty output: the compile reported ok but left $($job.Output) empty or missing"
+    }
 }
 Write-Host ("== compiled in {0:N1}s" -f $sw.Elapsed.TotalSeconds)
 
@@ -468,8 +477,8 @@ function Build-And-Run($job) {
     }
     $exe = Join-Path $binDir ($(if ($IsWindows) { 'main.exe' } else { 'main' }))
     $build = switch ($job.Backend) {
-        'C' { if (-not $tools.CC) { return 'no-toolchain' }; Invoke-Native $tools.CC (@('-std=c11', '-O2', '-w') + (Get-CFlags $job) + @('-o', $exe, $job.Output, '-lm')) $dir 120 }
-        'Ebpf' { if (-not $tools.CC) { return 'no-toolchain' }; Invoke-Native $tools.CC (@('-std=c11', '-O2', '-w', '-x', 'c') + @('-o', $exe, $job.Output, '-lm')) $dir 120 }
+        'C' { if (-not $tools.CC) { return 'no-toolchain' }; Invoke-Native $tools.CC (@('-std=c11', '-O2', '-fwrapv', '-w') + (Get-CFlags $job) + @('-o', $exe, $job.Output, '-lm')) $dir 120 }
+        'Ebpf' { if (-not $tools.CC) { return 'no-toolchain' }; Invoke-Native $tools.CC (@('-std=c11', '-O2', '-fwrapv', '-w', '-x', 'c') + @('-o', $exe, $job.Output, '-lm')) $dir 120 }
         'Rust' { if (-not $tools.Rustc) { return 'no-toolchain' }; Invoke-Native $tools.Rustc @('+1.99.0', '-C', 'opt-level=2', '-A', 'warnings', '--edition', '2024', '-o', $exe, $job.Output) $dir 180 }
         'Delphi' { if (-not $tools.Fpc) { return 'no-toolchain' }; Invoke-Native $tools.Fpc @('-O2', '-Mdelphi', "-FE$binDir", "-FU$binDir", "-o$exe", $job.Output) $dir 180 }
         'Zig' {
@@ -614,7 +623,7 @@ foreach ($row in $rows) {
     $e = $expected["$($row.id)|$($row.backend)"]
     if (-not $e) { $row.baseline = 'new'; continue }
     $produced = $row.compile -in 'ok', 'emitted'
-    $broken = if ($mode -eq 'hopac') { 'missing' } else { 'REGRESSED' }
+    $broken = if ($mode -eq 'gpt5parallel') { 'missing' } else { 'REGRESSED' }
     $nativeMatch = (-not $Native) -or ($e.native -ne 'ran') -or ($row.native -eq 'no-toolchain') -or ($row.native -eq 'ran' -and $e.exit -eq $row.exit -and $e.stdout -eq $row.stdout)
     $row.baseline =
         if ($e.compile -in 'timeout', 'crash', 'not-run') { if ($produced) { 'FIXED' } else { 'no-oracle' } }
@@ -651,7 +660,7 @@ if ($Native) {
     Write-Host ("native: {0} ran, {1} build-fail, oracle agree {2}, DISAGREE {3}" -f (Count $nat { $_.native -eq 'ran' }), (Count $nat { $_.native -eq 'build-fail' }),
         (Count $rows { $_.oracle -eq 'agree' }), (Count $rows { $_.oracle -eq 'DISAGREE' }))
 }
-$bad = @($rows | Where-Object { $_.baseline -in 'REGRESSED', 'NATIVE-DIFF' -or ($mode -ne 'hopac' -and $_.baseline -eq 'UNEXPECTED-OUTPUT') -or $_.oracle -eq 'DISAGREE' })
+$bad = @($rows | Where-Object { $_.baseline -in 'REGRESSED', 'NATIVE-DIFF' -or ($mode -ne 'gpt5parallel' -and $_.baseline -eq 'UNEXPECTED-OUTPUT') -or $_.oracle -eq 'DISAGREE' })
 foreach ($b in $bad | Select-Object -First 20) { Write-Host "  !! $($b.id) [$($b.backend)] $($b.baseline) $($b.oracle) $($b.detail)" -ForegroundColor Red }
 Write-Host "results: $resultPath"
 Write-Host "outputs: written next to their sources; git diff samples shows what changed"

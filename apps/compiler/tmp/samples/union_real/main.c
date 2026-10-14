@@ -56,14 +56,14 @@ int32_t score0(US0 v0){
         case 0: { // Real
             double v1 = v0.case0.v0;
             
-            USDecref0(&(v0));
+            
             return twice1(v1);
             break;
         }
         default: { // Whole
             int32_t v3 = v0.case1.v0;
             
-            USDecref0(&(v0));
+            
             return v3;
             break;
         }
@@ -102,19 +102,19 @@ int32_t main(){
         
         v7 = US0_Real(v1);
     }
-    USIncref0(&(v4));
+    
     
     int32_t v8;
     v8 = score0(v4);
     
-    USDecref0(&(v4));
+    
     bool v9;
     v9 = v8 == 3l;
     
     
     bool v12;
     if (v9){
-        USIncref0(&(v7));
+        
         
         int32_t v10;
         v10 = score0(v7);
@@ -131,7 +131,7 @@ int32_t main(){
         v12 = false;
     }
     
-    USDecref0(&(v7));
+    
     if (v12){
         
         

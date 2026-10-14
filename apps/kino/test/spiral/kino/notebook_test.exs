@@ -46,13 +46,8 @@ defmodule Spiral.Kino.NotebookTest do
              )
 
     sources = Agent.get(agent, & &1)
-    assert length(sources) == 3
-
-    test_cell =
-      Enum.find(
-        sources,
-        &(String.contains?(&1, "open testing") and not String.contains?(&1, "inl value"))
-      )
+    assert length(sources) == 2
+    refute Enum.any?(sources, &(String.contains?(&1, "open testing") and not String.contains?(&1, "inl value")))
 
     def_cell =
       Enum.find(sources, fn source ->
@@ -60,7 +55,6 @@ defmodule Spiral.Kino.NotebookTest do
       end)
 
     use_cell = Enum.find(sources, &calls?(&1, "value ()"))
-    assert test_cell
     assert "inl value () = 1i32" in lines(def_cell)
     assert "open testing" in lines(def_cell)
     assert "inl value () = 1i32" in lines(use_cell)
@@ -76,7 +70,7 @@ defmodule Spiral.Kino.NotebookTest do
     assert Enum.count(ipynb["cells"], &(&1["cell_type"] == "code")) == 3
 
     assert Enum.all?(ipynb["cells"], fn cell ->
-             cell["cell_type"] == "markdown" or
+             cell["cell_type"] == "markdown" or Enum.join(cell["source"]) =~ "--test static" or
                (cell["outputs"] != [] and
                   is_integer(cell["metadata"]["duration_ms"]) and
                   cell["metadata"]["duration_ms"] >= 0)

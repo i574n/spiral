@@ -96,6 +96,7 @@ Kernel directives in the source:
 ### Process handling (`Spiral.Kino.Runner`)
 
 - The child runs in an Erlang port (`spawn_executable`, no shell). stdout and stderr are captured together, and the exit status is returned.
+- On Windows the port loses the whole output of a child that prints and exits at once: 4–10% of runs at 24 concurrent runs, and a 3 s wait does not bring it back. There the child runs as `cmd /d /v:off /s /c "> <temp file> 2>&1 <program> <args>"`, and the output is read from the file after exit. The exit status passes through unchanged, crash codes included. Arguments containing `"`, `%` or a newline cannot be quoted safely for cmd, so those runs use the direct port.
 - The port is owned by a watcher under `Spiral.Kino.TaskSupervisor`. The watcher monitors the caller and is not linked to it.
 - On timeout, and when the caller dies (Livebook *Stop* or re-evaluation), the watcher kills the process tree. On Windows it uses `taskkill /T /F /PID`. On Unix it walks children with `pgrep -P` and sends `SIGKILL`.
 - A grandchild whose parent has already exited is not found by that walk. An abrupt BEAM kill leaves the children running on Windows.
@@ -116,9 +117,13 @@ Resolved in this order for each setting: the `run/2` option, then the environmen
 | Compiler daemon port | - | `SPIRAL_KINO_COMPILER_PORT` | `13905` |
 | Compiler server memory cap (MB; 0: none) | - | `SPIRAL_KINO_DAEMON_MAX_MB` | `2500` |
 | Compiles per compiler server (0: no limit) | - | `SPIRAL_KINO_DAEMON_MAX_COMPILES` | `0` |
+| Compiler servers per daemon (`off`, `N`, `auto` = 3) | - | `SPIRAL_KINO_DAEMON_POOL` | `auto` |
+| Free memory one more compiler server needs (MB) | - | `SPIRAL_KINO_DAEMON_SERVER_MB` + `SPIRAL_KINO_DAEMON_RESERVE_MB` | `1000` + `1500` |
+| Fair turns per client (`0`: first come first served) | - | `SPIRAL_KINO_DAEMON_FAIR` | `1` |
 
-By default a cell compiles through one shared, warm compiler: the first cell starts a detached
-`mix spiral.compiler_daemon` on `127.0.0.1:13905` (or `SPIRAL_KINO_COMPILER_PORT`), and it keeps running after the
+By default a cell compiles through one shared, warm daemon: the first cell starts it detached, straight from the
+compiled code (`elixir -pa _build/<env>/lib/*/ebin -e Spiral.Kino.CompilerDaemon.serve_app()`, so it never waits for
+mix's build lock; `mix spiral.compiler_daemon` when nothing is compiled), on `127.0.0.1:13905` (or `SPIRAL_KINO_COMPILER_PORT`), and it keeps running after the
 Livebook session ends so later sessions reuse it. `SPIRAL_KINO_COMPILER=process` opts out: each cell then starts its
 own compiler process, and no daemon is started. Passing any of `:compiler_dll`, `:dotnet`, `:package_dir`,
 `:workspace` or `:env` also compiles in a separate process. `SPIRAL_KINO_BRIDGE_TRACE=1` makes the daemon's socket
@@ -129,6 +134,13 @@ The daemon itself, its port and its queue stay up. The compiler server runs from
 (`%TEMP%/spiral-kino-compiler/<mtime>-<size>`), so rebuilding the compiler never fails on a locked DLL; before each compile
 the daemon compares the DLL's mtime and size with the copy it runs and restarts the server on a new build. Its code stamp is the md5 of the daemon module's code, so every
 build of the same code (this app, an app that depends on it) shares one daemon instead of replacing it.
+The daemon runs up to 3 compiler servers (`SPIRAL_KINO_DAEMON_POOL`): a request waits in its client's queue (a client is
+one BEAM), clients take turns, and a new server starts only when a request is waiting, every server is busy and free
+memory covers `SPIRAL_KINO_DAEMON_SERVER_MB` plus `SPIRAL_KINO_DAEMON_RESERVE_MB`; with several servers each one
+recycles at `max(SPIRAL_KINO_DAEMON_MAX_MB / servers, 1200)` MB. Measured with 3 sessions of 6 lib compiles: one
+server 60-69 s, the pool 41-49 s (queue p50 26.5 s -> 10 s) at about 1.1 GB. Retiring waits for queued and running
+compiles and stops every server. The daemon log (`kino-<port>.log`) has a `received`, `started` and finish line per
+request; a relaunch rotates it to `.prev.log` once the retiring daemon lets go of the file.
 
 Editor highlighting is `config :spiral_kino, editor_language: "javascript"` (the default).
 Livebook's editor has no Spiral mode. JavaScript highlights `//` comments, strings, numbers,
@@ -200,7 +212,20 @@ A test's verdict is its cell's own evaluation result: it passed when every targe
 failed on a compile error, a non-zero exit or a timeout, and is unsupported when none of its `///>` targets has its tool on
 this machine (`` `lua` was not found``, `gleam`, `gcc`, ...; a missing compiler, `dotnet` or core package is a failure).
 A native target (`///> c`, `cpp`, `delphi`) passes only when its program exits 0: the exit code is no value channel,
-so an assertion that exits 1 fails the test. A cell's `///>` lines are its whole target list (no Rust run beside them).
+so an assertion that exits 1 fails the test. `///> c` is built like the compiler harness builds its C rows:
+`gcc -std=c11 -O2 -w -fwrapv [-include <notebook dir>/c-shim.h] -o cell main.c -lm` (`cl /O2` with MSVC). The Rust host is built like the harness's Rust rows too: `rustc +1.99.0 -C opt-level=2 -A warnings --edition 2024`
+(`+1.99.0` only when `rustc` is rustup's proxy). `///> delphi` uses `dcc32` (`SPIRAL_DCC`) when present, else Free Pascal
+the way the harness builds its Delphi rows: `fpc -O2 -Mdelphi` (`SPIRAL_FPC`, `fpc` on PATH, or scoop's freepascal).
+`///> lean` runs the `--backend Lean` output with `lean --run` on the harness's toolchain `leanprover/lean4:v4.35.0-rc4`:
+`SPIRAL_LEAN` (an elan proxy, given `+leanprover/lean4:v4.35.0-rc4`), else that toolchain's own `lean` under `ELAN_HOME`,
+`~/.elan` or scoop's elan, else `lean` on PATH with `+leanprover/lean4:v4.35.0-rc4`.
+A cell's `///>` lines are its whole target list (no Rust run beside them).
+A test without `///>` lines runs on its file's default targets: the `///>` lines of the file's `static` prelude test
+(`///> c` above `test tibia static =`), else `SPIRAL_KINO_DEFAULT_TARGET` (or `default_target:`, e.g. `c`), else the Rust host.
+The `static` prelude itself is never compiled or run: its `open`s and types reach every later test, which compiles them,
+and its row says `static` (counted in `static`, not in `executed`). A static block whose body is only `open` lines
+(after its `///` lines) is the file's prelude, not a test: its row says `prelude`, it is counted in `preludes`, and it is
+left out of `discovered`, which then counts real tests only. A static block that defines something stays `static`.
 `///> zig` compiles the Zig backend and runs it with `zig run` (`SPIRAL_ZIG`, else `zig` on `PATH`). `///> wgsl` compiles
 the WGSL backend, validates it with `naga` when found (`SPIRAL_NAGA`), and runs it with `spiral-wgsl <file>`:
 `SPIRAL_WGSL_RUN`, else `<spiral-bin>/toolchains/wgsl-run/release/spiral-wgsl[.exe]`. The runner exits with the shader's
@@ -216,7 +241,14 @@ lines also list `failed_tests`. Each test row lists its `targets`: one `{target,
 default host), `status` being `passed`, `failed`, `unsupported` or `not_run` (after an earlier target failed), `ms` the
 target's compile plus run time; a recalled test shows the targets of the run it was recalled from. The ipynb metadata holds the same counts and every test (`spiral_tests`), and each test
 cell's metadata its own entry (`spiral_test`). A failed test fails the run (non-zero exit, no exports written); the plain
-compile of the same `.spi` is unaffected because the compiler skips test blocks. `--path` may be repeated; with several,
+compile of the same `.spi` is unaffected because the compiler skips test blocks. A test body is compiled as one local
+scope (`inl spiral_kino_test () = <body>`), so tuple patterns (`inl a, b = ...`) and a `let rec`
+over the body's own locals work; `static` bodies stay top level, since they hold the shared `open`s and types. Main then
+returns `0i32` after the call: `spiral_kino_test ()` when the body ends in an `_assert`, else `inl _ = spiral_kino_test ()`,
+which takes a unit or a value alike. A test therefore compiles once; before, a body ending in another unit expression
+or in a value was compiled a second time after the first compile failed (physics.spi: 58 compile requests for 39 tests
+before, 40 after).
+`--path` may be repeated; with several,
 `--output-dir <dir>` writes each notebook's `<name>.ipynb` there (`--output-path` takes a single `--path`). With several
 `--path`, each `--test` name runs in the files that have it, files with none of them are skipped, and only a name no
 file has is an error.
@@ -232,9 +264,10 @@ that and defaults to `plan: :cells` (one compile per cell, each cell's output sh
 passes only when compiling the definitions before it plus its body fails with a diagnostic that contains the message and,
 when given, the code. A program that compiles, a different diagnostic, or a failure after compiling fails the test; a
 matching message without any `E...` code fails too and says so. In a notebook the cell carries
-`///- --test --fails EJP0040 "Unification failure"`; the report's `mode` is `fails`. The type checker's diagnostics
-carry `ETY` codes (`ETY0009` Unification failure, `ETY0005` Unbound variable, ...), so
-`test rejects_mixed_units fails ETY0009 "Unification failure" =` pins both.
+`///- --test --fails EJP0040 "Unification failure"`; the report's `mode` is `fails`. A code is a prefix and either a
+number or the diagnostic's case name (`EJP0040`, `ETY-TermError`) and must match whole: `ETY-Term` does not match
+`ETY-TermError`. The type checker names its codes after the error case, so
+`test rejects_mixed_units fails ETY-TermError "Unification failure" =` pins both.
 
 ### Build-only tests
 
@@ -254,19 +287,35 @@ Nx module / ...`) and `at ...` stack frames dropped, union constructors written 
 whitespace runs folded, a last line `0` (the main status some runners print) dropped, and every
 number written with at most 6 decimals (`+1.570796`, `1.5707963267949` and `1.570796` agree). A target that printed
 nothing is not compared. Otherwise it fails with `targets disagree: lua printed
-"1", gleam printed "1.0"` and the differing target's row says `disagrees`. `test name no_agree =` (a cell's
-`///- --no-agree`) keeps only the pass rule. Cells that are not tests, and `print_code` tests, are not compared.
+"1", gleam printed "1.0"` and the differing target's row says `disagrees`. `test name no_agree "reason" =` (a cell's
+`///- --no-agree "reason"`) keeps only the pass rule; the reason is required (a bare `no_agree` fails the test without
+running it), each test row carries it as `no_agree`, and the report counts the opt-outs per reason in `no_agree_reasons`,
+so they cannot grow silently. Cells that are not tests, and `print_code` tests, are not compared.
 The lib's `_assert_*` helpers print through `sm'.show`, which already writes records, tuples, unions and arrays the same
 way on every backend, so for them the union and collection rules only matter for values printed natively (`#?`, `#?*`).
 
 ### Accepting actual values
 
 `--accept` (`.spi` only) rewrites the expected literal of each failed test whose output holds
-`__assert_eq { actual = A; expected = E }`: inside that test's block, the one `_assert_eq E` literal becomes `A`, its type suffix kept
-(`_assert_eq 5i32` -> `_assert_eq 4i32`), under a `<file>.accept.lock`. Such tests report `accepted` (counted in
-`executed` and `accepted`), and the run passes when nothing else failed. A test is left alone, with `accept_refused` saying
-why, when its block has no or several matching literals or the actual value is not a plain literal. Without the flag a
-mismatch fails and the file is not touched.
+`__assert_eq { actual = A; expected = E }`: inside that test's block, the failing `_assert_eq E` literal becomes `A`, its
+type suffix kept (`_assert_eq 5i32` -> `_assert_eq 4i32`), under a `<file>.accept.lock`. The literal rewritten is the failing
+assert's own: with `k` passing `__assert_eq { expected = ... }` lines in the output, it is the `k+1`-th `_assert_eq` written in the
+test's block, and it must be the literal `E` (otherwise the test is refused), so equal literals elsewhere are never touched. An accepted test is run again, and accepted again, until it passes or fails in a way that cannot be
+accepted (at most 25 rounds), so every assertion of the test is pinned in one run. Such tests report `accepted` (counted in
+`executed` and `accepted`), and the run passes when nothing else failed. A test fails, with `accept_refused` saying why,
+when its block has no matching literal, two on one line, a literal that ran more often than it is written (a loop or a
+helper), an actual value that is not a plain literal, or a later failure that is no mismatch. Without the flag a mismatch
+fails and the file is not touched.
+
+### X compatibility
+
+Edition-3 sources are meant to survive being posted on X. When the nearest `package.spiproj` above a notebook says
+`edition: 3` (or `--x-compat` is passed), a run prints one `x-compat <file>:<line>:<col>: <kind>: <text> (<hint>)` line per
+thing X would rewrite: `#` before a letter (hashtag), `@` before a name (mention), `$` before letters (cashtag) and text
+X would autolink as a domain (`cell.ai`, `listm.map`; shortened to a 23-character t.co link). These are warnings: the run's
+result does not change. `mix spiral.x_compat <file or dir>...` is the CI report over `.spi`, `.spir` and `.livemd`
+files: every finding plus a summary line, always exit 0. The checker is `Spiral.Kino.XCompat` (IANA TLD list in
+`priv/tlds.txt`, twitter-text weights); `apps/xsim` uses it for its thread frames and per-post limits.
 
 ### Target audit
 
@@ -284,7 +333,9 @@ A step that succeeded is remembered on disk (`%LOCALAPPDATA%/spiral-bin/kino-res
 the newest 5000 entries are kept), keyed by everything that decides its result: the step's whole program (definitions
 before it and its body) and real module, its `///>` targets, the compiler DLL (path, size, mtime), the core package and
 every `--package` the program mounts (the sha256 of each `package.spiproj` and of the modules it lists, folders and path
-dependencies included; files a project does not list are left out), the md5 of the Kino modules on the compile, run
+dependencies included; files a project does not list are left out; a module's `test` blocks and `///` lines are left out too,
+since the compiler skips them, so a notebook that is also a module of the package it mounts keeps its other tests' entries
+when one test or its accepted literal changes), the md5 of the Kino modules on the compile, run
 and verdict path (not the editor or report ones), and the tool options (`print_code`, tool paths). A re-run recalls such a step
 with its outputs instead of compiling, and the daemon is not even started when every step is recalled; failures,
 timeouts and unsupported steps always run again. Editing one test changes only that test's program, so only it runs;

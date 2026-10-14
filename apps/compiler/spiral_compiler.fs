@@ -8,7 +8,7 @@ namespace Polyglot
 
 module spiral_compiler =
 
-#if SPIRAL_CORE_HOPAC
+#if SPIRAL_CORE_GPT5PARALLEL
     module HopacPerfExperiment =
         let private flags =
             match System.Environment.GetEnvironmentVariable "SPIRAL_HOPAC_EXP" with
@@ -6146,7 +6146,7 @@ module spiral_compiler =
                 ReducerHudSnapshotRejectedObserverOnly
 
 #endif
-#if !SPIRAL_CORE_HOPAC
+#if !SPIRAL_CORE_GPT5PARALLEL
     /// ## IdentityAdapter
     type TermNameId = string
     type TypeNameId = string
@@ -6179,7 +6179,7 @@ module spiral_compiler =
     let termMapToModuleMembers (source : Map<TermNameId,'a>) : Map<ModuleMemberNameId,'a> = source
     let typeMapToModuleMembers (source : Map<TypeNameId,'a>) : Map<ModuleMemberNameId,'a> = source
 #endif
-#if SPIRAL_CORE_HOPAC
+#if SPIRAL_CORE_GPT5PARALLEL
     /// ## HopacProgress
     module Progress88 =
         open System
@@ -6798,7 +6798,7 @@ module spiral_compiler =
 
     open Common
 
-#if SPIRAL_CORE_HOPAC
+#if SPIRAL_CORE_GPT5PARALLEL
     /// ## HopacRuntimeHelpers
     open System
     open System.Threading
@@ -7242,11 +7242,16 @@ module spiral_compiler =
         | BoolT | StringT | CharT
 
     /// ### DefaultEnv
+    type SpiralEdition =
+        | UpstreamEdition2
+        | ForkEdition3
+
     type DefaultEnv = {
         port : int
         default_int : PrimitiveType
         default_uint : PrimitiveType
         default_float : PrimitiveType
+        edition : SpiralEdition
         }
 
     /// ### CliArguments
@@ -7254,6 +7259,7 @@ module spiral_compiler =
         | [<Mandatory;Unique>] Port of int
         | [<Unique>] Default_Int of string
         | [<Unique>] Default_Float of string
+        | [<Unique>] Edition of string
 
         interface IArgParserTemplate with
             member s.Usage =
@@ -7261,6 +7267,7 @@ module spiral_compiler =
                 | Port _ -> "specify a primary port."
                 | Default_Int _ -> "specify the default int: i8, i16, i32, i64, u8, u16, u32, u64"
                 | Default_Float _ -> "specify the default float: f32, f64"
+                | Edition _ -> "specify the language edition: 2 (upstream syntax), 3 (this fork's syntax)"
 
     /// ### parseStartup
     let startupParse args =
@@ -7298,6 +7305,11 @@ module spiral_compiler =
             | "f32" -> Float32T
             | "f64" -> Float64T
             | x -> failwith $"Invalid default float.\nGot: %s{x}\nExpected one of: f32, f64"
+        edition =
+            match results.GetResult(Edition, environmentDefault "SPIRAL_EDITION" "3") with
+            | "2" -> UpstreamEdition2
+            | "3" -> ForkEdition3
+            | x -> failwith $"Invalid edition.\nGot: %s{x}\nExpected one of: 2, 3"
         }
 
     /// ## Utils
@@ -7350,7 +7362,7 @@ module spiral_compiler =
         let memoize' memo_dict f k = memoize' memo_dict f k
         let file_uri x = file_uri x
 
-#if SPIRAL_CORE_HOPAC
+#if SPIRAL_CORE_GPT5PARALLEL
     open Hopac
     //open Hopac.Infixes
     //open Hopac.Extensions
@@ -42693,7 +42705,7 @@ module spiral_compiler =
 
     /// ### skip_string
     let skip_string x (s : Tokenizer) =
-        // ws: ordinal; the culture-aware String.Compare upstream uses was ~16% of hopac's parse time on lib/spiral.
+        // ws: ordinal; the culture-aware String.Compare upstream uses was ~16% of gpt5parallel's parse time on lib/spiral.
         if String.CompareOrdinal(s.text,s.from,x,0,x.Length) = 0 then inc' x.Length s; Ok()
         else error_char s.from x
 
@@ -43897,12 +43909,15 @@ module spiral_compiler =
         | RawApply of VSCRange * RawExpr * RawExpr
         | RawIfThenElse of VSCRange * RawExpr * RawExpr * RawExpr
         | RawIfThen of VSCRange * RawExpr * RawExpr
+        | RawTypeIfThenElse of VSCRange * RawTExpr * RawTExpr * RawExpr * RawExpr
+        | RawTypeIfThen of VSCRange * RawTExpr * RawTExpr * RawExpr
         | RawPair of VSCRange * RawExpr * RawExpr
         | RawSeq of VSCRange * RawExpr * RawExpr
         | RawHeapMutableSet of VSCRange * RawExpr * RawExpr list * RawExpr
         | RawReal of VSCRange * RawExpr
         | RawMacro of VSCRange * RawMacro list
         | RawArray of VSCRange * RawExpr list
+        | RawLayoutIndex of VSCRange * RawExpr
         | RawMissingBody of VSCRange
         | RawFilledForall of VSCRange * string * RawExpr // Filled in by the inferencer.
     and [<NoComparison>] RawTExpr =
@@ -43992,6 +44007,7 @@ module spiral_compiler =
         | RawType(r,_)
         | RawJoinPoint(r,_,_,_)
         | RawArray(r,_)
+        | RawLayoutIndex(r,_)
         | RawMatch(r,_,_)
         | RawFun(r,_)
         | RawReal(r,_)
@@ -44008,6 +44024,8 @@ module spiral_compiler =
         | RawSeq(r,_,_)
         | RawHeapMutableSet(r,_,_,_)
         | RawRecordWith(r,_,_,_)
+        | RawTypeIfThen(r,_,_,_)
+        | RawTypeIfThenElse(r,_,_,_,_)
         | RawIfThenElse(r,_,_,_)
         | RawOpen(r,_,_,_) -> r
 
@@ -45010,6 +45028,18 @@ module spiral_compiler =
                         | ers -> Error ers) d
 
             let case_default_value = read_default_value RawDefaultLit RawLit
+            let case_type_if_then_else d =
+                let i = col d
+                let inline f' keyword = blockParsingRange (skip_keyword keyword >>. next)
+                let inline f keyword = blockParsingIndent i (<=) (f' keyword)
+                let f_init = blockParsingIndent i (<=) (blockParsingRange (attempt (skip_keyword SpecIf >>. skip_keyword SpecType) >>. (root_type_annot .>>. (skip_op "=" >>. root_type_annot))))
+                pipe3 f_init (f SpecThen) (opt (f SpecElse))
+                    (fun cond tr fl ->
+                        match fl with
+                        | Some fl -> RawTypeIfThenElse(fst cond +. fst fl,(snd >> fst) cond, (snd >> snd) cond,snd tr,snd fl)
+                        | None -> RawTypeIfThen(fst cond +. fst tr,(snd >> fst) cond, (snd >> snd) cond,snd tr)
+                        ) d
+
             let case_if_then_else d =
                 let i = col d
                 let inline f' keyword = blockParsingRange (skip_keyword keyword >>. next)
@@ -45111,7 +45141,7 @@ module spiral_compiler =
 
             (case_value + case_default_value + case_var + case_join_point + case_join_point_backend + case_real + case_symbol
             + case_typecase + case_match + case_typecase + case_rounds + case_list + case_record
-            + case_if_then_else + case_fun + case_forall + case_string + case_macro + case_exists) d
+            + case_type_if_then_else + case_if_then_else + case_fun + case_forall + case_string + case_macro + case_exists) d
 
         and application_tight d =
             let next = expressions
@@ -45156,6 +45186,7 @@ module spiral_compiler =
                                 ) d
                     | "``" -> if d.is_top_down then Error [] else (blockParsingRange type_expr |>> fun (r,x) -> RawOp(o +. r,TypeToVar,[RawType(r,x)])) d
                     | "`$" -> (read_var'' |>> fun (r,x) -> RawV(r,x,false)) d
+                    | "*" when d.default_env.edition = UpstreamEdition2 -> (blockParsingRange (choice [|read_var'' |>> rawv; rounds root_term|]) |>> fun (r,x) -> RawLayoutIndex(r,x)) d
                     | _ -> (next |>> fun b -> RawApply(o +. range_of_expr b,rawv(o, "~" + a),b)) d
             (f <|> next) d
 
@@ -45484,8 +45515,8 @@ module spiral_compiler =
         | ListLiteralsNotAllowedInBottomUp -> "List literals are not allowed in the bottom-up segment."
         | ArrayLiteralsNotAllowedInBottomUp -> "Array literals are not allowed in the bottom-up segment."
 
-#if SPIRAL_CORE_HOPAC
-/// ## BlockParsingHopac
+#if SPIRAL_CORE_GPT5PARALLEL
+/// ## BlockParsingGpt5parallel
     let opStableText = function
         | ToFunPtr -> "ToFunPtr"
         | ToFunClosure -> "ToFunClosure"
@@ -45682,6 +45713,7 @@ module spiral_compiler =
                 (members |> Seq.map memberExpr |> parsedAstSeedMany)
         | RawOp(_, _, values)
         | RawArray(_, values) -> values |> Seq.map parsedAstSeedOfRawExpr |> parsedAstSeedMany
+        | RawLayoutIndex(_, value) -> parsedAstSeedOfRawExpr value
         | RawTypecase(_, _, clauses) -> clauses |> Seq.map (snd >> parsedAstSeedOfRawExpr) |> parsedAstSeedMany
         | RawOpen(_, _, _, onSucc) ->
             parsedAstSeedOfRawExpr onSucc
@@ -45693,6 +45725,8 @@ module spiral_compiler =
             parsedAstSeedAdd (parsedAstSeedOfRawExpr left) (parsedAstSeedOfRawExpr right)
         | RawIfThenElse(_, condition, ifTrue, ifFalse) ->
             parsedAstSeedMany [ parsedAstSeedOfRawExpr condition; parsedAstSeedOfRawExpr ifTrue; parsedAstSeedOfRawExpr ifFalse ]
+        | RawTypeIfThenElse(_, _, _, ifTrue, ifFalse) -> parsedAstSeedMany [ parsedAstSeedOfRawExpr ifTrue; parsedAstSeedOfRawExpr ifFalse ]
+        | RawTypeIfThen(_, _, _, ifTrue) -> parsedAstSeedOfRawExpr ifTrue
         | RawHeapMutableSet(_, target, indexes, value) ->
             parsedAstSeedMany
                 (seq {
@@ -45738,7 +45772,7 @@ module spiral_compiler =
     let observeParsedStatement blockKey (statement : TopStatement) =
         statement |> parsedAstSeedOfTopStatement |> DiagJson.noteParsedAstStructuralSeed blockKey |> ignore
 #else
-/// ## BlockParsingHopac
+/// ## BlockParsingGpt5parallel
     let observeParsedStatement (_ : 'blockKey) (_ : TopStatement) = ()
 #endif
     /// ## HopacExtensions
@@ -45781,7 +45815,7 @@ module spiral_compiler =
                             if opening then regions.AddOrUpdate(box table, box (ref 1, System.Collections.Generic.HashSet<'k>(table.Keys, HashIdentity.Structural)))
                             else table.Clear()
 
-#if SPIRAL_CORE_HOPAC
+#if SPIRAL_CORE_GPT5PARALLEL
     module HopacExtensions =
         open Hopac
         open Hopac.Infixes
@@ -48907,7 +48941,7 @@ module spiral_compiler =
     
 
 #endif
-#if !SPIRAL_CORE_HOPAC
+#if !SPIRAL_CORE_GPT5PARALLEL
     module HopacExtensions =
         let start (job : Hopac.Job<unit>) : unit = Hopac.queueIgnore job
         let queueAsTask (job : Hopac.Job<'a>) = Hopac.queueAsTask job
@@ -48930,7 +48964,7 @@ module spiral_compiler =
             let choose f xs = Array.choose f xs
             let collect f xs = Array.collect f xs
 #endif
-#if SPIRAL_CORE_HOPAC
+#if SPIRAL_CORE_GPT5PARALLEL
     open HopacExtensions
     open Hopac
     open Hopac.Infixes
@@ -49049,6 +49083,8 @@ module spiral_compiler =
         | RawApply(r,a,b) -> RawApply(g r,f a,f b)
         | RawIfThenElse(r,a,b,c) -> RawIfThenElse(g r,f a,f b,f c)
         | RawIfThen(r,a,b) -> RawIfThen(g r,f a,f b)
+        | RawTypeIfThenElse(r,a,b,c,d) -> RawTypeIfThenElse(g r,ty a,ty b,f c,f d)
+        | RawTypeIfThen(r,a,b,c) -> RawTypeIfThen(g r,ty a,ty b,f c)
         | RawPair(r,a,b) -> RawPair(g r,f a,f b)
         | RawSeq(r,a,b) -> RawSeq(g r,f a,f b)
         | RawHeapMutableSet(r,a,b,c) -> RawHeapMutableSet(g r,f a,List.map f b,f c)
@@ -49056,6 +49092,7 @@ module spiral_compiler =
         | RawMissingBody r -> RawMissingBody(g r)
         | RawMacro(r,a) -> RawMacro(g r,fold_offset_macro offset a)
         | RawArray(r,a) -> RawArray(g r,List.map f a)
+        | RawLayoutIndex(r,a) -> RawLayoutIndex(g r,f a)
     and fold_offset_pattern offset x =
         let f = fold_offset_pattern offset
         let term = fold_offset_term offset
@@ -49251,92 +49288,12 @@ module spiral_compiler =
 
     /// ## TypeErrorCodes
 
-    /// ### type_error_codes
-    let type_error_codes =
-        Map [
-            "KindError", "ETY0001"
-            "KindErrorInConstraint", "ETY0002"
-            "ExpectedSymbolAsRecordKey", "ETY0003"
-            "ExpectedSymbolAsModuleKey", "ETY0004"
-            "UnboundVariable", "ETY0005"
-            "UnboundModule", "ETY0006"
-            "ModuleIndexFailedInOpen", "ETY0007"
-            "ModuleIndexWouldShadowLocalVars", "ETY0008"
-            "TermError", "ETY0009"
-            "TypeVarScopeError", "ETY0010"
-            "RecursiveMetavarsNotAllowed", "ETY0011"
-            "RecursiveTypevarsNotAllowed", "ETY0012"
-            "ForallVarConstraintError", "ETY0013"
-            "MetavarsNotAllowedInRecordWith", "ETY0014"
-            "ExpectedRecord", "ETY0015"
-            "ExpectedExistentialInTerm", "ETY0016"
-            "ExpectedExistentialInPattern", "ETY0017"
-            "UnexpectedNumberOfArgumentsInExistsPattern", "ETY0018"
-            "UnexpectedNumberOfArgumentsInExistsBody", "ETY0019"
-            "ExistsShouldntHaveMetavars", "ETY0020"
-            "ExpectedRecordInsideALayout", "ETY0021"
-            "UnionsCannotBeApplied", "ETY0022"
-            "ExpectedNominalInApply", "ETY0023"
-            "MalformedNominal", "ETY0024"
-            "LayoutSetMustBeAnnotated", "ETY0025"
-            "ExpectedMutableLayout", "ETY0026"
-            "ExpectedRecordAsResultOfIndex", "ETY0027"
-            "RecordIndexFailed", "ETY0028"
-            "ModuleIndexFailed", "ETY0029"
-            "ModuleIndexAmbiguous", "ETY0030"
-            "ExpectedModule", "ETY0031"
-            "ExpectedSymbol", "ETY0032"
-            "ExpectedSymbolInRecordWith", "ETY0033"
-            "RealFunctionInTopDown", "ETY0034"
-            "ModuleMustBeImmediatelyApplied", "ETY0035"
-            "MissingRecordFieldsInPattern", "ETY0036"
-            "CasePatternNotFoundForType", "ETY0037"
-            "CasePatternNotFound", "ETY0038"
-            "CannotInferCasePatternFromTermInEnv", "ETY0039"
-            "NominalInPatternUnbox", "ETY0040"
-            "TypeInEnvIsNotNominal", "ETY0041"
-            "UnionInPatternNominal", "ETY0042"
-            "ConstraintError", "ETY0043"
-            "PrototypeConstraintCannotPropagateToMetavar", "ETY0044"
-            "PrototypeConstraintCannotPropagateToVar", "ETY0045"
-            "ExpectedAnnotation", "ETY0046"
-            "ExpectedSinglePattern", "ETY0047"
-            "RecursiveAnnotationHasMetavars", "ETY0048"
-            "ValueRestriction", "ETY0049"
-            "DuplicateRecInlName", "ETY0050"
-            "DuplicateKeyInRecUnion", "ETY0051"
-            "ExpectedConstraintInsteadOfModule", "ETY0052"
-            "InstanceNotFound", "ETY0053"
-            "ExpectedPrototypeConstraint", "ETY0054"
-            "ExpectedPrototypeInsteadOfModule", "ETY0055"
-            "ExpectedHigherOrder", "ETY0056"
-            "InstanceArityError", "ETY0057"
-            "InstanceCoreVarsShouldMatchTheArityDifference", "ETY0058"
-            "InstanceKindError", "ETY0059"
-            "KindNotAllowedInInstanceForall", "ETY0060"
-            "InstanceVarShouldNotMatchAnyOfPrototypes", "ETY0061"
-            "MissingBody", "ETY0062"
-            "MacroIsMissingAnnotation", "ETY0063"
-            "ArrayIsMissingAnnotation", "ETY0064"
-            "ExistsIsMissingAnnotation", "ETY0065"
-            "ShadowedForall", "ETY0066"
-            "ShadowedExists", "ETY0067"
-            "UnionTypesMustHaveTheSameLayout", "ETY0068"
-            "OrphanInstance", "ETY0069"
-            "ShadowedInstance", "ETY0070"
-            "UnusedTypeVariable", "ETY0071"
-            "CompilerError", "ETY0072"
-            "IncorrectGADTConstructorType", "ETY0073"
-            "IncorrectRecursiveNominal", "ETY0074"
-        ]
-
     /// ### type_error_report
     let type_error_report (message : string) (error : obj) =
         let case, _ = Microsoft.FSharp.Reflection.FSharpValue.GetUnionFields(error, error.GetType())
-        let code = type_error_codes |> Map.tryFind case.Name |> Option.defaultValue "ETY0000"
-        $"{code}: {message}"
+        $"ETY-{case.Name}: {message}"
 
-#if SPIRAL_CORE_HOPAC
+#if SPIRAL_CORE_GPT5PARALLEL
     /// ## Infer
     
 
@@ -49450,6 +49407,7 @@ module spiral_compiler =
         | MalformedNominal
         | LayoutSetMustBeAnnotated
         | ExpectedMutableLayout of T
+        | ExpectedLayout of T
         | ExpectedRecordAsResultOfIndex of T
         | RecordIndexFailed of RecordFieldNameId
         | ModuleIndexFailed of ModuleMemberNameId
@@ -49847,6 +49805,7 @@ module spiral_compiler =
             | RawMacro(r,a) -> errors.Add(r,MacroIsMissingAnnotation); cmacro constraints term ty a
             | RawAnnot(_,RawArray(_,a),b) -> List.iter (cterm constraints (term, ty)) a; ctype constraints term ty b
             | RawArray(r,a) -> errors.Add(r,ArrayIsMissingAnnotation); List.iter (cterm constraints (term, ty)) a
+            | RawLayoutIndex(_,a) -> cterm constraints (term, ty) a
             | RawAnnot(_,a,b) -> cterm constraints (term, ty) a; ctype constraints term ty b
             | RawTypecase(_,a,b) ->
                 ctype constraints term ty a
@@ -49864,6 +49823,8 @@ module spiral_compiler =
             | RawHeapMutableSet(_,a,b,c) -> cterm constraints (term, ty) a; List.iter (cterm constraints (term, ty)) b; cterm constraints (term, ty) c
             | RawSeq(_,a,b) | RawPair(_,a,b) | RawIfThen(_,a,b) | RawApply(_,a,b) -> cterm constraints (term, ty) a; cterm constraints (term, ty) b
             | RawIfThenElse(_,a,b,c) -> cterm constraints (term, ty) a; cterm constraints (term, ty) b; cterm constraints (term, ty) c
+            | RawTypeIfThenElse(_,a,b,c,d) -> ctype constraints term ty a; ctype constraints term ty b; cterm constraints (term, ty) c; cterm constraints (term, ty) d
+            | RawTypeIfThen(_,a,b,c) -> ctype constraints term ty a; ctype constraints term ty b; cterm constraints (term, ty) c
             | RawMissingBody r -> errors.Add(r,MissingBody)
         and cmacro constraints term ty a =
             List.iter (function
@@ -50127,6 +50088,7 @@ module spiral_compiler =
         | MetavarsNotAllowedInRecordWith -> sprintf "In the top-down segment the record keys need to be fully known. Please add an annotation."
         | LayoutSetMustBeAnnotated -> sprintf "The layout type being set must be annotated."
         | ExpectedMutableLayout a -> sprintf "Expected a mutable layout type.\nGot: %s" (f a)
+        | ExpectedLayout a -> sprintf "Expected a layout type.\nGot: %s" (f a)
         | ExpectedRecord a -> sprintf "Expected a record.\nGot: %s" (f a)
         | ExpectedRecordInsideALayout a -> sprintf "Expected a record inside a layout type.\nGot: %s" (f a)
         | ExpectedRecordAsResultOfIndex a -> sprintf "Expected a record as result of index.\nGot: %s" (f a)
@@ -50451,6 +50413,8 @@ module spiral_compiler =
                     | _ -> q
                 | RawIfThenElse(r,a,b,c) -> RawIfThenElse(r,f a,f b,f c)
                 | RawIfThen(r,a,b) -> RawIfThen(r,f a,f b)
+                | RawTypeIfThenElse(r,a,b,c,d) -> RawTypeIfThenElse(r,a,b,f c,f d)
+                | RawTypeIfThen(r,a,b,c) -> RawTypeIfThen(r,a,b,f c)
                 | RawPair(r,a,b) -> RawPair(r,f a,f b)
                 | RawSeq(r,a,b) -> RawSeq(r,f a,f b)
                 | RawHeapMutableSet(r,a,b,c) -> RawHeapMutableSet(r,f a,List.map f b,f c)
@@ -50458,6 +50422,7 @@ module spiral_compiler =
                     let l = l |> List.map (function RawMacroTerm(r,x,b) -> RawMacroTerm(r,f x,b) | x -> x )
                     RawAnnot(r,RawMacro(r,l),annot r x)
                 | RawArray(r,a) -> RawAnnot(r,RawArray(r,List.map f a),annot r x)
+                | RawLayoutIndex(r,a) -> RawLayoutIndex(r,f a)
             and pattern recbterm x' =
                 let mutable rec_term = rec_term
                 let rec f = function
@@ -50826,6 +50791,13 @@ module spiral_compiler =
                     else
                         unify r s a
                         hover_types.AddHover(r,(s,com))
+            let inline type_if_then_else r type_a type_b tr =
+                let gadt_links = ResizeArray()
+                let q,w = fresh_var scope, fresh_var scope
+                ty_init scope env q type_a; ty_init scope env w type_b
+                unify_gadt (Some gadt_links) r q w
+                f s tr
+                dispose_gadt_links gadt_links
             let match_clause (q,w) (a,b) =
                 let gadt_links, gadt_typecases', (scope, env) = pattern scope env q a
                 term scope env w b
@@ -50839,6 +50811,8 @@ module spiral_compiler =
             | RawSymbol(r,x) -> unify r s (TySymbol x)
             | RawIfThenElse(_,cond,tr,fl) -> f (TyPrim BoolT) cond; f s tr; f s fl
             | RawIfThen(r,cond,tr) -> f (TyPrim BoolT) cond; unify r s TyB; f TyB tr
+            | RawTypeIfThenElse(r,type_a,type_b,tr,fl) -> type_if_then_else r type_a type_b tr; f s fl
+            | RawTypeIfThen(r,type_a,type_b,tr) -> unify r s TyB; type_if_then_else r type_a type_b tr
             | RawPair(r,a,b) ->
                 let q,w = fresh_var scope, fresh_var scope
                 unify r s (TyPair(q, w))
@@ -51089,6 +51063,17 @@ module spiral_compiler =
                     | v -> raise (InferTypeErrorException [r, ExpectedMutableLayout v])
                 with :? InferTypeErrorException as e -> errors.AddRange e.Data0; fresh_var scope
                 |> fun v -> f v c
+            | RawLayoutIndex(r,a) ->
+                try let v = fresh_var scope
+                    let i = errors.Count
+                    f v a
+                    match visit_t v with
+                    | TyMetavar _ -> raise (InferTypeErrorException [r, LayoutSetMustBeAnnotated])
+                    | TyLayout(v,lay) ->
+                        if i <> errors.Count then raise (InferTypeErrorException [])
+                        unify r s v
+                    | v -> raise (InferTypeErrorException [r, ExpectedLayout v])
+                with :? InferTypeErrorException as e -> errors.AddRange e.Data0
             | RawArray(r,a) ->
                 annotations.Add(x,(r,s))
                 let v = fresh_var scope
@@ -51820,6 +51805,7 @@ module spiral_compiler =
         | MalformedNominal
         | LayoutSetMustBeAnnotated
         | ExpectedMutableLayout of T
+        | ExpectedLayout of T
         | ExpectedRecordAsResultOfIndex of T
         | RecordIndexFailed of string
         | ModuleIndexFailed of string
@@ -52162,6 +52148,7 @@ module spiral_compiler =
             | RawMacro(r,a) -> errors.Add(r,MacroIsMissingAnnotation); cmacro constraints term ty a
             | RawAnnot(_,RawArray(_,a),b) -> List.iter (cterm constraints (term, ty)) a; ctype constraints term ty b
             | RawArray(r,a) -> errors.Add(r,ArrayIsMissingAnnotation); List.iter (cterm constraints (term, ty)) a
+            | RawLayoutIndex(_,a) -> cterm constraints (term, ty) a
             | RawAnnot(_,a,b) -> cterm constraints (term, ty) a; ctype constraints term ty b
             | RawTypecase(_,a,b) ->
                 ctype constraints term ty a
@@ -52178,6 +52165,8 @@ module spiral_compiler =
             | RawHeapMutableSet(_,a,b,c) -> cterm constraints (term, ty) a; List.iter (cterm constraints (term, ty)) b; cterm constraints (term, ty) c
             | RawSeq(_,a,b) | RawPair(_,a,b) | RawIfThen(_,a,b) | RawApply(_,a,b) -> cterm constraints (term, ty) a; cterm constraints (term, ty) b
             | RawIfThenElse(_,a,b,c) -> cterm constraints (term, ty) a; cterm constraints (term, ty) b; cterm constraints (term, ty) c
+            | RawTypeIfThenElse(_,a,b,c,d) -> ctype constraints term ty a; ctype constraints term ty b; cterm constraints (term, ty) c; cterm constraints (term, ty) d
+            | RawTypeIfThen(_,a,b,c) -> ctype constraints term ty a; ctype constraints term ty b; cterm constraints (term, ty) c
             | RawMissingBody r -> errors.Add(r,MissingBody)
         and cmacro constraints term ty a =
             List.iter (function
@@ -52419,6 +52408,7 @@ module spiral_compiler =
         | MetavarsNotAllowedInRecordWith -> sprintf "In the top-down segment the record keys need to be fully known. Please add an annotation."
         | LayoutSetMustBeAnnotated -> sprintf "The layout type being set must be annotated."
         | ExpectedMutableLayout a -> sprintf "Expected a mutable layout type.\nGot: %s" (f a)
+        | ExpectedLayout a -> sprintf "Expected a layout type.\nGot: %s" (f a)
         | ExpectedRecord a -> sprintf "Expected a record.\nGot: %s" (f a)
         | ExpectedRecordInsideALayout a -> sprintf "Expected a record inside a layout type.\nGot: %s" (f a)
         | ExpectedRecordAsResultOfIndex a -> sprintf "Expected a record as result of index.\nGot: %s" (f a)
@@ -52745,6 +52735,8 @@ module spiral_compiler =
                     | _ -> q
                 | RawIfThenElse(r,a,b,c) -> RawIfThenElse(r,f a,f b,f c)
                 | RawIfThen(r,a,b) -> RawIfThen(r,f a,f b)
+                | RawTypeIfThenElse(r,a,b,c,d) -> RawTypeIfThenElse(r,a,b,f c,f d)
+                | RawTypeIfThen(r,a,b,c) -> RawTypeIfThen(r,a,b,f c)
                 | RawPair(r,a,b) -> RawPair(r,f a,f b)
                 | RawSeq(r,a,b) -> RawSeq(r,f a,f b)
                 | RawHeapMutableSet(r,a,b,c) -> RawHeapMutableSet(r,f a,List.map f b,f c)
@@ -52752,6 +52744,7 @@ module spiral_compiler =
                     let l = l |> List.map (function RawMacroTerm(r,x,b) -> RawMacroTerm(r,f x,b) | x -> x )
                     RawAnnot(r,RawMacro(r,l),annot r x)
                 | RawArray(r,a) -> RawAnnot(r,RawArray(r,List.map f a),annot r x)
+                | RawLayoutIndex(r,a) -> RawLayoutIndex(r,f a)
             and pattern recbterm x' =
                 let mutable rec_term = rec_term
                 let rec f = function
@@ -53089,6 +53082,13 @@ module spiral_compiler =
                     else
                         unify r s a
                         hover_types.AddHover(r,(s,com))
+            let inline type_if_then_else r type_a type_b tr =
+                let gadt_links = ResizeArray()
+                let q,w = fresh_var scope, fresh_var scope
+                ty_init scope env q type_a; ty_init scope env w type_b
+                unify_gadt (Some gadt_links) r q w
+                f s tr
+                dispose_gadt_links gadt_links
             let match_clause (q,w) (a,b) =
                 let gadt_links, gadt_typecases', (scope, env) = pattern scope env q a
                 term scope env w b
@@ -53102,6 +53102,8 @@ module spiral_compiler =
             | RawSymbol(r,x) -> unify r s (TySymbol x)
             | RawIfThenElse(_,cond,tr,fl) -> f (TyPrim BoolT) cond; f s tr; f s fl
             | RawIfThen(r,cond,tr) -> f (TyPrim BoolT) cond; unify r s TyB; f TyB tr
+            | RawTypeIfThenElse(r,type_a,type_b,tr,fl) -> type_if_then_else r type_a type_b tr; f s fl
+            | RawTypeIfThen(r,type_a,type_b,tr) -> unify r s TyB; type_if_then_else r type_a type_b tr
             | RawPair(r,a,b) ->
                 let q,w = fresh_var scope, fresh_var scope
                 unify r s (TyPair(q, w))
@@ -53347,6 +53349,17 @@ module spiral_compiler =
                     | v -> raise (InferTypeErrorException [r, ExpectedMutableLayout v])
                 with :? InferTypeErrorException as e -> errors.AddRange e.Data0; fresh_var scope
                 |> fun v -> f v c
+            | RawLayoutIndex(r,a) ->
+                try let v = fresh_var scope
+                    let i = errors.Count
+                    f v a
+                    match visit_t v with
+                    | TyMetavar _ -> raise (InferTypeErrorException [r, LayoutSetMustBeAnnotated])
+                    | TyLayout(v,lay) ->
+                        if i <> errors.Count then raise (InferTypeErrorException [])
+                        unify r s v
+                    | v -> raise (InferTypeErrorException [r, ExpectedLayout v])
+                with :? InferTypeErrorException as e -> errors.AddRange e.Data0
             | RawArray(r,a) ->
                 annotations.Add(x,(r,s))
                 let v = fresh_var scope
@@ -53963,7 +53976,7 @@ module spiral_compiler =
             base_types x
 
 #endif
-#if SPIRAL_CORE_HOPAC
+#if SPIRAL_CORE_GPT5PARALLEL
     /// ## Prepass
     
 
@@ -55232,6 +55245,7 @@ module spiral_compiler =
             | RawFun(r,a) -> pattern_function env (p r) a None
             | RawAnnot(_,RawFun(r,a),t) -> pattern_function env (p r) a (Some (ty env t))
             | RawArray(r,a) -> failwith "Compiler error: The array should have been annotated in `fill` by prepass time."
+            | RawLayoutIndex(r,a) -> EOp(p r,LayoutIndex,[f a])
             | RawAnnot(_,RawArray(r,a),b) -> EArray(p r,List.map f a,ty env b)
             | RawTypecase(r,a,b) ->
                 let b = b |> List.map (fun (t,e) ->
@@ -55297,6 +55311,8 @@ module spiral_compiler =
                 loop name (f a, f b)
             | RawIfThenElse(r,a,b,c) -> EIfThenElse(p r,f a,f b,f c)
             | RawIfThen(r,a,b) -> EIfThen(p r,f a,f b)
+            | RawTypeIfThenElse(r,a,b,tr,fl) -> let r = p r in EIfThenElse(r,EOp(r,TypeEq,[EType(r,ty env a); EType(r,ty env b)]),f tr,f fl)
+            | RawTypeIfThen(r,a,b,tr) -> let r = p r in EIfThen(r,EOp(r,TypeEq,[EType(r,ty env a); EType(r,ty env b)]),f tr)
             | RawPair(r,a,b) -> EPair(p r,f a,f b)
             | RawSeq(r,a,b) -> ESeq(p r,f a,f b)
             | RawHeapMutableSet(r,a,b,c) -> EMutableSet(p r,f a,List.map (fun a -> p (range_of_expr a), f a) b,f c)
@@ -56622,6 +56638,7 @@ module spiral_compiler =
             | RawFun(r,a) -> pattern_function env (p r) a None
             | RawAnnot(_,RawFun(r,a),t) -> pattern_function env (p r) a (Some (ty env t))
             | RawArray(r,a) -> failwith "Compiler error: The array should have been annotated in `fill` by prepass time."
+            | RawLayoutIndex(r,a) -> EOp(p r,LayoutIndex,[f a])
             | RawAnnot(_,RawArray(r,a),b) -> EArray(p r,List.map f a,ty env b)
             | RawTypecase(r,a,b) ->
                 let b = b |> List.map (fun (t,e) ->
@@ -56687,6 +56704,8 @@ module spiral_compiler =
                 loop name (f a, f b)
             | RawIfThenElse(r,a,b,c) -> EIfThenElse(p r,f a,f b,f c)
             | RawIfThen(r,a,b) -> EIfThen(p r,f a,f b)
+            | RawTypeIfThenElse(r,a,b,tr,fl) -> let r = p r in EIfThenElse(r,EOp(r,TypeEq,[EType(r,ty env a); EType(r,ty env b)]),f tr,f fl)
+            | RawTypeIfThen(r,a,b,tr) -> let r = p r in EIfThen(r,EOp(r,TypeEq,[EType(r,ty env a); EType(r,ty env b)]),f tr)
             | RawPair(r,a,b) -> EPair(p r,f a,f b)
             | RawSeq(r,a,b) -> ESeq(p r,f a,f b)
             | RawHeapMutableSet(r,a,b,c) -> EMutableSet(p r,f a,List.map (fun a -> p (range_of_expr a), f a) b,f c)
@@ -56823,7 +56842,7 @@ module spiral_compiler =
             ) prepassTop_env_empty (Infer.base_types default_env)
 
 #endif
-#if SPIRAL_CORE_HOPAC
+#if SPIRAL_CORE_GPT5PARALLEL
     /// ## PartEval
     
 
@@ -81560,7 +81579,7 @@ module spiral_compiler =
                                 *)
                                 if postRootWriterLeaseActive then
                                     DiagJson.emit (
-                                        FastRuntimeFormat.format "{\"kind\":\"eval_worklist_post_root_workdag_tail_drain\",\"event\":%s,\"reason\":%s,\"after_qap\":\"%d/%d/%d\",\"material_delta\":%d,\"root_resolved_receipt_id\":\"root-receipt:post-root-active\",\"writer_capability_lease_id\":\"writer-lease:post-root\",\"writer_capability_before_state_du\":\"WriterCapabilityState(WriterPending|lease_generation=%d)\",\"writer_capability_after_state_du\":\"WriterCapabilityState(WriterPending|tail_drain_scheduled=true)\",\"workdag_tail_id\":\"workdag-tail:parent-poison-live-handoff\",\"workdag_tail_kind_du\":\"PostRootTail(parent_poison_or_cross_kind)\",\"workdag_tail_before_state_du\":\"WorkDagTail(Live|qap=%d/%d/%d)\",\"workdag_tail_after_state_du\":\"WorkDagTail(PendingDrain|passes=adaptive_384|no_progress_cap=32|lease=writer-lease:post-root)\",\"root_resolved_but_owner_drain_active\":true,\"owner_drain_demoted_to_writer_tail\":true,\"post_root_scheduler_decision_du\":\"PostRootSchedulerDecision(DemoteOwnerDrainToWriterTail|lease=writer-lease:post-root|tail=workdag-tail:parent-poison-live-handoff)\",\"terminal_after_root_du\":\"TerminalAfterRoot(KeepDraining|lease=writer-lease:post-root|tail=workdag-tail:parent-poison-live-handoff)\",\"terminal_emit_blocker_du\":\"TerminalEmitBlockedBy(WorkDagTailNotTerminalized)\",\"root_to_writer_alt_du\":\"RootToWriterAlt(Armed|alt=root-to-writer-alt:post-root|lease=writer-lease:post-root|tail=workdag-tail:parent-poison-live-handoff|renderer_back_edges_banned=true)\",\"post_root_terminalization_witness_du\":\"PostRootTerminalizationWitness(id=witness:post-root-tail-drain|alt=root-to-writer-alt:post-root|boundary=awaiting_writer|owner_back_edges_suppressed=all_after_root)\",\"post_root_final_migration_seal_du\":\"PostRootFinalMigrationSeal(Pending|alt=root-to-writer-alt:post-root|witness=witness:post-root-tail-drain|legacy_back_edges_banned=true)\",\"breakthrough_seal_certificate_du\":\"BreakthroughSealCertificate(Draft|id=breakthrough-cert:post-root-tail-drain|stage=pure_graph_join_pending|quorum_board=false|root_back_edge_impossible=true)\",\"pure_hopac_graph_obligation_du\":\"PureHopacGraphObligation(id=pure-hopac:post-root-tail-drain|top_level=WriterCapability|root=root-receipt:post-root-active|lease=writer-lease:post-root|tail=workdag-tail:parent-poison-live-handoff|owner_debt_consumed=true)\",\"terminal_emission_decision_du\":\"TerminalEmissionDecision(AwaitPureGraphJoin|certificate=breakthrough-cert:post-root-tail-drain)\",\"quorum_board_authority_du\":\"AbolishedAfterRootResolved\",\"top_level_writer_promise_du\":\"Promise<WriterCapability>(root_to_writer_alt:post-root)\",\"deadman_action_du\":\"DeadmanSuppressedWhileWriterCapabilityLeaseLive\",\"scheduler_push_event_du\":\"SchedulerPushEvent(PushPostRootTerminalization|flow=keep_draining|lease=writer-lease:post-root)\",\"breakthrough_exit_arbiter_du\":\"BreakthroughPostRootTerminalization(flow=keep_draining|lease=writer-lease:post-root|tail=workdag-tail:parent-poison-live-handoff)\",\"native_job_graph\":\"Job.bind(root_resolved_receipt -> writer_lease -> post_root_workdag_tail_drain -> writer_or_typed_failure)\",\"policy\":\"owner_debt_authority_consumed_after_root_resolution_writer_tail_owns_remaining_qap\",\"single_flight\":1,\"next\":\"run_replay_driver_post_root_workdag_tail\"}" [| box (esc event); box (esc reason); box afterQ; box afterA; box afterP; box materialDelta; box postRootWriterLeaseGeneration; box afterQ; box afterA; box afterP |])
+                                        FastRuntimeFormat.format "{\"kind\":\"eval_worklist_post_root_workdag_tail_drain\",\"event\":%s,\"reason\":%s,\"after_qap\":\"%d/%d/%d\",\"material_delta\":%d,\"root_resolved_receipt_id\":\"root-receipt:post-root-active\",\"writer_capability_lease_id\":\"writer-lease:post-root\",\"writer_capability_before_state_du\":\"WriterCapabilityState(WriterPending|lease_generation=%d)\",\"writer_capability_after_state_du\":\"WriterCapabilityState(WriterPending|tail_drain_scheduled=true)\",\"workdag_tail_id\":\"workdag-tail:parent-poison-live-handoff\",\"workdag_tail_kind_du\":\"PostRootTail(parent_poison_or_cross_kind)\",\"workdag_tail_before_state_du\":\"WorkDagTail(Live|qap=%d/%d/%d)\",\"workdag_tail_after_state_du\":\"WorkDagTail(PendingDrain|passes=adaptive_384|no_progress_cap=32|lease=writer-lease:post-root)\",\"root_resolved_but_owner_drain_active\":true,\"owner_drain_demoted_to_writer_tail\":true,\"post_root_scheduler_decision_du\":\"PostRootSchedulerDecision(DemoteOwnerDrainToWriterTail|lease=writer-lease:post-root|tail=workdag-tail:parent-poison-live-handoff)\",\"terminal_after_root_du\":\"TerminalAfterRoot(KeepDraining|lease=writer-lease:post-root|tail=workdag-tail:parent-poison-live-handoff)\",\"terminal_emit_blocker_du\":\"TerminalEmitBlockedBy(WorkDagTailNotTerminalized)\",\"root_to_writer_alt_du\":\"RootToWriterAlt(Armed|alt=root-to-writer-alt:post-root|lease=writer-lease:post-root|tail=workdag-tail:parent-poison-live-handoff|renderer_back_edges_banned=true)\",\"post_root_terminalization_witness_du\":\"PostRootTerminalizationWitness(id=witness:post-root-tail-drain|alt=root-to-writer-alt:post-root|boundary=awaiting_writer|owner_back_edges_suppressed=all_after_root)\",\"post_root_final_migration_seal_du\":\"PostRootFinalMigrationSeal(Pending|alt=root-to-writer-alt:post-root|witness=witness:post-root-tail-drain|legacy_back_edges_banned=true)\",\"breakthrough_seal_certificate_du\":\"BreakthroughSealCertificate(Draft|id=breakthrough-cert:post-root-tail-drain|stage=pure_graph_join_pending|quorum_board=false|root_back_edge_impossible=true)\",\"pure_hopac_graph_obligation_du\":\"PureHopacGraphObligation(id=pure-gpt5parallel:post-root-tail-drain|top_level=WriterCapability|root=root-receipt:post-root-active|lease=writer-lease:post-root|tail=workdag-tail:parent-poison-live-handoff|owner_debt_consumed=true)\",\"terminal_emission_decision_du\":\"TerminalEmissionDecision(AwaitPureGraphJoin|certificate=breakthrough-cert:post-root-tail-drain)\",\"quorum_board_authority_du\":\"AbolishedAfterRootResolved\",\"top_level_writer_promise_du\":\"Promise<WriterCapability>(root_to_writer_alt:post-root)\",\"deadman_action_du\":\"DeadmanSuppressedWhileWriterCapabilityLeaseLive\",\"scheduler_push_event_du\":\"SchedulerPushEvent(PushPostRootTerminalization|flow=keep_draining|lease=writer-lease:post-root)\",\"breakthrough_exit_arbiter_du\":\"BreakthroughPostRootTerminalization(flow=keep_draining|lease=writer-lease:post-root|tail=workdag-tail:parent-poison-live-handoff)\",\"native_job_graph\":\"Job.bind(root_resolved_receipt -> writer_lease -> post_root_workdag_tail_drain -> writer_or_typed_failure)\",\"policy\":\"owner_debt_authority_consumed_after_root_resolution_writer_tail_owns_remaining_qap\",\"single_flight\":1,\"next\":\"run_replay_driver_post_root_workdag_tail\"}" [| box (esc event); box (esc reason); box afterQ; box afterA; box afterP; box materialDelta; box postRootWriterLeaseGeneration; box afterQ; box afterA; box afterP |])
                                     DiagJson.notePostRootWriterTailSnapshot afterQ afterA afterP
                                     // Stack-safety invariant: never call runReplayDriver recursively from inside
                                     // the active replay driver. The historical adaptive loop could nest
@@ -81595,7 +81614,7 @@ module spiral_compiler =
                                     (* SOURCE-ERASED-MIGRATION: post-root polling branches retained only as inert migration archaeology.
                                     elif writerTailDrained then
                                         let terminalLine =
-                                            FastRuntimeFormat.format "{\"kind\":\"eval_worklist_post_root_writer_capability_bound\",\"event\":%s,\"reason\":%s,\"root_resolved_receipt_id\":\"root-receipt:post-root-active\",\"writer_capability_lease_id\":\"writer-lease:post-root\",\"writer_capability_status_du\":\"WriterCapabilityLeaseStatus(Bound|lease=writer-lease:post-root|writer_receipt=writer-receipt:post-root-tail-drained)\",\"writer_capability_after_state_du\":\"WriterCapabilityState(WriterBound|writer_receipt=writer-receipt:post-root-tail-drained)\",\"workdag_tail_after_state_du\":\"WorkDagTail(Drained|qap=%d/%d/%d)\",\"post_root_tail_drain_outcome_du\":\"PostRootTailDrainOutcome(BoundWriter|writer_receipt=writer-receipt:post-root-tail-drained|qap=%d/%d/%d)\",\"post_root_flow_state_du\":\"writer_bound\",\"post_root_terminalization_gate_du\":\"PostRootTerminalizationGate(BindWriter|writer_receipt=writer-receipt:post-root-tail-drained)\",\"post_root_scheduler_decision_du\":\"PostRootSchedulerDecision(BindWriterLeaseToTerminalGate|gate=writer-bound)\",\"terminal_after_root_du\":\"TerminalAfterRoot(EmitSuccess|writer=writer-receipt:post-root-tail-drained)\",\"terminal_commit_receipt_id\":\"terminal-receipt:post-root-writer-bound\",\"terminal_commit_emission_contract_du\":\"TerminalCommitEmissionContract(id=terminal-receipt:post-root-writer-bound|root=root-receipt:post-root-active|lease=writer-lease:post-root|tail_outcome=bound_writer|flow=terminal_emitted|exit=0|physical_exit=true|owner_rows_suppressed=all_after_root)\",\"writer_tail_emission_seal_du\":\"WriterTailEmissionSeal(id=writer-tail-seal:post-root-success|contract=terminal-receipt:post-root-writer-bound|exit_kind=build_ok|writer=writer-receipt:post-root-tail-drained|artifact=artifact-hash:pending-durable-writer|tail=workdag-tail:drained|owner_back_edge=PostRootOwnerDebtBackEdgePolicy(Rejected|row=owner_debt_after_root|demotion=demotion-receipt:post-root-success)|physical_exit_latched=true)\",\"post_root_terminal_emission_boundary_du\":\"PostRootTerminalEmissionBoundary(SealedSuccess|seal=writer-tail-seal:post-root-success|physical_exit=true)\",\"root_to_writer_alt_du\":\"RootToWriterAlt(TerminalEmitted|alt=root-to-writer-alt:post-root|writer=writer-receipt:post-root-tail-drained|exit=0)\",\"post_root_terminalization_witness_du\":\"PostRootTerminalizationWitness(id=witness:post-root-success|alt=root-to-writer-alt:post-root|boundary=sealed_success|terminal=terminal-receipt:post-root-writer-bound)\",\"post_root_final_migration_seal_du\":\"PostRootFinalMigrationSeal(SealedSuccess|alt=root-to-writer-alt:post-root|physical_exit=build_ok|legacy_back_edges_banned=true)\",\"breakthrough_seal_certificate_du\":\"BreakthroughSealCertificate(TerminalSealed|id=breakthrough-cert:post-root-success|stage=terminal_sealed|quorum_board=false|root_back_edge_impossible=true|physical_exit=build_ok)\",\"pure_hopac_graph_obligation_du\":\"PureHopacGraphObligation(id=pure-hopac:post-root-success|top_level=WriterCapability|root=root-receipt:post-root-active|lease=writer-lease:post-root|tail=workdag-tail:drained|owner_debt_consumed=true)\",\"terminal_emission_decision_du\":\"TerminalEmissionDecision(CommitWriter|certificate=breakthrough-cert:post-root-success|seal=writer-tail-seal:post-root-success)\",\"quorum_board_authority_du\":\"AbolishedAfterRootResolved\",\"top_level_writer_promise_du\":\"Promise<WriterCapability>(bound:writer-receipt:post-root-tail-drained)\",\"post_root_owner_debt_back_edge_policy_du\":\"PostRootOwnerDebtBackEdgePolicy(Rejected|row=owner_debt_after_root|demotion=demotion-receipt:post-root-success)\",\"scheduler_push_event_du\":\"SchedulerPushEvent(PushWriterCapabilityBound|lease=writer-lease:post-root)\",\"breakthrough_exit_arbiter_du\":\"BreakthroughCommitted(contract=exit-contract:post-root-writer-bound|writer=writer-receipt:post-root-tail-drained|tail=workdag-tail:drained)\",\"native_terminal_exit_contract_du\":\"NativeTerminalExitContract(id=exit-contract:post-root-writer-bound|outcome=committed|exit=0)\",\"single_flight\":1,\"next\":\"physical_exit_0_after_writer_terminal_commit\"}" [| box (esc event); box (esc reason); box tailAfterQ; box tailAfterA; box tailAfterP; box tailAfterQ; box tailAfterA; box tailAfterP |]
+                                            FastRuntimeFormat.format "{\"kind\":\"eval_worklist_post_root_writer_capability_bound\",\"event\":%s,\"reason\":%s,\"root_resolved_receipt_id\":\"root-receipt:post-root-active\",\"writer_capability_lease_id\":\"writer-lease:post-root\",\"writer_capability_status_du\":\"WriterCapabilityLeaseStatus(Bound|lease=writer-lease:post-root|writer_receipt=writer-receipt:post-root-tail-drained)\",\"writer_capability_after_state_du\":\"WriterCapabilityState(WriterBound|writer_receipt=writer-receipt:post-root-tail-drained)\",\"workdag_tail_after_state_du\":\"WorkDagTail(Drained|qap=%d/%d/%d)\",\"post_root_tail_drain_outcome_du\":\"PostRootTailDrainOutcome(BoundWriter|writer_receipt=writer-receipt:post-root-tail-drained|qap=%d/%d/%d)\",\"post_root_flow_state_du\":\"writer_bound\",\"post_root_terminalization_gate_du\":\"PostRootTerminalizationGate(BindWriter|writer_receipt=writer-receipt:post-root-tail-drained)\",\"post_root_scheduler_decision_du\":\"PostRootSchedulerDecision(BindWriterLeaseToTerminalGate|gate=writer-bound)\",\"terminal_after_root_du\":\"TerminalAfterRoot(EmitSuccess|writer=writer-receipt:post-root-tail-drained)\",\"terminal_commit_receipt_id\":\"terminal-receipt:post-root-writer-bound\",\"terminal_commit_emission_contract_du\":\"TerminalCommitEmissionContract(id=terminal-receipt:post-root-writer-bound|root=root-receipt:post-root-active|lease=writer-lease:post-root|tail_outcome=bound_writer|flow=terminal_emitted|exit=0|physical_exit=true|owner_rows_suppressed=all_after_root)\",\"writer_tail_emission_seal_du\":\"WriterTailEmissionSeal(id=writer-tail-seal:post-root-success|contract=terminal-receipt:post-root-writer-bound|exit_kind=build_ok|writer=writer-receipt:post-root-tail-drained|artifact=artifact-hash:pending-durable-writer|tail=workdag-tail:drained|owner_back_edge=PostRootOwnerDebtBackEdgePolicy(Rejected|row=owner_debt_after_root|demotion=demotion-receipt:post-root-success)|physical_exit_latched=true)\",\"post_root_terminal_emission_boundary_du\":\"PostRootTerminalEmissionBoundary(SealedSuccess|seal=writer-tail-seal:post-root-success|physical_exit=true)\",\"root_to_writer_alt_du\":\"RootToWriterAlt(TerminalEmitted|alt=root-to-writer-alt:post-root|writer=writer-receipt:post-root-tail-drained|exit=0)\",\"post_root_terminalization_witness_du\":\"PostRootTerminalizationWitness(id=witness:post-root-success|alt=root-to-writer-alt:post-root|boundary=sealed_success|terminal=terminal-receipt:post-root-writer-bound)\",\"post_root_final_migration_seal_du\":\"PostRootFinalMigrationSeal(SealedSuccess|alt=root-to-writer-alt:post-root|physical_exit=build_ok|legacy_back_edges_banned=true)\",\"breakthrough_seal_certificate_du\":\"BreakthroughSealCertificate(TerminalSealed|id=breakthrough-cert:post-root-success|stage=terminal_sealed|quorum_board=false|root_back_edge_impossible=true|physical_exit=build_ok)\",\"pure_hopac_graph_obligation_du\":\"PureHopacGraphObligation(id=pure-gpt5parallel:post-root-success|top_level=WriterCapability|root=root-receipt:post-root-active|lease=writer-lease:post-root|tail=workdag-tail:drained|owner_debt_consumed=true)\",\"terminal_emission_decision_du\":\"TerminalEmissionDecision(CommitWriter|certificate=breakthrough-cert:post-root-success|seal=writer-tail-seal:post-root-success)\",\"quorum_board_authority_du\":\"AbolishedAfterRootResolved\",\"top_level_writer_promise_du\":\"Promise<WriterCapability>(bound:writer-receipt:post-root-tail-drained)\",\"post_root_owner_debt_back_edge_policy_du\":\"PostRootOwnerDebtBackEdgePolicy(Rejected|row=owner_debt_after_root|demotion=demotion-receipt:post-root-success)\",\"scheduler_push_event_du\":\"SchedulerPushEvent(PushWriterCapabilityBound|lease=writer-lease:post-root)\",\"breakthrough_exit_arbiter_du\":\"BreakthroughCommitted(contract=exit-contract:post-root-writer-bound|writer=writer-receipt:post-root-tail-drained|tail=workdag-tail:drained)\",\"native_terminal_exit_contract_du\":\"NativeTerminalExitContract(id=exit-contract:post-root-writer-bound|outcome=committed|exit=0)\",\"single_flight\":1,\"next\":\"physical_exit_0_after_writer_terminal_commit\"}" [| box (esc event); box (esc reason); box tailAfterQ; box tailAfterA; box tailAfterP; box tailAfterQ; box tailAfterA; box tailAfterP |]
                                         DiagJson.emitTerminalJsonDurableAndPhysicalExit 0 "post_root_writer_bound_terminal_commit" terminalLine
                                     elif terminalFlowBreakthroughExitAlreadySealed then
                                         let terminalLine =
@@ -81606,14 +81625,14 @@ module spiral_compiler =
                                             FastRuntimeFormat.format "{\"kind\":\"eval_worklist_post_root_writer_lease_expiry_delegated_to_breakthrough_protocol\",\"event\":%s,\"reason\":%s,\"after_qap\":\"%d/%d/%d\",\"terminal_flow_breakthrough_protocol_cache_du\":%s,\"post_root_scheduler_decision_du\":\"PostRootSchedulerDecision(DelegateWriterLeaseExpiryToTerminalFlowBreakthroughProtocol|legacy_build_error_suppressed=true)\",\"terminal_after_root_du\":\"TerminalAfterRoot(BreakthroughProtocolOwnsWriterTail|legacy_deadman_suppressed)\",\"terminal_emit_blocker_du\":\"TerminalEmitBlockedBy(BreakthroughProtocolOwnsTailUntilCommitReadyOrTypedBlock)\",\"scheduler_push_event_du\":\"SchedulerPushEvent(PushTerminalFlowBreakthroughProtocolRecheck|source=legacy_writer_lease_expiry_suppression)\",\"breakthrough_exit_arbiter_du\":\"BreakthroughExitArbiter(DelegatedToTerminalFlowProtocol|physical_exit=false)\",\"native_terminal_exit_contract_du\":\"NativeTerminalExitContract(id=exit-contract:breakthrough-protocol-delegated|outcome=await_protocol|exit=none)\",\"single_flight\":1,\"next\":\"preserve_breakthrough_protocol_do_not_emit_legacy_build_error\"}" [| box (esc event); box (esc reason); box tailAfterQ; box tailAfterA; box tailAfterP; box (esc terminalFlowBreakthroughText) |])
                                     elif writerLeaseExpiredByPressure then
                                         let terminalLine =
-                                            FastRuntimeFormat.format "{\"kind\":\"eval_worklist_post_root_writer_lease_expired\",\"event\":%s,\"reason\":%s,\"root_resolved_receipt_id\":\"root-receipt:post-root-active\",\"writer_capability_lease_id\":\"writer-lease:post-root\",\"writer_capability_status_du\":\"WriterCapabilityLeaseStatus(Expired|lease=writer-lease:post-root|age_ms=30000|expires_after_ms=30000)\",\"workdag_tail_id\":\"workdag-tail:parent-poison-live-handoff\",\"workdag_tail_after_state_du\":\"WorkDagTail(Deadlocked|qap=%d/%d/%d|repeat=%d/%d)\",\"post_root_tail_drain_outcome_du\":\"PostRootTailDrainOutcome(ExpiredToDeadlock|tail=workdag-tail:parent-poison-live-handoff|repeat=%d|cap=%d)\",\"post_root_flow_state_du\":\"tail_deadlocked\",\"post_root_authority_violation_du\":\"PostRootAuthorityViolation(WriterLeaseExpiredWithoutDecision|lease=writer-lease:post-root|tail=workdag-tail:parent-poison-live-handoff)\",\"post_root_terminalization_gate_du\":\"PostRootTerminalizationGate(EmitDeadlock|lease=writer-lease:post-root|tail=workdag-tail:parent-poison-live-handoff)\",\"post_root_scheduler_decision_du\":\"PostRootSchedulerDecision(ExpireWriterLeaseToTerminalReceipt|lease=writer-lease:post-root|tail=workdag-tail:parent-poison-live-handoff)\",\"terminal_after_root_du\":\"TerminalAfterRoot(EmitBuildError|writer_tail_deadlocked)\",\"deadman_terminal_receipt_id\":\"terminal-receipt:post-root-writer-lease-expired\",\"terminal_commit_emission_contract_du\":\"TerminalCommitEmissionContract(id=terminal-receipt:post-root-writer-lease-expired|root=root-receipt:post-root-active|lease=writer-lease:post-root|tail_outcome=expired_to_deadlock|flow=terminal_emitted|exit=1|physical_exit=true|owner_rows_suppressed=all_after_root)\",\"writer_tail_emission_seal_du\":\"WriterTailEmissionSeal(id=writer-tail-seal:post-root-failure|contract=terminal-receipt:post-root-writer-lease-expired|exit_kind=build_error|writer=none|artifact=none|tail=workdag-tail:parent-poison-live-handoff|owner_back_edge=PostRootOwnerDebtBackEdgePolicy(FatalViolation|row=owner_debt_after_root|violation=WriterLeaseExpiredWithoutDecision)|physical_exit_latched=true)\",\"post_root_terminal_emission_boundary_du\":\"PostRootTerminalEmissionBoundary(SealedFailure|seal=writer-tail-seal:post-root-failure|violation=WriterLeaseExpiredWithoutDecision)\",\"root_to_writer_alt_du\":\"RootToWriterAlt(TailDeadlocked|alt=root-to-writer-alt:post-root|lease=writer-lease:post-root|exit=1)\",\"post_root_terminalization_witness_du\":\"PostRootTerminalizationWitness(id=witness:post-root-failure|alt=root-to-writer-alt:post-root|boundary=sealed_failure|terminal=terminal-receipt:post-root-writer-lease-expired)\",\"post_root_final_migration_seal_du\":\"PostRootFinalMigrationSeal(SealedFailure|alt=root-to-writer-alt:post-root|physical_exit=build_error|legacy_back_edges_banned=true)\",\"breakthrough_seal_certificate_du\":\"BreakthroughSealCertificate(TerminalSealed|id=breakthrough-cert:post-root-failure|stage=terminal_sealed|quorum_board=false|root_back_edge_impossible=true|physical_exit=build_error)\",\"pure_hopac_graph_obligation_du\":\"PureHopacGraphObligation(id=pure-hopac:post-root-failure|top_level=WriterCapability|root=root-receipt:post-root-active|lease=writer-lease:post-root|tail=workdag-tail:parent-poison-live-handoff|owner_debt_consumed=true)\",\"terminal_emission_decision_du\":\"TerminalEmissionDecision(FailClosed|certificate=breakthrough-cert:post-root-failure|violation=WriterLeaseExpiredWithoutDecision)\",\"quorum_board_authority_du\":\"AbolishedAfterRootResolved\",\"top_level_writer_promise_du\":\"Promise<WriterCapability>(deadlocked:workdag-tail:parent-poison-live-handoff)\",\"post_root_owner_debt_back_edge_policy_du\":\"PostRootOwnerDebtBackEdgePolicy(FatalViolation|row=owner_debt_after_root|violation=WriterLeaseExpiredWithoutDecision)\",\"terminal_emit_blocker_du\":\"TerminalEmitBlockedBy(None|lease_expired_to_deadlock)\",\"scheduler_push_event_du\":\"SchedulerPushEvent(PushPostRootDeadlockedTerminalReceipt|lease=writer-lease:post-root)\",\"breakthrough_exit_arbiter_du\":\"BreakthroughFailedClosed(contract=exit-contract:post-root-writer-lease-expired|authority=post_root_writer_lease_expired|tail=workdag-tail:parent-poison-live-handoff)\",\"native_terminal_exit_contract_du\":\"NativeTerminalExitContract(id=exit-contract:post-root-writer-lease-expired|outcome=failed_closed|exit=1)\",\"single_flight\":1,\"next\":\"physical_exit_1_after_post_root_deadlock\"}" [| box (esc event); box (esc reason); box tailAfterQ; box tailAfterA; box tailAfterP; box pressurePinnedRepeatCount; box pressurePinnedRepeatCap; box pressurePinnedRepeatCount; box pressurePinnedRepeatCap |]
+                                            FastRuntimeFormat.format "{\"kind\":\"eval_worklist_post_root_writer_lease_expired\",\"event\":%s,\"reason\":%s,\"root_resolved_receipt_id\":\"root-receipt:post-root-active\",\"writer_capability_lease_id\":\"writer-lease:post-root\",\"writer_capability_status_du\":\"WriterCapabilityLeaseStatus(Expired|lease=writer-lease:post-root|age_ms=30000|expires_after_ms=30000)\",\"workdag_tail_id\":\"workdag-tail:parent-poison-live-handoff\",\"workdag_tail_after_state_du\":\"WorkDagTail(Deadlocked|qap=%d/%d/%d|repeat=%d/%d)\",\"post_root_tail_drain_outcome_du\":\"PostRootTailDrainOutcome(ExpiredToDeadlock|tail=workdag-tail:parent-poison-live-handoff|repeat=%d|cap=%d)\",\"post_root_flow_state_du\":\"tail_deadlocked\",\"post_root_authority_violation_du\":\"PostRootAuthorityViolation(WriterLeaseExpiredWithoutDecision|lease=writer-lease:post-root|tail=workdag-tail:parent-poison-live-handoff)\",\"post_root_terminalization_gate_du\":\"PostRootTerminalizationGate(EmitDeadlock|lease=writer-lease:post-root|tail=workdag-tail:parent-poison-live-handoff)\",\"post_root_scheduler_decision_du\":\"PostRootSchedulerDecision(ExpireWriterLeaseToTerminalReceipt|lease=writer-lease:post-root|tail=workdag-tail:parent-poison-live-handoff)\",\"terminal_after_root_du\":\"TerminalAfterRoot(EmitBuildError|writer_tail_deadlocked)\",\"deadman_terminal_receipt_id\":\"terminal-receipt:post-root-writer-lease-expired\",\"terminal_commit_emission_contract_du\":\"TerminalCommitEmissionContract(id=terminal-receipt:post-root-writer-lease-expired|root=root-receipt:post-root-active|lease=writer-lease:post-root|tail_outcome=expired_to_deadlock|flow=terminal_emitted|exit=1|physical_exit=true|owner_rows_suppressed=all_after_root)\",\"writer_tail_emission_seal_du\":\"WriterTailEmissionSeal(id=writer-tail-seal:post-root-failure|contract=terminal-receipt:post-root-writer-lease-expired|exit_kind=build_error|writer=none|artifact=none|tail=workdag-tail:parent-poison-live-handoff|owner_back_edge=PostRootOwnerDebtBackEdgePolicy(FatalViolation|row=owner_debt_after_root|violation=WriterLeaseExpiredWithoutDecision)|physical_exit_latched=true)\",\"post_root_terminal_emission_boundary_du\":\"PostRootTerminalEmissionBoundary(SealedFailure|seal=writer-tail-seal:post-root-failure|violation=WriterLeaseExpiredWithoutDecision)\",\"root_to_writer_alt_du\":\"RootToWriterAlt(TailDeadlocked|alt=root-to-writer-alt:post-root|lease=writer-lease:post-root|exit=1)\",\"post_root_terminalization_witness_du\":\"PostRootTerminalizationWitness(id=witness:post-root-failure|alt=root-to-writer-alt:post-root|boundary=sealed_failure|terminal=terminal-receipt:post-root-writer-lease-expired)\",\"post_root_final_migration_seal_du\":\"PostRootFinalMigrationSeal(SealedFailure|alt=root-to-writer-alt:post-root|physical_exit=build_error|legacy_back_edges_banned=true)\",\"breakthrough_seal_certificate_du\":\"BreakthroughSealCertificate(TerminalSealed|id=breakthrough-cert:post-root-failure|stage=terminal_sealed|quorum_board=false|root_back_edge_impossible=true|physical_exit=build_error)\",\"pure_hopac_graph_obligation_du\":\"PureHopacGraphObligation(id=pure-gpt5parallel:post-root-failure|top_level=WriterCapability|root=root-receipt:post-root-active|lease=writer-lease:post-root|tail=workdag-tail:parent-poison-live-handoff|owner_debt_consumed=true)\",\"terminal_emission_decision_du\":\"TerminalEmissionDecision(FailClosed|certificate=breakthrough-cert:post-root-failure|violation=WriterLeaseExpiredWithoutDecision)\",\"quorum_board_authority_du\":\"AbolishedAfterRootResolved\",\"top_level_writer_promise_du\":\"Promise<WriterCapability>(deadlocked:workdag-tail:parent-poison-live-handoff)\",\"post_root_owner_debt_back_edge_policy_du\":\"PostRootOwnerDebtBackEdgePolicy(FatalViolation|row=owner_debt_after_root|violation=WriterLeaseExpiredWithoutDecision)\",\"terminal_emit_blocker_du\":\"TerminalEmitBlockedBy(None|lease_expired_to_deadlock)\",\"scheduler_push_event_du\":\"SchedulerPushEvent(PushPostRootDeadlockedTerminalReceipt|lease=writer-lease:post-root)\",\"breakthrough_exit_arbiter_du\":\"BreakthroughFailedClosed(contract=exit-contract:post-root-writer-lease-expired|authority=post_root_writer_lease_expired|tail=workdag-tail:parent-poison-live-handoff)\",\"native_terminal_exit_contract_du\":\"NativeTerminalExitContract(id=exit-contract:post-root-writer-lease-expired|outcome=failed_closed|exit=1)\",\"single_flight\":1,\"next\":\"physical_exit_1_after_post_root_deadlock\"}" [| box (esc event); box (esc reason); box tailAfterQ; box tailAfterA; box tailAfterP; box pressurePinnedRepeatCount; box pressurePinnedRepeatCap; box pressurePinnedRepeatCount; box pressurePinnedRepeatCap |]
                                         DiagJson.emitTerminalJsonDurableAndPhysicalExit 1 "post_root_writer_lease_expired_terminal_commit" terminalLine
                                     elif writerTailSmallBound then
                                         DiagJson.emit (
-                                            FastRuntimeFormat.format "{\"kind\":\"eval_worklist_post_root_writer_tail_still_live\",\"event\":%s,\"reason\":%s,\"root_resolved_receipt_id\":\"root-receipt:post-root-active\",\"writer_capability_lease_id\":\"writer-lease:post-root\",\"writer_capability_status_du\":\"WriterCapabilityLeaseStatus(Live|lease=writer-lease:post-root|age_ms=0|expires_after_ms=30000)\",\"workdag_tail_after_state_du\":\"WorkDagTail(LiveSmall|qap=%d/%d/%d)\",\"post_root_tail_drain_outcome_du\":\"PostRootTailDrainOutcome(MadeProgress|before=%d|after=%d|material_delta=%d)\",\"post_root_flow_state_du\":\"writer_lease_live\",\"post_root_terminalization_gate_du\":\"PostRootTerminalizationGate(KeepDraining|lease=writer-lease:post-root|tail=small-bound)\",\"post_root_scheduler_decision_du\":\"PostRootSchedulerDecision(BindWriterLeaseToTerminalGate|gate=keep-draining-small-bound)\",\"terminal_emit_blocker_du\":\"TerminalEmitBlockedBy(WorkDagTailSmallBoundNotYetTerminalized)\",\"post_root_terminal_emission_boundary_du\":\"PostRootTerminalEmissionBoundary(AwaitingWriter|lease=writer-lease:post-root|tail=workdag-tail:parent-poison-live-handoff)\",\"root_to_writer_alt_du\":\"RootToWriterAlt(Armed|alt=root-to-writer-alt:post-root|lease=writer-lease:post-root|tail=workdag-tail:parent-poison-live-handoff)\",\"post_root_terminalization_witness_du\":\"PostRootTerminalizationWitness(id=witness:post-root-small-tail|alt=root-to-writer-alt:post-root|boundary=awaiting_writer|terminal=none)\",\"post_root_final_migration_seal_du\":\"PostRootFinalMigrationSeal(Pending|alt=root-to-writer-alt:post-root|physical_exit=none|legacy_back_edges_banned=true)\",\"breakthrough_seal_certificate_du\":\"BreakthroughSealCertificate(PureGraphJoined|id=breakthrough-cert:post-root-small-tail|stage=pure_graph_joined|quorum_board=false|root_back_edge_impossible=true)\",\"pure_hopac_graph_obligation_du\":\"PureHopacGraphObligation(id=pure-hopac:post-root-small-tail|top_level=WriterCapability|root=root-receipt:post-root-active|lease=writer-lease:post-root|tail=workdag-tail:parent-poison-live-handoff|owner_debt_consumed=true)\",\"terminal_emission_decision_du\":\"TerminalEmissionDecision(AwaitPureGraphJoin|certificate=breakthrough-cert:post-root-small-tail|small_tail_live=true)\",\"quorum_board_authority_du\":\"AbolishedAfterRootResolved\",\"top_level_writer_promise_du\":\"Promise<WriterCapability>(live:writer-lease:post-root)\",\"post_root_owner_debt_back_edge_policy_du\":\"PostRootOwnerDebtBackEdgePolicy(Demoted|row=owner_debt_after_root|lease=writer-lease:post-root|tail=workdag-tail:parent-poison-live-handoff)\",\"deadman_action_du\":\"DeadmanSuppressedWhileWriterCapabilityLeaseLive\",\"single_flight\":1,\"next\":\"continue_post_root_writer_tail_until_bound_or_expired\"}" [| box (esc event); box (esc reason); box tailAfterQ; box tailAfterA; box tailAfterP; box qapAfterTotal; box tailAfterTotal; box materialDelta |])
+                                            FastRuntimeFormat.format "{\"kind\":\"eval_worklist_post_root_writer_tail_still_live\",\"event\":%s,\"reason\":%s,\"root_resolved_receipt_id\":\"root-receipt:post-root-active\",\"writer_capability_lease_id\":\"writer-lease:post-root\",\"writer_capability_status_du\":\"WriterCapabilityLeaseStatus(Live|lease=writer-lease:post-root|age_ms=0|expires_after_ms=30000)\",\"workdag_tail_after_state_du\":\"WorkDagTail(LiveSmall|qap=%d/%d/%d)\",\"post_root_tail_drain_outcome_du\":\"PostRootTailDrainOutcome(MadeProgress|before=%d|after=%d|material_delta=%d)\",\"post_root_flow_state_du\":\"writer_lease_live\",\"post_root_terminalization_gate_du\":\"PostRootTerminalizationGate(KeepDraining|lease=writer-lease:post-root|tail=small-bound)\",\"post_root_scheduler_decision_du\":\"PostRootSchedulerDecision(BindWriterLeaseToTerminalGate|gate=keep-draining-small-bound)\",\"terminal_emit_blocker_du\":\"TerminalEmitBlockedBy(WorkDagTailSmallBoundNotYetTerminalized)\",\"post_root_terminal_emission_boundary_du\":\"PostRootTerminalEmissionBoundary(AwaitingWriter|lease=writer-lease:post-root|tail=workdag-tail:parent-poison-live-handoff)\",\"root_to_writer_alt_du\":\"RootToWriterAlt(Armed|alt=root-to-writer-alt:post-root|lease=writer-lease:post-root|tail=workdag-tail:parent-poison-live-handoff)\",\"post_root_terminalization_witness_du\":\"PostRootTerminalizationWitness(id=witness:post-root-small-tail|alt=root-to-writer-alt:post-root|boundary=awaiting_writer|terminal=none)\",\"post_root_final_migration_seal_du\":\"PostRootFinalMigrationSeal(Pending|alt=root-to-writer-alt:post-root|physical_exit=none|legacy_back_edges_banned=true)\",\"breakthrough_seal_certificate_du\":\"BreakthroughSealCertificate(PureGraphJoined|id=breakthrough-cert:post-root-small-tail|stage=pure_graph_joined|quorum_board=false|root_back_edge_impossible=true)\",\"pure_hopac_graph_obligation_du\":\"PureHopacGraphObligation(id=pure-gpt5parallel:post-root-small-tail|top_level=WriterCapability|root=root-receipt:post-root-active|lease=writer-lease:post-root|tail=workdag-tail:parent-poison-live-handoff|owner_debt_consumed=true)\",\"terminal_emission_decision_du\":\"TerminalEmissionDecision(AwaitPureGraphJoin|certificate=breakthrough-cert:post-root-small-tail|small_tail_live=true)\",\"quorum_board_authority_du\":\"AbolishedAfterRootResolved\",\"top_level_writer_promise_du\":\"Promise<WriterCapability>(live:writer-lease:post-root)\",\"post_root_owner_debt_back_edge_policy_du\":\"PostRootOwnerDebtBackEdgePolicy(Demoted|row=owner_debt_after_root|lease=writer-lease:post-root|tail=workdag-tail:parent-poison-live-handoff)\",\"deadman_action_du\":\"DeadmanSuppressedWhileWriterCapabilityLeaseLive\",\"single_flight\":1,\"next\":\"continue_post_root_writer_tail_until_bound_or_expired\"}" [| box (esc event); box (esc reason); box tailAfterQ; box tailAfterA; box tailAfterP; box qapAfterTotal; box tailAfterTotal; box materialDelta |])
                                     elif writerTailHighQueueBound then
                                         DiagJson.emit (
-                                            FastRuntimeFormat.format "{\"kind\":\"eval_worklist_post_root_writer_tail_high_queue_live\",\"event\":%s,\"reason\":%s,\"root_resolved_receipt_id\":\"root-receipt:post-root-active\",\"writer_capability_lease_id\":\"writer-lease:post-root-high-queue\",\"writer_capability_status_du\":\"WriterCapabilityLeaseStatus(LiveHighQueue|lease=writer-lease:post-root-high-queue|expires_after_ms=30000|material_progress_observed=%b)\",\"workdag_tail_id\":\"workdag-tail:high-queue-post-root\",\"workdag_tail_after_state_du\":\"WorkDagTail(LiveHighQueue|qap=%d/%d/%d|max_q=128|owner=writer_tail_scheduler)\",\"post_root_tail_drain_outcome_du\":\"PostRootTailDrainOutcome(HighQueueStillLive|before=%d|after=%d|material_delta=%d|lease=writer-lease:post-root-high-queue)\",\"post_root_flow_state_du\":\"writer_lease_live_high_queue\",\"post_root_terminalization_gate_du\":\"PostRootTerminalizationGate(KeepDrainingOrExpire|lease=writer-lease:post-root-high-queue|tail=high-queue-bound|deadline=30000ms)\",\"post_root_scheduler_decision_du\":\"PostRootSchedulerDecision(ForceHighQueueTailDrainLease|lease=writer-lease:post-root-high-queue|tail=workdag-tail:high-queue-post-root|root_reopen_forbidden=true)\",\"terminal_emit_blocker_du\":\"TerminalEmitBlockedBy(HighQueueWorkDagTailLeaseNotExpired|qap=%d/%d/%d)\",\"root_to_writer_alt_du\":\"RootToWriterAlt(ArmedHighQueue|alt=root-to-writer-alt:post-root|lease=writer-lease:post-root-high-queue|tail=workdag-tail:high-queue-post-root)\",\"post_root_terminalization_witness_du\":\"PostRootTerminalizationWitness(id=witness:post-root-high-queue|alt=root-to-writer-alt:post-root|boundary=awaiting_high_queue_drain|terminal=none)\",\"breakthrough_seal_certificate_du\":\"BreakthroughSealCertificate(PureGraphJoined|id=breakthrough-cert:post-root-high-queue|stage=high_queue_tail_lease|quorum_board=false|root_back_edge_impossible=true)\",\"pure_hopac_graph_obligation_du\":\"PureHopacGraphObligation(id=pure-hopac:post-root-high-queue|top_level=WriterCapability|root=root-receipt:post-root-active|lease=writer-lease:post-root-high-queue|tail=workdag-tail:high-queue-post-root|material_progress_required=true)\",\"terminal_emission_decision_du\":\"TerminalEmissionDecision(AwaitHighQueueTailOrExpire|certificate=breakthrough-cert:post-root-high-queue|deadline_ms=30000)\",\"quorum_board_authority_du\":\"AbolishedAfterRootResolved\",\"top_level_writer_promise_du\":\"Promise<WriterCapability>(live_high_queue:writer-lease:post-root-high-queue)\",\"post_root_owner_debt_back_edge_policy_du\":\"PostRootOwnerDebtBackEdgePolicy(Rejected|row=owner_debt_after_root|lease=writer-lease:post-root-high-queue)\",\"deadman_action_du\":\"DeadmanConvertedToPostRootHighQueueLeaseExpiry\",\"single_flight\":1,\"next\":\"continue_high_queue_post_root_tail_until_material_delta_or_expiry\"}" [| box (esc event); box (esc reason); box writerTailMaterialProgressObserved; box tailAfterQ; box tailAfterA; box tailAfterP; box qapAfterTotal; box tailAfterTotal; box materialDelta; box tailAfterQ; box tailAfterA; box tailAfterP |])
+                                            FastRuntimeFormat.format "{\"kind\":\"eval_worklist_post_root_writer_tail_high_queue_live\",\"event\":%s,\"reason\":%s,\"root_resolved_receipt_id\":\"root-receipt:post-root-active\",\"writer_capability_lease_id\":\"writer-lease:post-root-high-queue\",\"writer_capability_status_du\":\"WriterCapabilityLeaseStatus(LiveHighQueue|lease=writer-lease:post-root-high-queue|expires_after_ms=30000|material_progress_observed=%b)\",\"workdag_tail_id\":\"workdag-tail:high-queue-post-root\",\"workdag_tail_after_state_du\":\"WorkDagTail(LiveHighQueue|qap=%d/%d/%d|max_q=128|owner=writer_tail_scheduler)\",\"post_root_tail_drain_outcome_du\":\"PostRootTailDrainOutcome(HighQueueStillLive|before=%d|after=%d|material_delta=%d|lease=writer-lease:post-root-high-queue)\",\"post_root_flow_state_du\":\"writer_lease_live_high_queue\",\"post_root_terminalization_gate_du\":\"PostRootTerminalizationGate(KeepDrainingOrExpire|lease=writer-lease:post-root-high-queue|tail=high-queue-bound|deadline=30000ms)\",\"post_root_scheduler_decision_du\":\"PostRootSchedulerDecision(ForceHighQueueTailDrainLease|lease=writer-lease:post-root-high-queue|tail=workdag-tail:high-queue-post-root|root_reopen_forbidden=true)\",\"terminal_emit_blocker_du\":\"TerminalEmitBlockedBy(HighQueueWorkDagTailLeaseNotExpired|qap=%d/%d/%d)\",\"root_to_writer_alt_du\":\"RootToWriterAlt(ArmedHighQueue|alt=root-to-writer-alt:post-root|lease=writer-lease:post-root-high-queue|tail=workdag-tail:high-queue-post-root)\",\"post_root_terminalization_witness_du\":\"PostRootTerminalizationWitness(id=witness:post-root-high-queue|alt=root-to-writer-alt:post-root|boundary=awaiting_high_queue_drain|terminal=none)\",\"breakthrough_seal_certificate_du\":\"BreakthroughSealCertificate(PureGraphJoined|id=breakthrough-cert:post-root-high-queue|stage=high_queue_tail_lease|quorum_board=false|root_back_edge_impossible=true)\",\"pure_hopac_graph_obligation_du\":\"PureHopacGraphObligation(id=pure-gpt5parallel:post-root-high-queue|top_level=WriterCapability|root=root-receipt:post-root-active|lease=writer-lease:post-root-high-queue|tail=workdag-tail:high-queue-post-root|material_progress_required=true)\",\"terminal_emission_decision_du\":\"TerminalEmissionDecision(AwaitHighQueueTailOrExpire|certificate=breakthrough-cert:post-root-high-queue|deadline_ms=30000)\",\"quorum_board_authority_du\":\"AbolishedAfterRootResolved\",\"top_level_writer_promise_du\":\"Promise<WriterCapability>(live_high_queue:writer-lease:post-root-high-queue)\",\"post_root_owner_debt_back_edge_policy_du\":\"PostRootOwnerDebtBackEdgePolicy(Rejected|row=owner_debt_after_root|lease=writer-lease:post-root-high-queue)\",\"deadman_action_du\":\"DeadmanConvertedToPostRootHighQueueLeaseExpiry\",\"single_flight\":1,\"next\":\"continue_high_queue_post_root_tail_until_material_delta_or_expiry\"}" [| box (esc event); box (esc reason); box writerTailMaterialProgressObserved; box tailAfterQ; box tailAfterA; box tailAfterP; box qapAfterTotal; box tailAfterTotal; box materialDelta; box tailAfterQ; box tailAfterA; box tailAfterP |])
                                     *)
                                 elif ownerDebtDrainNeedsCascade then
                                     let cascadeEpoch = recentOwnerDebtMaterialDeltaCount
@@ -82595,7 +82614,7 @@ module spiral_compiler =
                                     pinTerminalContractLocked event terminalFrame
                                     terminalFrame
                                 elif suppressRootCompleteRetarget && frameSemanticStatusIs SemanticRootComplete frame && hasReplayCompleteWriteWitness() then
-                                    // MIGRATION: the pre-Hopac evaluator would already be done with
+                                    // MIGRATION: the pre-gpt5parallel evaluator would already be done with
                                     // this type root. Preserve the witness, but do not reinsert a stale
                                     // retarget cell that keeps pending>0 forever.
                                     let evaluatorRootCommit =
@@ -126749,7 +126768,7 @@ module spiral_compiler =
                                             ",\"root_to_writer_alt_du\":" + DiagJson.esc "RootToWriterAlt(ArmedNoRootBudgetTail|alt=root-to-writer-alt:post-root|lease=writer-lease:post-root-no-root-budget|tail=workdag-tail:no-root-budget-parent-poison)" +
                                             ",\"post_root_terminalization_witness_du\":" + DiagJson.esc "PostRootTerminalizationWitness(id=witness:post-root-no-root-budget-tail|boundary=no_root_budget_tail_lease|terminal=lease_or_expiry)" +
                                             ",\"breakthrough_seal_certificate_du\":" + DiagJson.esc "BreakthroughSealCertificate(PureGraphJoined|id=breakthrough-cert:post-root-no-root-budget-tail|stage=no_root_budget_tail_lease|quorum_board=false|root_back_edge_impossible=true)" +
-                                            ",\"pure_hopac_graph_obligation_du\":" + DiagJson.esc "PureHopacGraphObligation(id=pure-hopac:post-root-no-root-budget-tail|top_level=WriterCapability|tail=workdag-tail:no-root-budget-parent-poison)" +
+                                            ",\"pure_hopac_graph_obligation_du\":" + DiagJson.esc "PureHopacGraphObligation(id=pure-gpt5parallel:post-root-no-root-budget-tail|top_level=WriterCapability|tail=workdag-tail:no-root-budget-parent-poison)" +
                                             ",\"terminal_emission_decision_du\":" + DiagJson.esc (if postRootNoRootBudgetTailExpired then "TerminalEmissionDecision(FailClosed|certificate=breakthrough-cert:post-root-no-root-budget-tail|violation=NoRootBudgetTailExpired)" else "TerminalEmissionDecision(AwaitNoRootBudgetTailLease|certificate=breakthrough-cert:post-root-no-root-budget-tail)") +
                                             ",\"quorum_board_authority_du\":" + DiagJson.esc "AbolishedAfterRootResolved" +
                                             ",\"top_level_writer_promise_du\":" + DiagJson.esc "Promise<WriterCapability>(no_root_budget_tail:writer-lease:post-root-no-root-budget)" +
@@ -149484,7 +149503,7 @@ module spiral_compiler =
                 // a checkpoint every 2^22 bindings; the recovery multiplier, at most 4, can't overflow it).
                 // Resuming a yielded body loses or repeats statements: a resume continues in the environments
                 // the earlier slice saved, and so in that slice's block, while prefix replay re-evaluates the
-                // body and re-emits it (lanes/hopac/FRONTIER.md, fix 22). The budgets above are what the resume
+                // body and re-emits it (lanes/gpt5parallel/FRONTIER.md, fix 22). The budgets above are what the resume
                 // path was designed for; SPIRAL_JP_SLICE_OPS=<max>,<interval> (256,64 or 96,24) brings them back.
                 let maxOperations, checkpointInterval =
                     match System.Environment.GetEnvironmentVariable "SPIRAL_JP_SLICE_OPS" with
@@ -150544,7 +150563,7 @@ module spiral_compiler =
             seq_apply s x, x_ty
         and term_scope' s cse x = term_scope'' {s with seq=ResizeArray(); cse=cse :: s.cse} x None
         and term_scope s x = term_scope' s (System.Collections.Concurrent.ConcurrentDictionary(HashIdentity.Structural)) x
-        and ty_is_uninhabited_hopac s x =
+        and ty_is_uninhabited_gpt5parallel s x =
             let rec loop depth x =
                 if depth <= 0 then false
                 else
@@ -150592,7 +150611,7 @@ module spiral_compiler =
                     raise_type_error s <| sprintf "Expected a type level function in nominal application.\nGot: %s" (show_ty invalid)
             applied
 
-        // Replay installers: hopac's replay layer, kept out of term_core_impl / ty_core_impl. Each publishes the
+        // Replay installers: gpt5parallel's replay layer, kept out of term_core_impl / ty_core_impl. Each publishes the
         // thunks and child spines of a subtree into EvalReplayValueStore, so the replay worklist can re-run
         // evaluation without re-entering the evaluator. The evaluator calls them only once sequential mode was
         // requested or the term-cycle fuse tripped. `s`, `site`, `siteId` and `x` are the caller's (term_core_impl /
@@ -154141,7 +154160,7 @@ module spiral_compiler =
                         match ty s v with
                         | YVoid -> cases
                         // D49 (single-flight's ty_is_uninhabited): a case whose payload is uninhabited can never be built.
-                        | v when ty_is_uninhabited_hopac s v -> cases
+                        | v when ty_is_uninhabited_gpt5parallel s v -> cases
                         | v ->
                             is_degenerate <- is_degenerate && match v with YB -> true | _ -> false
                             tags.[UnionTagIdOps.create k] <- i
@@ -155692,6 +155711,19 @@ module spiral_compiler =
                 | _ -> None
     
 
+            let rec align_record_order (d : Data) (expected : Ty) =
+                match d, expected with
+                | DRecord fields, YRecord expected_fields when Map.count fields = Map.count expected_fields ->
+                    let by_name = fields |> Seq.map (fun (KeyValue((_, k), v)) -> k, v) |> Map.ofSeq
+                    let aligned =
+                        expected_fields
+                        |> Map.toSeq
+                        |> Seq.choose (fun ((i, k), t) -> Map.tryFind k by_name |> Option.map (fun v -> (i, k), align_record_order v t))
+                        |> Map.ofSeq
+                    if Map.count aligned = Map.count fields then DRecord aligned else d
+                | DPair(a, b), YPair(ta, tb) -> DPair(align_record_order a ta, align_record_order b tb)
+                | _ -> d
+
             let enominal (r,a,b) =
                 let a = term s a
                 let b = ty s b
@@ -155728,6 +155760,8 @@ module spiral_compiler =
                         match union_case_try_find h k with
                         | Some v_ty' when ty_eq_allow_jp_placeholders v_ty v_ty' ->
                             DNominal(DUnion(canonicalPair,h),b)
+                        | Some v_ty' when ty_eq_allow_jp_placeholders (data_to_ty s (align_record_order v v_ty')) v_ty' ->
+                            DNominal(DUnion(DPair(DSymbol k, align_record_order v v_ty'),h),b)
                         | Some v_ty' ->
                             match tryCoerceBareSymbolToExpectedUnion v_ty' v with
                             | Some v' when ty_eq_allow_jp_placeholders (data_to_ty s v') v_ty' ->
@@ -155796,6 +155830,7 @@ module spiral_compiler =
                             |> Map.ofSeq
                             |> DRecord
                         | _ -> a
+                    let a = align_record_order a b'
     
 
                     let a_ty = data_to_ty s a
@@ -162517,9 +162552,7 @@ module spiral_compiler =
                     | YRecord fields -> Map.exists (fun _ v -> loop (depth-1) v) fields
                     | YLayout(a,_) -> loop (depth-1) a
                     | YNominal _ | YApply _ as nominal ->
-                        try loop (depth-1) (nominal_type_apply s nominal)
-                        with
-                        | PartEvalTypeError(_,message) when message = "Type join points must not be unboxed during their definition." -> false
+                        try loop (depth-1) (nominal_type_apply s nominal) with PartEvalTypeError _ -> false
                     | _ -> false
             loop 32 x
         and ty s x =
@@ -162862,6 +162895,19 @@ module spiral_compiler =
                 assert (free_vars.term.free_vars.Length = i)
                 DFunction(body,annot,Array.map (v s) free_vars.term.free_vars,Array.map (vt s) free_vars.ty.free_vars,free_vars.term.stack_size,free_vars.ty.stack_size)
 
+            let rec align_record_order (d : Data) (expected : Ty) =
+                match d, expected with
+                | DRecord fields, YRecord expected_fields when Map.count fields = Map.count expected_fields ->
+                    let by_name = fields |> Seq.map (fun (KeyValue((_, k), v)) -> k, v) |> Map.ofSeq
+                    let aligned =
+                        expected_fields
+                        |> Map.toSeq
+                        |> Seq.choose (fun ((i, k), t) -> Map.tryFind k by_name |> Option.map (fun v -> (i, k), align_record_order v t))
+                        |> Map.ofSeq
+                    if Map.count aligned = Map.count fields then DRecord aligned else d
+                | DPair(a, b), YPair(ta, tb) -> DPair(align_record_order a ta, align_record_order b tb)
+                | _ -> d
+
             let enominal (r,a,b) =
                 let a = term s a
                 let b = ty s b
@@ -162872,6 +162918,7 @@ module spiral_compiler =
                         let v_ty = data_to_ty s v
                         match Map.tryPick (fun (_, name') v -> if k = name' then Some v else None) h.Item.cases with
                         | Some v_ty' when v_ty = v_ty' -> DNominal(DUnion(a,h),b)
+                        | Some v_ty' when data_to_ty s (align_record_order v v_ty') = v_ty' -> DNominal(DUnion(DPair(DSymbol k, align_record_order v v_ty'),h),b)
                         | Some v_ty' -> raise_type_error s <| sprintf "For key %s, The type of the value does not match the union case.\nGot: %s\nExpected: %s" k (show_ty v_ty) (show_ty v_ty')
                         | None -> raise_type_error s <| sprintf "The union does not have key %s.\nGot: %s" k (show_ty b)
                     | _ -> raise_type_error s <| sprintf "Expected key/value pair.\nGot: %s" (show_data a)
@@ -162888,6 +162935,7 @@ module spiral_compiler =
                             |> Map.ofSeq
                             |> DRecord
                         | _ -> a
+                    let a = align_record_order a b'
 
                     let a_ty = data_to_ty s a
 
@@ -164705,7 +164753,7 @@ module spiral_compiler =
 
     /// ### codegen_env
     // Plain ResizeArrays in both cores: codegen runs sequentially under Hopac too (the shared CodegenC already
-    // relies on it), so the hopac-side ConcurrentQueue copies of the old CodegenCpp/CodegenPython are not needed.
+    // relies on it), so the gpt5parallel-side ConcurrentQueue copies of the old CodegenCpp/CodegenPython are not needed.
     type codegen_env =
         {
             globals : string ResizeArray
@@ -164896,7 +164944,7 @@ module spiral_compiler =
         let elided = System.Runtime.CompilerServices.ConditionalWeakTable<TypedBind [], TypedBind []>()
         let block (body : TypedBind []) : TypedBind [] = elided.GetValue(body, fun body -> elide body)
 
-#if SPIRAL_CORE_HOPAC
+#if SPIRAL_CORE_GPT5PARALLEL
     /// ## CodegenFsharp
     
 
@@ -166627,7 +166675,7 @@ module spiral_compiler =
         program.Append(main).ToString()
 
 #endif
-#if SPIRAL_CORE_HOPAC
+#if SPIRAL_CORE_GPT5PARALLEL
     /// ## CodegenAdapter
     let codegenMethodKeyArgs (key : ConsedNode<RData [] * Ty [] * Ty>) = let args, _, _ = key.node in args
     let codegenMemoTable (comparer : IEqualityComparer<'k>) : System.Collections.Concurrent.ConcurrentDictionary<'k, 'v> =
@@ -172683,7 +172731,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                             Array.iter2 (fun (L(i,_)) w -> line s $"v{i} = {show_w w};") targets values
                         | WgslTail range ->
                             match data_term_vars d with
-                            | [||] -> ()
+                            | [||] -> if self_loop.Value.IsSome then line s "return;"
                             | [|w|] -> line s $"return {show_w w};"
                             | many ->
                                 let args = many |> Array.map show_w |> String.concat ", "
@@ -172699,7 +172747,9 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     let name = $"spiral_tuple{fresh_id ()}"
                     line s $"let {name} = {x};"
                     targets |> Array.iteri (fun k (L(i,_)) -> line s $"v{i} = {name}.v{k};")
-                | WgslTail range when is_unit_ty range -> if x <> "" then line s $"{x};"
+                | WgslTail range when is_unit_ty range ->
+                    if x <> "" then line s $"{x};"
+                    if self_loop.Value.IsSome then line s "return;"
                 | WgslTail _ -> line s $"return {x};"
             let jp_text (jp, args) =
                 match jp with
@@ -172740,6 +172790,9 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 line (indent s) $"if (!({jp_text cond})) {{ break; }}"
                 binds (indent s) (WgslLocal [||]) body
                 line s "}"
+                match ret with
+                | WgslTail _ when self_loop.Value.IsSome -> line s "return;"
+                | _ -> ()
             | TyDo body | TyIndent body -> binds s ret body
             | TyUnionBox(tag_id, _, h) when is_tag_only_union h -> return' $"{h.Item.tags.[tag_id]}u"
             | TyUnionBox(tag_id, payload, h) ->
@@ -176467,7 +176520,21 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
 
             let tyvs_to_tys (x : TyV []) = Array.map (fun (L(i,t)) -> t) x
 
+            let self_loop : (int * TyV [] * int) option ref = ref None
+            let self_continue_release : (CodegenEnv -> unit) ref = ref ignore
+            let self_let_tail_target : (TyV [] * (CodegenEnv -> unit)) option ref = ref None
+            let method_key_of_tag = Dictionary<int, obj>()
             let rec binds_start (args : TyV []) (s : CodegenEnv) (x : TypedBind []) = binds (refc_prepass Set.empty (Set args) x) s BindsTailEnd x
+            and self_continue (s : CodegenEnv) (parameters : TyV []) (args : TyV []) =
+                if parameters.Length > 0 then
+                    line s "{"
+                    let temps = Array.map2 (fun (L(_,t)) (L(j,_)) -> let k = tmp() in line (indent s) $"{tyv t} tmp{k} = v{j};"; k) parameters args
+                    self_continue_release.Value (indent s)
+                    Array.iteri (fun position k -> line (indent s) $"v{position} = tmp{k};") temps
+                    line s "}"
+                else
+                    self_continue_release.Value s
+                line s "continue;"
             and return_local s ret (x : string) =
                 match ret with
                 | [||] -> line s $"{x};"
@@ -176483,18 +176550,59 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                         | WLit b -> $"v{i} = {lit b};"
                         | WV (L(i',_)) -> $"v{i} = v{i'};"
                         ) a b
+                let heap_free (vars : TyV seq) = not (is_heap (env.ty_to_data >> data_free_vars) (Seq.toArray vars))
+                let outer_tail_release =
+                    match ret, self_let_tail_target.Value with
+                    | BindsTailEnd, _ -> Some ignore
+                    | BindsLocal l, Some (target, release) when l = target -> Some release
+                    | _ -> None
+                let self_let_tail =
+                    match outer_tail_release, self_loop.Value with
+                    | Some _, Some (tag, parameters, depth) when depth = fns_printing.Count && stmts.Length >= 2 ->
+                        match stmts.[stmts.Length - 2], stmts.[stmts.Length - 1] with
+                        | (TyLet(d,_,a) as call), (TyLocalReturnData(r,_) as last) when returns_unchanged d r && op_self_tail tag a ->
+                            let touched =
+                                Seq.concat [
+                                    Seq.ofList (Set.toList (get_default vars.g_incr last (fun () -> Set.empty)))
+                                    Seq.ofList (Set.toList (get_default vars.g_decr last (fun () -> Set.empty)))
+                                    Seq.ofList (Set.toList (get_default vars.g_op_decr last (fun () -> Set.empty)))
+                                    Seq.ofList (Map.toList (get_default vars.g_op last (fun () -> Map.empty)) |> List.map fst)
+                                    ]
+                            let direct_self_call = match a with TyJoinPoint(JPMethod(x,c),_) -> is_method_tag tag (x, c) | _ -> false
+                            let at_function_tail = match ret with BindsTailEnd -> true | _ -> false
+                            if direct_self_call || (at_function_tail && heap_free touched) then Some (call, last, parameters, a) else None
+                        | _ -> None
+                    | _ -> None
+                let kept_let_tail =
+                    match outer_tail_release, self_loop.Value, self_let_tail with
+                    | Some outer, Some (tag, _, depth), None when depth = fns_printing.Count && stmts.Length >= 2 ->
+                        match stmts.[stmts.Length - 2], stmts.[stmts.Length - 1] with
+                        | (TyLet(d,_,a) as call), (TyLocalReturnData(r,_) as last) when returns_unchanged d r && op_self_tail tag a && (data_free_vars d).Length > 0 -> Some (call, last, outer)
+                        | _ -> None
+                    | _ -> None
+                let stmts =
+                    match self_let_tail with
+                    | Some (_, last, _, _) -> stmts |> Array.filter (fun x -> not (obj.ReferenceEquals(x, last)))
+                    | None -> stmts
+                let refc_prefix (s : CodegenEnv) x =
+                    let incr0 = get_default vars.g_incr x (fun () -> Set.empty)
+                    let decr0 = get_default vars.g_decr x (fun () -> Set.empty)
+                    let op0 = get_default vars.g_op x (fun () -> Map.empty)
+                    let op_decr0 = get_default vars.g_op_decr x (fun () -> Set.empty)
+                    let incr, decr, op, op_decr = varc_set incr0 1, varc_set decr0 -1, op0, varc_set op_decr0 -1
+                    let incr, decr = varc_union incr decr |> varc_union op |> varc_union op_decr |> Map.partition (fun _ v -> 0 < v)
+                    refc_varc incr |> line' s; refc_varc decr |> line' s
                 Array.iter (fun x ->
-                    // This complicated looking piece of code is responsible for putting the incref and decref statements at the beginning of every
-                    // statement. It's actually the only place where ref counting code is outputted in the codegen.
-                    let _ =
-                        let incr0 = get_default vars.g_incr x (fun () -> Set.empty)
-                        let decr0 = get_default vars.g_decr x (fun () -> Set.empty)
-                        let op0 = get_default vars.g_op x (fun () -> Map.empty)
-                        let op_decr0 = get_default vars.g_op_decr x (fun () -> Set.empty)
-                        let incr, decr, op, op_decr = varc_set incr0 1, varc_set decr0 -1, op0, varc_set op_decr0 -1
-                        let incr, decr = varc_union incr decr |> varc_union op |> varc_union op_decr |> Map.partition (fun _ v -> 0 < v)
-                        refc_varc incr |> line' s; refc_varc decr |> line' s
+                    refc_prefix s x
                     match x with
+                    | TyLet _ when (match self_let_tail with Some (call, _, _, _) -> obj.ReferenceEquals(x, call) | None -> false) ->
+                        let _, last, _, a = self_let_tail.Value
+                        let direct_self_call = match a with TyJoinPoint _ -> true | _ -> false
+                        let outer = Option.defaultValue ignore outer_tail_release
+                        let saved_release = self_continue_release.Value
+                        self_continue_release.Value <- if direct_self_call then (fun s -> refc_prefix s last; outer s) else ignore
+                        op vars s BindsTailEnd a
+                        self_continue_release.Value <- saved_release
                     | TyLet(d,trace,a) ->
                         try let d = data_free_vars d
                             let decl_vars = Array.map (fun (L(i,t)) -> $"{tyv t} v{i};") d
@@ -176515,7 +176623,13 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                                         raise_codegen_error "The special \\v macro requires the same number of free vars in its binding as there are \\v in the code."
                             | _ ->
                                 decl_vars |> line' s
-                                op vars s (BindsLocal d) a
+                                match kept_let_tail with
+                                | Some (call, last, outer) when obj.ReferenceEquals(x, call) ->
+                                    let saved_target = self_let_tail_target.Value
+                                    self_let_tail_target.Value <- Some (d, fun s -> refc_prefix s last; outer s)
+                                    op vars s (BindsLocal d) a
+                                    self_let_tail_target.Value <- saved_target
+                                | _ -> op vars s (BindsLocal d) a
                         with :? CodegenError as e -> raise_codegen_error' trace (e.Data0, e.Data1)
                     | TyLocalReturnOp(trace,a,_) ->
                         try op vars s ret a
@@ -176536,6 +176650,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 match t' with
                 | YUnion t ->
                     match t.Item.layout with
+                    | UStack when ((ustack t : UnionRecC).free_vars : Map<int * string, TyV[]>) |> Map.forall (fun _ (fields : TyV[]) -> fields |> Array.forall (fun field -> Option.isNone (refc_change'' f 1 field))) -> None
                     | UStack ->
                         if count = -1 then Some $"USDecref{(ustack t).tag}(&({f v}));"
                         elif 0 < count then Some (String.replicate count $"USIncref{(ustack t).tag}(&({f v}));")
@@ -176673,6 +176788,16 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     line s "} else {"
                     binds (indent s) ret fl
                     line s "}"
+                | TyJoinPoint(JPMethod(a,b),args) when (match ret, self_loop.Value, self_let_tail_target.Value with BindsLocal l, Some (tag, _, depth), Some (target, _) -> depth = fns_printing.Count && l = target && is_method_tag tag (a, b) | _ -> false) ->
+                    let _, parameters, _ = self_loop.Value.Value
+                    let _, release = self_let_tail_target.Value.Value
+                    let saved_release = self_continue_release.Value
+                    self_continue_release.Value <- release
+                    self_continue s parameters args
+                    self_continue_release.Value <- saved_release
+                | TyJoinPoint(JPMethod(a,b),args) when (match ret, self_loop.Value with BindsTailEnd, Some (tag, _, depth) -> depth = fns_printing.Count && is_method_tag tag (a, b) | _ -> false) ->
+                    let _, parameters, _ = self_loop.Value.Value
+                    self_continue s parameters args
                 | TyJoinPoint(a,args) -> return' (jp (a, args))
                 | TyBackend(_,_,r) -> raise_codegen_error_backend r "The C backend does not support nesting of other backends."
                 | TyWhile(a,b) ->
@@ -176789,8 +176914,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     $"ArrayLit{(carray a).tag}({b'.Length}, ({tup_ty a} []){b})" |> return'
                 | TyArrayCreate(a,b) ->
                     let a = carray a
-                    let is_heap : string = is_heap (env.ty_to_data >> data_free_vars) a.tyvs |> sprintf "%b"
-                    $"ArrayCreate{a.tag}({tup_data b}, {is_heap})" |> return'
+                    $"ArrayCreate{a.tag}({tup_data b}, true)" |> return'
                 | TyFailwith(a,b) ->
                     let fmt = @"%s\n"
                     line s $"fprintf(stderr, \"{fmt}\", {string_in_op b});"
@@ -176896,16 +177020,57 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             and method_templ is_while fun_name : _ -> MethodRecC =
                 jp (fun ((jp_body,key),i) ->
                     let args = codegenMethodKeyArgs key
+                    method_key_of_tag.[i] <- box (jp_body, key)
                     match codegenMethodBody env "C" jp_body key with
                     | a, range, name -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a; name=name}
                     ) (fun _ s_typ s_fun x ->
                     let fun_name = Option.defaultValue fun_name x.name
                     line s_fun (method_sig fun_name x + "{")
                     fns_printing.Add $"{fun_name}{x.tag}"
-                    binds_start (if is_while then [||] else x.free_vars) (indent s_fun) x.body
+                    let saved = self_loop.Value
+                    let saved_release = self_continue_release.Value
+                    let saved_target = self_let_tail_target.Value
+                    self_continue_release.Value <- ignore
+                    self_let_tail_target.Value <- None
+                    if not is_while && self_tail x.tag x.body then
+                        self_loop.Value <- Some (x.tag, x.free_vars, fns_printing.Count)
+                        line (indent s_fun) "while (1) {"
+                        binds_start x.free_vars (indent (indent s_fun)) x.body
+                        line (indent s_fun) "}"
+                    else
+                        self_loop.Value <- None
+                        binds_start (if is_while then [||] else x.free_vars) (indent s_fun) x.body
+                    self_loop.Value <- saved
+                    self_continue_release.Value <- saved_release
+                    self_let_tail_target.Value <- saved_target
                     fns_printing.RemoveAt(fns_printing.Count - 1)
                     line s_fun "}"
                     )
+            and self_tail tag (body : TypedBind []) =
+                body.Length > 0 &&
+                match Array.last body with
+                | TyLocalReturnOp(_, a, _) -> op_self_tail tag a
+                | TyLocalReturnData(r,_) when body.Length >= 2 ->
+                    match body.[body.Length - 2] with
+                    | TyLet(d,_,a) when returns_unchanged d r -> op_self_tail tag a
+                    | _ -> false
+                | _ -> false
+            and op_self_tail tag (a : TypedOp) =
+                match a with
+                | TyJoinPoint(JPMethod(x,c),_) -> is_method_tag tag (x, c)
+                | TyIf(_,tr,fl) -> self_tail tag tr || self_tail tag fl
+                | TyUnionUnbox(_,_,on_succs,on_fail) -> (on_succs |> Map.exists (fun _ (_,b) -> self_tail tag b)) || (on_fail |> Option.exists (self_tail tag))
+                | TyIntSwitch(_,on_succ,on_fail) -> Array.exists (self_tail tag) on_succ || self_tail tag on_fail
+                | TyDo b | TyIndent b -> self_tail tag b
+                | _ -> false
+            and returns_unchanged d r =
+                let bound = data_free_vars d
+                let returned = data_term_vars r
+                bound.Length = returned.Length && Array.forall2 (fun (L(i,_)) w -> match w with WV(L(j,_)) -> i = j | WLit _ -> false) bound returned
+            and is_method_tag tag (x, c) =
+                match method_key_of_tag.TryGetValue tag with
+                | true, k -> k.Equals(box (x, c))
+                | _ -> false
             and method_sig fun_name (x : MethodRecC) =
                 let ret_ty = tup_ty x.range
                 let args = x.free_vars |> Array.mapi (fun i (L(_,x)) -> $"{tyv x} v{i}") |> String.concat ", "
@@ -177147,7 +177312,37 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                         line s_fun (sprintf "void USDecref%i(US%i * x){ USDecrefBody%i(x); }" i i i)
                     | false ->
                         line s_fwd (sprintf "void UHDecref%i(UH%i * x);" i i)
-                        print_decref s_fun $"UHDecref{i}" $"UH{i}" $"UHDecrefBody{i}"
+                        let is_same_union (L(_,t)) = match t with YUnion u -> u.Item.layout = UHeap && (uheap u).tag = i | _ -> false
+                        if x.free_vars |> Map.exists (fun _ v -> Array.exists is_same_union v) then
+                            line s_fun (sprintf "void UHDecref%i(UH%i * x){" i i)
+                            let _ =
+                                let s_fun = indent s_fun
+                                line s_fun "while (x != NULL && --(x->refc) == 0) {"
+                                let _ =
+                                    let s_fun = indent s_fun
+                                    line s_fun (sprintf "UH%i * next = NULL;" i)
+                                    line s_fun "switch (x->tag) {"
+                                    map_iteri (fun tag k v ->
+                                        let s_fun = indent s_fun
+                                        let next_field = v |> Array.tryFindBack is_same_union
+                                        let others = v |> Array.filter (fun field -> Some field <> next_field)
+                                        let refc = others |> refc_change (fun i -> $"x->case{tag}.v{i}") -1
+                                        if refc.Length <> 0 || next_field.IsSome then
+                                            line s_fun (sprintf "case %i: {" tag)
+                                            let _ =
+                                                let s_fun = indent s_fun
+                                                refc |> line' s_fun
+                                                next_field |> Option.iter (fun (L(field,_)) -> line s_fun $"next = x->case{tag}.v{field};")
+                                                line s_fun "break;"
+                                            line s_fun "}"
+                                        ) x.free_vars
+                                    line s_fun "}"
+                                    line s_fun $"{free}(x);"
+                                    line s_fun "x = next;"
+                                line s_fun "}"
+                            line s_fun "}"
+                        else
+                            print_decref s_fun $"UHDecref{i}" $"UH{i}" $"UHDecrefBody{i}"
 
                     map_iteri (fun tag (_, k) v ->
                         let args = v |> Array.map (fun (L(i,t)) -> $"{tyv t} v{i}") |> String.concat ", "
@@ -177304,7 +177499,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
     /// ## CodegenCpp
     // Upstream: The Spiral Language 2/CodegenCpp.fs @ 0cb0fda0 (host_cpp_and_cuda_backend, v2.18.10). One shared
     // section for both cores. Every line that differs from upstream carries a `// ws:` comment saying why; the
-    // differences are the workspace's types (records/union cases keyed by `int * string`, hopac's interned ids,
+    // differences are the workspace's types (records/union cases keyed by `int * string`, gpt5parallel's interned ids,
     // the PartEvalResult join point tables), reached through CodegenAdapter, plus a few bug fixes.
     module CodegenCpp =
         // ws: `open Spiral...` lines dropped: everything lives in the enclosing `spiral_compiler` module.
@@ -177805,7 +178000,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                         let s = indent s
                         Map.iter (fun k (a,b) ->
                             let union_i = case_tags.[k]
-                            line s (sprintf "case %i: { // %s" union_i (UnionTagIdOps.text k)) // ws: hopac's tags are interned ids
+                            line s (sprintf "case %i: { // %s" union_i (UnionTagIdOps.text k)) // ws: gpt5parallel's tags are interned ids
                             List.iter2 (fun (L(data_i,_)) a ->
                                 let a, s = data_free_vars a, indent s
                                 let qs = ResizeArray(a.Length)
@@ -178757,7 +178952,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                                 sprintf "%s(%s)" (generatedCaseNameOfTag prefix union_rec.free_vars i) (String.concat ", " x)
                                 )
                             |> String.concat ", "
-                        line s (sprintf "case %s: # %s" cases (UnionTagIdOps.text k)) // ws: hopac's tags are interned ids
+                        line s (sprintf "case %s: # %s" cases (UnionTagIdOps.text k)) // ws: gpt5parallel's tags are interned ids
                         binds g_decr (indent s) ret b
                         ) on_succs
                     line s "case t:"
@@ -178986,13 +179181,11 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 binds_start [||] (indent s) x
                 s.text.AppendLine() |> ignore
 
-                // ws: an i32 main is the exit code, as in C and Rust (lane W, #79); any other value is printed (upstream
-                // printed every result, `None` for unit). Kino's cells print the value either way (Cell.patch_python).
                 match Array.tryLast x with
                 | Some (TyLocalReturnData(d,_)) | Some (TyLocalReturnOp(_,_,d)) when (match data_term_vars d with [|WV(L(_,YPrim Int32T))|] | [|WLit (LitInt32 _)|] -> true | _ -> false) ->
                     import "sys"
                     line s "if __name__ == '__main__': sys.exit(main())"
-                | _ -> line s "if __name__ == '__main__': result = main(); None if result is None else print(result)"
+                | _ -> line s "if __name__ == '__main__': main()"
                 code_env.main_defs.Add(s.text.ToString())
 
         let codegen (default_env : DefaultEnv) (file_path : string) part_eval_env (x : TypedBind[]) : GeneratedFile list = // ws: Startup. prefix and the annotation
@@ -180312,7 +180505,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         with :? SchemaException as e -> Error [e.Data0]
         )
 
-#if SPIRAL_CORE_HOPAC
+#if SPIRAL_CORE_GPT5PARALLEL
     /// ## GraphIdentity
     type GraphPathKind private () =
         static member InternedKindTag () = 0x180001u
@@ -180970,7 +181163,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         List.fold (fun s x -> {ok=Map.remove x s.ok; error=Map.remove x s.error}) s l
     
 
-#if SPIRAL_CORE_HOPAC
+#if SPIRAL_CORE_GPT5PARALLEL
     /// ## SignalRSupervisor
     // open System
     open System.IO
@@ -185252,7 +185445,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                             // Read only the part of each file's result stream that is already there: a stream can
                             // never end (another version of a package, a file the entry does not reach), and folding
                             // it to the end hung the build here after type checking had finished (polyglot Supervisor's
-                            // type-error tests, in a long session; the hopac core's FRONTIER.md fix 33).
+                            // type-error tests, in a long session; the gpt5parallel core's FRONTIER.md fix 33).
                             let rec availableErrors acc (stream : Stream<_>) =
                                 if Promise.Now.isFulfilled stream then
                                     match Promise.Now.get stream with
@@ -185536,7 +185729,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         }
 
 #endif
-#if SPIRAL_CORE_HOPAC
+#if SPIRAL_CORE_GPT5PARALLEL
     /// ## ServerHooks
     let serverTraceFilesEnabled = diag_save_enabled
     let exitAfterParentProcessGone () = DiagJson.forceProcessExitDirect 1 DiagJson.LegacyExitParentObserverAfterNativeRootComplete
@@ -185804,7 +185997,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 }
     
 
-#if SPIRAL_CORE_HOPAC
+#if SPIRAL_CORE_GPT5PARALLEL
     /// ## main
     open Microsoft.AspNetCore.Builder
     open Microsoft.AspNetCore.Hosting

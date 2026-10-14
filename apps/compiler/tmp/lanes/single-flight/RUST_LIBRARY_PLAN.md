@@ -1,7 +1,7 @@
 # Plan: Rust libraries and exports without the translator (eoie)
 
 Status (2026-09-28): steps 1, 2, 4 and 5 done in single-flight (eoie: 88/88 owners, cargo check and all
-tests incl. compiler contracts pass; the translator is deleted). Open: step 3 (no eoie use), the hopac
+tests incl. compiler contracts pass; the translator is deleted). Open: step 3 (no eoie use), the gpt5parallel
 build, the post-deletion `-Suite all -Native` review (see `NEXT.md`), and moving `--plan-ir` into eoie. Goal: eoie builds with the native `codegenRust` backend, and
 `compiler/host/PortableBackends.fs` (8,759 lines) is deleted.
 
@@ -71,6 +71,6 @@ the host mode. `--check` is generic and stays.
 
 ## Order
 
-Core op + Rust library mode in single-flight (test with `tests/rust-exports`), then port to hopac (same
-pattern as the backends, see `lanes/hopac/FRONTIER.md` fix 17), then the eoie rewrite and its attestation,
+Core op + Rust library mode in single-flight (test with `tests/rust-exports`), then port to gpt5parallel (same
+pattern as the backends, see `lanes/gpt5parallel/FRONTIER.md` fix 17), then the eoie rewrite and its attestation,
 then the deletions. Delphi libraries are not needed by eoie; the same op can later emit a Pascal `unit`.

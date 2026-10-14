@@ -1,0 +1,104 @@
+///- --package .
+test search static =
+    open testing
+
+type genome = {first : i32; second : i32; third : i32}
+
+inl clamp_between (low : i32) (high : i32) (x : i32) : i32 =
+    if x < low then low elif x > high then high else x
+
+inl nudge (seed : u32) (generation : i32) (child : i32) (gene : u32) (spread : i32) (value : i32) : i32 =
+    inl draw : i32 = conv (rng.roll_between 0 (conv (2 * spread)) (rng.roll_key seed (conv generation) (conv child) (100u32 + gene)))
+    value + draw - spread
+
+inl mutate (seed : u32) (generation : i32) (child : i32) (spread : i32) (low : genome) (high : genome) (g : genome) : genome =
+    {
+        first = clamp_between low.first high.first (nudge seed generation child 1u32 spread g.first)
+        second = clamp_between low.second high.second (nudge seed generation child 2u32 spread g.second)
+        third = clamp_between low.third high.third (nudge seed generation child 3u32 spread g.third)
+    }
+
+inl evolve (fitness : genome -> i32) (low : genome) (high : genome) (start : genome) (seed : u32) (generations : i32) (offspring : i32) (spread : i32) : genome =
+    let rec generation (index : i32) (parent : genome) (parent_score : i32) (width : i32) : genome =
+        if index >= generations then parent
+        else
+            let rec children (child : i32) (best : genome) (best_score : i32) : genome * i32 =
+                if child >= offspring then best, best_score
+                else
+                    inl candidate = mutate seed index child width low high parent
+                    inl score = fitness candidate
+                    if score > best_score then children (child + 1) candidate score else children (child + 1) best best_score
+            match children 0 parent parent_score with
+            | best, best_score => generation (index + 1) best best_score (if width > 1 then width / 2 else 1)
+    generation 0 start (fitness start) spread
+
+nominal vector = a i32 i32
+
+inl vector_of (count : i32) (value : i32) : vector =
+    inl x : a i32 i32 = create count
+    let rec fill (i : i32) : () =
+        if i < count then
+            set x i value
+            fill (i + 1)
+    fill 0
+    vector x
+
+inl gene (vector v) (i : i32) : i32 = index v i
+inl gene_count (vector v) : i32 = length v
+inl with_gene (i : i32) (value : i32) (vector v) : vector =
+    set v i value
+    vector v
+
+inl antithetic_pair (seed : u32) (generation : i32) (pair : i32) (width_per_mille : i32) (low : vector) (high : vector) (parent : vector) : vector * vector =
+    inl n = gene_count parent
+    inl plus = vector_of n 0
+    inl minus = vector_of n 0
+    let rec fill (i : i32) : () =
+        if i < n then
+            inl range = gene high i - gene low i
+            inl spread = if range * width_per_mille / 1000 < 1 then 1 else range * width_per_mille / 1000
+            inl delta = nudge seed generation pair (conv i) spread 0
+            with_gene i (clamp_between (gene low i) (gene high i) (gene parent i + delta)) plus |> ignore
+            with_gene i (clamp_between (gene low i) (gene high i) (gene parent i - delta)) minus |> ignore
+            fill (i + 1)
+    fill 0
+    plus, minus
+
+inl evolve_vector (fitness : vector -> i32) (low : vector) (high : vector) (start : vector) (seed : u32) (generations : i32) (pairs : i32) : vector =
+    let rec generation (index : i32) (parent : vector) (parent_score : i32) (width : i32) : vector =
+        if index >= generations then parent
+        else
+            let rec children (pair : i32) (best : vector) (best_score : i32) : vector * i32 =
+                if pair >= pairs then best, best_score
+                else
+                    match antithetic_pair seed index pair width low high parent with
+                    | plus, minus =>
+                        inl plus_score = fitness plus
+                        inl minus_score = fitness minus
+                        inl best, best_score = if plus_score > best_score then plus, plus_score else best, best_score
+                        if minus_score > best_score then children (pair + 1) minus minus_score else children (pair + 1) best best_score
+            match children 0 parent parent_score with
+            | best, best_score => generation (index + 1) best best_score (if width * 4 / 5 > 10 then width * 4 / 5 else 10)
+    generation 0 start (fitness start) 250
+
+///> c
+test evolve_climbs_a_known_peak =
+    inl ~seed = 3u32
+    inl peak (g : genome) : i32 = 0 - (g.first - 40) * (g.first - 40) - (g.second - 7) * (g.second - 7) - (g.third + 5) * (g.third + 5)
+    inl low = {first = 0; second = -20; third = -20}
+    inl high = {first = 100; second = 20; third = 20}
+    inl best = evolve peak low high {first = 0; second = 0; third = 0} seed 12 16 32
+    (peak best > peak {first = 0; second = 0; third = 0}) |> _assert_eq true
+    (peak best >= -12) |> _assert_eq true
+
+///> c
+test evolve_vector_climbs_a_known_peak_with_antithetic_pairs =
+    inl ~seed = 3u32
+    inl target i = if i = 0 then 40 elif i = 1 then -7 elif i = 2 then 3 else 90
+    inl peak (v : vector) : i32 =
+        let rec loss (i : i32) (acc : i32) : i32 = if i >= 4 then acc else loss (i + 1) (acc - (gene v i - target i) * (gene v i - target i))
+        loss 0 0
+    inl low = vector_of 4 -100
+    inl high = vector_of 4 100
+    inl best = evolve_vector peak low high (vector_of 4 0) seed 20 8
+    (peak best > peak (vector_of 4 0), peak best >= -40) |> _assert_eq (true, true)

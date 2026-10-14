@@ -4,40 +4,48 @@
 #include <stdlib.h>
 #include <string.h>
 bool method1(int32_t v0, bool v1){
-    
-    
-    int32_t v2;
-    v2 = v0 - 1l;
-    
-    
-    bool v4;
-    if (v1){
+    while (1) {
         
         
-        bool v3;
-        v3 = v0 > 0l;
+        int32_t v2;
+        v2 = v0 - 1l;
         
         
-        v4 = v3;
-    } else {
+        bool v4;
+        if (v1){
+            
+            
+            bool v3;
+            v3 = v0 > 0l;
+            
+            
+            v4 = v3;
+        } else {
+            
+            
+            v4 = false;
+        }
         
         
-        v4 = false;
-    }
-    
-    
-    bool v5;
-    v5 = v2 == 0l;
-    
-    
-    if (v5){
+        bool v5;
+        v5 = v2 == 0l;
         
         
-        return v4;
-    } else {
-        
-        
-        return method1(v2, v4);
+        if (v5){
+            
+            
+            return v4;
+        } else {
+            
+            
+            {
+                int32_t tmp0 = v2;
+                bool tmp1 = v4;
+                v0 = tmp0;
+                v1 = tmp1;
+            }
+            continue;
+        }
     }
 }
 bool method0(int32_t v0){

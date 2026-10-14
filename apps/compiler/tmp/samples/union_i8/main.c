@@ -59,7 +59,7 @@ int32_t main(){
         case 1: { // Held
             int8_t v5 = v4.case1.v0;
             
-            USDecref0(&(v4));
+            
             bool v6;
             v6 = v5 == 100;
             
@@ -78,7 +78,7 @@ int32_t main(){
         default: { // Missing
             
             
-            USDecref0(&(v4));
+            
             return 1l;
             break;
         }

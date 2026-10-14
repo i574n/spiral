@@ -105,7 +105,7 @@ US0 closure0(Closure0 * x, int32_t v0){
         
         
         Array0 * v3;
-        v3 = ArrayCreate0(2l, false);
+        v3 = ArrayCreate0(2l, true);
         
         
         

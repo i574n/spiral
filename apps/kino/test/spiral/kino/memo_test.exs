@@ -34,6 +34,16 @@ defmodule Spiral.Kino.MemoTest do
     refute key.() == third
   end
 
+  test "a listed module that is also the notebook keeps the key when only its tests or doc lines change", %{package: package, key: key} do
+    listed = Path.join(package, "listed.spi")
+    File.write!(listed, "/// # listed\ninl a () = 1i32\n\ntest a =\n    a () |> _assert_eq 2i32\n")
+    first = key.()
+    File.write!(listed, "/// # listed, accepted\ninl a () = 1i32\n\ntest a =\n    a () |> _assert_eq 1i32\n\ntest b =\n    a () |> _assert_eq 1i32\n")
+    assert key.() == first
+    File.write!(listed, "/// # listed\ninl a () = 7i32\n\ntest a =\n    a () |> _assert_eq 1i32\n")
+    refute key.() == first
+  end
+
   test "the listed modules are read from package.spiproj, folders included", %{package: package} do
     project = File.read!(Path.join(package, "package.spiproj"))
     assert Enum.map(Memo.module_files(package, project), &Path.relative_to(&1, package)) == ["listed.spi", "sub/inner.spi"]

@@ -1,0 +1,476 @@
+///- --package .
+test hunting_pack static =
+    open testing
+
+inl tick_ms () : i32 = 100
+inl scenario_ticks () : i32 = 3000
+inl escape_distance () : i32 = 8
+inl sight_range () : i32 = 7
+inl knight_max_health (level : i32) : i32 = 185 + 15 * (level - 8)
+inl training_first () : u32 = 1
+inl training_count () : i32 = 100
+inl held_out_first () : u32 = 1001
+inl held_out_count () : i32 = 100
+inl creature_strike_ms () : i32 = 2000
+inl chase_step_factor () : i32 = 1
+inl knight_sample_step_ms () : i32 = 650
+inl parity_action_gap_ms () : i32 = 250
+inl client_decision_ms () : i32 = 100
+inl death_penalty () : i32 = 50
+
+inl purpose_player_hit () : u32 = 11
+inl purpose_player_heal () : u32 = 12
+inl purpose_creature_hit () : u32 = 13
+inl purpose_loot () : u32 = 14
+
+type foe =
+    {
+        at : geometry.position
+        spawn : geometry.position
+        life : vitality.vitality vitality.alive
+        strikes_at : i32
+        next_step_at : i32
+        met_target : bool
+    }
+
+type pack =
+    {
+        player_at : geometry.position
+        player_health : quantity.amount quantity.hitpoints
+        player_next_step_at : i32
+        timers : cooldowns.timers
+        target : i32
+        foes : views.trio foe
+        kills : i32
+        escapes : i32
+        deaths : i32
+        gold : quantity.amount quantity.gold_coins
+        potions : i32
+        block_charges : i32
+        next_charge_at : i32
+        next_action_at : quantity.amount quantity.milliseconds
+        next_decision_at : i32
+        hits_taken : i32
+        damage_taken : quantity.amount quantity.hitpoints
+        retreats : i32
+        cornered : i32
+    }
+
+union brain =
+    | Rules : policy.adaptive
+    | Network : network.weights
+
+union footing_rule =
+    | StepAway
+    | ScoredStep : terrain.footing
+
+type tactic = {brain : brain; order : policy.targeting; footing : footing_rule}
+
+type offense = {level : i32; weapon_attack : i32; weapon_skill : i32; step_ms : i32; heal_low : i32; heal_high : i32}
+
+inl offense_against (kind : creatures.arena_creature) : offense =
+    open creatures
+    match kind with
+    | Cyclops => {level = 30; weapon_attack = 21; weapon_skill = 60; step_ms = knight_sample_step_ms (); heal_low = 125; heal_high = 175}
+    | _ => {level = 8; weapon_attack = 20; weapon_skill = 30; step_ms = knight_sample_step_ms (); heal_low = 30; heal_high = 60}
+
+inl fresh_foe (kind : creatures.arena_creature) (spawn : geometry.position) : foe =
+    {at = spawn; spawn = spawn; life = vitality.spawn (creatures.stats_of kind).max_health; strikes_at = 0; next_step_at = 0; met_target = false}
+
+inl never () : i32 = 2147483647
+
+inl buried_foe (kind : creatures.arena_creature) : foe =
+    inl grave = fresh_foe kind (geometry.position 0 0 15)
+    {grave with strikes_at = never (); next_step_at = never ()}
+
+union respawn_rule =
+    | Respawning
+    | Clearing
+
+type camp = {first_kind : creatures.arena_creature; second_kind : creatures.arena_creature; third_kind : creatures.arena_creature; hunter_level : i32; rule : respawn_rule; layout : terrain.layout}
+
+inl hardest_kind (a : creatures.arena_creature) (b : creatures.arena_creature) (c : creatures.arena_creature) : creatures.arena_creature =
+    open creatures
+    inl tough kind = match kind with Cyclops => true | _ => false
+    if tough a || tough b || tough c then Cyclops else Troll
+
+inl default_hunter_level (a : creatures.arena_creature) (b : creatures.arena_creature) (c : creatures.arena_creature) : i32 = (offense_against (hardest_kind a b c)).level
+
+inl uniform_camp (kind : creatures.arena_creature) : camp = {first_kind = kind; second_kind = kind; third_kind = kind; hunter_level = default_hunter_level kind kind kind; rule = Respawning; layout = open terrain in OpenField}
+
+inl with_hunter_level (level : i32) (c : camp) : camp = {c with hunter_level = level}
+
+inl clearing (c : camp) : camp = {c with rule = Clearing}
+
+inl on_layout (l : terrain.layout) (c : camp) : camp = {c with layout = l}
+
+inl spawns_of (c : camp) : geometry.position * geometry.position * geometry.position =
+    match c.rule, c.layout with
+    | Clearing, OpenField => geometry.position 100 102 7, geometry.position 99 103 7, geometry.position 99 104 7
+    | _ => terrain.spawn_points c.layout
+
+inl camp_of_entries (entries : catalog.entry * catalog.entry * catalog.entry) : camp =
+    inl a, b, c = entries
+    inl first, second, third = catalog.entry_creature a, catalog.entry_creature b, catalog.entry_creature c
+    {first_kind = first; second_kind = second; third_kind = third; hunter_level = default_hunter_level first second third; rule = Respawning; layout = open terrain in OpenField}
+
+inl hunter_of (c : camp) : offense =
+    inl base = offense_against (hardest_kind c.first_kind c.second_kind c.third_kind)
+    {base with level = c.hunter_level}
+
+inl player_max_health (c : camp) : quantity.amount quantity.hitpoints = quantity.hp (knight_max_health (hunter_of c).level)
+
+inl kind_of (index : i32) (c : camp) : creatures.arena_creature =
+    if index = 0 then c.first_kind elif index = 1 then c.second_kind else c.third_kind
+
+inl start (camp : camp) : pack =
+    inl a, b, c = spawns_of camp
+    {
+        player_at = terrain.player_start camp.layout
+        player_health = player_max_health camp
+        player_next_step_at = 0
+        timers = cooldowns.idle_timers ()
+        target = -1
+        foes = views.trio (fresh_foe camp.first_kind a, fresh_foe camp.second_kind b, fresh_foe camp.third_kind c)
+        kills = 0
+        escapes = 0
+        deaths = 0
+        gold = quantity.gp 0
+        potions = 0
+        block_charges = combat.max_block_charges ()
+        next_charge_at = combat.block_charge_ms ()
+        next_action_at = quantity.ms 0
+        next_decision_at = 0
+        hits_taken = 0
+        damage_taken = quantity.hp 0
+        retreats = 0
+        cornered = 0
+    }
+
+inl slot (index : i32) (p : pack) : foe =
+    match p.foes with
+    | views.trio (a, b, c) => if index = 0 then a elif index = 1 then b else c
+
+inl with_slot (index : i32) (f : foe) (p : pack) : pack =
+    match p.foes with
+    | views.trio (a, b, c) => {p with foes = views.trio ((if index = 0 then f else a), (if index = 1 then f else b), (if index = 2 then f else c))}
+
+inl taken_by_others (index : i32) (p : pack) (q : geometry.position) : bool =
+    geometry.same_tile q p.player_at || (index <> 0 && geometry.same_tile q (slot 0 p).at) || (index <> 1 && geometry.same_tile q (slot 1 p).at) || (index <> 2 && geometry.same_tile q (slot 2 p).at)
+
+inl taken_by_foes (p : pack) (q : geometry.position) : bool =
+    views.counted (fun (f : foe) => geometry.same_tile q f.at) p.foes > 0
+
+inl key (seed : u32) (tick : i32) (entity : i32) (purpose : u32) : rng.roll_key =
+    rng.roll_key seed (conv tick) (conv entity) purpose
+
+inl distance_to (f : foe) (p : pack) : i32 = geometry.chebyshev_distance p.player_at f.at
+
+inl foe_acts (camp : camp) (seed : u32) (tick : i32) (now : i32) (index : i32) (p : pack) : pack =
+    inl kind = kind_of index camp
+    inl stats = creatures.stats_of kind
+    inl f = slot index p
+    inl moved =
+        if now < f.next_step_at then p
+        elif vitality.health f.life < stats.run_health then
+            inl away = terrain.step_away camp.layout (taken_by_others index p) p.player_at f.at
+            inl fled = {f with at = away; next_step_at = now + geometry.step_cost (terrain.on_ground camp.layout stats.step_ms) f.at away}
+            if geometry.chebyshev_distance p.player_at fled.at >= escape_distance () then
+                inl reset = with_slot index (fresh_foe kind f.spawn) p
+                {reset with escapes = p.escapes + 1; target = if p.target = index then -1 else p.target}
+            else with_slot index fled p
+        elif distance_to f p <= 1 then with_slot index {f with met_target = true} p
+        else
+            inl toward = terrain.step_toward camp.layout (taken_by_others index p) p.player_at f.at
+            inl base = terrain.on_ground camp.layout stats.step_ms
+            inl straight = if f.met_target then base * chase_step_factor () else base
+            with_slot index {f with at = toward; next_step_at = now + geometry.step_cost straight f.at toward} p
+    inl g = slot index moved
+    if distance_to g moved <= 1 && g.strikes_at <= now && vitality.health g.life >= stats.run_health then
+        inl shielded = moved.block_charges > 0
+        inl hurt = combat.creature_hit stats.melee_max (combat.knight_sample_gear ()) shielded (key seed tick index (purpose_creature_hit ()))
+        with_slot index {g with strikes_at = now + creature_strike_ms ()} {moved with player_health = quantity.minus moved.player_health (quantity.hp hurt); block_charges = if shielded then moved.block_charges - 1 else moved.block_charges; hits_taken = if hurt > 0 then moved.hits_taken + 1 else moved.hits_taken; damage_taken = quantity.plus moved.damage_taken (quantity.hp hurt)}
+    else moved
+
+inl candidate_of (index : i32) (p : pack) (camp : camp) : policy.candidate =
+    inl kind = kind_of index camp
+    inl f = slot index p
+    {is_current = p.target = index; distance = distance_to f p; health_percent = vitality.health f.life * 100 / (creatures.stats_of kind).max_health}
+
+inl choose_target (camp : camp) (order : policy.targeting) (p : pack) : i32 =
+    inl visible index = distance_to (slot index p) p <= sight_range ()
+    inl better (a : i32) (b : i32) : i32 =
+        if a < 0 then b
+        elif b < 0 then a
+        elif policy.prefers_by order (candidate_of a p camp) (candidate_of b p camp) then a
+        else b
+    inl pick index = if visible index then index else -1
+    better (better (pick 0) (pick 1)) (pick 2)
+
+inl observe (now : i32) (p : pack) : policy.observation =
+    open policy
+    inl reach = if p.target < 0 then NoTarget elif distance_to (slot p.target p) p <= 1 then InReach else OutOfReach
+    {health = quantity.value_of p.player_health; heal_ready = cooldowns.can_cast now (vocations.as_cooldown (vocations.knight_heal ())) p.timers; strike_ready = cooldowns.can_cast now (cooldowns.strike_spell ()) p.timers; target = reach}
+
+inl player_heals (camp : camp) (seed : u32) (tick : i32) (slot : readiness.ready readiness.action_slot) (p : pack) : pack =
+    inl now = quantity.value_of (readiness.since slot)
+    inl hunter = hunter_of camp
+    inl amount : i32 = conv (rng.roll_between (conv hunter.heal_low) (conv hunter.heal_high) (key seed tick 99 (purpose_player_heal ())))
+    {p with player_health = quantity.capped (player_max_health camp) (quantity.plus p.player_health (quantity.hp amount)); timers = cooldowns.after_cast now (vocations.as_cooldown (vocations.knight_heal ())) p.timers; potions = p.potions + 1; next_action_at = quantity.plus (readiness.since slot) (quantity.ms (parity_action_gap_ms ()))}
+
+inl player_strikes (camp : camp) (seed : u32) (tick : i32) (proof : readiness.ready readiness.attack_group) (p : pack) : pack =
+    open vitality
+    inl now = quantity.value_of (readiness.since proof)
+    inl kind = kind_of p.target camp
+    inl stats = creatures.stats_of kind
+    inl o = hunter_of camp
+    inl f = slot p.target p
+    inl hit = combat.melee_hit (open damage in Balanced) o.level o.weapon_attack o.weapon_skill stats.defense stats.armor (key seed tick p.target (purpose_player_hit ()))
+    inl timed = {p with timers = cooldowns.after_cast now (cooldowns.strike_spell ()) p.timers}
+    match strike hit f.life with
+    | Survived wounded => with_slot p.target {f with life = wounded} timed
+    | Slain _ =>
+        inl reset = with_slot p.target (match camp.rule with Respawning => fresh_foe kind f.spawn | Clearing => buried_foe kind) timed
+        inl drop = creatures.gold_drop_of kind
+        inl lucky = conv (rng.roll_between 1 100000 (key seed tick p.target (purpose_loot ()))) <= drop.chance_per_100000
+        inl coins : i32 = if lucky then conv (rng.roll_between 1 (conv drop.max_count) (key seed (tick + 1) p.target (purpose_loot ()))) else 0
+        {reset with kills = timed.kills + 1; target = -1; gold = quantity.plus timed.gold (quantity.gp coins)}
+
+inl player_approaches (camp : camp) (now : i32) (p : pack) : pack =
+    if now < p.player_next_step_at then p
+    else
+        inl toward = terrain.step_toward camp.layout (taken_by_foes p) (slot p.target p).at p.player_at
+        {p with player_at = toward; player_next_step_at = now + geometry.step_cost (terrain.on_ground camp.layout (hunter_of camp).step_ms) p.player_at toward}
+
+inl threat_rank (f : foe) : i32 = f.at.x * 100000 + f.at.y
+
+inl slot_of_nearest_attacker (p : pack) : foe =
+    inl adjacent index = distance_to (slot index p) p <= 1
+    inl earlier (a : i32) (b : i32) : i32 =
+        if a < 0 then b elif b < 0 then a elif threat_rank (slot b p) < threat_rank (slot a p) then b else a
+    inl pick index = if adjacent index then index else -1
+    inl chosen = earlier (earlier (pick 0) (pick 1)) (pick 2)
+    slot (if chosen < 0 then 0 else chosen) p
+
+inl player_retreats (camp : camp) (rule : footing_rule) (slot : readiness.ready readiness.action_slot) (p : pack) : pack =
+    inl now = quantity.value_of (readiness.since slot)
+    inl threat = slot_of_nearest_attacker p
+    inl foes_near (q : geometry.position) : i32 = views.counted (fun (f : foe) => geometry.chebyshev_distance f.at q <= 1) p.foes
+    inl away =
+        match rule with
+        | StepAway => terrain.step_away camp.layout (taken_by_foes p) threat.at p.player_at
+        | ScoredStep w => terrain.scored_step camp.layout (taken_by_foes p) foes_near w threat.at p.player_at
+    inl stuck = geometry.same_tile away p.player_at
+    {p with player_at = away; player_next_step_at = now + geometry.step_cost (terrain.on_ground camp.layout (hunter_of camp).step_ms) p.player_at away; next_action_at = quantity.plus (readiness.since slot) (quantity.ms (parity_action_gap_ms ())); retreats = if stuck then p.retreats else p.retreats + 1; cornered = if stuck then p.cornered + 1 else p.cornered}
+
+inl features (camp : camp) (attackers : i32) (now : i32) (p : pack) : network.inputs =
+    inl health_fraction = quantity.value_of p.player_health * network.one () / quantity.value_of (player_max_health camp)
+    if p.target < 0 then network.inputs_of health_fraction attackers 0 0 false false false
+    else
+        inl f = slot p.target p
+        inl stats = creatures.stats_of (kind_of p.target camp)
+        inl o = observe now p
+        network.inputs_of health_fraction attackers (vitality.health f.life * network.one () / stats.max_health) (distance_to f p) o.heal_ready o.strike_ready (vitality.health f.life < stats.run_health)
+
+inl wants_heal (camp : camp) (b : brain) (attackers : i32) (now : i32) (p : pack) : bool =
+    match b with
+    | Rules a => policy.heals (policy.thresholds_of a attackers) (observe now p)
+    | Network w => (observe now p).heal_ready && (network.decide w (features camp attackers now p)).heal
+
+inl after_heal_plan (camp : camp) (b : brain) (attackers : i32) (now : i32) (p : pack) : bool * policy.engagement =
+    open policy
+    match b with
+    | Rules a => retreats a attackers, engages (thresholds_of a attackers) (observe now p)
+    | Network w =>
+        inl o = observe now p
+        inl d = network.decide w (features camp attackers now p)
+        inl engagement =
+            if d.engage then
+                match o.target with
+                | InReach => if o.strike_ready then Strike else Hold
+                | OutOfReach => Approach
+                | NoTarget => Hold
+            else Hold
+        d.retreat, engagement
+
+inl player_acts (camp : camp) (t : tactic) (seed : u32) (tick : i32) (now : i32) (p : pack) : pack =
+    open policy
+    inl attackers = views.counted (fun (f : foe) => distance_to f p <= 1) p.foes
+    inl aimed = {p with target = choose_target camp t.order p}
+    inl healed =
+        match readiness.action_gate (quantity.ms now) aimed.next_action_at with
+        | Open slot => if wants_heal camp t.brain attackers now aimed then player_heals camp seed tick slot aimed else aimed
+        | ClosedUntil _ => aimed
+    if healed.target < 0 then healed
+    else
+        match after_heal_plan camp t.brain attackers now healed with
+        | retreat, engagement =>
+            inl engage () =
+                match engagement with
+                | Strike =>
+                    match readiness.attack_gate (quantity.ms now) healed.timers with
+                    | Open proof => player_strikes camp seed tick proof healed
+                    | ClosedUntil _ => healed
+                | Approach => player_approaches camp now healed
+                | Hold => healed
+            if retreat && now >= healed.player_next_step_at then
+                match readiness.action_gate (quantity.ms now) healed.next_action_at with
+                | Open slot => player_retreats camp t.footing slot healed
+                | ClosedUntil _ => engage ()
+            else engage ()
+inl respawn_player (camp : camp) (p : pack) : pack =
+    {p with player_at = terrain.player_start camp.layout; player_health = player_max_health camp; deaths = p.deaths + 1; target = -1}
+
+inl recharged (now : i32) (p : pack) : pack =
+    if now < p.next_charge_at then p
+    else {p with block_charges = if p.block_charges < combat.max_block_charges () then p.block_charges + 1 else p.block_charges; next_charge_at = now + combat.block_charge_ms ()}
+
+inl advance (camp : camp) (t : tactic) (seed : u32) (tick : i32) (p : pack) : pack =
+    inl now = tick * tick_ms ()
+    inl struck =
+        p
+        |> recharged now
+        |> foe_acts camp seed tick now 0
+        |> foe_acts camp seed tick now 1
+        |> foe_acts camp seed tick now 2
+    if quantity.at_least (quantity.hp 0) struck.player_health then respawn_player camp struck
+    elif now < struck.next_decision_at then struck
+    else player_acts camp t seed tick now {struck with next_decision_at = now + client_decision_ms ()}
+
+inl simulate (camp : camp) (t : tactic) (seed : u32) (ticks : i32) : pack =
+    let rec loop (tick : i32) (p : pack) : pack =
+        if tick >= ticks then p else loop (tick + 1) (advance camp t seed tick p)
+    loop 0 (start camp)
+
+inl clear_run (camp : camp) (t : tactic) (seed : u32) (max_ticks : i32) : i32 * pack =
+    inl cleared = clearing camp
+    let rec loop (tick : i32) (p : pack) : i32 * pack =
+        if tick >= max_ticks || p.kills >= 3 then tick * tick_ms (), p else loop (tick + 1) (advance cleared t seed tick p)
+    loop 0 (start cleared)
+
+inl score (camp : camp) (t : tactic) (first_seed : u32) (count : i32) : i32 =
+    let rec loop (index : i32) (acc : i32) : i32 =
+        if index >= count then acc
+        else
+            inl outcome = simulate camp t (first_seed + conv index) (scenario_ticks ())
+            loop (index + 1) (acc + outcome.kills - death_penalty () * outcome.deaths)
+    loop 0 0
+
+inl highest_tuned_heal () : i32 = 400
+
+inl potion_price () : quantity.amount quantity.gold_coins = quantity.gp 50
+inl all_blessings_price_at_level_30 () : quantity.amount quantity.gold_coins = quantity.gp 14000
+
+inl hunt_profit (p : pack) : quantity.amount quantity.gold_coins =
+    quantity.minus (quantity.minus p.gold (quantity.scaled p.potions (potion_price ()))) (quantity.scaled p.deaths (all_blessings_price_at_level_30 ()))
+
+inl profit (camp : camp) (t : tactic) (first_seed : u32) (count : i32) : quantity.amount quantity.gold_coins =
+    let rec loop (index : i32) (acc : quantity.amount quantity.gold_coins) : quantity.amount quantity.gold_coins =
+        if index >= count then acc
+        else loop (index + 1) (quantity.plus acc (hunt_profit (simulate camp t (first_seed + conv index) (scenario_ticks ()))))
+    loop 0 (quantity.gp 0)
+
+inl totals (camp : camp) (t : tactic) (first_seed : u32) (count : i32) : i32 * i32 * i32 =
+    let rec loop (index : i32) (kills : i32) (escapes : i32) (deaths : i32) : i32 * i32 * i32 =
+        if index >= count then kills, escapes, deaths
+        else
+            inl outcome = simulate camp t (first_seed + conv index) (scenario_ticks ())
+            loop (index + 1) (kills + outcome.kills) (escapes + outcome.escapes) (deaths + outcome.deaths)
+    loop 0 0 0 0
+
+inl cavebot (order : policy.targeting) : tactic = {brain = Rules (policy.fixed {heal_below = 120; strike_above = 0}); order = order; footing = StepAway}
+
+inl cavebot_with_heal (heal : i32) : tactic = {brain = Rules (policy.fixed {heal_below = heal; strike_above = 0}); order = open policy in CurrentFirst; footing = StepAway}
+
+type ledger = {hunt_kills : i32; hunt_deaths : i32; hunt_profit : quantity.amount quantity.gold_coins}
+
+inl ledger_of (camp : camp) (t : tactic) (first_seed : u32) (count : i32) : ledger =
+    let rec loop (index : i32) (acc : ledger) : ledger =
+        if index >= count then acc
+        else
+            inl p = simulate camp t (first_seed + conv index) (scenario_ticks ())
+            loop (index + 1) {hunt_kills = acc.hunt_kills + p.kills; hunt_deaths = acc.hunt_deaths + p.deaths; hunt_profit = quantity.plus acc.hunt_profit (hunt_profit p)}
+    loop 0 {hunt_kills = 0; hunt_deaths = 0; hunt_profit = quantity.gp 0}
+
+type clear_ledger = {clear_potions : i32; clear_deaths : i32; clear_ms : i32}
+
+inl clear_ledger_of (camp : camp) (t : tactic) (first_seed : u32) (count : i32) : clear_ledger =
+    let rec loop (index : i32) (acc : clear_ledger) : clear_ledger =
+        if index >= count then acc
+        else
+            match clear_run camp t (first_seed + conv index) 6000 with
+            | elapsed, p => loop (index + 1) {clear_potions = acc.clear_potions + p.potions; clear_deaths = acc.clear_deaths + p.deaths; clear_ms = acc.clear_ms + elapsed}
+    loop 0 {clear_potions = 0; clear_deaths = 0; clear_ms = 0}
+
+inl clear_cost (l : clear_ledger) : quantity.amount quantity.gold_coins =
+    quantity.plus (quantity.scaled l.clear_potions (potion_price ())) (quantity.scaled l.clear_deaths (all_blessings_price_at_level_30 ()))
+
+inl below_the_kill_floor () : i32 = -1000000000
+
+nominal kill_score = ()
+
+union objective unit =
+    | Kills :: objective kill_score
+    | Profit :: objective quantity.gold_coins
+    | ProfitKeepingKills :: i32 -> objective quantity.gold_coins
+    | CheapClearWithin :: i32 -> objective quantity.gold_coins
+
+inl measured forall unit. (o : objective unit) (camp : camp) (t : tactic) (first_seed : u32) (count : i32) : quantity.amount unit =
+    match o with
+    | Kills => quantity.amount_of (score camp t first_seed count)
+    | Profit => profit camp t first_seed count
+    | ProfitKeepingKills floor =>
+        inl l = ledger_of camp t first_seed count
+        if l.hunt_kills >= floor then l.hunt_profit else quantity.gp (below_the_kill_floor () + l.hunt_kills * 1000)
+    | CheapClearWithin limit_ms =>
+        inl l = clear_ledger_of camp t first_seed count
+        if l.clear_ms <= limit_ms * count then quantity.minus (quantity.gp 0) (clear_cost l) else quantity.gp (below_the_kill_floor () - l.clear_ms / count)
+
+inl worth forall unit. (o : objective unit) (camp : camp) (t : tactic) (first_seed : u32) (count : i32) : i32 =
+    quantity.value_of (measured o camp t first_seed count)
+inl tuned_cavebot_heal_for forall unit. (o : objective unit) (camp : camp) (first_seed : u32) (count : i32) : i32 =
+    let rec best (heal : i32) (best_heal : i32) (best_score : i32) : i32 =
+        if heal > highest_tuned_heal () then best_heal
+        else
+            inl s = worth o camp (cavebot_with_heal heal) first_seed count
+            if s > best_score then best (heal + 10) heal s else best (heal + 10) best_heal best_score
+    best 40 40 (worth o camp (cavebot_with_heal 40) first_seed count)
+
+inl tuned_cavebot_heal (camp : camp) (first_seed : u32) (count : i32) : i32 = tuned_cavebot_heal_for Kills camp first_seed count
+
+inl heal_fraction_below (camp : camp) (heal : i32) : i32 = network.fraction_below heal (quantity.value_of (player_max_health camp))
+
+inl network_tactic (w : network.weights) : tactic = {brain = Network w; order = open policy in CurrentFirst; footing = StepAway}
+
+inl cavebot_network (camp : camp) (heal : i32) : network.weights = network.threshold_healer (heal_fraction_below camp heal)
+
+inl tactic_with_order (order : policy.targeting) (g : search.genome) : tactic = {brain = Rules {heal_base = g.first; heal_per_attacker = g.second; strike_above = 0; retreat_at = g.third}; order = order; footing = StepAway}
+
+inl genes_of (g0 : i32) (g1 : i32) (g2 : i32) (g3 : i32) (g4 : i32) (g5 : i32) (g6 : i32) (g7 : i32) (g8 : i32) (g9 : i32) (g10 : i32) : search.vector =
+    search.vector_of 11 0 |> search.with_gene 10 g10 |> search.with_gene 0 g0 |> search.with_gene 1 g1 |> search.with_gene 2 g2 |> search.with_gene 3 g3 |> search.with_gene 4 g4
+    |> search.with_gene 5 g5 |> search.with_gene 6 g6 |> search.with_gene 7 g7 |> search.with_gene 8 g8 |> search.with_gene 9 g9
+
+inl scored_low () : search.vector = genes_of 40 0 1 -200 -200 -200 -200 -50 -50 -50 -10
+inl scored_high () : search.vector = genes_of 400 80 4 200 200 200 200 50 50 50 10
+inl scored_start () : search.vector = genes_of 143 34 1 50 100 -10 -1 10 0 0 1
+
+inl scored_tactic (g : search.vector) : tactic =
+    inl at i = search.gene g i
+    {
+        brain = Rules {heal_base = at 0; heal_per_attacker = at 1; strike_above = 0; retreat_at = at 2}
+        order = policy.Scored {current = at 3; reach = at 4; health = at 5; distance = at 6}
+        footing = ScoredStep {away = at 7; room = at 8; crowd = at 9; align = at 10}
+    }
+inl tactic_of (g : search.genome) : tactic = tactic_with_order (open policy in CurrentFirst) g
+
+inl evolve_rules_for forall unit. (o : objective unit) (order : policy.targeting) (start : search.genome) (camp : camp) (search_seed : u32) (first_seed : u32) (count : i32) (generations : i32) (offspring : i32) : search.genome =
+    search.evolve (fun g => worth o camp (tactic_with_order order g) first_seed count) {first = 0; second = 0; third = 1} {first = 400; second = 60; third = 4} start search_seed generations offspring 40
+
+inl evolve_tactic_from_for forall unit. (o : objective unit) (start : search.genome) (camp : camp) (search_seed : u32) (first_seed : u32) (count : i32) (generations : i32) (offspring : i32) : search.genome =
+    search.evolve (fun g => worth o camp (tactic_of g) first_seed count) {first = 0; second = 0; third = 1} {first = 400; second = 60; third = 4} start search_seed generations offspring 40
+
+inl evolve_tactic_from (start : search.genome) (camp : camp) (search_seed : u32) (first_seed : u32) (count : i32) (generations : i32) (offspring : i32) : search.genome =
+    search.evolve (fun g => score camp (tactic_of g) first_seed count) {first = 0; second = 0; third = 1} {first = 400; second = 60; third = 4} start search_seed generations offspring 40
+
+inl evolve_tactic (camp : camp) (search_seed : u32) (first_seed : u32) (count : i32) (generations : i32) (offspring : i32) : search.genome =
+    evolve_tactic_from {first = 120; second = 0; third = 4} camp search_seed first_seed count generations offspring

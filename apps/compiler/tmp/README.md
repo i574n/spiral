@@ -5,10 +5,10 @@ The build, test harness and fixtures around the Spiral compiler, plus its two de
 | Mode | Core | State | Use it for |
 |---|---|---|---|
 | `single-flight` | `../spiral_compiler.fs`: shared sections + the `#else` side of each pair | stable | F#, C, **Rust** and **Delphi** output; the oracle every test is scored against |
-| `hopac` | `../spiral_compiler.fs`: shared sections + the `#if SPIRAL_CORE_HOPAC` side of each pair | in progress | the parallel Hopac evaluator; advanced one frontier fixture at a time |
+| `gpt5parallel` | `../spiral_compiler.fs`: shared sections + the `#if SPIRAL_CORE_GPT5PARALLEL` side of each pair | in progress | the gpt5parallel evaluator (parallel, on Hopac); advanced one frontier fixture at a time |
 
 Both cores are one file (13.9 MB, merged 2026-09-28): its `/// ## Name` sections are shared when both cores
-agree and written as whole `#if SPIRAL_CORE_HOPAC` / `#else` pairs when they differ (6 shared and 33 pairs
+agree and written as whole `#if SPIRAL_CORE_GPT5PARALLEL` / `#else` pairs when they differ (6 shared and 33 pairs
 at the merge). See `AGENTS.md` for the rules and "Upstream" below for syncing with The Spiral Language.
 
 Both modes build the **same host** (`compiler/host`) around a different core. The host talks to the core
@@ -25,14 +25,11 @@ core itself; the host never rewrites one backend's output into another.
 ```powershell
 pwsh scripts/install-dotnet.ps1             # once: .NET 11 SDK into the cache dir (no system changes)
 pwsh scripts/build.ps1                      # single-flight            (~2 min)
-pwsh scripts/build.ps1 -Mode hopac          # hopac                    (~4-5 min for a core change, ~35 s for a host change)
+pwsh scripts/build.ps1 -Mode gpt5parallel          # gpt5parallel                    (~4-5 min for a core change, ~35 s for a host change)
 pwsh scripts/test.ps1                       # smoke suite, single-flight
-pwsh scripts/test.ps1 -Mode hopac -Suite frontier   # the hopac inner loop
+pwsh scripts/test.ps1 -Mode gpt5parallel -Suite frontier   # the gpt5parallel inner loop
 pwsh scripts/test.ps1 -Suite all -Native    # everything, with native builds and runs (C, Rust, Delphi, TypeScript, C++, Python)
 pwsh scripts/test-rust-exports.ps1          # Rust library/export ABI contracts
-pwsh scripts/build-splitter.ps1             # spiral-split (Rust), for split core builds
-pwsh scripts/bench-split.ps1                # time the split core against the monolith
-pwsh scripts/gear-dev.ps1                   # the split hopac compiler, rebuilding only changed gears
 ```
 
 Native builds need `gcc` or `clang`, `rustc` and `fpc` (Free Pascal) on `PATH`; missing tools are
@@ -48,15 +45,14 @@ compiler/
   runtime-compat/        minimal Supervisor stand-in (Lib/Common/Trace) both cores need
   lib/                   Packages.props (pinned NuGet dependencies) and Dependencies.fsproj
 samples/                 every fixture, one flat directory each:
-  <name>/                  backend fixtures and their compiled F#/C/Rust/Delphi outputs (frontier_* for hopac)
+  <name>/                  backend fixtures and their compiled F#/C/Rust/Delphi outputs (frontier_* for gpt5parallel)
   contract_<name>/         type-system contract cases (F#)
   mega_<name>/             the five megaprojects and their sub-packages
   core/                    the portable `core-` package the fixtures share
 tests/                   harness.psd1 (smoke list, known failures, megaproject roots, C flags),
                          native-shims/ (C shims; run_main.mjs/run_main.py/cpp_native.py: the TypeScript/Python/C++
                          native tiers), rust-exports/
-lanes/                   per-lane docs: single-flight (backends), hopac (frontier), splitter
-splitter/                Rust workspace `spiral-split`: splits a monolith into parallel-buildable projects
+lanes/                   per-lane docs: single-flight (backends), gpt5parallel (frontier), hopacsota (PLAN.md: the successor's contract)
 scripts/                 env, build, test, bench (pwsh, cross-platform)
 ```
 
@@ -131,12 +127,12 @@ that changed (for example `export <fork> a21845bb out --since cd17d19` gives the
 It moves edits as normalized-line patches (a 3-way merge that ignores indentation, blank lines, the
 `/// ###` headings and module headers), so each side keeps its own formatting; an edit whose lines the
 other side also changed is reported as a conflict, not applied. Only single-flight's text is touched (a
-pair's hopac side is reported). Checked 2026-09-28: exporting against the fork's `master` reproduces every
+pair's gpt5parallel side is reported). Checked 2026-09-28: exporting against the fork's `master` reproduces every
 section exactly (normalized), and a synthetic upstream edit imports into its section with the section's
 indentation and headings kept.
 
 Carrying a file into its section (and back) is mechanical as long as shared sections never contain
-`#if SPIRAL_CORE_HOPAC` (hopac differences live in whole hopac-only sections or pairs, see `AGENTS.md`): the
+`#if SPIRAL_CORE_GPT5PARALLEL` (gpt5parallel differences live in whole gpt5parallel-only sections or pairs, see `AGENTS.md`): the
 section's single-flight text is the fork file with the compaction's indent and headings. One file costs
 nothing extra here; only keeping upstream's multi-file layout would make `git merge` work without that
 section-to-file step.

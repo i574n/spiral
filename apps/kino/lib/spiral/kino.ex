@@ -58,17 +58,17 @@ defmodule Spiral.Kino do
           exe = Path.join(dir, exe_name())
 
           with {:ok, names, package_dir} <-
-                 mount_packages(dir, prepared.packages, opts[:root], workspace_root(opts)),
-               :ok <- write_package(dir, names, package_dir, opts[:real]) do
+                 timed(:mount_ms, fn -> mount_packages(dir, prepared.packages, opts[:root], workspace_root(opts)) end),
+               :ok <- timed(:mount_ms, fn -> write_package(dir, names, package_dir, opts[:real]) end) do
             run_builders(builders, dir, spi, exe, prepared, opts, timeout, deadline, started)
           end
         after
+          unless opts[:keep_files], do: timed(:cleanup_ms, fn -> File.rm_rf(dir) end)
           Process.put(:spiral_kino_last_phases, phases())
           Process.put(:spiral_kino_last_targets, target_rows(builders, Process.delete(:spiral_kino_targets) || []))
           Process.delete(:spiral_kino_deadline)
           Process.delete(:spiral_kino_queue_ms)
           Process.delete(:spiral_kino_phases)
-          unless opts[:keep_files], do: File.rm_rf(dir)
         end
       end
     end
@@ -330,7 +330,7 @@ defmodule Spiral.Kino do
         true ->
           File.write!(
             output,
-            if(backend == "Python + Cuda", do: Cell.patch_python(text), else: text)
+            if(backend == "Python + Cuda" and opts[:test_cell] != true, do: Cell.patch_python(text), else: text)
           )
 
           case in_slot(fn ->
@@ -656,7 +656,7 @@ defmodule Spiral.Kino do
         head = code |> binary_part(0, at) |> String.split("\n") |> length()
         last = code |> String.trim_trailing() |> String.split("\n") |> length()
 
-        case Regex.scan(~r/main\.spi:(\d+):(\d+): (?:E[A-Z]+\d+: )?(Unification failure\.)?/, output) do
+        case Regex.scan(~r/main\.spi:(\d+):(\d+): (?:E[A-Z]{2,4}(?:\d{4}|-[A-Za-z]+): )?(Unification failure\.)?/, output) do
           [[_, line, column, "Unification failure."]] ->
             line = String.to_integer(line)
 
@@ -827,7 +827,7 @@ defmodule Spiral.Kino do
 
   defp rustc_default(rs, exe, opts, timeout, deadline) do
     with :ok <- require_tool(Toolchain.rustc(opts), "rustc") do
-      case Runner.run(Toolchain.rustc(opts), ["--edition", "2021", "-o", exe, rs],
+      case Runner.run(Toolchain.rustc(opts), rustc_args(Toolchain.rustc(opts), rs, exe),
              timeout: budget(deadline),
              env: [{"CARGO_MANIFEST_DIR", Path.dirname(rs)}]
            ) do
@@ -837,6 +837,20 @@ defmodule Spiral.Kino do
         {:error, reason} -> {:error, "could not start rustc: #{inspect(reason)}"}
       end
     end
+  end
+
+  @rust_toolchain "+1.99.0"
+  @rust_flags ["-C", "opt-level=2", "-A", "warnings", "--edition", "2024"]
+
+  @spec rustc_args(String.t(), String.t(), String.t()) :: [String.t()]
+  def rustc_args(rustc, rs, exe) do
+    toolchain = if rustup_proxy?(rustc), do: [@rust_toolchain], else: []
+    toolchain ++ @rust_flags ++ ["-o", exe, rs]
+  end
+
+  defp rustup_proxy?(rustc) do
+    path = rustc |> Path.expand() |> String.downcase() |> String.replace("\\", "/")
+    String.contains?(path, "/.cargo/bin/") or String.contains?(path, "/rustup/")
   end
 
   defp execute(exe, opts, timeout, deadline) do

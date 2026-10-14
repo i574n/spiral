@@ -113,8 +113,30 @@ defmodule Spiral.Kino.Notebook do
       unavailable: ran.unavailable,
       memo: ran.memo,
       targets: ran.targets,
-      report: report(tests, selected, ran)
+      report: report(tests, selected, ran) |> with_no_agree_reasons(cells)
     }
+  end
+
+  @no_agree_reason ~r/^\/\/\/- [^\n]*--no-agree\s+"([^"]*)"/m
+  @bare_no_agree ~r/^\/\/\/- [^\n]*--no-agree(?!\s+")/m
+
+  defp with_no_agree_reasons(report, cells) do
+    rows =
+      Enum.map(report["tests"], fn row ->
+        case Regex.run(@no_agree_reason, cell_text(cells, row["index"])) do
+          [_, reason] -> Map.put(row, "no_agree", reason)
+          _ -> row
+        end
+      end)
+
+    report |> Map.merge(counts(rows)) |> Map.put("tests", rows)
+  end
+
+  defp cell_text(cells, index) do
+    case Enum.at(cells, index) do
+      %{source: source} when is_binary(source) -> source
+      _ -> ""
+    end
   end
 
   defp select_tests(_tests, nil), do: {:ok, nil}
@@ -142,7 +164,7 @@ defmodule Spiral.Kino.Notebook do
     tests |> Enum.filter(&(&1.name in names or &1.symbol in names)) |> MapSet.new(& &1.index)
   end
 
-  @report_counts ~w(discovered executed passed failed accepted built skipped unsupported filtered not_run memo_hits)
+  @report_counts ~w(discovered executed passed failed accepted built static preludes skipped unsupported filtered not_run memo_hits)
 
   defp report(tests, selected, %{verdicts: verdicts, unavailable: unavailable, memo: memo} = ran) do
     targets = Map.get(ran, :targets, %{})
@@ -176,9 +198,11 @@ defmodule Spiral.Kino.Notebook do
     count = &Map.get(by, &1, 0)
 
     %{
-      "discovered" => length(rows),
+      "discovered" => length(rows) - count.("prelude"),
+      "preludes" => count.("prelude"),
       "executed" => count.("passed") + count.("failed") + count.("accepted") + count.("built"),
       "built" => count.("built"),
+      "static" => count.("static"),
       "accepted" => count.("accepted"),
       "passed" => count.("passed"),
       "failed" => count.("failed"),
@@ -186,7 +210,8 @@ defmodule Spiral.Kino.Notebook do
       "unsupported" => count.("unsupported"),
       "filtered" => count.("filtered"),
       "not_run" => count.("not_run"),
-      "memo_hits" => Enum.count(rows, &(&1["memo"] == "hit"))
+      "memo_hits" => Enum.count(rows, &(&1["memo"] == "hit")),
+      "no_agree_reasons" => rows |> Enum.flat_map(&List.wrap(&1["no_agree"])) |> Enum.frequencies()
     }
   end
 
@@ -198,6 +223,8 @@ defmodule Spiral.Kino.Notebook do
   end
 
   defp test_state(%{mode: "ignore"}, _selected, _verdict), do: {"skipped", nil}
+  defp test_state(%{mode: "static"}, _selected, _verdict), do: {"static", nil}
+  defp test_state(%{mode: "prelude"}, _selected, _verdict), do: {"prelude", nil}
 
   defp test_state(test, selected, verdict) do
     cond do
@@ -235,6 +262,7 @@ defmodule Spiral.Kino.Notebook do
         Map.new(acc, fn {key, n} -> {key, n + file[key]} end)
       end)
       |> Map.put("files", length(files))
+      |> Map.put("no_agree_reasons", Enum.reduce(files, %{}, &Map.merge(&2, &1["no_agree_reasons"], fn _reason, a, b -> a + b end)))
 
     Enum.map(files, &("spiral-tests file " <> JSON.encode!(&1))) ++
       ["spiral-tests total " <> JSON.encode!(total)]
@@ -326,31 +354,62 @@ defmodule Spiral.Kino.Notebook do
     {result, report}
   end
 
+  @accept_rounds 25
+
   defp accept_mismatches(evaluation, path, opts) do
-    failures =
-      for %{"status" => "failed", "index" => index, "name" => name} <- evaluation.report["tests"],
-          {:failed, message} <- [Map.get(evaluation.verdicts, index)],
-          do: {name, message}
+    failures = failures_with_output(evaluation)
 
     if opts[:accept] && Path.extname(path) == ".spi" && failures != [] do
-      case Spiral.Kino.Accept.accept(path, failures) do
-        results when is_list(results) -> mark_accepted(evaluation, results)
-        _ -> evaluation
-      end
+      mark_accepted(evaluation, settle_accepts(path, opts, failures, 1, %{}))
     else
       evaluation
     end
   end
 
-  defp mark_accepted(evaluation, results) do
-    accepted = for {name, :ok} <- results, do: name
-    refused = Map.new(for {name, {:error, reason}} <- results, do: {name, reason})
+  defp failures_with_output(evaluation) do
+    for %{"status" => "failed", "index" => index, "name" => name} <- evaluation.report["tests"],
+        {:failed, message} <- [Map.get(evaluation.verdicts, index)],
+        do: {name, message}
+  end
+
+  defp settle_accepts(path, opts, failures, round, outcome) do
+    results = Spiral.Kino.Accept.accept(path, failures)
+
+    outcome =
+      Enum.reduce(results, outcome, fn
+        {name, :ok}, acc -> Map.put(acc, name, :accepted)
+        {name, {:error, reason}}, acc -> Map.put(acc, name, {:refused, reason})
+      end)
+
+    accepted_now = for {name, :ok} <- results, do: name
+
+    cond do
+      accepted_now == [] ->
+        outcome
+
+      round >= @accept_rounds ->
+        Enum.reduce(accepted_now, outcome, &Map.put(&2, &1, {:refused, "still failing after #{@accept_rounds} accept rounds"}))
+
+      true ->
+        doc = expand_lisp(parse(path, File.read!(path)), opts)
+        rerun = evaluate(doc, Keyword.put(opts, :tests, accepted_now))
+
+        case failures_with_output(rerun) do
+          [] -> outcome
+          again -> settle_accepts(path, opts, again, round + 1, outcome)
+        end
+    end
+  end
+
+  defp mark_accepted(evaluation, outcome) do
+    accepted = for {name, :accepted} <- outcome, do: name
+    refused = Map.new(for {name, {:refused, reason}} <- outcome, do: {name, reason})
 
     rows =
       Enum.map(evaluation.report["tests"], fn row ->
         cond do
           row["name"] in accepted and row["status"] == "failed" -> Map.put(row, "status", "accepted")
-          Map.has_key?(refused, row["name"]) -> Map.put(row, "accept_refused", refused[row["name"]])
+          Map.has_key?(refused, row["name"]) -> row |> Map.put("status", "failed") |> Map.put("accept_refused", refused[row["name"]])
           true -> row
         end
       end)
@@ -428,6 +487,8 @@ defmodule Spiral.Kino.Notebook do
       |> Spiral.Kino.Domain.decode_plan()
       |> Enum.map(&attach_source(&1, cells))
       |> only_selected(selected)
+      |> Enum.reject(&static_prelude?(&1.cell_source))
+      |> with_builders(default_builders(cells, opts))
 
     memo = Memo.context(opts, spiral)
     {spiral, recalled} = recall(spiral, memo)
@@ -502,6 +563,39 @@ defmodule Spiral.Kino.Notebook do
 
   defp plan(wire, :tests), do: Spiral.Kino.Domain.plan_tests(wire)
   defp plan(wire, _cells), do: Spiral.Kino.Domain.plan(wire)
+
+  @static_prelude ~r/^\/\/\/- [^\n]*--test static\b/m
+
+  defp static_prelude?(source), do: Regex.match?(@static_prelude, source)
+
+  @doc false
+  def default_builders(cells, opts) do
+    prelude =
+      Enum.find_value(cells, fn
+        %{kind: :spiral, source: source} -> if static_prelude?(source), do: nonempty(Builders.commands(source))
+        _ -> nil
+      end)
+
+    explicit = opts[:default_target] || System.get_env("SPIRAL_KINO_DEFAULT_TARGET")
+
+    cond do
+      prelude -> prelude
+      explicit not in [nil, ""] -> Builders.commands("///> " <> explicit)
+      true -> []
+    end
+  end
+
+  defp nonempty([]), do: nil
+  defp nonempty(list), do: list
+
+  defp with_builders(steps, defaults) do
+    Enum.map(steps, fn step ->
+      case Builders.commands(step.cell_source) do
+        [] -> Map.put(step, :builders, defaults)
+        own -> Map.put(step, :builders, own)
+      end
+    end)
+  end
 
   defp only_selected(steps, nil), do: steps
   defp only_selected(steps, selected), do: Enum.filter(steps, &MapSet.member?(selected, &1.index))
@@ -710,19 +804,25 @@ defmodule Spiral.Kino.Notebook do
   defp dispatch_spiral(step, opts, root) do
     timeout = opts[:timeout] || positive_int(step.timeout) || @default_timeout
 
+    source_path = opts[:path]
+
     try do
       opts =
         opts
         |> run_opts(root, timeout)
-        |> Keyword.put(:builders, Builders.commands(step.cell_source))
+        |> Keyword.put(:builders, Map.get_lazy(step, :builders, fn -> Builders.commands(step.cell_source) end))
         |> Keyword.put(:real, Map.get(step, :real, ""))
         |> Keyword.put(:agree, agreement?(step.cell_source))
         |> Keyword.put(:test_cell, Regex.match?(~r/^\/\/\/- [^\n]*--test\b/m, step.cell_source))
         |> Keyword.put(:build_only, build_only?(step.cell_source))
 
-      ran = Spiral.Kino.run(step.program, opts)
+      ran = if Regex.match?(@bare_no_agree, step.cell_source), do: :bare_no_agree, else: step.program |> Spiral.Kino.run(opts) |> in_source(source_path)
 
       cond do
+        ran == :bare_no_agree ->
+          text = "no_agree needs a reason: write `test name no_agree \"why the targets differ\" =` (cell: `///- --test --no-agree \"why\"`)"
+          {:error, error_output(text), text}
+
         build_only?(step.cell_source) -> built(ran)
         expected = expectation(step.cell_source) -> expected_compile_error(expected, ran)
         true -> verdict(ran)
@@ -733,6 +833,15 @@ defmodule Spiral.Kino.Notebook do
         {:error, error_output(text), text}
     end
   end
+
+  defp in_source({:error, %SpiralError{message: message, details: program} = error}, path) when is_binary(program) and is_binary(path) do
+    case File.read(path) do
+      {:ok, source} -> {:error, %{error | message: Spiral.Kino.SourceMap.remap(message, program, source, path)}}
+      _ -> {:error, error}
+    end
+  end
+
+  defp in_source(ran, _path), do: ran
 
   defp agreement?(source) do
     Regex.match?(~r/^\/\/\/- [^\n]*--test\b/m, source) and not Regex.match?(~r/^\/\/\/- [^\n]*--no-agree\b/m, source)
@@ -777,11 +886,11 @@ defmodule Spiral.Kino.Notebook do
   defp expected_label(%{code: nil, substring: substring}), do: inspect(substring)
   defp expected_label(%{code: code, substring: substring}), do: "#{code} #{inspect(substring)}"
 
-  @diagnostic_code ~r/\bE[A-Z]{2,4}\d{4}\b/
+  @diagnostic_code ~r/(?<![\w-])E[A-Z]{2,4}(?:\d{4}|-[A-Za-z]+)(?![\w-])/
 
   defp expected_compile_error(expected, {:error, %SpiralError{message: message}}) do
     has_text = String.contains?(message, expected.substring)
-    has_code = expected.code == nil or String.contains?(message, expected.code)
+    has_code = expected.code == nil or Regex.match?(~r/(?<![\w-])#{Regex.escape(expected.code)}(?![\w-])/, message)
 
     cond do
       has_text and has_code ->

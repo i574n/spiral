@@ -53,7 +53,7 @@ int32_t main(){
     
     
     Array0 * v0;
-    v0 = ArrayCreate0(0l, false);
+    v0 = ArrayCreate0(0l, true);
     (v0)->refc++;
     
     

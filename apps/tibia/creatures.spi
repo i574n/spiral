@@ -11,6 +11,16 @@ union arena_creature =
 
 type creature_stats = {experience : i32; max_health : i32; speed : i32; target_distance : i32; melee_max : i32; combat_spells : i32; armor : i32; defense : i32; run_health : i32; step_ms : i32}
 
+type gold_drop = {chance_per_100000 : i32; max_count : i32}
+
+inl gold_drop_of (kind : arena_creature) : gold_drop =
+    match kind with
+    | Troll => {chance_per_100000 = 65300; max_count = 12}
+    | Goblin => {chance_per_100000 = 50320; max_count = 9}
+    | Skeleton => {chance_per_100000 = 43900; max_count = 10}
+    | Cyclops => {chance_per_100000 = 82000; max_count = 47}
+    | _ => {chance_per_100000 = 0; max_count = 0}
+
 inl stats_of (kind : arena_creature) : creature_stats =
     match kind with
     | CaveRat => {experience = 10; max_health = 30; speed = 75; target_distance = 1; melee_max = 10; combat_spells = 0; armor = 5; defense = 5; run_health = 3; step_ms = 800}
@@ -35,7 +45,6 @@ inl experience_per_health (kind : arena_creature) : i32 =
     inl s = stats_of kind
     s.experience * 1000 / s.max_health
 
-///> rust
 ///> c
 test stats_match_canary_data_canary_lua_2026_10_12 =
     inl ~marker = 0i32
@@ -45,7 +54,6 @@ test stats_match_canary_data_canary_lua_2026_10_12 =
     (stats_of Cyclops).max_health + marker |> _assert_eq 260i32
     (stats_of Wolf).speed + marker |> _assert_eq 82i32
 
-///> rust
 ///> c
 test every_arena_creature_fights_in_melee_range =
     inl ~marker = 0i32
@@ -56,14 +64,12 @@ test every_arena_creature_fights_in_melee_range =
     (stats_of Goblin).target_distance + marker |> _assert_eq 1i32
     (stats_of Cyclops).target_distance + marker |> _assert_eq 1i32
 
-///> rust
 ///> c
 test experience_per_health_ranks_skeleton_above_troll =
     inl ~marker = 0i32
     experience_per_health Skeleton + marker |> _assert_eq 700i32
     experience_per_health Troll + marker |> _assert_eq 400i32
 
-///> rust
 ///> c
 test armor_defense_and_flee_match_data_canary_2026_10_13 =
     inl ~marker = 0i32
@@ -73,7 +79,6 @@ test armor_defense_and_flee_match_data_canary_2026_10_13 =
     (stats_of Skeleton).run_health + marker |> _assert_eq 0i32
     (stats_of Wolf).armor + marker |> _assert_eq 5i32
 
-///> rust
 ///> c
 test step_ms_matches_canary_step_formula_on_grass =
     inl check kind = (stats_of kind).step_ms = step_ms_from_canary_formula (stats_of kind).speed (grass_ground_speed ())

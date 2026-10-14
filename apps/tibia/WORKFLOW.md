@@ -17,6 +17,13 @@ where the road is clean. Every friction found becomes an eoie backlog item befor
 ## Rules for apps/tibia
 
 - Modules are `.spi` files with test blocks; no sample folders.
+- Every test names its targets, and every target has a reason (an untargeted test silently compiles Rust, Kino's
+  default):
+  - `///> c`: the semantic oracle, on every rules test.
+  - `///> wgsl`: the GPU simulator path.
+  - `///> lua`: the live client (policy decisions).
+  - `///> rust`: the CPU training host. Only the simulators' golden-seed tests use it, because a Rust compile costs
+    about 10 s per test (measured 2026-10-13: Rust 662 s of a 1,164 s suite).
 - Until inline expectations exist, a test asserts inside its body and fails through a non-zero exit.
 - A missing workflow feature is added to the tooling (Kino, compiler, eoie), not imitated in Tibia code.
 - Every backlog item names the claim or milestone it serves. An item reached through a dependency chain or a keyword

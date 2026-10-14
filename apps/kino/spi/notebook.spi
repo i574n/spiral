@@ -157,6 +157,37 @@ inl load_sources (src : string) : sources =
     | LineDone => NoSource
     | LineGot (count, next) => rev_sources (read_sources src next (text.parse_i32 count) NoSource) NoSource
 
+let rec indent_body (src : string) (i : i32) (acc : string) : string =
+    match text.next_line src i with
+    | LineDone => acc
+    | LineGot (line, next) =>
+        inl row = if text.trim line = "" then "" else "    " ++ line
+        indent_body src next (if row = "" && acc = "" then acc else acc ++ "\n" ++ row)
+
+let rec split_declarations (src : string) (i : i32) (in_declaration : bool) (declarations : string) (rest : string) : string * string =
+    match text.next_line src i with
+    | LineDone => declarations, rest
+    | LineGot (line, next) =>
+        inl top = line <> "" && text.starts_with line " " = false
+        inl declaration = if top then cell.declaration line else in_declaration
+        if declaration then split_declarations src next true (declarations ++ "\n" ++ line) rest
+        else split_declarations src next false declarations (rest ++ "\n" ++ line)
+
+let rec last_top_block (src : string) (i : i32) (block : string) : string =
+    match text.next_line src i with
+    | LineDone => block
+    | LineGot (line, next) =>
+        if line <> "" && text.starts_with line " " = false then last_top_block src next line
+        else last_top_block src next (block ++ "\n" ++ line)
+
+inl scoped_test_body (body : string) : string =
+    inl declarations, rest = split_declarations body 0i32 false "" ""
+    if text.trim rest = "" then body
+    else
+        inl ends_in_assertion = text.contains (last_top_block rest 0i32 "") "_assert"
+        inl call = if ends_in_assertion then "\nspiral_kino_test ()\n0i32" else "\ninl _ = spiral_kino_test ()\n0i32"
+        text.trim declarations ++ "\ninl spiral_kino_test () =" ++ indent_body rest 0i32 "" ++ call
+
 inl real_entry () : string = "spiral_kino_real"
 
 inl real_program (packages : nb) (reals : nb) (body : string) : string * string =
@@ -193,7 +224,7 @@ let rec walk (scope : plan_scope) (xs : sources) (index : i32) (last_def : i32) 
                 inl code, real_code =
                     if skip = 1i32 then "///> _", ""
                     elif is_real = 1i32 then real_program packages2 reals body
-                    else program packages2 opens defs body, join_nb reals
+                    else program packages2 opens defs (if test = 1i32 then scoped_test_body body else body), join_nb reals
                 inl timeout_text = if timeout = "" then "-" else timeout
                 inl step = if planned scope test then Step (index, timeout_text, code, real_code, acc) else acc
                 inl kept = test <> 1i32 && skip = 0i32 && text.trim body <> ""

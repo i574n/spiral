@@ -43,56 +43,66 @@ static inline String * StringConcat(String * left, String * right){
     return result;
 }
 String * method2(int32_t v0, String * v1, String * v2){
-    
-    
-    int32_t v3;
-    v3 = v0 - 1l;
-    
-    
-    String * v4;
-    v4 = StringConcat(v1, v2);
-    
-    StringDecref(v1); StringDecref(v2);
-    bool v5;
-    v5 = v3 == 0l;
-    
-    
-    if (v5){
+    while (1) {
         
         
-        return v4;
-    } else {
+        int32_t v3;
+        v3 = v0 - 1l;
         
         
-        int32_t v6;
-        v6 = v3 % 2l;
+        String * v4;
+        v4 = StringConcat(v1, v2);
+        
+        StringDecref(v1); StringDecref(v2);
+        bool v5;
+        v5 = v3 == 0l;
         
         
-        bool v7;
-        v7 = v6 == 0l;
-        
-        
-        String * v10;
-        if (v7){
+        if (v5){
             
             
-            String * v8;
-            v8 = StringLit(3, "ab");
-            
-            
-            v10 = v8;
+            return v4;
         } else {
             
             
-            String * v9;
-            v9 = StringLit(2, "c");
+            int32_t v6;
+            v6 = v3 % 2l;
             
             
-            v10 = v9;
+            bool v7;
+            v7 = v6 == 0l;
+            
+            
+            String * v10;
+            if (v7){
+                
+                
+                String * v8;
+                v8 = StringLit(3, "ab");
+                
+                
+                v10 = v8;
+            } else {
+                
+                
+                String * v9;
+                v9 = StringLit(2, "c");
+                
+                
+                v10 = v9;
+            }
+            
+            
+            {
+                int32_t tmp0 = v3;
+                String * tmp1 = v4;
+                String * tmp2 = v10;
+                v0 = tmp0;
+                v1 = tmp1;
+                v2 = tmp2;
+            }
+            continue;
         }
-        
-        
-        return method2(v3, v4, v10);
     }
 }
 String * method1(int32_t v0, String * v1){

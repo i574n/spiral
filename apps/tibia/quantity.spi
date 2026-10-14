@@ -1,0 +1,49 @@
+test quantity static =
+    open testing
+
+nominal hitpoints = ()
+nominal milliseconds = ()
+nominal tiles = ()
+nominal gold_coins = ()
+
+nominal amount unit = i32
+
+inl amount_of forall unit. (value : i32) : amount unit = amount value
+
+inl value_of forall unit. (amount x : amount unit) : i32 = x
+
+inl plus forall unit. (amount a : amount unit) (amount b : amount unit) : amount unit = amount (a + b)
+
+inl minus forall unit. (amount a : amount unit) (amount b : amount unit) : amount unit = amount (a - b)
+
+inl scaled forall unit. (factor : i32) (amount x : amount unit) : amount unit = amount (factor * x)
+
+inl at_least forall unit. (amount a : amount unit) (amount b : amount unit) : bool = a >= b
+
+inl capped forall unit. (amount limit : amount unit) (amount x : amount unit) : amount unit = amount (if x > limit then limit else x)
+
+inl hp (value : i32) : amount hitpoints = amount value
+inl ms (value : i32) : amount milliseconds = amount value
+inl tile_count (value : i32) : amount tiles = amount value
+inl gp (value : i32) : amount gold_coins = amount value
+
+///> c
+test same_unit_arithmetic =
+    inl ~health = 150i32
+    value_of (minus (hp health) (hp 40)) |> _assert_eq 110i32
+    value_of (capped (hp 150) (plus (hp health) (hp 60))) |> _assert_eq 150i32
+    at_least (ms 2000) (ms (health * 10)) |> _assert_eq true
+
+///> c
+test hitpoints_and_milliseconds_do_not_mix fails "Unification failure" =
+    plus (hp 10) (ms 20)
+
+///> c
+test gold_is_not_hitpoints fails "Unification failure" =
+    inl heal (amount : amount hitpoints) = amount
+    heal (gp 5)
+
+///> wgsl
+test units_on_gpu =
+    inl ~health = 150i32
+    if value_of (capped (hp 150) (plus (hp health) (hp 60))) = 150i32 && value_of (minus (ms 2000) (ms 500)) = 1500i32 then 0i32 else 1i32

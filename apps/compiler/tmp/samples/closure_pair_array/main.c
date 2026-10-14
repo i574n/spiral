@@ -68,11 +68,11 @@ Tuple0 f_c0(Closure0 * x, int32_t v2){
     
     
     Array0 * v3;
-    v3 = ArrayCreate0(1l, false);
+    v3 = ArrayCreate0(1l, true);
     
     
     Array0 * v4;
-    v4 = ArrayCreate0(1l, false);
+    v4 = ArrayCreate0(1l, true);
     
     
     bool v5;

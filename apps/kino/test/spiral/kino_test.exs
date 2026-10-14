@@ -177,6 +177,7 @@ defmodule Spiral.KinoTest do
            )
 
     assert Spiral.Kino.value_result?("main.spi:4:5: ETY0009: Unification failure. Got: i32 Expected: i32 * i32", code)
+    assert Spiral.Kino.value_result?("main.spi:4:5: ETY-TermError: Unification failure. Got: i32 Expected: i32 * i32", code)
     refute Spiral.Kino.value_result?("main.spi:4:5: Unbound variable: g.", code)
 
     piped = "inl main () : i32 =\n    \"[a\"\n    |> parse\n    |> sm'.format_debug\n"
@@ -656,5 +657,13 @@ defmodule Spiral.KinoTest do
   test "the core package defaults to spiral's fork clone, else polyglot's" do
     dir = Spiral.Kino.Toolchain.default_package_dir()
     assert String.ends_with?(dir, "deps/The-Spiral-Language/VS Code Plugin"), dir
+  end
+
+  test "the Rust host builds like the compiler harness: rustup's 1.99.0, opt-level 2, edition 2024, warnings off" do
+    assert Spiral.Kino.rustc_args("C:/Users/x/scoop/apps/rustup/current/.cargo/bin/rustc.exe", "main.rs", "main.exe") ==
+             ["+1.99.0", "-C", "opt-level=2", "-A", "warnings", "--edition", "2024", "-o", "main.exe", "main.rs"]
+
+    assert Spiral.Kino.rustc_args("/opt/rust/bin/rustc", "main.rs", "main") ==
+             ["-C", "opt-level=2", "-A", "warnings", "--edition", "2024", "-o", "main", "main.rs"]
   end
 end

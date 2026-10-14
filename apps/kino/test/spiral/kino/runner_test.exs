@@ -33,6 +33,42 @@ defmodule Spiral.Kino.RunnerTest do
     {[parent, escript(), grandchild, pidfile], pidfile}
   end
 
+  test "the last line a program prints before it exits is never lost", %{dir: dir} do
+    script =
+      script!(dir, "burst", """
+      main(_) ->
+          lists:foreach(fun(I) -> io:format("line ~p~n", [I]) end, lists:seq(1, 2000)),
+          io:format("SPIRAL_KINO_VALUE:49~n"),
+          halt(0).
+      """)
+
+    for _ <- 1..10 do
+      assert {:ok, %{exit_status: 0, output: output}} = Runner.run(escript(), [script], timeout: 60_000)
+      assert String.ends_with?(String.replace(output, "\r\n", "\n"), "SPIRAL_KINO_VALUE:49\n")
+    end
+  end
+
+  if match?({:win32, _}, :os.type()) do
+    test "a program that prints and exits at once keeps its output under concurrent runs (Windows port drops it)" do
+      shell = System.get_env("ComSpec") || System.find_executable("cmd.exe")
+
+      outputs =
+        1..300
+        |> Task.async_stream(fn _ -> Runner.run(shell, ["/d", "/c", "echo", "ready"], timeout: 30_000) end, max_concurrency: 24, timeout: :infinity)
+        |> Enum.map(fn {:ok, {:ok, %{exit_status: 0, output: output}}} -> output end)
+
+      assert Enum.frequencies(outputs) == %{"ready\r\n" => 300}
+    end
+
+    test "capture quotes words cmd would split and leaves cmd-unsafe arguments to the direct port" do
+      assert Runner.captured_command_line("C:/bin/cell.exe", ["a b", "", "x=1", "/flag"], "C:/tmp/out.txt") =~
+               ~s|/d /v:off /s /c "> "C:\\tmp\\out.txt" 2>&1 "C:\\bin\\cell.exe" "a b" "" "x=1" /flag"|
+
+      assert Runner.capture_file("C:/bin/cell.exe", ["100%"]) == nil
+      assert Runner.capture_file("C:/bin/cell.exe", [~s|say "hi"|]) == nil
+    end
+  end
+
   test "captures stdout and stderr and returns the exit status", %{dir: dir} do
     script =
       script!(dir, "exit3", """

@@ -56,7 +56,7 @@ int32_t main(){
     
     
     Array0 * v1;
-    v1 = ArrayCreate0(v0, false);
+    v1 = ArrayCreate0(v0, true);
     
     
     int32_t v2;

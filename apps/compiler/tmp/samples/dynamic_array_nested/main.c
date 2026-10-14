@@ -82,11 +82,11 @@ int32_t main(){
     
     
     Array1 * v2;
-    v2 = ArrayCreate1(v0, false);
+    v2 = ArrayCreate1(v0, true);
     
     
     Array1 * v3;
-    v3 = ArrayCreate1(v0, false);
+    v3 = ArrayCreate1(v0, true);
     
     
     

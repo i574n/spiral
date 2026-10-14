@@ -156,7 +156,7 @@ int32_t main(){
         }
     }
     
-    USDecref0(&(v17));
+    
     int32_t v19;
     if (v18){
         
@@ -192,7 +192,7 @@ int32_t main(){
         }
     }
     
-    USDecref0(&(v0));
+    
     int32_t v23;
     switch (v8.tag) {
         case 1: { // East
@@ -216,7 +216,7 @@ int32_t main(){
         }
     }
     
-    USDecref0(&(v8));
+    
     int32_t v24;
     v24 = v23 * 3l;
     
@@ -248,7 +248,7 @@ int32_t main(){
         }
     }
     
-    USDecref0(&(v16));
+    
     int32_t v28;
     v28 = v27 * 9l;
     

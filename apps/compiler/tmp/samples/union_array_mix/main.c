@@ -122,7 +122,7 @@ int32_t main(){
     
     
     Array0 * v2;
-    v2 = ArrayCreate0(1l, false);
+    v2 = ArrayCreate0(1l, true);
     
     
     

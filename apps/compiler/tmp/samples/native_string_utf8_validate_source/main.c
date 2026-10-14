@@ -582,84 +582,96 @@ int32_t utf8_scalar_at_byte_offset1(String * v0, int32_t v1){
     }
 }
 int32_t utf8_validate_loop0(String * v0, int32_t v1, int32_t v2, int32_t v3){
-    
-    
-    bool v4;
-    v4 = v1 == v3;
-    
-    
-    if (v4){
-        
-        StringDecref(v0);
-        return v2;
-    } else {
+    while (1) {
         
         
-        bool v5;
-        v5 = v1 > v3;
+        bool v4;
+        v4 = v1 == v3;
         
         
-        if (v5){
+        if (v4){
             
             StringDecref(v0);
-            fprintf(stderr, "%s\n", "UTF-8 scalar width exceeds the string.");
-            exit(EXIT_FAILURE);
+            return v2;
         } else {
-            (v0)->refc++;
-            
-            int32_t v7;
-            v7 = utf8_scalar_at_byte_offset1(v0, v1);
             
             
-            bool v8;
-            v8 = v7 < 128l;
+            bool v5;
+            v5 = v1 > v3;
             
             
-            int32_t v13;
-            if (v8){
+            if (v5){
                 
-                
-                v13 = 1l;
+                StringDecref(v0);
+                fprintf(stderr, "%s\n", "UTF-8 scalar width exceeds the string.");
+                exit(EXIT_FAILURE);
             } else {
+                (v0)->refc++;
+                
+                int32_t v7;
+                v7 = utf8_scalar_at_byte_offset1(v0, v1);
                 
                 
-                bool v9;
-                v9 = v7 < 2048l;
+                bool v8;
+                v8 = v7 < 128l;
                 
                 
-                if (v9){
+                int32_t v13;
+                if (v8){
                     
                     
-                    v13 = 2l;
+                    v13 = 1l;
                 } else {
                     
                     
-                    bool v10;
-                    v10 = v7 < 65536l;
+                    bool v9;
+                    v9 = v7 < 2048l;
                     
                     
-                    if (v10){
+                    if (v9){
                         
                         
-                        v13 = 3l;
+                        v13 = 2l;
                     } else {
                         
                         
-                        v13 = 4l;
+                        bool v10;
+                        v10 = v7 < 65536l;
+                        
+                        
+                        if (v10){
+                            
+                            
+                            v13 = 3l;
+                        } else {
+                            
+                            
+                            v13 = 4l;
+                        }
                     }
                 }
+                
+                
+                int32_t v14;
+                v14 = v1 + v13;
+                
+                
+                int32_t v15;
+                v15 = v2 + 1l;
+                
+                
+                {
+                    String * tmp0 = v0;
+                    int32_t tmp1 = v14;
+                    int32_t tmp2 = v15;
+                    int32_t tmp3 = v3;
+                    v0 = tmp0;
+                    v1 = tmp1;
+                    v2 = tmp2;
+                    v3 = tmp3;
+                }
+                continue;
             }
-            
-            
-            int32_t v14;
-            v14 = v1 + v13;
-            
-            
-            int32_t v15;
-            v15 = v2 + 1l;
-            
-            
-            return utf8_validate_loop0(v0, v14, v15, v3);
         }
     }
 }

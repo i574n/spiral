@@ -69,7 +69,7 @@ int32_t main(){
     
     
     Array0 * v1;
-    v1 = ArrayCreate0(v0, false);
+    v1 = ArrayCreate0(v0, true);
     
     
     
@@ -101,7 +101,7 @@ int32_t main(){
     
     
     Array1 * v4;
-    v4 = ArrayCreate1(3l, false);
+    v4 = ArrayCreate1(3l, true);
     
     
     
