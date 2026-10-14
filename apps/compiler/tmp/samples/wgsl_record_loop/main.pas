@@ -12,32 +12,28 @@ end;
 function loop_0(v0: LongInt; v1: LongInt; v2: LongInt; v3: LongInt): TTuple0;
 var
   v4: Boolean;
+  v9: LongInt;
+  v10: LongInt;
   v5: LongInt;
   v6: LongInt;
-  tmp3: LongInt;
-  tmp4: LongInt;
-  tmp5: LongInt;
-  tmp6: LongInt;
+  v7: LongInt;
+  v8: LongInt;
+  tmp7: TTuple0;
 begin
-  while True do begin
-      v4 := v1 >= v0;
-      if v4 then begin
-          Result := TupleCreate0(v2, v3);
-          Exit;
-      end else begin
-          v5 := v1 + 1;
-          v6 := v2 + 1;
-          tmp3 := v0;
-          tmp4 := v5;
-          tmp5 := v6;
-          tmp6 := v3;
-          v0 := tmp3;
-          v1 := tmp4;
-          v2 := tmp5;
-          v3 := tmp6;
-          Continue;
-      end;
+  v4 := v1 >= v0;
+  if v4 then begin
+      v9 := v2;
+      v10 := v3;
+  end else begin
+      v5 := v1 + 1;
+      v6 := v2 + 1;
+      tmp7 := loop_0(v0, v5, v6, v3);
+      v7 := tmp7.f0;
+      v8 := tmp7.f1;
+      v9 := v7;
+      v10 := v8;
   end;
+  Result := TupleCreate0(v9, v10);
 end;
 function SpiralMain: LongInt;
 var

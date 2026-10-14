@@ -164906,11 +164906,58 @@ module spiral_compiler =
             | TyLet(d, _, op) -> pureBranchingOp op && data_free_vars d |> Seq.forall (fun v -> live.Contains (tagOf v) |> not)
             | _ -> false
         let sameItems (a : 'a []) (b : 'a []) = a.Length = b.Length && Array.forall2 (fun x y -> obj.ReferenceEquals(x, y)) a b
+        let dataOfLeaves (leaves : Data []) =
+            match leaves with
+            | [|leaf|] -> leaf
+            | _ -> Array.foldBack (fun leaf rest -> DPair(leaf, rest)) leaves DB
+        let leafData = function WV v -> DV v | WLit l -> DLit l
+        let keepLiveLeaves (keep : bool []) (d : Data) =
+            let leaves = data_term_vars d
+            if leaves.Length <> keep.Length then None
+            else leaves |> Array.indexed |> Array.choose (fun (i, leaf) -> if keep.[i] then Some (leafData leaf) else None) |> dataOfLeaves |> Some
+        let rec pruneBlockReturns (keep : bool []) (block : TypedBind []) : TypedBind [] option =
+            if block.Length = 0 then None
+            else
+                let last = block.Length - 1
+                let rebuilt =
+                    match block.[last] with
+                    | TyLocalReturnData(d, trace) -> keepLiveLeaves keep d |> Option.map (fun d' -> TyLocalReturnData(d', trace))
+                    | TyLocalReturnOp(trace, op, d) ->
+                        match keepLiveLeaves keep d, pruneOpReturns keep op with
+                        | Some d', Some op' -> Some (TyLocalReturnOp(trace, op', d'))
+                        | _ -> None
+                    | TyLet _ -> None
+                rebuilt |> Option.map (fun x -> Array.append block.[.. last - 1] [|x|])
+        and pruneOpReturns (keep : bool []) op =
+            let all (blocks : TypedBind [] list) = blocks |> List.map (pruneBlockReturns keep) |> fun xs -> if List.forall Option.isSome xs then Some (List.map Option.get xs) else None
+            match op with
+            | TyIf(cond, tr, fl) -> all [tr; fl] |> Option.map (function [tr'; fl'] -> TyIf(cond, tr', fl') | _ -> op)
+            | TyUnionUnbox(vs, u, on_succs, on_fail) ->
+                let keys = on_succs |> Map.toList |> List.map fst
+                let blocks = (on_succs |> Map.toList |> List.map (snd >> snd)) @ (Option.toList on_fail)
+                all blocks |> Option.map (fun blocks' ->
+                    let succs' = List.zip keys (List.take keys.Length blocks') |> List.fold (fun m (k, b) -> Map.add k (fst on_succs.[k], b) m) on_succs
+                    let fail' = match on_fail with Some _ -> Some (List.last blocks') | None -> None
+                    TyUnionUnbox(vs, u, succs', fail'))
+            | TyIntSwitch(v, cases, on_fail) ->
+                all (List.ofArray cases @ [on_fail]) |> Option.map (fun blocks' -> TyIntSwitch(v, Array.ofList (List.take cases.Length blocks'), List.last blocks'))
+            | _ -> None
         let rec elide (block : TypedBind []) : TypedBind [] =
             let live = HashSet<int>()
             let kept = ResizeArray<TypedBind>()
             for i = block.Length - 1 downto 0 do
-                let x = rewriteBind block.[i]
+                let original = block.[i]
+                let x =
+                    match original with
+                    | TyLet(d, trace, op) when pureBranchingOp op ->
+                        let vars = data_free_vars d
+                        let keep = vars |> Array.map (fun v -> live.Contains (tagOf v))
+                        if vars.Length > 1 && Array.exists not keep && Array.exists id keep then
+                            match pruneOpReturns keep op with
+                            | Some op' -> rewriteBind (TyLet(vars |> Array.indexed |> Array.choose (fun (i, v) -> if keep.[i] then Some (DV v) else None) |> dataOfLeaves, trace, op'))
+                            | None -> rewriteBind original
+                        else rewriteBind original
+                    | _ -> rewriteBind original
                 if isDead live x |> not then
                     markBind live x
                     kept.Add x
@@ -169562,7 +169609,7 @@ def spiral_string_slice_checked(+valid: Bool, +s: String, +from: U32, +until: U3
       IO.die(String, 3, "")
 
 def spiral_string_slice(+s: String, +from: U32, +to: U32) -> IO(String):
-  spiral_string_slice_checked(Bool.and(Bool.and(Bool.not(U32.is_ge(from, 2147483648)), U32.is_le(U32.add(to, 1), spiral_string_bytes(s))), Bool.and(Bool.and(U32.is_le(from, U32.add(to, 1)), spiral_string_is_boundary(s, {0 : U32}, from)), spiral_string_is_boundary(s, {0 : U32}, U32.add(to, 1)))), s, from, U32.add(to, 1))
+  spiral_string_slice_checked(Bool.and(Bool.and(Bool.not(U32.is_ge(from, 2147483648)), U32.is_le(U32.add(to, 1), spiral_string_bytes(s))), Bool.and(U32.is_le(from, U32.add(to, 1)), Bool.or(U32.is_eq(from, U32.add(to, 1)), Bool.and(spiral_string_is_boundary(s, {0 : U32}, from), spiral_string_is_boundary(s, {0 : U32}, U32.add(to, 1)))))), s, from, U32.add(to, 1))
 
 @unsafe
 def spiral_i32_to_f32(+value: U32) -> F32:
@@ -169743,12 +169790,37 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         let fresh = ref 0
         let next_fresh () = fresh.Value <- fresh.Value + 1; fresh.Value
         let linear_unions = HashSet<int>()
+        let layout_parts_memo = Dictionary<Ty, TyV [] * Map<int * string, TyV []> * Data>(HashIdentity.Structural)
+        let type_argument (t : string) = if t.Contains " & " then $"({t})" else t
         let rec tyv = function
             | YPrim a -> primBend a
             | YUnion a -> $"U{union_tag a.Item.cases}"
-            | YArray a -> $"(Chan(Array<{tup_ty a}>) & U32)"
+            | YArray a -> $"(Chan(Array<{type_argument (tup_ty a)}>) & U32)"
             | YFun(a,b,_) -> $"(({tup_ty a}) -> IO({tup_ty b}))"
+            | YLayout(_, Heap) as a -> $"({layout_tuple_type a})"
+            | YLayout(_, HeapMutable) as a -> $"(Chan(Array<{type_argument (layout_tuple_type a)}>) & U32)"
             | a -> unsupported $"the type {show_ty a}"
+        and layout_parts (x : Ty) =
+            match layout_parts_memo.TryGetValue x with
+            | true, parts -> parts
+            | _ ->
+                match x with
+                | YLayout(d, _) ->
+                    let d = env.ty_to_data d
+                    let fields, fields_by_key =
+                        match d with
+                        | DRecord a -> let a = Map.map (fun _ -> data_free_vars) a in a |> Map.toArray |> Array.collect snd, a
+                        | _ -> data_free_vars d, Map.empty
+                    let parts = fields, fields_by_key, d
+                    layout_parts_memo.[x] <- parts
+                    parts
+                | _ -> raise_codegen_error $"Compiler error: Expected a layout type.\nGot: %s{show_ty x}"
+        and layout_tuple_type (x : Ty) =
+            let fields, _, _ = layout_parts x
+            match fields |> Array.map (fun (L(_,t)) -> tyv t) with
+            | [||] -> "Unit"
+            | [|x|] -> x
+            | xs -> String.concat " & " xs
         and tyvs (x : Ty) = env.ty_to_data x |> data_free_vars
         and tup_ty x =
             match tyvs x |> Array.map (fun (L(_,t)) -> tyv t) with
@@ -169781,6 +169853,8 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             | YArray _ -> true
             | YFun _ -> true
             | YUnion u -> linear_unions.Contains (union_tag u.Item.cases)
+            | YLayout(_, HeapMutable) -> true
+            | YLayout(_, Heap) as a -> let fields, _, _ = layout_parts a in fields.Length > 1 || fields |> Array.exists (fun (L(_,t)) -> linear_ty t)
             | _ -> false
         let lit = function
             | LitInt32 x -> $"{{{uint32 x} : U32}}"
@@ -169809,8 +169883,8 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         let args (vs : TyV seq) = vs |> Seq.map (fun (L(i,_)) -> $", v{i}") |> String.concat ""
         let array_helper_suffixes = Dictionary<string, int>()
         let nested_array_creators = HashSet<string>()
-        let array_suffix (element : Ty) =
-            let element_type = tup_ty element
+        let array_suffix_of_type (element_type : string) =
+            let element_type = type_argument element_type
             match array_helper_suffixes.TryGetValue element_type with
             | true, k -> $"_a{k}"
             | _ ->
@@ -169818,6 +169892,20 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 array_helper_suffixes.[element_type] <- k
                 defs.Add(bendArrayHelpers.Replace("__T__", element_type).Replace("__K__", $"_a{k}"))
                 $"_a{k}"
+        let array_suffix (element : Ty) = array_suffix_of_type (tup_ty element)
+        let tuple_of (names : string []) =
+            match names with
+            | [||] -> "Unit{}"
+            | [|x|] -> x
+            | xs -> xs |> String.concat ", " |> sprintf "(%s)"
+        let destructure (source : string) (prefix : string) (count : int) =
+            match count with
+            | 0 | 1 -> [||], (if count = 1 then [|source|] else [||])
+            | n ->
+                let names = Array.init n (fun j -> $"{prefix}{j}")
+                let binders = names |> Array.map (fun x -> "+" + x) |> String.concat ", "
+                [|$"  ({binders}) = {source}"|], names
+        let layout_cell_slot = "{0 : U32}"
         let array_element (d : Data) =
             match data_free_vars d with
             | [|L(_, YArray element)|] -> element
@@ -169839,6 +169927,12 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 let values = fields |> Array.map (default_value (depth + 1)) |> String.concat ", "
                 let case_name = generatedCaseName (sprintf "U%i" tag) cases c
                 $"{case_name}{{{values}}}"
+            | YLayout(_, Heap) ->
+                let fields, _, _ = layout_parts t
+                match fields |> Array.map (fun (L(_,t)) -> default_value (depth + 1) t) with
+                | [||] -> "Unit{}"
+                | [|x|] -> x
+                | xs -> xs |> String.concat ", " |> sprintf "(%s)"
             | _ -> unsupported $"default values of the type {show_ty t}"
         let default_tuple (element : Ty) =
             match tyvs element |> Array.map (fun (L(_,t)) -> default_value 0 t) with
@@ -169996,6 +170090,10 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                   | EQ when is_float -> bin (sprintf "F32.is_eq(%s, %s)")
                   | NEQ when is_float -> bin (sprintf "F32.is_ne(%s, %s)")
                   | Neg when is_float -> unary (sprintf "F32.neg(%s)")
+                  | LT when is_string -> bin (sprintf "String.is_lt(%s, %s)")
+                  | LTE when is_string -> bin (sprintf "String.is_le(%s, %s)")
+                  | GT when is_string -> bin (sprintf "String.is_gt(%s, %s)")
+                  | GTE when is_string -> bin (sprintf "String.is_ge(%s, %s)")
                   | Add -> bin (sprintf "U32.add(%s, %s)")
                   | Sub -> bin (sprintf "U32.sub(%s, %s)")
                   | Mult -> bin (sprintf "U32.mul(%s, %s)")
@@ -170021,6 +170119,69 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                   | _ -> unsupported $"the operation %A{op}"
                 $"IO.pure({result}, {expr})"
             | TyFailwith(_, b) -> $"IO.die({result}, 1, {tup b})"
+            | TyToLayout(a, (YLayout(_, Heap))) -> $"IO.pure({result}, {tup a})"
+            | TyToLayout(a, (YLayout(_, HeapMutable) as t)) ->
+                $"spiral_array_new{array_suffix_of_type (layout_tuple_type t)}({{1 : U32}}, {tup a})"
+            | TyLayoutIndexAll(L(i, (YLayout(_, Heap)))) -> $"IO.pure({result}, v{i})"
+            | TyLayoutIndexAll(L(i, (YLayout(_, HeapMutable) as t))) ->
+                $"spiral_array_get{array_suffix_of_type (layout_tuple_type t)}(v{i}, {layout_cell_slot})"
+            | TyLayoutIndexByKey(L(i, (YLayout(_, lay) as t)), key) when lay = Heap || lay = HeapMutable ->
+                let fields, fields_by_key, _ = layout_parts t
+                let selected =
+                    fields_by_key |> Map.tryPick (fun (_, k) v -> if LayoutFieldNameIdOps.matchesText key k then Some v else None)
+                    |> Option.defaultWith (fun () -> raise_codegen_error "Compiler error: The layout has no field with that key.")
+                let full_type = layout_tuple_type t
+                let name = $"{owner}_field{next_fresh ()}"
+                let lines, names = destructure "p" "w" fields.Length
+                let position (L(tag, _)) = fields |> Array.findIndex (fun (L(tag', _)) -> tag' = tag)
+                let picked = selected |> Array.map (fun v -> names.[position v]) |> tuple_of
+                defs.Add($"""@unsafe{"\n"}def {name}(+p: {full_type}) -> IO({result}):{"\n"}{lines |> Array.map (fun x -> x + "\n") |> String.concat ""}  IO.pure({result}, {picked}){"\n"}""")
+                match lay with
+                | HeapMutable ->
+                    let cell = $"{name}_cell"
+                    defs.Add($"@unsafe\ndef {cell}(+c: {tyv t}) -> IO({result}):\n  do IO<{result}>:\n    +p : {full_type} <- spiral_array_get{array_suffix_of_type full_type}(c, {layout_cell_slot})\n    {name}(p)\n")
+                    $"{cell}(v{i})"
+                | _ -> $"{name}(v{i})"
+            | TyLayoutMutableSet(L(i, (YLayout(_, HeapMutable) as t)), keys, c) ->
+                let fields, _, data = layout_parts t
+                let target =
+                    List.fold (fun s k ->
+                        match s with
+                        | DRecord l -> l |> Map.pick (fun (_, k') v -> if LayoutFieldNameIdOps.matchesText k k' then Some v else None)
+                        | _ -> raise_codegen_error "Compiler error: Expected a record.") data keys
+                    |> data_free_vars
+                let full_type = layout_tuple_type t
+                let sub_type =
+                    match target |> Array.map (fun (L(_,t)) -> tyv t) with
+                    | [||] -> "Unit"
+                    | [|x|] -> x
+                    | xs -> String.concat " & " xs
+                let suffix = array_suffix_of_type full_type
+                let name = $"{owner}_set{next_fresh ()}"
+                let old_lines, old_names = destructure "p" "w" fields.Length
+                let new_lines, new_names = destructure "n" "x" target.Length
+                let rebuilt =
+                    fields |> Array.mapi (fun j (L(tag, _)) ->
+                        match target |> Array.tryFindIndex (fun (L(tag', _)) -> tag' = tag) with
+                        | Some k -> new_names.[k]
+                        | None -> old_names.[j])
+                    |> tuple_of
+                let body = Array.append old_lines new_lines |> Array.map (fun x -> x + "\n") |> String.concat ""
+                defs.Add($"@unsafe\ndef {name}_put(+c: {tyv t}, +p: {full_type}, +n: {sub_type}) -> IO(Unit):\n{body}  spiral_array_set{suffix}(c, {layout_cell_slot}, {rebuilt})\n")
+                defs.Add($"@unsafe\ndef {name}(+c: {tyv t}, +n: {sub_type}) -> IO(Unit):\n  do IO<Unit>:\n    +p : {full_type} <- spiral_array_get{suffix}(c, {layout_cell_slot})\n    {name}_put(c, p, n)\n")
+                $"{name}(v{i}, {tup c})"
+            | TyWhile((JPMethod(a, c), cond_args), body) ->
+                let name = $"{owner}_while{next_fresh ()}"
+                let captured = scope.ToArray()
+                let parameters = captured |> Array.map param |> String.concat ", "
+                let arguments = captured |> Array.map (fun (L(i,_)) -> $"v{i}") |> String.concat ", "
+                let cond = cond_args |> Array.map (fun (L(i,_)) -> $"v{i}") |> String.concat ", " |> sprintf "%s(%s)" method_names.[(method (a, c)).tag]
+                let body_text = StringBuilder()
+                binds $"{name}_body" "  " "Unit" body_text (ResizeArray captured) body
+                defs.Add($"@unsafe\ndef {name}_body({parameters}) -> IO(Unit):\n{body_text}")
+                defs.Add($"@unsafe\ndef {name}_step(+c: Bool{params captured}) -> IO(Unit):\n  match c:\n    case True{{}}:\n      do IO<Unit>:\n        {name}_body({arguments})\n        {name}({arguments})\n    case False{{}}:\n      do IO<Unit>:\n        return Unit{{}}\n")
+                defs.Add($"@unsafe\ndef {name}({parameters}) -> IO(Unit):\n  do IO<Unit>:\n    +c : Bool <- {cond}\n    {name}_step(c{args captured})\n")
+                $"{name}({arguments})"
             | TyMacro _ -> unsupported "macros"
             | a ->
                 let construct = (sprintf "%A" a).Split('(').[0]

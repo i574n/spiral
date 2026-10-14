@@ -10,6 +10,7 @@ inl knight_max_health (level : i32) : i32 = 185 + 15 * (level - 8)
 inl training_first () : u32 = 1
 inl training_count () : i32 = 100
 inl held_out_first () : u32 = 1001
+inl resampled_first (block : i32) (generation : i32) : u32 = 10001u32 + conv (generation * block)
 inl held_out_count () : i32 = 100
 inl creature_strike_ms () : i32 = 2000
 inl chase_step_factor () : i32 = 1
@@ -59,6 +60,7 @@ type pack =
 union brain =
     | Rules : policy.adaptive
     | Network : network.weights
+    | Temperate : policy.temperate
 
 union footing_rule =
     | StepAway
@@ -87,7 +89,9 @@ union respawn_rule =
     | Respawning
     | Clearing
 
-type camp = {first_kind : creatures.arena_creature; second_kind : creatures.arena_creature; third_kind : creatures.arena_creature; hunter_level : i32; rule : respawn_rule; layout : terrain.layout}
+type camp = {first_kind : creatures.arena_creature; second_kind : creatures.arena_creature; third_kind : creatures.arena_creature; hunter_level : i32; rule : respawn_rule; layout : terrain.layout; potion_budget : i32}
+
+inl unlimited_potions () : i32 = 1000000
 
 inl hardest_kind (a : creatures.arena_creature) (b : creatures.arena_creature) (c : creatures.arena_creature) : creatures.arena_creature =
     open creatures
@@ -96,9 +100,11 @@ inl hardest_kind (a : creatures.arena_creature) (b : creatures.arena_creature) (
 
 inl default_hunter_level (a : creatures.arena_creature) (b : creatures.arena_creature) (c : creatures.arena_creature) : i32 = (offense_against (hardest_kind a b c)).level
 
-inl uniform_camp (kind : creatures.arena_creature) : camp = {first_kind = kind; second_kind = kind; third_kind = kind; hunter_level = default_hunter_level kind kind kind; rule = Respawning; layout = open terrain in OpenField}
+inl uniform_camp (kind : creatures.arena_creature) : camp = {first_kind = kind; second_kind = kind; third_kind = kind; hunter_level = default_hunter_level kind kind kind; rule = Respawning; layout = open terrain in OpenField; potion_budget = unlimited_potions ()}
 
 inl with_hunter_level (level : i32) (c : camp) : camp = {c with hunter_level = level}
+
+inl with_potion_budget (count : i32) (c : camp) : camp = {c with potion_budget = count}
 
 inl clearing (c : camp) : camp = {c with rule = Clearing}
 
@@ -112,7 +118,7 @@ inl spawns_of (c : camp) : geometry.position * geometry.position * geometry.posi
 inl camp_of_entries (entries : catalog.entry * catalog.entry * catalog.entry) : camp =
     inl a, b, c = entries
     inl first, second, third = catalog.entry_creature a, catalog.entry_creature b, catalog.entry_creature c
-    {first_kind = first; second_kind = second; third_kind = third; hunter_level = default_hunter_level first second third; rule = Respawning; layout = open terrain in OpenField}
+    {first_kind = first; second_kind = second; third_kind = third; hunter_level = default_hunter_level first second third; rule = Respawning; layout = open terrain in OpenField; potion_budget = unlimited_potions ()}
 
 inl hunter_of (c : camp) : offense =
     inl base = offense_against (hardest_kind c.first_kind c.second_kind c.third_kind)
@@ -272,10 +278,25 @@ inl features (camp : camp) (attackers : i32) (now : i32) (p : pack) : network.in
         inl o = observe now p
         network.inputs_of health_fraction attackers (vitality.health f.life * network.one () / stats.max_health) (distance_to f p) o.heal_ready o.strike_ready (vitality.health f.life < stats.run_health)
 
+inl temperament_of (kind : creatures.arena_creature) : policy.temperament =
+    open policy
+    if (creatures.stats_of kind).run_health > 0 then Flees else Stands
+
+inl crowd_of (camp : camp) (p : pack) : policy.by_temperament i32 =
+    open policy
+    inl joined (index : i32) (crowd : by_temperament i32) : by_temperament i32 =
+        if distance_to (slot index p) p > 1 then crowd
+        else
+            match temperament_of (kind_of index camp) with
+            | Stands => {crowd with standing = crowd.standing + 1}
+            | Flees => {crowd with fleeing = crowd.fleeing + 1}
+    {standing = 0; fleeing = 0} |> joined 0 |> joined 1 |> joined 2
+
 inl wants_heal (camp : camp) (b : brain) (attackers : i32) (now : i32) (p : pack) : bool =
     match b with
     | Rules a => policy.heals (policy.thresholds_of a attackers) (observe now p)
     | Network w => (observe now p).heal_ready && (network.decide w (features camp attackers now p)).heal
+    | Temperate r => policy.heals (policy.temperate_thresholds r (crowd_of camp p)) (observe now p)
 
 inl after_heal_plan (camp : camp) (b : brain) (attackers : i32) (now : i32) (p : pack) : bool * policy.engagement =
     open policy
@@ -292,6 +313,9 @@ inl after_heal_plan (camp : camp) (b : brain) (attackers : i32) (now : i32) (p :
                 | NoTarget => Hold
             else Hold
         d.retreat, engagement
+    | Temperate r =>
+        inl crowd = crowd_of camp p
+        temperate_retreats r crowd, engages (temperate_thresholds r crowd) (observe now p)
 
 inl player_acts (camp : camp) (t : tactic) (seed : u32) (tick : i32) (now : i32) (p : pack) : pack =
     open policy
@@ -299,7 +323,7 @@ inl player_acts (camp : camp) (t : tactic) (seed : u32) (tick : i32) (now : i32)
     inl aimed = {p with target = choose_target camp t.order p}
     inl healed =
         match readiness.action_gate (quantity.ms now) aimed.next_action_at with
-        | Open slot => if wants_heal camp t.brain attackers now aimed then player_heals camp seed tick slot aimed else aimed
+        | Open slot => if aimed.potions < camp.potion_budget && wants_heal camp t.brain attackers now aimed then player_heals camp seed tick slot aimed else aimed
         | ClosedUntil _ => aimed
     if healed.target < 0 then healed
     else
@@ -446,22 +470,43 @@ inl cavebot_network (camp : camp) (heal : i32) : network.weights = network.thres
 
 inl tactic_with_order (order : policy.targeting) (g : search.genome) : tactic = {brain = Rules {heal_base = g.first; heal_per_attacker = g.second; strike_above = 0; retreat_at = g.third}; order = order; footing = StepAway}
 
-inl genes_of (g0 : i32) (g1 : i32) (g2 : i32) (g3 : i32) (g4 : i32) (g5 : i32) (g6 : i32) (g7 : i32) (g8 : i32) (g9 : i32) (g10 : i32) : search.vector =
-    search.vector_of 11 0 |> search.with_gene 10 g10 |> search.with_gene 0 g0 |> search.with_gene 1 g1 |> search.with_gene 2 g2 |> search.with_gene 3 g3 |> search.with_gene 4 g4
+inl genes_of (g0 : i32) (g1 : i32) (g2 : i32) (g3 : i32) (g4 : i32) (g5 : i32) (g6 : i32) (g7 : i32) (g8 : i32) (g9 : i32) (g10 : i32) (g11 : i32) : search.vector =
+    search.vector_of 12 0 |> search.with_gene 11 g11 |> search.with_gene 10 g10 |> search.with_gene 0 g0 |> search.with_gene 1 g1 |> search.with_gene 2 g2 |> search.with_gene 3 g3 |> search.with_gene 4 g4
     |> search.with_gene 5 g5 |> search.with_gene 6 g6 |> search.with_gene 7 g7 |> search.with_gene 8 g8 |> search.with_gene 9 g9
 
-inl scored_low () : search.vector = genes_of 40 0 1 -200 -200 -200 -200 -50 -50 -50 -10
-inl scored_high () : search.vector = genes_of 400 80 4 200 200 200 200 50 50 50 10
-inl scored_start () : search.vector = genes_of 143 34 1 50 100 -10 -1 10 0 0 1
+inl scored_low () : search.vector = genes_of 40 0 1 -200 -200 -200 -200 -50 -50 -50 -10 -50
+inl scored_high () : search.vector = genes_of 400 80 4 200 200 200 200 50 50 50 10 50
+inl scored_start () : search.vector = genes_of 143 34 1 50 100 -10 -1 0 0 0 0 0
 
 inl scored_tactic (g : search.vector) : tactic =
     inl at i = search.gene g i
     {
         brain = Rules {heal_base = at 0; heal_per_attacker = at 1; strike_above = 0; retreat_at = at 2}
         order = policy.Scored {current = at 3; reach = at 4; health = at 5; distance = at 6}
-        footing = ScoredStep {away = at 7; room = at 8; crowd = at 9; align = at 10}
+        footing = ScoredStep {away = at 7; room = at 8; crowd = at 9; align = at 10; diagonal = at 11}
     }
 inl tactic_of (g : search.genome) : tactic = tactic_with_order (open policy in CurrentFirst) g
+
+inl temperate_genes (heal_base : i32) (per_standing : i32) (per_fleeing : i32) (retreat_standing : i32) (retreat_fleeing : i32) : search.vector =
+    search.vector_of 5 0 |> search.with_gene 0 heal_base |> search.with_gene 1 per_standing |> search.with_gene 2 per_fleeing |> search.with_gene 3 retreat_standing |> search.with_gene 4 retreat_fleeing
+
+inl temperate_low () : search.vector = temperate_genes 0 0 0 1 1
+inl temperate_high () : search.vector = temperate_genes 400 200 200 4 4
+
+inl temperate_tactic (order : policy.targeting) (g : search.vector) : tactic =
+    inl at i = search.gene g i
+    {brain = Temperate {heal_base = at 0; heal_per = {standing = at 1; fleeing = at 2}; strike_above = 0; retreat_at = {standing = at 3; fleeing = at 4}}; order = order; footing = StepAway}
+
+inl evolve_temperate_for forall unit. (o : objective unit) (order : policy.targeting) (start : search.vector) (camp : camp) (search_seed : u32) (first_seed : u32) (count : i32) (generations : i32) (pairs : i32) : search.vector =
+    search.evolve_vector (fun g => worth o camp (temperate_tactic order g) first_seed count) (temperate_low ()) (temperate_high ()) start search_seed generations pairs
+
+inl evolved_on_the_cyclops_spot () : search.genome = {first = 143; second = 34; third = 1}
+
+inl against_standing_only (g : search.genome) : search.vector = temperate_genes g.first g.second 0 g.third (policy.never_retreat ())
+
+inl cyclops_and_two_trolls_on_the_arena_spot () : camp =
+    open catalog
+    camp_of_entries (pack_entry (spawn_of CyclopsKind 1 2), pack_entry (spawn_of TrollKind 1 2), pack_entry (spawn_of TrollKind 1 2)) |> on_layout (open terrain in ArenaSpot)
 
 inl evolve_rules_for forall unit. (o : objective unit) (order : policy.targeting) (start : search.genome) (camp : camp) (search_seed : u32) (first_seed : u32) (count : i32) (generations : i32) (offspring : i32) : search.genome =
     search.evolve (fun g => worth o camp (tactic_with_order order g) first_seed count) {first = 0; second = 0; third = 1} {first = 400; second = 60; third = 4} start search_seed generations offspring 40

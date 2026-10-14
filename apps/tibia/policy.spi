@@ -30,6 +30,20 @@ inl fixed (t : thresholds) : adaptive = {heal_base = t.heal_below; heal_per_atta
 
 inl retreats (a : adaptive) (attackers : i32) : bool = attackers >= a.retreat_at
 
+union temperament =
+    | Stands
+    | Flees
+
+type by_temperament a = {standing : a; fleeing : a}
+
+type temperate = {heal_base : i32; heal_per : by_temperament i32; strike_above : i32; retreat_at : by_temperament i32}
+
+inl temperate_thresholds (r : temperate) (crowd : by_temperament i32) : thresholds =
+    {heal_below = r.heal_base + r.heal_per.standing * crowd.standing + r.heal_per.fleeing * crowd.fleeing; strike_above = r.strike_above}
+
+inl temperate_retreats (r : temperate) (crowd : by_temperament i32) : bool =
+    crowd.standing >= r.retreat_at.standing || crowd.fleeing >= r.retreat_at.fleeing
+
 inl heals (t : thresholds) (o : observation) : bool =
     o.heal_ready && o.health < t.heal_below
 
@@ -138,6 +152,15 @@ test adaptive_healing_rises_with_attackers =
     (thresholds_of a attackers).heal_below |> _assert_eq 135i32
     (thresholds_of a 0).heal_below |> _assert_eq 60i32
     (thresholds_of (fixed (evolved_against_cyclops ())) attackers).heal_below |> _assert_eq 124i32
+
+///> c
+test temperate_rules_count_standing_and_fleeing_attackers_apart =
+    inl ~standing = 1i32
+    inl r = {heal_base = 40; heal_per = {standing = 100; fleeing = 5}; strike_above = 0; retreat_at = {standing = 2; fleeing = never_retreat ()}}
+    inl one_cyclops_two_trolls = {standing = standing; fleeing = 2}
+    inl three_trolls = {standing = standing - 1; fleeing = 3}
+    inl two_cyclops = {standing = standing + 1; fleeing = 0}
+    ((temperate_thresholds r one_cyclops_two_trolls).heal_below, (temperate_thresholds r three_trolls).heal_below, temperate_retreats r one_cyclops_two_trolls, temperate_retreats r three_trolls, temperate_retreats r two_cyclops) |> _assert_eq (150i32, 55i32, false, false, true)
 
 ///> c
 test a_scored_aim_can_express_reach_first =

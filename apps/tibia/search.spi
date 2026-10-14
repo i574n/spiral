@@ -80,6 +80,23 @@ inl evolve_vector (fitness : vector -> i32) (low : vector) (high : vector) (star
             match children 0 parent parent_score with
             | best, best_score => generation (index + 1) best best_score (if width * 4 / 5 > 10 then width * 4 / 5 else 10)
     generation 0 start (fitness start) 250
+inl evolve_vector_resampled (fitness : i32 -> vector -> i32) (low : vector) (high : vector) (start : vector) (seed : u32) (generations : i32) (pairs : i32) : vector =
+    let rec generation (index : i32) (parent : vector) (width : i32) : vector =
+        if index >= generations then parent
+        else
+            inl parent_score = fitness index parent
+            let rec children (pair : i32) (best : vector) (best_score : i32) : vector * i32 =
+                if pair >= pairs then best, best_score
+                else
+                    match antithetic_pair seed index pair width low high parent with
+                    | plus, minus =>
+                        inl plus_score = fitness index plus
+                        inl minus_score = fitness index minus
+                        inl best, best_score = if plus_score > best_score then plus, plus_score else best, best_score
+                        if minus_score > best_score then children (pair + 1) minus minus_score else children (pair + 1) best best_score
+            match children 0 parent parent_score with
+            | best, _ => generation (index + 1) best (if width * 4 / 5 > 10 then width * 4 / 5 else 10)
+    generation 0 start 250
 
 ///> c
 test evolve_climbs_a_known_peak =

@@ -25,7 +25,7 @@ $corpus = Get-ChildItem ../../lib/spiral -Recurse -Filter *.spi |
     ForEach-Object { $_.FullName }
 $list = Join-Path ([IO.Path]::GetTempPath()) "xsim-corpus-$PID.txt"
 [IO.File]::WriteAllText($list, ($corpus -join "`n") + "`n")
-{ mix xsim.run --spi-file $list --schedules 2 --users 3 --edits 3 --breaking 1 --churn 2 --frames --duplicates 0.15 } | Invoke-Block
+{ mix xsim.run --spi-file $list --schedules 2 --users 3 --edits 3 --breaking 1 --churn 2 --frames --duplicates 0.15 --personas lurker=2,fickle=3,editor=2,breaker=2 } | Invoke-Block
 Remove-Item $list -ErrorAction Ignore
 
 if (!$fast) {

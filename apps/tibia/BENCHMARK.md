@@ -38,6 +38,8 @@ Every competitor, ours included, plays under the same conditions, so a win canno
   only creatures on the 15x11 screen. It reports allowed and dropped actions per run. The gate answers only for itself:
   an admitted call returns true whatever the wrapped `g_game` call returns, so a probe can tell a dropped action from an
   admitted one.
+- Same measurement rate: every probe watches health, experience and the clear every 100 ms. The vBot probe sampled every 10 s
+  until 2026-10-14, which rounded vBot's clear times up by about 5 s and turned its lowest-health figures into snapshots.
 - Same decision rate: a cap on actions does not equalize reaction time. vBot's HealBot macro runs every 100 ms; our
   probe decided every 250 ms in v1 and v2 and reacted later to damage bursts, so it now ticks every 100 ms too. The
   simulator's knight decides on its 100 ms tick (`hunting_pack.client_decision_ms`) behind the same 250 ms action
@@ -114,6 +116,12 @@ Tuning rules, from the first simulator runs (2026-10-13, `apps/tibia/hunt_sim.sp
 - A baseline tuned to the edge of its range is not tuned. In the room-and-corridor scenario the cavebot's heal sweep (40-200)
   picked 200, and evolved rules 'won' by 81600 gp; with the sweep widened to 400 the cavebot tuned to 230 and the win
   vanished (-477181 vs -477431 gp). Sweeps now reach `hunting_pack.highest_tuned_heal`.
+- A death rarer than the training set can show is invisible to tuning. On the mixed camp, evolved rules saw 0 deaths in
+  100 training clears and pushed the heal threshold down; held out they died twice, against the cavebot's once, and lost on
+  cost. When deaths are near 1%, train on fresh seed blocks per generation (`search.evolve_vector_resampled`) or on several
+  hundred seeds.
+- Fix the number of runs before looking. The retreat policy 'beat' vBot after 20 runs (t -2.14) and 38 (t -2.36); 18 more
+  runs brought it to t -1.89, a tie. Stopping when a result looks significant inflates claims.
 - Never compare against hand-picked baseline settings. A hand-picked cavebot "lost" 34 to 90; the same cavebot,
   tuned on the training seeds, tied at 90.
 - Every design choice is also made on training seeds: kiting thresholds, network wiring, search budgets. In an early

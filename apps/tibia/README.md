@@ -38,19 +38,34 @@ for the training host. Fidelity comes from Canary's source and live runs:
   respawning hunt, rules evolved on 100 training seeds (ReachFirst, heal below 223 + 3 per attacker, step back at three
   attackers) dominate the fully tuned cavebot on 100 held-out seeds: 946 kills and -288217 gp against 942 and -477181.
 - On the live arena spot's scanned terrain (`terrain.ArenaSpot`), rules evolved for the cheapest clear within the tuned
-  cavebot's time +15% on 100 training clears choose ReachFirst targeting and stepping back from the nearest attacker;
+  cavebot's time +15% on 100 training clears keep CurrentFirst targeting and step back from the nearest attacker (the live retreat competitor uses ReachFirst);
   on 100 held-out clears they use 852 potions and no deaths against the cavebot's 1309 and 1 death, at 91.8 s vs 88.6 s
   per clear: a third fewer potions for 4% more time, a trade inside the cap rather than dominance.
+- A mixed camp on the arena spot (one cyclops, two trolls): the rules evolved for three cyclops (heal below 143 + 34
+  per attacker, step back at one attacker) use 204 potions in 100 held-out clears at 40.8 s, against the cavebot tuned
+  on this camp (heal below 70): 80 potions, 1 death, 37.9 s. Counting only attackers that stand and fight
+  (`policy.temperate`: trolls flee, cyclops do not) cuts the same rules to 158 potions at 40.5 s. Rules evolved on this
+  camp's training clears with the same budget, kind-blind or kind-aware, settle on a lower heal (74 and 76 potions,
+  37.8 s) but die twice, so nothing dominates the tuned cavebot. With one cyclops nearly every potion is drunk while it
+  is adjacent, which leaves kind-aware healing little to save.
 - Golden seed 7 runs on WGSL with the same numbers as Rust.
 - Live arena, cyclops clear (BENCHMARK pack v1, full gear restored before every run, same 250 ms action gate and 100 ms
-  decision tick, heal below 160): Spiral rules and vBot tie, 6 of 6 clears each, 87.9 +- 14.3 s vs 90.0 +- 8.9 s, 14.7 vs
-  14.8 potions, no deaths. The simulator, given the arena spot's scanned terrain, predicts that clear at 85.0 s, 12.4
-  potions and no deaths. Stepping back at two attackers saves 29% of potions in the simulator. Live it first saved nothing (16 runs each:
-  13.8 vs 14.4 potions, vBot 14.1) because the probe left chase mode on and the server walked the knight back to its target;
-  with that fixed (v6, 23-24 runs each) it takes 19% less damage (2125 vs 2639, Welch t -4.20) and uses 19% fewer potions
-  (12.6 vs 15.5, t -3.89) at the same clear time (88.6 vs 91.7 s): the simulator's direction at about two thirds of its
-  size, and the first live win of a simulator-designed policy. One retreat run in 24 lost the fight. Earlier rounds measured harness faults, not policies: the forge inflating every monster, gear
-  dropped on deaths and never restored, vBot's HealBot ignoring a closed backpack, and our probe deciding every 250 ms.
+  decision tick, heal below 160, no deaths in any round below):
+  - Spiral rules and vBot tie: 6 of 6 clears each, 14.7 vs 14.8 potions. At heal below 120 they tie again (10 runs each:
+    12.8 vs 13.2 potions, 84.4 vs 88.8 s, t below 1).
+  - The simulator, given the arena spot's scanned terrain, predicts that clear at 85.0 s, 12.4 potions and no deaths.
+  - Stepping back at two attackers saves 29% of potions in the simulator. Live, against the rules policy (23-24 runs each),
+    it takes 19% less damage (2125 vs 2639, Welch t -4.20) and uses 19% fewer potions (12.6 vs 15.5, t -3.89) at the same
+    clear time (88.6 vs 91.7 s), once the probe stopped leaving chase mode on.
+  - Against vBot the retreat policy is level or slightly better, not yet a proven win: over three rounds (47 vs 42 runs) it
+    uses 8% fewer potions (12.6 vs 13.7, Welch t -1.89) at the same clear time (90.7 vs 92.0 s), and in the two rounds where
+    both probes measure identically it is 13.0 vs 13.6 (t -0.75). The first round alone looked significant (t -2.14); the
+    later rounds regressed toward a tie. Its 19% saving over our own rules policy is solid.
+  - Retreating with ReachFirst or CurrentFirst targeting makes no measurable difference live (18 runs each, every t below 0.8).
+  - Earlier rounds measured harness faults, not policies: the forge inflating every monster, gear dropped on deaths and never
+    restored, vBot's HealBot ignoring a closed backpack, our probe deciding every 250 ms, and the vBot probe sampling only every
+    10 s, which rounded vBot's clear times up by about 5 s and made its lowest-health figures snapshots (fixed from v8 on).
+  - Measured live and matching the model: a cyclops's diagonal step costs 3.0x a straight one (2109 vs 710 ms).
 - [PLAN.md](PLAN.md): phases, exit criteria, stop rules, costs.
 - [BENCHMARK.md](BENCHMARK.md): the OT Agent Arena (fidelity, baselines, scenarios, metrics, publication).
 - [MODELING.md](MODELING.md): how the mega samples' patterns upgrade the graph code, the game-domain types, compiler gaps.

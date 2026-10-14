@@ -145,6 +145,82 @@ defmodule XsimTest do
     assert match?({:violations, _}, Invariants.breaking_edits_fail(Runner.run(deliveries, lenient), scenario.broken))
   end
 
+  test "personas toggle demand, revert rewrites and fix breaking edits back without breaking an invariant" do
+    personas = Xsim.Personas.parse("lurker=2,fickle=3,editor=2,breaker=2")
+    scenario = Scenario.from_cells(@cells, seed: 17, users: 2, edits: 0, personas: personas)
+    originals = Map.new(for {:post, id, _, source} <- scenario.posts, do: {id, source})
+    assert Enum.any?(scenario.events, &match?({:unlike, _, "fickle" <> _}, &1))
+    assert Enum.any?(scenario.events, fn event -> match?({:edit, _, _}, event) and originals[elem(event, 1)] == elem(event, 2) end)
+    assert MapSet.size(scenario.broken) > 0
+    honest = fn sources -> if MapSet.member?(scenario.broken, List.last(sources)), do: %{status: :error, out: "failed"}, else: Executors.fake().(sources) end
+
+    states =
+      for schedule <- 1..4 do
+        state = Runner.run(Scenario.deliveries(scenario, schedule_seed: schedule, duplicates: 0.3, window: 10), honest, max_concurrency: 2)
+        assert Enum.all?(verdicts(state, honest), fn {_, v} -> v == :ok end), inspect(verdicts(state, honest))
+        assert Invariants.breaking_edits_fail(state, scenario.broken) == :ok
+        assert Enum.all?(Map.keys(state.world.posts), &(Xsim.World.current_source(state.world.posts[&1]) == originals[&1]))
+        state
+      end
+
+    assert states |> Enum.chunk_every(2, 1, :discard) |> Enum.all?(fn [a, b] -> Invariants.commute(a, b) == :ok end)
+    assert_raise ArgumentError, fn -> Xsim.Personas.parse("troll=1") end
+  end
+
+  test "evicting withdrawn results keeps only wanted prefixes in memory and recomputes on renewed demand" do
+    deliveries = [
+      {0, {:post, "a", nil, "inl a = 1"}},
+      {1, {:post, "b", "a", "inl b = a + 1"}},
+      {2, {:like, "b", "u1"}},
+      {3, {:unlike, "b", "u1"}},
+      {4, {:like, "a", "u2"}},
+      {5, {:like, "b", "u3"}}
+    ]
+
+    kept = Runner.run(deliveries, Executors.fake(), max_concurrency: 1)
+    freed = Runner.run(deliveries, Executors.fake(), max_concurrency: 1, evict: true)
+    assert Enum.all?(verdicts(freed), fn {_, v} -> v == :ok end), inspect(verdicts(freed))
+    assert Map.has_key?(verdicts(freed), :unwanted_results_freed) and not Map.has_key?(verdicts(kept), :unwanted_results_freed)
+    assert Invariants.commute(kept, freed) == :ok
+    personas = Xsim.Personas.parse("fickle=4,editor=2,breaker=2")
+    scenario = Scenario.from_cells(@cells, seed: 21, users: 3, edits: 2, churn: 4, personas: personas)
+
+    evictions =
+      for schedule <- 1..4 do
+        deliveries = Scenario.deliveries(scenario, schedule_seed: schedule, duplicates: 0.3, window: 10)
+        kept = Runner.run(deliveries, Executors.fake(), max_concurrency: 2)
+        freed = Runner.run(deliveries, Executors.fake(), max_concurrency: 2, evict: true)
+        assert Enum.all?(verdicts(freed), fn {_, v} -> v == :ok end), inspect(verdicts(freed))
+        assert Invariants.commute(kept, freed) == :ok
+        assert map_size(freed.results) <= map_size(kept.results)
+        freed.evicted |> Map.values() |> Enum.sum()
+      end
+
+    assert Enum.sum(evictions) > 0
+  end
+
+  test "a breaking edit changes a whole numeric literal, never only the last digits of a float" do
+    assert Scenario.break_source("square 3 |> _assert_eq 9") == "square 3 |> _assert_eq 10"
+    assert Scenario.break_source("|> _assert_approx_eq None 7.3890560989306495") == "|> _assert_approx_eq None 8.3890560989306495"
+    assert Scenario.break_source("|> _assert_eq 42  \n") == "|> _assert_eq 43  \n"
+  end
+
+  test "breakers and --breaking only pick tests whose source a break actually changes, and personas survive an empty thread" do
+    unbreakable = "///- --test\n\nvalue () |> _assert_eq pair.1"
+    assert Scenario.break_source(unbreakable) == unbreakable
+    scenario = Scenario.from_cells(["inl value () = 1i32", unbreakable], seed: 3, users: 2, edits: 0, breaking: 2, personas: Xsim.Personas.parse("breaker=3"))
+    assert MapSet.size(scenario.broken) == 0
+    assert Enum.all?(for({:edit, _, source} <- scenario.events, do: source), &(&1 == unbreakable))
+    assert {[], broken, _} = Xsim.Personas.events([], Xsim.Personas.parse("lurker=1,fickle=2,editor=1,breaker=1"), :rand.seed_s(:exsss, {1, 2, 3}))
+    assert MapSet.size(broken) == 0
+  end
+
+  test "a Rust panic's OS thread id does not make two runs of one revision differ" do
+    run = fn id -> %{status: :error, out: "thread '<unnamed>' (#{id}) panicked at C:\\Temp/spiral_kino/17919-#{id}/main.rs:71:9"} end
+    assert Invariants.comparable(run.(52388)) == Invariants.comparable(run.(27552))
+    refute Invariants.comparable(run.(1)) == Invariants.comparable(%{status: :error, out: "thread '<unnamed>' (1) panicked at C:\\Temp/spiral_kino/17919-1/main.rs:72:9"})
+  end
+
   test "replies and edits that arrive before their post wait for it" do
     deliveries = [{2, {:edit, "p1", "inl b = 2\n"}}, {3, {:like, "p1", "u1"}}, {1, {:post, "p1", "p0", "inl b = 2"}}, {0, {:post, "p0", nil, "inl a = 1"}}]
     state = Runner.run(deliveries, Executors.fake())

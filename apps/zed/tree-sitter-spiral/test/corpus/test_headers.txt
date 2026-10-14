@@ -1,0 +1,52 @@
+==================
+test block with targets
+==================
+
+/// ## tests
+///> fsharp
+test tests =
+    1 |> _assert_eq 1
+
+---
+
+(source_file
+  (doc_comment)
+  (target_directive)
+  (test_header
+    (test_keyword)
+    name: (test_name)
+    (test_signature))
+  (indented_line))
+
+==================
+primed name and flags
+==================
+
+test p'' static =
+    0
+
+---
+
+(source_file
+  (test_header
+    (test_keyword)
+    name: (test_name)
+    (test_signature))
+  (indented_line))
+
+==================
+words that start with test are not headers
+==================
+
+testing x
+inl test_value () = 1
+    test inside a body
+// test in a comment
+
+---
+
+(source_file
+  (other_line)
+  (definition_line)
+  (indented_line)
+  (line_comment))

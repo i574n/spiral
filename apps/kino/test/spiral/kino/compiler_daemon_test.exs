@@ -387,4 +387,58 @@ defmodule Spiral.Kino.CompilerDaemonTest do
     assert_received :second
     :gen_tcp.close(listen)
   end
+
+  @compiler_that_hangs_on_its_first_request """
+  $ErrorActionPreference = 'Stop'
+  $socket = $args[1]
+  $utf8 = New-Object System.Text.UTF8Encoding $false
+  $listener = [System.Net.Sockets.Socket]::new([System.Net.Sockets.AddressFamily]::Unix, [System.Net.Sockets.SocketType]::Stream, [System.Net.Sockets.ProtocolType]::Unspecified)
+  $listener.Bind([System.Net.Sockets.UnixDomainSocketEndPoint]::new($socket))
+  $listener.Listen(8)
+  [System.IO.File]::WriteAllText("$socket.pid", "$PID", $utf8)
+  $hangs = -not (Test-Path -LiteralPath $env:SPIRAL_KINO_TEST_HUNG_ONCE)
+  if ($hangs) { [System.IO.File]::WriteAllText($env:SPIRAL_KINO_TEST_HUNG_ONCE, "$PID", $utf8) }
+  while ($true) {
+      $client = $listener.Accept()
+      $stream = [System.Net.Sockets.NetworkStream]::new($client, $true)
+      $reader = [System.IO.StreamReader]::new($stream, $utf8)
+      $writer = [System.IO.StreamWriter]::new($stream, $utf8)
+      $writer.NewLine = "`n"
+      $writer.AutoFlush = $true
+      $parts = $reader.ReadLine().Split("`t")
+      if ($hangs) { [System.Threading.Thread]::Sleep([System.Threading.Timeout]::Infinite) }
+      [System.IO.File]::WriteAllText($parts[3], "fn main() {}", $utf8)
+      $writer.WriteLine("spiral-session`tok`t$PID`t12`tmain`trecovered")
+      $client.Dispose()
+  }
+  """
+
+  if System.find_executable("pwsh") do
+    test "a compiler idle at 0 CPU with a compile outstanding is restarted and the compile retried, instead of holding the daemon for the 20 min cold timeout" do
+      dir = Path.join(System.tmp_dir!(), "kst#{System.unique_integer([:positive])}")
+      File.mkdir_p!(Path.join(dir, "fake"))
+      fake = Path.join([dir, "fake", "hung_compiler.ps1"])
+      File.write!(fake, @compiler_that_hangs_on_its_first_request)
+      saved = Map.new(["TMPDIR", "SPIRAL_KINO_TEST_HUNG_ONCE", "SPIRAL_KINO_COMPILER_STALL_S"], &{&1, System.get_env(&1)})
+      System.put_env(%{"TMPDIR" => dir, "SPIRAL_KINO_TEST_HUNG_ONCE" => Path.join(dir, "hung-once"), "SPIRAL_KINO_COMPILER_STALL_S" => "5"})
+
+      {:ok, daemon} = CompilerDaemon.start_link(port: 0, dotnet: System.find_executable("pwsh"), compiler_dll: fake, workspace: dir, package_dir: dir, pool: "off")
+
+      try do
+        output = Path.join(dir, "main.rs")
+        {:ok, sock} = :gen_tcp.connect({127, 0, 0, 1}, CompilerDaemon.listen_port(daemon), [:binary, packet: :line, active: false], 5_000)
+        :ok = :gen_tcp.send(sock, "compile\tRust\t#{Path.join(dir, "main.spi")}\t#{output}\t300000\t0\tstall-test\n")
+        started = System.monotonic_time(:millisecond)
+
+        assert {:ok, "ok\trecovered" <> _} = :gen_tcp.recv(sock, 0, 120_000)
+        assert System.monotonic_time(:millisecond) - started < 90_000
+        assert File.read!(output) == "fn main() {}"
+        assert File.exists?(Path.join(dir, "hung-once"))
+      after
+        GenServer.stop(daemon, :normal, 30_000)
+        Enum.each(saved, fn {name, value} -> if value, do: System.put_env(name, value), else: System.delete_env(name) end)
+        File.rm_rf(dir)
+      end
+    end
+  end
 end

@@ -234,23 +234,47 @@ test on_the_arena_spot_evolved_retreating_cuts_potions_by_a_third_within_the_tim
     (potions < base_potions, deaths <= base_deaths, ms <= base_ms, ms <= cavebot_ms * 115 / 100) |> _assert_eq (true, true, false, true)
 
 ///> c
+test mixed_arena_camp_no_rules_dominate_the_tuned_cavebot_and_kind_aware_cyclops_rules_drink_a_fifth_less =
+    open hunting_pack
+    open policy
+    inl ~search_seed = 37u32
+    inl camp = cyclops_and_two_trolls_on_the_arena_spot ()
+    inl tf = training_first ()
+    inl tc = training_count ()
+    inl heal = tuned_cavebot_heal_for (CheapClearWithin 1000000) camp tf tc
+    inl cavebot_ms = (clear_ledger_of camp (cavebot_with_heal heal) tf tc).clear_ms / tc
+    inl objective = CheapClearWithin (cavebot_ms * 115 / 100)
+    inl training t = worth objective camp t tf tc
+    inl blind order = evolve_rules_for objective order {first = heal; second = 0; third = 4} camp search_seed tf tc 6 6
+    inl blind_current = blind CurrentFirst
+    inl blind_reach = blind ReachFirst
+    inl blind_reach_wins = training (tactic_with_order ReachFirst blind_reach) > training (tactic_with_order CurrentFirst blind_current)
+    inl blind_genes = if blind_reach_wins then blind_reach else blind_current
+    inl blind_tactic = tactic_with_order (if blind_reach_wins then ReachFirst else CurrentFirst) blind_genes
+    inl aware order = evolve_temperate_for objective order (temperate_genes heal 0 0 4 4) camp (search_seed + 2u32) tf tc 6 3
+    inl aware_current = aware CurrentFirst
+    inl aware_reach = aware ReachFirst
+    inl aware_reach_wins = training (temperate_tactic ReachFirst aware_reach) > training (temperate_tactic CurrentFirst aware_current)
+    inl aware_genes = if aware_reach_wins then aware_reach else aware_current
+    inl aware_tactic = temperate_tactic (if aware_reach_wins then ReachFirst else CurrentFirst) aware_genes
+    inl gene i = search.gene aware_genes i
+    inl held t =
+        inl l = clear_ledger_of camp t (held_out_first ()) (held_out_count ())
+        l.clear_potions, l.clear_deaths, l.clear_ms / held_out_count ()
+    inl cavebot = held (cavebot_with_heal heal)
+    inl blind_evolved = held blind_tactic
+    inl cyclops_rules = held (tactic_with_order CurrentFirst (evolved_on_the_cyclops_spot ()))
+    inl cyclops_rules_standing_only = held (temperate_tactic CurrentFirst (against_standing_only (evolved_on_the_cyclops_spot ())))
+    inl aware_evolved = held aware_tactic
+    ((heal, cavebot_ms, blind_genes.first, blind_genes.second, blind_genes.third, blind_reach_wins), (gene 0, gene 1, gene 2, gene 3, gene 4, aware_reach_wins)) |> _assert_eq ((70i32, 36356i32, 51i32, 6i32, 4i32, false), (59i32, 0i32, 4i32, 4i32, 3i32, false))
+    (cavebot, blind_evolved, cyclops_rules, cyclops_rules_standing_only, aware_evolved) |> _assert_eq ((80i32, 1i32, 37871i32), (74i32, 2i32, 37792i32), (204i32, 0i32, 40784i32), (158i32, 0i32, 40459i32), (76i32, 2i32, 37792i32))
+    inl dominates (p, d, ms) (bp, bd, bms) = p <= bp && d <= bd && ms <= bms && (p < bp || d < bd || ms < bms)
+    (dominates aware_evolved cavebot, dominates aware_evolved blind_evolved, dominates blind_evolved cavebot, dominates cyclops_rules_standing_only cyclops_rules) |> _assert_eq (false, false, false, true)
+
+///> c
 test kills_and_gold_do_not_add fails "Unification failure" =
     open hunting_pack
     open creatures
     inl camp = uniform_camp Cyclops
     inl t = cavebot_with_heal 160
     quantity.plus (measured Kills camp t 1 1) (measured Profit camp t 1 1)
-
-///> c
-test zz_scored_start_probe =
-    open hunting_pack
-    open creatures
-    inl spot = uniform_camp Cyclops |> on_layout (open terrain in ArenaSpot)
-    inl held t =
-        inl l = clear_ledger_of spot t (held_out_first ()) (held_out_count ())
-        l.clear_potions, l.clear_deaths, l.clear_ms / held_out_count ()
-    inl full = scored_tactic (scored_start ())
-    inl rules = tactic_with_order (open policy in ReachFirst) {first = 143; second = 34; third = 1}
-    inl aim_only = {full with footing = StepAway}
-    inl step_only = {rules with footing = full.footing}
-    (held full, held rules, held aim_only, held step_only) |> _assert_eq ((0i32, 0i32, 0i32), (0i32, 0i32, 0i32), (0i32, 0i32, 0i32), (0i32, 0i32, 0i32))

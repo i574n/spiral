@@ -489,6 +489,7 @@ defmodule Spiral.Kino.Notebook do
       |> only_selected(selected)
       |> Enum.reject(&static_prelude?(&1.cell_source))
       |> with_builders(default_builders(cells, opts))
+      |> keyed_on_the_whole_source()
 
     memo = Memo.context(opts, spiral)
     {spiral, recalled} = recall(spiral, memo)
@@ -520,6 +521,8 @@ defmodule Spiral.Kino.Notebook do
     end
   end
 
+  defp keyed_on_the_whole_source([]), do: []
+  defp keyed_on_the_whole_source(steps), do: List.update_at(steps, -1, &Map.put(&1, :whole_source_key, true))
   defp recall(steps, nil), do: {steps, []}
 
   defp recall(steps, memo) do

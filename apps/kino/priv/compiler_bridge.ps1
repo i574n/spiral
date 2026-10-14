@@ -3,7 +3,8 @@ param(
   [Parameter(Mandatory = $true)][string]$Dll,
   [Parameter(Mandatory = $true)][string]$Socket,
   [Parameter(Mandatory = $true)][string]$WorkDir,
-  [Parameter(Mandatory = $true)][string]$BridgeFile
+  [Parameter(Mandatory = $true)][string]$BridgeFile,
+  [int]$StallSeconds = 0
 )
 
 $ErrorActionPreference = "Stop"
@@ -30,7 +31,30 @@ function Wait-Compiler([System.Diagnostics.Process]$proc, [string]$pidFile) {
   }
 }
 
-function Invoke-Compiler([string]$backend, [string]$source, [string]$target, [string]$socket, [int]$compilerPid) {
+function Wait-Response([System.Threading.Tasks.Task[string]]$pending, [System.Diagnostics.Process]$compiler) {
+  $windowStart = [System.Diagnostics.Stopwatch]::StartNew()
+  $cpuAtWindowStart = $compiler.TotalProcessorTime.TotalMilliseconds
+  $minimumProgressMs = $StallSeconds * 10
+  while (-not $pending.Wait(1000)) {
+    if ($compiler.HasExited -or $StallSeconds -le 0 -or $windowStart.Elapsed.TotalSeconds -lt $StallSeconds) { continue }
+    $compiler.Refresh()
+    $cpu = $compiler.TotalProcessorTime.TotalMilliseconds
+    $progressMs = $cpu - $cpuAtWindowStart
+    if ($progressMs -lt $minimumProgressMs) {
+      return "spiral-session`terror`t$($compiler.Id)`tcompiler stalled: $([int]$progressMs) ms CPU in $StallSeconds s with a compile outstanding"
+    }
+    $cpuAtWindowStart = $cpu
+    $windowStart.Restart()
+  }
+  $response = $pending.Result
+  if ($null -eq $response) {
+    return "spiral-session`terror`t$($compiler.Id)`tcompiler closed the socket"
+  }
+  return $response
+}
+
+function Invoke-Compiler([string]$backend, [string]$source, [string]$target, [string]$socket, [System.Diagnostics.Process]$compiler) {
+  $compilerPid = $compiler.Id
   $endpoint = [System.Net.Sockets.UnixDomainSocketEndPoint]::new($socket)
   $unix = [System.Net.Sockets.Socket]::new(
     [System.Net.Sockets.AddressFamily]::Unix,
@@ -47,11 +71,7 @@ function Invoke-Compiler([string]$backend, [string]$source, [string]$target, [st
     $writer.NewLine = "`n"
     $writer.AutoFlush = $true
     $writer.WriteLine("compile`t$backend`t$source`t$target")
-    $response = $reader.ReadLine()
-    if ($null -eq $response) {
-      return "spiral-session`terror`t$compilerPid`tcompiler closed the socket"
-    }
-    return $response
+    return Wait-Response $reader.ReadLineAsync() $compiler
   } catch {
     return "spiral-session`terror`t$compilerPid`tbridge $($_.Exception.Message)"
   } finally {
@@ -119,7 +139,7 @@ try {
       if ($parts.Length -lt 4 -or $parts[0] -ne "compile") {
         $writer.WriteLine("spiral-session`terror`t$($compiler.Id)`tinvalid bridge request")
       } else {
-        $response = Invoke-Compiler $parts[1] $parts[2] $parts[3] $Socket $compiler.Id
+        $response = Invoke-Compiler $parts[1] $parts[2] $parts[3] $Socket $compiler
         Note "response=$response"
         $writer.WriteLine($response)
       }

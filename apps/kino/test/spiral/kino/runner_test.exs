@@ -113,7 +113,21 @@ defmodule Spiral.Kino.RunnerTest do
   end
 
   test "timeout kills the whole process tree (including grandchildren)", %{dir: dir} do
-    {args, pidfile} = slow_tree!(dir)
+    %{child: child_pid, grandchild: grandchild_pid, output: output} = tree_timed_out_after_start!(dir, 1)
+
+    assert output =~ "parent started"
+
+    assert wait_until(fn -> not Runner.os_pid_alive?(grandchild_pid) end, 30_000),
+           "grandchild #{grandchild_pid} survived the timeout"
+
+    assert wait_until(fn -> not Runner.os_pid_alive?(child_pid) end, 30_000),
+           "child #{child_pid} survived the timeout"
+  end
+
+  @tree_attempts 3
+
+  defp tree_timed_out_after_start!(dir, attempt) do
+    {args, pidfile} = slow_tree!(Path.join(dir, "attempt_#{attempt}"))
     test_pid = self()
 
     task =
@@ -125,20 +139,21 @@ defmodule Spiral.Kino.RunnerTest do
       end)
 
     assert_receive {:child, child_pid}, 60_000
-    grandchild_pid = wait_until(fn -> read_pid(pidfile) end, 60_000)
-    assert grandchild_pid, "grandchild never started"
-    assert Runner.os_pid_alive?(grandchild_pid)
+    grandchild_pid = wait_until(fn -> read_pid(pidfile) || (not Process.alive?(task.pid) and :timed_out_before_start) end, 60_000)
+    grandchild_alive? = is_integer(grandchild_pid) and Runner.os_pid_alive?(grandchild_pid)
 
-    assert {:error, {:timeout, %{timeout: 40_000, output: output}}} =
-             Task.await(task, 120_000)
+    assert {:error, {:timeout, %{timeout: 40_000, output: output}}} = Task.await(task, 120_000)
 
-    assert output =~ "parent started"
+    cond do
+      grandchild_alive? ->
+        %{child: child_pid, grandchild: grandchild_pid, output: output}
 
-    assert wait_until(fn -> not Runner.os_pid_alive?(grandchild_pid) end, 30_000),
-           "grandchild #{grandchild_pid} survived the timeout"
+      attempt < @tree_attempts ->
+        tree_timed_out_after_start!(dir, attempt + 1)
 
-    assert wait_until(fn -> not Runner.os_pid_alive?(child_pid) end, 30_000),
-           "child #{child_pid} survived the timeout"
+      true ->
+        flunk("the 40 s timeout fired before the grandchild was running in all #{@tree_attempts} attempts (machine too loaded to start two escripts)")
+    end
   end
 
   test "killing the caller kills the process tree", %{dir: dir} do

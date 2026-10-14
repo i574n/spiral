@@ -16,14 +16,6 @@ class QasmError(Exception):
     pass
 
 
-class Val:
-    __slots__ = ('kind', 'n')
-
-    def __init__(self, kind, n):
-        self.kind = kind
-        self.n = n
-
-
 _BREAK = object()
 _CONT = object()
 
@@ -65,79 +57,6 @@ def idiv(a, b):
 
 def imod(a, b):
     return a - idiv(a, b) * b
-
-
-def wrap(kind, n):
-    if kind == 'i32':
-        return as_i32(n)
-    if kind == 'u32':
-        return as_u32(n)
-    fail(f'wrap of {kind}')
-
-
-def coerce(val, kind):
-    if val is None:
-        fail('missing value')
-    if val.kind == kind:
-        return val
-    if kind == 'i32':
-        if val.kind in ('i32', 'u32', 'raw'):
-            return Val('i32', as_i32(val.n))
-        if val.kind == 'f32':
-            if math.isnan(val.n) or math.isinf(val.n):
-                fail('non-finite float to int')
-            return Val('i32', as_i32(int(val.n)))
-        fail(f'cannot convert {val.kind} to int[32]')
-    if kind == 'u32':
-        if val.kind in ('i32', 'u32', 'raw'):
-            return Val('u32', as_u32(val.n))
-        if val.kind == 'f32':
-            if math.isnan(val.n) or math.isinf(val.n):
-                fail('non-finite float to uint')
-            return Val('u32', as_u32(int(val.n)))
-        fail(f'cannot convert {val.kind} to uint[32]')
-    if kind == 'f32':
-        if val.kind == 'bool':
-            fail('cannot convert bool to float[32]')
-        return Val('f32', f32(val.n))
-    if kind == 'bool':
-        fail(f'cannot convert {val.kind} to bool')
-    fail(f'unknown type {kind}')
-
-
-def need_bool(val):
-    if val.kind != 'bool':
-        fail(f'expected bool, got {val.kind}')
-    return val.n
-
-
-def zero(kind):
-    if kind == 'bool':
-        return Val('bool', False)
-    if kind == 'f32':
-        return Val('f32', 0.0)
-    if kind == 'u32':
-        return Val('u32', 0)
-    if kind == 'i32':
-        return Val('i32', 0)
-    fail(f'unknown type {kind}')
-
-
-def coerce_ret(value, ret):
-    # A return type is either None (unit), a kind string, or a tuple of kinds.
-    if ret is None:
-        if value is not None:
-            fail('returned a value from a unit function')
-        return None
-    if isinstance(ret, tuple):
-        if value is None:
-            fail('returned no value')
-        if not isinstance(value, tuple) or len(value) != len(ret):
-            fail('tuple return arity mismatch')
-        return tuple(coerce(v, t) for v, t in zip(value, ret))
-    if value is None:
-        fail('returned no value')
-    return coerce(value, ret)
 
 
 KEYWORDS = {
@@ -474,249 +393,645 @@ class Parser:
         return funcs, tops
 
 
-def unify(a, b):
-    if a.kind == 'f32' or b.kind == 'f32':
-        return coerce(a, 'f32'), coerce(b, 'f32'), 'f32'
-    if a.kind == 'bool' or b.kind == 'bool':
-        if a.kind == b.kind:
-            return a, b, 'bool'
+COMPARE = {
+    '==': lambda a, b: a == b,
+    '!=': lambda a, b: a != b,
+    '<': lambda a, b: a < b,
+    '<=': lambda a, b: a <= b,
+    '>': lambda a, b: a > b,
+    '>=': lambda a, b: a >= b,
+}
+
+
+def float_div(a, b):
+    if b == 0.0:
+        fail('division by zero')
+    return f32(a / b)
+
+
+def float_mod(a, b):
+    if b == 0.0:
+        fail('division by zero')
+    return f32(math.fmod(a, b))
+
+
+FLOAT_OPS = {
+    '+': lambda a, b: f32(a + b),
+    '-': lambda a, b: f32(a - b),
+    '*': lambda a, b: f32(a * b),
+    '/': float_div,
+    '%': float_mod,
+}
+
+INT_OPS = {
+    '+': lambda a, b: a + b,
+    '-': lambda a, b: a - b,
+    '*': lambda a, b: a * b,
+    '/': idiv,
+    '%': imod,
+    '&': lambda a, b: a & b,
+    '|': lambda a, b: a | b,
+    '^': lambda a, b: a ^ b,
+    '<<': lambda a, b: a << (b & 31),
+    '>>': lambda a, b: a >> (b & 31),
+}
+
+NARROW = {'i32': as_i32, 'u32': as_u32}
+
+DYN = 'dyn'
+TOP = 'top'
+
+
+class Tagged:
+    __slots__ = ('kind', 'n')
+
+    def __init__(self, kind, n):
+        self.kind = kind
+        self.n = n
+
+
+def missing_kind(value):
+    return AttributeError(f"'{type(value).__name__}' object has no attribute 'kind'")
+
+
+def kind_of(value):
+    if isinstance(value, Tagged):
+        return value.kind
+    raise missing_kind(value)
+
+
+def to_int_checked(narrow, target):
+    def convert(x):
+        if math.isnan(x) or math.isinf(x):
+            fail(f'non-finite float to {target}')
+        return narrow(int(x))
+    return convert
+
+
+def converter(source, target):
+    if source is None:
+        fail('missing value')
+    if isinstance(source, tuple):
+        if source == target:
+            return None
+        raise missing_kind(())
+    if source == target:
+        return None
+    if target in ('i32', 'u32'):
+        if source in ('i32', 'u32', 'raw'):
+            return NARROW[target]
+        if source == 'f32':
+            return to_int_checked(NARROW[target], 'int' if target == 'i32' else 'uint')
+        fail(f"cannot convert {source} to {'int[32]' if target == 'i32' else 'uint[32]'}")
+    if target == 'f32':
+        if source == 'bool':
+            fail('cannot convert bool to float[32]')
+        return lambda x: f32(x)
+    if target == 'bool':
+        fail(f'cannot convert {source} to bool')
+    fail(f'unknown type {target}')
+
+
+def raising(error, *before):
+    def run(env):
+        for fn in before:
+            fn(env)
+        raise error
+    return run
+
+
+def failing(message, *before):
+    return raising(QasmError(message), *before)
+
+
+def runtime_converter(source, target):
+    try:
+        return converter(source, target)
+    except Exception as exc:
+        def raise_it(x):
+            raise exc
+        return raise_it
+
+
+def dyn_coerce(value, target):
+    if value is None:
+        fail('missing value')
+    kind = kind_of(value)
+    convert = converter(kind, target)
+    return value.n if convert is None else convert(value.n)
+
+
+def constant(value):
+    fn = lambda env: value
+    fn.constant = value
+    return fn
+
+
+def coerced(kind, fn, target):
+    if kind == DYN:
+        return lambda env: dyn_coerce(fn(env), target)
+    try:
+        convert = converter(kind, target)
+    except Exception as exc:
+        return raising(exc, fn)
+    if convert is None:
+        return fn
+    if hasattr(fn, 'constant'):
+        try:
+            return constant(convert(fn.constant))
+        except Exception:
+            pass
+    return lambda env: convert(fn(env))
+
+
+def tagger(kind, fn):
+    if kind == DYN or kind is None or isinstance(kind, tuple):
+        return fn
+    return lambda env: Tagged(kind, fn(env))
+
+
+def need_bool(value):
+    kind = kind_of(value)
+    if kind != 'bool':
+        fail(f'expected bool, got {kind}')
+    return value.n
+
+
+def bool_test(kind, fn):
+    if kind == 'bool':
+        return fn
+    if kind == DYN or kind is None or isinstance(kind, tuple):
+        return lambda env: need_bool(fn(env))
+    return failing(f'expected bool, got {kind}', fn)
+
+
+def static_scalar(kind):
+    return kind in ('i32', 'u32', 'f32', 'bool', 'raw')
+
+
+def static_unify(ka, kb):
+    if ka == kb and ka != 'raw':
+        return ka
+    if ka == 'f32' or kb == 'f32':
+        converter(ka, 'f32')
+        converter(kb, 'f32')
+        return 'f32'
+    if ka == 'bool' or kb == 'bool':
         fail('bool mixed with a number')
-    if (a.kind == 'u32' and b.kind == 'i32') or (a.kind == 'i32' and b.kind == 'u32'):
+    if (ka == 'u32' and kb == 'i32') or (ka == 'i32' and kb == 'u32'):
         fail('mixed signedness')
-    if a.kind == 'u32' or b.kind == 'u32':
-        return coerce(a, 'u32'), coerce(b, 'u32'), 'u32'
-    return coerce(a, 'i32'), coerce(b, 'i32'), 'i32'
+    if ka == 'u32' or kb == 'u32':
+        return 'u32'
+    return 'i32'
+
+
+def dyn_unify(a, b):
+    if kind_of(a) == 'f32' or kind_of(b) == 'f32':
+        return dyn_coerce(a, 'f32'), dyn_coerce(b, 'f32'), 'f32'
+    ka, kb = a.kind, b.kind
+    if ka == 'bool' or kb == 'bool':
+        if ka == kb:
+            return a.n, b.n, 'bool'
+        fail('bool mixed with a number')
+    if (ka == 'u32' and kb == 'i32') or (ka == 'i32' and kb == 'u32'):
+        fail('mixed signedness')
+    if ka == 'u32' or kb == 'u32':
+        return dyn_coerce(a, 'u32'), dyn_coerce(b, 'u32'), 'u32'
+    return dyn_coerce(a, 'i32'), dyn_coerce(b, 'i32'), 'i32'
+
+
+def dyn_bin(op, a, b):
+    x, y, kind = dyn_unify(a, b)
+    compare = COMPARE.get(op)
+    if compare is not None:
+        if kind == 'bool' and op not in ('==', '!='):
+            fail(f'{op} on bool')
+        return Tagged('bool', compare(x, y))
+    if kind == 'bool':
+        fail(f'{op} on bool')
+    if kind == 'f32':
+        float_op = FLOAT_OPS.get(op)
+        if float_op is None:
+            fail(f'{op} on float[32]')
+        return Tagged('f32', float_op(x, y))
+    return Tagged(kind, NARROW[kind](INT_OPS[op](x, y)))
+
+
+def dyn_unary(op, value):
+    kind = kind_of(value)
+    if op == 'bitnot':
+        if kind == 'raw':
+            value = Tagged('i32', as_i32(value.n))
+            kind = 'i32'
+        if kind in ('f32', 'bool'):
+            fail(f'complement of {kind}')
+        return Tagged(kind, NARROW[kind](~value.n))
+    if op == 'neg':
+        if kind == 'raw':
+            return Tagged('raw', -value.n)
+        if kind == 'bool':
+            fail('negation of bool')
+        if kind == 'f32':
+            return Tagged('f32', f32(-value.n))
+        return Tagged(kind, NARROW[kind](-value.n))
+    if kind == 'bool':
+        fail('unary plus of bool')
+    return value
+
+
+def zero_raw(kind):
+    if kind == 'bool':
+        return False
+    if kind == 'f32':
+        return 0.0
+    if kind in ('i32', 'u32'):
+        return 0
+    fail(f'unknown type {kind}')
 
 
 class Machine:
     def __init__(self, funcs):
-        self.funcs = {}
+        self.signatures = {}
         for name, params, ret, body in funcs:
-            if name in self.funcs:
+            if name in self.signatures:
                 fail(f'duplicate function {name}')
-            self.funcs[name] = (params, ret, body)
+            self.signatures[name] = (params, ret, body)
+        self.bodies = {}
+        for name, (params, ret, body) in self.signatures.items():
+            table = {pname: ty for ty, pname in params}
+            self.bodies[name] = self.block(body, table, ret)
 
-    def eval_expr(self, expr, env):
+    def expr(self, expr, table):
         kind = expr[0]
         if kind == 'num':
-            return Val('raw', expr[1])
+            return 'raw', constant(expr[1])
         if kind == 'real':
-            return Val('f32', f32(expr[1]))
-        if kind == 'bool':
-            return Val('bool', expr[1])
-        if kind == 'var':
             try:
-                return env[expr[1]]
-            except KeyError:
-                fail(f'unbound {expr[1]}')
-        if kind == 'call':
-            return self.call(expr[1], expr[2], env)
-        if kind == 'cast':
-            return coerce(self.eval_expr(expr[2], env), expr[1])
-        if kind == 'ifexpr':
-            if need_bool(self.eval_expr(expr[1], env)):
-                return self.eval_expr(expr[2], env)
-            return self.eval_expr(expr[3], env)
-        if kind == 'not':
-            return Val('bool', not need_bool(self.eval_expr(expr[1], env)))
-        if kind == 'bitnot':
-            val = self.eval_expr(expr[1], env)
-            if val.kind == 'raw':
-                val = coerce(val, 'i32')
-            if val.kind == 'f32' or val.kind == 'bool':
-                fail(f'complement of {val.kind}')
-            return Val(val.kind, wrap(val.kind, ~val.n))
-        if kind == 'neg':
-            val = self.eval_expr(expr[1], env)
-            if val.kind == 'raw':
-                return Val('raw', -val.n)
-            if val.kind == 'bool':
-                fail('negation of bool')
-            if val.kind == 'f32':
-                return Val('f32', f32(-val.n))
-            return Val(val.kind, wrap(val.kind, -val.n))
-        if kind == 'pos':
-            val = self.eval_expr(expr[1], env)
-            if val.kind == 'bool':
-                fail('unary plus of bool')
-            return val
-        if kind == 'bin':
-            return self.eval_bin(expr[1], expr[2], expr[3], env)
-        fail(f'bad expression {kind}')
-
-    def eval_bin(self, op, left, right, env):
-        if op == '&&':
-            if not need_bool(self.eval_expr(left, env)):
-                return Val('bool', False)
-            return Val('bool', need_bool(self.eval_expr(right, env)))
-        if op == '||':
-            if need_bool(self.eval_expr(left, env)):
-                return Val('bool', True)
-            return Val('bool', need_bool(self.eval_expr(right, env)))
-        a, b, kind = unify(self.eval_expr(left, env), self.eval_expr(right, env))
-        if op in ('==', '!=', '<', '<=', '>', '>='):
-            if kind == 'bool' and op not in ('==', '!='):
-                fail(f'{op} on bool')
-            return Val('bool', self.compare(op, a.n, b.n))
+                return 'f32', constant(f32(expr[1]))
+            except Exception as exc:
+                return DYN, raising(exc)
         if kind == 'bool':
-            fail(f'{op} on bool')
-        if kind == 'f32':
-            return Val('f32', self.float_op(op, a.n, b.n))
-        return Val(kind, self.int_op(op, a.n, b.n, kind))
+            return 'bool', constant(expr[1])
+        if kind == 'var':
+            return self.var(expr[1], table)
+        if kind == 'call':
+            return self.call(expr[1], expr[2], table)
+        if kind == 'cast':
+            source, inner = self.expr(expr[2], table)
+            return expr[1], coerced(source, inner, expr[1])
+        if kind == 'ifexpr':
+            return self.ifexpr(expr, table)
+        if kind in ('not', 'bitnot', 'neg', 'pos'):
+            return self.unary(kind, expr[1], table)
+        if kind == 'bin':
+            return self.bin(expr[1], expr[2], expr[3], table)
+        return DYN, failing(f'bad expression {kind}')
 
-    def compare(self, op, a, b):
-        if op == '==':
-            return a == b
-        if op == '!=':
-            return a != b
-        if op == '<':
-            return a < b
-        if op == '<=':
-            return a <= b
-        if op == '>':
-            return a > b
-        return a >= b
+    def var(self, name, table):
+        if name not in table:
+            return DYN, failing(f'unbound {name}')
 
-    def float_op(self, op, a, b):
-        if op == '+':
-            return f32(a + b)
-        if op == '-':
-            return f32(a - b)
-        if op == '*':
-            return f32(a * b)
-        if op == '/':
-            if b == 0.0:
-                fail('division by zero')
-            return f32(a / b)
-        if op == '%':
-            if b == 0.0:
-                fail('division by zero')
-            return f32(math.fmod(a, b))
-        fail(f'{op} on float[32]')
+        def run(env):
+            try:
+                return env[name]
+            except KeyError:
+                fail(f'unbound {name}')
+        return table[name], run
 
-    def int_op(self, op, a, b, kind):
-        if op == '+':
-            return wrap(kind, a + b)
-        if op == '-':
-            return wrap(kind, a - b)
-        if op == '*':
-            return wrap(kind, a * b)
-        if op == '/':
-            return wrap(kind, idiv(a, b))
-        if op == '%':
-            return wrap(kind, imod(a, b))
-        if op == '&':
-            return wrap(kind, a & b)
-        if op == '|':
-            return wrap(kind, a | b)
-        if op == '^':
-            return wrap(kind, a ^ b)
-        count = b & 31
-        if op == '<<':
-            return wrap(kind, a << count)
-        if op == '>>':
-            return wrap(kind, a >> count)
-        fail(f'{op} on {kind}')
+    def unary(self, op, operand, table):
+        source, inner = self.expr(operand, table)
+        if op == 'not':
+            test = bool_test(source, inner)
+            return 'bool', lambda env: not test(env)
+        if not static_scalar(source):
+            tagged = tagger(source, inner)
+            return DYN, lambda env: dyn_unary(op, tagged(env))
+        if op == 'bitnot':
+            if source == 'raw':
+                inner = coerced('raw', inner, 'i32')
+                source = 'i32'
+            if source in ('f32', 'bool'):
+                return DYN, failing(f'complement of {source}', inner)
+            narrow = NARROW[source]
+            return source, lambda env: narrow(~inner(env))
+        if op == 'neg':
+            if source == 'raw':
+                return 'raw', lambda env: -inner(env)
+            if source == 'bool':
+                return DYN, failing('negation of bool', inner)
+            if source == 'f32':
+                return 'f32', lambda env: f32(-inner(env))
+            narrow = NARROW[source]
+            return source, lambda env: narrow(-inner(env))
+        if source == 'bool':
+            return DYN, failing('unary plus of bool', inner)
+        return source, inner
 
-    def call(self, name, args, env):
+    def ifexpr(self, expr, table):
+        cond_kind, cond = self.expr(expr[1], table)
+        test = bool_test(cond_kind, cond)
+        yes_kind, yes = self.expr(expr[2], table)
+        no_kind, no = self.expr(expr[3], table)
+        if yes_kind == no_kind and yes_kind != DYN:
+            def run(env):
+                if test(env):
+                    return yes(env)
+                return no(env)
+            return yes_kind, run
+        tagged_yes = tagger(yes_kind, yes)
+        tagged_no = tagger(no_kind, no)
+
+        def run_tagged(env):
+            if test(env):
+                return tagged_yes(env)
+            return tagged_no(env)
+        return DYN, run_tagged
+
+    def bin(self, op, left_expr, right_expr, table):
+        left_kind, left = self.expr(left_expr, table)
+        right_kind, right = self.expr(right_expr, table)
+        if op in ('&&', '||'):
+            left_test = bool_test(left_kind, left)
+            right_test = bool_test(right_kind, right)
+            if op == '&&':
+                return 'bool', lambda env: left_test(env) and right_test(env)
+            return 'bool', lambda env: left_test(env) or right_test(env)
+        if not (static_scalar(left_kind) and static_scalar(right_kind)):
+            tagged_left = tagger(left_kind, left)
+            tagged_right = tagger(right_kind, right)
+            if op in COMPARE:
+                return 'bool', lambda env: dyn_bin(op, tagged_left(env), tagged_right(env)).n
+            return DYN, lambda env: dyn_bin(op, tagged_left(env), tagged_right(env))
         try:
-            params, ret, body = self.funcs[name]
-        except KeyError:
-            fail(f'unknown function {name}')
+            kind = static_unify(left_kind, right_kind)
+        except QasmError as exc:
+            return ('bool' if op in COMPARE else DYN), raising(exc, left, right)
+        left = coerced(left_kind, left, kind)
+        right = coerced(right_kind, right, kind)
+        compare = COMPARE.get(op)
+        if compare is not None:
+            if kind == 'bool' and op not in ('==', '!='):
+                return 'bool', failing(f'{op} on bool', left, right)
+            if hasattr(right, 'constant'):
+                c = right.constant
+                if op == '==':
+                    return 'bool', lambda env: left(env) == c
+                if op == '!=':
+                    return 'bool', lambda env: left(env) != c
+                if op == '<':
+                    return 'bool', lambda env: left(env) < c
+                return 'bool', lambda env: compare(left(env), c)
+            return 'bool', lambda env: compare(left(env), right(env))
+        if kind == 'bool':
+            return DYN, failing(f'{op} on bool', left, right)
+        if kind == 'f32':
+            float_op = FLOAT_OPS.get(op)
+            if float_op is None:
+                return DYN, failing(f'{op} on float[32]', left, right)
+            return 'f32', lambda env: float_op(left(env), right(env))
+        int_op = INT_OPS[op]
+        narrow = NARROW[kind]
+        if kind == 'i32' and op in ('+', '-'):
+            if hasattr(right, 'constant'):
+                c = right.constant if op == '+' else -right.constant
+                return kind, lambda env: ((left(env) + c + SIGN32) & MASK32) - SIGN32
+            if op == '+':
+                return kind, lambda env: ((left(env) + right(env) + SIGN32) & MASK32) - SIGN32
+            return kind, lambda env: ((left(env) - right(env) + SIGN32) & MASK32) - SIGN32
+        if kind == 'u32' and op in ('+', '-'):
+            if op == '+':
+                return kind, lambda env: (left(env) + right(env)) & MASK32
+            return kind, lambda env: (left(env) - right(env)) & MASK32
+        return kind, lambda env: narrow(int_op(left(env), right(env)))
+
+    def call(self, name, args, table):
+        if name not in self.signatures:
+            return DYN, failing(f'unknown function {name}')
+        params, ret, _ = self.signatures[name]
         if len(args) != len(params):
-            fail(f'{name} expected {len(params)} arguments, got {len(args)}')
-        local = {}
-        for (ty, pname), arg in zip(params, args):
-            local[pname] = coerce(self.eval_expr(arg, env), ty)
-        sig = self.exec_stmts(body, local)
-        if isinstance(sig, _Ret):
-            return coerce_ret(sig.value, ret)
-        if sig is not None:
-            fail(f'{name} used break or continue outside a loop')
-        if ret is None:
-            return None
-        fail(f'{name} ended without a return')
+            return DYN, failing(f'{name} expected {len(params)} arguments, got {len(args)}')
+        names = [pname for _, pname in params]
+        arg_fns = []
+        for (ty, _), arg in zip(params, args):
+            kind, fn = self.expr(arg, table)
+            arg_fns.append(coerced(kind, fn, ty))
+        bodies = self.bodies
 
-    def exec_stmts(self, stmts, env):
-        for stmt in stmts:
-            sig = self.exec_stmt(stmt, env)
+        def run(env):
+            local = {pname: arg(env) for pname, arg in zip(names, arg_fns)}
+            sig = bodies[name](local)
+            if isinstance(sig, _Ret):
+                return sig.value
             if sig is not None:
-                return sig
-        return None
+                fail(f'{name} used break or continue outside a loop')
+            if ret is None:
+                return None
+            fail(f'{name} ended without a return')
+        return ret, run
 
-    def exec_stmt(self, stmt, env):
+    def block(self, stmts, table, ret):
+        fns = [self.stmt(stmt, table, ret) for stmt in stmts]
+        if len(fns) == 1:
+            return fns[0]
+
+        def run(env):
+            for fn in fns:
+                sig = fn(env)
+                if sig is not None:
+                    return sig
+            return None
+        return run
+
+    def stmt(self, stmt, table, ret):
         kind = stmt[0]
         if kind == 'let':
-            env[stmt[2]] = coerce(self.eval_expr(stmt[3], env), stmt[1])
-            return None
+            ty, name = stmt[1], stmt[2]
+            source, inner = self.expr(stmt[3], table)
+            fn = coerced(source, inner, ty)
+            table[name] = ty
+
+            def run_let(env):
+                env[name] = fn(env)
+            return run_let
         if kind == 'set':
             name = stmt[1]
-            try:
-                current = env[name]
-            except KeyError:
-                fail(f'assignment to undeclared {name}')
-            env[name] = coerce(self.eval_expr(stmt[2], env), current.kind)
-            return None
-        if kind == 'set_multi':
-            value = self.eval_expr(stmt[2], env)
-            if not isinstance(value, tuple):
-                fail('a destructuring assignment needs a tuple')
-            names = stmt[1]
-            if len(value) != len(names):
-                fail('tuple arity mismatch')
-            for name, item in zip(names, value):
-                try:
-                    current = env[name]
-                except KeyError:
+            if name not in table:
+                return failing(f'assignment to undeclared {name}')
+            source, inner = self.expr(stmt[2], table)
+            fn = coerced(source, inner, table[name])
+
+            def run_set(env):
+                if name not in env:
                     fail(f'assignment to undeclared {name}')
-                env[name] = coerce(item, current.kind)
-            return None
+                env[name] = fn(env)
+            return run_set
+        if kind == 'set_multi':
+            return self.set_multi(stmt[1], stmt[2], table)
         if kind == 'expr':
-            self.eval_expr(stmt[1], env)
-            return None
+            _, inner = self.expr(stmt[1], table)
+
+            def run_expr(env):
+                inner(env)
+            return run_expr
         if kind == 'if':
-            branch = stmt[2] if need_bool(self.eval_expr(stmt[1], env)) else stmt[3]
-            return self.exec_stmts(branch, env)
+            cond_kind, cond = self.expr(stmt[1], table)
+            test = bool_test(cond_kind, cond)
+            then = self.block(stmt[2], table, ret)
+            els = self.block(stmt[3], table, ret)
+
+            def run_if(env):
+                if test(env):
+                    return then(env)
+                return els(env)
+            return run_if
         if kind == 'while':
-            while need_bool(self.eval_expr(stmt[1], env)):
-                sig = self.exec_stmts(stmt[2], env)
-                if sig is _BREAK:
-                    return None
-                if sig is _CONT or sig is None:
-                    continue
-                return sig
-            return None
+            cond_kind, cond = self.expr(stmt[1], table)
+            test = bool_test(cond_kind, cond)
+            body = self.block(stmt[2], table, ret)
+
+            def run_while(env):
+                while test(env):
+                    sig = body(env)
+                    if sig is _BREAK:
+                        return None
+                    if sig is _CONT or sig is None:
+                        continue
+                    return sig
+                return None
+            return run_while
         if kind == 'return':
-            if stmt[1] is None:
-                return _Ret(None)
-            if stmt[1][0] == 'tuple':
-                return _Ret(tuple(self.eval_expr(e, env) for e in stmt[1][1]))
-            return _Ret(self.eval_expr(stmt[1], env))
+            return self.return_(stmt[1], table, ret)
         if kind == 'break':
-            return _BREAK
+            return lambda env: _BREAK
         if kind == 'continue':
-            return _CONT
+            return lambda env: _CONT
         if kind == 'output':
-            env[stmt[2]] = zero(stmt[1])
-            return None
-        fail(f'bad statement {kind}')
+            ty, name = stmt[1], stmt[2]
+            table[name] = ty
+            try:
+                value = zero_raw(ty)
+            except QasmError as exc:
+                return raising(exc)
+
+            def run_output(env):
+                env[name] = value
+            return run_output
+        return failing(f'bad statement {kind}')
+
+    def set_multi(self, names, value_expr, table):
+        source, inner = self.expr(value_expr, table)
+        if source == DYN or source is None:
+            def run_checked(env):
+                if not isinstance(inner(env), tuple):
+                    fail('a destructuring assignment needs a tuple')
+            return run_checked
+        if not isinstance(source, tuple):
+            return failing('a destructuring assignment needs a tuple', inner)
+        if len(source) != len(names):
+            return failing('tuple arity mismatch', inner)
+        converters = [runtime_converter(kind, table[name]) if name in table else None for name, kind in zip(names, source)]
+
+        def run(env):
+            values = inner(env)
+            for name, convert, item in zip(names, converters, values):
+                if name not in env:
+                    fail(f'assignment to undeclared {name}')
+                env[name] = item if convert is None else convert(item)
+        return run
+
+    def return_(self, value, table, ret):
+        if value is None:
+            result = _Ret(None)
+            if ret is not None and ret != TOP:
+                return failing('returned no value')
+            return lambda env: result
+        if value[0] == 'tuple':
+            parts = [self.expr(expr, table) for expr in value[1]]
+            fns = [fn for _, fn in parts]
+            values = lambda env: tuple(fn(env) for fn in fns)
+            if ret == TOP:
+                return lambda env: _Ret(values(env))
+            if ret is None:
+                return failing('returned a value from a unit function', values)
+            if not isinstance(ret, tuple):
+                return raising(missing_kind(()), values)
+            if len(ret) != len(parts):
+                return failing('tuple return arity mismatch', values)
+            checks = [self.retagger(kind, ty) for (kind, _), ty in zip(parts, ret)]
+
+            def run_parts(env):
+                raw = values(env)
+                return _Ret(tuple(check(item) for check, item in zip(checks, raw)))
+            return run_parts
+        kind, fn = self.expr(value, table)
+        if ret == TOP:
+            return lambda env: _Ret(fn(env))
+        if ret is None:
+            if kind is None:
+                def run_unit(env):
+                    fn(env)
+                    return _Ret(None)
+                return run_unit
+            if kind == DYN:
+                def run_dyn_unit(env):
+                    if fn(env) is not None:
+                        fail('returned a value from a unit function')
+                    return _Ret(None)
+                return run_dyn_unit
+            return failing('returned a value from a unit function', fn)
+        if kind is None:
+            return failing('returned no value', fn)
+        if isinstance(ret, tuple):
+            if kind == DYN:
+                def run_dyn_tuple(env):
+                    item = fn(env)
+                    if item is None:
+                        fail('returned no value')
+                    fail('tuple return arity mismatch')
+                return run_dyn_tuple
+            if not isinstance(kind, tuple) or len(kind) != len(ret):
+                return failing('tuple return arity mismatch', fn)
+            converters = [runtime_converter(source, target) for source, target in zip(kind, ret)]
+            if all(convert is None for convert in converters):
+                return lambda env: _Ret(fn(env))
+
+            def run_tuple(env):
+                values = fn(env)
+                return _Ret(tuple(v if c is None else c(v) for c, v in zip(converters, values)))
+            return run_tuple
+        if kind == DYN:
+            def run_dyn(env):
+                item = fn(env)
+                if item is None:
+                    fail('returned no value')
+                return _Ret(dyn_coerce(item, ret))
+            return run_dyn
+        fn = coerced(kind, fn, ret)
+        return lambda env: _Ret(fn(env))
+
+    def retagger(self, kind, target):
+        if kind == DYN:
+            return lambda item: dyn_coerce(item, target)
+        convert = runtime_converter(kind, target)
+        if convert is None:
+            return lambda item: item
+        return convert
 
 
 def run_source(text):
     funcs, tops = Parser(lex(text)).parse_program()
     machine = Machine(funcs)
+    table = {}
     env = {}
     for stmt in tops:
-        sig = machine.exec_stmt(stmt, env)
+        sig = machine.stmt(stmt, table, TOP)(env)
         if sig is not None:
             fail('control transfer at the top level')
-    try:
-        io = env['spiral_io']
-    except KeyError:
+    if 'spiral_io' not in env:
         fail('missing spiral_io')
-    if io.kind != 'i32':
-        io = coerce(io, 'i32')
-    return io.n
+    convert = converter(table['spiral_io'], 'i32')
+    io = env['spiral_io']
+    return io if convert is None else convert(io)
 
 
 def main(argv):

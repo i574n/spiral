@@ -2838,20 +2838,20 @@ int32_t main(){
     }
     
     
-    int64_t v640; int64_t v641; int64_t v642; int64_t v643; int64_t v644; int64_t v645; int64_t v646; int64_t v647; int64_t v648;
+    int64_t v640; int64_t v641; int64_t v644; int64_t v645; int64_t v646; int64_t v647; int64_t v648;
     switch (v621.tag) {
         case 0: { // TypedFxHashedStatementChecksumValidationAccepted
             int64_t v625 = v621.case0.v0; int64_t v626 = v621.case0.v1; int64_t v627 = v621.case0.v2; int64_t v628 = v621.case0.v3; int64_t v629 = v621.case0.v4;
             
             
-            v640 = 1ll; v641 = 0ll; v642 = 0ll; v643 = 0ll; v644 = v625; v645 = v626; v646 = v627; v647 = v628; v648 = v629;
+            v640 = 1ll; v641 = 0ll; v644 = v625; v645 = v626; v646 = v627; v647 = v628; v648 = v629;
             break;
         }
         default: { // TypedFxHashedStatementChecksumValidationRejected
-            int64_t v622 = v621.case1.v0; int64_t v623 = v621.case1.v1;
             
             
-            v640 = 0ll; v641 = 1ll; v642 = v622; v643 = v623; v644 = 0ll; v645 = 0ll; v646 = 0ll; v647 = 0ll; v648 = 0ll;
+            
+            v640 = 0ll; v641 = 1ll; v644 = 0ll; v645 = 0ll; v646 = 0ll; v647 = 0ll; v648 = 0ll;
             break;
         }
     }
@@ -3998,20 +3998,20 @@ int32_t main(){
     }
     
     
-    int64_t v923; int64_t v924; int64_t v925; int64_t v926; int64_t v927; int64_t v928; int64_t v929; int64_t v930; int64_t v931;
+    int64_t v923; int64_t v924; int64_t v927; int64_t v931;
     switch (v904.tag) {
         case 0: { // TypedFxHashedStatementChecksumValidationAccepted
-            int64_t v908 = v904.case0.v0; int64_t v909 = v904.case0.v1; int64_t v910 = v904.case0.v2; int64_t v911 = v904.case0.v3; int64_t v912 = v904.case0.v4;
+            int64_t v908 = v904.case0.v0; int64_t v912 = v904.case0.v4;
             
             
-            v923 = 1ll; v924 = 0ll; v925 = 0ll; v926 = 0ll; v927 = v908; v928 = v909; v929 = v910; v930 = v911; v931 = v912;
+            v923 = 1ll; v924 = 0ll; v927 = v908; v931 = v912;
             break;
         }
         default: { // TypedFxHashedStatementChecksumValidationRejected
-            int64_t v905 = v904.case1.v0; int64_t v906 = v904.case1.v1;
             
             
-            v923 = 0ll; v924 = 1ll; v925 = v905; v926 = v906; v927 = 0ll; v928 = 0ll; v929 = 0ll; v930 = 0ll; v931 = 0ll;
+            
+            v923 = 0ll; v924 = 1ll; v927 = 0ll; v931 = 0ll;
             break;
         }
     }
@@ -8516,20 +8516,20 @@ int32_t main(){
     }
     
     
-    int64_t v1991; int64_t v1992; int64_t v1993; int64_t v1994; int64_t v1995; int64_t v1996; int64_t v1997; int64_t v1998; int64_t v1999;
+    int64_t v1991; int64_t v1992; int64_t v1995; int64_t v1999;
     switch (v1972.tag) {
         case 0: { // TypedFxHashedStatementChecksumValidationAccepted
-            int64_t v1976 = v1972.case0.v0; int64_t v1977 = v1972.case0.v1; int64_t v1978 = v1972.case0.v2; int64_t v1979 = v1972.case0.v3; int64_t v1980 = v1972.case0.v4;
+            int64_t v1976 = v1972.case0.v0; int64_t v1980 = v1972.case0.v4;
             
             
-            v1991 = 1ll; v1992 = 0ll; v1993 = 0ll; v1994 = 0ll; v1995 = v1976; v1996 = v1977; v1997 = v1978; v1998 = v1979; v1999 = v1980;
+            v1991 = 1ll; v1992 = 0ll; v1995 = v1976; v1999 = v1980;
             break;
         }
         default: { // TypedFxHashedStatementChecksumValidationRejected
-            int64_t v1973 = v1972.case1.v0; int64_t v1974 = v1972.case1.v1;
             
             
-            v1991 = 0ll; v1992 = 1ll; v1993 = v1973; v1994 = v1974; v1995 = 0ll; v1996 = 0ll; v1997 = 0ll; v1998 = 0ll; v1999 = 0ll;
+            
+            v1991 = 0ll; v1992 = 1ll; v1995 = 0ll; v1999 = 0ll;
             break;
         }
     }
@@ -10196,20 +10196,20 @@ int32_t main(){
     }
     
     
-    int64_t v2396; int64_t v2397; int64_t v2398; int64_t v2399; int64_t v2400; int64_t v2401; int64_t v2402; int64_t v2403; int64_t v2404;
+    int64_t v2396; int64_t v2397; int64_t v2404;
     switch (v2377.tag) {
         case 0: { // TypedFxHashedStatementChecksumValidationAccepted
-            int64_t v2381 = v2377.case0.v0; int64_t v2382 = v2377.case0.v1; int64_t v2383 = v2377.case0.v2; int64_t v2384 = v2377.case0.v3; int64_t v2385 = v2377.case0.v4;
+            int64_t v2385 = v2377.case0.v4;
             
             
-            v2396 = 1ll; v2397 = 0ll; v2398 = 0ll; v2399 = 0ll; v2400 = v2381; v2401 = v2382; v2402 = v2383; v2403 = v2384; v2404 = v2385;
+            v2396 = 1ll; v2397 = 0ll; v2404 = v2385;
             break;
         }
         default: { // TypedFxHashedStatementChecksumValidationRejected
-            int64_t v2378 = v2377.case1.v0; int64_t v2379 = v2377.case1.v1;
             
             
-            v2396 = 0ll; v2397 = 1ll; v2398 = v2378; v2399 = v2379; v2400 = 0ll; v2401 = 0ll; v2402 = 0ll; v2403 = 0ll; v2404 = 0ll;
+            
+            v2396 = 0ll; v2397 = 1ll; v2404 = 0ll;
             break;
         }
     }
@@ -11588,20 +11588,20 @@ int32_t main(){
     }
     
     
-    int64_t v2733; int64_t v2734; int64_t v2735; int64_t v2736; int64_t v2737; int64_t v2738; int64_t v2739; int64_t v2740; int64_t v2741;
+    int64_t v2733; int64_t v2734; int64_t v2741;
     switch (v2714.tag) {
         case 0: { // TypedFxHashedStatementChecksumValidationAccepted
-            int64_t v2718 = v2714.case0.v0; int64_t v2719 = v2714.case0.v1; int64_t v2720 = v2714.case0.v2; int64_t v2721 = v2714.case0.v3; int64_t v2722 = v2714.case0.v4;
+            int64_t v2722 = v2714.case0.v4;
             
             
-            v2733 = 1ll; v2734 = 0ll; v2735 = 0ll; v2736 = 0ll; v2737 = v2718; v2738 = v2719; v2739 = v2720; v2740 = v2721; v2741 = v2722;
+            v2733 = 1ll; v2734 = 0ll; v2741 = v2722;
             break;
         }
         default: { // TypedFxHashedStatementChecksumValidationRejected
-            int64_t v2715 = v2714.case1.v0; int64_t v2716 = v2714.case1.v1;
             
             
-            v2733 = 0ll; v2734 = 1ll; v2735 = v2715; v2736 = v2716; v2737 = 0ll; v2738 = 0ll; v2739 = 0ll; v2740 = 0ll; v2741 = 0ll;
+            
+            v2733 = 0ll; v2734 = 1ll; v2741 = 0ll;
             break;
         }
     }

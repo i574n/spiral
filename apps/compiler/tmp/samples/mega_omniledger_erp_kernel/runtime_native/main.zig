@@ -681,8 +681,6 @@ fn spiralMain() i32 {
     var v619: []const u8 = undefined; _ = &v619;
     var v640: i64 = undefined; _ = &v640;
     var v641: i64 = undefined; _ = &v641;
-    var v642: i64 = undefined; _ = &v642;
-    var v643: i64 = undefined; _ = &v643;
     var v644: i64 = undefined; _ = &v644;
     var v645: i64 = undefined; _ = &v645;
     var v646: i64 = undefined; _ = &v646;
@@ -937,12 +935,7 @@ fn spiralMain() i32 {
     var v902: []const u8 = undefined; _ = &v902;
     var v923: i64 = undefined; _ = &v923;
     var v924: i64 = undefined; _ = &v924;
-    var v925: i64 = undefined; _ = &v925;
-    var v926: i64 = undefined; _ = &v926;
     var v927: i64 = undefined; _ = &v927;
-    var v928: i64 = undefined; _ = &v928;
-    var v929: i64 = undefined; _ = &v929;
-    var v930: i64 = undefined; _ = &v930;
     var v931: i64 = undefined; _ = &v931;
     var v908: i64 = undefined; _ = &v908;
     var v909: i64 = undefined; _ = &v909;
@@ -1882,12 +1875,7 @@ fn spiralMain() i32 {
     var v1970: []const u8 = undefined; _ = &v1970;
     var v1991: i64 = undefined; _ = &v1991;
     var v1992: i64 = undefined; _ = &v1992;
-    var v1993: i64 = undefined; _ = &v1993;
-    var v1994: i64 = undefined; _ = &v1994;
     var v1995: i64 = undefined; _ = &v1995;
-    var v1996: i64 = undefined; _ = &v1996;
-    var v1997: i64 = undefined; _ = &v1997;
-    var v1998: i64 = undefined; _ = &v1998;
     var v1999: i64 = undefined; _ = &v1999;
     var v1976: i64 = undefined; _ = &v1976;
     var v1977: i64 = undefined; _ = &v1977;
@@ -2244,12 +2232,6 @@ fn spiralMain() i32 {
     var v2375: []const u8 = undefined; _ = &v2375;
     var v2396: i64 = undefined; _ = &v2396;
     var v2397: i64 = undefined; _ = &v2397;
-    var v2398: i64 = undefined; _ = &v2398;
-    var v2399: i64 = undefined; _ = &v2399;
-    var v2400: i64 = undefined; _ = &v2400;
-    var v2401: i64 = undefined; _ = &v2401;
-    var v2402: i64 = undefined; _ = &v2402;
-    var v2403: i64 = undefined; _ = &v2403;
     var v2404: i64 = undefined; _ = &v2404;
     var v2381: i64 = undefined; _ = &v2381;
     var v2382: i64 = undefined; _ = &v2382;
@@ -2546,12 +2528,6 @@ fn spiralMain() i32 {
     var v2712: []const u8 = undefined; _ = &v2712;
     var v2733: i64 = undefined; _ = &v2733;
     var v2734: i64 = undefined; _ = &v2734;
-    var v2735: i64 = undefined; _ = &v2735;
-    var v2736: i64 = undefined; _ = &v2736;
-    var v2737: i64 = undefined; _ = &v2737;
-    var v2738: i64 = undefined; _ = &v2738;
-    var v2739: i64 = undefined; _ = &v2739;
-    var v2740: i64 = undefined; _ = &v2740;
     var v2741: i64 = undefined; _ = &v2741;
     var v2718: i64 = undefined; _ = &v2718;
     var v2719: i64 = undefined; _ = &v2719;
@@ -4220,8 +4196,6 @@ fn spiralMain() i32 {
             v630 = v621.c0_5;
             v640 = @as(i64, 1);
             v641 = @as(i64, 0);
-            v642 = @as(i64, 0);
-            v643 = @as(i64, 0);
             v644 = v625;
             v645 = v626;
             v646 = v627;
@@ -4234,8 +4208,6 @@ fn spiralMain() i32 {
             v624 = v621.c1_2;
             v640 = @as(i64, 0);
             v641 = @as(i64, 1);
-            v642 = v622;
-            v643 = v623;
             v644 = @as(i64, 0);
             v645 = @as(i64, 0);
             v646 = @as(i64, 0);
@@ -4584,12 +4556,7 @@ fn spiralMain() i32 {
             v913 = v904.c0_5;
             v923 = @as(i64, 1);
             v924 = @as(i64, 0);
-            v925 = @as(i64, 0);
-            v926 = @as(i64, 0);
             v927 = v908;
-            v928 = v909;
-            v929 = v910;
-            v930 = v911;
             v931 = v912;
         },
         1 => {
@@ -4598,12 +4565,7 @@ fn spiralMain() i32 {
             v907 = v904.c1_2;
             v923 = @as(i64, 0);
             v924 = @as(i64, 1);
-            v925 = v905;
-            v926 = v906;
             v927 = @as(i64, 0);
-            v928 = @as(i64, 0);
-            v929 = @as(i64, 0);
-            v930 = @as(i64, 0);
             v931 = @as(i64, 0);
         },
         else => unreachable,
@@ -5933,12 +5895,7 @@ fn spiralMain() i32 {
             v1981 = v1972.c0_5;
             v1991 = @as(i64, 1);
             v1992 = @as(i64, 0);
-            v1993 = @as(i64, 0);
-            v1994 = @as(i64, 0);
             v1995 = v1976;
-            v1996 = v1977;
-            v1997 = v1978;
-            v1998 = v1979;
             v1999 = v1980;
         },
         1 => {
@@ -5947,12 +5904,7 @@ fn spiralMain() i32 {
             v1975 = v1972.c1_2;
             v1991 = @as(i64, 0);
             v1992 = @as(i64, 1);
-            v1993 = v1973;
-            v1994 = v1974;
             v1995 = @as(i64, 0);
-            v1996 = @as(i64, 0);
-            v1997 = @as(i64, 0);
-            v1998 = @as(i64, 0);
             v1999 = @as(i64, 0);
         },
         else => unreachable,
@@ -6451,12 +6403,6 @@ fn spiralMain() i32 {
             v2386 = v2377.c0_5;
             v2396 = @as(i64, 1);
             v2397 = @as(i64, 0);
-            v2398 = @as(i64, 0);
-            v2399 = @as(i64, 0);
-            v2400 = v2381;
-            v2401 = v2382;
-            v2402 = v2383;
-            v2403 = v2384;
             v2404 = v2385;
         },
         1 => {
@@ -6465,12 +6411,6 @@ fn spiralMain() i32 {
             v2380 = v2377.c1_2;
             v2396 = @as(i64, 0);
             v2397 = @as(i64, 1);
-            v2398 = v2378;
-            v2399 = v2379;
-            v2400 = @as(i64, 0);
-            v2401 = @as(i64, 0);
-            v2402 = @as(i64, 0);
-            v2403 = @as(i64, 0);
             v2404 = @as(i64, 0);
         },
         else => unreachable,
@@ -6885,12 +6825,6 @@ fn spiralMain() i32 {
             v2723 = v2714.c0_5;
             v2733 = @as(i64, 1);
             v2734 = @as(i64, 0);
-            v2735 = @as(i64, 0);
-            v2736 = @as(i64, 0);
-            v2737 = v2718;
-            v2738 = v2719;
-            v2739 = v2720;
-            v2740 = v2721;
             v2741 = v2722;
         },
         1 => {
@@ -6899,12 +6833,6 @@ fn spiralMain() i32 {
             v2717 = v2714.c1_2;
             v2733 = @as(i64, 0);
             v2734 = @as(i64, 1);
-            v2735 = v2715;
-            v2736 = v2716;
-            v2737 = @as(i64, 0);
-            v2738 = @as(i64, 0);
-            v2739 = @as(i64, 0);
-            v2740 = @as(i64, 0);
             v2741 = @as(i64, 0);
         },
         else => unreachable,

@@ -210,10 +210,10 @@ defmodule Spiral.Kino.DocumentTest do
 
     notebooks =
       Enum.map(
-        ["lib/dice.livemd", "contract/dice_contract.livemd", "lib/fsharp/dice_fsharp.livemd"],
+        ["lib/fsharp/dice_fsharp.livemd"],
         &Path.join(@dice, &1)
       ) ++
-        Enum.map(["documents/documents.livemd", "hangul/hangul.livemd"], &Path.join(alphabet, &1))
+        Enum.map(["hangul/hangul.livemd"], &Path.join(alphabet, &1))
 
     cond do
       File.regular?(exe) ->
@@ -338,12 +338,14 @@ defmodule Spiral.Kino.DocumentTest do
     assert Document.to_livemd(Document.parse_livemd(text)) == text
   end
 
-  test "alphabet notebooks round-trip through livemd" do
+  test "alphabet: documents is a .spi source that writes back byte for byte, hangul an F# notebook that round-trips through livemd" do
     alphabet = Path.expand("../../../../../alphabet/apps", __DIR__)
+    documents_source = File.read!(Path.join(alphabet, "documents/documents.spi"))
+    documents = Document.parse_spi(documents_source, "")
 
-    for rel <- ["documents/documents.livemd", "hangul/hangul.livemd"] do
-      assert_livemd_round_trip(Path.join(alphabet, rel))
-    end
+    assert Document.to_spi_tested(documents) == documents_source
+    assert length(Document.tests(documents)) >= 2
+    assert_livemd_round_trip(Path.join(alphabet, "hangul/hangul.livemd"))
   end
 
   test "test cells export as test blocks that load back as the same test cells" do
@@ -483,13 +485,17 @@ defmodule Spiral.Kino.DocumentTest do
     assert blocks >= 370
   end
 
-  test "dice notebooks round-trip through livemd" do
-    dice = assert_livemd_round_trip(Path.join(@dice, "lib/dice.livemd"))
-    contract = assert_livemd_round_trip(Path.join(@dice, "contract/dice_contract.livemd"))
+  test "dice's Spiral sources are .spi files whose test blocks load as notebook cells and write back byte for byte" do
+    dice_source = File.read!(Path.join(@dice, "lib/dice.spi"))
+    contract_source = File.read!(Path.join(@dice, "contract/dice_contract.spi"))
+    dice = Document.parse_spi(dice_source, "")
+    contract = Document.parse_spi(contract_source, "")
     fsharp = assert_livemd_round_trip(Path.join(@dice, "lib/fsharp/dice_fsharp.livemd"))
 
-    assert File.regular?(Path.join(@dice, "lib/dice.spi"))
-    assert File.regular?(Path.join(@dice, "contract/dice_contract.spi"))
+    assert Document.to_spi_tested(dice) == dice_source
+    assert Document.to_spi_tested(contract) == contract_source
+    assert length(Document.tests(dice)) >= 24
+    assert length(Document.tests(contract)) >= 8
     assert fsharp_sources(fsharp) != []
 
     spi = Document.to_spi(dice)
@@ -521,5 +527,35 @@ defmodule Spiral.Kino.DocumentTest do
       %{kind: :fsharp, source: source} -> [source]
       _ -> []
     end)
+  end
+  test "a column-0 comment inside a test body keeps the lines after it in the test, as the compiler's block does" do
+    spi = "test a =\n    1 |> ignore\n/// note\n    2 |> ignore\n\ninl x () = 1\n"
+
+    assert Enum.map(Document.parse_spi(spi, "").cells, &{&1.kind, &1.source}) == [
+             markdown: "#### a (test)",
+             spiral: "///- --test\n\n1 |> ignore\n/// note\n2 |> ignore",
+             spiral: "inl x () = 1"
+           ]
+  end
+
+  test "a column-0 comment after a test body still ends the test when no indented line follows" do
+    spi = "test a =\n    1 |> ignore\n\n/// ## next\ninl x () = 1\n"
+
+    assert Enum.map(Document.parse_spi(spi, "").cells, &{&1.kind, &1.source}) == [
+             markdown: "#### a (test)",
+             spiral: "///- --test\n\n1 |> ignore",
+             markdown: "## next",
+             spiral: "inl x () = 1"
+           ]
+  end
+
+  test "a block the compiler skips as a test but whose header is malformed becomes a failing test, never silent code" do
+    for {spi, name} <- [{"test b = 1\n", "b"}, {"test c\n    1 |> ignore\n", "c"}, {"test e unknown_flag =\n    1\n", "e"}, {"test\td =\n    1\n", "d"}] do
+      doc = Document.parse_spi(spi, "")
+      [%{name: ^name}] = Document.tests(doc)
+      [header | _] = String.split(spi, "\n")
+      escaped = header |> String.replace("\\", "\\\\") |> String.replace("\"", "\\\"")
+      assert Enum.any?(doc.cells, &(&1.source == "///- --test\n\nfailwith \"malformed test header: " <> escaped <> "\" : ()"))
+    end
   end
 end

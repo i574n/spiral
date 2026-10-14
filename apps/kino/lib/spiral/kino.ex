@@ -318,6 +318,20 @@ defmodule Spiral.Kino do
            timed(:compile_ms, fn ->
              compile(dir, spi, output, backend, host, builder, prepared, opts, timeout, deadline)
            end) do
+      code_parts = [builder.raw, backend, host, text, show_value, prepared.print_code, opts[:build_only], opts[:test_cell], opts[:root]]
+      looked_up = System.monotonic_time(:millisecond)
+
+      {result, memo} =
+        Spiral.Kino.Memo.code_result(opts, code_parts, fn ->
+          run_compiled(builder, output, backend, host, text, show_value, exe, prepared, opts, timeout, deadline)
+        end)
+
+      if memo == :hit, do: add_phase(:code_memo_hit_ms, System.monotonic_time(:millisecond) - looked_up)
+      result
+    end
+  end
+
+  defp run_compiled(builder, output, backend, host, text, show_value, exe, prepared, opts, timeout, deadline) do
       cond do
         opts[:build_only] == true ->
           in_slot(fn -> build_target(builder, host, text, show_value, output, exe, opts, timeout, deadline) end)
@@ -352,7 +366,6 @@ defmodule Spiral.Kino do
               other
           end
       end
-    end
   end
 
   defp build_target(builder, true, text, show_value, rs, exe, opts, timeout, deadline) do
@@ -826,7 +839,8 @@ defmodule Spiral.Kino do
   end
 
   defp rustc_default(rs, exe, opts, timeout, deadline) do
-    with :ok <- require_tool(Toolchain.rustc(opts), "rustc") do
+    with :ok <- require_tool(Toolchain.rustc(opts), "rustc"),
+         :ok <- ensure_rust_toolchain(Toolchain.rustc(opts), deadline) do
       case Runner.run(Toolchain.rustc(opts), rustc_args(Toolchain.rustc(opts), rs, exe),
              timeout: budget(deadline),
              env: [{"CARGO_MANIFEST_DIR", Path.dirname(rs)}]
@@ -846,6 +860,62 @@ defmodule Spiral.Kino do
   def rustc_args(rustc, rs, exe) do
     toolchain = if rustup_proxy?(rustc), do: [@rust_toolchain], else: []
     toolchain ++ @rust_flags ++ ["-o", exe, rs]
+  end
+
+  defp ensure_rust_toolchain(rustc, deadline) do
+    ready = {__MODULE__, :rust_toolchain_ready}
+    rustup = Path.join(Path.dirname(rustc), "rustup" <> Path.extname(rustc))
+
+    cond do
+      not rustup_proxy?(rustc) or not File.regular?(rustup) ->
+        :ok
+
+      :persistent_term.get(ready, false) ->
+        :ok
+
+      true ->
+        :global.trans({ready, self()}, fn ->
+          if :persistent_term.get(ready, false) do
+            :ok
+          else
+            with :ok <- prepare_rust_toolchain({rustup, []}, budget(deadline)) do
+              :persistent_term.put(ready, true)
+            end
+          end
+        end)
+    end
+  end
+
+  @doc false
+  @spec prepare_rust_toolchain({String.t(), [String.t()]}, timeout()) :: :ok | {:error, ProcessError.t()}
+  def prepare_rust_toolchain({rustup, prefix}, timeout) do
+    version = String.trim_leading(@rust_toolchain, "+")
+
+    with {:ok, listed} <- rustup_step(rustup, prefix ++ ["toolchain", "list"], timeout, "rustup toolchain list") do
+      if listed |> String.split(["\r\n", "\n"]) |> Enum.any?(&String.starts_with?(&1, version <> "-")) do
+        :ok
+      else
+        install = prefix ++ ["toolchain", "install", version, "--profile", "minimal", "--no-self-update"]
+
+        with {:ok, _output} <- rustup_step(rustup, install, timeout, "rustup toolchain install #{version}"), do: :ok
+      end
+    end
+  end
+
+  defp rustup_step(rustup, args, timeout, label) do
+    case Runner.run(rustup, args, timeout: timeout) do
+      {:ok, %{exit_status: 0, output: output}} ->
+        {:ok, output}
+
+      {:ok, %{exit_status: status, output: output}} ->
+        {:error, %ProcessError{message: "#{label} failed (exit #{status}); Rust cells need the #{@rust_toolchain} toolchain\n\n#{String.slice(output, -2000, 2000)}"}}
+
+      {:error, {:timeout, _info}} ->
+        {:error, %ProcessError{message: "#{label} did not finish within the cell's time budget"}}
+
+      {:error, reason} ->
+        {:error, %ProcessError{message: "#{label} could not start: #{inspect(reason)}"}}
+    end
   end
 
   defp rustup_proxy?(rustc) do

@@ -18,7 +18,10 @@ param(
 $harness = Import-PowerShellDataFile (Join-Path $BundleRoot 'tests/harness.psd1')
 $Suite = @($Suite | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 $Backend = @($Backend | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
-foreach ($s in $Suite) { if ($s -notin 'frontier', 'smoke', 'examples', 'contracts', 'mega', 'all') { throw "unknown suite '$s'" } }
+foreach ($s in $Suite) { if ($s -notin 'frontier', 'smoke', 'examples', 'contracts', 'mega', 'all', 'fast') { throw "unknown suite '$s'" } }
+$fastSuite = $Suite -contains 'fast'
+if ($fastSuite -and $Suite.Count -gt 1) { throw "-Suite fast picks its rows from every suite and does not combine with '$($Suite -join ',')'" }
+if ($fastSuite -and ($Bless -or $Record)) { throw '-Suite fast runs a subset picked from run history: -Bless and -Record need the full suite' }
 foreach ($b in $Backend) { if ($b -notin 'Fsharp', 'C', 'Rust', 'Delphi', 'Zig', 'Wasm', 'Wgsl', 'Calyx', 'Kotlin', 'Swift', 'OpenQasm', 'Ebpf', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python') { throw "unknown backend '$b'" } }
 $mode = ConvertTo-SpiralMode $Mode
 $suiteTimeoutSec = @{ frontier = 20; smoke = 20; examples = 20; contracts = 30; mega = 180 }
@@ -127,7 +130,18 @@ function Get-Samples([string]$suite) {
     }
 }
 
-$suites = if ($Suite -contains 'all') { 'frontier', 'examples', 'contracts', 'mega' } else { $Suite }
+$suites = if ($Suite -contains 'all' -or $fastSuite) { 'frontier', 'examples', 'contracts', 'mega' } else { $Suite }
+$fastKeys = $null
+if ($fastSuite) {
+    $fastList = Join-Path $runDir 'fast-tier.tsv'
+    & (Join-Path $PSScriptRoot 'fast-tier.ps1') -Mode $mode -ListPath $fastList | Write-Host
+    $fastKeys = [Collections.Generic.HashSet[string]]::new()
+    $restKeys = [Collections.Generic.HashSet[string]]::new()
+    foreach ($row in Import-Csv $fastList -Delimiter "`t") {
+        $key = "$($row.id)|$($row.backend)"
+        if ($row.tier -eq 'fast') { [void]$fastKeys.Add($key) } else { [void]$restKeys.Add($key) }
+    }
+}
 $samples = $suites | ForEach-Object { Get-Samples $_ } | Sort-Object Id -Unique
 if ($Filter) { $samples = $samples | Where-Object { $_.Id -match $Filter } }
 
@@ -135,6 +149,7 @@ $jobs = foreach ($sample in $samples) {
     $timeout = if ($TimeoutSec -gt 0) { $TimeoutSec } elseif ($harness.Timeouts -and $harness.Timeouts.ContainsKey($sample.Id)) { $harness.Timeouts[$sample.Id] } else { $suiteTimeoutSec[$sample.Suite] }
     foreach ($b in $sample.Backends) {
         if ($Backend -and $Backend -notcontains $b) { continue }
+        if ($fastSuite -and $restKeys.Contains("$($sample.Id)|$b")) { continue }
         [pscustomobject]@{ Key = "$($sample.Id)|$b"; Suite = $sample.Suite; Id = $sample.Id; Backend = $b; Input = $sample.Input
             CoreBackend = $(if ($coreBackend.ContainsKey($b)) { $coreBackend[$b] } else { $b })
             Output = $(if ($b -eq $Probe) { Join-Path $scratch "probe/$($sample.Id)/main.$($extension[$b])" } else { [IO.Path]::ChangeExtension($sample.Input, $extension[$b]) }); TimeoutSec = $timeout

@@ -88,15 +88,18 @@ inl footing_score (l : layout) (foes_near : geometry.position -> i32) (w : footi
 
 inl scored_step (l : layout) (taken : geometry.position -> bool) (foes_near : geometry.position -> i32) (w : footing) (threat : geometry.position) (from : geometry.position) : geometry.position =
     inl distance = geometry.chebyshev_distance threat from
-    let rec pick (k : i32) (best : geometry.position) (best_score : i32) (found : bool) : geometry.position =
-        if k >= 8 then best
-        else
-            inl c = neighbor k from
-            if free l taken c && geometry.chebyshev_distance threat c > distance then
-                inl s = footing_score l foes_near w threat from c
-                if found = false || s > best_score then pick (k + 1) c s true else pick (k + 1) best best_score found
-            else pick (k + 1) best best_score found
-    pick 0 from 0 false
+    inl sx = direction_of (from.x - threat.x)
+    inl sy = direction_of (from.y - threat.y)
+    inl usable p = free l taken p && geometry.chebyshev_distance threat p > distance
+    inl score p = footing_score l foes_near w threat from p
+    inl consider (c : geometry.position) (best : geometry.position) : geometry.position =
+        if usable c && (geometry.same_tile best from || score c > score best) then c else best
+    inl both = shifted sx sy from
+    inl across = shifted sx 0 from
+    inl along = shifted 0 sy from
+    inl left = if sy = 0 then shifted sx 1 from else shifted 1 sy from
+    inl right = if sy = 0 then shifted sx -1 from else shifted -1 sy from
+    from |> consider both |> consider across |> consider along |> consider left |> consider right
 
 inl ground_step_percent (l : layout) : i32 =
     match l with

@@ -34,14 +34,42 @@ defmodule Spiral.Kino.Memo do
 
   @spec key(map(), map(), [String.t()]) :: String.t()
   def key(context, step, builder_lines) do
-    packages = Enum.map(package_paths(step.program), &{&1, Map.get(context.packages, &1)})
+    whole = Map.get(step, :whole_source_key, false)
+    program = if whole, do: step.program, else: reached_program(step.program)
+    packages = Enum.map(package_paths(step.program), &{&1, package_print_for(Map.get(context.packages, &1), program, whole)})
 
-    {context.base, step.program, Map.get(step, :real, ""), builder_lines, packages}
+    {context.base, program, Map.get(step, :real, ""), builder_lines, packages}
     |> :erlang.term_to_binary()
     |> then(&:crypto.hash(:sha256, &1))
     |> Base.encode16(case: :lower)
   end
 
+  @code_format 1
+
+  @spec code_result(keyword(), term(), (-> term())) :: {term(), :hit | :miss | :off}
+  def code_result(opts, code_parts, run) do
+    if enabled?(opts) do
+      context = %{dir: dir(opts)}
+
+      key =
+        {@code_format, kino_identity(), Keyword.take(opts, @tool_opts), code_parts}
+        |> :erlang.term_to_binary()
+        |> then(&:crypto.hash(:sha256, &1))
+        |> Base.encode16(case: :lower)
+
+      case fetch(context, key) do
+        {:ok, {:code_result, result}} ->
+          {result, :hit}
+
+        _ ->
+          result = run.()
+          if match?({:ok, %{}}, result), do: store(context, key, {:code_result, result})
+          {result, :miss}
+      end
+    else
+      {run.(), :off}
+    end
+  end
   @spec fetch(map(), String.t()) :: {:ok, term()} | :miss
   def fetch(context, key) do
     path = entry(context, key)
@@ -162,9 +190,166 @@ defmodule Spiral.Kino.Memo do
     steps
     |> Enum.flat_map(&package_paths(&1.program))
     |> Enum.uniq()
-    |> Map.new(&{&1, tree_print(&1)})
+    |> Map.new(&{&1, package_index(&1)})
   end
 
+  defp package_index(dir) do
+    dir = Path.expand(dir)
+
+    case File.read(Path.join(dir, "package.spiproj")) do
+      {:ok, project} ->
+        blocks =
+          for {file, _opened} <- module_entries(dir, project),
+              text = read_compiled(file),
+              module = file |> Path.relative_to(dir) |> String.replace("\\", "/"),
+              block <- text |> String.split("\n") |> program_blocks() |> with_stable_ids(module) do
+            block
+          end
+
+        deps = for dep <- package_dependencies(project), do: {dep, tree_print(Path.join(dir, dep))}
+
+        %{
+          project: project,
+          deps: deps,
+          blocks: Map.new(blocks, &{&1.id, &1}),
+          by_name: Enum.reduce(blocks, %{}, fn block, acc -> Enum.reduce(block.names, acc, &Map.update(&2, &1, [block.id], fn ids -> [block.id | ids] end)) end),
+          operators: for(block <- blocks, op <- block.operators, do: {op, block.id}),
+          always: for(block <- blocks, block.kind != :definition or block.instance, do: block.id)
+        }
+
+      _ ->
+        :missing
+    end
+  end
+
+  defp with_stable_ids(blocks, module) do
+    {identified, _seen} =
+      Enum.map_reduce(blocks, %{}, fn block, seen ->
+        print = :crypto.hash(:sha256, block.text)
+        identity = if block.kind == :definition, do: block.names, else: print
+        occurrence = Map.get(seen, identity, 0)
+        {Map.merge(block, %{id: {module, identity, occurrence}, print: print}), Map.put(seen, identity, occurrence + 1)}
+      end)
+
+    identified
+  end
+  defp read_compiled(file) do
+    case File.read(file) do
+      {:ok, source} -> compiled_part(source)
+      _ -> ""
+    end
+  end
+
+  defp package_print_for(%{blocks: blocks} = index, _program, true) do
+    {index.project, index.deps, blocks |> Map.keys() |> Enum.sort() |> Enum.map(&{&1, blocks[&1].print})}
+  end
+
+  defp package_print_for(index, program, false), do: reached_package_print(index, program)
+  defp package_print_for(other, _program, true), do: other
+  defp reached_package_print(%{blocks: _} = index, program) do
+    roots = ~r/[A-Za-z_][\w']*/u |> Regex.scan(program) |> List.flatten() |> Enum.uniq()
+    from_operators = for {op, id} <- index.operators, String.contains?(program, op), do: id
+    seeds = Enum.flat_map(roots, &Map.get(index.by_name, &1, [])) ++ from_operators ++ index.always
+    reached = reach_package_blocks(seeds, index, MapSet.new())
+    {index.project, index.deps, reached |> Enum.sort() |> Enum.map(&{&1, index.blocks[&1].print})}
+  end
+
+  defp reached_package_print(other, _program), do: other
+
+  defp reach_package_blocks([], _index, reached), do: reached
+
+  defp reach_package_blocks([id | rest], index, reached) do
+    if MapSet.member?(reached, id) do
+      reach_package_blocks(rest, index, reached)
+    else
+      block = index.blocks[id]
+      named = Enum.flat_map(block.tokens, &Map.get(index.by_name, &1, []))
+      by_operator = for {op, other} <- index.operators, String.contains?(block.code, op), do: other
+      reach_package_blocks(named ++ by_operator ++ rest, index, MapSet.put(reached, id))
+    end
+  end
+  @doc false
+  def reached_program(program) do
+    blocks = program |> String.replace("\r\n", "\n") |> String.split("\n") |> program_blocks()
+    indexed = Enum.with_index(blocks)
+
+    by_name =
+      Enum.reduce(indexed, %{}, fn {block, i}, acc ->
+        Enum.reduce(block.names, acc, &Map.update(&2, &1, [i], fn xs -> [i | xs] end))
+      end)
+
+    operators = for {block, i} <- indexed, op <- block.operators, do: {op, i}
+    roots = for {block, i} <- indexed, block.kind != :definition or block.instance or "main" in block.names, do: i
+    reached = reach_blocks(roots, blocks, by_name, operators, MapSet.new())
+
+    indexed
+    |> Enum.filter(fn {block, i} -> block.kind != :definition or MapSet.member?(reached, i) end)
+    |> Enum.map_join("\n", fn {block, _} -> block.text end)
+  end
+
+  defp reach_blocks([], _blocks, _by_name, _operators, reached), do: reached
+
+  defp reach_blocks([i | rest], blocks, by_name, operators, reached) do
+    if MapSet.member?(reached, i) do
+      reach_blocks(rest, blocks, by_name, operators, reached)
+    else
+      block = Enum.at(blocks, i)
+      named = Enum.flat_map(block.tokens, &Map.get(by_name, &1, []))
+      by_operator = for {op, j} <- operators, String.contains?(block.code, op), do: j
+      reach_blocks(named ++ by_operator ++ rest, blocks, by_name, operators, MapSet.put(reached, i))
+    end
+  end
+
+  defp program_blocks(lines) do
+    lines
+    |> Enum.reduce([], fn line, acc ->
+      if statement_line?(line) or acc == [] do
+        [[line] | acc]
+      else
+        [head | tail] = acc
+        [[line | head] | tail]
+      end
+    end)
+    |> Enum.reverse()
+    |> Enum.map(fn block_lines ->
+      block_lines = Enum.reverse(block_lines)
+      header = hd(block_lines)
+      code = block_lines |> Enum.map(&strip_line_comment/1) |> Enum.join("\n")
+      {kind, names, operators} = block_shape(header, code)
+      tokens = ~r/[A-Za-z_][\w']*/u |> Regex.scan(code) |> List.flatten() |> Enum.uniq() |> Enum.reject(&(&1 in names))
+      %{text: Enum.join(block_lines, "\n"), code: code, kind: kind, names: names, operators: operators, tokens: tokens, instance: Regex.match?(~r/^instance\s/, header)}
+    end)
+  end
+
+  defp statement_line?(line), do: Regex.match?(~r/^\S/u, line) and not Regex.match?(~r/^(\/\/|\(\* )/, line)
+
+  defp block_shape(header, code) do
+    cond do
+      match = Regex.run(~r/^(?:and\s+)?(?:inl|let|inm|inb)(?:\s+rec)?\s+\(([^)\s]+)\)/, header) ->
+        {:definition, ["(" <> Enum.at(match, 1) <> ")"], [Enum.at(match, 1)]}
+
+      match = Regex.run(~r/^(?:and\s+)?(?:inl|let|inm|inb)(?:\s+rec)?\s+([^\s(:=]+)/u, header) ->
+        {:definition, [Enum.at(match, 1)], []}
+
+      match = Regex.run(~r/^(?:and\s+)?(?:type|union|nominal|prototype)(?:\s+rec)?\s+([^\s=]+)/u, header) ->
+        cases = ~r/\|\s*([A-Z][\w']*)/u |> Regex.scan(code, capture: :all_but_first) |> List.flatten()
+        {:definition, [Enum.at(match, 1) | cases], []}
+
+      match = Regex.run(~r/^instance\s+(\S+)/u, header) ->
+        {:definition, [Enum.at(match, 1)], []}
+
+      true ->
+        {:other, [], []}
+    end
+  end
+
+  defp strip_line_comment(line), do: line |> String.to_charlist() |> strip_chars(false, [])
+
+  defp strip_chars([], _in_string, acc), do: acc |> Enum.reverse() |> List.to_string()
+  defp strip_chars([?\\, char | rest], true, acc), do: strip_chars(rest, true, [char, ?\\ | acc])
+  defp strip_chars([?" | rest], in_string, acc), do: strip_chars(rest, not in_string, [?" | acc])
+  defp strip_chars([?/, ?/ | _rest], false, acc), do: strip_chars([], false, acc)
+  defp strip_chars([char | rest], in_string, acc), do: strip_chars(rest, in_string, [char | acc])
   @doc false
   def package_paths(program) do
     ~r/^\/\/\/- (.*)$/m
@@ -197,7 +382,9 @@ defmodule Spiral.Kino.Memo do
   end
 
   @doc false
-  def module_files(dir, project) do
+  def module_files(dir, project), do: dir |> module_entries(project) |> Enum.map(&elem(&1, 0))
+
+  defp module_entries(dir, project) do
     project
     |> section("modules")
     |> Enum.reduce({[], []}, fn {indent, entry}, {files, folders} ->
@@ -208,7 +395,8 @@ defmodule Spiral.Kino.Memo do
         {files, [{indent, String.trim_trailing(entry, "/")} | folders]}
       else
         name = entry |> String.trim_trailing("-") |> String.trim_trailing("*")
-        {files ++ candidates(dir, Path.join(path ++ [name])), folders}
+        opened = String.ends_with?(entry, "-") or String.ends_with?(entry, "*")
+        {files ++ Enum.map(candidates(dir, Path.join(path ++ [name])), &{&1, opened}), folders}
       end
     end)
     |> elem(0)

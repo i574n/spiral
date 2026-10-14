@@ -9,7 +9,7 @@ defmodule Mix.Tasks.Xsim.Run do
 
     {opts, _} =
       OptionParser.parse!(args,
-        strict: [spi: :string, spi_file: :string, cells: :integer, breaking: :integer, frames: :boolean, churn: :integer, save: :string, replay: :string, seed: :integer, users: :integer, edits: :integer, schedules: :integer, executor: :string, max_concurrency: :integer, duplicates: :float, memo: :boolean]
+        strict: [spi: :string, spi_file: :string, cells: :integer, breaking: :integer, frames: :boolean, churn: :integer, save: :string, replay: :string, seed: :integer, users: :integer, edits: :integer, schedules: :integer, executor: :string, max_concurrency: :integer, duplicates: :float, memo: :boolean, personas: :string, evict: :boolean]
       )
 
     files =
@@ -18,7 +18,7 @@ defmodule Mix.Tasks.Xsim.Run do
         else: String.split(opts[:spi] || Mix.raise("missing --spi or --spi-file"), ",", trim: true)
     spi = hd(files)
     threads = Enum.map(files, &cells_of(&1, opts[:cells]))
-    scenario = Xsim.Scenario.from_corpus(threads, seed: opts[:seed] || 1, users: opts[:users] || 8, edits: opts[:edits] || 3, breaking: opts[:breaking] || 0, churn: opts[:churn] || 0)
+    scenario = Xsim.Scenario.from_corpus(threads, seed: opts[:seed] || 1, users: opts[:users] || 8, edits: opts[:edits] || 3, breaking: opts[:breaking] || 0, churn: opts[:churn] || 0, personas: Xsim.Personas.parse(opts[:personas]))
     scenario = if opts[:frames], do: %{scenario | events: Xsim.Frames.explode_posts(scenario.events)}, else: scenario
     tally = Xsim.Executors.memo_tally()
     executor = executor(opts[:executor] || "fake", spi, memo: Keyword.get(opts, :memo, false), memo_tally: tally)
@@ -33,7 +33,7 @@ defmodule Mix.Tasks.Xsim.Run do
 
         if opts[:save], do: Xsim.Log.write(String.replace(opts[:save], "{schedule}", Integer.to_string(schedule)), deliveries)
         started = System.monotonic_time(:millisecond)
-        state = Xsim.Runner.run(deliveries, executor, max_concurrency: opts[:max_concurrency] || 4)
+        state = Xsim.Runner.run(deliveries, executor, max_concurrency: opts[:max_concurrency] || 4, evict: Keyword.get(opts, :evict, false))
         ms = System.monotonic_time(:millisecond) - started
         verdicts = Xsim.Invariants.check(state, baseline)
         verdicts = if opts[:executor] == "kino", do: verdicts ++ [{:breaking_edits_fail, Xsim.Invariants.breaking_edits_fail(state, scenario.broken)}], else: verdicts
@@ -79,6 +79,8 @@ defmodule Mix.Tasks.Xsim.Run do
       framed: state.world.framed,
       starts: state.starts |> Map.values() |> Enum.sum(),
       prefixes: map_size(state.results),
+      peak_results: state.peak_results,
+      evictions: state.evicted |> Map.values() |> Enum.sum(),
       cancels: state.cancels,
       visible: map_size(state.visible),
       peak_inflight: state.peak_inflight,

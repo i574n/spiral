@@ -46,10 +46,11 @@ defmodule Xsim.Scenario do
     {likes, rand} = likes(ids, users, rand)
     {unlikes, rand} = unlikes(likes, rand)
     {edit_events, rand} = edits(posts, edits, rand)
-    {breaking, _rand} = breaking_edits(posts, Keyword.get(opts, :breaking, 0), rand)
+    {breaking, rand} = breaking_edits(posts, Keyword.get(opts, :breaking, 0), rand)
+    {persona_events, persona_broken, _rand} = Xsim.Personas.events(posts, Keyword.get(opts, :personas, []), rand)
     churn = churn(posts, Keyword.get(opts, :churn, 0))
-    interactions = weave(likes ++ edit_events ++ breaking ++ unlikes, churn)
-    broken = MapSet.new(for {:edit, _, source} <- breaking, do: source)
+    interactions = weave(likes ++ edit_events ++ breaking ++ unlikes ++ persona_events, churn)
+    broken = MapSet.union(MapSet.new(for {:edit, _, source} <- breaking, do: source), persona_broken)
     %__MODULE__{seed: seed, posts: posts, events: posts ++ interactions, broken: broken}
   end
 
@@ -94,7 +95,7 @@ defmodule Xsim.Scenario do
     editable = Enum.filter(posts, fn {:post, _, _, source} -> not String.contains?(source, "///- --test") end)
 
     Enum.reduce(1..max(count, 1)//1, {[], rand}, fn _, {acc, rand} ->
-      if editable == [] do
+      if editable == [] or count == 0 do
         {acc, rand}
       else
         {i, rand} = :rand.uniform_s(length(editable), rand)
@@ -105,7 +106,7 @@ defmodule Xsim.Scenario do
   end
 
   defp breaking_edits(posts, count, rand) do
-    tests = Enum.filter(posts, fn {:post, _, _, source} -> String.contains?(source, "///- --test") and Regex.match?(~r/\d+\s*$/, source) end)
+    tests = Enum.filter(posts, fn {:post, _, _, source} -> String.contains?(source, "///- --test") and break_source(source) != source end)
 
     Enum.reduce(1..max(count, 1)//1, {[], rand}, fn _, {acc, rand} ->
       if tests == [] or count == 0 do
@@ -113,10 +114,13 @@ defmodule Xsim.Scenario do
       else
         {i, rand} = :rand.uniform_s(length(tests), rand)
         {:post, id, _, source} = Enum.at(tests, i - 1)
-        broken = Regex.replace(~r/(\d+)(\s*)$/, source, fn _, n, ws -> Integer.to_string(String.to_integer(n) + 1) <> ws end)
-        {acc ++ [{:edit, id, broken}], rand}
+        {acc ++ [{:edit, id, break_source(source)}], rand}
       end
     end)
+  end
+
+  def break_source(source) do
+    Regex.replace(~r/(?<![\d.])(\d+)((?:\.\d+)?\s*)$/, source, fn _, whole, rest -> Integer.to_string(String.to_integer(whole) + 1) <> rest end)
   end
 
   def deliveries(%__MODULE__{events: events}, opts \\ []) do

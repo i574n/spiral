@@ -517,7 +517,9 @@ defmodule Spiral.Kino.CompilerDaemon do
               "-WorkDir",
               Toolchain.workspace(state.toolchain),
               "-BridgeFile",
-              bridge
+              bridge,
+              "-StallSeconds",
+              Integer.to_string(stall_seconds())
             ],
             cd: Toolchain.workspace(state.toolchain),
             env: port_env(state.toolchain, dotnet)
@@ -987,8 +989,13 @@ defmodule Spiral.Kino.CompilerDaemon do
 
   defp session_lost?(message) do
     String.contains?(message, "compiler socket") or String.contains?(message, "bridge ") or
-      String.contains?(message, "closed the socket")
+      String.contains?(message, "closed the socket") or String.contains?(message, "compiler stalled")
   end
+
+  @default_stall_seconds 120
+
+  @doc false
+  def stall_seconds, do: env_count("SPIRAL_KINO_COMPILER_STALL_S", @default_stall_seconds)
 
   defp compiler_log(%{log: ""}), do: ""
   defp compiler_log(%{log: log}), do: "\n" <> String.trim(log)

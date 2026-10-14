@@ -32,6 +32,8 @@ pwsh scripts/test.ps1 -Mode gpt5parallel -Suite frontier,smoke   # widen once th
 pwsh scripts/test.ps1 -Mode gpt5parallel -Suite all -Record      # full scoreboard, written to lanes/gpt5parallel/
 ```
 
+For the edit loop, `pwsh scripts/test.ps1 -Suite fast -Native` runs the rows that changed most per second of their cost. `scripts/fast-tier.ps1` mines this mode's `<cache>/runs/*/results.tsv` (older `examples/` ids fold into `samples/`; runs with more than 20% timeouts are skipped) and writes `<run dir>/fast-tier.tsv`, with nothing stored in the tree. The selection fills a budget from `tests/harness.psd1` `Fast` (600 s of summed median row cost) in four passes: the cheapest row of every backend and sample family, every row with fewer than 5 runs, the cheapest row of every distinct outcome-flip history (the runs in which a row's compile or native outcome changed), then by signal per second. Signal is residual changes plus twice the outcome flips, and a row that only repeats a covered flip history with no residual change is skipped. The flip-history pass exists because 992 rows ever flipped but share only 157 histories: most flips are whole backend lanes changing in the same run. A non-C row brings its C oracle row with it. Rows missing from the latest full run always run, outside the budget. On 2026-10-14 that was 222 new Bend rows, so a fast run had about 893 jobs until a full run recorded them. `-Bless` and `-Record` refuse it. A fast run leaves `fast-tier.tsv` in its run directory, and such runs never add signal (they still update the last-seen state and costs), so the rows the tier picks do not score higher for being picked. Measured 2026-10-14 over 916 single-flight runs: 671 of 3,872 rows, 10.2% of the summed cost, all 130 flip histories of the current rows, 49.3% of the raw signal. At 1,200 s it is 1,237 rows and 78.1%; at 300 s, 316 rows, 129 of 130 histories and 19.8%. Without the flip-history pass, 600 s reached 55.9% of the raw signal but only 85 of the 130 histories, because the raw sum counts co-flip twins. Signal means a row changed during development. That is a proxy: it does not prove the row catches bugs, so bless only from `-Suite all`.
+
 For one fixture, skip the suite: `pwsh scripts/probe.ps1 <sample> [-Mode single-flight] [-Backend C]`
 compiles `samples/<sample>` directly and prints exit code, time and the first result line per run.
 - `-Repeat 5` exposes races: the outcomes line flags runs that differ.
@@ -237,7 +239,9 @@ The eBPF backend (`codegenEbpf`, `--backend Ebpf` / `.ebpf`, 2026-10-10) is a C 
   doc edit on one side never blocks a build. A new `RawExpr` case, for example, touches gpt5parallel's structural seed
   (`parsedAstSeedOfRawExpr`) and nothing on single-flight's side.
 - Verify a change to a pair or a shared section with both builds (`build.ps1 -Mode single-flight` and
-  `-Mode gpt5parallel`) and each lane's tests.
+  `-Mode gpt5parallel`), so both cores keep compiling, and with single-flight's tests. Since 2026-10-14 the
+  gpt5parallel suite no longer gates a bless (its rungs took 50 min to 2.5 h and timed out under load);
+  hopacsota replaces it.
 
 ## Promotion criterion
 

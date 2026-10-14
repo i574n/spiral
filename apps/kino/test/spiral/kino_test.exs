@@ -666,4 +666,28 @@ defmodule Spiral.KinoTest do
     assert Spiral.Kino.rustc_args("/opt/rust/bin/rustc", "main.rs", "main") ==
              ["-C", "opt-level=2", "-A", "warnings", "--edition", "2024", "-o", "main", "main.rs"]
   end
+  test "a missing pinned Rust toolchain is installed once; a failed install is reported and never marked ready" do
+    dir = Spiral.Kino.TestHelpers.tmp_dir!("rustup")
+
+    fake = fn name, listed, install_exit ->
+      Spiral.Kino.TestHelpers.script!(dir, name, """
+      main(["toolchain", "list"]) ->
+          io:format("~s~n", ["#{listed}"]);
+      main(["toolchain", "install" | _]) ->
+          io:format("error: could not download the toolchain (offline)~n"),
+          halt(#{install_exit}).
+      """)
+    end
+
+    escript = Spiral.Kino.TestHelpers.escript()
+
+    assert :ok = Spiral.Kino.prepare_rust_toolchain({escript, [fake.("listed", "1.99.0-x86_64-pc-windows-msvc", 1)]}, 60_000)
+    assert :ok = Spiral.Kino.prepare_rust_toolchain({escript, [fake.("installs", "stable-x86_64-pc-windows-msvc", 0)]}, 60_000)
+
+    assert {:error, %ProcessError{message: message}} =
+             Spiral.Kino.prepare_rust_toolchain({escript, [fake.("offline", "stable-x86_64-pc-windows-msvc", 1)]}, 60_000)
+
+    assert message =~ "rustup toolchain install 1.99.0 failed (exit 1)"
+    assert message =~ "offline"
+  end
 end

@@ -10,6 +10,9 @@ defmodule Xsim.Runner do
             visible: %{},
             refs: %{},
             cancelled: %{},
+            evicted: %{},
+            evicting: false,
+            peak_results: 0,
             post_key: %{},
             owner: %{},
             peak_inflight: 0,
@@ -18,8 +21,9 @@ defmodule Xsim.Runner do
   def run(deliveries, executor, opts \\ []) do
     limit = Keyword.get(opts, :max_concurrency, 4)
     naive = Keyword.get(opts, :naive_visibility, false)
-    faults = %{cancel: Keyword.get(opts, :cancel, true), rerun: Keyword.get(opts, :rerun_completed, false)}
-    state = %__MODULE__{world: World.new()}
+    evict = Keyword.get(opts, :evict, false)
+    faults = %{cancel: Keyword.get(opts, :cancel, true), rerun: Keyword.get(opts, :rerun_completed, false), evict: evict}
+    state = %__MODULE__{world: World.new(), evicting: evict}
 
     state =
       Enum.reduce(deliveries, state, fn delivery, state ->
@@ -36,7 +40,7 @@ defmodule Xsim.Runner do
     state = if faults.rerun, do: requeue_completed(state), else: state
     state = start_queued(state, executor, limit)
     beam_mb = div(:erlang.memory(:total), 1_048_576)
-    %{state | peak_inflight: max(state.peak_inflight, map_size(state.tasks)), peak_beam_mb: max(state.peak_beam_mb, beam_mb)}
+    %{state | peak_inflight: max(state.peak_inflight, map_size(state.tasks)), peak_beam_mb: max(state.peak_beam_mb, beam_mb), peak_results: max(state.peak_results, map_size(state.results))}
   end
 
   defp retarget(state, id, faults) do
@@ -60,6 +64,7 @@ defmodule Xsim.Runner do
       %{state | refs: Map.put(state.refs, key, count)}
     else
       state = %{state | refs: Map.delete(state.refs, key), queue: List.delete(state.queue, key)}
+      state = if faults.evict, do: evict(state, key), else: state
 
       case {faults.cancel, state.tasks[key]} do
         {true, %{task: task}} ->
@@ -70,6 +75,12 @@ defmodule Xsim.Runner do
           state
       end
     end
+  end
+
+  defp evict(state, key) do
+    if Map.has_key?(state.results, key),
+      do: %{state | results: Map.delete(state.results, key), evicted: Map.update(state.evicted, key, 1, &(&1 + 1))},
+      else: state
   end
 
   defp acquire(state, nil, _id), do: state
@@ -129,7 +140,7 @@ defmodule Xsim.Runner do
   end
 
   defp drain(state, executor, limit, naive) do
-    state = reconcile(state, executor, limit, %{cancel: true, rerun: false})
+    state = reconcile(state, executor, limit, %{cancel: true, rerun: false, evict: state.evicting})
 
     if map_size(state.tasks) == 0 and state.queue == [] do
       state

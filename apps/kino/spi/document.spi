@@ -485,11 +485,34 @@ inl test_options (real_mode : bool) (modes : string) : string =
 inl test_cell_source (real_mode : bool) (modes : string) (targets : rows) (body : rows) : string =
     join_rows (Row ("///- " ++ test_options real_mode modes, append_rows targets (Row ("", body))))
 
+union header_form =
+    | WellFormed
+    | Malformed : string
+
+inl comment_line (line : string) : bool = text.starts_with line "//" || text.starts_with line "(* "
+
+inl test_like (line : string) : bool =
+    if text.starts_with line "test" then
+        if text.length line = 4i32 then true else text.ident_char (text.index line 4i32) = false
+    else false
+
+inl malformed_name (line : string) : string =
+    inl start = lead_ws line 4i32
+    inl stop = text.take_unicode_ident line start
+    if stop > start then text.slice_len line start (stop - start) else "test"
+
+let rec resumes_test (src : string) (i : i32) : bool =
+    match text.next_line src i with
+    | LineDone => false
+    | LineGot (line, next) =>
+        if text.blank line || comment_line line then resumes_test src next
+        else text.is_space (text.index line 0i32)
+
 union spi_mode =
     | Between
     | InDoc : rows
     | InCode : rows
-    | InTest : string * string * rows * rows
+    | InTest : string * string * rows * rows * header_form
 
 inl doc_start (line : string) : bool = text.starts_with line "/// " || line = "///"
 
@@ -519,8 +542,17 @@ inl doc_cell (lines : rows) (real_mode : bool) (acc : cells) : cells =
     inl source = text.trim_newlines (join_rows (rev_rows lines NoRow))
     if source = "" then acc else Cell ("markdown", source, acc)
 
-inl test_cell_of (name : string) (modes : string) (targets : rows) (body : rows) (real_mode : bool) (acc : cells) : cells =
-    inl source = test_cell_source real_mode modes (rev_rows targets NoRow) (rev_rows (drop_blank_rows body) NoRow)
+inl malformed_body (line : string) : rows =
+    inl quoted = text.replace (text.replace line "\\" "\\\\") "\"" "\\\""
+    Row ("failwith \"malformed test header: " ++ quoted ++ "\" : ()", NoRow)
+
+inl test_body (form : header_form) (body : rows) : rows =
+    match form with
+    | WellFormed => rev_rows (drop_blank_rows body) NoRow
+    | Malformed line => malformed_body line
+
+inl test_cell_of (name : string) (modes : string) (targets : rows) (body : rows) (form : header_form) (real_mode : bool) (acc : cells) : cells =
+    inl source = test_cell_source real_mode modes (rev_rows targets NoRow) (test_body form body)
     if real_mode then Cell ("real_test:" ++ name, source, acc) else Cell ("test:" ++ name, source, acc)
 
 inl close_mode (mode : spi_mode) (targets : rows) (real_mode : bool) (acc : cells) : cells =
@@ -528,7 +560,7 @@ inl close_mode (mode : spi_mode) (targets : rows) (real_mode : bool) (acc : cell
     | Between => code_cell targets real_mode acc
     | InDoc lines => code_cell targets real_mode (doc_cell lines real_mode acc)
     | InCode lines => code_cell (append_rows targets lines) real_mode acc
-    | InTest (name, modes, test_targets, body) => code_cell targets real_mode (test_cell_of name modes test_targets body real_mode acc)
+    | InTest (name, modes, test_targets, body, form) => code_cell targets real_mode (test_cell_of name modes test_targets body form real_mode acc)
 
 inl close_open (code : rows) (targets : rows) (real_mode : bool) (acc : cells) : cells =
     if no_rows code then code_cell targets real_mode acc else code_cell (append_rows targets code) real_mode acc
@@ -538,9 +570,10 @@ let open_step (line : string) (code : rows) (targets : rows) (real_mode : bool) 
         if no_rows code then Between, Row (line, targets), acc else InCode code, Row (line, targets), acc
     else
         match header_of line with
-        | Header (name, modes) => InTest (name, modes, targets, NoRow), NoRow, close_open code NoRow real_mode acc
+        | Header (name, modes) => InTest (name, modes, targets, NoRow, WellFormed), NoRow, close_open code NoRow real_mode acc
         | NoHeader =>
-            if doc_start line then InDoc (Row (undoc line, NoRow)), NoRow, close_open code targets real_mode acc
+            if test_like line then InTest (malformed_name line, "", targets, NoRow, Malformed line), NoRow, close_open code NoRow real_mode acc
+            elif doc_start line then InDoc (Row (undoc line, NoRow)), NoRow, close_open code targets real_mode acc
             elif no_rows code then
                 if line = "" && no_rows targets then Between, NoRow, acc
                 else InCode (Row (line, targets)), NoRow, acc
@@ -551,9 +584,10 @@ let rec spi_walk (src : string) (i : i32) (mode : spi_mode) (targets : rows) (re
     | LineDone => close_mode mode targets real_mode acc
     | LineGot (line, next) =>
         match mode with
-        | InTest (name, modes, test_targets, body) =>
-            if indented line then spi_walk src next (InTest (name, modes, test_targets, Row (unindent line, body))) targets real_mode acc
-            else spi_walk src i Between NoRow real_mode (test_cell_of name modes test_targets body real_mode acc)
+        | InTest (name, modes, test_targets, body, form) =>
+            if indented line then spi_walk src next (InTest (name, modes, test_targets, Row (unindent line, body), form)) targets real_mode acc
+            elif comment_line line && resumes_test src next then spi_walk src next (InTest (name, modes, test_targets, Row (line, body), form)) targets real_mode acc
+            else spi_walk src i Between NoRow real_mode (test_cell_of name modes test_targets body form real_mode acc)
         | InDoc lines =>
             if doc_more line then spi_walk src next (InDoc (Row (undoc line, lines))) targets real_mode acc
             elif line = "" then spi_walk src next Between targets real_mode (doc_cell lines real_mode acc)

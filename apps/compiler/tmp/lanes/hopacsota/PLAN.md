@@ -15,11 +15,14 @@ Measured on gpt5parallel's side of `spiral_compiler.fs` (2026-10-13):
 | gpt5parallel-only lines / whole file | 159,083 / 186,186 |
 | its PartEval vs single-flight's PartEval | 104,778 vs 2,967 lines |
 | speed vs single-flight | 2.65x slower overall (interleaved A/B), 6.9x on runtime_bench |
-| CPU in replay bookkeeping | about half: `jpRecordCurrentWorkOperation` 23%, `buildFreshApplyState` 18%, `jpStoreDeclaredLetContinuation` 8% |
+| CPU in replay bookkeeping | about half (the three functions below) |
 | `ConcurrentDictionary` uses | 301 |
 | `lock` / `Monitor` sites | about 88 |
 | `Promise.Now.isFulfilled` / `IVar.Now.*` polls | 22 / 11 |
 | `withNack*`, `Alt.prepare*`, `Proc`, `Latch`, `MVar`, `Lock`, `BoundedMb`, `Job.server`, `Scheduler.create` | 0 |
+
+The replay bookkeeping: `jpRecordCurrentWorkOperation` 23%, `buildFreshApplyState` 18%,
+`jpStoreDeclaredLetContinuation` 8%.
 
 The fix classes in `lanes/gpt5parallel/FRONTIER.md` (58 numbered fixes):
 - **Replay.** Re-running evaluation to resume it was wrong in nine ways: fixes 4, 14, 16, 23, 24, 34, 41, 42
@@ -38,18 +41,27 @@ right in every corner. hopacsota never records evaluation and never replays it.
 
 ## The technical core (read from single-flight's PartEval)
 
-Three facts in single-flight make a join-point body a unit that can run on its own:
+Four facts in single-flight. The first three make a join-point body a unit that can run on its own; the
+fourth says when its shared state is final:
 
 1. **A join-point body is evaluated in a fresh environment.** `EJoinPoint'` (`spiral_compiler.fs` ~163002-163015)
    builds a new `LangEnv` with `seq = ResizeArray()`, `cse = [Dictionary()]`, `unions = Map.empty` and
    `i = ref 0`. Closures (`closure_env`, ~162396) and type join points (~162572) do the same. Residual
    variable numbers are local to the body.
 2. **Output names come from codegen, not from evaluation order.** Codegen names a method when its traversal
-   first reaches it: `method (a,b)` with `method_names.[(method (a,b)).tag]` (~165176, the same in every
-   backend). The order in which bodies finished does not reach the text.
-3. **The cache key fixes the result.** A specialization is keyed by `(backend, body)` plus the hash-consed
-   `(env_global_value, env_global_type)` (~162993-162995). Its result `(seq, ret_ty)` is determined by that
-   key and by the global state listed below.
+   first reaches it: `method (a,b)` with `method_names.[(method (a,b)).tag]` (single-flight's F# codegen
+   ~166398; ~165223 is gpt5parallel's copy; the same in every backend). The order in which bodies finished
+   does not reach the text.
+3. **The cache key fixes a successful result.** A specialization is keyed by `(backend, body)` plus the
+   hash-consed `(env_global_value, env_global_type)` (~162993-162995). A successful result `(seq, ret_ty)` is
+   determined by that key and by the shared state in the inventory below. A failure is not: a body inherits
+   context from the caller that first evaluates it, outside the key (`trace`, `inline_depth`, the dynamic-if
+   depth, the BackendSwitch validating flag, the stack depth; inventory entries of those names). That context
+   decides whether and where `EJP0011`/`EJP0040` fire, the trace each residual statement stores (read only by
+   codegen errors), and whether RUST-GAP reports are printed. D3 and D6 fix it to the canonical caller (P1).
+4. **Codegen is not a read-only phase.** `PartEvalResult.ty_to_data` and `nominal_apply` (~164584-164585) close
+   over the evaluator; codegen calls them and can fill `join_point_type`, build `Union`s and evaluate `TTerm`
+   bodies, and every backend appends to `globals`. Peval's shared state stays live until codegen ends (P5).
 
 The caller of a join point needs only `ret_ty`. Single-flight takes it from the annotation when there is one,
 and otherwise evaluates the body first (~162997-163022). Closures always carry `fun_ty`.
@@ -57,8 +69,9 @@ and otherwise evaluates the body first (~162997-163022). Closures always carry `
 **Consequence.** A specialization whose return type is known (annotated method, closure, or a type join point
 with its type known) can be evaluated by another job while the caller continues. One whose type is not known
 has to be awaited, or evaluated in place by the first caller that needs it. If every shared table is filled
-once per key and order-sensitive global effects are merged in a fixed order, the output does not depend on the
-schedule. This is determinism by construction: no recording.
+once per key, order-sensitive global effects are merged in a fixed order, and a body that would fail or print
+differently under another caller's context is evaluated again in the canonical caller's context, the output
+does not depend on the schedule. This is determinism by construction: no recording.
 
 ## Decisions
 
@@ -74,10 +87,24 @@ Each decision has an id. Code and reviews cite the id.
   carrying a reply IVar. Each entry is created by its first claim and filled exactly once. The claim returns
   a capability: `Owner of Filler | Waiter of Promise<SpecResult>`. Only an `Owner` can fill, so the type
   system rules out "filled twice". There is no `ConcurrentDictionary` and no lock.
+  - **The owner's context is relative (P1).** An owner that runs a body as a fork or a speculation, not inline
+    in its caller, evaluates it with a relative context: its own frame as the trace, `inline_depth` and the
+    dynamic-if depth 0, not validating. Its `SpecResult` records the maximum relative depths it reached. D6
+    decides at the merge whether the body is evaluated again with the canonical caller's context.
+  - **Three tables, one discipline.** `join_point_method`, `join_point_closure` and `join_point_type` are all
+    D3 tables. `join_point_type` stays one during codegen, which can still fill it (core fact 4, P5); a union
+    built in a type join point is compared by reference, so two fills of one key would make two unequal types.
+  - The per-family `HashConsTable` that interns keys keeps its lock (shared code, allowlisted in G2): its ids
+    reach key equality only, never text or order (inventory).
 - **D4. A pending key that is waited on.**
   - A caller that needs `ret_ty` from a key it does not own blocks on that key's promise.
-  - A cycle is a recursion. It raises single-flight's error, "Recursive join points must be annotated.", at
-    the same trace position as single-flight.
+  - A cycle is a recursion, and single-flight has three pending cases (P3). Each happens only when the
+    awaited key is on the waiter's own ancestor chain; any other pending key is awaited:
+    - a method key: single-flight's error "Recursive join points must be annotated." (~163000), at the same
+      trace position as single-flight; an annotated method is not pending, its type is the annotation;
+    - a type join point: "Type join points must not be unboxed during their definition." (~162576), except
+      inside `ty_is_uninhabited`, which swallows that error and reads the type as inhabited (~162555);
+    - a closure: no error; the recursion returns the key (~162425-162426), since `fun_ty` is known.
   - **Detection.** Each `Owner` records its own key and its ancestor chain, the keys it is evaluating on its
     current path. Before blocking, a waiter adds an edge `waiter key -> awaited key` to the wait-for graph,
     which is owned by a server job. The server rejects any edge that closes a cycle.
@@ -85,7 +112,10 @@ Each decision has an id. Code and reviews cite the id.
     have raised: the one earliest in single-flight's depth-first evaluation order (D6).
 - **D5. A local scheduler per compile.**
   - Created with `Scheduler.create`.
-  - `MaxStackSize` is the same 1.5 GB that single-flight's `peval` thread uses.
+  - `MaxStackSize` is the same 1.5 GB that single-flight's `peval` thread uses. A job starts on a fresh stack,
+    where single-flight runs a body nested inside its callers, so the stack check behind `EJP0011`
+    (`TryEnsureSufficientExecutionStack`, ~49283) can pass in hopacsota where single-flight stopped. D6's
+    restart covers the `inline_depth` limit, not the stack; R4 reports any corpus row that hits the stack check.
   - `NumWorkers` comes from `SPIRAL_HOPACSOTA_WORKERS`, default `ProcessorCount`.
   - `TopLevelHandler` turns an unhandled exception into a structured compile failure.
   - `IdleHandler` counts idle transitions for the HUD.
@@ -96,12 +126,30 @@ Each decision has an id. Code and reviews cite the id.
     recorded per specialization as an ordered list. It is merged afterwards by a depth-first walk of the
     specialization tree in single-flight's order: the order in which single-flight would have entered each
     child key while evaluating its parent.
-  - Diagnostics and errors use the same order.
+  - Diagnostics and errors use the same order, and so do the evaluator's other ordered effects: `PrintStatic`
+    and `PrintRaw` stdout (~164373-164375) and RUST-GAP reports (~162346). They become D13 events.
+  - A BackendSwitch validation is a child node too (P2): its ordered effects are merged at the position where
+    single-flight first ran it, whichever body ran it first under hopacsota (D7).
+  - Codegen-time globals (core fact 4) are merged in codegen's traversal order (P5).
+  - Effects are classed by merge law. A commutative one (maximum depths, HUD counts) merges in any order; only
+    an ordered one (globals, diagnostics, stdout, RUST-GAP) needs the walk.
+  - **The canonical-context check (P1).** At a child's merge position the canonical caller's context is known.
+    The child is evaluated again in place, with that context, when the caller's `inline_depth` or dynamic-if
+    depth plus the child's recorded maximum crosses its limit (`EJP0011` at 10,000, `EJP0040` at
+    `SPIRAL_IF_NESTING_LIMIT`), when a codegen error needs the child's absolute trace, or when the canonical
+    caller was validating (RUST-GAP reports are suppressed there). This is a deterministic restart of a pure
+    evaluation, as D16.3, not a replay (D2). R4 counts how often it triggers; if it is frequent, the fork
+    boundaries move, the rule does not.
   - This is a deterministic fold over finished data, the same kind of thing as Bend's join slots: each child
     fills its own slot and the parent's order is fixed by the program. It is not a replay of evaluation.
-- **D7. Idempotent caches stay caches.**
-  - `backend_switch_validated` (~162354) holds the same value whoever fills it, so it is a fill-once table
-    like D3.
+- **D7. A cache is idempotent only together with its effects (P2).**
+  - `backend_switch_validated` (~162354) holds, per `(backend, arm closure)` key, the arm's type plus the
+    ordered effect list of the validation that filled it: globals added (a switch nested in a validated arm
+    validates the build backend's arm, which passes the `global'` test at ~164405), static prints, and the join
+    point keys it filled. It is a fill-once table like D3. A later visit takes the type and adds nothing; the
+    effects reach the output once, through D6, at the validation's first position in single-flight's order.
+  - An arm closure that captures a mutable compile-time HashMap or HashSet has no key (~163443) and is
+    evaluated on every visit, inside the body that holds the map.
   - The `backend_switch_validation_tags` counter starts at `1 <<< 30` and is local to each validation, so it
     stays as it is.
 - **D8. Phantom types and units on day one, limited to:**
@@ -149,6 +197,93 @@ Each decision has an id. Code and reviews cite the id.
   - *Divergence, on purpose.* BendRT has no work stealing. The program must fork equal halves, and the
     runtime runs in bulk-synchronous waves. Join-point specializations are irregular and cannot be made
     equal, so hopacsota keeps Hopac's per-worker scheduling and does not adopt Bend's cube.
+
+  R1 additions (2026-10-14 00:57; read: BendTT pp. 7-10, `bend.ts` `term_infer`, `term_check`, `def_inst`,
+  `book_valid`'s header, `comp.ts` `emit_task`, `emit_jump`, `emit_fork`, `emit_match`, `monk_step`,
+  `err_post`, and the checker bench method in `gates/perf.ts` and `bend2/docs/gen_pins.ts`). Paths are under
+  `%LOCALAPPDATA%\spiral-bin\toolchains\bend`. Applies:
+  - *The first caller decides, and Bend gets away with it because it checks in sequence.* `def_inst`
+    (`bend.ts` 3739-3775) mints a template instance on its first call and checks it there with the caller's
+    depth: `z = (lhs.z ?? 0) + 1`, capped at 64 (3761-3763). The header of `term_check` (3230-3233) and
+    `book_valid` (3799-3802) say the same: "minted and checked by its first live call". Single-flight's join
+    point bodies inherit `trace`, `inline_depth` and the if-nesting depth the same way. That is fine for a
+    sequential checker and not for hopacsota: P1 (adopted; D3, D6).
+  - *A pending entry is a cycle only in a sequential checker.* `def_inst` stores the instance bodiless before
+    checking it (3768), and a later call that finds `v === null` fails with "a decreasing self-call"
+    (3771-3772). Single-flight does the same with its join point dict (163018 then 163000). In hopacsota a
+    pending key that is not on the caller's own ancestor chain is waited on: P3 (adopted; D4).
+  - *Ids by first-reach count are deterministic only in sequence.* Bend numbers instances by `is.size`
+    (`def_inst` 3765), tables by `FL.tabs.size` (`comp.ts` `emit_tab` 2646) and spun segments by
+    `FL.spun.size` (`emit_native` 2195). hopacsota mints no id at fill time; names stay codegen's (core fact
+    2). G2 adds: no `Count`/`size` of a shared table used as an id in hopacsota code.
+  - *Accounting rides alongside and merges by a law.* `term_check`'s header: "resource accounting rides
+    alongside the type judgment, it does not steer it" (`bend.ts` 3217-3218). Usage merges with `uses_add`
+    (`term_infer` App 3403, `term_check` Let 3550) and at a match with `pmap_union(..., quant_join)` (3658),
+    both order-free. hopacsota classifies each per-spec effect by its merge law: a commutative one (P1's
+    maximum depths, HUD counts) merges in any order; only an ordered one (globals, diagnostics, stdout,
+    RUST-GAP) needs the D6 canonical walk.
+  - *A result is first-order data.* "a checked term returns first-order: ... no closure survives"
+    (`term_check` header, 3219-3222). A `SpecResult` holds data only (`TypedBind []`, `Ty`, the effect lists).
+    Single-flight's `PartEvalResult` hands codegen two closures over live evaluator state (P5, adopted; D16).
+  - *The first error in a fixed order.* `book_valid` "throws the first Err" and checks the events in book
+    order (`bend.ts` 3779-3781, 3804-3819). That is D4's rule. Bend's GPU runtime does not do this: see the
+    last item.
+  - *Errors carry expected, observed and a note.* Every `Err(book, ctx, expected, observed, span, def, note)`
+    in `term_infer`/`term_check`; `term_check_kind` catches an error and rethrows it with a note and a better
+    span (3467-3475); BendTT p. 7-8 prints "expected / observed / Context / Location". D13's `Diagnostic`
+    gets `expected` and `observed` fields besides code, spans and notes.
+  - *Fork what can fork; deal leaves out while the frontier grows.* The compiler marks each function
+    fork-free or not ("A segment may fork if one it reaches does", `comp.ts` comment above `compile_book`,
+    2762). The bit is `!forky.has(s.fid)` (2853), where `forky` is the set of segments that fork, closed over
+    references (`graph_close`, 2834-2836); `fid_nofk` reads it (3584), so it means "cannot reach a fork".
+    `emit_jump` turns a call to a fork-free function into a task only under `!DEVICE && !seq &&
+    fid_nofk(fid)` (2076-2079), and `monk_step` lets "a growing lane skip a fork-free one" (4446-4448, 4460)
+    and deals fork-free tasks out to other lanes' rings (4474-4476). For Phase 3: mark a specialization body
+    that reaches no join point as a leaf (statically from `E`, or from R3's dump), start the bodies that reach
+    join points first while the frontier is narrow, and queue leaves to be dealt out, or run them inline below
+    the measured cost cutoff. R3 measures the leaf share and its self time before this is used.
+  - *A task is first-order data with a slot and a count.* `emit_task` (2066-2070) builds
+    `task_node(e, seg, cont, idx, rem)`: function id, captured words, the continuation, the slot it fills and
+    the number of children still out. `emit_fork` (2537-2565) makes one join task with `rem = calls.length`
+    and one kid per call aimed at its slot; `FID_EXIT` delivers with `task_deliver(e.mem, cont, idx, rv, n)`
+    (4430). D6's "each child fills its own slot" is this, and D15's portable engine can carry it as data.
+  - *Each branch gets its own copy of the scope's mutable state.* `emit_match` emits every arm with
+    `{ ...sc, uses: new Map(sc.uses), spares: sc.spares.slice() }` (2701). Single-flight does the same per
+    branch (new `seq`, pushed `cse`: 163188, 163219, 163242). Branches stay inside one body (D1).
+  - *A claim is about the code that runs.* BendTT p. 8: the theorem `consistent` is about `Book.check`, the
+    function `main` runs, "no model stands between the two", and the parts outside the proof (the parser, the
+    TypeScript translation) are named. R4 and Gate 2 run the real core (a Debug copy, then the Release
+    build), never a model, and every gate row names what it does not cover.
+  - *The bench method* (`gates/perf.ts` header 1-20 and `chk_run` 279-297; `gen_pins.ts` header 1-20,
+    `runtime_check` 222-228, `checker_rows` 318-346, `pin_write` 159-168). A timed run also checks its result
+    (exit 0 and `ALL PROOFS CHECK`; runtime outputs against the pin, 351-354), or it is not a time. Three
+    runs per cell: the gate takes the minimum (296), a new pin takes the median (328-331). A cell passes at
+    1.15x its pin or under (header 15-16, `fits` 346-347). The second compile is timed, so the cold compiler
+    service is not (header 5-8). A timeout is written `>300s`, never dropped (339-340). A pin file is stamped
+    with date, commit and command, and a column carried forward unmeasured says so (`--keep`, 368-369). The
+    script "writes nothing it did not measure in the same run" and times each cell alone on a quiet machine;
+    only builds are pooled (`gen_pins.ts` 6-8). For G5, `hopac_speed_ab.ps1`: drop a timing whose residual
+    hash differs from single-flight's; name the statistic (minimum for the gate, median for a published
+    table); say warm or cold (the core library is parsed again by every fresh process); keep a timeout as a
+    `>N s` row; stamp every table with date, commit and command.
+
+  Read and not applied:
+  - *Termination by a decreasing measure* (BendTT §6.4 p. 7, Theorem 5; `term_descend` 3235-3274 and the
+    descent check in `term_infer` infer-ref 3329-3337). Spiral does not check `inl` recursion statically, so
+    `EJP0040`/`EJP0011` stay deterministic counters. A static descent check would be a language change, not
+    part of hopacsota.
+  - *Affinity* (BendTT §7 pp. 7-8: a closure is called at most once; `uses_close` 3478-3488). Spiral's
+    evaluator copies compile-time values freely; the evaluator's sharing problem is mutable state, not use
+    counts.
+  - *No mutual recursion; merge it into one definition with a selector* (BendTT §7 p. 8). Spiral keeps
+    mutually recursive join points (annotated); `frontier_hopacsota_mutual_pending` tests them.
+  - *First error wins by a race on the device.* `err_post` is a compare-and-swap on one cell (`comp.ts`
+    3694-3696); the host aborts at the first error (3709-3711). That breaks D4, so it is not adopted. What is
+    kept: workers poll the error cell at loop boundaries (`WL_SPIN` and `err_spun`, 3389), the D15 Rust
+    row's "flag polled at boundaries". In hopacsota a known error may cancel only the jobs ordered after it
+    in D6 order; an earlier job can still fail first.
+  - BendTT §9-10 (related work, conclusion: intensional equality, no semantic model yet): nothing for
+    hopacsota.
 - **D13. Diagnostics and tracing cost nothing when off.**
   - Events are `[<Struct>]` values posted to a `Stream.Src` only when a static readonly flag is set. The JIT
     folds the check away when the flag is off.
@@ -166,16 +301,19 @@ Each decision has an id. Code and reviews cite the id.
   | Engine operation | Hopac (F#) | Gleam | Rust |
   |---|---|---|---|
   | spawn | `Job.start` / `Job.queue` | `process.start` | `rayon::spawn` / crossbeam scope |
-  | fill-once cell | `IVar` | a process holding the value + `Subject` replies | `OnceLock` + waker, or a oneshot channel |
-  | server request/reply | `Job.iterateServer` + `*<-=>-` | actor + `process.call` | thread + crossbeam channel + oneshot reply |
-  | choice over reads | `Alt.choose` / `<\|>`, left-biased | `process.select` (selector order) | `crossbeam::select!` with `biased` |
+  | fill-once cell | `IVar` | a process holding the value, `Subject` replies | `OnceLock` + waker, or oneshot |
+  | server request/reply | `Job.iterateServer` + `*<-=>-` | actor + `process.call` | thread + channel + oneshot reply |
+  | choice over reads | `Alt.choose` / `<\|>`, left-biased | `process.select` (selector order) | `select!`, `biased` |
   | cancel a speculative job | `withNackJob` | monitor + kill | a cancellation flag polled at boundaries |
 
 - **D16. Parallel evaluation is a requirement, not a hypothesis.** Codebases far larger than today's corpus
   are coming, and one evaluator thread cannot scale to them. A measurement can change *how* evaluation is
   parallel, never *whether*. A long span is shortened, in this order of preference:
   1. **Fork every body whose type is known.** Annotated methods, closures (always typed by `fun_ty`) and
-     type join points run as jobs as soon as their key exists.
+     type join points run as jobs as soon as their key exists, with the relative context of D3 and the
+     canonical-context check of D6 (P1). Bodies that reach no join point are leaves (D12, Bend's `fid_nofk`):
+     start the forking bodies first while the frontier is narrow, and queue leaves or run them inline below
+     the measured cost cutoff (Phase 3).
   2. **Speculate on unannotated bodies.** When a key is first seen, start its body at once, before any caller
      needs its type. Losers of a race are dropped (`withNackJob`; a blocked, unreachable job is just
      collected). The result is the same whoever finishes first (D3).
@@ -185,6 +323,8 @@ Each decision has an id. Code and reviews cite the id.
      steps (D2). It is measured before adoption.
   4. **Parallelism beside peval.** Parsing per file, type checking per package and codegen per method run in
      parallel too, and pipeline into peval: a package's evaluation starts as soon as its type check is done.
+     Codegen per method has a precondition (P5): codegen still fills `join_point_type` and appends globals
+     (core fact 4), so it runs against the D3 table and its globals merge by D6 in codegen's traversal order.
 
   Never: a placeholder type that callers read before it is filled. That was gpt5parallel's failure class
   (fixes 8, 25, 44-47, 50).
@@ -203,22 +343,253 @@ reason.
 ## Shared state inventory (Phase 0 output, R2)
 
 Every mutable thing reachable from single-flight's `peval`, and its hopacsota discipline. R2 completes this
-table with the line of every access, so nothing is found later by a race.
+inventory with the line of every access, so nothing is found later by a race.
 
-| State | Where | Order-sensitive? | Discipline |
-|---|---|---|---|
-| `join_point_method` / `join_point_closure` / `join_point_type` | `peval` locals ~162349 | no (keyed) | D3 fill-once tables |
-| per-body `HashConsTable` (keys) | `Utils.memoize ... HashConsTable()` | ids are counters | already locked (`sync_root`, ~7143); R2 checks whether an id reaches the output; if not, allowlist; if so, replace with structural keys |
-| `backend_strings` | `peval` local, a `HashConsTable` | ids | as above |
-| `backend_switch_validated` (+ `_hc`) | ~162354 | no | D7 fill-once |
-| `globals` (`global'`, `GlobalsIndex`) | ~162676, ~162324 | **yes** | D6 per-spec list + canonical merge |
-| `is_metavar` | ~162215 | R2 decides | R2 |
-| `RustGapTrace.seen`, `.validating` | ~162332 | stderr only | per-body value + canonical merge of reports |
-| `DynamicIfNesting.depth` | ~162315 (`ThreadLocal`) | no | per-body counter in `LangEnv` |
-| `RunawayUnrollDiagnostic.sourceLines` | ~162255 (`ConcurrentDictionary`) | no | read-only file cache: load sources once before peval |
-| top env: `nominals`, `prototypes_instances` | `PartEvalTopEnv`, immutable `Map`s | no | read-only during peval (R2 confirms) |
-| compile-time `DHashMap` / `DHashSet` | `Data` values | n/a | cannot cross a join point (~161840-161841), so they stay inside one body; R2 checks BackendSwitch arms that touch them |
-| which error is reported when several bodies fail | | **yes** | D4/D6 canonical order |
+R2 (2026-10-14 00:40-00:54) read single-flight's PartEval whole (`#else` side 161624, section 161625-164591,
+`#endif` 164592), the shared sections it calls (HashConsing 7106-7232, Utils 7315-7363, `CseDirectiveBarrier`
+45787-45816, `InlineDepth` 49256-49287), the build entry that calls it (185730-185799) and every single-flight
+codegen section (the projection without the `#if SPIRAL_CORE_GPT5PARALLEL` sides: 27,232 lines). Line numbers
+are `spiral_compiler.fs` as of that read. "Per-body" means created inside one join point body evaluation (or a
+call inside it) and never reachable from another body. "Shared" means reachable from more than one body.
+Every `<-` in 161625-164591 is covered by an entry below (34 lines; a write to a call-local `mutable` is covered
+by its creation line in the call-local entry). The disciplines include P1-P5 as adopted 2026-10-14 01:44.
+
+One entry per piece of state: where it is created and whether it is per-body or shared; the lines that read or
+write it; whether it is order-sensitive, that is, whether it reaches the output; the hopacsota discipline.
+
+- `join_point_method`
+  - Where: `peval` local 162349, shared; per family `(backend', body)` a `Dictionary<key, (seq option, ret_ty option,
+    jp_name)>` made by `Utils.memoize` 162993 (`memoize` 7336-7342: `TryGetValue` then `TryAdd`, not atomic)
+  - Lines: key built 162994-162995; read 162998-163000 (pending + unannotated = "Recursive join points must be
+    annotated.", 163000); write pending 163018, filled 163020; returned 164588; codegen reads by key only: 166681,
+    166755 (`codegenMethodBody`). No single-flight code iterates `.Keys`/`.Values` of any join point dict (grep of the
+    projection: 12 hits, all create/lookup)
+  - Order-sensitive: no: dict order never reaches text; codegen names methods in its own traversal order (`jp` memo,
+    `dict.Count`, 166332-166339)
+  - Discipline: D3 fill-once; the pending entry with an annotation is already a "type known" cell (163018)
+- `join_point_closure`
+  - Where: `peval` local 162350, shared; per family `(s.backend, body)` 162417
+  - Lines: key 162418-162419; read 162425-162426 (a pending closure is not an error: recursion returns the key); write
+    pending 162431, filled 162433; type check after the body 162450; returned 164588; codegen 166694, 166759
+  - Order-sensitive: no
+  - Discipline: D3 fill-once; closures never wait (type from `fun_ty`, 162413-162416)
+- `join_point_type`
+  - Where: `peval` local 162351, shared; per `body` 162572
+  - Lines: key 162573; read 162574-162576 (pending = "Type join points must not be unboxed during their definition.",
+    162576); write pending 162594, filled 162596; also reached after peval through `ty_to_data`/`nominal_apply`
+    (164584-164585) from codegen, e.g. 166310, 166390, 172691, 172745, 176918
+  - Order-sensitive: no, but load-bearing for type equality: a union made in a type join point is shared by reference
+    (row `Union`)
+  - Discipline: D3 fill-once; codegen-time fills must use the same table (P5; D3)
+- per-family `HashConsTable` (join point keys)
+  - Where: one per `(backend, body)` family, created in the memoize factories 162417, 162572, 162993; shared by every
+    specialization of that body, so concurrent keys of one body contend on one lock
+  - Lines: `Add` 7172-7198 under `lock sync_root` (7143, 7173); called via `data_to_rdata` 161822 (from 162418, 162994)
+    and 162419, 162573, 162995; tag reads: `Equals`/`CompareTo` by tag 7125-7134, `rdata_free_vars` 161924-161929 (dedup
+    by tag within one tree)
+  - Order-sensitive: **decided: no.** Ids reach equality only. Proof greps over the single-flight projection: (1) no
+    `%A`/`%O`/`ToString` of a `JoinPointKey`, `RData` or `TypedOp` reaches emitted text; the `%A` sites in codegen
+    errors print `Ty`/`Op`, where the only `ConsedNode` is a nominal from the per-build table filled in `Map.iter` order
+    before peval (185739-185741); (2) no `Map`/`Set`/sort keyed by a consed value (the only `Set.ofSeq`, 171050, is over
+    strings); (3) no equality between nodes of two tables: every key is compared inside its own family's dict, and
+    codegen's memo key `((backend, body), key)` (166398-166399) includes the family. All `.tag` uses in single-flight
+    codegen (330 hits) are codegen-local records (`MethodRec*`, `UnionRec*`, `LayoutRec*`, tag = `dict.Count`)
+  - Discipline: allowlist the shared `HashConsTable` lock (it is not hopacsota code); keys stay consed. Weak handles: a
+    collected node re-added gets a new tag; keys are kept alive by their dict, so no effect
+- `backend_strings`
+  - Where: `peval` local `HashConsTable` 162352, shared
+  - Lines: `Add` 162992 (backend-annotated join point), 163447 (validation env), 164581 (root env: first add, tag 0);
+    reads of `.node` 163431, 163458, 163463-163465, 164394, 164405; codegen 166762
+  - Order-sensitive: no (same proof as the row above)
+  - Discipline: allowlist with it
+- `backend_switch_validated` + `backend_switch_validated_hc`
+  - Where: `peval` locals 162354, 162355, shared
+  - Lines: key built 163443 (`data_to_rdata` into the one shared `_hc`; a capture of a mutable HashMap/HashSet raises,
+    the `try` makes the key `None`); read 163445; write 163451
+  - Order-sensitive: **yes, through side effects** of the first validation (row `globals`, row stdout): the validation's
+    effects (D7 as amended, P2)
+  - Discipline: D7: fill-once; the value is the type plus the validation's ordered effect list (P2)
+- `backend_switch_validation_tags`
+  - Where: `peval` local function 162356; one fresh `ref (1 <<< 30)` per validation 163447, per-validation
+  - Lines: written through `ty_to_data` 162366 / `rename_global_term` 161859 inside the validation env
+  - Order-sensitive: no (validation `seq` is discarded)
+  - Discipline: stays as is (D7)
+- `globals` list
+  - Where: root env 164582, then the same instance is passed into every body env: 162408 (`closure_env`), 162591 (type
+    join point), 163014 (method), and into validation envs (163447 keeps it); shared
+  - Lines: appended by `global'` 162676-162685 (called only from 164409, guarded by `s.backend.node = env.backend`
+    164405, which is also true inside a validation of the current backend's arm nested in another backend's validation);
+    returned 164588; codegen appends and prints: 166346-166351, 166715 (F#), and the other backends' `global'`/print
+    sites 167300-167301, 167829, 167965, 168372, 168587, 168988, 169105, 169444, 170393-170398, 171035, 171230-171235,
+    172632, 172644, 175819-175820, 176331, 176676, 177652, 178619, 179335
+  - Order-sensitive: **yes**: first-seen order is the order of the emitted prelude; `preserves_duplicate_fragment` text
+    (162681-162684) is appended on every visit
+  - Discipline: D6 per-spec ordered list + canonical merge; the merge applies the same dedup rule (first occurrence,
+    fragments kept); a validation's globals merge as a child node at its first position (D6, D7, P2)
+- `GlobalsIndex`
+  - Where: module-level `ConditionalWeakTable<ResizeArray<string>, HashSet<string>>` 162325, keyed by the shared
+    `globals` instance
+  - Lines: `get` 162326 (copies the list on first use), called 162680 on every `term` call; `Add` 162685
+  - Order-sensitive: yes (dedup decides what reaches the text)
+  - Discipline: per-spec index of the per-spec list (D6); the CWT goes away with the shared list
+- `is_metavar`
+  - Where: `HashSet` local to each `is_unify` call 162215; per-call
+  - Lines: `Add` 162237; writes go through `store_ty` 162211 into the current scope's `env_stack_type`; callers 162634
+    (`TTypecase`), 163398 (`ETypecase`); a failed partial unification leaves stores that the next arm's `is_unify`
+    overwrites for its own metavars, all inside one body
+  - Order-sensitive: **decided: no**
+  - Discipline: per-body value (call-local); nothing to share
+- `RustGapTrace`
+  - Where: module statics: `enabled` 162333 (read-only), `validating` `ThreadLocal<int>` 162336, `seen`
+    `HashSet<string>` 162337 (process-wide: in a warm server process it also dedups across builds)
+  - Lines: `enabled` read 163160; `report` 162338-162346 called 163161; `validating` read 162339, write 163448, 163453;
+    `seen.Add` + `eprintfn` 162346
+  - Order-sensitive: stderr only, order-sensitive and suppressed by the first caller's `validating` (a body first
+    entered inside a validation never reports)
+  - Discipline: per-body flag in the env + canonical merge of reports (D6/D13); a forked body starts not validating and
+    the canonical caller's flag is applied at the merge (D6, P1)
+- `DynamicIfNesting.depth`
+  - Where: module static `ThreadLocal<int>` 162320; `limit` 162316-162319 read-only (env var)
+  - Lines: read 162750; write 162760, 162762 (`try/finally`); `limit` read 162751, 162756, 162758; not reset at a join
+    point body: the count runs through nested bodies on the evaluating path
+  - Order-sensitive: only in failure (`EJP0040`, 162753-162759)
+  - Discipline: per-body value in the env; a forked body starts at 0 and records its maximum, and the merge re-runs the
+    body in place with the canonical caller's depth when the sum crosses the limit (D6, P1); a counter that simply
+    started at 0 would move where EJP0040 fires
+- `inline_depth` + the physical stack
+  - Where: `LangEnv.inline_depth` 161794, root 164572; inherited by bodies 162398, 162581, 163004
+  - Lines: `InlineDepthOps.ensure_stack` 162672 (`RuntimeHelpers.TryEnsureSufficientExecutionStack`, 49283), `enter`
+    162712 (limit 10,000, 49274, 49286)
+  - Order-sensitive: only in failure (`EJP0011`); the stack check depends on the thread and on how deep the caller
+    already is
+  - Discipline: relative value with the same merge check (D6, P1); the stack check becomes the D5 `MaxStackSize`
+    question: a job starts on a fresh stack where single-flight is nested in its callers
+- `trace` (caller context)
+  - Where: `LangEnv.trace` 161793, immutable list; inherited by bodies 162397, 162580 (`r :: s.trace`), 163003
+  - Lines: stored in every residual statement: `TyLet(_, d.trace, _)` 162377, 162384, `TyLocalReturnData` 162007; read
+    by codegen error rendering 166380-166382 (all backends), errors 161818, EJP0040 frames 162752, RUST-GAP frames
+    162341-162345
+  - Order-sensitive: only in error text, but there it is the **first caller's** chain
+  - Discipline: a forked body records traces relative to its own frame; a codegen error that needs the absolute trace
+    re-runs the body in place with the canonical caller's context (D6, P1)
+- `RunawayUnrollDiagnostic.sourceLines`
+  - Where: module static `ConcurrentDictionary` 162255
+  - Lines: `GetOrAdd` + `File.ReadAllLines` 162257, from `render` (called 162754)
+  - Order-sensitive: no
+  - Discipline: read-only file cache filled before peval (D13: the evaluator does no file IO)
+- `CseDirectiveBarrier.regions`
+  - Where: module static `ConditionalWeakTable<obj, obj>` 45795, keyed by one body's CSE table
+  - Lines: `TryGetValue` 45804, `Remove` 45811, `AddOrUpdate` 45815; mutates the CSE table: `Remove` 45799, `Clear`
+    45816; called from `EMacro` 163163-163164
+  - Order-sensitive: yes, inside one body: it decides which CSE entries are reused, which changes the residual
+  - Discipline: per-body value (keys are per-body tables; the CWT may stay, it is thread-safe and never shared across
+    bodies)
+- CSE tables (`cse`)
+  - Where: `LangEnv.cse` 161796; created per scope 162400, 162503, 162526, 162583, 162775, 163006, 163188, 163219,
+    163242, 163321, 163328, 163447; per-body
+  - Lines: `cse_tryfind` 162016-162021 (from 162380, 162770, 163316); `cse_add` 162024 (from 162385); direct `Add`
+    162777, 163329; `Count` 164392; pruned by the row above
+  - Order-sensitive: yes, within the body
+  - Discipline: per-body value
+- `seq` (residual statements)
+  - Where: `LangEnv.seq` 161795; created 162399, 162503, 162525, 162582, 163005, 163188, 163219, 163242, 163321, 163330,
+    163447; root `null` 164573; per-body
+  - Lines: `Add` 162007, 162377, 162384; last-element rewrite 162010; `ToArray` 162013
+  - Order-sensitive: yes (it is the output)
+  - Discipline: per-body value
+- `i` (residual variable counter)
+  - Where: `LangEnv.i` 161798; `ref 0` per body 162402, 162585, 163008, root 164576, codegen helpers 164584-164585;
+    shared by every `{s with ...}` copy inside one body
+  - Lines: write 161859, 162366; read 164395, 164402
+  - Order-sensitive: yes: `v{i}` names
+  - Discipline: per-body value; evaluating a child body never touches the caller's counter (each body env has its own
+    `ref 0`, the `rename_global_term` 163016/162593/162428 runs on the child env)
+- `env_stack_term` / `env_stack_type` arrays
+  - Where: created per body or application 162405-162406, 162536-162537, 162588-162589, 162657-162658, 162696-162697,
+    162718-162719, 163011-163012, root 164579-164580; per-body
+  - Lines: `store_term` 162208 (from 163179, 163340, 163344, 163349, 163365, 163386), `store_ty` 162211 (from 162237,
+    163349); `[0] <-` 162430, 162539, 162660, 162699, 162721; read `vt` 162199, `v` 162202
+  - Order-sensitive: yes, within the body
+  - Discipline: per-body value
+- `env_global_term` / `env_global_type` arrays
+  - Where: built 162565, 162569-162570, 162892, 162896, 162989-162990, renamed copy 161870; captured in
+    `DFunction`/`DForall`/`YTypeFunction` and passed between bodies through join point keys
+  - Lines: never written after creation (no `<-` on them in 161625-164591)
+  - Order-sensitive: n/a
+  - Discipline: read-only
+- `Union` (`H` wrapper)
+  - Where: built in `ty` `TUnion` 162610-162629 (`tags` `Dictionary` 162611 written 162625, `tag_cases` 162612/162626,
+    `mutable is_degenerate` 162613/162624); `H` 161652-161660 compares by **reference** (161658), hashes structurally
+    (161653)
+  - Lines: reads `tags` 162485, 164377; `tag_cases` 163306-163312; `cases` 162550, 163184, 163193, 163723; `layout`
+    164285, 164323; identity compares 162235, 163257, 163264, 163284 and every `Ty` equality
+  - Order-sensitive: no for the text; yes for type equality: two evaluations of one union are different types unless
+    they come from one type join point fill (comment 161714)
+  - Discipline: frozen after construction, published through the D3 fill (the `IVar` fill is the memory barrier);
+    `join_point_type` must be fill-once, never "first writer wins per thread"
+- prepass ref cells inside `E`
+  - Where: `ERecursiveFun'` `body.Value` 162981, `ERecursiveForall'` 162984, `ERecursive a.Value` 162985
+  - Lines: read only; no write in 161625-164591
+  - Order-sensitive: n/a
+  - Discipline: read-only
+- top env: `nominals`, `prototypes_instances`
+  - Where: `PartEvalTopEnv` 161807-161812: **`Dictionary`**, not `Map`; built per build before peval:
+    `prototypes_instances` copied 185737, `nominals` filled 185738-185742 through a fresh `HashConsTable` (185739) in
+    `Map.iter` order
+  - Lines: read 162668 (`nominals`), 163170, 164356 (`prototypes_instances`); never written during peval
+  - Order-sensitive: no
+  - Discipline: read-only during peval (confirmed)
+- compile-time `DHashMap` / `DHashSet`
+  - Where: `Data` values created 164489 (`OrderedDictionary` + `bool ref`), 164472 (`HashSet`); per-body
+  - Lines: map writes 164496, 164501, 164506, 164514; `is_writable` write 164492; reads 164510, 164518, 164523-164524;
+    set ops 164475, 164479, 164483, 164487; iteration (insertion order) 161885-161886, 161944-161945, 161959-161960,
+    161975-161976; crossing a join point: mutable refused 161840-161841, 161867-161868, 161909; an immutable map crosses
+    as a copy 161863-161866 that shares the `is_writable` cell (only ever `false`, so the only possible write, 164492,
+    stores the value it already has); `data_free_vars_replace` makes a new cell 161907
+  - Order-sensitive: yes, within the body
+  - Discipline: **decided:** they stay inside one body. BackendSwitch arms touching them: arms run in record key order
+    (`Map.iter` 163428); an arm closure that captures a mutable map/set gets no cache key (163443 `try` → `None`) and is
+    evaluated on every visit, in the body that holds the map, so its mutations never cross a body and the D7 cache never
+    skips them. Per-body value
+- stdout: `PrintStatic` / `PrintRaw`
+  - Where: `printfn` in the evaluator 164373, 164374, 164375
+  - Lines: written on every evaluation, including inside validations (skipped on a D7 cache hit)
+  - Order-sensitive: **yes** (console order)
+  - Discipline: event in the D13 stream, merged in D6 order; contradicts D13 today
+- `trace Verbose` logging
+  - Where: 164397-164402 (reads `s.cse` 164392, `s.i` 164395)
+  - Lines: Lib trace sink
+  - Order-sensitive: no (diagnostic log)
+  - Discipline: D13 event, off by default
+- peval result used by codegen
+  - Where: `PartEvalResult` 162242-162248, built 164584-164588: `ty_to_data` and `nominal_apply` close over the root env
+    and the `join_point_type` table
+  - Lines: codegen calls them throughout (e.g. 166310, 166325, 166390, 167161, 172691, 172745, 172759, 176918); they can
+    fill `join_point_type`, build new `Union`s and evaluate `TTerm` bodies (`term_real_nominal` 162502-162504) after
+    peval returned
+  - Order-sensitive: as their rows
+  - Discipline: codegen is not a read-only phase: `join_point_type` stays the D3 table during codegen and codegen-time
+    globals merge by D6 in codegen's traversal order (P5)
+- which error is reported when several bodies fail
+  - Where: `PartEvalTypeError` 161815, raised by `raise_type_error` 161818 (and `failwith` "Compiler error" sites);
+    first raise wins on the one thread; caught 162555 (swallowed by `ty_is_uninhabited`, so a pending type join point
+    counts as inhabited), 163443 (swallowed into a `None` key), 185783 (`BuildErrorTrace`)
+  - Lines: the raise and catch lines under Where
+  - Order-sensitive: **yes**
+  - Discipline: D4/D6 canonical order; D4 names all three pending cases (P3)
+- call-local scratch
+  - Where: memo `Dictionary`/`HashSet`/`ResizeArray`/`mutable` locals: 161823-161824, 161851, 161864, 161874-161875,
+    161892, 161905, 161921-161922, 161936, 161951, 161966, 162454, 162474-162475 (`dirty`), 162775, 163241 (`case_ty`),
+    163420-163421 (`t`, `d`), 163470, 163475, 164436, 164466, 164542
+  - Lines: written and read only inside the call that made them
+  - Order-sensitive: no
+  - Discipline: per-call value
+- static read-only config
+  - Where: `DynamicIfNesting.limit` 162316, `RustGapTrace.enabled` 162333, `InlineDepthOps.limit` 49274,
+    `CseDirectiveBarrier.directive` 45793-45794
+  - Lines: read only
+  - Order-sensitive: no
+  - Discipline: read-only
 
 ## Phases and gates
 
@@ -253,6 +624,11 @@ Every gate is a command plus a number. "Looks fine" is not a gate.
   - Run `-Suite all` per policy.
   - Gate: residual hashes identical across the policies on every row, or a list of each row that differs,
     with its cause. Each cause becomes a D6/D7 rule or an inventory row.
+  - Deferred bodies run with D3's relative context, and the run reports how often D6's canonical-context
+    restart triggers, by cause (depth limit, absolute trace for a codegen error, validating caller). This is
+    the measurement behind P1; a high count moves fork boundaries (D6).
+  - The run also lists every row where the stack-based `EJP0011` check fires (D5): a fresh job stack can pass
+    where single-flight's nested stack stopped.
   - R4 is the cheapest test of determinism by construction. If it fails, the design changes before any
     Hopac code.
 
@@ -333,11 +709,11 @@ Every gate is a command plus a number. "Looks fine" is not a gate.
 
 | Gate | Command | Pass |
 |---|---|---|
-| G1 size | `scripts/hopacsota-lint.ps1 -Size` | hopacsota layer sections + hooks ≤ 2x single-flight's PartEval (≤ 5,934 lines); no single section over 1,000 lines |
+| G1 size | `scripts/hopacsota-lint.ps1 -Size` | layer + hooks ≤ 5,934 lines (2x PartEval); no section > 1,000 |
 | G2 banned | `scripts/hopacsota-lint.ps1 -Banned` | 0 hits outside the allowlist |
 | G3 oracle | `scripts/test.ps1 -Mode hopacsota -Suite <phase's suites>` | 0 differences |
 | G4 determinism | `scripts/probe.ps1 <root> -Mode hopacsota -Repeat 5` at max workers | identical residual hashes |
-| G5 speed | `hopac_speed_ab.ps1` (interleaved A/B with single-flight) | phase threshold; the table is kept in the scoreboard |
+| G5 speed | `hopac_speed_ab.ps1` (interleaved A/B with single-flight) | phase threshold; table kept in the scoreboard |
 | G6 single-flight untouched | `scripts/projection-hash.ps1` | single-flight projection hash equal before and after |
 
 ## Process rules (against drift)
@@ -357,10 +733,21 @@ Every gate is a command plus a number. "Looks fine" is not a gate.
 
 | Phase | Gate | Date | Numbers | Run id |
 |---|---|---|---|---|
-| 0 | R1 | | | |
-| 0 | R2 | | | |
+| 0 | R1 | 2026-10-14 00:57 | BendTT pp. 7-10 read; 12 functions + checker bench; D12 +12 applied, 5 not | read only |
+| 0 | R2 | 2026-10-14 00:54 | 31 entries, 0 without a line, 3/3 decided, 34/34 writes; P1-P5 | see notes |
 | 0 | R3 | | | |
 | 0 | R4 | | | |
+
+Scoreboard notes:
+- R1: functions read: `term_infer`, `term_check`, `term_descend`, `term_check_kind`, `def_inst`, the
+  `book_valid` header; `emit_task`, `emit_jump`, `emit_fork`, `emit_match`, `monk_step`, `err_post`; bench:
+  `gates/perf.ts`, `bend2/docs/gen_pins.ts`. Every D12 addition cites a file and function or a page.
+- R2: "R2 decides" resolved: `is_metavar` is per-call; `HashConsTable` ids never reach output (allowlist);
+  compile-time maps stay in one body. The `<-` lines of PartEval are covered 34 of 34. P1-P5 were proposed
+  00:54 and adopted 01:44. Read of `spiral_compiler.fs`, 186,347 lines: HEAD `d94dc380` plus the main
+  thread's uncommitted edits (+165/-4, all at line 164909 or later); single-flight projection 27,232 lines.
+  PartEval lines (161624-164592) are the same in HEAD; codegen lines from 164909 on are working-tree numbers
+  and shift when those edits land.
 
 ## Decision changes
 
@@ -369,3 +756,70 @@ Every gate is a command plus a number. "Looks fine" is not a gate.
   simulated speedup, parallelism would move away from peval. That clause entered with this plan; it did not
   come from the user. It is removed. Added D16 (parallel evaluation is required; long spans are shortened by
   forking typed bodies, speculation, type hints, and parallel stages beside peval) and a scaling corpus in R3.
+- **2026-10-14 00:54, R2, proposed (not adopted; the decisions above are unchanged).** Five findings from the
+  shared state inventory that contradict or extend a decision. Each needs a measurement or a user call before
+  it is adopted.
+  - **P1. The key does not fix the result when a body fails (core fact 3, D3, D4, D6).** A body evaluation
+    inherits caller context that is not part of the key: `trace` (163003, 162580, 162397), `inline_depth`
+    (163004, 162581, 162398), `DynamicIfNesting.depth` (a `ThreadLocal` that is not reset at a body,
+    162750-162762), `RustGapTrace.validating` (162336, 163448) and the physical stack depth
+    (`TryEnsureSufficientExecutionStack`, 49283, checked at 162672). Single-flight evaluates a key with its
+    first caller's context in depth-first order. Under D3 the first claimant owns the key, and with forks or
+    speculation the first claimant is not always single-flight's first caller. Effects: whether and where
+    `EJP0011`/`EJP0040` fire, the trace stored in every residual statement (`TyLet(_, d.trace, _)`, 162377,
+    shown by codegen errors 166380-166382), and whether RUST-GAP reports are suppressed. Successful residual
+    text is not affected: in the single-flight projection's codegen (164592-185063) the stored trace is read
+    only by `raise_codegen_error'` (164670) and passed through unchanged by `DeadPureLetElision`
+    (164924-164970); a grep for any other use of `trace`, `#line`, `.path` or a range in emitted text finds 0.
+    The inventory's old row "DynamicIfNesting.depth: per-body counter in `LangEnv`" would
+    change when EJP0040 fires if the counter starts at 0. Proposal: evaluate a forked body with a relative
+    context (its own frame as the trace, depths 0, not validating) and record its maximum relative depths;
+    at the D6 merge, when the canonical caller's depth plus the body's maximum crosses a limit, or a codegen
+    error needs the absolute trace, or the canonical caller was validating, evaluate that body again in place
+    with the canonical caller's context. That is a deterministic restart of a pure evaluation (as D16.3), not
+    a replay. R4's BFS and random policies change the first caller, so they measure how often this happens on
+    the corpus.
+  - **P2. The BackendSwitch validation cache has side effects (D7).** D7 says `backend_switch_validated` holds
+    the same value whoever fills it. Its value is a type, but the first validation also has effects that a
+    cache hit skips: (a) `global'` (164405-164409) runs inside a validation whenever the validated arm, or a
+    switch nested in it, runs the current backend's arm (a nested switch validates every other arm with
+    `s.backend` set to that arm's backend, 163447, so the build backend's arm passes the 164405 test); the
+    global goes into the one shared list (163447 keeps `globals`), at a position set by whichever body
+    validated first; (b) `PrintStatic`/`PrintRaw` stdout (164373-164375); (c) join point fills for the arm's
+    backend. This path follows from the code; no corpus sample was run to show it (R2 runs nothing).
+    Proposal: the cache value is the type plus the validation's ordered effect list, and the D6 merge treats a
+    validation as a child node at the position where single-flight first ran it.
+  - **P3. D4 covers only method recursion.** A pending type join point raises "Type join points must not be
+    unboxed during their definition." (162576), and `ty_is_uninhabited` swallows that error (162555), so a
+    pending type join point reads as inhabited there. A pending closure is not an error at all (162425-162426:
+    recursion returns the key). Proposal: D4 names all three; the error (or the swallow) happens only when the
+    awaited key is on the waiter's own ancestor chain; any other pending key is awaited.
+  - **P4. The plan's inventory said the top env is immutable `Map`s.** It is two `Dictionary`s copied per build
+    before peval (161809-161810, 185737-185742) and never written during peval. The discipline (read-only) is
+    unchanged; only the fact is corrected in the table.
+  - **P5. Peval state is not frozen when codegen runs (D16.4).** `PartEvalResult.ty_to_data` and
+    `nominal_apply` (164584-164585) close over the root env; codegen calls them throughout (e.g. 166310,
+    172691, 176918), and they can fill `join_point_type`, build new `Union` instances and evaluate `TTerm`
+    bodies. Codegen also appends to the shared `globals` list (166351 and every backend's `global'`). Codegen
+    per method in parallel (D16.4) therefore needs the D3 `join_point_type` table during codegen and a D6
+    merge of codegen-time globals in codegen's traversal order.
+
+- **2026-10-14 01:44, P1-P5 decided (main thread, under the user's standing rule to make open technical calls).**
+  - **P1 adopted.** A forked or speculative body runs with a relative context (its own frame as the trace,
+    depths 0, not validating) and records its maximum relative depths. At the D6 merge, if the canonical
+    caller's depth plus the body's maximum crosses a limit, or a codegen error needs the absolute trace, or the
+    canonical caller was validating, the body is evaluated again in place with the canonical caller's context.
+    This is a deterministic restart of a pure evaluation (D16.3), not a replay (D2). R4 counts how often it
+    triggers on the corpus; if it is frequent, fork boundaries move, the rule does not.
+  - **P2 adopted.** The validation cache value is the type plus the validation's ordered effect list (globals,
+    static prints, join point keys it filled). The D6 merge treats a validation as a child node at the
+    position where single-flight first ran it. D7 is amended: a cache is idempotent only together with its
+    effect list.
+  - **P3 adopted.** D4 covers all three pending cases: a method key (the annotation error), a type join point
+    (the unbox-during-definition error and its swallow in `ty_is_uninhabited`), and a closure (recursion
+    returns the key, no error). The error or the swallow happens only when the awaited key is on the waiter's
+    own ancestor chain; any other pending key is awaited.
+  - **P4 adopted** as a fact correction; discipline unchanged (read-only during peval).
+  - **P5 adopted.** Codegen is not a read-only phase: join_point_type stays a D3 fill-once table during
+    codegen, and codegen-time globals are merged by D6 in codegen's traversal order. This is a precondition
+    for D16.4 (codegen per method in parallel).
