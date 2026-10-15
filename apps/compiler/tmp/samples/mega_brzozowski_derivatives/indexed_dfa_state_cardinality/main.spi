@@ -752,3 +752,7 @@ inl main () : i32 =
     if tri_compiled_runner_agrees tri_capability then 0i32 else failwith "brzozowski-compiled-ternary-disagrees"
 
 inl fourth_from_end_one_left_out_its_compile_time_minimization_takes_43_s () = ()
+
+type root_bit_alphabet = bit_alphabet
+type root_bit_finite_length = bit_finite_length
+inl root_bit_finite_symbol_vector () = bit_finite_symbol_vector ()

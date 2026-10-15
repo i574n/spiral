@@ -7,36 +7,46 @@ union layout =
     | EastCorridor
     | RoomAndCorridor
     | ArenaSpot
+    | ArenaHunt
 
 inl corridor_row () : i32 = 100
 inl corridor_mouth () : i32 = 99
 
-inl arena_spot_row (row : i32) : i32 =
-    if row = 0 then 13465
-    elif row = 1 then 8713
-    elif row = 2 then 28809
-    elif row = 3 then 13369
-    elif row = 4 then 9055
-    elif row = 5 then 10768
-    elif row = 6 then 12417
-    elif row = 7 then 11854
-    elif row = 8 then 24614
-    elif row = 9 then 6793
-    elif row = 10 then 80
-    elif row = 11 then 4089
-    elif row = 12 then 6156
-    elif row = 13 then 2052
-    elif row = 14 then 2052
-    else 32767
+let arena_spot_low (row : i32) : u32 =
+    if row < 0 || row > 60 then 4294967295u32 else if row <= 30 then if row <= 15 then if row <= 7 then if row <= 3 then if row <= 1 then if row <= 0 then 540671u32 else 311295u32 else if row <= 2 then 12632063u32 else 1345535u32 else if row <= 5 then if row <= 4 then 10503167u32 else 1066495u32 else if row <= 6 then 4043445759u32 else 271714815u32 else if row <= 11 then if row <= 9 then if row <= 8 then 286428159u32 else 285222911u32 else if row <= 10 then 274223103u32 else 272711679u32 else if row <= 13 then if row <= 12 then 4160831487u32 else 536707071u32 else if row <= 14 then 411860991u32 else 411860991u32 else if row <= 23 then if row <= 19 then if row <= 17 then if row <= 16 then 528842751u32 else 277151743u32 else if row <= 18 then 284983295u32 else 277135359u32 else if row <= 21 then if row <= 20 then 478453759u32 else 528838655u32 else if row <= 22 then 2761758719u32 else 1291600895u32 else if row <= 27 then if row <= 25 then if row <= 24 then 76393471u32 else 1150034431u32 else if row <= 26 then 478544895u32 else 2952571391u32 else if row <= 29 then if row <= 28 then 134284287u32 else 1082724351u32 else 654921727u32 else if row <= 45 then if row <= 38 then if row <= 34 then if row <= 32 then if row <= 31 then 320880639u32 else 1149304831u32 else if row <= 33 then 671154175u32 else 4237099007u32 else if row <= 36 then if row <= 35 then 101580799u32 else 33685503u32 else if row <= 37 then 37879807u32 else 33619967u32 else if row <= 42 then if row <= 40 then if row <= 39 then 37814271u32 else 35291135u32 else if row <= 41 then 35143679u32 else 4265639935u32 else if row <= 44 then if row <= 43 then 37781503u32 else 33619967u32 else 37814271u32 else if row <= 53 then if row <= 49 then if row <= 47 then if row <= 46 then 33882111u32 else 4261478399u32 else if row <= 48 then 2260991u32 else 75513855u32 else if row <= 51 then if row <= 50 then 1073750015u32 else 8404991u32 else if row <= 52 then 5013503u32 else 67928063u32 else if row <= 57 then if row <= 55 then if row <= 54 then 269778943u32 else 2147811327u32 else if row <= 56 then 3238133759u32 else 3758227455u32 else if row <= 59 then if row <= 58 then 4028760063u32 else 4093771775u32 else 4160815103u32
 
-inl arena_spot_radius () : i32 = 7
+let arena_spot_high (row : i32) : u32 =
+    if row < 0 || row > 60 then 536870911u32 else if row <= 30 then if row <= 15 then if row <= 7 then if row <= 3 then if row <= 1 then if row <= 0 then 520097776u32 else 50597128u32 else if row <= 2 then 50331808u32 else 524296176u32 else if row <= 5 then if row <= 4 then 33425904u32 else 255592848u32 else if row <= 6 then 153491607u32 else 522455188u32 else if row <= 11 then if row <= 9 then if row <= 8 then 421928948u32 else 154929428u32 else if row <= 10 then 151914772u32 else 151787796u32 else if row <= 13 then if row <= 12 then 268312575u32 else 0u32 else if row <= 14 then 0u32 else 0u32 else if row <= 23 then if row <= 19 then if row <= 17 then if row <= 16 then 0u32 else 0u32 else if row <= 18 then 0u32 else 536748000u32 else if row <= 21 then if row <= 20 then 536612880u32 else 357830672u32 else if row <= 22 then 357830682u32 else 5210u32 else if row <= 27 then if row <= 25 then if row <= 24 then 8392721u32 else 4120u32 else if row <= 26 then 4122u32 else 357831761u32 else if row <= 29 then if row <= 28 then 357830677u32 else 536612888u32 else 536612887u32 else if row <= 45 then if row <= 38 then if row <= 34 then if row <= 32 then if row <= 31 then 268400u32 else 4109u32 else if row <= 33 then 152043520u32 else 7u32 else if row <= 36 then if row <= 35 then 276824076u32 else 4u32 else if row <= 37 then 138936324u32 else 1028u32 else if row <= 42 then if row <= 40 then if row <= 39 then 167771140u32 else 16778244u32 else if row <= 41 then 58723340u32 else 176162823u32 else if row <= 44 then if row <= 43 then 25165836u32 else 25168900u32 else 50332676u32 else if row <= 53 then if row <= 49 then if row <= 47 then if row <= 46 then 33553412u32 else 41487u32 else if row <= 48 then 2228224u32 else 8389128u32 else if row <= 51 then if row <= 50 then 268468225u32 else 67248128u32 else if row <= 52 then 409u32 else 269521912u32 else if row <= 57 then if row <= 55 then if row <= 54 then 473960444u32 else 520101887u32 else if row <= 56 then 522256383u32 else 530841599u32 else if row <= 59 then if row <= 58 then 533200895u32 else 536870911u32 else 536870911u32
 
-inl arena_spot_blocked (p : geometry.position) : bool =
+inl arena_spot_radius () : i32 = 30
+
+let arena_spot_blocked (p : geometry.position) : bool =
     inl dx = p.x - 100
     inl dy = p.y - 100
     inl r = arena_spot_radius ()
     if dx < 0 - r || dx > r || dy < 0 - r || dy > r then true
-    else ((arena_spot_row (dy + r) >>> (dx + r)) &&& 1) = 1
+    else
+        inl bit = dx + r
+        inl word = if bit < 32 then arena_spot_low (dy + r) else arena_spot_high (dy + r)
+        inl shift = if bit < 32 then bit else bit - 32
+        ((word >>> shift) &&& 1u32) = 1u32
+
+let arena_road_low (row : i32) : u32 =
+    if row < 0 || row > 60 then 0u32 else if row <= 30 then if row <= 15 then if row <= 7 then if row <= 3 then if row <= 1 then if row <= 0 then 0u32 else 0u32 else if row <= 2 then 0u32 else 0u32 else if row <= 5 then if row <= 4 then 0u32 else 0u32 else if row <= 6 then 0u32 else 3758096384u32 else if row <= 11 then if row <= 9 then if row <= 8 then 3758096384u32 else 3758096384u32 else if row <= 10 then 3758096384u32 else 3758096384u32 else if row <= 13 then if row <= 12 then 3758096384u32 else 3758096384u32 else if row <= 14 then 4294443008u32 else 4294443008u32 else if row <= 23 then if row <= 19 then if row <= 17 then if row <= 16 then 4294443008u32 else 4294443008u32 else if row <= 18 then 4294443008u32 else 4294443008u32 else if row <= 21 then if row <= 20 then 4294443008u32 else 133693440u32 else if row <= 22 then 133693440u32 else 133693440u32 else if row <= 27 then if row <= 25 then if row <= 24 then 133693440u32 else 133693440u32 else if row <= 26 then 133693440u32 else 133693440u32 else if row <= 29 then if row <= 28 then 0u32 else 0u32 else 0u32 else if row <= 45 then if row <= 38 then if row <= 34 then if row <= 32 then if row <= 31 then 0u32 else 0u32 else if row <= 33 then 0u32 else 0u32 else if row <= 36 then if row <= 35 then 4160749568u32 else 4227858432u32 else if row <= 37 then 4227858432u32 else 4227858432u32 else if row <= 42 then if row <= 40 then if row <= 39 then 4227858432u32 else 4227858432u32 else if row <= 41 then 4227858432u32 else 4227858432u32 else if row <= 44 then if row <= 43 then 4227858432u32 else 4227858432u32 else 4227858432u32 else if row <= 53 then if row <= 49 then if row <= 47 then if row <= 46 then 4227858432u32 else 4227858432u32 else if row <= 48 then 0u32 else 0u32 else if row <= 51 then if row <= 50 then 0u32 else 0u32 else if row <= 52 then 0u32 else 0u32 else if row <= 57 then if row <= 55 then if row <= 54 then 0u32 else 0u32 else if row <= 56 then 0u32 else 0u32 else if row <= 59 then if row <= 58 then 0u32 else 0u32 else 0u32
+
+let arena_road_high (row : i32) : u32 =
+    if row < 0 || row > 60 then 0u32 else if row <= 30 then if row <= 15 then if row <= 7 then if row <= 3 then if row <= 1 then if row <= 0 then 126976u32 else 503443456u32 else if row <= 2 then 503439360u32 else 503440352u32 else if row <= 5 then if row <= 4 then 503443424u32 else 536473568u32 else if row <= 6 then 536473568u32 else 536473575u32 else if row <= 11 then if row <= 9 then if row <= 8 then 268038119u32 else 268038119u32 else if row <= 10 then 268038119u32 else 268038119u32 else if row <= 13 then if row <= 12 then 268173287u32 else 536870911u32 else if row <= 14 then 536870911u32 else 536870911u32 else if row <= 23 then if row <= 19 then if row <= 17 then if row <= 16 then 536870911u32 else 536870911u32 else if row <= 18 then 536870911u32 else 253967u32 else if row <= 21 then if row <= 20 then 17031143u32 else 253920u32 else if row <= 22 then 253920u32 else 516064u32 else if row <= 27 then if row <= 25 then if row <= 24 then 516064u32 else 516064u32 else if row <= 26 then 516064u32 else 253920u32 else if row <= 29 then if row <= 28 then 253920u32 else 253920u32 else 253920u32 else if row <= 45 then if row <= 38 then if row <= 34 then if row <= 32 then if row <= 31 then 253888u32 else 255872u32 else if row <= 33 then 262128u32 else 262128u32 else if row <= 36 then if row <= 35 then 262135u32 else 262135u32 else if row <= 37 then 262135u32 else 1015u32 else if row <= 42 then if row <= 40 then if row <= 39 then 503u32 else 16775671u32 else if row <= 41 then 16776695u32 else 8388087u32 else if row <= 44 then if row <= 43 then 8388087u32 else 16776695u32 else 16775671u32 else if row <= 53 then if row <= 49 then if row <= 47 then if row <= 46 then 503u32 else 503u32 else if row <= 48 then 496u32 else 496u32 else if row <= 51 then if row <= 50 then 496u32 else 0u32 else if row <= 52 then 0u32 else 0u32 else if row <= 57 then if row <= 55 then if row <= 54 then 0u32 else 0u32 else if row <= 56 then 0u32 else 0u32 else if row <= 59 then if row <= 58 then 0u32 else 0u32 else 0u32
+
+let arena_road (p : geometry.position) : bool =
+    inl dx = p.x - 100
+    inl dy = p.y - 100
+    inl r = arena_spot_radius ()
+    if dx < 0 - r || dx > r || dy < 0 - r || dy > r then false
+    else
+        inl bit = dx + r
+        inl word = if bit < 32 then arena_road_low (dy + r) else arena_road_high (dy + r)
+        inl shift = if bit < 32 then bit else bit - 32
+        ((word >>> shift) &&& 1u32) = 1u32
 
 inl blocked (l : layout) (p : geometry.position) : bool =
     match l with
@@ -44,6 +54,7 @@ inl blocked (l : layout) (p : geometry.position) : bool =
     | EastCorridor => p.y <> corridor_row () || p.x < corridor_mouth ()
     | RoomAndCorridor => p.x < 100 && p.y <> corridor_row ()
     | ArenaSpot => arena_spot_blocked p
+    | ArenaHunt => arena_spot_blocked p
 
 inl free (l : layout) (taken : geometry.position -> bool) (p : geometry.position) : bool =
     blocked l p = false && taken p = false
@@ -61,9 +72,126 @@ inl best_step (l : layout) (taken : geometry.position -> bool) (improves : geome
     inl right = if sy = 0 then shifted sx -1 from else shifted -1 sy from
     if usable both then both elif usable across then across elif usable along then along elif usable left then left elif usable right then right else from
 
-inl step_toward (l : layout) (taken : geometry.position -> bool) (target : geometry.position) (from : geometry.position) : geometry.position =
+inl greedy_step_toward (l : layout) (taken : geometry.position -> bool) (target : geometry.position) (from : geometry.position) : geometry.position =
     inl distance = geometry.chebyshev_distance target from
     best_step l taken (fun p => geometry.chebyshev_distance target p < distance) (direction_of (target.x - from.x)) (direction_of (target.y - from.y)) from
+
+inl region_rows () : i32 = 2 * arena_spot_radius () + 1
+inl region_high_bits () : u32 = 536870911u32
+inl all_bits () : u32 = 4294967295u32
+
+union route_choice =
+    | GoEast
+    | GoWest
+    | GoSouth
+    | GoNorth
+    | Arrived
+    | NoRoute
+
+inl route_offset (c : route_choice) : i32 * i32 =
+    match c with
+    | GoEast => 1, 0
+    | GoWest => -1, 0
+    | GoSouth => 0, 1
+    | GoNorth => 0, -1
+    | _ => 0, 0
+
+inl region_bit (x : i32) : i32 = x - 100 + arena_spot_radius ()
+inl region_row (y : i32) : i32 = y - 100 + arena_spot_radius ()
+inl inside_region (x : i32) (y : i32) : bool = region_bit x >= 0 && region_bit x < region_rows () && region_row y >= 0 && region_row y < region_rows ()
+
+inl word_holds (word : u32) (bit : i32) : bool = ((word >>> bit) &&& 1u32) = 1u32
+
+let route_between (tx : i32) (ty : i32) (fx : i32) (fy : i32) (free_east : bool) (free_west : bool) (free_south : bool) (free_north : bool) : route_choice =
+    inl rows = region_rows ()
+    inl lows : array_base u32 = !!!!ArrayCreate(`u32, rows)
+    inl highs : array_base u32 = !!!!ArrayCreate(`u32, rows)
+    inl open_lows : array_base u32 = !!!!ArrayCreate(`u32, rows)
+    inl open_highs : array_base u32 = !!!!ArrayCreate(`u32, rows)
+    inl low_at (row : i32) : u32 = if row < 0 || row >= rows then 0u32 else !!!!ArrayIndex(lows, row)
+    inl high_at (row : i32) : u32 = if row < 0 || row >= rows then 0u32 else !!!!ArrayIndex(highs, row)
+    let rec prepare (row : i32) : () =
+        if row < rows then
+            !!!!ArrayIndexSet(lows, row, 0u32)
+            !!!!ArrayIndexSet(highs, row, 0u32)
+            inl open_low = arena_spot_low row ^^^ all_bits ()
+            inl open_high = arena_spot_high row ^^^ region_high_bits ()
+            !!!!ArrayIndexSet(open_lows, row, open_low)
+            !!!!ArrayIndexSet(open_highs, row, open_high)
+            prepare (row + 1)
+    prepare 0
+    inl is_open (x : i32) (y : i32) : bool =
+        if inside_region x y = false then false
+        else
+            inl bit = region_bit x
+            inl row = region_row y
+            inl open_low : u32 = !!!!ArrayIndex(open_lows, row)
+            inl open_high : u32 = !!!!ArrayIndex(open_highs, row)
+            if bit < 32 then word_holds open_low bit else word_holds open_high (bit - 32)
+    inl reached (x : i32) (y : i32) : bool =
+        if inside_region x y = false then false
+        else
+            inl bit = region_bit x
+            inl row = region_row y
+            if bit < 32 then word_holds (low_at row) bit else word_holds (high_at row) (bit - 32)
+    inl mark (x : i32) (y : i32) : () =
+        if inside_region x y && is_open x y then
+            inl bit = region_bit x
+            inl row = region_row y
+            inl marked_low = low_at row ||| (if bit < 32 then 1u32 <<< bit else 0u32)
+            inl marked_high = high_at row ||| (if bit < 32 then 0u32 else 1u32 <<< (bit - 32))
+            !!!!ArrayIndexSet(lows, row, marked_low)
+            !!!!ArrayIndexSet(highs, row, marked_high)
+    let rec seed (k : i32) : () =
+        if k < 9 then
+            mark (tx + k % 3 - 1) (ty + k / 3 - 1)
+            seed (k + 1)
+    seed 0
+    let rec sweep (row : i32) (above_low : u32) (above_high : u32) (changed : bool) : bool =
+        if row >= rows then changed
+        else
+            inl low = low_at row
+            inl high = high_at row
+            inl open_low : u32 = !!!!ArrayIndex(open_lows, row)
+            inl open_high : u32 = !!!!ArrayIndex(open_highs, row)
+            inl grown_low = (low ||| (low <<< 1) ||| (low >>> 1) ||| (high <<< 31) ||| above_low ||| low_at (row + 1)) &&& open_low
+            inl grown_high = (high ||| (high <<< 1) ||| (low >>> 31) ||| (high >>> 1) ||| above_high ||| high_at (row + 1)) &&& open_high
+            !!!!ArrayIndexSet(lows, row, grown_low)
+            !!!!ArrayIndexSet(highs, row, grown_high)
+            sweep (row + 1) low high (changed || grown_low <> low || grown_high <> high)
+    inl along_x = (if tx - fx < 0 then fx - tx else tx - fx) >= (if ty - fy < 0 then fy - ty else ty - fy)
+    inl east_first = tx >= fx
+    inl south_first = ty >= fy
+    inl leads (c : route_choice) : bool =
+        inl dx, dy = route_offset c
+        inl free = match c with GoEast => free_east | GoWest => free_west | GoSouth => free_south | _ => free_north
+        free && reached (fx + dx) (fy + dy)
+    inl x_toward = if east_first then GoEast else GoWest
+    inl x_away = if east_first then GoWest else GoEast
+    inl y_toward = if south_first then GoSouth else GoNorth
+    inl y_away = if south_first then GoNorth else GoSouth
+    inl first, second = if along_x then x_toward, y_toward else y_toward, x_toward
+    inl choose () : route_choice =
+        if leads first then first elif leads second then second elif leads y_away then y_away elif leads x_away then x_away else NoRoute
+    inl still_searching (c : route_choice) : bool = match c with NoRoute => true | _ => false
+    let rec layers (k : i32) : route_choice =
+        inl c = choose ()
+        if still_searching c && k < rows * 2 && sweep 0 0u32 0u32 false then layers (k + 1) else c
+    if reached fx fy then Arrived else layers 0
+
+inl routed_step (l : layout) (taken : geometry.position -> bool) (target : geometry.position) (from : geometry.position) : geometry.position =
+    inl usable dx dy = free l taken (shifted dx dy from)
+    match route_between target.x target.y from.x from.y (usable 1 0) (usable -1 0) (usable 0 1) (usable 0 -1) with
+    | Arrived => from
+    | NoRoute => from
+    | c =>
+        inl dx, dy = route_offset c
+        shifted dx dy from
+
+inl step_toward (l : layout) (taken : geometry.position -> bool) (target : geometry.position) (from : geometry.position) : geometry.position =
+    match l with
+    | ArenaHunt => routed_step l taken target from
+    | _ => greedy_step_toward l taken target from
 
 inl step_away (l : layout) (taken : geometry.position -> bool) (threat : geometry.position) (from : geometry.position) : geometry.position =
     inl distance = geometry.chebyshev_distance threat from
@@ -104,13 +232,30 @@ inl scored_step (l : layout) (taken : geometry.position -> bool) (foes_near : ge
 inl ground_step_percent (l : layout) : i32 =
     match l with
     | ArenaSpot => 108
+    | ArenaHunt => 108
     | _ => 100
 
 inl on_ground (l : layout) (step_ms : i32) : i32 = step_ms * ground_step_percent l / 100
 
+inl arena_ground_speed () : i32 = 160
+inl road_ground_speed () : i32 = 100
+
+inl on_ground_at (l : layout) (from : geometry.position) (step_ms : i32) : i32 =
+    match l with
+    | ArenaHunt => if arena_road from then step_ms * ground_step_percent l * road_ground_speed () / (100 * arena_ground_speed ()) else on_ground l step_ms
+    | _ => on_ground l step_ms
+
+inl grave () : geometry.position = geometry.position 0 0 15
+
+inl more_spawn_points (l : layout) : geometry.position * geometry.position * geometry.position =
+    match l with
+    | ArenaHunt => geometry.position 117 95 7, geometry.position 120 105 7, geometry.position 108 104 7
+    | _ => grave (), grave (), grave ()
+
 inl player_start (l : layout) : geometry.position =
     match l with
     | ArenaSpot => geometry.position 99 99 7
+    | ArenaHunt => geometry.position 103 86 7
     | _ => geometry.position 100 100 7
 
 inl spawn_points (l : layout) : geometry.position * geometry.position * geometry.position =
@@ -119,6 +264,7 @@ inl spawn_points (l : layout) : geometry.position * geometry.position * geometry
     | EastCorridor => geometry.position 102 100 7, geometry.position 104 100 7, geometry.position 106 100 7
     | RoomAndCorridor => geometry.position 103 100 7, geometry.position 104 102 7, geometry.position 104 98 7
     | ArenaSpot => geometry.position 99 101 7, geometry.position 98 102 7, geometry.position 98 103 7
+    | ArenaHunt => geometry.position 125 86 7, geometry.position 124 96 7, geometry.position 110 84 7
 
 ///> c
 test a_corridor_turns_a_diagonal_approach_into_a_straight_one =
@@ -147,10 +293,10 @@ test corridor_steps_on_gpu =
     if step.x = 102i32 && step.y = 100i32 then 0i32 else 1i32
 
 ///> c
-test the_arena_spot_matches_the_live_scan =
+test the_arena_spot_matches_the_live_scan_and_the_server_map =
     inl ~x = 100i32
     inl at dx dy = blocked ArenaSpot (geometry.position (x + dx) (100 + dy) 7)
-    (at 0 0, at -1 0, at 1 0, at 4 -4, at -7 0, at 8 0, at -1 1) |> _assert_eq (false, true, false, false, false, true, false)
+    (at 0 0, at -1 0, at 1 0, at 4 -4, at -7 0, at 8 0, at -1 1) |> _assert_eq (false, true, false, false, false, false, false)
 
 ///> c
 test a_scored_step_can_prefer_room_over_distance =
@@ -161,3 +307,30 @@ test a_scored_step_can_prefer_room_over_distance =
     inl run = scored_step RoomAndCorridor nobody alone {away = 10; room = 0; crowd = 0; align = 0; diagonal = 0} threat (geometry.position x 100 7)
     inl roomy = scored_step RoomAndCorridor nobody alone {away = 0; room = 10; crowd = 0; align = 0; diagonal = 0} threat (geometry.position x 100 7)
     (run.x, walkable_around RoomAndCorridor (geometry.position 98 100 7), roomy.x) |> _assert_eq (99i32, 2i32, 99i32)
+
+///> c
+test the_arena_hunt_spawns_and_start_are_open_ground =
+    inl ~x = 0i32
+    inl a, b, c = spawn_points ArenaHunt
+    inl d, e, f = more_spawn_points ArenaHunt
+    inl s = player_start ArenaHunt
+    (blocked ArenaHunt a, blocked ArenaHunt b, blocked ArenaHunt c, blocked ArenaHunt d, blocked ArenaHunt e, blocked ArenaHunt f, blocked ArenaHunt s, x) |> _assert_eq (false, false, false, false, false, false, false, 0i32)
+
+///> c
+test on_the_hunting_ground_a_route_goes_where_a_greedy_step_sticks =
+    inl ~x = 110i32
+    inl nobody (p : geometry.position) = false
+    inl target = geometry.position 115 93 7
+    inl from = geometry.position x 88 7
+    inl greedy = greedy_step_toward ArenaHunt nobody target from
+    let rec walk (steps : i32) (at : geometry.position) : i32 * geometry.position =
+        if geometry.chebyshev_distance target at <= 1 || steps >= 100 then steps, at
+        else walk (steps + 1) (step_toward ArenaHunt nobody target at)
+    inl steps, last = walk 0 from
+    (greedy.x, greedy.y, steps, last.x, last.y) |> _assert_eq (110i32, 88i32, 9i32, 115i32, 92i32)
+
+///> c
+test on_the_hunting_ground_a_road_tile_speeds_the_next_step_up =
+    inl ~cyclops_ms = 650i32
+    (on_ground_at ArenaHunt (geometry.position 115 93 7) cyclops_ms, on_ground_at ArenaHunt (geometry.position 115 89 7) cyclops_ms, on_ground_at ArenaSpot (geometry.position 115 89 7) cyclops_ms, arena_road (geometry.position 99 99 7))
+    |> _assert_eq (702i32, 438i32, 702i32, false)

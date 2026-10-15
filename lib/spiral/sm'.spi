@@ -267,26 +267,12 @@ test concat_list print_code =
 
 /// ### slice
 inl slice forall t {number; int}. (from : t) (to : t) s : string =
-    inl to_py () =
-        if (s |> var_is) || (to |> var_is) || (from |> var_is) then to + 1 else to
-    inl trace () =
-        [
-            "sm'.slice"
-            " / from: "; from |> obj_to_string
-            " / to: "; to |> obj_to_string
-            " / s |> var_is: "; s |> var_is |> obj_to_string
-            " / from |> var_is: "; from |> var_is |> obj_to_string
-            " / to |> var_is: "; to |> var_is |> obj_to_string
-            " / to_py (): "; to_py () |> obj_to_string
-            " / to_py () |> var_is: "; to_py () |> var_is |> obj_to_string
-        ]
-        |> concat_list ""
     backend_switch {
         Gleam = fun () =>
             sm.slice s { from to } : string
         Lua = fun () => sm.slice s { from to } : string
         Fsharp = fun () => sm.slice s { from to } : string
-        Python = fun () => sm.slice s { from to = to_py () } : string
+        Python = fun () => sm.slice s { from to } : string
         Rust = fun () => sm.slice s { from to } : string
         TypeScript = fun () => sm.slice s { from to } : string
         Zig = fun () => sm.slice s { from to } : string

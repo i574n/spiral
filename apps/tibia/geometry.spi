@@ -59,6 +59,11 @@ inl straight_step (sign : i32) (target : position) (from : position) : position 
 
 inl step_toward (target : position) (from : position) : position = straight_step 1 target from
 
+inl monster_view_range () : i32 = 11
+
+inl sees (watcher : position) (seen : position) : bool =
+    watcher.z = seen.z && magnitude (watcher.x - seen.x) <= monster_view_range () && magnitude (watcher.y - seen.y) <= monster_view_range ()
+
 inl same_tile (a : position) (b : position) : bool = a.x = b.x && a.y = b.y && a.z = b.z
 
 inl diagonal_step_factor () : i32 = 3

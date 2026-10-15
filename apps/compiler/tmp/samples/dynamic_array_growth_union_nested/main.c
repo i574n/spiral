@@ -155,7 +155,7 @@ int32_t method4(Array1 * v0){
     ArrayDecref1(v0);
     return v1;
 }
-int32_t score0(US0 v0){
+int32_t observe_after_consume0(US0 v0){
     
     
     switch (v0.tag) {
@@ -291,7 +291,7 @@ int32_t main(){
     USIncref0(&(v4));
     ArrayDecref0(v1);
     int32_t v5;
-    v5 = score0(v4);
+    v5 = observe_after_consume0(v4);
     
     USDecref0(&(v4));
     int32_t v6;

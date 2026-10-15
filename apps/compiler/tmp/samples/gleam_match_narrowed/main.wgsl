@@ -1,10 +1,12 @@
 struct SpiralIo {
   code: i32,
-  pad0: u32,
-  pad1: u32,
-  pad2: u32,
+  lanes: u32,
+  heap_words_per_lane: u32,
+  lane_base: u32,
 }
 @group(0) @binding(0) var<storage, read_write> spiral_io: SpiralIo;
+@group(0) @binding(2) var<storage, read_write> spiral_results: array<i32>;
+var<private> spiral_lane: u32 = 0u;
 struct SpiralUnion0 {
   tag: u32,
   c0f0: i32,
@@ -124,7 +126,13 @@ fn spiral_main() -> i32 {
     v19 = sp_measure_tri_2(v18, v0);
     return (v17 + v19);
 }
-@compute @workgroup_size(1)
-fn main() {
-  spiral_io.code = spiral_main();
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) invocation: vec3<u32>) {
+  let lane_count = max(spiral_io.lanes, 1u);
+  let lane = spiral_io.lane_base + invocation.x;
+  if (lane >= lane_count) { return; }
+  spiral_lane = lane;
+  let result = spiral_main();
+  spiral_results[spiral_lane] = result;
+  if (spiral_lane == 0u) { spiral_io.code = result; }
 }

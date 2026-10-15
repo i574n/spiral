@@ -441,4 +441,53 @@ defmodule Spiral.Kino.CompilerDaemonTest do
       end
     end
   end
+
+  @compiler_that_listens_on_tcp """
+  $ErrorActionPreference = 'Stop'
+  if ($args[0] -eq '--capabilities') { 'server-tcp test-blocks'; exit 0 }
+  $socket = $args[1]
+  $utf8 = New-Object System.Text.UTF8Encoding $false
+  $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, 0)
+  $listener.Start()
+  [System.IO.File]::WriteAllText("$socket.pid", "$PID", $utf8)
+  [System.IO.File]::WriteAllText("$socket.bridge", "$($listener.LocalEndpoint.Port)", $utf8)
+  while ($true) {
+      $client = $listener.AcceptTcpClient()
+      $stream = $client.GetStream()
+      $reader = [System.IO.StreamReader]::new($stream, $utf8)
+      $writer = [System.IO.StreamWriter]::new($stream, $utf8)
+      $writer.NewLine = "`n"
+      $writer.AutoFlush = $true
+      $parts = $reader.ReadLine().Split("`t")
+      [System.IO.File]::WriteAllText($parts[3], "fn main() {}", $utf8)
+      $writer.WriteLine("spiral-session`tok`t$PID`t12`tmain`tdirect")
+      $client.Dispose()
+  }
+  """
+
+  if System.find_executable("pwsh") do
+    test "a host that lists server-tcp in --capabilities is reached directly over TCP, without the pwsh relay" do
+      dir = Path.join(System.tmp_dir!(), "ksd#{System.unique_integer([:positive])}")
+      File.mkdir_p!(Path.join(dir, "fake"))
+      fake = Path.join([dir, "fake", "tcp_compiler.ps1"])
+      File.write!(fake, @compiler_that_listens_on_tcp)
+      saved = System.get_env("TMPDIR")
+      System.put_env("TMPDIR", dir)
+      pwsh = System.find_executable("pwsh")
+      {:ok, daemon} = CompilerDaemon.start_link(port: 0, dotnet: pwsh, compiler_dll: fake, workspace: dir, package_dir: dir, pool: "off")
+
+      try do
+        assert "server-tcp" in CompilerDaemon.host_capabilities(pwsh, fake)
+        output = Path.join(dir, "main.rs")
+        {:ok, sock} = :gen_tcp.connect({127, 0, 0, 1}, CompilerDaemon.listen_port(daemon), [:binary, packet: :line, active: false], 5_000)
+        :ok = :gen_tcp.send(sock, "compile\tRust\t#{Path.join(dir, "main.spi")}\t#{output}\t300000\t0\tdirect-test\n")
+        assert {:ok, "ok\tdirect" <> _} = :gen_tcp.recv(sock, 0, 60_000)
+        assert File.read!(output) == "fn main() {}"
+      after
+        GenServer.stop(daemon, :normal, 30_000)
+        if saved, do: System.put_env("TMPDIR", saved), else: System.delete_env("TMPDIR")
+        File.rm_rf(dir)
+      end
+    end
+  end
 end

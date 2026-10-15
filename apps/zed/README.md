@@ -18,17 +18,17 @@ known gaps, failed approaches, and continuation checklist.
 | Area | Status |
 | --- | --- |
 | `.spi` and `.spir` association | Implemented |
-| `.spiproj` association | Implemented, but currently parsed with the same fallback grammar |
-| Tree-sitter grammar | Temporary Rust-grammar fallback; not publishable as-is |
-| Basic highlighting/brackets/indent queries | Experimental and unverified against a Spiral syntax tree |
+| `.spiproj` association | Implemented, parsed with the same line grammar |
+| Tree-sitter grammar | `tree-sitter-spiral` line grammar (exact test headers, directives, comments); expressions are not parsed |
+| Highlighting/outline/runnables queries | From the grammar; brackets and indents queries are empty; expression highlighting comes from semantic tokens |
 | Native `spiral-zed` helper | Unit-tested and compiler-probed on Windows |
 | Zed-to-helper launch | Blocked pending a dev-extension rebuild and manual verification |
 | Diagnostics, hover, semantic tokens, build actions | Implemented in the helper, not currently verified in Zed |
 | `.spiproj` links/actions | Partial implementation, not verified in Zed |
 | Test task picker entries | Repository-local developer tooling only |
-| Gutter run-test button | Not implemented |
+| Gutter run-test button | `runnables.scm` tags each `test name =` with `spiral-test`; not yet verified in Zed |
 | Linux/macOS support | Not validated; known URI/path correctness work remains |
-| Registry publication | Blocked by grammar and helper-distribution requirements |
+| Registry publication | Blocked by helper-distribution requirements |
 
 The files in `src/types.rs` demonstrate GADT-, existential-, and HKT-like Rust
 encodings with `PhantomData`. They are tested examples, but they are not used by
@@ -174,7 +174,7 @@ Record the Zed version, extension rebuild time, relevant log lines, and result
 in `DEVELOPMENT.md`. Until this checklist passes, editor-facing behavior remains
 unverified.
 
-## Tests and the missing run button
+## Tests and the run button
 
 `spiral/.zed/tasks.json` and `apps/zed/tasks/test-at-row.ps1` provide two
 monorepo-only task-picker entries:
@@ -185,19 +185,16 @@ monorepo-only task-picker entries:
 They are not installed with the extension and do not create gutter buttons in
 downstream Spiral projects.
 
-A reliable `runnables.scm` cannot be built on the borrowed Rust grammar. A
-validated experiment found real tests but also matched comments, strings,
-bindings, and ordinary references. Accurate per-test gutter buttons require a
-Spiral-aware Tree-sitter grammar, or a future Zed extension API that permits a
-custom runnable provider.
+`languages/spiral/runnables.scm` tags every `test_header` node with
+`spiral-test` and exposes the name as `ZED_CUSTOM_spiral_test_name`; the
+monorepo task `spiral: run test $ZED_CUSTOM_spiral_test_name` carries that tag,
+so each test block gets a gutter button once the dev extension is rebuilt.
 
 ## Known limitations
 
-- `grammar = "rust"` is a temporary fallback. Spiral code is parsed through
-  Rust error recovery, so highlighting, indentation, outline, and runnable
-  queries cannot be considered correct.
-- The extension does not define its own grammar in `extension.toml`, which is a
-  Zed registry publication blocker.
+- The grammar is line-level: every token is a whole line, so test headers,
+  `///>` targets and comments are exact, while expressions get their colors
+  only from the language server's semantic tokens.
 - The native helper is not packaged or downloaded and has no release/version
   compatibility protocol with `extension.wasm` or `SpiralCompiler.dll`.
 - Compiler checks and builds block the helper's single LSP loop for up to 90 or
@@ -228,5 +225,6 @@ Common failures:
 - **Zed starts `SpiralCompiler.dll` directly**: remove the DLL from
   `lsp.spiral-lsp.binary.path`; configure discovery with host environment
   variables instead.
-- **No gutter test button**: this is a known missing feature, not a local
-  installation problem.
+- **No gutter test button**: rebuild the dev extension so Zed fetches the
+  `spiral` grammar at the `rev` in `extension.toml`, and open the file from the
+  `spiral` worktree so `.zed/tasks.json` is loaded.

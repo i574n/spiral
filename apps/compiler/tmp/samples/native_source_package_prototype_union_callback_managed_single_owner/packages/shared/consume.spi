@@ -12,4 +12,4 @@ inl evaluate forall a {score}. (derive : i32 -> a) (seed : i32) : i32 =
 
 inl run () : i32 =
     inl ~derive = (fun (_ : i32) => Text "managed") : i32 -> outcome_t
-    evaluate derive 2i32 +. 31i32
+    evaluate derive 2i32 + 31i32

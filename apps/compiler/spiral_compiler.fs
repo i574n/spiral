@@ -43103,23 +43103,25 @@ module spiral_compiler =
     /// server, hopac, parallel module loads), a file that ends inside a string or comment, and a re-tokenized
     /// edit can't leak it into each other.
     [<Struct>]
-    type LexState = { in_triple : bool; comment_depth : int }
+    type LexState = { in_triple : bool; comment_depth : int; macro_close : char }
 
     /// ### lex_state_init
-    let lex_state_init = { in_triple = false; comment_depth = 0 }
+    let lex_state_init = { in_triple = false; comment_depth = 0; macro_close = '\000' }
 
     /// ### LexCell
     /// The lexical state while one line is being tokenized.
     type LexCell(state : LexState) =
         member val InTriple = state.in_triple with get, set
         member val CommentDepth = state.comment_depth with get, set
-        member x.State = { in_triple = x.InTriple; comment_depth = x.CommentDepth }
+        member val MacroClose = state.macro_close with get, set
+        member x.State = { in_triple = x.InTriple; comment_depth = x.CommentDepth; macro_close = x.MacroClose }
 
     /// ### lex_state_error
     /// The error for text that ends in `state`: inside a string or comment that never closes.
     let lex_state_error (state : LexState) =
         if state.in_triple then Some "Unterminated triple-quoted string. Expected '\"\"\"'."
         elif 0 < state.comment_depth then Some "Unterminated multiline comment. Expected '*)'."
+        elif state.macro_close <> '\000' then Some "Unterminated macro: a line ending in '\\' continues the macro on the next line, which must close it."
         else None
 
     /// ### comment_scan
@@ -43192,7 +43194,7 @@ module spiral_compiler =
         let ok x = ({from=from; nearTo=s.from}, x) |> Ok
         let is_separator_prev = is_prefix_separator_char (peek' s -1)
         let f (name : string) (s: Tokenizer) =
-            let symbol_before_commas = name.TrimEnd ','
+            let symbol_before_commas = name.TrimEnd [|','; ';'|]
             match edition3_symbol_token name with
             | Some keyword -> ok keyword
             | None when symbol_before_commas.Length > 0 && symbol_before_commas.Length < name.Length && (edition3_symbol_token symbol_before_commas).IsSome ->
@@ -43343,7 +43345,7 @@ module spiral_compiler =
                     | (_, TokComment _) -> []
                     | t -> [t])
             |>> fun x -> x, []
-        ((macro + individual_tokens) |> with_advance) s
+        ((macro lx + individual_tokens) |> with_advance) s
     // Tokenizes one line that starts in lexical state `state`: its tokens, its errors, and the state the next
     // line starts in. A line that starts inside a `(* *)` comment or a `"""` string continues it first.
     and tokenize_line (state : LexState) (text : string) =
@@ -43362,6 +43364,13 @@ module spiral_compiler =
             lx.CommentDepth <- depth
         elif lx.InTriple then
             add (string_triple_body lx s, [])
+        elif lx.MacroClose <> '\000' then
+            let closing_char = lx.MacroClose
+            lx.MacroClose <- '\000'
+            while peek s = ' ' do inc s
+            match macro_body lx closing_char s with
+            | Ok (tokens, er') -> add (tokens, er')
+            | Error er' -> add ([], er')
         let parser = spaces >>. many_iter add (token lx) .>> (tokenizeEol <|> tab)
         let er = match parser s with Ok() -> er | Error er' -> List.append er' er
         PersistentVector.ofSeq ar, er, lx.State
@@ -43371,7 +43380,7 @@ module spiral_compiler =
         match lex_state_error state with
         | Some message -> ar, List.append er [({from=0; nearTo=max 1 text.Length}, message)]
         | None -> ar, er
-    and macro s =
+    and macro_body (lx : LexCell) (closing_char : char) s =
         let char_to_macro_expr = function
             | '`' -> MType
             | '!' -> MTerm
@@ -43381,6 +43390,7 @@ module spiral_compiler =
 
         let p_special_char s =
             match peek' s 0, peek' s 1 with
+            | '\\', c when c = lineParsersEol -> error_char s.from "\\"
             | '\\', ('n' | 'r' | 't' | 'b' as c) ->
                 let r = {from=s.from; nearTo=s.from+2}
                 inc' 2 s
@@ -43400,8 +43410,8 @@ module spiral_compiler =
         let p_expr s =
             let start = anyOf ['`'; '!'; '@'; '#']
             let case_paren start_char =
-                let mutable c = 1 // number of open parens.
-                between (skip_char '(') (skip_char ')') (many1SatisfyL (fun x -> // Stops when the number of open parens is 0.
+                let mutable c = 1
+                between (skip_char '(') (skip_char ')') (many1SatisfyL (fun x ->
                     c <- c + (match x with '(' -> 1 | ')' -> -1 | _ -> 0)
                     c > 0
                     ) "not )")
@@ -43412,19 +43422,19 @@ module spiral_compiler =
             (range (start >>= fun start_char -> (case_paren start_char <|> case_var start_char))
             |>> fun (range, f) -> f range) s
         let p_macro_inner closing_char s = (many (p_special_char <|> p_text closing_char <|> p_expr) <|>% []) s
-        let p_macro s =
-            let body a b = range (between (skip_string a) (skip_char b) (p_macro_inner b))
-            (body "$\"" '"' <|> body "$'" ''') s
+        let p_close (s : Tokenizer) =
+            if peek s = closing_char then
+                let from = s.from
+                inc s
+                Ok (Some ({from=from; nearTo=from+1}, TokMacroClose))
+            elif peek s = '\\' && peek' s 1 = lineParsersEol then
+                inc s
+                lx.MacroClose <- closing_char
+                Ok None
+            else error_char s.from (string closing_char)
 
-        match (p_macro .>> spaces) s with
-        | Ok(r, x) ->
-            let start =
-                let r = {from=r.from; nearTo=r.from+2}
-                r, TokMacroOpen
-            let end_ =
-                let r = {from=r.nearTo-1; nearTo=r.nearTo}
-                r, TokMacroClose
-
+        match ((p_macro_inner closing_char .>>. p_close) .>> spaces) s with
+        | Ok(x, close) ->
             let mutable er = []
             x |> List.collect (function
                 | TokenizerText(r,x) -> [r, TokText x]
@@ -43451,8 +43461,17 @@ module spiral_compiler =
                     er <- List.append er' er
                     List.concat [[start]; List.ofSeq middle; [end_]]
                 )
-            |> fun l -> Ok(List.concat [[start]; l; [end_]], er)
+            |> fun l -> Ok(List.append l (Option.toList close), er)
         | Error er -> Error er
+    and macro (lx : LexCell) s =
+        if peek s = '$' && (peek' s 1 = '"' || peek' s 1 = ''') then
+            let from = s.from
+            let closing_char = peek' s 1
+            inc' 2 s
+            match macro_body lx closing_char s with
+            | Ok (l, er) -> Ok(({from=from; nearTo=from+2}, TokMacroOpen) :: l, er)
+            | Error er -> Error er
+        else error_char s.from "$\" or $'"
 
     /// ### LineToken
     type LineToken = TokenizerRange * SpiralToken
@@ -43812,6 +43831,7 @@ module spiral_compiler =
         | InbuiltOpNotFound
         | UnknownOperator
         | UnexpectedEob
+        | MalformedTestHeader
         | UnexpectedAndInlRec
         | ForallNotAllowed
         | TypecaseNotAllowed
@@ -44692,6 +44712,7 @@ module spiral_compiler =
         | ParsedOr of VSCRange
         | ParsedPair
         | ParsedHeapMutableSet
+        | ParsedStringConcat
         | ParsedNamed of VSCRange * string
 
     /// ### op
@@ -44716,6 +44737,7 @@ module spiral_compiler =
                             | "||" -> ParsedOr o
                             | "," -> ParsedPair
                             | "<-" -> ParsedHeapMutableSet
+                            | "^^" -> ParsedStringConcat
                             | name -> ParsedNamed(o,name)
                         Ok(p,a,parsed)
             | o, _ -> Error [o, ExpectedOperator']
@@ -45098,11 +45120,11 @@ module spiral_compiler =
                 let record_with =
                     blockParsingRange
                         (curlies
-                            (tuple4 read_small_var'
+                            (tuple4 ((read_small_var' |>> rawv) <|> rounds next)
                                 (many ((read_symbol |>> RawSymbol) <|> (skip_op "$" >>. read_small_var' |>> rawv)))
                                 ((skip_keyword SpecWith >>. sepBy record_with_bodies (optional (skip_op ";"))) <|>% [])
                                 ((skip_keyword SpecWithout >>. many record_without_bodies) <|>% [])))
-                    |>> fun (r,(name, acs, withs, withouts)) -> (r,rawv name :: acs,withs,withouts)
+                    |>> fun (r,(record, acs, withs, withouts)) -> (r,record :: acs,withs,withouts)
 
                 restore 2 record_create <|> record_with
                 >>= fun (_,_,withs,withouts as x) _ ->
@@ -45208,6 +45230,7 @@ module spiral_compiler =
                 | ParsedAnd source -> RawIfThenElse(range,left,right,RawLit(source,LitBool false))
                 | ParsedOr source -> RawIfThenElse(range,left,RawLit(source,LitBool true),right)
                 | ParsedPair -> RawPair(range,left,right)
+                | ParsedStringConcat -> RawOp(range,StaticStringConcat,[left;right])
                 | ParsedHeapMutableSet ->
                     let rec collect arguments = function
                         | RawApply(_,fn,argument) -> collect (argument :: arguments) fn
@@ -45325,9 +45348,27 @@ module spiral_compiler =
     /// ### top_inl_or_let
     let top_inl_or_let d = ((comments .>>. inl_or_let root_term root_pattern_pair root_type_annot) >>= fun (comments,x) d -> top_inl_or_let_process comments d.is_top_down x) d
 
+    /// ### privateNominalMarker
+    let privateNominalMarker = "\u0001private "
+
+    let privateNominalName (name : string) =
+        if name.StartsWith(privateNominalMarker, StringComparison.Ordinal) then true, name.Substring privateNominalMarker.Length
+        else false, name
+
+    let markPrivateNominal isPrivate ((range, name) : VSCRange * string) = range, (if isPrivate then privateNominalMarker + name else name)
+
+    let private_marker (d : BlockParsingEnv) =
+        let i = d.Index
+        if i < d.tokens.Length then
+            match d.tokens.[i] with
+            | _, TokVar ("private", _) -> blockParsingSkip d; Ok true
+            | _ -> Ok false
+        else Ok false
+
     /// ### process_union
-    let process_union (r,(layout,n,a,(r',b))) _ =
+    let process_union (r,((layout,isPrivate),n,a,(r',b))) _ =
         let this = (RawTVar n,a) ||> List.fold (fun s x -> RawTApply(r',s,RawTVar(r',hovar_name x)))
+        let n = markPrivateNominal isPrivate n
         match layout with
         | UHeap -> Ok(TopNominalRec(r,n,a,RawTUnion(r',b,layout,this)))
         | UStack -> Ok(TopNominal(r,n,a,RawTUnion(r',b,layout,this)))
@@ -45336,12 +45377,12 @@ module spiral_compiler =
     let union_clauses d = root_type_union root_type_defaults d
 
     /// ### top_union
-    let top_union d = ((blockParsingRange (tuple4 (skip_keyword SpecUnion >>. ((skip_keyword SpecRec >>% UHeap) <|>% UStack)) read_small_type_var' (many ho_var .>> skip_op "=") union_clauses)) >>= process_union) d
+    let top_union d = ((blockParsingRange (tuple4 (skip_keyword SpecUnion >>. (((skip_keyword SpecRec >>% UHeap) <|>% UStack) .>>. private_marker)) read_small_type_var' (many ho_var .>> skip_op "=") union_clauses)) >>= process_union) d
 
     /// ### top_nominal
     let top_nominal d =
-        (blockParsingRange (tuple3 (skip_keyword SpecNominal >>. read_small_type_var') (many ho_var .>> skip_op "=") (root_type {root_type_defaults with allow_term=true}))
-        |>> fun (r,(n,a,b)) -> TopNominal(r,n,a,b)) d
+        (blockParsingRange (tuple3 (skip_keyword SpecNominal >>. (private_marker .>>. read_small_type_var')) (many ho_var .>> skip_op "=") (root_type {root_type_defaults with allow_term=true}))
+        |>> fun (r,((isPrivate,n),a,b)) -> TopNominal(r,markPrivateNominal isPrivate n,a,b)) d
 
     /// ### type_forall
     let inline type_forall next d = (pipe2 (forall <|>% []) next (List.foldBack (fun x s -> RawTForall(range_of_typevar x +. range_of_texpr s,x,s)))) d
@@ -45374,7 +45415,7 @@ module spiral_compiler =
     let inline top_and f = restore 1 (blockParsingRange (skip_keyword SpecAnd >>. f)) |>> TopAnd
 
     /// ### top_and_union
-    let top_and_union d = top_and ((blockParsingRange (tuple4 (skip_keyword SpecUnion >>% UHeap) read_small_type_var' (many ho_var .>> skip_op "=") union_clauses)) >>= process_union) d
+    let top_and_union d = top_and ((blockParsingRange (tuple4 (skip_keyword SpecUnion >>% (UHeap, false)) read_small_type_var' (many ho_var .>> skip_op "=") union_clauses)) >>= process_union) d
 
     /// ### top_open
     let top_open d = (blockParsingModule_open |>> fun (r,(name,acs)) -> TopOpen(r,name,acs)) d
@@ -45393,8 +45434,41 @@ module spiral_compiler =
     /// ### blockParsingParse
     let blockParsingIsTest (s : BlockParsingEnv) = match snd s.tokens.[0] with TokVar ("test", _) -> true | _ -> false
 
+    let blockParsingTestModeWords = set [ "static"; "print_code"; "ignore"; "build_only" ]
+
+    let blockParsingIsStringOpen = function TokStringOpen -> true | _ -> false
+
+    let blockParsingIsStringClose = function TokStringClose -> true | _ -> false
+
+    let blockParsingAfterString (tokens : SpiralToken list) =
+        match List.skipWhile (blockParsingIsStringClose >> not) tokens with
+        | _ :: rest -> Some rest
+        | [] -> None
+
+    let blockParsingTestExpectationValid (tokens : SpiralToken list) =
+        match List.rev tokens with
+        | TokOperator ("=", _) :: TokStringClose :: _ -> List.exists blockParsingIsStringOpen tokens
+        | _ -> false
+
+    let rec blockParsingTestModesValid (tokens : SpiralToken list) =
+        match tokens with
+        | [ TokOperator ("=", _) ] -> true
+        | TokVar (word, _) :: rest when blockParsingTestModeWords.Contains word -> blockParsingTestModesValid rest
+        | TokVar ("no_agree", _) :: TokStringOpen :: rest -> blockParsingAfterString rest |> Option.exists blockParsingTestModesValid
+        | TokVar ("no_agree", _) :: rest -> blockParsingTestModesValid rest
+        | TokVar ("fails", _) :: rest -> blockParsingTestExpectationValid rest
+        | _ -> false
+
+    let blockParsingTestHeaderValid (s : BlockParsingEnv) =
+        let headerRow = s.tokens_cords.[0].row
+        let header = s.tokens |> Array.indexed |> Array.filter (fun (i, _) -> s.tokens_cords.[i].row = headerRow) |> Array.map (snd >> snd) |> List.ofArray
+        match header with
+        | TokVar ("test", _) :: (TokVar _ | TokKeyword _) :: modes -> blockParsingTestModesValid modes
+        | _ -> false
+
     let blockParsingParse (s : BlockParsingEnv) : ParseResult =
-        if 0 < s.tokens.Length && blockParsingIsTest s then Error []
+        if 0 < s.tokens.Length && blockParsingIsTest s then
+            if blockParsingTestHeaderValid s then Error [] else Error [ fst s.tokens.[0], MalformedTestHeader ]
         elif 0 < s.tokens.Length then
             match top_statement s with
             | Ok _ as x -> if s.Index = s.tokens.Length then x else Error [fst s.tokens.[s.Index], ExpectedEob]
@@ -45501,6 +45575,7 @@ module spiral_compiler =
         | UnexpectedAndInlRec -> "The first statement of a recursive block has to be marked as recursive."
         | ExpectedEob -> "Failed to parse this token."
         | UnexpectedEob -> "Unexpected end of block past this token."
+        | MalformedTestHeader -> "Malformed test header: expected `test <name> [static] [print_code] [ignore] [no_agree \"reason\"] [build_only] [fails \"expected\"] =` with the body indented below it."
         | UnknownError -> "Compiler error: Parsing failed at this position with no error message and without consuming all the tokens in a block."
         | DuplicateRecordTypeVar -> "Duplicate record type variable."
         | DuplicateForallVar -> "Duplicate forall variable."
@@ -49416,6 +49491,7 @@ module spiral_compiler =
         | ExpectedSymbol' of T
         | ExpectedSymbolInRecordWith of T
         | RealFunctionInTopDown
+        | UnionCaseAmbiguous of string
         | ModuleMustBeImmediatelyApplied
         | MissingRecordFieldsInPattern of T * RecordFieldNameId list
         | CasePatternNotFoundForType of GlobalId * TermNameId
@@ -50098,6 +50174,7 @@ module spiral_compiler =
         | ExpectedModule a -> sprintf "Expected a module.\nGot: %s" (f a)
         | ExpectedSymbolInRecordWith a -> sprintf "Expected a symbol.\nGot: %s" (f a)
         | RealFunctionInTopDown -> sprintf "Real segment functions are forbidden in the top-down segment. They can only be used in `real` expressions or .spir modules."
+        | UnionCaseAmbiguous name -> sprintf "The union case %s is defined by more than one opened module. Qualify it (module.%s) or open only one of the modules." name name
         | MissingRecordFieldsInPattern(a,b) -> sprintf "The record is missing the following fields: %s.\nGot: %s" (b |> List.map RecordFieldNameIdOps.text |> String.concat ", ") (f a)
         | CasePatternNotFoundForType(i,n) -> sprintf "%s does not have the %s case." (show_nominal env i) (TermNameIdOps.text n)
         | CasePatternNotFound n -> sprintf "Cannot find a function with the same name as the %s case in the environment." (TermNameIdOps.text n)
@@ -50168,10 +50245,42 @@ module spiral_compiler =
     type 'a AdditionType =
         | AOpen of 'a
         | AInclude of 'a
+        | AIncludePrivate of exported : 'a * local : 'a
     
 
     /// ### InferScope
     type InferScope = int
+
+    /// ### markAmbiguousUnionCases
+    let ambiguousUnionCasePrefix = "<ambiguous union case "
+
+    let rec unionCaseResultNominal (t : T) =
+        match t with
+        | TyForall (_, b) | TyInl (_, b) | TyFun (_, b, _) | TyComment (_, b) -> unionCaseResultNominal b
+        | TyApply (a, _, _) -> unionCaseResultNominal a
+        | TyNominal i -> ValueSome i
+        | _ -> ValueNone
+
+    let unionCaseOwner (top_env : TopEnv) (name : string) (t : T) =
+        match unionCaseResultNominal t with
+        | ValueSome i ->
+            match Map.tryFind i top_env.nominals with
+            | Some n ->
+                match n.body with
+                | TyUnion (cases, _) when cases |> Map.exists (fun (_, name') _ -> name' = name) -> ValueSome i
+                | _ -> ValueNone
+            | None -> ValueNone
+        | ValueNone -> ValueNone
+
+    let markAmbiguousUnionCases (top_env : TopEnv) (opened : Map<TermNameId, T>) =
+        opened |> Map.map (fun key t ->
+            let name = TermNameIdOps.text key
+            match unionCaseOwner top_env name t, Map.tryFind key top_env.term with
+            | ValueSome i, Some existing ->
+                match unionCaseOwner top_env name existing with
+                | ValueSome j when j <> i -> TySymbol (ambiguousUnionCasePrefix + name + ">")
+                | _ -> t
+            | _ -> t)
     
 
     /// ### InferResult
@@ -50778,6 +50887,7 @@ module spiral_compiler =
                 match v_term env name with
                 | None -> errors.Add(r,UnboundVariable (UnboundTermName (TermNameIdOps.create name)))
                 | Some (_,TySymbol "<real>") -> errors.Add(r,RealFunctionInTopDown)
+                | Some (_,TySymbol ambiguous) when ambiguous.StartsWith(ambiguousUnionCasePrefix, StringComparison.Ordinal) -> errors.Add(r,UnionCaseAmbiguous (ambiguous.Substring(ambiguousUnionCasePrefix.Length).TrimEnd '>'))
                 | Some (com,TyModule _ & m) when is_in_left_apply = false ->
                     hover_types.AddHover(r,(m,com))
                     errors.Add(r,ModuleMustBeImmediatelyApplied)
@@ -51483,9 +51593,10 @@ module spiral_compiler =
             hover_types.AddHover(r,(t,""))
             if 0 = errors.Count then psucc (fun () -> FType(q,(r,name),vars',expr)), AInclude {inferTop_env_empty with ty = Map.add (TypeNameIdOps.create name) t Map.empty}
             else pfail, AInclude inferTop_env_empty
-        | BundleNominal(q,(r,name),vars',expr) ->
+        | BundleNominal(q,(r,marked),vars',expr) ->
+            let isPrivate, name = privateNominalName marked
             let x = bundle_nominal_rec [q,(r,name),vars',expr]
-            if 0 = errors.Count then psucc (fun () -> FNominal(q,(r,name),vars',expr)), AInclude x
+            if 0 = errors.Count then psucc (fun () -> FNominal(q,(r,name),vars',expr)), (if isPrivate then AIncludePrivate ({x with term = Map.empty}, x) else AInclude x)
             else pfail, AInclude inferTop_env_empty
         | BundleNominalRec l ->
             let _ = // Checks that mutually recursive unions do not have duplicates.
@@ -51495,8 +51606,10 @@ module spiral_compiler =
                     | RawTUnion(_,l,_,_) -> l |> Map.iter (fun k v -> if h.Add k = false then errors.Add(range_of_texpr (snd v),DuplicateKeyInRecUnion))
                     | _ -> ()
                     )
+            let isPrivate = l |> List.exists (fun (_,(_,name),_,_) -> fst (privateNominalName name))
+            let l = l |> List.map (fun (q,(r,name),vars',expr) -> q,(r,snd (privateNominalName name)),vars',expr)
             let x = bundle_nominal_rec l
-            if 0 = errors.Count then psucc (fun () -> FNominalRec l), AInclude x
+            if 0 = errors.Count then psucc (fun () -> FNominalRec l), (if isPrivate then AIncludePrivate ({x with term = Map.empty}, x) else AInclude x)
             else pfail, AInclude inferTop_env_empty
         | BundlePrototype(com,r,(r',name),(w,var_init),vars',expr) ->
             let i = at_tag top_env'.prototypes_next_tag
@@ -51633,7 +51746,7 @@ module spiral_compiler =
             | Some(M _) -> errors.Add(fst prot, ExpectedPrototypeInsteadOfModule); check_ins fake
         | BundleOpen(q,(r,a),b) ->
             match inferModule_open (Some hover_types) (loc_env top_env) Map.empty r a b with
-            | Ok x -> psucc (fun () -> FOpen(q,(r,a),b)), AOpen {inferTop_env_empty with term=x.term; ty=x.ty; constraints=x.constraints}
+            | Ok x -> psucc (fun () -> FOpen(q,(r,a),b)), AOpen {inferTop_env_empty with term=markAmbiguousUnionCases top_env x.term; ty=x.ty; constraints=x.constraints}
             | Error er -> errors.Add(er); pfail, AOpen inferTop_env_empty
         |> fun (filled_top, top_env_additions) ->
             if 0 = errors.Count then
@@ -51814,6 +51927,7 @@ module spiral_compiler =
         | ExpectedSymbol' of T
         | ExpectedSymbolInRecordWith of T
         | RealFunctionInTopDown
+        | UnionCaseAmbiguous of string
         | ModuleMustBeImmediatelyApplied
         | MissingRecordFieldsInPattern of T * string list
         | CasePatternNotFoundForType of GlobalId * string
@@ -52418,6 +52532,7 @@ module spiral_compiler =
         | ExpectedModule a -> sprintf "Expected a module.\nGot: %s" (f a)
         | ExpectedSymbolInRecordWith a -> sprintf "Expected a symbol.\nGot: %s" (f a)
         | RealFunctionInTopDown -> sprintf "Real segment functions are forbidden in the top-down segment. They can only be used in `real` expressions or .spir modules."
+        | UnionCaseAmbiguous name -> sprintf "The union case %s is defined by more than one opened module. Qualify it (module.%s) or open only one of the modules." name name
         | MissingRecordFieldsInPattern(a,b) -> sprintf "The record is missing the following fields: %s.\nGot: %s" (String.concat ", " b) (f a)
         | CasePatternNotFoundForType(i,n) -> sprintf "%s does not have the %s case." (show_nominal env i) n
         | CasePatternNotFound n -> sprintf "Cannot find a function with the same name as the %s case in the environment." n
@@ -52504,9 +52619,41 @@ module spiral_compiler =
     type 'a AdditionType =
         | AOpen of 'a
         | AInclude of 'a
+        | AIncludePrivate of exported : 'a * local : 'a
 
     /// ### InferScope
     type InferScope = int
+
+    /// ### markAmbiguousUnionCases
+    let ambiguousUnionCasePrefix = "<ambiguous union case "
+
+    let rec unionCaseResultNominal (t : T) =
+        match t with
+        | TyForall (_, b) | TyInl (_, b) | TyFun (_, b, _) | TyComment (_, b) -> unionCaseResultNominal b
+        | TyApply (a, _, _) -> unionCaseResultNominal a
+        | TyNominal i -> ValueSome i
+        | _ -> ValueNone
+
+    let unionCaseOwner (top_env : TopEnv) (name : string) (t : T) =
+        match unionCaseResultNominal t with
+        | ValueSome i ->
+            match Map.tryFind i top_env.nominals with
+            | Some n ->
+                match n.body with
+                | TyUnion (cases, _) when cases |> Map.exists (fun (_, name') _ -> name' = name) -> ValueSome i
+                | _ -> ValueNone
+            | None -> ValueNone
+        | ValueNone -> ValueNone
+
+    let markAmbiguousUnionCases (top_env : TopEnv) (opened : Map<TermNameId, T>) =
+        opened |> Map.map (fun key t ->
+            let name = TermNameIdOps.text key
+            match unionCaseOwner top_env name t, Map.tryFind key top_env.term with
+            | ValueSome i, Some existing ->
+                match unionCaseOwner top_env name existing with
+                | ValueSome j when j <> i -> TySymbol (ambiguousUnionCasePrefix + name + ">")
+                | _ -> t
+            | _ -> t)
 
     /// ### InferResult
     type [<ReferenceEquality>] InferResult = {
@@ -53069,6 +53216,7 @@ module spiral_compiler =
                 match v_term env name with
                 | None -> errors.Add(r,UnboundVariable name)
                 | Some (_,TySymbol "<real>") -> errors.Add(r,RealFunctionInTopDown)
+                | Some (_,TySymbol ambiguous) when ambiguous.StartsWith(ambiguousUnionCasePrefix, StringComparison.Ordinal) -> errors.Add(r,UnionCaseAmbiguous (ambiguous.Substring(ambiguousUnionCasePrefix.Length).TrimEnd '>'))
                 | Some (com,TyModule _ & m) when is_in_left_apply = false ->
                     hover_types.AddHover(r,(m,com))
                     errors.Add(r,ModuleMustBeImmediatelyApplied)
@@ -53761,9 +53909,10 @@ module spiral_compiler =
             hover_types.AddHover(r,(t,""))
             if 0 = errors.Count then psucc (fun () -> FType(q,(r,name),vars',expr)), AInclude {inferTop_env_empty with ty = Map.add name t Map.empty}
             else pfail, AInclude inferTop_env_empty
-        | BundleNominal(q,(r,name),vars',expr) ->
+        | BundleNominal(q,(r,marked),vars',expr) ->
+            let isPrivate, name = privateNominalName marked
             let x = bundle_nominal_rec [q,(r,name),vars',expr]
-            if 0 = errors.Count then psucc (fun () -> FNominal(q,(r,name),vars',expr)), AInclude x
+            if 0 = errors.Count then psucc (fun () -> FNominal(q,(r,name),vars',expr)), (if isPrivate then AIncludePrivate ({x with term = Map.empty}, x) else AInclude x)
             else pfail, AInclude inferTop_env_empty
         | BundleNominalRec l ->
             let _ = // Checks that mutually recursive unions do not have duplicates.
@@ -53773,8 +53922,10 @@ module spiral_compiler =
                     | RawTUnion(_,l,_,_) -> l |> Map.iter (fun k v -> if h.Add k = false then errors.Add(range_of_texpr (snd v),DuplicateKeyInRecUnion))
                     | _ -> ()
                     )
+            let isPrivate = l |> List.exists (fun (_,(_,name),_,_) -> fst (privateNominalName name))
+            let l = l |> List.map (fun (q,(r,name),vars',expr) -> q,(r,snd (privateNominalName name)),vars',expr)
             let x = bundle_nominal_rec l
-            if 0 = errors.Count then psucc (fun () -> FNominalRec l), AInclude x
+            if 0 = errors.Count then psucc (fun () -> FNominalRec l), (if isPrivate then AIncludePrivate ({x with term = Map.empty}, x) else AInclude x)
             else pfail, AInclude inferTop_env_empty
         | BundlePrototype(com,r,(r',name),(w,var_init),vars',expr) ->
             let i = at_tag top_env'.prototypes_next_tag
@@ -53907,7 +54058,7 @@ module spiral_compiler =
             | Some(M _) -> errors.Add(fst prot, ExpectedPrototypeInsteadOfModule); check_ins fake
         | BundleOpen(q,(r,a),b) ->
             match inferModule_open (Some hover_types) (loc_env top_env) Map.empty r a b with
-            | Ok x -> psucc (fun () -> FOpen(q,(r,a),b)), AOpen {inferTop_env_empty with term=x.term; ty=x.ty; constraints=x.constraints}
+            | Ok x -> psucc (fun () -> FOpen(q,(r,a),b)), AOpen {inferTop_env_empty with term=markAmbiguousUnionCases top_env x.term; ty=x.ty; constraints=x.constraints}
             | Error er -> errors.Add(er); pfail, AOpen inferTop_env_empty
         |> fun (filled_top, top_env_additions) ->
             if 0 = errors.Count then
@@ -165247,18 +165398,22 @@ module spiral_compiler =
                 x |> HopacExtensions.S.map (fun (L(i',_)) -> sprintf "v%i.l%i" i i')
                 |> String.concat ", "
                 |> function "" -> () | x -> simple x
-            let length (a,b) =
+            let length_of_text a text =
                 match a with
-                | YPrim UInt8T -> sprintf "System.Convert.ToByte %s.Length" (tup b)
-                | YPrim UInt16T -> sprintf "System.Convert.ToUInt16 %s.Length" (tup b)
-                | YPrim UInt32T -> sprintf "System.Convert.ToUInt32 %s.Length" (tup b)
-                | YPrim UInt64T -> sprintf "System.Convert.ToUInt64 %s.Length" (tup b)
-                | YPrim Int8T -> sprintf "System.Convert.ToSByte %s.Length" (tup b)
-                | YPrim Int16T -> sprintf "System.Convert.ToInt16 %s.Length" (tup b)
-                | YPrim Int32T -> sprintf "%s.Length" (tup b)
-                | YPrim Int64T -> sprintf "System.Convert.ToInt64 %s.Length" (tup b)
+                | YPrim UInt8T -> sprintf "System.Convert.ToByte %s" text
+                | YPrim UInt16T -> sprintf "System.Convert.ToUInt16 %s" text
+                | YPrim UInt32T -> sprintf "System.Convert.ToUInt32 %s" text
+                | YPrim UInt64T -> sprintf "System.Convert.ToUInt64 %s" text
+                | YPrim Int8T -> sprintf "System.Convert.ToSByte %s" text
+                | YPrim Int16T -> sprintf "System.Convert.ToInt16 %s" text
+                | YPrim Int32T -> text
+                | YPrim Int64T -> sprintf "System.Convert.ToInt64 %s" text
                 | _ -> raise_codegen_error "Compiler error: Expected an int in length"
                 |> simple
+            let length (a,b) = length_of_text a (sprintf "%s.Length" (tup b))
+            let utf8_string_helpers () =
+                global' "let spiralStringIndex (s : string) (i : int) : char = char (System.Text.Encoding.UTF8.GetBytes(s).[i])"
+                global' "let spiralStringSlice (s : string) (from : int) (upto : int) : string =\n    let bytes = System.Text.Encoding.UTF8.GetBytes(s)\n    let length = bytes.Length\n    if from < 0 || from > length || upto < from - 1 || upto >= length then exit 3\n    elif upto < from then \"\"\n    elif (bytes.[from] &&& 0xC0uy) = 0x80uy || (upto + 1 < length && (bytes.[upto + 1] &&& 0xC0uy) = 0x80uy) then exit 3\n    else System.Text.Encoding.UTF8.GetString(bytes, from, upto - from + 1)"
             match a with
             | TyMacro a -> a |> List.map (function CMText x -> x | CMTerm (x,inl) -> (if inl then args' x else tup x) | CMType x -> tup_ty x | CMTypeLit x -> type_litFsharp x) |> String.concat "" |> simple
             | TySizeOf t -> simple $"sizeof<{tup_ty t}>"
@@ -165383,7 +165538,7 @@ module spiral_compiler =
                 | DLit(LitInt32 _) | DV(L(_,YPrim Int32T)) -> simple (sprintf "Array.zeroCreate<%s> (%s)" (tup_ty a) (tup b))
                 | _ -> simple (sprintf "Array.zeroCreate<%s> (System.Convert.ToInt32(%s))" (tup_ty a) (tup b))
             | TyArrayLength(a,b) -> length (a,b)
-            | TyStringLength(a,b) -> length (a,b)
+            | TyStringLength(a,b) -> length_of_text a (sprintf "(System.Text.Encoding.UTF8.GetByteCount(%s))" (tup b))
             | TyFailwith(a,b) -> simple (sprintf "failwith<%s> %s" (tup_ty a) (tup b))
             | TyConv(a,b) ->
                 let b = tup b
@@ -165406,8 +165561,8 @@ module spiral_compiler =
                 match op, l with
                 | Dyn,[a] -> tup a
                 | TypeToVar, _ -> raise_codegen_error "The use of `` should never appear in generated code."
-                | StringIndex, [a;b] -> sprintf "%s.[int %s]" (tup a) (tup b)
-                | StringSlice, [a;b;c] -> FastRuntimeFormat.format "%s.[int %s..int %s]" [| box (tup a); box (tup b); box (tup c) |]
+                | StringIndex, [a;b] -> utf8_string_helpers (); sprintf "(spiralStringIndex %s (int %s))" (tup a) (tup b)
+                | StringSlice, [a;b;c] -> utf8_string_helpers (); FastRuntimeFormat.format "(spiralStringSlice %s (int %s) (int %s))" [| box (tup a); box (tup b); box (tup c) |]
                 | StaticStringConcat, [a;b] -> sprintf "(%s + %s)" (tup a) (tup b)
                 | ArrayIndex, [a;b] -> sprintf "%s.[int %s]" (tup a) (tup b)
                 | ArrayIndexSet, [a;b;c] -> FastRuntimeFormat.format "%s.[int %s] <- %s" [| box (tup a); box (tup b); box (tup c) |]
@@ -166422,18 +166577,22 @@ module spiral_compiler =
                 x |> Array.map (fun (L(i',_)) -> sprintf "v%i.l%i" i i')
                 |> String.concat ", "
                 |> function "" -> () | x -> simple x
-            let length (a,b) =
+            let length_of_text a text =
                 match a with
-                | YPrim UInt8T -> sprintf "System.Convert.ToByte %s.Length" (tup b)
-                | YPrim UInt16T -> sprintf "System.Convert.ToUInt16 %s.Length" (tup b)
-                | YPrim UInt32T -> sprintf "System.Convert.ToUInt32 %s.Length" (tup b)
-                | YPrim UInt64T -> sprintf "System.Convert.ToUInt64 %s.Length" (tup b)
-                | YPrim Int8T -> sprintf "System.Convert.ToSByte %s.Length" (tup b)
-                | YPrim Int16T -> sprintf "System.Convert.ToInt16 %s.Length" (tup b)
-                | YPrim Int32T -> sprintf "%s.Length" (tup b)
-                | YPrim Int64T -> sprintf "System.Convert.ToInt64 %s.Length" (tup b)
+                | YPrim UInt8T -> sprintf "System.Convert.ToByte %s" text
+                | YPrim UInt16T -> sprintf "System.Convert.ToUInt16 %s" text
+                | YPrim UInt32T -> sprintf "System.Convert.ToUInt32 %s" text
+                | YPrim UInt64T -> sprintf "System.Convert.ToUInt64 %s" text
+                | YPrim Int8T -> sprintf "System.Convert.ToSByte %s" text
+                | YPrim Int16T -> sprintf "System.Convert.ToInt16 %s" text
+                | YPrim Int32T -> text
+                | YPrim Int64T -> sprintf "System.Convert.ToInt64 %s" text
                 | _ -> raise_codegen_error "Compiler error: Expected an int in length"
                 |> simple
+            let length (a,b) = length_of_text a (sprintf "%s.Length" (tup b))
+            let utf8_string_helpers () =
+                global' "let spiralStringIndex (s : string) (i : int) : char = char (System.Text.Encoding.UTF8.GetBytes(s).[i])"
+                global' "let spiralStringSlice (s : string) (from : int) (upto : int) : string =\n    let bytes = System.Text.Encoding.UTF8.GetBytes(s)\n    let length = bytes.Length\n    if from < 0 || from > length || upto < from - 1 || upto >= length then exit 3\n    elif upto < from then \"\"\n    elif (bytes.[from] &&& 0xC0uy) = 0x80uy || (upto + 1 < length && (bytes.[upto + 1] &&& 0xC0uy) = 0x80uy) then exit 3\n    else System.Text.Encoding.UTF8.GetString(bytes, from, upto - from + 1)"
             match a with
             | TyMacro a -> a |> List.map (function CMText x -> x | CMTerm (x,inl) -> (if inl then args' x else tup x) | CMType x -> tup_ty x | CMTypeLit x -> type_litFsharp x) |> String.concat "" |> simple
             | TySizeOf t -> simple $"sizeof<{tup_ty t}>"
@@ -166557,7 +166716,7 @@ module spiral_compiler =
                 | DLit(LitInt32 _) | DV(L(_,YPrim Int32T)) -> simple (sprintf "Array.zeroCreate<%s> (%s)" (tup_ty a) (tup b))
                 | _ -> simple (sprintf "Array.zeroCreate<%s> (System.Convert.ToInt32(%s))" (tup_ty a) (tup b))
             | TyArrayLength(a,b) -> length (a,b)
-            | TyStringLength(a,b) -> length (a,b)
+            | TyStringLength(a,b) -> length_of_text a (sprintf "(System.Text.Encoding.UTF8.GetByteCount(%s))" (tup b))
             | TyFailwith(a,b) -> simple (sprintf "failwith<%s> %s" (tup_ty a) (tup b))
             | TyConv(a,b) ->
                 let b = tup b
@@ -166580,8 +166739,8 @@ module spiral_compiler =
                 match op, l with
                 | Dyn,[a] -> tup a
                 | TypeToVar, _ -> raise_codegen_error "The use of `` should never appear in generated code."
-                | StringIndex, [a;b] -> sprintf "%s.[int %s]" (tup a) (tup b)
-                | StringSlice, [a;b;c] -> sprintf "%s.[int %s..int %s]" (tup a) (tup b) (tup c)
+                | StringIndex, [a;b] -> utf8_string_helpers (); sprintf "(spiralStringIndex %s (int %s))" (tup a) (tup b)
+                | StringSlice, [a;b;c] -> utf8_string_helpers (); sprintf "(spiralStringSlice %s (int %s) (int %s))" (tup a) (tup b) (tup c)
                 | StaticStringConcat, [a;b] -> sprintf "(%s + %s)" (tup a) (tup b)
                 | ArrayIndex, [a;b] -> sprintf "%s.[int %s]" (tup a) (tup b)
                 | ArrayIndexSet, [a;b;c] -> sprintf "%s.[int %s] <- %s" (tup a) (tup b) (tup c)
@@ -172868,6 +173027,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             match Array.last body with
             | TyLocalReturnOp(_, TyJoinPoint(JPMethod(a,c),_), _) -> (method (a,c)).tag = tag
             | TyLocalReturnOp(_, TyIf(_,tr,fl), _) -> self_tail tag tr || self_tail tag fl
+            | TyLocalReturnOp(_, TyUnionUnbox(_,_,on_succs,on_fail), _) -> (on_succs |> Map.exists (fun _ (_,b) -> self_tail tag b)) || (on_fail |> Option.exists (self_tail tag))
             | TyLocalReturnOp(_, TyIntSwitch(_,on_succ,on_fail), _) -> Array.exists (self_tail tag) on_succ || self_tail tag on_fail
             | TyLocalReturnOp(_, (TyDo b | TyIndent b), _) -> self_tail tag b
             | _ -> false
@@ -173106,11 +173266,13 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         let program = StringBuilder()
         program.AppendLine("struct SpiralIo {") |> ignore
         program.AppendLine("  code: i32,") |> ignore
-        program.AppendLine("  pad0: u32,") |> ignore
-        program.AppendLine("  pad1: u32,") |> ignore
-        program.AppendLine("  pad2: u32,") |> ignore
+        program.AppendLine("  lanes: u32,") |> ignore
+        program.AppendLine("  heap_words_per_lane: u32,") |> ignore
+        program.AppendLine("  lane_base: u32,") |> ignore
         program.AppendLine("}") |> ignore
         program.AppendLine("@group(0) @binding(0) var<storage, read_write> spiral_io: SpiralIo;") |> ignore
+        program.AppendLine("@group(0) @binding(2) var<storage, read_write> spiral_results: array<i32>;") |> ignore
+        program.AppendLine("var<private> spiral_lane: u32 = 0u;") |> ignore
         if uses_heap.Value then
             program.AppendLine("@group(0) @binding(1) var<storage, read_write> spiral_heap: array<u32>;") |> ignore
             program.AppendLine("var<private> spiral_heap_top: u32 = 0u;") |> ignore
@@ -173122,17 +173284,23 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             program.AppendLine("}") |> ignore
         tuple_bodies |> Seq.iter (fun text -> program.Append(text) |> ignore)
         functions |> Seq.iter (fun fn -> program.Append(fn) |> ignore)
+        program.AppendLine("@compute @workgroup_size(64)") |> ignore
+        program.AppendLine("fn main(@builtin(global_invocation_id) invocation: vec3<u32>) {") |> ignore
+        program.AppendLine("  let lane_count = max(spiral_io.lanes, 1u);") |> ignore
+        program.AppendLine("  let lane = spiral_io.lane_base + invocation.x;") |> ignore
+        program.AppendLine("  if (lane >= lane_count) { return; }") |> ignore
+        program.AppendLine("  spiral_lane = lane;") |> ignore
+        if uses_heap.Value then
+            program.AppendLine("  let heap_words = select(arrayLength(&spiral_heap) / lane_count, spiral_io.heap_words_per_lane, spiral_io.heap_words_per_lane > 0u);") |> ignore
+            program.AppendLine("  spiral_heap_top = invocation.x * heap_words;") |> ignore
         if unit_main then
-            program.AppendLine("@compute @workgroup_size(1)") |> ignore
-            program.AppendLine("fn main() {") |> ignore
             program.AppendLine("  spiral_main();") |> ignore
-            program.AppendLine("  spiral_io.code = 0i;") |> ignore
-            program.AppendLine("}") |> ignore
+            program.AppendLine("  let result = 0i;") |> ignore
         else
-            program.AppendLine("@compute @workgroup_size(1)") |> ignore
-            program.AppendLine("fn main() {") |> ignore
-            program.AppendLine("  spiral_io.code = spiral_main();") |> ignore
-            program.AppendLine("}") |> ignore
+            program.AppendLine("  let result = spiral_main();") |> ignore
+        program.AppendLine("  spiral_results[spiral_lane] = result;") |> ignore
+        program.AppendLine("  if (spiral_lane == 0u) { spiral_io.code = result; }") |> ignore
+        program.AppendLine("}") |> ignore
         program.ToString()
 
     // Calyx has no recursion. Self-tail calls become a while on a go register.
@@ -173459,7 +173627,15 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                             | "sub" -> comb dest "std_sub" w left right
                             | "mul" -> pipe dest "std_mult_pipe" w left right "out"
                             | "div" -> pipe dest (if signed_of a then "std_sdiv_pipe" else "std_div_pipe") w left right "out_quotient"
-                            | "mod" -> pipe dest (if signed_of a then "std_sdiv_pipe" else "std_div_pipe") w left right "out_remainder"
+                            | "mod" when signed_of a ->
+                                let quotient = sprintf "t%d" (fresh part)
+                                add_cell part (sprintf "%s = std_reg(%d);" quotient w)
+                                pipe quotient "std_sdiv_pipe" w left right "out_quotient"
+                                let product = sprintf "t%d" (fresh part)
+                                add_cell part (sprintf "%s = std_reg(%d);" product w)
+                                pipe product "std_mult_pipe" w (quotient + ".out") right "out"
+                                comb dest "std_sub" w left (product + ".out")
+                            | "mod" -> pipe dest "std_div_pipe" w left right "out_remainder"
                             | "lt" -> comb dest (if signed_of a then "std_slt" else "std_lt") w left right
                             | "le" -> comb dest (if signed_of a then "std_sle" else "std_le") w left right
                             | "gt" -> comb dest (if signed_of a then "std_sgt" else "std_gt") w left right
@@ -175050,12 +175226,15 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             | YPrim BoolT -> "bool"
             | YPrim Float32T -> "float[32]"
             | YPrim Float64T -> unsupported "f64"
-            | YPrim (Int64T | UInt64T) -> unsupported "64-bit integers"
+            | YPrim Int64T -> "int[64]"
+            | YPrim UInt64T -> "uint[64]"
             | YPrim t -> unsupported $"the primitive {t}"
             | t -> unsupported $"the type {show_ty t}"
         let zero = function
             | "int[32]" -> "0"
             | "uint[32]" -> "0"
+            | "int[64]" -> "0"
+            | "uint[64]" -> "0"
             | "bool" -> "false"
             | "float[32]" -> "0.0"
             | other -> unsupported $"a zero value of {other}"
@@ -175063,6 +175242,9 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             | LitInt32 x when x = Int32.MinValue -> "(-2147483648)"
             | LitInt32 x -> string x
             | LitUInt32 x -> string x
+            | LitInt64 x when x = Int64.MinValue -> "(-9223372036854775808)"
+            | LitInt64 x -> string x
+            | LitUInt64 x -> string x
             | LitBool x -> if x then "true" else "false"
             | LitChar x -> string (int x)
             | LitFloat32 x when Single.IsNaN x -> unsupported "NaN"
@@ -175226,15 +175408,13 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 let converted =
                     if same then text
                     else
+                        let integral = function Int32T | UInt32T | CharT | Int64T | UInt64T -> true | _ -> false
                         match source, target with
-                        | Some (Int32T | CharT), UInt32T -> text
-                        | Some UInt32T, (Int32T | CharT) -> text
-                        | Some (Int32T | UInt32T | CharT), Float32T -> $"float[32]({text})"
-                        | Some Float32T, (Int32T | CharT) -> $"int[32]({text})"
-                        | Some Float32T, UInt32T -> $"uint[32]({text})"
-                        | Some BoolT, (Int32T | CharT | UInt32T) -> $"(if {text} {{ 1 }} else {{ 0 }})"
-                        | Some (Int32T | CharT), BoolT -> $"({text} != 0)"
-                        | Some UInt32T, BoolT -> $"({text} != 0)"
+                        | Some s, t when integral s && integral t -> text
+                        | Some s, Float32T when integral s -> $"float[32]({text})"
+                        | Some Float32T, t when integral t -> $"{tyv (YPrim t)}({text})"
+                        | Some BoolT, t when integral t -> $"(if {text} {{ 1 }} else {{ 0 }})"
+                        | Some s, BoolT when integral s -> $"({text} != 0)"
                         | _ -> unsupported "this conversion"
                 return' converted
             | TyFailwith _ -> unsupported "failwith"
@@ -175335,12 +175515,15 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             | YPrim BoolT -> "bool"
             | YPrim Float32T -> "float"
             | YPrim Float64T -> unsupported "f64"
-            | YPrim (Int64T | UInt64T) -> unsupported "64-bit integers"
+            | YPrim Int64T -> "int64_t"
+            | YPrim UInt64T -> "uint64_t"
             | YPrim t -> unsupported $"the primitive {t}"
             | t -> unsupported $"the type {show_ty t}"
         let zero = function
             | "int32_t" -> "0"
             | "uint32_t" -> "0u"
+            | "int64_t" -> "0ll"
+            | "uint64_t" -> "0ull"
             | "bool" -> "false"
             | "float" -> "0.0f"
             | other -> unsupported $"a zero value of {other}"
@@ -175348,6 +175531,9 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             | LitInt32 x when x = Int32.MinValue -> "INT32_MIN"
             | LitInt32 x -> string x
             | LitUInt32 x -> $"{x}u"
+            | LitInt64 x when x = Int64.MinValue -> "INT64_MIN"
+            | LitInt64 x -> $"{x}ll"
+            | LitUInt64 x -> $"{x}ull"
             | LitBool x -> if x then "true" else "false"
             | LitChar x -> string (int x)
             | LitFloat32 x when Single.IsNaN x -> unsupported "NaN"
@@ -175526,14 +175712,13 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 let converted =
                     if same then text
                     else
+                        let integral = function Int32T | UInt32T | CharT | Int64T | UInt64T -> true | _ -> false
                         match source, target with
-                        | Some (Int32T | CharT), UInt32T -> $"(uint32_t)({text})"
-                        | Some UInt32T, (Int32T | CharT) -> $"(int32_t)({text})"
-                        | Some (Int32T | UInt32T | CharT), Float32T -> $"(float)({text})"
-                        | Some Float32T, (Int32T | CharT) -> $"(int32_t)({text})"
-                        | Some Float32T, UInt32T -> $"(uint32_t)({text})"
-                        | Some BoolT, (Int32T | CharT | UInt32T) -> $"({text} ? 1 : 0)"
-                        | Some (Int32T | CharT | UInt32T), BoolT -> $"({text} != 0)"
+                        | Some s, t when integral s && integral t -> $"({tyv (YPrim t)})({text})"
+                        | Some s, Float32T when integral s -> $"(float)({text})"
+                        | Some Float32T, t when integral t -> $"({tyv (YPrim t)})({text})"
+                        | Some BoolT, t when integral t -> $"({text} ? 1 : 0)"
+                        | Some s, BoolT when integral s -> $"({text} != 0)"
                         | _ -> unsupported "this conversion"
                 return' converted
             | TyFailwith _ -> unsupported "failwith"
@@ -179186,7 +179371,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     | Dyn,[a] -> tup_data a
                     | TypeToVar, _ -> raise_codegen_error "The use of `` should never appear in generated code."
                     | StringIndex, [a;b] -> sprintf "%s[%s]" (tup_data a) (tup_data b)
-                    | StringSlice, [a;b;c] -> sprintf "%s[%s:%s]" (tup_data a) (tup_data b) (tup_data c)
+                    | StringSlice, [a;b;c] -> sprintf "%s[%s:(%s) + 1]" (tup_data a) (tup_data b) (tup_data c)
                     | StaticStringConcat, [a;b] -> sprintf "%s + %s" (tup_data a) (tup_data b) // ws: upstream's Python generator has no string concat (sm.concat)
                     | ArrayIndex, [a;b] ->
                         // Upstream assumes primitive CuPy arrays. Foreign/corelib containers can return
@@ -179825,7 +180010,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             match b.bundle with
             | Some bundle ->
                 let x = infer package_id module_id env bundle
-                let adds = match x.top_env_additions with AOpen x | AInclude x -> x
+                let adds = match x.top_env_additions with AOpen x | AInclude x | AIncludePrivate (_, x) -> x
                 let env = inferUnion adds env
                 Job.result (Cons((b.bundle,x,env),typecheck (package_id,module_id,env) ls))
             | None ->
@@ -179969,7 +180154,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             has_error || List.isEmpty x.errors = false,
             match x.top_env_additions with
             | AOpen _ -> big
-            | AInclude small -> inferUnion small big
+            | AInclude small | AIncludePrivate (small, _) -> inferUnion small big
             ) (false,inferTop_env_empty) l
     
 
@@ -180213,7 +180398,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         | Cons((_,r,_) : TypecheckerStateValue, ls) ->
             r.filled_top >>- fun filled_top ->
             let x = (prepassPrepass package_id module_id path env).filled_top filled_top
-            let adds = match x with AOpen x | AInclude x -> x
+            let adds = match x with AOpen x | AInclude x | AIncludePrivate (_, x) -> x
             let env = prepassUnion adds env
             Cons((r,x,env),ls >>=* prepass (package_id,module_id,path,env))
         | Nil ->
@@ -180251,7 +180436,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         Stream.foldFun (fun big (_,x,_) ->
             match x with
             | AOpen _ -> big
-            | AInclude small -> prepassUnion small big
+            | AInclude small | AIncludePrivate (small, _) -> prepassUnion small big
             ) (prepassTop_env_empty) l
     
 
@@ -180511,6 +180696,9 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         modules : RawFileHierarchy list
         packageDir : RString option
         packages : RawSchemaPackages list
+        defaultInt : RString option
+        defaultFloat : RString option
+        edition : RString option
         }
 
     // Restore the FParsec operator scope after the adaptive assembly boundary.
@@ -180525,6 +180713,9 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         modules=[]
         packageDir=None
         packages=[]
+        defaultInt=None
+        defaultFloat=None
+        edition=None
         }
 
     /// ### ConfigError
@@ -180544,6 +180735,9 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 "modules", file_hierarchy |>> fun x s -> {s with modules=x}
                 "packageDir", directory |>> fun x s -> {s with packageDir=x}
                 "packages", packages |>> fun x s -> {s with packages=x}
+                "default-int", directory |>> fun x s -> {s with defaultInt=x}
+                "default-float", directory |>> fun x s -> {s with defaultFloat=x}
+                "edition", directory |>> fun x s -> {s with edition=x}
                 ]
             let necessary = []
 
@@ -182979,7 +183173,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                         // Also note whether the entry file defines `main` itself: an `open` can bring another module's
                         // `main` into scope too (a sub-package whose module `main` opens its dependency's module `main`).
                         Stream.foldFun (fun (own_main,_) ((_,adds,env) : PrepassStateValue) ->
-                            own_main || (match adds with AInclude small -> Map.containsKey (TermNameIdOps.create "main") small.term | AOpen _ -> false), env
+                            own_main || (match adds with AInclude small | AIncludePrivate (small, _) -> Map.containsKey (TermNameIdOps.create "main") small.term | AOpen _ -> false), env
                             ) (false,prepassTop_env_empty) x.result >>= fun (own_main,env) ->
                         emitBuildFileInitializationStage BuildFilePrepassReady
                         // A block that fails to tokenize or parse is left out of its module and the build goes on, so a
@@ -185660,7 +185854,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                         // Also note whether the entry file defines `main` itself: an `open` can bring another module's
                         // `main` into scope too (a sub-package whose module `main` opens its dependency's module `main`).
                         Stream.foldFun (fun (own_main,_) ((_,adds,env) : PrepassStateValue) ->
-                            own_main || (match adds with AInclude small -> Map.containsKey "main" small.term | AOpen _ -> false), env
+                            own_main || (match adds with AInclude small | AIncludePrivate (small, _) -> Map.containsKey "main" small.term | AOpen _ -> false), env
                             ) (false,prepassTop_env_empty) x.result >>=* fun (own_main,env) ->
                         trace Verbose (fun () -> $"Supervisor.supervisor_server.BuildFile.file_build.prepass_ready / terms: {env.term.Count} / own_main: {own_main}") _locals
                         // A block that fails to tokenize or parse is left out of its module and the build goes on, so its

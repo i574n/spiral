@@ -1,8 +1,9 @@
 # Classical simulator for the OpenQASM subset emitted by codegenOpenQasm.
-# Integer wrap is 32-bit. Division and remainder go toward zero, matching C.
-# Signed >> is arithmetic and unsigned >> is logical. The shift count keeps
-# its low 5 bits. float[32] rounds after every operation. The process prints
-# nothing and exits with spiral_io.
+# Integers wrap at their declared width, 32 or 64 bits. Division and remainder
+# go toward zero, matching C. Signed >> is arithmetic and unsigned >> is
+# logical. The shift count keeps its low 5 bits (6 for 64-bit values).
+# float[32] rounds after every operation. The process prints nothing and exits
+# with spiral_io.
 
 import math
 import struct
@@ -10,6 +11,10 @@ import sys
 
 MASK32 = 0xFFFFFFFF
 SIGN32 = 0x80000000
+MASK64 = 0xFFFFFFFFFFFFFFFF
+SIGN64 = 0x8000000000000000
+INTEGER_KINDS = ('i32', 'u32', 'i64', 'u64')
+WIDE_KINDS = ('i64', 'u64')
 
 
 class QasmError(Exception):
@@ -40,6 +45,17 @@ def as_i32(n):
 
 def as_u32(n):
     return n & MASK32
+
+
+def as_i64(n):
+    n &= MASK64
+    if n >= SIGN64:
+        n -= 0x10000000000000000
+    return n
+
+
+def as_u64(n):
+    return n & MASK64
 
 
 def f32(n):
@@ -195,16 +211,16 @@ class Parser:
             self.expect('[')
             width = self.expect('num')[1]
             self.expect(']')
-            if width != 32:
-                fail(f'line {self.cur[2]}: only int[32] is supported')
-            return 'i32'
+            if width not in (32, 64):
+                fail(f'line {self.cur[2]}: only int[32] and int[64] are supported')
+            return 'i32' if width == 32 else 'i64'
         if self.match('uint'):
             self.expect('[')
             width = self.expect('num')[1]
             self.expect(']')
-            if width != 32:
-                fail(f'line {self.cur[2]}: only uint[32] is supported')
-            return 'u32'
+            if width not in (32, 64):
+                fail(f'line {self.cur[2]}: only uint[32] and uint[64] are supported')
+            return 'u32' if width == 32 else 'u64'
         if self.match('float'):
             self.expect('[')
             width = self.expect('num')[1]
@@ -436,7 +452,17 @@ INT_OPS = {
     '>>': lambda a, b: a >> (b & 31),
 }
 
-NARROW = {'i32': as_i32, 'u32': as_u32}
+WIDE_INT_OPS = dict(INT_OPS)
+WIDE_INT_OPS['<<'] = lambda a, b: a << (b & 63)
+WIDE_INT_OPS['>>'] = lambda a, b: a >> (b & 63)
+
+
+def int_ops_for(kind):
+    return WIDE_INT_OPS if kind in WIDE_KINDS else INT_OPS
+
+
+NARROW = {'i32': as_i32, 'u32': as_u32, 'i64': as_i64, 'u64': as_u64}
+QASM_TYPE = {'i32': 'int[32]', 'u32': 'uint[32]', 'i64': 'int[64]', 'u64': 'uint[64]'}
 
 DYN = 'dyn'
 TOP = 'top'
@@ -477,12 +503,12 @@ def converter(source, target):
         raise missing_kind(())
     if source == target:
         return None
-    if target in ('i32', 'u32'):
-        if source in ('i32', 'u32', 'raw'):
+    if target in INTEGER_KINDS:
+        if source in INTEGER_KINDS or source == 'raw':
             return NARROW[target]
         if source == 'f32':
-            return to_int_checked(NARROW[target], 'int' if target == 'i32' else 'uint')
-        fail(f"cannot convert {source} to {'int[32]' if target == 'i32' else 'uint[32]'}")
+            return to_int_checked(NARROW[target], 'int' if target in ('i32', 'i64') else 'uint')
+        fail(f"cannot convert {source} to {QASM_TYPE[target]}")
     if target == 'f32':
         if source == 'bool':
             fail('cannot convert bool to float[32]')
@@ -566,7 +592,19 @@ def bool_test(kind, fn):
 
 
 def static_scalar(kind):
-    return kind in ('i32', 'u32', 'f32', 'bool', 'raw')
+    return kind in INTEGER_KINDS or kind in ('f32', 'bool', 'raw')
+
+
+def integer_unify(ka, kb):
+    if ka in INTEGER_KINDS and kb in INTEGER_KINDS and ka != kb:
+        if ka in WIDE_KINDS or kb in WIDE_KINDS:
+            fail('mixed integer widths')
+        fail('mixed signedness')
+    if ka in INTEGER_KINDS:
+        return ka
+    if kb in INTEGER_KINDS:
+        return kb
+    return 'i32'
 
 
 def static_unify(ka, kb):
@@ -578,11 +616,7 @@ def static_unify(ka, kb):
         return 'f32'
     if ka == 'bool' or kb == 'bool':
         fail('bool mixed with a number')
-    if (ka == 'u32' and kb == 'i32') or (ka == 'i32' and kb == 'u32'):
-        fail('mixed signedness')
-    if ka == 'u32' or kb == 'u32':
-        return 'u32'
-    return 'i32'
+    return integer_unify(ka, kb)
 
 
 def dyn_unify(a, b):
@@ -593,14 +627,18 @@ def dyn_unify(a, b):
         if ka == kb:
             return a.n, b.n, 'bool'
         fail('bool mixed with a number')
-    if (ka == 'u32' and kb == 'i32') or (ka == 'i32' and kb == 'u32'):
-        fail('mixed signedness')
-    if ka == 'u32' or kb == 'u32':
-        return dyn_coerce(a, 'u32'), dyn_coerce(b, 'u32'), 'u32'
-    return dyn_coerce(a, 'i32'), dyn_coerce(b, 'i32'), 'i32'
+    kind = integer_unify(ka, kb)
+    return dyn_coerce(a, kind), dyn_coerce(b, kind), kind
+
+
+def shift_operands(op, ka, kb):
+    return op in ('<<', '>>') and ka in WIDE_KINDS and kb != ka
 
 
 def dyn_bin(op, a, b):
+    if shift_operands(op, kind_of(a), kind_of(b)):
+        kind = a.kind
+        return Tagged(kind, NARROW[kind](WIDE_INT_OPS[op](a.n, dyn_coerce(b, 'i64') & 63)))
     x, y, kind = dyn_unify(a, b)
     compare = COMPARE.get(op)
     if compare is not None:
@@ -614,7 +652,7 @@ def dyn_bin(op, a, b):
         if float_op is None:
             fail(f'{op} on float[32]')
         return Tagged('f32', float_op(x, y))
-    return Tagged(kind, NARROW[kind](INT_OPS[op](x, y)))
+    return Tagged(kind, NARROW[kind](int_ops_for(kind)[op](x, y)))
 
 
 def dyn_unary(op, value):
@@ -644,7 +682,7 @@ def zero_raw(kind):
         return False
     if kind == 'f32':
         return 0.0
-    if kind in ('i32', 'u32'):
+    if kind in INTEGER_KINDS:
         return 0
     fail(f'unknown type {kind}')
 
@@ -762,6 +800,11 @@ class Machine:
             if op in COMPARE:
                 return 'bool', lambda env: dyn_bin(op, tagged_left(env), tagged_right(env)).n
             return DYN, lambda env: dyn_bin(op, tagged_left(env), tagged_right(env))
+        if shift_operands(op, left_kind, right_kind):
+            count = coerced(right_kind, right, 'i64')
+            narrow_wide = NARROW[left_kind]
+            wide_op = WIDE_INT_OPS[op]
+            return left_kind, lambda env: narrow_wide(wide_op(left(env), count(env) & 63))
         try:
             kind = static_unify(left_kind, right_kind)
         except QasmError as exc:
@@ -789,7 +832,7 @@ class Machine:
             if float_op is None:
                 return DYN, failing(f'{op} on float[32]', left, right)
             return 'f32', lambda env: float_op(left(env), right(env))
-        int_op = INT_OPS[op]
+        int_op = int_ops_for(kind)[op]
         narrow = NARROW[kind]
         if kind == 'i32' and op in ('+', '-'):
             if hasattr(right, 'constant'):

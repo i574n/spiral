@@ -29,7 +29,6 @@
         @{ Id = 'samples/mega_brzozowski_derivatives/runtime_bench'; Backend = 'Lua'; Reason = 'runtime_workload.spi lcg_next multiplies a u64 seed by 1103515245 (products up to 2^61), past the 2^53 exact range of Lua 5.1 doubles (WoW target)' }
         @{ Id = 'samples/mega_brzozowski_derivatives/indexed_dfa_state_cardinality'; Backend = 'Lua'; Reason = 'its random inputs come from a u64 generator, and 64-bit multiplication is inexact on Lua 5.1 doubles (WoW target), so the accepted count differs from C' }
         @{ Id = 'samples/ts_int_wrap'; Backend = 'Python'; Reason = 'upstream CodegenPython: Python ints are unbounded, so fixed-width wrapping differs from C (exits 1 at the first wrap check)' }
-        @{ Id = 'samples/ts_string_slice'; Backend = 'Python'; Reason = 'upstream CodegenPython: strings index by code point, C/Rust/TypeScript by UTF-8 byte' }
         @{ Id = 'samples/native_cube_flush_delay_direct'; Backend = 'C'; Reason = 'POSIX-only residual (poll.h); native C runs only on Linux' }
         @{ Id = 'samples/native_cube_monotonic_delay_direct'; Backend = 'C'; Reason = 'POSIX-only residual (poll.h/clock_gettime); native C runs only on Linux' }
         @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'Rust'; Reason = 'C residual has no bounds check (exits 0); Rust panics as the fixture intends' }
@@ -75,6 +74,7 @@
 
     CFlags = @(
         @{ Pattern = 'native_float_*'; Flags = '-lm' }
+        @{ Pattern = 'abi_external_buffer_length_negative'; Flags = '-include {shims}/abi-external-mutable-buffer-c-shim.h' }
         @{ Pattern = 'abi_external_callback'; Flags = '-include {shims}/abi-external-callback-c-shim.h' }
         @{ Pattern = 'abi_external_struct_argument'; Flags = '-include {shims}/abi-external-struct-argument-c-shim.h -lm' }
         @{ Pattern = 'abi_external_struct_return_i64'; Flags = '-include {shims}/abi-external-struct-return-i64-c-shim.h' }
@@ -193,6 +193,43 @@
         'samples/tuple_mixed'
         'samples/tuple_pair'
         'samples/unsigned_mod'
+    )
+
+    ExpectedErrors = @(
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_alphabet_mix'; Contains = 'Got: (tri_alphabet : *) Expected: (bit_alphabet : *)' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_antimirov_support_assignment_count'; Contains = 'Unification failure. Got: antimirov_support_slot_assignment' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_exact_rows_not_soundness_witness'; Contains = 'Unification failure. Got: indexed_dfa_exact_transition_rows bit_alphabet' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_finite_index_out_of_range'; Contains = 'Got: finite_symbol_index finite_length_zero Expected: finite_symbol_index (finite_length_succ _)' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_hkt_batch_predicate_specific'; Contains = 'Got: forall alphabet. matcher_program alphabet -> bool Expected: matcher_program bit_alphabet -> bool' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_hkt_requires_capability_capture'; Contains = 'Got: forall alphabet. matcher_case alphabet' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_indexed_descriptor_local_cardinality'; Contains = 'Got: finite_symbol_vector bit_alphabet _ Expected: finite_symbol_vector bit_alphabet (finite_length_succ' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_indexed_dfa_quotient_coverage_count'; Contains = 'Unification failure. Got: indexed_dfa_quotient_coverage' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_indexed_dfa_representative_origin_count'; Contains = 'Unification failure. Got: indexed_dfa_representative_origins' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_indexed_row_length'; Contains = 'Got: indexed_dfa_transition_vector bit_alphabet (finite_length_succ finite_length_zero)' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_missing_alphabet_symbols'; Contains = 'lone_alphabet does not have the prototype finite_alphabet' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_missing_compare'; Contains = 'orphan_alphabet does not have the prototype symbol_compare' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_missing_finite_inventory_witness'; Contains = 'lone_alphabet does not have the prototype finite_alphabet' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_missing_rank_lookup'; Contains = 'paired_alphabet does not have the prototype finite_alphabet' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_phase_use'; Contains = 'Got: bit_matcher_state matcher_decided Expected: bit_matcher_state matcher_raw' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_raw_generic_state_seal'; Contains = 'Got: matcher_state bit_alphabet matcher_decided Expected: matcher_state bit_alphabet matcher_raw' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_raw_indexed_not_structural_support_bound'; Contains = 'Unification failure. Got: antimirov_support_vector bit_alphabet' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_raw_inventory_bypass'; Contains = 'Got: certified_alphabet_inventory bit_alphabet Expected: symbol_list bit_alphabet' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_raw_quotient_not_semantic_witness'; Contains = 'Unification failure. Got: indexed_dfa_quotient_coverage' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_raw_regex_not_positioned_bound'; Contains = 'Got: regex bit_alphabet Expected: antimirov_positioned_regex _ bit_alphabet' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_raw_representatives_not_minimality_witness'; Contains = 'Unification failure. Got: indexed_dfa_state_vector bit_alphabet' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_truncated_canonical_vector'; Contains = 'Unification failure. Got: finite_symbol_vector bit_alphabet (finite_length_succ finite_length_zero)' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_derivative_skip_normalization'; Contains = 'derivative_normalized Expected: derivative_pipeline' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_seal_unverified_derivative'; Contains = 'derivative_verified Expected: derivative_pipeline' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_derivative_runtime_phase_use'; Contains = 'derivative_runtime_checked Expected: derivative_runtime_state' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_inventory_length_mix'; Contains = 'finite_symbol_vector tri_alphabet' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_antimirov_slot_shape'; Contains = 'antimirov_origin_slot position_shape_' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_derivative_program_missing_symbols'; Contains = 'law_only_alphabet does not have the prototype finite_alphabet' }
+        @{ Id = 'samples/missing_core_negative'; Contains = 'Unbound variable: +.' }
+        @{ Id = 'samples/multiline_comment_unterminated'; Contains = 'Unterminated multiline comment' }
+        @{ Id = 'samples/multiline_triple_string_unterminated'; Contains = 'Unterminated triple-quoted string' }
+        @{ Id = 'samples/native_fptr_capture_negative'; Contains = 'Function pointers shouldn''t have any runtime free variables' }
+        @{ Id = 'samples/native_layout_stack_mutable_string_negative'; Contains = 'support stack mutable layout types' }
+        @{ Id = 'samples/native_prototype_union_closure_method_missing_instance'; Contains = 'does not have the prototype score' }
     )
 
     Backends = @{
@@ -1384,6 +1421,23 @@
         'samples/array_union'
         'samples/wgsl_array_tuple'
         'samples/wgsl_unit_self_loop'
+        'samples/array_i32'
+        'samples/array_u32'
+        'samples/ts_union_scalar'
+        'samples/union_option'
+        'samples/union_bool'
+        'samples/union_nested'
+        'samples/union_pair'
+        'samples/method_union'
+        'samples/union_array'
+        'samples/method_array'
+        'samples/array_bool'
+        'samples/method_pair_union'
+        'samples/method_pair_slot'
+        'samples/union_array_mix'
+        'samples/array_f32'
+        'samples/wgsl_tail_call_in_match'
+        'samples/wgsl_parallel_lanes'
     )
     Calyx = @(
         'samples/backend_smoke'
@@ -1395,6 +1449,20 @@
         'samples/tail_loop'
         'samples/python_self_tail_call_depth'
         'samples/unsigned_mod'
+        'samples/ts_tail_loop'
+        'samples/ebpf_shift'
+        'samples/ebpf_bool'
+        'samples/ebpf_bits'
+        'samples/ebpf_umul'
+        'samples/ebpf_uacc'
+        'samples/ebpf_bacc'
+        'samples/ebpf_char'
+        'samples/ebpf_sh31'
+        'samples/ebpf_uadd'
+        'samples/ebpf_tworec'
+        'samples/ebpf_snot'
+        'samples/ebpf_arith'
+        'samples/ebpf_div'
     )
     Kotlin = @(
         'samples/backend_smoke'
@@ -1918,6 +1986,11 @@
         'samples/ebpf_tacc'
         'samples/ebpf_t2'
         'samples/ebpf_t3'
+        'samples/tuple_mixed'
+        'samples/nested_tuple'
+        'samples/ts_tuple_mixed'
+        'samples/recur_sum'
+        'samples/i64_scalar'
     )
     Ebpf = @(
         'samples/backend_smoke'
@@ -1971,6 +2044,7 @@
         'samples/ebpf_tworec'
         'samples/ebpf_t3'
         'samples/ebpf_snot'
+        'samples/i64_scalar'
     )
     Zig = @(
         'samples/gleam_match_narrowed'

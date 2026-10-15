@@ -198,12 +198,17 @@ defmodule Spiral.Kino.Memo do
 
     case File.read(Path.join(dir, "package.spiproj")) do
       {:ok, project} ->
+        modules =
+          for {file, opened} <- module_entries(dir, project) do
+            module = file |> Path.relative_to(dir) |> String.replace("\\", "/")
+            text = read_compiled(file)
+            %{module: module, scope: module |> Path.rootname() |> String.replace("/", "."), opened: opened, text: text, opens: opened_names(text)}
+          end
+
         blocks =
-          for {file, _opened} <- module_entries(dir, project),
-              text = read_compiled(file),
-              module = file |> Path.relative_to(dir) |> String.replace("\\", "/"),
-              block <- text |> String.split("\n") |> program_blocks() |> with_stable_ids(module) do
-            block
+          for module <- modules,
+              block <- module.text |> String.split("\n") |> program_blocks() |> with_stable_ids(module.module) do
+            Map.put(block, :scope, module.scope)
           end
 
         deps = for dep <- package_dependencies(project), do: {dep, tree_print(Path.join(dir, dep))}
@@ -211,6 +216,8 @@ defmodule Spiral.Kino.Memo do
         %{
           project: project,
           deps: deps,
+          opened: for(module <- modules, module.opened, do: module.scope),
+          scope_opens: Map.new(modules, &{&1.scope, &1.opens}),
           blocks: Map.new(blocks, &{&1.id, &1}),
           by_name: Enum.reduce(blocks, %{}, fn block, acc -> Enum.reduce(block.names, acc, &Map.update(&2, &1, [block.id], fn ids -> [block.id | ids] end)) end),
           operators: for(block <- blocks, op <- block.operators, do: {op, block.id}),
@@ -247,9 +254,11 @@ defmodule Spiral.Kino.Memo do
   defp package_print_for(index, program, false), do: reached_package_print(index, program)
   defp package_print_for(other, _program, true), do: other
   defp reached_package_print(%{blocks: _} = index, program) do
-    roots = ~r/[A-Za-z_][\w']*/u |> Regex.scan(program) |> List.flatten() |> Enum.uniq()
+    code = program |> String.split("\n") |> Enum.map_join("\n", &strip_line_comment/1)
+    {unqualified, qualified} = references(code, [])
+    in_scope = index.opened ++ opened_names(code)
     from_operators = for {op, id} <- index.operators, String.contains?(program, op), do: id
-    seeds = Enum.flat_map(roots, &Map.get(index.by_name, &1, [])) ++ from_operators ++ index.always
+    seeds = resolve_references(index, unqualified, qualified, in_scope) ++ from_operators ++ index.always
     reached = reach_package_blocks(seeds, index, MapSet.new())
     {index.project, index.deps, reached |> Enum.sort() |> Enum.map(&{&1, index.blocks[&1].print})}
   end
@@ -263,11 +272,44 @@ defmodule Spiral.Kino.Memo do
       reach_package_blocks(rest, index, reached)
     else
       block = index.blocks[id]
-      named = Enum.flat_map(block.tokens, &Map.get(index.by_name, &1, []))
+      in_scope = [block.scope | index.opened] ++ Map.get(index.scope_opens, block.scope, [])
+      named = resolve_references(index, block.unqualified, block.qualified, in_scope)
       by_operator = for {op, other} <- index.operators, String.contains?(block.code, op), do: other
       reach_package_blocks(named ++ by_operator ++ rest, index, MapSet.put(reached, id))
     end
   end
+
+  @identifier ~r/[A-Za-z_][\w']*/u
+  @qualified_name ~r/[A-Za-z_][\w']*(?:\.[A-Za-z_][\w']*)+/u
+  @open_statement ~r/\bopen\s+([A-Za-z_][\w']*(?:\.[A-Za-z_][\w']*)*)/u
+
+  defp opened_names(code), do: @open_statement |> Regex.scan(code, capture: :all_but_first) |> List.flatten() |> Enum.uniq()
+
+  defp references(code, names) do
+    qualified =
+      @qualified_name
+      |> Regex.scan(code)
+      |> List.flatten()
+      |> Enum.uniq()
+      |> Enum.map(fn token ->
+        parts = String.split(token, ".")
+        {Enum.join(Enum.drop(parts, -1), "."), List.last(parts)}
+      end)
+
+    heads = Regex.replace(@qualified_name, code, fn token -> token |> String.split(".") |> hd() end)
+    unqualified = @identifier |> Regex.scan(heads) |> List.flatten() |> Enum.uniq() |> Enum.reject(&(&1 in names))
+    {unqualified, qualified}
+  end
+
+  defp resolve_references(index, unqualified, qualified, in_scope) do
+    by_scope = fn ids, accept -> Enum.filter(ids, &accept.(index.blocks[&1].scope)) end
+    visible = fn scope -> Enum.any?(in_scope, &scope_named?(scope, &1)) end
+
+    Enum.flat_map(unqualified, &by_scope.(Map.get(index.by_name, &1, []), visible)) ++
+      Enum.flat_map(qualified, fn {module, name} -> by_scope.(Map.get(index.by_name, name, []), &scope_named?(&1, module)) end)
+  end
+
+  defp scope_named?(scope, name), do: scope == name or String.ends_with?(scope, "." <> name)
   @doc false
   def reached_program(program) do
     blocks = program |> String.replace("\r\n", "\n") |> String.split("\n") |> program_blocks()
@@ -316,8 +358,9 @@ defmodule Spiral.Kino.Memo do
       header = hd(block_lines)
       code = block_lines |> Enum.map(&strip_line_comment/1) |> Enum.join("\n")
       {kind, names, operators} = block_shape(header, code)
-      tokens = ~r/[A-Za-z_][\w']*/u |> Regex.scan(code) |> List.flatten() |> Enum.uniq() |> Enum.reject(&(&1 in names))
-      %{text: Enum.join(block_lines, "\n"), code: code, kind: kind, names: names, operators: operators, tokens: tokens, instance: Regex.match?(~r/^instance\s/, header)}
+      tokens = @identifier |> Regex.scan(code) |> List.flatten() |> Enum.uniq() |> Enum.reject(&(&1 in names))
+      {unqualified, qualified} = references(code, names)
+      %{text: Enum.join(block_lines, "\n"), code: code, kind: kind, names: names, operators: operators, tokens: tokens, unqualified: unqualified, qualified: qualified, instance: Regex.match?(~r/^instance\s/, header)}
     end)
   end
 
@@ -329,7 +372,7 @@ defmodule Spiral.Kino.Memo do
         {:definition, ["(" <> Enum.at(match, 1) <> ")"], [Enum.at(match, 1)]}
 
       match = Regex.run(~r/^(?:and\s+)?(?:inl|let|inm|inb)(?:\s+rec)?\s+([^\s(:=]+)/u, header) ->
-        {:definition, [Enum.at(match, 1)], []}
+        if Enum.at(match, 1) in ["_", "()"], do: {:other, [], []}, else: {:definition, [Enum.at(match, 1)], []}
 
       match = Regex.run(~r/^(?:and\s+)?(?:type|union|nominal|prototype)(?:\s+rec)?\s+([^\s=]+)/u, header) ->
         cases = ~r/\|\s*([A-Z][\w']*)/u |> Regex.scan(code, capture: :all_but_first) |> List.flatten()

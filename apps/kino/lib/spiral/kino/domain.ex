@@ -64,6 +64,21 @@ defmodule Spiral.Kino.Domain do
     :spiral_kino@domain.to_spir_tested(text)
   end
 
+  def from_spi_bounded(spi, spir, spi_bounds, spir_bounds) do
+    ensure!()
+    :spiral_kino@domain.from_spi_bounded(spi, spir, spi_bounds, spir_bounds)
+  end
+
+  def target_backend(tool) do
+    ensure!()
+    :spiral_kino@domain.target_backend(tool)
+  end
+
+  def target_extension(tool) do
+    ensure!()
+    :spiral_kino@domain.target_extension(tool)
+  end
+
   def from_spi(spi, spir) do
     ensure!()
     :spiral_kino@domain.from_spi(spi, spir)

@@ -494,69 +494,108 @@ defmodule Spiral.Kino.CompilerDaemon do
         {:error, "compiler bridge was not found at #{script}", state}
 
       true ->
-        File.rm(bridge)
+        direct = [dll, "--server-tcp", socket, "--stall-seconds", Integer.to_string(stall_seconds())]
 
-        port =
-          Port.open({:spawn_executable, pwsh}, [
-            :binary,
-            :exit_status,
-            :hide,
-            :stderr_to_stdout,
-            args: [
-              "-NoProfile",
-              "-ExecutionPolicy",
-              "Bypass",
-              "-File",
-              script,
-              "-Dotnet",
-              dotnet,
-              "-Dll",
-              dll,
-              "-Socket",
-              socket,
-              "-WorkDir",
-              Toolchain.workspace(state.toolchain),
-              "-BridgeFile",
-              bridge,
-              "-StallSeconds",
-              Integer.to_string(stall_seconds())
-            ],
-            cd: Toolchain.workspace(state.toolchain),
-            env: port_env(state.toolchain, dotnet)
-          ])
+        relayed = [
+          "-NoProfile",
+          "-ExecutionPolicy",
+          "Bypass",
+          "-File",
+          script,
+          "-Dotnet",
+          dotnet,
+          "-Dll",
+          dll,
+          "-Socket",
+          socket,
+          "-WorkDir",
+          Toolchain.workspace(state.toolchain),
+          "-BridgeFile",
+          bridge,
+          "-StallSeconds",
+          Integer.to_string(stall_seconds())
+        ]
 
-        os_pid =
-          case Port.info(port, :os_pid) do
-            {:os_pid, pid} -> pid
-            _ -> nil
+        opened =
+          if "server-tcp" in host_capabilities(dotnet, dll),
+            do: open_compiler(state, dotnet, direct, socket, bridge, source_dll),
+            else: open_compiler(state, pwsh, relayed, socket, bridge, source_dll, dotnet)
+
+        case opened do
+          {:error, reason, state} -> {:error, "Spiral compiler did not open #{socket}: #{inspect(reason)}", state}
+          started -> started
+        end
+    end
+  end
+
+  @doc false
+  def host_capabilities(dotnet, dll) do
+    key = {__MODULE__, :capabilities, dll, dll_stamp(dll)}
+
+    case :persistent_term.get(key, nil) do
+      nil ->
+        capabilities =
+          case System.cmd(dotnet, [dll, "--capabilities"], stderr_to_stdout: true) do
+            {text, 0} -> text |> String.split() |> Enum.uniq()
+            _ -> []
           end
 
-        server = self()
-        token = make_ref()
-        drainer = spawn_link(fn -> drain(port, server, token) end)
-        _ = Port.connect(port, drainer)
+        :persistent_term.put(key, capabilities)
+        capabilities
 
-        case await_bridge(port, bridge, 30_000) do
-          {:ok, bridge_port} ->
-            compiler = %{
-              port: port,
-              socket: socket,
-              bridge: bridge,
-              bridge_port: bridge_port,
-              os_pid: os_pid,
-              token: token,
-              booted: System.os_time(:second),
-              dll_stamp: dll_stamp(source_dll)
-            }
+      capabilities ->
+        capabilities
+    end
+  rescue
+    _ -> []
+  end
 
-            {:ok, %{state | compiler: compiler}}
+  defp open_compiler(state, exe, args, socket, bridge, source_dll, dotnet \\ nil) do
+    File.rm(bridge)
 
-          {:error, reason} ->
-            if os_pid, do: Runner.kill_tree(os_pid)
-            if Port.info(port), do: Port.close(port)
-            state = take_log(state)
-            {:error, "Spiral compiler did not open #{socket}: #{inspect(reason)}", state}
-        end
+    port =
+      Port.open({:spawn_executable, exe}, [
+        :binary,
+        :exit_status,
+        :hide,
+        :stderr_to_stdout,
+        args: args,
+        cd: Toolchain.workspace(state.toolchain),
+        env: port_env(state.toolchain, dotnet || exe)
+      ])
+
+    os_pid =
+      case Port.info(port, :os_pid) do
+        {:os_pid, pid} -> pid
+        _ -> nil
+      end
+
+    server = self()
+    token = make_ref()
+    drainer = spawn_link(fn -> drain(port, server, token) end)
+    _ = Port.connect(port, drainer)
+
+    case await_bridge(port, bridge, 30_000) do
+      {:ok, bridge_port} ->
+        compiler = %{
+          port: port,
+          socket: socket,
+          bridge: bridge,
+          bridge_port: bridge_port,
+          os_pid: os_pid,
+          token: token,
+          relayed: dotnet != nil,
+          booted: System.os_time(:second),
+          dll_stamp: dll_stamp(source_dll)
+        }
+
+        IO.puts("#{clock()} compiler pid=#{os_pid} port=#{bridge_port} #{if compiler.relayed, do: "relayed through compiler_bridge.ps1", else: "direct"}")
+        {:ok, %{state | compiler: compiler}}
+
+      {:error, reason} ->
+        if os_pid, do: Runner.kill_tree(os_pid)
+        if Port.info(port), do: Port.close(port)
+        {:error, reason, take_log(state)}
     end
   end
 

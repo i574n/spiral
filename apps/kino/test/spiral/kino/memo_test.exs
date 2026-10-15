@@ -139,6 +139,15 @@ defmodule Spiral.Kino.MemoTest do
     File.write!(Path.join(package, "implicit.spi"), "instance equable thing = fun x y => false\n")
     refute key.() == second
   end
+  test "a test body bound to _ (no trailing assertion) is part of the key, so two such tests never share a result" do
+    key = fn body ->
+      step = %{program: "inl cols () = 1i32\ninl lines () = 2i32\ninl spiral_kino_test () =\n    #{body}\ninl _ = spiral_kino_test ()\n0i32\n", real: ""}
+      Memo.key(Memo.context([memo: true, memo_dir: Spiral.Kino.TestHelpers.tmp_dir!("discard")], [step]), step, [])
+    end
+
+    refute key.("cols () |> console.write_line") == key.("lines () |> console.write_line")
+    assert Memo.reached_program("inl f () = 1i32\ninl _ = f ()\n0i32\n") =~ "inl f () = 1i32"
+  end
   test "the step keyed on the whole source changes with any definition, so an edit that only breaks unreached code still compiles once" do
     program = fn unused -> "inl helper () = 1i32\ninl unused () = #{unused}\ninl spiral_kino_test () = helper ()\nspiral_kino_test ()\n" end
     context = fn step -> Memo.context([memo: true, memo_dir: Spiral.Kino.TestHelpers.tmp_dir!("whole")], [step]) end
@@ -147,6 +156,28 @@ defmodule Spiral.Kino.MemoTest do
     assert reached.("1i32") == reached.("(")
     refute whole.("1i32") == whole.("(")
   end
+  test "an unqualified name resolves in opened modules and modules the code opens; m.x only in module m", %{package: package} do
+    File.write!(Path.join(package, "package.spiproj"), "packages:\n    |core-\nmodules:\n    listed-\n    sub/\n        inner\n    other\n    user\n")
+    File.write!(Path.join(package, "other.spi"), "inl a () = 1i32\ninl slice () = 1i32\n")
+    File.write!(Path.join(package, "user.spi"), "open other\ninl through () = slice ()\n")
+
+    key_of = fn body ->
+      step = %{program: "///- --package #{package}\n\n#{body}\n", real: ""}
+      fn -> Memo.key(Memo.context([memo: true, memo_dir: Path.join(package, "memo")], [step]), step, []) end
+    end
+
+    edit_other = fn value -> File.write!(Path.join(package, "other.spi"), "inl a () = #{value}i32\ninl slice () = #{value}i32\n") end
+    unqualified = key_of.("inl main () = a ()")
+    opened = key_of.("open other\ninl main () = a ()")
+    qualified = key_of.("inl main () = other.a ()")
+    field = key_of.("inl main () = record.slice")
+    through_module = key_of.("inl main () = user.through ()")
+    before = Enum.map([unqualified, opened, qualified, field, through_module], & &1.())
+    edit_other.(7)
+    after_edit = Enum.map([unqualified, opened, qualified, field, through_module], & &1.())
+    assert Enum.zip(before, after_edit) |> Enum.map(fn {b, a} -> b == a end) == [true, false, false, true, false]
+  end
+
   test "inserting an unreached definition between reached ones in a package module keeps the key", %{package: package} do
     File.write!(Path.join(package, "listed.spi"), "inl a () = 1i32\ninl z () = a ()\n")
     step = %{program: "///- --package #{package}\n\ninl main () = z ()\n", real: ""}

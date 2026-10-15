@@ -97,6 +97,7 @@ inl append_real (x : string) (s : string) : string =
         Lean = (fun () => $'(!s ++ !x)' : string) : () -> string
         C = (fun () => !!!!StaticStringConcat(s, x)) : () -> string
         Delphi = (fun () => $'!s + !x ' : string) : () -> string
+        Bend = (fun () => !!!!StaticStringConcat(s, x)) : () -> string
     }
 
 /// ### append

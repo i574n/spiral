@@ -288,12 +288,14 @@ function Invoke-Native([string]$exe, [string[]]$arguments, [string]$workDir, [in
         if (-not $pathKey) { $pathKey = 'PATH' }
         $info.Environment[$pathKey] = $PathPrefix + [IO.Path]::PathSeparator + $info.Environment[$pathKey]
     }
+    $nativeCallWatch = [Diagnostics.Stopwatch]::StartNew()
     $p = [Diagnostics.Process]::Start($info)
     $p.StandardInput.Close()
     $out = $p.StandardOutput.ReadToEndAsync()
     $err = $p.StandardError.ReadToEndAsync()
     if (-not $p.WaitForExit($timeoutSec * 1000)) { try { $p.Kill($true) } catch { }; return [pscustomobject]@{ Exit = 'timeout'; Out = ''; Err = '' } }
     $p.WaitForExit() | Out-Null
+    $global:SpiralLastNativeMs = [int]$nativeCallWatch.Elapsed.TotalMilliseconds
     $code = $p.ExitCode
     if (-not [Threading.Tasks.Task]::WaitAll([Threading.Tasks.Task[]]@($out, $err), 15000)) {
         # The process has exited. A child can keep the redirected pipes open (mingw gcc does this).
@@ -380,6 +382,13 @@ function Build-And-Run($job) {
     }
     if ($job.Backend -eq 'Swift') {
         if (-not $tools.Swiftc -or -not $tools.SwiftSdk -or -not $tools.SwiftRuntime) { return 'no-toolchain' }
+        if ($swiftBatchExe -and $swiftBatch.ContainsKey($job.Output)) {
+            $entry = $swiftBatch[$job.Output]
+            $run = Invoke-Native $entry.Exe @($entry.Slot) $binDir 60 $tools.SwiftRuntime
+            $stdout = ($run.Out -replace "`r`n", "`n").TrimEnd()
+            $sha = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($stdout))).ToLowerInvariant().Substring(0, 16)
+            return [pscustomobject]@{ Status = 'ran'; Exit = [string]$run.Exit; Stdout = $sha; Detail = '' }
+        }
         $exe = Join-Path $binDir ($(if ($IsWindows) { 'main.exe' } else { 'main' }))
         Remove-Item -LiteralPath $exe -ErrorAction SilentlyContinue
         $build = Invoke-Native $tools.Swiftc @('-O', '-sdk', $tools.SwiftSdk, '-o', $exe, $job.Output) $binDir 180
@@ -421,6 +430,19 @@ function Build-And-Run($job) {
     if ($job.Backend -eq 'Wasm') {
         if (-not $tools.Wasmtime) { return 'no-toolchain' }
         $run = Invoke-Native $tools.Wasmtime @('run', '-W', 'max-wasm-stack=1073741824', $job.Output) $binDir 60
+        $wasiStart = '(call $proc_exit (call $spiralMain))'
+        if ("$($run.Exit)" -eq '1' -and $run.Err -match 'exit with invalid exit status outside of \[0\.\.126\)') {
+            $module = [IO.File]::ReadAllText($job.Output)
+            if ($module.Contains($wasiStart)) {
+                $splitRuns = @(foreach ($split in @(@('high', '(call $proc_exit (i32.shr_u (call $spiralMain) (i32.const 4)))'), @('low', '(call $proc_exit (i32.and (call $spiralMain) (i32.const 15)))'))) {
+                    $splitModule = Join-Path $binDir "exit-$($split[0]).wat"
+                    [IO.File]::WriteAllText($splitModule, $module.Replace($wasiStart, $split[1]))
+                    Invoke-Native $tools.Wasmtime @('run', '-W', 'max-wasm-stack=1073741824', $splitModule) $binDir 60
+                })
+                $splitClean = @($splitRuns | Where-Object { "$($_.Exit)" -match '^\d+$' -and "$($_.Err)" -notmatch 'exit with invalid exit status' }).Count -eq 2
+                if ($splitClean) { $run.Exit = [int]$splitRuns[0].Exit * 16 + [int]$splitRuns[1].Exit }
+            }
+        }
         if ("$($run.Exit)" -ne '0' -and $run.Err -match '\.wat:\d+:\d+|Invalid input WebAssembly|failed to compile: wasm') {
             $msg = (($run.Err -split "`n" | Where-Object { $_.Trim() } | Select-Object -First 3) -join ' / ') -replace '\s+', ' '
             return [pscustomobject]@{ Status = 'build-fail'; Exit = ''; Stdout = ''; Detail = $msg.Substring(0, [Math]::Min(300, $msg.Length)) }
@@ -466,6 +488,14 @@ function Build-And-Run($job) {
         if (-not $tools.Gleam -or -not $tools.Erl) { return 'no-toolchain' }
         $erlBin = Split-Path $tools.Erl
         if (-not (($env:PATH -split [IO.Path]::PathSeparator) -contains $erlBin)) { $env:PATH = "$erlBin$([IO.Path]::PathSeparator)$env:PATH" }
+        $batched = if ($gleamBuilds) { $gleamBuilds[$job.Key] } else { $null }
+        if ($batched) {
+            if ($batched.Failure) { return [pscustomobject]@{ Status = 'build-fail'; Exit = ''; Stdout = ''; Detail = $batched.Failure.Substring(0, [Math]::Min(300, $batched.Failure.Length)) } }
+            $run = Invoke-Native $tools.Erl (@('-noshell', '-pa') + $batched.Ebin + @('-eval', "spiral_exit:halt($($batched.Module):main()).")) $batched.Project 180
+            $stdout = ($run.Out -replace "`r`n", "`n").TrimEnd()
+            $sha = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($stdout))).ToLowerInvariant().Substring(0, 16)
+            return [pscustomobject]@{ Status = 'ran'; Exit = [string]$run.Exit; Stdout = $sha; Detail = '' }
+        }
         $project = Join-Path $scratch "gleam-native-$nativeLane"
         if (-not (Test-Path (Join-Path $project 'gleam.toml'))) { Copy-Item (Join-Path $shimDir 'gleam') $project -Recurse -Force }
         $programFile = Join-Path $project 'src/main.gleam'
@@ -561,6 +591,86 @@ if ($Native) {
         }
         Write-Host ("== kotlin server: {0} of {1} compiled in {2:N1}s" -f @($kotlinBuilds.Values | Where-Object Exit -eq 'OK').Count, $kotlinJobs.Count, $kotlinWatch.Elapsed.TotalSeconds)
     }
+    $swiftBatch = @{}
+    $swiftBatchExe = ''
+    $swiftJobs = @($nativeJobs | Where-Object Backend -eq 'Swift')
+    if ($swiftJobs.Count -gt 1 -and $tools.Swiftc -and $tools.SwiftSdk -and $tools.SwiftRuntime) {
+        $swiftWatch = [Diagnostics.Stopwatch]::StartNew()
+        $swiftDir = Join-Path $scratch "swift-batch-$stamp"
+        Remove-Item -LiteralPath $swiftDir -Recurse -Force -ErrorAction SilentlyContinue
+        New-Item -ItemType Directory -Force $swiftDir | Out-Null
+        $swiftChunkSize = 16
+        $swiftChunks = for ($first = 0; $first -lt $swiftJobs.Count; $first += $swiftChunkSize) {
+            $chunkDir = Join-Path $swiftDir "chunk$first"
+            New-Item -ItemType Directory -Force $chunkDir | Out-Null
+            $members = @($swiftJobs[$first..([Math]::Min($first + $swiftChunkSize, $swiftJobs.Count) - 1)])
+            $cases = for ($slot = 0; $slot -lt $members.Count; $slot++) {
+                $wrapped = foreach ($line in [IO.File]::ReadAllLines($members[$slot].Output)) {
+                    if ($line -eq 'import CRT' -or $line -eq 'exit(spiral_main())') { continue }
+                    if ($line -match '^(func|var|let) ') { "    static $line"; continue }
+                    "    $line"
+                }
+                [IO.File]::WriteAllText((Join-Path $chunkDir "s$slot.swift"), "import CRT`nenum SpiralBatch$slot {`n" + ($wrapped -join "`n") + "`n}`n")
+                "case `"$slot`": exit(SpiralBatch$slot.spiral_main())"
+            }
+            [IO.File]::WriteAllText((Join-Path $chunkDir 'main.swift'), "import CRT`nswitch CommandLine.arguments[1] {`n" + ($cases -join "`n") + "`ndefault: exit(99)`n}`n")
+            [pscustomobject]@{ Dir = $chunkDir; Outputs = @($members | ForEach-Object Output); Exe = Join-Path $chunkDir $(if ($IsWindows) { 'batch.exe' } else { 'batch' }) }
+        }
+        $swiftTools = $tools
+        $swiftBuilt = $swiftChunks | ForEach-Object -ThrottleLimit ([Math]::Max(1, $laneCount)) -Parallel {
+            $chunk = $_
+            $tools = $using:swiftTools
+            $sources = @(Join-Path $chunk.Dir 'main.swift') + @(0..($chunk.Outputs.Count - 1) | ForEach-Object { Join-Path $chunk.Dir "s$_.swift" })
+            & $tools.Swiftc -O -no-whole-module-optimization -j 2 -sdk $tools.SwiftSdk -o $chunk.Exe @sources *> (Join-Path $chunk.Dir 'build.log')
+            [pscustomobject]@{ Chunk = $chunk; Ok = ($LASTEXITCODE -eq 0 -and (Test-Path -LiteralPath $chunk.Exe)) }
+        }
+        foreach ($built in @($swiftBuilt | Where-Object Ok)) {
+            for ($slot = 0; $slot -lt $built.Chunk.Outputs.Count; $slot++) { $swiftBatch[$built.Chunk.Outputs[$slot]] = [pscustomobject]@{ Exe = $built.Chunk.Exe; Slot = "$slot" } }
+        }
+        $swiftBatchExe = if ($swiftBatch.Count) { 'chunked' } else { '' }
+        Write-Host ("== swift batch: {0} of {1} programs built in {2} chunks of {3} in {4:N1}s; the rest build on their own" -f $swiftBatch.Count, $swiftJobs.Count, @($swiftChunks).Count, $swiftChunkSize, $swiftWatch.Elapsed.TotalSeconds)
+    }
+    $gleamBuilds = @{}
+    $gleamJobs = @($nativeJobs | Where-Object Backend -eq 'Gleam')
+    if ($gleamJobs.Count -and $tools.Gleam -and $tools.Erl) {
+        $gleamWatch = [Diagnostics.Stopwatch]::StartNew()
+        $erlBin = Split-Path $tools.Erl
+        if (-not (($env:PATH -split [IO.Path]::PathSeparator) -contains $erlBin)) { $env:PATH = "$erlBin$([IO.Path]::PathSeparator)$env:PATH" }
+        $gleamBatch = Join-Path $scratch "gleam-batch-$stamp"
+        Remove-Item -LiteralPath $gleamBatch -Recurse -Force -ErrorAction SilentlyContinue
+        Copy-Item (Join-Path $shimDir 'gleam') $gleamBatch -Recurse -Force
+        Remove-Item -LiteralPath (Join-Path $gleamBatch 'src/spiral_run.gleam')
+        $gleamModules = @{}
+        for ($i = 0; $i -lt $gleamJobs.Count; $i++) {
+            $module = 'spiral_row_{0:D4}' -f $i
+            $gleamModules[$module] = $gleamJobs[$i]
+            Copy-Item -LiteralPath $gleamJobs[$i].Output (Join-Path $gleamBatch "src/$module.gleam")
+        }
+        $gleamFailures = @{}
+        for ($round = 0; $round -le $gleamJobs.Count; $round++) {
+            $gleamBuild = Invoke-Native $tools.Gleam @('build', '--no-print-progress') $gleamBatch 900
+            if ("$($gleamBuild.Exit)" -eq '0') { break }
+            $failedNow = @{}
+            $lastError = $null
+            foreach ($line in (($gleamBuild.Out + "`n" + $gleamBuild.Err) -split "`r?`n")) {
+                if ($line -match '^error: (.*)') { $lastError = $Matches[1] }
+                elseif ($line -match '^warning: ') { $lastError = $null }
+                elseif ($lastError -and $line -match 'src[\\/](spiral_row_\d{4})\.gleam' -and -not $failedNow.ContainsKey($Matches[1])) { $failedNow[$Matches[1]] = $lastError }
+            }
+            if (-not $failedNow.Count) { $gleamFailures = $null; break }
+            foreach ($module in $failedNow.Keys) {
+                $gleamFailures[$module] = $failedNow[$module]
+                Remove-Item -LiteralPath (Join-Path $gleamBatch "src/$module.gleam")
+            }
+        }
+        if ($null -ne $gleamFailures) {
+            $gleamEbin = @(Get-ChildItem (Join-Path $gleamBatch 'build/dev/erlang') -Directory | ForEach-Object { Join-Path $_.FullName 'ebin' })
+            foreach ($module in $gleamModules.Keys) {
+                $gleamBuilds[$gleamModules[$module].Key] = [pscustomobject]@{ Module = $module; Project = $gleamBatch; Ebin = $gleamEbin; Failure = $gleamFailures[$module] }
+            }
+        }
+        Write-Host ("== gleam batch: {0} of {1} built in {2:N1}s{3}" -f ($gleamJobs.Count - $(if ($gleamFailures) { $gleamFailures.Count } else { 0 })), $gleamJobs.Count, $gleamWatch.Elapsed.TotalSeconds, $(if ($null -eq $gleamFailures) { '; unattributed build error, rows build one by one' } else { '' }))
+    }
     $laneFunctions = @{ 'Build-And-Run' = ${function:Build-And-Run}.ToString(); 'Invoke-Native' = ${function:Invoke-Native}.ToString(); 'Get-CFlags' = ${function:Get-CFlags}.ToString() }
     if (-not ('Spiral.NativeErrorMode' -as [type])) {
         Add-Type -Namespace Spiral -Name NativeErrorMode -MemberDefinition @'
@@ -573,15 +683,18 @@ public static extern uint SetErrorMode(uint mode);
     $laneResults = $lanes | ForEach-Object -ThrottleLimit ([Math]::Max(1, $lanes.Count)) -Parallel {
         foreach ($f in ($using:laneFunctions).GetEnumerator()) { Set-Item "function:$($f.Key)" -Value ([scriptblock]::Create($f.Value)) }
         $nativeLane = $_.Lane
-        $kotlinBuilds = $using:kotlinBuilds; $kotlinStdlib = $using:kotlinStdlib
+        $kotlinBuilds = $using:kotlinBuilds; $kotlinStdlib = $using:kotlinStdlib; $gleamBuilds = $using:gleamBuilds
+        $swiftBatch = $using:swiftBatch; $swiftBatchExe = $using:swiftBatchExe
         $tools = $using:tools; $zigExe = $using:zigExe; $zigCacheGen = 0; $zigCache = "$($using:zigCache)-lane$nativeLane"
         $scratch = $using:scratch; $shimDir = $using:shimDir; $cFlagRules = $using:cFlagRules; $stamp = $using:stamp
         $laneResult = @{}
         foreach ($job in $_.Jobs) {
             $jobWatch = [Diagnostics.Stopwatch]::StartNew()
+            $global:SpiralLastNativeMs = $null
             $r = Build-And-Run $job
             if ($r -is [string]) { $r = [pscustomobject]@{ Status = $r; Exit = ''; Stdout = ''; Detail = '' } }
             $r | Add-Member -NotePropertyName Ms -NotePropertyValue ([int]$jobWatch.Elapsed.TotalMilliseconds) -Force
+            $r | Add-Member -NotePropertyName RunMs -NotePropertyValue $global:SpiralLastNativeMs -Force
             $laneResult[$job.Key] = $r
             Write-Host ("native {0} {1}: {2} exit {3} ({4:N1}s)" -f $job.Id, $job.Backend, $r.Status, $r.Exit, $jobWatch.Elapsed.TotalSeconds)
         }
@@ -607,16 +720,30 @@ $rows = foreach ($job in $jobs) {
         residual = if ($residual) { $residual.Substring(0, 16) } else { '' }
         native = if ($n) { $n.Status } else { '' }; native_ms = if ($n) { $n.Ms } else { '' }; exit = if ($n) { $n.Exit } else { '' }; stdout = if ($n) { $n.Stdout } else { '' }
         oracle = ''; baseline = ''; detail = (($c.Detail + ' ' + $(if ($n) { $n.Detail } else { '' })) -replace '\s+', ' ').Trim()
+        run_ms = if ($n) { $n.RunMs } else { '' }
     }
 }
 $rows = @($rows)
 
+function Test-FailureExit([string]$backend, [string]$exit) {
+    $code = 0L
+    if (-not [long]::TryParse($exit, [ref]$code)) { return $false }
+    if ($code -lt 0 -or $code -ge 3221225472L) { return $true }
+    if ($code -in 1, 3, 134) { return $true }
+    if ($backend -eq 'Rust' -and $code -eq 101) { return $true }
+    if ($backend -eq 'Delphi' -and $code -in @(200..219) + @(227, 229, 231, 232)) { return $true }
+    $false
+}
+function Test-SharedFailure($c, $row) {
+    if ($c.exit -eq 'timeout' -or $row.exit -eq 'timeout') { return $c.exit -eq 'timeout' -and $row.exit -eq 'timeout' }
+    (Test-FailureExit $c.backend $c.exit) -and (Test-FailureExit $row.backend $row.exit)
+}
 $byId = $rows | Group-Object id -AsHashTable
 $known = @{}
 $harness.Known | ForEach-Object { $known["$($_.Id)|$($_.Backend)"] = $_.Reason }
 foreach ($row in $rows | Where-Object { $_.backend -in 'Rust', 'Delphi', 'Zig', 'Wasm', 'Wgsl', 'Calyx', 'Kotlin', 'Swift', 'OpenQasm', 'Ebpf', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python' -and $_.native -eq 'ran' }) {
     $c = $byId[$row.id] | Where-Object { $_.backend -eq 'C' -and $_.native -eq 'ran' } | Select-Object -First 1
-    $bothFailed = $c -and $c.exit -ne '0' -and $row.exit -ne '0' -and $c.exit -ne 'timeout' -and $row.exit -ne 'timeout'
+    $bothFailed = $c -and (Test-SharedFailure $c $row)
     $row.oracle =
         if (-not $c) { 'no-c' }
         elseif ($c.exit -eq $row.exit -and $c.stdout -eq $row.stdout) { 'agree' }
@@ -628,8 +755,13 @@ foreach ($row in $rows) {
     if ($reason -and ($row.oracle -eq 'DISAGREE' -or $row.native -eq 'build-fail')) { $row.oracle = 'known'; $row.detail = "known: $reason; $($row.detail)" }
 }$jobOutput = @{}
 foreach ($job in $jobs) { $jobOutput[$job.Key] = $job.Output }
+$expectedErrors = @{}
+foreach ($entry in @($harness.ExpectedErrors)) { if ($entry) { $expectedErrors[$entry.Id] = $entry.Contains } }
+foreach ($row in $rows | Where-Object { $_.compile -eq 'error' -and $expectedErrors.ContainsKey($_.id) }) {
+    if (-not "$($row.detail)".Contains($expectedErrors[$row.id])) { $row.oracle = 'WRONG-ERROR'; $row.detail = "wrong error: expected text '$($expectedErrors[$row.id])'; $($row.detail)" }
+}
 $cOnlyHelper = 'DynamicArray(Reserve|Resize|Capacity)\d|spiral_abi_lib|\(\(uint8_t\)'
-foreach ($row in $rows | Where-Object { $_.backend -ne 'C' -and ($_.oracle -eq 'DISAGREE' -or $_.native -eq 'build-fail') }) {
+foreach ($row in $rows | Where-Object { $_.backend -ne 'C' -and $_.native -eq 'build-fail' }) {
     $output = $jobOutput["$($row.id)|$($row.backend)"]
     if ($output -and (Test-Path $output) -and (Select-String -LiteralPath $output -Pattern $cOnlyHelper -Quiet)) { $row.oracle = 'c-only'; $row.detail = "c-only: the sample uses a C-only helper; $($row.detail)" }
 }
@@ -675,7 +807,7 @@ if ($Native) {
     Write-Host ("native: {0} ran, {1} build-fail, oracle agree {2}, DISAGREE {3}" -f (Count $nat { $_.native -eq 'ran' }), (Count $nat { $_.native -eq 'build-fail' }),
         (Count $rows { $_.oracle -eq 'agree' }), (Count $rows { $_.oracle -eq 'DISAGREE' }))
 }
-$bad = @($rows | Where-Object { $_.baseline -in 'REGRESSED', 'NATIVE-DIFF' -or ($mode -ne 'gpt5parallel' -and $_.baseline -eq 'UNEXPECTED-OUTPUT') -or $_.oracle -eq 'DISAGREE' })
+$bad = @($rows | Where-Object { $_.baseline -in 'REGRESSED', 'NATIVE-DIFF' -or ($mode -ne 'gpt5parallel' -and $_.baseline -eq 'UNEXPECTED-OUTPUT') -or $_.oracle -eq 'DISAGREE' -or $_.oracle -eq 'WRONG-ERROR' })
 foreach ($b in $bad | Select-Object -First 20) { Write-Host "  !! $($b.id) [$($b.backend)] $($b.baseline) $($b.oracle) $($b.detail)" -ForegroundColor Red }
 Write-Host "results: $resultPath"
 Write-Host "outputs: written next to their sources; git diff samples shows what changed"
@@ -688,7 +820,15 @@ if ($Bless) {
     if ($skipped) { Write-Host "not blessed: $skipped timeout row(s), they keep their previous oracle entry" -ForegroundColor Yellow }
     $fresh = @{}
     foreach ($row in $blessable) { $fresh["$($row.id)|$($row.backend)"] = $row }
-    $merged = @($existing | Where-Object { -not $fresh.ContainsKey("$($_.id)|$($_.backend)") }) + @($blessable | ForEach-Object {
+    $scheduled = @{}
+    if ($Suite -contains 'all' -and -not $Filter) { foreach ($sample in $samples) { $scheduled[$sample.Id] = @($scheduled[$sample.Id]) + @($sample.Backends) | Where-Object { $_ } | Select-Object -Unique } }
+    $unscheduled = @($existing | Where-Object { $scheduled.ContainsKey($_.id) -and $scheduled[$_.id] -notcontains $_.backend })
+    if ($unscheduled) {
+        Write-Host "dropped $($unscheduled.Count) oracle row(s) whose backend the harness no longer schedules for the sample:" -ForegroundColor Yellow
+        $unscheduled | ForEach-Object { Write-Host "  $($_.id) [$($_.backend)]" }
+    }
+    $kept = @($existing | Where-Object { -not $fresh.ContainsKey("$($_.id)|$($_.backend)") -and -not ($scheduled.ContainsKey($_.id) -and $scheduled[$_.id] -notcontains $_.backend) })
+    $merged = $kept + @($blessable | ForEach-Object {
         [pscustomobject]@{ id = $_.id; backend = $_.backend; compile = $_.compile; residual = $_.residual; native = $_.native; exit = $_.exit; stdout = $_.stdout } })
     New-Item -ItemType Directory -Force (Split-Path $expectedPath) | Out-Null
     $merged | Sort-Object id, backend | Export-Csv $expectedPath -Delimiter "`t" -NoTypeInformation -UseQuotes Never

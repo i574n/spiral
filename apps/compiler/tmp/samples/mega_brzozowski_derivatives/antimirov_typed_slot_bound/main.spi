@@ -373,3 +373,5 @@ inl main () : string =
             (tri_ab_star_then_c ()))
         "ternary cat/alt/star support must fit the typed root-plus-position slot universe"
     "brzozowski-antimirov-typed-slot-bound-green"
+
+type root_bit_alphabet = bit_alphabet

@@ -471,3 +471,7 @@ inl main () : string =
     ) "a failed verification capability must not manufacture the verified derivative phase"
 
     "brzozowski-antimirov-certificate-green"
+
+type root_bit_alphabet = bit_alphabet
+inl root_ends_with_zero () = ends_with_zero ()
+inl root_zero () = zero ()

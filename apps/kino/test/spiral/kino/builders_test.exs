@@ -102,4 +102,25 @@ defmodule Spiral.Kino.BuildersTest do
     assert Enum.any?(commands, &(&1.tool == :skip))
     assert body == "1i32"
   end
+
+  test "every target names its compiler backend and file extension from the Spiral domain table" do
+    table = %{
+      rust: {"Rust", ".rs"},
+      fsharp: {"Fsharp", ".fsx"},
+      typescript: {"TypeScript", ".ts"},
+      python: {"Python + Cuda", ".py"},
+      cuda: {"Python + Cuda", ".py"},
+      cpp: {"Cpp + Cuda", ".cpp"},
+      gleam: {"Gleam", ".gleam"},
+      lua: {"Lua", ".lua"},
+      c: {"C", ".c"},
+      delphi: {"Delphi", ".pas"},
+      zig: {"Zig", ".zig"},
+      lean: {"Lean", ".lean"},
+      wgsl: {"Wgsl", ".wgsl"}
+    }
+
+    for {tool, expected} <- table, do: assert({Builders.backend(%{tool: tool}), Builders.ext(%{tool: tool})} == expected)
+    assert_raise ArgumentError, fn -> Builders.backend(%{tool: :skip}) end
+  end
 end

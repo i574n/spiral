@@ -1,8 +1,8 @@
 inl main () : i32 =
-    inl ~n = 2i32
-    inl ~buffer : array u8 = create n
+    inl ~buffer_length = 2i32
+    inl ~buffer : array u8 = create buffer_length
     set buffer 0i32 0
     set buffer 1i32 0
     inl ~byte_value = 65i32
-    inl ~count = 3i32
-    $"spiral_abi_libc_memset(!buffer,!byte_value,!count)" : i32
+    inl ~requested_bytes = 3i32
+    $"spiral_abi_libc_memset(!buffer,!byte_value,!requested_bytes)" : i32

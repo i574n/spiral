@@ -126,8 +126,11 @@ compiled code (`elixir -pa _build/<env>/lib/*/ebin -e Spiral.Kino.CompilerDaemon
 mix's build lock; `mix spiral.compiler_daemon` when nothing is compiled), on `127.0.0.1:13905` (or `SPIRAL_KINO_COMPILER_PORT`), and it keeps running after the
 Livebook session ends so later sessions reuse it. `SPIRAL_KINO_COMPILER=process` opts out: each cell then starts its
 own compiler process, and no daemon is started. Passing any of `:compiler_dll`, `:dotnet`, `:package_dir`,
-`:workspace` or `:env` also compiles in a separate process. `SPIRAL_KINO_BRIDGE_TRACE=1` makes the daemon's socket
-bridge log every request and response to `<socket>.trace` (off by default).
+`:workspace` or `:env` also compiles in a separate process. A compiler whose `--capabilities` lists `server-tcp` runs as
+`SpiralCompiler.dll --server-tcp <socket> --stall-seconds N`: it listens on loopback TCP itself and its own watchdog answers
+`compiler stalled` when a compile makes no CPU progress, so no relay process runs beside it (the daemon log says `direct`).
+An older compiler runs behind `priv/compiler_bridge.ps1`; `SPIRAL_KINO_BRIDGE_TRACE=1` makes that socket bridge log every
+request and response to `<socket>.trace` (off by default).
 After each compile the daemon checks its .NET compiler server: past the memory cap (working set) or the compile
 count it stops it, logs `compiler recycled after ...`, and the next compile starts a fresh one (a cold compile).
 The daemon itself, its port and its queue stay up. The compiler server runs from a shadow copy of the compiler's directory
@@ -156,6 +159,7 @@ these blocks. `parse_spi/2` reads a `.spi` and its `_real.spir` back into cells,
 so `run_notebook.ps1 --path x.spi` runs a source file as a notebook without writing over it. The `_real.spir` cells
 go in after the same heading of the `.spi` (headings match by text; real cells come first within a section), so
 `to_spi_tested/1` and `to_spir_tested/1` give both files back.
+`parse_spi/3` also takes the compiler's test-block bounds for the `.spi` and the `_real.spir` (rows of name, header row, first and last body row): a test body then runs to the row the compiler's tokenizer ends it at, so a column-0 continuation line of a `"""` string or a `(* *)` comment stays in the test.
 `///` doc runs come back as markdown cells, and a `#### name (test)` heading is added only where a test's
 name would not follow from the heading above it, so `--path x.spi --livemd-path x.livemd --export-only`
 writes a Livebook view of the file and `--path x.livemd --export-only --with-tests --spi-path x.spi`
@@ -355,7 +359,8 @@ returns `%{status, outputs, durations, verdicts, unavailable, report}` by cell i
 `run_report/2` is `run/2` that also returns the report.
 
 A cell's `///- --timeout <ms>` directive is its budget. It wins over the smart cell's `timeout` field (a smart cell
-always passes one) and over the 300 s default.
+always passes one) and over the 300 s default. The first Spiral cell's `--timeout` (in a `.spi`, the file's first `///-` line)
+is also the budget of every test cell without its own and of the whole-file run.
 
 ### F# cells (`Spiral.Kino.FsiSession`, `Spiral.Kino.FsiChain`)
 

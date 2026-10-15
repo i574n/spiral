@@ -619,13 +619,27 @@ defmodule Spiral.Kino.Targets do
 
   defp json_map(_), do: nil
 
-  defp tool_env(_opts, false), do: System.get_env() |> Enum.to_list()
+  @cupy_missing_cuda_path_warning "ignore:CUDA path could not be detected:UserWarning"
+
+  defp tool_env(_opts, false), do: System.get_env() |> Enum.to_list() |> without_cupy_cuda_path_warning()
 
   defp tool_env(_opts, true) do
     System.get_env()
     |> Enum.to_list()
     |> List.keystore("SPIRAL_JSON", 0, {"SPIRAL_JSON", "1"})
     |> List.keystore("TRACE_LEVEL", 0, {"TRACE_LEVEL", "Info"})
+    |> without_cupy_cuda_path_warning()
+  end
+
+  @doc false
+  def without_cupy_cuda_path_warning(env) do
+    filters =
+      case List.keyfind(env, "PYTHONWARNINGS", 0) do
+        {_, existing} when existing not in [nil, ""] -> existing <> "," <> @cupy_missing_cuda_path_warning
+        _ -> @cupy_missing_cuda_path_warning
+      end
+
+    List.keystore(env, "PYTHONWARNINGS", 0, {"PYTHONWARNINGS", filters})
   end
 
   defp work_dir([], exe), do: Path.dirname(exe)

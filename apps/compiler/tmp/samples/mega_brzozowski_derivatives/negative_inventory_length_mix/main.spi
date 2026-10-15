@@ -1,9 +1,8 @@
 open inventory_indexed_model
 
-inl impossible_vector () : finite_symbol_vector tri_alphabet model_two_length =
-    tri_finite_symbol_vector ()
+inl impossible_vector () : root_finite_symbol_vector root_tri_alphabet model_two_length =
+    root_tri_finite_symbol_vector ()
 
 inl main () : bool =
-    match impossible_vector () with
-    | FiniteSymbolVectorNil => false
-    | FiniteSymbolVectorCons _ => true
+    inl _ = impossible_vector ()
+    true

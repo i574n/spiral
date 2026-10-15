@@ -558,4 +558,14 @@ defmodule Spiral.Kino.DocumentTest do
       assert Enum.any?(doc.cells, &(&1.source == "///- --test\n\nfailwith \"malformed test header: " <> escaped <> "\" : ()"))
     end
   end
+
+  test "compiler test-block bounds keep a column-0 string continuation inside its test" do
+    spi = "inl x () = 1i32\n\ntest multi =\n    inl s = \"\"\"a\nb\"\"\"\n    s |> _assert_eq \"a\\nb\"\n\ninl y () = 2i32\n"
+    test_source = fn doc -> doc.cells |> Enum.filter(&String.starts_with?(&1.source, "///- --test")) |> Enum.map(& &1.source) end
+    assert [heuristic] = test_source.(Document.parse_spi(spi, ""))
+    refute heuristic =~ "_assert_eq"
+    assert [bounded] = test_source.(Document.parse_spi(spi, "", {"multi\t3\t4\t6\ttest multi =\n", ""}))
+    assert bounded =~ "inl s = \"\"\"a\nb\"\"\"\ns |> _assert_eq"
+    assert Enum.any?(Document.parse_spi(spi, "", {"multi\t3\t4\t6\ttest multi =\n", ""}).cells, &(&1.source =~ "inl y () = 2i32"))
+  end
 end

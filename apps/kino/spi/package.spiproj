@@ -6,4 +6,5 @@ modules:
     directives
     document
     notebook
+    targets
     main

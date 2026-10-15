@@ -21,7 +21,7 @@ inl run (v : visitor) : i32 =
 
 inl main () : i32 =
     inl ~n = 10u64
-    inl total = sum (build n) 0
+    inl stream_sum_55 = sum (build n) 0
     inl ~k = 5i32
     inl v = Visit (k, fun self => match self with Visit (x, _) => x * 2 | Stop => 1)
-    !!!!Conv(`i32, total) + run v
+    !!!!Conv(`i32, stream_sum_55) + run v

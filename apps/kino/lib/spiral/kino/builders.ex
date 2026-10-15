@@ -88,42 +88,13 @@ defmodule Spiral.Kino.Builders do
   def host_rust?(_), do: false
 
   @spec backend(map()) :: String.t()
-  def backend(%{tool: tool}) do
-    case tool do
-      :rust -> "Rust"
-      :fsharp -> "Fsharp"
-      :typescript -> "TypeScript"
-      :python -> "Python + Cuda"
-      :cuda -> "Python + Cuda"
-      :cpp -> "Cpp + Cuda"
-      :gleam -> "Gleam"
-      :lua -> "Lua"
-      :c -> "C"
-      :delphi -> "Delphi"
-      :zig -> "Zig"
-      :lean -> "Lean"
-      :wgsl -> "Wgsl"
-    end
-  end
+  def backend(%{tool: tool}), do: tool |> Atom.to_string() |> Spiral.Kino.Domain.target_backend() |> known_target(tool)
 
   @spec ext(map()) :: String.t()
-  def ext(%{tool: tool}) do
-    case tool do
-      :rust -> ".rs"
-      :fsharp -> ".fsx"
-      :typescript -> ".ts"
-      :python -> ".py"
-      :cuda -> ".py"
-      :cpp -> ".cpp"
-      :gleam -> ".gleam"
-      :lua -> ".lua"
-      :c -> ".c"
-      :delphi -> ".pas"
-      :zig -> ".zig"
-      :lean -> ".lean"
-      :wgsl -> ".wgsl"
-    end
-  end
+  def ext(%{tool: tool}), do: tool |> Atom.to_string() |> Spiral.Kino.Domain.target_extension() |> known_target(tool)
+
+  defp known_target("", tool), do: raise(ArgumentError, "no Spiral target for #{inspect(tool)}")
+  defp known_target(value, _tool), do: value
 
   @spec dispatch(map(), String.t()) ::
           {:spiral, [String.t()]}

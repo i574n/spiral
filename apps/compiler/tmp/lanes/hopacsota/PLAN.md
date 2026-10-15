@@ -101,7 +101,11 @@ Each decision has an id. Code and reviews cite the id.
   - A cycle is a recursion, and single-flight has three pending cases (P3). Each happens only when the
     awaited key is on the waiter's own ancestor chain; any other pending key is awaited:
     - a method key: single-flight's error "Recursive join points must be annotated." (~163000), at the same
-      trace position as single-flight; an annotated method is not pending, its type is the annotation;
+      trace position as single-flight; an annotated method is not pending, its type is the annotation.
+      Checked 2026-10-14: the typechecker's fill pass annotates every join point with its inferred type
+      (`RawAnnot(r, RawJoinPoint ..., annot r x)`, ~50402), so from type-checked source every method key
+      carries an annotation and that error is unreachable. hopacsota keeps it as a defensive compiler
+      error; it needs no waiter rule;
     - a type join point: "Type join points must not be unboxed during their definition." (~162576), except
       inside `ty_is_uninhabited`, which swallows that error and reads the type as inhabited (~162555);
     - a closure: no error; the recursion returns the key (~162425-162426), since `fun_ty` is known.
@@ -642,8 +646,9 @@ Every gate is a command plus a number. "Looks fine" is not a gate.
 - The deferred policy: type-known specializations go to a single-threaded worklist; D3 tables, D6 merge,
   D8 types.
 - New frontier fixtures, each written before its code with its oracle row blessed from single-flight:
-  - `frontier_hopacsota_recursion_unannotated`, which must reproduce single-flight's "Recursive join points
-    must be annotated." at the same position;
+  - `frontier_hopacsota_recursion_inferred`, a self-recursive `let rec` without a written annotation whose
+    pending recursive call returns the inferred type without waiting (single-flight: exit 0; it replaces the
+    `recursion_unannotated` draft, whose error D4 shows is unreachable);
   - `frontier_hopacsota_mutual_pending`, two join points that call each other from separate branches;
   - `frontier_hopacsota_globals_order`, where globals are added from sibling bodies in an order that differs
     from completion order;
@@ -735,8 +740,8 @@ Every gate is a command plus a number. "Looks fine" is not a gate.
 |---|---|---|---|---|
 | 0 | R1 | 2026-10-14 00:57 | BendTT pp. 7-10 read; 12 functions + checker bench; D12 +12 applied, 5 not | read only |
 | 0 | R2 | 2026-10-14 00:54 | 31 entries, 0 without a line, 3/3 decided, 34/34 writes; P1-P5 | see notes |
-| 0 | R3 | | | |
-| 0 | R4 | | | |
+| 0 | R3 | 2026-10-14 07:52 | apps/spiral W/S 2.80 (8 workers 2.76x); mega roots W/S 1.00; scaling corpus N=1000 blocked by a typecheck stack overflow (fixed in source) | see notes |
+| 0 | R4 | 2026-10-14 12:08 | -Suite all 4098 rows, 5 policies, 0 differ; apps/spiral 636 methods + 579 closures deferred, output differs only in global order (55-58 lines) | see notes |
 
 Scoreboard notes:
 - R1: functions read: `term_infer`, `term_check`, `term_descend`, `term_check_kind`, `def_inst`, the
@@ -748,6 +753,37 @@ Scoreboard notes:
   thread's uncommitted edits (+165/-4, all at line 164909 or later); single-flight projection 27,232 lines.
   PartEval lines (161624-164592) are the same in HEAD; codegen lines from 164909 on are working-tree numbers
   and shift when those edits land.
+
+- R3 (apps/spiral, 2026-10-14 07:52): 1,656 specializations (579 closures, 711 methods, 366 type join points), peval W 58.0 s, S 20.7 s, W/S 2.80; simulated 1.70x at 2 workers, 2.30x at 4, 2.76x at 8; compile 94 s; the span is three single bodies: the root body 8.6 s self, annotated method#639 7.3 s, method#283 4.7 s; so with D1 (a body is never split) 8 workers cap near 2.8x: beyond that needs parallelism inside a body, a candidate decision change for after R4 (proposed, not adopted).
+- R4 (2026-10-14 11:19-12:08, R4 DLL in the night cache, `-Suite all` compile-only from a copied
+  apps/compiler/tmp tree): dfs, bfs, random:11, random:23 and random:37 give identical compile status and
+  residual hash on all 4,098 rows. Each policy has the same 3,582 ok and 516 error; 53 rows fail only in the
+  copied tree (package paths), identically under every policy. The suite does not exercise deferral much
+  (5 mega roots: 24 deferred methods, 3 roots compile to a trivial program), so apps/spiral is the real
+  test. With `SPIRAL_R4_REPORT`, every policy defers 636 methods and 579 closures, max queue 1,215
+  (bfs/random), 0 depth or dynamic-if restarts, 0 stack stops; validating callers 899 (dfs) / 604 (bfs) /
+  605 (random:11); relative-trace bodies 1,203 under bfs/random. The outputs (953,638 bytes each) differ
+  in 55 (bfs) and 58 (random:11) lines, all in lines 3-60, the global type declaration header; the lines
+  are the same multiset, and every method and closure body and name after line 60 is byte-identical. So
+  the only order-dependent effect is the order of globals, the case D6's depth-first merge exists for;
+  R4 confirms D6 as required and finds no other cause. Next: apply D6's merge to the R4 copy and require
+  0 differing lines on apps/spiral.
+- R4 + D6 merge (2026-10-14 15:5x): with per-deferral global lists merged depth-first, apps/spiral's peval
+  globals are the same 60 lines under every policy but still in a different order (clap_Command 3rd under
+  dfs, 10th under bfs). Cause: a memoized join-point body runs at its first evaluation-time caller, and under
+  bfs that can be a different caller than dfs's first one in depth-first order, so its globals sit at the
+  wrong position. D6 refined: globals belong to the body (its key), every call site including memo hits
+  records a reference, and the merge expands a key's globals at its first reference in depth-first order.
+  Next: per-key global lists with reference markers on memo hits in the R4 copy.
+- Key-level D6 tried (2026-10-14 17:1x): dfs peval globals unchanged, bfs order still differs at the same
+  globals, and dfs's output gained a second `type Box` from codegen. So join-point memo order is not the
+  whole story (suspect: globals from inlined code inside deferred bodies, which have no key), and the merged
+  list interacts with codegen's dedup. Open; scripts in the job's tmp/hopacsota-p0.
+- R3 scaling corpus (2026-10-14): generated N independent modules x 6 join-point levels
+  (`r3_scaling_corpus.ps1`); plain compile N=10 3.0 s, N=100 4.8 s, N=1000 stack overflow in the
+  typechecker (one frame pair per sequential `let`, between 1,000 and 2,000 lets in one body). Fixed in
+  source: `infer` and its deferred `fill` jobs run on a 256 MB thread; W/S for N=1000 waits for that build.
+- R3 (mega roots, 2026-10-14 07:50): the five mega roots compiled to F# with the R3 build, outputs byte-identical to the committed ones; W/S = 1.00 on all five (0-491 type join points, 2 method join points, root body 86-98% of peval), peval 28-672 ms of 2.5-8.2 s compiles: the mega roots inline almost everything, so join-point forking finds nothing there and parse/type check/codegen dominate (D16.4); apps/spiral running next.
 
 ## Decision changes
 

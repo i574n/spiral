@@ -227,4 +227,16 @@ defmodule XsimTest do
     assert [{"p1", {_, %{status: :ok}}}] = Map.to_list(state.visible)
     assert state.world.buffered >= 2
   end
+
+  test "the daemon memory sampler reads a process tree's working set" do
+    assert {3, 1464} = Xsim.DaemonMemory.parse_sample("3 1464\r")
+    assert nil == Xsim.DaemonMemory.parse_sample("noise")
+
+    if match?({:win32, _}, :os.type()) do
+      {:ok, sampler} = Xsim.DaemonMemory.start_tree(String.to_integer(System.pid()), 200)
+      reading = Enum.find_value(1..150, fn _ -> Process.sleep(100); r = Xsim.DaemonMemory.peak(sampler); if r.samples > 0, do: r end)
+      Xsim.DaemonMemory.stop(sampler)
+      assert reading.procs >= 1 and reading.peak_mb > 10
+    end
+  end
 end

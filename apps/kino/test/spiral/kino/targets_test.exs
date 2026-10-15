@@ -15,6 +15,21 @@ defmodule Spiral.Kino.TargetsTest do
     )
   end
 
+  test "python and cuda targets never print CuPy's missing CUDA_PATH warning" do
+    assert {"PYTHONWARNINGS", "default,ignore:CUDA path could not be detected:UserWarning"} =
+             [{"PYTHONWARNINGS", "default"}] |> Targets.without_cupy_cuda_path_warning() |> List.keyfind("PYTHONWARNINGS", 0)
+
+    case Toolchain.python([]) do
+      nil ->
+        :ok
+
+      python ->
+        warn = "import warnings; warnings.warn('CUDA path could not be detected. Set CUDA_PATH environment variable if CuPy fails to load.'); print('ok')"
+        {out, 0} = System.cmd(python, ["-c", warn], env: Targets.without_cupy_cuda_path_warning([]), stderr_to_stdout: true)
+        assert String.trim(out) == "ok"
+    end
+  end
+
   test "gcc builds C with the compiler harness flags and links libm last" do
     assert Targets.c_args("C:/mingw/bin/gcc.exe", "main.c", "cell.exe", nil) ==
              ["-std=c11", "-O2", "-w", "-fwrapv", "-o", "cell.exe", "main.c", "-lm"]

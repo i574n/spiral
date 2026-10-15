@@ -1,0 +1,47 @@
+name: compiler
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: "test.ps1 -Suite value"
+        required: false
+        default: "all"
+
+jobs:
+  suite:
+    timeout-minutes: 360
+    runs-on: ubuntu-24.04
+    env:
+      SPIRAL_BIN_CACHE_DIR: ${{ github.workspace }}/../spiral-bin
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: "27"
+          elixir-version: "1.18"
+          gleam-version: "1.19.1"
+          rebar3-version: '3.24.0'
+
+      - uses: oven-sh/setup-bun@v2
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12.10"
+
+      - run: pwsh scripts/init.ps1
+
+      - run: pwsh apps/compiler/tmp/scripts/build.ps1 -Mode single-flight
+
+      - run: pwsh apps/compiler/tmp/scripts/test.ps1 -Mode single-flight -Suite ${{ github.event.inputs.suite || 'all' }} -Native -Parallel 2 -Bless
+
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: compiler-oracle
+          path: |
+            ${{ env.SPIRAL_BIN_CACHE_DIR }}/baseline/EXPECTED.tsv
+            ${{ env.SPIRAL_BIN_CACHE_DIR }}/runs
+          retention-days: 14

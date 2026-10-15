@@ -1,5 +1,5 @@
 name = "Spiral"
-grammar = "rust"
+grammar = "spiral"
 path_suffixes = ["spi", "spir", "spiproj"]
 line_comments = ["// "]
 block_comment = { start = "(* ", prefix = "", end = " *)", tab_size = 0 }

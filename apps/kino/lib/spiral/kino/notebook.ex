@@ -1,5 +1,5 @@
 defmodule Spiral.Kino.Notebook do
-  alias Spiral.Kino.{Builders, Document, Memo, ProcessError, Result, SpiralError, Targets}
+  alias Spiral.Kino.{Builders, Document, Memo, ProcessError, Result, SpiralError, Targets, Toolchain}
 
   @default_timeout 300_000
   @run_keys [
@@ -58,7 +58,7 @@ defmodule Spiral.Kino.Notebook do
     opts = if Path.extname(path) == ".spi" and !opts[:spi_path], do: Keyword.put(opts, :spi, false), else: opts
     opts = if Path.extname(path) == ".spi", do: Keyword.put_new(opts, :plan, :tests), else: opts
     text = File.read!(path)
-    parsed = parse(path, text)
+    parsed = parse(path, text, compiler_bounds?(opts))
     if opts[:livemd_path], do: File.write!(opts[:livemd_path], Document.to_livemd(parsed))
     doc = expand_lisp(parsed, opts)
 
@@ -453,11 +453,36 @@ defmodule Spiral.Kino.Notebook do
     |> IO.iodata_to_binary()
   end
 
-  defp parse(path, text) do
+  defp parse(path, text, bounded \\ false) do
     case Path.extname(path) do
       ".livemd" -> Document.parse_livemd(text)
+      ".spi" when bounded -> Document.parse_spi(text, real_sibling(path), {test_bounds(path), test_bounds(Path.rootname(path) <> "_real.spir")})
       ".spi" -> Document.parse_spi(text, real_sibling(path))
       _ -> Document.parse_dib(text)
+    end
+  end
+
+  @stubbed_runs [:compile, :rustc, :execute, :target, :host]
+
+  defp compiler_bounds?(opts), do: not Enum.any?(@stubbed_runs, &Keyword.has_key?(opts, &1))
+
+  @doc false
+  def test_bounds(path, opts \\ []) do
+    out = Path.join(System.tmp_dir!(), "spiral-test-blocks-#{System.unique_integer([:positive])}.tsv")
+
+    try do
+      with true <- File.regular?(path),
+           dotnet when is_binary(dotnet) <- Toolchain.dotnet(opts),
+           dll when is_binary(dll) <- Toolchain.compiler_dll(opts),
+           true <- File.regular?(dll),
+           {_, 0} <- System.cmd(dotnet, [dll, "--test-blocks", path, out], stderr_to_stdout: true),
+           {:ok, rows} <- File.read(out) do
+        rows
+      else
+        _ -> ""
+      end
+    after
+      File.rm(out)
     end
   end
 

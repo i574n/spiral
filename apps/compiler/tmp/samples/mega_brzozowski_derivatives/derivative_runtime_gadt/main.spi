@@ -51,3 +51,8 @@ inl main () : bool =
             tri_capability
             (DerivativeRuntimeRaw (tri_value, tri_symbol, tri_suffix))
     derivative_runtime_checked_value bit_checked && derivative_runtime_checked_value tri_checked
+
+type root_bit_alphabet = bit_alphabet
+inl root_ends_with_zero () = ends_with_zero ()
+inl root_zero () = zero ()
+inl root_input_110 () = input_110 ()

@@ -13,6 +13,11 @@ defmodule Spiral.Kino.Document do
     %{cells: Spiral.Kino.Domain.decode_cells(Spiral.Kino.Domain.from_spi(spi, spir))}
   end
 
+  @spec parse_spi(String.t(), String.t(), {String.t(), String.t()}) :: %{cells: [map()]}
+  def parse_spi(spi, spir, {spi_bounds, spir_bounds}) when is_binary(spi) and is_binary(spir) do
+    %{cells: Spiral.Kino.Domain.decode_cells(Spiral.Kino.Domain.from_spi_bounded(spi, spir, spi_bounds, spir_bounds))}
+  end
+
   @spec parse_livemd(String.t()) :: %{cells: [map()]}
   def parse_livemd(text) when is_binary(text) do
     text = String.replace(text, "\r\n", "\n")

@@ -6,7 +6,8 @@ inl rec build (n : u64) : stream =
     if n = 0 then Nil else Cons (n, fun () => build (n - 1))
 
 inl native () : i32 =
-    inl ~s = build 80
+    inl static_closure_count = 80u64
+    inl ~s = build static_closure_count
     inl ~acc = 0u64
     let rec loop (s : stream) (acc : u64) : u64 =
         match s with

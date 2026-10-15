@@ -11,6 +11,7 @@
     <AssemblyName>SpiralCompilerCore</AssemblyName>
     <RootNamespace>Polyglot</RootNamespace>
     <SpiralCoreSource Condition="'$(SpiralCoreSource)' == ''">../../../spiral_compiler.fs</SpiralCoreSource>
+    <Tailcalls>true</Tailcalls>
   </PropertyGroup>
   <PropertyGroup Condition="'$(SpiralCore)' == 'gpt5parallel'">
     <DefineConstants>$(DefineConstants);SPIRAL_CORE_GPT5PARALLEL</DefineConstants>

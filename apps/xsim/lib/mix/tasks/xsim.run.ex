@@ -9,7 +9,7 @@ defmodule Mix.Tasks.Xsim.Run do
 
     {opts, _} =
       OptionParser.parse!(args,
-        strict: [spi: :string, spi_file: :string, cells: :integer, breaking: :integer, frames: :boolean, churn: :integer, save: :string, replay: :string, seed: :integer, users: :integer, edits: :integer, schedules: :integer, executor: :string, max_concurrency: :integer, duplicates: :float, memo: :boolean, personas: :string, evict: :boolean]
+        strict: [spi: :string, spi_file: :string, cells: :integer, breaking: :integer, frames: :boolean, churn: :integer, save: :string, replay: :string, seed: :integer, users: :integer, edits: :integer, schedules: :integer, executor: :string, max_concurrency: :integer, duplicates: :float, memo: :boolean, personas: :string, evict: :boolean, daemon_memory: :boolean]
       )
 
     files =
@@ -23,6 +23,7 @@ defmodule Mix.Tasks.Xsim.Run do
     tally = Xsim.Executors.memo_tally()
     executor = executor(opts[:executor] || "fake", spi, memo: Keyword.get(opts, :memo, false), memo_tally: tally)
     baseline = executor(opts[:executor] || "fake", spi, memo: false)
+    sampler = if opts[:daemon_memory], do: elem(Xsim.DaemonMemory.start(Spiral.Kino.CompilerDaemon.port()), 1)
 
     runs =
       for schedule <- 1..(opts[:schedules] || 2) do
@@ -40,6 +41,7 @@ defmodule Mix.Tasks.Xsim.Run do
         memo = Xsim.Executors.memo_counts(tally)
         IO.puts(summary(scenario, deliveries, state, verdicts, schedule, ms))
         if opts[:memo], do: IO.puts("  memo hits=#{memo.hit} misses=#{memo.miss} cumulative_after_schedule=#{schedule}")
+        if sampler, do: IO.puts(daemon_line(Xsim.DaemonMemory.peak(sampler), schedule))
         explain(state, verdicts, baseline)
         {state, verdicts}
       end
@@ -51,6 +53,7 @@ defmodule Mix.Tasks.Xsim.Run do
       |> Enum.map(fn [a, b] -> Xsim.Invariants.commute(a, b) end)
       |> Enum.find(:ok, &(&1 != :ok))
 
+    if sampler, do: Xsim.DaemonMemory.stop(sampler)
     failed = Enum.any?(runs, fn {_, verdicts} -> Enum.any?(verdicts, fn {_, v} -> v != :ok end) end) or commute != :ok
     IO.puts("XSIM commute=#{verdict_text(commute)} result=#{if failed, do: "fail", else: "pass"}")
     if failed, do: exit({:shutdown, 1})
@@ -104,6 +107,10 @@ defmodule Mix.Tasks.Xsim.Run do
       _ ->
         :ok
     end
+  end
+
+  defp daemon_line(reading, schedule) do
+    "  daemon pid=#{reading.daemon} peak_mb=#{reading.peak_mb} last_mb=#{reading.last_mb} procs=#{reading.procs} samples=#{reading.samples} cumulative_after_schedule=#{schedule}"
   end
 
   defp verdict_text(:ok), do: "ok"

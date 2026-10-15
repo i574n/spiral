@@ -18,6 +18,18 @@ USD/BRL about 5.21 (BCB PTAX, 2026-09-28).
 
 Total to P6: about 3.5-4.5 months.
 
+## Where each phase stands (2026-10-14)
+
+| Phase | State |
+| --- | --- |
+| P0 | Met for the simulator: arrays, unions and records run on WGSL, and the multi-creature simulator is bit-exact against C (`gpu_sim.spi`). Parallel lanes installed 2026-10-14: one seed per GPU thread, bit-exact with C, ~4 s fixed per launch then ~0.23 ms per arena clear (7x one C core); worth it from ~4000 clears per launch; large lane counts run in 1024-lane chunks since pack-1e. |
+| P1 | Met: login, walk, kills, potions, summons and resets all scripted off-screen; the server map is readable (`tibia-local/otbm-walkability.py`). |
+| P2 | Met for the hunt subset: melee, blocks and block charges, fleeing, cooldowns, potions, loot, death costs, terrain and occupancy; bit-identical C and WGSL traces; negative tests for illegal states and protocol misuse. Ranged creatures and mana are not modeled yet. |
+| P3 | Mostly met: every modeled mechanic has a source or a live measurement (README "Fidelity"); the clean live check (PR-4, 2026-10-14) confirms clear times for both Spiral policies but not potion use: the simulator predicts 13.2 and 9.1 potions where live uses 11.5 and 12.9 (TIBIA-POTION-FIDELITY). Open: the fleeing-troll respawn rule (PR-2 tests it). |
+| P4 | Partly met: vBot runs under the parity layer with seeded configs; a scripted rules policy and a retreat policy compete; pre-registered comparisons with fixed run counts (BENCHMARK.md PR-4 done: retreat vs vBot no difference shown; PR-1 void: vBot ran alongside our policy in every spiral run since 2026-10-13 11:48, now fixed in the harness and checked per run). nExBot crashes the client after login (both check runs). nExBot and the OTCv8 bot module are not set up yet. |
+| P5 | Stop rule reached for the current scenarios: learned policies (an integer network, a 12-gene scored policy, evolution with fresh seeds) tie or trail tuned threshold rules everywhere tried. Per the stop rule this means re-planning the scenario design, not more compute. First re-plan done 2026-10-14: a respawning hunting ground on the real map with shortest-path movement. The timer-aware sweeping rule beats every fixed route at a 60 s respawn (not at 30 s), including one evolved on training seeds, and with six cyclops the tuned sweeping cavebot leads. Second re-plan the same day: two knights; moving together on one shared rule is within 1% of rules evolved for the pair, so the stop rule holds there too. What is left: scenarios where information is hidden (unseen spawns, other players), or a richer action set (spells, mana, ranged monsters). |
+| P6 | Not started. |
+
 ## Stop rules
 
 - P0 is the gate for everything GPU: without arrays in WGSL there is no simulator on the GPU. If it stalls, P2-P5 run

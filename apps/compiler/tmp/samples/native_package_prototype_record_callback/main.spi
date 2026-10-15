@@ -19,8 +19,8 @@ instance shift state = fun ds (state s) =>
             | delta d => d.position, d.velocity
             | state d => d.position, d.velocity
     state {
-        position = s.position +. dposition
-        velocity = s.velocity +. dvelocity
+        position = s.position + dposition
+        velocity = s.velocity + dvelocity
     }
 
 inl advance forall s {shift} ds. (derive : s -> ds) (current : s) : s =
@@ -32,9 +32,9 @@ inl main () : i32 =
     inl ~derive =
         (fun (state s) =>
             delta {
-                position = s.position -. 8i32 +. bias
-                velocity = s.velocity -. 18i32
+                position = s.position - 8i32 + bias
+                velocity = s.velocity - 18i32
             }
         ) : state -> delta
     inl (state next) = advance derive initial
-    next.position +. next.velocity +. 7i32
+    next.position + next.velocity + 7i32

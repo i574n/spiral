@@ -512,7 +512,7 @@ union spi_mode =
     | Between
     | InDoc : rows
     | InCode : rows
-    | InTest : string * string * rows * rows * header_form
+    | InTest : string * string * rows * rows * header_form * i32
 
 inl doc_start (line : string) : bool = text.starts_with line "/// " || line = "///"
 
@@ -560,7 +560,7 @@ inl close_mode (mode : spi_mode) (targets : rows) (real_mode : bool) (acc : cell
     | Between => code_cell targets real_mode acc
     | InDoc lines => code_cell targets real_mode (doc_cell lines real_mode acc)
     | InCode lines => code_cell (append_rows targets lines) real_mode acc
-    | InTest (name, modes, test_targets, body, form) => code_cell targets real_mode (test_cell_of name modes test_targets body form real_mode acc)
+    | InTest (name, modes, test_targets, body, form, _) => code_cell targets real_mode (test_cell_of name modes test_targets body form real_mode acc)
 
 inl close_open (code : rows) (targets : rows) (real_mode : bool) (acc : cells) : cells =
     if no_rows code then code_cell targets real_mode acc else code_cell (append_rows targets code) real_mode acc
@@ -570,34 +570,57 @@ let open_step (line : string) (code : rows) (targets : rows) (real_mode : bool) 
         if no_rows code then Between, Row (line, targets), acc else InCode code, Row (line, targets), acc
     else
         match header_of line with
-        | Header (name, modes) => InTest (name, modes, targets, NoRow, WellFormed), NoRow, close_open code NoRow real_mode acc
+        | Header (name, modes) => InTest (name, modes, targets, NoRow, WellFormed, -1i32), NoRow, close_open code NoRow real_mode acc
         | NoHeader =>
-            if test_like line then InTest (malformed_name line, "", targets, NoRow, Malformed line), NoRow, close_open code NoRow real_mode acc
+            if test_like line then InTest (malformed_name line, "", targets, NoRow, Malformed line, -1i32), NoRow, close_open code NoRow real_mode acc
             elif doc_start line then InDoc (Row (undoc line, NoRow)), NoRow, close_open code targets real_mode acc
             elif no_rows code then
                 if line = "" && no_rows targets then Between, NoRow, acc
                 else InCode (Row (line, targets)), NoRow, acc
             else InCode (Row (line, append_rows targets code)), NoRow, acc
 
-let rec spi_walk (src : string) (i : i32) (mode : spi_mode) (targets : rows) (real_mode : bool) (acc : cells) : cells =
+let rec tab_field (line : string) (from : i32) (n : i32) : string =
+    inl stop = text.find_char line from '\t'
+    if n = 0i32 then (if stop < 0i32 then text.drop line from else text.slice_len line from (stop - from))
+    elif stop < 0i32 then ""
+    else tab_field line (stop + 1i32) (n - 1i32)
+
+let rec body_last_of (bounds : string) (i : i32) (header_row : i32) : i32 =
+    match text.next_line bounds i with
+    | LineDone => -1i32
+    | LineGot (line, next) =>
+        if text.parse_i32 (tab_field line 0i32 1i32) = header_row then text.parse_i32 (tab_field line 0i32 3i32)
+        else body_last_of bounds next header_row
+
+inl bounded (mode : spi_mode) (bounds : string) (row : i32) : spi_mode =
+    match mode with
+    | InTest (name, modes, test_targets, body, form, _) => InTest (name, modes, test_targets, body, form, if bounds = "" then -1i32 else body_last_of bounds 0i32 (row + 1i32))
+    | _ => mode
+
+inl bounded_line (line : string) : string = if indented line then unindent line else line
+
+let rec spi_walk (src : string) (i : i32) (row : i32) (bounds : string) (mode : spi_mode) (targets : rows) (real_mode : bool) (acc : cells) : cells =
     match text.next_line src i with
     | LineDone => close_mode mode targets real_mode acc
     | LineGot (line, next) =>
         match mode with
-        | InTest (name, modes, test_targets, body, form) =>
-            if indented line then spi_walk src next (InTest (name, modes, test_targets, Row (unindent line, body), form)) targets real_mode acc
-            elif comment_line line && resumes_test src next then spi_walk src next (InTest (name, modes, test_targets, Row (line, body), form)) targets real_mode acc
-            else spi_walk src i Between NoRow real_mode (test_cell_of name modes test_targets body form real_mode acc)
+        | InTest (name, modes, test_targets, body, form, last) =>
+            if last >= 0i32 then
+                if row + 1i32 <= last then spi_walk src next (row + 1i32) bounds (InTest (name, modes, test_targets, Row (bounded_line line, body), form, last)) targets real_mode acc
+                else spi_walk src i row bounds Between NoRow real_mode (test_cell_of name modes test_targets body form real_mode acc)
+            elif indented line then spi_walk src next (row + 1i32) bounds (InTest (name, modes, test_targets, Row (unindent line, body), form, last)) targets real_mode acc
+            elif comment_line line && resumes_test src next then spi_walk src next (row + 1i32) bounds (InTest (name, modes, test_targets, Row (line, body), form, last)) targets real_mode acc
+            else spi_walk src i row bounds Between NoRow real_mode (test_cell_of name modes test_targets body form real_mode acc)
         | InDoc lines =>
-            if doc_more line then spi_walk src next (InDoc (Row (undoc line, lines))) targets real_mode acc
-            elif line = "" then spi_walk src next Between targets real_mode (doc_cell lines real_mode acc)
-            else spi_walk src i Between targets real_mode (doc_cell lines real_mode acc)
+            if doc_more line then spi_walk src next (row + 1i32) bounds (InDoc (Row (undoc line, lines))) targets real_mode acc
+            elif line = "" then spi_walk src next (row + 1i32) bounds Between targets real_mode (doc_cell lines real_mode acc)
+            else spi_walk src i row bounds Between targets real_mode (doc_cell lines real_mode acc)
         | InCode lines =>
             inl mode2, targets2, acc2 = open_step line lines targets real_mode acc
-            spi_walk src next mode2 targets2 real_mode acc2
+            spi_walk src next (row + 1i32) bounds (bounded mode2 bounds row) targets2 real_mode acc2
         | Between =>
             inl mode2, targets2, acc2 = open_step line NoRow targets real_mode acc
-            spi_walk src next mode2 targets2 real_mode acc2
+            spi_walk src next (row + 1i32) bounds (bounded mode2 bounds row) targets2 real_mode acc2
 
 union test_realm =
     | SpiRealm
@@ -649,8 +672,8 @@ let rec name_tested (xs : cells) (last : string) (spi_used : rows) (real_used : 
                 name_tested rest heading spi_named real_named (Cell ("spiral", source, Cell ("markdown", heading_source, acc)))
         else name_tested rest last spi_used real_used (Cell (kind, source, acc))
 
-inl spi_cells (src : string) (real_mode : bool) (acc : cells) : cells =
-    spi_walk (text.replace src "\r\n" "\n") 0i32 Between NoRow real_mode acc
+inl spi_cells (src : string) (bounds : string) (real_mode : bool) (acc : cells) : cells =
+    spi_walk (text.replace src "\r\n" "\n") 0i32 0i32 bounds Between NoRow real_mode acc
 
 let rec interleave (spi : cells) (real_cells : cells) (acc : cells) : cells =
     match real_cells with
@@ -665,7 +688,9 @@ let rec interleave (spi : cells) (real_cells : cells) (acc : cells) : cells =
                 elif source = real_source then interleave rest real_rest (Cell (kind, source, acc))
                 else interleave rest real_cells (Cell (kind, source, acc))
 
-inl from_spi (spi : string) (spir : string) : string =
-    inl spi_doc = rev_cells (spi_cells spi false NoCell) NoCell
-    inl real_doc = rev_cells (spi_cells spir true NoCell) NoCell
+inl from_spi_bounded (spi : string) (spir : string) (spi_bounds : string) (spir_bounds : string) : string =
+    inl spi_doc = rev_cells (spi_cells spi spi_bounds false NoCell) NoCell
+    inl real_doc = rev_cells (spi_cells spir spir_bounds true NoCell) NoCell
     wire (name_tested (interleave spi_doc real_doc NoCell) "" NoRow NoRow NoCell)
+
+inl from_spi (spi : string) (spir : string) : string = from_spi_bounded spi spir "" ""

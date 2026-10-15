@@ -583,6 +583,28 @@ defmodule Spiral.Kino.NotebookReportTest do
     assert source =~ ~r/^open pack$/m
   end
 
+  test "a .spi file's first ///- --timeout is the budget of its test blocks", %{dir: dir} do
+    path = Path.join(dir, "slow.spi")
+    File.write!(path, "///- --timeout 1800000\ninl one () = 1i32\n\ntest one =\n    one () |> _assert_eq 1i32\n\ntest two =\n    one () |> _assert_eq 1i32\n")
+    {:ok, agent} = Agent.start_link(fn -> [] end)
+
+    budget = fn %{source: source} ->
+      left = Process.get(:spiral_kino_deadline) - System.monotonic_time(:millisecond)
+      Agent.update(agent, &[{source =~ "two", left} | &1])
+      {:ok, "fn main() {}\n"}
+    end
+
+    assert {:ok, %{"passed" => 2}} = Notebook.run_report(path, compile: budget, rustc: fn _ -> :ok end, execute: exit_when("never", 0))
+    budgets = Agent.get(agent, & &1)
+    assert length(budgets) >= 2
+    assert Enum.all?(budgets, fn {_, left} -> left > 300_000 and left <= 1_800_000 end)
+
+    File.write!(path, "inl one () = 1i32\n\ntest one =\n    one () |> _assert_eq 1i32\n")
+    Agent.update(agent, fn _ -> [] end)
+    assert {:ok, %{"passed" => 1}} = Notebook.run_report(path, compile: budget, rustc: fn _ -> :ok end, execute: exit_when("never", 0))
+    assert Enum.all?(Agent.get(agent, & &1), fn {_, left} -> left <= 300_000 end)
+  end
+
   test "a compile error points at the .spi line and column, not the throwaway main.spi", %{dir: dir} do
     path = Path.join(dir, "located.spi")
     File.write!(path, "inl one () = 1i32\n\ntest broken =\n    inl a = one ()\n    a + missing_name |> _assert_eq 1i32\n")

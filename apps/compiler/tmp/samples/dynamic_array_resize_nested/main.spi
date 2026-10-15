@@ -24,6 +24,6 @@ inl main () : i32 =
     join resize_inner alias_inner 1i32
     set inner 0i32 9i32
     inl ~view = index outer 0i32
-    inl ~score = index view 0i32 +. length view +. length outer
+    inl ~view_value_plus_lengths = index view 0i32 +. length view +. length outer
     inl ~capacities = join capacity_outer outer +. join capacity_inner inner
-    score +. capacities -. 13i32
+    view_value_plus_lengths +. capacities -. 13i32
