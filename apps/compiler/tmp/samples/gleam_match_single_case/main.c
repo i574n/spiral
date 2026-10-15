@@ -60,7 +60,7 @@ int32_t walk0(int32_t v0){
         default: { // Step
             int32_t v7 = v6.case0.v0; int32_t v8 = v6.case0.v1; int32_t v9 = v6.case0.v2;
             
-            USDecref0(&(v6));
+            
             int32_t v10;
             v10 = v8 * v9;
             

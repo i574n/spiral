@@ -7840,7 +7840,7 @@ a.anchor-link {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [1]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span> <span class="n">static</span>
@@ -7867,7 +7867,7 @@ a.anchor-link {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [2]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [1]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -7887,7 +7887,7 @@ a.anchor-link {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [3]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span> <span class="n">static</span>
@@ -8072,7 +8072,7 @@ a.anchor-link {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [4]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [2]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -8176,28 +8176,27 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>input: a b c
-__assert_eq' { expected = [|"a"; "b"; "c"|] }
+__assert_eq' { expected = [a, b, c] }
 input: e f "g h" i
-__assert_eq' { expected = [|"e"; "f"; "g h"; "i"|] }
+__assert_eq' { expected = [e, f, g h, i] }
 input: "j k" "l" "m"
-__assert_eq' { expected = [|"j k"; "l"; "m"|] }
+__assert_eq' { expected = [j k, l, m] }
 input: s -t "u `"v`" w"
-__assert_eq' { expected = [|"s"; "-t"; "u `"v`" w"|] }
+__assert_eq' { expected = [s, -t, u `"v`" w] }
 input: n -o "p \"q\" r"
-__assert_eq' { expected = [|"n"; "-o"; "p \"q\" r"|] }
+__assert_eq' { expected = [n, -o, p \"q\" r] }
 input: r -s "t \"u\""
-__assert_eq' { expected = [|"r"; "-s"; "t \"u\""|] }
+__assert_eq' { expected = [r, -s, t \"u\"] }
 input: x -y "$z -a '(b=\"c-id=)[a-fA-F0-9]{8}', { `$_[1] + `$d++ }"
-__assert_eq' { expected = [|"x"; "-y"; "$z -a '(b=\"c-id=)[a-fA-F0-9]{8}', { `$_[1] + `$d++ }"|] }
+__assert_eq' { expected = [x, -y, $z -a '(b=\"c-id=)[a-fA-F0-9]{8}', { `$_[1] + `$d++ }] }
 input: e -f "$g -h '(i=`"j-id=)[a-fA-F0-9]{8}', { `$_[1] + `$k++ }"
-__assert_eq' { expected = [|"e"; "-f"; "$g -h '(i=`"j-id=)[a-fA-F0-9]{8}', { `$_[1] + `$k++ }"|] }
+__assert_eq' { expected = [e, -f, $g -h '(i=`"j-id=)[a-fA-F0-9]{8}', { `$_[1] + `$k++ }] }
 input: --l \"''' m '''\" 
-__assert_eq' { expected = [|"--l"; "''' m '''"|] }
+__assert_eq' { expected = [--l, ''' m '''] }
 input: n --o --p q --r "s:/t u/v.w" --x "y:/z.a" --b c.d "\e{f-g}" h.i "j (k)"
-__assert_eq' { expected = [|"n"; "--o"; "--p"; "q"; "--r"; "s:/t u/v.w"; "--x"; "y:/z.a"; "--b"; "c.d";
-  "\e{f-g}"; "h.i"; "j (k)"|] }
+__assert_eq' { expected = [n, --o, --p, q, --r, s:/t u/v.w, --x, y:/z.a, --b, c.d, \e{f-g}, h.i, j (k)] }
 input: l "m n:\o.p"
-__assert_eq' { expected = [|"l"; "m n:\o.p"|] }</pre>
+__assert_eq' { expected = [l, m n:\o.p] }</pre>
 </div>
 </div>
 </div>
@@ -8745,7 +8744,7 @@ __assert_eq' { expected = [|"l"; "m n:\o.p"|] }</pre>
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">any_char</span> <span class="p">()</span> <span class="p">:</span> <span class="n">parser</span> <span class="n">char</span> <span class="o">=</span> <span class="n">fun</span> <span class="n">t</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">parser_state</span> <span class="n">s</span><span class="s1">' as s) =&gt;</span>
     <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="n">s</span><span class="s1">'.text_length then</span>
-        <span class="n">fail</span> <span class="p">(</span><span class="n">fun</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">s</span> <span class="o">=&gt;</span> <span class="s2">"parsing.any_char / unexpected end of t / "</span> <span class="o">++</span><span class="c1">#? { s }) i s</span>
+        <span class="n">fail</span> <span class="p">(</span><span class="n">fun</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">s</span> <span class="o">=&gt;</span> <span class="s2">"parsing.any_char / unexpected end of t / "</span> <span class="o">++</span><span class="c1"># sm'.show { s }) i s</span>
     <span class="k">else</span>
         <span class="n">inl</span> <span class="n">c</span> <span class="o">=</span> <span class="n">t</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.index i</span>
         <span class="n">Ok</span> <span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">c</span> <span class="o">|&gt;</span> <span class="n">update_char</span> <span class="n">s</span><span class="p">)</span>
@@ -8759,7 +8758,7 @@ __assert_eq' { expected = [|"l"; "m n:\o.p"|] }</pre>
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [5]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [3]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -8770,8 +8769,8 @@ __assert_eq' { expected = [|"l"; "m n:\o.p"|] }</pre>
 
 <span class="s2">"abc"</span>
 <span class="o">|&gt;</span> <span class="n">run_parser</span> <span class="p">(</span><span class="n">any_char</span> <span class="p">())</span>
-<span class="o">|&gt;</span> <span class="p">(</span><span class="n">resultm</span><span class="o">.</span><span class="n">get</span> <span class="o">&gt;&gt;</span> <span class="n">sm</span><span class="s1">'.format)</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="c1">#?('a', "bc", #?*(new_parser_state 0 1 2 3))</span>
+<span class="o">|&gt;</span> <span class="p">(</span><span class="n">resultm</span><span class="o">.</span><span class="n">get</span> <span class="o">&gt;&gt;</span> <span class="n">sm</span><span class="s1">'.show)</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="n">sm</span><span class="s1">'.show ('</span><span class="n">a</span><span class="s1">', "bc", new_parser_state 0 1 2 3))</span>
 </pre></div>
 </div>
 </div>
@@ -8785,14 +8784,13 @@ __assert_eq' { expected = [|"l"; "m n:\o.p"|] }</pre>
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.gleam (gleam)
-
+__assert_eq { expected = (a, bc, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 }) }
 .fsx (fsharp)
-__assert_eq { expected = a, bc, struct (0, 1, 2, 3) }
+__assert_eq { expected = (a, bc, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 }) }
 .py (cuda)
-__assert_eq { expected = a, bc, (0, 1, 2, 3) }
-0
+__assert_eq { expected = (a, bc, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 }) }
 .ts (typescript)
-__assert_eq { expected = a, bc, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 } }</pre>
+__assert_eq { expected = (a, bc, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 }) }</pre>
 </div>
 </div>
 </div>
@@ -8802,7 +8800,7 @@ __assert_eq { expected = a, bc, { line_start = 0; position = { line = 1; col = 2
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [6]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [4]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -8877,7 +8875,7 @@ __assert_eq { expected = a, bc, { line_start = 0; position = { line = 1; col = 2
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">p_char</span> <span class="p">(</span><span class="n">c</span> <span class="p">:</span> <span class="n">char</span><span class="p">)</span> <span class="p">:</span> <span class="n">parser</span> <span class="n">char</span> <span class="o">=</span>
     <span class="n">fun</span> <span class="n">t</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">parser_state</span> <span class="p">({</span> <span class="n">line_start</span> <span class="n">position</span> <span class="o">=</span> <span class="p">{</span> <span class="n">line</span> <span class="n">col</span> <span class="p">}</span> <span class="p">}</span> <span class="k">as</span> <span class="n">s</span><span class="s1">') as s) =&gt;</span>
         <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="n">s</span><span class="s1">'.text_length then</span>
-            <span class="n">fail</span> <span class="p">(</span><span class="n">fun</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="p">(</span><span class="n">parser_state</span> <span class="n">s</span><span class="s1">') =&gt; "parsing.p_char / unexpected end of text / " ++#? { c s'</span> <span class="p">})</span> <span class="n">i</span> <span class="n">s</span>
+            <span class="n">fail</span> <span class="p">(</span><span class="n">fun</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="p">(</span><span class="n">parser_state</span> <span class="n">s</span><span class="s1">') =&gt; "parsing.p_char / unexpected end of text / " ++# sm'</span><span class="o">.</span><span class="n">show</span> <span class="p">{</span> <span class="n">c</span> <span class="n">s</span><span class="s1">' }) i s</span>
         <span class="k">else</span>
             <span class="n">inl</span> <span class="n">got</span> <span class="o">=</span> <span class="n">t</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.index i</span>
             <span class="k">if</span> <span class="n">got</span> <span class="o">=</span> <span class="n">c</span>
@@ -8893,7 +8891,7 @@ __assert_eq { expected = a, bc, { line_start = 0; position = { line = 1; col = 2
                             <span class="k">if</span> <span class="nb">len</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="n">line_slice</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.index (len - 1)) = '</span>\<span class="n">n</span><span class="s1">' then "" else "</span><span class="se">\n</span><span class="s1">"</span>
                         <span class="n">inl</span> <span class="n">pointer_line</span> <span class="o">=</span> <span class="p">(</span><span class="s2">" "</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.replicate (col - 1)) ++# "^"</span>
                         <span class="s2">"parsing.p_char / "</span>
-                        <span class="o">++</span><span class="c1">#? { expected = c; line col }</span>
+                        <span class="o">++</span><span class="c1"># sm'.show { expected = c; line col }</span>
                         <span class="o">++</span><span class="c1"># "\n" ++# line_slice</span>
                         <span class="o">++</span><span class="c1"># new_line</span>
                         <span class="o">++</span><span class="c1"># pointer_line ++# "\n"</span>
@@ -8908,7 +8906,7 @@ __assert_eq { expected = a, bc, { line_start = 0; position = { line = 1; col = 2
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [7]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [5]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -8919,8 +8917,9 @@ __assert_eq { expected = a, bc, { line_start = 0; position = { line = 1; col = 2
 
 <span class="s2">"abc"</span>
 <span class="o">|&gt;</span> <span class="n">run_parser</span> <span class="p">(</span><span class="n">p_char</span> <span class="s1">'a'</span><span class="p">)</span>
-<span class="o">|&gt;</span> <span class="n">unwrap_format</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="c1">#?*('a', "bc", new_parser_state 0 1 2 3)</span>
+<span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">get</span>
+<span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.show</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="n">sm</span><span class="s1">'.show ('</span><span class="n">a</span><span class="s1">', "bc", new_parser_state 0 1 2 3))</span>
 </pre></div>
 </div>
 </div>
@@ -8934,14 +8933,13 @@ __assert_eq { expected = a, bc, { line_start = 0; position = { line = 1; col = 2
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.gleam (gleam)
-
+__assert_eq { expected = (a, bc, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 }) }
 .fsx (fsharp)
-__assert_eq { expected = struct ('a', "bc", 0, 1, 2, 3) }
+__assert_eq { expected = (a, bc, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 }) }
 .py (cuda)
-__assert_eq { expected = ('a', 'bc', 0, 1, 2, 3) }
-0
+__assert_eq { expected = (a, bc, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 }) }
 .ts (typescript)
-__assert_eq { expected = 'a', bc, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 } }</pre>
+__assert_eq { expected = (a, bc, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 }) }</pre>
 </div>
 </div>
 </div>
@@ -8951,7 +8949,7 @@ __assert_eq { expected = 'a', bc, { line_start = 0; position = { line = 1; col =
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [8]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [6]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -9001,7 +8999,7 @@ __assert_eq { expected = 'a', bc, { line_start = 0; position = { line = 1; col =
     <span class="k">if</span> <span class="n">s</span><span class="s1">'.text_length - i &gt;= len</span>
     <span class="n">then</span> <span class="n">Ok</span> <span class="p">(</span><span class="n">t</span> <span class="o">|&gt;</span> <span class="nb">slice</span> <span class="n">i</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="nb">len</span><span class="p">),</span> <span class="n">i</span> <span class="o">+</span> <span class="nb">len</span><span class="p">,</span> <span class="n">s</span> <span class="o">|&gt;</span> <span class="n">update_span</span> <span class="n">t</span> <span class="n">i</span> <span class="nb">len</span><span class="p">)</span>
     <span class="k">else</span>
-        <span class="n">fail</span> <span class="p">(</span><span class="n">fun</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">s</span> <span class="o">=&gt;</span> <span class="s2">"parsing.any_string / unexpected end of text / "</span> <span class="o">++</span><span class="c1">#? { s }) i s</span>
+        <span class="n">fail</span> <span class="p">(</span><span class="n">fun</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">s</span> <span class="o">=&gt;</span> <span class="s2">"parsing.any_string / unexpected end of text / "</span> <span class="o">++</span><span class="c1"># sm'.show { s }) i s</span>
 </pre></div>
 </div>
 </div>
@@ -9012,7 +9010,7 @@ __assert_eq { expected = 'a', bc, { line_start = 0; position = { line = 1; col =
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [9]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [7]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -9023,8 +9021,9 @@ __assert_eq { expected = 'a', bc, { line_start = 0; position = { line = 1; col =
 
 <span class="s2">"abcdef"</span>
 <span class="o">|&gt;</span> <span class="n">run_parser</span> <span class="p">(</span><span class="n">any_string</span> <span class="mi">3</span><span class="p">)</span>
-<span class="o">|&gt;</span> <span class="n">unwrap_format</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="c1">#?*("abc", "def", new_parser_state 0 1 4 6)</span>
+<span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">get</span>
+<span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.show</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="n">sm</span><span class="s1">'.show ("abc", "def", new_parser_state 0 1 4 6))</span>
 </pre></div>
 </div>
 </div>
@@ -9038,14 +9037,13 @@ __assert_eq { expected = 'a', bc, { line_start = 0; position = { line = 1; col =
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.gleam (gleam)
-
+__assert_eq { expected = (abc, def, { line_start = 0; position = { line = 1; col = 4 }; text_length = 6 }) }
 .fsx (fsharp)
-__assert_eq { expected = struct ("abc", "def", 0, 1, 4, 6) }
+__assert_eq { expected = (abc, def, { line_start = 0; position = { line = 1; col = 4 }; text_length = 6 }) }
 .py (cuda)
-__assert_eq { expected = ('abc', 'def', 0, 1, 4, 6) }
-0
+__assert_eq { expected = (abc, def, { line_start = 0; position = { line = 1; col = 4 }; text_length = 6 }) }
 .ts (typescript)
-__assert_eq { expected = abc, def, { line_start = 0; position = { line = 1; col = 4 }; text_length = 6 } }</pre>
+__assert_eq { expected = (abc, def, { line_start = 0; position = { line = 1; col = 4 }; text_length = 6 }) }</pre>
 </div>
 </div>
 </div>
@@ -9055,7 +9053,7 @@ __assert_eq { expected = abc, def, { line_start = 0; position = { line = 1; col 
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [10]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [8]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -9106,7 +9104,7 @@ __assert_eq { expected = abc, def, { line_start = 0; position = { line = 1; col 
     <span class="k">if</span> <span class="n">s</span><span class="s1">'.text_length - i &gt;= len</span>
     <span class="n">then</span> <span class="n">Ok</span> <span class="p">((),</span> <span class="n">i</span> <span class="o">+</span> <span class="nb">len</span><span class="p">,</span> <span class="n">s</span> <span class="o">|&gt;</span> <span class="n">update_span</span> <span class="n">t</span> <span class="n">i</span> <span class="nb">len</span><span class="p">)</span>
     <span class="k">else</span>
-        <span class="n">fail</span> <span class="p">(</span><span class="n">fun</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">s</span> <span class="o">=&gt;</span> <span class="s2">"parsing.skip_any_string / unexpected end of text / "</span> <span class="o">++</span><span class="c1">#? { s }) i s</span>
+        <span class="n">fail</span> <span class="p">(</span><span class="n">fun</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">s</span> <span class="o">=&gt;</span> <span class="s2">"parsing.skip_any_string / unexpected end of text / "</span> <span class="o">++</span><span class="c1"># sm'.show { s }) i s</span>
 </pre></div>
 </div>
 </div>
@@ -9117,7 +9115,7 @@ __assert_eq { expected = abc, def, { line_start = 0; position = { line = 1; col 
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [11]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [9]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -9128,8 +9126,9 @@ __assert_eq { expected = abc, def, { line_start = 0; position = { line = 1; col 
 
 <span class="s2">"abcdef"</span>
 <span class="o">|&gt;</span> <span class="n">run_parser</span> <span class="p">(</span><span class="n">skip_any_string</span> <span class="mi">3</span><span class="p">)</span>
-<span class="o">|&gt;</span> <span class="n">unwrap_format</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="c1">#?*((), "def", new_parser_state 0 1 4 6)</span>
+<span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">get</span>
+<span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.show</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="n">sm</span><span class="s1">'.show ((), "def", new_parser_state 0 1 4 6))</span>
 </pre></div>
 </div>
 </div>
@@ -9143,14 +9142,13 @@ __assert_eq { expected = abc, def, { line_start = 0; position = { line = 1; col 
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.gleam (gleam)
-
+__assert_eq { expected = (def, { line_start = 0; position = { line = 1; col = 4 }; text_length = 6 }) }
 .fsx (fsharp)
-__assert_eq { expected = struct ("def", 0, 1, 4, 6) }
+__assert_eq { expected = (def, { line_start = 0; position = { line = 1; col = 4 }; text_length = 6 }) }
 .py (cuda)
-__assert_eq { expected = ('def', 0, 1, 4, 6) }
-0
+__assert_eq { expected = (def, { line_start = 0; position = { line = 1; col = 4 }; text_length = 6 }) }
 .ts (typescript)
-__assert_eq { expected = def, { line_start = 0; position = { line = 1; col = 4 }; text_length = 6 } }</pre>
+__assert_eq { expected = (def, { line_start = 0; position = { line = 1; col = 4 }; text_length = 6 }) }</pre>
 </div>
 </div>
 </div>
@@ -9194,15 +9192,16 @@ __assert_eq { expected = def, { line_start = 0; position = { line = 1; col = 4 }
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [12]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [10]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
 
 <span class="s2">"sskkip_many"</span>
 <span class="o">|&gt;</span> <span class="n">run_parser</span> <span class="p">(</span><span class="n">skip_many</span> <span class="p">(</span><span class="n">p_char</span> <span class="s1">'s'</span><span class="p">))</span>
-<span class="o">|&gt;</span> <span class="n">unwrap_format</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="c1">#?*("kkip_many", new_parser_state 0 1 3 11)</span>
+<span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">get</span>
+<span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.show</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="n">sm</span><span class="s1">'.show ("kkip_many", new_parser_state 0 1 3 11))</span>
 </pre></div>
 </div>
 </div>
@@ -9215,7 +9214,13 @@ __assert_eq { expected = def, { line_start = 0; position = { line = 1; col = 4 }
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq { expected = kkip_many, { line_start = 0; position = { line = 1; col = 3 }; text_length = 11 } }</pre>
+<pre>__assert_eq { expected = (kkip_many, { line_start = 0; position = { line = 1; col = 3 }; text_length = 11 }) }</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[10]:</div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
+<pre>0</pre>
 </div>
 </div>
 </div>
@@ -9257,15 +9262,16 @@ __assert_eq { expected = def, { line_start = 0; position = { line = 1; col = 4 }
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [13]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [11]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
 
 <span class="s2">"skip_many1"</span>
 <span class="o">|&gt;</span> <span class="n">run_parser</span> <span class="p">(</span><span class="n">skip_many1</span> <span class="p">(</span><span class="n">p_char</span> <span class="s1">'s'</span><span class="p">))</span>
-<span class="o">|&gt;</span> <span class="n">unwrap_format</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="c1">#?*("kip_many1", new_parser_state 0 1 2 10)</span>
+<span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">get</span>
+<span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.show</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="n">sm</span><span class="s1">'.show ("kip_many1", new_parser_state 0 1 2 10))</span>
 </pre></div>
 </div>
 </div>
@@ -9278,7 +9284,13 @@ __assert_eq { expected = def, { line_start = 0; position = { line = 1; col = 4 }
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq { expected = kip_many1, { line_start = 0; position = { line = 1; col = 2 }; text_length = 10 } }</pre>
+<pre>__assert_eq { expected = (kip_many1, { line_start = 0; position = { line = 1; col = 2 }; text_length = 10 }) }</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[11]:</div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
+<pre>0</pre>
 </div>
 </div>
 </div>
@@ -9316,7 +9328,7 @@ __assert_eq { expected = def, { line_start = 0; position = { line = 1; col = 4 }
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [14]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [12]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -9342,15 +9354,20 @@ __assert_eq { expected = def, { line_start = 0; position = { line = 1; col = 4 }
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.gleam (gleam)
-
-.fsx (fsharp)
-__assert_eq { expected = US2_Error "parsing.p_char / { expected = a; line = 2; col = 2 }
+__assert_eq { expected = Error(parsing.p_char / { expected = a; line = 2; col = 2 }
 def
  ^
-" }
+) }
+.fsx (fsharp)
+__assert_eq { expected = Error(parsing.p_char / { expected = a; line = 2; col = 2 }
+def
+ ^
+) }
 .py (cuda)
-__assert_eq { expected = US2_Error(v0='parsing.p_char / { expected = a; line = 2; col = 2 }\ndef\n ^\n') }
-0
+__assert_eq { expected = Error(parsing.p_char / { expected = a; line = 2; col = 2 }
+def
+ ^
+) }
 .ts (typescript)
 __assert_eq { expected = Error(parsing.p_char / { expected = a; line = 2; col = 2 }
 def
@@ -9454,7 +9471,7 @@ def
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [15]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [13]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -9465,8 +9482,9 @@ def
 
 <span class="s2">"abc"</span>
 <span class="o">|&gt;</span> <span class="n">run_parser</span> <span class="p">(</span><span class="n">p_char</span> <span class="s1">'a'</span> <span class="o">&gt;&gt;.</span> <span class="n">p_char</span> <span class="s1">'b'</span><span class="p">)</span>
-<span class="o">|&gt;</span> <span class="n">unwrap_format</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="c1">#?*('b', "c", new_parser_state 0 1 3 3)</span>
+<span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">get</span>
+<span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.show</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="n">sm</span><span class="s1">'.show ('</span><span class="sa">b</span><span class="s1">', "c", new_parser_state 0 1 3 3))</span>
 </pre></div>
 </div>
 </div>
@@ -9480,14 +9498,13 @@ def
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.gleam (gleam)
-
+__assert_eq { expected = (b, c, { line_start = 0; position = { line = 1; col = 3 }; text_length = 3 }) }
 .fsx (fsharp)
-__assert_eq { expected = struct ('b', "c", 0, 1, 3, 3) }
+__assert_eq { expected = (b, c, { line_start = 0; position = { line = 1; col = 3 }; text_length = 3 }) }
 .py (cuda)
-__assert_eq { expected = ('b', 'c', 0, 1, 3, 3) }
-0
+__assert_eq { expected = (b, c, { line_start = 0; position = { line = 1; col = 3 }; text_length = 3 }) }
 .ts (typescript)
-__assert_eq { expected = 'b', c, { line_start = 0; position = { line = 1; col = 3 }; text_length = 3 } }</pre>
+__assert_eq { expected = (b, c, { line_start = 0; position = { line = 1; col = 3 }; text_length = 3 }) }</pre>
 </div>
 </div>
 </div>
@@ -9497,7 +9514,7 @@ __assert_eq { expected = 'b', c, { line_start = 0; position = { line = 1; col = 
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [16]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [14]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -9530,7 +9547,7 @@ __assert_eq { expected = 'b', c, { line_start = 0; position = { line = 1; col = 
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [17]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [15]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -9586,9 +9603,9 @@ Expecting: 'a'
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">none_of</span> <span class="p">(</span><span class="n">chars</span> <span class="p">:</span> <span class="nb">list</span> <span class="n">char</span><span class="p">)</span> <span class="p">:</span> <span class="n">parser</span> <span class="n">char</span> <span class="o">=</span> <span class="n">fun</span> <span class="n">t</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">parser_state</span> <span class="n">s</span><span class="s1">' as s) =&gt;</span>
     <span class="n">inl</span> <span class="n">chars</span><span class="s1">' () =</span>
-        <span class="n">chars</span> <span class="o">|&gt;</span> <span class="n">listm</span><span class="s1">'.box |&gt; listm'</span><span class="o">.</span><span class="n">to_array</span><span class="s1">' |&gt; sm'</span><span class="o">.</span><span class="n">format</span>
+        <span class="n">chars</span> <span class="o">|&gt;</span> <span class="n">listm</span><span class="s1">'.box |&gt; listm'</span><span class="o">.</span><span class="n">to_array</span><span class="s1">' |&gt; sm'</span><span class="o">.</span><span class="n">show</span>
     <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="n">s</span><span class="s1">'.text_length then</span>
-        <span class="n">fail</span> <span class="p">(</span><span class="n">fun</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">s</span> <span class="o">=&gt;</span> <span class="s2">"parsing.none_of / unexpected end of text / "</span> <span class="o">++</span><span class="c1">#? { chars' = chars' (); s }) i s</span>
+        <span class="n">fail</span> <span class="p">(</span><span class="n">fun</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">s</span> <span class="o">=&gt;</span> <span class="s2">"parsing.none_of / unexpected end of text / "</span> <span class="o">++</span><span class="c1"># sm'.show { chars' = chars' (); s }) i s</span>
     <span class="k">else</span>
         <span class="n">inl</span> <span class="n">ch</span> <span class="o">=</span> <span class="n">t</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.index i</span>
         <span class="k">if</span> <span class="n">chars</span> <span class="o">|&gt;</span> <span class="n">listm</span><span class="s1">'.exists'</span> <span class="p">((</span><span class="o">=</span><span class="p">)</span> <span class="n">ch</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="ow">not</span>
@@ -9597,7 +9614,7 @@ Expecting: 'a'
             <span class="n">fail</span>
                 <span class="n">fun</span> <span class="n">t</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">s</span> <span class="o">=&gt;</span>
                     <span class="s2">"parsing.none_of / unexpected char / "</span>
-                    <span class="o">++</span><span class="c1">#? { first_char = t |&gt; sm'.index i; chars' = chars' (); s }</span>
+                    <span class="o">++</span><span class="c1"># sm'.show { first_char = t |&gt; sm'.index i; chars' = chars' (); s }</span>
                 <span class="n">i</span> <span class="n">s</span>
 </pre></div>
 </div>
@@ -9609,7 +9626,7 @@ Expecting: 'a'
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [18]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [16]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -9622,32 +9639,16 @@ Expecting: 'a'
 <span class="o">|&gt;</span> <span class="n">run_parser</span> <span class="p">(</span><span class="n">none_of</span> <span class="p">[</span><span class="s1">'a'</span><span class="p">;</span> <span class="s1">'b'</span><span class="p">;</span> <span class="s1">'c'</span><span class="p">])</span>
 <span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">map_error</span> <span class="nb">eval</span>
 <span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span>
-    <span class="n">backend_switch</span> <span class="p">{</span>
-        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-            <span class="s2">"parsing.none_of / unexpected char / "</span>
-            <span class="o">++</span><span class="c1"># "{ first_char = a; chars' = [\"a\", \"b\", \"c\"]; s = #(0, 1, 1, 3) }"</span>
-        <span class="n">Lua</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-            <span class="s2">"parsing.none_of / unexpected char / "</span>
-            <span class="o">++</span><span class="c1"># "{ first_char = a; chars' = [\"a\", \"b\", \"c\"]; s = #(0, 1, 1, 3) }"</span>
-        <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-            <span class="n">join</span>
-                <span class="s2">"parsing.none_of / unexpected char / "</span>
-                <span class="o">++</span><span class="c1"># "{ first_char = a; chars' = [|'a'; 'b'; 'c'|]; s = struct (0, 1, 1, 3) }"</span>
-        <span class="n">TypeScript</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-            <span class="n">join</span>
-                <span class="s2">"parsing.none_of / unexpected char / "</span>
-                <span class="o">++</span><span class="c1"># "{ first_char = a; chars' = ['a', 'b', 'c']; s = { line_start = 0; position = { line = 1; col = 1 }; text_length = 3 } }"</span>
-        <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-            <span class="s2">"parsing.none_of / unexpected char / "</span>
-            <span class="o">++</span><span class="c1"># "{ first_char = a; chars' = ['a' 'b' 'c']; s = (0, 1, 1, 3) }"</span>
-    <span class="p">}</span>
+    <span class="s2">"parsing.none_of / unexpected char / "</span>
+    <span class="o">++</span><span class="c1"># "{ first_char = a; chars' = [a, b, c]; s = { line_start = 0; position = { line = 1; col = 1 }; text_length = 3 } }"</span>
     <span class="o">|&gt;</span> <span class="n">Error</span>
 <span class="p">)</span>
 
 <span class="s2">"def"</span>
 <span class="o">|&gt;</span> <span class="n">run_parser</span> <span class="p">(</span><span class="n">none_of</span> <span class="p">[</span><span class="s1">'a'</span><span class="p">;</span> <span class="s1">'b'</span><span class="p">;</span> <span class="s1">'c'</span><span class="p">])</span>
-<span class="o">|&gt;</span> <span class="n">unwrap_format</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="c1">#?*('d', "ef", new_parser_state 0 1 2 3)</span>
+<span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">get</span>
+<span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.show</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="n">sm</span><span class="s1">'.show ('</span><span class="n">d</span><span class="s1">', "ef", new_parser_state 0 1 2 3))</span>
 </pre></div>
 </div>
 </div>
@@ -9661,18 +9662,17 @@ Expecting: 'a'
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.gleam (gleam)
-
+__assert_eq { expected = Error(parsing.none_of / unexpected char / { first_char = a; chars' = [a, b, c]; s = { line_start = 0; position = { line = 1; col = 1 }; text_length = 3 } }) }
+__assert_eq { expected = (d, ef, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 }) }
 .fsx (fsharp)
-__assert_eq { expected = US0_Error
-  "parsing.none_of / unexpected char / { first_char = a; chars' = [|'a'; 'b'; 'c'|]; s = struct (0, 1, 1, 3) }" }
-__assert_eq { expected = struct ('d', "ef", 0, 1, 2, 3) }
+__assert_eq { expected = Error(parsing.none_of / unexpected char / { first_char = a; chars' = [a, b, c]; s = { line_start = 0; position = { line = 1; col = 1 }; text_length = 3 } }) }
+__assert_eq { expected = (d, ef, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 }) }
 .py (cuda)
-__assert_eq { expected = US0_Error(v0="parsing.none_of / unexpected char / { first_char = a; chars' = ['a' 'b' 'c']; s = (0, 1, 1, 3) }") }
-__assert_eq { expected = ('d', 'ef', 0, 1, 2, 3) }
-0
+__assert_eq { expected = Error(parsing.none_of / unexpected char / { first_char = a; chars' = [a, b, c]; s = { line_start = 0; position = { line = 1; col = 1 }; text_length = 3 } }) }
+__assert_eq { expected = (d, ef, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 }) }
 .ts (typescript)
-__assert_eq { expected = Error(parsing.none_of / unexpected char / { first_char = a; chars' = ['a', 'b', 'c']; s = { line_start = 0; position = { line = 1; col = 1 }; text_length = 3 } }) }
-__assert_eq { expected = 'd', ef, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 } }</pre>
+__assert_eq { expected = Error(parsing.none_of / unexpected char / { first_char = a; chars' = [a, b, c]; s = { line_start = 0; position = { line = 1; col = 1 }; text_length = 3 } }) }
+__assert_eq { expected = (d, ef, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 }) }</pre>
 </div>
 </div>
 </div>
@@ -9682,7 +9682,7 @@ __assert_eq { expected = 'd', ef, { line_start = 0; position = { line = 1; col =
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [19]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [17]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -9756,7 +9756,7 @@ __assert_eq' { expected = struct ('d', (Ln: 1, Col: 2)) }</pre>
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [20]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [18]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -9767,8 +9767,9 @@ __assert_eq' { expected = struct ('d', (Ln: 1, Col: 2)) }</pre>
 
 <span class="s2">"abc"</span>
 <span class="o">|&gt;</span> <span class="n">run_parser</span> <span class="p">(</span><span class="n">p_char</span> <span class="s1">'a'</span> <span class="o">&lt;|&gt;</span> <span class="n">p_char</span> <span class="s1">'b'</span><span class="p">)</span>
-<span class="o">|&gt;</span> <span class="n">unwrap_format</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="c1">#?*('a', "bc", new_parser_state 0 1 2 3)</span>
+<span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">get</span>
+<span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.show</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="n">sm</span><span class="s1">'.show ('</span><span class="n">a</span><span class="s1">', "bc", new_parser_state 0 1 2 3))</span>
 
 <span class="s2">"cba"</span>
 <span class="o">|&gt;</span> <span class="n">run_parser</span> <span class="p">(</span><span class="n">p_char</span> <span class="s1">'a'</span> <span class="o">&lt;|&gt;</span> <span class="n">p_char</span> <span class="s1">'b'</span><span class="p">)</span>
@@ -9787,19 +9788,25 @@ __assert_eq' { expected = struct ('d', (Ln: 1, Col: 2)) }</pre>
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.gleam (gleam)
-
-.fsx (fsharp)
-__assert_eq { expected = struct ('a', "bc", 0, 1, 2, 3) }
-__assert_eq { expected = US0_Error "parsing.p_char / { expected = b; line = 1; col = 1 }
+__assert_eq { expected = (a, bc, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 }) }
+__assert_eq { expected = Error(parsing.p_char / { expected = b; line = 1; col = 1 }
 cba
 ^
-" }
+) }
+.fsx (fsharp)
+__assert_eq { expected = (a, bc, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 }) }
+__assert_eq { expected = Error(parsing.p_char / { expected = b; line = 1; col = 1 }
+cba
+^
+) }
 .py (cuda)
-__assert_eq { expected = ('a', 'bc', 0, 1, 2, 3) }
-__assert_eq { expected = US0_Error(v0='parsing.p_char / { expected = b; line = 1; col = 1 }\ncba\n^\n') }
-0
+__assert_eq { expected = (a, bc, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 }) }
+__assert_eq { expected = Error(parsing.p_char / { expected = b; line = 1; col = 1 }
+cba
+^
+) }
 .ts (typescript)
-__assert_eq { expected = 'a', bc, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 } }
+__assert_eq { expected = (a, bc, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 }) }
 __assert_eq { expected = Error(parsing.p_char / { expected = b; line = 1; col = 1 }
 cba
 ^
@@ -9840,7 +9847,7 @@ cba
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [21]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [19]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -9851,8 +9858,9 @@ cba
 
 <span class="s2">"abc"</span>
 <span class="o">|&gt;</span> <span class="n">run_parser</span> <span class="p">(</span><span class="n">p_char</span> <span class="s1">'a'</span> <span class="o">|&gt;&gt;</span> <span class="n">fun</span> <span class="n">c</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">c</span> <span class="p">()</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.char_to_upper)</span>
-<span class="o">|&gt;</span> <span class="n">unwrap_format</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="c1">#?*('A', "bc", new_parser_state 0 1 2 3)</span>
+<span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">get</span>
+<span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.show</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="n">sm</span><span class="s1">'.show ('</span><span class="n">A</span><span class="s1">', "bc", new_parser_state 0 1 2 3))</span>
 </pre></div>
 </div>
 </div>
@@ -9866,14 +9874,13 @@ cba
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.gleam (gleam)
-
+__assert_eq { expected = (A, bc, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 }) }
 .fsx (fsharp)
-__assert_eq { expected = struct ('A', "bc", 0, 1, 2, 3) }
+__assert_eq { expected = (A, bc, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 }) }
 .py (cuda)
-__assert_eq { expected = ('A', 'bc', 0, 1, 2, 3) }
-0
+__assert_eq { expected = (A, bc, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 }) }
 .ts (typescript)
-__assert_eq { expected = 'A', bc, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 } }</pre>
+__assert_eq { expected = (A, bc, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 }) }</pre>
 </div>
 </div>
 </div>
@@ -9921,7 +9928,7 @@ __assert_eq { expected = 'A', bc, { line_start = 0; position = { line = 1; col =
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [22]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [20]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -9932,8 +9939,9 @@ __assert_eq { expected = 'A', bc, { line_start = 0; position = { line = 1; col =
 
 <span class="s2">"aaabbc"</span>
 <span class="o">|&gt;</span> <span class="n">run_parser</span> <span class="p">(</span><span class="n">many</span> <span class="p">(</span><span class="n">p_char</span> <span class="s1">'a'</span> <span class="o">&lt;|&gt;</span> <span class="n">p_char</span> <span class="s1">'b'</span><span class="p">))</span>
-<span class="o">|&gt;</span> <span class="n">unwrap_format</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="c1">#?*(['a'; 'a'; 'a'; 'b'; 'b'], "c", new_parser_state 0 1 6 6)</span>
+<span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">get</span>
+<span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.show</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="n">sm</span><span class="s1">'.show (['</span><span class="n">a</span><span class="s1">'; '</span><span class="n">a</span><span class="s1">'; '</span><span class="n">a</span><span class="s1">'; '</span><span class="sa">b</span><span class="s1">'; '</span><span class="sa">b</span><span class="s1">'], "c", new_parser_state 0 1 6 6))</span>
 </pre></div>
 </div>
 </div>
@@ -9947,19 +9955,14 @@ __assert_eq { expected = 'A', bc, { line_start = 0; position = { line = 1; col =
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.gleam (gleam)
-
+__assert_eq { expected = (Cons(a, Cons(a, Cons(a, Cons(b, Cons(b, Nil))))), c, { line_start = 0; position = { line = 1; col = 6 }; text_length = 6 }) }
 .fsx (fsharp)
-/home/runner/work/spiral/spiral/lib/spiral/main.fsx(436,54): warning FS3884: This expression is a function value. When used in an interpolated string it will be formatted using its 'ToString' method, which is likely not the intended behavior. Consider applying the function to its arguments.
-__assert_eq { expected = struct (UH0_Cons
-          ('a',
-           UH0_Cons
-             ('a', UH0_Cons ('a', UH0_Cons ('b', UH0_Cons ('b', UH0_Nil))))),
-        "c", 0, 1, 6, 6) }
+/home/runner/work/spiral/spiral/lib/spiral/main.fsx(533,54): warning FS3884: This expression is a function value. When used in an interpolated string it will be formatted using its 'ToString' method, which is likely not the intended behavior. Consider applying the function to its arguments.
+__assert_eq { expected = (Cons(a, Cons(a, Cons(a, Cons(b, Cons(b, Nil))))), c, { line_start = 0; position = { line = 1; col = 6 }; text_length = 6 }) }
 .py (cuda)
-__assert_eq { expected = (UH0_Cons(v0='a', v1=UH0_Cons(v0='a', v1=UH0_Cons(v0='a', v1=UH0_Cons(v0='b', v1=UH0_Cons(v0='b', v1=UH0_Nil()))))), 'c', 0, 1, 6, 6) }
-0
+__assert_eq { expected = (Cons(a, Cons(a, Cons(a, Cons(b, Cons(b, Nil))))), c, { line_start = 0; position = { line = 1; col = 6 }; text_length = 6 }) }
 .ts (typescript)
-__assert_eq { expected = Cons('a', Cons('a', Cons('a', Cons('b', Cons('b', Nil))))), c, { line_start = 0; position = { line = 1; col = 6 }; text_length = 6 } }</pre>
+__assert_eq { expected = (Cons(a, Cons(a, Cons(a, Cons(b, Cons(b, Nil))))), c, { line_start = 0; position = { line = 1; col = 6 }; text_length = 6 }) }</pre>
 </div>
 </div>
 </div>
@@ -10006,7 +10009,7 @@ __assert_eq { expected = Cons('a', Cons('a', Cons('a', Cons('b', Cons('b', Nil))
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [23]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [21]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -10017,8 +10020,9 @@ __assert_eq { expected = Cons('a', Cons('a', Cons('a', Cons('b', Cons('b', Nil))
 
 <span class="s2">"aaabbc"</span>
 <span class="o">|&gt;</span> <span class="n">run_parser</span> <span class="p">(</span><span class="n">many1_chars</span> <span class="p">(</span><span class="n">p_char</span> <span class="s1">'a'</span> <span class="o">&lt;|&gt;</span> <span class="n">p_char</span> <span class="s1">'b'</span><span class="p">))</span>
-<span class="o">|&gt;</span> <span class="n">unwrap_format</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="c1">#?*("aaabb", "c", new_parser_state 0 1 6 6)</span>
+<span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">get</span>
+<span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.show</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="n">sm</span><span class="s1">'.show ("aaabb", "c", new_parser_state 0 1 6 6))</span>
 </pre></div>
 </div>
 </div>
@@ -10032,15 +10036,14 @@ __assert_eq { expected = Cons('a', Cons('a', Cons('a', Cons('b', Cons('b', Nil))
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.gleam (gleam)
-
+__assert_eq { expected = (aaabb, c, { line_start = 0; position = { line = 1; col = 6 }; text_length = 6 }) }
 .fsx (fsharp)
-/home/runner/work/spiral/spiral/lib/spiral/main.fsx(434,54): warning FS3884: This expression is a function value. When used in an interpolated string it will be formatted using its 'ToString' method, which is likely not the intended behavior. Consider applying the function to its arguments.
-__assert_eq { expected = struct ("aaabb", "c", 0, 1, 6, 6) }
+/home/runner/work/spiral/spiral/lib/spiral/main.fsx(440,54): warning FS3884: This expression is a function value. When used in an interpolated string it will be formatted using its 'ToString' method, which is likely not the intended behavior. Consider applying the function to its arguments.
+__assert_eq { expected = (aaabb, c, { line_start = 0; position = { line = 1; col = 6 }; text_length = 6 }) }
 .py (cuda)
-__assert_eq { expected = ('aaabb', 'c', 0, 1, 6, 6) }
-0
+__assert_eq { expected = (aaabb, c, { line_start = 0; position = { line = 1; col = 6 }; text_length = 6 }) }
 .ts (typescript)
-__assert_eq { expected = aaabb, c, { line_start = 0; position = { line = 1; col = 6 }; text_length = 6 } }</pre>
+__assert_eq { expected = (aaabb, c, { line_start = 0; position = { line = 1; col = 6 }; text_length = 6 }) }</pre>
 </div>
 </div>
 </div>
@@ -10077,7 +10080,7 @@ __assert_eq { expected = aaabb, c, { line_start = 0; position = { line = 1; col 
     <span class="k">if</span> <span class="n">i</span><span class="s1">' &gt; i</span>
     <span class="n">then</span> <span class="n">Ok</span> <span class="p">(</span><span class="n">t</span> <span class="o">|&gt;</span> <span class="nb">slice</span> <span class="n">i</span> <span class="n">i</span><span class="s1">', i'</span><span class="p">,</span> <span class="n">s</span><span class="s1">''</span><span class="p">)</span>
     <span class="k">else</span>
-        <span class="n">fail</span> <span class="p">(</span><span class="n">fun</span> <span class="n">_</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">s</span> <span class="o">=&gt;</span> <span class="s2">"parsing.many1_satisfy / no matching char / "</span> <span class="o">++</span><span class="c1">#? { i s }) i s</span>
+        <span class="n">fail</span> <span class="p">(</span><span class="n">fun</span> <span class="n">_</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">s</span> <span class="o">=&gt;</span> <span class="s2">"parsing.many1_satisfy / no matching char / "</span> <span class="o">++</span><span class="c1"># sm'.show { i s }) i s</span>
 </pre></div>
 </div>
 </div>
@@ -10308,7 +10311,7 @@ __assert_eq { expected = aaabb, c, { line_start = 0; position = { line = 1; col 
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [24]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [22]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -10319,13 +10322,15 @@ __assert_eq { expected = aaabb, c, { line_start = 0; position = { line = 1; col 
 
 <span class="s2">"aaabbc"</span>
 <span class="o">|&gt;</span> <span class="n">run_parser</span> <span class="p">(</span><span class="n">many1</span> <span class="p">(</span><span class="n">p_char</span> <span class="s1">'a'</span> <span class="o">&lt;|&gt;</span> <span class="n">p_char</span> <span class="s1">'b'</span><span class="p">))</span>
-<span class="o">|&gt;</span> <span class="n">unwrap_format</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="c1">#?*([ 'a'; 'a'; 'a'; 'b'; 'b' ], "c", new_parser_state 0 1 6 6)</span>
+<span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">get</span>
+<span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.show</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="n">sm</span><span class="s1">'.show ([ '</span><span class="n">a</span><span class="s1">'; '</span><span class="n">a</span><span class="s1">'; '</span><span class="n">a</span><span class="s1">'; '</span><span class="sa">b</span><span class="s1">'; '</span><span class="sa">b</span><span class="s1">' ], "c", new_parser_state 0 1 6 6))</span>
 
 <span class="s2">"bcc"</span>
 <span class="o">|&gt;</span> <span class="n">run_parser</span> <span class="p">(</span><span class="n">many1</span> <span class="p">(</span><span class="n">p_char</span> <span class="s1">'a'</span> <span class="o">&lt;|&gt;</span> <span class="n">p_char</span> <span class="s1">'b'</span><span class="p">))</span>
-<span class="o">|&gt;</span> <span class="n">unwrap_format</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="c1">#?*([ 'b' ], "cc", new_parser_state 0 1 2 3)</span>
+<span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">get</span>
+<span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.show</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="n">sm</span><span class="s1">'.show ([ '</span><span class="sa">b</span><span class="s1">' ], "cc", new_parser_state 0 1 2 3))</span>
 
 <span class="s2">"cba"</span>
 <span class="o">|&gt;</span> <span class="n">run_parser</span> <span class="p">(</span><span class="n">many1</span> <span class="p">(</span><span class="n">p_char</span> <span class="s1">'a'</span> <span class="o">&lt;|&gt;</span> <span class="n">p_char</span> <span class="s1">'b'</span><span class="p">))</span>
@@ -10344,28 +10349,31 @@ __assert_eq { expected = aaabb, c, { line_start = 0; position = { line = 1; col 
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.gleam (gleam)
-
-.fsx (fsharp)
-/home/runner/work/spiral/spiral/lib/spiral/main.fsx(534,54): warning FS3884: This expression is a function value. When used in an interpolated string it will be formatted using its 'ToString' method, which is likely not the intended behavior. Consider applying the function to its arguments.
-/home/runner/work/spiral/spiral/lib/spiral/main.fsx(601,55): warning FS3884: This expression is a function value. When used in an interpolated string it will be formatted using its 'ToString' method, which is likely not the intended behavior. Consider applying the function to its arguments.
-__assert_eq { expected = struct (UH0_Cons
-          ('a',
-           UH0_Cons
-             ('a', UH0_Cons ('a', UH0_Cons ('b', UH0_Cons ('b', UH0_Nil))))),
-        "c", 0, 1, 6, 6) }
-__assert_eq { expected = struct (UH0_Cons ('b', UH0_Nil), "cc", 0, 1, 2, 3) }
-__assert_eq { expected = US3_Error "parsing.p_char / { expected = b; line = 1; col = 1 }
+__assert_eq { expected = (Cons(a, Cons(a, Cons(a, Cons(b, Cons(b, Nil))))), c, { line_start = 0; position = { line = 1; col = 6 }; text_length = 6 }) }
+__assert_eq { expected = (Cons(b, Nil), cc, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 }) }
+__assert_eq { expected = Error(parsing.p_char / { expected = b; line = 1; col = 1 }
 cba
 ^
-" }
+) }
+.fsx (fsharp)
+/home/runner/work/spiral/spiral/lib/spiral/main.fsx(618,54): warning FS3884: This expression is a function value. When used in an interpolated string it will be formatted using its 'ToString' method, which is likely not the intended behavior. Consider applying the function to its arguments.
+/home/runner/work/spiral/spiral/lib/spiral/main.fsx(801,55): warning FS3884: This expression is a function value. When used in an interpolated string it will be formatted using its 'ToString' method, which is likely not the intended behavior. Consider applying the function to its arguments.
+__assert_eq { expected = (Cons(a, Cons(a, Cons(a, Cons(b, Cons(b, Nil))))), c, { line_start = 0; position = { line = 1; col = 6 }; text_length = 6 }) }
+__assert_eq { expected = (Cons(b, Nil), cc, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 }) }
+__assert_eq { expected = Error(parsing.p_char / { expected = b; line = 1; col = 1 }
+cba
+^
+) }
 .py (cuda)
-__assert_eq { expected = (UH0_Cons(v0='a', v1=UH0_Cons(v0='a', v1=UH0_Cons(v0='a', v1=UH0_Cons(v0='b', v1=UH0_Cons(v0='b', v1=UH0_Nil()))))), 'c', 0, 1, 6, 6) }
-__assert_eq { expected = (UH0_Cons(v0='b', v1=UH0_Nil()), 'cc', 0, 1, 2, 3) }
-__assert_eq { expected = US3_Error(v0='parsing.p_char / { expected = b; line = 1; col = 1 }\ncba\n^\n') }
-0
+__assert_eq { expected = (Cons(a, Cons(a, Cons(a, Cons(b, Cons(b, Nil))))), c, { line_start = 0; position = { line = 1; col = 6 }; text_length = 6 }) }
+__assert_eq { expected = (Cons(b, Nil), cc, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 }) }
+__assert_eq { expected = Error(parsing.p_char / { expected = b; line = 1; col = 1 }
+cba
+^
+) }
 .ts (typescript)
-__assert_eq { expected = Cons('a', Cons('a', Cons('a', Cons('b', Cons('b', Nil))))), c, { line_start = 0; position = { line = 1; col = 6 }; text_length = 6 } }
-__assert_eq { expected = Cons('b', Nil), cc, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 } }
+__assert_eq { expected = (Cons(a, Cons(a, Cons(a, Cons(b, Cons(b, Nil))))), c, { line_start = 0; position = { line = 1; col = 6 }; text_length = 6 }) }
+__assert_eq { expected = (Cons(b, Nil), cc, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 }) }
 __assert_eq { expected = Error(parsing.p_char / { expected = b; line = 1; col = 1 }
 cba
 ^
@@ -10500,7 +10508,7 @@ cba
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [25]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [23]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -10511,8 +10519,9 @@ cba
 
 <span class="s2">"aaabbc"</span>
 <span class="o">|&gt;</span> <span class="n">run_parser</span> <span class="p">(</span><span class="n">many1_strings</span> <span class="p">(</span><span class="n">p_char</span> <span class="s1">'a'</span> <span class="o">&lt;|&gt;</span> <span class="n">p_char</span> <span class="s1">'b'</span><span class="p">))</span>
-<span class="o">|&gt;</span> <span class="n">unwrap_format</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="c1">#?*("aaabb", "c", new_parser_state 0 1 6 6)</span>
+<span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">get</span>
+<span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.show</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="n">sm</span><span class="s1">'.show ("aaabb", "c", new_parser_state 0 1 6 6))</span>
 </pre></div>
 </div>
 </div>
@@ -10526,15 +10535,14 @@ cba
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.gleam (gleam)
-
+__assert_eq { expected = (aaabb, c, { line_start = 0; position = { line = 1; col = 6 }; text_length = 6 }) }
 .fsx (fsharp)
-/home/runner/work/spiral/spiral/lib/spiral/main.fsx(478,54): warning FS3884: This expression is a function value. When used in an interpolated string it will be formatted using its 'ToString' method, which is likely not the intended behavior. Consider applying the function to its arguments.
-__assert_eq { expected = struct ("aaabb", "c", 0, 1, 6, 6) }
+/home/runner/work/spiral/spiral/lib/spiral/main.fsx(477,54): warning FS3884: This expression is a function value. When used in an interpolated string it will be formatted using its 'ToString' method, which is likely not the intended behavior. Consider applying the function to its arguments.
+__assert_eq { expected = (aaabb, c, { line_start = 0; position = { line = 1; col = 6 }; text_length = 6 }) }
 .py (cuda)
-__assert_eq { expected = ('aaabb', 'c', 0, 1, 6, 6) }
-0
+__assert_eq { expected = (aaabb, c, { line_start = 0; position = { line = 1; col = 6 }; text_length = 6 }) }
 .ts (typescript)
-__assert_eq { expected = aaabb, c, { line_start = 0; position = { line = 1; col = 6 }; text_length = 6 } }</pre>
+__assert_eq { expected = (aaabb, c, { line_start = 0; position = { line = 1; col = 6 }; text_length = 6 }) }</pre>
 </div>
 </div>
 </div>
@@ -10629,7 +10637,7 @@ __assert_eq { expected = aaabb, c, { line_start = 0; position = { line = 1; col 
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [26]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [24]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -10640,13 +10648,15 @@ __assert_eq { expected = aaabb, c, { line_start = 0; position = { line = 1; col 
 
 <span class="s2">"bca"</span>
 <span class="o">|&gt;</span> <span class="n">run_parser</span> <span class="p">(</span><span class="n">choice</span> <span class="p">[</span> <span class="n">p_char</span> <span class="s1">'a'</span><span class="p">;</span> <span class="n">p_char</span> <span class="s1">'b'</span><span class="p">;</span> <span class="n">p_char</span> <span class="s1">'c'</span> <span class="p">])</span>
-<span class="o">|&gt;</span> <span class="n">unwrap_format</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="c1">#?*('b', "ca", new_parser_state 0 1 2 3)</span>
+<span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">get</span>
+<span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.show</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="n">sm</span><span class="s1">'.show ('</span><span class="sa">b</span><span class="s1">', "ca", new_parser_state 0 1 2 3))</span>
 
 <span class="s2">"cba"</span>
 <span class="o">|&gt;</span> <span class="n">run_parser</span> <span class="p">(</span><span class="n">choice</span> <span class="p">[</span> <span class="n">p_char</span> <span class="s1">'a'</span><span class="p">;</span> <span class="n">p_char</span> <span class="s1">'b'</span><span class="p">;</span> <span class="n">p_char</span> <span class="s1">'c'</span> <span class="p">])</span>
-<span class="o">|&gt;</span> <span class="n">unwrap_format</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="c1">#?*('c', "ba", new_parser_state 0 1 2 3)</span>
+<span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">get</span>
+<span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.show</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="n">sm</span><span class="s1">'.show ('</span><span class="n">c</span><span class="s1">', "ba", new_parser_state 0 1 2 3))</span>
 </pre></div>
 </div>
 </div>
@@ -10660,17 +10670,17 @@ __assert_eq { expected = aaabb, c, { line_start = 0; position = { line = 1; col 
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.gleam (gleam)
-
+__assert_eq { expected = (b, ca, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 }) }
+__assert_eq { expected = (c, ba, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 }) }
 .fsx (fsharp)
-__assert_eq { expected = struct ('b', "ca", 0, 1, 2, 3) }
-__assert_eq { expected = struct ('c', "ba", 0, 1, 2, 3) }
+__assert_eq { expected = (b, ca, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 }) }
+__assert_eq { expected = (c, ba, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 }) }
 .py (cuda)
-__assert_eq { expected = ('b', 'ca', 0, 1, 2, 3) }
-__assert_eq { expected = ('c', 'ba', 0, 1, 2, 3) }
-0
+__assert_eq { expected = (b, ca, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 }) }
+__assert_eq { expected = (c, ba, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 }) }
 .ts (typescript)
-__assert_eq { expected = 'b', ca, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 } }
-__assert_eq { expected = 'c', ba, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 } }</pre>
+__assert_eq { expected = (b, ca, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 }) }
+__assert_eq { expected = (c, ba, { line_start = 0; position = { line = 1; col = 2 }; text_length = 3 }) }</pre>
 </div>
 </div>
 </div>
@@ -10711,7 +10721,7 @@ __assert_eq { expected = 'c', ba, { line_start = 0; position = { line = 1; col =
                         <span class="n">inl</span> <span class="n">end</span><span class="s1">''</span> <span class="o">=</span> <span class="p">(</span><span class="n">i</span><span class="s1">''</span> <span class="o">+</span> <span class="n">get_max_context</span> <span class="p">())</span> <span class="o">|&gt;</span> <span class="nb">min</span> <span class="n">t_len</span>
                         <span class="n">inl</span> <span class="n">rest</span><span class="s1">' = t |&gt; slice i'</span> <span class="n">end</span><span class="s1">'</span>
                         <span class="n">inl</span> <span class="n">rest</span><span class="s1">''</span> <span class="o">=</span> <span class="n">t</span> <span class="o">|&gt;</span> <span class="nb">slice</span> <span class="n">i</span><span class="s1">''</span> <span class="n">end</span><span class="s1">''</span>
-                        <span class="s2">"parsing.between / expected closing delimiter / "</span> <span class="o">++</span><span class="c1">#? { e t rest' rest'' }</span>
+                        <span class="s2">"parsing.between / expected closing delimiter / "</span> <span class="o">++</span><span class="c1"># sm'.show { e t rest' rest'' }</span>
                     <span class="n">i</span><span class="s1">''</span> <span class="n">s</span><span class="s1">''</span>
         <span class="o">|</span> <span class="n">Error</span> <span class="n">_</span> <span class="o">=&gt;</span>
             <span class="k">match</span> <span class="n">p_close</span> <span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">i</span><span class="s1">', s'</span><span class="p">)</span> <span class="k">with</span>
@@ -10721,7 +10731,7 @@ __assert_eq { expected = 'c', ba, { line_start = 0; position = { line = 1; col =
                     <span class="n">fun</span> <span class="n">t</span><span class="p">,</span> <span class="n">i</span><span class="s1">', _ =&gt;</span>
                         <span class="n">inl</span> <span class="n">end</span><span class="s1">' = (i'</span> <span class="o">+</span> <span class="n">get_max_context</span> <span class="p">())</span> <span class="o">|&gt;</span> <span class="nb">min</span> <span class="c1">##t</span>
                         <span class="n">inl</span> <span class="n">rest</span><span class="s1">' = t |&gt; slice i'</span> <span class="n">end</span><span class="s1">'</span>
-                        <span class="s2">"parsing.between / expected content or closing delimiter / "</span> <span class="o">++</span><span class="c1">#? { rest' }</span>
+                        <span class="s2">"parsing.between / expected content or closing delimiter / "</span> <span class="o">++</span><span class="c1"># sm'.show { rest' }</span>
                     <span class="n">i</span><span class="s1">' s'</span>
     <span class="o">|</span> <span class="n">Error</span> <span class="n">e</span> <span class="o">=&gt;</span> <span class="n">e</span> <span class="o">|&gt;</span> <span class="n">Error</span>
 </pre></div>
@@ -10729,12 +10739,12 @@ __assert_eq { expected = 'c', ba, { line_start = 0; position = { line = 1; col =
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=122">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=122">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [27]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [25]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -10749,32 +10759,12 @@ __assert_eq { expected = 'c', ba, { line_start = 0; position = { line = 1; col =
 </div>
 </div>
 </div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>struct ("Error in Ln: 1 Col: 7
-[aaabb
-      ^
-Note: The error occurred at the end of the input stream.
-Expecting: ']', 'a' or 'b'
-",
-        Error in Ln: 1 Col: 7
-Expecting: ']', 'a' or 'b'
-)</pre>
-</div>
-</div>
-</div>
-</div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=123">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [28]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [26]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -10785,8 +10775,9 @@ Expecting: ']', 'a' or 'b'
 
 <span class="s2">"[aaabb]"</span>
 <span class="o">|&gt;</span> <span class="n">run_parser</span> <span class="p">(</span><span class="n">between</span> <span class="p">(</span><span class="n">p_char</span> <span class="s1">'['</span><span class="p">)</span> <span class="p">(</span><span class="n">p_char</span> <span class="s1">']'</span><span class="p">)</span> <span class="p">(</span><span class="n">many1_chars</span> <span class="p">(</span><span class="n">p_char</span> <span class="s1">'a'</span> <span class="o">&lt;|&gt;</span> <span class="n">p_char</span> <span class="s1">'b'</span><span class="p">)))</span>
-<span class="o">|&gt;</span> <span class="n">unwrap_format</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="c1">#?*("aaabb", "", new_parser_state 0 1 8 7)</span>
+<span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">get</span>
+<span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.show</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="n">sm</span><span class="s1">'.show ("aaabb", "", new_parser_state 0 1 8 7))</span>
 
 <span class="s2">"[aaabb"</span>
 <span class="o">|&gt;</span> <span class="n">run_parser</span> <span class="p">(</span><span class="n">between</span> <span class="p">(</span><span class="n">p_char</span> <span class="s1">'['</span><span class="p">)</span> <span class="p">(</span><span class="n">p_char</span> <span class="s1">']'</span><span class="p">)</span> <span class="p">(</span><span class="n">many1_chars</span> <span class="p">(</span><span class="n">p_char</span> <span class="s1">'a'</span> <span class="o">&lt;|&gt;</span> <span class="n">p_char</span> <span class="s1">'b'</span><span class="p">)))</span>
@@ -10796,7 +10787,7 @@ Expecting: ']', 'a' or 'b'
 <span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span>
     <span class="s2">"parsing.between / expected closing delimiter / "</span>
     <span class="o">++</span><span class="c1"># "{ e = parsing.p_char / unexpected end of text / { c = ]; "</span>
-    <span class="o">++</span><span class="c1"># "s' = " ++#? (new_parser_state 0 1 7 6) ++# " }; "</span>
+    <span class="o">++</span><span class="c1"># "s' = " ++# sm'.show (new_parser_state 0 1 7 6) ++# " }; "</span>
     <span class="o">++</span><span class="c1"># "t = [aaabb; rest' = aaabb; rest'' =  }"</span>
 <span class="p">)</span>
 </pre></div>
@@ -10812,17 +10803,17 @@ Expecting: ']', 'a' or 'b'
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.gleam (gleam)
-
+__assert_eq { expected = (aaabb, , { line_start = 0; position = { line = 1; col = 8 }; text_length = 7 }) }
+__assert_eq { expected = parsing.between / expected closing delimiter / { e = parsing.p_char / unexpected end of text / { c = ]; s' = { line_start = 0; position = { line = 1; col = 7 }; text_length = 6 } }; t = [aaabb; rest' = aaabb; rest'' =  } }
 .fsx (fsharp)
-/home/runner/work/spiral/spiral/lib/spiral/main.fsx(760,54): warning FS3884: This expression is a function value. When used in an interpolated string it will be formatted using its 'ToString' method, which is likely not the intended behavior. Consider applying the function to its arguments.
-__assert_eq { expected = struct ("aaabb", "", 0, 1, 8, 7) }
+/home/runner/work/spiral/spiral/lib/spiral/main.fsx(796,54): warning FS3884: This expression is a function value. When used in an interpolated string it will be formatted using its 'ToString' method, which is likely not the intended behavior. Consider applying the function to its arguments.
+__assert_eq { expected = (aaabb, , { line_start = 0; position = { line = 1; col = 8 }; text_length = 7 }) }
 __assert_eq { expected = parsing.between / expected closing delimiter / { e = parsing.p_char / unexpected end of text / { c = ]; s' = { line_start = 0; position = { line = 1; col = 7 }; text_length = 6 } }; t = [aaabb; rest' = aaabb; rest'' =  } }
 .py (cuda)
-__assert_eq { expected = ('aaabb', '', 0, 1, 8, 7) }
+__assert_eq { expected = (aaabb, , { line_start = 0; position = { line = 1; col = 8 }; text_length = 7 }) }
 __assert_eq { expected = parsing.between / expected closing delimiter / { e = parsing.p_char / unexpected end of text / { c = ]; s' = { line_start = 0; position = { line = 1; col = 7 }; text_length = 6 } }; t = [aaabb; rest' = aaabb; rest'' =  } }
-0
 .ts (typescript)
-__assert_eq { expected = aaabb, , { line_start = 0; position = { line = 1; col = 8 }; text_length = 7 } }
+__assert_eq { expected = (aaabb, , { line_start = 0; position = { line = 1; col = 8 }; text_length = 7 }) }
 __assert_eq { expected = parsing.between / expected closing delimiter / { e = parsing.p_char / unexpected end of text / { c = ]; s' = { line_start = 0; position = { line = 1; col = 7 }; text_length = 6 } }; t = [aaabb; rest' = aaabb; rest'' =  } }</pre>
 </div>
 </div>
@@ -10914,15 +10905,16 @@ __assert_eq { expected = parsing.between / expected closing delimiter / { e = pa
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [29]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [27]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
 
 <span class="s2">"sep_end_by"</span>
 <span class="o">|&gt;</span> <span class="n">run_parser</span> <span class="p">(</span><span class="n">sep_end_by</span> <span class="p">(</span><span class="n">p_char</span> <span class="s1">'s'</span> <span class="o">&lt;|&gt;</span> <span class="n">p_char</span> <span class="s1">'e'</span><span class="p">)</span> <span class="p">(</span><span class="n">p_char</span> <span class="s1">'e'</span><span class="p">))</span>
-<span class="o">|&gt;</span> <span class="n">unwrap_format</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="c1">#?*([ 's' ], "p_end_by", new_parser_state 0 1 3 10)</span>
+<span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">get</span>
+<span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.show</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="n">sm</span><span class="s1">'.show ([ '</span><span class="n">s</span><span class="s1">' ], "p_end_by", new_parser_state 0 1 3 10))</span>
 </pre></div>
 </div>
 </div>
@@ -10935,7 +10927,13 @@ __assert_eq { expected = parsing.between / expected closing delimiter / { e = pa
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq { expected = Cons('s', Nil), p_end_by, { line_start = 0; position = { line = 1; col = 3 }; text_length = 10 } }</pre>
+<pre>__assert_eq { expected = (Cons(s, Nil), p_end_by, { line_start = 0; position = { line = 1; col = 3 }; text_length = 10 }) }</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[27]:</div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
+<pre>0</pre>
 </div>
 </div>
 </div>
@@ -10994,7 +10992,7 @@ __assert_eq { expected = parsing.between / expected closing delimiter / { e = pa
             <span class="n">fun</span> <span class="n">t</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">parser_state</span> <span class="n">s</span><span class="s1">') =&gt;</span>
                 <span class="n">inl</span> <span class="n">preview_end</span> <span class="o">=</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="n">get_max_context</span> <span class="p">())</span> <span class="o">|&gt;</span> <span class="nb">min</span> <span class="n">s</span><span class="s1">'.text_length</span>
                 <span class="s2">"parsing.spaces1 / expected at least one space / "</span>
-                <span class="o">++</span><span class="c1">#? { rest = t |&gt; slice i preview_end }</span>
+                <span class="o">++</span><span class="c1"># sm'.show { rest = t |&gt; slice i preview_end }</span>
             <span class="n">i</span> <span class="n">s</span>
 </pre></div>
 </div>
@@ -11049,12 +11047,12 @@ __assert_eq { expected = parsing.between / expected closing delimiter / { e = pa
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">p_digit</span> <span class="p">()</span> <span class="p">:</span> <span class="n">parser</span> <span class="n">char</span> <span class="o">=</span> <span class="n">fun</span> <span class="n">t</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">parser_state</span> <span class="n">s</span><span class="s1">' as s) =&gt;</span>
     <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="n">s</span><span class="s1">'.text_length then</span>
-        <span class="n">fail</span> <span class="p">(</span><span class="n">fun</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">s</span> <span class="o">=&gt;</span> <span class="s2">"parsing.p_digit / unexpected end of text / "</span> <span class="o">++</span><span class="c1">#? { s }) i s</span>
+        <span class="n">fail</span> <span class="p">(</span><span class="n">fun</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">s</span> <span class="o">=&gt;</span> <span class="s2">"parsing.p_digit / unexpected end of text / "</span> <span class="o">++</span><span class="c1"># sm'.show { s }) i s</span>
     <span class="k">else</span>
         <span class="k">match</span> <span class="n">t</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.index i with</span>
         <span class="o">|</span> <span class="s1">'0'</span> <span class="o">|</span> <span class="s1">'1'</span> <span class="o">|</span> <span class="s1">'2'</span> <span class="o">|</span> <span class="s1">'3'</span> <span class="o">|</span> <span class="s1">'4'</span> <span class="o">|</span> <span class="s1">'5'</span> <span class="o">|</span> <span class="s1">'6'</span> <span class="o">|</span> <span class="s1">'7'</span> <span class="o">|</span> <span class="s1">'8'</span> <span class="o">|</span> <span class="s1">'9'</span> <span class="k">as</span> <span class="n">c</span> <span class="o">=&gt;</span>
             <span class="n">Ok</span> <span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">c</span> <span class="o">|&gt;</span> <span class="n">update_char</span> <span class="n">s</span><span class="p">)</span>
-        <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fail</span> <span class="p">(</span><span class="n">fun</span> <span class="n">t</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="s2">"parsing.p_digit / unexpected char / "</span> <span class="o">++</span><span class="c1">#? { c = t |&gt; sm'.index i }) i s</span>
+        <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fail</span> <span class="p">(</span><span class="n">fun</span> <span class="n">t</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="s2">"parsing.p_digit / unexpected char / "</span> <span class="o">++</span><span class="c1"># sm'.show { c = t |&gt; sm'.index i }) i s</span>
 </pre></div>
 </div>
 </div>
@@ -11065,7 +11063,7 @@ __assert_eq { expected = parsing.between / expected closing delimiter / { e = pa
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [30]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [28]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -11076,8 +11074,9 @@ __assert_eq { expected = parsing.between / expected closing delimiter / { e = pa
 
 <span class="s2">"1 2 3"</span>
 <span class="o">|&gt;</span> <span class="n">run_parser</span> <span class="p">(</span><span class="n">sep_by</span> <span class="p">(</span><span class="n">p_digit</span> <span class="p">())</span> <span class="p">(</span><span class="n">spaces1</span> <span class="p">()))</span>
-<span class="o">|&gt;</span> <span class="n">unwrap_format</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="c1">#?*([ '1'; '2'; '3' ], "", new_parser_state 0 1 6 5)</span>
+<span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">get</span>
+<span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.show</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="n">sm</span><span class="s1">'.show ([ '</span><span class="mi">1</span><span class="s1">'; '</span><span class="mi">2</span><span class="s1">'; '</span><span class="mi">3</span><span class="s1">' ], "", new_parser_state 0 1 6 5))</span>
 </pre></div>
 </div>
 </div>
@@ -11091,15 +11090,14 @@ __assert_eq { expected = parsing.between / expected closing delimiter / { e = pa
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.gleam (gleam)
-
+__assert_eq { expected = (Cons(1, Cons(2, Cons(3, Nil))), , { line_start = 0; position = { line = 1; col = 6 }; text_length = 5 }) }
 .fsx (fsharp)
-/home/runner/work/spiral/spiral/lib/spiral/main.fsx(433,54): warning FS3884: This expression is a function value. When used in an interpolated string it will be formatted using its 'ToString' method, which is likely not the intended behavior. Consider applying the function to its arguments.
-__assert_eq { expected = struct (UH0_Cons ('1', UH0_Cons ('2', UH0_Cons ('3', UH0_Nil))), "", 0, 1, 6, 5) }
+/home/runner/work/spiral/spiral/lib/spiral/main.fsx(472,54): warning FS3884: This expression is a function value. When used in an interpolated string it will be formatted using its 'ToString' method, which is likely not the intended behavior. Consider applying the function to its arguments.
+__assert_eq { expected = (Cons(1, Cons(2, Cons(3, Nil))), , { line_start = 0; position = { line = 1; col = 6 }; text_length = 5 }) }
 .py (cuda)
-__assert_eq { expected = (UH0_Cons(v0='1', v1=UH0_Cons(v0='2', v1=UH0_Cons(v0='3', v1=UH0_Nil()))), '', 0, 1, 6, 5) }
-0
+__assert_eq { expected = (Cons(1, Cons(2, Cons(3, Nil))), , { line_start = 0; position = { line = 1; col = 6 }; text_length = 5 }) }
 .ts (typescript)
-__assert_eq { expected = Cons('1', Cons('2', Cons('3', Nil))), , { line_start = 0; position = { line = 1; col = 6 }; text_length = 5 } }</pre>
+__assert_eq { expected = (Cons(1, Cons(2, Cons(3, Nil))), , { line_start = 0; position = { line = 1; col = 6 }; text_length = 5 }) }</pre>
 </div>
 </div>
 </div>
@@ -11109,7 +11107,7 @@ __assert_eq { expected = Cons('1', Cons('2', Cons('3', Nil))), , { line_start = 
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [31]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [29]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -11120,8 +11118,9 @@ __assert_eq { expected = Cons('1', Cons('2', Cons('3', Nil))), , { line_start = 
 
 <span class="s2">"1 a 2"</span>
 <span class="o">|&gt;</span> <span class="n">run_parser</span> <span class="p">(</span><span class="n">sep_by</span> <span class="p">(</span><span class="n">p_digit</span> <span class="p">())</span> <span class="p">(</span><span class="n">spaces1</span> <span class="p">()))</span>
-<span class="o">|&gt;</span> <span class="n">unwrap_format</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="c1">#?*([ '1' ], " a 2", new_parser_state 0 1 2 5)</span>
+<span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">get</span>
+<span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.show</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="n">sm</span><span class="s1">'.show ([ '</span><span class="mi">1</span><span class="s1">' ], " a 2", new_parser_state 0 1 2 5))</span>
 </pre></div>
 </div>
 </div>
@@ -11135,15 +11134,14 @@ __assert_eq { expected = Cons('1', Cons('2', Cons('3', Nil))), , { line_start = 
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.gleam (gleam)
-
+__assert_eq { expected = (Cons(1, Nil),  a 2, { line_start = 0; position = { line = 1; col = 2 }; text_length = 5 }) }
 .fsx (fsharp)
-/home/runner/work/spiral/spiral/lib/spiral/main.fsx(433,54): warning FS3884: This expression is a function value. When used in an interpolated string it will be formatted using its 'ToString' method, which is likely not the intended behavior. Consider applying the function to its arguments.
-__assert_eq { expected = struct (UH0_Cons ('1', UH0_Nil), " a 2", 0, 1, 2, 5) }
+/home/runner/work/spiral/spiral/lib/spiral/main.fsx(444,54): warning FS3884: This expression is a function value. When used in an interpolated string it will be formatted using its 'ToString' method, which is likely not the intended behavior. Consider applying the function to its arguments.
+__assert_eq { expected = (Cons(1, Nil),  a 2, { line_start = 0; position = { line = 1; col = 2 }; text_length = 5 }) }
 .py (cuda)
-__assert_eq { expected = (UH0_Cons(v0='1', v1=UH0_Nil()), ' a 2', 0, 1, 2, 5) }
-0
+__assert_eq { expected = (Cons(1, Nil),  a 2, { line_start = 0; position = { line = 1; col = 2 }; text_length = 5 }) }
 .ts (typescript)
-__assert_eq { expected = Cons('1', Nil),  a 2, { line_start = 0; position = { line = 1; col = 2 }; text_length = 5 } }</pre>
+__assert_eq { expected = (Cons(1, Nil),  a 2, { line_start = 0; position = { line = 1; col = 2 }; text_length = 5 }) }</pre>
 </div>
 </div>
 </div>
@@ -11229,7 +11227,7 @@ __assert_eq { expected = Cons('1', Nil),  a 2, { line_start = 0; position = { li
         <span class="n">fail</span>
             <span class="n">fun</span> <span class="n">t</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">parser_state</span> <span class="n">s</span><span class="s1">') =&gt;</span>
                 <span class="s2">"parsing.eof / expected end of text / "</span>
-                <span class="o">++</span><span class="c1">#? { rest = t |&gt; slice i s'.text_length }</span>
+                <span class="o">++</span><span class="c1"># sm'.show { rest = t |&gt; slice i s'.text_length }</span>
             <span class="n">i</span> <span class="n">s</span>
 </pre></div>
 </div>
@@ -11258,7 +11256,7 @@ __assert_eq { expected = Cons('1', Nil),  a 2, { line_start = 0; position = { li
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">p_string</span> <span class="p">(</span><span class="nb">str</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="p">:</span> <span class="n">parser</span> <span class="n">string</span> <span class="o">=</span> <span class="n">fun</span> <span class="n">t</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">parser_state</span> <span class="n">s</span><span class="s1">' as s) =&gt;</span>
     <span class="n">inl</span> <span class="nb">len</span> <span class="o">=</span> <span class="c1">##str</span>
     <span class="k">if</span> <span class="n">s</span><span class="s1">'.text_length - i &lt; len then</span>
-        <span class="n">fail</span> <span class="p">(</span><span class="n">fun</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">s</span> <span class="o">=&gt;</span> <span class="s2">"parsing.p_string / unexpected end of text / "</span> <span class="o">++</span><span class="c1">#? { expected = str; s }) i s</span>
+        <span class="n">fail</span> <span class="p">(</span><span class="n">fun</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">s</span> <span class="o">=&gt;</span> <span class="s2">"parsing.p_string / unexpected end of text / "</span> <span class="o">++</span><span class="c1"># sm'.show { expected = str; s }) i s</span>
     <span class="k">else</span>
         <span class="n">let</span> <span class="n">rec</span> <span class="n">eq</span> <span class="n">k</span> <span class="o">=</span>
             <span class="k">if</span> <span class="n">k</span> <span class="o">&gt;=</span> <span class="nb">len</span>
@@ -11273,7 +11271,7 @@ __assert_eq { expected = Cons('1', Nil),  a 2, { line_start = 0; position = { li
                     <span class="n">inl</span> <span class="n">rest</span> <span class="o">=</span> <span class="n">t</span> <span class="o">|&gt;</span> <span class="nb">slice</span> <span class="n">i</span> <span class="n">preview_end</span>
                     <span class="n">inl</span> <span class="n">got</span> <span class="o">=</span> <span class="n">t</span> <span class="o">|&gt;</span> <span class="nb">slice</span> <span class="n">i</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="nb">len</span><span class="p">)</span>
                     <span class="s2">"parsing.p_string / unexpected string / "</span>
-                    <span class="o">++</span><span class="c1">#? { expected = str; got rest s }</span>
+                    <span class="o">++</span><span class="c1"># sm'.show { expected = str; got rest s }</span>
                 <span class="n">i</span> <span class="n">s</span>
 </pre></div>
 </div>
@@ -11285,15 +11283,16 @@ __assert_eq { expected = Cons('1', Nil),  a 2, { line_start = 0; position = { li
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [32]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [30]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
 
 <span class="s2">"hello world"</span>
 <span class="o">|&gt;</span> <span class="n">run_parser</span> <span class="p">(</span><span class="n">p_string</span> <span class="s2">"hello"</span><span class="p">)</span>
-<span class="o">|&gt;</span> <span class="n">unwrap_format</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="c1">#?*("hello", " world", new_parser_state 0 1 6 11)</span>
+<span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">get</span>
+<span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.show</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="n">sm</span><span class="s1">'.show ("hello", " world", new_parser_state 0 1 6 11))</span>
 </pre></div>
 </div>
 </div>
@@ -11306,7 +11305,13 @@ __assert_eq { expected = Cons('1', Nil),  a 2, { line_start = 0; position = { li
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq { expected = hello,  world, { line_start = 0; position = { line = 1; col = 6 }; text_length = 11 } }</pre>
+<pre>__assert_eq { expected = (hello,  world, { line_start = 0; position = { line = 1; col = 6 }; text_length = 11 }) }</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[30]:</div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
+<pre>0</pre>
 </div>
 </div>
 </div>
@@ -11332,7 +11337,7 @@ __assert_eq { expected = Cons('1', Nil),  a 2, { line_start = 0; position = { li
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">new_line</span> <span class="p">()</span> <span class="p">:</span> <span class="n">parser</span> <span class="n">char</span> <span class="o">=</span> <span class="n">fun</span> <span class="n">t</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">parser_state</span> <span class="n">s</span><span class="s1">' as s) =&gt;</span>
     <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="n">s</span><span class="s1">'.text_length then</span>
-        <span class="n">fail</span> <span class="p">(</span><span class="n">fun</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">s</span> <span class="o">=&gt;</span> <span class="s2">"parsing.new_line / unexpected end of text / "</span> <span class="o">++</span><span class="c1">#? { s }) i s</span>
+        <span class="n">fail</span> <span class="p">(</span><span class="n">fun</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">s</span> <span class="o">=&gt;</span> <span class="s2">"parsing.new_line / unexpected end of text / "</span> <span class="o">++</span><span class="c1"># sm'.show { s }) i s</span>
     <span class="k">else</span>
         <span class="n">inl</span> <span class="n">c</span> <span class="o">=</span> <span class="n">t</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.index i</span>
         <span class="k">if</span> <span class="n">c</span> <span class="o">=</span> <span class="s1">'</span><span class="se">\n</span><span class="s1">'</span>
@@ -11343,7 +11348,7 @@ __assert_eq { expected = Cons('1', Nil),  a 2, { line_start = 0; position = { li
                     <span class="n">inl</span> <span class="n">preview_end</span> <span class="o">=</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="n">get_max_context</span> <span class="p">())</span> <span class="o">|&gt;</span> <span class="nb">min</span> <span class="n">s</span><span class="s1">'.text_length</span>
                     <span class="n">inl</span> <span class="n">rest</span> <span class="o">=</span> <span class="n">t</span> <span class="o">|&gt;</span> <span class="nb">slice</span> <span class="n">i</span> <span class="n">preview_end</span>
                     <span class="s2">"parsing.new_line / expected new line char / "</span>
-                    <span class="o">++</span><span class="c1">#? { first_char = t |&gt; sm'.index i; rest s }</span>
+                    <span class="o">++</span><span class="c1"># sm'.show { first_char = t |&gt; sm'.index i; rest s }</span>
                 <span class="n">i</span> <span class="n">s</span>
 </pre></div>
 </div>
@@ -11355,15 +11360,16 @@ __assert_eq { expected = Cons('1', Nil),  a 2, { line_start = 0; position = { li
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [33]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [31]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
 
 <span class="s2">"hello</span><span class="se">\n</span><span class="s2">world"</span>
 <span class="o">|&gt;</span> <span class="n">run_parser</span> <span class="p">(</span><span class="n">many_chars_till</span> <span class="p">(</span><span class="n">any_char</span> <span class="p">())</span> <span class="p">(</span><span class="n">new_line</span> <span class="p">()))</span>
-<span class="o">|&gt;</span> <span class="n">unwrap_format</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="c1">#?*("hello", "\nworld", new_parser_state 0 1 6 11)</span>
+<span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">get</span>
+<span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.show</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="n">sm</span><span class="s1">'.show ("hello", "</span><span class="se">\n</span><span class="s1">world", new_parser_state 0 1 6 11))</span>
 </pre></div>
 </div>
 </div>
@@ -11376,8 +11382,14 @@ __assert_eq { expected = Cons('1', Nil),  a 2, { line_start = 0; position = { li
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq { expected = hello, 
-world, { line_start = 0; position = { line = 1; col = 6 }; text_length = 11 } }</pre>
+<pre>__assert_eq { expected = (hello, 
+world, { line_start = 0; position = { line = 1; col = 6 }; text_length = 11 }) }</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[31]:</div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
+<pre>0</pre>
 </div>
 </div>
 </div>
@@ -11424,15 +11436,16 @@ world, { line_start = 0; position = { line = 1; col = 6 }; text_length = 11 } }<
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [34]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [32]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
 
 <span class="s2">"hello</span><span class="se">\n</span><span class="s2">world"</span>
 <span class="o">|&gt;</span> <span class="n">run_parser</span> <span class="p">(</span><span class="n">many_till</span> <span class="p">(</span><span class="n">any_char</span> <span class="p">())</span> <span class="p">(</span><span class="n">new_line</span> <span class="p">()))</span>
-<span class="o">|&gt;</span> <span class="n">unwrap_format</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="c1">#?*(['h'; 'e'; 'l'; 'l'; 'o'], "world", new_parser_state 6 2 1 11)</span>
+<span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">get</span>
+<span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.show</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="n">sm</span><span class="s1">'.show (['</span><span class="n">h</span><span class="s1">'; '</span><span class="n">e</span><span class="s1">'; '</span><span class="n">l</span><span class="s1">'; '</span><span class="n">l</span><span class="s1">'; '</span><span class="n">o</span><span class="s1">'], "world", new_parser_state 6 2 1 11))</span>
 </pre></div>
 </div>
 </div>
@@ -11445,7 +11458,13 @@ world, { line_start = 0; position = { line = 1; col = 6 }; text_length = 11 } }<
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq { expected = Cons('h', Cons('e', Cons('l', Cons('l', Cons('o', Nil))))), world, { line_start = 6; position = { line = 2; col = 1 }; text_length = 11 } }</pre>
+<pre>__assert_eq { expected = (Cons(h, Cons(e, Cons(l, Cons(l, Cons(o, Nil))))), world, { line_start = 6; position = { line = 2; col = 1 }; text_length = 11 }) }</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[32]:</div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
+<pre>0</pre>
 </div>
 </div>
 </div>
@@ -11481,15 +11500,16 @@ world, { line_start = 0; position = { line = 1; col = 6 }; text_length = 11 } }<
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [35]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [33]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
 
 <span class="s2">"abc"</span>
 <span class="o">|&gt;</span> <span class="n">run_parser</span> <span class="p">(</span><span class="n">p_return</span> <span class="mi">42</span><span class="n">i32</span><span class="p">)</span>
-<span class="o">|&gt;</span> <span class="n">unwrap_format</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="c1">#?*(42i32, "abc", new_parser_state 0 1 1 3)</span>
+<span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">get</span>
+<span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.show</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="n">sm</span><span class="s1">'.show (42i32, "abc", new_parser_state 0 1 1 3))</span>
 </pre></div>
 </div>
 </div>
@@ -11502,7 +11522,13 @@ world, { line_start = 0; position = { line = 1; col = 6 }; text_length = 11 } }<
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq { expected = 42, abc, { line_start = 0; position = { line = 1; col = 1 }; text_length = 3 } }</pre>
+<pre>__assert_eq { expected = (42, abc, { line_start = 0; position = { line = 1; col = 1 }; text_length = 3 }) }</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[33]:</div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
+<pre>0</pre>
 </div>
 </div>
 </div>
@@ -11540,7 +11566,7 @@ world, { line_start = 0; position = { line = 1; col = 6 }; text_length = 11 } }<
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [36]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [34]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -11565,6 +11591,12 @@ world, { line_start = 0; position = { line = 1; col = 6 }; text_length = 11 } }<
 aabbcc
    ^
 ) }</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[34]:</div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
+<pre>0</pre>
 </div>
 </div>
 </div>
@@ -11602,15 +11634,16 @@ aabbcc
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [37]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [35]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
 
 <span class="s2">"123"</span>
 <span class="o">|&gt;</span> <span class="n">run_parser</span> <span class="p">(</span><span class="n">look_ahead</span> <span class="p">(</span><span class="n">many1_chars</span> <span class="p">(</span><span class="n">p_digit</span> <span class="p">())))</span>
-<span class="o">|&gt;</span> <span class="n">unwrap_format</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="c1">#?*("123", "123", new_parser_state 0 1 1 3)</span>
+<span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">get</span>
+<span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.show</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="n">sm</span><span class="s1">'.show ("123", "123", new_parser_state 0 1 1 3))</span>
 </pre></div>
 </div>
 </div>
@@ -11623,7 +11656,13 @@ aabbcc
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq { expected = 123, 123, { line_start = 0; position = { line = 1; col = 1 }; text_length = 3 } }</pre>
+<pre>__assert_eq { expected = (123, 123, { line_start = 0; position = { line = 1; col = 1 }; text_length = 3 }) }</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[35]:</div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
+<pre>0</pre>
 </div>
 </div>
 </div>
@@ -11664,15 +11703,16 @@ aabbcc
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [38]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [36]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
 
 <span class="s2">"pipe2"</span>
 <span class="o">|&gt;</span> <span class="n">run_parser</span> <span class="p">(</span><span class="n">pipe2</span> <span class="p">(</span><span class="n">p_string</span> <span class="s2">"pipe"</span><span class="p">)</span> <span class="p">(</span><span class="n">spaces</span> <span class="p">()</span> <span class="o">&gt;&gt;.</span> <span class="n">p_string</span> <span class="s2">"2"</span><span class="p">)</span> <span class="p">(</span><span class="n">fun</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=&gt;</span> <span class="n">a</span> <span class="p">()</span> <span class="o">++</span><span class="c1"># b ()))</span>
-<span class="o">|&gt;</span> <span class="n">unwrap_format</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="c1">#?*("pipe2", "", new_parser_state 0 1 6 5)</span>
+<span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">get</span>
+<span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.show</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="n">sm</span><span class="s1">'.show ("pipe2", "", new_parser_state 0 1 6 5))</span>
 </pre></div>
 </div>
 </div>
@@ -11685,7 +11725,13 @@ aabbcc
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq { expected = pipe2, , { line_start = 0; position = { line = 1; col = 6 }; text_length = 5 } }</pre>
+<pre>__assert_eq { expected = (pipe2, , { line_start = 0; position = { line = 1; col = 6 }; text_length = 5 }) }</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[36]:</div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
+<pre>0</pre>
 </div>
 </div>
 </div>
@@ -11722,15 +11768,16 @@ aabbcc
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [39]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [37]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
 
 <span class="s2">"</span><span class="se">\n\n</span><span class="s2">line1</span><span class="se">\n</span><span class="s2">line2</span><span class="se">\n\n</span><span class="s2">line4"</span>
 <span class="o">|&gt;</span> <span class="n">run_parser</span> <span class="p">(</span><span class="n">many_till</span> <span class="p">(</span><span class="n">any_char</span> <span class="p">())</span> <span class="p">(</span><span class="n">new_lines</span> <span class="p">()))</span>
-<span class="o">|&gt;</span> <span class="n">unwrap_format</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="c1">#?*(([] : _ char), "line1\nline2\n\nline4", new_parser_state 2 3 1 20)</span>
+<span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">get</span>
+<span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.show</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="n">sm</span><span class="s1">'.show (([] : _ char), "line1</span><span class="se">\n</span><span class="s1">line2</span><span class="se">\n\n</span><span class="s1">line4", new_parser_state 2 3 1 20))</span>
 </pre></div>
 </div>
 </div>
@@ -11743,10 +11790,16 @@ aabbcc
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq { expected = Nil, line1
+<pre>__assert_eq { expected = (Nil, line1
 line2
 
-line4, { line_start = 2; position = { line = 3; col = 1 }; text_length = 20 } }</pre>
+line4, { line_start = 2; position = { line = 3; col = 1 }; text_length = 20 }) }</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[37]:</div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
+<pre>0</pre>
 </div>
 </div>
 </div>
@@ -11767,7 +11820,7 @@ line4, { line_start = 2; position = { line = 3; col = 1 }; text_length = 20 } }<
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [40]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [38]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">new_lines1</span> <span class="p">()</span> <span class="p">:</span> <span class="n">parser</span> <span class="p">()</span> <span class="o">=</span> <span class="n">fun</span> <span class="n">t</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">parser_state</span> <span class="n">s</span><span class="s1">' as s) =&gt;</span>
@@ -11779,7 +11832,7 @@ line4, { line_start = 2; position = { line = 3; col = 1 }; text_length = 20 } }<
             <span class="n">fun</span> <span class="n">t</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">parser_state</span> <span class="n">s</span><span class="s1">') =&gt;</span>
                 <span class="n">inl</span> <span class="n">preview_end</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="n">get_max_context</span> <span class="p">()</span> <span class="o">|&gt;</span> <span class="nb">min</span> <span class="n">s</span><span class="s1">'.text_length</span>
                 <span class="s2">"parsing.new_lines1 / expected at least one new line / "</span>
-                <span class="o">++</span><span class="c1">#? { rest = t |&gt; slice i preview_end }</span>
+                <span class="o">++</span><span class="c1"># sm'.show { rest = t |&gt; slice i preview_end }</span>
             <span class="n">i</span> <span class="n">s</span>
 </pre></div>
 </div>
@@ -11791,15 +11844,16 @@ line4, { line_start = 2; position = { line = 3; col = 1 }; text_length = 20 } }<
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [41]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [39]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
 
 <span class="s2">"</span><span class="se">\n\n\n</span><span class="s2">"</span>
 <span class="o">|&gt;</span> <span class="n">run_parser</span> <span class="p">(</span><span class="n">new_lines1</span> <span class="p">())</span>
-<span class="o">|&gt;</span> <span class="n">unwrap_format</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="c1">#?*("", new_parser_state 3 4 1 3)</span>
+<span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">get</span>
+<span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.show</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="n">sm</span><span class="s1">'.show ("", new_parser_state 3 4 1 3))</span>
 </pre></div>
 </div>
 </div>
@@ -11812,7 +11866,13 @@ line4, { line_start = 2; position = { line = 3; col = 1 }; text_length = 20 } }<
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq { expected = , { line_start = 3; position = { line = 4; col = 1 }; text_length = 3 } }</pre>
+<pre>__assert_eq { expected = (, { line_start = 3; position = { line = 4; col = 1 }; text_length = 3 }) }</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[39]:</div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
+<pre>0</pre>
 </div>
 </div>
 </div>

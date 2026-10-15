@@ -51,6 +51,13 @@ inl write_wasm forall t. (obj : t) : () =
         | () => $'' : ()
         | _ => $'backend_switch_has_no_Wasm_arm_in_lib_spiral' : ()
 
+inl write_line_bend forall t. (x : t) : () =
+    real
+        typecase t with
+        | string => !!!!Printf("%s\n", x)
+        | i32 => !!!!Printf("%d\n", x)
+        | _ => $'backend_switch_has_no_Bend_arm_in_lib_spiral' : ()
+
 inl write_line forall t. (obj : t) : () =
     backend_switch {
         Gleam = fun () => write_line_gleam obj
@@ -65,6 +72,7 @@ inl write_line forall t. (obj : t) : () =
         Lean = fun () => $'IO.println (toString !obj)' : ()
         C = fun () => write_line_c obj
         Delphi = fun () => $'Writeln(!obj)' : ()
+        Bend = fun () => write_line_bend obj
         Wasm = fun () =>
             write_wasm obj
             $'(call $print_newline)' : ()

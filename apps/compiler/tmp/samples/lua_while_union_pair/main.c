@@ -107,7 +107,18 @@ static inline void UHDecrefBody0(UH0 * x){
     }
 }
 void UHDecref0(UH0 * x){
-    if (x != NULL && --(x->refc) == 0) { UHDecrefBody0(x); free(x); }
+    while (x != NULL && --(x->refc) == 0) {
+        UH0 * next = NULL;
+        switch (x->tag) {
+            case 1: {
+                
+                next = x->case1.v1;
+                break;
+            }
+        }
+        free(x);
+        x = next;
+    }
 }
 UH0 * UH0_Nil() { // Nil
     UH0 * x = malloc(sizeof(UH0));
@@ -156,7 +167,7 @@ int32_t main(){
     
     
     Array0 * v0;
-    v0 = ArrayCreate0(3l, false);
+    v0 = ArrayCreate0(3l, true);
     
     
     Mut0 * v1;

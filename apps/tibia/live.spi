@@ -1,0 +1,25 @@
+inl reach_of_code (code : i32) : policy.reach =
+    open policy
+    if code = 1 then InReach elif code = 2 then OutOfReach else NoTarget
+
+inl observation_of (health : i32) (heal_ready : bool) (strike_ready : bool) (target_code : i32) : policy.observation =
+    {health = health; heal_ready = heal_ready; strike_ready = strike_ready; target = reach_of_code target_code}
+
+inl main () =
+    inl heals (heal_below : i32) (strike_above : i32) (health : i32) (heal_ready : bool) (strike_ready : bool) (target_code : i32) : bool =
+        policy.heals {heal_below = heal_below; strike_above = strike_above} (observation_of health heal_ready strike_ready target_code)
+    inl engagement (heal_below : i32) (strike_above : i32) (health : i32) (heal_ready : bool) (strike_ready : bool) (target_code : i32) : i32 =
+        policy.engagement_code (policy.engages {heal_below = heal_below; strike_above = strike_above} (observation_of health heal_ready strike_ready target_code))
+    inl prefers (a_current : bool) (a_distance : i32) (a_health : i32) (b_current : bool) (b_distance : i32) (b_health : i32) : bool =
+        policy.prefers_by (open policy in CurrentFirst) {is_current = a_current; distance = a_distance; health_percent = a_health} {is_current = b_current; distance = b_distance; health_percent = b_health}
+    inl network_decision (heal_below : i32) (max_health : i32) (kite_at : i32) (health : i32) (attackers : i32) (target_health_percent : i32) (target_distance : i32) (heal_ready : bool) (strike_ready : bool) : i32 =
+        inl healer = network.threshold_healer (network.fraction_below heal_below max_health)
+        inl w = if kite_at > 0 then network.with_kiting kite_at healer else healer
+        inl x = network.inputs_of (health * network.one () / max_health) attackers (target_health_percent * network.one () / 100) target_distance heal_ready strike_ready false
+        inl d = network.decide w x
+        (if d.heal then 1 else 0) + (if d.engage then 2 else 0) + (if d.retreat then 4 else 0)
+    inl retreats (retreat_at : i32) (attackers : i32) : bool =
+        policy.retreats {heal_base = 0; heal_per_attacker = 0; strike_above = 0; retreat_at = retreat_at} attackers
+    inl prefers_reach (a_current : bool) (a_distance : i32) (a_health : i32) (b_current : bool) (b_distance : i32) (b_health : i32) : bool =
+        policy.prefers_by (open policy in ReachFirst) {is_current = a_current; distance = a_distance; health_percent = a_health} {is_current = b_current; distance = b_distance; health_percent = b_health}
+    heals, engagement, prefers, network_decision, retreats, prefers_reach

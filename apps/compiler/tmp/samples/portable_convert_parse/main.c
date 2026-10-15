@@ -206,7 +206,7 @@ int32_t main(){
         }
     }
     
-    USDecref0(&(v16));
+    
     String * v19;
     v19 = StringLit(4, "12x");
     
@@ -308,7 +308,7 @@ int32_t main(){
         }
     }
     
-    USDecref0(&(v29));
+    
     String * v32;
     v32 = StringLit(1, "");
     
@@ -410,7 +410,7 @@ int32_t main(){
         }
     }
     
-    USDecref0(&(v42));
+    
     String * v45;
     v45 = StringLit(3, "+7");
     
@@ -512,6 +512,6 @@ int32_t main(){
         }
     }
     
-    USDecref0(&(v55));
+    
     return 0l;
 }

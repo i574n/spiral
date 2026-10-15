@@ -82,6 +82,20 @@ defmodule Spiral.Kino.CompilerClient do
   end
 
   @doc """
+  Launches the daemon on the base port when nothing listens there, without waiting for it: a notebook run whose steps
+  were all recalled never needs a compiler, but the next run's thin client (`run_notebook.ps1`) wants a warm daemon.
+  """
+  @spec prestart() :: :ok
+  def prestart do
+    port = base_port()
+
+    if ping(port) == :down do
+      _ = spawn_daemon(port)
+    end
+
+    :ok
+  end
+  @doc """
   Retires the compiler daemons on this client's ports, if they are up: each finishes the compiles already queued and
   exits (killed if it is still up after 10 s). The test suite calls this when it ends, so no test daemon outlives `mix test`.
   """
@@ -412,7 +426,10 @@ defmodule Spiral.Kino.CompilerClient do
     detach = if System.find_executable("setsid"), do: "setsid", else: "nohup"
 
     script =
-      ~s(cd "$1" && #{detach} "$2" -S mix spiral.compiler_daemon </dev/null >"$3" 2>"$4" &)
+      case compiled_ebins() do
+        nil -> ~s(cd "$1" && #{detach} "$2" -S mix spiral.compiler_daemon </dev/null >"$3" 2>"$4" &)
+        ebins -> ~s|cd "$1" && #{detach} "$2" -pa "#{ebins}" -e 'Spiral.Kino.CompilerDaemon.serve_app()' </dev/null >"$3" 2>"$4" &|
+      end
 
     env = [
       {"PATH", path},
@@ -453,18 +470,42 @@ defmodule Spiral.Kino.CompilerClient do
   end
 
   @doc false
-  def daemon_command_line(elixir, log, err) do
-    ~s{/d /c ""#{elixir}" -S mix spiral.compiler_daemon 1>"#{log}" 2>"#{err}""}
+  def daemon_command_line(elixir, log, err, ebins \\ compiled_ebins()) do
+    case ebins do
+      nil -> ~s{/d /c ""#{elixir}" -S mix spiral.compiler_daemon 1>"#{log}" 2>"#{err}""}
+      ebins -> ~s{/d /c ""#{elixir}" -pa "#{ebins}" -e Spiral.Kino.CompilerDaemon.serve_app() 1>"#{log}" 2>"#{err}""}
+    end
   end
 
-  defp keep_previous(path) do
-    case File.stat(path) do
-      {:ok, %{size: size}} when size > 0 ->
-        _ = File.rename(path, Path.rootname(path) <> ".prev.log")
-        :ok
+  @doc false
+  def compiled_ebins do
+    case :code.lib_dir(:spiral_kino) do
+      path when is_list(path) ->
+        lib = path |> to_string() |> Path.dirname()
+        if File.dir?(Path.join([lib, "spiral_kino", "ebin"])), do: Path.join(lib, "*/ebin"), else: nil
 
       _ ->
+        nil
+    end
+  end
+
+  defp keep_previous(path), do: keep_previous(path, System.monotonic_time(:millisecond) + 30_000)
+
+  @doc false
+  def keep_previous(path, deadline) do
+    cond do
+      not File.exists?(path) ->
         :ok
+
+      File.rename(path, Path.rootname(path) <> ".prev.log") == :ok ->
+        :ok
+
+      System.monotonic_time(:millisecond) > deadline ->
+        {:error, :locked}
+
+      true ->
+        Process.sleep(200)
+        keep_previous(path, deadline)
     end
   end
 
@@ -509,7 +550,7 @@ defmodule Spiral.Kino.CompilerClient do
   end
 
   defp request_line(req) do
-    "compile\t#{req.backend}\t#{req.spi}\t#{req.rs}\t#{timeout_field(req.timeout)}\t#{req.mtime}"
+    "compile\t#{req.backend}\t#{req.spi}\t#{req.rs}\t#{timeout_field(req.timeout)}\t#{req.mtime}\t#{System.pid()}"
   end
 
   defp timeout_field(:infinity), do: "-1"

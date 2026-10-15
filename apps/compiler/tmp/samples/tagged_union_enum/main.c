@@ -45,28 +45,28 @@ int32_t score0(US0 v0){
         case 0: { // Cold
             
             
-            USDecref0(&(v0));
+            
             return 1l;
             break;
         }
         case 3: { // Done
             
             
-            USDecref0(&(v0));
+            
             return 4l;
             break;
         }
         case 2: { // Hot
             
             
-            USDecref0(&(v0));
+            
             return 3l;
             break;
         }
         default: { // Warm
             
             
-            USDecref0(&(v0));
+            
             return 2l;
             break;
         }
@@ -117,12 +117,12 @@ int32_t main(){
             }
         }
     }
-    USIncref0(&(v10));
+    
     
     int32_t v11;
     v11 = score0(v10);
     
-    USDecref0(&(v10));
+    
     int32_t v12;
     v12 = v11 - 4l;
     

@@ -40,10 +40,16 @@ defmodule Spiral.Kino.CompilerDaemon do
     GenServer.start_link(__MODULE__, opts, name: name)
   end
 
+  @spec serve_app() :: no_return()
+  def serve_app do
+    {:ok, _} = Application.ensure_all_started(:spiral_kino)
+    serve()
+  end
+
   @spec serve() :: no_return()
   def serve do
     listen = port()
-    {:ok, _} = start_link(name: __MODULE__, port: listen, on_retire: fn -> System.stop(0) end)
+    {:ok, _} = start_link(name: __MODULE__, port: listen, on_retire: fn -> System.stop(0) end, pool: System.get_env("SPIRAL_KINO_DAEMON_POOL") || "auto")
     IO.puts("spiral-kino-compiler listening port=#{listen} pid=#{System.pid()}")
     Process.sleep(:infinity)
   end
@@ -76,6 +82,29 @@ defmodule Spiral.Kino.CompilerDaemon do
   @impl true
   def init(opts) do
     Process.flag(:trap_exit, true)
+    :persistent_term.put({__MODULE__, :source_stamp}, source_stamp())
+    if opts[:worker], do: {:ok, worker_state(opts)}, else: listen_init(opts)
+  end
+
+  defp worker_state(opts) do
+    %{
+      listen_port: nil,
+      listen: nil,
+      acceptor: nil,
+      retiring: false,
+      idle_ms: nil,
+      idle_check_ms: @idle_check_ms,
+      last_used: System.monotonic_time(:millisecond),
+      on_retire: nil,
+      compile: opts[:compile],
+      compiler: nil,
+      log: "",
+      toolchain: Keyword.take(opts, [:dotnet, :compiler_dll, :workspace, :package_dir]),
+      limits: Keyword.get(opts, :limits) || limits()
+    }
+  end
+
+  defp listen_init(opts) do
     port = Keyword.get(opts, :port, port())
 
     case :gen_tcp.listen(port, listen_opts()) do
@@ -91,6 +120,7 @@ defmodule Spiral.Kino.CompilerDaemon do
           end)
 
         :ok = :gen_tcp.controlling_process(listen, acceptor)
+        start_pool(server, opts)
         send(acceptor, :go)
         idle_ms = if opts[:on_retire], do: Keyword.get(opts, :idle_ms, idle_ms()), else: nil
         idle_check_ms = Keyword.get(opts, :idle_check_ms, @idle_check_ms)
@@ -109,7 +139,8 @@ defmodule Spiral.Kino.CompilerDaemon do
            compile: opts[:compile],
            compiler: nil,
            log: "",
-           toolchain: Keyword.take(opts, [:dotnet, :compiler_dll, :workspace, :package_dir])
+           toolchain: Keyword.take(opts, [:dotnet, :compiler_dll, :workspace, :package_dir]),
+           limits: pool_limits(opts, Spiral.Kino.CompilerPool.settings(opts[:pool]).max_workers)
          }}
 
       {:error, reason} ->
@@ -122,6 +153,7 @@ defmodule Spiral.Kino.CompilerDaemon do
 
   def handle_call({:compile, req}, _from, state) do
     started = System.monotonic_time(:millisecond)
+    IO.puts("#{clock()} started #{Map.get(req, :client, "anonymous")} #{Path.basename(req.input)} #{req.input}")
 
     {result, state} =
       try do
@@ -141,7 +173,7 @@ defmodule Spiral.Kino.CompilerDaemon do
     ms = if Process.delete(:spiral_kino_cold), do: 0, else: System.monotonic_time(:millisecond) - started
     result = normalize(result)
     log_compile(req, ms, result)
-    state = %{state | last_used: System.monotonic_time(:millisecond)}
+    state = recycle_heavy(%{state | last_used: System.monotonic_time(:millisecond)})
     retire_when_idle({:reply, {:compiled, result, ms}, state})
   end
 
@@ -211,6 +243,98 @@ defmodule Spiral.Kino.CompilerDaemon do
     :ok
   end
 
+  @default_max_mb 2_500
+
+  @spec limits() :: %{max_mb: non_neg_integer(), max_compiles: non_neg_integer()}
+  def limits do
+    %{
+      max_mb: env_count("SPIRAL_KINO_DAEMON_MAX_MB", @default_max_mb),
+      max_compiles: env_count("SPIRAL_KINO_DAEMON_MAX_COMPILES", 0)
+    }
+  end
+
+  defp env_count(name, default) do
+    case Integer.parse(System.get_env(name) || "") do
+      {n, ""} when n >= 0 -> n
+      _ -> default
+    end
+  end
+
+  @doc false
+  def recycle_reason(compiles, mb, %{max_mb: max_mb, max_compiles: max_compiles}) do
+    cond do
+      max_compiles > 0 and compiles >= max_compiles -> "#{compiles} compiles"
+      max_mb > 0 and is_integer(mb) and mb >= max_mb -> "reaching #{mb} MB"
+      true -> nil
+    end
+  end
+
+  defp recycle_heavy(%{compiler: %{} = compiler, limits: limits} = state) do
+    mb = if limits.max_mb > 0, do: compiler_mb(compiler), else: nil
+
+    case recycle_reason(Map.get(compiler, :compiles, 0), mb, limits) do
+      nil ->
+        state
+
+      reason ->
+        IO.puts("#{clock()} compiler recycled after #{reason}; the next compile starts a fresh one")
+        stop_compiler(state)
+    end
+  end
+
+  defp recycle_heavy(state), do: state
+
+  defp compiler_mb(compiler) do
+    with {:ok, text} <- File.read(compiler.socket <> ".pid"),
+         {pid, ""} <- Integer.parse(String.trim(text)) do
+      task = Task.async(fn -> working_set_mb(pid) end)
+
+      case Task.yield(task, 5_000) || Task.shutdown(task, :brutal_kill) do
+        {:ok, mb} -> mb
+        _ -> nil
+      end
+    else
+      _ -> nil
+    end
+  end
+
+  @doc false
+  def working_set_mb(os_pid) when is_integer(os_pid) do
+    case :os.type() do
+      {:win32, _} ->
+        case System.cmd("tasklist", ["/FI", "PID eq #{os_pid}", "/FO", "CSV", "/NH"], stderr_to_stdout: true) do
+          {out, 0} ->
+            case Regex.run(~r/"#{os_pid}".*,"([^"]+)"\s*$/m, out) do
+              [_, memory] ->
+                case Integer.parse(String.replace(memory, ~r/\D/, "")) do
+                  {kb, ""} -> div(kb, 1024)
+                  _ -> nil
+                end
+
+              _ ->
+                nil
+            end
+
+          _ ->
+            nil
+        end
+
+      _ ->
+        case File.read("/proc/#{os_pid}/status") do
+          {:ok, status} ->
+            case Regex.run(~r/^VmRSS:\s+(\d+)\s+kB/m, status) do
+              [_, kb] -> div(String.to_integer(kb), 1024)
+              _ -> nil
+            end
+
+          _ ->
+            nil
+        end
+    end
+  rescue
+    _ -> nil
+  end
+
   @retire_grace_ms 2_000
 
   defp retire_when_idle(reply) do
@@ -220,12 +344,13 @@ defmodule Spiral.Kino.CompilerDaemon do
       state.retiring == false ->
         reply
 
-      queued() > 0 or System.monotonic_time(:millisecond) - state.retiring < @retire_grace_ms ->
+      queued() > 0 or pool_busy?() or System.monotonic_time(:millisecond) - state.retiring < @retire_grace_ms ->
         Process.send_after(self(), :retire_check, 500)
         reply
 
       true ->
         IO.puts("retired; stopping")
+        stop_pool_workers()
         state = safe_stop_compiler(state)
         if is_function(state.on_retire, 0), do: state.on_retire.()
 
@@ -233,6 +358,20 @@ defmodule Spiral.Kino.CompilerDaemon do
           {:reply, value, _} -> {:stop, :normal, value, state}
           {:noreply, _} -> {:stop, :normal, state}
         end
+    end
+  end
+
+  defp pool_busy? do
+    case :persistent_term.get({__MODULE__, :pool, self()}, nil) do
+      nil -> false
+      pool -> match?(%{queued: q, idle: i, workers: w} when q > 0 or i < w, Spiral.Kino.CompilerPool.stats(pool))
+    end
+  end
+
+  defp stop_pool_workers do
+    case :persistent_term.get({__MODULE__, :pool, self()}, nil) do
+      nil -> :ok
+      pool -> pool |> Spiral.Kino.CompilerPool.stats() |> Map.get(:extra_workers, []) |> Enum.each(&GenServer.stop(&1, :normal, 30_000))
     end
   end
 
@@ -312,13 +451,17 @@ defmodule Spiral.Kino.CompilerDaemon do
     end
   end
 
-  defp warm(%{compiler: %{} = compiler} = state), do: %{state | compiler: Map.put(compiler, :warm, true)}
+  defp warm(%{compiler: %{} = compiler} = state) do
+    %{state | compiler: compiler |> Map.put(:warm, true) |> Map.update(:compiles, 1, &(&1 + 1))}
+  end
   defp warm(state), do: state
 
   defp prepare_compiler(state, mtime) do
     case state.compiler do
-      %{booted: booted} when mtime <= booted ->
-        {:ok, state}
+      %{booted: booted} = compiler when mtime <= booted ->
+        if compiler_current?(compiler, dll_stamp(Toolchain.compiler_dll(state.toolchain))),
+          do: {:ok, state},
+          else: start_compiler(stop_compiler(state))
 
       nil ->
         start_compiler(state)
@@ -330,11 +473,9 @@ defmodule Spiral.Kino.CompilerDaemon do
 
   defp start_compiler(state) do
     dotnet = Toolchain.dotnet(state.toolchain)
-    dll = Toolchain.compiler_dll(state.toolchain)
-    pwsh = pwsh_exe()
-    script = bridge_script()
+    source_dll = Toolchain.compiler_dll(state.toolchain)
+    dll = shadow_dll(source_dll)
     socket = socket_path()
-    bridge = socket <> ".bridge"
 
     cond do
       not is_binary(dotnet) ->
@@ -343,85 +484,163 @@ defmodule Spiral.Kino.CompilerDaemon do
       not File.regular?(dll) ->
         {:error, "Spiral compiler was not found at #{dll}", state}
 
-      not is_binary(pwsh) ->
-        {:error, "pwsh was not found", state}
-
-      not File.regular?(script) ->
-        {:error, "compiler bridge was not found at #{script}", state}
+      "server-tcp" not in host_capabilities(dotnet, dll) ->
+        {:error, "the Spiral compiler at #{source_dll} does not list server-tcp in --capabilities; rebuild it from apps/compiler/tmp/compiler/host", state}
 
       true ->
-        File.rm(bridge)
+        args = [dll, "--server-tcp", socket, "--stall-seconds", Integer.to_string(stall_seconds())]
 
-        port =
-          Port.open({:spawn_executable, pwsh}, [
-            :binary,
-            :exit_status,
-            :hide,
-            :stderr_to_stdout,
-            args: [
-              "-NoProfile",
-              "-ExecutionPolicy",
-              "Bypass",
-              "-File",
-              script,
-              "-Dotnet",
-              dotnet,
-              "-Dll",
-              dll,
-              "-Socket",
-              socket,
-              "-WorkDir",
-              Toolchain.workspace(state.toolchain),
-              "-BridgeFile",
-              bridge
-            ],
-            cd: Toolchain.workspace(state.toolchain),
-            env: port_env(state.toolchain, dotnet)
-          ])
-
-        os_pid =
-          case Port.info(port, :os_pid) do
-            {:os_pid, pid} -> pid
-            _ -> nil
-          end
-
-        server = self()
-        token = make_ref()
-        drainer = spawn_link(fn -> drain(port, server, token) end)
-        _ = Port.connect(port, drainer)
-
-        case await_bridge(port, bridge, 30_000) do
-          {:ok, bridge_port} ->
-            compiler = %{
-              port: port,
-              socket: socket,
-              bridge: bridge,
-              bridge_port: bridge_port,
-              os_pid: os_pid,
-              token: token,
-              booted: System.os_time(:second)
-            }
-
-            {:ok, %{state | compiler: compiler}}
-
-          {:error, reason} ->
-            if os_pid, do: Runner.kill_tree(os_pid)
-            if Port.info(port), do: Port.close(port)
-            state = take_log(state)
-            {:error, "Spiral compiler did not open #{socket}: #{inspect(reason)}", state}
+        case open_compiler(state, dotnet, args, socket, source_dll) do
+          {:error, reason, state} -> {:error, "Spiral compiler did not open #{socket}: #{inspect(reason)}", state}
+          started -> started
         end
     end
   end
 
-  @cold_compile_ms 1_200_000
+  @doc false
+  def host_capabilities(dotnet, dll) do
+    key = {__MODULE__, :capabilities, dll, dll_stamp(dll)}
 
+    case :persistent_term.get(key, nil) do
+      nil ->
+        capabilities =
+          case System.cmd(dotnet, [dll, "--capabilities"], stderr_to_stdout: true) do
+            {text, 0} -> text |> String.split() |> Enum.uniq()
+            _ -> []
+          end
+
+        :persistent_term.put(key, capabilities)
+        capabilities
+
+      capabilities ->
+        capabilities
+    end
+  rescue
+    _ -> []
+  end
+
+  defp open_compiler(state, dotnet, args, socket, source_dll) do
+    port_file = socket <> ".bridge"
+    File.rm(port_file)
+
+    port =
+      Port.open({:spawn_executable, dotnet}, [
+        :binary,
+        :exit_status,
+        :hide,
+        :stderr_to_stdout,
+        args: args,
+        cd: Toolchain.workspace(state.toolchain),
+        env: port_env(state.toolchain, dotnet)
+      ])
+
+    os_pid =
+      case Port.info(port, :os_pid) do
+        {:os_pid, pid} -> pid
+        _ -> nil
+      end
+
+    server = self()
+    token = make_ref()
+    drainer = spawn_link(fn -> drain(port, server, token) end)
+    _ = Port.connect(port, drainer)
+
+    case await_port_file(port, port_file, 30_000) do
+      {:ok, compiler_port} ->
+        compiler = %{
+          port: port,
+          socket: socket,
+          port_file: port_file,
+          compiler_port: compiler_port,
+          os_pid: os_pid,
+          token: token,
+          booted: System.os_time(:second),
+          dll_stamp: dll_stamp(source_dll)
+        }
+
+        IO.puts("#{clock()} compiler pid=#{os_pid} port=#{compiler_port}")
+        {:ok, %{state | compiler: compiler}}
+
+      {:error, reason} ->
+        if os_pid, do: Runner.kill_tree(os_pid)
+        if Port.info(port), do: Port.close(port)
+        {:error, reason, take_log(state)}
+    end
+  end
+
+  @doc false
+  def dll_stamp(dll) do
+    case File.stat(dll, time: :posix) do
+      {:ok, %{mtime: mtime, size: size}} -> {mtime, size}
+      _ -> nil
+    end
+  end
+
+  @doc false
+  def compiler_current?(compiler, source_stamp), do: Map.get(compiler, :dll_stamp) == source_stamp
+
+  defp shadow_root, do: Path.join(System.tmp_dir!(), "spiral-kino-compiler")
+
+  @doc false
+  def shadow_dll(dll, root \\ shadow_root()) do
+    case dll_stamp(dll) do
+      nil ->
+        dll
+
+      {mtime, size} ->
+        dir = Path.join(root, "#{mtime}-#{size}")
+        target = Path.join(dir, Path.basename(dll))
+
+        unless File.regular?(Path.join(dir, ".complete")) do
+          copy_shadow(dll, root, dir, {mtime, size})
+        end
+
+        if File.regular?(Path.join(dir, ".complete")) do
+          prune_shadows(root, dir)
+          target
+        else
+          dll
+        end
+    end
+  rescue
+    _ -> dll
+  end
+
+  defp copy_shadow(dll, root, dir, stamp) do
+    staging = dir <> ".#{System.unique_integer([:positive])}"
+    _ = File.mkdir_p(root)
+
+    with {:ok, _} <- File.cp_r(Path.dirname(dll), staging),
+         true <- dll_stamp(dll) == stamp,
+         :ok <- File.write(Path.join(staging, ".complete"), ""),
+         :ok <- File.rename(staging, dir) do
+      :ok
+    else
+      _ -> File.rm_rf(staging)
+    end
+  rescue
+    _ -> :error
+  end
+
+  defp prune_shadows(root, keep) do
+    for old <- Path.wildcard(Path.join(String.replace(root, "\\", "/"), "*")),
+        Path.basename(old) != Path.basename(keep),
+        Regex.match?(~r/^\d+-\d+$/, Path.basename(old)) do
+      trash = old <> ".trash#{System.unique_integer([:positive])}"
+      if File.rename(old, trash) == :ok, do: File.rm_rf(trash)
+    end
+
+    :ok
+  end
+
+  @cold_compile_ms 1_200_000
   defp session(state, req) do
     cold = not Map.get(state.compiler, :warm, false)
     if cold, do: Process.put(:spiral_kino_cold, true)
     timeout = if req.timeout == :infinity, do: :infinity, else: max(req.timeout, 0)
     timeout = if cold and timeout != :infinity, do: max(timeout, @cold_compile_ms), else: timeout
 
-    case :gen_tcp.connect({127, 0, 0, 1}, state.compiler.bridge_port, socket_opts(), 5_000) do
+    case :gen_tcp.connect({127, 0, 0, 1}, state.compiler.compiler_port, socket_opts(), 5_000) do
       {:ok, sock} ->
         :gen_tcp.send(sock, "compile\t#{req.backend}\t#{req.input}\t#{req.output}\n")
 
@@ -434,7 +653,7 @@ defmodule Spiral.Kino.CompilerDaemon do
               {:error, :timeout}
 
             {:error, reason} ->
-              IO.puts("compiler bridge closed: #{inspect(reason)} #{bridge_trace(state)}")
+              IO.puts("compiler connection closed: #{inspect(reason)}")
               {:error, "compiler socket failed: #{inspect(reason)}"}
           end
 
@@ -467,7 +686,7 @@ defmodule Spiral.Kino.CompilerDaemon do
     close_port(compiler.port)
     File.rm(compiler.socket)
     File.rm(compiler.socket <> ".pid")
-    if compiler[:bridge], do: File.rm(compiler.bridge)
+    File.rm(compiler.port_file)
     %{state | compiler: nil}
   end
 
@@ -478,18 +697,6 @@ defmodule Spiral.Kino.CompilerDaemon do
     ArgumentError -> :ok
   end
 
-  defp bridge_trace(%{compiler: %{socket: socket}}) do
-    case File.read(socket <> ".trace") do
-      {:ok, text} ->
-        text = String.trim(text)
-        if text == "", do: "", else: "\n" <> String.slice(text, -800, 800)
-
-      _ ->
-        ""
-    end
-  end
-
-  defp bridge_trace(_state), do: ""
 
   defp kill_pidfile(path) do
     case File.read(path) do
@@ -504,21 +711,21 @@ defmodule Spiral.Kino.CompilerDaemon do
     end
   end
 
-  defp await_bridge(port, bridge, left) do
+  defp await_port_file(port, port_file, left) do
     cond do
-      File.regular?(bridge) ->
-        case File.read(bridge) do
+      File.regular?(port_file) ->
+        case File.read(port_file) do
           {:ok, text} ->
             case Integer.parse(String.trim(String.trim_leading(text, "\uFEFF"))) do
               {number, ""} ->
                 {:ok, number}
 
               _ when left <= 0 ->
-                {:error, :bridge_port}
+                {:error, :compiler_port}
 
               _ ->
                 Process.sleep(50)
-                await_bridge(port, bridge, left - 50)
+                await_port_file(port, port_file, left - 50)
             end
 
           _ when left <= 0 ->
@@ -526,7 +733,7 @@ defmodule Spiral.Kino.CompilerDaemon do
 
           _ ->
             Process.sleep(50)
-            await_bridge(port, bridge, left - 50)
+            await_port_file(port, port_file, left - 50)
         end
 
       left <= 0 ->
@@ -537,7 +744,7 @@ defmodule Spiral.Kino.CompilerDaemon do
 
       true ->
         Process.sleep(50)
-        await_bridge(port, bridge, left - 50)
+        await_port_file(port, port_file, left - 50)
     end
   end
 
@@ -601,6 +808,16 @@ defmodule Spiral.Kino.CompilerDaemon do
             :gen_tcp.send(sock, banner() <> "\n")
             handle(sock, server, listen)
 
+          "notebook\t" <> request ->
+            {lines, after_reply} = notebook_reply(request)
+            Enum.each(lines, &:gen_tcp.send(sock, &1 <> "\n"))
+            :gen_tcp.close(sock)
+
+            if after_reply == :retire do
+              :gen_tcp.close(listen)
+              send(server, :retire)
+            end
+
           "retire" ->
             :gen_tcp.close(listen)
             send(server, :retire)
@@ -610,10 +827,11 @@ defmodule Spiral.Kino.CompilerDaemon do
           "compile\t" <> rest ->
             req = parse_request(rest)
             started = System.monotonic_time(:millisecond)
+            IO.puts("#{clock()} received #{req.client} #{Path.basename(req.input)} #{req.input}")
 
             reply =
               try do
-                case GenServer.call(server, {:compile, req}, :infinity) do
+                case compile_call(server, req) do
                   {:compiled, result, compile_ms} ->
                     encode(
                       result,
@@ -640,15 +858,112 @@ defmodule Spiral.Kino.CompilerDaemon do
     end
   end
 
+  defp start_pool(server, opts) do
+    settings = Spiral.Kino.CompilerPool.settings(opts[:pool])
+
+    if settings.max_workers > 1 or settings.fair_single do
+      toolchain = Keyword.take(opts, [:dotnet, :compiler_dll, :workspace, :package_dir, :compile])
+
+      {:ok, pool} =
+        Spiral.Kino.CompilerPool.start_link(
+          first: server,
+          max_workers: settings.max_workers,
+          fair: settings.fair,
+          start_worker: Spiral.Kino.CompilerPool.worker_starter(toolchain, pool_limits(opts, settings.max_workers))
+        )
+
+      :persistent_term.put({__MODULE__, :pool, server}, pool)
+      IO.puts("compiler pool: up to #{settings.max_workers} compiler(s), #{if settings.fair, do: "fair per client", else: "first come first served"}")
+    end
+  end
+
+  defp pool_limits(opts, workers) do
+    base = Keyword.get(opts, :limits) || limits()
+    if workers > 1, do: %{base | max_mb: max(div(base.max_mb, workers), 1_200)}, else: base
+  end
+
+  defp compile_call(server, req) do
+    case :persistent_term.get({__MODULE__, :pool, server}, nil) do
+      nil -> GenServer.call(server, {:compile, req}, :infinity)
+      pool -> Spiral.Kino.CompilerPool.compile(pool, req.client, req)
+    end
+  end
+
+  @kino_root Path.expand("../../..", __DIR__)
+
+  @doc false
+  def source_stamp do
+    ["lib/**/*.ex", "spi/*.spi", "spi/*.ex", "mix.exs", "priv/**/*"]
+    |> Enum.flat_map(&Path.wildcard(Path.join(@kino_root, &1)))
+    |> Enum.map(fn path ->
+      case File.stat(path, time: :posix) do
+        {:ok, %{mtime: mtime}} -> mtime
+        _ -> 0
+      end
+    end)
+    |> Enum.max(fn -> 0 end)
+  end
+
+  @doc false
+  def stale_code do
+    modified = Enum.filter(:code.modified_modules(), &kino_module?/1)
+    booted = :persistent_term.get({__MODULE__, :source_stamp}, nil)
+
+    cond do
+      modified != [] -> "reloaded beams: #{inspect(modified)}"
+      booted == nil -> nil
+      source_stamp() > booted -> "Kino sources changed since the daemon started"
+      true -> nil
+    end
+  end
+
+  defp kino_module?(module) do
+    name = Atom.to_string(module)
+    String.starts_with?(name, "Elixir.Spiral.Kino") or String.starts_with?(name, "spiral_kino@")
+  end
+
+  @doc false
+  def notebook_reply(request) do
+    with {:ok, %{"args" => args, "root" => root}} when is_list(args) and is_binary(root) <- JSON.decode(request),
+         true <- Enum.all?(args, &is_binary/1) do
+      cond do
+        same_root(root) != same_root(@kino_root) -> {["stale\tthe daemon serves another Kino checkout: #{@kino_root}"], :keep}
+        reason = stale_code() -> {["stale\t" <> reason <> "; retiring"], :retire}
+        true -> {run_notebook(args), :keep}
+      end
+    else
+      _ -> {["error\t" <> JSON.encode!("notebook request is not {\"args\": [...], \"root\": ...}"), "end\t1"], :keep}
+    end
+  end
+
+  defp same_root(path) do
+    expanded = path |> Path.expand() |> String.trim_trailing("/")
+    if match?({:win32, _}, :os.type()), do: String.downcase(expanded), else: expanded
+  end
+
+  defp run_notebook(args) do
+    Spiral.Kino.Domain.ensure!()
+    {status, lines} = Spiral.Kino.NotebookCli.execute(args)
+    shown = Enum.map(lines, &("line\t" <> &1))
+
+    case status do
+      :ok -> shown ++ ["end\t0"]
+      {:error, message} -> shown ++ ["error\t" <> JSON.encode!(message), "end\t1"]
+    end
+  rescue
+    error -> ["error\t" <> JSON.encode!(Exception.message(error)), "end\t1"]
+  end
+
   defp parse_request(rest) do
-    [backend, input, output, timeout, mtime] = String.split(String.trim(rest), "\t")
+    [backend, input, output, timeout, mtime | client] = String.split(String.trim(rest), "\t")
 
     %{
       backend: backend,
       input: input,
       output: output,
       timeout: parse_timeout(timeout),
-      mtime: String.to_integer(mtime)
+      mtime: String.to_integer(mtime),
+      client: List.first(client) || "anonymous"
     }
   end
 
@@ -669,9 +984,14 @@ defmodule Spiral.Kino.CompilerDaemon do
     do: encode({:error, "unexpected compile result: #{inspect(other)}"}, queue)
 
   defp session_lost?(message) do
-    String.contains?(message, "compiler socket") or String.contains?(message, "bridge ") or
-      String.contains?(message, "closed the socket")
+    String.contains?(message, "compiler socket") or String.contains?(message, "closed the socket") or
+      String.contains?(message, "compiler stalled")
   end
+
+  @default_stall_seconds 120
+
+  @doc false
+  def stall_seconds, do: env_count("SPIRAL_KINO_COMPILER_STALL_S", @default_stall_seconds)
 
   defp compiler_log(%{log: ""}), do: ""
   defp compiler_log(%{log: log}), do: "\n" <> String.trim(log)
@@ -693,7 +1013,7 @@ defmodule Spiral.Kino.CompilerDaemon do
   end
 
   defp socket_path do
-    path = Path.expand(Path.join(System.tmp_dir!(), "spiral-kino-#{System.pid()}.sock"))
+    path = Path.expand(Path.join(System.tmp_dir!(), "spiral-kino-#{System.pid()}-#{System.unique_integer([:positive])}.sock"))
 
     case :os.type() do
       {:win32, _} -> String.replace(path, "/", "\\")
@@ -701,22 +1021,6 @@ defmodule Spiral.Kino.CompilerDaemon do
     end
   end
 
-  defp bridge_script, do: Application.app_dir(:spiral_kino, "priv/compiler_bridge.ps1")
-
-  defp pwsh_exe do
-    cond do
-      path = System.find_executable("pwsh") ->
-        path
-
-      path = System.find_executable("pwsh.exe") ->
-        path
-
-      true ->
-        scoop = System.get_env("SCOOP") || Path.join(System.user_home!(), "scoop")
-        candidate = Path.join(scoop, "apps/pwsh/current/pwsh.exe")
-        if File.regular?(candidate), do: candidate, else: nil
-    end
-  end
 
   defp port_env(opts, dotnet) do
     System.get_env()

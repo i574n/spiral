@@ -212,7 +212,7 @@ Fun1 * closure0(Closure0 * x, int32_t v0){
     
     
     Array0 * v1;
-    v1 = ArrayCreate0(2l, false);
+    v1 = ArrayCreate0(2l, true);
     
     
     

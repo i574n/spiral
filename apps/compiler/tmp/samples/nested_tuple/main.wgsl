@@ -1,10 +1,12 @@
 struct SpiralIo {
   code: i32,
-  pad0: u32,
-  pad1: u32,
-  pad2: u32,
+  lanes: u32,
+  heap_words_per_lane: u32,
+  lane_base: u32,
 }
 @group(0) @binding(0) var<storage, read_write> spiral_io: SpiralIo;
+@group(0) @binding(2) var<storage, read_write> spiral_results: array<i32>;
+var<private> spiral_lane: u32 = 0u;
 struct SpiralTuple0 {
   v0: i32,
   v1: i32,
@@ -32,9 +34,7 @@ fn sp_method1(p0: i32, p1: i32, p2: i32, p3: i32) -> i32 {
     v5 = (v4 + v2);
     var v6: i32 = 0i;
     v6 = (v5 + v3);
-    var v7: i32 = 0i;
-    v7 = (v6 - 10i);
-    return v7;
+    return (v6 - 10i);
 }
 fn spiral_main() -> i32 {
     var v0: i32 = 0i;
@@ -50,7 +50,13 @@ fn spiral_main() -> i32 {
     v4 = spiral_tuple1.v3;
     return sp_method1(v1, v2, v3, v4);
 }
-@compute @workgroup_size(1)
-fn main() {
-  spiral_io.code = spiral_main();
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) invocation: vec3<u32>) {
+  let lane_count = max(spiral_io.lanes, 1u);
+  let lane = spiral_io.lane_base + invocation.x;
+  if (lane >= lane_count) { return; }
+  spiral_lane = lane;
+  let result = spiral_main();
+  spiral_results[spiral_lane] = result;
+  if (spiral_lane == 0u) { spiral_io.code = result; }
 }

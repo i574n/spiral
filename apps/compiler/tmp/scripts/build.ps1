@@ -1,14 +1,19 @@
 param(
-    [ValidateSet('single-flight', 'sf', 'hopac', 'hp', 'both')][string]$Mode = 'single-flight',
+    [ValidateSet('single-flight', 'sf', 'gpt5parallel', 'gp', 'both')][string]$Mode = 'single-flight',
     [ValidateSet('Release', 'Debug')][string]$Configuration = 'Release',
     [string]$CoreSource
 )
 . $PSScriptRoot/env.ps1
 
+if (-not $CoreSource) {
+    pwsh -NoProfile -File (Join-Path $PSScriptRoot 'pair-drift.ps1')
+    if ($LASTEXITCODE -ne 0) { throw 'pair-drift: a SPIRAL_CORE_GPT5PARALLEL pair changed on one side only; change both sides or unify the pair' }
+}
+
 $dotnet = Resolve-SpiralDotnet
 $cache = Get-SpiralCacheDir
 $project = Join-Path $BundleRoot 'compiler/host/SpiralCompiler.fsproj'
-$modes = if ($Mode -eq 'both') { 'single-flight', 'hopac' } else { ConvertTo-SpiralMode $Mode }
+$modes = if ($Mode -eq 'both') { 'single-flight', 'gpt5parallel' } else { ConvertTo-SpiralMode $Mode }
 $receipts = Join-Path $cache 'results/builds.tsv'
 New-Item -ItemType Directory -Force (Split-Path $receipts) | Out-Null
 if (-not (Test-Path $receipts)) { "timestamp`tmode`tconfiguration`tseconds`texit`tcore_sha256`tcore" | Set-Content $receipts }

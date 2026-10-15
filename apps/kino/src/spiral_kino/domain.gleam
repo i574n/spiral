@@ -62,31 +62,55 @@ pub type Uh4 {
     Uh4NoRow
     Uh4Row(String, Uh4)
 }
+pub type Us5 {
+    Us5WellFormed
+    Us5Malformed(f1i0 : String)
+}
 pub type Us4 {
     Us4Between
     Us4InDoc(f1i0 : Uh4)
     Us4InCode(f2i0 : Uh4)
-    Us4InTest(f3i0 : String, f3i1 : String, f3i2 : Uh4, f3i3 : Uh4)
-}
-pub type Us5 {
-    Us5NoHeader
-    Us5Header(f1i0 : String, f1i1 : String)
+    Us4InTest(f3i0 : String, f3i1 : String, f3i2 : Uh4, f3i3 : Uh4, f3i4 : Us5, f3i5 : Int)
 }
 pub type Us6 {
-    Us6SpiRealm
-    Us6RealRealm
+    Us6NoHeader
+    Us6Header(f1i0 : String, f1i1 : String)
+}
+pub type Us7 {
+    Us7SpiRealm
+    Us7RealRealm
+}
+pub type Us8 {
+    Us8RustTarget
+    Us8FsharpTarget
+    Us8TypescriptTarget
+    Us8PythonTarget
+    Us8CudaTarget
+    Us8CppTarget
+    Us8GleamTarget
+    Us8LuaTarget
+    Us8CTarget
+    Us8DelphiTarget
+    Us8ZigTarget
+    Us8LeanTarget
+    Us8WgslTarget
+    Us8UnknownTarget
 }
 pub type Uh5 {
     Uh5NoNb
     Uh5Nb(String, Uh5)
 }
-pub type Us7 {
-    Us7EveryCell
-    Us7TestsAndWholeFile
+pub type Us9 {
+    Us9EveryCell
+    Us9TestsAndWholeFile
 }
 pub type Uh6 {
     Uh6NoSource
     Uh6Source(String, String, Uh6)
+}
+pub type Us10 {
+    Us10BudgetUnseen
+    Us10BudgetOf(f1i0 : String)
 }
 pub type Uh7 {
     Uh7NoStep
@@ -6389,7 +6413,425 @@ pub fn closure1(capt: Nil) -> fn(#(String, String)) -> String {
         }
     }
 }
-pub fn find_42(v0: Uh0, v1: Uh0) -> String {
+pub fn digits_between_43(v0: String, v1: Int, v2: Int) -> Bool {
+    let v3 = v1 >= v2
+    case v3 {
+        True -> {
+            True
+        }
+        False -> {
+            let v4 = kino_text_at(v0, v1, 1)
+            let v5 = v4 == "0"
+            let v24 =
+                case v5 {
+                    True -> {
+                        0
+                    }
+                    False -> {
+                        let v6 = v4 == "1"
+                        case v6 {
+                            True -> {
+                                1
+                            }
+                            False -> {
+                                let v7 = v4 == "2"
+                                case v7 {
+                                    True -> {
+                                        2
+                                    }
+                                    False -> {
+                                        let v8 = v4 == "3"
+                                        case v8 {
+                                            True -> {
+                                                3
+                                            }
+                                            False -> {
+                                                let v9 = v4 == "4"
+                                                case v9 {
+                                                    True -> {
+                                                        4
+                                                    }
+                                                    False -> {
+                                                        let v10 = v4 == "5"
+                                                        case v10 {
+                                                            True -> {
+                                                                5
+                                                            }
+                                                            False -> {
+                                                                let v11 = v4 == "6"
+                                                                case v11 {
+                                                                    True -> {
+                                                                        6
+                                                                    }
+                                                                    False -> {
+                                                                        let v12 = v4 == "7"
+                                                                        case v12 {
+                                                                            True -> {
+                                                                                7
+                                                                            }
+                                                                            False -> {
+                                                                                let v13 = v4 == "8"
+                                                                                case v13 {
+                                                                                    True -> {
+                                                                                        8
+                                                                                    }
+                                                                                    False -> {
+                                                                                        let v14 = v4 == "9"
+                                                                                        case v14 {
+                                                                                            True -> {
+                                                                                                9
+                                                                                            }
+                                                                                            False -> {
+                                                                                                -1
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            let v25 = v24 < 0
+            case v25 {
+                True -> {
+                    False
+                }
+                False -> {
+                    let v26 = spiral_wrap_signed(v1 + 1, 32)
+                    digits_between_43(v0, v26, v2)
+                }
+            }
+        }
+    }
+}
+pub fn last_separator_before_44(v0: String, v1: Int, v2: Int) -> Int {
+    let v3 = v1 < v2
+    case v3 {
+        True -> {
+            -1
+        }
+        False -> {
+            let v4 = kino_text_at(v0, v1, 1)
+            let v5 = v4 == "/"
+            let v8 =
+                case v5 {
+                    True -> {
+                        True
+                    }
+                    False -> {
+                        let v6 = kino_text_at(v0, v1, 1)
+                        let v7 = v6 == "\\"
+                        v7
+                    }
+                }
+            case v8 {
+                True -> {
+                    v1
+                }
+                False -> {
+                    let v9 = spiral_wrap_signed(v1 - 1, 32)
+                    last_separator_before_44(v0, v9, v2)
+                }
+            }
+        }
+    }
+}
+pub fn run_stable_lines_42(v0: Uh0) -> Uh0 {
+    case v0  {
+        Uh0Line(v2, v3) -> {
+            let v4 = "thread '"
+            let v5 = kino_text_size(v4)
+            let v6 = kino_text_size(v2)
+            let v7 = v5 > v6
+            let v14 =
+                case v7 {
+                    True -> {
+                        False
+                    }
+                    False -> {
+                        let v8 = v5 == 0
+                        case v8 {
+                            True -> {
+                                True
+                            }
+                            False -> {
+                                let v9 = spiral_wrap_signed(v5 - 1, 32)
+                                let v10 = spiral_wrap_signed(v9 + 1, 32)
+                                let v11 = kino_text_at(v2, 0, v10)
+                                let v12 = v11 == "thread '"
+                                v12
+                            }
+                        }
+                    }
+                }
+            let v50 =
+                case v14 {
+                    True -> {
+                        let v15 = "' ("
+                        let v16 = kino_text_size(v4)
+                        let v17 = find_from_1(v2, v15, v16)
+                        let v18 = kino_text_size(v15)
+                        let v19 = spiral_wrap_signed(v17 + v18, 32)
+                        let v20 = v17 >= 0
+                        let v23 =
+                            case v20 {
+                                True -> {
+                                    let v21 = ") panicked"
+                                    find_from_1(v2, v21, v19)
+                                }
+                                False -> {
+                                    -1
+                                }
+                            }
+                        let v24 = v23 > v19
+                        let v26 =
+                            case v24 {
+                                True -> {
+                                    digits_between_43(v2, v19, v23)
+                                }
+                                False -> {
+                                    False
+                                }
+                            }
+                        case v26 {
+                            True -> {
+                                let v27 = spiral_wrap_signed(v17 + 1, 32)
+                                let v28 = kino_text_size(v2)
+                                let v29 = v27 < v28
+                                let v30 =
+                                    case v29 {
+                                        True -> {
+                                            v27
+                                        }
+                                        False -> {
+                                            v28
+                                        }
+                                    }
+                                let v31 = v30 <= 0
+                                let v36 =
+                                    case v31 {
+                                        True -> {
+                                            let v32 = ""
+                                            v32
+                                        }
+                                        False -> {
+                                            let v33 = spiral_wrap_signed(v30 - 1, 32)
+                                            let v34 = spiral_wrap_signed(v33 + 1, 32)
+                                            let v35 = kino_text_at(v2, 0, v34)
+                                            v35
+                                        }
+                                    }
+                                let v37 = spiral_wrap_signed(v23 + 1, 32)
+                                let v38 = kino_text_size(v2)
+                                let v39 = v37 >= v38
+                                let v47 =
+                                    case v39 {
+                                        True -> {
+                                            let v40 = ""
+                                            v40
+                                        }
+                                        False -> {
+                                            let v41 = v37 <= 0
+                                            case v41 {
+                                                True -> {
+                                                    v2
+                                                }
+                                                False -> {
+                                                    let v42 = spiral_wrap_signed(v38 - 1, 32)
+                                                    let v43 = spiral_wrap_signed(v42 - v37, 32)
+                                                    let v44 = spiral_wrap_signed(v43 + 1, 32)
+                                                    let v45 = kino_text_at(v2, v37, v44)
+                                                    v45
+                                                }
+                                            }
+                                        }
+                                    }
+                                let v48 = { v36 } <> { v47 }
+                                v48
+                            }
+                            False -> {
+                                v2
+                            }
+                        }
+                    }
+                    False -> {
+                        v2
+                    }
+                }
+            let v51 = "panicked at "
+            let v52 = 0
+            let v53 = find_from_1(v50, v51, v52)
+            let v54 = kino_text_size(v51)
+            let v55 = spiral_wrap_signed(v53 + v54, 32)
+            let v56 = v53 >= 0
+            let v59 =
+                case v56 {
+                    True -> {
+                        let v57 = ".rs:"
+                        find_from_1(v50, v57, v55)
+                    }
+                    False -> {
+                        -1
+                    }
+                }
+            let v60 = v59 > v55
+            let v116 =
+                case v60 {
+                    True -> {
+                        let v61 = ".rs:"
+                        let v62 = kino_text_size(v61)
+                        let v63 = spiral_wrap_signed(v59 + v62, 32)
+                        let v64 = spiral_wrap_signed(v63 - 1, 32)
+                        let v65 = spiral_wrap_signed(v64 - v55, 32)
+                        let v66 = v65 <= 0
+                        let v85 =
+                            case v66 {
+                                True -> {
+                                    let v67 = ""
+                                    v67
+                                }
+                                False -> {
+                                    let v68 = kino_text_size(v50)
+                                    let v69 = v55 >= v68
+                                    case v69 {
+                                        True -> {
+                                            let v70 = ""
+                                            v70
+                                        }
+                                        False -> {
+                                            let v71 = spiral_wrap_signed(v55 + v65, 32)
+                                            let v72 = spiral_wrap_signed(v71 - 1, 32)
+                                            let v73 = kino_text_size(v50)
+                                            let v74 = v72 >= v73
+                                            let v77 =
+                                                case v74 {
+                                                    True -> {
+                                                        let v75 = kino_text_size(v50)
+                                                        let v76 = spiral_wrap_signed(v75 - 1, 32)
+                                                        v76
+                                                    }
+                                                    False -> {
+                                                        v72
+                                                    }
+                                                }
+                                            let v78 = v77 < v55
+                                            case v78 {
+                                                True -> {
+                                                    let v79 = ""
+                                                    v79
+                                                }
+                                                False -> {
+                                                    let v80 = spiral_wrap_signed(v77 - v55, 32)
+                                                    let v81 = spiral_wrap_signed(v80 + 1, 32)
+                                                    let v82 = kino_text_at(v50, v55, v81)
+                                                    v82
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        let v86 = spiral_wrap_signed(v64 - 1, 32)
+                        let v87 = last_separator_before_44(v50, v86, v55)
+                        let v88 = "spiral_kino"
+                        let v89 = 0
+                        let v90 = find_from_1(v85, v88, v89)
+                        let v91 = v90 >= 0
+                        let v93 =
+                            case v91 {
+                                True -> {
+                                    let v92 = v87 >= v55
+                                    v92
+                                }
+                                False -> {
+                                    False
+                                }
+                            }
+                        case v93 {
+                            True -> {
+                                let v94 = kino_text_size(v50)
+                                let v95 = v55 < v94
+                                let v96 =
+                                    case v95 {
+                                        True -> {
+                                            v55
+                                        }
+                                        False -> {
+                                            v94
+                                        }
+                                    }
+                                let v97 = v96 <= 0
+                                let v102 =
+                                    case v97 {
+                                        True -> {
+                                            let v98 = ""
+                                            v98
+                                        }
+                                        False -> {
+                                            let v99 = spiral_wrap_signed(v96 - 1, 32)
+                                            let v100 = spiral_wrap_signed(v99 + 1, 32)
+                                            let v101 = kino_text_at(v50, 0, v100)
+                                            v101
+                                        }
+                                    }
+                                let v103 = spiral_wrap_signed(v87 + 1, 32)
+                                let v104 = kino_text_size(v50)
+                                let v105 = v103 >= v104
+                                let v113 =
+                                    case v105 {
+                                        True -> {
+                                            let v106 = ""
+                                            v106
+                                        }
+                                        False -> {
+                                            let v107 = v103 <= 0
+                                            case v107 {
+                                                True -> {
+                                                    v50
+                                                }
+                                                False -> {
+                                                    let v108 = spiral_wrap_signed(v104 - 1, 32)
+                                                    let v109 = spiral_wrap_signed(v108 - v103, 32)
+                                                    let v110 = spiral_wrap_signed(v109 + 1, 32)
+                                                    let v111 = kino_text_at(v50, v103, v110)
+                                                    v111
+                                                }
+                                            }
+                                        }
+                                    }
+                                let v114 = { v102 } <> { v113 }
+                                v114
+                            }
+                            False -> {
+                                v50
+                            }
+                        }
+                    }
+                    False -> {
+                        v50
+                    }
+                }
+            let v117 = run_stable_lines_42(v3)
+            Uh0Line(v116, v117)
+        }
+        Uh0NoLine -> {
+            Uh0NoLine
+        }
+    }
+}
+pub fn find_45(v0: Uh0, v1: Uh0) -> String {
     case v0  {
         Uh0Line(v22, v23) -> {
             let v24 = "SPIRAL_KINO_VALUE:"
@@ -6566,7 +7008,7 @@ pub fn find_42(v0: Uh0, v1: Uh0) -> String {
                 }
                 False -> {
                     let v100 = Uh0Line(v22, v1)
-                    find_42(v23, v100)
+                    find_45(v23, v100)
                 }
             }
         }
@@ -6623,11 +7065,12 @@ pub fn closure2(capt: Nil) -> fn(String) -> String {
         let v6 = 0
         let v7 = Uh0NoLine
         let v8 = collect_4(v5, v6, v7)
-        let v9 = Uh0NoLine
-        find_42(v8, v9)
+        let v9 = run_stable_lines_42(v8)
+        let v10 = Uh0NoLine
+        find_45(v9, v10)
     }
 }
-pub fn skip_ws_44(v0: String, v1: Int) -> Int {
+pub fn skip_ws_47(v0: String, v1: Int) -> Int {
     let v2 = kino_text_size(v0)
     let v3 = v1 >= v2
     case v3 {
@@ -6640,28 +7083,28 @@ pub fn skip_ws_44(v0: String, v1: Int) -> Int {
             case v5 {
                 True -> {
                     let v6 = spiral_wrap_signed(v1 + 1, 32)
-                    skip_ws_44(v0, v6)
+                    skip_ws_47(v0, v6)
                 }
                 False -> {
                     let v8 = v4 == "\t"
                     case v8 {
                         True -> {
                             let v9 = spiral_wrap_signed(v1 + 1, 32)
-                            skip_ws_44(v0, v9)
+                            skip_ws_47(v0, v9)
                         }
                         False -> {
                             let v11 = v4 == "\n"
                             case v11 {
                                 True -> {
                                     let v12 = spiral_wrap_signed(v1 + 1, 32)
-                                    skip_ws_44(v0, v12)
+                                    skip_ws_47(v0, v12)
                                 }
                                 False -> {
                                     let v14 = v4 == "\r"
                                     case v14 {
                                         True -> {
                                             let v15 = spiral_wrap_signed(v1 + 1, 32)
-                                            skip_ws_44(v0, v15)
+                                            skip_ws_47(v0, v15)
                                         }
                                         False -> {
                                             v1
@@ -6676,7 +7119,7 @@ pub fn skip_ws_44(v0: String, v1: Int) -> Int {
         }
     }
 }
-pub fn line_end_45(v0: String, v1: Int) -> Int {
+pub fn line_end_48(v0: String, v1: Int) -> Int {
     let v2 = kino_text_size(v0)
     let v3 = v1 >= v2
     case v3 {
@@ -6698,7 +7141,7 @@ pub fn line_end_45(v0: String, v1: Int) -> Int {
                         }
                         False -> {
                             let v7 = spiral_wrap_signed(v1 + 1, 32)
-                            line_end_45(v0, v7)
+                            line_end_48(v0, v7)
                         }
                     }
                 }
@@ -6706,7 +7149,7 @@ pub fn line_end_45(v0: String, v1: Int) -> Int {
         }
     }
 }
-pub fn unit_from_43(v0: String, v1: Int) -> String {
+pub fn unit_from_46(v0: String, v1: Int) -> String {
     let v2 = "Got:"
     let v3 = find_from_1(v0, v2, v1)
     let v4 = v3 < 0
@@ -6728,8 +7171,8 @@ pub fn unit_from_43(v0: String, v1: Int) -> String {
                 False -> {
                     let v11 = kino_text_size(v2)
                     let v12 = spiral_wrap_signed(v3 + v11, 32)
-                    let v13 = skip_ws_44(v0, v12)
-                    let v14 = line_end_45(v0, v13)
+                    let v13 = skip_ws_47(v0, v12)
+                    let v14 = line_end_48(v0, v13)
                     let v15 = spiral_wrap_signed(v14 - v13, 32)
                     let v16 = v15 <= 0
                     let v35 =
@@ -6855,8 +7298,8 @@ pub fn unit_from_43(v0: String, v1: Int) -> String {
                         }
                     let v72 = kino_text_size(v6)
                     let v73 = spiral_wrap_signed(v8 + v72, 32)
-                    let v74 = skip_ws_44(v0, v73)
-                    let v75 = line_end_45(v0, v74)
+                    let v74 = skip_ws_47(v0, v73)
+                    let v75 = line_end_48(v0, v74)
                     let v76 = spiral_wrap_signed(v75 - v74, 32)
                     let v77 = v76 <= 0
                     let v96 =
@@ -7445,7 +7888,7 @@ pub fn unit_from_43(v0: String, v1: Int) -> String {
                             v306
                         }
                         False -> {
-                            unit_from_43(v0, v7)
+                            unit_from_46(v0, v7)
                         }
                     }
                 }
@@ -7456,10 +7899,10 @@ pub fn unit_from_43(v0: String, v1: Int) -> String {
 pub fn closure3(capt: Nil) -> fn(String) -> String {
     fn (v0) {
         let v1 = 0
-        unit_from_43(v0, v1)
+        unit_from_46(v0, v1)
     }
 }
-pub fn indent_names_46(v0: String, v1: Int, v2: String) -> String {
+pub fn indent_names_49(v0: String, v1: Int, v2: String) -> String {
     let v3 = kino_text_size(v0)
     let v4 = v1 > v3
     let v44 =
@@ -7557,13 +8000,13 @@ pub fn indent_names_46(v0: String, v1: Int, v2: String) -> String {
             let v47 = v45 == ""
             case v47 {
                 True -> {
-                    indent_names_46(v0, v46, v2)
+                    indent_names_49(v0, v46, v2)
                 }
                 False -> {
                     let v49 = { v2 } <> { "    " }
                     let v50 = { v49 } <> { v45 }
                     let v51 = { v50 } <> { "-\n" }
-                    indent_names_46(v0, v46, v51)
+                    indent_names_49(v0, v46, v51)
                 }
             }
         }
@@ -7580,7 +8023,7 @@ pub fn closure4(capt: Nil) -> fn(String) -> String {
             False -> {
                 let v3 = 0
                 let v4 = ""
-                let v5 = indent_names_46(v0, v3, v4)
+                let v5 = indent_names_49(v0, v3, v4)
                 let v6 = { "packageDir: .\npackages:\n    |core-\n" } <> { v5 }
                 let v7 = { v6 } <> { "modules:\n    console\n    main\n" }
                 v7
@@ -7588,7 +8031,7 @@ pub fn closure4(capt: Nil) -> fn(String) -> String {
         }
     }
 }
-pub fn letter_end_48(v0: String, v1: Int) -> Int {
+pub fn letter_end_51(v0: String, v1: Int) -> Int {
     let v2 = kino_text_size(v0)
     let v3 = v1 >= v2
     case v3 {
@@ -7603,7 +8046,7 @@ pub fn letter_end_48(v0: String, v1: Int) -> Int {
             case v7 {
                 True -> {
                     let v8 = spiral_wrap_signed(v1 + 1, 32)
-                    letter_end_48(v0, v8)
+                    letter_end_51(v0, v8)
                 }
                 False -> {
                     v1
@@ -7612,7 +8055,7 @@ pub fn letter_end_48(v0: String, v1: Int) -> Int {
         }
     }
 }
-pub fn walk_49(v0: String, v1: Int, v2: Uh3, v3: String, v4: String) -> Uh3 {
+pub fn walk_52(v0: String, v1: Int, v2: Uh3, v3: String, v4: String) -> Uh3 {
     let v5 = kino_text_size(v0)
     let v6 = v1 > v5
     let v46 =
@@ -7771,7 +8214,7 @@ pub fn walk_49(v0: String, v1: Int, v2: Uh3, v3: String, v4: String) -> Uh3 {
                 case v75 {
                     True -> {
                         let v76 = 2
-                        let v77 = letter_end_48(v63, v76)
+                        let v77 = letter_end_51(v63, v76)
                         let v78 = v77 == 2
                         case v78 {
                             True -> {
@@ -7923,40 +8366,40 @@ pub fn walk_49(v0: String, v1: Int, v2: Uh3, v3: String, v4: String) -> Uh3 {
                             let v150 = "import"
                             let v151 = Uh3Cell(v150, v149, v137)
                             let v152 = ""
-                            walk_49(v0, v64, v151, v3, v152)
+                            walk_52(v0, v64, v151, v3, v152)
                         }
                         False -> {
                             let v154 = v120 == "meta"
                             case v154 {
                                 True -> {
                                     let v155 = ""
-                                    walk_47(v0, v64, v137, v155)
+                                    walk_50(v0, v64, v137, v155)
                                 }
                                 False -> {
                                     let v157 = v120 == "markdown"
                                     case v157 {
                                         True -> {
                                             let v158 = ""
-                                            walk_49(v0, v64, v137, v120, v158)
+                                            walk_52(v0, v64, v137, v120, v158)
                                         }
                                         False -> {
                                             let v160 = v120 == "spiral"
                                             case v160 {
                                                 True -> {
                                                     let v161 = ""
-                                                    walk_49(v0, v64, v137, v120, v161)
+                                                    walk_52(v0, v64, v137, v120, v161)
                                                 }
                                                 False -> {
                                                     let v163 = v120 == "fsharp"
                                                     case v163 {
                                                         True -> {
                                                             let v164 = ""
-                                                            walk_49(v0, v64, v137, v120, v164)
+                                                            walk_52(v0, v64, v137, v120, v164)
                                                         }
                                                         False -> {
                                                             let v166 = { "code/" } <> { v120 }
                                                             let v167 = ""
-                                                            walk_49(v0, v64, v137, v166, v167)
+                                                            walk_52(v0, v64, v137, v166, v167)
                                                         }
                                                     }
                                                 }
@@ -7981,13 +8424,13 @@ pub fn walk_49(v0: String, v1: Int, v2: Uh3, v3: String, v4: String) -> Uh3 {
                                 v117
                             }
                         }
-                    walk_49(v0, v64, v2, v3, v118)
+                    walk_52(v0, v64, v2, v3, v118)
                 }
             }
         }
     }
 }
-pub fn walk_47(v0: String, v1: Int, v2: Uh3, v3: String) -> Uh3 {
+pub fn walk_50(v0: String, v1: Int, v2: Uh3, v3: String) -> Uh3 {
     let v4 = kino_text_size(v0)
     let v5 = v1 > v4
     let v45 =
@@ -8146,7 +8589,7 @@ pub fn walk_47(v0: String, v1: Int, v2: Uh3, v3: String) -> Uh3 {
                 case v74 {
                     True -> {
                         let v75 = 2
-                        let v76 = letter_end_48(v62, v75)
+                        let v76 = letter_end_51(v62, v75)
                         let v77 = v76 == 2
                         case v77 {
                             True -> {
@@ -8298,40 +8741,40 @@ pub fn walk_47(v0: String, v1: Int, v2: Uh3, v3: String) -> Uh3 {
                             let v149 = "import"
                             let v150 = Uh3Cell(v149, v148, v136)
                             let v151 = ""
-                            walk_49(v0, v63, v150, v3, v151)
+                            walk_52(v0, v63, v150, v3, v151)
                         }
                         False -> {
                             let v153 = v119 == "meta"
                             case v153 {
                                 True -> {
                                     let v154 = ""
-                                    walk_47(v0, v63, v136, v154)
+                                    walk_50(v0, v63, v136, v154)
                                 }
                                 False -> {
                                     let v156 = v119 == "markdown"
                                     case v156 {
                                         True -> {
                                             let v157 = ""
-                                            walk_49(v0, v63, v136, v119, v157)
+                                            walk_52(v0, v63, v136, v119, v157)
                                         }
                                         False -> {
                                             let v159 = v119 == "spiral"
                                             case v159 {
                                                 True -> {
                                                     let v160 = ""
-                                                    walk_49(v0, v63, v136, v119, v160)
+                                                    walk_52(v0, v63, v136, v119, v160)
                                                 }
                                                 False -> {
                                                     let v162 = v119 == "fsharp"
                                                     case v162 {
                                                         True -> {
                                                             let v163 = ""
-                                                            walk_49(v0, v63, v136, v119, v163)
+                                                            walk_52(v0, v63, v136, v119, v163)
                                                         }
                                                         False -> {
                                                             let v165 = { "code/" } <> { v119 }
                                                             let v166 = ""
-                                                            walk_49(v0, v63, v136, v165, v166)
+                                                            walk_52(v0, v63, v136, v165, v166)
                                                         }
                                                     }
                                                 }
@@ -8356,27 +8799,27 @@ pub fn walk_47(v0: String, v1: Int, v2: Uh3, v3: String) -> Uh3 {
                                 v116
                             }
                         }
-                    walk_49(v0, v63, v2, v3, v117)
+                    walk_52(v0, v63, v2, v3, v117)
                 }
             }
         }
     }
 }
-pub fn rev_cells_50(v0: Uh3, v1: Uh3) -> Uh3 {
+pub fn rev_cells_53(v0: Uh3, v1: Uh3) -> Uh3 {
     case v0  {
         Uh3Cell(v2, v3, v4) -> {
             let v5 = Uh3Cell(v2, v3, v1)
-            rev_cells_50(v4, v5)
+            rev_cells_53(v4, v5)
         }
         Uh3NoCell -> {
             v1
         }
     }
 }
-pub fn count_cells_51(v0: Uh3) -> Int {
+pub fn count_cells_54(v0: Uh3) -> Int {
     case v0  {
         Uh3Cell(v1, v2, v3) -> {
-            let v4 = count_cells_51(v3)
+            let v4 = count_cells_54(v3)
             let v5 = spiral_wrap_signed(1 + v4, 32)
             v5
         }
@@ -8385,7 +8828,7 @@ pub fn count_cells_51(v0: Uh3) -> Int {
         }
     }
 }
-pub fn emit_cells_52(v0: Uh3) -> String {
+pub fn emit_cells_55(v0: Uh3) -> String {
     case v0  {
         Uh3Cell(v2, v3, v4) -> {
             let v5 = { v2 } <> { "\n" }
@@ -8394,7 +8837,7 @@ pub fn emit_cells_52(v0: Uh3) -> String {
             let v8 = { v5 } <> { v7 }
             let v9 = { v8 } <> { "\n" }
             let v10 = { v9 } <> { v3 }
-            let v11 = emit_cells_52(v4)
+            let v11 = emit_cells_55(v4)
             let v12 = { v10 } <> { v11 }
             v12
         }
@@ -8413,23 +8856,23 @@ pub fn closure5(capt: Nil) -> fn(String) -> String {
         let v5 = replace_from_0(v0, v1, v2, v3, v4)
         let v6 = 0
         let v7 = Uh3NoCell
-        let v8 = walk_47(v5, v6, v7, v4)
+        let v8 = walk_50(v5, v6, v7, v4)
         let v9 = Uh3NoCell
-        let v10 = rev_cells_50(v8, v9)
-        let v11 = count_cells_51(v10)
+        let v10 = rev_cells_53(v8, v9)
+        let v11 = count_cells_54(v10)
         let v12 = show_i32_20(v11)
         let v13 = { v12 } <> { "\n" }
-        let v14 = emit_cells_52(v10)
+        let v14 = emit_cells_55(v10)
         let v15 = { v13 } <> { v14 }
         v15
     }
 }
-pub fn read_cells_53(v0: String, v1: Int, v2: Int, v3: Uh3) -> Uh3 {
+pub fn read_cells_56(v0: String, v1: Int, v2: Int, v3: Uh3) -> Uh3 {
     let v4 = v2 <= 0
     case v4 {
         True -> {
             let v5 = Uh3NoCell
-            rev_cells_50(v3, v5)
+            rev_cells_53(v3, v5)
         }
         False -> {
             let v7 = kino_text_size(v0)
@@ -8524,7 +8967,7 @@ pub fn read_cells_53(v0: String, v1: Int, v2: Int, v3: Uh3) -> Uh3 {
             case v48  {
                 Us0LineDone -> {
                     let v49 = Uh3NoCell
-                    rev_cells_50(v3, v49)
+                    rev_cells_53(v3, v49)
                 }
                 Us0LineGot(v51, v52) -> {
                     let v53 = kino_text_size(v0)
@@ -8619,7 +9062,7 @@ pub fn read_cells_53(v0: String, v1: Int, v2: Int, v3: Uh3) -> Uh3 {
                     case v94  {
                         Us0LineDone -> {
                             let v95 = Uh3NoCell
-                            rev_cells_50(v3, v95)
+                            rev_cells_53(v3, v95)
                         }
                         Us0LineGot(v97, v98) -> {
                             let v99 = 0
@@ -8676,7 +9119,7 @@ pub fn read_cells_53(v0: String, v1: Int, v2: Int, v3: Uh3) -> Uh3 {
                                     }
                                 }
                             let v124 = Uh3Cell(v51, v123, v3)
-                            read_cells_53(v0, v103, v104, v124)
+                            read_cells_56(v0, v103, v104, v124)
                         }
                     }
                 }
@@ -8684,7 +9127,7 @@ pub fn read_cells_53(v0: String, v1: Int, v2: Int, v3: Uh3) -> Uh3 {
         }
     }
 }
-pub fn export_blocks_54(v0: Us3, v1: Uh3, v2: Uh3) -> Uh3 {
+pub fn export_blocks_57(v0: Us3, v1: Uh3, v2: Uh3) -> Uh3 {
     case v1  {
         Uh3Cell(v5, v6, v7) -> {
             let v8 = v5 == "markdown"
@@ -8794,20 +9237,20 @@ pub fn export_blocks_54(v0: Us3, v1: Uh3, v2: Uh3) -> Uh3 {
             case v56 {
                 True -> {
                     let v57 = Uh3Cell(v5, v6, v2)
-                    export_blocks_54(v0, v7, v57)
+                    export_blocks_57(v0, v7, v57)
                 }
                 False -> {
-                    export_blocks_54(v0, v7, v2)
+                    export_blocks_57(v0, v7, v2)
                 }
             }
         }
         Uh3NoCell -> {
             let v3 = Uh3NoCell
-            rev_cells_50(v2, v3)
+            rev_cells_53(v2, v3)
         }
     }
 }
-pub fn keep_docs_55(v0: Uh3) -> Uh3 {
+pub fn keep_docs_58(v0: Uh3) -> Uh3 {
     case v0  {
         Uh3Cell(v2, v3, v4) -> {
             case v4  {
@@ -8824,7 +9267,7 @@ pub fn keep_docs_55(v0: Uh3) -> Uh3 {
                     }
                 }
                 _ -> {
-                    let v10 = keep_docs_55(v4)
+                    let v10 = keep_docs_58(v4)
                     Uh3Cell(v2, v3, v10)
                 }
             }
@@ -8834,18 +9277,18 @@ pub fn keep_docs_55(v0: Uh3) -> Uh3 {
         }
     }
 }
-pub fn rev_rows_58(v0: Uh4, v1: Uh4) -> Uh4 {
+pub fn rev_rows_61(v0: Uh4, v1: Uh4) -> Uh4 {
     case v0  {
         Uh4NoRow -> {
             v1
         }
         Uh4Row(v2, v3) -> {
             let v4 = Uh4Row(v2, v1)
-            rev_rows_58(v3, v4)
+            rev_rows_61(v3, v4)
         }
     }
 }
-pub fn lead_ws_59(v0: String, v1: Int) -> Int {
+pub fn lead_ws_62(v0: String, v1: Int) -> Int {
     let v2 = kino_text_size(v0)
     let v3 = v1 >= v2
     case v3 {
@@ -8858,14 +9301,14 @@ pub fn lead_ws_59(v0: String, v1: Int) -> Int {
             case v5 {
                 True -> {
                     let v6 = spiral_wrap_signed(v1 + 1, 32)
-                    lead_ws_59(v0, v6)
+                    lead_ws_62(v0, v6)
                 }
                 False -> {
                     let v8 = v4 == "\t"
                     case v8 {
                         True -> {
                             let v9 = spiral_wrap_signed(v1 + 1, 32)
-                            lead_ws_59(v0, v9)
+                            lead_ws_62(v0, v9)
                         }
                         False -> {
                             v1
@@ -8876,7 +9319,7 @@ pub fn lead_ws_59(v0: String, v1: Int) -> Int {
         }
     }
 }
-pub fn md_go_57(v0: String, v1: Int, v2: Uh4) -> Uh4 {
+pub fn md_go_60(v0: String, v1: Int, v2: Uh4) -> Uh4 {
     let v3 = kino_text_size(v0)
     let v4 = v1 > v3
     let v44 =
@@ -8969,7 +9412,7 @@ pub fn md_go_57(v0: String, v1: Int, v2: Uh4) -> Uh4 {
     case v44  {
         Us0LineDone -> {
             let v45 = Uh4NoRow
-            rev_rows_58(v2, v45)
+            rev_rows_61(v2, v45)
         }
         Us0LineGot(v47, v48) -> {
             let v49 = kino_text_size(v47)
@@ -9047,7 +9490,7 @@ pub fn md_go_57(v0: String, v1: Int, v2: Uh4) -> Uh4 {
                 }
             case v79 {
                 True -> {
-                    md_go_57(v0, v48, v2)
+                    md_go_60(v0, v48, v2)
                 }
                 False -> {
                     let v81 = v59 == ""
@@ -9059,7 +9502,7 @@ pub fn md_go_57(v0: String, v1: Int, v2: Uh4) -> Uh4 {
                             }
                             False -> {
                                 let v83 = 0
-                                let v84 = lead_ws_59(v59, v83)
+                                let v84 = lead_ws_62(v59, v83)
                                 let v85 = kino_text_size(v59)
                                 let v86 = v84 >= v85
                                 case v86 {
@@ -9124,13 +9567,13 @@ pub fn md_go_57(v0: String, v1: Int, v2: Uh4) -> Uh4 {
                             }
                         }
                     let v110 = Uh4Row(v109, v2)
-                    md_go_57(v0, v48, v110)
+                    md_go_60(v0, v48, v110)
                 }
             }
         }
     }
 }
-pub fn join_rows_60(v0: Uh4) -> String {
+pub fn join_rows_63(v0: Uh4) -> String {
     case v0  {
         Uh4NoRow -> {
             let v1 = ""
@@ -9143,7 +9586,7 @@ pub fn join_rows_60(v0: Uh4) -> String {
                 }
                 _ -> {
                     let v4 = { v2 } <> { "\n" }
-                    let v5 = join_rows_60(v3)
+                    let v5 = join_rows_63(v3)
                     let v6 = { v4 } <> { v5 }
                     v6
                 }
@@ -9151,7 +9594,7 @@ pub fn join_rows_60(v0: Uh4) -> String {
         }
     }
 }
-pub fn formatted_56(v0: Uh3, v1: Uh3) -> Uh3 {
+pub fn formatted_59(v0: Uh3, v1: Uh3) -> Uh3 {
     case v0  {
         Uh3Cell(v4, v5, v6) -> {
             let v7 = 0
@@ -9179,8 +9622,8 @@ pub fn formatted_56(v0: Uh3, v1: Uh3) -> Uh3 {
                     True -> {
                         let v19 = 0
                         let v20 = Uh4NoRow
-                        let v21 = md_go_57(v17, v19, v20)
-                        join_rows_60(v21)
+                        let v21 = md_go_60(v17, v19, v20)
+                        join_rows_63(v21)
                     }
                     False -> {
                         let v23 = v4 == "test"
@@ -9233,21 +9676,21 @@ pub fn formatted_56(v0: Uh3, v1: Uh3) -> Uh3 {
             let v42 = v41 == ""
             case v42 {
                 True -> {
-                    formatted_56(v6, v1)
+                    formatted_59(v6, v1)
                 }
                 False -> {
                     let v44 = Uh3Cell(v4, v41, v1)
-                    formatted_56(v6, v44)
+                    formatted_59(v6, v44)
                 }
             }
         }
         Uh3NoCell -> {
             let v2 = Uh3NoCell
-            rev_cells_50(v1, v2)
+            rev_cells_53(v1, v2)
         }
     }
 }
-pub fn emit_spi_61(v0: Uh3) -> String {
+pub fn emit_spi_64(v0: Uh3) -> String {
     case v0  {
         Uh3Cell(v2, v3, v4) -> {
             case v4  {
@@ -9277,7 +9720,7 @@ pub fn emit_spi_61(v0: Uh3) -> String {
                         }
                     let v16 = { v3 } <> { v15 }
                     let v17 = { v16 } <> { "\n" }
-                    let v18 = emit_spi_61(v4)
+                    let v18 = emit_spi_64(v4)
                     let v19 = { v17 } <> { v18 }
                     v19
                 }
@@ -9385,15 +9828,15 @@ pub fn closure6(capt: Nil) -> fn(String) -> String {
                     let v46 = 0
                     let v47 = parse_acc_26(v42, v44, v45, v46)
                     let v48 = Uh3NoCell
-                    read_cells_53(v0, v43, v47, v48)
+                    read_cells_56(v0, v43, v47, v48)
                 }
             }
         let v52 = Uh3NoCell
-        let v53 = export_blocks_54(v1, v51, v52)
-        let v54 = keep_docs_55(v53)
+        let v53 = export_blocks_57(v1, v51, v52)
+        let v54 = keep_docs_58(v53)
         let v55 = Uh3NoCell
-        let v56 = formatted_56(v54, v55)
-        emit_spi_61(v56)
+        let v56 = formatted_59(v54, v55)
+        emit_spi_64(v56)
     }
 }
 pub fn closure7(capt: Nil) -> fn(String) -> String {
@@ -9488,18 +9931,18 @@ pub fn closure7(capt: Nil) -> fn(String) -> String {
                     let v46 = 0
                     let v47 = parse_acc_26(v42, v44, v45, v46)
                     let v48 = Uh3NoCell
-                    read_cells_53(v0, v43, v47, v48)
+                    read_cells_56(v0, v43, v47, v48)
                 }
             }
         let v52 = Uh3NoCell
-        let v53 = export_blocks_54(v1, v51, v52)
-        let v54 = keep_docs_55(v53)
+        let v53 = export_blocks_57(v1, v51, v52)
+        let v54 = keep_docs_58(v53)
         let v55 = Uh3NoCell
-        let v56 = formatted_56(v54, v55)
-        emit_spi_61(v56)
+        let v56 = formatted_59(v54, v55)
+        emit_spi_64(v56)
     }
 }
-pub fn last_heading_line_63(v0: String, v1: Int, v2: String) -> String {
+pub fn last_heading_line_66(v0: String, v1: Int, v2: String) -> String {
     let v3 = kino_text_size(v0)
     let v4 = v1 > v3
     let v44 =
@@ -9640,16 +10083,16 @@ pub fn last_heading_line_63(v0: String, v1: Int, v2: String) -> String {
                 }
             case v68 {
                 True -> {
-                    last_heading_line_63(v0, v46, v45)
+                    last_heading_line_66(v0, v46, v45)
                 }
                 False -> {
-                    last_heading_line_63(v0, v46, v2)
+                    last_heading_line_66(v0, v46, v2)
                 }
             }
         }
     }
 }
-pub fn replace_from_64(v0: String, v1: String, v2: String, v3: Int) -> String {
+pub fn replace_from_67(v0: String, v1: String, v2: String, v3: Int) -> String {
     let v4 = find_from_1(v0, v1, v3)
     let v5 = v4 < 0
     case v5 {
@@ -9747,7 +10190,7 @@ pub fn replace_from_64(v0: String, v1: String, v2: String, v3: Int) -> String {
         }
     }
 }
-pub fn test_name_go_65(v0: String, v1: Int, v2: Bool, v3: String) -> String {
+pub fn test_name_go_68(v0: String, v1: Int, v2: Bool, v3: String) -> String {
     let v4 = kino_text_size(v0)
     let v5 = v1 >= v4
     case v5 {
@@ -10292,12 +10735,12 @@ pub fn test_name_go_65(v0: String, v1: Int, v2: Bool, v3: String) -> String {
                                 }
                             let v171 = { v3 } <> { v170 }
                             let v172 = { v171 } <> { v164 }
-                            test_name_go_65(v0, v143, v144, v172)
+                            test_name_go_68(v0, v143, v144, v172)
                         }
                         False -> {
                             let v174 = spiral_wrap_signed(v1 + v14, 32)
                             let v175 = True
-                            test_name_go_65(v0, v174, v175, v3)
+                            test_name_go_68(v0, v174, v175, v3)
                         }
                     }
                 }
@@ -10351,12 +10794,12 @@ pub fn test_name_go_65(v0: String, v1: Int, v2: Bool, v3: String) -> String {
                                 }
                             let v199 = { v3 } <> { v198 }
                             let v200 = { v199 } <> { v192 }
-                            test_name_go_65(v0, v182, v183, v200)
+                            test_name_go_68(v0, v182, v183, v200)
                         }
                         False -> {
                             let v202 = spiral_wrap_signed(v1 + 1, 32)
                             let v203 = True
-                            test_name_go_65(v0, v202, v203, v3)
+                            test_name_go_68(v0, v202, v203, v3)
                         }
                     }
                 }
@@ -10364,7 +10807,7 @@ pub fn test_name_go_65(v0: String, v1: Int, v2: Bool, v3: String) -> String {
         }
     }
 }
-pub fn underscore_start_66(v0: String, v1: Int) -> Int {
+pub fn underscore_start_69(v0: String, v1: Int) -> Int {
     let v2 = kino_text_size(v0)
     let v3 = v1 < v2
     let v6 =
@@ -10381,14 +10824,14 @@ pub fn underscore_start_66(v0: String, v1: Int) -> Int {
     case v6 {
         True -> {
             let v7 = spiral_wrap_signed(v1 + 1, 32)
-            underscore_start_66(v0, v7)
+            underscore_start_69(v0, v7)
         }
         False -> {
             v1
         }
     }
 }
-pub fn underscore_end_67(v0: String, v1: Int) -> Int {
+pub fn underscore_end_70(v0: String, v1: Int) -> Int {
     let v2 = v1 > 0
     let v6 =
         case v2 {
@@ -10405,14 +10848,14 @@ pub fn underscore_end_67(v0: String, v1: Int) -> Int {
     case v6 {
         True -> {
             let v7 = spiral_wrap_signed(v1 - 1, 32)
-            underscore_end_67(v0, v7)
+            underscore_end_70(v0, v7)
         }
         False -> {
             v1
         }
     }
 }
-pub fn count_row_68(v0: Uh4, v1: String) -> Int {
+pub fn count_row_71(v0: Uh4, v1: String) -> Int {
     case v0  {
         Uh4NoRow -> {
             0
@@ -10421,18 +10864,18 @@ pub fn count_row_68(v0: Uh4, v1: String) -> Int {
             let v4 = v2 == v1
             case v4 {
                 True -> {
-                    let v5 = count_row_68(v3, v1)
+                    let v5 = count_row_71(v3, v1)
                     let v6 = spiral_wrap_signed(1 + v5, 32)
                     v6
                 }
                 False -> {
-                    count_row_68(v3, v1)
+                    count_row_71(v3, v1)
                 }
             }
         }
     }
 }
-pub fn drop_blank_rows_70(v0: Uh4) -> Uh4 {
+pub fn drop_blank_rows_73(v0: Uh4) -> Uh4 {
     case v0  {
         Uh4NoRow -> {
             Uh4NoRow
@@ -10460,7 +10903,7 @@ pub fn drop_blank_rows_70(v0: Uh4) -> Uh4 {
             let v15 = v14 == ""
             case v15 {
                 True -> {
-                    drop_blank_rows_70(v3)
+                    drop_blank_rows_73(v3)
                 }
                 False -> {
                     v0
@@ -10469,18 +10912,18 @@ pub fn drop_blank_rows_70(v0: Uh4) -> Uh4 {
         }
     }
 }
-pub fn append_rows_71(v0: Uh4, v1: Uh4) -> Uh4 {
+pub fn append_rows_74(v0: Uh4, v1: Uh4) -> Uh4 {
     case v0  {
         Uh4NoRow -> {
             v1
         }
         Uh4Row(v2, v3) -> {
-            let v4 = append_rows_71(v3, v1)
+            let v4 = append_rows_74(v3, v1)
             Uh4Row(v2, v4)
         }
     }
 }
-pub fn test_block_go_69(v0: String, v1: Int, v2: Uh4, v3: String, v4: Uh4, v5: String) -> String {
+pub fn test_block_go_72(v0: String, v1: Int, v2: Uh4, v3: String, v4: Uh4, v5: String) -> String {
     let v6 = kino_text_size(v0)
     let v7 = v1 > v6
     let v47 =
@@ -10572,265 +11015,526 @@ pub fn test_block_go_69(v0: String, v1: Int, v2: Uh4, v3: String, v4: Uh4, v5: S
         }
     case v47  {
         Us0LineDone -> {
-            let v48 = { "test " } <> { v5 }
-            let v49 = { " " } <> { v3 }
-            let v50 = { v49 } <> { " " }
-            let v51 = " static "
-            let v52 = 0
-            let v53 = find_from_1(v50, v51, v52)
-            let v54 = v53 >= 0
-            let v57 =
-                case v54 {
+            let v48 = " --fails "
+            let v49 = 0
+            let v50 = find_from_1(v3, v48, v49)
+            let v51 = v50 >= 0
+            let v61 =
+                case v51 {
                     True -> {
-                        let v55 = " static"
-                        v55
+                        let v52 = kino_text_size(v3)
+                        let v53 = v50 < v52
+                        let v54 =
+                            case v53 {
+                                True -> {
+                                    v50
+                                }
+                                False -> {
+                                    v52
+                                }
+                            }
+                        let v55 = v54 <= 0
+                        case v55 {
+                            True -> {
+                                let v56 = ""
+                                v56
+                            }
+                            False -> {
+                                let v57 = spiral_wrap_signed(v54 - 1, 32)
+                                let v58 = spiral_wrap_signed(v57 + 1, 32)
+                                let v59 = kino_text_at(v3, 0, v58)
+                                v59
+                            }
+                        }
                     }
                     False -> {
-                        let v56 = ""
-                        v56
+                        v3
                     }
                 }
-            let v58 = { v48 } <> { v57 }
-            let v59 = " --print-code "
-            let v60 = 0
-            let v61 = find_from_1(v50, v59, v60)
-            let v62 = v61 >= 0
-            let v65 =
-                case v62 {
+            let v62 = { "test " } <> { v5 }
+            let v63 = { " " } <> { v61 }
+            let v64 = { v63 } <> { " " }
+            let v65 = " static "
+            let v66 = 0
+            let v67 = find_from_1(v64, v65, v66)
+            let v68 = v67 >= 0
+            let v71 =
+                case v68 {
                     True -> {
-                        let v63 = " print_code"
-                        v63
+                        let v69 = " static"
+                        v69
                     }
                     False -> {
-                        let v64 = ""
-                        v64
+                        let v70 = ""
+                        v70
                     }
                 }
-            let v66 = { v58 } <> { v65 }
-            let v67 = " --ignore "
-            let v68 = 0
-            let v69 = find_from_1(v50, v67, v68)
-            let v70 = v69 >= 0
-            let v73 =
-                case v70 {
+            let v72 = { v62 } <> { v71 }
+            let v73 = " --print-code "
+            let v74 = 0
+            let v75 = find_from_1(v64, v73, v74)
+            let v76 = v75 >= 0
+            let v79 =
+                case v76 {
                     True -> {
-                        let v71 = " ignore"
-                        v71
+                        let v77 = " print_code"
+                        v77
                     }
                     False -> {
-                        let v72 = ""
-                        v72
+                        let v78 = ""
+                        v78
                     }
                 }
-            let v74 = { v66 } <> { v73 }
-            let v75 = { v74 } <> { " =" }
-            let v76 = drop_blank_rows_70(v4)
-            let v77 = Uh4NoRow
-            let v78 = rev_rows_58(v76, v77)
-            let v79 = Uh4NoRow
-            let v80 = rev_rows_58(v2, v79)
-            let v81 = Uh4Row(v75, v78)
-            let v82 = append_rows_71(v80, v81)
-            join_rows_60(v82)
+            let v80 = { v72 } <> { v79 }
+            let v81 = " --ignore "
+            let v82 = 0
+            let v83 = find_from_1(v64, v81, v82)
+            let v84 = v83 >= 0
+            let v87 =
+                case v84 {
+                    True -> {
+                        let v85 = " ignore"
+                        v85
+                    }
+                    False -> {
+                        let v86 = ""
+                        v86
+                    }
+                }
+            let v88 = { v80 } <> { v87 }
+            let v89 = " --no-agree "
+            let v90 = 0
+            let v91 = find_from_1(v64, v89, v90)
+            let v92 = v91 >= 0
+            let v97 =
+                case v92 {
+                    True -> {
+                        True
+                    }
+                    False -> {
+                        let v93 = " --no-agree \""
+                        let v94 = 0
+                        let v95 = find_from_1(v63, v93, v94)
+                        let v96 = v95 >= 0
+                        v96
+                    }
+                }
+            let v150 =
+                case v97 {
+                    True -> {
+                        let v98 = { v61 } <> { " " }
+                        let v99 = "--no-agree "
+                        let v100 = 0
+                        let v101 = find_from_1(v98, v99, v100)
+                        let v102 = v101 < 0
+                        let v147 =
+                            case v102 {
+                                True -> {
+                                    let v103 = ""
+                                    v103
+                                }
+                                False -> {
+                                    let v104 = "--no-agree"
+                                    let v105 = kino_text_size(v104)
+                                    let v106 = spiral_wrap_signed(v101 + v105, 32)
+                                    let v107 = kino_text_size(v61)
+                                    let v108 = v106 >= v107
+                                    let v116 =
+                                        case v108 {
+                                            True -> {
+                                                let v109 = ""
+                                                v109
+                                            }
+                                            False -> {
+                                                let v110 = v106 <= 0
+                                                case v110 {
+                                                    True -> {
+                                                        v61
+                                                    }
+                                                    False -> {
+                                                        let v111 = spiral_wrap_signed(v107 - 1, 32)
+                                                        let v112 = spiral_wrap_signed(v111 - v106, 32)
+                                                        let v113 = spiral_wrap_signed(v112 + 1, 32)
+                                                        let v114 = kino_text_at(v61, v106, v113)
+                                                        v114
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    let v117 = " \""
+                                    let v118 = kino_text_size(v117)
+                                    let v119 = kino_text_size(v116)
+                                    let v120 = v118 > v119
+                                    let v127 =
+                                        case v120 {
+                                            True -> {
+                                                False
+                                            }
+                                            False -> {
+                                                let v121 = v118 == 0
+                                                case v121 {
+                                                    True -> {
+                                                        True
+                                                    }
+                                                    False -> {
+                                                        let v122 = spiral_wrap_signed(v118 - 1, 32)
+                                                        let v123 = spiral_wrap_signed(v122 + 1, 32)
+                                                        let v124 = kino_text_at(v116, 0, v123)
+                                                        let v125 = v124 == " \""
+                                                        v125
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    let v134 =
+                                        case v127 {
+                                            True -> {
+                                                let v128 = 2
+                                                let v129 = "\""
+                                                let v130 = find_char_3(v116, v128, v129)
+                                                let v131 = v130 >= 2
+                                                case v131 {
+                                                    True -> {
+                                                        let v132 = spiral_wrap_signed(v130 + 1, 32)
+                                                        v132
+                                                    }
+                                                    False -> {
+                                                        -1
+                                                    }
+                                                }
+                                            }
+                                            False -> {
+                                                0
+                                            }
+                                        }
+                                    let v135 = v134 > 0
+                                    case v135 {
+                                        True -> {
+                                            let v136 = kino_text_size(v116)
+                                            let v137 = v134 < v136
+                                            let v138 =
+                                                case v137 {
+                                                    True -> {
+                                                        v134
+                                                    }
+                                                    False -> {
+                                                        v136
+                                                    }
+                                                }
+                                            let v139 = v138 <= 0
+                                            case v139 {
+                                                True -> {
+                                                    let v140 = ""
+                                                    v140
+                                                }
+                                                False -> {
+                                                    let v141 = spiral_wrap_signed(v138 - 1, 32)
+                                                    let v142 = spiral_wrap_signed(v141 + 1, 32)
+                                                    let v143 = kino_text_at(v116, 0, v142)
+                                                    v143
+                                                }
+                                            }
+                                        }
+                                        False -> {
+                                            let v145 = ""
+                                            v145
+                                        }
+                                    }
+                                }
+                            }
+                        let v148 = { " no_agree" } <> { v147 }
+                        v148
+                    }
+                    False -> {
+                        let v149 = ""
+                        v149
+                    }
+                }
+            let v151 = { v88 } <> { v150 }
+            let v152 = " --build-only "
+            let v153 = 0
+            let v154 = find_from_1(v64, v152, v153)
+            let v155 = v154 >= 0
+            let v158 =
+                case v155 {
+                    True -> {
+                        let v156 = " build_only"
+                        v156
+                    }
+                    False -> {
+                        let v157 = ""
+                        v157
+                    }
+                }
+            let v159 = { v151 } <> { v158 }
+            let v160 = 0
+            let v161 = find_from_1(v3, v48, v160)
+            let v162 = v161 >= 0
+            let v188 =
+                case v162 {
+                    True -> {
+                        let v163 = kino_text_size(v48)
+                        let v164 = spiral_wrap_signed(v161 + v163, 32)
+                        let v165 = kino_text_size(v3)
+                        let v166 = v164 >= v165
+                        let v174 =
+                            case v166 {
+                                True -> {
+                                    let v167 = ""
+                                    v167
+                                }
+                                False -> {
+                                    let v168 = v164 <= 0
+                                    case v168 {
+                                        True -> {
+                                            v3
+                                        }
+                                        False -> {
+                                            let v169 = spiral_wrap_signed(v165 - 1, 32)
+                                            let v170 = spiral_wrap_signed(v169 - v164, 32)
+                                            let v171 = spiral_wrap_signed(v170 + 1, 32)
+                                            let v172 = kino_text_at(v3, v164, v171)
+                                            v172
+                                        }
+                                    }
+                                }
+                            }
+                        let v175 = 0
+                        let v176 = trim_start_17(v174, v175)
+                        let v177 = kino_text_size(v174)
+                        let v178 = trim_end_18(v174, v177)
+                        let v179 = v178 <= v176
+                        let v185 =
+                            case v179 {
+                                True -> {
+                                    let v180 = ""
+                                    v180
+                                }
+                                False -> {
+                                    let v181 = spiral_wrap_signed(v178 - 1, 32)
+                                    let v182 = spiral_wrap_signed(v181 - v176, 32)
+                                    let v183 = spiral_wrap_signed(v182 + 1, 32)
+                                    let v184 = kino_text_at(v174, v176, v183)
+                                    v184
+                                }
+                            }
+                        let v186 = { " fails " } <> { v185 }
+                        v186
+                    }
+                    False -> {
+                        let v187 = ""
+                        v187
+                    }
+                }
+            let v189 = { v159 } <> { v188 }
+            let v190 = { v189 } <> { " =" }
+            let v191 = drop_blank_rows_73(v4)
+            let v192 = Uh4NoRow
+            let v193 = rev_rows_61(v191, v192)
+            let v194 = Uh4NoRow
+            let v195 = rev_rows_61(v2, v194)
+            let v196 = Uh4Row(v190, v193)
+            let v197 = append_rows_74(v195, v196)
+            join_rows_63(v197)
         }
-        Us0LineGot(v84, v85) -> {
-            let v86 = "///-"
-            let v87 = kino_text_size(v86)
-            let v88 = kino_text_size(v84)
-            let v89 = v87 > v88
-            let v96 =
-                case v89 {
+        Us0LineGot(v199, v200) -> {
+            let v201 = "///-"
+            let v202 = kino_text_size(v201)
+            let v203 = kino_text_size(v199)
+            let v204 = v202 > v203
+            let v211 =
+                case v204 {
                     True -> {
                         False
                     }
                     False -> {
-                        let v90 = v87 == 0
-                        case v90 {
+                        let v205 = v202 == 0
+                        case v205 {
                             True -> {
                                 True
                             }
                             False -> {
-                                let v91 = spiral_wrap_signed(v87 - 1, 32)
-                                let v92 = spiral_wrap_signed(v91 + 1, 32)
-                                let v93 = kino_text_at(v84, 0, v92)
-                                let v94 = v93 == "///-"
-                                v94
+                                let v206 = spiral_wrap_signed(v202 - 1, 32)
+                                let v207 = spiral_wrap_signed(v206 + 1, 32)
+                                let v208 = kino_text_at(v199, 0, v207)
+                                let v209 = v208 == "///-"
+                                v209
                             }
                         }
                     }
                 }
-            case v96 {
+            case v211 {
                 True -> {
-                    let v97 = { v3 } <> { " " }
-                    let v98 = kino_text_size(v84)
-                    let v99 = 4 >= v98
-                    let v105 =
-                        case v99 {
+                    let v212 = { v3 } <> { " " }
+                    let v213 = kino_text_size(v199)
+                    let v214 = 4 >= v213
+                    let v220 =
+                        case v214 {
                             True -> {
-                                let v100 = ""
-                                v100
+                                let v215 = ""
+                                v215
                             }
                             False -> {
-                                let v101 = spiral_wrap_signed(v98 - 1, 32)
-                                let v102 = spiral_wrap_signed(v101 - 4, 32)
-                                let v103 = spiral_wrap_signed(v102 + 1, 32)
-                                let v104 = kino_text_at(v84, 4, v103)
-                                v104
+                                let v216 = spiral_wrap_signed(v213 - 1, 32)
+                                let v217 = spiral_wrap_signed(v216 - 4, 32)
+                                let v218 = spiral_wrap_signed(v217 + 1, 32)
+                                let v219 = kino_text_at(v199, 4, v218)
+                                v219
                             }
                         }
-                    let v106 = 0
-                    let v107 = trim_start_17(v105, v106)
-                    let v108 = kino_text_size(v105)
-                    let v109 = trim_end_18(v105, v108)
-                    let v110 = v109 <= v107
-                    let v116 =
-                        case v110 {
+                    let v221 = 0
+                    let v222 = trim_start_17(v220, v221)
+                    let v223 = kino_text_size(v220)
+                    let v224 = trim_end_18(v220, v223)
+                    let v225 = v224 <= v222
+                    let v231 =
+                        case v225 {
                             True -> {
-                                let v111 = ""
-                                v111
+                                let v226 = ""
+                                v226
                             }
                             False -> {
-                                let v112 = spiral_wrap_signed(v109 - 1, 32)
-                                let v113 = spiral_wrap_signed(v112 - v107, 32)
-                                let v114 = spiral_wrap_signed(v113 + 1, 32)
-                                let v115 = kino_text_at(v105, v107, v114)
-                                v115
+                                let v227 = spiral_wrap_signed(v224 - 1, 32)
+                                let v228 = spiral_wrap_signed(v227 - v222, 32)
+                                let v229 = spiral_wrap_signed(v228 + 1, 32)
+                                let v230 = kino_text_at(v220, v222, v229)
+                                v230
                             }
                         }
-                    let v117 = { v97 } <> { v116 }
-                    test_block_go_69(v0, v85, v2, v117, v4, v5)
+                    let v232 = { v212 } <> { v231 }
+                    test_block_go_72(v0, v200, v2, v232, v4, v5)
                 }
                 False -> {
-                    let v119 = "///>"
-                    let v120 = kino_text_size(v119)
-                    let v121 = kino_text_size(v84)
-                    let v122 = v120 > v121
-                    let v129 =
-                        case v122 {
+                    let v234 = "///>"
+                    let v235 = kino_text_size(v234)
+                    let v236 = kino_text_size(v199)
+                    let v237 = v235 > v236
+                    let v244 =
+                        case v237 {
                             True -> {
                                 False
                             }
                             False -> {
-                                let v123 = v120 == 0
-                                case v123 {
+                                let v238 = v235 == 0
+                                case v238 {
                                     True -> {
                                         True
                                     }
                                     False -> {
-                                        let v124 = spiral_wrap_signed(v120 - 1, 32)
-                                        let v125 = spiral_wrap_signed(v124 + 1, 32)
-                                        let v126 = kino_text_at(v84, 0, v125)
-                                        let v127 = v126 == "///>"
-                                        v127
+                                        let v239 = spiral_wrap_signed(v235 - 1, 32)
+                                        let v240 = spiral_wrap_signed(v239 + 1, 32)
+                                        let v241 = kino_text_at(v199, 0, v240)
+                                        let v242 = v241 == "///>"
+                                        v242
                                     }
                                 }
                             }
                         }
-                    case v129 {
+                    case v244 {
                         True -> {
-                            let v130 = Uh4Row(v84, v2)
-                            test_block_go_69(v0, v85, v130, v3, v4, v5)
+                            let v245 = Uh4Row(v199, v2)
+                            test_block_go_72(v0, v200, v245, v3, v4, v5)
                         }
                         False -> {
                             case v4  {
                                 Uh4NoRow -> {
-                                    let v132 = 0
-                                    let v133 = trim_start_17(v84, v132)
-                                    let v134 = kino_text_size(v84)
-                                    let v135 = trim_end_18(v84, v134)
-                                    let v136 = v135 <= v133
-                                    let v142 =
-                                        case v136 {
+                                    let v247 = 0
+                                    let v248 = trim_start_17(v199, v247)
+                                    let v249 = kino_text_size(v199)
+                                    let v250 = trim_end_18(v199, v249)
+                                    let v251 = v250 <= v248
+                                    let v257 =
+                                        case v251 {
                                             True -> {
-                                                let v137 = ""
-                                                v137
+                                                let v252 = ""
+                                                v252
                                             }
                                             False -> {
-                                                let v138 = spiral_wrap_signed(v135 - 1, 32)
-                                                let v139 = spiral_wrap_signed(v138 - v133, 32)
-                                                let v140 = spiral_wrap_signed(v139 + 1, 32)
-                                                let v141 = kino_text_at(v84, v133, v140)
-                                                v141
+                                                let v253 = spiral_wrap_signed(v250 - 1, 32)
+                                                let v254 = spiral_wrap_signed(v253 - v248, 32)
+                                                let v255 = spiral_wrap_signed(v254 + 1, 32)
+                                                let v256 = kino_text_at(v199, v248, v255)
+                                                v256
                                             }
                                         }
-                                    let v143 = v142 == ""
-                                    case v143 {
+                                    let v258 = v257 == ""
+                                    case v258 {
                                         True -> {
-                                            let v144 = Uh4NoRow
-                                            test_block_go_69(v0, v85, v2, v3, v144, v5)
+                                            let v259 = Uh4NoRow
+                                            test_block_go_72(v0, v200, v2, v3, v259, v5)
                                         }
                                         False -> {
-                                            let v146 = 0
-                                            let v147 = trim_start_17(v84, v146)
-                                            let v148 = kino_text_size(v84)
-                                            let v149 = trim_end_18(v84, v148)
-                                            let v150 = v149 <= v147
-                                            let v156 =
-                                                case v150 {
+                                            let v261 = 0
+                                            let v262 = trim_start_17(v199, v261)
+                                            let v263 = kino_text_size(v199)
+                                            let v264 = trim_end_18(v199, v263)
+                                            let v265 = v264 <= v262
+                                            let v271 =
+                                                case v265 {
                                                     True -> {
-                                                        let v151 = ""
-                                                        v151
+                                                        let v266 = ""
+                                                        v266
                                                     }
                                                     False -> {
-                                                        let v152 = spiral_wrap_signed(v149 - 1, 32)
-                                                        let v153 = spiral_wrap_signed(v152 - v147, 32)
-                                                        let v154 = spiral_wrap_signed(v153 + 1, 32)
-                                                        let v155 = kino_text_at(v84, v147, v154)
-                                                        v155
+                                                        let v267 = spiral_wrap_signed(v264 - 1, 32)
+                                                        let v268 = spiral_wrap_signed(v267 - v262, 32)
+                                                        let v269 = spiral_wrap_signed(v268 + 1, 32)
+                                                        let v270 = kino_text_at(v199, v262, v269)
+                                                        v270
                                                     }
                                                 }
-                                            let v157 = v156 == ""
-                                            let v160 =
-                                                case v157 {
+                                            let v272 = v271 == ""
+                                            let v275 =
+                                                case v272 {
                                                     True -> {
-                                                        let v158 = ""
-                                                        v158
+                                                        let v273 = ""
+                                                        v273
                                                     }
                                                     False -> {
-                                                        let v159 = { "    " } <> { v84 }
-                                                        v159
+                                                        let v274 = { "    " } <> { v199 }
+                                                        v274
                                                     }
                                                 }
-                                            let v161 = Uh4NoRow
-                                            let v162 = Uh4Row(v160, v161)
-                                            test_block_go_69(v0, v85, v2, v3, v162, v5)
+                                            let v276 = Uh4NoRow
+                                            let v277 = Uh4Row(v275, v276)
+                                            test_block_go_72(v0, v200, v2, v3, v277, v5)
                                         }
                                     }
                                 }
                                 _ -> {
-                                    let v165 = 0
-                                    let v166 = trim_start_17(v84, v165)
-                                    let v167 = kino_text_size(v84)
-                                    let v168 = trim_end_18(v84, v167)
-                                    let v169 = v168 <= v166
-                                    let v175 =
-                                        case v169 {
+                                    let v280 = 0
+                                    let v281 = trim_start_17(v199, v280)
+                                    let v282 = kino_text_size(v199)
+                                    let v283 = trim_end_18(v199, v282)
+                                    let v284 = v283 <= v281
+                                    let v290 =
+                                        case v284 {
                                             True -> {
-                                                let v170 = ""
-                                                v170
+                                                let v285 = ""
+                                                v285
                                             }
                                             False -> {
-                                                let v171 = spiral_wrap_signed(v168 - 1, 32)
-                                                let v172 = spiral_wrap_signed(v171 - v166, 32)
-                                                let v173 = spiral_wrap_signed(v172 + 1, 32)
-                                                let v174 = kino_text_at(v84, v166, v173)
-                                                v174
+                                                let v286 = spiral_wrap_signed(v283 - 1, 32)
+                                                let v287 = spiral_wrap_signed(v286 - v281, 32)
+                                                let v288 = spiral_wrap_signed(v287 + 1, 32)
+                                                let v289 = kino_text_at(v199, v281, v288)
+                                                v289
                                             }
                                         }
-                                    let v176 = v175 == ""
-                                    let v179 =
-                                        case v176 {
+                                    let v291 = v290 == ""
+                                    let v294 =
+                                        case v291 {
                                             True -> {
-                                                let v177 = ""
-                                                v177
+                                                let v292 = ""
+                                                v292
                                             }
                                             False -> {
-                                                let v178 = { "    " } <> { v84 }
-                                                v178
+                                                let v293 = { "    " } <> { v199 }
+                                                v293
                                             }
                                         }
-                                    let v180 = Uh4Row(v179, v4)
-                                    test_block_go_69(v0, v85, v2, v3, v180, v5)
+                                    let v295 = Uh4Row(v294, v4)
+                                    test_block_go_72(v0, v200, v2, v3, v295, v5)
                                 }
                             }
                         }
@@ -10840,7 +11544,7 @@ pub fn test_block_go_69(v0: String, v1: Int, v2: Uh4, v3: String, v4: Uh4, v5: S
         }
     }
 }
-pub fn name_tests_62(v0: Uh3, v1: String, v2: Uh4, v3: Uh3) -> Uh3 {
+pub fn name_tests_65(v0: Uh3, v1: String, v2: Uh4, v3: Uh3) -> Uh3 {
     case v0  {
         Uh3Cell(v6, v7, v8) -> {
             let v9 = v6 == "markdown"
@@ -10867,7 +11571,7 @@ pub fn name_tests_62(v0: Uh3, v1: String, v2: Uh4, v3: Uh3) -> Uh3 {
                         }
                     let v21 = 0
                     let v22 = ""
-                    let v23 = last_heading_line_63(v20, v21, v22)
+                    let v23 = last_heading_line_66(v20, v21, v22)
                     let v24 = v23 == ""
                     let v55 =
                         case v24 {
@@ -10877,14 +11581,14 @@ pub fn name_tests_62(v0: Uh3, v1: String, v2: Uh4, v3: Uh3) -> Uh3 {
                             False -> {
                                 let v25 = " (test)"
                                 let v26 = 0
-                                let v27 = replace_from_64(v23, v25, v22, v26)
+                                let v27 = replace_from_67(v23, v25, v22, v26)
                                 let v28 = 0
                                 let v29 = False
-                                let v30 = test_name_go_65(v27, v28, v29, v22)
+                                let v30 = test_name_go_68(v27, v28, v29, v22)
                                 let v31 = 0
-                                let v32 = underscore_start_66(v30, v31)
+                                let v32 = underscore_start_69(v30, v31)
                                 let v33 = kino_text_size(v30)
-                                let v34 = underscore_end_67(v30, v33)
+                                let v34 = underscore_end_70(v30, v33)
                                 let v35 = v34 <= v32
                                 case v35 {
                                     True -> {
@@ -10951,7 +11655,7 @@ pub fn name_tests_62(v0: Uh3, v1: String, v2: Uh4, v3: Uh3) -> Uh3 {
                             }
                         }
                     let v58 = Uh3Cell(v6, v7, v3)
-                    name_tests_62(v8, v57, v2, v58)
+                    name_tests_65(v8, v57, v2, v58)
                 }
                 False -> {
                     let v60 = 0
@@ -11014,7 +11718,7 @@ pub fn name_tests_62(v0: Uh3, v1: String, v2: Uh4, v3: Uh3) -> Uh3 {
                                         v1
                                     }
                                 }
-                            let v88 = count_row_68(v2, v87)
+                            let v88 = count_row_71(v2, v87)
                             let v89 = v88 == 0
                             let v94 =
                                 case v89 {
@@ -11053,14 +11757,14 @@ pub fn name_tests_62(v0: Uh3, v1: String, v2: Uh4, v3: Uh3) -> Uh3 {
                             let v108 = Uh4NoRow
                             let v109 = ""
                             let v110 = Uh4NoRow
-                            let v111 = test_block_go_69(v106, v107, v108, v109, v110, v94)
+                            let v111 = test_block_go_72(v106, v107, v108, v109, v110, v94)
                             let v112 = "test"
                             let v113 = Uh3Cell(v112, v111, v3)
-                            name_tests_62(v8, v1, v95, v113)
+                            name_tests_65(v8, v1, v95, v113)
                         }
                         False -> {
                             let v115 = Uh3Cell(v6, v7, v3)
-                            name_tests_62(v8, v1, v2, v115)
+                            name_tests_65(v8, v1, v2, v115)
                         }
                     }
                 }
@@ -11068,7 +11772,7 @@ pub fn name_tests_62(v0: Uh3, v1: String, v2: Uh4, v3: Uh3) -> Uh3 {
         }
         Uh3NoCell -> {
             let v4 = Uh3NoCell
-            rev_cells_50(v3, v4)
+            rev_cells_53(v3, v4)
         }
     }
 }
@@ -11164,19 +11868,19 @@ pub fn closure8(capt: Nil) -> fn(String) -> String {
                     let v46 = 0
                     let v47 = parse_acc_26(v42, v44, v45, v46)
                     let v48 = Uh3NoCell
-                    read_cells_53(v0, v43, v47, v48)
+                    read_cells_56(v0, v43, v47, v48)
                 }
             }
         let v52 = Uh3NoCell
-        let v53 = export_blocks_54(v1, v51, v52)
+        let v53 = export_blocks_57(v1, v51, v52)
         let v54 = ""
         let v55 = Uh4NoRow
         let v56 = Uh3NoCell
-        let v57 = name_tests_62(v53, v54, v55, v56)
-        let v58 = keep_docs_55(v57)
+        let v57 = name_tests_65(v53, v54, v55, v56)
+        let v58 = keep_docs_58(v57)
         let v59 = Uh3NoCell
-        let v60 = formatted_56(v58, v59)
-        emit_spi_61(v60)
+        let v60 = formatted_59(v58, v59)
+        emit_spi_64(v60)
     }
 }
 pub fn closure9(capt: Nil) -> fn(String) -> String {
@@ -11271,22 +11975,22 @@ pub fn closure9(capt: Nil) -> fn(String) -> String {
                     let v46 = 0
                     let v47 = parse_acc_26(v42, v44, v45, v46)
                     let v48 = Uh3NoCell
-                    read_cells_53(v0, v43, v47, v48)
+                    read_cells_56(v0, v43, v47, v48)
                 }
             }
         let v52 = Uh3NoCell
-        let v53 = export_blocks_54(v1, v51, v52)
+        let v53 = export_blocks_57(v1, v51, v52)
         let v54 = ""
         let v55 = Uh4NoRow
         let v56 = Uh3NoCell
-        let v57 = name_tests_62(v53, v54, v55, v56)
-        let v58 = keep_docs_55(v57)
+        let v57 = name_tests_65(v53, v54, v55, v56)
+        let v58 = keep_docs_58(v57)
         let v59 = Uh3NoCell
-        let v60 = formatted_56(v58, v59)
-        emit_spi_61(v60)
+        let v60 = formatted_59(v58, v59)
+        emit_spi_64(v60)
     }
 }
-pub fn take_unicode_ident_74(v0: String, v1: Int) -> Int {
+pub fn take_unicode_ident_77(v0: String, v1: Int) -> Int {
     let v2 = kino_text_size(v0)
     let v3 = v1 >= v2
     case v3 {
@@ -11299,7 +12003,7 @@ pub fn take_unicode_ident_74(v0: String, v1: Int) -> Int {
             case v5 {
                 True -> {
                     let v6 = spiral_wrap_signed(v1 + 1, 32)
-                    take_unicode_ident_74(v0, v6)
+                    take_unicode_ident_77(v0, v6)
                 }
                 False -> {
                     let v8 = kino_text_at(v0, v1, 1)
@@ -11309,7 +12013,7 @@ pub fn take_unicode_ident_74(v0: String, v1: Int) -> Int {
                     case v11 {
                         True -> {
                             let v12 = spiral_wrap_signed(v1 + 1, 32)
-                            take_unicode_ident_74(v0, v12)
+                            take_unicode_ident_77(v0, v12)
                         }
                         False -> {
                             v1
@@ -11320,7 +12024,7 @@ pub fn take_unicode_ident_74(v0: String, v1: Int) -> Int {
         }
     }
 }
-pub fn modes_valid_75(v0: String) -> Bool {
+pub fn flags_valid_78(v0: String) -> Bool {
     let v1 = v0 == ""
     case v1 {
         True -> {
@@ -11370,7 +12074,7 @@ pub fn modes_valid_75(v0: String) -> Bool {
                                 v19
                             }
                         }
-                    modes_valid_75(v20)
+                    flags_valid_78(v20)
                 }
                 False -> {
                     let v22 = " print_code"
@@ -11416,7 +12120,7 @@ pub fn modes_valid_75(v0: String) -> Bool {
                                         v39
                                     }
                                 }
-                            modes_valid_75(v40)
+                            flags_valid_78(v40)
                         }
                         False -> {
                             let v42 = " ignore"
@@ -11462,10 +12166,184 @@ pub fn modes_valid_75(v0: String) -> Bool {
                                                 v59
                                             }
                                         }
-                                    modes_valid_75(v60)
+                                    flags_valid_78(v60)
                                 }
                                 False -> {
-                                    False
+                                    let v62 = " no_agree"
+                                    let v63 = kino_text_size(v62)
+                                    let v64 = kino_text_size(v0)
+                                    let v65 = v63 > v64
+                                    let v72 =
+                                        case v65 {
+                                            True -> {
+                                                False
+                                            }
+                                            False -> {
+                                                let v66 = v63 == 0
+                                                case v66 {
+                                                    True -> {
+                                                        True
+                                                    }
+                                                    False -> {
+                                                        let v67 = spiral_wrap_signed(v63 - 1, 32)
+                                                        let v68 = spiral_wrap_signed(v67 + 1, 32)
+                                                        let v69 = kino_text_at(v0, 0, v68)
+                                                        let v70 = v69 == " no_agree"
+                                                        v70
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    case v72 {
+                                        True -> {
+                                            let v73 = kino_text_size(v0)
+                                            let v74 = 9 >= v73
+                                            let v80 =
+                                                case v74 {
+                                                    True -> {
+                                                        let v75 = ""
+                                                        v75
+                                                    }
+                                                    False -> {
+                                                        let v76 = spiral_wrap_signed(v73 - 1, 32)
+                                                        let v77 = spiral_wrap_signed(v76 - 9, 32)
+                                                        let v78 = spiral_wrap_signed(v77 + 1, 32)
+                                                        let v79 = kino_text_at(v0, 9, v78)
+                                                        v79
+                                                    }
+                                                }
+                                            let v81 = " \""
+                                            let v82 = kino_text_size(v81)
+                                            let v83 = kino_text_size(v80)
+                                            let v84 = v82 > v83
+                                            let v91 =
+                                                case v84 {
+                                                    True -> {
+                                                        False
+                                                    }
+                                                    False -> {
+                                                        let v85 = v82 == 0
+                                                        case v85 {
+                                                            True -> {
+                                                                True
+                                                            }
+                                                            False -> {
+                                                                let v86 = spiral_wrap_signed(v82 - 1, 32)
+                                                                let v87 = spiral_wrap_signed(v86 + 1, 32)
+                                                                let v88 = kino_text_at(v80, 0, v87)
+                                                                let v89 = v88 == " \""
+                                                                v89
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            let v98 =
+                                                case v91 {
+                                                    True -> {
+                                                        let v92 = 2
+                                                        let v93 = "\""
+                                                        let v94 = find_char_3(v80, v92, v93)
+                                                        let v95 = v94 >= 2
+                                                        case v95 {
+                                                            True -> {
+                                                                let v96 = spiral_wrap_signed(v94 + 1, 32)
+                                                                v96
+                                                            }
+                                                            False -> {
+                                                                -1
+                                                            }
+                                                        }
+                                                    }
+                                                    False -> {
+                                                        0
+                                                    }
+                                                }
+                                            let v99 = v98 < 0
+                                            case v99 {
+                                                True -> {
+                                                    False
+                                                }
+                                                False -> {
+                                                    let v100 = kino_text_size(v80)
+                                                    let v101 = v98 >= v100
+                                                    let v109 =
+                                                        case v101 {
+                                                            True -> {
+                                                                let v102 = ""
+                                                                v102
+                                                            }
+                                                            False -> {
+                                                                let v103 = v98 <= 0
+                                                                case v103 {
+                                                                    True -> {
+                                                                        v80
+                                                                    }
+                                                                    False -> {
+                                                                        let v104 = spiral_wrap_signed(v100 - 1, 32)
+                                                                        let v105 = spiral_wrap_signed(v104 - v98, 32)
+                                                                        let v106 = spiral_wrap_signed(v105 + 1, 32)
+                                                                        let v107 = kino_text_at(v80, v98, v106)
+                                                                        v107
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    flags_valid_78(v109)
+                                                }
+                                            }
+                                        }
+                                        False -> {
+                                            let v112 = " build_only"
+                                            let v113 = kino_text_size(v112)
+                                            let v114 = kino_text_size(v0)
+                                            let v115 = v113 > v114
+                                            let v122 =
+                                                case v115 {
+                                                    True -> {
+                                                        False
+                                                    }
+                                                    False -> {
+                                                        let v116 = v113 == 0
+                                                        case v116 {
+                                                            True -> {
+                                                                True
+                                                            }
+                                                            False -> {
+                                                                let v117 = spiral_wrap_signed(v113 - 1, 32)
+                                                                let v118 = spiral_wrap_signed(v117 + 1, 32)
+                                                                let v119 = kino_text_at(v0, 0, v118)
+                                                                let v120 = v119 == " build_only"
+                                                                v120
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            case v122 {
+                                                True -> {
+                                                    let v123 = kino_text_size(v0)
+                                                    let v124 = 11 >= v123
+                                                    let v130 =
+                                                        case v124 {
+                                                            True -> {
+                                                                let v125 = ""
+                                                                v125
+                                                            }
+                                                            False -> {
+                                                                let v126 = spiral_wrap_signed(v123 - 1, 32)
+                                                                let v127 = spiral_wrap_signed(v126 - 11, 32)
+                                                                let v128 = spiral_wrap_signed(v127 + 1, 32)
+                                                                let v129 = kino_text_at(v0, 11, v128)
+                                                                v129
+                                                            }
+                                                        }
+                                                    flags_valid_78(v130)
+                                                }
+                                                False -> {
+                                                    False
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -11475,7 +12353,7 @@ pub fn modes_valid_75(v0: String) -> Bool {
         }
     }
 }
-pub fn open_step_73(v0: String, v1: Uh4, v2: Uh4, v3: Bool, v4: Uh3) -> #(Us4, Uh4, Uh3) {
+pub fn open_step_76(v0: String, v1: Uh4, v2: Uh4, v3: Bool, v4: Uh3) -> #(Us4, Uh4, Uh3) {
     let v5 = "///>"
     let v6 = kino_text_size(v5)
     let v7 = kino_text_size(v0)
@@ -11551,11 +12429,11 @@ pub fn open_step_73(v0: String, v1: Uh4, v2: Uh4, v3: Bool, v4: Uh3) -> #(Us4, U
                         }
                     }
                 }
-            let v146 =
+            let v184 =
                 case v34 {
                     True -> {
                         let v35 = 5
-                        let v36 = take_unicode_ident_74(v0, v35)
+                        let v36 = take_unicode_ident_77(v0, v35)
                         let v37 = kino_text_size(v0)
                         let v38 = v36 >= v37
                         let v46 =
@@ -11710,7 +12588,7 @@ pub fn open_step_73(v0: String, v1: Uh4, v2: Uh4, v3: Bool, v4: Uh3) -> #(Us4, U
                                     False
                                 }
                             }
-                        let v110 =
+                        let v148 =
                             case v98 {
                                 True -> {
                                     let v99 = spiral_wrap_signed(v78 - 2, 32)
@@ -11739,103 +12617,195 @@ pub fn open_step_73(v0: String, v1: Uh4, v2: Uh4, v3: Bool, v4: Uh3) -> #(Us4, U
                                                 v107
                                             }
                                         }
-                                    modes_valid_75(v108)
+                                    let v109 = " fails "
+                                    let v110 = 0
+                                    let v111 = find_from_1(v108, v109, v110)
+                                    let v112 = v111 >= 0
+                                    case v112 {
+                                        True -> {
+                                            let v113 = kino_text_size(v108)
+                                            let v114 = v111 < v113
+                                            let v115 =
+                                                case v114 {
+                                                    True -> {
+                                                        v111
+                                                    }
+                                                    False -> {
+                                                        v113
+                                                    }
+                                                }
+                                            let v116 = v115 <= 0
+                                            let v121 =
+                                                case v116 {
+                                                    True -> {
+                                                        let v117 = ""
+                                                        v117
+                                                    }
+                                                    False -> {
+                                                        let v118 = spiral_wrap_signed(v115 - 1, 32)
+                                                        let v119 = spiral_wrap_signed(v118 + 1, 32)
+                                                        let v120 = kino_text_at(v108, 0, v119)
+                                                        v120
+                                                    }
+                                                }
+                                            let v122 = flags_valid_78(v121)
+                                            case v122 {
+                                                True -> {
+                                                    let v123 = spiral_wrap_signed(v111 + 7, 32)
+                                                    let v124 = kino_text_size(v108)
+                                                    let v125 = v123 >= v124
+                                                    let v133 =
+                                                        case v125 {
+                                                            True -> {
+                                                                let v126 = ""
+                                                                v126
+                                                            }
+                                                            False -> {
+                                                                let v127 = v123 <= 0
+                                                                case v127 {
+                                                                    True -> {
+                                                                        v108
+                                                                    }
+                                                                    False -> {
+                                                                        let v128 = spiral_wrap_signed(v124 - 1, 32)
+                                                                        let v129 = spiral_wrap_signed(v128 - v123, 32)
+                                                                        let v130 = spiral_wrap_signed(v129 + 1, 32)
+                                                                        let v131 = kino_text_at(v108, v123, v130)
+                                                                        v131
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    let v134 = kino_text_size(v133)
+                                                    let v135 = v134 >= 2
+                                                    case v135 {
+                                                        True -> {
+                                                            let v136 = spiral_wrap_signed(v134 - 1, 32)
+                                                            let v137 = kino_text_at(v133, v136, 1)
+                                                            let v138 = v137 == "\""
+                                                            case v138 {
+                                                                True -> {
+                                                                    let v139 = 0
+                                                                    let v140 = "\""
+                                                                    let v141 = find_char_3(v133, v139, v140)
+                                                                    let v142 = v141 < v136
+                                                                    v142
+                                                                }
+                                                                False -> {
+                                                                    False
+                                                                }
+                                                            }
+                                                        }
+                                                        False -> {
+                                                            False
+                                                        }
+                                                    }
+                                                }
+                                                False -> {
+                                                    False
+                                                }
+                                            }
+                                        }
+                                        False -> {
+                                            flags_valid_78(v108)
+                                        }
+                                    }
                                 }
                                 False -> {
                                     False
                                 }
                             }
-                        case v110 {
+                        case v148 {
                             True -> {
-                                let v111 = spiral_wrap_signed(v36 - 5, 32)
-                                let v112 = v111 <= 0
-                                let v131 =
-                                    case v112 {
+                                let v149 = spiral_wrap_signed(v36 - 5, 32)
+                                let v150 = v149 <= 0
+                                let v169 =
+                                    case v150 {
                                         True -> {
-                                            let v113 = ""
-                                            v113
+                                            let v151 = ""
+                                            v151
                                         }
                                         False -> {
-                                            let v114 = kino_text_size(v0)
-                                            let v115 = 5 >= v114
-                                            case v115 {
+                                            let v152 = kino_text_size(v0)
+                                            let v153 = 5 >= v152
+                                            case v153 {
                                                 True -> {
-                                                    let v116 = ""
-                                                    v116
+                                                    let v154 = ""
+                                                    v154
                                                 }
                                                 False -> {
-                                                    let v117 = spiral_wrap_signed(5 + v111, 32)
-                                                    let v118 = spiral_wrap_signed(v117 - 1, 32)
-                                                    let v119 = kino_text_size(v0)
-                                                    let v120 = v118 >= v119
-                                                    let v123 =
-                                                        case v120 {
+                                                    let v155 = spiral_wrap_signed(5 + v149, 32)
+                                                    let v156 = spiral_wrap_signed(v155 - 1, 32)
+                                                    let v157 = kino_text_size(v0)
+                                                    let v158 = v156 >= v157
+                                                    let v161 =
+                                                        case v158 {
                                                             True -> {
-                                                                let v121 = kino_text_size(v0)
-                                                                let v122 = spiral_wrap_signed(v121 - 1, 32)
-                                                                v122
+                                                                let v159 = kino_text_size(v0)
+                                                                let v160 = spiral_wrap_signed(v159 - 1, 32)
+                                                                v160
                                                             }
                                                             False -> {
-                                                                v118
+                                                                v156
                                                             }
                                                         }
-                                                    let v124 = v123 < 5
-                                                    case v124 {
+                                                    let v162 = v161 < 5
+                                                    case v162 {
                                                         True -> {
-                                                            let v125 = ""
-                                                            v125
+                                                            let v163 = ""
+                                                            v163
                                                         }
                                                         False -> {
-                                                            let v126 = spiral_wrap_signed(v123 - 5, 32)
-                                                            let v127 = spiral_wrap_signed(v126 + 1, 32)
-                                                            let v128 = kino_text_at(v0, 5, v127)
-                                                            v128
+                                                            let v164 = spiral_wrap_signed(v161 - 5, 32)
+                                                            let v165 = spiral_wrap_signed(v164 + 1, 32)
+                                                            let v166 = kino_text_at(v0, 5, v165)
+                                                            v166
                                                         }
                                                     }
                                                 }
                                             }
                                         }
                                     }
-                                let v132 = spiral_wrap_signed(v78 - 2, 32)
-                                let v133 = kino_text_size(v77)
-                                let v134 = v132 < v133
-                                let v135 =
-                                    case v134 {
+                                let v170 = spiral_wrap_signed(v78 - 2, 32)
+                                let v171 = kino_text_size(v77)
+                                let v172 = v170 < v171
+                                let v173 =
+                                    case v172 {
                                         True -> {
-                                            v132
+                                            v170
                                         }
                                         False -> {
-                                            v133
+                                            v171
                                         }
                                     }
-                                let v136 = v135 <= 0
-                                let v141 =
-                                    case v136 {
+                                let v174 = v173 <= 0
+                                let v179 =
+                                    case v174 {
                                         True -> {
-                                            let v137 = ""
-                                            v137
+                                            let v175 = ""
+                                            v175
                                         }
                                         False -> {
-                                            let v138 = spiral_wrap_signed(v135 - 1, 32)
-                                            let v139 = spiral_wrap_signed(v138 + 1, 32)
-                                            let v140 = kino_text_at(v77, 0, v139)
-                                            v140
+                                            let v176 = spiral_wrap_signed(v173 - 1, 32)
+                                            let v177 = spiral_wrap_signed(v176 + 1, 32)
+                                            let v178 = kino_text_at(v77, 0, v177)
+                                            v178
                                         }
                                     }
-                                Us5Header(v131, v141)
+                                Us6Header(v169, v179)
                             }
                             False -> {
-                                Us5NoHeader
+                                Us6NoHeader
                             }
                         }
                     }
                     False -> {
-                        Us5NoHeader
+                        Us6NoHeader
                     }
                 }
-            case v146  {
-                Us5Header(v147, v148) -> {
-                    let v149 =
+            case v184  {
+                Us6Header(v185, v186) -> {
+                    let v187 =
                         case v1  {
                             Uh4NoRow -> {
                                 True
@@ -11844,634 +12814,966 @@ pub fn open_step_73(v0: String, v1: Uh4, v2: Uh4, v3: Bool, v4: Uh3) -> #(Us4, U
                                 False
                             }
                         }
-                    let v241 =
-                        case v149 {
+                    let v279 =
+                        case v187 {
                             True -> {
-                                let v150 = Uh4NoRow
-                                let v151 = Uh4NoRow
-                                let v152 = rev_rows_58(v150, v151)
-                                let v153 = join_rows_60(v152)
-                                let v154 = 0
-                                let v155 = trim_nl_start_29(v153, v154)
-                                let v156 = kino_text_size(v153)
-                                let v157 = trim_nl_end_30(v153, v156)
-                                let v158 = v157 <= v155
-                                let v164 =
-                                    case v158 {
+                                let v188 = Uh4NoRow
+                                let v189 = Uh4NoRow
+                                let v190 = rev_rows_61(v188, v189)
+                                let v191 = join_rows_63(v190)
+                                let v192 = 0
+                                let v193 = trim_nl_start_29(v191, v192)
+                                let v194 = kino_text_size(v191)
+                                let v195 = trim_nl_end_30(v191, v194)
+                                let v196 = v195 <= v193
+                                let v202 =
+                                    case v196 {
                                         True -> {
-                                            let v159 = ""
-                                            v159
+                                            let v197 = ""
+                                            v197
                                         }
                                         False -> {
-                                            let v160 = spiral_wrap_signed(v157 - 1, 32)
-                                            let v161 = spiral_wrap_signed(v160 - v155, 32)
-                                            let v162 = spiral_wrap_signed(v161 + 1, 32)
-                                            let v163 = kino_text_at(v153, v155, v162)
-                                            v163
+                                            let v198 = spiral_wrap_signed(v195 - 1, 32)
+                                            let v199 = spiral_wrap_signed(v198 - v193, 32)
+                                            let v200 = spiral_wrap_signed(v199 + 1, 32)
+                                            let v201 = kino_text_at(v191, v193, v200)
+                                            v201
                                         }
                                     }
-                                let v165 = 0
-                                let v166 = trim_start_17(v164, v165)
-                                let v167 = kino_text_size(v164)
-                                let v168 = trim_end_18(v164, v167)
-                                let v169 = v168 <= v166
-                                let v175 =
-                                    case v169 {
+                                let v203 = 0
+                                let v204 = trim_start_17(v202, v203)
+                                let v205 = kino_text_size(v202)
+                                let v206 = trim_end_18(v202, v205)
+                                let v207 = v206 <= v204
+                                let v213 =
+                                    case v207 {
                                         True -> {
-                                            let v170 = ""
-                                            v170
+                                            let v208 = ""
+                                            v208
                                         }
                                         False -> {
-                                            let v171 = spiral_wrap_signed(v168 - 1, 32)
-                                            let v172 = spiral_wrap_signed(v171 - v166, 32)
-                                            let v173 = spiral_wrap_signed(v172 + 1, 32)
-                                            let v174 = kino_text_at(v164, v166, v173)
-                                            v174
+                                            let v209 = spiral_wrap_signed(v206 - 1, 32)
+                                            let v210 = spiral_wrap_signed(v209 - v204, 32)
+                                            let v211 = spiral_wrap_signed(v210 + 1, 32)
+                                            let v212 = kino_text_at(v202, v204, v211)
+                                            v212
                                         }
                                     }
-                                let v176 = v175 == ""
-                                case v176 {
+                                let v214 = v213 == ""
+                                case v214 {
                                     True -> {
                                         v4
                                     }
                                     False -> {
-                                        let v189 =
+                                        let v227 =
                                             case v3 {
                                                 True -> {
-                                                    let v177 = "///- --real"
-                                                    let v178 = kino_text_size(v177)
-                                                    let v179 = kino_text_size(v164)
-                                                    let v180 = v178 > v179
-                                                    let v187 =
-                                                        case v180 {
+                                                    let v215 = "///- --real"
+                                                    let v216 = kino_text_size(v215)
+                                                    let v217 = kino_text_size(v202)
+                                                    let v218 = v216 > v217
+                                                    let v225 =
+                                                        case v218 {
                                                             True -> {
                                                                 False
                                                             }
                                                             False -> {
-                                                                let v181 = v178 == 0
-                                                                case v181 {
+                                                                let v219 = v216 == 0
+                                                                case v219 {
                                                                     True -> {
                                                                         True
                                                                     }
                                                                     False -> {
-                                                                        let v182 = spiral_wrap_signed(v178 - 1, 32)
-                                                                        let v183 = spiral_wrap_signed(v182 + 1, 32)
-                                                                        let v184 = kino_text_at(v164, 0, v183)
-                                                                        let v185 = v184 == "///- --real"
-                                                                        v185
+                                                                        let v220 = spiral_wrap_signed(v216 - 1, 32)
+                                                                        let v221 = spiral_wrap_signed(v220 + 1, 32)
+                                                                        let v222 = kino_text_at(v202, 0, v221)
+                                                                        let v223 = v222 == "///- --real"
+                                                                        v223
                                                                     }
                                                                 }
                                                             }
                                                         }
-                                                    let v188 = v187 == False
-                                                    v188
+                                                    let v226 = v225 == False
+                                                    v226
                                                 }
                                                 False -> {
                                                     False
                                                 }
                                             }
-                                        let v191 =
-                                            case v189 {
+                                        let v229 =
+                                            case v227 {
                                                 True -> {
-                                                    let v190 = { "///- --real\n\n" } <> { v164 }
-                                                    v190
+                                                    let v228 = { "///- --real\n\n" } <> { v202 }
+                                                    v228
                                                 }
                                                 False -> {
-                                                    v164
+                                                    v202
                                                 }
                                             }
-                                        let v192 = "spiral"
-                                        Uh3Cell(v192, v191, v4)
+                                        let v230 = "spiral"
+                                        Uh3Cell(v230, v229, v4)
                                     }
                                 }
                             }
                             False -> {
-                                let v195 = Uh4NoRow
-                                let v196 = append_rows_71(v195, v1)
-                                let v197 = Uh4NoRow
-                                let v198 = rev_rows_58(v196, v197)
-                                let v199 = join_rows_60(v198)
-                                let v200 = 0
-                                let v201 = trim_nl_start_29(v199, v200)
-                                let v202 = kino_text_size(v199)
-                                let v203 = trim_nl_end_30(v199, v202)
-                                let v204 = v203 <= v201
-                                let v210 =
-                                    case v204 {
+                                let v233 = Uh4NoRow
+                                let v234 = append_rows_74(v233, v1)
+                                let v235 = Uh4NoRow
+                                let v236 = rev_rows_61(v234, v235)
+                                let v237 = join_rows_63(v236)
+                                let v238 = 0
+                                let v239 = trim_nl_start_29(v237, v238)
+                                let v240 = kino_text_size(v237)
+                                let v241 = trim_nl_end_30(v237, v240)
+                                let v242 = v241 <= v239
+                                let v248 =
+                                    case v242 {
                                         True -> {
-                                            let v205 = ""
-                                            v205
+                                            let v243 = ""
+                                            v243
                                         }
                                         False -> {
-                                            let v206 = spiral_wrap_signed(v203 - 1, 32)
-                                            let v207 = spiral_wrap_signed(v206 - v201, 32)
-                                            let v208 = spiral_wrap_signed(v207 + 1, 32)
-                                            let v209 = kino_text_at(v199, v201, v208)
-                                            v209
+                                            let v244 = spiral_wrap_signed(v241 - 1, 32)
+                                            let v245 = spiral_wrap_signed(v244 - v239, 32)
+                                            let v246 = spiral_wrap_signed(v245 + 1, 32)
+                                            let v247 = kino_text_at(v237, v239, v246)
+                                            v247
                                         }
                                     }
-                                let v211 = 0
-                                let v212 = trim_start_17(v210, v211)
-                                let v213 = kino_text_size(v210)
-                                let v214 = trim_end_18(v210, v213)
-                                let v215 = v214 <= v212
-                                let v221 =
-                                    case v215 {
+                                let v249 = 0
+                                let v250 = trim_start_17(v248, v249)
+                                let v251 = kino_text_size(v248)
+                                let v252 = trim_end_18(v248, v251)
+                                let v253 = v252 <= v250
+                                let v259 =
+                                    case v253 {
                                         True -> {
-                                            let v216 = ""
-                                            v216
+                                            let v254 = ""
+                                            v254
                                         }
                                         False -> {
-                                            let v217 = spiral_wrap_signed(v214 - 1, 32)
-                                            let v218 = spiral_wrap_signed(v217 - v212, 32)
-                                            let v219 = spiral_wrap_signed(v218 + 1, 32)
-                                            let v220 = kino_text_at(v210, v212, v219)
-                                            v220
+                                            let v255 = spiral_wrap_signed(v252 - 1, 32)
+                                            let v256 = spiral_wrap_signed(v255 - v250, 32)
+                                            let v257 = spiral_wrap_signed(v256 + 1, 32)
+                                            let v258 = kino_text_at(v248, v250, v257)
+                                            v258
                                         }
                                     }
-                                let v222 = v221 == ""
-                                case v222 {
+                                let v260 = v259 == ""
+                                case v260 {
                                     True -> {
                                         v4
                                     }
                                     False -> {
-                                        let v235 =
+                                        let v273 =
                                             case v3 {
                                                 True -> {
-                                                    let v223 = "///- --real"
-                                                    let v224 = kino_text_size(v223)
-                                                    let v225 = kino_text_size(v210)
-                                                    let v226 = v224 > v225
-                                                    let v233 =
-                                                        case v226 {
+                                                    let v261 = "///- --real"
+                                                    let v262 = kino_text_size(v261)
+                                                    let v263 = kino_text_size(v248)
+                                                    let v264 = v262 > v263
+                                                    let v271 =
+                                                        case v264 {
                                                             True -> {
                                                                 False
                                                             }
                                                             False -> {
-                                                                let v227 = v224 == 0
-                                                                case v227 {
+                                                                let v265 = v262 == 0
+                                                                case v265 {
                                                                     True -> {
                                                                         True
                                                                     }
                                                                     False -> {
-                                                                        let v228 = spiral_wrap_signed(v224 - 1, 32)
-                                                                        let v229 = spiral_wrap_signed(v228 + 1, 32)
-                                                                        let v230 = kino_text_at(v210, 0, v229)
-                                                                        let v231 = v230 == "///- --real"
-                                                                        v231
+                                                                        let v266 = spiral_wrap_signed(v262 - 1, 32)
+                                                                        let v267 = spiral_wrap_signed(v266 + 1, 32)
+                                                                        let v268 = kino_text_at(v248, 0, v267)
+                                                                        let v269 = v268 == "///- --real"
+                                                                        v269
                                                                     }
                                                                 }
                                                             }
                                                         }
-                                                    let v234 = v233 == False
-                                                    v234
+                                                    let v272 = v271 == False
+                                                    v272
                                                 }
                                                 False -> {
                                                     False
                                                 }
                                             }
-                                        let v237 =
-                                            case v235 {
+                                        let v275 =
+                                            case v273 {
                                                 True -> {
-                                                    let v236 = { "///- --real\n\n" } <> { v210 }
-                                                    v236
+                                                    let v274 = { "///- --real\n\n" } <> { v248 }
+                                                    v274
                                                 }
                                                 False -> {
-                                                    v210
+                                                    v248
                                                 }
                                             }
-                                        let v238 = "spiral"
-                                        Uh3Cell(v238, v237, v4)
+                                        let v276 = "spiral"
+                                        Uh3Cell(v276, v275, v4)
                                     }
                                 }
                             }
                         }
-                    let v242 = Uh4NoRow
-                    let v243 = Us4InTest(v147, v148, v2, v242)
-                    let v244 = Uh4NoRow
-                    #(v243, v244, v241)
+                    let v280 = Uh4NoRow
+                    let v281 = Us5WellFormed
+                    let v282 = Us4InTest(v185, v186, v2, v280, v281, -1)
+                    let v283 = Uh4NoRow
+                    #(v282, v283, v279)
                 }
-                Us5NoHeader -> {
-                    let v245 = "/// "
-                    let v246 = kino_text_size(v245)
-                    let v247 = kino_text_size(v0)
-                    let v248 = v246 > v247
-                    let v255 =
-                        case v248 {
+                Us6NoHeader -> {
+                    let v284 = "test"
+                    let v285 = kino_text_size(v284)
+                    let v286 = kino_text_size(v0)
+                    let v287 = v285 > v286
+                    let v294 =
+                        case v287 {
                             True -> {
                                 False
                             }
                             False -> {
-                                let v249 = v246 == 0
-                                case v249 {
+                                let v288 = v285 == 0
+                                case v288 {
                                     True -> {
                                         True
                                     }
                                     False -> {
-                                        let v250 = spiral_wrap_signed(v246 - 1, 32)
-                                        let v251 = spiral_wrap_signed(v250 + 1, 32)
-                                        let v252 = kino_text_at(v0, 0, v251)
-                                        let v253 = v252 == "/// "
-                                        v253
+                                        let v289 = spiral_wrap_signed(v285 - 1, 32)
+                                        let v290 = spiral_wrap_signed(v289 + 1, 32)
+                                        let v291 = kino_text_at(v0, 0, v290)
+                                        let v292 = v291 == "test"
+                                        v292
                                     }
                                 }
                             }
                         }
-                    let v257 =
-                        case v255 {
+                    let v303 =
+                        case v294 {
                             True -> {
-                                True
+                                let v295 = kino_text_size(v0)
+                                let v296 = v295 == 4
+                                case v296 {
+                                    True -> {
+                                        True
+                                    }
+                                    False -> {
+                                        let v297 = kino_text_at(v0, 4, 1)
+                                        let v298 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_'"
+                                        let v299 = 0
+                                        let v300 = has_char_12(v298, v299, v297)
+                                        let v301 = v300 == False
+                                        v301
+                                    }
+                                }
                             }
                             False -> {
-                                let v256 = v0 == "///"
-                                v256
+                                False
                             }
                         }
-                    case v257 {
+                    case v303 {
                         True -> {
-                            let v258 = 0
-                            let v259 = lead_ws_59(v0, v258)
-                            let v260 = kino_text_size(v245)
-                            let v261 = v259 < 0
-                            let v273 =
-                                case v261 {
+                            let v304 = 4
+                            let v305 = lead_ws_62(v0, v304)
+                            let v306 = take_unicode_ident_77(v0, v305)
+                            let v307 = v306 > v305
+                            let v329 =
+                                case v307 {
+                                    True -> {
+                                        let v308 = spiral_wrap_signed(v306 - v305, 32)
+                                        let v309 = v308 <= 0
+                                        case v309 {
+                                            True -> {
+                                                let v310 = ""
+                                                v310
+                                            }
+                                            False -> {
+                                                let v311 = kino_text_size(v0)
+                                                let v312 = v305 >= v311
+                                                case v312 {
+                                                    True -> {
+                                                        let v313 = ""
+                                                        v313
+                                                    }
+                                                    False -> {
+                                                        let v314 = spiral_wrap_signed(v305 + v308, 32)
+                                                        let v315 = spiral_wrap_signed(v314 - 1, 32)
+                                                        let v316 = kino_text_size(v0)
+                                                        let v317 = v315 >= v316
+                                                        let v320 =
+                                                            case v317 {
+                                                                True -> {
+                                                                    let v318 = kino_text_size(v0)
+                                                                    let v319 = spiral_wrap_signed(v318 - 1, 32)
+                                                                    v319
+                                                                }
+                                                                False -> {
+                                                                    v315
+                                                                }
+                                                            }
+                                                        let v321 = v320 < v305
+                                                        case v321 {
+                                                            True -> {
+                                                                let v322 = ""
+                                                                v322
+                                                            }
+                                                            False -> {
+                                                                let v323 = spiral_wrap_signed(v320 - v305, 32)
+                                                                let v324 = spiral_wrap_signed(v323 + 1, 32)
+                                                                let v325 = kino_text_at(v0, v305, v324)
+                                                                v325
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    False -> {
+                                        v284
+                                    }
+                                }
+                            let v330 =
+                                case v1  {
+                                    Uh4NoRow -> {
+                                        True
+                                    }
+                                    _ -> {
+                                        False
+                                    }
+                                }
+                            let v422 =
+                                case v330 {
+                                    True -> {
+                                        let v331 = Uh4NoRow
+                                        let v332 = Uh4NoRow
+                                        let v333 = rev_rows_61(v331, v332)
+                                        let v334 = join_rows_63(v333)
+                                        let v335 = 0
+                                        let v336 = trim_nl_start_29(v334, v335)
+                                        let v337 = kino_text_size(v334)
+                                        let v338 = trim_nl_end_30(v334, v337)
+                                        let v339 = v338 <= v336
+                                        let v345 =
+                                            case v339 {
+                                                True -> {
+                                                    let v340 = ""
+                                                    v340
+                                                }
+                                                False -> {
+                                                    let v341 = spiral_wrap_signed(v338 - 1, 32)
+                                                    let v342 = spiral_wrap_signed(v341 - v336, 32)
+                                                    let v343 = spiral_wrap_signed(v342 + 1, 32)
+                                                    let v344 = kino_text_at(v334, v336, v343)
+                                                    v344
+                                                }
+                                            }
+                                        let v346 = 0
+                                        let v347 = trim_start_17(v345, v346)
+                                        let v348 = kino_text_size(v345)
+                                        let v349 = trim_end_18(v345, v348)
+                                        let v350 = v349 <= v347
+                                        let v356 =
+                                            case v350 {
+                                                True -> {
+                                                    let v351 = ""
+                                                    v351
+                                                }
+                                                False -> {
+                                                    let v352 = spiral_wrap_signed(v349 - 1, 32)
+                                                    let v353 = spiral_wrap_signed(v352 - v347, 32)
+                                                    let v354 = spiral_wrap_signed(v353 + 1, 32)
+                                                    let v355 = kino_text_at(v345, v347, v354)
+                                                    v355
+                                                }
+                                            }
+                                        let v357 = v356 == ""
+                                        case v357 {
+                                            True -> {
+                                                v4
+                                            }
+                                            False -> {
+                                                let v370 =
+                                                    case v3 {
+                                                        True -> {
+                                                            let v358 = "///- --real"
+                                                            let v359 = kino_text_size(v358)
+                                                            let v360 = kino_text_size(v345)
+                                                            let v361 = v359 > v360
+                                                            let v368 =
+                                                                case v361 {
+                                                                    True -> {
+                                                                        False
+                                                                    }
+                                                                    False -> {
+                                                                        let v362 = v359 == 0
+                                                                        case v362 {
+                                                                            True -> {
+                                                                                True
+                                                                            }
+                                                                            False -> {
+                                                                                let v363 = spiral_wrap_signed(v359 - 1, 32)
+                                                                                let v364 = spiral_wrap_signed(v363 + 1, 32)
+                                                                                let v365 = kino_text_at(v345, 0, v364)
+                                                                                let v366 = v365 == "///- --real"
+                                                                                v366
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            let v369 = v368 == False
+                                                            v369
+                                                        }
+                                                        False -> {
+                                                            False
+                                                        }
+                                                    }
+                                                let v372 =
+                                                    case v370 {
+                                                        True -> {
+                                                            let v371 = { "///- --real\n\n" } <> { v345 }
+                                                            v371
+                                                        }
+                                                        False -> {
+                                                            v345
+                                                        }
+                                                    }
+                                                let v373 = "spiral"
+                                                Uh3Cell(v373, v372, v4)
+                                            }
+                                        }
+                                    }
+                                    False -> {
+                                        let v376 = Uh4NoRow
+                                        let v377 = append_rows_74(v376, v1)
+                                        let v378 = Uh4NoRow
+                                        let v379 = rev_rows_61(v377, v378)
+                                        let v380 = join_rows_63(v379)
+                                        let v381 = 0
+                                        let v382 = trim_nl_start_29(v380, v381)
+                                        let v383 = kino_text_size(v380)
+                                        let v384 = trim_nl_end_30(v380, v383)
+                                        let v385 = v384 <= v382
+                                        let v391 =
+                                            case v385 {
+                                                True -> {
+                                                    let v386 = ""
+                                                    v386
+                                                }
+                                                False -> {
+                                                    let v387 = spiral_wrap_signed(v384 - 1, 32)
+                                                    let v388 = spiral_wrap_signed(v387 - v382, 32)
+                                                    let v389 = spiral_wrap_signed(v388 + 1, 32)
+                                                    let v390 = kino_text_at(v380, v382, v389)
+                                                    v390
+                                                }
+                                            }
+                                        let v392 = 0
+                                        let v393 = trim_start_17(v391, v392)
+                                        let v394 = kino_text_size(v391)
+                                        let v395 = trim_end_18(v391, v394)
+                                        let v396 = v395 <= v393
+                                        let v402 =
+                                            case v396 {
+                                                True -> {
+                                                    let v397 = ""
+                                                    v397
+                                                }
+                                                False -> {
+                                                    let v398 = spiral_wrap_signed(v395 - 1, 32)
+                                                    let v399 = spiral_wrap_signed(v398 - v393, 32)
+                                                    let v400 = spiral_wrap_signed(v399 + 1, 32)
+                                                    let v401 = kino_text_at(v391, v393, v400)
+                                                    v401
+                                                }
+                                            }
+                                        let v403 = v402 == ""
+                                        case v403 {
+                                            True -> {
+                                                v4
+                                            }
+                                            False -> {
+                                                let v416 =
+                                                    case v3 {
+                                                        True -> {
+                                                            let v404 = "///- --real"
+                                                            let v405 = kino_text_size(v404)
+                                                            let v406 = kino_text_size(v391)
+                                                            let v407 = v405 > v406
+                                                            let v414 =
+                                                                case v407 {
+                                                                    True -> {
+                                                                        False
+                                                                    }
+                                                                    False -> {
+                                                                        let v408 = v405 == 0
+                                                                        case v408 {
+                                                                            True -> {
+                                                                                True
+                                                                            }
+                                                                            False -> {
+                                                                                let v409 = spiral_wrap_signed(v405 - 1, 32)
+                                                                                let v410 = spiral_wrap_signed(v409 + 1, 32)
+                                                                                let v411 = kino_text_at(v391, 0, v410)
+                                                                                let v412 = v411 == "///- --real"
+                                                                                v412
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            let v415 = v414 == False
+                                                            v415
+                                                        }
+                                                        False -> {
+                                                            False
+                                                        }
+                                                    }
+                                                let v418 =
+                                                    case v416 {
+                                                        True -> {
+                                                            let v417 = { "///- --real\n\n" } <> { v391 }
+                                                            v417
+                                                        }
+                                                        False -> {
+                                                            v391
+                                                        }
+                                                    }
+                                                let v419 = "spiral"
+                                                Uh3Cell(v419, v418, v4)
+                                            }
+                                        }
+                                    }
+                                }
+                            let v423 = ""
+                            let v424 = Uh4NoRow
+                            let v425 = Us5Malformed(v0)
+                            let v426 = Us4InTest(v329, v423, v2, v424, v425, -1)
+                            let v427 = Uh4NoRow
+                            #(v426, v427, v422)
+                        }
+                        False -> {
+                            let v428 = "/// "
+                            let v429 = kino_text_size(v428)
+                            let v430 = kino_text_size(v0)
+                            let v431 = v429 > v430
+                            let v438 =
+                                case v431 {
                                     True -> {
                                         False
                                     }
                                     False -> {
-                                        let v262 = spiral_wrap_signed(v259 + v260, 32)
-                                        let v263 = kino_text_size(v0)
-                                        let v264 = v262 > v263
-                                        case v264 {
+                                        let v432 = v429 == 0
+                                        case v432 {
+                                            True -> {
+                                                True
+                                            }
+                                            False -> {
+                                                let v433 = spiral_wrap_signed(v429 - 1, 32)
+                                                let v434 = spiral_wrap_signed(v433 + 1, 32)
+                                                let v435 = kino_text_at(v0, 0, v434)
+                                                let v436 = v435 == "/// "
+                                                v436
+                                            }
+                                        }
+                                    }
+                                }
+                            let v440 =
+                                case v438 {
+                                    True -> {
+                                        True
+                                    }
+                                    False -> {
+                                        let v439 = v0 == "///"
+                                        v439
+                                    }
+                                }
+                            case v440 {
+                                True -> {
+                                    let v441 = 0
+                                    let v442 = lead_ws_62(v0, v441)
+                                    let v443 = kino_text_size(v428)
+                                    let v444 = v442 < 0
+                                    let v456 =
+                                        case v444 {
                                             True -> {
                                                 False
                                             }
                                             False -> {
-                                                let v265 = v260 == 0
-                                                case v265 {
+                                                let v445 = spiral_wrap_signed(v442 + v443, 32)
+                                                let v446 = kino_text_size(v0)
+                                                let v447 = v445 > v446
+                                                case v447 {
                                                     True -> {
-                                                        True
+                                                        False
                                                     }
                                                     False -> {
-                                                        let v266 = spiral_wrap_signed(v262 - 1, 32)
-                                                        let v267 = spiral_wrap_signed(v266 - v259, 32)
-                                                        let v268 = spiral_wrap_signed(v267 + 1, 32)
-                                                        let v269 = kino_text_at(v0, v259, v268)
-                                                        let v270 = v269 == "/// "
-                                                        v270
+                                                        let v448 = v443 == 0
+                                                        case v448 {
+                                                            True -> {
+                                                                True
+                                                            }
+                                                            False -> {
+                                                                let v449 = spiral_wrap_signed(v445 - 1, 32)
+                                                                let v450 = spiral_wrap_signed(v449 - v442, 32)
+                                                                let v451 = spiral_wrap_signed(v450 + 1, 32)
+                                                                let v452 = kino_text_at(v0, v442, v451)
+                                                                let v453 = v452 == "/// "
+                                                                v453
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             }
                                         }
-                                    }
-                                }
-                            let v304 =
-                                case v273 {
-                                    True -> {
-                                        let v274 = kino_text_size(v0)
-                                        let v275 = v259 < v274
-                                        let v276 =
-                                            case v275 {
-                                                True -> {
-                                                    v259
-                                                }
-                                                False -> {
-                                                    v274
-                                                }
-                                            }
-                                        let v277 = v276 <= 0
-                                        let v282 =
-                                            case v277 {
-                                                True -> {
-                                                    let v278 = ""
-                                                    v278
-                                                }
-                                                False -> {
-                                                    let v279 = spiral_wrap_signed(v276 - 1, 32)
-                                                    let v280 = spiral_wrap_signed(v279 + 1, 32)
-                                                    let v281 = kino_text_at(v0, 0, v280)
-                                                    v281
-                                                }
-                                            }
-                                        let v283 = spiral_wrap_signed(v259 + 4, 32)
-                                        let v284 = kino_text_size(v0)
-                                        let v285 = v283 >= v284
-                                        let v293 =
-                                            case v285 {
-                                                True -> {
-                                                    let v286 = ""
-                                                    v286
-                                                }
-                                                False -> {
-                                                    let v287 = v283 <= 0
-                                                    case v287 {
+                                    let v487 =
+                                        case v456 {
+                                            True -> {
+                                                let v457 = kino_text_size(v0)
+                                                let v458 = v442 < v457
+                                                let v459 =
+                                                    case v458 {
                                                         True -> {
-                                                            v0
+                                                            v442
                                                         }
                                                         False -> {
-                                                            let v288 = spiral_wrap_signed(v284 - 1, 32)
-                                                            let v289 = spiral_wrap_signed(v288 - v283, 32)
-                                                            let v290 = spiral_wrap_signed(v289 + 1, 32)
-                                                            let v291 = kino_text_at(v0, v283, v290)
-                                                            v291
+                                                            v457
                                                         }
+                                                    }
+                                                let v460 = v459 <= 0
+                                                let v465 =
+                                                    case v460 {
+                                                        True -> {
+                                                            let v461 = ""
+                                                            v461
+                                                        }
+                                                        False -> {
+                                                            let v462 = spiral_wrap_signed(v459 - 1, 32)
+                                                            let v463 = spiral_wrap_signed(v462 + 1, 32)
+                                                            let v464 = kino_text_at(v0, 0, v463)
+                                                            v464
+                                                        }
+                                                    }
+                                                let v466 = spiral_wrap_signed(v442 + 4, 32)
+                                                let v467 = kino_text_size(v0)
+                                                let v468 = v466 >= v467
+                                                let v476 =
+                                                    case v468 {
+                                                        True -> {
+                                                            let v469 = ""
+                                                            v469
+                                                        }
+                                                        False -> {
+                                                            let v470 = v466 <= 0
+                                                            case v470 {
+                                                                True -> {
+                                                                    v0
+                                                                }
+                                                                False -> {
+                                                                    let v471 = spiral_wrap_signed(v467 - 1, 32)
+                                                                    let v472 = spiral_wrap_signed(v471 - v466, 32)
+                                                                    let v473 = spiral_wrap_signed(v472 + 1, 32)
+                                                                    let v474 = kino_text_at(v0, v466, v473)
+                                                                    v474
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                let v477 = { v465 } <> { v476 }
+                                                v477
+                                            }
+                                            False -> {
+                                                let v478 = kino_text_size(v0)
+                                                let v479 = v442 < v478
+                                                let v480 =
+                                                    case v479 {
+                                                        True -> {
+                                                            v442
+                                                        }
+                                                        False -> {
+                                                            v478
+                                                        }
+                                                    }
+                                                let v481 = v480 <= 0
+                                                case v481 {
+                                                    True -> {
+                                                        let v482 = ""
+                                                        v482
+                                                    }
+                                                    False -> {
+                                                        let v483 = spiral_wrap_signed(v480 - 1, 32)
+                                                        let v484 = spiral_wrap_signed(v483 + 1, 32)
+                                                        let v485 = kino_text_at(v0, 0, v484)
+                                                        v485
                                                     }
                                                 }
                                             }
-                                        let v294 = { v282 } <> { v293 }
-                                        v294
-                                    }
-                                    False -> {
-                                        let v295 = kino_text_size(v0)
-                                        let v296 = v259 < v295
-                                        let v297 =
-                                            case v296 {
-                                                True -> {
-                                                    v259
-                                                }
-                                                False -> {
-                                                    v295
-                                                }
+                                        }
+                                    let v488 =
+                                        case v1  {
+                                            Uh4NoRow -> {
+                                                True
                                             }
-                                        let v298 = v297 <= 0
-                                        case v298 {
-                                            True -> {
-                                                let v299 = ""
-                                                v299
-                                            }
-                                            False -> {
-                                                let v300 = spiral_wrap_signed(v297 - 1, 32)
-                                                let v301 = spiral_wrap_signed(v300 + 1, 32)
-                                                let v302 = kino_text_at(v0, 0, v301)
-                                                v302
+                                            _ -> {
+                                                False
                                             }
                                         }
-                                    }
-                                }
-                            let v305 =
-                                case v1  {
-                                    Uh4NoRow -> {
-                                        True
-                                    }
-                                    _ -> {
-                                        False
-                                    }
-                                }
-                            let v395 =
-                                case v305 {
-                                    True -> {
-                                        let v306 = Uh4NoRow
-                                        let v307 = rev_rows_58(v2, v306)
-                                        let v308 = join_rows_60(v307)
-                                        let v309 = 0
-                                        let v310 = trim_nl_start_29(v308, v309)
-                                        let v311 = kino_text_size(v308)
-                                        let v312 = trim_nl_end_30(v308, v311)
-                                        let v313 = v312 <= v310
-                                        let v319 =
-                                            case v313 {
-                                                True -> {
-                                                    let v314 = ""
-                                                    v314
-                                                }
-                                                False -> {
-                                                    let v315 = spiral_wrap_signed(v312 - 1, 32)
-                                                    let v316 = spiral_wrap_signed(v315 - v310, 32)
-                                                    let v317 = spiral_wrap_signed(v316 + 1, 32)
-                                                    let v318 = kino_text_at(v308, v310, v317)
-                                                    v318
-                                                }
-                                            }
-                                        let v320 = 0
-                                        let v321 = trim_start_17(v319, v320)
-                                        let v322 = kino_text_size(v319)
-                                        let v323 = trim_end_18(v319, v322)
-                                        let v324 = v323 <= v321
-                                        let v330 =
-                                            case v324 {
-                                                True -> {
-                                                    let v325 = ""
-                                                    v325
-                                                }
-                                                False -> {
-                                                    let v326 = spiral_wrap_signed(v323 - 1, 32)
-                                                    let v327 = spiral_wrap_signed(v326 - v321, 32)
-                                                    let v328 = spiral_wrap_signed(v327 + 1, 32)
-                                                    let v329 = kino_text_at(v319, v321, v328)
-                                                    v329
-                                                }
-                                            }
-                                        let v331 = v330 == ""
-                                        case v331 {
+                                    let v578 =
+                                        case v488 {
                                             True -> {
-                                                v4
-                                            }
-                                            False -> {
-                                                let v344 =
-                                                    case v3 {
+                                                let v489 = Uh4NoRow
+                                                let v490 = rev_rows_61(v2, v489)
+                                                let v491 = join_rows_63(v490)
+                                                let v492 = 0
+                                                let v493 = trim_nl_start_29(v491, v492)
+                                                let v494 = kino_text_size(v491)
+                                                let v495 = trim_nl_end_30(v491, v494)
+                                                let v496 = v495 <= v493
+                                                let v502 =
+                                                    case v496 {
                                                         True -> {
-                                                            let v332 = "///- --real"
-                                                            let v333 = kino_text_size(v332)
-                                                            let v334 = kino_text_size(v319)
-                                                            let v335 = v333 > v334
-                                                            let v342 =
-                                                                case v335 {
-                                                                    True -> {
-                                                                        False
-                                                                    }
-                                                                    False -> {
-                                                                        let v336 = v333 == 0
-                                                                        case v336 {
+                                                            let v497 = ""
+                                                            v497
+                                                        }
+                                                        False -> {
+                                                            let v498 = spiral_wrap_signed(v495 - 1, 32)
+                                                            let v499 = spiral_wrap_signed(v498 - v493, 32)
+                                                            let v500 = spiral_wrap_signed(v499 + 1, 32)
+                                                            let v501 = kino_text_at(v491, v493, v500)
+                                                            v501
+                                                        }
+                                                    }
+                                                let v503 = 0
+                                                let v504 = trim_start_17(v502, v503)
+                                                let v505 = kino_text_size(v502)
+                                                let v506 = trim_end_18(v502, v505)
+                                                let v507 = v506 <= v504
+                                                let v513 =
+                                                    case v507 {
+                                                        True -> {
+                                                            let v508 = ""
+                                                            v508
+                                                        }
+                                                        False -> {
+                                                            let v509 = spiral_wrap_signed(v506 - 1, 32)
+                                                            let v510 = spiral_wrap_signed(v509 - v504, 32)
+                                                            let v511 = spiral_wrap_signed(v510 + 1, 32)
+                                                            let v512 = kino_text_at(v502, v504, v511)
+                                                            v512
+                                                        }
+                                                    }
+                                                let v514 = v513 == ""
+                                                case v514 {
+                                                    True -> {
+                                                        v4
+                                                    }
+                                                    False -> {
+                                                        let v527 =
+                                                            case v3 {
+                                                                True -> {
+                                                                    let v515 = "///- --real"
+                                                                    let v516 = kino_text_size(v515)
+                                                                    let v517 = kino_text_size(v502)
+                                                                    let v518 = v516 > v517
+                                                                    let v525 =
+                                                                        case v518 {
                                                                             True -> {
-                                                                                True
+                                                                                False
                                                                             }
                                                                             False -> {
-                                                                                let v337 = spiral_wrap_signed(v333 - 1, 32)
-                                                                                let v338 = spiral_wrap_signed(v337 + 1, 32)
-                                                                                let v339 = kino_text_at(v319, 0, v338)
-                                                                                let v340 = v339 == "///- --real"
-                                                                                v340
+                                                                                let v519 = v516 == 0
+                                                                                case v519 {
+                                                                                    True -> {
+                                                                                        True
+                                                                                    }
+                                                                                    False -> {
+                                                                                        let v520 = spiral_wrap_signed(v516 - 1, 32)
+                                                                                        let v521 = spiral_wrap_signed(v520 + 1, 32)
+                                                                                        let v522 = kino_text_at(v502, 0, v521)
+                                                                                        let v523 = v522 == "///- --real"
+                                                                                        v523
+                                                                                    }
+                                                                                }
                                                                             }
                                                                         }
-                                                                    }
+                                                                    let v526 = v525 == False
+                                                                    v526
                                                                 }
-                                                            let v343 = v342 == False
-                                                            v343
-                                                        }
-                                                        False -> {
-                                                            False
-                                                        }
+                                                                False -> {
+                                                                    False
+                                                                }
+                                                            }
+                                                        let v529 =
+                                                            case v527 {
+                                                                True -> {
+                                                                    let v528 = { "///- --real\n\n" } <> { v502 }
+                                                                    v528
+                                                                }
+                                                                False -> {
+                                                                    v502
+                                                                }
+                                                            }
+                                                        let v530 = "spiral"
+                                                        Uh3Cell(v530, v529, v4)
                                                     }
-                                                let v346 =
-                                                    case v344 {
-                                                        True -> {
-                                                            let v345 = { "///- --real\n\n" } <> { v319 }
-                                                            v345
-                                                        }
-                                                        False -> {
-                                                            v319
-                                                        }
-                                                    }
-                                                let v347 = "spiral"
-                                                Uh3Cell(v347, v346, v4)
-                                            }
-                                        }
-                                    }
-                                    False -> {
-                                        let v350 = append_rows_71(v2, v1)
-                                        let v351 = Uh4NoRow
-                                        let v352 = rev_rows_58(v350, v351)
-                                        let v353 = join_rows_60(v352)
-                                        let v354 = 0
-                                        let v355 = trim_nl_start_29(v353, v354)
-                                        let v356 = kino_text_size(v353)
-                                        let v357 = trim_nl_end_30(v353, v356)
-                                        let v358 = v357 <= v355
-                                        let v364 =
-                                            case v358 {
-                                                True -> {
-                                                    let v359 = ""
-                                                    v359
                                                 }
-                                                False -> {
-                                                    let v360 = spiral_wrap_signed(v357 - 1, 32)
-                                                    let v361 = spiral_wrap_signed(v360 - v355, 32)
-                                                    let v362 = spiral_wrap_signed(v361 + 1, 32)
-                                                    let v363 = kino_text_at(v353, v355, v362)
-                                                    v363
-                                                }
-                                            }
-                                        let v365 = 0
-                                        let v366 = trim_start_17(v364, v365)
-                                        let v367 = kino_text_size(v364)
-                                        let v368 = trim_end_18(v364, v367)
-                                        let v369 = v368 <= v366
-                                        let v375 =
-                                            case v369 {
-                                                True -> {
-                                                    let v370 = ""
-                                                    v370
-                                                }
-                                                False -> {
-                                                    let v371 = spiral_wrap_signed(v368 - 1, 32)
-                                                    let v372 = spiral_wrap_signed(v371 - v366, 32)
-                                                    let v373 = spiral_wrap_signed(v372 + 1, 32)
-                                                    let v374 = kino_text_at(v364, v366, v373)
-                                                    v374
-                                                }
-                                            }
-                                        let v376 = v375 == ""
-                                        case v376 {
-                                            True -> {
-                                                v4
                                             }
                                             False -> {
-                                                let v389 =
-                                                    case v3 {
+                                                let v533 = append_rows_74(v2, v1)
+                                                let v534 = Uh4NoRow
+                                                let v535 = rev_rows_61(v533, v534)
+                                                let v536 = join_rows_63(v535)
+                                                let v537 = 0
+                                                let v538 = trim_nl_start_29(v536, v537)
+                                                let v539 = kino_text_size(v536)
+                                                let v540 = trim_nl_end_30(v536, v539)
+                                                let v541 = v540 <= v538
+                                                let v547 =
+                                                    case v541 {
                                                         True -> {
-                                                            let v377 = "///- --real"
-                                                            let v378 = kino_text_size(v377)
-                                                            let v379 = kino_text_size(v364)
-                                                            let v380 = v378 > v379
-                                                            let v387 =
-                                                                case v380 {
-                                                                    True -> {
-                                                                        False
-                                                                    }
-                                                                    False -> {
-                                                                        let v381 = v378 == 0
-                                                                        case v381 {
+                                                            let v542 = ""
+                                                            v542
+                                                        }
+                                                        False -> {
+                                                            let v543 = spiral_wrap_signed(v540 - 1, 32)
+                                                            let v544 = spiral_wrap_signed(v543 - v538, 32)
+                                                            let v545 = spiral_wrap_signed(v544 + 1, 32)
+                                                            let v546 = kino_text_at(v536, v538, v545)
+                                                            v546
+                                                        }
+                                                    }
+                                                let v548 = 0
+                                                let v549 = trim_start_17(v547, v548)
+                                                let v550 = kino_text_size(v547)
+                                                let v551 = trim_end_18(v547, v550)
+                                                let v552 = v551 <= v549
+                                                let v558 =
+                                                    case v552 {
+                                                        True -> {
+                                                            let v553 = ""
+                                                            v553
+                                                        }
+                                                        False -> {
+                                                            let v554 = spiral_wrap_signed(v551 - 1, 32)
+                                                            let v555 = spiral_wrap_signed(v554 - v549, 32)
+                                                            let v556 = spiral_wrap_signed(v555 + 1, 32)
+                                                            let v557 = kino_text_at(v547, v549, v556)
+                                                            v557
+                                                        }
+                                                    }
+                                                let v559 = v558 == ""
+                                                case v559 {
+                                                    True -> {
+                                                        v4
+                                                    }
+                                                    False -> {
+                                                        let v572 =
+                                                            case v3 {
+                                                                True -> {
+                                                                    let v560 = "///- --real"
+                                                                    let v561 = kino_text_size(v560)
+                                                                    let v562 = kino_text_size(v547)
+                                                                    let v563 = v561 > v562
+                                                                    let v570 =
+                                                                        case v563 {
                                                                             True -> {
-                                                                                True
+                                                                                False
                                                                             }
                                                                             False -> {
-                                                                                let v382 = spiral_wrap_signed(v378 - 1, 32)
-                                                                                let v383 = spiral_wrap_signed(v382 + 1, 32)
-                                                                                let v384 = kino_text_at(v364, 0, v383)
-                                                                                let v385 = v384 == "///- --real"
-                                                                                v385
+                                                                                let v564 = v561 == 0
+                                                                                case v564 {
+                                                                                    True -> {
+                                                                                        True
+                                                                                    }
+                                                                                    False -> {
+                                                                                        let v565 = spiral_wrap_signed(v561 - 1, 32)
+                                                                                        let v566 = spiral_wrap_signed(v565 + 1, 32)
+                                                                                        let v567 = kino_text_at(v547, 0, v566)
+                                                                                        let v568 = v567 == "///- --real"
+                                                                                        v568
+                                                                                    }
+                                                                                }
                                                                             }
                                                                         }
-                                                                    }
+                                                                    let v571 = v570 == False
+                                                                    v571
                                                                 }
-                                                            let v388 = v387 == False
-                                                            v388
-                                                        }
-                                                        False -> {
-                                                            False
-                                                        }
+                                                                False -> {
+                                                                    False
+                                                                }
+                                                            }
+                                                        let v574 =
+                                                            case v572 {
+                                                                True -> {
+                                                                    let v573 = { "///- --real\n\n" } <> { v547 }
+                                                                    v573
+                                                                }
+                                                                False -> {
+                                                                    v547
+                                                                }
+                                                            }
+                                                        let v575 = "spiral"
+                                                        Uh3Cell(v575, v574, v4)
                                                     }
-                                                let v391 =
-                                                    case v389 {
-                                                        True -> {
-                                                            let v390 = { "///- --real\n\n" } <> { v364 }
-                                                            v390
-                                                        }
-                                                        False -> {
-                                                            v364
-                                                        }
-                                                    }
-                                                let v392 = "spiral"
-                                                Uh3Cell(v392, v391, v4)
+                                                }
                                             }
                                         }
-                                    }
+                                    let v579 = Uh4NoRow
+                                    let v580 = Uh4Row(v487, v579)
+                                    let v581 = Us4InDoc(v580)
+                                    let v582 = Uh4NoRow
+                                    #(v581, v582, v578)
                                 }
-                            let v396 = Uh4NoRow
-                            let v397 = Uh4Row(v304, v396)
-                            let v398 = Us4InDoc(v397)
-                            let v399 = Uh4NoRow
-                            #(v398, v399, v395)
-                        }
-                        False -> {
-                            let v400 =
-                                case v1  {
-                                    Uh4NoRow -> {
-                                        True
-                                    }
-                                    _ -> {
-                                        False
-                                    }
-                                }
-                            case v400 {
-                                True -> {
-                                    let v401 = v0 == ""
-                                    let v403 =
-                                        case v401 {
-                                            True -> {
-                                                case v2  {
-                                                    Uh4NoRow -> {
-                                                        True
+                                False -> {
+                                    let v583 =
+                                        case v1  {
+                                            Uh4NoRow -> {
+                                                True
+                                            }
+                                            _ -> {
+                                                False
+                                            }
+                                        }
+                                    case v583 {
+                                        True -> {
+                                            let v584 = v0 == ""
+                                            let v586 =
+                                                case v584 {
+                                                    True -> {
+                                                        case v2  {
+                                                            Uh4NoRow -> {
+                                                                True
+                                                            }
+                                                            _ -> {
+                                                                False
+                                                            }
+                                                        }
                                                     }
-                                                    _ -> {
+                                                    False -> {
                                                         False
                                                     }
                                                 }
+                                            case v586 {
+                                                True -> {
+                                                    let v587 = Us4Between
+                                                    let v588 = Uh4NoRow
+                                                    #(v587, v588, v4)
+                                                }
+                                                False -> {
+                                                    let v589 = Uh4Row(v0, v2)
+                                                    let v590 = Us4InCode(v589)
+                                                    let v591 = Uh4NoRow
+                                                    #(v590, v591, v4)
+                                                }
                                             }
-                                            False -> {
-                                                False
-                                            }
-                                        }
-                                    case v403 {
-                                        True -> {
-                                            let v404 = Us4Between
-                                            let v405 = Uh4NoRow
-                                            #(v404, v405, v4)
                                         }
                                         False -> {
-                                            let v406 = Uh4Row(v0, v2)
-                                            let v407 = Us4InCode(v406)
-                                            let v408 = Uh4NoRow
-                                            #(v407, v408, v4)
+                                            let v595 = append_rows_74(v2, v1)
+                                            let v596 = Uh4Row(v0, v595)
+                                            let v597 = Us4InCode(v596)
+                                            let v598 = Uh4NoRow
+                                            #(v597, v598, v4)
                                         }
                                     }
-                                }
-                                False -> {
-                                    let v412 = append_rows_71(v2, v1)
-                                    let v413 = Uh4Row(v0, v412)
-                                    let v414 = Us4InCode(v413)
-                                    let v415 = Uh4NoRow
-                                    #(v414, v415, v4)
                                 }
                             }
                         }
@@ -12481,53 +13783,154 @@ pub fn open_step_73(v0: String, v1: Uh4, v2: Uh4, v3: Bool, v4: Uh3) -> #(Us4, U
         }
     }
 }
-pub fn spi_walk_72(v0: String, v1: Int, v2: Us4, v3: Uh4, v4: Bool, v5: Uh3) -> Uh3 {
-    let v6 = kino_text_size(v0)
-    let v7 = v1 > v6
-    let v47 =
-        case v7 {
+pub fn tab_field_80(v0: String, v1: Int, v2: Int) -> String {
+    let v3 = "\t"
+    let v4 = find_char_3(v0, v1, v3)
+    let v5 = v2 == 0
+    case v5 {
+        True -> {
+            let v6 = v4 < 0
+            case v6 {
+                True -> {
+                    let v7 = kino_text_size(v0)
+                    let v8 = v1 >= v7
+                    case v8 {
+                        True -> {
+                            let v9 = ""
+                            v9
+                        }
+                        False -> {
+                            let v10 = v1 <= 0
+                            case v10 {
+                                True -> {
+                                    v0
+                                }
+                                False -> {
+                                    let v11 = spiral_wrap_signed(v7 - 1, 32)
+                                    let v12 = spiral_wrap_signed(v11 - v1, 32)
+                                    let v13 = spiral_wrap_signed(v12 + 1, 32)
+                                    let v14 = kino_text_at(v0, v1, v13)
+                                    v14
+                                }
+                            }
+                        }
+                    }
+                }
+                False -> {
+                    let v17 = spiral_wrap_signed(v4 - v1, 32)
+                    let v18 = v17 <= 0
+                    case v18 {
+                        True -> {
+                            let v19 = ""
+                            v19
+                        }
+                        False -> {
+                            let v20 = kino_text_size(v0)
+                            let v21 = v1 >= v20
+                            case v21 {
+                                True -> {
+                                    let v22 = ""
+                                    v22
+                                }
+                                False -> {
+                                    let v23 = spiral_wrap_signed(v1 + v17, 32)
+                                    let v24 = spiral_wrap_signed(v23 - 1, 32)
+                                    let v25 = kino_text_size(v0)
+                                    let v26 = v24 >= v25
+                                    let v29 =
+                                        case v26 {
+                                            True -> {
+                                                let v27 = kino_text_size(v0)
+                                                let v28 = spiral_wrap_signed(v27 - 1, 32)
+                                                v28
+                                            }
+                                            False -> {
+                                                v24
+                                            }
+                                        }
+                                    let v30 = v29 < v1
+                                    case v30 {
+                                        True -> {
+                                            let v31 = ""
+                                            v31
+                                        }
+                                        False -> {
+                                            let v32 = spiral_wrap_signed(v29 - v1, 32)
+                                            let v33 = spiral_wrap_signed(v32 + 1, 32)
+                                            let v34 = kino_text_at(v0, v1, v33)
+                                            v34
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        False -> {
+            let v39 = v4 < 0
+            case v39 {
+                True -> {
+                    let v40 = ""
+                    v40
+                }
+                False -> {
+                    let v41 = spiral_wrap_signed(v4 + 1, 32)
+                    let v42 = spiral_wrap_signed(v2 - 1, 32)
+                    tab_field_80(v0, v41, v42)
+                }
+            }
+        }
+    }
+}
+pub fn body_last_of_79(v0: String, v1: Int, v2: Int) -> Int {
+    let v3 = kino_text_size(v0)
+    let v4 = v1 > v3
+    let v44 =
+        case v4 {
             True -> {
                 Us0LineDone
             }
             False -> {
-                let v9 = v6 == 0
-                let v11 =
-                    case v9 {
+                let v6 = v3 == 0
+                let v8 =
+                    case v6 {
                         True -> {
-                            let v10 = v1 == 0
-                            v10
+                            let v7 = v1 == 0
+                            v7
                         }
                         False -> {
                             False
                         }
                     }
-                case v11 {
+                case v8 {
                     True -> {
-                        let v12 = ""
-                        Us0LineGot(v12, 1)
+                        let v9 = ""
+                        Us0LineGot(v9, 1)
                     }
                     False -> {
-                        let v14 = v1 == v6
-                        case v14 {
+                        let v11 = v1 == v3
+                        case v11 {
                             True -> {
-                                let v15 = v6 > 0
-                                let v19 =
-                                    case v15 {
+                                let v12 = v3 > 0
+                                let v16 =
+                                    case v12 {
                                         True -> {
-                                            let v16 = spiral_wrap_signed(v6 - 1, 32)
-                                            let v17 = kino_text_at(v0, v16, 1)
-                                            let v18 = v17 == "\n"
-                                            v18
+                                            let v13 = spiral_wrap_signed(v3 - 1, 32)
+                                            let v14 = kino_text_at(v0, v13, 1)
+                                            let v15 = v14 == "\n"
+                                            v15
                                         }
                                         False -> {
                                             False
                                         }
                                     }
-                                case v19 {
+                                case v16 {
                                     True -> {
-                                        let v20 = spiral_wrap_signed(v6 + 1, 32)
-                                        let v21 = ""
-                                        Us0LineGot(v21, v20)
+                                        let v17 = spiral_wrap_signed(v3 + 1, 32)
+                                        let v18 = ""
+                                        Us0LineGot(v18, v17)
                                     }
                                     False -> {
                                         Us0LineDone
@@ -12535,32 +13938,32 @@ pub fn spi_walk_72(v0: String, v1: Int, v2: Us4, v3: Uh4, v4: Bool, v5: Uh3) -> 
                                 }
                             }
                             False -> {
-                                let v25 = "\n"
-                                let v26 = find_char_3(v0, v1, v25)
-                                let v27 = v26 < 0
-                                case v27 {
+                                let v22 = "\n"
+                                let v23 = find_char_3(v0, v1, v22)
+                                let v24 = v23 < 0
+                                case v24 {
                                     True -> {
-                                        let v28 = spiral_wrap_signed(v6 - 1, 32)
-                                        let v29 = spiral_wrap_signed(v28 - v1, 32)
-                                        let v30 = spiral_wrap_signed(v29 + 1, 32)
-                                        let v31 = kino_text_at(v0, v1, v30)
-                                        Us0LineGot(v31, v6)
+                                        let v25 = spiral_wrap_signed(v3 - 1, 32)
+                                        let v26 = spiral_wrap_signed(v25 - v1, 32)
+                                        let v27 = spiral_wrap_signed(v26 + 1, 32)
+                                        let v28 = kino_text_at(v0, v1, v27)
+                                        Us0LineGot(v28, v3)
                                     }
                                     False -> {
-                                        let v33 = v26 == v1
-                                        case v33 {
+                                        let v30 = v23 == v1
+                                        case v30 {
                                             True -> {
-                                                let v34 = spiral_wrap_signed(v26 + 1, 32)
-                                                let v35 = ""
-                                                Us0LineGot(v35, v34)
+                                                let v31 = spiral_wrap_signed(v23 + 1, 32)
+                                                let v32 = ""
+                                                Us0LineGot(v32, v31)
                                             }
                                             False -> {
-                                                let v37 = spiral_wrap_signed(v26 - 1, 32)
-                                                let v38 = spiral_wrap_signed(v37 - v1, 32)
-                                                let v39 = spiral_wrap_signed(v38 + 1, 32)
-                                                let v40 = kino_text_at(v0, v1, v39)
-                                                let v41 = spiral_wrap_signed(v26 + 1, 32)
-                                                Us0LineGot(v40, v41)
+                                                let v34 = spiral_wrap_signed(v23 - 1, 32)
+                                                let v35 = spiral_wrap_signed(v34 - v1, 32)
+                                                let v36 = spiral_wrap_signed(v35 + 1, 32)
+                                                let v37 = kino_text_at(v0, v1, v36)
+                                                let v38 = spiral_wrap_signed(v23 + 1, 32)
+                                                Us0LineGot(v37, v38)
                                             }
                                         }
                                     }
@@ -12571,979 +13974,245 @@ pub fn spi_walk_72(v0: String, v1: Int, v2: Us4, v3: Uh4, v4: Bool, v5: Uh3) -> 
                 }
             }
         }
-    case v47  {
+    case v44  {
         Us0LineDone -> {
-            case v2  {
-                Us4Between -> {
-                    let v48 = Uh4NoRow
-                    let v49 = rev_rows_58(v3, v48)
-                    let v50 = join_rows_60(v49)
-                    let v51 = 0
-                    let v52 = trim_nl_start_29(v50, v51)
-                    let v53 = kino_text_size(v50)
-                    let v54 = trim_nl_end_30(v50, v53)
-                    let v55 = v54 <= v52
-                    let v61 =
-                        case v55 {
-                            True -> {
-                                let v56 = ""
-                                v56
-                            }
-                            False -> {
-                                let v57 = spiral_wrap_signed(v54 - 1, 32)
-                                let v58 = spiral_wrap_signed(v57 - v52, 32)
-                                let v59 = spiral_wrap_signed(v58 + 1, 32)
-                                let v60 = kino_text_at(v50, v52, v59)
-                                v60
-                            }
-                        }
-                    let v62 = 0
-                    let v63 = trim_start_17(v61, v62)
-                    let v64 = kino_text_size(v61)
-                    let v65 = trim_end_18(v61, v64)
-                    let v66 = v65 <= v63
-                    let v72 =
-                        case v66 {
-                            True -> {
-                                let v67 = ""
-                                v67
-                            }
-                            False -> {
-                                let v68 = spiral_wrap_signed(v65 - 1, 32)
-                                let v69 = spiral_wrap_signed(v68 - v63, 32)
-                                let v70 = spiral_wrap_signed(v69 + 1, 32)
-                                let v71 = kino_text_at(v61, v63, v70)
-                                v71
-                            }
-                        }
-                    let v73 = v72 == ""
-                    case v73 {
-                        True -> {
-                            v5
-                        }
-                        False -> {
-                            let v86 =
-                                case v4 {
-                                    True -> {
-                                        let v74 = "///- --real"
-                                        let v75 = kino_text_size(v74)
-                                        let v76 = kino_text_size(v61)
-                                        let v77 = v75 > v76
-                                        let v84 =
-                                            case v77 {
-                                                True -> {
-                                                    False
-                                                }
-                                                False -> {
-                                                    let v78 = v75 == 0
-                                                    case v78 {
-                                                        True -> {
-                                                            True
-                                                        }
-                                                        False -> {
-                                                            let v79 = spiral_wrap_signed(v75 - 1, 32)
-                                                            let v80 = spiral_wrap_signed(v79 + 1, 32)
-                                                            let v81 = kino_text_at(v61, 0, v80)
-                                                            let v82 = v81 == "///- --real"
-                                                            v82
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        let v85 = v84 == False
-                                        v85
-                                    }
-                                    False -> {
-                                        False
-                                    }
-                                }
-                            let v88 =
-                                case v86 {
-                                    True -> {
-                                        let v87 = { "///- --real\n\n" } <> { v61 }
-                                        v87
-                                    }
-                                    False -> {
-                                        v61
-                                    }
-                                }
-                            let v89 = "spiral"
-                            Uh3Cell(v89, v88, v5)
-                        }
-                    }
+            -1
+        }
+        Us0LineGot(v45, v46) -> {
+            let v47 = 0
+            let v48 = 1
+            let v49 = tab_field_80(v45, v47, v48)
+            let v50 = 0
+            let v51 = 0
+            let v52 = 0
+            let v53 = parse_acc_26(v49, v50, v51, v52)
+            let v54 = v53 == v2
+            case v54 {
+                True -> {
+                    let v55 = 0
+                    let v56 = 3
+                    let v57 = tab_field_80(v45, v55, v56)
+                    let v58 = 0
+                    let v59 = 0
+                    let v60 = 0
+                    parse_acc_26(v57, v58, v59, v60)
                 }
-                Us4InCode(v155) -> {
-                    let v156 = append_rows_71(v3, v155)
-                    let v157 = Uh4NoRow
-                    let v158 = rev_rows_58(v156, v157)
-                    let v159 = join_rows_60(v158)
-                    let v160 = 0
-                    let v161 = trim_nl_start_29(v159, v160)
-                    let v162 = kino_text_size(v159)
-                    let v163 = trim_nl_end_30(v159, v162)
-                    let v164 = v163 <= v161
-                    let v170 =
-                        case v164 {
-                            True -> {
-                                let v165 = ""
-                                v165
-                            }
-                            False -> {
-                                let v166 = spiral_wrap_signed(v163 - 1, 32)
-                                let v167 = spiral_wrap_signed(v166 - v161, 32)
-                                let v168 = spiral_wrap_signed(v167 + 1, 32)
-                                let v169 = kino_text_at(v159, v161, v168)
-                                v169
-                            }
-                        }
-                    let v171 = 0
-                    let v172 = trim_start_17(v170, v171)
-                    let v173 = kino_text_size(v170)
-                    let v174 = trim_end_18(v170, v173)
-                    let v175 = v174 <= v172
-                    let v181 =
-                        case v175 {
-                            True -> {
-                                let v176 = ""
-                                v176
-                            }
-                            False -> {
-                                let v177 = spiral_wrap_signed(v174 - 1, 32)
-                                let v178 = spiral_wrap_signed(v177 - v172, 32)
-                                let v179 = spiral_wrap_signed(v178 + 1, 32)
-                                let v180 = kino_text_at(v170, v172, v179)
-                                v180
-                            }
-                        }
-                    let v182 = v181 == ""
-                    case v182 {
-                        True -> {
-                            v5
-                        }
-                        False -> {
-                            let v195 =
-                                case v4 {
-                                    True -> {
-                                        let v183 = "///- --real"
-                                        let v184 = kino_text_size(v183)
-                                        let v185 = kino_text_size(v170)
-                                        let v186 = v184 > v185
-                                        let v193 =
-                                            case v186 {
-                                                True -> {
-                                                    False
-                                                }
-                                                False -> {
-                                                    let v187 = v184 == 0
-                                                    case v187 {
-                                                        True -> {
-                                                            True
-                                                        }
-                                                        False -> {
-                                                            let v188 = spiral_wrap_signed(v184 - 1, 32)
-                                                            let v189 = spiral_wrap_signed(v188 + 1, 32)
-                                                            let v190 = kino_text_at(v170, 0, v189)
-                                                            let v191 = v190 == "///- --real"
-                                                            v191
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        let v194 = v193 == False
-                                        v194
-                                    }
-                                    False -> {
-                                        False
-                                    }
-                                }
-                            let v197 =
-                                case v195 {
-                                    True -> {
-                                        let v196 = { "///- --real\n\n" } <> { v170 }
-                                        v196
-                                    }
-                                    False -> {
-                                        v170
-                                    }
-                                }
-                            let v198 = "spiral"
-                            Uh3Cell(v198, v197, v5)
-                        }
-                    }
-                }
-                Us4InDoc(v92) -> {
-                    let v93 = Uh4NoRow
-                    let v94 = rev_rows_58(v92, v93)
-                    let v95 = join_rows_60(v94)
-                    let v96 = 0
-                    let v97 = trim_nl_start_29(v95, v96)
-                    let v98 = kino_text_size(v95)
-                    let v99 = trim_nl_end_30(v95, v98)
-                    let v100 = v99 <= v97
-                    let v106 =
-                        case v100 {
-                            True -> {
-                                let v101 = ""
-                                v101
-                            }
-                            False -> {
-                                let v102 = spiral_wrap_signed(v99 - 1, 32)
-                                let v103 = spiral_wrap_signed(v102 - v97, 32)
-                                let v104 = spiral_wrap_signed(v103 + 1, 32)
-                                let v105 = kino_text_at(v95, v97, v104)
-                                v105
-                            }
-                        }
-                    let v107 = v106 == ""
-                    let v110 =
-                        case v107 {
-                            True -> {
-                                v5
-                            }
-                            False -> {
-                                let v108 = "markdown"
-                                Uh3Cell(v108, v106, v5)
-                            }
-                        }
-                    let v111 = Uh4NoRow
-                    let v112 = rev_rows_58(v3, v111)
-                    let v113 = join_rows_60(v112)
-                    let v114 = 0
-                    let v115 = trim_nl_start_29(v113, v114)
-                    let v116 = kino_text_size(v113)
-                    let v117 = trim_nl_end_30(v113, v116)
-                    let v118 = v117 <= v115
-                    let v124 =
-                        case v118 {
-                            True -> {
-                                let v119 = ""
-                                v119
-                            }
-                            False -> {
-                                let v120 = spiral_wrap_signed(v117 - 1, 32)
-                                let v121 = spiral_wrap_signed(v120 - v115, 32)
-                                let v122 = spiral_wrap_signed(v121 + 1, 32)
-                                let v123 = kino_text_at(v113, v115, v122)
-                                v123
-                            }
-                        }
-                    let v125 = 0
-                    let v126 = trim_start_17(v124, v125)
-                    let v127 = kino_text_size(v124)
-                    let v128 = trim_end_18(v124, v127)
-                    let v129 = v128 <= v126
-                    let v135 =
-                        case v129 {
-                            True -> {
-                                let v130 = ""
-                                v130
-                            }
-                            False -> {
-                                let v131 = spiral_wrap_signed(v128 - 1, 32)
-                                let v132 = spiral_wrap_signed(v131 - v126, 32)
-                                let v133 = spiral_wrap_signed(v132 + 1, 32)
-                                let v134 = kino_text_at(v124, v126, v133)
-                                v134
-                            }
-                        }
-                    let v136 = v135 == ""
-                    case v136 {
-                        True -> {
-                            v110
-                        }
-                        False -> {
-                            let v149 =
-                                case v4 {
-                                    True -> {
-                                        let v137 = "///- --real"
-                                        let v138 = kino_text_size(v137)
-                                        let v139 = kino_text_size(v124)
-                                        let v140 = v138 > v139
-                                        let v147 =
-                                            case v140 {
-                                                True -> {
-                                                    False
-                                                }
-                                                False -> {
-                                                    let v141 = v138 == 0
-                                                    case v141 {
-                                                        True -> {
-                                                            True
-                                                        }
-                                                        False -> {
-                                                            let v142 = spiral_wrap_signed(v138 - 1, 32)
-                                                            let v143 = spiral_wrap_signed(v142 + 1, 32)
-                                                            let v144 = kino_text_at(v124, 0, v143)
-                                                            let v145 = v144 == "///- --real"
-                                                            v145
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        let v148 = v147 == False
-                                        v148
-                                    }
-                                    False -> {
-                                        False
-                                    }
-                                }
-                            let v151 =
-                                case v149 {
-                                    True -> {
-                                        let v150 = { "///- --real\n\n" } <> { v124 }
-                                        v150
-                                    }
-                                    False -> {
-                                        v124
-                                    }
-                                }
-                            let v152 = "spiral"
-                            Uh3Cell(v152, v151, v110)
-                        }
-                    }
-                }
-                Us4InTest(v201, v202, v203, v204) -> {
-                    let v205 = Uh4NoRow
-                    let v206 = rev_rows_58(v203, v205)
-                    let v207 = drop_blank_rows_70(v204)
-                    let v208 = Uh4NoRow
-                    let v209 = rev_rows_58(v207, v208)
-                    let v210 = { v202 } <> { " " }
-                    let v211 = " ignore "
-                    let v212 = 0
-                    let v213 = find_from_1(v210, v211, v212)
-                    let v214 = v213 >= 0
-                    let v217 =
-                        case v214 {
-                            True -> {
-                                let v215 = "--ignore"
-                                v215
-                            }
-                            False -> {
-                                let v216 = "--test"
-                                v216
-                            }
-                        }
-                    let v219 =
-                        case v4 {
-                            True -> {
-                                let v218 = { "--real " } <> { v217 }
-                                v218
-                            }
-                            False -> {
-                                v217
-                            }
-                        }
-                    let v220 = " static "
-                    let v221 = 0
-                    let v222 = find_from_1(v210, v220, v221)
-                    let v223 = v222 >= 0
-                    let v226 =
-                        case v223 {
-                            True -> {
-                                let v224 = " static"
-                                v224
-                            }
-                            False -> {
-                                let v225 = ""
-                                v225
-                            }
-                        }
-                    let v227 = " print_code "
-                    let v228 = 0
-                    let v229 = find_from_1(v210, v227, v228)
-                    let v230 = v229 >= 0
-                    let v233 =
-                        case v230 {
-                            True -> {
-                                let v231 = " --print-code"
-                                v231
-                            }
-                            False -> {
-                                let v232 = ""
-                                v232
-                            }
-                        }
-                    let v234 = { v219 } <> { v226 }
-                    let v235 = { v234 } <> { v233 }
-                    let v236 = { "///- " } <> { v235 }
-                    let v237 = ""
-                    let v238 = Uh4Row(v237, v209)
-                    let v239 = append_rows_71(v206, v238)
-                    let v240 = Uh4Row(v236, v239)
-                    let v241 = join_rows_60(v240)
-                    let v246 =
-                        case v4 {
-                            True -> {
-                                let v242 = { "real_test:" } <> { v201 }
-                                Uh3Cell(v242, v241, v5)
-                            }
-                            False -> {
-                                let v244 = { "test:" } <> { v201 }
-                                Uh3Cell(v244, v241, v5)
-                            }
-                        }
-                    let v247 = Uh4NoRow
-                    let v248 = rev_rows_58(v3, v247)
-                    let v249 = join_rows_60(v248)
-                    let v250 = 0
-                    let v251 = trim_nl_start_29(v249, v250)
-                    let v252 = kino_text_size(v249)
-                    let v253 = trim_nl_end_30(v249, v252)
-                    let v254 = v253 <= v251
-                    let v259 =
-                        case v254 {
-                            True -> {
-                                v237
-                            }
-                            False -> {
-                                let v255 = spiral_wrap_signed(v253 - 1, 32)
-                                let v256 = spiral_wrap_signed(v255 - v251, 32)
-                                let v257 = spiral_wrap_signed(v256 + 1, 32)
-                                let v258 = kino_text_at(v249, v251, v257)
-                                v258
-                            }
-                        }
-                    let v260 = 0
-                    let v261 = trim_start_17(v259, v260)
-                    let v262 = kino_text_size(v259)
-                    let v263 = trim_end_18(v259, v262)
-                    let v264 = v263 <= v261
-                    let v269 =
-                        case v264 {
-                            True -> {
-                                v237
-                            }
-                            False -> {
-                                let v265 = spiral_wrap_signed(v263 - 1, 32)
-                                let v266 = spiral_wrap_signed(v265 - v261, 32)
-                                let v267 = spiral_wrap_signed(v266 + 1, 32)
-                                let v268 = kino_text_at(v259, v261, v267)
-                                v268
-                            }
-                        }
-                    let v270 = v269 == ""
-                    case v270 {
-                        True -> {
-                            v246
-                        }
-                        False -> {
-                            let v283 =
-                                case v4 {
-                                    True -> {
-                                        let v271 = "///- --real"
-                                        let v272 = kino_text_size(v271)
-                                        let v273 = kino_text_size(v259)
-                                        let v274 = v272 > v273
-                                        let v281 =
-                                            case v274 {
-                                                True -> {
-                                                    False
-                                                }
-                                                False -> {
-                                                    let v275 = v272 == 0
-                                                    case v275 {
-                                                        True -> {
-                                                            True
-                                                        }
-                                                        False -> {
-                                                            let v276 = spiral_wrap_signed(v272 - 1, 32)
-                                                            let v277 = spiral_wrap_signed(v276 + 1, 32)
-                                                            let v278 = kino_text_at(v259, 0, v277)
-                                                            let v279 = v278 == "///- --real"
-                                                            v279
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        let v282 = v281 == False
-                                        v282
-                                    }
-                                    False -> {
-                                        False
-                                    }
-                                }
-                            let v285 =
-                                case v283 {
-                                    True -> {
-                                        let v284 = { "///- --real\n\n" } <> { v259 }
-                                        v284
-                                    }
-                                    False -> {
-                                        v259
-                                    }
-                                }
-                            let v286 = "spiral"
-                            Uh3Cell(v286, v285, v246)
-                        }
-                    }
+                False -> {
+                    body_last_of_79(v0, v46, v2)
                 }
             }
         }
-        Us0LineGot(v293, v294) -> {
-            case v2  {
-                Us4Between -> {
-                    let v506 = Uh4NoRow
-                    let #(v507, v508, v509) = open_step_73(v293, v506, v3, v4, v5)
-                    spi_walk_72(v0, v294, v507, v508, v4, v509)
-                }
-                Us4InCode(v501) -> {
-                    let #(v502, v503, v504) = open_step_73(v293, v501, v3, v4, v5)
-                    spi_walk_72(v0, v294, v502, v503, v4, v504)
-                }
-                Us4InDoc(v378) -> {
-                    let v379 = 0
-                    let v380 = lead_ws_59(v293, v379)
-                    let v381 = "/// "
-                    let v382 = kino_text_size(v381)
-                    let v383 = v380 < 0
-                    let v395 =
-                        case v383 {
-                            True -> {
-                                False
-                            }
-                            False -> {
-                                let v384 = spiral_wrap_signed(v380 + v382, 32)
-                                let v385 = kino_text_size(v293)
-                                let v386 = v384 > v385
-                                case v386 {
-                                    True -> {
-                                        False
-                                    }
-                                    False -> {
-                                        let v387 = v382 == 0
-                                        case v387 {
-                                            True -> {
-                                                True
-                                            }
-                                            False -> {
-                                                let v388 = spiral_wrap_signed(v384 - 1, 32)
-                                                let v389 = spiral_wrap_signed(v388 - v380, 32)
-                                                let v390 = spiral_wrap_signed(v389 + 1, 32)
-                                                let v391 = kino_text_at(v293, v380, v390)
-                                                let v392 = v391 == "/// "
-                                                v392
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+    }
+}
+pub fn resumes_test_81(v0: String, v1: Int) -> Bool {
+    let v2 = kino_text_size(v0)
+    let v3 = v1 > v2
+    let v43 =
+        case v3 {
+            True -> {
+                Us0LineDone
+            }
+            False -> {
+                let v5 = v2 == 0
+                let v7 =
+                    case v5 {
+                        True -> {
+                            let v6 = v1 == 0
+                            v6
                         }
-                    let v407 =
-                        case v395 {
+                        False -> {
+                            False
+                        }
+                    }
+                case v7 {
+                    True -> {
+                        let v8 = ""
+                        Us0LineGot(v8, 1)
+                    }
+                    False -> {
+                        let v10 = v1 == v2
+                        case v10 {
                             True -> {
-                                True
-                            }
-                            False -> {
-                                let v396 = kino_text_size(v293)
-                                let v397 = v380 >= v396
-                                let v405 =
-                                    case v397 {
+                                let v11 = v2 > 0
+                                let v15 =
+                                    case v11 {
                                         True -> {
-                                            let v398 = ""
-                                            v398
+                                            let v12 = spiral_wrap_signed(v2 - 1, 32)
+                                            let v13 = kino_text_at(v0, v12, 1)
+                                            let v14 = v13 == "\n"
+                                            v14
                                         }
                                         False -> {
-                                            let v399 = v380 <= 0
-                                            case v399 {
-                                                True -> {
-                                                    v293
-                                                }
-                                                False -> {
-                                                    let v400 = spiral_wrap_signed(v396 - 1, 32)
-                                                    let v401 = spiral_wrap_signed(v400 - v380, 32)
-                                                    let v402 = spiral_wrap_signed(v401 + 1, 32)
-                                                    let v403 = kino_text_at(v293, v380, v402)
-                                                    v403
-                                                }
+                                            False
+                                        }
+                                    }
+                                case v15 {
+                                    True -> {
+                                        let v16 = spiral_wrap_signed(v2 + 1, 32)
+                                        let v17 = ""
+                                        Us0LineGot(v17, v16)
+                                    }
+                                    False -> {
+                                        Us0LineDone
+                                    }
+                                }
+                            }
+                            False -> {
+                                let v21 = "\n"
+                                let v22 = find_char_3(v0, v1, v21)
+                                let v23 = v22 < 0
+                                case v23 {
+                                    True -> {
+                                        let v24 = spiral_wrap_signed(v2 - 1, 32)
+                                        let v25 = spiral_wrap_signed(v24 - v1, 32)
+                                        let v26 = spiral_wrap_signed(v25 + 1, 32)
+                                        let v27 = kino_text_at(v0, v1, v26)
+                                        Us0LineGot(v27, v2)
+                                    }
+                                    False -> {
+                                        let v29 = v22 == v1
+                                        case v29 {
+                                            True -> {
+                                                let v30 = spiral_wrap_signed(v22 + 1, 32)
+                                                let v31 = ""
+                                                Us0LineGot(v31, v30)
+                                            }
+                                            False -> {
+                                                let v33 = spiral_wrap_signed(v22 - 1, 32)
+                                                let v34 = spiral_wrap_signed(v33 - v1, 32)
+                                                let v35 = spiral_wrap_signed(v34 + 1, 32)
+                                                let v36 = kino_text_at(v0, v1, v35)
+                                                let v37 = spiral_wrap_signed(v22 + 1, 32)
+                                                Us0LineGot(v36, v37)
                                             }
                                         }
                                     }
-                                let v406 = v405 == "///"
-                                v406
+                                }
                             }
                         }
-                    case v407 {
-                        True -> {
-                            let v408 = 0
-                            let v409 = lead_ws_59(v293, v408)
-                            let v410 = kino_text_size(v381)
-                            let v411 = v409 < 0
-                            let v423 =
-                                case v411 {
+                    }
+                }
+            }
+        }
+    case v43  {
+        Us0LineDone -> {
+            False
+        }
+        Us0LineGot(v44, v45) -> {
+            let v46 = 0
+            let v47 = trim_start_17(v44, v46)
+            let v48 = kino_text_size(v44)
+            let v49 = trim_end_18(v44, v48)
+            let v50 = v49 <= v47
+            let v56 =
+                case v50 {
+                    True -> {
+                        let v51 = ""
+                        v51
+                    }
+                    False -> {
+                        let v52 = spiral_wrap_signed(v49 - 1, 32)
+                        let v53 = spiral_wrap_signed(v52 - v47, 32)
+                        let v54 = spiral_wrap_signed(v53 + 1, 32)
+                        let v55 = kino_text_at(v44, v47, v54)
+                        v55
+                    }
+                }
+            let v57 = v56 == ""
+            let v81 =
+                case v57 {
+                    True -> {
+                        True
+                    }
+                    False -> {
+                        let v58 = "//"
+                        let v59 = kino_text_size(v58)
+                        let v60 = kino_text_size(v44)
+                        let v61 = v59 > v60
+                        let v68 =
+                            case v61 {
+                                True -> {
+                                    False
+                                }
+                                False -> {
+                                    let v62 = v59 == 0
+                                    case v62 {
+                                        True -> {
+                                            True
+                                        }
+                                        False -> {
+                                            let v63 = spiral_wrap_signed(v59 - 1, 32)
+                                            let v64 = spiral_wrap_signed(v63 + 1, 32)
+                                            let v65 = kino_text_at(v44, 0, v64)
+                                            let v66 = v65 == "//"
+                                            v66
+                                        }
+                                    }
+                                }
+                            }
+                        case v68 {
+                            True -> {
+                                True
+                            }
+                            False -> {
+                                let v69 = "(* "
+                                let v70 = kino_text_size(v69)
+                                let v71 = kino_text_size(v44)
+                                let v72 = v70 > v71
+                                case v72 {
                                     True -> {
                                         False
                                     }
                                     False -> {
-                                        let v412 = spiral_wrap_signed(v409 + v410, 32)
-                                        let v413 = kino_text_size(v293)
-                                        let v414 = v412 > v413
-                                        case v414 {
+                                        let v73 = v70 == 0
+                                        case v73 {
                                             True -> {
-                                                False
+                                                True
                                             }
                                             False -> {
-                                                let v415 = v410 == 0
-                                                case v415 {
-                                                    True -> {
-                                                        True
-                                                    }
-                                                    False -> {
-                                                        let v416 = spiral_wrap_signed(v412 - 1, 32)
-                                                        let v417 = spiral_wrap_signed(v416 - v409, 32)
-                                                        let v418 = spiral_wrap_signed(v417 + 1, 32)
-                                                        let v419 = kino_text_at(v293, v409, v418)
-                                                        let v420 = v419 == "/// "
-                                                        v420
-                                                    }
-                                                }
+                                                let v74 = spiral_wrap_signed(v70 - 1, 32)
+                                                let v75 = spiral_wrap_signed(v74 + 1, 32)
+                                                let v76 = kino_text_at(v44, 0, v75)
+                                                let v77 = v76 == "(* "
+                                                v77
                                             }
                                         }
                                     }
-                                }
-                            let v454 =
-                                case v423 {
-                                    True -> {
-                                        let v424 = kino_text_size(v293)
-                                        let v425 = v409 < v424
-                                        let v426 =
-                                            case v425 {
-                                                True -> {
-                                                    v409
-                                                }
-                                                False -> {
-                                                    v424
-                                                }
-                                            }
-                                        let v427 = v426 <= 0
-                                        let v432 =
-                                            case v427 {
-                                                True -> {
-                                                    let v428 = ""
-                                                    v428
-                                                }
-                                                False -> {
-                                                    let v429 = spiral_wrap_signed(v426 - 1, 32)
-                                                    let v430 = spiral_wrap_signed(v429 + 1, 32)
-                                                    let v431 = kino_text_at(v293, 0, v430)
-                                                    v431
-                                                }
-                                            }
-                                        let v433 = spiral_wrap_signed(v409 + 4, 32)
-                                        let v434 = kino_text_size(v293)
-                                        let v435 = v433 >= v434
-                                        let v443 =
-                                            case v435 {
-                                                True -> {
-                                                    let v436 = ""
-                                                    v436
-                                                }
-                                                False -> {
-                                                    let v437 = v433 <= 0
-                                                    case v437 {
-                                                        True -> {
-                                                            v293
-                                                        }
-                                                        False -> {
-                                                            let v438 = spiral_wrap_signed(v434 - 1, 32)
-                                                            let v439 = spiral_wrap_signed(v438 - v433, 32)
-                                                            let v440 = spiral_wrap_signed(v439 + 1, 32)
-                                                            let v441 = kino_text_at(v293, v433, v440)
-                                                            v441
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        let v444 = { v432 } <> { v443 }
-                                        v444
-                                    }
-                                    False -> {
-                                        let v445 = kino_text_size(v293)
-                                        let v446 = v409 < v445
-                                        let v447 =
-                                            case v446 {
-                                                True -> {
-                                                    v409
-                                                }
-                                                False -> {
-                                                    v445
-                                                }
-                                            }
-                                        let v448 = v447 <= 0
-                                        case v448 {
-                                            True -> {
-                                                let v449 = ""
-                                                v449
-                                            }
-                                            False -> {
-                                                let v450 = spiral_wrap_signed(v447 - 1, 32)
-                                                let v451 = spiral_wrap_signed(v450 + 1, 32)
-                                                let v452 = kino_text_at(v293, 0, v451)
-                                                v452
-                                            }
-                                        }
-                                    }
-                                }
-                            let v455 = Uh4Row(v454, v378)
-                            let v456 = Us4InDoc(v455)
-                            spi_walk_72(v0, v294, v456, v3, v4, v5)
-                        }
-                        False -> {
-                            let v458 = v293 == ""
-                            case v458 {
-                                True -> {
-                                    let v459 = Us4Between
-                                    let v460 = Uh4NoRow
-                                    let v461 = rev_rows_58(v378, v460)
-                                    let v462 = join_rows_60(v461)
-                                    let v463 = 0
-                                    let v464 = trim_nl_start_29(v462, v463)
-                                    let v465 = kino_text_size(v462)
-                                    let v466 = trim_nl_end_30(v462, v465)
-                                    let v467 = v466 <= v464
-                                    let v473 =
-                                        case v467 {
-                                            True -> {
-                                                let v468 = ""
-                                                v468
-                                            }
-                                            False -> {
-                                                let v469 = spiral_wrap_signed(v466 - 1, 32)
-                                                let v470 = spiral_wrap_signed(v469 - v464, 32)
-                                                let v471 = spiral_wrap_signed(v470 + 1, 32)
-                                                let v472 = kino_text_at(v462, v464, v471)
-                                                v472
-                                            }
-                                        }
-                                    let v474 = v473 == ""
-                                    let v477 =
-                                        case v474 {
-                                            True -> {
-                                                v5
-                                            }
-                                            False -> {
-                                                let v475 = "markdown"
-                                                Uh3Cell(v475, v473, v5)
-                                            }
-                                        }
-                                    spi_walk_72(v0, v294, v459, v3, v4, v477)
-                                }
-                                False -> {
-                                    let v479 = Us4Between
-                                    let v480 = Uh4NoRow
-                                    let v481 = rev_rows_58(v378, v480)
-                                    let v482 = join_rows_60(v481)
-                                    let v483 = 0
-                                    let v484 = trim_nl_start_29(v482, v483)
-                                    let v485 = kino_text_size(v482)
-                                    let v486 = trim_nl_end_30(v482, v485)
-                                    let v487 = v486 <= v484
-                                    let v493 =
-                                        case v487 {
-                                            True -> {
-                                                let v488 = ""
-                                                v488
-                                            }
-                                            False -> {
-                                                let v489 = spiral_wrap_signed(v486 - 1, 32)
-                                                let v490 = spiral_wrap_signed(v489 - v484, 32)
-                                                let v491 = spiral_wrap_signed(v490 + 1, 32)
-                                                let v492 = kino_text_at(v482, v484, v491)
-                                                v492
-                                            }
-                                        }
-                                    let v494 = v493 == ""
-                                    let v497 =
-                                        case v494 {
-                                            True -> {
-                                                v5
-                                            }
-                                            False -> {
-                                                let v495 = "markdown"
-                                                Uh3Cell(v495, v493, v5)
-                                            }
-                                        }
-                                    spi_walk_72(v0, v1, v479, v3, v4, v497)
                                 }
                             }
                         }
                     }
                 }
-                Us4InTest(v295, v296, v297, v298) -> {
-                    let v299 = v293 == ""
-                    let v308 =
-                        case v299 {
-                            True -> {
-                                True
-                            }
-                            False -> {
-                                let v300 = kino_text_at(v293, 0, 1)
-                                let v301 = v300 == " "
-                                case v301 {
-                                    True -> {
-                                        True
-                                    }
-                                    False -> {
-                                        let v302 = v300 == "\t"
-                                        case v302 {
-                                            True -> {
-                                                True
-                                            }
-                                            False -> {
-                                                let v303 = v300 == "\n"
-                                                case v303 {
-                                                    True -> {
-                                                        True
-                                                    }
-                                                    False -> {
-                                                        let v304 = v300 == "\r"
-                                                        v304
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    case v308 {
+            case v81 {
+                True -> {
+                    resumes_test_81(v0, v45)
+                }
+                False -> {
+                    let v83 = kino_text_at(v44, 0, 1)
+                    let v84 = v83 == " "
+                    case v84 {
                         True -> {
-                            let v309 = "    "
-                            let v310 = kino_text_size(v309)
-                            let v311 = kino_text_size(v293)
-                            let v312 = v310 > v311
-                            let v319 =
-                                case v312 {
-                                    True -> {
-                                        False
-                                    }
-                                    False -> {
-                                        let v313 = v310 == 0
-                                        case v313 {
-                                            True -> {
-                                                True
-                                            }
-                                            False -> {
-                                                let v314 = spiral_wrap_signed(v310 - 1, 32)
-                                                let v315 = spiral_wrap_signed(v314 + 1, 32)
-                                                let v316 = kino_text_at(v293, 0, v315)
-                                                let v317 = v316 == "    "
-                                                v317
-                                            }
-                                        }
-                                    }
-                                }
-                            let v328 =
-                                case v319 {
-                                    True -> {
-                                        let v320 = kino_text_size(v293)
-                                        let v321 = 4 >= v320
-                                        case v321 {
-                                            True -> {
-                                                let v322 = ""
-                                                v322
-                                            }
-                                            False -> {
-                                                let v323 = spiral_wrap_signed(v320 - 1, 32)
-                                                let v324 = spiral_wrap_signed(v323 - 4, 32)
-                                                let v325 = spiral_wrap_signed(v324 + 1, 32)
-                                                let v326 = kino_text_at(v293, 4, v325)
-                                                v326
-                                            }
-                                        }
-                                    }
-                                    False -> {
-                                        v293
-                                    }
-                                }
-                            let v329 = Uh4Row(v328, v298)
-                            let v330 = Us4InTest(v295, v296, v297, v329)
-                            spi_walk_72(v0, v294, v330, v3, v4, v5)
+                            True
                         }
                         False -> {
-                            let v332 = Us4Between
-                            let v333 = Uh4NoRow
-                            let v334 = Uh4NoRow
-                            let v335 = rev_rows_58(v297, v334)
-                            let v336 = drop_blank_rows_70(v298)
-                            let v337 = Uh4NoRow
-                            let v338 = rev_rows_58(v336, v337)
-                            let v339 = { v296 } <> { " " }
-                            let v340 = " ignore "
-                            let v341 = 0
-                            let v342 = find_from_1(v339, v340, v341)
-                            let v343 = v342 >= 0
-                            let v346 =
-                                case v343 {
-                                    True -> {
-                                        let v344 = "--ignore"
-                                        v344
-                                    }
-                                    False -> {
-                                        let v345 = "--test"
-                                        v345
+                            let v85 = v83 == "\t"
+                            case v85 {
+                                True -> {
+                                    True
+                                }
+                                False -> {
+                                    let v86 = v83 == "\n"
+                                    case v86 {
+                                        True -> {
+                                            True
+                                        }
+                                        False -> {
+                                            let v87 = v83 == "\r"
+                                            v87
+                                        }
                                     }
                                 }
-                            let v348 =
-                                case v4 {
-                                    True -> {
-                                        let v347 = { "--real " } <> { v346 }
-                                        v347
-                                    }
-                                    False -> {
-                                        v346
-                                    }
-                                }
-                            let v349 = " static "
-                            let v350 = 0
-                            let v351 = find_from_1(v339, v349, v350)
-                            let v352 = v351 >= 0
-                            let v355 =
-                                case v352 {
-                                    True -> {
-                                        let v353 = " static"
-                                        v353
-                                    }
-                                    False -> {
-                                        let v354 = ""
-                                        v354
-                                    }
-                                }
-                            let v356 = " print_code "
-                            let v357 = 0
-                            let v358 = find_from_1(v339, v356, v357)
-                            let v359 = v358 >= 0
-                            let v362 =
-                                case v359 {
-                                    True -> {
-                                        let v360 = " --print-code"
-                                        v360
-                                    }
-                                    False -> {
-                                        let v361 = ""
-                                        v361
-                                    }
-                                }
-                            let v363 = { v348 } <> { v355 }
-                            let v364 = { v363 } <> { v362 }
-                            let v365 = { "///- " } <> { v364 }
-                            let v366 = ""
-                            let v367 = Uh4Row(v366, v338)
-                            let v368 = append_rows_71(v335, v367)
-                            let v369 = Uh4Row(v365, v368)
-                            let v370 = join_rows_60(v369)
-                            let v375 =
-                                case v4 {
-                                    True -> {
-                                        let v371 = { "real_test:" } <> { v295 }
-                                        Uh3Cell(v371, v370, v5)
-                                    }
-                                    False -> {
-                                        let v373 = { "test:" } <> { v295 }
-                                        Uh3Cell(v373, v370, v5)
-                                    }
-                                }
-                            spi_walk_72(v0, v1, v332, v333, v4, v375)
+                            }
                         }
                     }
                 }
@@ -13551,7 +14220,2230 @@ pub fn spi_walk_72(v0: String, v1: Int, v2: Us4, v3: Uh4, v4: Bool, v5: Uh3) -> 
         }
     }
 }
-pub fn interleave_76(v0: Uh3, v1: Uh3, v2: Uh3) -> Uh3 {
+pub fn spi_walk_75(v0: String, v1: Int, v2: Int, v3: String, v4: Us4, v5: Uh4, v6: Bool, v7: Uh3) -> Uh3 {
+    let v8 = kino_text_size(v0)
+    let v9 = v1 > v8
+    let v49 =
+        case v9 {
+            True -> {
+                Us0LineDone
+            }
+            False -> {
+                let v11 = v8 == 0
+                let v13 =
+                    case v11 {
+                        True -> {
+                            let v12 = v1 == 0
+                            v12
+                        }
+                        False -> {
+                            False
+                        }
+                    }
+                case v13 {
+                    True -> {
+                        let v14 = ""
+                        Us0LineGot(v14, 1)
+                    }
+                    False -> {
+                        let v16 = v1 == v8
+                        case v16 {
+                            True -> {
+                                let v17 = v8 > 0
+                                let v21 =
+                                    case v17 {
+                                        True -> {
+                                            let v18 = spiral_wrap_signed(v8 - 1, 32)
+                                            let v19 = kino_text_at(v0, v18, 1)
+                                            let v20 = v19 == "\n"
+                                            v20
+                                        }
+                                        False -> {
+                                            False
+                                        }
+                                    }
+                                case v21 {
+                                    True -> {
+                                        let v22 = spiral_wrap_signed(v8 + 1, 32)
+                                        let v23 = ""
+                                        Us0LineGot(v23, v22)
+                                    }
+                                    False -> {
+                                        Us0LineDone
+                                    }
+                                }
+                            }
+                            False -> {
+                                let v27 = "\n"
+                                let v28 = find_char_3(v0, v1, v27)
+                                let v29 = v28 < 0
+                                case v29 {
+                                    True -> {
+                                        let v30 = spiral_wrap_signed(v8 - 1, 32)
+                                        let v31 = spiral_wrap_signed(v30 - v1, 32)
+                                        let v32 = spiral_wrap_signed(v31 + 1, 32)
+                                        let v33 = kino_text_at(v0, v1, v32)
+                                        Us0LineGot(v33, v8)
+                                    }
+                                    False -> {
+                                        let v35 = v28 == v1
+                                        case v35 {
+                                            True -> {
+                                                let v36 = spiral_wrap_signed(v28 + 1, 32)
+                                                let v37 = ""
+                                                Us0LineGot(v37, v36)
+                                            }
+                                            False -> {
+                                                let v39 = spiral_wrap_signed(v28 - 1, 32)
+                                                let v40 = spiral_wrap_signed(v39 - v1, 32)
+                                                let v41 = spiral_wrap_signed(v40 + 1, 32)
+                                                let v42 = kino_text_at(v0, v1, v41)
+                                                let v43 = spiral_wrap_signed(v28 + 1, 32)
+                                                Us0LineGot(v42, v43)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    case v49  {
+        Us0LineDone -> {
+            case v4  {
+                Us4Between -> {
+                    let v50 = Uh4NoRow
+                    let v51 = rev_rows_61(v5, v50)
+                    let v52 = join_rows_63(v51)
+                    let v53 = 0
+                    let v54 = trim_nl_start_29(v52, v53)
+                    let v55 = kino_text_size(v52)
+                    let v56 = trim_nl_end_30(v52, v55)
+                    let v57 = v56 <= v54
+                    let v63 =
+                        case v57 {
+                            True -> {
+                                let v58 = ""
+                                v58
+                            }
+                            False -> {
+                                let v59 = spiral_wrap_signed(v56 - 1, 32)
+                                let v60 = spiral_wrap_signed(v59 - v54, 32)
+                                let v61 = spiral_wrap_signed(v60 + 1, 32)
+                                let v62 = kino_text_at(v52, v54, v61)
+                                v62
+                            }
+                        }
+                    let v64 = 0
+                    let v65 = trim_start_17(v63, v64)
+                    let v66 = kino_text_size(v63)
+                    let v67 = trim_end_18(v63, v66)
+                    let v68 = v67 <= v65
+                    let v74 =
+                        case v68 {
+                            True -> {
+                                let v69 = ""
+                                v69
+                            }
+                            False -> {
+                                let v70 = spiral_wrap_signed(v67 - 1, 32)
+                                let v71 = spiral_wrap_signed(v70 - v65, 32)
+                                let v72 = spiral_wrap_signed(v71 + 1, 32)
+                                let v73 = kino_text_at(v63, v65, v72)
+                                v73
+                            }
+                        }
+                    let v75 = v74 == ""
+                    case v75 {
+                        True -> {
+                            v7
+                        }
+                        False -> {
+                            let v88 =
+                                case v6 {
+                                    True -> {
+                                        let v76 = "///- --real"
+                                        let v77 = kino_text_size(v76)
+                                        let v78 = kino_text_size(v63)
+                                        let v79 = v77 > v78
+                                        let v86 =
+                                            case v79 {
+                                                True -> {
+                                                    False
+                                                }
+                                                False -> {
+                                                    let v80 = v77 == 0
+                                                    case v80 {
+                                                        True -> {
+                                                            True
+                                                        }
+                                                        False -> {
+                                                            let v81 = spiral_wrap_signed(v77 - 1, 32)
+                                                            let v82 = spiral_wrap_signed(v81 + 1, 32)
+                                                            let v83 = kino_text_at(v63, 0, v82)
+                                                            let v84 = v83 == "///- --real"
+                                                            v84
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        let v87 = v86 == False
+                                        v87
+                                    }
+                                    False -> {
+                                        False
+                                    }
+                                }
+                            let v90 =
+                                case v88 {
+                                    True -> {
+                                        let v89 = { "///- --real\n\n" } <> { v63 }
+                                        v89
+                                    }
+                                    False -> {
+                                        v63
+                                    }
+                                }
+                            let v91 = "spiral"
+                            Uh3Cell(v91, v90, v7)
+                        }
+                    }
+                }
+                Us4InCode(v157) -> {
+                    let v158 = append_rows_74(v5, v157)
+                    let v159 = Uh4NoRow
+                    let v160 = rev_rows_61(v158, v159)
+                    let v161 = join_rows_63(v160)
+                    let v162 = 0
+                    let v163 = trim_nl_start_29(v161, v162)
+                    let v164 = kino_text_size(v161)
+                    let v165 = trim_nl_end_30(v161, v164)
+                    let v166 = v165 <= v163
+                    let v172 =
+                        case v166 {
+                            True -> {
+                                let v167 = ""
+                                v167
+                            }
+                            False -> {
+                                let v168 = spiral_wrap_signed(v165 - 1, 32)
+                                let v169 = spiral_wrap_signed(v168 - v163, 32)
+                                let v170 = spiral_wrap_signed(v169 + 1, 32)
+                                let v171 = kino_text_at(v161, v163, v170)
+                                v171
+                            }
+                        }
+                    let v173 = 0
+                    let v174 = trim_start_17(v172, v173)
+                    let v175 = kino_text_size(v172)
+                    let v176 = trim_end_18(v172, v175)
+                    let v177 = v176 <= v174
+                    let v183 =
+                        case v177 {
+                            True -> {
+                                let v178 = ""
+                                v178
+                            }
+                            False -> {
+                                let v179 = spiral_wrap_signed(v176 - 1, 32)
+                                let v180 = spiral_wrap_signed(v179 - v174, 32)
+                                let v181 = spiral_wrap_signed(v180 + 1, 32)
+                                let v182 = kino_text_at(v172, v174, v181)
+                                v182
+                            }
+                        }
+                    let v184 = v183 == ""
+                    case v184 {
+                        True -> {
+                            v7
+                        }
+                        False -> {
+                            let v197 =
+                                case v6 {
+                                    True -> {
+                                        let v185 = "///- --real"
+                                        let v186 = kino_text_size(v185)
+                                        let v187 = kino_text_size(v172)
+                                        let v188 = v186 > v187
+                                        let v195 =
+                                            case v188 {
+                                                True -> {
+                                                    False
+                                                }
+                                                False -> {
+                                                    let v189 = v186 == 0
+                                                    case v189 {
+                                                        True -> {
+                                                            True
+                                                        }
+                                                        False -> {
+                                                            let v190 = spiral_wrap_signed(v186 - 1, 32)
+                                                            let v191 = spiral_wrap_signed(v190 + 1, 32)
+                                                            let v192 = kino_text_at(v172, 0, v191)
+                                                            let v193 = v192 == "///- --real"
+                                                            v193
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        let v196 = v195 == False
+                                        v196
+                                    }
+                                    False -> {
+                                        False
+                                    }
+                                }
+                            let v199 =
+                                case v197 {
+                                    True -> {
+                                        let v198 = { "///- --real\n\n" } <> { v172 }
+                                        v198
+                                    }
+                                    False -> {
+                                        v172
+                                    }
+                                }
+                            let v200 = "spiral"
+                            Uh3Cell(v200, v199, v7)
+                        }
+                    }
+                }
+                Us4InDoc(v94) -> {
+                    let v95 = Uh4NoRow
+                    let v96 = rev_rows_61(v94, v95)
+                    let v97 = join_rows_63(v96)
+                    let v98 = 0
+                    let v99 = trim_nl_start_29(v97, v98)
+                    let v100 = kino_text_size(v97)
+                    let v101 = trim_nl_end_30(v97, v100)
+                    let v102 = v101 <= v99
+                    let v108 =
+                        case v102 {
+                            True -> {
+                                let v103 = ""
+                                v103
+                            }
+                            False -> {
+                                let v104 = spiral_wrap_signed(v101 - 1, 32)
+                                let v105 = spiral_wrap_signed(v104 - v99, 32)
+                                let v106 = spiral_wrap_signed(v105 + 1, 32)
+                                let v107 = kino_text_at(v97, v99, v106)
+                                v107
+                            }
+                        }
+                    let v109 = v108 == ""
+                    let v112 =
+                        case v109 {
+                            True -> {
+                                v7
+                            }
+                            False -> {
+                                let v110 = "markdown"
+                                Uh3Cell(v110, v108, v7)
+                            }
+                        }
+                    let v113 = Uh4NoRow
+                    let v114 = rev_rows_61(v5, v113)
+                    let v115 = join_rows_63(v114)
+                    let v116 = 0
+                    let v117 = trim_nl_start_29(v115, v116)
+                    let v118 = kino_text_size(v115)
+                    let v119 = trim_nl_end_30(v115, v118)
+                    let v120 = v119 <= v117
+                    let v126 =
+                        case v120 {
+                            True -> {
+                                let v121 = ""
+                                v121
+                            }
+                            False -> {
+                                let v122 = spiral_wrap_signed(v119 - 1, 32)
+                                let v123 = spiral_wrap_signed(v122 - v117, 32)
+                                let v124 = spiral_wrap_signed(v123 + 1, 32)
+                                let v125 = kino_text_at(v115, v117, v124)
+                                v125
+                            }
+                        }
+                    let v127 = 0
+                    let v128 = trim_start_17(v126, v127)
+                    let v129 = kino_text_size(v126)
+                    let v130 = trim_end_18(v126, v129)
+                    let v131 = v130 <= v128
+                    let v137 =
+                        case v131 {
+                            True -> {
+                                let v132 = ""
+                                v132
+                            }
+                            False -> {
+                                let v133 = spiral_wrap_signed(v130 - 1, 32)
+                                let v134 = spiral_wrap_signed(v133 - v128, 32)
+                                let v135 = spiral_wrap_signed(v134 + 1, 32)
+                                let v136 = kino_text_at(v126, v128, v135)
+                                v136
+                            }
+                        }
+                    let v138 = v137 == ""
+                    case v138 {
+                        True -> {
+                            v112
+                        }
+                        False -> {
+                            let v151 =
+                                case v6 {
+                                    True -> {
+                                        let v139 = "///- --real"
+                                        let v140 = kino_text_size(v139)
+                                        let v141 = kino_text_size(v126)
+                                        let v142 = v140 > v141
+                                        let v149 =
+                                            case v142 {
+                                                True -> {
+                                                    False
+                                                }
+                                                False -> {
+                                                    let v143 = v140 == 0
+                                                    case v143 {
+                                                        True -> {
+                                                            True
+                                                        }
+                                                        False -> {
+                                                            let v144 = spiral_wrap_signed(v140 - 1, 32)
+                                                            let v145 = spiral_wrap_signed(v144 + 1, 32)
+                                                            let v146 = kino_text_at(v126, 0, v145)
+                                                            let v147 = v146 == "///- --real"
+                                                            v147
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        let v150 = v149 == False
+                                        v150
+                                    }
+                                    False -> {
+                                        False
+                                    }
+                                }
+                            let v153 =
+                                case v151 {
+                                    True -> {
+                                        let v152 = { "///- --real\n\n" } <> { v126 }
+                                        v152
+                                    }
+                                    False -> {
+                                        v126
+                                    }
+                                }
+                            let v154 = "spiral"
+                            Uh3Cell(v154, v153, v112)
+                        }
+                    }
+                }
+                Us4InTest(v203, v204, v205, v206, v207, v208) -> {
+                    let v209 = Uh4NoRow
+                    let v210 = rev_rows_61(v205, v209)
+                    let v229 =
+                        case v207  {
+                            Us5Malformed(v214) -> {
+                                let v215 = "\\"
+                                let v216 = "\\\\"
+                                let v217 = 0
+                                let v218 = ""
+                                let v219 = replace_from_0(v214, v215, v216, v217, v218)
+                                let v220 = "\""
+                                let v221 = "\\\""
+                                let v222 = 0
+                                let v223 = replace_from_0(v219, v220, v221, v222, v218)
+                                let v224 = { "failwith \"malformed test header: " } <> { v223 }
+                                let v225 = { v224 } <> { "\" : ()" }
+                                let v226 = Uh4NoRow
+                                Uh4Row(v225, v226)
+                            }
+                            Us5WellFormed -> {
+                                let v211 = drop_blank_rows_73(v206)
+                                let v212 = Uh4NoRow
+                                rev_rows_61(v211, v212)
+                            }
+                        }
+                    let v230 = " fails "
+                    let v231 = 0
+                    let v232 = find_from_1(v204, v230, v231)
+                    let v233 = v232 >= 0
+                    let v243 =
+                        case v233 {
+                            True -> {
+                                let v234 = kino_text_size(v204)
+                                let v235 = v232 < v234
+                                let v236 =
+                                    case v235 {
+                                        True -> {
+                                            v232
+                                        }
+                                        False -> {
+                                            v234
+                                        }
+                                    }
+                                let v237 = v236 <= 0
+                                case v237 {
+                                    True -> {
+                                        let v238 = ""
+                                        v238
+                                    }
+                                    False -> {
+                                        let v239 = spiral_wrap_signed(v236 - 1, 32)
+                                        let v240 = spiral_wrap_signed(v239 + 1, 32)
+                                        let v241 = kino_text_at(v204, 0, v240)
+                                        v241
+                                    }
+                                }
+                            }
+                            False -> {
+                                v204
+                            }
+                        }
+                    let v244 = { v243 } <> { " " }
+                    let v245 = " ignore "
+                    let v246 = 0
+                    let v247 = find_from_1(v244, v245, v246)
+                    let v248 = v247 >= 0
+                    let v251 =
+                        case v248 {
+                            True -> {
+                                let v249 = "--ignore"
+                                v249
+                            }
+                            False -> {
+                                let v250 = "--test"
+                                v250
+                            }
+                        }
+                    let v253 =
+                        case v6 {
+                            True -> {
+                                let v252 = { "--real " } <> { v251 }
+                                v252
+                            }
+                            False -> {
+                                v251
+                            }
+                        }
+                    let v254 = " static "
+                    let v255 = 0
+                    let v256 = find_from_1(v244, v254, v255)
+                    let v257 = v256 >= 0
+                    let v260 =
+                        case v257 {
+                            True -> {
+                                let v258 = " static"
+                                v258
+                            }
+                            False -> {
+                                let v259 = ""
+                                v259
+                            }
+                        }
+                    let v261 = " print_code "
+                    let v262 = 0
+                    let v263 = find_from_1(v244, v261, v262)
+                    let v264 = v263 >= 0
+                    let v267 =
+                        case v264 {
+                            True -> {
+                                let v265 = " --print-code"
+                                v265
+                            }
+                            False -> {
+                                let v266 = ""
+                                v266
+                            }
+                        }
+                    let v268 = " no_agree "
+                    let v269 = 0
+                    let v270 = find_from_1(v244, v268, v269)
+                    let v271 = v270 >= 0
+                    let v276 =
+                        case v271 {
+                            True -> {
+                                True
+                            }
+                            False -> {
+                                let v272 = " no_agree \""
+                                let v273 = 0
+                                let v274 = find_from_1(v244, v272, v273)
+                                let v275 = v274 >= 0
+                                v275
+                            }
+                        }
+                    let v328 =
+                        case v276 {
+                            True -> {
+                                let v277 = { v204 } <> { " " }
+                                let v278 = 0
+                                let v279 = find_from_1(v277, v268, v278)
+                                let v280 = v279 < 0
+                                let v325 =
+                                    case v280 {
+                                        True -> {
+                                            let v281 = ""
+                                            v281
+                                        }
+                                        False -> {
+                                            let v282 = " no_agree"
+                                            let v283 = kino_text_size(v282)
+                                            let v284 = spiral_wrap_signed(v279 + v283, 32)
+                                            let v285 = kino_text_size(v204)
+                                            let v286 = v284 >= v285
+                                            let v294 =
+                                                case v286 {
+                                                    True -> {
+                                                        let v287 = ""
+                                                        v287
+                                                    }
+                                                    False -> {
+                                                        let v288 = v284 <= 0
+                                                        case v288 {
+                                                            True -> {
+                                                                v204
+                                                            }
+                                                            False -> {
+                                                                let v289 = spiral_wrap_signed(v285 - 1, 32)
+                                                                let v290 = spiral_wrap_signed(v289 - v284, 32)
+                                                                let v291 = spiral_wrap_signed(v290 + 1, 32)
+                                                                let v292 = kino_text_at(v204, v284, v291)
+                                                                v292
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            let v295 = " \""
+                                            let v296 = kino_text_size(v295)
+                                            let v297 = kino_text_size(v294)
+                                            let v298 = v296 > v297
+                                            let v305 =
+                                                case v298 {
+                                                    True -> {
+                                                        False
+                                                    }
+                                                    False -> {
+                                                        let v299 = v296 == 0
+                                                        case v299 {
+                                                            True -> {
+                                                                True
+                                                            }
+                                                            False -> {
+                                                                let v300 = spiral_wrap_signed(v296 - 1, 32)
+                                                                let v301 = spiral_wrap_signed(v300 + 1, 32)
+                                                                let v302 = kino_text_at(v294, 0, v301)
+                                                                let v303 = v302 == " \""
+                                                                v303
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            let v312 =
+                                                case v305 {
+                                                    True -> {
+                                                        let v306 = 2
+                                                        let v307 = "\""
+                                                        let v308 = find_char_3(v294, v306, v307)
+                                                        let v309 = v308 >= 2
+                                                        case v309 {
+                                                            True -> {
+                                                                let v310 = spiral_wrap_signed(v308 + 1, 32)
+                                                                v310
+                                                            }
+                                                            False -> {
+                                                                -1
+                                                            }
+                                                        }
+                                                    }
+                                                    False -> {
+                                                        0
+                                                    }
+                                                }
+                                            let v313 = v312 > 0
+                                            case v313 {
+                                                True -> {
+                                                    let v314 = kino_text_size(v294)
+                                                    let v315 = v312 < v314
+                                                    let v316 =
+                                                        case v315 {
+                                                            True -> {
+                                                                v312
+                                                            }
+                                                            False -> {
+                                                                v314
+                                                            }
+                                                        }
+                                                    let v317 = v316 <= 0
+                                                    case v317 {
+                                                        True -> {
+                                                            let v318 = ""
+                                                            v318
+                                                        }
+                                                        False -> {
+                                                            let v319 = spiral_wrap_signed(v316 - 1, 32)
+                                                            let v320 = spiral_wrap_signed(v319 + 1, 32)
+                                                            let v321 = kino_text_at(v294, 0, v320)
+                                                            v321
+                                                        }
+                                                    }
+                                                }
+                                                False -> {
+                                                    let v323 = ""
+                                                    v323
+                                                }
+                                            }
+                                        }
+                                    }
+                                let v326 = { " --no-agree" } <> { v325 }
+                                v326
+                            }
+                            False -> {
+                                let v327 = ""
+                                v327
+                            }
+                        }
+                    let v329 = " build_only "
+                    let v330 = 0
+                    let v331 = find_from_1(v244, v329, v330)
+                    let v332 = v331 >= 0
+                    let v335 =
+                        case v332 {
+                            True -> {
+                                let v333 = " --build-only"
+                                v333
+                            }
+                            False -> {
+                                let v334 = ""
+                                v334
+                            }
+                        }
+                    let v336 = { v253 } <> { v260 }
+                    let v337 = { v336 } <> { v267 }
+                    let v338 = { v337 } <> { v328 }
+                    let v339 = { v338 } <> { v335 }
+                    let v340 = 0
+                    let v341 = find_from_1(v204, v230, v340)
+                    let v342 = v341 >= 0
+                    let v368 =
+                        case v342 {
+                            True -> {
+                                let v343 = kino_text_size(v230)
+                                let v344 = spiral_wrap_signed(v341 + v343, 32)
+                                let v345 = kino_text_size(v204)
+                                let v346 = v344 >= v345
+                                let v354 =
+                                    case v346 {
+                                        True -> {
+                                            let v347 = ""
+                                            v347
+                                        }
+                                        False -> {
+                                            let v348 = v344 <= 0
+                                            case v348 {
+                                                True -> {
+                                                    v204
+                                                }
+                                                False -> {
+                                                    let v349 = spiral_wrap_signed(v345 - 1, 32)
+                                                    let v350 = spiral_wrap_signed(v349 - v344, 32)
+                                                    let v351 = spiral_wrap_signed(v350 + 1, 32)
+                                                    let v352 = kino_text_at(v204, v344, v351)
+                                                    v352
+                                                }
+                                            }
+                                        }
+                                    }
+                                let v355 = 0
+                                let v356 = trim_start_17(v354, v355)
+                                let v357 = kino_text_size(v354)
+                                let v358 = trim_end_18(v354, v357)
+                                let v359 = v358 <= v356
+                                let v365 =
+                                    case v359 {
+                                        True -> {
+                                            let v360 = ""
+                                            v360
+                                        }
+                                        False -> {
+                                            let v361 = spiral_wrap_signed(v358 - 1, 32)
+                                            let v362 = spiral_wrap_signed(v361 - v356, 32)
+                                            let v363 = spiral_wrap_signed(v362 + 1, 32)
+                                            let v364 = kino_text_at(v354, v356, v363)
+                                            v364
+                                        }
+                                    }
+                                let v366 = { " --fails " } <> { v365 }
+                                v366
+                            }
+                            False -> {
+                                let v367 = ""
+                                v367
+                            }
+                        }
+                    let v369 = { v339 } <> { v368 }
+                    let v370 = { "///- " } <> { v369 }
+                    let v371 = ""
+                    let v372 = Uh4Row(v371, v229)
+                    let v373 = append_rows_74(v210, v372)
+                    let v374 = Uh4Row(v370, v373)
+                    let v375 = join_rows_63(v374)
+                    let v380 =
+                        case v6 {
+                            True -> {
+                                let v376 = { "real_test:" } <> { v203 }
+                                Uh3Cell(v376, v375, v7)
+                            }
+                            False -> {
+                                let v378 = { "test:" } <> { v203 }
+                                Uh3Cell(v378, v375, v7)
+                            }
+                        }
+                    let v381 = Uh4NoRow
+                    let v382 = rev_rows_61(v5, v381)
+                    let v383 = join_rows_63(v382)
+                    let v384 = 0
+                    let v385 = trim_nl_start_29(v383, v384)
+                    let v386 = kino_text_size(v383)
+                    let v387 = trim_nl_end_30(v383, v386)
+                    let v388 = v387 <= v385
+                    let v393 =
+                        case v388 {
+                            True -> {
+                                v371
+                            }
+                            False -> {
+                                let v389 = spiral_wrap_signed(v387 - 1, 32)
+                                let v390 = spiral_wrap_signed(v389 - v385, 32)
+                                let v391 = spiral_wrap_signed(v390 + 1, 32)
+                                let v392 = kino_text_at(v383, v385, v391)
+                                v392
+                            }
+                        }
+                    let v394 = 0
+                    let v395 = trim_start_17(v393, v394)
+                    let v396 = kino_text_size(v393)
+                    let v397 = trim_end_18(v393, v396)
+                    let v398 = v397 <= v395
+                    let v403 =
+                        case v398 {
+                            True -> {
+                                v371
+                            }
+                            False -> {
+                                let v399 = spiral_wrap_signed(v397 - 1, 32)
+                                let v400 = spiral_wrap_signed(v399 - v395, 32)
+                                let v401 = spiral_wrap_signed(v400 + 1, 32)
+                                let v402 = kino_text_at(v393, v395, v401)
+                                v402
+                            }
+                        }
+                    let v404 = v403 == ""
+                    case v404 {
+                        True -> {
+                            v380
+                        }
+                        False -> {
+                            let v417 =
+                                case v6 {
+                                    True -> {
+                                        let v405 = "///- --real"
+                                        let v406 = kino_text_size(v405)
+                                        let v407 = kino_text_size(v393)
+                                        let v408 = v406 > v407
+                                        let v415 =
+                                            case v408 {
+                                                True -> {
+                                                    False
+                                                }
+                                                False -> {
+                                                    let v409 = v406 == 0
+                                                    case v409 {
+                                                        True -> {
+                                                            True
+                                                        }
+                                                        False -> {
+                                                            let v410 = spiral_wrap_signed(v406 - 1, 32)
+                                                            let v411 = spiral_wrap_signed(v410 + 1, 32)
+                                                            let v412 = kino_text_at(v393, 0, v411)
+                                                            let v413 = v412 == "///- --real"
+                                                            v413
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        let v416 = v415 == False
+                                        v416
+                                    }
+                                    False -> {
+                                        False
+                                    }
+                                }
+                            let v419 =
+                                case v417 {
+                                    True -> {
+                                        let v418 = { "///- --real\n\n" } <> { v393 }
+                                        v418
+                                    }
+                                    False -> {
+                                        v393
+                                    }
+                                }
+                            let v420 = "spiral"
+                            Uh3Cell(v420, v419, v380)
+                        }
+                    }
+                }
+            }
+        }
+        Us0LineGot(v427, v428) -> {
+            case v4  {
+                Us4Between -> {
+                    let v1032 = Uh4NoRow
+                    let #(v1033, v1034, v1035) = open_step_76(v427, v1032, v5, v6, v7)
+                    let v1036 = spiral_wrap_signed(v2 + 1, 32)
+                    let v1048 =
+                        case v1033  {
+                            Us4InTest(v1037, v1038, v1039, v1040, v1041, v1042) -> {
+                                let v1043 = v3 == ""
+                                let v1046 =
+                                    case v1043 {
+                                        True -> {
+                                            -1
+                                        }
+                                        False -> {
+                                            let v1044 = 0
+                                            body_last_of_79(v3, v1044, v1036)
+                                        }
+                                    }
+                                Us4InTest(v1037, v1038, v1039, v1040, v1041, v1046)
+                            }
+                            _ -> {
+                                v1033
+                            }
+                        }
+                    spi_walk_75(v0, v428, v1036, v3, v1048, v1034, v6, v1035)
+                }
+                Us4InCode(v1014) -> {
+                    let #(v1015, v1016, v1017) = open_step_76(v427, v1014, v5, v6, v7)
+                    let v1018 = spiral_wrap_signed(v2 + 1, 32)
+                    let v1030 =
+                        case v1015  {
+                            Us4InTest(v1019, v1020, v1021, v1022, v1023, v1024) -> {
+                                let v1025 = v3 == ""
+                                let v1028 =
+                                    case v1025 {
+                                        True -> {
+                                            -1
+                                        }
+                                        False -> {
+                                            let v1026 = 0
+                                            body_last_of_79(v3, v1026, v1018)
+                                        }
+                                    }
+                                Us4InTest(v1019, v1020, v1021, v1022, v1023, v1028)
+                            }
+                            _ -> {
+                                v1015
+                            }
+                        }
+                    spi_walk_75(v0, v428, v1018, v3, v1030, v1016, v6, v1017)
+                }
+                Us4InDoc(v889) -> {
+                    let v890 = 0
+                    let v891 = lead_ws_62(v427, v890)
+                    let v892 = "/// "
+                    let v893 = kino_text_size(v892)
+                    let v894 = v891 < 0
+                    let v906 =
+                        case v894 {
+                            True -> {
+                                False
+                            }
+                            False -> {
+                                let v895 = spiral_wrap_signed(v891 + v893, 32)
+                                let v896 = kino_text_size(v427)
+                                let v897 = v895 > v896
+                                case v897 {
+                                    True -> {
+                                        False
+                                    }
+                                    False -> {
+                                        let v898 = v893 == 0
+                                        case v898 {
+                                            True -> {
+                                                True
+                                            }
+                                            False -> {
+                                                let v899 = spiral_wrap_signed(v895 - 1, 32)
+                                                let v900 = spiral_wrap_signed(v899 - v891, 32)
+                                                let v901 = spiral_wrap_signed(v900 + 1, 32)
+                                                let v902 = kino_text_at(v427, v891, v901)
+                                                let v903 = v902 == "/// "
+                                                v903
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    let v918 =
+                        case v906 {
+                            True -> {
+                                True
+                            }
+                            False -> {
+                                let v907 = kino_text_size(v427)
+                                let v908 = v891 >= v907
+                                let v916 =
+                                    case v908 {
+                                        True -> {
+                                            let v909 = ""
+                                            v909
+                                        }
+                                        False -> {
+                                            let v910 = v891 <= 0
+                                            case v910 {
+                                                True -> {
+                                                    v427
+                                                }
+                                                False -> {
+                                                    let v911 = spiral_wrap_signed(v907 - 1, 32)
+                                                    let v912 = spiral_wrap_signed(v911 - v891, 32)
+                                                    let v913 = spiral_wrap_signed(v912 + 1, 32)
+                                                    let v914 = kino_text_at(v427, v891, v913)
+                                                    v914
+                                                }
+                                            }
+                                        }
+                                    }
+                                let v917 = v916 == "///"
+                                v917
+                            }
+                        }
+                    case v918 {
+                        True -> {
+                            let v919 = spiral_wrap_signed(v2 + 1, 32)
+                            let v920 = 0
+                            let v921 = lead_ws_62(v427, v920)
+                            let v922 = kino_text_size(v892)
+                            let v923 = v921 < 0
+                            let v935 =
+                                case v923 {
+                                    True -> {
+                                        False
+                                    }
+                                    False -> {
+                                        let v924 = spiral_wrap_signed(v921 + v922, 32)
+                                        let v925 = kino_text_size(v427)
+                                        let v926 = v924 > v925
+                                        case v926 {
+                                            True -> {
+                                                False
+                                            }
+                                            False -> {
+                                                let v927 = v922 == 0
+                                                case v927 {
+                                                    True -> {
+                                                        True
+                                                    }
+                                                    False -> {
+                                                        let v928 = spiral_wrap_signed(v924 - 1, 32)
+                                                        let v929 = spiral_wrap_signed(v928 - v921, 32)
+                                                        let v930 = spiral_wrap_signed(v929 + 1, 32)
+                                                        let v931 = kino_text_at(v427, v921, v930)
+                                                        let v932 = v931 == "/// "
+                                                        v932
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            let v966 =
+                                case v935 {
+                                    True -> {
+                                        let v936 = kino_text_size(v427)
+                                        let v937 = v921 < v936
+                                        let v938 =
+                                            case v937 {
+                                                True -> {
+                                                    v921
+                                                }
+                                                False -> {
+                                                    v936
+                                                }
+                                            }
+                                        let v939 = v938 <= 0
+                                        let v944 =
+                                            case v939 {
+                                                True -> {
+                                                    let v940 = ""
+                                                    v940
+                                                }
+                                                False -> {
+                                                    let v941 = spiral_wrap_signed(v938 - 1, 32)
+                                                    let v942 = spiral_wrap_signed(v941 + 1, 32)
+                                                    let v943 = kino_text_at(v427, 0, v942)
+                                                    v943
+                                                }
+                                            }
+                                        let v945 = spiral_wrap_signed(v921 + 4, 32)
+                                        let v946 = kino_text_size(v427)
+                                        let v947 = v945 >= v946
+                                        let v955 =
+                                            case v947 {
+                                                True -> {
+                                                    let v948 = ""
+                                                    v948
+                                                }
+                                                False -> {
+                                                    let v949 = v945 <= 0
+                                                    case v949 {
+                                                        True -> {
+                                                            v427
+                                                        }
+                                                        False -> {
+                                                            let v950 = spiral_wrap_signed(v946 - 1, 32)
+                                                            let v951 = spiral_wrap_signed(v950 - v945, 32)
+                                                            let v952 = spiral_wrap_signed(v951 + 1, 32)
+                                                            let v953 = kino_text_at(v427, v945, v952)
+                                                            v953
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        let v956 = { v944 } <> { v955 }
+                                        v956
+                                    }
+                                    False -> {
+                                        let v957 = kino_text_size(v427)
+                                        let v958 = v921 < v957
+                                        let v959 =
+                                            case v958 {
+                                                True -> {
+                                                    v921
+                                                }
+                                                False -> {
+                                                    v957
+                                                }
+                                            }
+                                        let v960 = v959 <= 0
+                                        case v960 {
+                                            True -> {
+                                                let v961 = ""
+                                                v961
+                                            }
+                                            False -> {
+                                                let v962 = spiral_wrap_signed(v959 - 1, 32)
+                                                let v963 = spiral_wrap_signed(v962 + 1, 32)
+                                                let v964 = kino_text_at(v427, 0, v963)
+                                                v964
+                                            }
+                                        }
+                                    }
+                                }
+                            let v967 = Uh4Row(v966, v889)
+                            let v968 = Us4InDoc(v967)
+                            spi_walk_75(v0, v428, v919, v3, v968, v5, v6, v7)
+                        }
+                        False -> {
+                            let v970 = v427 == ""
+                            case v970 {
+                                True -> {
+                                    let v971 = spiral_wrap_signed(v2 + 1, 32)
+                                    let v972 = Us4Between
+                                    let v973 = Uh4NoRow
+                                    let v974 = rev_rows_61(v889, v973)
+                                    let v975 = join_rows_63(v974)
+                                    let v976 = 0
+                                    let v977 = trim_nl_start_29(v975, v976)
+                                    let v978 = kino_text_size(v975)
+                                    let v979 = trim_nl_end_30(v975, v978)
+                                    let v980 = v979 <= v977
+                                    let v986 =
+                                        case v980 {
+                                            True -> {
+                                                let v981 = ""
+                                                v981
+                                            }
+                                            False -> {
+                                                let v982 = spiral_wrap_signed(v979 - 1, 32)
+                                                let v983 = spiral_wrap_signed(v982 - v977, 32)
+                                                let v984 = spiral_wrap_signed(v983 + 1, 32)
+                                                let v985 = kino_text_at(v975, v977, v984)
+                                                v985
+                                            }
+                                        }
+                                    let v987 = v986 == ""
+                                    let v990 =
+                                        case v987 {
+                                            True -> {
+                                                v7
+                                            }
+                                            False -> {
+                                                let v988 = "markdown"
+                                                Uh3Cell(v988, v986, v7)
+                                            }
+                                        }
+                                    spi_walk_75(v0, v428, v971, v3, v972, v5, v6, v990)
+                                }
+                                False -> {
+                                    let v992 = Us4Between
+                                    let v993 = Uh4NoRow
+                                    let v994 = rev_rows_61(v889, v993)
+                                    let v995 = join_rows_63(v994)
+                                    let v996 = 0
+                                    let v997 = trim_nl_start_29(v995, v996)
+                                    let v998 = kino_text_size(v995)
+                                    let v999 = trim_nl_end_30(v995, v998)
+                                    let v1000 = v999 <= v997
+                                    let v1006 =
+                                        case v1000 {
+                                            True -> {
+                                                let v1001 = ""
+                                                v1001
+                                            }
+                                            False -> {
+                                                let v1002 = spiral_wrap_signed(v999 - 1, 32)
+                                                let v1003 = spiral_wrap_signed(v1002 - v997, 32)
+                                                let v1004 = spiral_wrap_signed(v1003 + 1, 32)
+                                                let v1005 = kino_text_at(v995, v997, v1004)
+                                                v1005
+                                            }
+                                        }
+                                    let v1007 = v1006 == ""
+                                    let v1010 =
+                                        case v1007 {
+                                            True -> {
+                                                v7
+                                            }
+                                            False -> {
+                                                let v1008 = "markdown"
+                                                Uh3Cell(v1008, v1006, v7)
+                                            }
+                                        }
+                                    spi_walk_75(v0, v1, v2, v3, v992, v5, v6, v1010)
+                                }
+                            }
+                        }
+                    }
+                }
+                Us4InTest(v429, v430, v431, v432, v433, v434) -> {
+                    let v435 = v434 >= 0
+                    case v435 {
+                        True -> {
+                            let v436 = spiral_wrap_signed(v2 + 1, 32)
+                            let v437 = v436 <= v434
+                            case v437 {
+                                True -> {
+                                    let v438 = v427 == ""
+                                    let v447 =
+                                        case v438 {
+                                            True -> {
+                                                True
+                                            }
+                                            False -> {
+                                                let v439 = kino_text_at(v427, 0, 1)
+                                                let v440 = v439 == " "
+                                                case v440 {
+                                                    True -> {
+                                                        True
+                                                    }
+                                                    False -> {
+                                                        let v441 = v439 == "\t"
+                                                        case v441 {
+                                                            True -> {
+                                                                True
+                                                            }
+                                                            False -> {
+                                                                let v442 = v439 == "\n"
+                                                                case v442 {
+                                                                    True -> {
+                                                                        True
+                                                                    }
+                                                                    False -> {
+                                                                        let v443 = v439 == "\r"
+                                                                        v443
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    let v468 =
+                                        case v447 {
+                                            True -> {
+                                                let v448 = "    "
+                                                let v449 = kino_text_size(v448)
+                                                let v450 = kino_text_size(v427)
+                                                let v451 = v449 > v450
+                                                let v458 =
+                                                    case v451 {
+                                                        True -> {
+                                                            False
+                                                        }
+                                                        False -> {
+                                                            let v452 = v449 == 0
+                                                            case v452 {
+                                                                True -> {
+                                                                    True
+                                                                }
+                                                                False -> {
+                                                                    let v453 = spiral_wrap_signed(v449 - 1, 32)
+                                                                    let v454 = spiral_wrap_signed(v453 + 1, 32)
+                                                                    let v455 = kino_text_at(v427, 0, v454)
+                                                                    let v456 = v455 == "    "
+                                                                    v456
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                case v458 {
+                                                    True -> {
+                                                        let v459 = kino_text_size(v427)
+                                                        let v460 = 4 >= v459
+                                                        case v460 {
+                                                            True -> {
+                                                                let v461 = ""
+                                                                v461
+                                                            }
+                                                            False -> {
+                                                                let v462 = spiral_wrap_signed(v459 - 1, 32)
+                                                                let v463 = spiral_wrap_signed(v462 - 4, 32)
+                                                                let v464 = spiral_wrap_signed(v463 + 1, 32)
+                                                                let v465 = kino_text_at(v427, 4, v464)
+                                                                v465
+                                                            }
+                                                        }
+                                                    }
+                                                    False -> {
+                                                        v427
+                                                    }
+                                                }
+                                            }
+                                            False -> {
+                                                v427
+                                            }
+                                        }
+                                    let v469 = Uh4Row(v468, v432)
+                                    let v470 = Us4InTest(v429, v430, v431, v469, v433, v434)
+                                    spi_walk_75(v0, v428, v436, v3, v470, v5, v6, v7)
+                                }
+                                False -> {
+                                    let v472 = Us4Between
+                                    let v473 = Uh4NoRow
+                                    let v474 = Uh4NoRow
+                                    let v475 = rev_rows_61(v431, v474)
+                                    let v494 =
+                                        case v433  {
+                                            Us5Malformed(v479) -> {
+                                                let v480 = "\\"
+                                                let v481 = "\\\\"
+                                                let v482 = 0
+                                                let v483 = ""
+                                                let v484 = replace_from_0(v479, v480, v481, v482, v483)
+                                                let v485 = "\""
+                                                let v486 = "\\\""
+                                                let v487 = 0
+                                                let v488 = replace_from_0(v484, v485, v486, v487, v483)
+                                                let v489 = { "failwith \"malformed test header: " } <> { v488 }
+                                                let v490 = { v489 } <> { "\" : ()" }
+                                                let v491 = Uh4NoRow
+                                                Uh4Row(v490, v491)
+                                            }
+                                            Us5WellFormed -> {
+                                                let v476 = drop_blank_rows_73(v432)
+                                                let v477 = Uh4NoRow
+                                                rev_rows_61(v476, v477)
+                                            }
+                                        }
+                                    let v495 = " fails "
+                                    let v496 = 0
+                                    let v497 = find_from_1(v430, v495, v496)
+                                    let v498 = v497 >= 0
+                                    let v508 =
+                                        case v498 {
+                                            True -> {
+                                                let v499 = kino_text_size(v430)
+                                                let v500 = v497 < v499
+                                                let v501 =
+                                                    case v500 {
+                                                        True -> {
+                                                            v497
+                                                        }
+                                                        False -> {
+                                                            v499
+                                                        }
+                                                    }
+                                                let v502 = v501 <= 0
+                                                case v502 {
+                                                    True -> {
+                                                        let v503 = ""
+                                                        v503
+                                                    }
+                                                    False -> {
+                                                        let v504 = spiral_wrap_signed(v501 - 1, 32)
+                                                        let v505 = spiral_wrap_signed(v504 + 1, 32)
+                                                        let v506 = kino_text_at(v430, 0, v505)
+                                                        v506
+                                                    }
+                                                }
+                                            }
+                                            False -> {
+                                                v430
+                                            }
+                                        }
+                                    let v509 = { v508 } <> { " " }
+                                    let v510 = " ignore "
+                                    let v511 = 0
+                                    let v512 = find_from_1(v509, v510, v511)
+                                    let v513 = v512 >= 0
+                                    let v516 =
+                                        case v513 {
+                                            True -> {
+                                                let v514 = "--ignore"
+                                                v514
+                                            }
+                                            False -> {
+                                                let v515 = "--test"
+                                                v515
+                                            }
+                                        }
+                                    let v518 =
+                                        case v6 {
+                                            True -> {
+                                                let v517 = { "--real " } <> { v516 }
+                                                v517
+                                            }
+                                            False -> {
+                                                v516
+                                            }
+                                        }
+                                    let v519 = " static "
+                                    let v520 = 0
+                                    let v521 = find_from_1(v509, v519, v520)
+                                    let v522 = v521 >= 0
+                                    let v525 =
+                                        case v522 {
+                                            True -> {
+                                                let v523 = " static"
+                                                v523
+                                            }
+                                            False -> {
+                                                let v524 = ""
+                                                v524
+                                            }
+                                        }
+                                    let v526 = " print_code "
+                                    let v527 = 0
+                                    let v528 = find_from_1(v509, v526, v527)
+                                    let v529 = v528 >= 0
+                                    let v532 =
+                                        case v529 {
+                                            True -> {
+                                                let v530 = " --print-code"
+                                                v530
+                                            }
+                                            False -> {
+                                                let v531 = ""
+                                                v531
+                                            }
+                                        }
+                                    let v533 = " no_agree "
+                                    let v534 = 0
+                                    let v535 = find_from_1(v509, v533, v534)
+                                    let v536 = v535 >= 0
+                                    let v541 =
+                                        case v536 {
+                                            True -> {
+                                                True
+                                            }
+                                            False -> {
+                                                let v537 = " no_agree \""
+                                                let v538 = 0
+                                                let v539 = find_from_1(v509, v537, v538)
+                                                let v540 = v539 >= 0
+                                                v540
+                                            }
+                                        }
+                                    let v593 =
+                                        case v541 {
+                                            True -> {
+                                                let v542 = { v430 } <> { " " }
+                                                let v543 = 0
+                                                let v544 = find_from_1(v542, v533, v543)
+                                                let v545 = v544 < 0
+                                                let v590 =
+                                                    case v545 {
+                                                        True -> {
+                                                            let v546 = ""
+                                                            v546
+                                                        }
+                                                        False -> {
+                                                            let v547 = " no_agree"
+                                                            let v548 = kino_text_size(v547)
+                                                            let v549 = spiral_wrap_signed(v544 + v548, 32)
+                                                            let v550 = kino_text_size(v430)
+                                                            let v551 = v549 >= v550
+                                                            let v559 =
+                                                                case v551 {
+                                                                    True -> {
+                                                                        let v552 = ""
+                                                                        v552
+                                                                    }
+                                                                    False -> {
+                                                                        let v553 = v549 <= 0
+                                                                        case v553 {
+                                                                            True -> {
+                                                                                v430
+                                                                            }
+                                                                            False -> {
+                                                                                let v554 = spiral_wrap_signed(v550 - 1, 32)
+                                                                                let v555 = spiral_wrap_signed(v554 - v549, 32)
+                                                                                let v556 = spiral_wrap_signed(v555 + 1, 32)
+                                                                                let v557 = kino_text_at(v430, v549, v556)
+                                                                                v557
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            let v560 = " \""
+                                                            let v561 = kino_text_size(v560)
+                                                            let v562 = kino_text_size(v559)
+                                                            let v563 = v561 > v562
+                                                            let v570 =
+                                                                case v563 {
+                                                                    True -> {
+                                                                        False
+                                                                    }
+                                                                    False -> {
+                                                                        let v564 = v561 == 0
+                                                                        case v564 {
+                                                                            True -> {
+                                                                                True
+                                                                            }
+                                                                            False -> {
+                                                                                let v565 = spiral_wrap_signed(v561 - 1, 32)
+                                                                                let v566 = spiral_wrap_signed(v565 + 1, 32)
+                                                                                let v567 = kino_text_at(v559, 0, v566)
+                                                                                let v568 = v567 == " \""
+                                                                                v568
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            let v577 =
+                                                                case v570 {
+                                                                    True -> {
+                                                                        let v571 = 2
+                                                                        let v572 = "\""
+                                                                        let v573 = find_char_3(v559, v571, v572)
+                                                                        let v574 = v573 >= 2
+                                                                        case v574 {
+                                                                            True -> {
+                                                                                let v575 = spiral_wrap_signed(v573 + 1, 32)
+                                                                                v575
+                                                                            }
+                                                                            False -> {
+                                                                                -1
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                    False -> {
+                                                                        0
+                                                                    }
+                                                                }
+                                                            let v578 = v577 > 0
+                                                            case v578 {
+                                                                True -> {
+                                                                    let v579 = kino_text_size(v559)
+                                                                    let v580 = v577 < v579
+                                                                    let v581 =
+                                                                        case v580 {
+                                                                            True -> {
+                                                                                v577
+                                                                            }
+                                                                            False -> {
+                                                                                v579
+                                                                            }
+                                                                        }
+                                                                    let v582 = v581 <= 0
+                                                                    case v582 {
+                                                                        True -> {
+                                                                            let v583 = ""
+                                                                            v583
+                                                                        }
+                                                                        False -> {
+                                                                            let v584 = spiral_wrap_signed(v581 - 1, 32)
+                                                                            let v585 = spiral_wrap_signed(v584 + 1, 32)
+                                                                            let v586 = kino_text_at(v559, 0, v585)
+                                                                            v586
+                                                                        }
+                                                                    }
+                                                                }
+                                                                False -> {
+                                                                    let v588 = ""
+                                                                    v588
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                let v591 = { " --no-agree" } <> { v590 }
+                                                v591
+                                            }
+                                            False -> {
+                                                let v592 = ""
+                                                v592
+                                            }
+                                        }
+                                    let v594 = " build_only "
+                                    let v595 = 0
+                                    let v596 = find_from_1(v509, v594, v595)
+                                    let v597 = v596 >= 0
+                                    let v600 =
+                                        case v597 {
+                                            True -> {
+                                                let v598 = " --build-only"
+                                                v598
+                                            }
+                                            False -> {
+                                                let v599 = ""
+                                                v599
+                                            }
+                                        }
+                                    let v601 = { v518 } <> { v525 }
+                                    let v602 = { v601 } <> { v532 }
+                                    let v603 = { v602 } <> { v593 }
+                                    let v604 = { v603 } <> { v600 }
+                                    let v605 = 0
+                                    let v606 = find_from_1(v430, v495, v605)
+                                    let v607 = v606 >= 0
+                                    let v633 =
+                                        case v607 {
+                                            True -> {
+                                                let v608 = kino_text_size(v495)
+                                                let v609 = spiral_wrap_signed(v606 + v608, 32)
+                                                let v610 = kino_text_size(v430)
+                                                let v611 = v609 >= v610
+                                                let v619 =
+                                                    case v611 {
+                                                        True -> {
+                                                            let v612 = ""
+                                                            v612
+                                                        }
+                                                        False -> {
+                                                            let v613 = v609 <= 0
+                                                            case v613 {
+                                                                True -> {
+                                                                    v430
+                                                                }
+                                                                False -> {
+                                                                    let v614 = spiral_wrap_signed(v610 - 1, 32)
+                                                                    let v615 = spiral_wrap_signed(v614 - v609, 32)
+                                                                    let v616 = spiral_wrap_signed(v615 + 1, 32)
+                                                                    let v617 = kino_text_at(v430, v609, v616)
+                                                                    v617
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                let v620 = 0
+                                                let v621 = trim_start_17(v619, v620)
+                                                let v622 = kino_text_size(v619)
+                                                let v623 = trim_end_18(v619, v622)
+                                                let v624 = v623 <= v621
+                                                let v630 =
+                                                    case v624 {
+                                                        True -> {
+                                                            let v625 = ""
+                                                            v625
+                                                        }
+                                                        False -> {
+                                                            let v626 = spiral_wrap_signed(v623 - 1, 32)
+                                                            let v627 = spiral_wrap_signed(v626 - v621, 32)
+                                                            let v628 = spiral_wrap_signed(v627 + 1, 32)
+                                                            let v629 = kino_text_at(v619, v621, v628)
+                                                            v629
+                                                        }
+                                                    }
+                                                let v631 = { " --fails " } <> { v630 }
+                                                v631
+                                            }
+                                            False -> {
+                                                let v632 = ""
+                                                v632
+                                            }
+                                        }
+                                    let v634 = { v604 } <> { v633 }
+                                    let v635 = { "///- " } <> { v634 }
+                                    let v636 = ""
+                                    let v637 = Uh4Row(v636, v494)
+                                    let v638 = append_rows_74(v475, v637)
+                                    let v639 = Uh4Row(v635, v638)
+                                    let v640 = join_rows_63(v639)
+                                    let v645 =
+                                        case v6 {
+                                            True -> {
+                                                let v641 = { "real_test:" } <> { v429 }
+                                                Uh3Cell(v641, v640, v7)
+                                            }
+                                            False -> {
+                                                let v643 = { "test:" } <> { v429 }
+                                                Uh3Cell(v643, v640, v7)
+                                            }
+                                        }
+                                    spi_walk_75(v0, v1, v2, v3, v472, v473, v6, v645)
+                                }
+                            }
+                        }
+                        False -> {
+                            let v648 = v427 == ""
+                            let v657 =
+                                case v648 {
+                                    True -> {
+                                        True
+                                    }
+                                    False -> {
+                                        let v649 = kino_text_at(v427, 0, 1)
+                                        let v650 = v649 == " "
+                                        case v650 {
+                                            True -> {
+                                                True
+                                            }
+                                            False -> {
+                                                let v651 = v649 == "\t"
+                                                case v651 {
+                                                    True -> {
+                                                        True
+                                                    }
+                                                    False -> {
+                                                        let v652 = v649 == "\n"
+                                                        case v652 {
+                                                            True -> {
+                                                                True
+                                                            }
+                                                            False -> {
+                                                                let v653 = v649 == "\r"
+                                                                v653
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            case v657 {
+                                True -> {
+                                    let v658 = spiral_wrap_signed(v2 + 1, 32)
+                                    let v659 = "    "
+                                    let v660 = kino_text_size(v659)
+                                    let v661 = kino_text_size(v427)
+                                    let v662 = v660 > v661
+                                    let v669 =
+                                        case v662 {
+                                            True -> {
+                                                False
+                                            }
+                                            False -> {
+                                                let v663 = v660 == 0
+                                                case v663 {
+                                                    True -> {
+                                                        True
+                                                    }
+                                                    False -> {
+                                                        let v664 = spiral_wrap_signed(v660 - 1, 32)
+                                                        let v665 = spiral_wrap_signed(v664 + 1, 32)
+                                                        let v666 = kino_text_at(v427, 0, v665)
+                                                        let v667 = v666 == "    "
+                                                        v667
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    let v678 =
+                                        case v669 {
+                                            True -> {
+                                                let v670 = kino_text_size(v427)
+                                                let v671 = 4 >= v670
+                                                case v671 {
+                                                    True -> {
+                                                        let v672 = ""
+                                                        v672
+                                                    }
+                                                    False -> {
+                                                        let v673 = spiral_wrap_signed(v670 - 1, 32)
+                                                        let v674 = spiral_wrap_signed(v673 - 4, 32)
+                                                        let v675 = spiral_wrap_signed(v674 + 1, 32)
+                                                        let v676 = kino_text_at(v427, 4, v675)
+                                                        v676
+                                                    }
+                                                }
+                                            }
+                                            False -> {
+                                                v427
+                                            }
+                                        }
+                                    let v679 = Uh4Row(v678, v432)
+                                    let v680 = Us4InTest(v429, v430, v431, v679, v433, v434)
+                                    spi_walk_75(v0, v428, v658, v3, v680, v5, v6, v7)
+                                }
+                                False -> {
+                                    let v682 = "//"
+                                    let v683 = kino_text_size(v682)
+                                    let v684 = kino_text_size(v427)
+                                    let v685 = v683 > v684
+                                    let v692 =
+                                        case v685 {
+                                            True -> {
+                                                False
+                                            }
+                                            False -> {
+                                                let v686 = v683 == 0
+                                                case v686 {
+                                                    True -> {
+                                                        True
+                                                    }
+                                                    False -> {
+                                                        let v687 = spiral_wrap_signed(v683 - 1, 32)
+                                                        let v688 = spiral_wrap_signed(v687 + 1, 32)
+                                                        let v689 = kino_text_at(v427, 0, v688)
+                                                        let v690 = v689 == "//"
+                                                        v690
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    let v704 =
+                                        case v692 {
+                                            True -> {
+                                                True
+                                            }
+                                            False -> {
+                                                let v693 = "(* "
+                                                let v694 = kino_text_size(v693)
+                                                let v695 = kino_text_size(v427)
+                                                let v696 = v694 > v695
+                                                case v696 {
+                                                    True -> {
+                                                        False
+                                                    }
+                                                    False -> {
+                                                        let v697 = v694 == 0
+                                                        case v697 {
+                                                            True -> {
+                                                                True
+                                                            }
+                                                            False -> {
+                                                                let v698 = spiral_wrap_signed(v694 - 1, 32)
+                                                                let v699 = spiral_wrap_signed(v698 + 1, 32)
+                                                                let v700 = kino_text_at(v427, 0, v699)
+                                                                let v701 = v700 == "(* "
+                                                                v701
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    let v706 =
+                                        case v704 {
+                                            True -> {
+                                                resumes_test_81(v0, v428)
+                                            }
+                                            False -> {
+                                                False
+                                            }
+                                        }
+                                    case v706 {
+                                        True -> {
+                                            let v707 = spiral_wrap_signed(v2 + 1, 32)
+                                            let v708 = Uh4Row(v427, v432)
+                                            let v709 = Us4InTest(v429, v430, v431, v708, v433, v434)
+                                            spi_walk_75(v0, v428, v707, v3, v709, v5, v6, v7)
+                                        }
+                                        False -> {
+                                            let v711 = Us4Between
+                                            let v712 = Uh4NoRow
+                                            let v713 = Uh4NoRow
+                                            let v714 = rev_rows_61(v431, v713)
+                                            let v733 =
+                                                case v433  {
+                                                    Us5Malformed(v718) -> {
+                                                        let v719 = "\\"
+                                                        let v720 = "\\\\"
+                                                        let v721 = 0
+                                                        let v722 = ""
+                                                        let v723 = replace_from_0(v718, v719, v720, v721, v722)
+                                                        let v724 = "\""
+                                                        let v725 = "\\\""
+                                                        let v726 = 0
+                                                        let v727 = replace_from_0(v723, v724, v725, v726, v722)
+                                                        let v728 = { "failwith \"malformed test header: " } <> { v727 }
+                                                        let v729 = { v728 } <> { "\" : ()" }
+                                                        let v730 = Uh4NoRow
+                                                        Uh4Row(v729, v730)
+                                                    }
+                                                    Us5WellFormed -> {
+                                                        let v715 = drop_blank_rows_73(v432)
+                                                        let v716 = Uh4NoRow
+                                                        rev_rows_61(v715, v716)
+                                                    }
+                                                }
+                                            let v734 = " fails "
+                                            let v735 = 0
+                                            let v736 = find_from_1(v430, v734, v735)
+                                            let v737 = v736 >= 0
+                                            let v747 =
+                                                case v737 {
+                                                    True -> {
+                                                        let v738 = kino_text_size(v430)
+                                                        let v739 = v736 < v738
+                                                        let v740 =
+                                                            case v739 {
+                                                                True -> {
+                                                                    v736
+                                                                }
+                                                                False -> {
+                                                                    v738
+                                                                }
+                                                            }
+                                                        let v741 = v740 <= 0
+                                                        case v741 {
+                                                            True -> {
+                                                                let v742 = ""
+                                                                v742
+                                                            }
+                                                            False -> {
+                                                                let v743 = spiral_wrap_signed(v740 - 1, 32)
+                                                                let v744 = spiral_wrap_signed(v743 + 1, 32)
+                                                                let v745 = kino_text_at(v430, 0, v744)
+                                                                v745
+                                                            }
+                                                        }
+                                                    }
+                                                    False -> {
+                                                        v430
+                                                    }
+                                                }
+                                            let v748 = { v747 } <> { " " }
+                                            let v749 = " ignore "
+                                            let v750 = 0
+                                            let v751 = find_from_1(v748, v749, v750)
+                                            let v752 = v751 >= 0
+                                            let v755 =
+                                                case v752 {
+                                                    True -> {
+                                                        let v753 = "--ignore"
+                                                        v753
+                                                    }
+                                                    False -> {
+                                                        let v754 = "--test"
+                                                        v754
+                                                    }
+                                                }
+                                            let v757 =
+                                                case v6 {
+                                                    True -> {
+                                                        let v756 = { "--real " } <> { v755 }
+                                                        v756
+                                                    }
+                                                    False -> {
+                                                        v755
+                                                    }
+                                                }
+                                            let v758 = " static "
+                                            let v759 = 0
+                                            let v760 = find_from_1(v748, v758, v759)
+                                            let v761 = v760 >= 0
+                                            let v764 =
+                                                case v761 {
+                                                    True -> {
+                                                        let v762 = " static"
+                                                        v762
+                                                    }
+                                                    False -> {
+                                                        let v763 = ""
+                                                        v763
+                                                    }
+                                                }
+                                            let v765 = " print_code "
+                                            let v766 = 0
+                                            let v767 = find_from_1(v748, v765, v766)
+                                            let v768 = v767 >= 0
+                                            let v771 =
+                                                case v768 {
+                                                    True -> {
+                                                        let v769 = " --print-code"
+                                                        v769
+                                                    }
+                                                    False -> {
+                                                        let v770 = ""
+                                                        v770
+                                                    }
+                                                }
+                                            let v772 = " no_agree "
+                                            let v773 = 0
+                                            let v774 = find_from_1(v748, v772, v773)
+                                            let v775 = v774 >= 0
+                                            let v780 =
+                                                case v775 {
+                                                    True -> {
+                                                        True
+                                                    }
+                                                    False -> {
+                                                        let v776 = " no_agree \""
+                                                        let v777 = 0
+                                                        let v778 = find_from_1(v748, v776, v777)
+                                                        let v779 = v778 >= 0
+                                                        v779
+                                                    }
+                                                }
+                                            let v832 =
+                                                case v780 {
+                                                    True -> {
+                                                        let v781 = { v430 } <> { " " }
+                                                        let v782 = 0
+                                                        let v783 = find_from_1(v781, v772, v782)
+                                                        let v784 = v783 < 0
+                                                        let v829 =
+                                                            case v784 {
+                                                                True -> {
+                                                                    let v785 = ""
+                                                                    v785
+                                                                }
+                                                                False -> {
+                                                                    let v786 = " no_agree"
+                                                                    let v787 = kino_text_size(v786)
+                                                                    let v788 = spiral_wrap_signed(v783 + v787, 32)
+                                                                    let v789 = kino_text_size(v430)
+                                                                    let v790 = v788 >= v789
+                                                                    let v798 =
+                                                                        case v790 {
+                                                                            True -> {
+                                                                                let v791 = ""
+                                                                                v791
+                                                                            }
+                                                                            False -> {
+                                                                                let v792 = v788 <= 0
+                                                                                case v792 {
+                                                                                    True -> {
+                                                                                        v430
+                                                                                    }
+                                                                                    False -> {
+                                                                                        let v793 = spiral_wrap_signed(v789 - 1, 32)
+                                                                                        let v794 = spiral_wrap_signed(v793 - v788, 32)
+                                                                                        let v795 = spiral_wrap_signed(v794 + 1, 32)
+                                                                                        let v796 = kino_text_at(v430, v788, v795)
+                                                                                        v796
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    let v799 = " \""
+                                                                    let v800 = kino_text_size(v799)
+                                                                    let v801 = kino_text_size(v798)
+                                                                    let v802 = v800 > v801
+                                                                    let v809 =
+                                                                        case v802 {
+                                                                            True -> {
+                                                                                False
+                                                                            }
+                                                                            False -> {
+                                                                                let v803 = v800 == 0
+                                                                                case v803 {
+                                                                                    True -> {
+                                                                                        True
+                                                                                    }
+                                                                                    False -> {
+                                                                                        let v804 = spiral_wrap_signed(v800 - 1, 32)
+                                                                                        let v805 = spiral_wrap_signed(v804 + 1, 32)
+                                                                                        let v806 = kino_text_at(v798, 0, v805)
+                                                                                        let v807 = v806 == " \""
+                                                                                        v807
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    let v816 =
+                                                                        case v809 {
+                                                                            True -> {
+                                                                                let v810 = 2
+                                                                                let v811 = "\""
+                                                                                let v812 = find_char_3(v798, v810, v811)
+                                                                                let v813 = v812 >= 2
+                                                                                case v813 {
+                                                                                    True -> {
+                                                                                        let v814 = spiral_wrap_signed(v812 + 1, 32)
+                                                                                        v814
+                                                                                    }
+                                                                                    False -> {
+                                                                                        -1
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                            False -> {
+                                                                                0
+                                                                            }
+                                                                        }
+                                                                    let v817 = v816 > 0
+                                                                    case v817 {
+                                                                        True -> {
+                                                                            let v818 = kino_text_size(v798)
+                                                                            let v819 = v816 < v818
+                                                                            let v820 =
+                                                                                case v819 {
+                                                                                    True -> {
+                                                                                        v816
+                                                                                    }
+                                                                                    False -> {
+                                                                                        v818
+                                                                                    }
+                                                                                }
+                                                                            let v821 = v820 <= 0
+                                                                            case v821 {
+                                                                                True -> {
+                                                                                    let v822 = ""
+                                                                                    v822
+                                                                                }
+                                                                                False -> {
+                                                                                    let v823 = spiral_wrap_signed(v820 - 1, 32)
+                                                                                    let v824 = spiral_wrap_signed(v823 + 1, 32)
+                                                                                    let v825 = kino_text_at(v798, 0, v824)
+                                                                                    v825
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                        False -> {
+                                                                            let v827 = ""
+                                                                            v827
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        let v830 = { " --no-agree" } <> { v829 }
+                                                        v830
+                                                    }
+                                                    False -> {
+                                                        let v831 = ""
+                                                        v831
+                                                    }
+                                                }
+                                            let v833 = " build_only "
+                                            let v834 = 0
+                                            let v835 = find_from_1(v748, v833, v834)
+                                            let v836 = v835 >= 0
+                                            let v839 =
+                                                case v836 {
+                                                    True -> {
+                                                        let v837 = " --build-only"
+                                                        v837
+                                                    }
+                                                    False -> {
+                                                        let v838 = ""
+                                                        v838
+                                                    }
+                                                }
+                                            let v840 = { v757 } <> { v764 }
+                                            let v841 = { v840 } <> { v771 }
+                                            let v842 = { v841 } <> { v832 }
+                                            let v843 = { v842 } <> { v839 }
+                                            let v844 = 0
+                                            let v845 = find_from_1(v430, v734, v844)
+                                            let v846 = v845 >= 0
+                                            let v872 =
+                                                case v846 {
+                                                    True -> {
+                                                        let v847 = kino_text_size(v734)
+                                                        let v848 = spiral_wrap_signed(v845 + v847, 32)
+                                                        let v849 = kino_text_size(v430)
+                                                        let v850 = v848 >= v849
+                                                        let v858 =
+                                                            case v850 {
+                                                                True -> {
+                                                                    let v851 = ""
+                                                                    v851
+                                                                }
+                                                                False -> {
+                                                                    let v852 = v848 <= 0
+                                                                    case v852 {
+                                                                        True -> {
+                                                                            v430
+                                                                        }
+                                                                        False -> {
+                                                                            let v853 = spiral_wrap_signed(v849 - 1, 32)
+                                                                            let v854 = spiral_wrap_signed(v853 - v848, 32)
+                                                                            let v855 = spiral_wrap_signed(v854 + 1, 32)
+                                                                            let v856 = kino_text_at(v430, v848, v855)
+                                                                            v856
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        let v859 = 0
+                                                        let v860 = trim_start_17(v858, v859)
+                                                        let v861 = kino_text_size(v858)
+                                                        let v862 = trim_end_18(v858, v861)
+                                                        let v863 = v862 <= v860
+                                                        let v869 =
+                                                            case v863 {
+                                                                True -> {
+                                                                    let v864 = ""
+                                                                    v864
+                                                                }
+                                                                False -> {
+                                                                    let v865 = spiral_wrap_signed(v862 - 1, 32)
+                                                                    let v866 = spiral_wrap_signed(v865 - v860, 32)
+                                                                    let v867 = spiral_wrap_signed(v866 + 1, 32)
+                                                                    let v868 = kino_text_at(v858, v860, v867)
+                                                                    v868
+                                                                }
+                                                            }
+                                                        let v870 = { " --fails " } <> { v869 }
+                                                        v870
+                                                    }
+                                                    False -> {
+                                                        let v871 = ""
+                                                        v871
+                                                    }
+                                                }
+                                            let v873 = { v843 } <> { v872 }
+                                            let v874 = { "///- " } <> { v873 }
+                                            let v875 = ""
+                                            let v876 = Uh4Row(v875, v733)
+                                            let v877 = append_rows_74(v714, v876)
+                                            let v878 = Uh4Row(v874, v877)
+                                            let v879 = join_rows_63(v878)
+                                            let v884 =
+                                                case v6 {
+                                                    True -> {
+                                                        let v880 = { "real_test:" } <> { v429 }
+                                                        Uh3Cell(v880, v879, v7)
+                                                    }
+                                                    False -> {
+                                                        let v882 = { "test:" } <> { v429 }
+                                                        Uh3Cell(v882, v879, v7)
+                                                    }
+                                                }
+                                            spi_walk_75(v0, v1, v2, v3, v711, v712, v6, v884)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+pub fn interleave_82(v0: Uh3, v1: Uh3, v2: Uh3) -> Uh3 {
     case v1  {
         Uh3Cell(v4, v5, v6) -> {
             let v7 = v4 == "markdown"
@@ -13559,7 +16451,7 @@ pub fn interleave_76(v0: Uh3, v1: Uh3, v2: Uh3) -> Uh3 {
             case v8 {
                 True -> {
                     let v9 = Uh3Cell(v4, v5, v2)
-                    interleave_76(v0, v6, v9)
+                    interleave_82(v0, v6, v9)
                 }
                 False -> {
                     case v0  {
@@ -13569,36 +16461,36 @@ pub fn interleave_76(v0: Uh3, v1: Uh3, v2: Uh3) -> Uh3 {
                             case v16 {
                                 True -> {
                                     let v17 = Uh3Cell(v12, v13, v2)
-                                    interleave_76(v14, v1, v17)
+                                    interleave_82(v14, v1, v17)
                                 }
                                 False -> {
                                     let v19 = v13 == v5
                                     case v19 {
                                         True -> {
                                             let v20 = Uh3Cell(v12, v13, v2)
-                                            interleave_76(v14, v6, v20)
+                                            interleave_82(v14, v6, v20)
                                         }
                                         False -> {
                                             let v22 = Uh3Cell(v12, v13, v2)
-                                            interleave_76(v14, v1, v22)
+                                            interleave_82(v14, v1, v22)
                                         }
                                     }
                                 }
                             }
                         }
                         Uh3NoCell -> {
-                            rev_cells_50(v2, v1)
+                            rev_cells_53(v2, v1)
                         }
                     }
                 }
             }
         }
         Uh3NoCell -> {
-            rev_cells_50(v2, v0)
+            rev_cells_53(v2, v0)
         }
     }
 }
-pub fn name_tested_77(v0: Uh3, v1: String, v2: Uh4, v3: Uh4, v4: Uh3) -> Uh3 {
+pub fn name_tested_83(v0: Uh3, v1: String, v2: Uh4, v3: Uh4, v4: Uh3) -> Uh3 {
     case v0  {
         Uh3Cell(v5, v6, v7) -> {
             let v8 = v5 == "markdown"
@@ -13625,7 +16517,7 @@ pub fn name_tested_77(v0: Uh3, v1: String, v2: Uh4, v3: Uh4, v4: Uh3) -> Uh3 {
                         }
                     let v20 = 0
                     let v21 = ""
-                    let v22 = last_heading_line_63(v19, v20, v21)
+                    let v22 = last_heading_line_66(v19, v20, v21)
                     let v23 = v22 == ""
                     let v54 =
                         case v23 {
@@ -13635,14 +16527,14 @@ pub fn name_tested_77(v0: Uh3, v1: String, v2: Uh4, v3: Uh4, v4: Uh3) -> Uh3 {
                             False -> {
                                 let v24 = " (test)"
                                 let v25 = 0
-                                let v26 = replace_from_64(v22, v24, v21, v25)
+                                let v26 = replace_from_67(v22, v24, v21, v25)
                                 let v27 = 0
                                 let v28 = False
-                                let v29 = test_name_go_65(v26, v27, v28, v21)
+                                let v29 = test_name_go_68(v26, v27, v28, v21)
                                 let v30 = 0
-                                let v31 = underscore_start_66(v29, v30)
+                                let v31 = underscore_start_69(v29, v30)
                                 let v32 = kino_text_size(v29)
-                                let v33 = underscore_end_67(v29, v32)
+                                let v33 = underscore_end_70(v29, v32)
                                 let v34 = v33 <= v31
                                 case v34 {
                                     True -> {
@@ -13709,7 +16601,7 @@ pub fn name_tested_77(v0: Uh3, v1: String, v2: Uh4, v3: Uh4, v4: Uh3) -> Uh3 {
                             }
                         }
                     let v57 = Uh3Cell(v5, v6, v4)
-                    name_tested_77(v7, v56, v2, v3, v57)
+                    name_tested_83(v7, v56, v2, v3, v57)
                 }
                 False -> {
                     let v59 = "test:"
@@ -13799,18 +16691,18 @@ pub fn name_tested_77(v0: Uh3, v1: String, v2: Uh4, v3: Uh4, v4: Uh3) -> Uh3 {
                             let v95 =
                                 case v92 {
                                     True -> {
-                                        Us6RealRealm
+                                        Us7RealRealm
                                     }
                                     False -> {
-                                        Us6SpiRealm
+                                        Us7SpiRealm
                                     }
                                 }
                             let v97 =
                                 case v95  {
-                                    Us6RealRealm -> {
+                                    Us7RealRealm -> {
                                         v3
                                     }
-                                    Us6SpiRealm -> {
+                                    Us7SpiRealm -> {
                                         v2
                                     }
                                 }
@@ -13853,7 +16745,7 @@ pub fn name_tested_77(v0: Uh3, v1: String, v2: Uh4, v3: Uh4, v4: Uh3) -> Uh3 {
                                         v1
                                     }
                                 }
-                            let v115 = count_row_68(v97, v114)
+                            let v115 = count_row_71(v97, v114)
                             let v116 = v115 == 0
                             let v121 =
                                 case v116 {
@@ -13870,19 +16762,19 @@ pub fn name_tested_77(v0: Uh3, v1: String, v2: Uh4, v3: Uh4, v4: Uh3) -> Uh3 {
                                 }
                             let v124 =
                                 case v95  {
-                                    Us6RealRealm -> {
+                                    Us7RealRealm -> {
                                         v2
                                     }
-                                    Us6SpiRealm -> {
+                                    Us7SpiRealm -> {
                                         Uh4Row(v114, v2)
                                     }
                                 }
                             let v127 =
                                 case v95  {
-                                    Us6RealRealm -> {
+                                    Us7RealRealm -> {
                                         Uh4Row(v114, v3)
                                     }
-                                    Us6SpiRealm -> {
+                                    Us7SpiRealm -> {
                                         v3
                                     }
                                 }
@@ -13891,7 +16783,7 @@ pub fn name_tested_77(v0: Uh3, v1: String, v2: Uh4, v3: Uh4, v4: Uh3) -> Uh3 {
                                 True -> {
                                     let v129 = "spiral"
                                     let v130 = Uh3Cell(v129, v6, v4)
-                                    name_tested_77(v7, v1, v124, v127, v130)
+                                    name_tested_83(v7, v1, v124, v127, v130)
                                 }
                                 False -> {
                                     let v132 = { "#### " } <> { v111 }
@@ -13917,7 +16809,7 @@ pub fn name_tested_77(v0: Uh3, v1: String, v2: Uh4, v3: Uh4, v4: Uh3) -> Uh3 {
                                         }
                                     let v145 = 0
                                     let v146 = ""
-                                    let v147 = last_heading_line_63(v144, v145, v146)
+                                    let v147 = last_heading_line_66(v144, v145, v146)
                                     let v148 = v147 == ""
                                     let v179 =
                                         case v148 {
@@ -13927,14 +16819,14 @@ pub fn name_tested_77(v0: Uh3, v1: String, v2: Uh4, v3: Uh4, v4: Uh3) -> Uh3 {
                                             False -> {
                                                 let v149 = " (test)"
                                                 let v150 = 0
-                                                let v151 = replace_from_64(v147, v149, v146, v150)
+                                                let v151 = replace_from_67(v147, v149, v146, v150)
                                                 let v152 = 0
                                                 let v153 = False
-                                                let v154 = test_name_go_65(v151, v152, v153, v146)
+                                                let v154 = test_name_go_68(v151, v152, v153, v146)
                                                 let v155 = 0
-                                                let v156 = underscore_start_66(v154, v155)
+                                                let v156 = underscore_start_69(v154, v155)
                                                 let v157 = kino_text_size(v154)
-                                                let v158 = underscore_end_67(v154, v157)
+                                                let v158 = underscore_end_70(v154, v157)
                                                 let v159 = v158 <= v156
                                                 case v159 {
                                                     True -> {
@@ -13992,19 +16884,19 @@ pub fn name_tested_77(v0: Uh3, v1: String, v2: Uh4, v3: Uh4, v4: Uh3) -> Uh3 {
                                         }
                                     let v182 =
                                         case v95  {
-                                            Us6RealRealm -> {
+                                            Us7RealRealm -> {
                                                 v2
                                             }
-                                            Us6SpiRealm -> {
+                                            Us7SpiRealm -> {
                                                 Uh4Row(v179, v2)
                                             }
                                         }
                                     let v185 =
                                         case v95  {
-                                            Us6RealRealm -> {
+                                            Us7RealRealm -> {
                                                 Uh4Row(v179, v3)
                                             }
-                                            Us6SpiRealm -> {
+                                            Us7SpiRealm -> {
                                                 v3
                                             }
                                         }
@@ -14012,13 +16904,13 @@ pub fn name_tested_77(v0: Uh3, v1: String, v2: Uh4, v3: Uh4, v4: Uh3) -> Uh3 {
                                     let v187 = "markdown"
                                     let v188 = Uh3Cell(v187, v133, v4)
                                     let v189 = Uh3Cell(v186, v6, v188)
-                                    name_tested_77(v7, v179, v182, v185, v189)
+                                    name_tested_83(v7, v179, v182, v185, v189)
                                 }
                             }
                         }
                         False -> {
                             let v192 = Uh3Cell(v5, v6, v4)
-                            name_tested_77(v7, v1, v2, v3, v192)
+                            name_tested_83(v7, v1, v2, v3, v192)
                         }
                     }
                 }
@@ -14038,40 +16930,86 @@ pub fn closure10(capt: Nil) -> fn(#(String, String)) -> String {
         let v5 = ""
         let v6 = replace_from_0(v0, v2, v3, v4, v5)
         let v7 = 0
-        let v8 = Us4Between
-        let v9 = Uh4NoRow
-        let v10 = False
-        let v11 = Uh3NoCell
-        let v12 = spi_walk_72(v6, v7, v8, v9, v10, v11)
-        let v13 = Uh3NoCell
-        let v14 = rev_cells_50(v12, v13)
-        let v15 = 0
-        let v16 = replace_from_0(v1, v2, v3, v15, v5)
-        let v17 = 0
-        let v18 = Us4Between
-        let v19 = Uh4NoRow
-        let v20 = True
-        let v21 = Uh3NoCell
-        let v22 = spi_walk_72(v16, v17, v18, v19, v20, v21)
+        let v8 = 0
+        let v9 = Us4Between
+        let v10 = Uh4NoRow
+        let v11 = False
+        let v12 = Uh3NoCell
+        let v13 = spi_walk_75(v6, v7, v8, v5, v9, v10, v11, v12)
+        let v14 = Uh3NoCell
+        let v15 = rev_cells_53(v13, v14)
+        let v16 = 0
+        let v17 = replace_from_0(v1, v2, v3, v16, v5)
+        let v18 = 0
+        let v19 = 0
+        let v20 = Us4Between
+        let v21 = Uh4NoRow
+        let v22 = True
         let v23 = Uh3NoCell
-        let v24 = rev_cells_50(v22, v23)
+        let v24 = spi_walk_75(v17, v18, v19, v5, v20, v21, v22, v23)
         let v25 = Uh3NoCell
-        let v26 = interleave_76(v14, v24, v25)
-        let v27 = Uh4NoRow
-        let v28 = Uh4NoRow
-        let v29 = Uh3NoCell
-        let v30 = name_tested_77(v26, v5, v27, v28, v29)
+        let v26 = rev_cells_53(v24, v25)
+        let v27 = Uh3NoCell
+        let v28 = interleave_82(v15, v26, v27)
+        let v29 = Uh4NoRow
+        let v30 = Uh4NoRow
         let v31 = Uh3NoCell
-        let v32 = rev_cells_50(v30, v31)
-        let v33 = count_cells_51(v32)
-        let v34 = show_i32_20(v33)
-        let v35 = { v34 } <> { "\n" }
-        let v36 = emit_cells_52(v32)
-        let v37 = { v35 } <> { v36 }
-        v37
+        let v32 = name_tested_83(v28, v5, v29, v30, v31)
+        let v33 = Uh3NoCell
+        let v34 = rev_cells_53(v32, v33)
+        let v35 = count_cells_54(v34)
+        let v36 = show_i32_20(v35)
+        let v37 = { v36 } <> { "\n" }
+        let v38 = emit_cells_55(v34)
+        let v39 = { v37 } <> { v38 }
+        v39
     }
 }
-pub fn heading_marks_end_79(v0: String, v1: Int) -> Int {
+pub fn closure11(capt: Nil) -> fn(#(String, String, String, String)) -> String {
+    fn (dom) {
+        let #(v0, v1, v2, v3) = dom
+        let v4 = "\r\n"
+        let v5 = "\n"
+        let v6 = 0
+        let v7 = ""
+        let v8 = replace_from_0(v0, v4, v5, v6, v7)
+        let v9 = 0
+        let v10 = 0
+        let v11 = Us4Between
+        let v12 = Uh4NoRow
+        let v13 = False
+        let v14 = Uh3NoCell
+        let v15 = spi_walk_75(v8, v9, v10, v2, v11, v12, v13, v14)
+        let v16 = Uh3NoCell
+        let v17 = rev_cells_53(v15, v16)
+        let v18 = 0
+        let v19 = replace_from_0(v1, v4, v5, v18, v7)
+        let v20 = 0
+        let v21 = 0
+        let v22 = Us4Between
+        let v23 = Uh4NoRow
+        let v24 = True
+        let v25 = Uh3NoCell
+        let v26 = spi_walk_75(v19, v20, v21, v3, v22, v23, v24, v25)
+        let v27 = Uh3NoCell
+        let v28 = rev_cells_53(v26, v27)
+        let v29 = Uh3NoCell
+        let v30 = interleave_82(v17, v28, v29)
+        let v31 = Uh4NoRow
+        let v32 = Uh4NoRow
+        let v33 = Uh3NoCell
+        let v34 = name_tested_83(v30, v7, v31, v32, v33)
+        let v35 = Uh3NoCell
+        let v36 = rev_cells_53(v34, v35)
+        let v37 = count_cells_54(v36)
+        let v38 = show_i32_20(v37)
+        let v39 = { v38 } <> { "\n" }
+        let v40 = emit_cells_55(v36)
+        let v41 = { v39 } <> { v40 }
+        v41
+    }
+}
+pub fn heading_marks_end_85(v0: String, v1: Int) -> Int {
     let v2 = kino_text_size(v0)
     let v3 = v1 < v2
     let v6 =
@@ -14088,14 +17026,205 @@ pub fn heading_marks_end_79(v0: String, v1: Int) -> Int {
     case v6 {
         True -> {
             let v7 = spiral_wrap_signed(v1 + 1, 32)
-            heading_marks_end_79(v0, v7)
+            heading_marks_end_85(v0, v7)
         }
         False -> {
             v1
         }
     }
 }
-pub fn show_hex_82(v0: Int) -> String {
+pub fn only_opens_from_87(v0: String, v1: Int, v2: Bool) -> Bool {
+    let v3 = kino_text_size(v0)
+    let v4 = v1 > v3
+    let v44 =
+        case v4 {
+            True -> {
+                Us0LineDone
+            }
+            False -> {
+                let v6 = v3 == 0
+                let v8 =
+                    case v6 {
+                        True -> {
+                            let v7 = v1 == 0
+                            v7
+                        }
+                        False -> {
+                            False
+                        }
+                    }
+                case v8 {
+                    True -> {
+                        let v9 = ""
+                        Us0LineGot(v9, 1)
+                    }
+                    False -> {
+                        let v11 = v1 == v3
+                        case v11 {
+                            True -> {
+                                let v12 = v3 > 0
+                                let v16 =
+                                    case v12 {
+                                        True -> {
+                                            let v13 = spiral_wrap_signed(v3 - 1, 32)
+                                            let v14 = kino_text_at(v0, v13, 1)
+                                            let v15 = v14 == "\n"
+                                            v15
+                                        }
+                                        False -> {
+                                            False
+                                        }
+                                    }
+                                case v16 {
+                                    True -> {
+                                        let v17 = spiral_wrap_signed(v3 + 1, 32)
+                                        let v18 = ""
+                                        Us0LineGot(v18, v17)
+                                    }
+                                    False -> {
+                                        Us0LineDone
+                                    }
+                                }
+                            }
+                            False -> {
+                                let v22 = "\n"
+                                let v23 = find_char_3(v0, v1, v22)
+                                let v24 = v23 < 0
+                                case v24 {
+                                    True -> {
+                                        let v25 = spiral_wrap_signed(v3 - 1, 32)
+                                        let v26 = spiral_wrap_signed(v25 - v1, 32)
+                                        let v27 = spiral_wrap_signed(v26 + 1, 32)
+                                        let v28 = kino_text_at(v0, v1, v27)
+                                        Us0LineGot(v28, v3)
+                                    }
+                                    False -> {
+                                        let v30 = v23 == v1
+                                        case v30 {
+                                            True -> {
+                                                let v31 = spiral_wrap_signed(v23 + 1, 32)
+                                                let v32 = ""
+                                                Us0LineGot(v32, v31)
+                                            }
+                                            False -> {
+                                                let v34 = spiral_wrap_signed(v23 - 1, 32)
+                                                let v35 = spiral_wrap_signed(v34 - v1, 32)
+                                                let v36 = spiral_wrap_signed(v35 + 1, 32)
+                                                let v37 = kino_text_at(v0, v1, v36)
+                                                let v38 = spiral_wrap_signed(v23 + 1, 32)
+                                                Us0LineGot(v37, v38)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    case v44  {
+        Us0LineDone -> {
+            v2
+        }
+        Us0LineGot(v45, v46) -> {
+            let v47 = 0
+            let v48 = trim_start_17(v45, v47)
+            let v49 = kino_text_size(v45)
+            let v50 = trim_end_18(v45, v49)
+            let v51 = v50 <= v48
+            let v57 =
+                case v51 {
+                    True -> {
+                        let v52 = ""
+                        v52
+                    }
+                    False -> {
+                        let v53 = spiral_wrap_signed(v50 - 1, 32)
+                        let v54 = spiral_wrap_signed(v53 - v48, 32)
+                        let v55 = spiral_wrap_signed(v54 + 1, 32)
+                        let v56 = kino_text_at(v45, v48, v55)
+                        v56
+                    }
+                }
+            let v58 = v57 == ""
+            let v70 =
+                case v58 {
+                    True -> {
+                        True
+                    }
+                    False -> {
+                        let v59 = "///"
+                        let v60 = kino_text_size(v59)
+                        let v61 = kino_text_size(v57)
+                        let v62 = v60 > v61
+                        case v62 {
+                            True -> {
+                                False
+                            }
+                            False -> {
+                                let v63 = v60 == 0
+                                case v63 {
+                                    True -> {
+                                        True
+                                    }
+                                    False -> {
+                                        let v64 = spiral_wrap_signed(v60 - 1, 32)
+                                        let v65 = spiral_wrap_signed(v64 + 1, 32)
+                                        let v66 = kino_text_at(v57, 0, v65)
+                                        let v67 = v66 == "///"
+                                        v67
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            case v70 {
+                True -> {
+                    only_opens_from_87(v0, v46, v2)
+                }
+                False -> {
+                    let v72 = "open "
+                    let v73 = kino_text_size(v72)
+                    let v74 = kino_text_size(v57)
+                    let v75 = v73 > v74
+                    let v82 =
+                        case v75 {
+                            True -> {
+                                False
+                            }
+                            False -> {
+                                let v76 = v73 == 0
+                                case v76 {
+                                    True -> {
+                                        True
+                                    }
+                                    False -> {
+                                        let v77 = spiral_wrap_signed(v73 - 1, 32)
+                                        let v78 = spiral_wrap_signed(v77 + 1, 32)
+                                        let v79 = kino_text_at(v57, 0, v78)
+                                        let v80 = v79 == "open "
+                                        v80
+                                    }
+                                }
+                            }
+                        }
+                    case v82 {
+                        True -> {
+                            let v83 = True
+                            only_opens_from_87(v0, v46, v83)
+                        }
+                        False -> {
+                            False
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+pub fn show_hex_89(v0: Int) -> String {
     let v1 = v0 < 16
     case v1 {
         True -> {
@@ -14105,7 +17234,7 @@ pub fn show_hex_82(v0: Int) -> String {
         }
         False -> {
             let v4 = v0 / 16
-            let v5 = show_hex_82(v4)
+            let v5 = show_hex_89(v4)
             let v6 = v0 % 16
             let v7 = "0123456789abcdef"
             let v8 = kino_text_at(v7, v6, 1)
@@ -14114,7 +17243,7 @@ pub fn show_hex_82(v0: Int) -> String {
         }
     }
 }
-pub fn symbol_go_81(v0: String, v1: Int, v2: String) -> String {
+pub fn symbol_go_88(v0: String, v1: Int, v2: String) -> String {
     let v3 = kino_text_size(v0)
     let v4 = v1 >= v3
     case v4 {
@@ -14141,7 +17270,7 @@ pub fn symbol_go_81(v0: String, v1: Int, v2: String) -> String {
                     let v12 = spiral_wrap_signed(v1 + 1, 32)
                     let v13 = kino_text_at(v0, v1, 1)
                     let v14 = { v2 } <> { v13 }
-                    symbol_go_81(v0, v12, v14)
+                    symbol_go_88(v0, v12, v14)
                 }
                 False -> {
                     let v16 = kino_text_byte(v0, v1)
@@ -14325,16 +17454,16 @@ pub fn symbol_go_81(v0: String, v1: Int, v2: String) -> String {
                                 }
                             }
                         }
-                    let v89 = show_hex_82(v88)
+                    let v89 = show_hex_89(v88)
                     let v90 = { v24 } <> { v89 }
                     let v91 = { v90 } <> { "_" }
-                    symbol_go_81(v0, v23, v91)
+                    symbol_go_88(v0, v23, v91)
                 }
             }
         }
     }
 }
-pub fn index_tests_80(v0: Bool, v1: Uh3, v2: Int, v3: String, v4: String, v5: Uh4, v6: Uh4) -> Uh4 {
+pub fn index_tests_86(v0: Bool, v1: Uh3, v2: Int, v3: String, v4: String, v5: Uh4, v6: Uh4) -> Uh4 {
     case v1  {
         Uh3Cell(v7, v8, v9) -> {
             let v10 = 0
@@ -14380,7 +17509,7 @@ pub fn index_tests_80(v0: Bool, v1: Uh3, v2: Int, v3: String, v4: String, v5: Uh
                         }
                     let v33 = 0
                     let v34 = ""
-                    let v35 = last_heading_line_63(v32, v33, v34)
+                    let v35 = last_heading_line_66(v32, v33, v34)
                     let v36 = v35 == ""
                     let v67 =
                         case v36 {
@@ -14390,14 +17519,14 @@ pub fn index_tests_80(v0: Bool, v1: Uh3, v2: Int, v3: String, v4: String, v5: Uh
                             False -> {
                                 let v37 = " (test)"
                                 let v38 = 0
-                                let v39 = replace_from_64(v35, v37, v34, v38)
+                                let v39 = replace_from_67(v35, v37, v34, v38)
                                 let v40 = 0
                                 let v41 = False
-                                let v42 = test_name_go_65(v39, v40, v41, v34)
+                                let v42 = test_name_go_68(v39, v40, v41, v34)
                                 let v43 = 0
-                                let v44 = underscore_start_66(v42, v43)
+                                let v44 = underscore_start_69(v42, v43)
                                 let v45 = kino_text_size(v42)
-                                let v46 = underscore_end_67(v42, v45)
+                                let v46 = underscore_end_70(v42, v45)
                                 let v47 = v46 <= v44
                                 case v47 {
                                     True -> {
@@ -14457,7 +17586,7 @@ pub fn index_tests_80(v0: Bool, v1: Uh3, v2: Int, v3: String, v4: String, v5: Uh
                     case v68 {
                         True -> {
                             let v69 = spiral_wrap_signed(v2 + 1, 32)
-                            index_tests_80(v0, v9, v69, v3, v4, v5, v6)
+                            index_tests_86(v0, v9, v69, v3, v4, v5, v6)
                         }
                         False -> {
                             let v71 = spiral_wrap_signed(v2 + 1, 32)
@@ -14480,7 +17609,7 @@ pub fn index_tests_80(v0: Bool, v1: Uh3, v2: Int, v3: String, v4: String, v5: Uh
                                     }
                                 }
                             let v82 = 0
-                            let v83 = last_heading_line_63(v81, v82, v34)
+                            let v83 = last_heading_line_66(v81, v82, v34)
                             let v84 = 0
                             let v85 = trim_start_17(v83, v84)
                             let v86 = kino_text_size(v83)
@@ -14500,7 +17629,7 @@ pub fn index_tests_80(v0: Bool, v1: Uh3, v2: Int, v3: String, v4: String, v5: Uh
                                     }
                                 }
                             let v94 = 0
-                            let v95 = heading_marks_end_79(v93, v94)
+                            let v95 = heading_marks_end_85(v93, v94)
                             let v96 = kino_text_size(v93)
                             let v97 = v95 >= v96
                             let v104 =
@@ -14526,7 +17655,7 @@ pub fn index_tests_80(v0: Bool, v1: Uh3, v2: Int, v3: String, v4: String, v5: Uh
                                 }
                             let v105 = " (test)"
                             let v106 = 0
-                            let v107 = replace_from_64(v104, v105, v34, v106)
+                            let v107 = replace_from_67(v104, v105, v34, v106)
                             let v108 = 0
                             let v109 = trim_start_17(v107, v108)
                             let v110 = kino_text_size(v107)
@@ -14545,7 +17674,7 @@ pub fn index_tests_80(v0: Bool, v1: Uh3, v2: Int, v3: String, v4: String, v5: Uh
                                         v116
                                     }
                                 }
-                            index_tests_80(v0, v9, v71, v67, v117, v5, v6)
+                            index_tests_86(v0, v9, v71, v67, v117, v5, v6)
                         }
                     }
                 }
@@ -14626,7 +17755,7 @@ pub fn index_tests_80(v0: Bool, v1: Uh3, v2: Int, v3: String, v4: String, v5: Uh
                                         v3
                                     }
                                 }
-                            let v150 = count_row_68(v5, v149)
+                            let v150 = count_row_71(v5, v149)
                             let v151 = v150 == 0
                             let v156 =
                                 case v151 {
@@ -14760,58 +17889,178 @@ pub fn index_tests_80(v0: Bool, v1: Uh3, v2: Int, v3: String, v4: String, v5: Uh
                             let v213 = 0
                             let v214 = find_from_1(v211, v212, v213)
                             let v215 = v214 >= 0
-                            let v224 =
+                            let v283 =
                                 case v215 {
                                     True -> {
                                         let v216 = "ignore"
                                         v216
                                     }
                                     False -> {
-                                        let v217 = " --test static "
+                                        let v217 = " --fails "
                                         let v218 = 0
                                         let v219 = find_from_1(v211, v217, v218)
                                         let v220 = v219 >= 0
                                         case v220 {
                                             True -> {
-                                                let v221 = "static"
+                                                let v221 = "fails"
                                                 v221
                                             }
                                             False -> {
-                                                let v222 = "test"
-                                                v222
+                                                let v222 = " --build-only "
+                                                let v223 = 0
+                                                let v224 = find_from_1(v211, v222, v223)
+                                                let v225 = v224 >= 0
+                                                case v225 {
+                                                    True -> {
+                                                        let v226 = "build_only"
+                                                        v226
+                                                    }
+                                                    False -> {
+                                                        let v227 = " --test static "
+                                                        let v228 = 0
+                                                        let v229 = find_from_1(v211, v227, v228)
+                                                        let v230 = v229 >= 0
+                                                        case v230 {
+                                                            True -> {
+                                                                let v231 = kino_text_size(v20)
+                                                                let v232 = 0 > v231
+                                                                let v269 =
+                                                                    case v232 {
+                                                                        True -> {
+                                                                            Us0LineDone
+                                                                        }
+                                                                        False -> {
+                                                                            let v234 = v231 == 0
+                                                                            case v234 {
+                                                                                True -> {
+                                                                                    let v235 = ""
+                                                                                    Us0LineGot(v235, 1)
+                                                                                }
+                                                                                False -> {
+                                                                                    let v237 = 0 == v231
+                                                                                    case v237 {
+                                                                                        True -> {
+                                                                                            let v238 = v231 > 0
+                                                                                            let v242 =
+                                                                                                case v238 {
+                                                                                                    True -> {
+                                                                                                        let v239 = spiral_wrap_signed(v231 - 1, 32)
+                                                                                                        let v240 = kino_text_at(v20, v239, 1)
+                                                                                                        let v241 = v240 == "\n"
+                                                                                                        v241
+                                                                                                    }
+                                                                                                    False -> {
+                                                                                                        False
+                                                                                                    }
+                                                                                                }
+                                                                                            case v242 {
+                                                                                                True -> {
+                                                                                                    let v243 = spiral_wrap_signed(v231 + 1, 32)
+                                                                                                    let v244 = ""
+                                                                                                    Us0LineGot(v244, v243)
+                                                                                                }
+                                                                                                False -> {
+                                                                                                    Us0LineDone
+                                                                                                }
+                                                                                            }
+                                                                                        }
+                                                                                        False -> {
+                                                                                            let v248 = 0
+                                                                                            let v249 = "\n"
+                                                                                            let v250 = find_char_3(v20, v248, v249)
+                                                                                            let v251 = v250 < 0
+                                                                                            case v251 {
+                                                                                                True -> {
+                                                                                                    let v252 = spiral_wrap_signed(v231 - 1, 32)
+                                                                                                    let v253 = spiral_wrap_signed(v252 + 1, 32)
+                                                                                                    let v254 = kino_text_at(v20, 0, v253)
+                                                                                                    Us0LineGot(v254, v231)
+                                                                                                }
+                                                                                                False -> {
+                                                                                                    let v256 = v250 == 0
+                                                                                                    case v256 {
+                                                                                                        True -> {
+                                                                                                            let v257 = spiral_wrap_signed(v250 + 1, 32)
+                                                                                                            let v258 = ""
+                                                                                                            Us0LineGot(v258, v257)
+                                                                                                        }
+                                                                                                        False -> {
+                                                                                                            let v260 = spiral_wrap_signed(v250 - 1, 32)
+                                                                                                            let v261 = spiral_wrap_signed(v260 + 1, 32)
+                                                                                                            let v262 = kino_text_at(v20, 0, v261)
+                                                                                                            let v263 = spiral_wrap_signed(v250 + 1, 32)
+                                                                                                            Us0LineGot(v262, v263)
+                                                                                                        }
+                                                                                                    }
+                                                                                                }
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                let v275 =
+                                                                    case v269  {
+                                                                        Us0LineDone -> {
+                                                                            False
+                                                                        }
+                                                                        Us0LineGot(v270, v271) -> {
+                                                                            let v272 = False
+                                                                            only_opens_from_87(v20, v271, v272)
+                                                                        }
+                                                                    }
+                                                                case v275 {
+                                                                    True -> {
+                                                                        let v276 = "prelude"
+                                                                        v276
+                                                                    }
+                                                                    False -> {
+                                                                        let v277 = "static"
+                                                                        v277
+                                                                    }
+                                                                }
+                                                            }
+                                                            False -> {
+                                                                let v279 = "test"
+                                                                v279
+                                                            }
+                                                        }
+                                                    }
+                                                }
                                             }
                                         }
                                     }
                                 }
-                            let v225 = { v165 } <> { v224 }
-                            let v226 = { v225 } <> { "\t" }
-                            let v227 = { v226 } <> { v159 }
-                            let v228 = { v227 } <> { "\t" }
-                            let v229 = 0
-                            let v230 = ""
-                            let v231 = symbol_go_81(v156, v229, v230)
-                            let v232 = v231 == v156
-                            let v234 =
-                                case v232 {
+                            let v284 = { v165 } <> { v283 }
+                            let v285 = { v284 } <> { "\t" }
+                            let v286 = { v285 } <> { v159 }
+                            let v287 = { v286 } <> { "\t" }
+                            let v288 = 0
+                            let v289 = ""
+                            let v290 = symbol_go_88(v156, v288, v289)
+                            let v291 = v290 == v156
+                            let v293 =
+                                case v291 {
                                     True -> {
                                         v156
                                     }
                                     False -> {
-                                        let v233 = { "test_" } <> { v231 }
-                                        v233
+                                        let v292 = { "test_" } <> { v290 }
+                                        v292
                                     }
                                 }
-                            let v235 = { v228 } <> { v234 }
-                            let v236 = { v235 } <> { "\t" }
-                            let v237 = { v236 } <> { v161 }
-                            let v238 = spiral_wrap_signed(v2 + 1, 32)
-                            let v239 = Uh4Row(v149, v5)
-                            let v240 = Uh4Row(v237, v6)
-                            index_tests_80(v0, v9, v238, v3, v4, v239, v240)
+                            let v294 = { v287 } <> { v293 }
+                            let v295 = { v294 } <> { "\t" }
+                            let v296 = { v295 } <> { v161 }
+                            let v297 = spiral_wrap_signed(v2 + 1, 32)
+                            let v298 = Uh4Row(v149, v5)
+                            let v299 = Uh4Row(v296, v6)
+                            index_tests_86(v0, v9, v297, v3, v4, v298, v299)
                         }
                         False -> {
-                            let v242 = spiral_wrap_signed(v2 + 1, 32)
-                            index_tests_80(v0, v9, v242, v3, v4, v5, v6)
+                            let v301 = spiral_wrap_signed(v2 + 1, 32)
+                            index_tests_86(v0, v9, v301, v3, v4, v5, v6)
                         }
                     }
                 }
@@ -14822,7 +18071,7 @@ pub fn index_tests_80(v0: Bool, v1: Uh3, v2: Int, v3: String, v4: String, v5: Uh
         }
     }
 }
-pub fn index_tests_78(v0: Bool, v1: Uh3, v2: Int, v3: String, v4: Uh4, v5: Uh4) -> Uh4 {
+pub fn index_tests_84(v0: Bool, v1: Uh3, v2: Int, v3: String, v4: Uh4, v5: Uh4) -> Uh4 {
     case v1  {
         Uh3Cell(v6, v7, v8) -> {
             let v9 = 0
@@ -14868,7 +18117,7 @@ pub fn index_tests_78(v0: Bool, v1: Uh3, v2: Int, v3: String, v4: Uh4, v5: Uh4) 
                         }
                     let v32 = 0
                     let v33 = ""
-                    let v34 = last_heading_line_63(v31, v32, v33)
+                    let v34 = last_heading_line_66(v31, v32, v33)
                     let v35 = v34 == ""
                     let v66 =
                         case v35 {
@@ -14878,14 +18127,14 @@ pub fn index_tests_78(v0: Bool, v1: Uh3, v2: Int, v3: String, v4: Uh4, v5: Uh4) 
                             False -> {
                                 let v36 = " (test)"
                                 let v37 = 0
-                                let v38 = replace_from_64(v34, v36, v33, v37)
+                                let v38 = replace_from_67(v34, v36, v33, v37)
                                 let v39 = 0
                                 let v40 = False
-                                let v41 = test_name_go_65(v38, v39, v40, v33)
+                                let v41 = test_name_go_68(v38, v39, v40, v33)
                                 let v42 = 0
-                                let v43 = underscore_start_66(v41, v42)
+                                let v43 = underscore_start_69(v41, v42)
                                 let v44 = kino_text_size(v41)
-                                let v45 = underscore_end_67(v41, v44)
+                                let v45 = underscore_end_70(v41, v44)
                                 let v46 = v45 <= v43
                                 case v46 {
                                     True -> {
@@ -14945,7 +18194,7 @@ pub fn index_tests_78(v0: Bool, v1: Uh3, v2: Int, v3: String, v4: Uh4, v5: Uh4) 
                     case v67 {
                         True -> {
                             let v68 = spiral_wrap_signed(v2 + 1, 32)
-                            index_tests_78(v0, v8, v68, v3, v4, v5)
+                            index_tests_84(v0, v8, v68, v3, v4, v5)
                         }
                         False -> {
                             let v70 = spiral_wrap_signed(v2 + 1, 32)
@@ -14968,7 +18217,7 @@ pub fn index_tests_78(v0: Bool, v1: Uh3, v2: Int, v3: String, v4: Uh4, v5: Uh4) 
                                     }
                                 }
                             let v81 = 0
-                            let v82 = last_heading_line_63(v80, v81, v33)
+                            let v82 = last_heading_line_66(v80, v81, v33)
                             let v83 = 0
                             let v84 = trim_start_17(v82, v83)
                             let v85 = kino_text_size(v82)
@@ -14988,7 +18237,7 @@ pub fn index_tests_78(v0: Bool, v1: Uh3, v2: Int, v3: String, v4: Uh4, v5: Uh4) 
                                     }
                                 }
                             let v93 = 0
-                            let v94 = heading_marks_end_79(v92, v93)
+                            let v94 = heading_marks_end_85(v92, v93)
                             let v95 = kino_text_size(v92)
                             let v96 = v94 >= v95
                             let v103 =
@@ -15014,7 +18263,7 @@ pub fn index_tests_78(v0: Bool, v1: Uh3, v2: Int, v3: String, v4: Uh4, v5: Uh4) 
                                 }
                             let v104 = " (test)"
                             let v105 = 0
-                            let v106 = replace_from_64(v103, v104, v33, v105)
+                            let v106 = replace_from_67(v103, v104, v33, v105)
                             let v107 = 0
                             let v108 = trim_start_17(v106, v107)
                             let v109 = kino_text_size(v106)
@@ -15033,7 +18282,7 @@ pub fn index_tests_78(v0: Bool, v1: Uh3, v2: Int, v3: String, v4: Uh4, v5: Uh4) 
                                         v115
                                     }
                                 }
-                            index_tests_80(v0, v8, v70, v66, v116, v4, v5)
+                            index_tests_86(v0, v8, v70, v66, v116, v4, v5)
                         }
                     }
                 }
@@ -15114,7 +18363,7 @@ pub fn index_tests_78(v0: Bool, v1: Uh3, v2: Int, v3: String, v4: Uh4, v5: Uh4) 
                                         v3
                                     }
                                 }
-                            let v149 = count_row_68(v4, v148)
+                            let v149 = count_row_71(v4, v148)
                             let v150 = v149 == 0
                             let v155 =
                                 case v150 {
@@ -15247,58 +18496,178 @@ pub fn index_tests_78(v0: Bool, v1: Uh3, v2: Int, v3: String, v4: Uh4, v5: Uh4) 
                             let v211 = 0
                             let v212 = find_from_1(v209, v210, v211)
                             let v213 = v212 >= 0
-                            let v222 =
+                            let v281 =
                                 case v213 {
                                     True -> {
                                         let v214 = "ignore"
                                         v214
                                     }
                                     False -> {
-                                        let v215 = " --test static "
+                                        let v215 = " --fails "
                                         let v216 = 0
                                         let v217 = find_from_1(v209, v215, v216)
                                         let v218 = v217 >= 0
                                         case v218 {
                                             True -> {
-                                                let v219 = "static"
+                                                let v219 = "fails"
                                                 v219
                                             }
                                             False -> {
-                                                let v220 = "test"
-                                                v220
+                                                let v220 = " --build-only "
+                                                let v221 = 0
+                                                let v222 = find_from_1(v209, v220, v221)
+                                                let v223 = v222 >= 0
+                                                case v223 {
+                                                    True -> {
+                                                        let v224 = "build_only"
+                                                        v224
+                                                    }
+                                                    False -> {
+                                                        let v225 = " --test static "
+                                                        let v226 = 0
+                                                        let v227 = find_from_1(v209, v225, v226)
+                                                        let v228 = v227 >= 0
+                                                        case v228 {
+                                                            True -> {
+                                                                let v229 = kino_text_size(v19)
+                                                                let v230 = 0 > v229
+                                                                let v267 =
+                                                                    case v230 {
+                                                                        True -> {
+                                                                            Us0LineDone
+                                                                        }
+                                                                        False -> {
+                                                                            let v232 = v229 == 0
+                                                                            case v232 {
+                                                                                True -> {
+                                                                                    let v233 = ""
+                                                                                    Us0LineGot(v233, 1)
+                                                                                }
+                                                                                False -> {
+                                                                                    let v235 = 0 == v229
+                                                                                    case v235 {
+                                                                                        True -> {
+                                                                                            let v236 = v229 > 0
+                                                                                            let v240 =
+                                                                                                case v236 {
+                                                                                                    True -> {
+                                                                                                        let v237 = spiral_wrap_signed(v229 - 1, 32)
+                                                                                                        let v238 = kino_text_at(v19, v237, 1)
+                                                                                                        let v239 = v238 == "\n"
+                                                                                                        v239
+                                                                                                    }
+                                                                                                    False -> {
+                                                                                                        False
+                                                                                                    }
+                                                                                                }
+                                                                                            case v240 {
+                                                                                                True -> {
+                                                                                                    let v241 = spiral_wrap_signed(v229 + 1, 32)
+                                                                                                    let v242 = ""
+                                                                                                    Us0LineGot(v242, v241)
+                                                                                                }
+                                                                                                False -> {
+                                                                                                    Us0LineDone
+                                                                                                }
+                                                                                            }
+                                                                                        }
+                                                                                        False -> {
+                                                                                            let v246 = 0
+                                                                                            let v247 = "\n"
+                                                                                            let v248 = find_char_3(v19, v246, v247)
+                                                                                            let v249 = v248 < 0
+                                                                                            case v249 {
+                                                                                                True -> {
+                                                                                                    let v250 = spiral_wrap_signed(v229 - 1, 32)
+                                                                                                    let v251 = spiral_wrap_signed(v250 + 1, 32)
+                                                                                                    let v252 = kino_text_at(v19, 0, v251)
+                                                                                                    Us0LineGot(v252, v229)
+                                                                                                }
+                                                                                                False -> {
+                                                                                                    let v254 = v248 == 0
+                                                                                                    case v254 {
+                                                                                                        True -> {
+                                                                                                            let v255 = spiral_wrap_signed(v248 + 1, 32)
+                                                                                                            let v256 = ""
+                                                                                                            Us0LineGot(v256, v255)
+                                                                                                        }
+                                                                                                        False -> {
+                                                                                                            let v258 = spiral_wrap_signed(v248 - 1, 32)
+                                                                                                            let v259 = spiral_wrap_signed(v258 + 1, 32)
+                                                                                                            let v260 = kino_text_at(v19, 0, v259)
+                                                                                                            let v261 = spiral_wrap_signed(v248 + 1, 32)
+                                                                                                            Us0LineGot(v260, v261)
+                                                                                                        }
+                                                                                                    }
+                                                                                                }
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                let v273 =
+                                                                    case v267  {
+                                                                        Us0LineDone -> {
+                                                                            False
+                                                                        }
+                                                                        Us0LineGot(v268, v269) -> {
+                                                                            let v270 = False
+                                                                            only_opens_from_87(v19, v269, v270)
+                                                                        }
+                                                                    }
+                                                                case v273 {
+                                                                    True -> {
+                                                                        let v274 = "prelude"
+                                                                        v274
+                                                                    }
+                                                                    False -> {
+                                                                        let v275 = "static"
+                                                                        v275
+                                                                    }
+                                                                }
+                                                            }
+                                                            False -> {
+                                                                let v277 = "test"
+                                                                v277
+                                                            }
+                                                        }
+                                                    }
+                                                }
                                             }
                                         }
                                     }
                                 }
-                            let v223 = { v163 } <> { v222 }
-                            let v224 = { v223 } <> { "\t" }
-                            let v225 = { v224 } <> { v158 }
-                            let v226 = { v225 } <> { "\t" }
-                            let v227 = 0
-                            let v228 = ""
-                            let v229 = symbol_go_81(v155, v227, v228)
-                            let v230 = v229 == v155
-                            let v232 =
-                                case v230 {
+                            let v282 = { v163 } <> { v281 }
+                            let v283 = { v282 } <> { "\t" }
+                            let v284 = { v283 } <> { v158 }
+                            let v285 = { v284 } <> { "\t" }
+                            let v286 = 0
+                            let v287 = ""
+                            let v288 = symbol_go_88(v155, v286, v287)
+                            let v289 = v288 == v155
+                            let v291 =
+                                case v289 {
                                     True -> {
                                         v155
                                     }
                                     False -> {
-                                        let v231 = { "test_" } <> { v229 }
-                                        v231
+                                        let v290 = { "test_" } <> { v288 }
+                                        v290
                                     }
                                 }
-                            let v233 = { v226 } <> { v232 }
-                            let v234 = { v233 } <> { "\t" }
-                            let v235 = { v234 } <> { v159 }
-                            let v236 = spiral_wrap_signed(v2 + 1, 32)
-                            let v237 = Uh4Row(v148, v4)
-                            let v238 = Uh4Row(v235, v5)
-                            index_tests_78(v0, v8, v236, v3, v237, v238)
+                            let v292 = { v285 } <> { v291 }
+                            let v293 = { v292 } <> { "\t" }
+                            let v294 = { v293 } <> { v159 }
+                            let v295 = spiral_wrap_signed(v2 + 1, 32)
+                            let v296 = Uh4Row(v148, v4)
+                            let v297 = Uh4Row(v294, v5)
+                            index_tests_84(v0, v8, v295, v3, v296, v297)
                         }
                         False -> {
-                            let v240 = spiral_wrap_signed(v2 + 1, 32)
-                            index_tests_78(v0, v8, v240, v3, v4, v5)
+                            let v299 = spiral_wrap_signed(v2 + 1, 32)
+                            index_tests_84(v0, v8, v299, v3, v4, v5)
                         }
                     }
                 }
@@ -15309,7 +18678,7 @@ pub fn index_tests_78(v0: Bool, v1: Uh3, v2: Int, v3: String, v4: Uh4, v5: Uh4) 
         }
     }
 }
-pub fn closure11(capt: Nil) -> fn(String) -> String {
+pub fn closure12(capt: Nil) -> fn(String) -> String {
     fn (v0) {
         let v1 = kino_text_size(v0)
         let v2 = 0 > v1
@@ -15400,7 +18769,7 @@ pub fn closure11(capt: Nil) -> fn(String) -> String {
                     let v45 = 0
                     let v46 = parse_acc_26(v41, v43, v44, v45)
                     let v47 = Uh3NoCell
-                    read_cells_53(v0, v42, v46, v47)
+                    read_cells_56(v0, v42, v46, v47)
                 }
             }
         let v51 = True
@@ -15411,14 +18780,350 @@ pub fn closure11(capt: Nil) -> fn(String) -> String {
         let v56 = 0
         let v57 = Uh4NoRow
         let v58 = Uh4NoRow
-        let v59 = index_tests_78(v55, v50, v56, v53, v57, v58)
-        let v60 = index_tests_78(v51, v50, v52, v53, v54, v59)
+        let v59 = index_tests_84(v55, v50, v56, v53, v57, v58)
+        let v60 = index_tests_84(v51, v50, v52, v53, v54, v59)
         let v61 = Uh4NoRow
-        let v62 = rev_rows_58(v60, v61)
-        join_rows_60(v62)
+        let v62 = rev_rows_61(v60, v61)
+        join_rows_63(v62)
     }
 }
-pub fn read_sources_83(v0: String, v1: Int, v2: Int, v3: Uh6) -> Uh6 {
+pub fn closure13(capt: Nil) -> fn(String) -> String {
+    fn (v0) {
+        let v1 = v0 == "rust"
+        let v40 =
+            case v1 {
+                True -> {
+                    Us8RustTarget
+                }
+                False -> {
+                    let v3 = v0 == "fsharp"
+                    case v3 {
+                        True -> {
+                            Us8FsharpTarget
+                        }
+                        False -> {
+                            let v5 = v0 == "typescript"
+                            case v5 {
+                                True -> {
+                                    Us8TypescriptTarget
+                                }
+                                False -> {
+                                    let v7 = v0 == "python"
+                                    case v7 {
+                                        True -> {
+                                            Us8PythonTarget
+                                        }
+                                        False -> {
+                                            let v9 = v0 == "cuda"
+                                            case v9 {
+                                                True -> {
+                                                    Us8CudaTarget
+                                                }
+                                                False -> {
+                                                    let v11 = v0 == "cpp"
+                                                    case v11 {
+                                                        True -> {
+                                                            Us8CppTarget
+                                                        }
+                                                        False -> {
+                                                            let v13 = v0 == "gleam"
+                                                            case v13 {
+                                                                True -> {
+                                                                    Us8GleamTarget
+                                                                }
+                                                                False -> {
+                                                                    let v15 = v0 == "lua"
+                                                                    case v15 {
+                                                                        True -> {
+                                                                            Us8LuaTarget
+                                                                        }
+                                                                        False -> {
+                                                                            let v17 = v0 == "c"
+                                                                            case v17 {
+                                                                                True -> {
+                                                                                    Us8CTarget
+                                                                                }
+                                                                                False -> {
+                                                                                    let v19 = v0 == "delphi"
+                                                                                    case v19 {
+                                                                                        True -> {
+                                                                                            Us8DelphiTarget
+                                                                                        }
+                                                                                        False -> {
+                                                                                            let v21 = v0 == "zig"
+                                                                                            case v21 {
+                                                                                                True -> {
+                                                                                                    Us8ZigTarget
+                                                                                                }
+                                                                                                False -> {
+                                                                                                    let v23 = v0 == "lean"
+                                                                                                    case v23 {
+                                                                                                        True -> {
+                                                                                                            Us8LeanTarget
+                                                                                                        }
+                                                                                                        False -> {
+                                                                                                            let v25 = v0 == "wgsl"
+                                                                                                            case v25 {
+                                                                                                                True -> {
+                                                                                                                    Us8WgslTarget
+                                                                                                                }
+                                                                                                                False -> {
+                                                                                                                    Us8UnknownTarget
+                                                                                                                }
+                                                                                                            }
+                                                                                                        }
+                                                                                                    }
+                                                                                                }
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        case v40  {
+            Us8CTarget -> {
+                let v49 = "C"
+                v49
+            }
+            Us8CppTarget -> {
+                let v46 = "Cpp + Cuda"
+                v46
+            }
+            Us8CudaTarget -> {
+                let v45 = "Python + Cuda"
+                v45
+            }
+            Us8DelphiTarget -> {
+                let v50 = "Delphi"
+                v50
+            }
+            Us8FsharpTarget -> {
+                let v42 = "Fsharp"
+                v42
+            }
+            Us8GleamTarget -> {
+                let v47 = "Gleam"
+                v47
+            }
+            Us8LeanTarget -> {
+                let v52 = "Lean"
+                v52
+            }
+            Us8LuaTarget -> {
+                let v48 = "Lua"
+                v48
+            }
+            Us8PythonTarget -> {
+                let v44 = "Python + Cuda"
+                v44
+            }
+            Us8RustTarget -> {
+                let v41 = "Rust"
+                v41
+            }
+            Us8TypescriptTarget -> {
+                let v43 = "TypeScript"
+                v43
+            }
+            Us8UnknownTarget -> {
+                let v54 = ""
+                v54
+            }
+            Us8WgslTarget -> {
+                let v53 = "Wgsl"
+                v53
+            }
+            Us8ZigTarget -> {
+                let v51 = "Zig"
+                v51
+            }
+        }
+    }
+}
+pub fn closure14(capt: Nil) -> fn(String) -> String {
+    fn (v0) {
+        let v1 = v0 == "rust"
+        let v40 =
+            case v1 {
+                True -> {
+                    Us8RustTarget
+                }
+                False -> {
+                    let v3 = v0 == "fsharp"
+                    case v3 {
+                        True -> {
+                            Us8FsharpTarget
+                        }
+                        False -> {
+                            let v5 = v0 == "typescript"
+                            case v5 {
+                                True -> {
+                                    Us8TypescriptTarget
+                                }
+                                False -> {
+                                    let v7 = v0 == "python"
+                                    case v7 {
+                                        True -> {
+                                            Us8PythonTarget
+                                        }
+                                        False -> {
+                                            let v9 = v0 == "cuda"
+                                            case v9 {
+                                                True -> {
+                                                    Us8CudaTarget
+                                                }
+                                                False -> {
+                                                    let v11 = v0 == "cpp"
+                                                    case v11 {
+                                                        True -> {
+                                                            Us8CppTarget
+                                                        }
+                                                        False -> {
+                                                            let v13 = v0 == "gleam"
+                                                            case v13 {
+                                                                True -> {
+                                                                    Us8GleamTarget
+                                                                }
+                                                                False -> {
+                                                                    let v15 = v0 == "lua"
+                                                                    case v15 {
+                                                                        True -> {
+                                                                            Us8LuaTarget
+                                                                        }
+                                                                        False -> {
+                                                                            let v17 = v0 == "c"
+                                                                            case v17 {
+                                                                                True -> {
+                                                                                    Us8CTarget
+                                                                                }
+                                                                                False -> {
+                                                                                    let v19 = v0 == "delphi"
+                                                                                    case v19 {
+                                                                                        True -> {
+                                                                                            Us8DelphiTarget
+                                                                                        }
+                                                                                        False -> {
+                                                                                            let v21 = v0 == "zig"
+                                                                                            case v21 {
+                                                                                                True -> {
+                                                                                                    Us8ZigTarget
+                                                                                                }
+                                                                                                False -> {
+                                                                                                    let v23 = v0 == "lean"
+                                                                                                    case v23 {
+                                                                                                        True -> {
+                                                                                                            Us8LeanTarget
+                                                                                                        }
+                                                                                                        False -> {
+                                                                                                            let v25 = v0 == "wgsl"
+                                                                                                            case v25 {
+                                                                                                                True -> {
+                                                                                                                    Us8WgslTarget
+                                                                                                                }
+                                                                                                                False -> {
+                                                                                                                    Us8UnknownTarget
+                                                                                                                }
+                                                                                                            }
+                                                                                                        }
+                                                                                                    }
+                                                                                                }
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        case v40  {
+            Us8CTarget -> {
+                let v49 = ".c"
+                v49
+            }
+            Us8CppTarget -> {
+                let v46 = ".cpp"
+                v46
+            }
+            Us8CudaTarget -> {
+                let v45 = ".py"
+                v45
+            }
+            Us8DelphiTarget -> {
+                let v50 = ".pas"
+                v50
+            }
+            Us8FsharpTarget -> {
+                let v42 = ".fsx"
+                v42
+            }
+            Us8GleamTarget -> {
+                let v47 = ".gleam"
+                v47
+            }
+            Us8LeanTarget -> {
+                let v52 = ".lean"
+                v52
+            }
+            Us8LuaTarget -> {
+                let v48 = ".lua"
+                v48
+            }
+            Us8PythonTarget -> {
+                let v44 = ".py"
+                v44
+            }
+            Us8RustTarget -> {
+                let v41 = ".rs"
+                v41
+            }
+            Us8TypescriptTarget -> {
+                let v43 = ".ts"
+                v43
+            }
+            Us8UnknownTarget -> {
+                let v54 = ""
+                v54
+            }
+            Us8WgslTarget -> {
+                let v53 = ".wgsl"
+                v53
+            }
+            Us8ZigTarget -> {
+                let v51 = ".zig"
+                v51
+            }
+        }
+    }
+}
+pub fn read_sources_90(v0: String, v1: Int, v2: Int, v3: Uh6) -> Uh6 {
     let v4 = v2 <= 0
     case v4 {
         True -> {
@@ -15667,7 +19372,7 @@ pub fn read_sources_83(v0: String, v1: Int, v2: Int, v3: Uh6) -> Uh6 {
                                     }
                                 }
                             let v118 = Uh6Source(v47, v117, v3)
-                            read_sources_83(v0, v97, v98, v118)
+                            read_sources_90(v0, v97, v98, v118)
                         }
                     }
                 }
@@ -15675,18 +19380,18 @@ pub fn read_sources_83(v0: String, v1: Int, v2: Int, v3: Uh6) -> Uh6 {
         }
     }
 }
-pub fn rev_sources_84(v0: Uh6, v1: Uh6) -> Uh6 {
+pub fn rev_sources_91(v0: Uh6, v1: Uh6) -> Uh6 {
     case v0  {
         Uh6NoSource -> {
             v1
         }
         Uh6Source(v2, v3, v4) -> {
             let v5 = Uh6Source(v2, v3, v1)
-            rev_sources_84(v4, v5)
+            rev_sources_91(v4, v5)
         }
     }
 }
-pub fn package_line_86(v0: Uh5) -> String {
+pub fn package_line_93(v0: Uh5) -> String {
     case v0  {
         Uh5Nb(v2, v3) -> {
             case v3  {
@@ -15697,7 +19402,7 @@ pub fn package_line_86(v0: Uh5) -> String {
                 _ -> {
                     let v5 = { "--package " } <> { v2 }
                     let v6 = { v5 } <> { " " }
-                    let v7 = package_line_86(v3)
+                    let v7 = package_line_93(v3)
                     let v8 = { v6 } <> { v7 }
                     v8
                 }
@@ -15709,10 +19414,10 @@ pub fn package_line_86(v0: Uh5) -> String {
         }
     }
 }
-pub fn snoc_87(v0: Uh5, v1: String) -> Uh5 {
+pub fn snoc_94(v0: Uh5, v1: String) -> Uh5 {
     case v0  {
         Uh5Nb(v4, v5) -> {
-            let v6 = snoc_87(v5, v1)
+            let v6 = snoc_94(v5, v1)
             Uh5Nb(v4, v6)
         }
         Uh5NoNb -> {
@@ -15721,7 +19426,7 @@ pub fn snoc_87(v0: Uh5, v1: String) -> Uh5 {
         }
     }
 }
-pub fn join_nb_88(v0: Uh5) -> String {
+pub fn join_nb_95(v0: Uh5) -> String {
     case v0  {
         Uh5Nb(v2, v3) -> {
             case v3  {
@@ -15730,7 +19435,7 @@ pub fn join_nb_88(v0: Uh5) -> String {
                 }
                 _ -> {
                     let v4 = { v2 } <> { "\n" }
-                    let v5 = join_nb_88(v3)
+                    let v5 = join_nb_95(v3)
                     let v6 = { v4 } <> { v5 }
                     v6
                 }
@@ -15742,20 +19447,20 @@ pub fn join_nb_88(v0: Uh5) -> String {
         }
     }
 }
-pub fn join_rev_90(v0: Uh5, v1: String, v2: Int) -> String {
+pub fn join_rev_97(v0: Uh5, v1: String, v2: Int) -> String {
     case v0  {
         Uh5Nb(v3, v4) -> {
             let v5 = v2 == 0
             case v5 {
                 True -> {
                     let v6 = 1
-                    join_rev_90(v4, v3, v6)
+                    join_rev_97(v4, v3, v6)
                 }
                 False -> {
                     let v8 = { v3 } <> { "\n" }
                     let v9 = { v8 } <> { v1 }
                     let v10 = 1
-                    join_rev_90(v4, v9, v10)
+                    join_rev_97(v4, v9, v10)
                 }
             }
         }
@@ -15764,18 +19469,18 @@ pub fn join_rev_90(v0: Uh5, v1: String, v2: Int) -> String {
         }
     }
 }
-pub fn rev_nb_91(v0: Uh5, v1: Uh5) -> Uh5 {
+pub fn rev_nb_98(v0: Uh5, v1: Uh5) -> Uh5 {
     case v0  {
         Uh5Nb(v2, v3) -> {
             let v4 = Uh5Nb(v2, v1)
-            rev_nb_91(v3, v4)
+            rev_nb_98(v3, v4)
         }
         Uh5NoNb -> {
             v1
         }
     }
 }
-pub fn skip_ws_93(v0: String, v1: Int) -> Int {
+pub fn skip_ws_100(v0: String, v1: Int) -> Int {
     let v2 = kino_text_size(v0)
     let v3 = v1 >= v2
     case v3 {
@@ -15788,14 +19493,14 @@ pub fn skip_ws_93(v0: String, v1: Int) -> Int {
             case v5 {
                 True -> {
                     let v6 = spiral_wrap_signed(v1 + 1, 32)
-                    skip_ws_93(v0, v6)
+                    skip_ws_100(v0, v6)
                 }
                 False -> {
                     let v8 = v4 == "\t"
                     case v8 {
                         True -> {
                             let v9 = spiral_wrap_signed(v1 + 1, 32)
-                            skip_ws_93(v0, v9)
+                            skip_ws_100(v0, v9)
                         }
                         False -> {
                             v1
@@ -15806,18 +19511,18 @@ pub fn skip_ws_93(v0: String, v1: Int) -> Int {
         }
     }
 }
-pub fn rev_flags_94(v0: Uh8, v1: Uh8) -> Uh8 {
+pub fn rev_flags_101(v0: Uh8, v1: Uh8) -> Uh8 {
     case v0  {
         Uh8Flag(v2, v3) -> {
             let v4 = Uh8Flag(v2, v1)
-            rev_flags_94(v3, v4)
+            rev_flags_101(v3, v4)
         }
         Uh8NoFlag -> {
             v1
         }
     }
 }
-pub fn take_token_95(v0: String, v1: Int) -> Int {
+pub fn take_token_102(v0: String, v1: Int) -> Int {
     let v2 = kino_text_size(v0)
     let v3 = v1 >= v2
     case v3 {
@@ -15839,7 +19544,7 @@ pub fn take_token_95(v0: String, v1: Int) -> Int {
                         }
                         False -> {
                             let v7 = spiral_wrap_signed(v1 + 1, 32)
-                            take_token_95(v0, v7)
+                            take_token_102(v0, v7)
                         }
                     }
                 }
@@ -15847,17 +19552,17 @@ pub fn take_token_95(v0: String, v1: Int) -> Int {
         }
     }
 }
-pub fn flags_from_92(v0: String, v1: Int, v2: Uh8) -> Uh8 {
-    let v3 = skip_ws_93(v0, v1)
+pub fn flags_from_99(v0: String, v1: Int, v2: Uh8) -> Uh8 {
+    let v3 = skip_ws_100(v0, v1)
     let v4 = kino_text_size(v0)
     let v5 = v3 >= v4
     case v5 {
         True -> {
             let v6 = Uh8NoFlag
-            rev_flags_94(v2, v6)
+            rev_flags_101(v2, v6)
         }
         False -> {
-            let v8 = take_token_95(v0, v3)
+            let v8 = take_token_102(v0, v3)
             let v9 = spiral_wrap_signed(v8 - v3, 32)
             let v10 = v9 <= 0
             let v29 =
@@ -15908,11 +19613,11 @@ pub fn flags_from_92(v0: String, v1: Int, v2: Uh8) -> Uh8 {
                     }
                 }
             let v30 = Uh8Flag(v29, v2)
-            flags_from_92(v0, v8, v30)
+            flags_from_99(v0, v8, v30)
         }
     }
 }
-pub fn has_nb_97(v0: Uh5, v1: String) -> Bool {
+pub fn has_nb_104(v0: Uh5, v1: String) -> Bool {
     case v0  {
         Uh5Nb(v2, v3) -> {
             let v4 = v2 == v1
@@ -15921,7 +19626,7 @@ pub fn has_nb_97(v0: Uh5, v1: String) -> Bool {
                     True
                 }
                 False -> {
-                    has_nb_97(v3, v1)
+                    has_nb_104(v3, v1)
                 }
             }
         }
@@ -15930,7 +19635,7 @@ pub fn has_nb_97(v0: Uh5, v1: String) -> Bool {
         }
     }
 }
-pub fn read_flags_96(v0: Uh8, v1: Uh5, v2: Int, v3: Int, v4: String) -> #(Uh5, Int, Int, String) {
+pub fn read_flags_103(v0: Uh8, v1: Uh5, v2: Int, v3: Int, v4: String) -> #(Uh5, Int, Int, String) {
     case v0  {
         Uh8Flag(v5, v6) -> {
             let v7 = "--package" == v5
@@ -15965,25 +19670,25 @@ pub fn read_flags_96(v0: Uh8, v1: Uh5, v2: Int, v3: Int, v4: String) -> #(Uh5, I
                                 }
                             case v20 {
                                 True -> {
-                                    read_flags_96(v9, v1, v2, v3, v4)
+                                    read_flags_103(v9, v1, v2, v3, v4)
                                 }
                                 False -> {
-                                    let v25 = has_nb_97(v1, v8)
+                                    let v25 = has_nb_104(v1, v8)
                                     let v27 =
                                         case v25 {
                                             True -> {
                                                 v1
                                             }
                                             False -> {
-                                                snoc_87(v1, v8)
+                                                snoc_94(v1, v8)
                                             }
                                         }
-                                    read_flags_96(v9, v27, v2, v3, v4)
+                                    read_flags_103(v9, v27, v2, v3, v4)
                                 }
                             }
                         }
                         _ -> {
-                            read_flags_96(v6, v1, v2, v3, v4)
+                            read_flags_103(v6, v1, v2, v3, v4)
                         }
                     }
                 }
@@ -15992,7 +19697,7 @@ pub fn read_flags_96(v0: Uh8, v1: Uh5, v2: Int, v3: Int, v4: String) -> #(Uh5, I
                     case v44 {
                         True -> {
                             let v45 = 3
-                            read_flags_96(v6, v1, v45, v3, v4)
+                            read_flags_103(v6, v1, v45, v3, v4)
                         }
                         False -> {
                             let v50 = "--test" == v5
@@ -16013,7 +19718,7 @@ pub fn read_flags_96(v0: Uh8, v1: Uh5, v2: Int, v3: Int, v4: String) -> #(Uh5, I
                                                                 2
                                                             }
                                                         }
-                                                    read_flags_96(v52, v1, v55, v3, v4)
+                                                    read_flags_103(v52, v1, v55, v3, v4)
                                                 }
                                                 False -> {
                                                     let v60 = v2 >= 2
@@ -16026,7 +19731,7 @@ pub fn read_flags_96(v0: Uh8, v1: Uh5, v2: Int, v3: Int, v4: String) -> #(Uh5, I
                                                                 1
                                                             }
                                                         }
-                                                    read_flags_96(v6, v1, v61, v3, v4)
+                                                    read_flags_103(v6, v1, v61, v3, v4)
                                                 }
                                             }
                                         }
@@ -16041,7 +19746,7 @@ pub fn read_flags_96(v0: Uh8, v1: Uh5, v2: Int, v3: Int, v4: String) -> #(Uh5, I
                                                         1
                                                     }
                                                 }
-                                            read_flags_96(v6, v1, v71, v3, v4)
+                                            read_flags_103(v6, v1, v71, v3, v4)
                                         }
                                     }
                                 }
@@ -16050,7 +19755,7 @@ pub fn read_flags_96(v0: Uh8, v1: Uh5, v2: Int, v3: Int, v4: String) -> #(Uh5, I
                                     case v80 {
                                         True -> {
                                             let v81 = 1
-                                            read_flags_96(v6, v1, v2, v81, v4)
+                                            read_flags_103(v6, v1, v2, v81, v4)
                                         }
                                         False -> {
                                             let v86 = "--timeout" == v5
@@ -16072,15 +19777,15 @@ pub fn read_flags_96(v0: Uh8, v1: Uh5, v2: Int, v3: Int, v4: String) -> #(Uh5, I
                                                                         v4
                                                                     }
                                                                 }
-                                                            read_flags_96(v88, v1, v2, v3, v94)
+                                                            read_flags_103(v88, v1, v2, v3, v94)
                                                         }
                                                         _ -> {
-                                                            read_flags_96(v6, v1, v2, v3, v4)
+                                                            read_flags_103(v6, v1, v2, v3, v4)
                                                         }
                                                     }
                                                 }
                                                 False -> {
-                                                    read_flags_96(v6, v1, v2, v3, v4)
+                                                    read_flags_103(v6, v1, v2, v3, v4)
                                                 }
                                             }
                                         }
@@ -16097,7 +19802,7 @@ pub fn read_flags_96(v0: Uh8, v1: Uh5, v2: Int, v3: Int, v4: String) -> #(Uh5, I
         }
     }
 }
-pub fn scan_lines_89(v0: String, v1: Int, v2: Uh5, v3: Int, v4: Int, v5: String, v6: Uh5, v7: Uh5, v8: Int) -> #(Uh5, Int, Int, String, String, Uh5, Int) {
+pub fn scan_lines_96(v0: String, v1: Int, v2: Uh5, v3: Int, v4: Int, v5: String, v6: Uh5, v7: Uh5, v8: Int) -> #(Uh5, Int, Int, String, String, Uh5, Int) {
     let v9 = kino_text_size(v0)
     let v10 = v1 > v9
     let v50 =
@@ -16191,7 +19896,7 @@ pub fn scan_lines_89(v0: String, v1: Int, v2: Uh5, v3: Int, v4: Int, v5: String,
         Us0LineDone -> {
             let v51 = ""
             let v52 = 0
-            let v53 = join_rev_90(v6, v51, v52)
+            let v53 = join_rev_97(v6, v51, v52)
             let v54 = kino_text_size(v53)
             let v55 = trim_nl_end_30(v53, v54)
             let v56 = v55 <= 0
@@ -16217,7 +19922,7 @@ pub fn scan_lines_89(v0: String, v1: Int, v2: Uh5, v3: Int, v4: Int, v5: String,
                     }
                 }
             let v64 = Uh5NoNb
-            let v65 = rev_nb_91(v7, v64)
+            let v65 = rev_nb_98(v7, v64)
             #(v2, v3, v4, v5, v63, v65, v8)
         }
         Us0LineGot(v66, v67) -> {
@@ -16321,9 +20026,9 @@ pub fn scan_lines_89(v0: String, v1: Int, v2: Uh5, v3: Int, v4: Int, v5: String,
                                 }
                             let v112 = 0
                             let v113 = Uh8NoFlag
-                            let v114 = flags_from_92(v111, v112, v113)
-                            let #(v115, v116, v117, v118) = read_flags_96(v114, v2, v3, v4, v5)
-                            scan_lines_89(v0, v67, v115, v116, v117, v118, v6, v7, v8)
+                            let v114 = flags_from_99(v111, v112, v113)
+                            let #(v115, v116, v117, v118) = read_flags_103(v114, v2, v3, v4, v5)
+                            scan_lines_96(v0, v67, v115, v116, v117, v118, v6, v7, v8)
                         }
                         False -> {
                             let v126 = "///>"
@@ -16407,10 +20112,10 @@ pub fn scan_lines_89(v0: String, v1: Int, v2: Uh5, v3: Int, v4: Int, v5: String,
                                                 v8
                                             }
                                         }
-                                    scan_lines_89(v0, v67, v2, v3, v4, v5, v6, v7, v160)
+                                    scan_lines_96(v0, v67, v2, v3, v4, v5, v6, v7, v160)
                                 }
                                 False -> {
-                                    scan_lines_89(v0, v67, v2, v3, v4, v5, v6, v7, v8)
+                                    scan_lines_96(v0, v67, v2, v3, v4, v5, v6, v7, v8)
                                 }
                             }
                         }
@@ -16452,262 +20157,1268 @@ pub fn scan_lines_89(v0: String, v1: Int, v2: Uh5, v3: Int, v4: Int, v5: String,
                             }
                         }
                     let v202 = Uh5Nb(v66, v6)
-                    scan_lines_89(v0, v67, v2, v3, v4, v5, v202, v201, v8)
+                    scan_lines_96(v0, v67, v2, v3, v4, v5, v202, v201, v8)
                 }
             }
         }
     }
 }
-pub fn merge_98(v0: Uh5, v1: Uh5) -> Uh5 {
+pub fn merge_105(v0: Uh5, v1: Uh5) -> Uh5 {
     case v1  {
         Uh5Nb(v2, v3) -> {
-            let v4 = has_nb_97(v0, v2)
+            let v4 = has_nb_104(v0, v2)
             let v6 =
                 case v4 {
                     True -> {
                         v0
                     }
                     False -> {
-                        snoc_87(v0, v2)
+                        snoc_94(v0, v2)
                     }
                 }
-            merge_98(v6, v3)
+            merge_105(v6, v3)
         }
         Uh5NoNb -> {
             v0
         }
     }
 }
-pub fn walk_85(v0: Us7, v1: Uh6, v2: Int, v3: Int, v4: Uh5, v5: Uh5, v6: Uh5, v7: Uh5, v8: Uh7) -> Uh7 {
-    case v1  {
-        Uh6NoSource -> {
-            case v0  {
-                Us7EveryCell -> {
-                    v8
-                }
-                Us7TestsAndWholeFile -> {
-                    let v9 = v3 < 0
-                    case v9 {
+pub fn split_declarations_107(v0: String, v1: Int, v2: Bool, v3: String, v4: String) -> #(String, String) {
+    let v5 = kino_text_size(v0)
+    let v6 = v1 > v5
+    let v46 =
+        case v6 {
+            True -> {
+                Us0LineDone
+            }
+            False -> {
+                let v8 = v5 == 0
+                let v10 =
+                    case v8 {
                         True -> {
-                            v8
+                            let v9 = v1 == 0
+                            v9
                         }
                         False -> {
-                            let v13 =
-                                case v4  {
-                                    Uh5NoNb -> {
-                                        let v10 = ""
-                                        v10
+                            False
+                        }
+                    }
+                case v10 {
+                    True -> {
+                        let v11 = ""
+                        Us0LineGot(v11, 1)
+                    }
+                    False -> {
+                        let v13 = v1 == v5
+                        case v13 {
+                            True -> {
+                                let v14 = v5 > 0
+                                let v18 =
+                                    case v14 {
+                                        True -> {
+                                            let v15 = spiral_wrap_signed(v5 - 1, 32)
+                                            let v16 = kino_text_at(v0, v15, 1)
+                                            let v17 = v16 == "\n"
+                                            v17
+                                        }
+                                        False -> {
+                                            False
+                                        }
                                     }
-                                    _ -> {
-                                        let v11 = package_line_86(v4)
-                                        let v12 = { "///- " } <> { v11 }
-                                        v12
-                                    }
-                                }
-                            let v14 = v13 == ""
-                            let v18 =
-                                case v14 {
+                                case v18 {
                                     True -> {
-                                        Uh5NoNb
+                                        let v19 = spiral_wrap_signed(v5 + 1, 32)
+                                        let v20 = ""
+                                        Us0LineGot(v20, v19)
                                     }
                                     False -> {
-                                        let v16 = Uh5NoNb
-                                        snoc_87(v16, v13)
+                                        Us0LineDone
                                     }
                                 }
-                            let v19 = join_nb_88(v5)
-                            let v20 = v19 == ""
-                            let v22 =
-                                case v20 {
+                            }
+                            False -> {
+                                let v24 = "\n"
+                                let v25 = find_char_3(v0, v1, v24)
+                                let v26 = v25 < 0
+                                case v26 {
                                     True -> {
-                                        v18
+                                        let v27 = spiral_wrap_signed(v5 - 1, 32)
+                                        let v28 = spiral_wrap_signed(v27 - v1, 32)
+                                        let v29 = spiral_wrap_signed(v28 + 1, 32)
+                                        let v30 = kino_text_at(v0, v1, v29)
+                                        Us0LineGot(v30, v5)
                                     }
                                     False -> {
-                                        snoc_87(v18, v19)
+                                        let v32 = v25 == v1
+                                        case v32 {
+                                            True -> {
+                                                let v33 = spiral_wrap_signed(v25 + 1, 32)
+                                                let v34 = ""
+                                                Us0LineGot(v34, v33)
+                                            }
+                                            False -> {
+                                                let v36 = spiral_wrap_signed(v25 - 1, 32)
+                                                let v37 = spiral_wrap_signed(v36 - v1, 32)
+                                                let v38 = spiral_wrap_signed(v37 + 1, 32)
+                                                let v39 = kino_text_at(v0, v1, v38)
+                                                let v40 = spiral_wrap_signed(v25 + 1, 32)
+                                                Us0LineGot(v39, v40)
+                                            }
+                                        }
                                     }
                                 }
-                            let v23 = join_nb_88(v6)
-                            let v24 = v23 == ""
-                            let v26 =
-                                case v24 {
-                                    True -> {
-                                        v22
-                                    }
-                                    False -> {
-                                        snoc_87(v22, v23)
-                                    }
-                                }
-                            let v27 = join_nb_88(v26)
-                            let v28 = join_nb_88(v7)
-                            let v29 = "-"
-                            Uh7Step(v3, v29, v27, v28, v8)
+                            }
                         }
                     }
                 }
             }
         }
-        Uh6Source(v34, v35, v36) -> {
-            let v37 = v34 == "spiral"
-            let v38 = v37 != True
-            case v38 {
-                True -> {
-                    let v39 = spiral_wrap_signed(v2 + 1, 32)
-                    walk_85(v0, v36, v39, v3, v4, v5, v6, v7, v8)
+    case v46  {
+        Us0LineDone -> {
+            #(v3, v4)
+        }
+        Us0LineGot(v47, v48) -> {
+            let v49 = v47 == ""
+            let v50 = v49 != True
+            let v63 =
+                case v50 {
+                    True -> {
+                        let v51 = " "
+                        let v52 = kino_text_size(v51)
+                        let v53 = kino_text_size(v47)
+                        let v54 = v52 > v53
+                        let v61 =
+                            case v54 {
+                                True -> {
+                                    False
+                                }
+                                False -> {
+                                    let v55 = v52 == 0
+                                    case v55 {
+                                        True -> {
+                                            True
+                                        }
+                                        False -> {
+                                            let v56 = spiral_wrap_signed(v52 - 1, 32)
+                                            let v57 = spiral_wrap_signed(v56 + 1, 32)
+                                            let v58 = kino_text_at(v47, 0, v57)
+                                            let v59 = v58 == " "
+                                            v59
+                                        }
+                                    }
+                                }
+                            }
+                        let v62 = v61 == False
+                        v62
+                    }
+                    False -> {
+                        False
+                    }
                 }
-                False -> {
-                    let v41 = "\r\n"
-                    let v42 = "\n"
-                    let v43 = 0
-                    let v44 = ""
-                    let v45 = replace_from_0(v35, v41, v42, v43, v44)
-                    let v46 = 0
-                    let v47 = Uh5NoNb
-                    let v48 = 0
-                    let v49 = 0
-                    let v50 = Uh5NoNb
-                    let v51 = Uh5NoNb
-                    let v52 = 0
-                    let #(v53, v54, v55, v56, v57, v58, v59) = scan_lines_89(v45, v46, v47, v48, v49, v44, v50, v51, v52)
-                    let v60 = merge_98(v4, v53)
-                    let v61 = v54 == 3
-                    case v61 {
-                        True -> {
-                            let v62 = spiral_wrap_signed(v2 + 1, 32)
-                            walk_85(v0, v36, v62, v3, v60, v5, v6, v7, v8)
-                        }
-                        False -> {
-                            let v64 = v59 == 1
-                            let #(v239, v240) =
-                                case v64 {
+            let v135 =
+                case v63 {
+                    True -> {
+                        let v64 = "open "
+                        let v65 = kino_text_size(v64)
+                        let v66 = kino_text_size(v47)
+                        let v67 = v65 > v66
+                        let v74 =
+                            case v67 {
+                                True -> {
+                                    False
+                                }
+                                False -> {
+                                    let v68 = v65 == 0
+                                    case v68 {
+                                        True -> {
+                                            True
+                                        }
+                                        False -> {
+                                            let v69 = spiral_wrap_signed(v65 - 1, 32)
+                                            let v70 = spiral_wrap_signed(v69 + 1, 32)
+                                            let v71 = kino_text_at(v47, 0, v70)
+                                            let v72 = v71 == "open "
+                                            v72
+                                        }
+                                    }
+                                }
+                            }
+                        case v74 {
+                            True -> {
+                                True
+                            }
+                            False -> {
+                                let v75 = "prototype "
+                                let v76 = kino_text_size(v75)
+                                let v77 = kino_text_size(v47)
+                                let v78 = v76 > v77
+                                let v85 =
+                                    case v78 {
+                                        True -> {
+                                            False
+                                        }
+                                        False -> {
+                                            let v79 = v76 == 0
+                                            case v79 {
+                                                True -> {
+                                                    True
+                                                }
+                                                False -> {
+                                                    let v80 = spiral_wrap_signed(v76 - 1, 32)
+                                                    let v81 = spiral_wrap_signed(v80 + 1, 32)
+                                                    let v82 = kino_text_at(v47, 0, v81)
+                                                    let v83 = v82 == "prototype "
+                                                    v83
+                                                }
+                                            }
+                                        }
+                                    }
+                                case v85 {
                                     True -> {
-                                        let v65 = "///> _"
-                                        #(v65, v44)
+                                        True
                                     }
                                     False -> {
-                                        let v66 = v55 == 1
-                                        case v66 {
-                                            True -> {
-                                                let v67 = 0
-                                                let v68 = Uh0NoLine
-                                                let v69 = collect_4(v57, v67, v68)
-                                                let v70 = count_lines_6(v69)
-                                                let v71 = spiral_wrap_signed(v70 - 1, 32)
-                                                let v72 = last_block_7(v69, v71)
-                                                let v73 = v72 >= 0
-                                                let v122 =
-                                                    case v73 {
+                                        let v86 = "instance "
+                                        let v87 = kino_text_size(v86)
+                                        let v88 = kino_text_size(v47)
+                                        let v89 = v87 > v88
+                                        let v96 =
+                                            case v89 {
+                                                True -> {
+                                                    False
+                                                }
+                                                False -> {
+                                                    let v90 = v87 == 0
+                                                    case v90 {
                                                         True -> {
-                                                            let v74 = nth_line_8(v69, v72)
-                                                            let v75 = "inl main "
-                                                            let v76 = kino_text_size(v75)
-                                                            let v77 = kino_text_size(v74)
-                                                            let v78 = v76 > v77
-                                                            let v85 =
-                                                                case v78 {
-                                                                    True -> {
-                                                                        False
-                                                                    }
-                                                                    False -> {
-                                                                        let v79 = v76 == 0
-                                                                        case v79 {
-                                                                            True -> {
-                                                                                True
-                                                                            }
-                                                                            False -> {
-                                                                                let v80 = spiral_wrap_signed(v76 - 1, 32)
-                                                                                let v81 = spiral_wrap_signed(v80 + 1, 32)
-                                                                                let v82 = kino_text_at(v74, 0, v81)
-                                                                                let v83 = v82 == "inl main "
-                                                                                v83
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                }
-                                                            case v85 {
+                                                            True
+                                                        }
+                                                        False -> {
+                                                            let v91 = spiral_wrap_signed(v87 - 1, 32)
+                                                            let v92 = spiral_wrap_signed(v91 + 1, 32)
+                                                            let v93 = kino_text_at(v47, 0, v92)
+                                                            let v94 = v93 == "instance "
+                                                            v94
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        case v96 {
+                                            True -> {
+                                                True
+                                            }
+                                            False -> {
+                                                let v97 = "type "
+                                                let v98 = kino_text_size(v97)
+                                                let v99 = kino_text_size(v47)
+                                                let v100 = v98 > v99
+                                                let v107 =
+                                                    case v100 {
+                                                        True -> {
+                                                            False
+                                                        }
+                                                        False -> {
+                                                            let v101 = v98 == 0
+                                                            case v101 {
                                                                 True -> {
                                                                     True
                                                                 }
                                                                 False -> {
-                                                                    let v86 = "let main "
-                                                                    let v87 = kino_text_size(v86)
-                                                                    let v88 = kino_text_size(v74)
-                                                                    let v89 = v87 > v88
-                                                                    let v96 =
-                                                                        case v89 {
-                                                                            True -> {
-                                                                                False
-                                                                            }
-                                                                            False -> {
-                                                                                let v90 = v87 == 0
-                                                                                case v90 {
-                                                                                    True -> {
-                                                                                        True
-                                                                                    }
-                                                                                    False -> {
-                                                                                        let v91 = spiral_wrap_signed(v87 - 1, 32)
-                                                                                        let v92 = spiral_wrap_signed(v91 + 1, 32)
-                                                                                        let v93 = kino_text_at(v74, 0, v92)
-                                                                                        let v94 = v93 == "let main "
-                                                                                        v94
-                                                                                    }
-                                                                                }
-                                                                            }
-                                                                        }
-                                                                    case v96 {
+                                                                    let v102 = spiral_wrap_signed(v98 - 1, 32)
+                                                                    let v103 = spiral_wrap_signed(v102 + 1, 32)
+                                                                    let v104 = kino_text_at(v47, 0, v103)
+                                                                    let v105 = v104 == "type "
+                                                                    v105
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                case v107 {
+                                                    True -> {
+                                                        True
+                                                    }
+                                                    False -> {
+                                                        let v108 = "union "
+                                                        let v109 = kino_text_size(v108)
+                                                        let v110 = kino_text_size(v47)
+                                                        let v111 = v109 > v110
+                                                        let v118 =
+                                                            case v111 {
+                                                                True -> {
+                                                                    False
+                                                                }
+                                                                False -> {
+                                                                    let v112 = v109 == 0
+                                                                    case v112 {
                                                                         True -> {
                                                                             True
                                                                         }
                                                                         False -> {
-                                                                            let v97 = "inl main("
-                                                                            let v98 = kino_text_size(v97)
-                                                                            let v99 = kino_text_size(v74)
-                                                                            let v100 = v98 > v99
-                                                                            let v107 =
-                                                                                case v100 {
+                                                                            let v113 = spiral_wrap_signed(v109 - 1, 32)
+                                                                            let v114 = spiral_wrap_signed(v113 + 1, 32)
+                                                                            let v115 = kino_text_at(v47, 0, v114)
+                                                                            let v116 = v115 == "union "
+                                                                            v116
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        case v118 {
+                                                            True -> {
+                                                                True
+                                                            }
+                                                            False -> {
+                                                                let v119 = "nominal "
+                                                                let v120 = kino_text_size(v119)
+                                                                let v121 = kino_text_size(v47)
+                                                                let v122 = v120 > v121
+                                                                case v122 {
+                                                                    True -> {
+                                                                        False
+                                                                    }
+                                                                    False -> {
+                                                                        let v123 = v120 == 0
+                                                                        case v123 {
+                                                                            True -> {
+                                                                                True
+                                                                            }
+                                                                            False -> {
+                                                                                let v124 = spiral_wrap_signed(v120 - 1, 32)
+                                                                                let v125 = spiral_wrap_signed(v124 + 1, 32)
+                                                                                let v126 = kino_text_at(v47, 0, v125)
+                                                                                let v127 = v126 == "nominal "
+                                                                                v127
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    False -> {
+                        v2
+                    }
+                }
+            case v135 {
+                True -> {
+                    let v136 = True
+                    let v137 = { v3 } <> { "\n" }
+                    let v138 = { v137 } <> { v47 }
+                    split_declarations_107(v0, v48, v136, v138, v4)
+                }
+                False -> {
+                    let v141 = False
+                    let v142 = { v4 } <> { "\n" }
+                    let v143 = { v142 } <> { v47 }
+                    split_declarations_107(v0, v48, v141, v3, v143)
+                }
+            }
+        }
+    }
+}
+pub fn split_declarations_106(v0: String, v1: Int, v2: Bool, v3: String) -> #(String, String) {
+    let v4 = kino_text_size(v0)
+    let v5 = v1 > v4
+    let v45 =
+        case v5 {
+            True -> {
+                Us0LineDone
+            }
+            False -> {
+                let v7 = v4 == 0
+                let v9 =
+                    case v7 {
+                        True -> {
+                            let v8 = v1 == 0
+                            v8
+                        }
+                        False -> {
+                            False
+                        }
+                    }
+                case v9 {
+                    True -> {
+                        let v10 = ""
+                        Us0LineGot(v10, 1)
+                    }
+                    False -> {
+                        let v12 = v1 == v4
+                        case v12 {
+                            True -> {
+                                let v13 = v4 > 0
+                                let v17 =
+                                    case v13 {
+                                        True -> {
+                                            let v14 = spiral_wrap_signed(v4 - 1, 32)
+                                            let v15 = kino_text_at(v0, v14, 1)
+                                            let v16 = v15 == "\n"
+                                            v16
+                                        }
+                                        False -> {
+                                            False
+                                        }
+                                    }
+                                case v17 {
+                                    True -> {
+                                        let v18 = spiral_wrap_signed(v4 + 1, 32)
+                                        let v19 = ""
+                                        Us0LineGot(v19, v18)
+                                    }
+                                    False -> {
+                                        Us0LineDone
+                                    }
+                                }
+                            }
+                            False -> {
+                                let v23 = "\n"
+                                let v24 = find_char_3(v0, v1, v23)
+                                let v25 = v24 < 0
+                                case v25 {
+                                    True -> {
+                                        let v26 = spiral_wrap_signed(v4 - 1, 32)
+                                        let v27 = spiral_wrap_signed(v26 - v1, 32)
+                                        let v28 = spiral_wrap_signed(v27 + 1, 32)
+                                        let v29 = kino_text_at(v0, v1, v28)
+                                        Us0LineGot(v29, v4)
+                                    }
+                                    False -> {
+                                        let v31 = v24 == v1
+                                        case v31 {
+                                            True -> {
+                                                let v32 = spiral_wrap_signed(v24 + 1, 32)
+                                                let v33 = ""
+                                                Us0LineGot(v33, v32)
+                                            }
+                                            False -> {
+                                                let v35 = spiral_wrap_signed(v24 - 1, 32)
+                                                let v36 = spiral_wrap_signed(v35 - v1, 32)
+                                                let v37 = spiral_wrap_signed(v36 + 1, 32)
+                                                let v38 = kino_text_at(v0, v1, v37)
+                                                let v39 = spiral_wrap_signed(v24 + 1, 32)
+                                                Us0LineGot(v38, v39)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    case v45  {
+        Us0LineDone -> {
+            #(v3, v3)
+        }
+        Us0LineGot(v46, v47) -> {
+            let v48 = v46 == ""
+            let v49 = v48 != True
+            let v62 =
+                case v49 {
+                    True -> {
+                        let v50 = " "
+                        let v51 = kino_text_size(v50)
+                        let v52 = kino_text_size(v46)
+                        let v53 = v51 > v52
+                        let v60 =
+                            case v53 {
+                                True -> {
+                                    False
+                                }
+                                False -> {
+                                    let v54 = v51 == 0
+                                    case v54 {
+                                        True -> {
+                                            True
+                                        }
+                                        False -> {
+                                            let v55 = spiral_wrap_signed(v51 - 1, 32)
+                                            let v56 = spiral_wrap_signed(v55 + 1, 32)
+                                            let v57 = kino_text_at(v46, 0, v56)
+                                            let v58 = v57 == " "
+                                            v58
+                                        }
+                                    }
+                                }
+                            }
+                        let v61 = v60 == False
+                        v61
+                    }
+                    False -> {
+                        False
+                    }
+                }
+            let v134 =
+                case v62 {
+                    True -> {
+                        let v63 = "open "
+                        let v64 = kino_text_size(v63)
+                        let v65 = kino_text_size(v46)
+                        let v66 = v64 > v65
+                        let v73 =
+                            case v66 {
+                                True -> {
+                                    False
+                                }
+                                False -> {
+                                    let v67 = v64 == 0
+                                    case v67 {
+                                        True -> {
+                                            True
+                                        }
+                                        False -> {
+                                            let v68 = spiral_wrap_signed(v64 - 1, 32)
+                                            let v69 = spiral_wrap_signed(v68 + 1, 32)
+                                            let v70 = kino_text_at(v46, 0, v69)
+                                            let v71 = v70 == "open "
+                                            v71
+                                        }
+                                    }
+                                }
+                            }
+                        case v73 {
+                            True -> {
+                                True
+                            }
+                            False -> {
+                                let v74 = "prototype "
+                                let v75 = kino_text_size(v74)
+                                let v76 = kino_text_size(v46)
+                                let v77 = v75 > v76
+                                let v84 =
+                                    case v77 {
+                                        True -> {
+                                            False
+                                        }
+                                        False -> {
+                                            let v78 = v75 == 0
+                                            case v78 {
+                                                True -> {
+                                                    True
+                                                }
+                                                False -> {
+                                                    let v79 = spiral_wrap_signed(v75 - 1, 32)
+                                                    let v80 = spiral_wrap_signed(v79 + 1, 32)
+                                                    let v81 = kino_text_at(v46, 0, v80)
+                                                    let v82 = v81 == "prototype "
+                                                    v82
+                                                }
+                                            }
+                                        }
+                                    }
+                                case v84 {
+                                    True -> {
+                                        True
+                                    }
+                                    False -> {
+                                        let v85 = "instance "
+                                        let v86 = kino_text_size(v85)
+                                        let v87 = kino_text_size(v46)
+                                        let v88 = v86 > v87
+                                        let v95 =
+                                            case v88 {
+                                                True -> {
+                                                    False
+                                                }
+                                                False -> {
+                                                    let v89 = v86 == 0
+                                                    case v89 {
+                                                        True -> {
+                                                            True
+                                                        }
+                                                        False -> {
+                                                            let v90 = spiral_wrap_signed(v86 - 1, 32)
+                                                            let v91 = spiral_wrap_signed(v90 + 1, 32)
+                                                            let v92 = kino_text_at(v46, 0, v91)
+                                                            let v93 = v92 == "instance "
+                                                            v93
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        case v95 {
+                                            True -> {
+                                                True
+                                            }
+                                            False -> {
+                                                let v96 = "type "
+                                                let v97 = kino_text_size(v96)
+                                                let v98 = kino_text_size(v46)
+                                                let v99 = v97 > v98
+                                                let v106 =
+                                                    case v99 {
+                                                        True -> {
+                                                            False
+                                                        }
+                                                        False -> {
+                                                            let v100 = v97 == 0
+                                                            case v100 {
+                                                                True -> {
+                                                                    True
+                                                                }
+                                                                False -> {
+                                                                    let v101 = spiral_wrap_signed(v97 - 1, 32)
+                                                                    let v102 = spiral_wrap_signed(v101 + 1, 32)
+                                                                    let v103 = kino_text_at(v46, 0, v102)
+                                                                    let v104 = v103 == "type "
+                                                                    v104
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                case v106 {
+                                                    True -> {
+                                                        True
+                                                    }
+                                                    False -> {
+                                                        let v107 = "union "
+                                                        let v108 = kino_text_size(v107)
+                                                        let v109 = kino_text_size(v46)
+                                                        let v110 = v108 > v109
+                                                        let v117 =
+                                                            case v110 {
+                                                                True -> {
+                                                                    False
+                                                                }
+                                                                False -> {
+                                                                    let v111 = v108 == 0
+                                                                    case v111 {
+                                                                        True -> {
+                                                                            True
+                                                                        }
+                                                                        False -> {
+                                                                            let v112 = spiral_wrap_signed(v108 - 1, 32)
+                                                                            let v113 = spiral_wrap_signed(v112 + 1, 32)
+                                                                            let v114 = kino_text_at(v46, 0, v113)
+                                                                            let v115 = v114 == "union "
+                                                                            v115
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        case v117 {
+                                                            True -> {
+                                                                True
+                                                            }
+                                                            False -> {
+                                                                let v118 = "nominal "
+                                                                let v119 = kino_text_size(v118)
+                                                                let v120 = kino_text_size(v46)
+                                                                let v121 = v119 > v120
+                                                                case v121 {
+                                                                    True -> {
+                                                                        False
+                                                                    }
+                                                                    False -> {
+                                                                        let v122 = v119 == 0
+                                                                        case v122 {
+                                                                            True -> {
+                                                                                True
+                                                                            }
+                                                                            False -> {
+                                                                                let v123 = spiral_wrap_signed(v119 - 1, 32)
+                                                                                let v124 = spiral_wrap_signed(v123 + 1, 32)
+                                                                                let v125 = kino_text_at(v46, 0, v124)
+                                                                                let v126 = v125 == "nominal "
+                                                                                v126
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    False -> {
+                        v2
+                    }
+                }
+            case v134 {
+                True -> {
+                    let v135 = True
+                    let v136 = { v3 } <> { "\n" }
+                    let v137 = { v136 } <> { v46 }
+                    split_declarations_107(v0, v47, v135, v137, v3)
+                }
+                False -> {
+                    let v140 = False
+                    let v141 = { v3 } <> { "\n" }
+                    let v142 = { v141 } <> { v46 }
+                    split_declarations_107(v0, v47, v140, v3, v142)
+                }
+            }
+        }
+    }
+}
+pub fn last_top_block_108(v0: String, v1: Int, v2: String) -> String {
+    let v3 = kino_text_size(v0)
+    let v4 = v1 > v3
+    let v44 =
+        case v4 {
+            True -> {
+                Us0LineDone
+            }
+            False -> {
+                let v6 = v3 == 0
+                let v8 =
+                    case v6 {
+                        True -> {
+                            let v7 = v1 == 0
+                            v7
+                        }
+                        False -> {
+                            False
+                        }
+                    }
+                case v8 {
+                    True -> {
+                        let v9 = ""
+                        Us0LineGot(v9, 1)
+                    }
+                    False -> {
+                        let v11 = v1 == v3
+                        case v11 {
+                            True -> {
+                                let v12 = v3 > 0
+                                let v16 =
+                                    case v12 {
+                                        True -> {
+                                            let v13 = spiral_wrap_signed(v3 - 1, 32)
+                                            let v14 = kino_text_at(v0, v13, 1)
+                                            let v15 = v14 == "\n"
+                                            v15
+                                        }
+                                        False -> {
+                                            False
+                                        }
+                                    }
+                                case v16 {
+                                    True -> {
+                                        let v17 = spiral_wrap_signed(v3 + 1, 32)
+                                        let v18 = ""
+                                        Us0LineGot(v18, v17)
+                                    }
+                                    False -> {
+                                        Us0LineDone
+                                    }
+                                }
+                            }
+                            False -> {
+                                let v22 = "\n"
+                                let v23 = find_char_3(v0, v1, v22)
+                                let v24 = v23 < 0
+                                case v24 {
+                                    True -> {
+                                        let v25 = spiral_wrap_signed(v3 - 1, 32)
+                                        let v26 = spiral_wrap_signed(v25 - v1, 32)
+                                        let v27 = spiral_wrap_signed(v26 + 1, 32)
+                                        let v28 = kino_text_at(v0, v1, v27)
+                                        Us0LineGot(v28, v3)
+                                    }
+                                    False -> {
+                                        let v30 = v23 == v1
+                                        case v30 {
+                                            True -> {
+                                                let v31 = spiral_wrap_signed(v23 + 1, 32)
+                                                let v32 = ""
+                                                Us0LineGot(v32, v31)
+                                            }
+                                            False -> {
+                                                let v34 = spiral_wrap_signed(v23 - 1, 32)
+                                                let v35 = spiral_wrap_signed(v34 - v1, 32)
+                                                let v36 = spiral_wrap_signed(v35 + 1, 32)
+                                                let v37 = kino_text_at(v0, v1, v36)
+                                                let v38 = spiral_wrap_signed(v23 + 1, 32)
+                                                Us0LineGot(v37, v38)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    case v44  {
+        Us0LineDone -> {
+            v2
+        }
+        Us0LineGot(v45, v46) -> {
+            let v47 = v45 == ""
+            let v48 = v47 != True
+            let v61 =
+                case v48 {
+                    True -> {
+                        let v49 = " "
+                        let v50 = kino_text_size(v49)
+                        let v51 = kino_text_size(v45)
+                        let v52 = v50 > v51
+                        let v59 =
+                            case v52 {
+                                True -> {
+                                    False
+                                }
+                                False -> {
+                                    let v53 = v50 == 0
+                                    case v53 {
+                                        True -> {
+                                            True
+                                        }
+                                        False -> {
+                                            let v54 = spiral_wrap_signed(v50 - 1, 32)
+                                            let v55 = spiral_wrap_signed(v54 + 1, 32)
+                                            let v56 = kino_text_at(v45, 0, v55)
+                                            let v57 = v56 == " "
+                                            v57
+                                        }
+                                    }
+                                }
+                            }
+                        let v60 = v59 == False
+                        v60
+                    }
+                    False -> {
+                        False
+                    }
+                }
+            case v61 {
+                True -> {
+                    last_top_block_108(v0, v46, v45)
+                }
+                False -> {
+                    let v63 = { v2 } <> { "\n" }
+                    let v64 = { v63 } <> { v45 }
+                    last_top_block_108(v0, v46, v64)
+                }
+            }
+        }
+    }
+}
+pub fn indent_body_109(v0: String, v1: Int, v2: String) -> String {
+    let v3 = kino_text_size(v0)
+    let v4 = v1 > v3
+    let v44 =
+        case v4 {
+            True -> {
+                Us0LineDone
+            }
+            False -> {
+                let v6 = v3 == 0
+                let v8 =
+                    case v6 {
+                        True -> {
+                            let v7 = v1 == 0
+                            v7
+                        }
+                        False -> {
+                            False
+                        }
+                    }
+                case v8 {
+                    True -> {
+                        let v9 = ""
+                        Us0LineGot(v9, 1)
+                    }
+                    False -> {
+                        let v11 = v1 == v3
+                        case v11 {
+                            True -> {
+                                let v12 = v3 > 0
+                                let v16 =
+                                    case v12 {
+                                        True -> {
+                                            let v13 = spiral_wrap_signed(v3 - 1, 32)
+                                            let v14 = kino_text_at(v0, v13, 1)
+                                            let v15 = v14 == "\n"
+                                            v15
+                                        }
+                                        False -> {
+                                            False
+                                        }
+                                    }
+                                case v16 {
+                                    True -> {
+                                        let v17 = spiral_wrap_signed(v3 + 1, 32)
+                                        let v18 = ""
+                                        Us0LineGot(v18, v17)
+                                    }
+                                    False -> {
+                                        Us0LineDone
+                                    }
+                                }
+                            }
+                            False -> {
+                                let v22 = "\n"
+                                let v23 = find_char_3(v0, v1, v22)
+                                let v24 = v23 < 0
+                                case v24 {
+                                    True -> {
+                                        let v25 = spiral_wrap_signed(v3 - 1, 32)
+                                        let v26 = spiral_wrap_signed(v25 - v1, 32)
+                                        let v27 = spiral_wrap_signed(v26 + 1, 32)
+                                        let v28 = kino_text_at(v0, v1, v27)
+                                        Us0LineGot(v28, v3)
+                                    }
+                                    False -> {
+                                        let v30 = v23 == v1
+                                        case v30 {
+                                            True -> {
+                                                let v31 = spiral_wrap_signed(v23 + 1, 32)
+                                                let v32 = ""
+                                                Us0LineGot(v32, v31)
+                                            }
+                                            False -> {
+                                                let v34 = spiral_wrap_signed(v23 - 1, 32)
+                                                let v35 = spiral_wrap_signed(v34 - v1, 32)
+                                                let v36 = spiral_wrap_signed(v35 + 1, 32)
+                                                let v37 = kino_text_at(v0, v1, v36)
+                                                let v38 = spiral_wrap_signed(v23 + 1, 32)
+                                                Us0LineGot(v37, v38)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    case v44  {
+        Us0LineDone -> {
+            v2
+        }
+        Us0LineGot(v45, v46) -> {
+            let v47 = 0
+            let v48 = trim_start_17(v45, v47)
+            let v49 = kino_text_size(v45)
+            let v50 = trim_end_18(v45, v49)
+            let v51 = v50 <= v48
+            let v57 =
+                case v51 {
+                    True -> {
+                        let v52 = ""
+                        v52
+                    }
+                    False -> {
+                        let v53 = spiral_wrap_signed(v50 - 1, 32)
+                        let v54 = spiral_wrap_signed(v53 - v48, 32)
+                        let v55 = spiral_wrap_signed(v54 + 1, 32)
+                        let v56 = kino_text_at(v45, v48, v55)
+                        v56
+                    }
+                }
+            let v58 = v57 == ""
+            let v61 =
+                case v58 {
+                    True -> {
+                        let v59 = ""
+                        v59
+                    }
+                    False -> {
+                        let v60 = { "    " } <> { v45 }
+                        v60
+                    }
+                }
+            let v62 = v61 == ""
+            let v64 =
+                case v62 {
+                    True -> {
+                        let v63 = v2 == ""
+                        v63
+                    }
+                    False -> {
+                        False
+                    }
+                }
+            let v67 =
+                case v64 {
+                    True -> {
+                        v2
+                    }
+                    False -> {
+                        let v65 = { v2 } <> { "\n" }
+                        let v66 = { v65 } <> { v61 }
+                        v66
+                    }
+                }
+            indent_body_109(v0, v46, v67)
+        }
+    }
+}
+pub fn walk_92(v0: Us9, v1: Uh6, v2: Int, v3: Int, v4: Uh5, v5: Uh5, v6: Uh5, v7: Uh5, v8: Us10, v9: Uh7) -> Uh7 {
+    case v1  {
+        Uh6NoSource -> {
+            case v0  {
+                Us9EveryCell -> {
+                    v9
+                }
+                Us9TestsAndWholeFile -> {
+                    let v10 = v3 < 0
+                    case v10 {
+                        True -> {
+                            v9
+                        }
+                        False -> {
+                            let v17 =
+                                case v8  {
+                                    Us10BudgetOf(v11) -> {
+                                        let v12 = v11 == ""
+                                        case v12 {
+                                            True -> {
+                                                let v13 = "-"
+                                                v13
+                                            }
+                                            False -> {
+                                                v11
+                                            }
+                                        }
+                                    }
+                                    Us10BudgetUnseen -> {
+                                        let v15 = "-"
+                                        v15
+                                    }
+                                }
+                            let v21 =
+                                case v4  {
+                                    Uh5NoNb -> {
+                                        let v18 = ""
+                                        v18
+                                    }
+                                    _ -> {
+                                        let v19 = package_line_93(v4)
+                                        let v20 = { "///- " } <> { v19 }
+                                        v20
+                                    }
+                                }
+                            let v22 = v21 == ""
+                            let v26 =
+                                case v22 {
+                                    True -> {
+                                        Uh5NoNb
+                                    }
+                                    False -> {
+                                        let v24 = Uh5NoNb
+                                        snoc_94(v24, v21)
+                                    }
+                                }
+                            let v27 = join_nb_95(v5)
+                            let v28 = v27 == ""
+                            let v30 =
+                                case v28 {
+                                    True -> {
+                                        v26
+                                    }
+                                    False -> {
+                                        snoc_94(v26, v27)
+                                    }
+                                }
+                            let v31 = join_nb_95(v6)
+                            let v32 = v31 == ""
+                            let v34 =
+                                case v32 {
+                                    True -> {
+                                        v30
+                                    }
+                                    False -> {
+                                        snoc_94(v30, v31)
+                                    }
+                                }
+                            let v35 = join_nb_95(v34)
+                            let v36 = join_nb_95(v7)
+                            Uh7Step(v3, v17, v35, v36, v9)
+                        }
+                    }
+                }
+            }
+        }
+        Uh6Source(v41, v42, v43) -> {
+            let v44 = v41 == "spiral"
+            let v45 = v44 != True
+            case v45 {
+                True -> {
+                    let v46 = spiral_wrap_signed(v2 + 1, 32)
+                    walk_92(v0, v43, v46, v3, v4, v5, v6, v7, v8, v9)
+                }
+                False -> {
+                    let v48 = "\r\n"
+                    let v49 = "\n"
+                    let v50 = 0
+                    let v51 = ""
+                    let v52 = replace_from_0(v42, v48, v49, v50, v51)
+                    let v53 = 0
+                    let v54 = Uh5NoNb
+                    let v55 = 0
+                    let v56 = 0
+                    let v57 = Uh5NoNb
+                    let v58 = Uh5NoNb
+                    let v59 = 0
+                    let #(v60, v61, v62, v63, v64, v65, v66) = scan_lines_96(v52, v53, v54, v55, v56, v51, v57, v58, v59)
+                    let v67 = merge_105(v4, v60)
+                    let v71 =
+                        case v8  {
+                            Us10BudgetOf(v69) -> {
+                                v8
+                            }
+                            Us10BudgetUnseen -> {
+                                Us10BudgetOf(v63)
+                            }
+                        }
+                    let v72 = v61 == 3
+                    case v72 {
+                        True -> {
+                            let v73 = spiral_wrap_signed(v2 + 1, 32)
+                            walk_92(v0, v43, v73, v3, v67, v5, v6, v7, v71, v9)
+                        }
+                        False -> {
+                            let v75 = v66 == 1
+                            let #(v292, v293) =
+                                case v75 {
+                                    True -> {
+                                        let v76 = "///> _"
+                                        #(v76, v51)
+                                    }
+                                    False -> {
+                                        let v77 = v62 == 1
+                                        case v77 {
+                                            True -> {
+                                                let v78 = 0
+                                                let v79 = Uh0NoLine
+                                                let v80 = collect_4(v64, v78, v79)
+                                                let v81 = count_lines_6(v80)
+                                                let v82 = spiral_wrap_signed(v81 - 1, 32)
+                                                let v83 = last_block_7(v80, v82)
+                                                let v84 = v83 >= 0
+                                                let v133 =
+                                                    case v84 {
+                                                        True -> {
+                                                            let v85 = nth_line_8(v80, v83)
+                                                            let v86 = "inl main "
+                                                            let v87 = kino_text_size(v86)
+                                                            let v88 = kino_text_size(v85)
+                                                            let v89 = v87 > v88
+                                                            let v96 =
+                                                                case v89 {
+                                                                    True -> {
+                                                                        False
+                                                                    }
+                                                                    False -> {
+                                                                        let v90 = v87 == 0
+                                                                        case v90 {
+                                                                            True -> {
+                                                                                True
+                                                                            }
+                                                                            False -> {
+                                                                                let v91 = spiral_wrap_signed(v87 - 1, 32)
+                                                                                let v92 = spiral_wrap_signed(v91 + 1, 32)
+                                                                                let v93 = kino_text_at(v85, 0, v92)
+                                                                                let v94 = v93 == "inl main "
+                                                                                v94
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            case v96 {
+                                                                True -> {
+                                                                    True
+                                                                }
+                                                                False -> {
+                                                                    let v97 = "let main "
+                                                                    let v98 = kino_text_size(v97)
+                                                                    let v99 = kino_text_size(v85)
+                                                                    let v100 = v98 > v99
+                                                                    let v107 =
+                                                                        case v100 {
+                                                                            True -> {
+                                                                                False
+                                                                            }
+                                                                            False -> {
+                                                                                let v101 = v98 == 0
+                                                                                case v101 {
+                                                                                    True -> {
+                                                                                        True
+                                                                                    }
+                                                                                    False -> {
+                                                                                        let v102 = spiral_wrap_signed(v98 - 1, 32)
+                                                                                        let v103 = spiral_wrap_signed(v102 + 1, 32)
+                                                                                        let v104 = kino_text_at(v85, 0, v103)
+                                                                                        let v105 = v104 == "let main "
+                                                                                        v105
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    case v107 {
+                                                                        True -> {
+                                                                            True
+                                                                        }
+                                                                        False -> {
+                                                                            let v108 = "inl main("
+                                                                            let v109 = kino_text_size(v108)
+                                                                            let v110 = kino_text_size(v85)
+                                                                            let v111 = v109 > v110
+                                                                            let v118 =
+                                                                                case v111 {
                                                                                     True -> {
                                                                                         False
                                                                                     }
                                                                                     False -> {
-                                                                                        let v101 = v98 == 0
-                                                                                        case v101 {
+                                                                                        let v112 = v109 == 0
+                                                                                        case v112 {
                                                                                             True -> {
                                                                                                 True
                                                                                             }
                                                                                             False -> {
-                                                                                                let v102 = spiral_wrap_signed(v98 - 1, 32)
-                                                                                                let v103 = spiral_wrap_signed(v102 + 1, 32)
-                                                                                                let v104 = kino_text_at(v74, 0, v103)
-                                                                                                let v105 = v104 == "inl main("
-                                                                                                v105
+                                                                                                let v113 = spiral_wrap_signed(v109 - 1, 32)
+                                                                                                let v114 = spiral_wrap_signed(v113 + 1, 32)
+                                                                                                let v115 = kino_text_at(v85, 0, v114)
+                                                                                                let v116 = v115 == "inl main("
+                                                                                                v116
                                                                                             }
                                                                                         }
                                                                                     }
                                                                                 }
-                                                                            case v107 {
+                                                                            case v118 {
                                                                                 True -> {
                                                                                     True
                                                                                 }
                                                                                 False -> {
-                                                                                    let v108 = "let main("
-                                                                                    let v109 = kino_text_size(v108)
-                                                                                    let v110 = kino_text_size(v74)
-                                                                                    let v111 = v109 > v110
-                                                                                    case v111 {
+                                                                                    let v119 = "let main("
+                                                                                    let v120 = kino_text_size(v119)
+                                                                                    let v121 = kino_text_size(v85)
+                                                                                    let v122 = v120 > v121
+                                                                                    case v122 {
                                                                                         True -> {
                                                                                             False
                                                                                         }
                                                                                         False -> {
-                                                                                            let v112 = v109 == 0
-                                                                                            case v112 {
+                                                                                            let v123 = v120 == 0
+                                                                                            case v123 {
                                                                                                 True -> {
                                                                                                     True
                                                                                                 }
                                                                                                 False -> {
-                                                                                                    let v113 = spiral_wrap_signed(v109 - 1, 32)
-                                                                                                    let v114 = spiral_wrap_signed(v113 + 1, 32)
-                                                                                                    let v115 = kino_text_at(v74, 0, v114)
-                                                                                                    let v116 = v115 == "let main("
-                                                                                                    v116
+                                                                                                    let v124 = spiral_wrap_signed(v120 - 1, 32)
+                                                                                                    let v125 = spiral_wrap_signed(v124 + 1, 32)
+                                                                                                    let v126 = kino_text_at(v85, 0, v125)
+                                                                                                    let v127 = v126 == "let main("
+                                                                                                    v127
                                                                                                 }
                                                                                             }
                                                                                         }
@@ -16723,373 +21434,488 @@ pub fn walk_85(v0: Us7, v1: Uh6, v2: Int, v3: Int, v4: Uh5, v5: Uh5, v6: Uh5, v7
                                                             False
                                                         }
                                                     }
-                                                let #(v163, v164) =
-                                                    case v122 {
+                                                let #(v174, v175) =
+                                                    case v133 {
                                                         True -> {
-                                                            let v123 = kino_text_size(v57)
-                                                            let v124 = v123 == 0
-                                                            let v131 =
-                                                                case v124 {
+                                                            let v134 = kino_text_size(v64)
+                                                            let v135 = v134 == 0
+                                                            let v142 =
+                                                                case v135 {
                                                                     True -> {
-                                                                        v42
+                                                                        v49
                                                                     }
                                                                     False -> {
-                                                                        let v125 = kino_text_size(v57)
-                                                                        let v126 = spiral_wrap_signed(v125 - 1, 32)
-                                                                        let v127 = kino_text_at(v57, v126, 1)
-                                                                        let v128 = v127 == "\n"
-                                                                        case v128 {
+                                                                        let v136 = kino_text_size(v64)
+                                                                        let v137 = spiral_wrap_signed(v136 - 1, 32)
+                                                                        let v138 = kino_text_at(v64, v137, 1)
+                                                                        let v139 = v138 == "\n"
+                                                                        case v139 {
                                                                             True -> {
-                                                                                v57
+                                                                                v64
                                                                             }
                                                                             False -> {
-                                                                                let v129 = { v57 } <> { "\n" }
-                                                                                v129
+                                                                                let v140 = { v64 } <> { "\n" }
+                                                                                v140
                                                                             }
                                                                         }
                                                                     }
                                                                 }
-                                                            #(v131, 0)
+                                                            #(v142, 0)
                                                         }
                                                         False -> {
-                                                            let v132 = -1
-                                                            let v133 = search_top_9(v69, v71, v132)
-                                                            let v134 = v133 < 0
-                                                            case v134 {
+                                                            let v143 = -1
+                                                            let v144 = search_top_9(v80, v82, v143)
+                                                            let v145 = v144 < 0
+                                                            case v145 {
                                                                 True -> {
-                                                                    let v135 = kino_text_size(v57)
-                                                                    let v136 = v135 == 0
-                                                                    let v143 =
-                                                                        case v136 {
+                                                                    let v146 = kino_text_size(v64)
+                                                                    let v147 = v146 == 0
+                                                                    let v154 =
+                                                                        case v147 {
                                                                             True -> {
-                                                                                v42
+                                                                                v49
                                                                             }
                                                                             False -> {
-                                                                                let v137 = kino_text_size(v57)
-                                                                                let v138 = spiral_wrap_signed(v137 - 1, 32)
-                                                                                let v139 = kino_text_at(v57, v138, 1)
-                                                                                let v140 = v139 == "\n"
-                                                                                case v140 {
+                                                                                let v148 = kino_text_size(v64)
+                                                                                let v149 = spiral_wrap_signed(v148 - 1, 32)
+                                                                                let v150 = kino_text_at(v64, v149, 1)
+                                                                                let v151 = v150 == "\n"
+                                                                                case v151 {
                                                                                     True -> {
-                                                                                        v57
+                                                                                        v64
                                                                                     }
                                                                                     False -> {
-                                                                                        let v141 = { v57 } <> { "\n" }
-                                                                                        v141
+                                                                                        let v152 = { v64 } <> { "\n" }
+                                                                                        v152
                                                                                     }
                                                                                 }
                                                                             }
                                                                         }
-                                                                    let v144 = { v143 } <> { "inl main () : i32 = 0i32\n" }
-                                                                    #(v144, 2)
+                                                                    let v155 = { v154 } <> { "inl main () : i32 = 0i32\n" }
+                                                                    #(v155, 2)
                                                                 }
                                                                 False -> {
-                                                                    let v145 = 0
-                                                                    let v146 = map_main_16(v69, v145, v133)
-                                                                    let v151 =
-                                                                        case v146  {
-                                                                            Uh0Line(v147, v148) -> {
-                                                                                join_from_19(v148, v147)
+                                                                    let v156 = 0
+                                                                    let v157 = map_main_16(v80, v156, v144)
+                                                                    let v162 =
+                                                                        case v157  {
+                                                                            Uh0Line(v158, v159) -> {
+                                                                                join_from_19(v159, v158)
                                                                             }
                                                                             Uh0NoLine -> {
-                                                                                v44
+                                                                                v51
                                                                             }
                                                                         }
-                                                                    let v152 = kino_text_size(v151)
-                                                                    let v153 = v152 == 0
-                                                                    let v160 =
-                                                                        case v153 {
+                                                                    let v163 = kino_text_size(v162)
+                                                                    let v164 = v163 == 0
+                                                                    let v171 =
+                                                                        case v164 {
                                                                             True -> {
-                                                                                v42
+                                                                                v49
                                                                             }
                                                                             False -> {
-                                                                                let v154 = kino_text_size(v151)
-                                                                                let v155 = spiral_wrap_signed(v154 - 1, 32)
-                                                                                let v156 = kino_text_at(v151, v155, 1)
-                                                                                let v157 = v156 == "\n"
-                                                                                case v157 {
+                                                                                let v165 = kino_text_size(v162)
+                                                                                let v166 = spiral_wrap_signed(v165 - 1, 32)
+                                                                                let v167 = kino_text_at(v162, v166, 1)
+                                                                                let v168 = v167 == "\n"
+                                                                                case v168 {
                                                                                     True -> {
-                                                                                        v151
+                                                                                        v162
                                                                                     }
                                                                                     False -> {
-                                                                                        let v158 = { v151 } <> { "\n" }
-                                                                                        v158
+                                                                                        let v169 = { v162 } <> { "\n" }
+                                                                                        v169
                                                                                     }
                                                                                 }
                                                                             }
                                                                         }
-                                                                    #(v160, 1)
+                                                                    #(v171, 1)
                                                                 }
                                                             }
                                                         }
                                                     }
-                                                let v165 = v164 == 1
-                                                case v165 {
+                                                let v176 = v175 == 1
+                                                case v176 {
                                                     True -> {
-                                                        let v166 = "inl main () : i32 ="
-                                                        let v167 = "inl spiral_kino_real () ="
-                                                        let v168 = 0
-                                                        let v169 = replace_from_0(v163, v166, v167, v168, v44)
-                                                        let v172 =
-                                                            case v60  {
+                                                        let v177 = "inl main () : i32 ="
+                                                        let v178 = "inl spiral_kino_real () ="
+                                                        let v179 = 0
+                                                        let v180 = replace_from_0(v174, v177, v178, v179, v51)
+                                                        let v183 =
+                                                            case v67  {
                                                                 Uh5NoNb -> {
-                                                                    v44
+                                                                    v51
                                                                 }
                                                                 _ -> {
-                                                                    let v170 = package_line_86(v60)
-                                                                    let v171 = { "///- " } <> { v170 }
-                                                                    v171
-                                                                }
-                                                            }
-                                                        let v173 = v172 == ""
-                                                        let v177 =
-                                                            case v173 {
-                                                                True -> {
-                                                                    Uh5NoNb
-                                                                }
-                                                                False -> {
-                                                                    let v175 = Uh5NoNb
-                                                                    snoc_87(v175, v172)
-                                                                }
-                                                            }
-                                                        let v178 = Uh5NoNb
-                                                        let v179 = join_nb_88(v178)
-                                                        let v180 = v179 == ""
-                                                        let v182 =
-                                                            case v180 {
-                                                                True -> {
-                                                                    v177
-                                                                }
-                                                                False -> {
-                                                                    snoc_87(v177, v179)
-                                                                }
-                                                            }
-                                                        let v183 = Uh5NoNb
-                                                        let v184 = join_nb_88(v183)
-                                                        let v185 = v184 == ""
-                                                        let v187 =
-                                                            case v185 {
-                                                                True -> {
+                                                                    let v181 = package_line_93(v67)
+                                                                    let v182 = { "///- " } <> { v181 }
                                                                     v182
                                                                 }
-                                                                False -> {
-                                                                    snoc_87(v182, v184)
-                                                                }
                                                             }
-                                                        let v188 = "inl main () : i32 =\n    inl _ = real spiral_kino_real ()\n    0i32"
-                                                        let v189 = snoc_87(v187, v188)
-                                                        let v190 = join_nb_88(v189)
-                                                        let v191 = snoc_87(v7, v169)
-                                                        let v192 = join_nb_88(v191)
-                                                        #(v190, v192)
-                                                    }
-                                                    False -> {
-                                                        let v195 =
-                                                            case v60  {
-                                                                Uh5NoNb -> {
-                                                                    v44
-                                                                }
-                                                                _ -> {
-                                                                    let v193 = package_line_86(v60)
-                                                                    let v194 = { "///- " } <> { v193 }
-                                                                    v194
-                                                                }
-                                                            }
-                                                        let v196 = v195 == ""
-                                                        let v200 =
-                                                            case v196 {
+                                                        let v184 = v183 == ""
+                                                        let v188 =
+                                                            case v184 {
                                                                 True -> {
                                                                     Uh5NoNb
                                                                 }
                                                                 False -> {
-                                                                    let v198 = Uh5NoNb
-                                                                    snoc_87(v198, v195)
+                                                                    let v186 = Uh5NoNb
+                                                                    snoc_94(v186, v183)
                                                                 }
                                                             }
-                                                        let v201 = Uh5NoNb
-                                                        let v202 = join_nb_88(v201)
-                                                        let v203 = v202 == ""
-                                                        let v205 =
-                                                            case v203 {
+                                                        let v189 = Uh5NoNb
+                                                        let v190 = join_nb_95(v189)
+                                                        let v191 = v190 == ""
+                                                        let v193 =
+                                                            case v191 {
                                                                 True -> {
-                                                                    v200
+                                                                    v188
                                                                 }
                                                                 False -> {
-                                                                    snoc_87(v200, v202)
+                                                                    snoc_94(v188, v190)
                                                                 }
                                                             }
-                                                        let v206 = Uh5NoNb
-                                                        let v207 = join_nb_88(v206)
-                                                        let v208 = v207 == ""
-                                                        let v210 =
-                                                            case v208 {
+                                                        let v194 = Uh5NoNb
+                                                        let v195 = join_nb_95(v194)
+                                                        let v196 = v195 == ""
+                                                        let v198 =
+                                                            case v196 {
                                                                 True -> {
+                                                                    v193
+                                                                }
+                                                                False -> {
+                                                                    snoc_94(v193, v195)
+                                                                }
+                                                            }
+                                                        let v199 = "inl main () : i32 =\n    inl _ = real spiral_kino_real ()\n    0i32"
+                                                        let v200 = snoc_94(v198, v199)
+                                                        let v201 = join_nb_95(v200)
+                                                        let v202 = snoc_94(v7, v180)
+                                                        let v203 = join_nb_95(v202)
+                                                        #(v201, v203)
+                                                    }
+                                                    False -> {
+                                                        let v206 =
+                                                            case v67  {
+                                                                Uh5NoNb -> {
+                                                                    v51
+                                                                }
+                                                                _ -> {
+                                                                    let v204 = package_line_93(v67)
+                                                                    let v205 = { "///- " } <> { v204 }
                                                                     v205
                                                                 }
+                                                            }
+                                                        let v207 = v206 == ""
+                                                        let v211 =
+                                                            case v207 {
+                                                                True -> {
+                                                                    Uh5NoNb
+                                                                }
                                                                 False -> {
-                                                                    snoc_87(v205, v207)
+                                                                    let v209 = Uh5NoNb
+                                                                    snoc_94(v209, v206)
                                                                 }
                                                             }
-                                                        let v211 = join_nb_88(v210)
-                                                        let v212 = snoc_87(v7, v57)
-                                                        let v213 = join_nb_88(v212)
-                                                        #(v211, v213)
+                                                        let v212 = Uh5NoNb
+                                                        let v213 = join_nb_95(v212)
+                                                        let v214 = v213 == ""
+                                                        let v216 =
+                                                            case v214 {
+                                                                True -> {
+                                                                    v211
+                                                                }
+                                                                False -> {
+                                                                    snoc_94(v211, v213)
+                                                                }
+                                                            }
+                                                        let v217 = Uh5NoNb
+                                                        let v218 = join_nb_95(v217)
+                                                        let v219 = v218 == ""
+                                                        let v221 =
+                                                            case v219 {
+                                                                True -> {
+                                                                    v216
+                                                                }
+                                                                False -> {
+                                                                    snoc_94(v216, v218)
+                                                                }
+                                                            }
+                                                        let v222 = join_nb_95(v221)
+                                                        let v223 = snoc_94(v7, v64)
+                                                        let v224 = join_nb_95(v223)
+                                                        #(v222, v224)
                                                     }
                                                 }
                                             }
                                             False -> {
-                                                let v218 =
-                                                    case v60  {
-                                                        Uh5NoNb -> {
-                                                            v44
+                                                let v227 = v61 == 1
+                                                let v268 =
+                                                    case v227 {
+                                                        True -> {
+                                                            let v228 = 0
+                                                            let v229 = False
+                                                            let #(v230, v231) = split_declarations_106(v64, v228, v229, v51)
+                                                            let v232 = 0
+                                                            let v233 = trim_start_17(v231, v232)
+                                                            let v234 = kino_text_size(v231)
+                                                            let v235 = trim_end_18(v231, v234)
+                                                            let v236 = v235 <= v233
+                                                            let v241 =
+                                                                case v236 {
+                                                                    True -> {
+                                                                        v51
+                                                                    }
+                                                                    False -> {
+                                                                        let v237 = spiral_wrap_signed(v235 - 1, 32)
+                                                                        let v238 = spiral_wrap_signed(v237 - v233, 32)
+                                                                        let v239 = spiral_wrap_signed(v238 + 1, 32)
+                                                                        let v240 = kino_text_at(v231, v233, v239)
+                                                                        v240
+                                                                    }
+                                                                }
+                                                            let v242 = v241 == ""
+                                                            case v242 {
+                                                                True -> {
+                                                                    v64
+                                                                }
+                                                                False -> {
+                                                                    let v243 = 0
+                                                                    let v244 = last_top_block_108(v231, v243, v51)
+                                                                    let v245 = "_assert"
+                                                                    let v246 = 0
+                                                                    let v247 = find_from_1(v244, v245, v246)
+                                                                    let v248 = v247 >= 0
+                                                                    let v251 =
+                                                                        case v248 {
+                                                                            True -> {
+                                                                                let v249 = "\nspiral_kino_test ()\n0i32"
+                                                                                v249
+                                                                            }
+                                                                            False -> {
+                                                                                let v250 = "\ninl _ = spiral_kino_test ()\n0i32"
+                                                                                v250
+                                                                            }
+                                                                        }
+                                                                    let v252 = 0
+                                                                    let v253 = trim_start_17(v230, v252)
+                                                                    let v254 = kino_text_size(v230)
+                                                                    let v255 = trim_end_18(v230, v254)
+                                                                    let v256 = v255 <= v253
+                                                                    let v261 =
+                                                                        case v256 {
+                                                                            True -> {
+                                                                                v51
+                                                                            }
+                                                                            False -> {
+                                                                                let v257 = spiral_wrap_signed(v255 - 1, 32)
+                                                                                let v258 = spiral_wrap_signed(v257 - v253, 32)
+                                                                                let v259 = spiral_wrap_signed(v258 + 1, 32)
+                                                                                let v260 = kino_text_at(v230, v253, v259)
+                                                                                v260
+                                                                            }
+                                                                        }
+                                                                    let v262 = { v261 } <> { "\ninl spiral_kino_test () =" }
+                                                                    let v263 = 0
+                                                                    let v264 = indent_body_109(v231, v263, v51)
+                                                                    let v265 = { v262 } <> { v264 }
+                                                                    let v266 = { v265 } <> { v251 }
+                                                                    v266
+                                                                }
+                                                            }
                                                         }
-                                                        _ -> {
-                                                            let v216 = package_line_86(v60)
-                                                            let v217 = { "///- " } <> { v216 }
-                                                            v217
+                                                        False -> {
+                                                            v64
                                                         }
                                                     }
-                                                let v219 = v218 == ""
-                                                let v223 =
-                                                    case v219 {
+                                                let v271 =
+                                                    case v67  {
+                                                        Uh5NoNb -> {
+                                                            v51
+                                                        }
+                                                        _ -> {
+                                                            let v269 = package_line_93(v67)
+                                                            let v270 = { "///- " } <> { v269 }
+                                                            v270
+                                                        }
+                                                    }
+                                                let v272 = v271 == ""
+                                                let v276 =
+                                                    case v272 {
                                                         True -> {
                                                             Uh5NoNb
                                                         }
                                                         False -> {
-                                                            let v221 = Uh5NoNb
-                                                            snoc_87(v221, v218)
+                                                            let v274 = Uh5NoNb
+                                                            snoc_94(v274, v271)
                                                         }
                                                     }
-                                                let v224 = join_nb_88(v5)
-                                                let v225 = v224 == ""
-                                                let v227 =
-                                                    case v225 {
+                                                let v277 = join_nb_95(v5)
+                                                let v278 = v277 == ""
+                                                let v280 =
+                                                    case v278 {
                                                         True -> {
-                                                            v223
+                                                            v276
                                                         }
                                                         False -> {
-                                                            snoc_87(v223, v224)
+                                                            snoc_94(v276, v277)
                                                         }
                                                     }
-                                                let v228 = join_nb_88(v6)
-                                                let v229 = v228 == ""
-                                                let v231 =
-                                                    case v229 {
+                                                let v281 = join_nb_95(v6)
+                                                let v282 = v281 == ""
+                                                let v284 =
+                                                    case v282 {
                                                         True -> {
-                                                            v227
+                                                            v280
                                                         }
                                                         False -> {
-                                                            snoc_87(v227, v228)
+                                                            snoc_94(v280, v281)
                                                         }
                                                     }
-                                                let v232 = v57 == ""
-                                                let v234 =
-                                                    case v232 {
+                                                let v285 = v268 == ""
+                                                let v287 =
+                                                    case v285 {
                                                         True -> {
-                                                            v231
+                                                            v284
                                                         }
                                                         False -> {
-                                                            snoc_87(v231, v57)
+                                                            snoc_94(v284, v268)
                                                         }
                                                     }
-                                                let v235 = join_nb_88(v234)
-                                                let v236 = join_nb_88(v7)
-                                                #(v235, v236)
+                                                let v288 = join_nb_95(v287)
+                                                let v289 = join_nb_95(v7)
+                                                #(v288, v289)
                                             }
                                         }
                                     }
                                 }
-                            let v241 = v56 == ""
-                            let v243 =
-                                case v241 {
+                            let v294 = v63 == ""
+                            let v295 = v294 != True
+                            let v308 =
+                                case v295 {
                                     True -> {
-                                        let v242 = "-"
-                                        v242
+                                        v63
                                     }
                                     False -> {
-                                        v56
+                                        let v296 = v61 == 1
+                                        let v298 =
+                                            case v296 {
+                                                True -> {
+                                                    True
+                                                }
+                                                False -> {
+                                                    let v297 = v61 == 2
+                                                    v297
+                                                }
+                                            }
+                                        case v298 {
+                                            True -> {
+                                                case v71  {
+                                                    Us10BudgetOf(v299) -> {
+                                                        let v300 = v299 == ""
+                                                        case v300 {
+                                                            True -> {
+                                                                let v301 = "-"
+                                                                v301
+                                                            }
+                                                            False -> {
+                                                                v299
+                                                            }
+                                                        }
+                                                    }
+                                                    Us10BudgetUnseen -> {
+                                                        let v303 = "-"
+                                                        v303
+                                                    }
+                                                }
+                                            }
+                                            False -> {
+                                                let v306 = "-"
+                                                v306
+                                            }
+                                        }
                                     }
                                 }
-                            let v248 =
+                            let v313 =
                                 case v0  {
-                                    Us7EveryCell -> {
+                                    Us9EveryCell -> {
                                         True
                                     }
-                                    Us7TestsAndWholeFile -> {
-                                        let v244 = v54 == 1
-                                        case v244 {
+                                    Us9TestsAndWholeFile -> {
+                                        let v309 = v61 == 1
+                                        case v309 {
                                             True -> {
                                                 True
                                             }
                                             False -> {
-                                                let v245 = v54 == 2
-                                                v245
+                                                let v310 = v61 == 2
+                                                v310
                                             }
                                         }
                                     }
                                 }
-                            let v250 =
-                                case v248 {
+                            let v315 =
+                                case v313 {
                                     True -> {
-                                        Uh7Step(v2, v243, v239, v240, v8)
+                                        Uh7Step(v2, v308, v292, v293, v9)
                                     }
                                     False -> {
-                                        v8
+                                        v9
                                     }
                                 }
-                            let v251 = v54 == 1
-                            let v252 = v251 != True
-                            let v254 =
-                                case v252 {
+                            let v316 = v61 == 1
+                            let v317 = v316 != True
+                            let v319 =
+                                case v317 {
                                     True -> {
-                                        let v253 = v59 == 0
-                                        v253
+                                        let v318 = v66 == 0
+                                        v318
                                     }
                                     False -> {
                                         False
                                     }
                                 }
-                            let v267 =
-                                case v254 {
+                            let v332 =
+                                case v319 {
                                     True -> {
-                                        let v255 = 0
-                                        let v256 = trim_start_17(v57, v255)
-                                        let v257 = kino_text_size(v57)
-                                        let v258 = trim_end_18(v57, v257)
-                                        let v259 = v258 <= v256
-                                        let v264 =
-                                            case v259 {
+                                        let v320 = 0
+                                        let v321 = trim_start_17(v64, v320)
+                                        let v322 = kino_text_size(v64)
+                                        let v323 = trim_end_18(v64, v322)
+                                        let v324 = v323 <= v321
+                                        let v329 =
+                                            case v324 {
                                                 True -> {
-                                                    v44
+                                                    v51
                                                 }
                                                 False -> {
-                                                    let v260 = spiral_wrap_signed(v258 - 1, 32)
-                                                    let v261 = spiral_wrap_signed(v260 - v256, 32)
-                                                    let v262 = spiral_wrap_signed(v261 + 1, 32)
-                                                    let v263 = kino_text_at(v57, v256, v262)
-                                                    v263
+                                                    let v325 = spiral_wrap_signed(v323 - 1, 32)
+                                                    let v326 = spiral_wrap_signed(v325 - v321, 32)
+                                                    let v327 = spiral_wrap_signed(v326 + 1, 32)
+                                                    let v328 = kino_text_at(v64, v321, v327)
+                                                    v328
                                                 }
                                             }
-                                        let v265 = v264 == ""
-                                        let v266 = v265 != True
-                                        v266
+                                        let v330 = v329 == ""
+                                        let v331 = v330 != True
+                                        v331
                                     }
                                     False -> {
                                         False
                                     }
                                 }
-                            let v269 =
-                                case v267 {
+                            let v334 =
+                                case v332 {
                                     True -> {
-                                        let v268 = v54 == 0
-                                        v268
+                                        let v333 = v61 == 0
+                                        v333
                                     }
                                     False -> {
                                         False
                                     }
                                 }
-                            let v270 =
-                                case v269 {
+                            let v335 =
+                                case v334 {
                                     True -> {
                                         v2
                                     }
@@ -17097,38 +21923,38 @@ pub fn walk_85(v0: Us7, v1: Uh6, v2: Int, v3: Int, v4: Uh5, v5: Uh5, v6: Uh5, v7
                                         v3
                                     }
                                 }
-                            let v271 = v55 == 1
-                            case v271 {
+                            let v336 = v62 == 1
+                            case v336 {
                                 True -> {
-                                    let v272 = spiral_wrap_signed(v2 + 1, 32)
-                                    let v274 =
-                                        case v267 {
+                                    let v337 = spiral_wrap_signed(v2 + 1, 32)
+                                    let v339 =
+                                        case v332 {
                                             True -> {
-                                                snoc_87(v7, v57)
+                                                snoc_94(v7, v64)
                                             }
                                             False -> {
                                                 v7
                                             }
                                         }
-                                    walk_85(v0, v36, v272, v270, v60, v5, v6, v274, v250)
+                                    walk_92(v0, v43, v337, v335, v67, v5, v6, v339, v71, v315)
                                 }
                                 False -> {
-                                    case v251 {
+                                    case v316 {
                                         True -> {
-                                            let v276 = spiral_wrap_signed(v2 + 1, 32)
-                                            let v277 = merge_98(v5, v58)
-                                            walk_85(v0, v36, v276, v270, v60, v277, v6, v7, v250)
+                                            let v341 = spiral_wrap_signed(v2 + 1, 32)
+                                            let v342 = merge_105(v5, v65)
+                                            walk_92(v0, v43, v341, v335, v67, v342, v6, v7, v71, v315)
                                         }
                                         False -> {
-                                            case v267 {
+                                            case v332 {
                                                 True -> {
-                                                    let v279 = spiral_wrap_signed(v2 + 1, 32)
-                                                    let v280 = snoc_87(v6, v57)
-                                                    walk_85(v0, v36, v279, v270, v60, v5, v280, v7, v250)
+                                                    let v344 = spiral_wrap_signed(v2 + 1, 32)
+                                                    let v345 = snoc_94(v6, v64)
+                                                    walk_92(v0, v43, v344, v335, v67, v5, v345, v7, v71, v315)
                                                 }
                                                 False -> {
-                                                    let v282 = spiral_wrap_signed(v2 + 1, 32)
-                                                    walk_85(v0, v36, v282, v270, v60, v5, v6, v7, v250)
+                                                    let v347 = spiral_wrap_signed(v2 + 1, 32)
+                                                    walk_92(v0, v43, v347, v335, v67, v5, v6, v7, v71, v315)
                                                 }
                                             }
                                         }
@@ -17142,30 +21968,30 @@ pub fn walk_85(v0: Us7, v1: Uh6, v2: Int, v3: Int, v4: Uh5, v5: Uh5, v6: Uh5, v7
         }
     }
 }
-pub fn rev_steps_99(v0: Uh7, v1: Uh7) -> Uh7 {
+pub fn rev_steps_110(v0: Uh7, v1: Uh7) -> Uh7 {
     case v0  {
         Uh7NoStep -> {
             v1
         }
         Uh7Step(v2, v3, v4, v5, v6) -> {
             let v7 = Uh7Step(v2, v3, v4, v5, v1)
-            rev_steps_99(v6, v7)
+            rev_steps_110(v6, v7)
         }
     }
 }
-pub fn count_steps_100(v0: Uh7) -> Int {
+pub fn count_steps_111(v0: Uh7) -> Int {
     case v0  {
         Uh7NoStep -> {
             0
         }
         Uh7Step(v1, v2, v3, v4, v5) -> {
-            let v6 = count_steps_100(v5)
+            let v6 = count_steps_111(v5)
             let v7 = spiral_wrap_signed(1 + v6, 32)
             v7
         }
     }
 }
-pub fn emit_steps_101(v0: Uh7) -> String {
+pub fn emit_steps_112(v0: Uh7) -> String {
     case v0  {
         Uh7NoStep -> {
             let v1 = ""
@@ -17186,13 +22012,13 @@ pub fn emit_steps_101(v0: Uh7) -> String {
             let v18 = { v15 } <> { v17 }
             let v19 = { v18 } <> { "\n" }
             let v20 = { v19 } <> { v5 }
-            let v21 = emit_steps_101(v6)
+            let v21 = emit_steps_112(v6)
             let v22 = { v20 } <> { v21 }
             v22
         }
     }
 }
-pub fn closure12(capt: Nil) -> fn(String) -> String {
+pub fn closure15(capt: Nil) -> fn(String) -> String {
     fn (v0) {
         let v1 = "\r\n"
         let v2 = "\n"
@@ -17301,7 +22127,7 @@ pub fn closure12(capt: Nil) -> fn(String) -> String {
                             Uh5Nb(v43, v49)
                         }
                     }
-                let v52 = Us7EveryCell
+                let v52 = Us9EveryCell
                 let v53 = kino_text_size(v0)
                 let v54 = v44 >= v53
                 let v61 =
@@ -17411,9 +22237,9 @@ pub fn closure12(capt: Nil) -> fn(String) -> String {
                             let v103 = 0
                             let v104 = parse_acc_26(v99, v101, v102, v103)
                             let v105 = Uh6NoSource
-                            let v106 = read_sources_83(v61, v100, v104, v105)
+                            let v106 = read_sources_90(v61, v100, v104, v105)
                             let v107 = Uh6NoSource
-                            rev_sources_84(v106, v107)
+                            rev_sources_91(v106, v107)
                         }
                     }
                 let v111 = 0
@@ -17421,21 +22247,22 @@ pub fn closure12(capt: Nil) -> fn(String) -> String {
                 let v113 = Uh5NoNb
                 let v114 = Uh5NoNb
                 let v115 = Uh5NoNb
-                let v116 = Uh7NoStep
-                let v117 = walk_85(v52, v110, v111, v112, v51, v113, v114, v115, v116)
-                let v118 = Uh7NoStep
-                let v119 = rev_steps_99(v117, v118)
-                let v120 = count_steps_100(v119)
-                let v121 = show_i32_20(v120)
-                let v122 = { v121 } <> { "\n" }
-                let v123 = emit_steps_101(v119)
-                let v124 = { v122 } <> { v123 }
-                v124
+                let v116 = Us10BudgetUnseen
+                let v117 = Uh7NoStep
+                let v118 = walk_92(v52, v110, v111, v112, v51, v113, v114, v115, v116, v117)
+                let v119 = Uh7NoStep
+                let v120 = rev_steps_110(v118, v119)
+                let v121 = count_steps_111(v120)
+                let v122 = show_i32_20(v121)
+                let v123 = { v122 } <> { "\n" }
+                let v124 = emit_steps_112(v120)
+                let v125 = { v123 } <> { v124 }
+                v125
             }
         }
     }
 }
-pub fn closure13(capt: Nil) -> fn(String) -> String {
+pub fn closure16(capt: Nil) -> fn(String) -> String {
     fn (v0) {
         let v1 = "\r\n"
         let v2 = "\n"
@@ -17544,7 +22371,7 @@ pub fn closure13(capt: Nil) -> fn(String) -> String {
                             Uh5Nb(v43, v49)
                         }
                     }
-                let v52 = Us7TestsAndWholeFile
+                let v52 = Us9TestsAndWholeFile
                 let v53 = kino_text_size(v0)
                 let v54 = v44 >= v53
                 let v61 =
@@ -17654,9 +22481,9 @@ pub fn closure13(capt: Nil) -> fn(String) -> String {
                             let v103 = 0
                             let v104 = parse_acc_26(v99, v101, v102, v103)
                             let v105 = Uh6NoSource
-                            let v106 = read_sources_83(v61, v100, v104, v105)
+                            let v106 = read_sources_90(v61, v100, v104, v105)
                             let v107 = Uh6NoSource
-                            rev_sources_84(v106, v107)
+                            rev_sources_91(v106, v107)
                         }
                     }
                 let v111 = 0
@@ -17664,16 +22491,17 @@ pub fn closure13(capt: Nil) -> fn(String) -> String {
                 let v113 = Uh5NoNb
                 let v114 = Uh5NoNb
                 let v115 = Uh5NoNb
-                let v116 = Uh7NoStep
-                let v117 = walk_85(v52, v110, v111, v112, v51, v113, v114, v115, v116)
-                let v118 = Uh7NoStep
-                let v119 = rev_steps_99(v117, v118)
-                let v120 = count_steps_100(v119)
-                let v121 = show_i32_20(v120)
-                let v122 = { v121 } <> { "\n" }
-                let v123 = emit_steps_101(v119)
-                let v124 = { v122 } <> { v123 }
-                v124
+                let v116 = Us10BudgetUnseen
+                let v117 = Uh7NoStep
+                let v118 = walk_92(v52, v110, v111, v112, v51, v113, v114, v115, v116, v117)
+                let v119 = Uh7NoStep
+                let v120 = rev_steps_110(v118, v119)
+                let v121 = count_steps_111(v120)
+                let v122 = show_i32_20(v121)
+                let v123 = { v122 } <> { "\n" }
+                let v124 = emit_steps_112(v120)
+                let v125 = { v123 } <> { v124 }
+                v125
             }
         }
     }
@@ -17711,14 +22539,23 @@ pub fn to_spir_tested(v0: String) -> String {
 pub fn from_spi(v0: String, v1: String) -> String {
   closure10(Nil)(#(v0, v1))
 }
-pub fn test_index(v0: String) -> String {
-  closure11(Nil)(v0)
+pub fn from_spi_bounded(v0: String, v1: String, v2: String, v3: String) -> String {
+  closure11(Nil)(#(v0, v1, v2, v3))
 }
-pub fn plan(v0: String) -> String {
+pub fn test_index(v0: String) -> String {
   closure12(Nil)(v0)
 }
-pub fn plan_tests(v0: String) -> String {
+pub fn target_backend(v0: String) -> String {
   closure13(Nil)(v0)
+}
+pub fn target_extension(v0: String) -> String {
+  closure14(Nil)(v0)
+}
+pub fn plan(v0: String) -> String {
+  closure15(Nil)(v0)
+}
+pub fn plan_tests(v0: String) -> String {
+  closure16(Nil)(v0)
 }
 pub fn main() {
 let _v0 = closure0(Nil)
@@ -17748,6 +22585,12 @@ let _ = Nil
 let _v12 = closure12(Nil)
 let _ = Nil
 let _v13 = closure13(Nil)
+let _ = Nil
+let _v14 = closure14(Nil)
+let _ = Nil
+let _v15 = closure15(Nil)
+let _ = Nil
+let _v16 = closure16(Nil)
 let _ = Nil
 0
 }

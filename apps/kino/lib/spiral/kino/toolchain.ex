@@ -15,14 +15,7 @@ defmodule Spiral.Kino.Toolchain do
   end
 
   @spec default_package_dir() :: String.t()
-  def default_package_dir do
-    candidates = [
-      Path.join(@spiral_root, @core_package),
-      Path.join([@spiral_root, "../polyglot", @core_package]) |> Path.expand()
-    ]
-
-    Enum.find(candidates, &File.regular?(Path.join(&1, "core/package.spiproj"))) || hd(candidates)
-  end
+  def default_package_dir, do: Path.join(@spiral_root, @core_package)
 
   @spec compiler_dll(keyword()) :: String.t()
   def compiler_dll(opts) do
@@ -60,6 +53,37 @@ defmodule Spiral.Kino.Toolchain do
     opts[:lua] || System.get_env("SPIRAL_LUA") || System.find_executable("lua")
   end
 
+  @spec erl(keyword()) :: String.t() | nil
+  def erl(opts) do
+    opts[:erl] || System.get_env("SPIRAL_ERL") || System.find_executable("erl")
+  end
+
+  @spec gleam(keyword()) :: String.t() | nil
+  def gleam(opts) do
+    opts[:gleam] || System.get_env("SPIRAL_GLEAM") || System.find_executable("gleam")
+  end
+
+  @spec zig(keyword()) :: String.t() | nil
+  def zig(opts) do
+    opts[:zig] || System.get_env("SPIRAL_ZIG") || System.find_executable("zig")
+  end
+
+  @spec wgsl_run(keyword()) :: String.t() | nil
+  def wgsl_run(opts) do
+    cache =
+      System.get_env("SPIRAL_BIN_CACHE_DIR") ||
+        Path.join(System.get_env("LOCALAPPDATA") || Path.join(System.user_home!(), ".cache"), "spiral-bin")
+
+    built = Path.join(cache, "toolchains/wgsl-run/release")
+
+    opts[:wgsl_run] || System.get_env("SPIRAL_WGSL_RUN") ||
+      Enum.find([Path.join(built, "spiral-wgsl.exe"), Path.join(built, "spiral-wgsl")], &File.regular?/1)
+  end
+  @spec naga(keyword()) :: String.t() | nil
+  def naga(opts) do
+    opts[:naga] || System.get_env("SPIRAL_NAGA") || System.find_executable("naga")
+  end
+
   @spec bun(keyword()) :: String.t() | nil
   def bun(opts) do
     opts[:bun] || System.get_env("SPIRAL_BUN") || System.find_executable("bun")
@@ -82,6 +106,42 @@ defmodule Spiral.Kino.Toolchain do
       System.find_executable("dcc64")
   end
 
+  @lean_toolchain "leanprover/lean4:v4.35.0-rc4"
+
+  @spec lean(keyword()) :: {String.t() | nil, [String.t()]}
+  def lean(opts) do
+    explicit = opts[:lean] || System.get_env("SPIRAL_LEAN")
+    exe = if match?({:win32, _}, :os.type()), do: "lean.exe", else: "lean"
+
+    elan_homes =
+      [System.get_env("ELAN_HOME"), Path.join(System.user_home!(), ".elan"), Path.join(System.user_home!(), "scoop/persist/elan/.elan")]
+      |> Enum.reject(&is_nil/1)
+
+    pinned =
+      Enum.find_value(elan_homes, fn home ->
+        path = Path.join([home, "toolchains", String.replace(@lean_toolchain, ["/", ":"], &if(&1 == "/", do: "--", else: "---")), "bin", exe])
+        if File.regular?(path), do: path
+      end)
+
+    cond do
+      explicit -> {explicit, ["+" <> @lean_toolchain]}
+      pinned -> {pinned, []}
+      true -> {System.find_executable("lean"), ["+" <> @lean_toolchain]}
+    end
+  end
+  @spec fpc(keyword()) :: String.t() | nil
+  def fpc(opts) do
+    opts[:fpc] || System.get_env("SPIRAL_FPC") || System.find_executable("fpc") || scoop_fpc()
+  end
+
+  defp scoop_fpc do
+    Enum.find(
+      ["scoop/apps/freepascal/current/bin/x86_64-win64/fpc.exe", "scoop/apps/freepascal/current/bin/i386-win32/fpc.exe"]
+      |> Enum.map(&Path.join(System.user_home!(), &1)),
+      &File.regular?/1
+    )
+  end
+
   @spec plot(keyword()) :: String.t() | nil
   def plot(opts) do
     opts[:plot] || System.get_env("SPIRAL_KINO_PLOT") || default_plot()
@@ -102,8 +162,9 @@ defmodule Spiral.Kino.Toolchain do
     Enum.find([Path.join(base, "dotnet.exe"), Path.join(base, "dotnet")], &File.regular?/1)
   end
 
-  defp cache_dir do
-    System.get_env("SPIRAL_BIN_CACHE_DIR") ||
+  @spec cache_dir(keyword()) :: String.t()
+  def cache_dir(opts \\ []) do
+    opts[:bin_cache_dir] || System.get_env("SPIRAL_BIN_CACHE_DIR") ||
       case System.get_env("LOCALAPPDATA") do
         nil -> Path.join(System.user_home!(), ".cache/spiral-bin")
         local -> Path.join(local, "spiral-bin")

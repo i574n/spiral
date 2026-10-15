@@ -4,28 +4,36 @@
 #include <stdlib.h>
 #include <string.h>
 int32_t method1(int32_t v0, int32_t v1){
-    
-    
-    int32_t v2;
-    v2 = v0 - 1l;
-    
-    
-    int32_t v3;
-    v3 = v1 + 3l;
-    
-    
-    bool v4;
-    v4 = v2 == 0l;
-    
-    
-    if (v4){
+    while (1) {
         
         
-        return v3;
-    } else {
+        int32_t v2;
+        v2 = v0 - 1l;
         
         
-        return method1(v2, v3);
+        int32_t v3;
+        v3 = v1 + 3l;
+        
+        
+        bool v4;
+        v4 = v2 == 0l;
+        
+        
+        if (v4){
+            
+            
+            return v3;
+        } else {
+            
+            
+            {
+                int32_t tmp0 = v2;
+                int32_t tmp1 = v3;
+                v0 = tmp0;
+                v1 = tmp1;
+            }
+            continue;
+        }
     }
 }
 int32_t method0(int32_t v0){
@@ -50,28 +58,36 @@ int32_t method0(int32_t v0){
     }
 }
 int32_t method3(int32_t v0, int32_t v1){
-    
-    
-    int32_t v2;
-    v2 = v0 - 1l;
-    
-    
-    int32_t v3;
-    v3 = v1 - 2l;
-    
-    
-    bool v4;
-    v4 = v2 == 0l;
-    
-    
-    if (v4){
+    while (1) {
         
         
-        return v3;
-    } else {
+        int32_t v2;
+        v2 = v0 - 1l;
         
         
-        return method3(v2, v3);
+        int32_t v3;
+        v3 = v1 - 2l;
+        
+        
+        bool v4;
+        v4 = v2 == 0l;
+        
+        
+        if (v4){
+            
+            
+            return v3;
+        } else {
+            
+            
+            {
+                int32_t tmp2 = v2;
+                int32_t tmp3 = v3;
+                v0 = tmp2;
+                v1 = tmp3;
+            }
+            continue;
+        }
     }
 }
 int32_t method2(int32_t v0){

@@ -399,9 +399,7 @@ test new_seq =
 /// ### of_array'
 inl of_array' forall dim t. (items : a dim t) : seq' t =
     backend_switch {
-        Gleam = fun () =>
-            global "import gary/array"
-            $'!items |> array.to_list' : seq' t
+        Gleam = fun () => $'!items |> spiral_array_to_list' : seq' t
         Fsharp = fun () =>
             fun () =>
                 $'for i = 0 to !items.Length - 1 do yield !items.[i]'
@@ -426,9 +424,7 @@ test of_array =
 /// ### of_array
 inl of_array forall dim t. (items : a dim t) : seq' t =
     backend_switch {
-        Gleam = fun () =>
-            global "import gary/array"
-            $'!items |> array.to_list' : seq' t
+        Gleam = fun () => $'!items |> spiral_array_to_list' : seq' t
         Fsharp = fun () => $'!items |> Seq.ofArray' : seq' t
         Python = fun () => $'list(iter(!items))' : seq' t
         Rust = fun () => $'Rc::new(!items.borrow().clone())' : seq' t
@@ -466,9 +462,7 @@ test of_array_base =
 /// ### to_array'
 inl to_array' forall dim t. (items : seq' t) : a dim t =
     backend_switch {
-        Gleam = fun () =>
-            global "import gary/array"
-            $'!items |> array.from_list' : a dim t
+        Gleam = fun () => $'!items |> spiral_array_from_list' : a dim t
         Fsharp = fun () => items |> $'Seq.toArray' : a dim t
         Python = fun () =>
             inl x = ($'!items ' : listm'.list' t) |> listm'.to_array'

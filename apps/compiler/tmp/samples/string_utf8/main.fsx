@@ -1,18 +1,26 @@
+let spiralStringIndex (s : string) (i : int) : char = char (System.Text.Encoding.UTF8.GetBytes(s).[i])
+let spiralStringSlice (s : string) (from : int) (upto : int) : string =
+    let bytes = System.Text.Encoding.UTF8.GetBytes(s)
+    let length = bytes.Length
+    if from < 0 || from > length || upto < from - 1 || upto >= length then exit 3
+    elif upto < from then ""
+    elif (bytes.[from] &&& 0xC0uy) = 0x80uy || (upto + 1 < length && (bytes.[upto + 1] &&& 0xC0uy) = 0x80uy) then exit 3
+    else System.Text.Encoding.UTF8.GetString(bytes, from, upto - from + 1)
 let v0 : string = "é"
-let v1 : int32 = v0.Length
-let v2 : char = v0.[int 0]
-let v3 : char = v0.[int 1]
+let v1 : int32 = (System.Text.Encoding.UTF8.GetByteCount(v0))
+let v2 : char = (spiralStringIndex v0 (int 0))
+let v3 : char = (spiralStringIndex v0 (int 1))
 let v4 : string = "x"
 let v5 : string = (v0 + v4)
-let v6 : int32 = v5.Length
+let v6 : int32 = (System.Text.Encoding.UTF8.GetByteCount(v5))
 let v7 : string = "ab"
-let v8 : char = v7.[int 0]
-let v9 : string = v7.[int 0..int 0]
-let v10 : int32 = v9.Length
-let v11 : string = v7.[int 1..int 0]
-let v12 : int32 = v11.Length
-let v13 : string = v0.[int 0..int 1]
-let v14 : int32 = v13.Length
+let v8 : char = (spiralStringIndex v7 (int 0))
+let v9 : string = (spiralStringSlice v7 (int 0) (int 0))
+let v10 : int32 = (System.Text.Encoding.UTF8.GetByteCount(v9))
+let v11 : string = (spiralStringSlice v7 (int 1) (int 0))
+let v12 : int32 = (System.Text.Encoding.UTF8.GetByteCount(v11))
+let v13 : string = (spiralStringSlice v0 (int 0) (int 1))
+let v14 : int32 = (System.Text.Encoding.UTF8.GetByteCount(v13))
 let v15 : bool = v2 = v3
 if v15 then
     1

@@ -8,6 +8,15 @@
     "reveal": "always"
   },
   {
+    "label": "spiral: run test $ZED_CUSTOM_spiral_test_name",
+    "command": "pwsh",
+    "args": ["-NoProfile", "-File", "$ZED_WORKTREE_ROOT/apps/zed/tasks/test-at-row.ps1", "-File", "$ZED_FILE", "-Row", "$ZED_ROW"],
+    "tags": ["spiral-test"],
+    "use_new_terminal": false,
+    "allow_concurrent_runs": false,
+    "reveal": "always"
+  },
+  {
     "label": "spiral: run file tests",
     "command": "pwsh",
     "args": ["-NoProfile", "-File", "$ZED_WORKTREE_ROOT/apps/zed/tasks/test-at-row.ps1", "-File", "$ZED_FILE"],

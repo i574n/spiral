@@ -4,51 +4,70 @@ program SpiralGenerated;
 uses SysUtils, Math;
 type
   TMut0 = class;
-  TUS0 = record tag: LongInt; c0_0: LongInt; end;
   TMut0 = class l0: AnsiString; end;
-function format_real_0(v0: TUS0): AnsiString; forward;
-function US0_Some(a0: LongInt): TUS0;
-begin
-  Result.tag := 0; Result.c0_0 := a0;
-end;
-function US0_None: TUS0;
-begin
-  Result.tag := 1; 
-end;
+procedure method2(v0: TMut0; v1: AnsiString); forward;
+function format_real_1(v0: LongInt): AnsiString; forward;
+function method0: AnsiString; forward;
 function MutCreate0(a0: AnsiString): TMut0;
 begin
   Result := TMut0.Create; Result.l0 := a0;
 end;
-function format_real_0(v0: TUS0): AnsiString;
+procedure method2(v0: TMut0; v1: AnsiString);
+var
+  v2: AnsiString;
+  v3: AnsiString;
+begin
+  v2 := v0.l0;
+  v3 := v2 + v1 ;
+  v0.l0 := v3;
+end;
+function format_real_1(v0: LongInt): AnsiString;
 var
   v1: AnsiString;
   v2: TMut0;
   v3: AnsiString;
   v4: AnsiString;
-  v5: AnsiString;
 begin
-  v1 := backend_switch_has_no_Delphi_arm_in_lib_spiral;
+  v1 := '';
   v2 := MutCreate0(v1);
-  v3 := backend_switch_has_no_Delphi_arm_in_lib_spiral;
-  v4 := backend_switch_has_no_Delphi_arm_in_lib_spiral;
-  ;
-  v5 := v2.l0;
-  Result := v5;
+  v3 := IntToStr(v0);
+  method2(v2, v3);
+  v4 := v2.l0;
+  Result := v4;
+end;
+function method0: AnsiString;
+var
+  v0: AnsiString;
+  v1: AnsiString;
+  v2: AnsiString;
+  v3: LongInt;
+  v4: AnsiString;
+  v5: AnsiString;
+  v6: AnsiString;
+  v7: AnsiString;
+begin
+  v0 := 'Some';
+  v1 := '(';
+  v2 := v0 + v1 ;
+  v3 := 1;
+  v4 := format_real_1(v3);
+  v5 := v2 + v4 ;
+  v6 := ')';
+  v7 := v5 + v6 ;
+  Result := v7;
 end;
 function SpiralMain: LongInt;
 var
-  v0: LongInt;
-  v1: TUS0;
+  v0: AnsiString;
+  v1: AnsiString;
   v2: AnsiString;
-  v3: AnsiString;
-  v4: Boolean;
+  v3: Boolean;
 begin
-  v0 := 1;
-  v1 := US0_Some(v0);
-  v2 := format_real_0(v1);
-  v3 := backend_switch_has_no_Delphi_arm_in_lib_spiral;
-  v4 := v3 = '';
-  if v4 then begin
+  v0 := method0;
+  v1 := 'x: ';
+  v2 := v1 + v0 ;
+  v3 := v2 = '';
+  if v3 then begin
       Result := 1;
   end else begin
       Result := 0;

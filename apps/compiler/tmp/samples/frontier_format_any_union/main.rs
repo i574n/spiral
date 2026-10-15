@@ -1,47 +1,10 @@
 #![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_code, while_true)]
 use std::cell::RefCell;
 use std::rc::Rc;
-#[derive(Clone)]
-enum US0 {
-    US0_Some(i32),
-    US0_None,
-}
-impl US0 {
-    fn tag(&self) -> i32 {
-        match self {
-            US0::US0_Some(..) => 0,
-            US0::US0_None => 1,
-        }
-    }
-}
-impl Default for US0 {
-    fn default() -> Self {
-        US0::US0_Some(<i32>::default())
-    }
-}
 struct Mut0 { l0: Rc<str> }
 impl Default for Mut0 {
     fn default() -> Self {
         Mut0 { l0: { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) } }
-    }
-}
-fn method1(mut v0: US0) -> Rc<str> {
-    match &v0 {
-        US0::US0_None => {
-            let mut v9: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("None"); } LIT.with(|lit| lit.clone()) };
-            v9.clone()
-        }
-        US0::US0_Some(v1) => {
-            let mut v1: i32 = *v1;
-            let mut v2: Rc<str> = Rc::<str>::from(format!("{:?}", v1));
-            let mut v3: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(")"); } LIT.with(|lit| lit.clone()) };
-            let mut v4: Rc<str> = Rc::<str>::from(format!("{}{}", v2, v3));
-            let mut v5: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("("); } LIT.with(|lit| lit.clone()) };
-            let mut v6: Rc<str> = Rc::<str>::from(format!("{}{}", v5, v4));
-            let mut v7: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("Some"); } LIT.with(|lit| lit.clone()) };
-            let mut v8: Rc<str> = Rc::<str>::from(format!("{}{}", v7, v6));
-            v8.clone()
-        }
     }
 }
 fn method2(mut v0: Rc<RefCell<Mut0>>, mut v1: Rc<str>) -> () {
@@ -50,22 +13,31 @@ fn method2(mut v0: Rc<RefCell<Mut0>>, mut v1: Rc<str>) -> () {
     v0.borrow_mut().l0 = v3.clone();
     ()
 }
-fn format_real_0(mut v0: US0) -> Rc<str> {
+fn format_real_1(mut v0: i32) -> Rc<str> {
     let mut v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
     let mut v2: Rc<RefCell<Mut0>> = Rc::new(RefCell::new(Mut0 { l0: v1.clone() }));
-    let mut v3: Rc<str> = method1(v0.clone());
+    let mut v3: Rc<str> = Rc::<str>::from(format!("{}", v0));
     method2(v2.clone(), v3.clone());
     let mut v4: Rc<str> = v2.borrow().l0.clone();
     v4.clone()
 }
+fn method0() -> Rc<str> {
+    let mut v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("Some"); } LIT.with(|lit| lit.clone()) };
+    let mut v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("("); } LIT.with(|lit| lit.clone()) };
+    let mut v2: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("Some("); } LIT.with(|lit| lit.clone()) };
+    let mut v3: i32 = 1i32;
+    let mut v4: Rc<str> = format_real_1(v3);
+    let mut v5: Rc<str> = Rc::<str>::from(format!("{}{}", v2, v4));
+    let mut v6: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(")"); } LIT.with(|lit| lit.clone()) };
+    let mut v7: Rc<str> = Rc::<str>::from(format!("{}{}", v5, v6));
+    v7.clone()
+}
 fn spiral_main() -> i32 {
-    let mut v0: i32 = 1i32;
-    let mut v1: US0 = US0::US0_Some(v0);
-    let mut v2: Rc<str> = format_real_0(v1.clone());
-    let mut v3: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("x: "); } LIT.with(|lit| lit.clone()) };
-    let mut v4: Rc<str> = Rc::<str>::from(format!("{}{}", v3, v2));
-    let mut v5: bool = v4.clone() == { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
-    if v5 {
+    let mut v0: Rc<str> = method0();
+    let mut v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("x: "); } LIT.with(|lit| lit.clone()) };
+    let mut v2: Rc<str> = Rc::<str>::from(format!("{}{}", v1, v0));
+    let mut v3: bool = v2.clone() == { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
+    if v3 {
         1i32
     } else {
         0i32

@@ -35,52 +35,60 @@ static inline String * StringLit(uint32_t len, char * ptr){
     return ArrayLit0(len, ptr);
 }
 String * method1(int32_t v0, String * v1){
-    
-    
-    int32_t v2;
-    v2 = v0 - 1l;
-    
-    
-    bool v3;
-    v3 = v2 == 0l;
-    
-    
-    if (v3){
+    while (1) {
         
         
-        return v1;
-    } else {
-        
-        StringDecref(v1);
-        int32_t v4;
-        v4 = v2 % 2l;
+        int32_t v2;
+        v2 = v0 - 1l;
         
         
-        bool v5;
-        v5 = v4 == 0l;
+        bool v3;
+        v3 = v2 == 0l;
         
         
-        String * v8;
-        if (v5){
+        if (v3){
             
             
-            String * v6;
-            v6 = StringLit(3, "ok");
-            
-            
-            v8 = v6;
+            return v1;
         } else {
             
+            StringDecref(v1);
+            int32_t v4;
+            v4 = v2 % 2l;
             
-            String * v7;
-            v7 = StringLit(3, "go");
+            
+            bool v5;
+            v5 = v4 == 0l;
             
             
-            v8 = v7;
+            String * v8;
+            if (v5){
+                
+                
+                String * v6;
+                v6 = StringLit(3, "ok");
+                
+                
+                v8 = v6;
+            } else {
+                
+                
+                String * v7;
+                v7 = StringLit(3, "go");
+                
+                
+                v8 = v7;
+            }
+            
+            
+            {
+                int32_t tmp0 = v2;
+                String * tmp1 = v8;
+                v0 = tmp0;
+                v1 = tmp1;
+            }
+            continue;
         }
-        
-        
-        return method1(v2, v8);
     }
 }
 String * method0(){

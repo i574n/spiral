@@ -39,14 +39,14 @@ int32_t pick0(US0 v0){
         case 0: { // Empty
             
             
-            USDecref0(&(v0));
+            
             return 0l;
             break;
         }
         default: { // Full
             int32_t v1 = v0.case1.v0;
             
-            USDecref0(&(v0));
+            
             return v1;
             break;
         }
@@ -81,19 +81,19 @@ int32_t main(){
         
         v6 = US0_Full(1l);
     }
-    USIncref0(&(v3));
+    
     
     int32_t v7;
     v7 = pick0(v3);
     
-    USDecref0(&(v3));
+    
     bool v8;
     v8 = v7 == 7l;
     
     
     bool v11;
     if (v8){
-        USIncref0(&(v6));
+        
         
         int32_t v9;
         v9 = pick0(v6);
@@ -110,7 +110,7 @@ int32_t main(){
         v11 = false;
     }
     
-    USDecref0(&(v6));
+    
     if (v11){
         
         

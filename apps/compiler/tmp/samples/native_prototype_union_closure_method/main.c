@@ -55,14 +55,14 @@ US0 US0_Flag(bool v0) { // Flag
     return x;
 }
 static inline void ClosureDecrefBody0(Closure0 * x){
-    USDecref0(&(x->v0));
+    (void)x;
 }
 void ClosureDecref0(Closure0 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
 int32_t closure0(Closure0 * x, int32_t v1){
     US0 v0 = x->v0;
-    USIncref0(&(v0));
+    
     ClosureDecref0(x);
     
     
@@ -99,7 +99,7 @@ int32_t closure0(Closure0 * x, int32_t v1){
         }
     }
     
-    USDecref0(&(v0));
+    
     int32_t v8;
     v8 = v7 + v1;
     
@@ -152,11 +152,11 @@ int32_t main(){
             v7 = US0_Flag(true);
         }
     }
-    USIncref0(&(v7));
+    
     
     Fun0 * v8;
     v8 = ClosureCreate0(v7);
     
-    USDecref0(&(v7));
+    
     return method0(v8);
 }

@@ -20,6 +20,8 @@ defmodule Spiral.Kino do
 
   @spec run(String.t(), keyword()) :: {:ok, Result.t()} | {:error, Exception.t()}
   def run(code, opts \\ []) when is_binary(code) do
+    Process.put(:spiral_kino_last_targets, [])
+
     if String.trim(code) == "" do
       {:ok, %Result{}}
     else
@@ -49,22 +51,24 @@ defmodule Spiral.Kino do
         dir = tmp_dir()
         Process.put(:spiral_kino_deadline, deadline)
         Process.put(:spiral_kino_phases, %{})
+        Process.put(:spiral_kino_targets, [])
 
         try do
           spi = Path.join(dir, "main.spi")
           exe = Path.join(dir, exe_name())
 
           with {:ok, names, package_dir} <-
-                 mount_packages(dir, prepared.packages, opts[:root], workspace_root(opts)),
-               :ok <- write_package(dir, names, package_dir, opts[:real]) do
+                 timed(:mount_ms, fn -> mount_packages(dir, prepared.packages, opts[:root], workspace_root(opts)) end),
+               :ok <- timed(:mount_ms, fn -> write_package(dir, names, package_dir, opts[:real]) end) do
             run_builders(builders, dir, spi, exe, prepared, opts, timeout, deadline, started)
           end
         after
+          unless opts[:keep_files], do: timed(:cleanup_ms, fn -> File.rm_rf(dir) end)
           Process.put(:spiral_kino_last_phases, phases())
+          Process.put(:spiral_kino_last_targets, target_rows(builders, Process.delete(:spiral_kino_targets) || []))
           Process.delete(:spiral_kino_deadline)
           Process.delete(:spiral_kino_queue_ms)
           Process.delete(:spiral_kino_phases)
-          unless opts[:keep_files], do: File.rm_rf(dir)
         end
       end
     end
@@ -90,6 +94,29 @@ defmodule Spiral.Kino do
     end
   end
 
+  @spec last_targets() :: [%{target: String.t(), status: String.t(), ms: non_neg_integer() | nil}]
+  def last_targets, do: Process.get(:spiral_kino_last_targets) || []
+
+  defp target_rows(builders, ran) do
+    Enum.map(builders, fn builder ->
+      Enum.find(ran, &(&1.target == builder.raw)) || %{target: builder.raw, status: "not_run", ms: nil}
+    end)
+  end
+
+  defp record_target(builder, result, ms) do
+    status =
+      case result do
+        {:ok, %{exit_status: status}} when status not in [nil, 0] -> "failed"
+        {:ok, _} -> "passed"
+        {:error, %ProcessError{reason: :tool_missing}} -> "unsupported"
+        {:error, _} -> "failed"
+      end
+
+    row = %{target: builder.raw, status: status, ms: ms}
+    Process.put(:spiral_kino_targets, (Process.get(:spiral_kino_targets) || []) ++ [row])
+    result
+  end
+
   @spec last_phases() :: map()
   def last_phases, do: Process.get(:spiral_kino_last_phases) || %{}
 
@@ -107,12 +134,8 @@ defmodule Spiral.Kino do
 
   @spec workspace_root(keyword()) :: String.t()
   def workspace_root(opts \\ []) do
-    opts[:workspace_root] || opts[:polyglot_root] ||
-      Application.get_env(:spiral_kino, :workspace_root) ||
-      Application.get_env(:spiral_kino, :polyglot_root) ||
-      System.get_env("SPIRAL_KINO_WORKSPACE_ROOT") ||
-      System.get_env("SPIRAL_KINO_POLYGLOT_ROOT") ||
-      @default_workspace_root
+    opts[:workspace_root] || Application.get_env(:spiral_kino, :workspace_root) ||
+      System.get_env("SPIRAL_KINO_WORKSPACE_ROOT") || @default_workspace_root
   end
 
   defp show(%Result{stdout: stdout, html: html, displays: displays}) do
@@ -136,7 +159,9 @@ defmodule Spiral.Kino do
   defp run_builders(builders, dir, spi, exe, prepared, opts, timeout, deadline, started) do
     builders
     |> Enum.reduce_while({:ok, [], []}, fn builder, {:ok, acc, missing} ->
-      case run_builder(builder, dir, spi, exe, prepared, opts, timeout, deadline) do
+      begun = System.monotonic_time(:millisecond)
+
+      case record_target(builder, run_builder(builder, dir, spi, exe, prepared, opts, timeout, deadline), System.monotonic_time(:millisecond) - begun) do
         {:ok, %{exit_status: status} = chunk} when status not in [nil, 0] ->
           {:halt, {:done, acc ++ [chunk], missing}}
 
@@ -152,14 +177,135 @@ defmodule Spiral.Kino do
     end)
     |> case do
       {_, [], [{_builder, error} | _]} -> {:error, error}
-      {:ok, chunks, missing} -> {:ok, assemble(chunks, missing, spi, started)}
+      {:ok, chunks, missing} -> agreed(chunks, prepared, opts, fn -> {:ok, assemble(chunks, missing, spi, started)} end)
       {:done, chunks, missing} -> {:ok, assemble(chunks, missing, spi, started)}
       {:error, error} -> {:error, error}
     end
   end
 
+  defp agreed(chunks, prepared, opts, assembled) do
+    case disagreement(chunks, prepared, opts) do
+      nil ->
+        assembled.()
+
+      {first, other} ->
+        Process.put(
+          :spiral_kino_targets,
+          Enum.map(Process.get(:spiral_kino_targets) || [], fn row ->
+            if row.target == other.target, do: %{row | status: "disagrees"}, else: row
+          end)
+        )
+
+        {:error,
+         %ProcessError{
+           reason: :disagree,
+           message:
+             "targets disagree: #{first.target} printed #{inspect(shown(first))}, #{other.target} printed #{inspect(shown(other))}"
+         }}
+    end
+  end
+
+  defp disagreement([_one], _prepared, _opts), do: nil
+
+  defp disagreement(chunks, prepared, opts) do
+    if opts[:agree] != true or prepared.print_code do
+      nil
+    else
+      case Enum.reject(chunks, &(shown(&1) == "")) do
+        [first | rest] ->
+          case Enum.find(rest, &(shown(&1) != shown(first))) do
+            nil -> nil
+            other -> {first, other}
+          end
+
+        [] ->
+          nil
+      end
+    end
+  end
+
+  @number ~r/(?<![\w.])[+-]?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?(?:un|uy|us|ul|UL|L|l|y|s|u|n|f|m)?(?![\w])/
+  @union_name "U[SsHh]\\d+_?([A-Z]\\w*)"
+
+  @doc false
+  def shown(chunk) do
+    chunk.stdout
+    |> String.replace("\r\n", "\n")
+    |> String.split("\n")
+    |> Enum.map(&(&1 |> String.replace(~r/\e\[[0-9;]*m/, "") |> String.trim() |> unwrap_string()))
+    |> Enum.reject(&(&1 == "" or trace_line?(&1)))
+    |> drop_trailing_status()
+    |> Enum.map(&(&1 |> String.replace("\\\"", "") |> String.replace("\"", "")))
+    |> Enum.map(&(&1 |> canonical_unions() |> canonical_collections()))
+    |> Enum.map(&Regex.replace(@number, &1, fn number -> same_number(number) end))
+    |> Enum.map(&String.replace(&1, ~r/\s+/, " "))
+    |> Enum.join("\n")
+  end
+
+  @doc false
+  def canonical_unions(line) do
+    line
+    |> then(&Regex.replace(~r/(?<=\(|, |,)v\d+=/, &1, ""))
+    |> then(&Regex.replace(~r/(?<=\(|, |,)'([^']*)'/, &1, "\\1"))
+    |> then(&Regex.replace(Regex.compile!("\\b" <> @union_name <> "\\(\\)"), &1, "\\1"))
+    |> then(&Regex.replace(Regex.compile!("\\b" <> @union_name <> " \\("), &1, "\\1("))
+    |> then(&Regex.replace(Regex.compile!("\\b" <> @union_name <> " ([^\\s(),{}]+)"), &1, "\\1(\\2)"))
+    |> then(&Regex.replace(Regex.compile!("\\b" <> @union_name), &1, "\\1"))
+    |> then(&Regex.replace(~r/\b([A-Z]\w*)\(\)/, &1, "\\1"))
+  end
+
+  @doc false
+  def canonical_collections(line) do
+    line
+    |> then(&Regex.replace(~r/\bstruct \(|#\(/, &1, "("))
+    |> then(&Regex.replace(~r/\[\|\s*\|\]/, &1, "[]"))
+    |> then(&Regex.replace(~r/\[\|(.*?)\|\]/, &1, fn _, inner -> "[" <> semicolon_items(inner) <> "]" end))
+    |> then(&Regex.replace(~r/\[([^\[\],();|]*)\]/, &1, fn _, inner -> "[" <> numpy_items(inner) <> "]" end))
+  end
+
+  defp semicolon_items(inner), do: inner |> String.split(";") |> Enum.map_join(", ", &String.trim/1)
+
+  defp numpy_items(inner) do
+    if String.contains?(inner, ",") do
+      inner |> String.split(",") |> Enum.map_join(", ", &String.trim/1)
+    else
+      inner |> String.split(~r/\s+/, trim: true) |> Enum.join(", ")
+    end
+  end
+
+  defp trace_line?(line) do
+    Regex.match?(~r/^\d{2}:\d{2}:\d{2} \d+[a-zA-Z] /, line) or String.starts_with?(line, "at ") or
+      Regex.match?(~r/\.fsx?\(\d+,\d+\): warning FS\d+:/, line)
+  end
+
+  defp unwrap_string(line) do
+    case Regex.run(~r/\AString\("(.*)"\)\z/, line) do
+      [_, inner] -> inner |> String.replace("\\\"", "\"") |> String.replace("\\\\", "\\")
+      _ -> line
+    end
+  end
+
+  defp drop_trailing_status(lines) do
+    if List.last(lines) == "0", do: Enum.drop(lines, -1), else: lines
+  end
+
+  defp same_number(number) do
+    case Float.parse(String.replace(number, ~r/[a-zA-Z]+\z/, "")) do
+      {value, _} -> :erlang.float_to_binary(value, [{:decimals, 6}, :compact])
+      :error -> number
+    end
+  end
+  @doc false
+  def target_output(dir, %{tool: :gleam} = builder) do
+    source_dir = Path.join([dir, "gleam", "src"])
+    File.mkdir_p!(source_dir)
+    Path.join(source_dir, "main" <> Builders.ext(builder))
+  end
+
+  def target_output(dir, builder), do: Path.join(dir, "main" <> Builders.ext(builder))
+
   defp run_builder(builder, dir, spi, exe, prepared, opts, timeout, deadline) do
-    output = Path.join(dir, "main" <> Builders.ext(builder))
+    output = target_output(dir, builder)
     backend = Builders.backend(builder)
     host = Builders.host_rust?(builder)
     File.write!(spi, prepared.code)
@@ -168,40 +314,76 @@ defmodule Spiral.Kino do
            timed(:compile_ms, fn ->
              compile(dir, spi, output, backend, host, builder, prepared, opts, timeout, deadline)
            end) do
-      if host do
-        in_slot(fn ->
-          run_host_rust(text, show_value, output, exe, prepared, opts, timeout, deadline)
+      code_parts = [builder.raw, backend, host, text, show_value, prepared.print_code, opts[:build_only], opts[:test_cell], opts[:root]]
+      looked_up = System.monotonic_time(:millisecond)
+
+      {result, memo} =
+        Spiral.Kino.Memo.code_result(opts, code_parts, fn ->
+          run_compiled(builder, output, backend, host, text, show_value, exe, prepared, opts, timeout, deadline)
         end)
-      else
-        File.write!(
-          output,
-          if(backend == "Python + Cuda", do: Cell.patch_python(text), else: text)
-        )
 
-        case in_slot(fn ->
-               timed(:target_ms, fn -> Targets.run(builder, output, opts, timeout, deadline) end)
-             end) do
-          {:ok, %{stdout: stdout} = ran} ->
-            {displays, stdout} = Display.extract(stdout)
-
-            {:ok,
-             chunk(
-               builder,
-               shown_stdout(prepared, text, stdout),
-               Map.get(ran, :value),
-               0,
-               displays
-             )}
-
-          other ->
-            other
-        end
-      end
+      if memo == :hit, do: add_phase(:code_memo_hit_ms, System.monotonic_time(:millisecond) - looked_up)
+      result
     end
   end
 
-  defp in_slot(fun) do
-    {result, _waited} = Spiral.Kino.Slots.run(fun, on_wait: &add_phase(:slot_wait_ms, &1))
+  defp run_compiled(builder, output, backend, host, text, show_value, exe, prepared, opts, timeout, deadline) do
+      cond do
+        opts[:build_only] == true ->
+          in_slot(fn -> build_target(builder, host, text, show_value, output, exe, opts, timeout, deadline) end)
+
+        host ->
+          in_slot(fn ->
+            run_host_rust(text, show_value, output, exe, prepared, opts, timeout, deadline)
+          end)
+
+        true ->
+          File.write!(
+            output,
+            if(backend == "Python + Cuda" and opts[:test_cell] != true, do: Cell.patch_python(text), else: text)
+          )
+
+          case in_slot(fn ->
+                 timed(:target_ms, fn -> Targets.run(builder, output, opts, timeout, deadline) end)
+               end) do
+            {:ok, %{stdout: stdout} = ran} ->
+              {displays, stdout} = Display.extract(stdout)
+
+              {:ok,
+               chunk(
+                 builder,
+                 shown_stdout(prepared, text, stdout),
+                 Map.get(ran, :value),
+                 0,
+                 displays
+               )}
+
+            other ->
+              other
+          end
+      end
+  end
+
+  defp build_target(builder, true, text, show_value, rs, exe, opts, timeout, deadline) do
+    rust = Cell.patch_rust(text, show_value)
+
+    with :ok <- reject_unpatched(rust),
+         :ok <- File.write(rs, rust),
+         :ok <- timed(:rustc_ms, fn -> rustc(rs, exe, opts, timeout, deadline) end) do
+      {:ok, chunk(builder, "built", nil, 0, [])}
+    end
+  end
+
+  defp build_target(builder, false, text, _show_value, output, _exe, opts, timeout, deadline) do
+    File.write!(output, text)
+
+    case timed(:target_ms, fn -> Targets.build(builder, output, opts, timeout, deadline) end) do
+      {:ok, _} -> {:ok, chunk(builder, "built", nil, 0, [])}
+      error -> error
+    end
+  end
+
+  defp in_slot(fun) do    {result, _waited} = Spiral.Kino.Slots.run(fun, on_wait: &add_phase(:slot_wait_ms, &1))
     result
   end
 
@@ -263,6 +445,7 @@ defmodule Spiral.Kino do
 
   defp chunk(builder, stdout, value, status, displays) do
     %{
+      target: builder.raw,
       ext: String.trim_leading(Builders.ext(builder), "."),
       tool: builder.tool,
       stdout: stdout,
@@ -482,7 +665,7 @@ defmodule Spiral.Kino do
         head = code |> binary_part(0, at) |> String.split("\n") |> length()
         last = code |> String.trim_trailing() |> String.split("\n") |> length()
 
-        case Regex.scan(~r/main\.spi:(\d+):(\d+): (Unification failure\.)?/, output) do
+        case Regex.scan(~r/main\.spi:(\d+):(\d+): (?:E[A-Z]{2,4}(?:\d{4}|-[A-Za-z]+): )?(Unification failure\.)?/, output) do
           [[_, line, column, "Unification failure."]] ->
             line = String.to_integer(line)
 
@@ -652,8 +835,9 @@ defmodule Spiral.Kino do
   end
 
   defp rustc_default(rs, exe, opts, timeout, deadline) do
-    with :ok <- require_tool(Toolchain.rustc(opts), "rustc") do
-      case Runner.run(Toolchain.rustc(opts), ["--edition", "2021", "-o", exe, rs],
+    with :ok <- require_tool(Toolchain.rustc(opts), "rustc"),
+         :ok <- ensure_rust_toolchain(Toolchain.rustc(opts), deadline) do
+      case Runner.run(Toolchain.rustc(opts), rustc_args(Toolchain.rustc(opts), rs, exe),
              timeout: budget(deadline),
              env: [{"CARGO_MANIFEST_DIR", Path.dirname(rs)}]
            ) do
@@ -663,6 +847,76 @@ defmodule Spiral.Kino do
         {:error, reason} -> {:error, "could not start rustc: #{inspect(reason)}"}
       end
     end
+  end
+
+  @rust_toolchain "+1.99.0"
+  @rust_flags ["-C", "opt-level=2", "-A", "warnings", "--edition", "2024"]
+
+  @spec rustc_args(String.t(), String.t(), String.t()) :: [String.t()]
+  def rustc_args(rustc, rs, exe) do
+    toolchain = if rustup_proxy?(rustc), do: [@rust_toolchain], else: []
+    toolchain ++ @rust_flags ++ ["-o", exe, rs]
+  end
+
+  defp ensure_rust_toolchain(rustc, deadline) do
+    ready = {__MODULE__, :rust_toolchain_ready}
+    rustup = Path.join(Path.dirname(rustc), "rustup" <> Path.extname(rustc))
+
+    cond do
+      not rustup_proxy?(rustc) or not File.regular?(rustup) ->
+        :ok
+
+      :persistent_term.get(ready, false) ->
+        :ok
+
+      true ->
+        :global.trans({ready, self()}, fn ->
+          if :persistent_term.get(ready, false) do
+            :ok
+          else
+            with :ok <- prepare_rust_toolchain({rustup, []}, budget(deadline)) do
+              :persistent_term.put(ready, true)
+            end
+          end
+        end)
+    end
+  end
+
+  @doc false
+  @spec prepare_rust_toolchain({String.t(), [String.t()]}, timeout()) :: :ok | {:error, ProcessError.t()}
+  def prepare_rust_toolchain({rustup, prefix}, timeout) do
+    version = String.trim_leading(@rust_toolchain, "+")
+
+    with {:ok, listed} <- rustup_step(rustup, prefix ++ ["toolchain", "list"], timeout, "rustup toolchain list") do
+      if listed |> String.split(["\r\n", "\n"]) |> Enum.any?(&String.starts_with?(&1, version <> "-")) do
+        :ok
+      else
+        install = prefix ++ ["toolchain", "install", version, "--profile", "minimal", "--no-self-update"]
+
+        with {:ok, _output} <- rustup_step(rustup, install, timeout, "rustup toolchain install #{version}"), do: :ok
+      end
+    end
+  end
+
+  defp rustup_step(rustup, args, timeout, label) do
+    case Runner.run(rustup, args, timeout: timeout) do
+      {:ok, %{exit_status: 0, output: output}} ->
+        {:ok, output}
+
+      {:ok, %{exit_status: status, output: output}} ->
+        {:error, %ProcessError{message: "#{label} failed (exit #{status}); Rust cells need the #{@rust_toolchain} toolchain\n\n#{String.slice(output, -2000, 2000)}"}}
+
+      {:error, {:timeout, _info}} ->
+        {:error, %ProcessError{message: "#{label} did not finish within the cell's time budget"}}
+
+      {:error, reason} ->
+        {:error, %ProcessError{message: "#{label} could not start: #{inspect(reason)}"}}
+    end
+  end
+
+  defp rustup_proxy?(rustc) do
+    path = rustc |> Path.expand() |> String.downcase() |> String.replace("\\", "/")
+    String.contains?(path, "/.cargo/bin/") or String.contains?(path, "/rustup/")
   end
 
   defp execute(exe, opts, timeout, deadline) do

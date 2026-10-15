@@ -43,7 +43,7 @@ int32_t score0(US0 v0){
         case 0: { // No
             bool v1 = v0.case0.v0;
             
-            USDecref0(&(v0));
+            
             if (v1){
                 
                 
@@ -58,7 +58,7 @@ int32_t score0(US0 v0){
         default: { // Yes
             int32_t v3 = v0.case1.v0;
             
-            USDecref0(&(v0));
+            
             return v3;
             break;
         }
@@ -93,19 +93,19 @@ int32_t main(){
         
         v6 = US0_Yes(1l);
     }
-    USIncref0(&(v3));
+    
     
     int32_t v7;
     v7 = score0(v3);
     
-    USDecref0(&(v3));
+    
     bool v8;
     v8 = v7 == 7l;
     
     
     bool v11;
     if (v8){
-        USIncref0(&(v6));
+        
         
         int32_t v9;
         v9 = score0(v6);
@@ -122,7 +122,7 @@ int32_t main(){
         v11 = false;
     }
     
-    USDecref0(&(v6));
+    
     if (v11){
         
         

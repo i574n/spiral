@@ -582,88 +582,96 @@ int32_t utf8_scalar_at_byte_offset1(String * v0, int32_t v1){
     }
 }
 int32_t loop0(int32_t v0, int32_t v1){
-    
-    
-    bool v2;
-    v2 = v0 == 2l;
-    
-    
-    if (v2){
+    while (1) {
         
         
-        return v1;
-    } else {
+        bool v2;
+        v2 = v0 == 2l;
         
         
-        bool v3;
-        v3 = v0 > 2l;
-        
-        
-        if (v3){
+        if (v2){
             
             
-            fprintf(stderr, "%s\n", "UTF-8 scalar width exceeds the string.");
-            exit(EXIT_FAILURE);
+            return v1;
         } else {
             
             
-            String * v5;
-            v5 = StringLit(3, "é");
-            (v5)->refc++;
-            
-            int32_t v6;
-            v6 = utf8_scalar_at_byte_offset1(v5, v0);
-            
-            StringDecref(v5);
-            bool v7;
-            v7 = v6 < 128l;
+            bool v3;
+            v3 = v0 > 2l;
             
             
-            int32_t v12;
-            if (v7){
+            if (v3){
                 
                 
-                v12 = 1l;
+                fprintf(stderr, "%s\n", "UTF-8 scalar width exceeds the string.");
+                exit(EXIT_FAILURE);
             } else {
                 
                 
-                bool v8;
-                v8 = v6 < 2048l;
+                String * v5;
+                v5 = StringLit(3, "é");
+                (v5)->refc++;
+                
+                int32_t v6;
+                v6 = utf8_scalar_at_byte_offset1(v5, v0);
+                
+                StringDecref(v5);
+                bool v7;
+                v7 = v6 < 128l;
                 
                 
-                if (v8){
+                int32_t v12;
+                if (v7){
                     
                     
-                    v12 = 2l;
+                    v12 = 1l;
                 } else {
                     
                     
-                    bool v9;
-                    v9 = v6 < 65536l;
+                    bool v8;
+                    v8 = v6 < 2048l;
                     
                     
-                    if (v9){
+                    if (v8){
                         
                         
-                        v12 = 3l;
+                        v12 = 2l;
                     } else {
                         
                         
-                        v12 = 4l;
+                        bool v9;
+                        v9 = v6 < 65536l;
+                        
+                        
+                        if (v9){
+                            
+                            
+                            v12 = 3l;
+                        } else {
+                            
+                            
+                            v12 = 4l;
+                        }
                     }
                 }
+                
+                
+                int32_t v13;
+                v13 = v0 + v12;
+                
+                
+                int32_t v14;
+                v14 = v1 + v6;
+                
+                
+                {
+                    int32_t tmp0 = v13;
+                    int32_t tmp1 = v14;
+                    v0 = tmp0;
+                    v1 = tmp1;
+                }
+                continue;
             }
-            
-            
-            int32_t v13;
-            v13 = v0 + v12;
-            
-            
-            int32_t v14;
-            v14 = v1 + v6;
-            
-            
-            return loop0(v13, v14);
         }
     }
 }

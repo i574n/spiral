@@ -44,135 +44,185 @@ char runtime_byte0(String * v0, int32_t v1){
     return v2;
 }
 int32_t codepoint_length_loop1(String * v0, char v1, char v2, int32_t v3, int32_t v4, int32_t v5){
-    
-    
-    bool v6;
-    v6 = v3 == v5;
-    
-    
-    if (v6){
-        
-        StringDecref(v0);
-        return v4;
-    } else {
+    while (1) {
         
         
-        char v7;
-        v7 = v0->ptr[v3];
+        bool v6;
+        v6 = v3 == v5;
         
         
-        bool v8;
-        v8 = v7 < v1;
-        
-        
-        bool v10;
-        if (v8){
+        if (v6){
             
-            
-            v10 = false;
+            StringDecref(v0);
+            return v4;
         } else {
             
             
-            bool v9;
-            v9 = v7 < v2;
+            char v7;
+            v7 = v0->ptr[v3];
             
             
-            v10 = v9;
-        }
-        
-        
-        int32_t v12;
-        if (v10){
-            
-            
-            v12 = v4;
-        } else {
-            
-            
-            int32_t v11;
-            v11 = v4 + 1l;
-            
-            
-            v12 = v11;
-        }
-        
-        
-        int32_t v13;
-        v13 = v3 + 1l;
-        
-        
-        return codepoint_length_loop1(v0, v1, v2, v13, v12, v5);
-    }
-}
-int32_t codepoint_byte_offset_loop2(String * v0, char v1, char v2, int32_t v3, int32_t v4, int32_t v5, int32_t v6){
-    
-    
-    bool v7;
-    v7 = v4 == v6;
-    
-    
-    if (v7){
-        
-        StringDecref(v0);
-        return v6;
-    } else {
-        
-        
-        char v8;
-        v8 = v0->ptr[v4];
-        
-        
-        bool v9;
-        v9 = v8 < v1;
-        
-        
-        bool v11;
-        if (v9){
-            
-            
-            v11 = false;
-        } else {
+            bool v8;
+            v8 = v7 < v1;
             
             
             bool v10;
-            v10 = v8 < v2;
-            
-            
-            v11 = v10;
-        }
-        
-        
-        if (v11){
-            
-            
-            int32_t v12;
-            v12 = v4 + 1l;
-            
-            
-            return codepoint_byte_offset_loop2(v0, v1, v2, v3, v12, v5, v6);
-        } else {
-            
-            
-            bool v14;
-            v14 = v5 == v3;
-            
-            
-            if (v14){
+            if (v8){
                 
-                StringDecref(v0);
-                return v4;
+                
+                v10 = false;
             } else {
                 
                 
-                int32_t v15;
-                v15 = v4 + 1l;
+                bool v9;
+                v9 = v7 < v2;
                 
                 
-                int32_t v16;
-                v16 = v5 + 1l;
+                v10 = v9;
+            }
+            
+            
+            int32_t v12;
+            if (v10){
                 
                 
-                return codepoint_byte_offset_loop2(v0, v1, v2, v3, v15, v16, v6);
+                v12 = v4;
+            } else {
+                
+                
+                int32_t v11;
+                v11 = v4 + 1l;
+                
+                
+                v12 = v11;
+            }
+            
+            
+            int32_t v13;
+            v13 = v3 + 1l;
+            
+            
+            {
+                String * tmp0 = v0;
+                char tmp1 = v1;
+                char tmp2 = v2;
+                int32_t tmp3 = v13;
+                int32_t tmp4 = v12;
+                int32_t tmp5 = v5;
+                v0 = tmp0;
+                v1 = tmp1;
+                v2 = tmp2;
+                v3 = tmp3;
+                v4 = tmp4;
+                v5 = tmp5;
+            }
+            continue;
+        }
+    }
+}
+int32_t codepoint_byte_offset_loop2(String * v0, char v1, char v2, int32_t v3, int32_t v4, int32_t v5, int32_t v6){
+    while (1) {
+        
+        
+        bool v7;
+        v7 = v4 == v6;
+        
+        
+        if (v7){
+            
+            StringDecref(v0);
+            return v6;
+        } else {
+            
+            
+            char v8;
+            v8 = v0->ptr[v4];
+            
+            
+            bool v9;
+            v9 = v8 < v1;
+            
+            
+            bool v11;
+            if (v9){
+                
+                
+                v11 = false;
+            } else {
+                
+                
+                bool v10;
+                v10 = v8 < v2;
+                
+                
+                v11 = v10;
+            }
+            
+            
+            if (v11){
+                
+                
+                int32_t v12;
+                v12 = v4 + 1l;
+                
+                
+                {
+                    String * tmp6 = v0;
+                    char tmp7 = v1;
+                    char tmp8 = v2;
+                    int32_t tmp9 = v3;
+                    int32_t tmp10 = v12;
+                    int32_t tmp11 = v5;
+                    int32_t tmp12 = v6;
+                    v0 = tmp6;
+                    v1 = tmp7;
+                    v2 = tmp8;
+                    v3 = tmp9;
+                    v4 = tmp10;
+                    v5 = tmp11;
+                    v6 = tmp12;
+                }
+                continue;
+            } else {
+                
+                
+                bool v14;
+                v14 = v5 == v3;
+                
+                
+                if (v14){
+                    
+                    StringDecref(v0);
+                    return v4;
+                } else {
+                    
+                    
+                    int32_t v15;
+                    v15 = v4 + 1l;
+                    
+                    
+                    int32_t v16;
+                    v16 = v5 + 1l;
+                    
+                    
+                    {
+                        String * tmp13 = v0;
+                        char tmp14 = v1;
+                        char tmp15 = v2;
+                        int32_t tmp16 = v3;
+                        int32_t tmp17 = v15;
+                        int32_t tmp18 = v16;
+                        int32_t tmp19 = v6;
+                        v0 = tmp13;
+                        v1 = tmp14;
+                        v2 = tmp15;
+                        v3 = tmp16;
+                        v4 = tmp17;
+                        v5 = tmp18;
+                        v6 = tmp19;
+                    }
+                    continue;
+                }
             }
         }
     }

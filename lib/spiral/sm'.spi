@@ -183,7 +183,7 @@ inl (~#?*) s =
 ///> lua
 ///> fsharp
 ///> cuda
-test format_debug =
+test format_debug no_agree "tests each backend's native rendering" =
     #?*("1", "2", "3")
     |> _assert_eq (
         backend_switch {
@@ -198,7 +198,7 @@ test format_debug =
 ///> lua
 ///> fsharp
 ///> cuda
-test format_debug_2 =
+test format_debug_2 no_agree "tests each backend's native rendering" =
     #?*{ c = "1"; a = "2"; b = "3" }
     |> _assert_eq (
         backend_switch {
@@ -221,18 +221,20 @@ instance unwrap_format result t u = fun x =>
     |> format_debug
 
 /// ### obj_to_string
-inl obj_to_string x : string =
-    backend_switch {
-        Gleam = fun () => #?*x : string
-        Lua = fun () => #?*x : string
-        Fsharp = fun () => $'!x |> _.ToString()' : string
-        Python = fun () => $'str(!x)' : string
-        Rust = fun () => obj_to_string_rust x
-        TypeScript = fun () => obj_to_string_typescript x
-        Zig = fun () => obj_to_string_zig x
-        Lean = fun () => $'toString !x ' : string
-        Wasm = fun () => obj_to_string_wasm x
-    }
+inl obj_to_string forall t. (x : t) : string =
+    if real show_composite_real `t () then real show_real `t x
+    else
+        backend_switch {
+            Gleam = fun () => #?*x : string
+            Lua = fun () => #?*x : string
+            Fsharp = fun () => $'!x |> _.ToString()' : string
+            Python = fun () => $'str(!x)' : string
+            Rust = fun () => obj_to_string_rust x
+            TypeScript = fun () => obj_to_string_typescript x
+            Zig = fun () => obj_to_string_zig x
+            Lean = fun () => $'toString !x ' : string
+            Wasm = fun () => obj_to_string_wasm x
+        }
 
 /// ### (~#?**)
 inl (~#?**) s =
@@ -265,26 +267,12 @@ test concat_list print_code =
 
 /// ### slice
 inl slice forall t {number; int}. (from : t) (to : t) s : string =
-    inl to_py () =
-        if (s |> var_is) || (to |> var_is) || (from |> var_is) then to + 1 else to
-    inl trace () =
-        [
-            "sm'.slice"
-            " / from: "; from |> obj_to_string
-            " / to: "; to |> obj_to_string
-            " / s |> var_is: "; s |> var_is |> obj_to_string
-            " / from |> var_is: "; from |> var_is |> obj_to_string
-            " / to |> var_is: "; to |> var_is |> obj_to_string
-            " / to_py (): "; to_py () |> obj_to_string
-            " / to_py () |> var_is: "; to_py () |> var_is |> obj_to_string
-        ]
-        |> concat_list ""
     backend_switch {
         Gleam = fun () =>
             sm.slice s { from to } : string
         Lua = fun () => sm.slice s { from to } : string
         Fsharp = fun () => sm.slice s { from to } : string
-        Python = fun () => sm.slice s { from to = to_py () } : string
+        Python = fun () => sm.slice s { from to } : string
         Rust = fun () => sm.slice s { from to } : string
         TypeScript = fun () => sm.slice s { from to } : string
         Zig = fun () => sm.slice s { from to } : string
@@ -378,7 +366,7 @@ inl prim x = real
 
 /// ### format
 inl format forall t. (x : t) : string =
-    real format_real `t x
+    real show_real `t x
 
 ///> gleam
 ///> lua
@@ -390,20 +378,7 @@ inl format forall t. (x : t) : string =
 test format =
     ("1", "2", ["3"; "4"], { b = "5"; c = "6"; a = fun () => "7" }, ;[ 8i32 ])
     |> format
-    |> _assert_eq (
-        backend_switch {
-            Gleam = fun () => "1, 2, Uh0Cons(\"3\", Uh0Cons(\"4\", Uh0Nil)), { b = 5; c = 6; a = 7 }, [8]" : string
-            Lua = fun () => "1, 2, Uh0_Cons(3, Uh0_Cons(4, Uh0_Nil)), { b = 5; c = 6; a = 7 }, [8]" : string
-            Fsharp = fun () =>
-                run_target function
-                    | _ => fun () => join "1, 2, UH0_Cons (\"3\", UH0_Cons (\"4\", UH0_Nil)), { b = 5; c = 6; a = 7 }, [|8|]"
-                : string
-            Python = fun () => "1, 2, UH0_Cons(v0='3', v1=UH0_Cons(v0='4', v1=UH0_Nil())), { b = 5; c = 6; a = 7 }, [8]" : string
-            Rust = fun () => "1, 2, Cons(3, Cons(4, Nil)), { b = 5; c = 6; a = 7 }, [8]" : string
-            TypeScript = fun () => "1, 2, Cons(3, Cons(4, Nil)), { b = 5; c = 6; a = 7 }, [8]" : string
-            C = fun () => "1, 2, Cons(3, Cons(4, Nil)), { b = 5; c = 6; a = 7 }, [8]" : string
-        }
-    )
+    |> _assert_eq "(1, 2, Cons(3, Cons(4, Nil)), { b = 5; c = 6; a = 7 }, [8])"
 
 /// ### (~#?)
 inl (~#?) s =
@@ -412,6 +387,36 @@ inl (~#?) s =
 /// ### (++#?)
 inl (++#?) (a : string) (b : _) : string =
     a ++# #?b
+
+/// ### show_real
+
+/// ### show
+inl show forall t. (x : t) : string =
+    real show_real `t x
+
+///> gleam
+///> lua
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test show =
+    show ("1", 2i32, ["3"; "4"], { b = "5"; c = (6i32, Some 'x') }, ;[ ("7", 8i32) ])
+    |> _assert_eq "(1, 2, Cons(3, Cons(4, Nil)), { b = 5; c = (6, Some(x)) }, [(7, 8)])"
+
+///> gleam
+///> lua
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> c
+///> zig
+///> delphi
+///> lean
+test show_floats =
+    show (1.5f64, 0.1f64, 2.0f64, 1.5707963267948966f64, -0.25f64)
+    |> _assert_eq "(1.5, 0.1, 2.0, 1.5707963267948966, -0.25)"
 
 /// ### to_char_array
 inl to_char_array (str : string) : array_base char =
@@ -805,12 +810,12 @@ inl builder_insert (i : int) (s : string) (sb : string_builder) : string_builder
         Gleam = fun () =>
             inl sb = #?sb
             inl a = sb |> slice 0 (i - 1)
-            inl b = sb |> slice i (length sb)
+            inl b = sb |> slice i (length sb - 1)
             [ a; s; b ] |> concat_list "" |> string_builder
         Lua = fun () =>
             inl sb = #?sb
             inl a = sb |> slice 0 (i - 1)
-            inl b = sb |> slice i (length sb)
+            inl b = sb |> slice i (length sb - 1)
             [ a; s; b ] |> concat_list "" |> string_builder
         Fsharp = fun () =>
             ($'!sb.Insert (!i, !s)' : string_builder) |> ignore
@@ -1614,7 +1619,7 @@ inl format_exception (ex : exn) : string =
 ///> cuda
 ///> rust
 ///> typescript
-test format_exception =
+test format_exception no_agree "exception text is backend-specific" =
     fun () => failwith "test"
     |> _throws
     |> optionm.value

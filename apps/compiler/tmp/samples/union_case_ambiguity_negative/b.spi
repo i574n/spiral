@@ -1,0 +1,3 @@
+union b_t =
+    | Hit
+    | MissB

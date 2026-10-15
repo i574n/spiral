@@ -7905,8 +7905,8 @@ a.anchor-link {
     <span class="n">inl</span> <span class="n">result</span> <span class="o">=</span> <span class="n">fn</span> <span class="n">a</span> <span class="n">b</span>
     <span class="n">inl</span> <span class="n">get_data</span> <span class="p">()</span> <span class="o">=</span>
         <span class="k">if</span> <span class="n">result</span>
-        <span class="n">then</span> <span class="c1">#?{ expected = b }</span>
-        <span class="k">else</span> <span class="c1">#?{ actual = a; expected = b }</span>
+        <span class="n">then</span> <span class="n">sm</span><span class="s1">'.show { expected = b }</span>
+        <span class="k">else</span> <span class="n">sm</span><span class="s1">'.show { actual = a; expected = b }</span>
     <span class="n">inl</span> <span class="n">get_raw_text</span> <span class="p">()</span> <span class="o">=</span>
         <span class="n">inl</span> <span class="n">data</span> <span class="o">=</span> <span class="n">get_data</span> <span class="p">()</span>
         <span class="n">name</span> <span class="o">++</span><span class="c1"># " " ++# get_data ()</span>
@@ -7995,16 +7995,21 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.gleam (gleam)
-
+__assert_approx_eq { expected = 12.345 }
 .fsx (fsharp)
-__assert_approx_eq { expected = +12.345000 }
+__assert_approx_eq { expected = 12.345 }
 .py (cuda)
-__assert_approx_eq { expected = 12.345000 }
-0
+__assert_approx_eq { expected = 12.345 }
 .rs (rust)
-__assert_approx_eq { expected = +12.345000 }
+__assert_approx_eq { expected = 12.345 }
 .ts (typescript)
-__assert_approx_eq { expected = +12.345000 }</pre>
+__assert_approx_eq { expected = 12.345 }</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[1]:</div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
+<pre>0</pre>
 </div>
 </div>
 </div>
@@ -8033,7 +8038,13 @@ __assert_approx_eq { expected = +12.345000 }</pre>
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_approx_eq { expected = +2.000000 }</pre>
+<pre>__assert_approx_eq { expected = 2.0 }</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[2]:</div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
+<pre>0</pre>
 </div>
 </div>
 </div>
@@ -8062,7 +8073,13 @@ __assert_approx_eq { expected = +12.345000 }</pre>
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_approx_eq { expected = +2.000000 }</pre>
+<pre>__assert_approx_eq { expected = 2.0 }</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[3]:</div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
+<pre>0</pre>
 </div>
 </div>
 </div>
@@ -8401,8 +8418,8 @@ __assert_approx_eq { expected = +12.345000 }</pre>
                     <span class="n">trace</span> <span class="n">Verbose</span>
                         <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">name</span>
                         <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span> <span class="nb">input</span> <span class="p">}</span>
-                    <span class="c1">#?x</span>
-                    <span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="c1">#?expected'</span>
+                    <span class="n">sm</span><span class="s1">'.show x</span>
+                    <span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="p">(</span><span class="n">sm</span><span class="s1">'.show expected'</span><span class="p">)</span>
                     <span class="n">true</span>
                 <span class="n">fun</span> <span class="n">ex</span> <span class="o">=&gt;</span>
                     <span class="n">trace</span> <span class="n">Critical</span>
@@ -8458,31 +8475,39 @@ __assert_approx_eq { expected = +12.345000 }</pre>
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.gleam (gleam)
-
-.fsx (fsharp)
-17:16:42 1v _assert_fn / { input = 3 }
+11:37:14 1v _assert_fn / { input = 3 }
 __assert_eq { expected = 2 }
-17:16:42 2v _assert_fn / { input = 2 }
+11:37:14 1v _assert_fn / { input = 2 }
+__assert_eq { expected = 1 }
+.fsx (fsharp)
+11:37:17 1v _assert_fn / { input = 3 }
+__assert_eq { expected = 2 }
+11:37:17 2v _assert_fn / { input = 2 }
 __assert_eq { expected = 1 }
 .py (cuda)
-17:16:45 1<span class="ansi-black-intense-fg">v</span> _assert_fn / { input = 3 }
+11:37:18 1<span class="ansi-black-intense-fg">v</span> _assert_fn / { input = 3 }
 __assert_eq { expected = 2 }
 
-17:16:45 2<span class="ansi-black-intense-fg">v</span> _assert_fn / { input = 2 }
+11:37:18 2<span class="ansi-black-intense-fg">v</span> _assert_fn / { input = 2 }
 __assert_eq { expected = 1 }
-0
 .rs (rust)
 
-17:16:48 1<span class="ansi-black-intense-fg">v</span> _assert_fn / { input = 3 }
+11:37:20 1<span class="ansi-black-intense-fg">v</span> _assert_fn / { input = 3 }
 __assert_eq { expected = 2 }
 
-17:16:48 2<span class="ansi-black-intense-fg">v</span> _assert_fn / { input = 2 }
+11:37:20 2<span class="ansi-black-intense-fg">v</span> _assert_fn / { input = 2 }
 __assert_eq { expected = 1 }
 .ts (typescript)
-17:16:49 1v _assert_fn / { input = 3 }
+11:37:20 1v _assert_fn / { input = 3 }
 __assert_eq { expected = 2 }
-17:16:49 2v _assert_fn / { input = 2 }
+11:37:20 2v _assert_fn / { input = 2 }
 __assert_eq { expected = 1 }</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[4]:</div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
+<pre>0</pre>
 </div>
 </div>
 </div>
@@ -8615,6 +8640,12 @@ __assert_eq { expected = 1 }</pre>
 <pre>__assert_contains { expected = b }</pre>
 </div>
 </div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[5]:</div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
+<pre>0</pre>
+</div>
+</div>
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=42">
@@ -8642,6 +8673,12 @@ __assert_eq { expected = 1 }</pre>
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>__assert_contains { expected = b }</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[6]:</div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
+<pre>0</pre>
 </div>
 </div>
 </div>

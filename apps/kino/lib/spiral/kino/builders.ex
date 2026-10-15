@@ -13,10 +13,13 @@ defmodule Spiral.Kino.Builders do
     "lua" => :lua,
     "c" => :c,
     "delphi" => :delphi,
+    "zig" => :zig,
+    "lean" => :lean,
+    "wgsl" => :wgsl,
     "_" => :skip
   }
 
-  @expected "rust, fsharp, typescript, python, cuda, cpp, gleam, lua, c, or delphi"
+  @expected "rust, fsharp, typescript, python, cuda, cpp, gleam, lua, c, delphi, zig, lean, or wgsl"
 
   @rust_flags %{
     long: %{
@@ -85,36 +88,13 @@ defmodule Spiral.Kino.Builders do
   def host_rust?(_), do: false
 
   @spec backend(map()) :: String.t()
-  def backend(%{tool: tool}) do
-    case tool do
-      :rust -> "Rust"
-      :fsharp -> "Fsharp"
-      :typescript -> "TypeScript"
-      :python -> "Python + Cuda"
-      :cuda -> "Python + Cuda"
-      :cpp -> "Cpp + Cuda"
-      :gleam -> "Gleam"
-      :lua -> "Lua"
-      :c -> "C"
-      :delphi -> "Delphi"
-    end
-  end
+  def backend(%{tool: tool}), do: tool |> Atom.to_string() |> Spiral.Kino.Domain.target_backend() |> known_target(tool)
 
   @spec ext(map()) :: String.t()
-  def ext(%{tool: tool}) do
-    case tool do
-      :rust -> ".rs"
-      :fsharp -> ".fsx"
-      :typescript -> ".ts"
-      :python -> ".py"
-      :cuda -> ".py"
-      :cpp -> ".cpp"
-      :gleam -> ".gleam"
-      :lua -> ".lua"
-      :c -> ".c"
-      :delphi -> ".pas"
-    end
-  end
+  def ext(%{tool: tool}), do: tool |> Atom.to_string() |> Spiral.Kino.Domain.target_extension() |> known_target(tool)
+
+  defp known_target("", tool), do: raise(ArgumentError, "no Spiral target for #{inspect(tool)}")
+  defp known_target(value, _tool), do: value
 
   @spec dispatch(map(), String.t()) ::
           {:spiral, [String.t()]}
@@ -123,6 +103,10 @@ defmodule Spiral.Kino.Builders do
           | {:bun, String.t()}
           | {:cc, String.t()}
           | {:dcc, String.t()}
+          | {:gleam, String.t(), [map()]}
+          | {:zig, String.t()}
+          | {:lean, String.t()}
+          | {:wgsl, String.t()}
   def dispatch(%{tool: :fsharp}, path), do: {:fsi, path}
 
   def dispatch(%{tool: :python, deps: [], env: nil}, path), do: {:python, path}
@@ -132,6 +116,15 @@ defmodule Spiral.Kino.Builders do
   def dispatch(%{tool: :c}, path), do: {:cc, path}
 
   def dispatch(%{tool: :delphi}, path), do: {:dcc, path}
+
+  def dispatch(%{tool: :gleam, target: target} = builder, path) when target in [nil, "erlang"],
+    do: {:gleam, path, builder.deps}
+
+  def dispatch(%{tool: :zig}, path), do: {:zig, path}
+
+  def dispatch(%{tool: :lean}, path), do: {:lean, path}
+
+  def dispatch(%{tool: :wgsl}, path), do: {:wgsl, path}
 
   def dispatch(builder, path), do: {:spiral, argv(builder, path)}
 

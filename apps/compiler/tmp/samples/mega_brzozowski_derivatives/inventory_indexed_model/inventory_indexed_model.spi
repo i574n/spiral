@@ -1528,4 +1528,6 @@ inl inventory_indexed_closed_dfa_runtime_probe () : bool =
         else false
     | _ => false
 
-
+type root_finite_symbol_vector alphabet length = finite_symbol_vector alphabet length
+type root_tri_alphabet = tri_alphabet
+inl root_tri_finite_symbol_vector () = tri_finite_symbol_vector ()

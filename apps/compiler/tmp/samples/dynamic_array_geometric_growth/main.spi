@@ -7,5 +7,5 @@ inl capacity ~(xs : array i32) : i32 =
 inl main () : i32 =
     inl ~xs : array i32 = create 0i32
     join reserve xs 3i32
-    inl ~reserved = join capacity xs
-    reserved -. 4i32
+    inl ~capacity_after_reserve_3 = join capacity xs
+    capacity_after_reserve_3 -. 4i32

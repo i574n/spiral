@@ -582,296 +582,308 @@ int32_t utf8_scalar_at_byte_offset0(String * v0, int32_t v1){
     }
 }
 int32_t utf8_grapheme_count_bounded_loop2(String * v0, int32_t v1, int32_t v2, int32_t v3){
-    
-    
-    bool v4;
-    v4 = v1 == v3;
-    
-    
-    if (v4){
-        
-        StringDecref(v0);
-        return v2;
-    } else {
+    while (1) {
         
         
-        bool v5;
-        v5 = v1 > v3;
+        bool v4;
+        v4 = v1 == v3;
         
         
-        if (v5){
+        if (v4){
             
             StringDecref(v0);
-            fprintf(stderr, "%s\n", "UTF-8 scalar width exceeds the string.");
-            exit(EXIT_FAILURE);
+            return v2;
         } else {
-            (v0)->refc++;
-            
-            int32_t v7;
-            v7 = utf8_scalar_at_byte_offset0(v0, v1);
             
             
-            bool v8;
-            v8 = v7 < 128l;
+            bool v5;
+            v5 = v1 > v3;
             
             
-            int32_t v13;
-            if (v8){
+            if (v5){
                 
-                
-                v13 = 1l;
+                StringDecref(v0);
+                fprintf(stderr, "%s\n", "UTF-8 scalar width exceeds the string.");
+                exit(EXIT_FAILURE);
             } else {
+                (v0)->refc++;
+                
+                int32_t v7;
+                v7 = utf8_scalar_at_byte_offset0(v0, v1);
                 
                 
-                bool v9;
-                v9 = v7 < 2048l;
+                bool v8;
+                v8 = v7 < 128l;
                 
                 
-                if (v9){
+                int32_t v13;
+                if (v8){
                     
                     
-                    v13 = 2l;
+                    v13 = 1l;
                 } else {
                     
                     
-                    bool v10;
-                    v10 = v7 < 65536l;
+                    bool v9;
+                    v9 = v7 < 2048l;
                     
                     
-                    if (v10){
+                    if (v9){
                         
                         
-                        v13 = 3l;
+                        v13 = 2l;
                     } else {
                         
                         
-                        v13 = 4l;
-                    }
-                }
-            }
-            
-            
-            bool v14;
-            v14 = v7 >= 768l;
-            
-            
-            bool v44;
-            if (v14){
-                
-                
-                bool v15;
-                v15 = v7 <= 879l;
-                
-                
-                if (v15){
-                    
-                    
-                    v44 = true;
-                } else {
-                    
-                    
-                    bool v16;
-                    v16 = v7 >= 6832l;
-                    
-                    
-                    if (v16){
+                        bool v10;
+                        v10 = v7 < 65536l;
                         
                         
-                        bool v17;
-                        v17 = v7 <= 6911l;
-                        
-                        
-                        if (v17){
+                        if (v10){
                             
                             
-                            v44 = true;
+                            v13 = 3l;
                         } else {
                             
                             
-                            bool v18;
-                            v18 = v7 >= 7616l;
-                            
-                            
-                            if (v18){
-                                
-                                
-                                bool v19;
-                                v19 = v7 <= 7679l;
-                                
-                                
-                                if (v19){
-                                    
-                                    
-                                    v44 = true;
-                                } else {
-                                    
-                                    
-                                    bool v20;
-                                    v20 = v7 >= 8400l;
-                                    
-                                    
-                                    if (v20){
-                                        
-                                        
-                                        bool v21;
-                                        v21 = v7 <= 8447l;
-                                        
-                                        
-                                        if (v21){
-                                            
-                                            
-                                            v44 = true;
-                                        } else {
-                                            
-                                            
-                                            bool v22;
-                                            v22 = v7 >= 65024l;
-                                            
-                                            
-                                            if (v22){
-                                                
-                                                
-                                                bool v23;
-                                                v23 = v7 <= 65039l;
-                                                
-                                                
-                                                if (v23){
-                                                    
-                                                    
-                                                    v44 = true;
-                                                } else {
-                                                    
-                                                    
-                                                    bool v24;
-                                                    v24 = v7 >= 65056l;
-                                                    
-                                                    
-                                                    if (v24){
-                                                        
-                                                        
-                                                        bool v25;
-                                                        v25 = v7 <= 65071l;
-                                                        
-                                                        
-                                                        if (v25){
-                                                            
-                                                            
-                                                            v44 = true;
-                                                        } else {
-                                                            
-                                                            
-                                                            bool v26;
-                                                            v26 = v7 >= 127995l;
-                                                            
-                                                            
-                                                            if (v26){
-                                                                
-                                                                
-                                                                bool v27;
-                                                                v27 = v7 <= 127999l;
-                                                                
-                                                                
-                                                                if (v27){
-                                                                    
-                                                                    
-                                                                    v44 = true;
-                                                                } else {
-                                                                    
-                                                                    
-                                                                    bool v28;
-                                                                    v28 = v7 >= 917760l;
-                                                                    
-                                                                    
-                                                                    if (v28){
-                                                                        
-                                                                        
-                                                                        bool v29;
-                                                                        v29 = v7 <= 917999l;
-                                                                        
-                                                                        
-                                                                        v44 = v29;
-                                                                    } else {
-                                                                        
-                                                                        
-                                                                        v44 = false;
-                                                                    }
-                                                                }
-                                                            } else {
-                                                                
-                                                                
-                                                                v44 = false;
-                                                            }
-                                                        }
-                                                    } else {
-                                                        
-                                                        
-                                                        v44 = false;
-                                                    }
-                                                }
-                                            } else {
-                                                
-                                                
-                                                v44 = false;
-                                            }
-                                        }
-                                    } else {
-                                        
-                                        
-                                        v44 = false;
-                                    }
-                                }
-                            } else {
-                                
-                                
-                                v44 = false;
-                            }
+                            v13 = 4l;
                         }
+                    }
+                }
+                
+                
+                bool v14;
+                v14 = v7 >= 768l;
+                
+                
+                bool v44;
+                if (v14){
+                    
+                    
+                    bool v15;
+                    v15 = v7 <= 879l;
+                    
+                    
+                    if (v15){
+                        
+                        
+                        v44 = true;
                     } else {
                         
                         
-                        v44 = false;
+                        bool v16;
+                        v16 = v7 >= 6832l;
+                        
+                        
+                        if (v16){
+                            
+                            
+                            bool v17;
+                            v17 = v7 <= 6911l;
+                            
+                            
+                            if (v17){
+                                
+                                
+                                v44 = true;
+                            } else {
+                                
+                                
+                                bool v18;
+                                v18 = v7 >= 7616l;
+                                
+                                
+                                if (v18){
+                                    
+                                    
+                                    bool v19;
+                                    v19 = v7 <= 7679l;
+                                    
+                                    
+                                    if (v19){
+                                        
+                                        
+                                        v44 = true;
+                                    } else {
+                                        
+                                        
+                                        bool v20;
+                                        v20 = v7 >= 8400l;
+                                        
+                                        
+                                        if (v20){
+                                            
+                                            
+                                            bool v21;
+                                            v21 = v7 <= 8447l;
+                                            
+                                            
+                                            if (v21){
+                                                
+                                                
+                                                v44 = true;
+                                            } else {
+                                                
+                                                
+                                                bool v22;
+                                                v22 = v7 >= 65024l;
+                                                
+                                                
+                                                if (v22){
+                                                    
+                                                    
+                                                    bool v23;
+                                                    v23 = v7 <= 65039l;
+                                                    
+                                                    
+                                                    if (v23){
+                                                        
+                                                        
+                                                        v44 = true;
+                                                    } else {
+                                                        
+                                                        
+                                                        bool v24;
+                                                        v24 = v7 >= 65056l;
+                                                        
+                                                        
+                                                        if (v24){
+                                                            
+                                                            
+                                                            bool v25;
+                                                            v25 = v7 <= 65071l;
+                                                            
+                                                            
+                                                            if (v25){
+                                                                
+                                                                
+                                                                v44 = true;
+                                                            } else {
+                                                                
+                                                                
+                                                                bool v26;
+                                                                v26 = v7 >= 127995l;
+                                                                
+                                                                
+                                                                if (v26){
+                                                                    
+                                                                    
+                                                                    bool v27;
+                                                                    v27 = v7 <= 127999l;
+                                                                    
+                                                                    
+                                                                    if (v27){
+                                                                        
+                                                                        
+                                                                        v44 = true;
+                                                                    } else {
+                                                                        
+                                                                        
+                                                                        bool v28;
+                                                                        v28 = v7 >= 917760l;
+                                                                        
+                                                                        
+                                                                        if (v28){
+                                                                            
+                                                                            
+                                                                            bool v29;
+                                                                            v29 = v7 <= 917999l;
+                                                                            
+                                                                            
+                                                                            v44 = v29;
+                                                                        } else {
+                                                                            
+                                                                            
+                                                                            v44 = false;
+                                                                        }
+                                                                    }
+                                                                } else {
+                                                                    
+                                                                    
+                                                                    v44 = false;
+                                                                }
+                                                            }
+                                                        } else {
+                                                            
+                                                            
+                                                            v44 = false;
+                                                        }
+                                                    }
+                                                } else {
+                                                    
+                                                    
+                                                    v44 = false;
+                                                }
+                                            }
+                                        } else {
+                                            
+                                            
+                                            v44 = false;
+                                        }
+                                    }
+                                } else {
+                                    
+                                    
+                                    v44 = false;
+                                }
+                            }
+                        } else {
+                            
+                            
+                            v44 = false;
+                        }
                     }
-                }
-            } else {
-                
-                
-                v44 = false;
-            }
-            
-            
-            int32_t v48;
-            if (v44){
-                
-                
-                bool v45;
-                v45 = v2 == 0l;
-                
-                
-                if (v45){
-                    
-                    
-                    v48 = 1l;
                 } else {
                     
                     
-                    v48 = v2;
+                    v44 = false;
                 }
-            } else {
                 
                 
-                int32_t v47;
-                v47 = v2 + 1l;
+                int32_t v48;
+                if (v44){
+                    
+                    
+                    bool v45;
+                    v45 = v2 == 0l;
+                    
+                    
+                    if (v45){
+                        
+                        
+                        v48 = 1l;
+                    } else {
+                        
+                        
+                        v48 = v2;
+                    }
+                } else {
+                    
+                    
+                    int32_t v47;
+                    v47 = v2 + 1l;
+                    
+                    
+                    v48 = v47;
+                }
                 
                 
-                v48 = v47;
+                int32_t v49;
+                v49 = v1 + v13;
+                
+                
+                {
+                    String * tmp0 = v0;
+                    int32_t tmp1 = v49;
+                    int32_t tmp2 = v48;
+                    int32_t tmp3 = v3;
+                    v0 = tmp0;
+                    v1 = tmp1;
+                    v2 = tmp2;
+                    v3 = tmp3;
+                }
+                continue;
             }
-            
-            
-            int32_t v49;
-            v49 = v1 + v13;
-            
-            
-            return utf8_grapheme_count_bounded_loop2(v0, v49, v48, v3);
         }
     }
 }

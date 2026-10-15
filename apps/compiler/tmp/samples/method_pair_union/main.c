@@ -90,19 +90,19 @@ int32_t main(){
         case 0: { // None
             
             
-            USDecref0(&(v1)); USDecref0(&(v2));
+            
             return 1l;
             break;
         }
         default: { // Some
             int32_t v3 = v1.case1.v0;
             
-            USDecref0(&(v1));
+            
             switch (v2.tag) {
                 case 0: { // None
                     
                     
-                    USDecref0(&(v2));
+                    
                     bool v4;
                     v4 = v3 == 7l;
                     
@@ -121,7 +121,7 @@ int32_t main(){
                 default: { // Some
                     
                     
-                    USDecref0(&(v2));
+                    
                     return 1l;
                     break;
                 }

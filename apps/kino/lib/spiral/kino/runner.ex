@@ -15,6 +15,7 @@ defmodule Spiral.Kino.Runner do
 
   @default_max_output 16 * 1024 * 1024
   @drain_after_kill_ms 5_000
+  @output_after_exit_ms 2_000
 
   @spec run(String.t(), [String.t()], keyword()) :: {:ok, result()} | {:error, error()}
   def run(executable, args, opts \\ []) when is_binary(executable) and is_list(args) do
@@ -58,7 +59,7 @@ defmodule Spiral.Kino.Runner do
     caller_mref = Process.monitor(caller)
 
     case open_port(executable, args, opts) do
-      {:ok, port} ->
+      {:ok, port, capture} ->
         os_pid =
           case Port.info(port, :os_pid) do
             {:os_pid, os_pid} -> os_pid
@@ -80,6 +81,7 @@ defmodule Spiral.Kino.Runner do
           caller_mref: caller_mref,
           ref: ref,
           port: port,
+          capture: capture,
           os_pid: os_pid,
           started: started,
           deadline: deadline,
@@ -98,22 +100,104 @@ defmodule Spiral.Kino.Runner do
 
   defp open_port(executable, args, opts) do
     with {:ok, path} <- resolve_executable(executable) do
+      capture = capture_file(path, args)
+
+      {spawn, spawn_args} =
+        case capture do
+          nil -> {{:spawn_executable, path}, [args: args]}
+          file -> {{:spawn, captured_command_line(path, args, file)}, []}
+        end
+
       port_opts =
-        [
-          :binary,
-          :exit_status,
-          :stderr_to_stdout,
-          :use_stdio,
-          :hide,
-          args: args,
-          env: Enum.map(opts[:env], &port_env/1)
-        ] ++ if(opts[:cd], do: [cd: opts[:cd]], else: [])
+        [:binary, :exit_status, :stderr_to_stdout, :use_stdio, :hide] ++
+          spawn_args ++
+          [env: Enum.map(opts[:env], &port_env/1)] ++
+          if(opts[:cd], do: [cd: opts[:cd]], else: [])
 
       try do
-        {:ok, Port.open({:spawn_executable, path}, port_opts)}
+        {:ok, Port.open(spawn, port_opts), capture}
       rescue
         error -> {:error, error}
       end
+    end
+  end
+
+  @cmd_unquotable ["\"", "%", "\r", "\n"]
+  @cmd_needs_quotes [" ", "\t", "&", "|", "<", ">", "(", ")", "^", ",", ";", "="]
+
+  @doc false
+  @spec capture_file(String.t(), [String.t()]) :: String.t() | nil
+  def capture_file(path, args) do
+    file = Path.join(System.tmp_dir!(), "spiral-kino-run-#{System.pid()}-#{System.unique_integer([:positive])}.out")
+
+    with {:win32, _} <- :os.type(),
+         shell when is_binary(shell) <- command_shell(),
+         true <- Enum.all?([shell, path, file | args], &(not String.contains?(&1, @cmd_unquotable))) do
+      file
+    else
+      _ -> nil
+    end
+  end
+
+  @doc false
+  @spec captured_command_line(String.t(), [String.t()], String.t()) :: String.t()
+  def captured_command_line(path, args, file) do
+    words = Enum.map_join(args, "", &(" " <> cmd_word(&1)))
+    ~s|"#{windows_path(command_shell())}" /d /v:off /s /c "> "#{windows_path(file)}" 2>&1 "#{windows_path(path)}"#{words}"|
+  end
+
+  defp command_shell, do: System.get_env("ComSpec") || System.find_executable("cmd.exe")
+
+  defp cmd_word(""), do: ~s|""|
+
+  defp cmd_word(word) do
+    if String.contains?(word, @cmd_needs_quotes), do: ~s|"#{word}"|, else: word
+  end
+
+  defp windows_path(path), do: String.replace(path, "/", "\\")
+
+  defp absorb_capture(%{capture: nil} = state), do: state
+
+  defp absorb_capture(%{capture: file} = state) do
+    state =
+      case read_tail(file, state.max_output) do
+        {:ok, data} -> append(state, data)
+        {:error, _} -> state
+      end
+
+    discard_capture(state)
+  end
+
+  defp read_tail(file, limit) do
+    with {:ok, %File.Stat{size: size}} <- File.stat(file),
+         {:ok, io} <- File.open(file, [:read, :binary]) do
+      try do
+        case :file.pread(io, max(size - limit, 0), min(size, limit)) do
+          {:ok, data} -> {:ok, data}
+          :eof -> {:ok, ""}
+          {:error, reason} -> {:error, reason}
+        end
+      after
+        File.close(io)
+      end
+    end
+  end
+
+  defp discard_capture(%{capture: nil} = state), do: state
+
+  defp discard_capture(%{capture: file} = state) do
+    remove_capture(file, 20)
+    %{state | capture: nil}
+  end
+
+  defp remove_capture(file, attempts) do
+    case File.rm(file) do
+      {:error, reason} when reason not in [:enoent] and attempts > 1 ->
+        Process.sleep(100)
+        remove_capture(file, attempts - 1)
+
+      _ ->
+        :ok
     end
   end
 
@@ -134,29 +218,45 @@ defmodule Spiral.Kino.Runner do
         loop(append(state, data))
 
       {^port, {:exit_status, status}} ->
+        state = output_after_exit(state, System.monotonic_time(:millisecond) + @output_after_exit_ms)
+        state = absorb_capture(state)
         finish(state, {:ok, result(state, status)})
 
       {:DOWN, ^caller_mref, :process, _, _reason} ->
         kill_tree(state.os_pid)
         close_port(port)
+        discard_capture(state)
 
       {:EXIT, ^port, _reason} ->
-        loop(state)
+        loop(Map.put(state, :port_closed, true))
 
       {:EXIT, _from, reason} ->
         kill_tree(state.os_pid)
         close_port(port)
+        discard_capture(state)
         exit(reason)
     after
       remaining(state.deadline) ->
         kill_tree(state.os_pid)
         state = drain(state, System.monotonic_time(:millisecond) + @drain_after_kill_ms)
         close_port(port)
+        state = absorb_capture(state)
 
         error =
           {:timeout, %{output: output(state), os_pid: state.os_pid, timeout: state.timeout}}
 
         finish(state, {:error, error})
+    end
+  end
+
+  defp output_after_exit(%{port_closed: true} = state, _until), do: state
+
+  defp output_after_exit(%{port: port} = state, until) do
+    receive do
+      {^port, {:data, data}} -> output_after_exit(append(state, data), until)
+      {:EXIT, ^port, _reason} -> state
+    after
+      max(until - System.monotonic_time(:millisecond), 0) -> state
     end
   end
 

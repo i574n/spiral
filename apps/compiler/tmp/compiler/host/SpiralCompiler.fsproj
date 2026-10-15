@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!--
-    The compiler executable. Build with -p:SpiralCore=single-flight (default) or -p:SpiralCore=hopac.
+    The compiler executable. Build with -p:SpiralCore=single-flight (default) or -p:SpiralCore=gpt5parallel.
     Program.fs talks to the core only through SupervisorReq (built by reflection), new_server and
     startupParse, which both cores expose. The core is a separate assembly (../core), so editing the
-    host rebuilds in seconds even in hopac mode.
+    host rebuilds in seconds even in gpt5parallel mode.
   -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -15,9 +15,9 @@
   <PropertyGroup Condition="'$(SpiralCore)' == 'single-flight'">
     <DefineConstants>$(DefineConstants);SPIRAL_CORE_SINGLE_FLIGHT</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(SpiralCore)' == 'hopac'">
-    <DefineConstants>$(DefineConstants);SPIRAL_CORE_HOPAC</DefineConstants>
-    <!-- Hopac runs one compile per process: tier-0 PGO instrumentation costs more than it pays back (~7%). -->
+  <PropertyGroup Condition="'$(SpiralCore)' == 'gpt5parallel'">
+    <DefineConstants>$(DefineConstants);SPIRAL_CORE_GPT5PARALLEL</DefineConstants>
+    <!-- gpt5parallel runs one compile per process: tier-0 PGO instrumentation costs more than it pays back (~7%). -->
     <TieredPGO>false</TieredPGO>
   </PropertyGroup>
   <ItemGroup>

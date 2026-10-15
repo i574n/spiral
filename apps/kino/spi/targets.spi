@@ -1,0 +1,65 @@
+union target =
+    | RustTarget
+    | FsharpTarget
+    | TypescriptTarget
+    | PythonTarget
+    | CudaTarget
+    | CppTarget
+    | GleamTarget
+    | LuaTarget
+    | CTarget
+    | DelphiTarget
+    | ZigTarget
+    | LeanTarget
+    | WgslTarget
+    | UnknownTarget
+
+inl target_of (tool : string) : target =
+    if tool = "rust" then RustTarget
+    elif tool = "fsharp" then FsharpTarget
+    elif tool = "typescript" then TypescriptTarget
+    elif tool = "python" then PythonTarget
+    elif tool = "cuda" then CudaTarget
+    elif tool = "cpp" then CppTarget
+    elif tool = "gleam" then GleamTarget
+    elif tool = "lua" then LuaTarget
+    elif tool = "c" then CTarget
+    elif tool = "delphi" then DelphiTarget
+    elif tool = "zig" then ZigTarget
+    elif tool = "lean" then LeanTarget
+    elif tool = "wgsl" then WgslTarget
+    else UnknownTarget
+
+inl backend (t : target) : string =
+    match t with
+    | RustTarget => "Rust"
+    | FsharpTarget => "Fsharp"
+    | TypescriptTarget => "TypeScript"
+    | PythonTarget => "Python + Cuda"
+    | CudaTarget => "Python + Cuda"
+    | CppTarget => "Cpp + Cuda"
+    | GleamTarget => "Gleam"
+    | LuaTarget => "Lua"
+    | CTarget => "C"
+    | DelphiTarget => "Delphi"
+    | ZigTarget => "Zig"
+    | LeanTarget => "Lean"
+    | WgslTarget => "Wgsl"
+    | UnknownTarget => ""
+
+inl extension (t : target) : string =
+    match t with
+    | RustTarget => ".rs"
+    | FsharpTarget => ".fsx"
+    | TypescriptTarget => ".ts"
+    | PythonTarget => ".py"
+    | CudaTarget => ".py"
+    | CppTarget => ".cpp"
+    | GleamTarget => ".gleam"
+    | LuaTarget => ".lua"
+    | CTarget => ".c"
+    | DelphiTarget => ".pas"
+    | ZigTarget => ".zig"
+    | LeanTarget => ".lean"
+    | WgslTarget => ".wgsl"
+    | UnknownTarget => ""

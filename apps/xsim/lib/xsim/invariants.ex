@@ -9,10 +9,22 @@ defmodule Xsim.Invariants do
       {:no_stale_results, no_stale(state, wanted)},
       {:one_compile_per_prefix, one_compile(state)},
       {:withdrawn_demand_hidden, withdrawn_hidden(state, wanted)}
-    ]
+    ] ++ if(state.evicting, do: [{:unwanted_results_freed, unwanted_freed(state, wanted)}], else: [])
+  end
+
+  def breaking_edits_fail(state, broken) do
+    bad =
+      for {id, {_key, result}} <- state.visible,
+          post = state.world.posts[id],
+          MapSet.member?(broken, World.current_source(post)),
+          comparable(result) |> elem(0) == :ok,
+          do: id
+
+    verdict(bad)
   end
 
   def commute(a, b) do
+
     va = Map.new(a.visible, fn {id, {_key, result}} -> {id, comparable(result)} end)
     vb = Map.new(b.visible, fn {id, {_key, result}} -> {id, comparable(result)} end)
     if va == vb, do: :ok, else: {:violations, Enum.take(for({id, r} <- va, vb[id] != r, do: id), 5)}
@@ -31,8 +43,13 @@ defmodule Xsim.Invariants do
   end
 
   defp one_compile(state) do
-    bad = for {key, n} <- state.starts, n - Map.get(state.cancelled, key, 0) > 1, do: key
+    bad = for {key, n} <- state.starts, n - Map.get(state.cancelled, key, 0) - Map.get(state.evicted, key, 0) > 1, do: key
     verdict(bad)
+  end
+
+  defp unwanted_freed(state, wanted) do
+    live = MapSet.new(Map.values(wanted))
+    verdict(for {key, _} <- state.results, not MapSet.member?(live, key), do: key)
   end
 
   defp withdrawn_hidden(state, wanted) do
@@ -43,6 +60,9 @@ defmodule Xsim.Invariants do
   defp verdict([]), do: :ok
   defp verdict(bad), do: {:violations, Enum.take(bad, 5)}
 
-  def comparable(%{status: status, out: out}), do: {status, Regex.replace(~r/spiral_kino[\\\/][0-9]+-[0-9]+/, out, "spiral_kino/_")}
+  def comparable(%{status: status, out: out}) do
+    out = Regex.replace(~r/spiral_kino[\\\/][0-9]+-[0-9]+/, out, "spiral_kino/_")
+    {status, Regex.replace(~r/(thread '[^']*') \([0-9]+\) panicked/, out, "\\1 (_) panicked")}
+  end
   def comparable(other), do: other
 end

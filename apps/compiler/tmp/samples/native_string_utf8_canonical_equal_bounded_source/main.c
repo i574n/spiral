@@ -582,265 +582,267 @@ int32_t utf8_scalar_at_byte_offset1(String * v0, int32_t v1){
     }
 }
 bool utf8_canonical_equal_bounded_loop0(String * v0, int32_t v1, int32_t v2, int32_t v3, int32_t v4, int32_t v5, int32_t v6){
-    
-    
-    bool v7;
-    v7 = v3 >= 0l;
-    
-    
-    int32_t v75; int32_t v76; int32_t v77;
-    if (v7){
+    while (1) {
         
         
-        v75 = v3; v76 = v1; v77 = -1l;
-    } else {
+        bool v7;
+        v7 = v3 >= 0l;
         
         
-        bool v8;
-        v8 = v1 == v5;
-        
-        
-        if (v8){
+        int32_t v75; int32_t v76; int32_t v77;
+        if (v7){
             
             
-            v75 = -1l; v76 = v1; v77 = -1l;
+            v75 = v3; v76 = v1; v77 = -1l;
         } else {
             
             
-            bool v9;
-            v9 = v1 > v5;
+            bool v8;
+            v8 = v1 == v5;
             
             
-            if (v9){
+            if (v8){
                 
                 
-                fprintf(stderr, "%s\n", "UTF-8 canonical stream offset exceeds the string.");
-                exit(EXIT_FAILURE);
+                v75 = -1l; v76 = v1; v77 = -1l;
             } else {
-                (v0)->refc++;
-                
-                int32_t v13;
-                v13 = utf8_scalar_at_byte_offset1(v0, v1);
                 
                 
-                bool v14;
-                v14 = v13 < 128l;
+                bool v9;
+                v9 = v1 > v5;
                 
                 
-                int32_t v19;
-                if (v14){
+                if (v9){
                     
                     
-                    v19 = 1l;
+                    fprintf(stderr, "%s\n", "UTF-8 canonical stream offset exceeds the string.");
+                    exit(EXIT_FAILURE);
                 } else {
+                    (v0)->refc++;
+                    
+                    int32_t v13;
+                    v13 = utf8_scalar_at_byte_offset1(v0, v1);
                     
                     
-                    bool v15;
-                    v15 = v13 < 2048l;
+                    bool v14;
+                    v14 = v13 < 128l;
                     
                     
-                    if (v15){
+                    int32_t v19;
+                    if (v14){
                         
                         
-                        v19 = 2l;
+                        v19 = 1l;
                     } else {
                         
                         
-                        bool v16;
-                        v16 = v13 < 65536l;
+                        bool v15;
+                        v15 = v13 < 2048l;
                         
                         
-                        if (v16){
+                        if (v15){
                             
                             
-                            v19 = 3l;
+                            v19 = 2l;
                         } else {
                             
                             
-                            v19 = 4l;
-                        }
-                    }
-                }
-                
-                
-                bool v20;
-                v20 = v13 == 192l;
-                
-                
-                int32_t v66; int32_t v67;
-                if (v20){
-                    
-                    
-                    v66 = 65l; v67 = 768l;
-                } else {
-                    
-                    
-                    bool v21;
-                    v21 = v13 == 193l;
-                    
-                    
-                    if (v21){
-                        
-                        
-                        v66 = 65l; v67 = 769l;
-                    } else {
-                        
-                        
-                        bool v22;
-                        v22 = v13 == 195l;
-                        
-                        
-                        if (v22){
+                            bool v16;
+                            v16 = v13 < 65536l;
                             
                             
-                            v66 = 65l; v67 = 771l;
-                        } else {
-                            
-                            
-                            bool v23;
-                            v23 = v13 == 196l;
-                            
-                            
-                            if (v23){
+                            if (v16){
                                 
                                 
-                                v66 = 65l; v67 = 776l;
+                                v19 = 3l;
                             } else {
                                 
                                 
-                                bool v24;
-                                v24 = v13 == 199l;
+                                v19 = 4l;
+                            }
+                        }
+                    }
+                    
+                    
+                    bool v20;
+                    v20 = v13 == 192l;
+                    
+                    
+                    int32_t v66; int32_t v67;
+                    if (v20){
+                        
+                        
+                        v66 = 65l; v67 = 768l;
+                    } else {
+                        
+                        
+                        bool v21;
+                        v21 = v13 == 193l;
+                        
+                        
+                        if (v21){
+                            
+                            
+                            v66 = 65l; v67 = 769l;
+                        } else {
+                            
+                            
+                            bool v22;
+                            v22 = v13 == 195l;
+                            
+                            
+                            if (v22){
                                 
                                 
-                                if (v24){
+                                v66 = 65l; v67 = 771l;
+                            } else {
+                                
+                                
+                                bool v23;
+                                v23 = v13 == 196l;
+                                
+                                
+                                if (v23){
                                     
                                     
-                                    v66 = 67l; v67 = 807l;
+                                    v66 = 65l; v67 = 776l;
                                 } else {
                                     
                                     
-                                    bool v25;
-                                    v25 = v13 == 201l;
+                                    bool v24;
+                                    v24 = v13 == 199l;
                                     
                                     
-                                    if (v25){
+                                    if (v24){
                                         
                                         
-                                        v66 = 69l; v67 = 769l;
+                                        v66 = 67l; v67 = 807l;
                                     } else {
                                         
                                         
-                                        bool v26;
-                                        v26 = v13 == 211l;
+                                        bool v25;
+                                        v25 = v13 == 201l;
                                         
                                         
-                                        if (v26){
+                                        if (v25){
                                             
                                             
-                                            v66 = 79l; v67 = 769l;
+                                            v66 = 69l; v67 = 769l;
                                         } else {
                                             
                                             
-                                            bool v27;
-                                            v27 = v13 == 213l;
+                                            bool v26;
+                                            v26 = v13 == 211l;
                                             
                                             
-                                            if (v27){
+                                            if (v26){
                                                 
                                                 
-                                                v66 = 79l; v67 = 771l;
+                                                v66 = 79l; v67 = 769l;
                                             } else {
                                                 
                                                 
-                                                bool v28;
-                                                v28 = v13 == 224l;
+                                                bool v27;
+                                                v27 = v13 == 213l;
                                                 
                                                 
-                                                if (v28){
+                                                if (v27){
                                                     
                                                     
-                                                    v66 = 97l; v67 = 768l;
+                                                    v66 = 79l; v67 = 771l;
                                                 } else {
                                                     
                                                     
-                                                    bool v29;
-                                                    v29 = v13 == 225l;
+                                                    bool v28;
+                                                    v28 = v13 == 224l;
                                                     
                                                     
-                                                    if (v29){
+                                                    if (v28){
                                                         
                                                         
-                                                        v66 = 97l; v67 = 769l;
+                                                        v66 = 97l; v67 = 768l;
                                                     } else {
                                                         
                                                         
-                                                        bool v30;
-                                                        v30 = v13 == 227l;
+                                                        bool v29;
+                                                        v29 = v13 == 225l;
                                                         
                                                         
-                                                        if (v30){
+                                                        if (v29){
                                                             
                                                             
-                                                            v66 = 97l; v67 = 771l;
+                                                            v66 = 97l; v67 = 769l;
                                                         } else {
                                                             
                                                             
-                                                            bool v31;
-                                                            v31 = v13 == 228l;
+                                                            bool v30;
+                                                            v30 = v13 == 227l;
                                                             
                                                             
-                                                            if (v31){
+                                                            if (v30){
                                                                 
                                                                 
-                                                                v66 = 97l; v67 = 776l;
+                                                                v66 = 97l; v67 = 771l;
                                                             } else {
                                                                 
                                                                 
-                                                                bool v32;
-                                                                v32 = v13 == 231l;
+                                                                bool v31;
+                                                                v31 = v13 == 228l;
                                                                 
                                                                 
-                                                                if (v32){
+                                                                if (v31){
                                                                     
                                                                     
-                                                                    v66 = 99l; v67 = 807l;
+                                                                    v66 = 97l; v67 = 776l;
                                                                 } else {
                                                                     
                                                                     
-                                                                    bool v33;
-                                                                    v33 = v13 == 233l;
+                                                                    bool v32;
+                                                                    v32 = v13 == 231l;
                                                                     
                                                                     
-                                                                    if (v33){
+                                                                    if (v32){
                                                                         
                                                                         
-                                                                        v66 = 101l; v67 = 769l;
+                                                                        v66 = 99l; v67 = 807l;
                                                                     } else {
                                                                         
                                                                         
-                                                                        bool v34;
-                                                                        v34 = v13 == 243l;
+                                                                        bool v33;
+                                                                        v33 = v13 == 233l;
                                                                         
                                                                         
-                                                                        if (v34){
+                                                                        if (v33){
                                                                             
                                                                             
-                                                                            v66 = 111l; v67 = 769l;
+                                                                            v66 = 101l; v67 = 769l;
                                                                         } else {
                                                                             
                                                                             
-                                                                            bool v35;
-                                                                            v35 = v13 == 245l;
+                                                                            bool v34;
+                                                                            v34 = v13 == 243l;
                                                                             
                                                                             
-                                                                            if (v35){
+                                                                            if (v34){
                                                                                 
                                                                                 
-                                                                                v66 = 111l; v67 = 771l;
+                                                                                v66 = 111l; v67 = 769l;
                                                                             } else {
                                                                                 
                                                                                 
-                                                                                v66 = v13; v67 = -1l;
+                                                                                bool v35;
+                                                                                v35 = v13 == 245l;
+                                                                                
+                                                                                
+                                                                                if (v35){
+                                                                                    
+                                                                                    
+                                                                                    v66 = 111l; v67 = 771l;
+                                                                                } else {
+                                                                                    
+                                                                                    
+                                                                                    v66 = v13; v67 = -1l;
+                                                                                }
                                                                             }
                                                                         }
                                                                     }
@@ -856,276 +858,276 @@ bool utf8_canonical_equal_bounded_loop0(String * v0, int32_t v1, int32_t v2, int
                             }
                         }
                     }
+                    
+                    
+                    int32_t v68;
+                    v68 = v1 + v19;
+                    
+                    
+                    v75 = v66; v76 = v68; v77 = v67;
                 }
-                
-                
-                int32_t v68;
-                v68 = v1 + v19;
-                
-                
-                v75 = v66; v76 = v68; v77 = v67;
             }
         }
-    }
-    
-    
-    bool v78;
-    v78 = v4 >= 0l;
-    
-    
-    int32_t v146; int32_t v147; int32_t v148;
-    if (v78){
         
         
-        v146 = v4; v147 = v2; v148 = -1l;
-    } else {
+        bool v78;
+        v78 = v4 >= 0l;
         
         
-        bool v79;
-        v79 = v2 == v6;
-        
-        
-        if (v79){
+        int32_t v146; int32_t v147; int32_t v148;
+        if (v78){
             
             
-            v146 = -1l; v147 = v2; v148 = -1l;
+            v146 = v4; v147 = v2; v148 = -1l;
         } else {
             
             
-            bool v80;
-            v80 = v2 > v6;
+            bool v79;
+            v79 = v2 == v6;
             
             
-            if (v80){
+            if (v79){
                 
                 
-                fprintf(stderr, "%s\n", "UTF-8 canonical stream offset exceeds the string.");
-                exit(EXIT_FAILURE);
+                v146 = -1l; v147 = v2; v148 = -1l;
             } else {
-                (v0)->refc++;
-                
-                int32_t v84;
-                v84 = utf8_scalar_at_byte_offset1(v0, v2);
                 
                 
-                bool v85;
-                v85 = v84 < 128l;
+                bool v80;
+                v80 = v2 > v6;
                 
                 
-                int32_t v90;
-                if (v85){
+                if (v80){
                     
                     
-                    v90 = 1l;
+                    fprintf(stderr, "%s\n", "UTF-8 canonical stream offset exceeds the string.");
+                    exit(EXIT_FAILURE);
                 } else {
+                    (v0)->refc++;
+                    
+                    int32_t v84;
+                    v84 = utf8_scalar_at_byte_offset1(v0, v2);
                     
                     
-                    bool v86;
-                    v86 = v84 < 2048l;
+                    bool v85;
+                    v85 = v84 < 128l;
                     
                     
-                    if (v86){
+                    int32_t v90;
+                    if (v85){
                         
                         
-                        v90 = 2l;
+                        v90 = 1l;
                     } else {
                         
                         
-                        bool v87;
-                        v87 = v84 < 65536l;
+                        bool v86;
+                        v86 = v84 < 2048l;
                         
                         
-                        if (v87){
+                        if (v86){
                             
                             
-                            v90 = 3l;
+                            v90 = 2l;
                         } else {
                             
                             
-                            v90 = 4l;
-                        }
-                    }
-                }
-                
-                
-                bool v91;
-                v91 = v84 == 192l;
-                
-                
-                int32_t v137; int32_t v138;
-                if (v91){
-                    
-                    
-                    v137 = 65l; v138 = 768l;
-                } else {
-                    
-                    
-                    bool v92;
-                    v92 = v84 == 193l;
-                    
-                    
-                    if (v92){
-                        
-                        
-                        v137 = 65l; v138 = 769l;
-                    } else {
-                        
-                        
-                        bool v93;
-                        v93 = v84 == 195l;
-                        
-                        
-                        if (v93){
+                            bool v87;
+                            v87 = v84 < 65536l;
                             
                             
-                            v137 = 65l; v138 = 771l;
-                        } else {
-                            
-                            
-                            bool v94;
-                            v94 = v84 == 196l;
-                            
-                            
-                            if (v94){
+                            if (v87){
                                 
                                 
-                                v137 = 65l; v138 = 776l;
+                                v90 = 3l;
                             } else {
                                 
                                 
-                                bool v95;
-                                v95 = v84 == 199l;
+                                v90 = 4l;
+                            }
+                        }
+                    }
+                    
+                    
+                    bool v91;
+                    v91 = v84 == 192l;
+                    
+                    
+                    int32_t v137; int32_t v138;
+                    if (v91){
+                        
+                        
+                        v137 = 65l; v138 = 768l;
+                    } else {
+                        
+                        
+                        bool v92;
+                        v92 = v84 == 193l;
+                        
+                        
+                        if (v92){
+                            
+                            
+                            v137 = 65l; v138 = 769l;
+                        } else {
+                            
+                            
+                            bool v93;
+                            v93 = v84 == 195l;
+                            
+                            
+                            if (v93){
                                 
                                 
-                                if (v95){
+                                v137 = 65l; v138 = 771l;
+                            } else {
+                                
+                                
+                                bool v94;
+                                v94 = v84 == 196l;
+                                
+                                
+                                if (v94){
                                     
                                     
-                                    v137 = 67l; v138 = 807l;
+                                    v137 = 65l; v138 = 776l;
                                 } else {
                                     
                                     
-                                    bool v96;
-                                    v96 = v84 == 201l;
+                                    bool v95;
+                                    v95 = v84 == 199l;
                                     
                                     
-                                    if (v96){
+                                    if (v95){
                                         
                                         
-                                        v137 = 69l; v138 = 769l;
+                                        v137 = 67l; v138 = 807l;
                                     } else {
                                         
                                         
-                                        bool v97;
-                                        v97 = v84 == 211l;
+                                        bool v96;
+                                        v96 = v84 == 201l;
                                         
                                         
-                                        if (v97){
+                                        if (v96){
                                             
                                             
-                                            v137 = 79l; v138 = 769l;
+                                            v137 = 69l; v138 = 769l;
                                         } else {
                                             
                                             
-                                            bool v98;
-                                            v98 = v84 == 213l;
+                                            bool v97;
+                                            v97 = v84 == 211l;
                                             
                                             
-                                            if (v98){
+                                            if (v97){
                                                 
                                                 
-                                                v137 = 79l; v138 = 771l;
+                                                v137 = 79l; v138 = 769l;
                                             } else {
                                                 
                                                 
-                                                bool v99;
-                                                v99 = v84 == 224l;
+                                                bool v98;
+                                                v98 = v84 == 213l;
                                                 
                                                 
-                                                if (v99){
+                                                if (v98){
                                                     
                                                     
-                                                    v137 = 97l; v138 = 768l;
+                                                    v137 = 79l; v138 = 771l;
                                                 } else {
                                                     
                                                     
-                                                    bool v100;
-                                                    v100 = v84 == 225l;
+                                                    bool v99;
+                                                    v99 = v84 == 224l;
                                                     
                                                     
-                                                    if (v100){
+                                                    if (v99){
                                                         
                                                         
-                                                        v137 = 97l; v138 = 769l;
+                                                        v137 = 97l; v138 = 768l;
                                                     } else {
                                                         
                                                         
-                                                        bool v101;
-                                                        v101 = v84 == 227l;
+                                                        bool v100;
+                                                        v100 = v84 == 225l;
                                                         
                                                         
-                                                        if (v101){
+                                                        if (v100){
                                                             
                                                             
-                                                            v137 = 97l; v138 = 771l;
+                                                            v137 = 97l; v138 = 769l;
                                                         } else {
                                                             
                                                             
-                                                            bool v102;
-                                                            v102 = v84 == 228l;
+                                                            bool v101;
+                                                            v101 = v84 == 227l;
                                                             
                                                             
-                                                            if (v102){
+                                                            if (v101){
                                                                 
                                                                 
-                                                                v137 = 97l; v138 = 776l;
+                                                                v137 = 97l; v138 = 771l;
                                                             } else {
                                                                 
                                                                 
-                                                                bool v103;
-                                                                v103 = v84 == 231l;
+                                                                bool v102;
+                                                                v102 = v84 == 228l;
                                                                 
                                                                 
-                                                                if (v103){
+                                                                if (v102){
                                                                     
                                                                     
-                                                                    v137 = 99l; v138 = 807l;
+                                                                    v137 = 97l; v138 = 776l;
                                                                 } else {
                                                                     
                                                                     
-                                                                    bool v104;
-                                                                    v104 = v84 == 233l;
+                                                                    bool v103;
+                                                                    v103 = v84 == 231l;
                                                                     
                                                                     
-                                                                    if (v104){
+                                                                    if (v103){
                                                                         
                                                                         
-                                                                        v137 = 101l; v138 = 769l;
+                                                                        v137 = 99l; v138 = 807l;
                                                                     } else {
                                                                         
                                                                         
-                                                                        bool v105;
-                                                                        v105 = v84 == 243l;
+                                                                        bool v104;
+                                                                        v104 = v84 == 233l;
                                                                         
                                                                         
-                                                                        if (v105){
+                                                                        if (v104){
                                                                             
                                                                             
-                                                                            v137 = 111l; v138 = 769l;
+                                                                            v137 = 101l; v138 = 769l;
                                                                         } else {
                                                                             
                                                                             
-                                                                            bool v106;
-                                                                            v106 = v84 == 245l;
+                                                                            bool v105;
+                                                                            v105 = v84 == 243l;
                                                                             
                                                                             
-                                                                            if (v106){
+                                                                            if (v105){
                                                                                 
                                                                                 
-                                                                                v137 = 111l; v138 = 771l;
+                                                                                v137 = 111l; v138 = 769l;
                                                                             } else {
                                                                                 
                                                                                 
-                                                                                v137 = v84; v138 = -1l;
+                                                                                bool v106;
+                                                                                v106 = v84 == 245l;
+                                                                                
+                                                                                
+                                                                                if (v106){
+                                                                                    
+                                                                                    
+                                                                                    v137 = 111l; v138 = 771l;
+                                                                                } else {
+                                                                                    
+                                                                                    
+                                                                                    v137 = v84; v138 = -1l;
+                                                                                }
                                                                             }
                                                                         }
                                                                     }
@@ -1141,321 +1143,339 @@ bool utf8_canonical_equal_bounded_loop0(String * v0, int32_t v1, int32_t v2, int
                             }
                         }
                     }
+                    
+                    
+                    int32_t v139;
+                    v139 = v2 + v90;
+                    
+                    
+                    v146 = v137; v147 = v139; v148 = v138;
                 }
-                
-                
-                int32_t v139;
-                v139 = v2 + v90;
-                
-                
-                v146 = v137; v147 = v139; v148 = v138;
             }
         }
-    }
-    
-    
-    bool v149;
-    v149 = v75 < 0l;
-    
-    
-    if (v149){
-        
-        StringDecref(v0);
-        bool v150;
-        v150 = v146 == -1l;
         
         
-        return v150;
-    } else {
+        bool v149;
+        v149 = v75 < 0l;
         
         
-        bool v151;
-        v151 = v146 < 0l;
-        
-        
-        if (v151){
+        if (v149){
             
             StringDecref(v0);
-            return false;
+            bool v150;
+            v150 = v146 == -1l;
+            
+            
+            return v150;
         } else {
             
             
-            bool v152;
-            v152 = v75 == v146;
+            bool v151;
+            v151 = v146 < 0l;
             
             
-            if (v152){
-                
-                
-                return utf8_canonical_equal_bounded_loop0(v0, v76, v147, v77, v148, v5, v6);
-            } else {
+            if (v151){
                 
                 StringDecref(v0);
                 return false;
+            } else {
+                
+                
+                bool v152;
+                v152 = v75 == v146;
+                
+                
+                if (v152){
+                    
+                    
+                    {
+                        String * tmp0 = v0;
+                        int32_t tmp1 = v76;
+                        int32_t tmp2 = v147;
+                        int32_t tmp3 = v77;
+                        int32_t tmp4 = v148;
+                        int32_t tmp5 = v5;
+                        int32_t tmp6 = v6;
+                        v0 = tmp0;
+                        v1 = tmp1;
+                        v2 = tmp2;
+                        v3 = tmp3;
+                        v4 = tmp4;
+                        v5 = tmp5;
+                        v6 = tmp6;
+                    }
+                    continue;
+                } else {
+                    
+                    StringDecref(v0);
+                    return false;
+                }
             }
         }
     }
 }
 bool utf8_canonical_equal_bounded_loop3(String * v0, String * v1, int32_t v2, int32_t v3, int32_t v4, int32_t v5, int32_t v6, int32_t v7){
-    
-    
-    bool v8;
-    v8 = v4 >= 0l;
-    
-    
-    int32_t v76; int32_t v77; int32_t v78;
-    if (v8){
+    while (1) {
         
         
-        v76 = v4; v77 = v2; v78 = -1l;
-    } else {
+        bool v8;
+        v8 = v4 >= 0l;
         
         
-        bool v9;
-        v9 = v2 == v6;
-        
-        
-        if (v9){
+        int32_t v76; int32_t v77; int32_t v78;
+        if (v8){
             
             
-            v76 = -1l; v77 = v2; v78 = -1l;
+            v76 = v4; v77 = v2; v78 = -1l;
         } else {
             
             
-            bool v10;
-            v10 = v2 > v6;
+            bool v9;
+            v9 = v2 == v6;
             
             
-            if (v10){
+            if (v9){
                 
                 
-                fprintf(stderr, "%s\n", "UTF-8 canonical stream offset exceeds the string.");
-                exit(EXIT_FAILURE);
+                v76 = -1l; v77 = v2; v78 = -1l;
             } else {
-                (v0)->refc++;
-                
-                int32_t v14;
-                v14 = utf8_scalar_at_byte_offset1(v0, v2);
                 
                 
-                bool v15;
-                v15 = v14 < 128l;
+                bool v10;
+                v10 = v2 > v6;
                 
                 
-                int32_t v20;
-                if (v15){
+                if (v10){
                     
                     
-                    v20 = 1l;
+                    fprintf(stderr, "%s\n", "UTF-8 canonical stream offset exceeds the string.");
+                    exit(EXIT_FAILURE);
                 } else {
+                    (v0)->refc++;
+                    
+                    int32_t v14;
+                    v14 = utf8_scalar_at_byte_offset1(v0, v2);
                     
                     
-                    bool v16;
-                    v16 = v14 < 2048l;
+                    bool v15;
+                    v15 = v14 < 128l;
                     
                     
-                    if (v16){
+                    int32_t v20;
+                    if (v15){
                         
                         
-                        v20 = 2l;
+                        v20 = 1l;
                     } else {
                         
                         
-                        bool v17;
-                        v17 = v14 < 65536l;
+                        bool v16;
+                        v16 = v14 < 2048l;
                         
                         
-                        if (v17){
+                        if (v16){
                             
                             
-                            v20 = 3l;
+                            v20 = 2l;
                         } else {
                             
                             
-                            v20 = 4l;
-                        }
-                    }
-                }
-                
-                
-                bool v21;
-                v21 = v14 == 192l;
-                
-                
-                int32_t v67; int32_t v68;
-                if (v21){
-                    
-                    
-                    v67 = 65l; v68 = 768l;
-                } else {
-                    
-                    
-                    bool v22;
-                    v22 = v14 == 193l;
-                    
-                    
-                    if (v22){
-                        
-                        
-                        v67 = 65l; v68 = 769l;
-                    } else {
-                        
-                        
-                        bool v23;
-                        v23 = v14 == 195l;
-                        
-                        
-                        if (v23){
+                            bool v17;
+                            v17 = v14 < 65536l;
                             
                             
-                            v67 = 65l; v68 = 771l;
-                        } else {
-                            
-                            
-                            bool v24;
-                            v24 = v14 == 196l;
-                            
-                            
-                            if (v24){
+                            if (v17){
                                 
                                 
-                                v67 = 65l; v68 = 776l;
+                                v20 = 3l;
                             } else {
                                 
                                 
-                                bool v25;
-                                v25 = v14 == 199l;
+                                v20 = 4l;
+                            }
+                        }
+                    }
+                    
+                    
+                    bool v21;
+                    v21 = v14 == 192l;
+                    
+                    
+                    int32_t v67; int32_t v68;
+                    if (v21){
+                        
+                        
+                        v67 = 65l; v68 = 768l;
+                    } else {
+                        
+                        
+                        bool v22;
+                        v22 = v14 == 193l;
+                        
+                        
+                        if (v22){
+                            
+                            
+                            v67 = 65l; v68 = 769l;
+                        } else {
+                            
+                            
+                            bool v23;
+                            v23 = v14 == 195l;
+                            
+                            
+                            if (v23){
                                 
                                 
-                                if (v25){
+                                v67 = 65l; v68 = 771l;
+                            } else {
+                                
+                                
+                                bool v24;
+                                v24 = v14 == 196l;
+                                
+                                
+                                if (v24){
                                     
                                     
-                                    v67 = 67l; v68 = 807l;
+                                    v67 = 65l; v68 = 776l;
                                 } else {
                                     
                                     
-                                    bool v26;
-                                    v26 = v14 == 201l;
+                                    bool v25;
+                                    v25 = v14 == 199l;
                                     
                                     
-                                    if (v26){
+                                    if (v25){
                                         
                                         
-                                        v67 = 69l; v68 = 769l;
+                                        v67 = 67l; v68 = 807l;
                                     } else {
                                         
                                         
-                                        bool v27;
-                                        v27 = v14 == 211l;
+                                        bool v26;
+                                        v26 = v14 == 201l;
                                         
                                         
-                                        if (v27){
+                                        if (v26){
                                             
                                             
-                                            v67 = 79l; v68 = 769l;
+                                            v67 = 69l; v68 = 769l;
                                         } else {
                                             
                                             
-                                            bool v28;
-                                            v28 = v14 == 213l;
+                                            bool v27;
+                                            v27 = v14 == 211l;
                                             
                                             
-                                            if (v28){
+                                            if (v27){
                                                 
                                                 
-                                                v67 = 79l; v68 = 771l;
+                                                v67 = 79l; v68 = 769l;
                                             } else {
                                                 
                                                 
-                                                bool v29;
-                                                v29 = v14 == 224l;
+                                                bool v28;
+                                                v28 = v14 == 213l;
                                                 
                                                 
-                                                if (v29){
+                                                if (v28){
                                                     
                                                     
-                                                    v67 = 97l; v68 = 768l;
+                                                    v67 = 79l; v68 = 771l;
                                                 } else {
                                                     
                                                     
-                                                    bool v30;
-                                                    v30 = v14 == 225l;
+                                                    bool v29;
+                                                    v29 = v14 == 224l;
                                                     
                                                     
-                                                    if (v30){
+                                                    if (v29){
                                                         
                                                         
-                                                        v67 = 97l; v68 = 769l;
+                                                        v67 = 97l; v68 = 768l;
                                                     } else {
                                                         
                                                         
-                                                        bool v31;
-                                                        v31 = v14 == 227l;
+                                                        bool v30;
+                                                        v30 = v14 == 225l;
                                                         
                                                         
-                                                        if (v31){
+                                                        if (v30){
                                                             
                                                             
-                                                            v67 = 97l; v68 = 771l;
+                                                            v67 = 97l; v68 = 769l;
                                                         } else {
                                                             
                                                             
-                                                            bool v32;
-                                                            v32 = v14 == 228l;
+                                                            bool v31;
+                                                            v31 = v14 == 227l;
                                                             
                                                             
-                                                            if (v32){
+                                                            if (v31){
                                                                 
                                                                 
-                                                                v67 = 97l; v68 = 776l;
+                                                                v67 = 97l; v68 = 771l;
                                                             } else {
                                                                 
                                                                 
-                                                                bool v33;
-                                                                v33 = v14 == 231l;
+                                                                bool v32;
+                                                                v32 = v14 == 228l;
                                                                 
                                                                 
-                                                                if (v33){
+                                                                if (v32){
                                                                     
                                                                     
-                                                                    v67 = 99l; v68 = 807l;
+                                                                    v67 = 97l; v68 = 776l;
                                                                 } else {
                                                                     
                                                                     
-                                                                    bool v34;
-                                                                    v34 = v14 == 233l;
+                                                                    bool v33;
+                                                                    v33 = v14 == 231l;
                                                                     
                                                                     
-                                                                    if (v34){
+                                                                    if (v33){
                                                                         
                                                                         
-                                                                        v67 = 101l; v68 = 769l;
+                                                                        v67 = 99l; v68 = 807l;
                                                                     } else {
                                                                         
                                                                         
-                                                                        bool v35;
-                                                                        v35 = v14 == 243l;
+                                                                        bool v34;
+                                                                        v34 = v14 == 233l;
                                                                         
                                                                         
-                                                                        if (v35){
+                                                                        if (v34){
                                                                             
                                                                             
-                                                                            v67 = 111l; v68 = 769l;
+                                                                            v67 = 101l; v68 = 769l;
                                                                         } else {
                                                                             
                                                                             
-                                                                            bool v36;
-                                                                            v36 = v14 == 245l;
+                                                                            bool v35;
+                                                                            v35 = v14 == 243l;
                                                                             
                                                                             
-                                                                            if (v36){
+                                                                            if (v35){
                                                                                 
                                                                                 
-                                                                                v67 = 111l; v68 = 771l;
+                                                                                v67 = 111l; v68 = 769l;
                                                                             } else {
                                                                                 
                                                                                 
-                                                                                v67 = v14; v68 = -1l;
+                                                                                bool v36;
+                                                                                v36 = v14 == 245l;
+                                                                                
+                                                                                
+                                                                                if (v36){
+                                                                                    
+                                                                                    
+                                                                                    v67 = 111l; v68 = 771l;
+                                                                                } else {
+                                                                                    
+                                                                                    
+                                                                                    v67 = v14; v68 = -1l;
+                                                                                }
                                                                             }
                                                                         }
                                                                     }
@@ -1471,276 +1491,276 @@ bool utf8_canonical_equal_bounded_loop3(String * v0, String * v1, int32_t v2, in
                             }
                         }
                     }
+                    
+                    
+                    int32_t v69;
+                    v69 = v2 + v20;
+                    
+                    
+                    v76 = v67; v77 = v69; v78 = v68;
                 }
-                
-                
-                int32_t v69;
-                v69 = v2 + v20;
-                
-                
-                v76 = v67; v77 = v69; v78 = v68;
             }
         }
-    }
-    
-    
-    bool v79;
-    v79 = v5 >= 0l;
-    
-    
-    int32_t v147; int32_t v148; int32_t v149;
-    if (v79){
         
         
-        v147 = v5; v148 = v3; v149 = -1l;
-    } else {
+        bool v79;
+        v79 = v5 >= 0l;
         
         
-        bool v80;
-        v80 = v3 == v7;
-        
-        
-        if (v80){
+        int32_t v147; int32_t v148; int32_t v149;
+        if (v79){
             
             
-            v147 = -1l; v148 = v3; v149 = -1l;
+            v147 = v5; v148 = v3; v149 = -1l;
         } else {
             
             
-            bool v81;
-            v81 = v3 > v7;
+            bool v80;
+            v80 = v3 == v7;
             
             
-            if (v81){
+            if (v80){
                 
                 
-                fprintf(stderr, "%s\n", "UTF-8 canonical stream offset exceeds the string.");
-                exit(EXIT_FAILURE);
+                v147 = -1l; v148 = v3; v149 = -1l;
             } else {
-                (v1)->refc++;
-                
-                int32_t v85;
-                v85 = utf8_scalar_at_byte_offset1(v1, v3);
                 
                 
-                bool v86;
-                v86 = v85 < 128l;
+                bool v81;
+                v81 = v3 > v7;
                 
                 
-                int32_t v91;
-                if (v86){
+                if (v81){
                     
                     
-                    v91 = 1l;
+                    fprintf(stderr, "%s\n", "UTF-8 canonical stream offset exceeds the string.");
+                    exit(EXIT_FAILURE);
                 } else {
+                    (v1)->refc++;
+                    
+                    int32_t v85;
+                    v85 = utf8_scalar_at_byte_offset1(v1, v3);
                     
                     
-                    bool v87;
-                    v87 = v85 < 2048l;
+                    bool v86;
+                    v86 = v85 < 128l;
                     
                     
-                    if (v87){
+                    int32_t v91;
+                    if (v86){
                         
                         
-                        v91 = 2l;
+                        v91 = 1l;
                     } else {
                         
                         
-                        bool v88;
-                        v88 = v85 < 65536l;
+                        bool v87;
+                        v87 = v85 < 2048l;
                         
                         
-                        if (v88){
+                        if (v87){
                             
                             
-                            v91 = 3l;
+                            v91 = 2l;
                         } else {
                             
                             
-                            v91 = 4l;
-                        }
-                    }
-                }
-                
-                
-                bool v92;
-                v92 = v85 == 192l;
-                
-                
-                int32_t v138; int32_t v139;
-                if (v92){
-                    
-                    
-                    v138 = 65l; v139 = 768l;
-                } else {
-                    
-                    
-                    bool v93;
-                    v93 = v85 == 193l;
-                    
-                    
-                    if (v93){
-                        
-                        
-                        v138 = 65l; v139 = 769l;
-                    } else {
-                        
-                        
-                        bool v94;
-                        v94 = v85 == 195l;
-                        
-                        
-                        if (v94){
+                            bool v88;
+                            v88 = v85 < 65536l;
                             
                             
-                            v138 = 65l; v139 = 771l;
-                        } else {
-                            
-                            
-                            bool v95;
-                            v95 = v85 == 196l;
-                            
-                            
-                            if (v95){
+                            if (v88){
                                 
                                 
-                                v138 = 65l; v139 = 776l;
+                                v91 = 3l;
                             } else {
                                 
                                 
-                                bool v96;
-                                v96 = v85 == 199l;
+                                v91 = 4l;
+                            }
+                        }
+                    }
+                    
+                    
+                    bool v92;
+                    v92 = v85 == 192l;
+                    
+                    
+                    int32_t v138; int32_t v139;
+                    if (v92){
+                        
+                        
+                        v138 = 65l; v139 = 768l;
+                    } else {
+                        
+                        
+                        bool v93;
+                        v93 = v85 == 193l;
+                        
+                        
+                        if (v93){
+                            
+                            
+                            v138 = 65l; v139 = 769l;
+                        } else {
+                            
+                            
+                            bool v94;
+                            v94 = v85 == 195l;
+                            
+                            
+                            if (v94){
                                 
                                 
-                                if (v96){
+                                v138 = 65l; v139 = 771l;
+                            } else {
+                                
+                                
+                                bool v95;
+                                v95 = v85 == 196l;
+                                
+                                
+                                if (v95){
                                     
                                     
-                                    v138 = 67l; v139 = 807l;
+                                    v138 = 65l; v139 = 776l;
                                 } else {
                                     
                                     
-                                    bool v97;
-                                    v97 = v85 == 201l;
+                                    bool v96;
+                                    v96 = v85 == 199l;
                                     
                                     
-                                    if (v97){
+                                    if (v96){
                                         
                                         
-                                        v138 = 69l; v139 = 769l;
+                                        v138 = 67l; v139 = 807l;
                                     } else {
                                         
                                         
-                                        bool v98;
-                                        v98 = v85 == 211l;
+                                        bool v97;
+                                        v97 = v85 == 201l;
                                         
                                         
-                                        if (v98){
+                                        if (v97){
                                             
                                             
-                                            v138 = 79l; v139 = 769l;
+                                            v138 = 69l; v139 = 769l;
                                         } else {
                                             
                                             
-                                            bool v99;
-                                            v99 = v85 == 213l;
+                                            bool v98;
+                                            v98 = v85 == 211l;
                                             
                                             
-                                            if (v99){
+                                            if (v98){
                                                 
                                                 
-                                                v138 = 79l; v139 = 771l;
+                                                v138 = 79l; v139 = 769l;
                                             } else {
                                                 
                                                 
-                                                bool v100;
-                                                v100 = v85 == 224l;
+                                                bool v99;
+                                                v99 = v85 == 213l;
                                                 
                                                 
-                                                if (v100){
+                                                if (v99){
                                                     
                                                     
-                                                    v138 = 97l; v139 = 768l;
+                                                    v138 = 79l; v139 = 771l;
                                                 } else {
                                                     
                                                     
-                                                    bool v101;
-                                                    v101 = v85 == 225l;
+                                                    bool v100;
+                                                    v100 = v85 == 224l;
                                                     
                                                     
-                                                    if (v101){
+                                                    if (v100){
                                                         
                                                         
-                                                        v138 = 97l; v139 = 769l;
+                                                        v138 = 97l; v139 = 768l;
                                                     } else {
                                                         
                                                         
-                                                        bool v102;
-                                                        v102 = v85 == 227l;
+                                                        bool v101;
+                                                        v101 = v85 == 225l;
                                                         
                                                         
-                                                        if (v102){
+                                                        if (v101){
                                                             
                                                             
-                                                            v138 = 97l; v139 = 771l;
+                                                            v138 = 97l; v139 = 769l;
                                                         } else {
                                                             
                                                             
-                                                            bool v103;
-                                                            v103 = v85 == 228l;
+                                                            bool v102;
+                                                            v102 = v85 == 227l;
                                                             
                                                             
-                                                            if (v103){
+                                                            if (v102){
                                                                 
                                                                 
-                                                                v138 = 97l; v139 = 776l;
+                                                                v138 = 97l; v139 = 771l;
                                                             } else {
                                                                 
                                                                 
-                                                                bool v104;
-                                                                v104 = v85 == 231l;
+                                                                bool v103;
+                                                                v103 = v85 == 228l;
                                                                 
                                                                 
-                                                                if (v104){
+                                                                if (v103){
                                                                     
                                                                     
-                                                                    v138 = 99l; v139 = 807l;
+                                                                    v138 = 97l; v139 = 776l;
                                                                 } else {
                                                                     
                                                                     
-                                                                    bool v105;
-                                                                    v105 = v85 == 233l;
+                                                                    bool v104;
+                                                                    v104 = v85 == 231l;
                                                                     
                                                                     
-                                                                    if (v105){
+                                                                    if (v104){
                                                                         
                                                                         
-                                                                        v138 = 101l; v139 = 769l;
+                                                                        v138 = 99l; v139 = 807l;
                                                                     } else {
                                                                         
                                                                         
-                                                                        bool v106;
-                                                                        v106 = v85 == 243l;
+                                                                        bool v105;
+                                                                        v105 = v85 == 233l;
                                                                         
                                                                         
-                                                                        if (v106){
+                                                                        if (v105){
                                                                             
                                                                             
-                                                                            v138 = 111l; v139 = 769l;
+                                                                            v138 = 101l; v139 = 769l;
                                                                         } else {
                                                                             
                                                                             
-                                                                            bool v107;
-                                                                            v107 = v85 == 245l;
+                                                                            bool v106;
+                                                                            v106 = v85 == 243l;
                                                                             
                                                                             
-                                                                            if (v107){
+                                                                            if (v106){
                                                                                 
                                                                                 
-                                                                                v138 = 111l; v139 = 771l;
+                                                                                v138 = 111l; v139 = 769l;
                                                                             } else {
                                                                                 
                                                                                 
-                                                                                v138 = v85; v139 = -1l;
+                                                                                bool v107;
+                                                                                v107 = v85 == 245l;
+                                                                                
+                                                                                
+                                                                                if (v107){
+                                                                                    
+                                                                                    
+                                                                                    v138 = 111l; v139 = 771l;
+                                                                                } else {
+                                                                                    
+                                                                                    
+                                                                                    v138 = v85; v139 = -1l;
+                                                                                }
                                                                             }
                                                                         }
                                                                     }
@@ -1756,57 +1776,75 @@ bool utf8_canonical_equal_bounded_loop3(String * v0, String * v1, int32_t v2, in
                             }
                         }
                     }
+                    
+                    
+                    int32_t v140;
+                    v140 = v3 + v91;
+                    
+                    
+                    v147 = v138; v148 = v140; v149 = v139;
                 }
-                
-                
-                int32_t v140;
-                v140 = v3 + v91;
-                
-                
-                v147 = v138; v148 = v140; v149 = v139;
             }
         }
-    }
-    
-    
-    bool v150;
-    v150 = v76 < 0l;
-    
-    
-    if (v150){
-        
-        StringDecref(v0); StringDecref(v1);
-        bool v151;
-        v151 = v147 == -1l;
         
         
-        return v151;
-    } else {
+        bool v150;
+        v150 = v76 < 0l;
         
         
-        bool v152;
-        v152 = v147 < 0l;
-        
-        
-        if (v152){
+        if (v150){
             
             StringDecref(v0); StringDecref(v1);
-            return false;
+            bool v151;
+            v151 = v147 == -1l;
+            
+            
+            return v151;
         } else {
             
             
-            bool v153;
-            v153 = v76 == v147;
+            bool v152;
+            v152 = v147 < 0l;
             
             
-            if (v153){
-                
-                
-                return utf8_canonical_equal_bounded_loop3(v0, v1, v77, v148, v78, v149, v6, v7);
-            } else {
+            if (v152){
                 
                 StringDecref(v0); StringDecref(v1);
                 return false;
+            } else {
+                
+                
+                bool v153;
+                v153 = v76 == v147;
+                
+                
+                if (v153){
+                    
+                    
+                    {
+                        String * tmp7 = v0;
+                        String * tmp8 = v1;
+                        int32_t tmp9 = v77;
+                        int32_t tmp10 = v148;
+                        int32_t tmp11 = v78;
+                        int32_t tmp12 = v149;
+                        int32_t tmp13 = v6;
+                        int32_t tmp14 = v7;
+                        v0 = tmp7;
+                        v1 = tmp8;
+                        v2 = tmp9;
+                        v3 = tmp10;
+                        v4 = tmp11;
+                        v5 = tmp12;
+                        v6 = tmp13;
+                        v7 = tmp14;
+                    }
+                    continue;
+                } else {
+                    
+                    StringDecref(v0); StringDecref(v1);
+                    return false;
+                }
             }
         }
     }

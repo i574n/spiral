@@ -38,12 +38,7 @@ US0 US0_Some(int32_t v0) { // Some
     return x;
 }
 static inline void ArrayDecrefBody0(Array0 * x){
-    uint32_t len = x->len;
-    US0 * ptr = x->ptr;
-    for (uint32_t i=0; i < len; i++){
-        US0 v = ptr[i];
-        USDecref0(&(v));
-    }
+    (void)x;
 }
 void ArrayDecref0(Array0 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody0(x); free(x); }
@@ -59,15 +54,11 @@ Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
 Array0 * ArrayLit0(uint32_t len, US0 * ptr){
     Array0 * x = ArrayCreate0(len, false);
     memcpy(x->ptr, ptr, sizeof(US0) * len);
-        for (uint32_t i=0; i < len; i++){
-            US0 v = ptr[i];
-            USIncref0(&(v));
-        }
     return x;
 }
 static inline void AssignArray0(US0 * a, US0 b){
-    USIncref0(&(b));
-    USDecref0(&(*a));
+    
+    
     *a = b;
 }
 int32_t main(){
@@ -78,7 +69,7 @@ int32_t main(){
     
     
     Array0 * v1;
-    v1 = ArrayCreate0(v0, false);
+    v1 = ArrayCreate0(v0, true);
     
     
     int32_t v2;
@@ -92,7 +83,7 @@ int32_t main(){
     
     AssignArray0(&(v1->ptr[0l]), v3);
     
-    USDecref0(&(v3));
+    
     US0 v4;
     v4 = US0_None();
     
@@ -100,32 +91,32 @@ int32_t main(){
     
     AssignArray0(&(v1->ptr[1l]), v4);
     
-    USDecref0(&(v4));
+    
     US0 v5;
     v5 = v1->ptr[0l];
-    USIncref0(&(v5));
+    
     
     switch (v5.tag) {
         case 0: { // None
             
             
-            ArrayDecref0(v1); USDecref0(&(v5));
+            ArrayDecref0(v1);
             return 1l;
             break;
         }
         default: { // Some
             int32_t v6 = v5.case1.v0;
             
-            USDecref0(&(v5));
+            
             US0 v7;
             v7 = v1->ptr[1l];
-            USIncref0(&(v7));
+            
             ArrayDecref0(v1);
             switch (v7.tag) {
                 case 0: { // None
                     
                     
-                    USDecref0(&(v7));
+                    
                     bool v8;
                     v8 = v6 == 7l;
                     
@@ -144,7 +135,7 @@ int32_t main(){
                 default: { // Some
                     
                     
-                    USDecref0(&(v7));
+                    
                     return 1l;
                     break;
                 }

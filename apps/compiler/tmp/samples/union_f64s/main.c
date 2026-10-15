@@ -73,7 +73,7 @@ int32_t main(){
     
     
     Array0 * v0;
-    v0 = ArrayCreate0(1l, false);
+    v0 = ArrayCreate0(1l, true);
     
     
     double v1;

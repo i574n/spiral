@@ -989,18 +989,18 @@ let v333 : US0 =
     else
         let v331 : string = "checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric"
         US0_TypedFxHashedStatementChecksumValidationRejected(999L, v295, v331)
-let struct (v345 : int64, v346 : int64) =
+let v345 : int64 =
     match v190 with
     | US0_TypedFxHashedStatementChecksumValidationAccepted(v334, v335, v336, v337, v338, v339) -> (* TypedFxHashedStatementChecksumValidationAccepted *)
-        struct (1L, 0L)
+        1L
     | US0_TypedFxHashedStatementChecksumValidationRejected(v340, v341, v342) -> (* TypedFxHashedStatementChecksumValidationRejected *)
-        struct (0L, 1L)
-let struct (v358 : int64, v359 : int64) =
+        0L
+let v359 : int64 =
     match v333 with
     | US0_TypedFxHashedStatementChecksumValidationAccepted(v347, v348, v349, v350, v351, v352) -> (* TypedFxHashedStatementChecksumValidationAccepted *)
-        struct (1L, 0L)
+        0L
     | US0_TypedFxHashedStatementChecksumValidationRejected(v353, v354, v355) -> (* TypedFxHashedStatementChecksumValidationRejected *)
-        struct (0L, 1L)
+        1L
 let v360 : bool = v345 = 1L
 let v361 : bool = v359 = 1L
 let v362 : bool = v360 && v361
@@ -1107,12 +1107,12 @@ let v435 : US0 =
     else
         let v433 : string = "checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric"
         US0_TypedFxHashedStatementChecksumValidationRejected(v117, v397, v433)
-let struct (v454 : int64, v455 : int64, v456 : int64, v457 : int64, v458 : int64, v459 : int64, v460 : int64, v461 : int64, v462 : int64) =
+let struct (v454 : int64, v458 : int64, v459 : int64, v460 : int64, v461 : int64, v462 : int64) =
     match v435 with
     | US0_TypedFxHashedStatementChecksumValidationAccepted(v439, v440, v441, v442, v443, v444) -> (* TypedFxHashedStatementChecksumValidationAccepted *)
-        struct (1L, 0L, 0L, 0L, v439, v440, v441, v442, v443)
+        struct (1L, v439, v440, v441, v442, v443)
     | US0_TypedFxHashedStatementChecksumValidationRejected(v436, v437, v438) -> (* TypedFxHashedStatementChecksumValidationRejected *)
-        struct (0L, 1L, v436, v437, 0L, 0L, 0L, 0L, 0L)
+        struct (0L, 0L, 0L, 0L, 0L, 0L)
 let v463 : int64 = 0L + 1L
 let v464 : int64 = v463 + 1L
 let v465 : int64 = v464 + 1L
@@ -1212,12 +1212,12 @@ let v535 : US0 =
     else
         let v533 : string = "checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric"
         US0_TypedFxHashedStatementChecksumValidationRejected(999L, v497, v533)
-let struct (v554 : int64, v555 : int64, v556 : int64, v557 : int64, v558 : int64, v559 : int64, v560 : int64, v561 : int64, v562 : int64) =
+let struct (v555 : int64, v556 : int64, v557 : int64) =
     match v535 with
     | US0_TypedFxHashedStatementChecksumValidationAccepted(v539, v540, v541, v542, v543, v544) -> (* TypedFxHashedStatementChecksumValidationAccepted *)
-        struct (1L, 0L, 0L, 0L, v539, v540, v541, v542, v543)
+        struct (0L, 0L, 0L)
     | US0_TypedFxHashedStatementChecksumValidationRejected(v536, v537, v538) -> (* TypedFxHashedStatementChecksumValidationRejected *)
-        struct (0L, 1L, v536, v537, 0L, 0L, 0L, 0L, 0L)
+        struct (1L, v536, v537)
 let v563 : bool = v454 = 1L
 let v564 : bool = v555 = 1L
 let v565 : bool = v556 = 999L
@@ -2097,12 +2097,12 @@ let v1249 : US0 =
     else
         let v1247 : string = "checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric"
         US0_TypedFxHashedStatementChecksumValidationRejected(v1176, v1211, v1247)
-let struct (v1268 : int64, v1269 : int64, v1270 : int64, v1271 : int64, v1272 : int64, v1273 : int64, v1274 : int64, v1275 : int64, v1276 : int64) =
+let struct (v1268 : int64, v1269 : int64, v1272 : int64, v1273 : int64, v1274 : int64, v1275 : int64, v1276 : int64) =
     match v1249 with
     | US0_TypedFxHashedStatementChecksumValidationAccepted(v1253, v1254, v1255, v1256, v1257, v1258) -> (* TypedFxHashedStatementChecksumValidationAccepted *)
-        struct (1L, 0L, 0L, 0L, v1253, v1254, v1255, v1256, v1257)
+        struct (1L, 0L, v1253, v1254, v1255, v1256, v1257)
     | US0_TypedFxHashedStatementChecksumValidationRejected(v1250, v1251, v1252) -> (* TypedFxHashedStatementChecksumValidationRejected *)
-        struct (0L, 1L, v1250, v1251, 0L, 0L, 0L, 0L, 0L)
+        struct (0L, 1L, 0L, 0L, 0L, 0L, 0L)
 let v1277 : bool = v1141 = 0L
 let v1278 : bool = v1176 = 23L
 let v1279 : bool = v1268 = 1L
@@ -2433,12 +2433,12 @@ let v1532 : US0 =
     else
         let v1530 : string = "checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric"
         US0_TypedFxHashedStatementChecksumValidationRejected(v1459, v1494, v1530)
-let struct (v1551 : int64, v1552 : int64, v1553 : int64, v1554 : int64, v1555 : int64, v1556 : int64, v1557 : int64, v1558 : int64, v1559 : int64) =
+let struct (v1551 : int64, v1552 : int64, v1555 : int64, v1559 : int64) =
     match v1532 with
     | US0_TypedFxHashedStatementChecksumValidationAccepted(v1536, v1537, v1538, v1539, v1540, v1541) -> (* TypedFxHashedStatementChecksumValidationAccepted *)
-        struct (1L, 0L, 0L, 0L, v1536, v1537, v1538, v1539, v1540)
+        struct (1L, 0L, v1536, v1540)
     | US0_TypedFxHashedStatementChecksumValidationRejected(v1533, v1534, v1535) -> (* TypedFxHashedStatementChecksumValidationRejected *)
-        struct (0L, 1L, v1533, v1534, 0L, 0L, 0L, 0L, 0L)
+        struct (0L, 1L, 0L, 0L)
 let v1560 : int64 = 0L + 1L
 let v1561 : int64 = v1560 + 1L
 let v1562 : int64 = v1561 + 1L
@@ -3754,12 +3754,12 @@ let v2600 : US0 =
     else
         let v2598 : string = "checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric"
         US0_TypedFxHashedStatementChecksumValidationRejected(v2527, v2562, v2598)
-let struct (v2619 : int64, v2620 : int64, v2621 : int64, v2622 : int64, v2623 : int64, v2624 : int64, v2625 : int64, v2626 : int64, v2627 : int64) =
+let struct (v2619 : int64, v2620 : int64, v2623 : int64, v2627 : int64) =
     match v2600 with
     | US0_TypedFxHashedStatementChecksumValidationAccepted(v2604, v2605, v2606, v2607, v2608, v2609) -> (* TypedFxHashedStatementChecksumValidationAccepted *)
-        struct (1L, 0L, 0L, 0L, v2604, v2605, v2606, v2607, v2608)
+        struct (1L, 0L, v2604, v2608)
     | US0_TypedFxHashedStatementChecksumValidationRejected(v2601, v2602, v2603) -> (* TypedFxHashedStatementChecksumValidationRejected *)
-        struct (0L, 1L, v2601, v2602, 0L, 0L, 0L, 0L, 0L)
+        struct (0L, 1L, 0L, 0L)
 let v2628 : int64 = 0L + 1L
 let v2629 : int64 = v2628 + 1L
 let v2630 : int64 = v2629 + 1L
@@ -4244,12 +4244,12 @@ let v3005 : US0 =
     else
         let v3003 : string = "checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric"
         US0_TypedFxHashedStatementChecksumValidationRejected(v2932, v2967, v3003)
-let struct (v3024 : int64, v3025 : int64, v3026 : int64, v3027 : int64, v3028 : int64, v3029 : int64, v3030 : int64, v3031 : int64, v3032 : int64) =
+let struct (v3024 : int64, v3025 : int64, v3032 : int64) =
     match v3005 with
     | US0_TypedFxHashedStatementChecksumValidationAccepted(v3009, v3010, v3011, v3012, v3013, v3014) -> (* TypedFxHashedStatementChecksumValidationAccepted *)
-        struct (1L, 0L, 0L, 0L, v3009, v3010, v3011, v3012, v3013)
+        struct (1L, 0L, v3013)
     | US0_TypedFxHashedStatementChecksumValidationRejected(v3006, v3007, v3008) -> (* TypedFxHashedStatementChecksumValidationRejected *)
-        struct (0L, 1L, v3006, v3007, 0L, 0L, 0L, 0L, 0L)
+        struct (0L, 1L, 0L)
 let v3033 : int64 = 0L + 1L
 let v3034 : int64 = v3033 + 1L
 let v3035 : int64 = v3034 + 1L
@@ -4650,12 +4650,12 @@ let v3342 : US0 =
     else
         let v3340 : string = "checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric"
         US0_TypedFxHashedStatementChecksumValidationRejected(v3269, v3304, v3340)
-let struct (v3361 : int64, v3362 : int64, v3363 : int64, v3364 : int64, v3365 : int64, v3366 : int64, v3367 : int64, v3368 : int64, v3369 : int64) =
+let struct (v3361 : int64, v3362 : int64, v3369 : int64) =
     match v3342 with
     | US0_TypedFxHashedStatementChecksumValidationAccepted(v3346, v3347, v3348, v3349, v3350, v3351) -> (* TypedFxHashedStatementChecksumValidationAccepted *)
-        struct (1L, 0L, 0L, 0L, v3346, v3347, v3348, v3349, v3350)
+        struct (1L, 0L, v3350)
     | US0_TypedFxHashedStatementChecksumValidationRejected(v3343, v3344, v3345) -> (* TypedFxHashedStatementChecksumValidationRejected *)
-        struct (0L, 1L, v3343, v3344, 0L, 0L, 0L, 0L, 0L)
+        struct (0L, 1L, 0L)
 let v3370 : int64 = 0L + 1L
 let v3371 : int64 = v3370 + 1L
 let v3372 : int64 = v3371 + 1L
@@ -6218,10 +6218,10 @@ let v4690 : string =
         let struct (v4675 : int64, v4676 : int64) =
             match v4601 with
             | US2_NetIntercompany(v4640, v4641, v4642, v4643, v4644, v4645, v4646, v4647) -> (* NetIntercompany *)
-                let struct (v4655 : string, v4656 : string, v4657 : string, v4658 : string, v4659 : int64, v4660 : string) =
+                let v4659 : int64 =
                     match v4647 with
                     | US3_OpposedMirrorPair(v4648, v4649, v4650, v4651, v4652, v4653, v4654) -> (* OpposedMirrorPair *)
-                        struct (v4648, v4649, v4650, v4651, v4652, v4653)
+                        v4652
                 let struct (v4669 : string, v4670 : string, v4671 : string, v4672 : string, v4673 : int64, v4674 : string) =
                     match v4647 with
                     | US3_OpposedMirrorPair(v4661, v4662, v4663, v4664, v4665, v4666, v4667) -> (* OpposedMirrorPair *)

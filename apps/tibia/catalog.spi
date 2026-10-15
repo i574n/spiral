@@ -1,0 +1,73 @@
+///- --package .
+test catalog static =
+    open testing
+
+nominal troll_kind = ()
+nominal goblin_kind = ()
+nominal cyclops_kind = ()
+
+union kind k =
+    | TrollKind :: kind troll_kind
+    | GoblinKind :: kind goblin_kind
+    | CyclopsKind :: kind cyclops_kind
+
+type spawn k = {kind : kind k; count : i32; radius : i32}
+
+nominal entry = exists k. spawn k
+
+inl arena_creature_of forall k. (which : kind k) : creatures.arena_creature =
+    open creatures
+    match which with
+    | TrollKind => Troll
+    | GoblinKind => Goblin
+    | CyclopsKind => Cyclops
+
+inl stats_of forall k. (which : kind k) : creatures.creature_stats =
+    creatures.stats_of (arena_creature_of which)
+
+inl spawn_of forall k. (which : kind k) (count : i32) (radius : i32) : spawn k =
+    {kind = which; count = count; radius = radius}
+
+inl pack_entry forall k. (s : spawn k) : entry = entry (exists s)
+
+inl entry_experience (entry e : entry) : i32 =
+    inl exists k. s = e
+    (stats_of s.kind).experience * s.count
+
+inl entry_health (entry e : entry) : i32 =
+    inl exists k. s = e
+    (stats_of s.kind).max_health * s.count
+
+inl entry_creature (entry e : entry) : creatures.arena_creature =
+    inl exists k. s = e
+    arena_creature_of s.kind
+
+inl troll_camp () : entry * entry =
+    pack_entry (spawn_of TrollKind 3 2), pack_entry (spawn_of GoblinKind 2 3)
+
+inl cyclops_cave () : entry * entry =
+    pack_entry (spawn_of CyclopsKind 1 2), pack_entry (spawn_of TrollKind 2 4)
+
+inl camp_experience (camp : entry * entry) : i32 =
+    inl a, b = camp
+    entry_experience a + entry_experience b
+inl camp_health (camp : entry * entry) : i32 =
+    inl a, b = camp
+    entry_health a + entry_health b
+
+///> c
+test mixed_camps_sum_their_kinds =
+    inl ~scale = 1i32
+    camp_experience (troll_camp ()) * scale |> _assert_eq 110i32
+    camp_health (troll_camp ()) * scale |> _assert_eq 250i32
+    camp_experience (cyclops_cave ()) * scale |> _assert_eq 190i32
+
+///> c
+test a_troll_spawn_cannot_hold_a_cyclops fails "Unification failure" =
+    inl s : spawn troll_kind = spawn_of CyclopsKind 1 2
+    s.count
+
+///> wgsl
+test camps_on_gpu =
+    inl ~scale = 1i32
+    if camp_experience (troll_camp ()) * scale = 110i32 && camp_health (cyclops_cave ()) * scale = 360i32 then 0i32 else 1i32

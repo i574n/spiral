@@ -116,14 +116,14 @@ int32_t main(){
         case 0: { // None
             
             
-            USDecref0(&(v2));
+            
             return 1l;
             break;
         }
         default: { // Some
             int32_t v4 = v2.case1.v0;
             
-            USDecref0(&(v2));
+            
             bool v5;
             v5 = v4 == 7l;
             

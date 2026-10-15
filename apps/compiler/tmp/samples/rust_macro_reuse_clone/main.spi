@@ -25,4 +25,4 @@ inl native (n : i32) : i32 =
 
 inl main () : i32 =
     inl ~n = 3i32
-    !!!!BackendSwitch({ C = fun () => 35i32 : i32; Rust = fun () => native n : i32 })
+    !!!!BackendSwitch({ C = fun () => 35i32 : i32; Rust = fun () => native n : i32; Bend = fun () => 35i32 : i32 })

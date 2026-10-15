@@ -300,7 +300,7 @@ module Program =
             | Cons(_, next) -> drain next
         drain state.bundler
 
-#if SPIRAL_CORE_HOPAC
+#if SPIRAL_CORE_GPT5PARALLEL
     let private directProjectCompileFsharp (_input : string) (_output : string) : Result<int * string * string, string> =
         Error "SPIRAL_DIRECT_PROJECT_BUILD is only available in single-flight mode"
 #else
@@ -669,7 +669,7 @@ module Program =
             try if File.Exists path then File.Delete path with _ -> ()
 
     let private runCheck inputPath =
-#if SPIRAL_CORE_HOPAC
+#if SPIRAL_CORE_GPT5PARALLEL
         eprintfn "Package attestation currently requires the single-flight compiler"
         5
 #else
@@ -773,7 +773,7 @@ module Program =
         | other -> failwith $"cannot infer a backend from output extension '{other}'; pass --backend"
 
     let private stallDetail () =
-#if SPIRAL_CORE_HOPAC
+#if SPIRAL_CORE_GPT5PARALLEL
         try $"; stalled at stage {buildFileInitializationStageNow ()}" with _ -> ""
 #else
         ""
@@ -830,69 +830,209 @@ module Program =
             if not failureDeferredToFreshProcess then index <- index + 1
         if recycle && index < jobs.Length then 4 else exitCode
 
-    let private runServer socketPath _initialInput =
-        let socketPath = Path.GetFullPath socketPath
-        let parent = Path.GetDirectoryName socketPath
-        if not (String.IsNullOrWhiteSpace parent) then Directory.CreateDirectory parent |> ignore
-        if File.Exists socketPath then File.Delete socketPath
-        let pidPath = socketPath + ".pid"
-        use listener = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified)
-        listener.Bind(UnixDomainSocketEndPoint(socketPath))
-        listener.Listen(128)
-        File.WriteAllText(pidPath, Environment.ProcessId.ToString())
+    let private isCommentToken (_, token) = match token with TokComment _ -> true | _ -> false
+
+    let private sourceBlocks (text : string) =
+        let text = text.Replace("\r\n", "\n")
+        let lines = text.Split '\n'
+        let state = wdiff_tokenizer_all wdiff_tokenizer_init text
+        let lineAt row = if row < lines.Length then lines.[row] else ""
+        let sourceOf row (range : TokenizerRange) =
+            let line = lineAt row
+            if range.nearTo <= line.Length then line.Substring(range.from, range.nearTo - range.from) else ""
+        let isBodyContent row (line : seq<LineToken>) =
+            let textRow = lineAt row
+            let trimmed = textRow.TrimStart()
+            let opensInComment = row > 0 && row - 1 < state.lines_state.Length && state.lines_state.[row - 1].comment_depth > 0
+            let commentRow = trimmed.StartsWith "//" || trimmed.StartsWith "(*" || opensInComment
+            if Seq.isEmpty line then not (String.IsNullOrWhiteSpace textRow || commentRow) else line |> Seq.exists (isCommentToken >> not)
+        let blocks =
+            [ for block in state.blocks do
+                let blockRows = block.block |> Seq.toArray
+                let lastRow = block.offset + blockRows.Length - 1
+                match blockRows |> Array.tryFindIndex (fun line -> line |> Seq.exists (isCommentToken >> not)) with
+                | Some i ->
+                    let headerRow = block.offset + i
+                    let lastContent =
+                        blockRows |> Array.mapi (fun j line -> j, line) |> Array.filter (fun (j, line) -> j > i && isBodyContent (block.offset + j) line)
+                        |> Array.tryLast |> Option.map (fun (j, _) -> block.offset + j) |> Option.defaultValue headerRow
+                    let statement = blockRows.[i] |> Seq.filter (isCommentToken >> not) |> Seq.toArray
+                    yield {| firstRow = block.offset; headerRow = Some headerRow; lastContent = lastContent; lastRow = lastRow; statement = statement |}
+                | None -> yield {| firstRow = block.offset; headerRow = None; lastContent = lastRow; lastRow = lastRow; statement = [||] |} ]
+        blocks, lineAt, sourceOf, state.errors.Length
+
+    let private testBlockRows (text : string) =
+        let blocks, lineAt, sourceOf, tokenizerErrors = sourceBlocks text
+        let rows =
+            [ for block in blocks do
+                match block.headerRow with
+                | Some headerRow ->
+                    match block.statement.[0] with
+                    | _, TokVar ("test", _) ->
+                        let name = if block.statement.Length > 1 then sourceOf headerRow (fst block.statement.[1]) else ""
+                        yield $"{name}\t{headerRow + 1}\t{headerRow + 2}\t{block.lastContent + 1}\t{lineAt headerRow}"
+                    | _ -> ()
+                | None -> () ]
+        rows, tokenizerErrors
+
+    let private sourceBlockRows (text : string) =
+        let blocks, lineAt, _, tokenizerErrors = sourceBlocks text
+        let rows =
+            [ for block in blocks do
+                match block.headerRow with
+                | Some headerRow -> yield $"{block.firstRow + 1}\t{headerRow + 1}\t{block.lastContent + 1}\t{block.lastRow + 1}\t{lineAt headerRow}"
+                | None -> yield $"{block.firstRow + 1}\t0\t0\t{block.lastRow + 1}\t" ]
+        rows, tokenizerErrors
+
+    let private stalledReply (stallSeconds : int) (progressMs : float) =
+        $"spiral-session\terror\t{Environment.ProcessId}\tcompiler stalled: {int progressMs} ms CPU in {stallSeconds} s with a compile outstanding"
+
+    let private watchStall (stallSeconds : int) (writer : StreamWriter) (compile : unit -> unit) =
+        if stallSeconds <= 0 then compile ()
+        else
+            let finished = new Threading.ManualResetEventSlim(false)
+            let watch () =
+                use me = Diagnostics.Process.GetCurrentProcess()
+                let window = Diagnostics.Stopwatch.StartNew()
+                let mutable cpuAtWindowStart = me.TotalProcessorTime.TotalMilliseconds
+                while not (finished.Wait 1000) do
+                    if window.Elapsed.TotalSeconds >= float stallSeconds then
+                        me.Refresh()
+                        let cpu = me.TotalProcessorTime.TotalMilliseconds
+                        let progressMs = cpu - cpuAtWindowStart
+                        if progressMs < float (stallSeconds * 10) then
+                            try writer.WriteLine(stalledReply stallSeconds progressMs); writer.Flush() with _ -> ()
+                            exit 6
+                        cpuAtWindowStart <- cpu
+                        window.Restart()
+            let watchdog = Threading.Thread(Threading.ThreadStart watch)
+            watchdog.IsBackground <- true
+            watchdog.Start()
+            try compile () finally finished.Set()
+
+    let private serveSessions (accept : unit -> Socket) (stallSeconds : int) =
         let server = new_server<Job<unit>, obj, string option, Job<unit>, unit> ()
         let router = DiagnosticRouter()
         let revisions = SourceRevisionStore()
         let cache = CompilationCache(true)
         startDiagnosticPump server.errors router
-        printfn "spiral-session-ready socket=%s pid=%d" socketPath Environment.ProcessId
-        Console.Out.Flush()
-        try
-            let mutable running = true
-            while running do
-                use client = listener.Accept()
-                use stream = new NetworkStream(client, true)
-                use reader = new StreamReader(stream, UTF8Encoding(false), false, 4096, true)
-                use writer = new StreamWriter(stream, UTF8Encoding(false), 4096, true)
-                writer.AutoFlush <- true
-                match reader.ReadLine() with
-                | null -> ()
-                | line ->
-                    let fields = line.Split('\t')
-                    if fields.Length = 1 && fields.[0] = "quit" then
-                        writer.WriteLine($"spiral-session\tquit\t{Environment.ProcessId}")
-                        running <- false
-                    elif (fields.Length = 3 || fields.Length = 4) && fields.[0] = "compile" then
-                        let backend, input, output =
-                            if fields.Length = 4 then fields.[1], fields.[2], fields.[3]
-                            else "Fsharp", fields.[1], fields.[2]
+        let mutable running = true
+        while running do
+            use client = accept ()
+            use stream = new NetworkStream(client, true)
+            use reader = new StreamReader(stream, UTF8Encoding(false), false, 4096, true)
+            use writer = new StreamWriter(stream, UTF8Encoding(false), 4096, true)
+            writer.AutoFlush <- true
+            match reader.ReadLine() with
+            | null -> ()
+            | line ->
+                let fields = line.Split('\t')
+                if fields.Length = 1 && fields.[0] = "quit" then
+                    writer.WriteLine($"spiral-session\tquit\t{Environment.ProcessId}")
+                    running <- false
+                elif fields.Length = 2 && fields.[0] = "test-blocks" then
+                    if File.Exists fields.[1] then
+                        let rows, tokenizerErrors = testBlockRows (File.ReadAllText fields.[1])
+                        rows |> List.iter writer.WriteLine
+                        writer.WriteLine($"spiral-session\ttest-blocks\t{Environment.ProcessId}\t{rows.Length}\t{tokenizerErrors}")
+                    else
+                        writer.WriteLine($"spiral-session\terror\t{Environment.ProcessId}\tno such file {cleanProtocolText fields.[1]}")
+                elif fields.Length = 2 && fields.[0] = "source-blocks" then
+                    if File.Exists fields.[1] then
+                        let rows, tokenizerErrors = sourceBlockRows (File.ReadAllText fields.[1])
+                        rows |> List.iter writer.WriteLine
+                        writer.WriteLine($"spiral-session\tsource-blocks\t{Environment.ProcessId}\t{rows.Length}\t{tokenizerErrors}")
+                    else
+                        writer.WriteLine($"spiral-session\terror\t{Environment.ProcessId}\tno such file {cleanProtocolText fields.[1]}")
+                elif (fields.Length = 3 || fields.Length = 4) && fields.[0] = "compile" then
+                    let backend, input, output =
+                        if fields.Length = 4 then fields.[1], fields.[2], fields.[3]
+                        else "Fsharp", fields.[1], fields.[2]
+                    watchStall stallSeconds writer (fun () ->
                         match compileOne server.supervisor router revisions cache server.job_val backend input output with
                         | Ok (bytes, binding, revisionMode) ->
                             writer.WriteLine($"spiral-session\tok\t{Environment.ProcessId}\t{bytes}\t{binding}\t{revisionMode}\t{backend}")
                         | Error message ->
-                            writer.WriteLine($"spiral-session\terror\t{Environment.ProcessId}\t{cleanProtocolText message}")
-                    else
-                        writer.WriteLine($"spiral-session\terror\t{Environment.ProcessId}\tinvalid request")
-            0
+                            writer.WriteLine($"spiral-session\terror\t{Environment.ProcessId}\t{cleanProtocolText message}"))
+                else
+                    writer.WriteLine($"spiral-session\terror\t{Environment.ProcessId}\tinvalid request")
+        0
+
+    let private sessionPaths (socketPath : string) =
+        let socketPath = Path.GetFullPath socketPath
+        let parent = Path.GetDirectoryName socketPath
+        if not (String.IsNullOrWhiteSpace parent) then Directory.CreateDirectory parent |> ignore
+        if File.Exists socketPath then File.Delete socketPath
+        socketPath, socketPath + ".pid"
+
+    let private runServer socketPath _initialInput =
+        let socketPath, pidPath = sessionPaths socketPath
+        use listener = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified)
+        listener.Bind(UnixDomainSocketEndPoint(socketPath))
+        listener.Listen(128)
+        File.WriteAllText(pidPath, Environment.ProcessId.ToString())
+        printfn "spiral-session-ready socket=%s pid=%d" socketPath Environment.ProcessId
+        Console.Out.Flush()
+        try serveSessions listener.Accept 0
         finally
             try File.Delete socketPath with _ -> ()
             try File.Delete pidPath with _ -> ()
 
+    let private runTcpServer socketPath (stallSeconds : int) =
+        let socketPath, pidPath = sessionPaths socketPath
+        let portPath = socketPath + ".bridge"
+        let listener = TcpListener(Net.IPAddress.Loopback, 0)
+        listener.Start()
+        let port = (listener.LocalEndpoint :?> Net.IPEndPoint).Port
+        File.WriteAllText(pidPath, Environment.ProcessId.ToString())
+        File.WriteAllText(portPath, string port)
+        printfn "spiral-session-ready port=%d pid=%d" port Environment.ProcessId
+        Console.Out.Flush()
+        try serveSessions (fun () -> let client = listener.AcceptSocket() in client.NoDelay <- true; client) stallSeconds
+        finally
+            try listener.Stop() with _ -> ()
+            try File.Delete pidPath with _ -> ()
+            try File.Delete portPath with _ -> ()
+
+    let private hopacWorkerStackBytes = 256 <<< 20
+
     let private configureHopacFromEnvironment () =
-#if SPIRAL_CORE_HOPAC
+#if SPIRAL_CORE_GPT5PARALLEL
         let positive name =
             match Int32.TryParse(Environment.GetEnvironmentVariable name) with
             | true, value when value > 0 -> Some value
             | _ -> None
-        match positive "SPIRAL_HOPAC_WORKERS" with
-        | Some workers -> Scheduler.Global.setCreate { Scheduler.Create.Def with NumWorkers = Some workers }
-        | None -> ()
+        Scheduler.Global.setCreate { Scheduler.Create.Def with NumWorkers = positive "SPIRAL_HOPAC_WORKERS"; MaxStackSize = Some hopacWorkerStackBytes }
         match positive "SPIRAL_DOP" with
         | Some dop -> HopacExtensions.forceConcurrency dop
         | None -> ()
 #else
-        ()
+        Scheduler.Global.setCreate { Scheduler.Create.Def with MaxStackSize = Some hopacWorkerStackBytes }
 #endif
+
+    let private runTestBlocks (path : string) (output : string) =
+        if not (File.Exists path) then
+            eprintfn "test-blocks: no such file %s" path
+            2
+        else
+            let rows, tokenizerErrors = testBlockRows (File.ReadAllText path)
+            if output = "-" then rows |> List.iter (printfn "%s")
+            else File.WriteAllText(output, rows |> List.map (fun row -> row + "\n") |> String.concat "", UTF8Encoding(false))
+            eprintfn "test-blocks ok file=%s blocks=%d tokenizer_errors=%d" path rows.Length tokenizerErrors
+            0
+
+    let private runSourceBlocks (output : string) (inputs : string []) =
+        match inputs |> Array.tryFind (File.Exists >> not) with
+        | Some missing ->
+            eprintfn "source-blocks: no such file %s" missing
+            2
+        | None ->
+            let perInput = inputs |> Array.map (fun path -> sourceBlockRows (File.ReadAllText path))
+            let rows = perInput |> Array.mapi (fun index (inputRows, _) -> inputRows |> List.map (fun row -> $"{index + 1}\t{row}")) |> List.concat
+            if output = "-" then rows |> List.iter (printfn "%s")
+            else File.WriteAllText(output, rows |> List.map (fun row -> row + "\n") |> String.concat "", UTF8Encoding(false))
+            eprintfn "source-blocks ok files=%d blocks=%d tokenizer_errors=%d" inputs.Length rows.Length (perInput |> Array.sumBy snd)
+            0
 
     let private parseBuildFileArgs (argv : string []) =
         let positional = ResizeArray<string>()
@@ -948,15 +1088,82 @@ module Program =
             eprintfn "build-file timed out after %d ms" timeoutMs
             exit 3
 
+    let private defaultTypeFlags =
+        [ "--default-int", "SPIRAL_DEFAULT_INT", [ "i8"; "i16"; "i32"; "i64"; "u8"; "u16"; "u32"; "u64" ]
+          "--default-float", "SPIRAL_DEFAULT_FLOAT", [ "f32"; "f64" ]
+          "--edition", "SPIRAL_EDITION", [ "2"; "3" ] ]
+
+    let private packageDefaultFields =
+        [ "default-int", "SPIRAL_DEFAULT_INT", [ "i8"; "i16"; "i32"; "i64"; "u8"; "u16"; "u32"; "u64" ]
+          "default-float", "SPIRAL_DEFAULT_FLOAT", [ "f32"; "f64" ]
+          "edition", "SPIRAL_EDITION", [ "2"; "3" ] ]
+
+    let private applyPackageDefaults (input : string) : Result<unit, string> =
+        let rec nearest (dir : DirectoryInfo) =
+            if isNull dir then None
+            else
+                let candidate = Path.Combine (dir.FullName, "package.spiproj")
+                if File.Exists candidate then Some candidate else nearest dir.Parent
+        match nearest (DirectoryInfo (Path.GetDirectoryName (Path.GetFullPath input))) with
+        | None -> Ok ()
+        | Some project ->
+            match config (File.ReadAllText project) with
+            | Error _ -> Ok ()
+            | Ok raw ->
+                let declared = [ raw.defaultInt; raw.defaultFloat; raw.edition ]
+                List.zip packageDefaultFields declared
+                |> List.fold (fun state ((field, variable, allowed), value) ->
+                    match state, value with
+                    | Error _, _ | _, None -> state
+                    | Ok (), Some (_, text) when not (List.contains text allowed) ->
+                        Error $"""{project}: {field} expects one of {String.concat ", " allowed}, got '{text}'"""
+                    | Ok (), Some (_, text) ->
+                        if String.IsNullOrEmpty (Environment.GetEnvironmentVariable variable) then Environment.SetEnvironmentVariable (variable, text)
+                        Ok ()) (Ok ())
+
+    let private takeDefaultTypeFlags (argv : string []) : Result<string [], string> =
+        let flagOf (text : string) = defaultTypeFlags |> List.tryFind (fun (name, _, _) -> name = text)
+        let rec go (rest : string list) (kept : string list) =
+            match rest with
+            | flag :: value :: tail when (flagOf flag).IsSome ->
+                let name, variable, allowed = (flagOf flag).Value
+                if List.contains value allowed then
+                    Environment.SetEnvironmentVariable(variable, value)
+                    go tail kept
+                else Error $"""{name} expects one of {String.concat ", " allowed}, got '{value}'"""
+            | [ flag ] when (flagOf flag).IsSome -> Error $"{flag} needs a value"
+            | head :: tail -> go tail (head :: kept)
+            | [] -> Ok (List.rev kept |> Array.ofList)
+        go (List.ofArray argv) []
+
     [<EntryPoint>]
-    let main argv =
+    let main rawArgv =
+        let defaultTypeFlagsResult = takeDefaultTypeFlags rawArgv
+        let argv = match defaultTypeFlagsResult with Ok kept -> kept | Error _ -> rawArgv
         configureHopacFromEnvironment ()
         if isNull (Environment.GetEnvironmentVariable "SPIRAL_HOVERS") then Environment.SetEnvironmentVariable("SPIRAL_HOVERS", "0")
-        if argv.Length = 1 && argv.[0] = "--version" then
+        let defaultTypeFlagsError = match defaultTypeFlagsResult with Error message -> Some message | Ok _ -> None
+        if defaultTypeFlagsError.IsSome then
+            eprintfn "%s" defaultTypeFlagsError.Value
+            2
+        elif argv.Length = 1 && argv.[0] = "--capabilities" then
+            printfn "server-tcp test-blocks source-blocks"
+            0
+        elif argv.Length = 1 && argv.[0] = "--version" then
             printfn "SpiralCompiler alpha418"
             0
+        elif (argv.Length = 2 || (argv.Length = 4 && argv.[2] = "--stall-seconds")) && argv.[0] = "--server-tcp" then
+            let parsed, stallSeconds = if argv.Length = 4 then Int32.TryParse argv.[3] else true, 0
+            if not parsed || stallSeconds < 0 then
+                eprintfn "--stall-seconds must be a non-negative 32-bit integer"
+                2
+            else runTcpServer argv.[1] stallSeconds
         elif argv.Length = 3 && argv.[0] = "--server" then
             runServer argv.[1] argv.[2]
+        elif argv.Length = 3 && argv.[0] = "--test-blocks" then
+            runTestBlocks argv.[1] argv.[2]
+        elif argv.Length >= 3 && argv.[0] = "--source-blocks" then
+            runSourceBlocks argv.[1] argv.[2..]
         elif argv.Length = 2 && argv.[0] = "--check" then
             exit (runAttestationBounded 30000 (fun () -> runCheck argv.[1]))
         elif (argv.Length = 3 || (argv.Length = 5 && argv.[1] = "--timeout-ms")) && argv.[0] = "--plan-ir" then
@@ -982,6 +1189,9 @@ module Program =
                 if argv.Length = 4 then argv.[1], argv.[2], argv.[3]
                 else backendOfOutput argv.[1], argv.[0], argv.[1]
             let backend = match backend with "Cpp" -> "Cpp + Cuda" | "Python" -> "Python + Cuda" | b -> b
+            match applyPackageDefaults input with
+            | Error message -> eprintfn "%s" message; exit 2
+            | Ok () -> ()
             let server = new_server<Job<unit>, obj, string option, Job<unit>, unit> ()
             let router = DiagnosticRouter()
             let revisions = SourceRevisionStore()
@@ -1000,5 +1210,5 @@ module Program =
                 eprintfn "%s" message
                 5
         else
-            eprintfn "usage: SpiralCompiler [--backend Fsharp|C|Rust|Delphi|Zig|TypeScript|Lua|Gleam|\"Cpp + Cuda\"|\"Python + Cuda\"] <input.spi> <output.fsx|.c|.rs|.pas|.zig|.ts|.lua|.gleam|.cpp|.py> | --check INPUT.spi | --plan-ir [--timeout-ms N] INPUT.spi OUTPUT.ir | --batch JOBS.tsv RESULTS.tsv [--timeout-ms N] | --server SOCKET INPUT.spi | build-file IN OUT [IN OUT ...] [--timeout MS] [--exit-on-error] | fsharp IN.spi [--timeout MS]"
+            eprintfn "usage: SpiralCompiler [--default-int i8|i16|i32|i64|u8|u16|u32|u64] [--default-float f32|f64] [--backend Fsharp|C|Rust|Delphi|Zig|TypeScript|Lua|Gleam|\"Cpp + Cuda\"|\"Python + Cuda\"] <input.spi> <output.fsx|.c|.rs|.pas|.zig|.ts|.lua|.gleam|.cpp|.py> | --check INPUT.spi | --test-blocks INPUT.spi OUTPUT.tsv|- | --source-blocks OUTPUT.tsv|- INPUT.spi [INPUT.spi ...] | --capabilities | --plan-ir [--timeout-ms N] INPUT.spi OUTPUT.ir | --batch JOBS.tsv RESULTS.tsv [--timeout-ms N] | --server SOCKET INPUT.spi | --server-tcp SOCKET [--stall-seconds N] | build-file IN OUT [IN OUT ...] [--timeout MS] [--exit-on-error] | fsharp IN.spi [--timeout MS]"
             2

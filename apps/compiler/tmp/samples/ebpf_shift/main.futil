@@ -1,0 +1,237 @@
+import "primitives/core.futil";
+import "primitives/binary_operators.futil";
+import "primitives/memories/comb.futil";
+component spiral_main() -> (out: 32) {
+  cells {
+    spiral_tick = std_reg(1);
+    spiral_ret = std_reg(32);
+    v0 = std_reg(32);
+    v1 = std_reg(32);
+    v2 = std_reg(32);
+    v3 = std_reg(32);
+    v4 = std_reg(32);
+    v5 = std_reg(32);
+    op6 = std_srsh(32);
+    v6 = std_reg(32);
+    op8 = std_lsh(32);
+    v7 = std_reg(32);
+    op10 = std_rsh(32);
+    v8 = std_reg(32);
+    op12 = std_lsh(32);
+    v9 = std_reg(1);
+    op14 = std_eq(32);
+    b16 = std_reg(1);
+    v10 = std_reg(1);
+    op18 = std_eq(32);
+    b20 = std_reg(1);
+    v11 = std_reg(1);
+    op22 = std_eq(32);
+    b24 = std_reg(1);
+    v12 = std_reg(1);
+    op26 = std_eq(32);
+    b28 = std_reg(1);
+  }
+  wires {
+    group g1 {
+      v0.in = 32'd4294967288;
+      v0.write_en = 1'd1;
+      g1[done] = v0.done;
+    }
+    group g2 {
+      v1.in = 32'd3;
+      v1.write_en = 1'd1;
+      g2[done] = v1.done;
+    }
+    group g3 {
+      v2.in = 32'd1;
+      v2.write_en = 1'd1;
+      g3[done] = v2.done;
+    }
+    group g4 {
+      v3.in = 32'd4294967295;
+      v3.write_en = 1'd1;
+      g4[done] = v3.done;
+    }
+    group g5 {
+      v4.in = 32'd4;
+      v4.write_en = 1'd1;
+      g5[done] = v4.done;
+    }
+    group g7 {
+      op6.left = v0.out;
+      op6.right = v2.out;
+      v5.in = op6.out;
+      v5.write_en = 1'd1;
+      g7[done] = v5.done;
+    }
+    group g9 {
+      op8.left = v1.out;
+      op8.right = v2.out;
+      v6.in = op8.out;
+      v6.write_en = 1'd1;
+      g9[done] = v6.done;
+    }
+    group g11 {
+      op10.left = v3.out;
+      op10.right = v4.out;
+      v7.in = op10.out;
+      v7.write_en = 1'd1;
+      g11[done] = v7.done;
+    }
+    group g13 {
+      op12.left = v3.out;
+      op12.right = v2.out;
+      v8.in = op12.out;
+      v8.write_en = 1'd1;
+      g13[done] = v8.done;
+    }
+    group g15 {
+      op14.left = v5.out;
+      op14.right = 32'd4294967292;
+      v9.in = op14.out;
+      v9.write_en = 1'd1;
+      g15[done] = v9.done;
+    }
+    group g17 {
+      b16.in = v9.out;
+      b16.write_en = 1'd1;
+      g17[done] = b16.done;
+    }
+    group g19 {
+      op18.left = v6.out;
+      op18.right = 32'd6;
+      v10.in = op18.out;
+      v10.write_en = 1'd1;
+      g19[done] = v10.done;
+    }
+    group g21 {
+      b20.in = v10.out;
+      b20.write_en = 1'd1;
+      g21[done] = b20.done;
+    }
+    group g23 {
+      op22.left = v7.out;
+      op22.right = 32'd268435455;
+      v11.in = op22.out;
+      v11.write_en = 1'd1;
+      g23[done] = v11.done;
+    }
+    group g25 {
+      b24.in = v11.out;
+      b24.write_en = 1'd1;
+      g25[done] = b24.done;
+    }
+    group g27 {
+      op26.left = v8.out;
+      op26.right = 32'd4294967294;
+      v12.in = op26.out;
+      v12.write_en = 1'd1;
+      g27[done] = v12.done;
+    }
+    group g29 {
+      b28.in = v12.out;
+      b28.write_en = 1'd1;
+      g29[done] = b28.done;
+    }
+    group g30 {
+      spiral_ret.in = 32'd0;
+      spiral_ret.write_en = 1'd1;
+      g30[done] = spiral_ret.done;
+    }
+    group g31 {
+      spiral_ret.in = 32'd4;
+      spiral_ret.write_en = 1'd1;
+      g31[done] = spiral_ret.done;
+    }
+    group g32 {
+      spiral_ret.in = 32'd3;
+      spiral_ret.write_en = 1'd1;
+      g32[done] = spiral_ret.done;
+    }
+    group g33 {
+      spiral_ret.in = 32'd2;
+      spiral_ret.write_en = 1'd1;
+      g33[done] = spiral_ret.done;
+    }
+    group g34 {
+      spiral_ret.in = 32'd1;
+      spiral_ret.write_en = 1'd1;
+      g34[done] = spiral_ret.done;
+    }
+    out = spiral_ret.out;
+  }
+  control {
+    seq {
+      g1;
+      g2;
+      g3;
+      g4;
+      g5;
+      g7;
+      g9;
+      g11;
+      g13;
+      g15;
+      g17;
+      if b16.out {
+        seq {
+          g19;
+          g21;
+          if b20.out {
+            seq {
+              g23;
+              g25;
+              if b24.out {
+                seq {
+                  g27;
+                  g29;
+                  if b28.out {
+                    seq {
+                      g30;
+                    }
+                  } else {
+                    seq {
+                      g31;
+                    }
+                  };
+                }
+              } else {
+                seq {
+                  g32;
+                }
+              };
+            }
+          } else {
+            seq {
+              g33;
+            }
+          };
+        }
+      } else {
+        seq {
+          g34;
+        }
+      };
+    }
+  }
+}
+component main() -> () {
+  cells {
+    @external spiral_io = comb_mem_d1(32, 1, 1);
+    entry = spiral_main();
+  }
+  wires {
+    group spiral_store {
+      spiral_io.addr0 = 1'd0;
+      spiral_io.write_en = 1'd1;
+      spiral_io.write_data = entry.out;
+      spiral_store[done] = spiral_io.done;
+    }
+  }
+  control {
+    seq {
+      invoke entry()();
+      spiral_store;
+    }
+  }
+}

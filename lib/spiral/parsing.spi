@@ -427,7 +427,7 @@ inl run_parser p t =
 /// ### any_char
 inl any_char () : parser char = fun t, i, (parser_state s' as s) =>
     if i >= s'.text_length then
-        fail (fun _, _, s => "parsing.any_char / unexpected end of t / " ++#? { s }) i s
+        fail (fun _, _, s => "parsing.any_char / unexpected end of t / " ++# sm'.show { s }) i s
     else
         inl c = t |> sm'.index i
         Ok (c, i + 1, c |> update_char s)
@@ -439,8 +439,8 @@ inl any_char () : parser char = fun t, i, (parser_state s' as s) =>
 test any_char =
     "abc"
     |> run_parser (any_char ())
-    |> (resultm.get >> sm'.format)
-    |> _assert_eq #?('a', "bc", #?*(new_parser_state 0 1 2 3))
+    |> (resultm.get >> sm'.show)
+    |> _assert_eq (sm'.show ('a', "bc", new_parser_state 0 1 2 3))
 
 ///> fsharp
 test any_char_2 =
@@ -457,7 +457,7 @@ inl get_max_context () =
 inl p_char (c : char) : parser char =
     fun t, i, (parser_state ({ line_start position = { line col } } as s') as s) =>
         if i >= s'.text_length then
-            fail (fun _, _, (parser_state s') => "parsing.p_char / unexpected end of text / " ++#? { c s' }) i s
+            fail (fun _, _, (parser_state s') => "parsing.p_char / unexpected end of text / " ++# sm'.show { c s' }) i s
         else
             inl got = t |> sm'.index i
             if got = c
@@ -473,7 +473,7 @@ inl p_char (c : char) : parser char =
                             if len > 0 && (line_slice |> sm'.index (len - 1)) = '\n' then "" else "\n"
                         inl pointer_line = (" " |> sm'.replicate (col - 1)) ++# "^"
                         "parsing.p_char / "
-                        ++#? { expected = c; line col }
+                        ++# sm'.show { expected = c; line col }
                         ++# "\n" ++# line_slice
                         ++# new_line
                         ++# pointer_line ++# "\n"
@@ -486,8 +486,9 @@ inl p_char (c : char) : parser char =
 test p_char =
     "abc"
     |> run_parser (p_char 'a')
-    |> unwrap_format
-    |> _assert_eq #?*('a', "bc", new_parser_state 0 1 2 3)
+    |> resultm.get
+    |> sm'.show
+    |> _assert_eq (sm'.show ('a', "bc", new_parser_state 0 1 2 3))
 
 ///> fsharp
 test p_char_2 =
@@ -501,7 +502,7 @@ inl any_string len : parser string = fun t, i, (parser_state s' as s) =>
     if s'.text_length - i >= len
     then Ok (t |> slice i (i + len), i + len, s |> update_span t i len)
     else
-        fail (fun _, _, s => "parsing.any_string / unexpected end of text / " ++#? { s }) i s
+        fail (fun _, _, s => "parsing.any_string / unexpected end of text / " ++# sm'.show { s }) i s
 
 ///> gleam
 ///> fsharp
@@ -510,8 +511,9 @@ inl any_string len : parser string = fun t, i, (parser_state s' as s) =>
 test any_string =
     "abcdef"
     |> run_parser (any_string 3)
-    |> unwrap_format
-    |> _assert_eq #?*("abc", "def", new_parser_state 0 1 4 6)
+    |> resultm.get
+    |> sm'.show
+    |> _assert_eq (sm'.show ("abc", "def", new_parser_state 0 1 4 6))
 
 ///> fsharp
 test any_string_2 =
@@ -526,7 +528,7 @@ inl skip_any_string len : parser () = fun t, i, (parser_state s' as s) =>
     if s'.text_length - i >= len
     then Ok ((), i + len, s |> update_span t i len)
     else
-        fail (fun _, _, s => "parsing.skip_any_string / unexpected end of text / " ++#? { s }) i s
+        fail (fun _, _, s => "parsing.skip_any_string / unexpected end of text / " ++# sm'.show { s }) i s
 
 ///> gleam
 ///> fsharp
@@ -535,8 +537,9 @@ inl skip_any_string len : parser () = fun t, i, (parser_state s' as s) =>
 test skip_any_string =
     "abcdef"
     |> run_parser (skip_any_string 3)
-    |> unwrap_format
-    |> _assert_eq #?*((), "def", new_parser_state 0 1 4 6)
+    |> resultm.get
+    |> sm'.show
+    |> _assert_eq (sm'.show ((), "def", new_parser_state 0 1 4 6))
 
 /// ### skip_many
 inl skip_many forall t. (p : parser t) : parser () = fun t, i, s =>
@@ -553,8 +556,9 @@ inl skip_many forall t. (p : parser t) : parser () = fun t, i, s =>
 test skip_many =
     "sskkip_many"
     |> run_parser (skip_many (p_char 's'))
-    |> unwrap_format
-    |> _assert_eq #?*("kkip_many", new_parser_state 0 1 3 11)
+    |> resultm.get
+    |> sm'.show
+    |> _assert_eq (sm'.show ("kkip_many", new_parser_state 0 1 3 11))
 
 /// ### skip_many1
 inl skip_many1 forall t. (a : parser t) : parser () = fun t, i, s =>
@@ -569,8 +573,9 @@ inl skip_many1 forall t. (a : parser t) : parser () = fun t, i, s =>
 test skip_many1 =
     "skip_many1"
     |> run_parser (skip_many1 (p_char 's'))
-    |> unwrap_format
-    |> _assert_eq #?*("kip_many1", new_parser_state 0 1 2 10)
+    |> resultm.get
+    |> sm'.show
+    |> _assert_eq (sm'.show ("kip_many1", new_parser_state 0 1 2 10))
 
 /// ### (>>.)
 inl (>>.) forall t u. (a : parser t) (b : parser u) : parser u = fun t, i, s =>
@@ -618,8 +623,9 @@ inl (>>%) forall t u. (a : parser t) (b : u) : parser u =
 test skip_many1_3 =
     "abc"
     |> run_parser (p_char 'a' >>. p_char 'b')
-    |> unwrap_format
-    |> _assert_eq #?*('b', "c", new_parser_state 0 1 3 3)
+    |> resultm.get
+    |> sm'.show
+    |> _assert_eq (sm'.show ('b', "c", new_parser_state 0 1 3 3))
 
 ///> fsharp
 test skip_many1_4 =
@@ -641,9 +647,9 @@ test skip_many1_5 =
 /// ### none_of
 inl none_of (chars : list char) : parser char = fun t, i, (parser_state s' as s) =>
     inl chars' () =
-        chars |> listm'.box |> listm'.to_array' |> sm'.format
+        chars |> listm'.box |> listm'.to_array' |> sm'.show
     if i >= s'.text_length then
-        fail (fun _, _, s => "parsing.none_of / unexpected end of text / " ++#? { chars' = chars' (); s }) i s
+        fail (fun _, _, s => "parsing.none_of / unexpected end of text / " ++# sm'.show { chars' = chars' (); s }) i s
     else
         inl ch = t |> sm'.index i
         if chars |> listm'.exists' ((=) ch) |> not
@@ -652,7 +658,7 @@ inl none_of (chars : list char) : parser char = fun t, i, (parser_state s' as s)
             fail
                 fun t, i, s =>
                     "parsing.none_of / unexpected char / "
-                    ++#? { first_char = t |> sm'.index i; chars' = chars' (); s }
+                    ++# sm'.show { first_char = t |> sm'.index i; chars' = chars' (); s }
                 i s
 
 ///> gleam
@@ -664,32 +670,16 @@ test none_of =
     |> run_parser (none_of ['a'; 'b'; 'c'])
     |> resultm.map_error eval
     |> _assert_eq (
-        backend_switch {
-            Gleam = fun () =>
-                "parsing.none_of / unexpected char / "
-                ++# "{ first_char = a; chars' = [\"a\", \"b\", \"c\"]; s = #(0, 1, 1, 3) }"
-            Lua = fun () =>
-                "parsing.none_of / unexpected char / "
-                ++# "{ first_char = a; chars' = [\"a\", \"b\", \"c\"]; s = #(0, 1, 1, 3) }"
-            Fsharp = fun () =>
-                join
-                    "parsing.none_of / unexpected char / "
-                    ++# "{ first_char = a; chars' = [|'a'; 'b'; 'c'|]; s = struct (0, 1, 1, 3) }"
-            TypeScript = fun () =>
-                join
-                    "parsing.none_of / unexpected char / "
-                    ++# "{ first_char = a; chars' = ['a', 'b', 'c']; s = { line_start = 0; position = { line = 1; col = 1 }; text_length = 3 } }"
-            Python = fun () =>
-                "parsing.none_of / unexpected char / "
-                ++# "{ first_char = a; chars' = ['a' 'b' 'c']; s = (0, 1, 1, 3) }"
-        }
+        "parsing.none_of / unexpected char / "
+        ++# "{ first_char = a; chars' = [a, b, c]; s = { line_start = 0; position = { line = 1; col = 1 }; text_length = 3 } }"
         |> Error
     )
 
     "def"
     |> run_parser (none_of ['a'; 'b'; 'c'])
-    |> unwrap_format
-    |> _assert_eq #?*('d', "ef", new_parser_state 0 1 2 3)
+    |> resultm.get
+    |> sm'.show
+    |> _assert_eq (sm'.show ('d', "ef", new_parser_state 0 1 2 3))
 
 ///> fsharp
 test none_of_2 =
@@ -718,8 +708,9 @@ inl (<|>) forall t. (a : parser t) (b : parser t) : parser t = fun t, i, s =>
 test none_of_3 =
     "abc"
     |> run_parser (p_char 'a' <|> p_char 'b')
-    |> unwrap_format
-    |> _assert_eq #?*('a', "bc", new_parser_state 0 1 2 3)
+    |> resultm.get
+    |> sm'.show
+    |> _assert_eq (sm'.show ('a', "bc", new_parser_state 0 1 2 3))
 
     "cba"
     |> run_parser (p_char 'a' <|> p_char 'b')
@@ -738,8 +729,9 @@ inl (|>>) p f : parser _ =
 test none_of_4 =
     "abc"
     |> run_parser (p_char 'a' |>> fun c => fun () => c () |> sm'.char_to_upper)
-    |> unwrap_format
-    |> _assert_eq #?*('A', "bc", new_parser_state 0 1 2 3)
+    |> resultm.get
+    |> sm'.show
+    |> _assert_eq (sm'.show ('A', "bc", new_parser_state 0 1 2 3))
 
 /// ### many
 inl many forall b c.
@@ -764,8 +756,9 @@ inl many forall b c.
 test many =
     "aaabbc"
     |> run_parser (many (p_char 'a' <|> p_char 'b'))
-    |> unwrap_format
-    |> _assert_eq #?*(['a'; 'a'; 'a'; 'b'; 'b'], "c", new_parser_state 0 1 6 6)
+    |> resultm.get
+    |> sm'.show
+    |> _assert_eq (sm'.show (['a'; 'a'; 'a'; 'b'; 'b'], "c", new_parser_state 0 1 6 6))
 
 /// ### many1_chars
 inl many1_chars (p : parser char) : parser string = fun t, i, s =>
@@ -789,8 +782,9 @@ inl many1_chars (p : parser char) : parser string = fun t, i, s =>
 test many1_chars =
     "aaabbc"
     |> run_parser (many1_chars (p_char 'a' <|> p_char 'b'))
-    |> unwrap_format
-    |> _assert_eq #?*("aaabb", "c", new_parser_state 0 1 6 6)
+    |> resultm.get
+    |> sm'.show
+    |> _assert_eq (sm'.show ("aaabb", "c", new_parser_state 0 1 6 6))
 
 /// ### many1_satisfy
 inl many1_satisfy (fn : char -> bool) : parser string = fun t, i, (parser_state s' as s) =>
@@ -806,7 +800,7 @@ inl many1_satisfy (fn : char -> bool) : parser string = fun t, i, (parser_state 
     if i' > i
     then Ok (t |> slice i i', i', s'')
     else
-        fail (fun _, i, s => "parsing.many1_satisfy / no matching char / " ++#? { i s }) i s
+        fail (fun _, i, s => "parsing.many1_satisfy / no matching char / " ++# sm'.show { i s }) i s
 
 /// ### many1_none_of
 inl many1_none_of (chars : list char) : parser string =
@@ -903,13 +897,15 @@ inl many1 (p : parser _) : parser (list _) = fun t, i, s =>
 test many1 =
     "aaabbc"
     |> run_parser (many1 (p_char 'a' <|> p_char 'b'))
-    |> unwrap_format
-    |> _assert_eq #?*([ 'a'; 'a'; 'a'; 'b'; 'b' ], "c", new_parser_state 0 1 6 6)
+    |> resultm.get
+    |> sm'.show
+    |> _assert_eq (sm'.show ([ 'a'; 'a'; 'a'; 'b'; 'b' ], "c", new_parser_state 0 1 6 6))
 
     "bcc"
     |> run_parser (many1 (p_char 'a' <|> p_char 'b'))
-    |> unwrap_format
-    |> _assert_eq #?*([ 'b' ], "cc", new_parser_state 0 1 2 3)
+    |> resultm.get
+    |> sm'.show
+    |> _assert_eq (sm'.show ([ 'b' ], "cc", new_parser_state 0 1 2 3))
 
     "cba"
     |> run_parser (many1 (p_char 'a' <|> p_char 'b'))
@@ -978,8 +974,9 @@ inl many1_strings (p : parser _) : parser string = fun t, i, s =>
 test many1_strings =
     "aaabbc"
     |> run_parser (many1_strings (p_char 'a' <|> p_char 'b'))
-    |> unwrap_format
-    |> _assert_eq #?*("aaabb", "c", new_parser_state 0 1 6 6)
+    |> resultm.get
+    |> sm'.show
+    |> _assert_eq (sm'.show ("aaabb", "c", new_parser_state 0 1 6 6))
 
 /// ### many_strings
 inl many_strings (p : parser _) : parser string = fun t, i, s =>
@@ -1029,13 +1026,15 @@ inl choice forall t. (ps : list (parser t)) : parser t =
 test choice =
     "bca"
     |> run_parser (choice [ p_char 'a'; p_char 'b'; p_char 'c' ])
-    |> unwrap_format
-    |> _assert_eq #?*('b', "ca", new_parser_state 0 1 2 3)
+    |> resultm.get
+    |> sm'.show
+    |> _assert_eq (sm'.show ('b', "ca", new_parser_state 0 1 2 3))
 
     "cba"
     |> run_parser (choice [ p_char 'a'; p_char 'b'; p_char 'c' ])
-    |> unwrap_format
-    |> _assert_eq #?*('c', "ba", new_parser_state 0 1 2 3)
+    |> resultm.get
+    |> sm'.show
+    |> _assert_eq (sm'.show ('c', "ba", new_parser_state 0 1 2 3))
 
 /// ### between
 inl between p_open p_close p_content : parser _ = fun t, i, s =>
@@ -1055,7 +1054,7 @@ inl between p_open p_close p_content : parser _ = fun t, i, s =>
                         inl end'' = (i'' + get_max_context ()) |> min t_len
                         inl rest' = t |> slice i' end'
                         inl rest'' = t |> slice i'' end''
-                        "parsing.between / expected closing delimiter / " ++#? { e t rest' rest'' }
+                        "parsing.between / expected closing delimiter / " ++# sm'.show { e t rest' rest'' }
                     i'' s''
         | Error _ =>
             match p_close (t, i', s') with
@@ -1065,7 +1064,7 @@ inl between p_open p_close p_content : parser _ = fun t, i, s =>
                     fun t, i', _ =>
                         inl end' = (i' + get_max_context ()) |> min ##t
                         inl rest' = t |> slice i' end'
-                        "parsing.between / expected content or closing delimiter / " ++#? { rest' }
+                        "parsing.between / expected content or closing delimiter / " ++# sm'.show { rest' }
                     i' s'
     | Error e => e |> Error
 
@@ -1083,8 +1082,9 @@ test between =
 test between_2 =
     "[aaabb]"
     |> run_parser (between (p_char '[') (p_char ']') (many1_chars (p_char 'a' <|> p_char 'b')))
-    |> unwrap_format
-    |> _assert_eq #?*("aaabb", "", new_parser_state 0 1 8 7)
+    |> resultm.get
+    |> sm'.show
+    |> _assert_eq (sm'.show ("aaabb", "", new_parser_state 0 1 8 7))
 
     "[aaabb"
     |> run_parser (between (p_char '[') (p_char ']') (many1_chars (p_char 'a' <|> p_char 'b')))
@@ -1094,7 +1094,7 @@ test between_2 =
     |> _assert_eq (
         "parsing.between / expected closing delimiter / "
         ++# "{ e = parsing.p_char / unexpected end of text / { c = ]; "
-        ++# "s' = " ++#? (new_parser_state 0 1 7 6) ++# " }; "
+        ++# "s' = " ++# sm'.show (new_parser_state 0 1 7 6) ++# " }; "
         ++# "t = [aaabb; rest' = aaabb; rest'' =  }"
     )
 
@@ -1138,8 +1138,9 @@ inl sep_end_by forall b. p sep : parser (list b) = fun t, i, s =>
 test sep_end_by =
     "sep_end_by"
     |> run_parser (sep_end_by (p_char 's' <|> p_char 'e') (p_char 'e'))
-    |> unwrap_format
-    |> _assert_eq #?*([ 's' ], "p_end_by", new_parser_state 0 1 3 10)
+    |> resultm.get
+    |> sm'.show
+    |> _assert_eq (sm'.show ([ 's' ], "p_end_by", new_parser_state 0 1 3 10))
 
 /// ### is_space
 inl is_space c =
@@ -1155,7 +1156,7 @@ inl spaces1 () : parser () = fun t, i, (parser_state s' as s) =>
             fun t, i, (parser_state s') =>
                 inl preview_end = (i + get_max_context ()) |> min s'.text_length
                 "parsing.spaces1 / expected at least one space / "
-                ++#? { rest = t |> slice i preview_end }
+                ++# sm'.show { rest = t |> slice i preview_end }
             i s
 
 /// ### spaces
@@ -1166,12 +1167,12 @@ inl spaces () : parser () = fun t, i, s =>
 /// ### p_digit
 inl p_digit () : parser char = fun t, i, (parser_state s' as s) =>
     if i >= s'.text_length then
-        fail (fun _, _, s => "parsing.p_digit / unexpected end of text / " ++#? { s }) i s
+        fail (fun _, _, s => "parsing.p_digit / unexpected end of text / " ++# sm'.show { s }) i s
     else
         match t |> sm'.index i with
         | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' as c =>
             Ok (c, i + 1, c |> update_char s)
-        | _ => fail (fun t, i, _ => "parsing.p_digit / unexpected char / " ++#? { c = t |> sm'.index i }) i s
+        | _ => fail (fun t, i, _ => "parsing.p_digit / unexpected char / " ++# sm'.show { c = t |> sm'.index i }) i s
 
 ///> gleam
 ///> fsharp
@@ -1180,8 +1181,9 @@ inl p_digit () : parser char = fun t, i, (parser_state s' as s) =>
 test p_digit =
     "1 2 3"
     |> run_parser (sep_by (p_digit ()) (spaces1 ()))
-    |> unwrap_format
-    |> _assert_eq #?*([ '1'; '2'; '3' ], "", new_parser_state 0 1 6 5)
+    |> resultm.get
+    |> sm'.show
+    |> _assert_eq (sm'.show ([ '1'; '2'; '3' ], "", new_parser_state 0 1 6 5))
 
 ///> gleam
 ///> fsharp
@@ -1190,8 +1192,9 @@ test p_digit =
 test p_digit_2 =
     "1 a 2"
     |> run_parser (sep_by (p_digit ()) (spaces1 ()))
-    |> unwrap_format
-    |> _assert_eq #?*([ '1' ], " a 2", new_parser_state 0 1 2 5)
+    |> resultm.get
+    |> sm'.show
+    |> _assert_eq (sm'.show ([ '1' ], " a 2", new_parser_state 0 1 2 5))
 
 /// ### opt
 inl opt p : parser (option _) = fun t, i, s =>
@@ -1212,14 +1215,14 @@ inl eof () : parser () = fun t, i, (parser_state s' as s) =>
         fail
             fun t, i, (parser_state s') =>
                 "parsing.eof / expected end of text / "
-                ++#? { rest = t |> slice i s'.text_length }
+                ++# sm'.show { rest = t |> slice i s'.text_length }
             i s
 
 /// ### p_string
 inl p_string (str : string) : parser string = fun t, i, (parser_state s' as s) =>
     inl len = ##str
     if s'.text_length - i < len then
-        fail (fun _, _, s => "parsing.p_string / unexpected end of text / " ++#? { expected = str; s }) i s
+        fail (fun _, _, s => "parsing.p_string / unexpected end of text / " ++# sm'.show { expected = str; s }) i s
     else
         let rec eq k =
             if k >= len
@@ -1234,19 +1237,20 @@ inl p_string (str : string) : parser string = fun t, i, (parser_state s' as s) =
                     inl rest = t |> slice i preview_end
                     inl got = t |> slice i (i + len)
                     "parsing.p_string / unexpected string / "
-                    ++#? { expected = str; got rest s }
+                    ++# sm'.show { expected = str; got rest s }
                 i s
 
 test p_string =
     "hello world"
     |> run_parser (p_string "hello")
-    |> unwrap_format
-    |> _assert_eq #?*("hello", " world", new_parser_state 0 1 6 11)
+    |> resultm.get
+    |> sm'.show
+    |> _assert_eq (sm'.show ("hello", " world", new_parser_state 0 1 6 11))
 
 /// ### new_line
 inl new_line () : parser char = fun t, i, (parser_state s' as s) =>
     if i >= s'.text_length then
-        fail (fun _, _, s => "parsing.new_line / unexpected end of text / " ++#? { s }) i s
+        fail (fun _, _, s => "parsing.new_line / unexpected end of text / " ++# sm'.show { s }) i s
     else
         inl c = t |> sm'.index i
         if c = '\n'
@@ -1257,14 +1261,15 @@ inl new_line () : parser char = fun t, i, (parser_state s' as s) =>
                     inl preview_end = (i + get_max_context ()) |> min s'.text_length
                     inl rest = t |> slice i preview_end
                     "parsing.new_line / expected new line char / "
-                    ++#? { first_char = t |> sm'.index i; rest s }
+                    ++# sm'.show { first_char = t |> sm'.index i; rest s }
                 i s
 
 test new_line =
     "hello\nworld"
     |> run_parser (many_chars_till (any_char ()) (new_line ()))
-    |> unwrap_format
-    |> _assert_eq #?*("hello", "\nworld", new_parser_state 0 1 6 11)
+    |> resultm.get
+    |> sm'.show
+    |> _assert_eq (sm'.show ("hello", "\nworld", new_parser_state 0 1 6 11))
 
 /// ### many_till
 inl many_till forall b c. (p : parser b) (end_p : parser c) : parser _ = fun t, i, s =>
@@ -1284,8 +1289,9 @@ inl many_till forall b c. (p : parser b) (end_p : parser c) : parser _ = fun t, 
 test many_till =
     "hello\nworld"
     |> run_parser (many_till (any_char ()) (new_line ()))
-    |> unwrap_format
-    |> _assert_eq #?*(['h'; 'e'; 'l'; 'l'; 'o'], "world", new_parser_state 6 2 1 11)
+    |> resultm.get
+    |> sm'.show
+    |> _assert_eq (sm'.show (['h'; 'e'; 'l'; 'l'; 'o'], "world", new_parser_state 6 2 1 11))
 
 /// ### p_return
 inl p_return forall t. (x : t) : parser t = fun t, i, s =>
@@ -1294,8 +1300,9 @@ inl p_return forall t. (x : t) : parser t = fun t, i, s =>
 test p_return =
     "abc"
     |> run_parser (p_return 42i32)
-    |> unwrap_format
-    |> _assert_eq #?*(42i32, "abc", new_parser_state 0 1 1 3)
+    |> resultm.get
+    |> sm'.show
+    |> _assert_eq (sm'.show (42i32, "abc", new_parser_state 0 1 1 3))
 
 /// ### attempt
 inl attempt forall t. (p : parser t) : parser t = fun t, i, s =>
@@ -1318,8 +1325,9 @@ inl look_ahead (p : parser _) : parser _ = fun t, i, s =>
 test look_ahead =
     "123"
     |> run_parser (look_ahead (many1_chars (p_digit ())))
-    |> unwrap_format
-    |> _assert_eq #?*("123", "123", new_parser_state 0 1 1 3)
+    |> resultm.get
+    |> sm'.show
+    |> _assert_eq (sm'.show ("123", "123", new_parser_state 0 1 1 3))
 
 /// ### pipe2
 inl pipe2 forall a b c. (p1 : parser a) (p2 : parser b) (f : ((() -> a) * (() -> b)) -> c) : parser c = fun t, i, s =>
@@ -1333,8 +1341,9 @@ inl pipe2 forall a b c. (p1 : parser a) (p2 : parser b) (f : ((() -> a) * (() ->
 test pipe2 =
     "pipe2"
     |> run_parser (pipe2 (p_string "pipe") (spaces () >>. p_string "2") (fun a, b => a () ++# b ()))
-    |> unwrap_format
-    |> _assert_eq #?*("pipe2", "", new_parser_state 0 1 6 5)
+    |> resultm.get
+    |> sm'.show
+    |> _assert_eq (sm'.show ("pipe2", "", new_parser_state 0 1 6 5))
 
 /// ### new_lines
 inl new_lines () : parser () = fun t, i, s =>
@@ -1344,8 +1353,9 @@ inl new_lines () : parser () = fun t, i, s =>
 test new_lines =
     "\n\nline1\nline2\n\nline4"
     |> run_parser (many_till (any_char ()) (new_lines ()))
-    |> unwrap_format
-    |> _assert_eq #?*(([] : _ char), "line1\nline2\n\nline4", new_parser_state 2 3 1 20)
+    |> resultm.get
+    |> sm'.show
+    |> _assert_eq (sm'.show (([] : _ char), "line1\nline2\n\nline4", new_parser_state 2 3 1 20))
 
 /// ### new_lines1
 inl new_lines1 () : parser () = fun t, i, (parser_state s' as s) =>
@@ -1357,11 +1367,12 @@ inl new_lines1 () : parser () = fun t, i, (parser_state s' as s) =>
             fun t, i, (parser_state s') =>
                 inl preview_end = i + get_max_context () |> min s'.text_length
                 "parsing.new_lines1 / expected at least one new line / "
-                ++#? { rest = t |> slice i preview_end }
+                ++# sm'.show { rest = t |> slice i preview_end }
             i s
 
 test new_lines1 =
     "\n\n\n"
     |> run_parser (new_lines1 ())
-    |> unwrap_format
-    |> _assert_eq #?*("", new_parser_state 3 4 1 3)
+    |> resultm.get
+    |> sm'.show
+    |> _assert_eq (sm'.show ("", new_parser_state 3 4 1 3))

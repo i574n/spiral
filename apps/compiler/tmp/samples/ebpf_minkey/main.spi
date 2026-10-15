@@ -1,8 +1,8 @@
 inl map_update (key : i32) (value : i32) (expect : i32) : i32 =
-    !!!!BackendSwitch({ C = fun () => $"!expect" : i32; Ebpf = fun () => $"spiral_map_update(!key, !value)" : i32 })
+    !!!!BackendSwitch({ C = fun () => $"!expect" : i32; Ebpf = fun () => $"spiral_map_update(!key, !value)" : i32; Bend = fun () => expect })
 
 inl map_lookup (key : i32) (expect : i32) : i32 =
-    !!!!BackendSwitch({ C = fun () => $"!expect" : i32; Ebpf = fun () => $"spiral_map_lookup(!key)" : i32 })
+    !!!!BackendSwitch({ C = fun () => $"!expect" : i32; Ebpf = fun () => $"spiral_map_lookup(!key)" : i32; Bend = fun () => expect })
 
 inl main () : i32 =
     inl ~k = -2147483648i32

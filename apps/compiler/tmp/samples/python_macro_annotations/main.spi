@@ -5,7 +5,7 @@ union u =
     | W : res
     | T : tok
 
-inl native (k : i32) : i32 =
+inl python_annotated_macro_types (k : i32) : i32 =
     inl w : res = $'!k + 1'
     inl r = join $'!w * 2' : i32
     inl x = if k > 0 then W w else T ($'None' : tok)
@@ -15,4 +15,4 @@ inl native (k : i32) : i32 =
 
 inl main () : i32 =
     inl ~k = 7i32
-    !!!!BackendSwitch({ C = fun () => 24i32 : i32; Python = fun () => native k : i32 })
+    !!!!BackendSwitch({ C = fun () => 24i32 : i32; Python = fun () => python_annotated_macro_types k : i32; Bend = fun () => 24i32 : i32 })

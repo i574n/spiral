@@ -591,198 +591,218 @@ int32_t utf8_scalar_at_byte_offset1(String * v0, int32_t v1){
     }
 }
 Tuple0 loop0(int32_t v0, int32_t v1, int32_t v2){
-    
-    
-    bool v3;
-    v3 = v0 == 10l;
-    
-    
-    if (v3){
+    while (1) {
         
         
-        return TupleCreate0(v1, v2);
-    } else {
+        bool v3;
+        v3 = v0 == 10l;
         
         
-        bool v4;
-        v4 = v0 > 10l;
-        
-        
-        if (v4){
+        if (v3){
             
             
-            fprintf(stderr, "%s\n", "UTF-8 scalar width exceeds the string.");
-            exit(EXIT_FAILURE);
+            return TupleCreate0(v1, v2);
         } else {
             
             
-            String * v7;
-            v7 = StringLit(11, "Aéλ🙂Z");
-            (v7)->refc++;
-            
-            int32_t v8;
-            v8 = utf8_scalar_at_byte_offset1(v7, v0);
-            
-            StringDecref(v7);
-            bool v9;
-            v9 = v8 < 128l;
+            bool v4;
+            v4 = v0 > 10l;
             
             
-            int32_t v14;
-            if (v9){
+            if (v4){
                 
                 
-                v14 = 1l;
+                fprintf(stderr, "%s\n", "UTF-8 scalar width exceeds the string.");
+                exit(EXIT_FAILURE);
             } else {
                 
                 
-                bool v10;
-                v10 = v8 < 2048l;
+                String * v7;
+                v7 = StringLit(11, "Aéλ🙂Z");
+                (v7)->refc++;
+                
+                int32_t v8;
+                v8 = utf8_scalar_at_byte_offset1(v7, v0);
+                
+                StringDecref(v7);
+                bool v9;
+                v9 = v8 < 128l;
                 
                 
-                if (v10){
+                int32_t v14;
+                if (v9){
                     
                     
-                    v14 = 2l;
+                    v14 = 1l;
                 } else {
                     
                     
-                    bool v11;
-                    v11 = v8 < 65536l;
+                    bool v10;
+                    v10 = v8 < 2048l;
                     
                     
-                    if (v11){
+                    if (v10){
                         
                         
-                        v14 = 3l;
+                        v14 = 2l;
                     } else {
                         
                         
-                        v14 = 4l;
+                        bool v11;
+                        v11 = v8 < 65536l;
+                        
+                        
+                        if (v11){
+                            
+                            
+                            v14 = 3l;
+                        } else {
+                            
+                            
+                            v14 = 4l;
+                        }
                     }
                 }
+                
+                
+                int32_t v15;
+                v15 = v0 + v14;
+                
+                
+                int32_t v16;
+                v16 = v1 + 1l;
+                
+                
+                int32_t v17;
+                v17 = v2 * 3l;
+                
+                
+                int32_t v18;
+                v18 = v8 % 17l;
+                
+                
+                int32_t v19;
+                v19 = v17 + v18;
+                
+                
+                {
+                    int32_t tmp0 = v15;
+                    int32_t tmp1 = v16;
+                    int32_t tmp2 = v19;
+                    v0 = tmp0;
+                    v1 = tmp1;
+                    v2 = tmp2;
+                }
+                continue;
             }
-            
-            
-            int32_t v15;
-            v15 = v0 + v14;
-            
-            
-            int32_t v16;
-            v16 = v1 + 1l;
-            
-            
-            int32_t v17;
-            v17 = v2 * 3l;
-            
-            
-            int32_t v18;
-            v18 = v8 % 17l;
-            
-            
-            int32_t v19;
-            v19 = v17 + v18;
-            
-            
-            return loop0(v15, v16, v19);
         }
     }
 }
 Tuple0 loop3(int32_t v0, int32_t v1, int32_t v2){
-    
-    
-    bool v3;
-    v3 = v0 == 0l;
-    
-    
-    if (v3){
+    while (1) {
         
         
-        return TupleCreate0(v1, v2);
-    } else {
+        bool v3;
+        v3 = v0 == 0l;
         
         
-        bool v4;
-        v4 = v0 > 0l;
-        
-        
-        if (v4){
+        if (v3){
             
             
-            fprintf(stderr, "%s\n", "UTF-8 scalar width exceeds the string.");
-            exit(EXIT_FAILURE);
+            return TupleCreate0(v1, v2);
         } else {
             
             
-            String * v7;
-            v7 = StringLit(1, "");
-            (v7)->refc++;
-            
-            int32_t v8;
-            v8 = utf8_scalar_at_byte_offset1(v7, v0);
-            
-            StringDecref(v7);
-            bool v9;
-            v9 = v8 < 128l;
+            bool v4;
+            v4 = v0 > 0l;
             
             
-            int32_t v14;
-            if (v9){
+            if (v4){
                 
                 
-                v14 = 1l;
+                fprintf(stderr, "%s\n", "UTF-8 scalar width exceeds the string.");
+                exit(EXIT_FAILURE);
             } else {
                 
                 
-                bool v10;
-                v10 = v8 < 2048l;
+                String * v7;
+                v7 = StringLit(1, "");
+                (v7)->refc++;
+                
+                int32_t v8;
+                v8 = utf8_scalar_at_byte_offset1(v7, v0);
+                
+                StringDecref(v7);
+                bool v9;
+                v9 = v8 < 128l;
                 
                 
-                if (v10){
+                int32_t v14;
+                if (v9){
                     
                     
-                    v14 = 2l;
+                    v14 = 1l;
                 } else {
                     
                     
-                    bool v11;
-                    v11 = v8 < 65536l;
+                    bool v10;
+                    v10 = v8 < 2048l;
                     
                     
-                    if (v11){
+                    if (v10){
                         
                         
-                        v14 = 3l;
+                        v14 = 2l;
                     } else {
                         
                         
-                        v14 = 4l;
+                        bool v11;
+                        v11 = v8 < 65536l;
+                        
+                        
+                        if (v11){
+                            
+                            
+                            v14 = 3l;
+                        } else {
+                            
+                            
+                            v14 = 4l;
+                        }
                     }
                 }
+                
+                
+                int32_t v15;
+                v15 = v0 + v14;
+                
+                
+                int32_t v16;
+                v16 = v1 + 1l;
+                
+                
+                int32_t v17;
+                v17 = v2 * 3l;
+                
+                
+                int32_t v18;
+                v18 = v8 % 17l;
+                
+                
+                int32_t v19;
+                v19 = v17 + v18;
+                
+                
+                {
+                    int32_t tmp4 = v15;
+                    int32_t tmp5 = v16;
+                    int32_t tmp6 = v19;
+                    v0 = tmp4;
+                    v1 = tmp5;
+                    v2 = tmp6;
+                }
+                continue;
             }
-            
-            
-            int32_t v15;
-            v15 = v0 + v14;
-            
-            
-            int32_t v16;
-            v16 = v1 + 1l;
-            
-            
-            int32_t v17;
-            v17 = v2 * 3l;
-            
-            
-            int32_t v18;
-            v18 = v8 % 17l;
-            
-            
-            int32_t v19;
-            v19 = v17 + v18;
-            
-            
-            return loop3(v15, v16, v19);
         }
     }
 }
@@ -802,8 +822,8 @@ int32_t main(){
     
     
     int32_t v3; int32_t v4;
-    Tuple0 tmp0 = loop0(v0, v1, v2);
-    v3 = tmp0.v0; v4 = tmp0.v1;
+    Tuple0 tmp3 = loop0(v0, v1, v2);
+    v3 = tmp3.v0; v4 = tmp3.v1;
     
     
     int32_t v5;
@@ -819,8 +839,8 @@ int32_t main(){
     
     
     int32_t v8; int32_t v9;
-    Tuple0 tmp1 = loop3(v5, v6, v7);
-    v8 = tmp1.v0; v9 = tmp1.v1;
+    Tuple0 tmp7 = loop3(v5, v6, v7);
+    v8 = tmp7.v0; v9 = tmp7.v1;
     
     
     int32_t v10;
@@ -836,8 +856,8 @@ int32_t main(){
     
     
     int32_t v13; int32_t v14;
-    Tuple0 tmp2 = loop0(v10, v11, v12);
-    v13 = tmp2.v0; v14 = tmp2.v1;
+    Tuple0 tmp8 = loop0(v10, v11, v12);
+    v13 = tmp8.v0; v14 = tmp8.v1;
     
     
     bool v15;

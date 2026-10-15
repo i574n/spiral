@@ -17,12 +17,18 @@
         'samples/contract_illegal_transition'
     )
 
+    Fast = @{
+        BudgetSeconds = 600
+        MatureRuns = 5
+        MaxTimeoutShare = 0.2
+        RecentCostRuns = 7
+    }
+
     Known = @(
         @{ Id = 'samples/ts_int_wrap'; Backend = 'Lua'; Reason = 'Lua 5.1 (the WoW target) has only double numbers: 8/16/32-bit wraparound is exact, 64-bit integers are not (fails at the first u64 check)' }
         @{ Id = 'samples/mega_brzozowski_derivatives/runtime_bench'; Backend = 'Lua'; Reason = 'runtime_workload.spi lcg_next multiplies a u64 seed by 1103515245 (products up to 2^61), past the 2^53 exact range of Lua 5.1 doubles (WoW target)' }
         @{ Id = 'samples/mega_brzozowski_derivatives/indexed_dfa_state_cardinality'; Backend = 'Lua'; Reason = 'its random inputs come from a u64 generator, and 64-bit multiplication is inexact on Lua 5.1 doubles (WoW target), so the accepted count differs from C' }
         @{ Id = 'samples/ts_int_wrap'; Backend = 'Python'; Reason = 'upstream CodegenPython: Python ints are unbounded, so fixed-width wrapping differs from C (exits 1 at the first wrap check)' }
-        @{ Id = 'samples/ts_string_slice'; Backend = 'Python'; Reason = 'upstream CodegenPython: strings index by code point, C/Rust/TypeScript by UTF-8 byte' }
         @{ Id = 'samples/native_cube_flush_delay_direct'; Backend = 'C'; Reason = 'POSIX-only residual (poll.h); native C runs only on Linux' }
         @{ Id = 'samples/native_cube_monotonic_delay_direct'; Backend = 'C'; Reason = 'POSIX-only residual (poll.h/clock_gettime); native C runs only on Linux' }
         @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'Rust'; Reason = 'C residual has no bounds check (exits 0); Rust panics as the fixture intends' }
@@ -42,6 +48,7 @@
     )
 
     Timeouts = @{
+        'samples/runaway_inline_match_recursion' = 120
         'samples/mega_brzozowski_derivatives/runtime_bench' = 180
         'samples/mega_brzozowski_derivatives/proof_suite' = 180
         'samples/mega_brzozowski_derivatives/bench_derivative' = 180
@@ -67,6 +74,7 @@
 
     CFlags = @(
         @{ Pattern = 'native_float_*'; Flags = '-lm' }
+        @{ Pattern = 'abi_external_buffer_length_negative'; Flags = '-include {shims}/abi-external-mutable-buffer-c-shim.h' }
         @{ Pattern = 'abi_external_callback'; Flags = '-include {shims}/abi-external-callback-c-shim.h' }
         @{ Pattern = 'abi_external_struct_argument'; Flags = '-include {shims}/abi-external-struct-argument-c-shim.h -lm' }
         @{ Pattern = 'abi_external_struct_return_i64'; Flags = '-include {shims}/abi-external-struct-return-i64-c-shim.h' }
@@ -185,6 +193,44 @@
         'samples/tuple_mixed'
         'samples/tuple_pair'
         'samples/unsigned_mod'
+    )
+
+    ExpectedErrors = @(
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_alphabet_mix'; Contains = 'Got: (tri_alphabet : *) Expected: (bit_alphabet : *)' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_antimirov_support_assignment_count'; Contains = 'Unification failure. Got: antimirov_support_slot_assignment' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_exact_rows_not_soundness_witness'; Contains = 'Unification failure. Got: indexed_dfa_exact_transition_rows bit_alphabet' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_finite_index_out_of_range'; Contains = 'Got: finite_symbol_index finite_length_zero Expected: finite_symbol_index (finite_length_succ _)' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_hkt_batch_predicate_specific'; Contains = 'Got: forall alphabet. matcher_program alphabet -> bool Expected: matcher_program bit_alphabet -> bool' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_hkt_requires_capability_capture'; Contains = 'Got: forall alphabet. matcher_case alphabet' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_indexed_descriptor_local_cardinality'; Contains = 'Got: finite_symbol_vector bit_alphabet _ Expected: finite_symbol_vector bit_alphabet (finite_length_succ' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_indexed_dfa_quotient_coverage_count'; Contains = 'Unification failure. Got: indexed_dfa_quotient_coverage' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_indexed_dfa_representative_origin_count'; Contains = 'Unification failure. Got: indexed_dfa_representative_origins' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_indexed_row_length'; Contains = 'Got: indexed_dfa_transition_vector bit_alphabet (finite_length_succ finite_length_zero)' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_missing_alphabet_symbols'; Contains = 'lone_alphabet does not have the prototype finite_alphabet' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_missing_compare'; Contains = 'orphan_alphabet does not have the prototype symbol_compare' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_missing_finite_inventory_witness'; Contains = 'lone_alphabet does not have the prototype finite_alphabet' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_missing_rank_lookup'; Contains = 'paired_alphabet does not have the prototype finite_alphabet' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_phase_use'; Contains = 'Got: bit_matcher_state matcher_decided Expected: bit_matcher_state matcher_raw' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_raw_generic_state_seal'; Contains = 'Got: matcher_state bit_alphabet matcher_decided Expected: matcher_state bit_alphabet matcher_raw' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_raw_indexed_not_structural_support_bound'; Contains = 'Unification failure. Got: antimirov_support_vector bit_alphabet' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_raw_inventory_bypass'; Contains = 'Got: certified_alphabet_inventory bit_alphabet Expected: symbol_list bit_alphabet' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_raw_quotient_not_semantic_witness'; Contains = 'Unification failure. Got: indexed_dfa_quotient_coverage' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_raw_regex_not_positioned_bound'; Contains = 'Got: regex bit_alphabet Expected: antimirov_positioned_regex _ bit_alphabet' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_raw_representatives_not_minimality_witness'; Contains = 'Unification failure. Got: indexed_dfa_state_vector bit_alphabet' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_truncated_canonical_vector'; Contains = 'Unification failure. Got: finite_symbol_vector bit_alphabet (finite_length_succ finite_length_zero)' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_derivative_skip_normalization'; Contains = 'derivative_normalized Expected: derivative_pipeline' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_seal_unverified_derivative'; Contains = 'derivative_verified Expected: derivative_pipeline' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_derivative_runtime_phase_use'; Contains = 'derivative_runtime_checked Expected: derivative_runtime_state' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_inventory_length_mix'; Contains = 'finite_symbol_vector tri_alphabet' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_antimirov_slot_shape'; Contains = 'antimirov_origin_slot position_shape_' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/negative_derivative_program_missing_symbols'; Contains = 'law_only_alphabet does not have the prototype finite_alphabet' }
+        @{ Id = 'samples/missing_core_negative'; Contains = 'Unbound variable: +.' }
+        @{ Id = 'samples/multiline_comment_unterminated'; Contains = 'Unterminated multiline comment' }
+        @{ Id = 'samples/multiline_triple_string_unterminated'; Contains = 'Unterminated triple-quoted string' }
+        @{ Id = 'samples/native_fptr_capture_negative'; Contains = 'Function pointers shouldn''t have any runtime free variables' }
+        @{ Id = 'samples/native_layout_stack_mutable_string_negative'; Contains = 'support stack mutable layout types' }
+        @{ Id = 'samples/native_prototype_union_closure_method_missing_instance'; Contains = 'does not have the prototype score' }
+        @{ Id = 'samples/union_case_ambiguity_negative'; Contains = 'ETY-UnionCaseAmbiguous: The union case Hit is defined by more than one opened module' }
     )
 
     Backends = @{
@@ -399,6 +445,8 @@
             'samples/rust_static_closure_chain'
             'samples/rust_string_literal_path'
             'samples/rust_union_non_clone_payload'
+            'samples/c_deep_list_decref'
+            'samples/c_self_tail_loop_heap'
         )
         'Python' = @(
             'samples/python_foreign_array_index'
@@ -705,8 +753,84 @@
     )
     Bend = @(
         'samples/arithmetic_branch'
+        'samples/array_bool'
+        'samples/array_cell'
+        'samples/array_closure_union3_all_heap_union_heap_union_heap_pair_heaps'
+        'samples/array_create_reads_zero'
+        'samples/array_f32'
+        'samples/array_heap_closure_union3_all_heap_union_heap_union_heap_pair_heaps'
+        'samples/array_heap_f32'
+        'samples/array_heap_heap'
+        'samples/array_heap_heap_heap'
+        'samples/array_heap_heap_pair'
+        'samples/array_heap_mix'
+        'samples/array_heap_pair_heaps'
+        'samples/array_heap_triple_heaps'
+        'samples/array_heap_union_heap_pair_heaps'
+        'samples/array_heap_union_heap_union_heap_pair_heaps'
+        'samples/array_i32'
+        'samples/array_text'
+        'samples/array_text_at1'
+        'samples/array_u32'
+        'samples/array_union'
+        'samples/array_union_heap_heap'
+        'samples/array_union_heap_pair_heaps'
+        'samples/array_union_heap_union_heap_pair_heaps'
+        'samples/array_union_pair_heaps'
+        'samples/array_union_text'
+        'samples/array_union_triple_heaps'
+        'samples/array_union3_both_heap_union_heap_union_heap_pair_heaps'
+        'samples/array2_heap_union_heap_union_heap_pair_heaps'
+        'samples/array3_union3_all_heap_union_heap_union_heap_pair_heaps'
         'samples/backend_smoke'
         'samples/branch_select'
+        'samples/c_deep_list_decref'
+        'samples/c_gadt_union_array'
+        'samples/c_self_tail_loop_heap'
+        'samples/closure_apply'
+        'samples/closure_array'
+        'samples/closure_curry'
+        'samples/closure_depth'
+        'samples/closure_f32_heap'
+        'samples/closure_heap'
+        'samples/closure_heap_heap'
+        'samples/closure_heap_heap_heap'
+        'samples/closure_heap_pair_heaps'
+        'samples/closure_heap_union_heap_pair_heaps'
+        'samples/closure_heap_union_heap_union_heap_pair_heaps'
+        'samples/closure_heap_union3_both_heap_union_heap_union_heap_pair_heaps'
+        'samples/closure_mut'
+        'samples/closure_mut_pair'
+        'samples/closure_pair'
+        'samples/closure_pair_array'
+        'samples/closure_pair_bool'
+        'samples/closure_pair_cell'
+        'samples/closure_pair_f32'
+        'samples/closure_pair_fun'
+        'samples/closure_pair_heap'
+        'samples/closure_pair_heaps'
+        'samples/closure_pair_mix'
+        'samples/closure_pair_slot'
+        'samples/closure_pair_text'
+        'samples/closure_pair_union'
+        'samples/closure_pair_union_heap'
+        'samples/closure_return'
+        'samples/closure_return_heap'
+        'samples/closure_return_text'
+        'samples/closure_text'
+        'samples/closure_text_pair'
+        'samples/closure_triple'
+        'samples/closure_triple_heaps'
+        'samples/closure_u32_flag'
+        'samples/closure_union'
+        'samples/closure_union_heap_heap'
+        'samples/closure_union_heap_pair_heaps'
+        'samples/closure_union_heap_union_heap_pair_heaps'
+        'samples/closure_union_mix'
+        'samples/closure_union_pair_heaps'
+        'samples/closure_union_triple_heaps'
+        'samples/closure_union3_all_heap_union_heap_union_heap_pair_heaps'
+        'samples/closure_union3_both_heap_union_heap_union_heap_pair_heaps'
         'samples/dynamic_array_bool'
         'samples/dynamic_array_bounds_negative'
         'samples/dynamic_array_function_boundary'
@@ -721,6 +845,32 @@
         'samples/dynamic_array_union_nested'
         'samples/dynamic_array_union_nested_shared_alias'
         'samples/dynamic_array_union_shared_alias'
+        'samples/ebpf_arith'
+        'samples/ebpf_bacc'
+        'samples/ebpf_bits'
+        'samples/ebpf_bool'
+        'samples/ebpf_cast'
+        'samples/ebpf_char'
+        'samples/ebpf_conv'
+        'samples/ebpf_div'
+        'samples/ebpf_facc'
+        'samples/ebpf_fdiv'
+        'samples/ebpf_float'
+        'samples/ebpf_flt'
+        'samples/ebpf_ineq'
+        'samples/ebpf_neq'
+        'samples/ebpf_nest3'
+        'samples/ebpf_sh31'
+        'samples/ebpf_shift'
+        'samples/ebpf_snot'
+        'samples/ebpf_t2'
+        'samples/ebpf_t3'
+        'samples/ebpf_tacc'
+        'samples/ebpf_tworec'
+        'samples/ebpf_uacc'
+        'samples/ebpf_uadd'
+        'samples/ebpf_umul'
+        'samples/failwith_exit'
         'samples/fixed_array_runtime_index'
         'samples/fixed_array_runtime_update'
         'samples/fixed_array_scalar'
@@ -731,9 +881,47 @@
         'samples/frontier_static_list_eq'
         'samples/frontier_try_item'
         'samples/function_call'
+        'samples/gadt_lazy_payload'
+        'samples/gadt_match_loses_constraint'
         'samples/gleam_match_narrowed'
         'samples/gleam_match_single_case'
+        'samples/heap_array'
+        'samples/heap_array_f32'
+        'samples/heap_array_n'
+        'samples/heap_bool'
+        'samples/heap_bool_text'
+        'samples/heap_closure'
+        'samples/heap_closure_union3_all_heap_union_heap_union_heap_pair_heaps'
+        'samples/heap_f32_n'
+        'samples/heap_f32_text'
+        'samples/heap_f32_u32'
+        'samples/heap_fun'
+        'samples/heap_heap'
+        'samples/heap_heap_heap'
+        'samples/heap_heap_pair_heaps'
+        'samples/heap_mut_cell'
+        'samples/heap_nest'
+        'samples/heap_pair'
+        'samples/heap_pair_heaps'
+        'samples/heap_pair_mix'
+        'samples/heap_slot'
+        'samples/heap_text'
+        'samples/heap_text_eq'
+        'samples/heap_text_pair'
+        'samples/heap_texts'
+        'samples/heap_texts_flag'
+        'samples/heap_triple'
+        'samples/heap_triple_heaps'
+        'samples/heap_u32_flag'
+        'samples/heap_u32_text'
+        'samples/heap_union'
+        'samples/heap_union_heap_pair_heaps'
+        'samples/heap_union_heap_union_heap_pair_heaps'
+        'samples/heap_union_pair_heaps'
+        'samples/heap_union_triple_heaps'
+        'samples/heap_union3_both_heap_union_heap_union_heap_pair_heaps'
         'samples/item_metadata_missing_target'
+        'samples/lua_while_union_pair'
         'samples/managed_string_array'
         'samples/managed_string_builder'
         'samples/managed_string_codepoints'
@@ -749,8 +937,42 @@
         'samples/managed_string_slice'
         'samples/managed_string_union'
         'samples/managed_string_utf8_boundaries'
+        'samples/match_multiline_scrutinee'
+        'samples/method_array'
+        'samples/method_depth'
+        'samples/method_heap'
+        'samples/method_mut'
+        'samples/method_mut_pair'
+        'samples/method_pair_cell'
+        'samples/method_pair_fun'
+        'samples/method_pair_heap'
+        'samples/method_pair_mix'
+        'samples/method_pair_slot'
+        'samples/method_pair_text'
+        'samples/method_pair_union'
+        'samples/method_pair_union_heap'
+        'samples/method_return'
+        'samples/method_text'
+        'samples/method_text_pair'
+        'samples/method_union'
+        'samples/method_union_mix'
         'samples/multiline_comment'
         'samples/multiline_triple_string'
+        'samples/multiline_type_application_dropped'
+        'samples/mut_f32_text'
+        'samples/mut_heap_heap'
+        'samples/mut_heap_heap_heap'
+        'samples/mut_heap_heap_pair'
+        'samples/mut_heap_union_heap_pair_heaps'
+        'samples/mut_heap_union_heap_union_heap_pair_heaps'
+        'samples/mut_heap_union3_both_heap_union_heap_union_heap_pair_heaps'
+        'samples/mut_pair'
+        'samples/mut_pair_heaps'
+        'samples/mut_text'
+        'samples/mut_text_pair'
+        'samples/mut_triple_heaps'
+        'samples/mut_u32_text'
+        'samples/mutable_alias_method_branch'
         'samples/native_bitwise_scalar'
         'samples/native_closure_array_capture'
         'samples/native_closure_branch'
@@ -768,6 +990,8 @@
         'samples/native_closure_transport'
         'samples/native_closure_union_capture_method'
         'samples/native_cube_direct'
+        'samples/native_layout_heap'
+        'samples/native_layout_mutable'
         'samples/native_literal_join_args'
         'samples/native_managed_array_tail_recursion'
         'samples/native_managed_scc_tail_recursion'
@@ -793,12 +1017,17 @@
         'samples/native_recursive_tail_recursion'
         'samples/native_tail_recursion'
         'samples/nested_tuple'
+        'samples/nominal_phantom_parameter'
+        'samples/nominal_record_field_order'
         'samples/nominal_union_case_pattern'
         'samples/op_args_application'
+        'samples/op_args_deref_if'
         'samples/portable_composite'
         'samples/predicate_call'
         'samples/python_self_tail_call_depth'
+        'samples/qualified_union_case_pattern'
         'samples/record_value'
+        'samples/recur_sum'
         'samples/recursive_union_list'
         'samples/recursive_union_managed'
         'samples/recursive_union_mutual'
@@ -808,6 +1037,9 @@
         'samples/rust_global_item_macro'
         'samples/rust_target_globals'
         'samples/static_string'
+        'samples/string_eq'
+        'samples/string_ord'
+        'samples/string_utf8'
         'samples/tagged_union_enum'
         'samples/tagged_union_heterogeneous'
         'samples/tagged_union_scalar'
@@ -817,6 +1049,8 @@
         'samples/ts_array_union'
         'samples/ts_closure_capture'
         'samples/ts_closure_return'
+        'samples/ts_layout_heap'
+        'samples/ts_layout_mutable'
         'samples/ts_string_concat'
         'samples/ts_string_slice'
         'samples/ts_tail_loop'
@@ -825,7 +1059,43 @@
         'samples/ts_union_scalar'
         'samples/tuple_mixed'
         'samples/tuple_pair'
+        'samples/union_array'
+        'samples/union_array_mix'
+        'samples/union_bool'
+        'samples/union_call'
+        'samples/union_case_record_field_order'
+        'samples/union_cell_mix'
+        'samples/union_f32_text'
+        'samples/union_fun_mix'
+        'samples/union_heap'
+        'samples/union_heap_heap'
+        'samples/union_heap_heap_heap'
+        'samples/union_heap_pair_heaps'
+        'samples/union_heap_union_heap_pair_heaps'
+        'samples/union_mut'
+        'samples/union_nested'
+        'samples/union_option'
+        'samples/union_pair'
+        'samples/union_pair_heaps'
+        'samples/union_pair_mix'
+        'samples/union_text'
+        'samples/union_text_pair'
+        'samples/union_texts'
+        'samples/union_texts_flag'
+        'samples/union_triple_heaps'
+        'samples/union_triple_mix'
+        'samples/union_u32_flag'
+        'samples/union_u32_text'
+        'samples/union3_all_heap_union_heap_union_heap_pair_heaps'
+        'samples/union3_both_heap_union_heap_union_heap_pair_heaps'
+        'samples/union3_heap_union_heap_union_heap_pair_heaps'
         'samples/unsigned_mod'
+        'samples/upstream_type_if'
+        'samples/wgsl_array_scalar'
+        'samples/wgsl_array_tuple'
+        'samples/wgsl_gadt_payload_union'
+        'samples/wgsl_record_loop'
+        'samples/wgsl_unit_self_loop'
     )
     Lean = @(
         'samples/gleam_match_narrowed'
@@ -1139,6 +1409,36 @@
         'samples/tuple_mixed'
         'samples/nested_tuple'
         'samples/ts_tuple_mixed'
+        'samples/wgsl_nullary_union'
+        'samples/wgsl_payload_union'
+        'samples/wgsl_gadt_payload_union'
+        'samples/wgsl_record_loop'
+        'samples/gleam_match_single_case'
+        'samples/gleam_match_narrowed'
+        'samples/wgsl_array_scalar'
+        'samples/fixed_array_scalar'
+        'samples/fixed_array_runtime_index'
+        'samples/fixed_array_runtime_update'
+        'samples/array_union'
+        'samples/wgsl_array_tuple'
+        'samples/wgsl_unit_self_loop'
+        'samples/array_i32'
+        'samples/array_u32'
+        'samples/ts_union_scalar'
+        'samples/union_option'
+        'samples/union_bool'
+        'samples/union_nested'
+        'samples/union_pair'
+        'samples/method_union'
+        'samples/union_array'
+        'samples/method_array'
+        'samples/array_bool'
+        'samples/method_pair_union'
+        'samples/method_pair_slot'
+        'samples/union_array_mix'
+        'samples/array_f32'
+        'samples/wgsl_tail_call_in_match'
+        'samples/wgsl_parallel_lanes'
     )
     Calyx = @(
         'samples/backend_smoke'
@@ -1150,6 +1450,20 @@
         'samples/tail_loop'
         'samples/python_self_tail_call_depth'
         'samples/unsigned_mod'
+        'samples/ts_tail_loop'
+        'samples/ebpf_shift'
+        'samples/ebpf_bool'
+        'samples/ebpf_bits'
+        'samples/ebpf_umul'
+        'samples/ebpf_uacc'
+        'samples/ebpf_bacc'
+        'samples/ebpf_char'
+        'samples/ebpf_sh31'
+        'samples/ebpf_uadd'
+        'samples/ebpf_tworec'
+        'samples/ebpf_snot'
+        'samples/ebpf_arith'
+        'samples/ebpf_div'
     )
     Kotlin = @(
         'samples/backend_smoke'
@@ -1673,6 +1987,11 @@
         'samples/ebpf_tacc'
         'samples/ebpf_t2'
         'samples/ebpf_t3'
+        'samples/tuple_mixed'
+        'samples/nested_tuple'
+        'samples/ts_tuple_mixed'
+        'samples/recur_sum'
+        'samples/i64_scalar'
     )
     Ebpf = @(
         'samples/backend_smoke'
@@ -1726,6 +2045,7 @@
         'samples/ebpf_tworec'
         'samples/ebpf_t3'
         'samples/ebpf_snot'
+        'samples/i64_scalar'
     )
     Zig = @(
         'samples/gleam_match_narrowed'

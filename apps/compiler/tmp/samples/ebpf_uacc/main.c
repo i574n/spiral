@@ -4,28 +4,36 @@
 #include <stdlib.h>
 #include <string.h>
 uint32_t method1(int32_t v0, uint32_t v1){
-    
-    
-    int32_t v2;
-    v2 = v0 - 1l;
-    
-    
-    uint32_t v3;
-    v3 = v1 + 3000000000ul;
-    
-    
-    bool v4;
-    v4 = v2 == 0l;
-    
-    
-    if (v4){
+    while (1) {
         
         
-        return v3;
-    } else {
+        int32_t v2;
+        v2 = v0 - 1l;
         
         
-        return method1(v2, v3);
+        uint32_t v3;
+        v3 = v1 + 3000000000ul;
+        
+        
+        bool v4;
+        v4 = v2 == 0l;
+        
+        
+        if (v4){
+            
+            
+            return v3;
+        } else {
+            
+            
+            {
+                int32_t tmp0 = v2;
+                uint32_t tmp1 = v3;
+                v0 = tmp0;
+                v1 = tmp1;
+            }
+            continue;
+        }
     }
 }
 uint32_t method0(int32_t v0, uint32_t v1){

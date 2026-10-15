@@ -15,8 +15,8 @@ function Get-SpiralCacheDir {
 function ConvertTo-SpiralMode([string]$Mode) {
     switch -Regex ($Mode) {
         '^(sf|single|single-flight)$' { 'single-flight' }
-        '^(hp|hopac)$' { 'hopac' }
-        default { throw "unknown mode '$Mode' (use single-flight or hopac)" }
+        '^(gp|gpt5parallel)$' { 'gpt5parallel' }
+        default { throw "unknown mode '$Mode' (use single-flight or gpt5parallel)" }
     }
 }
 
@@ -26,7 +26,7 @@ function Get-SpiralCoreSource([string]$Mode) {
 }
 
 function Get-SpiralCoreProjection([string]$Mode, [string]$Destination) {
-    $hopac = (ConvertTo-SpiralMode $Mode) -eq 'hopac'
+    $gpt5parallel = (ConvertTo-SpiralMode $Mode) -eq 'gpt5parallel'
     $text = [IO.File]::ReadAllText((Get-SpiralCoreSource $Mode))
     $out = [Text.StringBuilder]::new($text.Length)
     $depth = 0
@@ -34,17 +34,17 @@ function Get-SpiralCoreProjection([string]$Mode, [string]$Destination) {
     foreach ($line in [regex]::Split($text, '(?<=\n)')) {
         if ($line.Length -eq 0) { continue }
         $bare = $line.TrimEnd("`r", "`n")
-        if ($bare -ceq '#if SPIRAL_CORE_HOPAC') { $depth++; $ours.Add(@($depth, $true)); continue }
+        if ($bare -ceq '#if SPIRAL_CORE_GPT5PARALLEL') { $depth++; $ours.Add(@($depth, $true)); continue }
         if ($ours.Count -and $depth -eq $ours[$ours.Count - 1][0] -and ($bare -ceq '#else' -or $bare -ceq '#endif')) {
             if ($bare -ceq '#else') { $ours[$ours.Count - 1] = @($depth, $false) } else { $ours.RemoveAt($ours.Count - 1); $depth-- }
             continue
         }
         if ($line -match '^\s*#if\b') { $depth++ } elseif ($line -match '^\s*#endif\b') { $depth-- }
         $keep = $true
-        foreach ($block in $ours) { if ($block[1] -ne $hopac) { $keep = $false; break } }
+        foreach ($block in $ours) { if ($block[1] -ne $gpt5parallel) { $keep = $false; break } }
         if ($keep) { [void]$out.Append($line) }
     }
-    if ($ours.Count) { throw 'unterminated #if SPIRAL_CORE_HOPAC block in the core' }
+    if ($ours.Count) { throw 'unterminated #if SPIRAL_CORE_GPT5PARALLEL block in the core' }
     New-Item -ItemType Directory -Force (Split-Path $Destination) | Out-Null
     [IO.File]::WriteAllText($Destination, $out.ToString())
     $Destination

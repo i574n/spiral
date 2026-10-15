@@ -873,7 +873,12 @@ inl process_gleam { gleam_path target deps } =
         |> optionm'.default_value' ""
         |> file_system.standardize_path
 
-    inl package_dir = src_dir </> ".." |> file_system.standardize_path
+    inl owned = package_owns_code src_dir
+
+    inl package_dir =
+        if owned
+        then src_dir </> ".." |> file_system.standardize_path
+        else src_dir </> "gleam_package" |> file_system.standardize_path
 
     fun () =>
         inl ci = "CI" |> env.get_environment_variable
@@ -926,6 +931,10 @@ inl process_gleam { gleam_path target deps } =
 
     manifest |> file_system.write_all_text_exists manifest_path
 
+    if owned |> not then
+        inl module_file = if new_code_path |> sm'.contains "_real" then "main_real.gleam" else "main.gleam"
+        new_code |> file_system.write_all_text_exists (package_dir </> "src" </> module_file)
+
     inl exit_code, run_result =
         0i32, ""
 
@@ -945,6 +954,15 @@ inl process_gleam { gleam_path target deps } =
                 "GLEAM_LOG", ""
                 "GLEAM_LOG_NOCOLOUR", ""
             ]
+        if target = Erlang then
+            runtime.execution_options fun x => { x with
+                command = "gleam build --no-print-progress"
+                environment_variables
+                working_directory = package_dir |> optionm'.some'
+                stderr = false
+            }
+            |> runtime.execute_with_options
+            |> ignore
         inl exit_code, run_result =
             runtime.execution_options fun x => { x with
                 command
@@ -966,7 +984,7 @@ inl process_gleam { gleam_path target deps } =
             trace Critical
                 fun () => "spiral.process_gleam / error"
                 fun () => { exit_code run_result new_code_path external_command }
-            { extension = Some extension; code = None; code_path = None; output = None }
+            failwith ("spiral.process_gleam / gleam run failed\n" ++# run_result)
         else
             inl run_result =
                 if target = Erlang
@@ -1146,6 +1164,12 @@ inl lua_values_debug (values : lua_multi_value) : am'.vec string =
             inl values : am'.vec (rust.ref lua_value) = !\\(values, $'$"$0.iter().collect()"')
             values |> am'.vec_map (rust.deref >> sm'.format_debug)
 
+inl lua_values_text (values : lua_multi_value) : am'.vec string =
+    run_target_args (fun () => values) function
+        | Rust => fun values =>
+            $'!values.iter().map(|x| Rc::<str>::from(x.to_string().unwrap_or_else(|_| format\!("{:?}", x)))).collect::<Vec<_>>()' : am'.vec string
+        | _ => fun values => lua_values_debug values
+
 inl process_lua { lua_path } =
     inl extension = "lua"
 
@@ -1175,11 +1199,11 @@ inl process_lua { lua_path } =
     inl custom_print (args : lua_multi_value) : _ _ lua_error =
         inl args =
             args
-            |> lua_values_debug
+            |> lua_values_text
             |> am'.from_vec_base
             |> am'.to_list_base'
             |> listm'.unbox
-            |> sm'.concat_list ", "
+            |> sm'.concat_list "\t"
         stdio <- args :: *stdio
         Ok () |> resultm.box
 
@@ -1195,7 +1219,7 @@ inl process_lua { lua_path } =
         inl new_code = new_code |> sm'.to_std_string
         !\\((lua, new_code), $'$"$0.load($1).eval::<mlua::MultiValue>().unwrap()"')
     inl output =
-        output |> lua_values_debug |> am'.from_vec |> sm'.concat_array "\n"
+        output |> lua_values_text |> am'.from_vec |> sm'.concat_array "\n"
 
     inl stdio =
         *stdio_clone

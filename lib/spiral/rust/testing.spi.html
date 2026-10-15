@@ -7826,7 +7826,7 @@ a.anchor-link {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [1]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span> <span class="n">static</span>
@@ -7872,11 +7872,13 @@ a.anchor-link {
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">run_tests</span><span class="s1">' tests =</span>
     <span class="n">inl</span> <span class="n">fields</span> <span class="o">=</span> <span class="n">reflection</span><span class="o">.</span><span class="n">get_record_fields</span> <span class="n">tests</span>
-    <span class="k">global</span> <span class="s2">"thread_local! { static SPIRAL_TEST: std::cell::RefCell&lt;Option&lt;&amp;'static str&gt;&gt; = const { std::cell::RefCell::new(None) }; }"</span>
+    <span class="k">if</span> <span class="n">is_rust</span> <span class="p">()</span> <span class="n">then</span>
+        <span class="k">global</span> <span class="s2">"thread_local! { static SPIRAL_TEST: std::cell::RefCell&lt;Option&lt;&amp;'static str&gt;&gt; = const { std::cell::RefCell::new(None) }; }"</span>
     <span class="n">fields</span>
     <span class="o">|&gt;</span> <span class="n">listm</span><span class="o">.</span><span class="n">iter</span> <span class="n">fun</span> <span class="n">name</span><span class="p">,</span> <span class="p">(</span><span class="n">fn</span> <span class="p">:</span> <span class="n">string</span> <span class="o">-&gt;</span> <span class="p">())</span> <span class="o">=&gt;</span>
         <span class="n">inl</span> <span class="p">(</span><span class="o">++</span><span class="p">)</span> <span class="p">(</span><span class="n">a</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="p">(</span><span class="n">b</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="p">:</span> <span class="n">string</span> <span class="o">=</span> <span class="err">!!!!</span><span class="n">StaticStringConcat</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
-        <span class="k">global</span> <span class="p">(</span><span class="s2">"#[test] fn "</span> <span class="o">++</span> <span class="n">name</span> <span class="o">++</span> <span class="s2">"() { std::thread::Builder::new().stack_size(1 &lt;&lt; 30).spawn(|| { SPIRAL_TEST.with(|t| *t.borrow_mut() = Some(</span><span class="se">\"</span><span class="s2">"</span> <span class="o">++</span> <span class="n">name</span> <span class="o">++</span> <span class="s2">"</span><span class="se">\"</span><span class="s2">)); spiral_main() }).unwrap().join().unwrap(); }"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">is_rust</span> <span class="p">()</span> <span class="n">then</span>
+            <span class="k">global</span> <span class="p">(</span><span class="s2">"#[test] fn "</span> <span class="o">++</span> <span class="n">name</span> <span class="o">++</span> <span class="s2">"() { std::thread::Builder::new().stack_size(1 &lt;&lt; 30).spawn(|| { SPIRAL_TEST.with(|t| *t.borrow_mut() = Some(</span><span class="se">\"</span><span class="s2">"</span> <span class="o">++</span> <span class="n">name</span> <span class="o">++</span> <span class="s2">"</span><span class="se">\"</span><span class="s2">)); spiral_main() }).unwrap().join().unwrap(); }"</span><span class="p">)</span>
         <span class="k">if</span> <span class="err">$</span><span class="s1">'SPIRAL_TEST.with(|t| t.borrow().map_or(false, |s| s == (&amp;*!name)))'</span> <span class="n">then</span>
             <span class="n">fn</span> <span class="n">name</span>
 </pre></div>
@@ -7889,7 +7891,7 @@ a.anchor-link {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [2]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span> <span class="n">static</span>
@@ -7921,7 +7923,7 @@ a.anchor-link {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [3]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [1]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -7944,54 +7946,54 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>17:16:20 1<span class="ansi-blue-intense-fg">d</span> runtime.execute_with_options / { file_name = cargo; arguments = ["+nightly-2025-11-01", "test", "--timings", "--", "--show-output"] }
-17:16:20 2<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-yellow-intense-fg ansi-bold">warning</span>: /home/runner/work/spiral/spiral/target/spiral/spiral/packages/Rust/bd1af5686f4b740881777870bd591c10bcb0f7d66964a920bba0239149cae11d/Cargo.toml: the cargo feature `edition2024` has been stabilized in the 1.85 release and is no longer necessary to be listed in the manifest
-17:16:20 3<span class="ansi-black-intense-fg">v</span> !   See https://doc.rust-lang.org/nightly/cargo/reference/manifest.html#the-edition-field for more information about using this feature.
-17:16:20 4<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> rustversion v1.0.23
-17:16:20 5<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> multiversion_no_op v1.0.0
-17:16:20 6<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> cfg-if v1.0.5
-17:16:20 7<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> core_detect v1.0.0
-17:16:20 8<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> simdutf8 v0.1.5
-17:16:20 9<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> scopeguard v1.2.0
-17:16:20 10<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> inline_colorization v0.1.6
-17:16:20 11<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> encoding_rs v0.8.42
-17:16:20 12<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> encoding_rs_io v0.1.8
-17:16:20 13<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> spiral_bd1af5686f4b740881777870bd591c10bcb0f7d66964a920bba0239149cae11d v0.0.1 (/home/runner/work/spiral/spiral/target/spiral/spiral/packages/Rust/bd1af5686f4b740881777870bd591c10bcb0f7d66964a920bba0239149cae11d)
-17:16:22 14<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">      Timing</span> report saved to /home/runner/work/spiral/spiral/target/spiral/spiral/target/cargo-timings/cargo-timing-20261012T171620.45361706Z.html
-17:16:22 15<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">    Finished</span> `test` profile [unoptimized + debuginfo] target(s) in 2.10s
-17:16:22 16<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">     Running</span> unittests spiral.rs (/home/runner/work/spiral/spiral/target/spiral/spiral/target/debug/deps/spiral_bd1af5686f4b740881777870bd591c10bcb0f7d66964a920bba0239149cae11d-49cb852276530cbe)
-17:16:22 17<span class="ansi-black-intense-fg">v</span> &gt;
-17:16:22 18<span class="ansi-black-intense-fg">v</span> &gt; running 1 test
-17:16:22 19<span class="ansi-black-intense-fg">v</span> &gt; test a ... ok
-17:16:22 20<span class="ansi-black-intense-fg">v</span> &gt;
-17:16:22 21<span class="ansi-black-intense-fg">v</span> &gt; successes:
-17:16:22 22<span class="ansi-black-intense-fg">v</span> &gt;
-17:16:22 23<span class="ansi-black-intense-fg">v</span> &gt; ---- a stdout ----
-17:16:22 24<span class="ansi-black-intense-fg">v</span> &gt; __assert_eq { expected = a }
-17:16:22 25<span class="ansi-black-intense-fg">v</span> &gt;
-17:16:22 26<span class="ansi-black-intense-fg">v</span> &gt;
-17:16:22 27<span class="ansi-black-intense-fg">v</span> &gt; successes:
-17:16:22 28<span class="ansi-black-intense-fg">v</span> &gt;     a
-17:16:22 29<span class="ansi-black-intense-fg">v</span> &gt;
-17:16:22 30<span class="ansi-black-intense-fg">v</span> &gt; test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
-17:16:22 31<span class="ansi-black-intense-fg">v</span> &gt;
-17:16:22 32<span class="ansi-black-intense-fg">v</span> runtime.execute_with_options / result / { file_name = cargo; exit_code = 0; std_trace_len = 1892 }
+<pre>11:36:45 1<span class="ansi-blue-intense-fg">d</span> runtime.execute_with_options / { file_name = cargo; arguments = ["+nightly-2025-11-01", "test", "--timings", "--", "--show-output"] }
+11:36:45 2<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-yellow-intense-fg ansi-bold">warning</span>: /home/runner/work/spiral/spiral/target/spiral/spiral/packages/Rust/2ba6b73d5878a36d5e72d423403d38d0e9677eb8bff136eb14805384d0e3c957/Cargo.toml: the cargo feature `edition2024` has been stabilized in the 1.85 release and is no longer necessary to be listed in the manifest
+11:36:45 3<span class="ansi-black-intense-fg">v</span> !   See https://doc.rust-lang.org/nightly/cargo/reference/manifest.html#the-edition-field for more information about using this feature.
+11:36:45 4<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> rustversion v1.0.23
+11:36:45 5<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> cfg-if v1.0.5
+11:36:45 6<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> multiversion_no_op v1.0.0
+11:36:45 7<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> scopeguard v1.2.0
+11:36:45 8<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> simdutf8 v0.1.5
+11:36:45 9<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> core_detect v1.0.0
+11:36:45 10<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> inline_colorization v0.1.6
+11:36:46 11<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> encoding_rs v0.8.42
+11:36:46 12<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> encoding_rs_io v0.1.8
+11:36:46 13<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> spiral_2ba6b73d5878a36d5e72d423403d38d0e9677eb8bff136eb14805384d0e3c957 v0.0.1 (/home/runner/work/spiral/spiral/target/spiral/spiral/packages/Rust/2ba6b73d5878a36d5e72d423403d38d0e9677eb8bff136eb14805384d0e3c957)
+11:36:49 14<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">      Timing</span> report saved to /home/runner/work/spiral/spiral/target/spiral/spiral/target/cargo-timings/cargo-timing-20261015T113645.785377292Z.html
+11:36:49 15<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">    Finished</span> `test` profile [unoptimized + debuginfo] target(s) in 4.22s
+11:36:49 16<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">     Running</span> unittests spiral.rs (/home/runner/work/spiral/spiral/target/spiral/spiral/target/debug/deps/spiral_2ba6b73d5878a36d5e72d423403d38d0e9677eb8bff136eb14805384d0e3c957-541d05890d239b3b)
+11:36:49 17<span class="ansi-black-intense-fg">v</span> &gt;
+11:36:49 18<span class="ansi-black-intense-fg">v</span> &gt; running 1 test
+11:36:49 19<span class="ansi-black-intense-fg">v</span> &gt; test a ... ok
+11:36:49 20<span class="ansi-black-intense-fg">v</span> &gt;
+11:36:49 21<span class="ansi-black-intense-fg">v</span> &gt; successes:
+11:36:49 22<span class="ansi-black-intense-fg">v</span> &gt;
+11:36:49 23<span class="ansi-black-intense-fg">v</span> &gt; ---- a stdout ----
+11:36:49 24<span class="ansi-black-intense-fg">v</span> &gt; __assert_eq { expected = a }
+11:36:49 25<span class="ansi-black-intense-fg">v</span> &gt;
+11:36:49 26<span class="ansi-black-intense-fg">v</span> &gt;
+11:36:49 27<span class="ansi-black-intense-fg">v</span> &gt; successes:
+11:36:49 28<span class="ansi-black-intense-fg">v</span> &gt;     a
+11:36:49 29<span class="ansi-black-intense-fg">v</span> &gt;
+11:36:49 30<span class="ansi-black-intense-fg">v</span> &gt; test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+11:36:49 31<span class="ansi-black-intense-fg">v</span> &gt;
+11:36:49 32<span class="ansi-black-intense-fg">v</span> runtime.execute_with_options / result / { file_name = cargo; exit_code = 0; std_trace_len = 1893 }
 __assert_eq { expected = 0 }
-__assert { expected = <span class="ansi-default-inverse-fg ansi-yellow-intense-bg ansi-bold ansi-underline">warning</span>: /home/runner/work/spiral/spiral/target/spiral/spiral/packages/Rust/bd1af5686f4b740881777870bd591c10bcb0f7d66964a920bba0239149cae11d/Cargo.toml: the cargo feature `edition2024` has been stabilized in the 1.85 release and is no longer necessary to be listed in the manifest
+__assert { expected = <span class="ansi-default-inverse-fg ansi-yellow-intense-bg ansi-bold ansi-underline">warning</span>: /home/runner/work/spiral/spiral/target/spiral/spiral/packages/Rust/2ba6b73d5878a36d5e72d423403d38d0e9677eb8bff136eb14805384d0e3c957/Cargo.toml: the cargo feature `edition2024` has been stabilized in the 1.85 release and is no longer necessary to be listed in the manifest
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  See https://doc.rust-lang.org/nightly/cargo/reference/manifest.html#the-edition-field for more information about using this feature.</span>
 <span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> rustversion v1.0.23
-<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> multiversion_no_op v1.0.0
 <span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> cfg-if v1.0.5
-<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> core_detect v1.0.0
-<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> simdutf8 v0.1.5
+<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> multiversion_no_op v1.0.0
 <span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> scopeguard v1.2.0
+<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> simdutf8 v0.1.5
+<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> core_detect v1.0.0
 <span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> inline_colorization v0.1.6
 <span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> encoding_rs v0.8.42
 <span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> encoding_rs_io v0.1.8
-<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> spiral_bd1af5686f4b740881777870bd591c10bcb0f7d66964a920bba0239149cae11d v0.0.1 (/home/runner/work/spiral/spiral/target/spiral/spiral/packages/Rust/bd1af5686f4b740881777870bd591c10bcb0f7d66964a920bba0239149cae11d)
-<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">      Timing</span> report saved to /home/runner/work/spiral/spiral/target/spiral/spiral/target/cargo-timings/cargo-timing-20261012T171620.45361706Z.html
-<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">    Finished</span> `test` profile [unoptimized + debuginfo] target(s) in 2.10s
-<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">     Running</span> unittests spiral.rs (/home/runner/work/spiral/spiral/target/spiral/spiral/target/debug/deps/spiral_bd1af5686f4b740881777870bd591c10bcb0f7d66964a920bba0239149cae11d-49cb852276530cbe)
+<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> spiral_2ba6b73d5878a36d5e72d423403d38d0e9677eb8bff136eb14805384d0e3c957 v0.0.1 (/home/runner/work/spiral/spiral/target/spiral/spiral/packages/Rust/2ba6b73d5878a36d5e72d423403d38d0e9677eb8bff136eb14805384d0e3c957)
+<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">      Timing</span> report saved to /home/runner/work/spiral/spiral/target/spiral/spiral/target/cargo-timings/cargo-timing-20261015T113645.785377292Z.html
+<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">    Finished</span> `test` profile [unoptimized + debuginfo] target(s) in 4.22s
+<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">     Running</span> unittests spiral.rs (/home/runner/work/spiral/spiral/target/spiral/spiral/target/debug/deps/spiral_2ba6b73d5878a36d5e72d423403d38d0e9677eb8bff136eb14805384d0e3c957-541d05890d239b3b)
 
 running 1 test
 test a ... ok
@@ -8047,7 +8049,7 @@ test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [4]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [2]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -8070,54 +8072,54 @@ test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>17:16:09 1<span class="ansi-blue-intense-fg">d</span> runtime.execute_with_options / { file_name = cargo; arguments = ["+nightly-2025-11-01", "test", "--timings", "--", "--show-output"] }
-17:16:09 2<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-yellow-intense-fg ansi-bold">warning</span>: /home/runner/work/spiral/spiral/target/spiral/spiral/packages/Rust/bd1af5686f4b740881777870bd591c10bcb0f7d66964a920bba0239149cae11d/Cargo.toml: the cargo feature `edition2024` has been stabilized in the 1.85 release and is no longer necessary to be listed in the manifest
-17:16:09 3<span class="ansi-black-intense-fg">v</span> !   See https://doc.rust-lang.org/nightly/cargo/reference/manifest.html#the-edition-field for more information about using this feature.
-17:16:09 4<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> rustversion v1.0.23
-17:16:09 5<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> core_detect v1.0.0
-17:16:09 6<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> scopeguard v1.2.0
-17:16:09 7<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> simdutf8 v0.1.5
-17:16:09 8<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> multiversion_no_op v1.0.0
-17:16:09 9<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> cfg-if v1.0.5
-17:16:09 10<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> inline_colorization v0.1.6
-17:16:09 11<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> encoding_rs v0.8.42
-17:16:10 12<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> encoding_rs_io v0.1.8
-17:16:10 13<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> spiral_bd1af5686f4b740881777870bd591c10bcb0f7d66964a920bba0239149cae11d v0.0.1 (/home/runner/work/spiral/spiral/target/spiral/spiral/packages/Rust/bd1af5686f4b740881777870bd591c10bcb0f7d66964a920bba0239149cae11d)
-17:16:12 14<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">      Timing</span> report saved to /home/runner/work/spiral/spiral/target/spiral/spiral/target/cargo-timings/cargo-timing-20261012T171609.180973654Z.html
-17:16:12 15<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">    Finished</span> `test` profile [unoptimized + debuginfo] target(s) in 3.33s
-17:16:12 16<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">     Running</span> unittests spiral.rs (/home/runner/work/spiral/spiral/target/spiral/spiral/target/debug/deps/spiral_bd1af5686f4b740881777870bd591c10bcb0f7d66964a920bba0239149cae11d-49cb852276530cbe)
-17:16:12 17<span class="ansi-black-intense-fg">v</span> &gt;
-17:16:12 18<span class="ansi-black-intense-fg">v</span> &gt; running 1 test
-17:16:12 19<span class="ansi-black-intense-fg">v</span> &gt; test a ... ok
-17:16:12 20<span class="ansi-black-intense-fg">v</span> &gt;
-17:16:12 21<span class="ansi-black-intense-fg">v</span> &gt; successes:
-17:16:12 22<span class="ansi-black-intense-fg">v</span> &gt;
-17:16:12 23<span class="ansi-black-intense-fg">v</span> &gt; ---- a stdout ----
-17:16:12 24<span class="ansi-black-intense-fg">v</span> &gt; __assert_eq { expected = a }
-17:16:12 25<span class="ansi-black-intense-fg">v</span> &gt;
-17:16:12 26<span class="ansi-black-intense-fg">v</span> &gt;
-17:16:12 27<span class="ansi-black-intense-fg">v</span> &gt; successes:
-17:16:12 28<span class="ansi-black-intense-fg">v</span> &gt;     a
-17:16:12 29<span class="ansi-black-intense-fg">v</span> &gt;
-17:16:12 30<span class="ansi-black-intense-fg">v</span> &gt; test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
-17:16:12 31<span class="ansi-black-intense-fg">v</span> &gt;
-17:16:12 32<span class="ansi-black-intense-fg">v</span> runtime.execute_with_options / result / { file_name = cargo; exit_code = 0; std_trace_len = 1893 }
+<pre>11:36:55 1<span class="ansi-blue-intense-fg">d</span> runtime.execute_with_options / { file_name = cargo; arguments = ["+nightly-2025-11-01", "test", "--timings", "--", "--show-output"] }
+11:36:55 2<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-yellow-intense-fg ansi-bold">warning</span>: /home/runner/work/spiral/spiral/target/spiral/spiral/packages/Rust/2ba6b73d5878a36d5e72d423403d38d0e9677eb8bff136eb14805384d0e3c957/Cargo.toml: the cargo feature `edition2024` has been stabilized in the 1.85 release and is no longer necessary to be listed in the manifest
+11:36:55 3<span class="ansi-black-intense-fg">v</span> !   See https://doc.rust-lang.org/nightly/cargo/reference/manifest.html#the-edition-field for more information about using this feature.
+11:36:55 4<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> rustversion v1.0.23
+11:36:55 5<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> cfg-if v1.0.5
+11:36:55 6<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> scopeguard v1.2.0
+11:36:55 7<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> simdutf8 v0.1.5
+11:36:55 8<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> core_detect v1.0.0
+11:36:55 9<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> multiversion_no_op v1.0.0
+11:36:55 10<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> inline_colorization v0.1.6
+11:36:55 11<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> encoding_rs v0.8.42
+11:36:56 12<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> encoding_rs_io v0.1.8
+11:36:56 13<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> spiral_2ba6b73d5878a36d5e72d423403d38d0e9677eb8bff136eb14805384d0e3c957 v0.0.1 (/home/runner/work/spiral/spiral/target/spiral/spiral/packages/Rust/2ba6b73d5878a36d5e72d423403d38d0e9677eb8bff136eb14805384d0e3c957)
+11:36:59 14<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">      Timing</span> report saved to /home/runner/work/spiral/spiral/target/spiral/spiral/target/cargo-timings/cargo-timing-20261015T113655.539218188Z.html
+11:36:59 15<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">    Finished</span> `test` profile [unoptimized + debuginfo] target(s) in 4.22s
+11:36:59 16<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">     Running</span> unittests spiral.rs (/home/runner/work/spiral/spiral/target/spiral/spiral/target/debug/deps/spiral_2ba6b73d5878a36d5e72d423403d38d0e9677eb8bff136eb14805384d0e3c957-541d05890d239b3b)
+11:36:59 17<span class="ansi-black-intense-fg">v</span> &gt;
+11:36:59 18<span class="ansi-black-intense-fg">v</span> &gt; running 1 test
+11:36:59 19<span class="ansi-black-intense-fg">v</span> &gt; test a ... ok
+11:36:59 20<span class="ansi-black-intense-fg">v</span> &gt;
+11:36:59 21<span class="ansi-black-intense-fg">v</span> &gt; successes:
+11:36:59 22<span class="ansi-black-intense-fg">v</span> &gt;
+11:36:59 23<span class="ansi-black-intense-fg">v</span> &gt; ---- a stdout ----
+11:36:59 24<span class="ansi-black-intense-fg">v</span> &gt; __assert_eq { expected = a }
+11:36:59 25<span class="ansi-black-intense-fg">v</span> &gt;
+11:36:59 26<span class="ansi-black-intense-fg">v</span> &gt;
+11:36:59 27<span class="ansi-black-intense-fg">v</span> &gt; successes:
+11:36:59 28<span class="ansi-black-intense-fg">v</span> &gt;     a
+11:36:59 29<span class="ansi-black-intense-fg">v</span> &gt;
+11:36:59 30<span class="ansi-black-intense-fg">v</span> &gt; test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+11:36:59 31<span class="ansi-black-intense-fg">v</span> &gt;
+11:36:59 32<span class="ansi-black-intense-fg">v</span> runtime.execute_with_options / result / { file_name = cargo; exit_code = 0; std_trace_len = 1893 }
 __assert_eq { expected = 0 }
-__assert { expected = <span class="ansi-default-inverse-fg ansi-yellow-intense-bg ansi-bold ansi-underline">warning</span>: /home/runner/work/spiral/spiral/target/spiral/spiral/packages/Rust/bd1af5686f4b740881777870bd591c10bcb0f7d66964a920bba0239149cae11d/Cargo.toml: the cargo feature `edition2024` has been stabilized in the 1.85 release and is no longer necessary to be listed in the manifest
+__assert { expected = <span class="ansi-default-inverse-fg ansi-yellow-intense-bg ansi-bold ansi-underline">warning</span>: /home/runner/work/spiral/spiral/target/spiral/spiral/packages/Rust/2ba6b73d5878a36d5e72d423403d38d0e9677eb8bff136eb14805384d0e3c957/Cargo.toml: the cargo feature `edition2024` has been stabilized in the 1.85 release and is no longer necessary to be listed in the manifest
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  See https://doc.rust-lang.org/nightly/cargo/reference/manifest.html#the-edition-field for more information about using this feature.</span>
 <span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> rustversion v1.0.23
-<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> core_detect v1.0.0
+<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> cfg-if v1.0.5
 <span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> scopeguard v1.2.0
 <span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> simdutf8 v0.1.5
+<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> core_detect v1.0.0
 <span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> multiversion_no_op v1.0.0
-<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> cfg-if v1.0.5
 <span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> inline_colorization v0.1.6
 <span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> encoding_rs v0.8.42
 <span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> encoding_rs_io v0.1.8
-<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> spiral_bd1af5686f4b740881777870bd591c10bcb0f7d66964a920bba0239149cae11d v0.0.1 (/home/runner/work/spiral/spiral/target/spiral/spiral/packages/Rust/bd1af5686f4b740881777870bd591c10bcb0f7d66964a920bba0239149cae11d)
-<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">      Timing</span> report saved to /home/runner/work/spiral/spiral/target/spiral/spiral/target/cargo-timings/cargo-timing-20261012T171609.180973654Z.html
-<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">    Finished</span> `test` profile [unoptimized + debuginfo] target(s) in 3.33s
-<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">     Running</span> unittests spiral.rs (/home/runner/work/spiral/spiral/target/spiral/spiral/target/debug/deps/spiral_bd1af5686f4b740881777870bd591c10bcb0f7d66964a920bba0239149cae11d-49cb852276530cbe)
+<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> spiral_2ba6b73d5878a36d5e72d423403d38d0e9677eb8bff136eb14805384d0e3c957 v0.0.1 (/home/runner/work/spiral/spiral/target/spiral/spiral/packages/Rust/2ba6b73d5878a36d5e72d423403d38d0e9677eb8bff136eb14805384d0e3c957)
+<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">      Timing</span> report saved to /home/runner/work/spiral/spiral/target/spiral/spiral/target/cargo-timings/cargo-timing-20261015T113655.539218188Z.html
+<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">    Finished</span> `test` profile [unoptimized + debuginfo] target(s) in 4.22s
+<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">     Running</span> unittests spiral.rs (/home/runner/work/spiral/spiral/target/spiral/spiral/target/debug/deps/spiral_2ba6b73d5878a36d5e72d423403d38d0e9677eb8bff136eb14805384d0e3c957-541d05890d239b3b)
 
 running 1 test
 test a ... ok
@@ -8152,7 +8154,7 @@ test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [5]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [3]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">run_tests_log</span> <span class="n">tests</span> <span class="p">:</span> <span class="p">()</span> <span class="o">=</span>
@@ -8173,7 +8175,7 @@ test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [6]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [4]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -8196,54 +8198,54 @@ test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>17:16:15 1<span class="ansi-blue-intense-fg">d</span> runtime.execute_with_options / { file_name = cargo; arguments = ["+nightly-2025-11-01", "test", "--timings", "--", "--show-output"] }
-17:16:15 2<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-yellow-intense-fg ansi-bold">warning</span>: /home/runner/work/spiral/spiral/target/spiral/spiral/packages/Rust/e9bcbb57c4cc63e2ca671846c1dcff2621468b033172437674a2e77ac9c4284c/Cargo.toml: the cargo feature `edition2024` has been stabilized in the 1.85 release and is no longer necessary to be listed in the manifest
-17:16:15 3<span class="ansi-black-intense-fg">v</span> !   See https://doc.rust-lang.org/nightly/cargo/reference/manifest.html#the-edition-field for more information about using this feature.
-17:16:15 4<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> rustversion v1.0.23
-17:16:15 5<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> cfg-if v1.0.5
-17:16:15 6<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> scopeguard v1.2.0
-17:16:15 7<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> core_detect v1.0.0
-17:16:15 8<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> multiversion_no_op v1.0.0
-17:16:15 9<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> simdutf8 v0.1.5
-17:16:15 10<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> inline_colorization v0.1.6
-17:16:15 11<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> encoding_rs v0.8.42
-17:16:15 12<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> encoding_rs_io v0.1.8
-17:16:15 13<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> spiral_e9bcbb57c4cc63e2ca671846c1dcff2621468b033172437674a2e77ac9c4284c v0.0.1 (/home/runner/work/spiral/spiral/target/spiral/spiral/packages/Rust/e9bcbb57c4cc63e2ca671846c1dcff2621468b033172437674a2e77ac9c4284c)
-17:16:17 14<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">      Timing</span> report saved to /home/runner/work/spiral/spiral/target/spiral/spiral/target/cargo-timings/cargo-timing-20261012T171615.371117892Z.html
-17:16:17 15<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">    Finished</span> `test` profile [unoptimized + debuginfo] target(s) in 2.13s
-17:16:17 16<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">     Running</span> unittests spiral.rs (/home/runner/work/spiral/spiral/target/spiral/spiral/target/debug/deps/spiral_e9bcbb57c4cc63e2ca671846c1dcff2621468b033172437674a2e77ac9c4284c-9077656ae09eead8)
-17:16:17 17<span class="ansi-black-intense-fg">v</span> &gt;
-17:16:17 18<span class="ansi-black-intense-fg">v</span> &gt; running 1 test
-17:16:17 19<span class="ansi-black-intense-fg">v</span> &gt; test a ... ok
-17:16:17 20<span class="ansi-black-intense-fg">v</span> &gt;
-17:16:17 21<span class="ansi-black-intense-fg">v</span> &gt; successes:
-17:16:17 22<span class="ansi-black-intense-fg">v</span> &gt;
-17:16:17 23<span class="ansi-black-intense-fg">v</span> &gt; ---- a stdout ----
-17:16:17 24<span class="ansi-black-intense-fg">v</span> &gt; __assert_eq { expected = false }
-17:16:17 25<span class="ansi-black-intense-fg">v</span> &gt;
-17:16:17 26<span class="ansi-black-intense-fg">v</span> &gt;
-17:16:17 27<span class="ansi-black-intense-fg">v</span> &gt; successes:
-17:16:17 28<span class="ansi-black-intense-fg">v</span> &gt;     a
-17:16:17 29<span class="ansi-black-intense-fg">v</span> &gt;
-17:16:17 30<span class="ansi-black-intense-fg">v</span> &gt; test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
-17:16:17 31<span class="ansi-black-intense-fg">v</span> &gt;
-17:16:17 32<span class="ansi-black-intense-fg">v</span> runtime.execute_with_options / result / { file_name = cargo; exit_code = 0; std_trace_len = 1897 }
+<pre>11:36:34 1<span class="ansi-blue-intense-fg">d</span> runtime.execute_with_options / { file_name = cargo; arguments = ["+nightly-2025-11-01", "test", "--timings", "--", "--show-output"] }
+11:36:34 2<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-yellow-intense-fg ansi-bold">warning</span>: /home/runner/work/spiral/spiral/target/spiral/spiral/packages/Rust/963a3ee773da70974ae6845ee1d963441d7815ed5e571a762b7a8fb51bb29f6c/Cargo.toml: the cargo feature `edition2024` has been stabilized in the 1.85 release and is no longer necessary to be listed in the manifest
+11:36:34 3<span class="ansi-black-intense-fg">v</span> !   See https://doc.rust-lang.org/nightly/cargo/reference/manifest.html#the-edition-field for more information about using this feature.
+11:36:34 4<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> rustversion v1.0.23
+11:36:34 5<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> simdutf8 v0.1.5
+11:36:34 6<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> multiversion_no_op v1.0.0
+11:36:34 7<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> scopeguard v1.2.0
+11:36:35 8<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> core_detect v1.0.0
+11:36:35 9<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> cfg-if v1.0.5
+11:36:35 10<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> inline_colorization v0.1.6
+11:36:35 11<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> encoding_rs v0.8.42
+11:36:36 12<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> encoding_rs_io v0.1.8
+11:36:36 13<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">   Compiling</span> spiral_963a3ee773da70974ae6845ee1d963441d7815ed5e571a762b7a8fb51bb29f6c v0.0.1 (/home/runner/work/spiral/spiral/target/spiral/spiral/packages/Rust/963a3ee773da70974ae6845ee1d963441d7815ed5e571a762b7a8fb51bb29f6c)
+11:36:40 14<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">      Timing</span> report saved to /home/runner/work/spiral/spiral/target/spiral/spiral/target/cargo-timings/cargo-timing-20261015T113634.906592589Z.html
+11:36:40 15<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">    Finished</span> `test` profile [unoptimized + debuginfo] target(s) in 5.55s
+11:36:40 16<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-green-intense-fg ansi-bold">     Running</span> unittests spiral.rs (/home/runner/work/spiral/spiral/target/spiral/spiral/target/debug/deps/spiral_963a3ee773da70974ae6845ee1d963441d7815ed5e571a762b7a8fb51bb29f6c-692a0372af03992a)
+11:36:40 17<span class="ansi-black-intense-fg">v</span> &gt;
+11:36:40 18<span class="ansi-black-intense-fg">v</span> &gt; running 1 test
+11:36:40 19<span class="ansi-black-intense-fg">v</span> &gt; test a ... ok
+11:36:40 20<span class="ansi-black-intense-fg">v</span> &gt;
+11:36:40 21<span class="ansi-black-intense-fg">v</span> &gt; successes:
+11:36:40 22<span class="ansi-black-intense-fg">v</span> &gt;
+11:36:40 23<span class="ansi-black-intense-fg">v</span> &gt; ---- a stdout ----
+11:36:40 24<span class="ansi-black-intense-fg">v</span> &gt; __assert_eq { expected = false }
+11:36:40 25<span class="ansi-black-intense-fg">v</span> &gt;
+11:36:40 26<span class="ansi-black-intense-fg">v</span> &gt;
+11:36:40 27<span class="ansi-black-intense-fg">v</span> &gt; successes:
+11:36:40 28<span class="ansi-black-intense-fg">v</span> &gt;     a
+11:36:40 29<span class="ansi-black-intense-fg">v</span> &gt;
+11:36:40 30<span class="ansi-black-intense-fg">v</span> &gt; test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+11:36:40 31<span class="ansi-black-intense-fg">v</span> &gt;
+11:36:40 32<span class="ansi-black-intense-fg">v</span> runtime.execute_with_options / result / { file_name = cargo; exit_code = 0; std_trace_len = 1897 }
 __assert_eq { expected = 0 }
-__assert { expected = <span class="ansi-default-inverse-fg ansi-yellow-intense-bg ansi-bold ansi-underline">warning</span>: /home/runner/work/spiral/spiral/target/spiral/spiral/packages/Rust/e9bcbb57c4cc63e2ca671846c1dcff2621468b033172437674a2e77ac9c4284c/Cargo.toml: the cargo feature `edition2024` has been stabilized in the 1.85 release and is no longer necessary to be listed in the manifest
+__assert { expected = <span class="ansi-default-inverse-fg ansi-yellow-intense-bg ansi-bold ansi-underline">warning</span>: /home/runner/work/spiral/spiral/target/spiral/spiral/packages/Rust/963a3ee773da70974ae6845ee1d963441d7815ed5e571a762b7a8fb51bb29f6c/Cargo.toml: the cargo feature `edition2024` has been stabilized in the 1.85 release and is no longer necessary to be listed in the manifest
 <span class="ansi-default-inverse-fg ansi-default-inverse-bg ansi-underline">  See https://doc.rust-lang.org/nightly/cargo/reference/manifest.html#the-edition-field for more information about using this feature.</span>
 <span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> rustversion v1.0.23
-<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> cfg-if v1.0.5
+<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> simdutf8 v0.1.5
+<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> multiversion_no_op v1.0.0
 <span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> scopeguard v1.2.0
 <span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> core_detect v1.0.0
-<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> multiversion_no_op v1.0.0
-<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> simdutf8 v0.1.5
+<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> cfg-if v1.0.5
 <span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> inline_colorization v0.1.6
 <span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> encoding_rs v0.8.42
 <span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> encoding_rs_io v0.1.8
-<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> spiral_e9bcbb57c4cc63e2ca671846c1dcff2621468b033172437674a2e77ac9c4284c v0.0.1 (/home/runner/work/spiral/spiral/target/spiral/spiral/packages/Rust/e9bcbb57c4cc63e2ca671846c1dcff2621468b033172437674a2e77ac9c4284c)
-<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">      Timing</span> report saved to /home/runner/work/spiral/spiral/target/spiral/spiral/target/cargo-timings/cargo-timing-20261012T171615.371117892Z.html
-<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">    Finished</span> `test` profile [unoptimized + debuginfo] target(s) in 2.13s
-<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">     Running</span> unittests spiral.rs (/home/runner/work/spiral/spiral/target/spiral/spiral/target/debug/deps/spiral_e9bcbb57c4cc63e2ca671846c1dcff2621468b033172437674a2e77ac9c4284c-9077656ae09eead8)
+<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">   Compiling</span> spiral_963a3ee773da70974ae6845ee1d963441d7815ed5e571a762b7a8fb51bb29f6c v0.0.1 (/home/runner/work/spiral/spiral/target/spiral/spiral/packages/Rust/963a3ee773da70974ae6845ee1d963441d7815ed5e571a762b7a8fb51bb29f6c)
+<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">      Timing</span> report saved to /home/runner/work/spiral/spiral/target/spiral/spiral/target/cargo-timings/cargo-timing-20261015T113634.906592589Z.html
+<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">    Finished</span> `test` profile [unoptimized + debuginfo] target(s) in 5.55s
+<span class="ansi-default-inverse-fg ansi-green-intense-bg ansi-bold ansi-underline">     Running</span> unittests spiral.rs (/home/runner/work/spiral/spiral/target/spiral/spiral/target/debug/deps/spiral_963a3ee773da70974ae6845ee1d963441d7815ed5e571a762b7a8fb51bb29f6c-692a0372af03992a)
 
 running 1 test
 test a ... ok

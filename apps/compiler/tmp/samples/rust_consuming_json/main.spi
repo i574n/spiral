@@ -7,4 +7,4 @@ inl native (k : i32) : i32 =
 
 inl main () : i32 =
     inl ~k = 7i32
-    !!!!BackendSwitch({ C = fun () => 22i32 : i32; Rust = fun () => native k : i32 })
+    !!!!BackendSwitch({ C = fun () => 22i32 : i32; Rust = fun () => native k : i32; Bend = fun () => 22i32 : i32 })

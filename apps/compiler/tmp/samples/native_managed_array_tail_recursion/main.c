@@ -33,24 +33,34 @@ static inline void AssignArray0(int32_t * a, int32_t b){
     *a = b;
 }
 Array0 * method1(int32_t v0, Array0 * v1, Array0 * v2){
-    
-    
-    int32_t v3;
-    v3 = v0 - 1l;
-    
-    
-    bool v4;
-    v4 = v3 == 0l;
-    
-    
-    if (v4){
-        
-        ArrayDecref0(v1);
-        return v2;
-    } else {
+    while (1) {
         
         
-        return method1(v3, v2, v1);
+        int32_t v3;
+        v3 = v0 - 1l;
+        
+        
+        bool v4;
+        v4 = v3 == 0l;
+        
+        
+        if (v4){
+            
+            ArrayDecref0(v1);
+            return v2;
+        } else {
+            
+            
+            {
+                int32_t tmp0 = v3;
+                Array0 * tmp1 = v2;
+                Array0 * tmp2 = v1;
+                v0 = tmp0;
+                v1 = tmp1;
+                v2 = tmp2;
+            }
+            continue;
+        }
     }
 }
 Array0 * method0(Array0 * v0, Array0 * v1){
@@ -82,11 +92,11 @@ int32_t main(){
     
     
     Array0 * v1;
-    v1 = ArrayCreate0(v0, false);
+    v1 = ArrayCreate0(v0, true);
     
     
     Array0 * v2;
-    v2 = ArrayCreate0(v0, false);
+    v2 = ArrayCreate0(v0, true);
     
     
     

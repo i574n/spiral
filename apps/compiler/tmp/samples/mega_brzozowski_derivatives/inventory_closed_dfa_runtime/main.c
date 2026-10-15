@@ -184,13 +184,24 @@ US0 US0_BitOne() { // BitOne
 static inline void UHDecrefBody0(UH0 * x){
     switch (x->tag) {
         case 1: {
-            USDecref0(&(x->case1.v0)); UHDecref0(x->case1.v1);
+            UHDecref0(x->case1.v1);
             break;
         }
     }
 }
 void UHDecref0(UH0 * x){
-    if (x != NULL && --(x->refc) == 0) { UHDecrefBody0(x); free(x); }
+    while (x != NULL && --(x->refc) == 0) {
+        UH0 * next = NULL;
+        switch (x->tag) {
+            case 1: {
+                
+                next = x->case1.v1;
+                break;
+            }
+        }
+        free(x);
+        x = next;
+    }
 }
 UH0 * UH0_SymbolListNil() { // SymbolListNil
     UH0 * x = malloc(sizeof(UH0));
@@ -208,13 +219,24 @@ UH0 * UH0_SymbolListCons(US0 v0, UH0 * v1) { // SymbolListCons
 static inline void UHDecrefBody2(UH2 * x){
     switch (x->tag) {
         case 1: {
-            USDecref0(&(x->case1.v0)); UHDecref2(x->case1.v1);
+            UHDecref2(x->case1.v1);
             break;
         }
     }
 }
 void UHDecref2(UH2 * x){
-    if (x != NULL && --(x->refc) == 0) { UHDecrefBody2(x); free(x); }
+    while (x != NULL && --(x->refc) == 0) {
+        UH2 * next = NULL;
+        switch (x->tag) {
+            case 1: {
+                
+                next = x->case1.v1;
+                break;
+            }
+        }
+        free(x);
+        x = next;
+    }
 }
 UH2 * UH2_InputEmpty() { // InputEmpty
     UH2 * x = malloc(sizeof(UH2));
@@ -238,7 +260,18 @@ static inline void UHDecrefBody1(UH1 * x){
     }
 }
 void UHDecref1(UH1 * x){
-    if (x != NULL && --(x->refc) == 0) { UHDecrefBody1(x); free(x); }
+    while (x != NULL && --(x->refc) == 0) {
+        UH1 * next = NULL;
+        switch (x->tag) {
+            case 1: {
+                UHDecref2(x->case1.v0);
+                next = x->case1.v1;
+                break;
+            }
+        }
+        free(x);
+        x = next;
+    }
 }
 UH1 * UH1_InputListNil() { // InputListNil
     UH1 * x = malloc(sizeof(UH1));
@@ -259,7 +292,7 @@ UH1 * input_singletons_from_symbols0(UH0 * v0){
     switch (v0->tag) {
         case 1: { // SymbolListCons
             US0 v2 = v0->case1.v0; UH0 * v3 = v0->case1.v1;
-            USIncref0(&(v2)); (v3)->refc += 2;
+            (v3)->refc += 2;
             UHDecref0(v0);
             UH1 * v4;
             v4 = input_singletons_from_symbols0(v3);
@@ -267,12 +300,12 @@ UH1 * input_singletons_from_symbols0(UH0 * v0){
             UHDecref0(v3);
             UH2 * v5;
             v5 = UH2_InputEmpty();
-            USIncref0(&(v2)); (v5)->refc++;
+            (v5)->refc++;
             
             UH2 * v6;
             v6 = UH2_InputCons(v2, v5);
             
-            USDecref0(&(v2)); UHDecref2(v5);
+            UHDecref2(v5);
             return UH1_InputListCons(v6, v4);
             break;
         }
@@ -291,23 +324,23 @@ UH1 * input_prepend_symbol_to_corpus2(US0 v0, UH1 * v1){
     switch (v1->tag) {
         case 1: { // InputListCons
             UH2 * v3 = v1->case1.v0; UH1 * v4 = v1->case1.v1;
-            USIncref0(&(v0)); (v3)->refc++; (v4)->refc += 2;
+            (v3)->refc++; (v4)->refc += 2;
             UHDecref1(v1);
             UH1 * v5;
             v5 = input_prepend_symbol_to_corpus2(v0, v4);
-            USIncref0(&(v0)); (v3)->refc++;
+            (v3)->refc++;
             UHDecref1(v4);
             UH2 * v6;
             v6 = UH2_InputCons(v0, v3);
             
-            USDecref0(&(v0)); UHDecref2(v3);
+            UHDecref2(v3);
             return UH1_InputListCons(v6, v5);
             break;
         }
         default: { // InputListNil
             
             
-            USDecref0(&(v0)); UHDecref1(v1);
+            UHDecref1(v1);
             return UH1_InputListNil();
             break;
         }
@@ -343,12 +376,12 @@ UH1 * input_prepend_symbols_to_corpus1(UH0 * v0, UH1 * v1){
     switch (v0->tag) {
         case 1: { // SymbolListCons
             US0 v3 = v0->case1.v0; UH0 * v4 = v0->case1.v1;
-            (v1)->refc++; USIncref0(&(v3));USIncref0(&(v3)); (v4)->refc++;
+            (v1)->refc++; (v4)->refc++;
             UHDecref0(v0);
             UH1 * v5;
             v5 = input_prepend_symbol_to_corpus2(v3, v1);
             (v1)->refc++; (v4)->refc++;
-            USDecref0(&(v3));
+            
             UH1 * v6;
             v6 = input_prepend_symbols_to_corpus1(v4, v1);
             
@@ -393,13 +426,24 @@ US1 US1_TriC() { // TriC
 static inline void UHDecrefBody3(UH3 * x){
     switch (x->tag) {
         case 1: {
-            USDecref1(&(x->case1.v0)); UHDecref3(x->case1.v1);
+            UHDecref3(x->case1.v1);
             break;
         }
     }
 }
 void UHDecref3(UH3 * x){
-    if (x != NULL && --(x->refc) == 0) { UHDecrefBody3(x); free(x); }
+    while (x != NULL && --(x->refc) == 0) {
+        UH3 * next = NULL;
+        switch (x->tag) {
+            case 1: {
+                
+                next = x->case1.v1;
+                break;
+            }
+        }
+        free(x);
+        x = next;
+    }
 }
 UH3 * UH3_SymbolListNil() { // SymbolListNil
     UH3 * x = malloc(sizeof(UH3));
@@ -417,13 +461,24 @@ UH3 * UH3_SymbolListCons(US1 v0, UH3 * v1) { // SymbolListCons
 static inline void UHDecrefBody5(UH5 * x){
     switch (x->tag) {
         case 1: {
-            USDecref1(&(x->case1.v0)); UHDecref5(x->case1.v1);
+            UHDecref5(x->case1.v1);
             break;
         }
     }
 }
 void UHDecref5(UH5 * x){
-    if (x != NULL && --(x->refc) == 0) { UHDecrefBody5(x); free(x); }
+    while (x != NULL && --(x->refc) == 0) {
+        UH5 * next = NULL;
+        switch (x->tag) {
+            case 1: {
+                
+                next = x->case1.v1;
+                break;
+            }
+        }
+        free(x);
+        x = next;
+    }
 }
 UH5 * UH5_InputEmpty() { // InputEmpty
     UH5 * x = malloc(sizeof(UH5));
@@ -447,7 +502,18 @@ static inline void UHDecrefBody4(UH4 * x){
     }
 }
 void UHDecref4(UH4 * x){
-    if (x != NULL && --(x->refc) == 0) { UHDecrefBody4(x); free(x); }
+    while (x != NULL && --(x->refc) == 0) {
+        UH4 * next = NULL;
+        switch (x->tag) {
+            case 1: {
+                UHDecref5(x->case1.v0);
+                next = x->case1.v1;
+                break;
+            }
+        }
+        free(x);
+        x = next;
+    }
 }
 UH4 * UH4_InputListNil() { // InputListNil
     UH4 * x = malloc(sizeof(UH4));
@@ -468,7 +534,7 @@ UH4 * input_singletons_from_symbols4(UH3 * v0){
     switch (v0->tag) {
         case 1: { // SymbolListCons
             US1 v2 = v0->case1.v0; UH3 * v3 = v0->case1.v1;
-            USIncref1(&(v2)); (v3)->refc += 2;
+            (v3)->refc += 2;
             UHDecref3(v0);
             UH4 * v4;
             v4 = input_singletons_from_symbols4(v3);
@@ -476,12 +542,12 @@ UH4 * input_singletons_from_symbols4(UH3 * v0){
             UHDecref3(v3);
             UH5 * v5;
             v5 = UH5_InputEmpty();
-            USIncref1(&(v2)); (v5)->refc++;
+            (v5)->refc++;
             
             UH5 * v6;
             v6 = UH5_InputCons(v2, v5);
             
-            USDecref1(&(v2)); UHDecref5(v5);
+            UHDecref5(v5);
             return UH4_InputListCons(v6, v4);
             break;
         }
@@ -500,23 +566,23 @@ UH4 * input_prepend_symbol_to_corpus6(US1 v0, UH4 * v1){
     switch (v1->tag) {
         case 1: { // InputListCons
             UH5 * v3 = v1->case1.v0; UH4 * v4 = v1->case1.v1;
-            USIncref1(&(v0)); (v3)->refc++; (v4)->refc += 2;
+            (v3)->refc++; (v4)->refc += 2;
             UHDecref4(v1);
             UH4 * v5;
             v5 = input_prepend_symbol_to_corpus6(v0, v4);
-            USIncref1(&(v0)); (v3)->refc++;
+            (v3)->refc++;
             UHDecref4(v4);
             UH5 * v6;
             v6 = UH5_InputCons(v0, v3);
             
-            USDecref1(&(v0)); UHDecref5(v3);
+            UHDecref5(v3);
             return UH4_InputListCons(v6, v5);
             break;
         }
         default: { // InputListNil
             
             
-            USDecref1(&(v0)); UHDecref4(v1);
+            UHDecref4(v1);
             return UH4_InputListNil();
             break;
         }
@@ -552,12 +618,12 @@ UH4 * input_prepend_symbols_to_corpus5(UH3 * v0, UH4 * v1){
     switch (v0->tag) {
         case 1: { // SymbolListCons
             US1 v3 = v0->case1.v0; UH3 * v4 = v0->case1.v1;
-            (v1)->refc++; USIncref1(&(v3));USIncref1(&(v3)); (v4)->refc++;
+            (v1)->refc++; (v4)->refc++;
             UHDecref3(v0);
             UH4 * v5;
             v5 = input_prepend_symbol_to_corpus6(v3, v1);
             (v1)->refc++; (v4)->refc++;
-            USDecref1(&(v3));
+            
             UH4 * v6;
             v6 = input_prepend_symbols_to_corpus5(v4, v1);
             
@@ -602,13 +668,24 @@ US2 US2_ModelC() { // ModelC
 static inline void UHDecrefBody6(UH6 * x){
     switch (x->tag) {
         case 1: {
-            USDecref2(&(x->case1.v0)); UHDecref6(x->case1.v1);
+            UHDecref6(x->case1.v1);
             break;
         }
     }
 }
 void UHDecref6(UH6 * x){
-    if (x != NULL && --(x->refc) == 0) { UHDecrefBody6(x); free(x); }
+    while (x != NULL && --(x->refc) == 0) {
+        UH6 * next = NULL;
+        switch (x->tag) {
+            case 1: {
+                
+                next = x->case1.v1;
+                break;
+            }
+        }
+        free(x);
+        x = next;
+    }
 }
 UH6 * UH6_InputEmpty() { // InputEmpty
     UH6 * x = malloc(sizeof(UH6));
@@ -625,10 +702,6 @@ UH6 * UH6_InputCons(US2 v0, UH6 * v1) { // InputCons
 }
 static inline void UHDecrefBody7(UH7 * x){
     switch (x->tag) {
-        case 2: {
-            USDecref0(&(x->case2.v0));
-            break;
-        }
         case 3: {
             UHDecref7(x->case3.v0); UHDecref7(x->case3.v1);
             break;
@@ -644,7 +717,28 @@ static inline void UHDecrefBody7(UH7 * x){
     }
 }
 void UHDecref7(UH7 * x){
-    if (x != NULL && --(x->refc) == 0) { UHDecrefBody7(x); free(x); }
+    while (x != NULL && --(x->refc) == 0) {
+        UH7 * next = NULL;
+        switch (x->tag) {
+            case 3: {
+                UHDecref7(x->case3.v0);
+                next = x->case3.v1;
+                break;
+            }
+            case 4: {
+                UHDecref7(x->case4.v0);
+                next = x->case4.v1;
+                break;
+            }
+            case 5: {
+                
+                next = x->case5.v0;
+                break;
+            }
+        }
+        free(x);
+        x = next;
+    }
 }
 UH7 * UH7_RegexEmpty() { // RegexEmpty
     UH7 * x = malloc(sizeof(UH7));
@@ -737,432 +831,460 @@ US4 US4_SymbolGreater() { // SymbolGreater
     return x;
 }
 US3 loop9(int32_t v0, UH2 * v1){
-    
-    
-    switch (v1->tag) {
-        case 1: { // InputCons
-            US0 v6 = v1->case1.v0; UH2 * v7 = v1->case1.v1;
-            USIncref0(&(v6)); (v7)->refc++;
-            UHDecref2(v1);
-            US4 v11;
-            switch (v6.tag) {
-                case 1: { // BitOne
-                    
-                    
-                    
-                    v11 = US4_SymbolGreater();
-                    break;
-                }
-                default: { // BitZero
-                    
-                    
-                    
-                    v11 = US4_SymbolSame();
-                    break;
-                }
-            }
-            
-            
-            bool v12;
-            switch (v11.tag) {
-                case 1: { // SymbolSame
-                    
-                    
-                    
-                    v12 = true;
-                    break;
-                }
-                default: {
-                    
-                    
-                    v12 = false;
-                }
-            }
-            
-            USDecref4(&(v11));
-            int32_t v19;
-            if (v12){
-                
-                
-                v19 = 0l;
-            } else {
-                
-                
-                US4 v16;
+    while (1) {
+        
+        
+        switch (v1->tag) {
+            case 1: { // InputCons
+                US0 v6 = v1->case1.v0; UH2 * v7 = v1->case1.v1;
+                (v7)->refc++;
+                UHDecref2(v1);
+                US4 v11;
                 switch (v6.tag) {
                     case 1: { // BitOne
                         
                         
                         
-                        v16 = US4_SymbolSame();
+                        v11 = US4_SymbolGreater();
                         break;
                     }
                     default: { // BitZero
                         
                         
                         
-                        v16 = US4_SymbolLess();
+                        v11 = US4_SymbolSame();
                         break;
                     }
                 }
                 
                 
-                bool v17;
-                switch (v16.tag) {
+                bool v12;
+                switch (v11.tag) {
                     case 1: { // SymbolSame
                         
                         
                         
-                        v17 = true;
+                        v12 = true;
                         break;
                     }
                     default: {
                         
                         
-                        v17 = false;
+                        v12 = false;
                     }
                 }
                 
-                USDecref4(&(v16));
-                if (v17){
+                
+                int32_t v19;
+                if (v12){
                     
                     
-                    v19 = 1l;
+                    v19 = 0l;
                 } else {
                     
                     
-                    v19 = -1l;
-                }
-            }
-            
-            USDecref0(&(v6));
-            bool v20;
-            v20 = v19 < 0l;
-            
-            
-            if (v20){
-                
-                UHDecref2(v7);
-                return US3_InventoryDfaInputOutsideInventory();
-            } else {
-                
-                
-                bool v22;
-                v22 = v0 == 0l;
-                
-                
-                int32_t v27;
-                if (v22){
-                    
-                    
-                    bool v23;
-                    v23 = v19 == 0l;
-                    
-                    
-                    if (v23){
-                        
-                        
-                        v27 = 0l;
-                    } else {
-                        
-                        
-                        v27 = 1l;
-                    }
-                } else {
-                    
-                    
-                    bool v25;
-                    v25 = v19 == 0l;
-                    
-                    
-                    if (v25){
-                        
-                        
-                        v27 = 0l;
-                    } else {
-                        
-                        
-                        v27 = 1l;
-                    }
-                }
-                
-                
-                return loop9(v27, v7);
-            }
-            break;
-        }
-        default: { // InputEmpty
-            
-            
-            UHDecref2(v1);
-            bool v2;
-            v2 = v0 == 0l;
-            
-            
-            if (v2){
-                
-                
-                return US3_InventoryDfaAccepted();
-            } else {
-                
-                
-                return US3_InventoryDfaRejected();
-            }
-            break;
-        }
-    }
-}
-US4 regex_compare15(UH7 * v0, UH7 * v1){
-    
-    
-    switch (v0->tag) {
-        case 3: { // RegexAlt
-            UH7 * v53 = v0->case3.v0; UH7 * v54 = v0->case3.v1;
-            (v53)->refc++; (v54)->refc++;
-            UHDecref7(v0);
-            switch (v1->tag) {
-                case 3: { // RegexAlt
-                    UH7 * v55 = v1->case3.v0; UH7 * v56 = v1->case3.v1;
-                    (v53)->refc++; (v55)->refc += 2; (v56)->refc++;
-                    UHDecref7(v1);
-                    US4 v57;
-                    v57 = regex_compare15(v53, v55);
-                    
-                    UHDecref7(v53); UHDecref7(v55);
-                    switch (v57.tag) {
-                        case 1: { // SymbolSame
-                            
-                            
-                            USDecref4(&(v57));
-                            return regex_compare15(v54, v56);
-                            break;
-                        }
-                        default: {
-                            
-                            UHDecref7(v54); UHDecref7(v56);
-                            return v57;
-                        }
-                    }
-                    break;
-                }
-                default: {
-                    
-                    UHDecref7(v1); UHDecref7(v53); UHDecref7(v54);
-                    return US4_SymbolGreater();
-                }
-            }
-            break;
-        }
-        case 4: { // RegexCat
-            UH7 * v28 = v0->case4.v0; UH7 * v29 = v0->case4.v1;
-            (v28)->refc++; (v29)->refc++;
-            UHDecref7(v0);
-            switch (v1->tag) {
-                case 4: { // RegexCat
-                    UH7 * v34 = v1->case4.v0; UH7 * v35 = v1->case4.v1;
-                    (v28)->refc++; (v34)->refc += 2; (v35)->refc++;
-                    UHDecref7(v1);
-                    US4 v36;
-                    v36 = regex_compare15(v28, v34);
-                    
-                    UHDecref7(v28); UHDecref7(v34);
-                    switch (v36.tag) {
-                        case 1: { // SymbolSame
-                            
-                            
-                            USDecref4(&(v36));
-                            return regex_compare15(v29, v35);
-                            break;
-                        }
-                        default: {
-                            
-                            UHDecref7(v29); UHDecref7(v35);
-                            return v36;
-                        }
-                    }
-                    break;
-                }
-                case 2: { // RegexChar
-                    
-                    
-                    UHDecref7(v1); UHDecref7(v28); UHDecref7(v29);
-                    return US4_SymbolGreater();
-                    break;
-                }
-                case 0: { // RegexEmpty
-                    
-                    
-                    UHDecref7(v1); UHDecref7(v28); UHDecref7(v29);
-                    return US4_SymbolGreater();
-                    break;
-                }
-                case 1: { // RegexEpsilon
-                    
-                    
-                    UHDecref7(v1); UHDecref7(v28); UHDecref7(v29);
-                    return US4_SymbolGreater();
-                    break;
-                }
-                default: {
-                    
-                    UHDecref7(v1); UHDecref7(v28); UHDecref7(v29);
-                    return US4_SymbolLess();
-                }
-            }
-            break;
-        }
-        case 2: { // RegexChar
-            US0 v10 = v0->case2.v0;
-            USIncref0(&(v10));
-            UHDecref7(v0);
-            switch (v1->tag) {
-                case 2: { // RegexChar
-                    US0 v13 = v1->case2.v0;
-                    USIncref0(&(v13));
-                    UHDecref7(v1);
-                    switch (v10.tag) {
+                    US4 v16;
+                    switch (v6.tag) {
                         case 1: { // BitOne
                             
                             
-                            USDecref0(&(v10));
-                            switch (v13.tag) {
-                                case 1: { // BitOne
-                                    
-                                    
-                                    USDecref0(&(v13));
-                                    return US4_SymbolSame();
-                                    break;
-                                }
-                                default: { // BitZero
-                                    
-                                    
-                                    USDecref0(&(v13));
-                                    return US4_SymbolGreater();
-                                    break;
-                                }
-                            }
+                            
+                            v16 = US4_SymbolSame();
                             break;
                         }
                         default: { // BitZero
                             
                             
-                            USDecref0(&(v10));
-                            switch (v13.tag) {
-                                case 1: { // BitOne
-                                    
-                                    
-                                    USDecref0(&(v13));
-                                    return US4_SymbolLess();
-                                    break;
-                                }
-                                default: { // BitZero
-                                    
-                                    
-                                    USDecref0(&(v13));
-                                    return US4_SymbolSame();
-                                    break;
-                                }
-                            }
+                            
+                            v16 = US4_SymbolLess();
                             break;
                         }
                     }
-                    break;
+                    
+                    
+                    bool v17;
+                    switch (v16.tag) {
+                        case 1: { // SymbolSame
+                            
+                            
+                            
+                            v17 = true;
+                            break;
+                        }
+                        default: {
+                            
+                            
+                            v17 = false;
+                        }
+                    }
+                    
+                    
+                    if (v17){
+                        
+                        
+                        v19 = 1l;
+                    } else {
+                        
+                        
+                        v19 = -1l;
+                    }
                 }
-                case 0: { // RegexEmpty
+                
+                
+                bool v20;
+                v20 = v19 < 0l;
+                
+                
+                if (v20){
+                    
+                    UHDecref2(v7);
+                    return US3_InventoryDfaInputOutsideInventory();
+                } else {
                     
                     
-                    UHDecref7(v1); USDecref0(&(v10));
-                    return US4_SymbolGreater();
-                    break;
+                    bool v22;
+                    v22 = v0 == 0l;
+                    
+                    
+                    int32_t v27;
+                    if (v22){
+                        
+                        
+                        bool v23;
+                        v23 = v19 == 0l;
+                        
+                        
+                        if (v23){
+                            
+                            
+                            v27 = 0l;
+                        } else {
+                            
+                            
+                            v27 = 1l;
+                        }
+                    } else {
+                        
+                        
+                        bool v25;
+                        v25 = v19 == 0l;
+                        
+                        
+                        if (v25){
+                            
+                            
+                            v27 = 0l;
+                        } else {
+                            
+                            
+                            v27 = 1l;
+                        }
+                    }
+                    
+                    
+                    {
+                        int32_t tmp0 = v27;
+                        UH2 * tmp1 = v7;
+                        v0 = tmp0;
+                        v1 = tmp1;
+                    }
+                    continue;
                 }
-                case 1: { // RegexEpsilon
-                    
-                    
-                    UHDecref7(v1); USDecref0(&(v10));
-                    return US4_SymbolGreater();
-                    break;
-                }
-                default: {
-                    
-                    UHDecref7(v1); USDecref0(&(v10));
-                    return US4_SymbolLess();
-                }
+                break;
             }
-            break;
+            default: { // InputEmpty
+                
+                
+                UHDecref2(v1);
+                bool v2;
+                v2 = v0 == 0l;
+                
+                
+                if (v2){
+                    
+                    
+                    return US3_InventoryDfaAccepted();
+                } else {
+                    
+                    
+                    return US3_InventoryDfaRejected();
+                }
+                break;
+            }
         }
-        case 0: { // RegexEmpty
-            
-            
-            UHDecref7(v0);
-            switch (v1->tag) {
-                case 0: { // RegexEmpty
-                    
-                    
-                    UHDecref7(v1);
-                    return US4_SymbolSame();
-                    break;
+    }
+}
+US4 regex_compare15(UH7 * v0, UH7 * v1){
+    while (1) {
+        
+        
+        switch (v0->tag) {
+            case 3: { // RegexAlt
+                UH7 * v53 = v0->case3.v0; UH7 * v54 = v0->case3.v1;
+                (v53)->refc++; (v54)->refc++;
+                UHDecref7(v0);
+                switch (v1->tag) {
+                    case 3: { // RegexAlt
+                        UH7 * v55 = v1->case3.v0; UH7 * v56 = v1->case3.v1;
+                        (v53)->refc++; (v55)->refc += 2; (v56)->refc++;
+                        UHDecref7(v1);
+                        US4 v57;
+                        v57 = regex_compare15(v53, v55);
+                        
+                        UHDecref7(v53); UHDecref7(v55);
+                        switch (v57.tag) {
+                            case 1: { // SymbolSame
+                                
+                                
+                                
+                                {
+                                    UH7 * tmp2 = v54;
+                                    UH7 * tmp3 = v56;
+                                    v0 = tmp2;
+                                    v1 = tmp3;
+                                }
+                                continue;
+                                break;
+                            }
+                            default: {
+                                
+                                UHDecref7(v54); UHDecref7(v56);
+                                return v57;
+                            }
+                        }
+                        break;
+                    }
+                    default: {
+                        
+                        UHDecref7(v1); UHDecref7(v53); UHDecref7(v54);
+                        return US4_SymbolGreater();
+                    }
                 }
-                default: {
-                    
-                    UHDecref7(v1);
-                    return US4_SymbolLess();
-                }
+                break;
             }
-            break;
-        }
-        case 1: { // RegexEpsilon
-            
-            
-            UHDecref7(v0);
-            switch (v1->tag) {
-                case 0: { // RegexEmpty
-                    
-                    
-                    UHDecref7(v1);
-                    return US4_SymbolGreater();
-                    break;
+            case 4: { // RegexCat
+                UH7 * v28 = v0->case4.v0; UH7 * v29 = v0->case4.v1;
+                (v28)->refc++; (v29)->refc++;
+                UHDecref7(v0);
+                switch (v1->tag) {
+                    case 4: { // RegexCat
+                        UH7 * v34 = v1->case4.v0; UH7 * v35 = v1->case4.v1;
+                        (v28)->refc++; (v34)->refc += 2; (v35)->refc++;
+                        UHDecref7(v1);
+                        US4 v36;
+                        v36 = regex_compare15(v28, v34);
+                        
+                        UHDecref7(v28); UHDecref7(v34);
+                        switch (v36.tag) {
+                            case 1: { // SymbolSame
+                                
+                                
+                                
+                                {
+                                    UH7 * tmp4 = v29;
+                                    UH7 * tmp5 = v35;
+                                    v0 = tmp4;
+                                    v1 = tmp5;
+                                }
+                                continue;
+                                break;
+                            }
+                            default: {
+                                
+                                UHDecref7(v29); UHDecref7(v35);
+                                return v36;
+                            }
+                        }
+                        break;
+                    }
+                    case 2: { // RegexChar
+                        
+                        
+                        UHDecref7(v1); UHDecref7(v28); UHDecref7(v29);
+                        return US4_SymbolGreater();
+                        break;
+                    }
+                    case 0: { // RegexEmpty
+                        
+                        
+                        UHDecref7(v1); UHDecref7(v28); UHDecref7(v29);
+                        return US4_SymbolGreater();
+                        break;
+                    }
+                    case 1: { // RegexEpsilon
+                        
+                        
+                        UHDecref7(v1); UHDecref7(v28); UHDecref7(v29);
+                        return US4_SymbolGreater();
+                        break;
+                    }
+                    default: {
+                        
+                        UHDecref7(v1); UHDecref7(v28); UHDecref7(v29);
+                        return US4_SymbolLess();
+                    }
                 }
-                case 1: { // RegexEpsilon
-                    
-                    
-                    UHDecref7(v1);
-                    return US4_SymbolSame();
-                    break;
-                }
-                default: {
-                    
-                    UHDecref7(v1);
-                    return US4_SymbolLess();
-                }
+                break;
             }
-            break;
-        }
-        default: { // RegexStar
-            UH7 * v44 = v0->case5.v0;
-            (v44)->refc++;
-            UHDecref7(v0);
-            switch (v1->tag) {
-                case 3: { // RegexAlt
-                    
-                    
-                    UHDecref7(v1); UHDecref7(v44);
-                    return US4_SymbolLess();
-                    break;
+            case 2: { // RegexChar
+                US0 v10 = v0->case2.v0;
+                
+                UHDecref7(v0);
+                switch (v1->tag) {
+                    case 2: { // RegexChar
+                        US0 v13 = v1->case2.v0;
+                        
+                        UHDecref7(v1);
+                        switch (v10.tag) {
+                            case 1: { // BitOne
+                                
+                                
+                                
+                                switch (v13.tag) {
+                                    case 1: { // BitOne
+                                        
+                                        
+                                        
+                                        return US4_SymbolSame();
+                                        break;
+                                    }
+                                    default: { // BitZero
+                                        
+                                        
+                                        
+                                        return US4_SymbolGreater();
+                                        break;
+                                    }
+                                }
+                                break;
+                            }
+                            default: { // BitZero
+                                
+                                
+                                
+                                switch (v13.tag) {
+                                    case 1: { // BitOne
+                                        
+                                        
+                                        
+                                        return US4_SymbolLess();
+                                        break;
+                                    }
+                                    default: { // BitZero
+                                        
+                                        
+                                        
+                                        return US4_SymbolSame();
+                                        break;
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                    case 0: { // RegexEmpty
+                        
+                        
+                        UHDecref7(v1);
+                        return US4_SymbolGreater();
+                        break;
+                    }
+                    case 1: { // RegexEpsilon
+                        
+                        
+                        UHDecref7(v1);
+                        return US4_SymbolGreater();
+                        break;
+                    }
+                    default: {
+                        
+                        UHDecref7(v1);
+                        return US4_SymbolLess();
+                    }
                 }
-                case 5: { // RegexStar
-                    UH7 * v48 = v1->case5.v0;
-                    (v48)->refc++;
-                    UHDecref7(v1);
-                    return regex_compare15(v44, v48);
-                    break;
-                }
-                default: {
-                    
-                    UHDecref7(v1); UHDecref7(v44);
-                    return US4_SymbolGreater();
-                }
+                break;
             }
-            break;
+            case 0: { // RegexEmpty
+                
+                
+                UHDecref7(v0);
+                switch (v1->tag) {
+                    case 0: { // RegexEmpty
+                        
+                        
+                        UHDecref7(v1);
+                        return US4_SymbolSame();
+                        break;
+                    }
+                    default: {
+                        
+                        UHDecref7(v1);
+                        return US4_SymbolLess();
+                    }
+                }
+                break;
+            }
+            case 1: { // RegexEpsilon
+                
+                
+                UHDecref7(v0);
+                switch (v1->tag) {
+                    case 0: { // RegexEmpty
+                        
+                        
+                        UHDecref7(v1);
+                        return US4_SymbolGreater();
+                        break;
+                    }
+                    case 1: { // RegexEpsilon
+                        
+                        
+                        UHDecref7(v1);
+                        return US4_SymbolSame();
+                        break;
+                    }
+                    default: {
+                        
+                        UHDecref7(v1);
+                        return US4_SymbolLess();
+                    }
+                }
+                break;
+            }
+            default: { // RegexStar
+                UH7 * v44 = v0->case5.v0;
+                (v44)->refc++;
+                UHDecref7(v0);
+                switch (v1->tag) {
+                    case 3: { // RegexAlt
+                        
+                        
+                        UHDecref7(v1); UHDecref7(v44);
+                        return US4_SymbolLess();
+                        break;
+                    }
+                    case 5: { // RegexStar
+                        UH7 * v48 = v1->case5.v0;
+                        (v48)->refc++;
+                        UHDecref7(v1);
+                        {
+                            UH7 * tmp6 = v44;
+                            UH7 * tmp7 = v48;
+                            v0 = tmp6;
+                            v1 = tmp7;
+                        }
+                        continue;
+                        break;
+                    }
+                    default: {
+                        
+                        UHDecref7(v1); UHDecref7(v44);
+                        return US4_SymbolGreater();
+                    }
+                }
+                break;
+            }
         }
     }
 }
@@ -1182,7 +1304,7 @@ UH7 * alt_insert_sorted14(UH7 * v0, UH7 * v1){
                 case 2: { // SymbolGreater
                     
                     (v0)->refc++; (v3)->refc++;
-                    UHDecref7(v1); USDecref4(&(v4));
+                    UHDecref7(v1);
                     UH7 * v6;
                     v6 = alt_insert_sorted14(v0, v3);
                     
@@ -1193,14 +1315,14 @@ UH7 * alt_insert_sorted14(UH7 * v0, UH7 * v1){
                 case 0: { // SymbolLess
                     
                     
-                    UHDecref7(v2); UHDecref7(v3); USDecref4(&(v4));
+                    UHDecref7(v2); UHDecref7(v3);
                     return UH7_RegexAlt(v0, v1);
                     break;
                 }
                 default: { // SymbolSame
                     
                     
-                    UHDecref7(v0); UHDecref7(v2); UHDecref7(v3); USDecref4(&(v4));
+                    UHDecref7(v0); UHDecref7(v2); UHDecref7(v3);
                     return v1;
                     break;
                 }
@@ -1225,21 +1347,21 @@ UH7 * alt_insert_sorted14(UH7 * v0, UH7 * v1){
                 case 2: { // SymbolGreater
                     
                     
-                    USDecref4(&(v11));
+                    
                     return UH7_RegexAlt(v1, v0);
                     break;
                 }
                 case 0: { // SymbolLess
                     
                     
-                    USDecref4(&(v11));
+                    
                     return UH7_RegexAlt(v0, v1);
                     break;
                 }
                 default: { // SymbolSame
                     
                     
-                    UHDecref7(v0); USDecref4(&(v11));
+                    UHDecref7(v0);
                     return v1;
                     break;
                 }
@@ -1248,243 +1370,271 @@ UH7 * alt_insert_sorted14(UH7 * v0, UH7 * v1){
     }
 }
 UH7 * make_alt13(UH7 * v0, UH7 * v1){
-    
-    
-    switch (v0->tag) {
-        case 3: { // RegexAlt
-            UH7 * v2 = v0->case3.v0; UH7 * v3 = v0->case3.v1;
-            (v1)->refc++; (v2)->refc += 2; (v3)->refc++;
-            UHDecref7(v0);
-            UH7 * v4;
-            v4 = alt_insert_sorted14(v2, v1);
-            
-            UHDecref7(v1); UHDecref7(v2);
-            return make_alt13(v3, v4);
-            break;
-        }
-        case 0: { // RegexEmpty
-            
-            
-            UHDecref7(v0);
-            return v1;
-            break;
-        }
-        default: {
-            
-            
-            return alt_insert_sorted14(v0, v1);
+    while (1) {
+        
+        
+        switch (v0->tag) {
+            case 3: { // RegexAlt
+                UH7 * v2 = v0->case3.v0; UH7 * v3 = v0->case3.v1;
+                (v1)->refc++; (v2)->refc += 2; (v3)->refc++;
+                UHDecref7(v0);
+                UH7 * v4;
+                v4 = alt_insert_sorted14(v2, v1);
+                
+                UHDecref7(v1); UHDecref7(v2);
+                {
+                    UH7 * tmp8 = v3;
+                    UH7 * tmp9 = v4;
+                    v0 = tmp8;
+                    v1 = tmp9;
+                }
+                continue;
+                break;
+            }
+            case 0: { // RegexEmpty
+                
+                
+                UHDecref7(v0);
+                return v1;
+                break;
+            }
+            default: {
+                
+                
+                return alt_insert_sorted14(v0, v1);
+            }
         }
     }
 }
 bool regex_equal17(UH7 * v0, UH7 * v1){
-    
-    
-    switch (v0->tag) {
-        case 3: { // RegexAlt
-            UH7 * v18 = v0->case3.v0; UH7 * v19 = v0->case3.v1;
-            (v18)->refc++; (v19)->refc++;
-            UHDecref7(v0);
-            switch (v1->tag) {
-                case 3: { // RegexAlt
-                    UH7 * v20 = v1->case3.v0; UH7 * v21 = v1->case3.v1;
-                    (v18)->refc++; (v20)->refc += 2; (v21)->refc++;
-                    UHDecref7(v1);
-                    bool v22;
-                    v22 = regex_equal17(v18, v20);
-                    
-                    UHDecref7(v18); UHDecref7(v20);
-                    if (v22){
+    while (1) {
+        
+        
+        switch (v0->tag) {
+            case 3: { // RegexAlt
+                UH7 * v18 = v0->case3.v0; UH7 * v19 = v0->case3.v1;
+                (v18)->refc++; (v19)->refc++;
+                UHDecref7(v0);
+                switch (v1->tag) {
+                    case 3: { // RegexAlt
+                        UH7 * v20 = v1->case3.v0; UH7 * v21 = v1->case3.v1;
+                        (v18)->refc++; (v20)->refc += 2; (v21)->refc++;
+                        UHDecref7(v1);
+                        bool v22;
+                        v22 = regex_equal17(v18, v20);
                         
-                        
-                        return regex_equal17(v19, v21);
-                    } else {
-                        
-                        UHDecref7(v19); UHDecref7(v21);
-                        return false;
-                    }
-                    break;
-                }
-                default: {
-                    
-                    UHDecref7(v1); UHDecref7(v18); UHDecref7(v19);
-                    return false;
-                }
-            }
-            break;
-        }
-        case 4: { // RegexCat
-            UH7 * v26 = v0->case4.v0; UH7 * v27 = v0->case4.v1;
-            (v26)->refc++; (v27)->refc++;
-            UHDecref7(v0);
-            switch (v1->tag) {
-                case 4: { // RegexCat
-                    UH7 * v28 = v1->case4.v0; UH7 * v29 = v1->case4.v1;
-                    (v26)->refc++; (v28)->refc += 2; (v29)->refc++;
-                    UHDecref7(v1);
-                    bool v30;
-                    v30 = regex_equal17(v26, v28);
-                    
-                    UHDecref7(v26); UHDecref7(v28);
-                    if (v30){
-                        
-                        
-                        return regex_equal17(v27, v29);
-                    } else {
-                        
-                        UHDecref7(v27); UHDecref7(v29);
-                        return false;
-                    }
-                    break;
-                }
-                default: {
-                    
-                    UHDecref7(v1); UHDecref7(v26); UHDecref7(v27);
-                    return false;
-                }
-            }
-            break;
-        }
-        case 2: { // RegexChar
-            US0 v4 = v0->case2.v0;
-            USIncref0(&(v4));
-            UHDecref7(v0);
-            switch (v1->tag) {
-                case 2: { // RegexChar
-                    US0 v5 = v1->case2.v0;
-                    USIncref0(&(v5));
-                    UHDecref7(v1);
-                    US4 v15;
-                    switch (v4.tag) {
-                        case 1: { // BitOne
+                        UHDecref7(v18); UHDecref7(v20);
+                        if (v22){
                             
                             
-                            
-                            switch (v5.tag) {
-                                case 1: { // BitOne
-                                    
-                                    
-                                    
-                                    v15 = US4_SymbolSame();
-                                    break;
-                                }
-                                default: { // BitZero
-                                    
-                                    
-                                    
-                                    v15 = US4_SymbolGreater();
-                                    break;
-                                }
+                            {
+                                UH7 * tmp10 = v19;
+                                UH7 * tmp11 = v21;
+                                v0 = tmp10;
+                                v1 = tmp11;
                             }
-                            break;
-                        }
-                        default: { // BitZero
+                            continue;
+                        } else {
                             
-                            
-                            
-                            switch (v5.tag) {
-                                case 1: { // BitOne
-                                    
-                                    
-                                    
-                                    v15 = US4_SymbolLess();
-                                    break;
-                                }
-                                default: { // BitZero
-                                    
-                                    
-                                    
-                                    v15 = US4_SymbolSame();
-                                    break;
-                                }
-                            }
-                            break;
-                        }
-                    }
-                    
-                    USDecref0(&(v4)); USDecref0(&(v5));
-                    switch (v15.tag) {
-                        case 1: { // SymbolSame
-                            
-                            
-                            USDecref4(&(v15));
-                            return true;
-                            break;
-                        }
-                        default: {
-                            
-                            USDecref4(&(v15));
+                            UHDecref7(v19); UHDecref7(v21);
                             return false;
                         }
+                        break;
                     }
-                    break;
+                    default: {
+                        
+                        UHDecref7(v1); UHDecref7(v18); UHDecref7(v19);
+                        return false;
+                    }
                 }
-                default: {
-                    
-                    UHDecref7(v1); USDecref0(&(v4));
-                    return false;
-                }
+                break;
             }
-            break;
-        }
-        case 0: { // RegexEmpty
-            
-            
-            UHDecref7(v0);
-            switch (v1->tag) {
-                case 0: { // RegexEmpty
-                    
-                    
-                    UHDecref7(v1);
-                    return true;
-                    break;
+            case 4: { // RegexCat
+                UH7 * v26 = v0->case4.v0; UH7 * v27 = v0->case4.v1;
+                (v26)->refc++; (v27)->refc++;
+                UHDecref7(v0);
+                switch (v1->tag) {
+                    case 4: { // RegexCat
+                        UH7 * v28 = v1->case4.v0; UH7 * v29 = v1->case4.v1;
+                        (v26)->refc++; (v28)->refc += 2; (v29)->refc++;
+                        UHDecref7(v1);
+                        bool v30;
+                        v30 = regex_equal17(v26, v28);
+                        
+                        UHDecref7(v26); UHDecref7(v28);
+                        if (v30){
+                            
+                            
+                            {
+                                UH7 * tmp12 = v27;
+                                UH7 * tmp13 = v29;
+                                v0 = tmp12;
+                                v1 = tmp13;
+                            }
+                            continue;
+                        } else {
+                            
+                            UHDecref7(v27); UHDecref7(v29);
+                            return false;
+                        }
+                        break;
+                    }
+                    default: {
+                        
+                        UHDecref7(v1); UHDecref7(v26); UHDecref7(v27);
+                        return false;
+                    }
                 }
-                default: {
-                    
-                    UHDecref7(v1);
-                    return false;
-                }
+                break;
             }
-            break;
-        }
-        case 1: { // RegexEpsilon
-            
-            
-            UHDecref7(v0);
-            switch (v1->tag) {
-                case 1: { // RegexEpsilon
-                    
-                    
-                    UHDecref7(v1);
-                    return true;
-                    break;
+            case 2: { // RegexChar
+                US0 v4 = v0->case2.v0;
+                
+                UHDecref7(v0);
+                switch (v1->tag) {
+                    case 2: { // RegexChar
+                        US0 v5 = v1->case2.v0;
+                        
+                        UHDecref7(v1);
+                        US4 v15;
+                        switch (v4.tag) {
+                            case 1: { // BitOne
+                                
+                                
+                                
+                                switch (v5.tag) {
+                                    case 1: { // BitOne
+                                        
+                                        
+                                        
+                                        v15 = US4_SymbolSame();
+                                        break;
+                                    }
+                                    default: { // BitZero
+                                        
+                                        
+                                        
+                                        v15 = US4_SymbolGreater();
+                                        break;
+                                    }
+                                }
+                                break;
+                            }
+                            default: { // BitZero
+                                
+                                
+                                
+                                switch (v5.tag) {
+                                    case 1: { // BitOne
+                                        
+                                        
+                                        
+                                        v15 = US4_SymbolLess();
+                                        break;
+                                    }
+                                    default: { // BitZero
+                                        
+                                        
+                                        
+                                        v15 = US4_SymbolSame();
+                                        break;
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                        
+                        
+                        switch (v15.tag) {
+                            case 1: { // SymbolSame
+                                
+                                
+                                
+                                return true;
+                                break;
+                            }
+                            default: {
+                                
+                                
+                                return false;
+                            }
+                        }
+                        break;
+                    }
+                    default: {
+                        
+                        UHDecref7(v1);
+                        return false;
+                    }
                 }
-                default: {
-                    
-                    UHDecref7(v1);
-                    return false;
-                }
+                break;
             }
-            break;
-        }
-        default: { // RegexStar
-            UH7 * v34 = v0->case5.v0;
-            (v34)->refc++;
-            UHDecref7(v0);
-            switch (v1->tag) {
-                case 5: { // RegexStar
-                    UH7 * v35 = v1->case5.v0;
-                    (v35)->refc++;
-                    UHDecref7(v1);
-                    return regex_equal17(v34, v35);
-                    break;
+            case 0: { // RegexEmpty
+                
+                
+                UHDecref7(v0);
+                switch (v1->tag) {
+                    case 0: { // RegexEmpty
+                        
+                        
+                        UHDecref7(v1);
+                        return true;
+                        break;
+                    }
+                    default: {
+                        
+                        UHDecref7(v1);
+                        return false;
+                    }
                 }
-                default: {
-                    
-                    UHDecref7(v1); UHDecref7(v34);
-                    return false;
-                }
+                break;
             }
-            break;
+            case 1: { // RegexEpsilon
+                
+                
+                UHDecref7(v0);
+                switch (v1->tag) {
+                    case 1: { // RegexEpsilon
+                        
+                        
+                        UHDecref7(v1);
+                        return true;
+                        break;
+                    }
+                    default: {
+                        
+                        UHDecref7(v1);
+                        return false;
+                    }
+                }
+                break;
+            }
+            default: { // RegexStar
+                UH7 * v34 = v0->case5.v0;
+                (v34)->refc++;
+                UHDecref7(v0);
+                switch (v1->tag) {
+                    case 5: { // RegexStar
+                        UH7 * v35 = v1->case5.v0;
+                        (v35)->refc++;
+                        UHDecref7(v1);
+                        {
+                            UH7 * tmp14 = v34;
+                            UH7 * tmp15 = v35;
+                            v0 = tmp14;
+                            v1 = tmp15;
+                        }
+                        continue;
+                        break;
+                    }
+                    default: {
+                        
+                        UHDecref7(v1); UHDecref7(v34);
+                        return false;
+                    }
+                }
+                break;
+            }
         }
     }
 }
@@ -1662,7 +1812,7 @@ UH7 * normalize12(UH7 * v0){
         }
         case 2: { // RegexChar
             US0 v3 = v0->case2.v0;
-            USIncref0(&(v3));
+            
             UHDecref7(v0);
             return UH7_RegexChar(v3);
             break;
@@ -1734,7 +1884,7 @@ US5 nullable20(UH7 * v0){
                 case 0: { // Nullable
                     
                     
-                    USDecref5(&(v7)); USDecref5(&(v8));
+                    
                     return US5_Nullable();
                     break;
                 }
@@ -1745,7 +1895,7 @@ US5 nullable20(UH7 * v0){
                         case 0: { // Nullable
                             
                             
-                            USDecref5(&(v7)); USDecref5(&(v8));
+                            
                             return US5_Nullable();
                             break;
                         }
@@ -1756,12 +1906,12 @@ US5 nullable20(UH7 * v0){
                                 default: { // NonNullable
                                     
                                     
-                                    USDecref5(&(v7));
+                                    
                                     switch (v8.tag) {
                                         default: { // NonNullable
                                             
                                             
-                                            USDecref5(&(v8));
+                                            
                                             return US5_NonNullable();
                                             break;
                                         }
@@ -1791,18 +1941,18 @@ US5 nullable20(UH7 * v0){
                 case 0: { // Nullable
                     
                     
-                    USDecref5(&(v18));
+                    
                     switch (v19.tag) {
                         case 0: { // Nullable
                             
                             
-                            USDecref5(&(v19));
+                            
                             return US5_Nullable();
                             break;
                         }
                         default: {
                             
-                            USDecref5(&(v19));
+                            
                             return US5_NonNullable();
                         }
                     }
@@ -1810,7 +1960,7 @@ US5 nullable20(UH7 * v0){
                 }
                 default: {
                     
-                    USDecref5(&(v18)); USDecref5(&(v19));
+                    
                     return US5_NonNullable();
                 }
             }
@@ -1852,16 +2002,16 @@ UH7 * derivative19(UH7 * v0, US0 v1){
     switch (v0->tag) {
         case 3: { // RegexAlt
             UH7 * v19 = v0->case3.v0; UH7 * v20 = v0->case3.v1;
-            USIncref0(&(v1)); (v19)->refc += 2; (v20)->refc++;
+            (v19)->refc += 2; (v20)->refc++;
             UHDecref7(v0);
             UH7 * v21;
             v21 = derivative19(v19, v1);
-            USIncref0(&(v1)); (v20)->refc++;
+            (v20)->refc++;
             UHDecref7(v19);
             UH7 * v22;
             v22 = derivative19(v20, v1);
             
-            USDecref0(&(v1)); UHDecref7(v20);
+            UHDecref7(v20);
             return make_alt13(v21, v22);
             break;
         }
@@ -1876,31 +2026,31 @@ UH7 * derivative19(UH7 * v0, US0 v1){
             switch (v26.tag) {
                 case 1: { // NonNullable
                     
-                    USIncref0(&(v1)); (v24)->refc++;
-                    USDecref5(&(v26));
+                    (v24)->refc++;
+                    
                     UH7 * v31;
                     v31 = derivative19(v24, v1);
                     
-                    USDecref0(&(v1)); UHDecref7(v24);
+                    UHDecref7(v24);
                     return make_cat16(v31, v25);
                     break;
                 }
                 default: { // Nullable
                     
-                    USIncref0(&(v1)); (v24)->refc++;
-                    USDecref5(&(v26));
+                    (v24)->refc++;
+                    
                     UH7 * v27;
                     v27 = derivative19(v24, v1);
                     (v25)->refc++; (v27)->refc++;
                     UHDecref7(v24);
                     UH7 * v28;
                     v28 = make_cat16(v27, v25);
-                    USIncref0(&(v1)); (v25)->refc++;
+                    (v25)->refc++;
                     UHDecref7(v27);
                     UH7 * v29;
                     v29 = derivative19(v25, v1);
                     
-                    USDecref0(&(v1)); UHDecref7(v25);
+                    UHDecref7(v25);
                     return make_alt13(v28, v29);
                     break;
                 }
@@ -1909,7 +2059,7 @@ UH7 * derivative19(UH7 * v0, US0 v1){
         }
         case 2: { // RegexChar
             US0 v4 = v0->case2.v0;
-            USIncref0(&(v4));
+            
             UHDecref7(v0);
             US4 v14;
             switch (v4.tag) {
@@ -1959,7 +2109,7 @@ UH7 * derivative19(UH7 * v0, US0 v1){
                 }
             }
             
-            USDecref0(&(v1)); USDecref0(&(v4));
+            
             bool v15;
             switch (v14.tag) {
                 case 1: { // SymbolSame
@@ -1976,7 +2126,7 @@ UH7 * derivative19(UH7 * v0, US0 v1){
                 }
             }
             
-            USDecref4(&(v14));
+            
             if (v15){
                 
                 
@@ -1991,25 +2141,25 @@ UH7 * derivative19(UH7 * v0, US0 v1){
         case 0: { // RegexEmpty
             
             
-            UHDecref7(v0); USDecref0(&(v1));
+            UHDecref7(v0);
             return UH7_RegexEmpty();
             break;
         }
         case 1: { // RegexEpsilon
             
             
-            UHDecref7(v0); USDecref0(&(v1));
+            UHDecref7(v0);
             return UH7_RegexEmpty();
             break;
         }
         default: { // RegexStar
             UH7 * v35 = v0->case5.v0;
-            USIncref0(&(v1)); (v35)->refc += 2;
+            (v35)->refc += 2;
             UHDecref7(v0);
             UH7 * v36;
             v36 = derivative19(v35, v1);
             (v35)->refc++;
-            USDecref0(&(v1));
+            
             UH7 * v37;
             v37 = make_star18(v35);
             
@@ -2024,137 +2174,149 @@ UH7 * canonical_derivative11(UH7 * v0, US0 v1){
     
     UH7 * v2;
     v2 = normalize12(v0);
-    USIncref0(&(v1)); (v2)->refc++;
+    (v2)->refc++;
     UHDecref7(v0);
     UH7 * v3;
     v3 = derivative19(v2, v1);
     
-    USDecref0(&(v1)); UHDecref7(v2);
+    UHDecref7(v2);
     return normalize12(v3);
 }
 bool accepts10(UH7 * v0, UH2 * v1){
-    
-    
-    switch (v1->tag) {
-        case 1: { // InputCons
-            US0 v6 = v1->case1.v0; UH2 * v7 = v1->case1.v1;
-            (v0)->refc++; USIncref0(&(v6));USIncref0(&(v6)); (v7)->refc++;
-            UHDecref2(v1);
-            UH7 * v8;
-            v8 = canonical_derivative11(v0, v6);
-            
-            UHDecref7(v0); USDecref0(&(v6));
-            return accepts10(v8, v7);
-            break;
-        }
-        default: { // InputEmpty
-            
-            (v0)->refc++;
-            UHDecref2(v1);
-            UH7 * v2;
-            v2 = normalize12(v0);
-            (v2)->refc++;
-            UHDecref7(v0);
-            US5 v3;
-            v3 = nullable20(v2);
-            
-            UHDecref7(v2);
-            switch (v3.tag) {
-                case 1: { // NonNullable
-                    
-                    
-                    USDecref5(&(v3));
-                    return false;
-                    break;
+    while (1) {
+        
+        
+        switch (v1->tag) {
+            case 1: { // InputCons
+                US0 v6 = v1->case1.v0; UH2 * v7 = v1->case1.v1;
+                (v0)->refc++; (v7)->refc++;
+                UHDecref2(v1);
+                UH7 * v8;
+                v8 = canonical_derivative11(v0, v6);
+                
+                UHDecref7(v0);
+                {
+                    UH7 * tmp16 = v8;
+                    UH2 * tmp17 = v7;
+                    v0 = tmp16;
+                    v1 = tmp17;
                 }
-                default: { // Nullable
-                    
-                    
-                    USDecref5(&(v3));
-                    return true;
-                    break;
-                }
+                continue;
+                break;
             }
-            break;
+            default: { // InputEmpty
+                
+                (v0)->refc++;
+                UHDecref2(v1);
+                UH7 * v2;
+                v2 = normalize12(v0);
+                (v2)->refc++;
+                UHDecref7(v0);
+                US5 v3;
+                v3 = nullable20(v2);
+                
+                UHDecref7(v2);
+                switch (v3.tag) {
+                    case 1: { // NonNullable
+                        
+                        
+                        
+                        return false;
+                        break;
+                    }
+                    default: { // Nullable
+                        
+                        
+                        
+                        return true;
+                        break;
+                    }
+                }
+                break;
+            }
         }
     }
 }
 bool loop8(UH7 * v0, UH1 * v1){
-    
-    
-    switch (v1->tag) {
-        case 1: { // InputListCons
-            UH2 * v2 = v1->case1.v0; UH1 * v3 = v1->case1.v1;
-            (v2)->refc++; (v3)->refc++;
-            UHDecref1(v1);
-            int32_t v4;
-            v4 = 1l;
-            (v2)->refc++;
-            
-            US3 v5;
-            v5 = loop9(v4, v2);
-            
-            
-            bool v11;
-            switch (v5.tag) {
-                case 0: { // InventoryDfaAccepted
-                    
-                    (v0)->refc++; (v2)->refc++;
-                    
-                    v11 = accepts10(v0, v2);
-                    break;
+    while (1) {
+        
+        
+        switch (v1->tag) {
+            case 1: { // InputListCons
+                UH2 * v2 = v1->case1.v0; UH1 * v3 = v1->case1.v1;
+                (v2)->refc++; (v3)->refc++;
+                UHDecref1(v1);
+                int32_t v4;
+                v4 = 1l;
+                (v2)->refc++;
+                
+                US3 v5;
+                v5 = loop9(v4, v2);
+                
+                
+                bool v11;
+                switch (v5.tag) {
+                    case 0: { // InventoryDfaAccepted
+                        
+                        (v0)->refc++; (v2)->refc++;
+                        
+                        v11 = accepts10(v0, v2);
+                        break;
+                    }
+                    case 2: { // InventoryDfaInputOutsideInventory
+                        
+                        
+                        
+                        v11 = false;
+                        break;
+                    }
+                    default: { // InventoryDfaRejected
+                        
+                        (v0)->refc++; (v2)->refc++;
+                        
+                        bool v7;
+                        v7 = accepts10(v0, v2);
+                        
+                        
+                        bool v8;
+                        v8 = v7 == false;
+                        
+                        
+                        v11 = v8;
+                        break;
+                    }
                 }
-                case 2: { // InventoryDfaInputOutsideInventory
+                
+                UHDecref2(v2);
+                if (v11){
                     
                     
+                    {
+                        UH7 * tmp18 = v0;
+                        UH1 * tmp19 = v3;
+                        v0 = tmp18;
+                        v1 = tmp19;
+                    }
+                    continue;
+                } else {
                     
-                    v11 = false;
-                    break;
+                    UHDecref7(v0); UHDecref1(v3);
+                    return false;
                 }
-                default: { // InventoryDfaRejected
-                    
-                    (v0)->refc++; (v2)->refc++;
-                    
-                    bool v7;
-                    v7 = accepts10(v0, v2);
-                    
-                    
-                    bool v8;
-                    v8 = v7 == false;
-                    
-                    
-                    v11 = v8;
-                    break;
-                }
+                break;
             }
-            
-            UHDecref2(v2); USDecref3(&(v5));
-            if (v11){
+            default: { // InputListNil
                 
                 
-                return loop8(v0, v3);
-            } else {
-                
-                UHDecref7(v0); UHDecref1(v3);
-                return false;
+                UHDecref7(v0); UHDecref1(v1);
+                return true;
+                break;
             }
-            break;
-        }
-        default: { // InputListNil
-            
-            
-            UHDecref7(v0); UHDecref1(v1);
-            return true;
-            break;
         }
     }
 }
 static inline void UHDecrefBody8(UH8 * x){
     switch (x->tag) {
-        case 2: {
-            USDecref1(&(x->case2.v0));
-            break;
-        }
         case 3: {
             UHDecref8(x->case3.v0); UHDecref8(x->case3.v1);
             break;
@@ -2170,7 +2332,28 @@ static inline void UHDecrefBody8(UH8 * x){
     }
 }
 void UHDecref8(UH8 * x){
-    if (x != NULL && --(x->refc) == 0) { UHDecrefBody8(x); free(x); }
+    while (x != NULL && --(x->refc) == 0) {
+        UH8 * next = NULL;
+        switch (x->tag) {
+            case 3: {
+                UHDecref8(x->case3.v0);
+                next = x->case3.v1;
+                break;
+            }
+            case 4: {
+                UHDecref8(x->case4.v0);
+                next = x->case4.v1;
+                break;
+            }
+            case 5: {
+                
+                next = x->case5.v0;
+                break;
+            }
+        }
+        free(x);
+        x = next;
+    }
 }
 UH8 * UH8_RegexEmpty() { // RegexEmpty
     UH8 * x = malloc(sizeof(UH8));
@@ -2213,208 +2396,186 @@ UH8 * UH8_RegexStar(UH8 * v0) { // RegexStar
     return x;
 }
 US3 loop22(int32_t v0, UH5 * v1){
-    
-    
-    switch (v1->tag) {
-        case 1: { // InputCons
-            US1 v8 = v1->case1.v0; UH5 * v9 = v1->case1.v1;
-            USIncref1(&(v8)); (v9)->refc++;
-            UHDecref5(v1);
-            US4 v12;
-            switch (v8.tag) {
-                case 0: { // TriA
-                    
-                    
-                    
-                    v12 = US4_SymbolSame();
-                    break;
-                }
-                default: {
-                    
-                    
-                    v12 = US4_SymbolGreater();
-                }
-            }
-            
-            
-            bool v13;
-            switch (v12.tag) {
-                case 1: { // SymbolSame
-                    
-                    
-                    
-                    v13 = true;
-                    break;
-                }
-                default: {
-                    
-                    
-                    v13 = false;
-                }
-            }
-            
-            USDecref4(&(v12));
-            int32_t v30;
-            if (v13){
-                
-                
-                v30 = 0l;
-            } else {
-                
-                
-                US4 v19;
+    while (1) {
+        
+        
+        switch (v1->tag) {
+            case 1: { // InputCons
+                US1 v8 = v1->case1.v0; UH5 * v9 = v1->case1.v1;
+                (v9)->refc++;
+                UHDecref5(v1);
+                US4 v12;
                 switch (v8.tag) {
                     case 0: { // TriA
                         
                         
                         
-                        v19 = US4_SymbolLess();
-                        break;
-                    }
-                    case 1: { // TriB
-                        
-                        
-                        
-                        v19 = US4_SymbolSame();
-                        break;
-                    }
-                    default: { // TriC
-                        
-                        
-                        
-                        v19 = US4_SymbolGreater();
-                        break;
-                    }
-                }
-                
-                
-                bool v20;
-                switch (v19.tag) {
-                    case 1: { // SymbolSame
-                        
-                        
-                        
-                        v20 = true;
+                        v12 = US4_SymbolSame();
                         break;
                     }
                     default: {
                         
                         
-                        v20 = false;
+                        v12 = US4_SymbolGreater();
                     }
                 }
                 
-                USDecref4(&(v19));
-                if (v20){
+                
+                bool v13;
+                switch (v12.tag) {
+                    case 1: { // SymbolSame
+                        
+                        
+                        
+                        v13 = true;
+                        break;
+                    }
+                    default: {
+                        
+                        
+                        v13 = false;
+                    }
+                }
+                
+                
+                int32_t v30;
+                if (v13){
                     
                     
-                    v30 = 1l;
+                    v30 = 0l;
                 } else {
                     
                     
-                    US4 v26;
+                    US4 v19;
                     switch (v8.tag) {
                         case 0: { // TriA
                             
                             
                             
-                            v26 = US4_SymbolLess();
+                            v19 = US4_SymbolLess();
                             break;
                         }
                         case 1: { // TriB
                             
                             
                             
-                            v26 = US4_SymbolLess();
+                            v19 = US4_SymbolSame();
                             break;
                         }
                         default: { // TriC
                             
                             
                             
-                            v26 = US4_SymbolSame();
+                            v19 = US4_SymbolGreater();
                             break;
                         }
                     }
                     
                     
-                    bool v27;
-                    switch (v26.tag) {
+                    bool v20;
+                    switch (v19.tag) {
                         case 1: { // SymbolSame
                             
                             
                             
-                            v27 = true;
+                            v20 = true;
                             break;
                         }
                         default: {
                             
                             
-                            v27 = false;
+                            v20 = false;
                         }
                     }
                     
-                    USDecref4(&(v26));
-                    if (v27){
+                    
+                    if (v20){
                         
                         
-                        v30 = 2l;
+                        v30 = 1l;
                     } else {
                         
                         
-                        v30 = -1l;
+                        US4 v26;
+                        switch (v8.tag) {
+                            case 0: { // TriA
+                                
+                                
+                                
+                                v26 = US4_SymbolLess();
+                                break;
+                            }
+                            case 1: { // TriB
+                                
+                                
+                                
+                                v26 = US4_SymbolLess();
+                                break;
+                            }
+                            default: { // TriC
+                                
+                                
+                                
+                                v26 = US4_SymbolSame();
+                                break;
+                            }
+                        }
+                        
+                        
+                        bool v27;
+                        switch (v26.tag) {
+                            case 1: { // SymbolSame
+                                
+                                
+                                
+                                v27 = true;
+                                break;
+                            }
+                            default: {
+                                
+                                
+                                v27 = false;
+                            }
+                        }
+                        
+                        
+                        if (v27){
+                            
+                            
+                            v30 = 2l;
+                        } else {
+                            
+                            
+                            v30 = -1l;
+                        }
                     }
                 }
-            }
-            
-            USDecref1(&(v8));
-            bool v31;
-            v31 = v30 < 0l;
-            
-            
-            if (v31){
-                
-                UHDecref5(v9);
-                return US3_InventoryDfaInputOutsideInventory();
-            } else {
                 
                 
-                bool v33;
-                v33 = v0 == 0l;
+                bool v31;
+                v31 = v30 < 0l;
                 
                 
-                int32_t v46;
-                if (v33){
+                if (v31){
                     
-                    
-                    bool v34;
-                    v34 = v30 == 0l;
-                    
-                    
-                    if (v34){
-                        
-                        
-                        v46 = 0l;
-                    } else {
-                        
-                        
-                        v46 = 0l;
-                    }
+                    UHDecref5(v9);
+                    return US3_InventoryDfaInputOutsideInventory();
                 } else {
                     
                     
-                    bool v37;
-                    v37 = v0 == 1l;
+                    bool v33;
+                    v33 = v0 == 0l;
                     
                     
-                    if (v37){
+                    int32_t v46;
+                    if (v33){
                         
                         
-                        bool v38;
-                        v38 = v30 == 0l;
+                        bool v34;
+                        v34 = v30 == 0l;
                         
                         
-                        if (v38){
+                        if (v34){
                             
                             
                             v46 = 0l;
@@ -2426,366 +2587,416 @@ US3 loop22(int32_t v0, UH5 * v1){
                     } else {
                         
                         
-                        bool v41;
-                        v41 = v30 == 0l;
+                        bool v37;
+                        v37 = v0 == 1l;
                         
                         
-                        if (v41){
+                        if (v37){
                             
                             
-                            v46 = 2l;
+                            bool v38;
+                            v38 = v30 == 0l;
+                            
+                            
+                            if (v38){
+                                
+                                
+                                v46 = 0l;
+                            } else {
+                                
+                                
+                                v46 = 0l;
+                            }
                         } else {
                             
                             
-                            bool v42;
-                            v42 = v30 == 1l;
+                            bool v41;
+                            v41 = v30 == 0l;
                             
                             
-                            if (v42){
+                            if (v41){
                                 
                                 
                                 v46 = 2l;
                             } else {
                                 
                                 
-                                v46 = 1l;
+                                bool v42;
+                                v42 = v30 == 1l;
+                                
+                                
+                                if (v42){
+                                    
+                                    
+                                    v46 = 2l;
+                                } else {
+                                    
+                                    
+                                    v46 = 1l;
+                                }
                             }
                         }
                     }
+                    
+                    
+                    {
+                        int32_t tmp20 = v46;
+                        UH5 * tmp21 = v9;
+                        v0 = tmp20;
+                        v1 = tmp21;
+                    }
+                    continue;
+                }
+                break;
+            }
+            default: { // InputEmpty
+                
+                
+                UHDecref5(v1);
+                bool v2;
+                v2 = v0 == 0l;
+                
+                
+                bool v4;
+                if (v2){
+                    
+                    
+                    v4 = false;
+                } else {
+                    
+                    
+                    bool v3;
+                    v3 = v0 == 1l;
+                    
+                    
+                    v4 = v3;
                 }
                 
                 
-                return loop22(v46, v9);
+                if (v4){
+                    
+                    
+                    return US3_InventoryDfaAccepted();
+                } else {
+                    
+                    
+                    return US3_InventoryDfaRejected();
+                }
+                break;
             }
-            break;
-        }
-        default: { // InputEmpty
-            
-            
-            UHDecref5(v1);
-            bool v2;
-            v2 = v0 == 0l;
-            
-            
-            bool v4;
-            if (v2){
-                
-                
-                v4 = false;
-            } else {
-                
-                
-                bool v3;
-                v3 = v0 == 1l;
-                
-                
-                v4 = v3;
-            }
-            
-            
-            if (v4){
-                
-                
-                return US3_InventoryDfaAccepted();
-            } else {
-                
-                
-                return US3_InventoryDfaRejected();
-            }
-            break;
         }
     }
 }
 US4 regex_compare28(UH8 * v0, UH8 * v1){
-    
-    
-    switch (v0->tag) {
-        case 3: { // RegexAlt
-            UH8 * v59 = v0->case3.v0; UH8 * v60 = v0->case3.v1;
-            (v59)->refc++; (v60)->refc++;
-            UHDecref8(v0);
-            switch (v1->tag) {
-                case 3: { // RegexAlt
-                    UH8 * v61 = v1->case3.v0; UH8 * v62 = v1->case3.v1;
-                    (v59)->refc++; (v61)->refc += 2; (v62)->refc++;
-                    UHDecref8(v1);
-                    US4 v63;
-                    v63 = regex_compare28(v59, v61);
-                    
-                    UHDecref8(v59); UHDecref8(v61);
-                    switch (v63.tag) {
-                        case 1: { // SymbolSame
-                            
-                            
-                            USDecref4(&(v63));
-                            return regex_compare28(v60, v62);
-                            break;
-                        }
-                        default: {
-                            
-                            UHDecref8(v60); UHDecref8(v62);
-                            return v63;
-                        }
-                    }
-                    break;
-                }
-                default: {
-                    
-                    UHDecref8(v1); UHDecref8(v59); UHDecref8(v60);
-                    return US4_SymbolGreater();
-                }
-            }
-            break;
-        }
-        case 4: { // RegexCat
-            UH8 * v34 = v0->case4.v0; UH8 * v35 = v0->case4.v1;
-            (v34)->refc++; (v35)->refc++;
-            UHDecref8(v0);
-            switch (v1->tag) {
-                case 4: { // RegexCat
-                    UH8 * v40 = v1->case4.v0; UH8 * v41 = v1->case4.v1;
-                    (v34)->refc++; (v40)->refc += 2; (v41)->refc++;
-                    UHDecref8(v1);
-                    US4 v42;
-                    v42 = regex_compare28(v34, v40);
-                    
-                    UHDecref8(v34); UHDecref8(v40);
-                    switch (v42.tag) {
-                        case 1: { // SymbolSame
-                            
-                            
-                            USDecref4(&(v42));
-                            return regex_compare28(v35, v41);
-                            break;
-                        }
-                        default: {
-                            
-                            UHDecref8(v35); UHDecref8(v41);
-                            return v42;
-                        }
-                    }
-                    break;
-                }
-                case 2: { // RegexChar
-                    
-                    
-                    UHDecref8(v1); UHDecref8(v34); UHDecref8(v35);
-                    return US4_SymbolGreater();
-                    break;
-                }
-                case 0: { // RegexEmpty
-                    
-                    
-                    UHDecref8(v1); UHDecref8(v34); UHDecref8(v35);
-                    return US4_SymbolGreater();
-                    break;
-                }
-                case 1: { // RegexEpsilon
-                    
-                    
-                    UHDecref8(v1); UHDecref8(v34); UHDecref8(v35);
-                    return US4_SymbolGreater();
-                    break;
-                }
-                default: {
-                    
-                    UHDecref8(v1); UHDecref8(v34); UHDecref8(v35);
-                    return US4_SymbolLess();
-                }
-            }
-            break;
-        }
-        case 2: { // RegexChar
-            US1 v10 = v0->case2.v0;
-            USIncref1(&(v10));
-            UHDecref8(v0);
-            switch (v1->tag) {
-                case 2: { // RegexChar
-                    US1 v13 = v1->case2.v0;
-                    USIncref1(&(v13));
-                    UHDecref8(v1);
-                    switch (v10.tag) {
-                        case 0: { // TriA
-                            
-                            
-                            USDecref1(&(v10));
-                            switch (v13.tag) {
-                                case 0: { // TriA
-                                    
-                                    
-                                    USDecref1(&(v13));
-                                    return US4_SymbolSame();
-                                    break;
+    while (1) {
+        
+        
+        switch (v0->tag) {
+            case 3: { // RegexAlt
+                UH8 * v59 = v0->case3.v0; UH8 * v60 = v0->case3.v1;
+                (v59)->refc++; (v60)->refc++;
+                UHDecref8(v0);
+                switch (v1->tag) {
+                    case 3: { // RegexAlt
+                        UH8 * v61 = v1->case3.v0; UH8 * v62 = v1->case3.v1;
+                        (v59)->refc++; (v61)->refc += 2; (v62)->refc++;
+                        UHDecref8(v1);
+                        US4 v63;
+                        v63 = regex_compare28(v59, v61);
+                        
+                        UHDecref8(v59); UHDecref8(v61);
+                        switch (v63.tag) {
+                            case 1: { // SymbolSame
+                                
+                                
+                                
+                                {
+                                    UH8 * tmp22 = v60;
+                                    UH8 * tmp23 = v62;
+                                    v0 = tmp22;
+                                    v1 = tmp23;
                                 }
-                                default: {
-                                    
-                                    USDecref1(&(v13));
-                                    return US4_SymbolLess();
-                                }
+                                continue;
+                                break;
                             }
-                            break;
+                            default: {
+                                
+                                UHDecref8(v60); UHDecref8(v62);
+                                return v63;
+                            }
                         }
-                        default: {
-                            
-                            
-                            switch (v13.tag) {
-                                case 0: { // TriA
-                                    
-                                    
-                                    USDecref1(&(v10)); USDecref1(&(v13));
-                                    return US4_SymbolGreater();
-                                    break;
+                        break;
+                    }
+                    default: {
+                        
+                        UHDecref8(v1); UHDecref8(v59); UHDecref8(v60);
+                        return US4_SymbolGreater();
+                    }
+                }
+                break;
+            }
+            case 4: { // RegexCat
+                UH8 * v34 = v0->case4.v0; UH8 * v35 = v0->case4.v1;
+                (v34)->refc++; (v35)->refc++;
+                UHDecref8(v0);
+                switch (v1->tag) {
+                    case 4: { // RegexCat
+                        UH8 * v40 = v1->case4.v0; UH8 * v41 = v1->case4.v1;
+                        (v34)->refc++; (v40)->refc += 2; (v41)->refc++;
+                        UHDecref8(v1);
+                        US4 v42;
+                        v42 = regex_compare28(v34, v40);
+                        
+                        UHDecref8(v34); UHDecref8(v40);
+                        switch (v42.tag) {
+                            case 1: { // SymbolSame
+                                
+                                
+                                
+                                {
+                                    UH8 * tmp24 = v35;
+                                    UH8 * tmp25 = v41;
+                                    v0 = tmp24;
+                                    v1 = tmp25;
                                 }
-                                default: {
-                                    
-                                    
-                                    switch (v10.tag) {
-                                        case 1: { // TriB
-                                            
-                                            
-                                            USDecref1(&(v10));
-                                            switch (v13.tag) {
-                                                case 1: { // TriB
-                                                    
-                                                    
-                                                    USDecref1(&(v13));
-                                                    return US4_SymbolSame();
-                                                    break;
+                                continue;
+                                break;
+                            }
+                            default: {
+                                
+                                UHDecref8(v35); UHDecref8(v41);
+                                return v42;
+                            }
+                        }
+                        break;
+                    }
+                    case 2: { // RegexChar
+                        
+                        
+                        UHDecref8(v1); UHDecref8(v34); UHDecref8(v35);
+                        return US4_SymbolGreater();
+                        break;
+                    }
+                    case 0: { // RegexEmpty
+                        
+                        
+                        UHDecref8(v1); UHDecref8(v34); UHDecref8(v35);
+                        return US4_SymbolGreater();
+                        break;
+                    }
+                    case 1: { // RegexEpsilon
+                        
+                        
+                        UHDecref8(v1); UHDecref8(v34); UHDecref8(v35);
+                        return US4_SymbolGreater();
+                        break;
+                    }
+                    default: {
+                        
+                        UHDecref8(v1); UHDecref8(v34); UHDecref8(v35);
+                        return US4_SymbolLess();
+                    }
+                }
+                break;
+            }
+            case 2: { // RegexChar
+                US1 v10 = v0->case2.v0;
+                
+                UHDecref8(v0);
+                switch (v1->tag) {
+                    case 2: { // RegexChar
+                        US1 v13 = v1->case2.v0;
+                        
+                        UHDecref8(v1);
+                        switch (v10.tag) {
+                            case 0: { // TriA
+                                
+                                
+                                
+                                switch (v13.tag) {
+                                    case 0: { // TriA
+                                        
+                                        
+                                        
+                                        return US4_SymbolSame();
+                                        break;
+                                    }
+                                    default: {
+                                        
+                                        
+                                        return US4_SymbolLess();
+                                    }
+                                }
+                                break;
+                            }
+                            default: {
+                                
+                                
+                                switch (v13.tag) {
+                                    case 0: { // TriA
+                                        
+                                        
+                                        
+                                        return US4_SymbolGreater();
+                                        break;
+                                    }
+                                    default: {
+                                        
+                                        
+                                        switch (v10.tag) {
+                                            case 1: { // TriB
+                                                
+                                                
+                                                
+                                                switch (v13.tag) {
+                                                    case 1: { // TriB
+                                                        
+                                                        
+                                                        
+                                                        return US4_SymbolSame();
+                                                        break;
+                                                    }
+                                                    default: { // TriC
+                                                        
+                                                        
+                                                        
+                                                        return US4_SymbolLess();
+                                                        break;
+                                                    }
                                                 }
-                                                default: { // TriC
-                                                    
-                                                    
-                                                    USDecref1(&(v13));
-                                                    return US4_SymbolLess();
-                                                    break;
-                                                }
+                                                break;
                                             }
-                                            break;
-                                        }
-                                        default: { // TriC
-                                            
-                                            
-                                            USDecref1(&(v10));
-                                            switch (v13.tag) {
-                                                case 1: { // TriB
-                                                    
-                                                    
-                                                    USDecref1(&(v13));
-                                                    return US4_SymbolGreater();
-                                                    break;
+                                            default: { // TriC
+                                                
+                                                
+                                                
+                                                switch (v13.tag) {
+                                                    case 1: { // TriB
+                                                        
+                                                        
+                                                        
+                                                        return US4_SymbolGreater();
+                                                        break;
+                                                    }
+                                                    default: { // TriC
+                                                        
+                                                        
+                                                        
+                                                        return US4_SymbolSame();
+                                                        break;
+                                                    }
                                                 }
-                                                default: { // TriC
-                                                    
-                                                    
-                                                    USDecref1(&(v13));
-                                                    return US4_SymbolSame();
-                                                    break;
-                                                }
+                                                break;
                                             }
-                                            break;
                                         }
                                     }
                                 }
                             }
                         }
+                        break;
                     }
-                    break;
+                    case 0: { // RegexEmpty
+                        
+                        
+                        UHDecref8(v1);
+                        return US4_SymbolGreater();
+                        break;
+                    }
+                    case 1: { // RegexEpsilon
+                        
+                        
+                        UHDecref8(v1);
+                        return US4_SymbolGreater();
+                        break;
+                    }
+                    default: {
+                        
+                        UHDecref8(v1);
+                        return US4_SymbolLess();
+                    }
                 }
-                case 0: { // RegexEmpty
-                    
-                    
-                    UHDecref8(v1); USDecref1(&(v10));
-                    return US4_SymbolGreater();
-                    break;
-                }
-                case 1: { // RegexEpsilon
-                    
-                    
-                    UHDecref8(v1); USDecref1(&(v10));
-                    return US4_SymbolGreater();
-                    break;
-                }
-                default: {
-                    
-                    UHDecref8(v1); USDecref1(&(v10));
-                    return US4_SymbolLess();
-                }
+                break;
             }
-            break;
-        }
-        case 0: { // RegexEmpty
-            
-            
-            UHDecref8(v0);
-            switch (v1->tag) {
-                case 0: { // RegexEmpty
-                    
-                    
-                    UHDecref8(v1);
-                    return US4_SymbolSame();
-                    break;
+            case 0: { // RegexEmpty
+                
+                
+                UHDecref8(v0);
+                switch (v1->tag) {
+                    case 0: { // RegexEmpty
+                        
+                        
+                        UHDecref8(v1);
+                        return US4_SymbolSame();
+                        break;
+                    }
+                    default: {
+                        
+                        UHDecref8(v1);
+                        return US4_SymbolLess();
+                    }
                 }
-                default: {
-                    
-                    UHDecref8(v1);
-                    return US4_SymbolLess();
-                }
+                break;
             }
-            break;
-        }
-        case 1: { // RegexEpsilon
-            
-            
-            UHDecref8(v0);
-            switch (v1->tag) {
-                case 0: { // RegexEmpty
-                    
-                    
-                    UHDecref8(v1);
-                    return US4_SymbolGreater();
-                    break;
+            case 1: { // RegexEpsilon
+                
+                
+                UHDecref8(v0);
+                switch (v1->tag) {
+                    case 0: { // RegexEmpty
+                        
+                        
+                        UHDecref8(v1);
+                        return US4_SymbolGreater();
+                        break;
+                    }
+                    case 1: { // RegexEpsilon
+                        
+                        
+                        UHDecref8(v1);
+                        return US4_SymbolSame();
+                        break;
+                    }
+                    default: {
+                        
+                        UHDecref8(v1);
+                        return US4_SymbolLess();
+                    }
                 }
-                case 1: { // RegexEpsilon
-                    
-                    
-                    UHDecref8(v1);
-                    return US4_SymbolSame();
-                    break;
-                }
-                default: {
-                    
-                    UHDecref8(v1);
-                    return US4_SymbolLess();
-                }
+                break;
             }
-            break;
-        }
-        default: { // RegexStar
-            UH8 * v50 = v0->case5.v0;
-            (v50)->refc++;
-            UHDecref8(v0);
-            switch (v1->tag) {
-                case 3: { // RegexAlt
-                    
-                    
-                    UHDecref8(v1); UHDecref8(v50);
-                    return US4_SymbolLess();
-                    break;
+            default: { // RegexStar
+                UH8 * v50 = v0->case5.v0;
+                (v50)->refc++;
+                UHDecref8(v0);
+                switch (v1->tag) {
+                    case 3: { // RegexAlt
+                        
+                        
+                        UHDecref8(v1); UHDecref8(v50);
+                        return US4_SymbolLess();
+                        break;
+                    }
+                    case 5: { // RegexStar
+                        UH8 * v54 = v1->case5.v0;
+                        (v54)->refc++;
+                        UHDecref8(v1);
+                        {
+                            UH8 * tmp26 = v50;
+                            UH8 * tmp27 = v54;
+                            v0 = tmp26;
+                            v1 = tmp27;
+                        }
+                        continue;
+                        break;
+                    }
+                    default: {
+                        
+                        UHDecref8(v1); UHDecref8(v50);
+                        return US4_SymbolGreater();
+                    }
                 }
-                case 5: { // RegexStar
-                    UH8 * v54 = v1->case5.v0;
-                    (v54)->refc++;
-                    UHDecref8(v1);
-                    return regex_compare28(v50, v54);
-                    break;
-                }
-                default: {
-                    
-                    UHDecref8(v1); UHDecref8(v50);
-                    return US4_SymbolGreater();
-                }
+                break;
             }
-            break;
         }
     }
 }
@@ -2805,7 +3016,7 @@ UH8 * alt_insert_sorted27(UH8 * v0, UH8 * v1){
                 case 2: { // SymbolGreater
                     
                     (v0)->refc++; (v3)->refc++;
-                    UHDecref8(v1); USDecref4(&(v4));
+                    UHDecref8(v1);
                     UH8 * v6;
                     v6 = alt_insert_sorted27(v0, v3);
                     
@@ -2816,14 +3027,14 @@ UH8 * alt_insert_sorted27(UH8 * v0, UH8 * v1){
                 case 0: { // SymbolLess
                     
                     
-                    UHDecref8(v2); UHDecref8(v3); USDecref4(&(v4));
+                    UHDecref8(v2); UHDecref8(v3);
                     return UH8_RegexAlt(v0, v1);
                     break;
                 }
                 default: { // SymbolSame
                     
                     
-                    UHDecref8(v0); UHDecref8(v2); UHDecref8(v3); USDecref4(&(v4));
+                    UHDecref8(v0); UHDecref8(v2); UHDecref8(v3);
                     return v1;
                     break;
                 }
@@ -2848,21 +3059,21 @@ UH8 * alt_insert_sorted27(UH8 * v0, UH8 * v1){
                 case 2: { // SymbolGreater
                     
                     
-                    USDecref4(&(v11));
+                    
                     return UH8_RegexAlt(v1, v0);
                     break;
                 }
                 case 0: { // SymbolLess
                     
                     
-                    USDecref4(&(v11));
+                    
                     return UH8_RegexAlt(v0, v1);
                     break;
                 }
                 default: { // SymbolSame
                     
                     
-                    UHDecref8(v0); USDecref4(&(v11));
+                    UHDecref8(v0);
                     return v1;
                     break;
                 }
@@ -2871,282 +3082,310 @@ UH8 * alt_insert_sorted27(UH8 * v0, UH8 * v1){
     }
 }
 UH8 * make_alt26(UH8 * v0, UH8 * v1){
-    
-    
-    switch (v0->tag) {
-        case 3: { // RegexAlt
-            UH8 * v2 = v0->case3.v0; UH8 * v3 = v0->case3.v1;
-            (v1)->refc++; (v2)->refc += 2; (v3)->refc++;
-            UHDecref8(v0);
-            UH8 * v4;
-            v4 = alt_insert_sorted27(v2, v1);
-            
-            UHDecref8(v1); UHDecref8(v2);
-            return make_alt26(v3, v4);
-            break;
-        }
-        case 0: { // RegexEmpty
-            
-            
-            UHDecref8(v0);
-            return v1;
-            break;
-        }
-        default: {
-            
-            
-            return alt_insert_sorted27(v0, v1);
+    while (1) {
+        
+        
+        switch (v0->tag) {
+            case 3: { // RegexAlt
+                UH8 * v2 = v0->case3.v0; UH8 * v3 = v0->case3.v1;
+                (v1)->refc++; (v2)->refc += 2; (v3)->refc++;
+                UHDecref8(v0);
+                UH8 * v4;
+                v4 = alt_insert_sorted27(v2, v1);
+                
+                UHDecref8(v1); UHDecref8(v2);
+                {
+                    UH8 * tmp28 = v3;
+                    UH8 * tmp29 = v4;
+                    v0 = tmp28;
+                    v1 = tmp29;
+                }
+                continue;
+                break;
+            }
+            case 0: { // RegexEmpty
+                
+                
+                UHDecref8(v0);
+                return v1;
+                break;
+            }
+            default: {
+                
+                
+                return alt_insert_sorted27(v0, v1);
+            }
         }
     }
 }
 bool regex_equal30(UH8 * v0, UH8 * v1){
-    
-    
-    switch (v0->tag) {
-        case 3: { // RegexAlt
-            UH8 * v24 = v0->case3.v0; UH8 * v25 = v0->case3.v1;
-            (v24)->refc++; (v25)->refc++;
-            UHDecref8(v0);
-            switch (v1->tag) {
-                case 3: { // RegexAlt
-                    UH8 * v26 = v1->case3.v0; UH8 * v27 = v1->case3.v1;
-                    (v24)->refc++; (v26)->refc += 2; (v27)->refc++;
-                    UHDecref8(v1);
-                    bool v28;
-                    v28 = regex_equal30(v24, v26);
-                    
-                    UHDecref8(v24); UHDecref8(v26);
-                    if (v28){
+    while (1) {
+        
+        
+        switch (v0->tag) {
+            case 3: { // RegexAlt
+                UH8 * v24 = v0->case3.v0; UH8 * v25 = v0->case3.v1;
+                (v24)->refc++; (v25)->refc++;
+                UHDecref8(v0);
+                switch (v1->tag) {
+                    case 3: { // RegexAlt
+                        UH8 * v26 = v1->case3.v0; UH8 * v27 = v1->case3.v1;
+                        (v24)->refc++; (v26)->refc += 2; (v27)->refc++;
+                        UHDecref8(v1);
+                        bool v28;
+                        v28 = regex_equal30(v24, v26);
                         
-                        
-                        return regex_equal30(v25, v27);
-                    } else {
-                        
-                        UHDecref8(v25); UHDecref8(v27);
-                        return false;
-                    }
-                    break;
-                }
-                default: {
-                    
-                    UHDecref8(v1); UHDecref8(v24); UHDecref8(v25);
-                    return false;
-                }
-            }
-            break;
-        }
-        case 4: { // RegexCat
-            UH8 * v32 = v0->case4.v0; UH8 * v33 = v0->case4.v1;
-            (v32)->refc++; (v33)->refc++;
-            UHDecref8(v0);
-            switch (v1->tag) {
-                case 4: { // RegexCat
-                    UH8 * v34 = v1->case4.v0; UH8 * v35 = v1->case4.v1;
-                    (v32)->refc++; (v34)->refc += 2; (v35)->refc++;
-                    UHDecref8(v1);
-                    bool v36;
-                    v36 = regex_equal30(v32, v34);
-                    
-                    UHDecref8(v32); UHDecref8(v34);
-                    if (v36){
-                        
-                        
-                        return regex_equal30(v33, v35);
-                    } else {
-                        
-                        UHDecref8(v33); UHDecref8(v35);
-                        return false;
-                    }
-                    break;
-                }
-                default: {
-                    
-                    UHDecref8(v1); UHDecref8(v32); UHDecref8(v33);
-                    return false;
-                }
-            }
-            break;
-        }
-        case 2: { // RegexChar
-            US1 v4 = v0->case2.v0;
-            USIncref1(&(v4));
-            UHDecref8(v0);
-            switch (v1->tag) {
-                case 2: { // RegexChar
-                    US1 v5 = v1->case2.v0;
-                    USIncref1(&(v5));
-                    UHDecref8(v1);
-                    US4 v21;
-                    switch (v4.tag) {
-                        case 0: { // TriA
+                        UHDecref8(v24); UHDecref8(v26);
+                        if (v28){
                             
                             
-                            
-                            switch (v5.tag) {
-                                case 0: { // TriA
-                                    
-                                    
-                                    
-                                    v21 = US4_SymbolSame();
-                                    break;
-                                }
-                                default: {
-                                    
-                                    
-                                    v21 = US4_SymbolLess();
-                                }
+                            {
+                                UH8 * tmp30 = v25;
+                                UH8 * tmp31 = v27;
+                                v0 = tmp30;
+                                v1 = tmp31;
                             }
-                            break;
+                            continue;
+                        } else {
+                            
+                            UHDecref8(v25); UHDecref8(v27);
+                            return false;
                         }
-                        default: {
+                        break;
+                    }
+                    default: {
+                        
+                        UHDecref8(v1); UHDecref8(v24); UHDecref8(v25);
+                        return false;
+                    }
+                }
+                break;
+            }
+            case 4: { // RegexCat
+                UH8 * v32 = v0->case4.v0; UH8 * v33 = v0->case4.v1;
+                (v32)->refc++; (v33)->refc++;
+                UHDecref8(v0);
+                switch (v1->tag) {
+                    case 4: { // RegexCat
+                        UH8 * v34 = v1->case4.v0; UH8 * v35 = v1->case4.v1;
+                        (v32)->refc++; (v34)->refc += 2; (v35)->refc++;
+                        UHDecref8(v1);
+                        bool v36;
+                        v36 = regex_equal30(v32, v34);
+                        
+                        UHDecref8(v32); UHDecref8(v34);
+                        if (v36){
                             
                             
-                            switch (v5.tag) {
-                                case 0: { // TriA
-                                    
-                                    
-                                    
-                                    v21 = US4_SymbolGreater();
-                                    break;
+                            {
+                                UH8 * tmp32 = v33;
+                                UH8 * tmp33 = v35;
+                                v0 = tmp32;
+                                v1 = tmp33;
+                            }
+                            continue;
+                        } else {
+                            
+                            UHDecref8(v33); UHDecref8(v35);
+                            return false;
+                        }
+                        break;
+                    }
+                    default: {
+                        
+                        UHDecref8(v1); UHDecref8(v32); UHDecref8(v33);
+                        return false;
+                    }
+                }
+                break;
+            }
+            case 2: { // RegexChar
+                US1 v4 = v0->case2.v0;
+                
+                UHDecref8(v0);
+                switch (v1->tag) {
+                    case 2: { // RegexChar
+                        US1 v5 = v1->case2.v0;
+                        
+                        UHDecref8(v1);
+                        US4 v21;
+                        switch (v4.tag) {
+                            case 0: { // TriA
+                                
+                                
+                                
+                                switch (v5.tag) {
+                                    case 0: { // TriA
+                                        
+                                        
+                                        
+                                        v21 = US4_SymbolSame();
+                                        break;
+                                    }
+                                    default: {
+                                        
+                                        
+                                        v21 = US4_SymbolLess();
+                                    }
                                 }
-                                default: {
-                                    
-                                    
-                                    switch (v4.tag) {
-                                        case 1: { // TriB
-                                            
-                                            
-                                            
-                                            switch (v5.tag) {
-                                                case 1: { // TriB
-                                                    
-                                                    
-                                                    
-                                                    v21 = US4_SymbolSame();
-                                                    break;
+                                break;
+                            }
+                            default: {
+                                
+                                
+                                switch (v5.tag) {
+                                    case 0: { // TriA
+                                        
+                                        
+                                        
+                                        v21 = US4_SymbolGreater();
+                                        break;
+                                    }
+                                    default: {
+                                        
+                                        
+                                        switch (v4.tag) {
+                                            case 1: { // TriB
+                                                
+                                                
+                                                
+                                                switch (v5.tag) {
+                                                    case 1: { // TriB
+                                                        
+                                                        
+                                                        
+                                                        v21 = US4_SymbolSame();
+                                                        break;
+                                                    }
+                                                    default: { // TriC
+                                                        
+                                                        
+                                                        
+                                                        v21 = US4_SymbolLess();
+                                                        break;
+                                                    }
                                                 }
-                                                default: { // TriC
-                                                    
-                                                    
-                                                    
-                                                    v21 = US4_SymbolLess();
-                                                    break;
-                                                }
+                                                break;
                                             }
-                                            break;
-                                        }
-                                        default: { // TriC
-                                            
-                                            
-                                            
-                                            switch (v5.tag) {
-                                                case 1: { // TriB
-                                                    
-                                                    
-                                                    
-                                                    v21 = US4_SymbolGreater();
-                                                    break;
+                                            default: { // TriC
+                                                
+                                                
+                                                
+                                                switch (v5.tag) {
+                                                    case 1: { // TriB
+                                                        
+                                                        
+                                                        
+                                                        v21 = US4_SymbolGreater();
+                                                        break;
+                                                    }
+                                                    default: { // TriC
+                                                        
+                                                        
+                                                        
+                                                        v21 = US4_SymbolSame();
+                                                        break;
+                                                    }
                                                 }
-                                                default: { // TriC
-                                                    
-                                                    
-                                                    
-                                                    v21 = US4_SymbolSame();
-                                                    break;
-                                                }
+                                                break;
                                             }
-                                            break;
                                         }
                                     }
                                 }
                             }
                         }
-                    }
-                    
-                    USDecref1(&(v4)); USDecref1(&(v5));
-                    switch (v21.tag) {
-                        case 1: { // SymbolSame
-                            
-                            
-                            USDecref4(&(v21));
-                            return true;
-                            break;
+                        
+                        
+                        switch (v21.tag) {
+                            case 1: { // SymbolSame
+                                
+                                
+                                
+                                return true;
+                                break;
+                            }
+                            default: {
+                                
+                                
+                                return false;
+                            }
                         }
-                        default: {
-                            
-                            USDecref4(&(v21));
-                            return false;
-                        }
+                        break;
                     }
-                    break;
+                    default: {
+                        
+                        UHDecref8(v1);
+                        return false;
+                    }
                 }
-                default: {
-                    
-                    UHDecref8(v1); USDecref1(&(v4));
-                    return false;
-                }
+                break;
             }
-            break;
-        }
-        case 0: { // RegexEmpty
-            
-            
-            UHDecref8(v0);
-            switch (v1->tag) {
-                case 0: { // RegexEmpty
-                    
-                    
-                    UHDecref8(v1);
-                    return true;
-                    break;
+            case 0: { // RegexEmpty
+                
+                
+                UHDecref8(v0);
+                switch (v1->tag) {
+                    case 0: { // RegexEmpty
+                        
+                        
+                        UHDecref8(v1);
+                        return true;
+                        break;
+                    }
+                    default: {
+                        
+                        UHDecref8(v1);
+                        return false;
+                    }
                 }
-                default: {
-                    
-                    UHDecref8(v1);
-                    return false;
-                }
+                break;
             }
-            break;
-        }
-        case 1: { // RegexEpsilon
-            
-            
-            UHDecref8(v0);
-            switch (v1->tag) {
-                case 1: { // RegexEpsilon
-                    
-                    
-                    UHDecref8(v1);
-                    return true;
-                    break;
+            case 1: { // RegexEpsilon
+                
+                
+                UHDecref8(v0);
+                switch (v1->tag) {
+                    case 1: { // RegexEpsilon
+                        
+                        
+                        UHDecref8(v1);
+                        return true;
+                        break;
+                    }
+                    default: {
+                        
+                        UHDecref8(v1);
+                        return false;
+                    }
                 }
-                default: {
-                    
-                    UHDecref8(v1);
-                    return false;
-                }
+                break;
             }
-            break;
-        }
-        default: { // RegexStar
-            UH8 * v40 = v0->case5.v0;
-            (v40)->refc++;
-            UHDecref8(v0);
-            switch (v1->tag) {
-                case 5: { // RegexStar
-                    UH8 * v41 = v1->case5.v0;
-                    (v41)->refc++;
-                    UHDecref8(v1);
-                    return regex_equal30(v40, v41);
-                    break;
+            default: { // RegexStar
+                UH8 * v40 = v0->case5.v0;
+                (v40)->refc++;
+                UHDecref8(v0);
+                switch (v1->tag) {
+                    case 5: { // RegexStar
+                        UH8 * v41 = v1->case5.v0;
+                        (v41)->refc++;
+                        UHDecref8(v1);
+                        {
+                            UH8 * tmp34 = v40;
+                            UH8 * tmp35 = v41;
+                            v0 = tmp34;
+                            v1 = tmp35;
+                        }
+                        continue;
+                        break;
+                    }
+                    default: {
+                        
+                        UHDecref8(v1); UHDecref8(v40);
+                        return false;
+                    }
                 }
-                default: {
-                    
-                    UHDecref8(v1); UHDecref8(v40);
-                    return false;
-                }
+                break;
             }
-            break;
         }
     }
 }
@@ -3324,7 +3563,7 @@ UH8 * normalize25(UH8 * v0){
         }
         case 2: { // RegexChar
             US1 v3 = v0->case2.v0;
-            USIncref1(&(v3));
+            
             UHDecref8(v0);
             return UH8_RegexChar(v3);
             break;
@@ -3376,7 +3615,7 @@ US5 nullable33(UH8 * v0){
                 case 0: { // Nullable
                     
                     
-                    USDecref5(&(v7)); USDecref5(&(v8));
+                    
                     return US5_Nullable();
                     break;
                 }
@@ -3387,7 +3626,7 @@ US5 nullable33(UH8 * v0){
                         case 0: { // Nullable
                             
                             
-                            USDecref5(&(v7)); USDecref5(&(v8));
+                            
                             return US5_Nullable();
                             break;
                         }
@@ -3398,12 +3637,12 @@ US5 nullable33(UH8 * v0){
                                 default: { // NonNullable
                                     
                                     
-                                    USDecref5(&(v7));
+                                    
                                     switch (v8.tag) {
                                         default: { // NonNullable
                                             
                                             
-                                            USDecref5(&(v8));
+                                            
                                             return US5_NonNullable();
                                             break;
                                         }
@@ -3433,18 +3672,18 @@ US5 nullable33(UH8 * v0){
                 case 0: { // Nullable
                     
                     
-                    USDecref5(&(v18));
+                    
                     switch (v19.tag) {
                         case 0: { // Nullable
                             
                             
-                            USDecref5(&(v19));
+                            
                             return US5_Nullable();
                             break;
                         }
                         default: {
                             
-                            USDecref5(&(v19));
+                            
                             return US5_NonNullable();
                         }
                     }
@@ -3452,7 +3691,7 @@ US5 nullable33(UH8 * v0){
                 }
                 default: {
                     
-                    USDecref5(&(v18)); USDecref5(&(v19));
+                    
                     return US5_NonNullable();
                 }
             }
@@ -3494,16 +3733,16 @@ UH8 * derivative32(UH8 * v0, US1 v1){
     switch (v0->tag) {
         case 3: { // RegexAlt
             UH8 * v25 = v0->case3.v0; UH8 * v26 = v0->case3.v1;
-            USIncref1(&(v1)); (v25)->refc += 2; (v26)->refc++;
+            (v25)->refc += 2; (v26)->refc++;
             UHDecref8(v0);
             UH8 * v27;
             v27 = derivative32(v25, v1);
-            USIncref1(&(v1)); (v26)->refc++;
+            (v26)->refc++;
             UHDecref8(v25);
             UH8 * v28;
             v28 = derivative32(v26, v1);
             
-            USDecref1(&(v1)); UHDecref8(v26);
+            UHDecref8(v26);
             return make_alt26(v27, v28);
             break;
         }
@@ -3518,31 +3757,31 @@ UH8 * derivative32(UH8 * v0, US1 v1){
             switch (v32.tag) {
                 case 1: { // NonNullable
                     
-                    USIncref1(&(v1)); (v30)->refc++;
-                    USDecref5(&(v32));
+                    (v30)->refc++;
+                    
                     UH8 * v37;
                     v37 = derivative32(v30, v1);
                     
-                    USDecref1(&(v1)); UHDecref8(v30);
+                    UHDecref8(v30);
                     return make_cat29(v37, v31);
                     break;
                 }
                 default: { // Nullable
                     
-                    USIncref1(&(v1)); (v30)->refc++;
-                    USDecref5(&(v32));
+                    (v30)->refc++;
+                    
                     UH8 * v33;
                     v33 = derivative32(v30, v1);
                     (v31)->refc++; (v33)->refc++;
                     UHDecref8(v30);
                     UH8 * v34;
                     v34 = make_cat29(v33, v31);
-                    USIncref1(&(v1)); (v31)->refc++;
+                    (v31)->refc++;
                     UHDecref8(v33);
                     UH8 * v35;
                     v35 = derivative32(v31, v1);
                     
-                    USDecref1(&(v1)); UHDecref8(v31);
+                    UHDecref8(v31);
                     return make_alt26(v34, v35);
                     break;
                 }
@@ -3551,7 +3790,7 @@ UH8 * derivative32(UH8 * v0, US1 v1){
         }
         case 2: { // RegexChar
             US1 v4 = v0->case2.v0;
-            USIncref1(&(v4));
+            
             UHDecref8(v0);
             US4 v20;
             switch (v4.tag) {
@@ -3640,7 +3879,7 @@ UH8 * derivative32(UH8 * v0, US1 v1){
                 }
             }
             
-            USDecref1(&(v1)); USDecref1(&(v4));
+            
             bool v21;
             switch (v20.tag) {
                 case 1: { // SymbolSame
@@ -3657,7 +3896,7 @@ UH8 * derivative32(UH8 * v0, US1 v1){
                 }
             }
             
-            USDecref4(&(v20));
+            
             if (v21){
                 
                 
@@ -3672,25 +3911,25 @@ UH8 * derivative32(UH8 * v0, US1 v1){
         case 0: { // RegexEmpty
             
             
-            UHDecref8(v0); USDecref1(&(v1));
+            UHDecref8(v0);
             return UH8_RegexEmpty();
             break;
         }
         case 1: { // RegexEpsilon
             
             
-            UHDecref8(v0); USDecref1(&(v1));
+            UHDecref8(v0);
             return UH8_RegexEmpty();
             break;
         }
         default: { // RegexStar
             UH8 * v41 = v0->case5.v0;
-            USIncref1(&(v1)); (v41)->refc += 2;
+            (v41)->refc += 2;
             UHDecref8(v0);
             UH8 * v42;
             v42 = derivative32(v41, v1);
             (v41)->refc++;
-            USDecref1(&(v1));
+            
             UH8 * v43;
             v43 = make_star31(v41);
             
@@ -3705,301 +3944,325 @@ UH8 * canonical_derivative24(UH8 * v0, US1 v1){
     
     UH8 * v2;
     v2 = normalize25(v0);
-    USIncref1(&(v1)); (v2)->refc++;
+    (v2)->refc++;
     UHDecref8(v0);
     UH8 * v3;
     v3 = derivative32(v2, v1);
     
-    USDecref1(&(v1)); UHDecref8(v2);
+    UHDecref8(v2);
     return normalize25(v3);
 }
 bool accepts23(UH8 * v0, UH5 * v1){
-    
-    
-    switch (v1->tag) {
-        case 1: { // InputCons
-            US1 v6 = v1->case1.v0; UH5 * v7 = v1->case1.v1;
-            (v0)->refc++; USIncref1(&(v6));USIncref1(&(v6)); (v7)->refc++;
-            UHDecref5(v1);
-            UH8 * v8;
-            v8 = canonical_derivative24(v0, v6);
-            
-            UHDecref8(v0); USDecref1(&(v6));
-            return accepts23(v8, v7);
-            break;
-        }
-        default: { // InputEmpty
-            
-            (v0)->refc++;
-            UHDecref5(v1);
-            UH8 * v2;
-            v2 = normalize25(v0);
-            (v2)->refc++;
-            UHDecref8(v0);
-            US5 v3;
-            v3 = nullable33(v2);
-            
-            UHDecref8(v2);
-            switch (v3.tag) {
-                case 1: { // NonNullable
-                    
-                    
-                    USDecref5(&(v3));
-                    return false;
-                    break;
+    while (1) {
+        
+        
+        switch (v1->tag) {
+            case 1: { // InputCons
+                US1 v6 = v1->case1.v0; UH5 * v7 = v1->case1.v1;
+                (v0)->refc++; (v7)->refc++;
+                UHDecref5(v1);
+                UH8 * v8;
+                v8 = canonical_derivative24(v0, v6);
+                
+                UHDecref8(v0);
+                {
+                    UH8 * tmp36 = v8;
+                    UH5 * tmp37 = v7;
+                    v0 = tmp36;
+                    v1 = tmp37;
                 }
-                default: { // Nullable
-                    
-                    
-                    USDecref5(&(v3));
-                    return true;
-                    break;
-                }
+                continue;
+                break;
             }
-            break;
+            default: { // InputEmpty
+                
+                (v0)->refc++;
+                UHDecref5(v1);
+                UH8 * v2;
+                v2 = normalize25(v0);
+                (v2)->refc++;
+                UHDecref8(v0);
+                US5 v3;
+                v3 = nullable33(v2);
+                
+                UHDecref8(v2);
+                switch (v3.tag) {
+                    case 1: { // NonNullable
+                        
+                        
+                        
+                        return false;
+                        break;
+                    }
+                    default: { // Nullable
+                        
+                        
+                        
+                        return true;
+                        break;
+                    }
+                }
+                break;
+            }
         }
     }
 }
 bool loop21(UH8 * v0, UH4 * v1){
-    
-    
-    switch (v1->tag) {
-        case 1: { // InputListCons
-            UH5 * v2 = v1->case1.v0; UH4 * v3 = v1->case1.v1;
-            (v2)->refc++; (v3)->refc++;
-            UHDecref4(v1);
-            int32_t v4;
-            v4 = 2l;
-            (v2)->refc++;
-            
-            US3 v5;
-            v5 = loop22(v4, v2);
-            
-            
-            bool v11;
-            switch (v5.tag) {
-                case 0: { // InventoryDfaAccepted
-                    
-                    (v0)->refc++; (v2)->refc++;
-                    
-                    v11 = accepts23(v0, v2);
-                    break;
+    while (1) {
+        
+        
+        switch (v1->tag) {
+            case 1: { // InputListCons
+                UH5 * v2 = v1->case1.v0; UH4 * v3 = v1->case1.v1;
+                (v2)->refc++; (v3)->refc++;
+                UHDecref4(v1);
+                int32_t v4;
+                v4 = 2l;
+                (v2)->refc++;
+                
+                US3 v5;
+                v5 = loop22(v4, v2);
+                
+                
+                bool v11;
+                switch (v5.tag) {
+                    case 0: { // InventoryDfaAccepted
+                        
+                        (v0)->refc++; (v2)->refc++;
+                        
+                        v11 = accepts23(v0, v2);
+                        break;
+                    }
+                    case 2: { // InventoryDfaInputOutsideInventory
+                        
+                        
+                        
+                        v11 = false;
+                        break;
+                    }
+                    default: { // InventoryDfaRejected
+                        
+                        (v0)->refc++; (v2)->refc++;
+                        
+                        bool v7;
+                        v7 = accepts23(v0, v2);
+                        
+                        
+                        bool v8;
+                        v8 = v7 == false;
+                        
+                        
+                        v11 = v8;
+                        break;
+                    }
                 }
-                case 2: { // InventoryDfaInputOutsideInventory
+                
+                UHDecref5(v2);
+                if (v11){
                     
                     
+                    {
+                        UH8 * tmp38 = v0;
+                        UH4 * tmp39 = v3;
+                        v0 = tmp38;
+                        v1 = tmp39;
+                    }
+                    continue;
+                } else {
                     
-                    v11 = false;
-                    break;
+                    UHDecref8(v0); UHDecref4(v3);
+                    return false;
                 }
-                default: { // InventoryDfaRejected
-                    
-                    (v0)->refc++; (v2)->refc++;
-                    
-                    bool v7;
-                    v7 = accepts23(v0, v2);
-                    
-                    
-                    bool v8;
-                    v8 = v7 == false;
-                    
-                    
-                    v11 = v8;
-                    break;
-                }
+                break;
             }
-            
-            UHDecref5(v2); USDecref3(&(v5));
-            if (v11){
+            default: { // InputListNil
                 
                 
-                return loop21(v0, v3);
-            } else {
-                
-                UHDecref8(v0); UHDecref4(v3);
-                return false;
+                UHDecref8(v0); UHDecref4(v1);
+                return true;
+                break;
             }
-            break;
-        }
-        default: { // InputListNil
-            
-            
-            UHDecref8(v0); UHDecref4(v1);
-            return true;
-            break;
         }
     }
 }
 US3 loop34(int32_t v0, UH6 * v1){
-    
-    
-    switch (v1->tag) {
-        case 1: { // InputCons
-            US2 v7 = v1->case1.v0; UH6 * v8 = v1->case1.v1;
-            USIncref2(&(v7)); (v8)->refc++;
-            UHDecref6(v1);
-            US4 v11;
-            switch (v7.tag) {
-                case 0: { // ModelA
-                    
-                    
-                    
-                    v11 = US4_SymbolSame();
-                    break;
-                }
-                default: {
-                    
-                    
-                    v11 = US4_SymbolGreater();
-                }
-            }
-            
-            
-            bool v12;
-            switch (v11.tag) {
-                case 1: { // SymbolSame
-                    
-                    
-                    
-                    v12 = true;
-                    break;
-                }
-                default: {
-                    
-                    
-                    v12 = false;
-                }
-            }
-            
-            USDecref4(&(v11));
-            int32_t v21;
-            if (v12){
-                
-                
-                v21 = 0l;
-            } else {
-                
-                
-                US4 v18;
+    while (1) {
+        
+        
+        switch (v1->tag) {
+            case 1: { // InputCons
+                US2 v7 = v1->case1.v0; UH6 * v8 = v1->case1.v1;
+                (v8)->refc++;
+                UHDecref6(v1);
+                US4 v11;
                 switch (v7.tag) {
                     case 0: { // ModelA
                         
                         
                         
-                        v18 = US4_SymbolLess();
-                        break;
-                    }
-                    case 1: { // ModelB
-                        
-                        
-                        
-                        v18 = US4_SymbolSame();
-                        break;
-                    }
-                    default: { // ModelC
-                        
-                        
-                        
-                        v18 = US4_SymbolGreater();
-                        break;
-                    }
-                }
-                
-                
-                bool v19;
-                switch (v18.tag) {
-                    case 1: { // SymbolSame
-                        
-                        
-                        
-                        v19 = true;
+                        v11 = US4_SymbolSame();
                         break;
                     }
                     default: {
                         
                         
-                        v19 = false;
+                        v11 = US4_SymbolGreater();
                     }
                 }
                 
-                USDecref4(&(v18));
-                if (v19){
-                    
-                    
-                    v21 = 1l;
-                } else {
-                    
-                    
-                    v21 = -1l;
+                
+                bool v12;
+                switch (v11.tag) {
+                    case 1: { // SymbolSame
+                        
+                        
+                        
+                        v12 = true;
+                        break;
+                    }
+                    default: {
+                        
+                        
+                        v12 = false;
+                    }
                 }
-            }
-            
-            USDecref2(&(v7));
-            bool v22;
-            v22 = v21 < 0l;
-            
-            
-            if (v22){
-                
-                UHDecref6(v8);
-                return US3_InventoryDfaInputOutsideInventory();
-            } else {
                 
                 
-                bool v24;
-                v24 = v0 == 0l;
-                
-                
-                int32_t v28;
-                if (v24){
+                int32_t v21;
+                if (v12){
                     
                     
-                    v28 = 0l;
+                    v21 = 0l;
                 } else {
                     
                     
-                    bool v26;
-                    v26 = v21 == 0l;
+                    US4 v18;
+                    switch (v7.tag) {
+                        case 0: { // ModelA
+                            
+                            
+                            
+                            v18 = US4_SymbolLess();
+                            break;
+                        }
+                        case 1: { // ModelB
+                            
+                            
+                            
+                            v18 = US4_SymbolSame();
+                            break;
+                        }
+                        default: { // ModelC
+                            
+                            
+                            
+                            v18 = US4_SymbolGreater();
+                            break;
+                        }
+                    }
                     
                     
-                    if (v26){
+                    bool v19;
+                    switch (v18.tag) {
+                        case 1: { // SymbolSame
+                            
+                            
+                            
+                            v19 = true;
+                            break;
+                        }
+                        default: {
+                            
+                            
+                            v19 = false;
+                        }
+                    }
+                    
+                    
+                    if (v19){
                         
                         
-                        v28 = 1l;
+                        v21 = 1l;
                     } else {
                         
                         
-                        v28 = 0l;
+                        v21 = -1l;
                     }
                 }
                 
                 
-                return loop34(v28, v8);
+                bool v22;
+                v22 = v21 < 0l;
+                
+                
+                if (v22){
+                    
+                    UHDecref6(v8);
+                    return US3_InventoryDfaInputOutsideInventory();
+                } else {
+                    
+                    
+                    bool v24;
+                    v24 = v0 == 0l;
+                    
+                    
+                    int32_t v28;
+                    if (v24){
+                        
+                        
+                        v28 = 0l;
+                    } else {
+                        
+                        
+                        bool v26;
+                        v26 = v21 == 0l;
+                        
+                        
+                        if (v26){
+                            
+                            
+                            v28 = 1l;
+                        } else {
+                            
+                            
+                            v28 = 0l;
+                        }
+                    }
+                    
+                    
+                    {
+                        int32_t tmp40 = v28;
+                        UH6 * tmp41 = v8;
+                        v0 = tmp40;
+                        v1 = tmp41;
+                    }
+                    continue;
+                }
+                break;
             }
-            break;
-        }
-        default: { // InputEmpty
-            
-            
-            UHDecref6(v1);
-            bool v2;
-            v2 = v0 == 0l;
-            
-            
-            bool v3;
-            v3 = v2 == false;
-            
-            
-            if (v3){
+            default: { // InputEmpty
                 
                 
-                return US3_InventoryDfaAccepted();
-            } else {
+                UHDecref6(v1);
+                bool v2;
+                v2 = v0 == 0l;
                 
                 
-                return US3_InventoryDfaRejected();
+                bool v3;
+                v3 = v2 == false;
+                
+                
+                if (v3){
+                    
+                    
+                    return US3_InventoryDfaAccepted();
+                } else {
+                    
+                    
+                    return US3_InventoryDfaRejected();
+                }
+                break;
             }
-            break;
         }
     }
 }
@@ -4016,16 +4279,16 @@ int32_t main(){
     
     UH0 * v2;
     v2 = UH0_SymbolListNil();
-    USIncref0(&(v1)); (v2)->refc++;
+    (v2)->refc++;
     
     UH0 * v3;
     v3 = UH0_SymbolListCons(v1, v2);
-    USIncref0(&(v0)); (v3)->refc++;
-    USDecref0(&(v1)); UHDecref0(v2);
+    (v3)->refc++;
+    UHDecref0(v2);
     UH0 * v4;
     v4 = UH0_SymbolListCons(v0, v3);
     (v4)->refc++;
-    USDecref0(&(v0)); UHDecref0(v3);
+    UHDecref0(v3);
     UH1 * v5;
     v5 = input_singletons_from_symbols0(v4);
     
@@ -4048,16 +4311,16 @@ int32_t main(){
     
     UH0 * v10;
     v10 = UH0_SymbolListNil();
-    USIncref0(&(v9)); (v10)->refc++;
+    (v10)->refc++;
     
     UH0 * v11;
     v11 = UH0_SymbolListCons(v9, v10);
-    USIncref0(&(v8)); (v11)->refc++;
-    USDecref0(&(v9)); UHDecref0(v10);
+    (v11)->refc++;
+    UHDecref0(v10);
     UH0 * v12;
     v12 = UH0_SymbolListCons(v8, v11);
     
-    USDecref0(&(v8)); UHDecref0(v11);
+    UHDecref0(v11);
     US0 v13;
     v13 = US0_BitZero();
     
@@ -4068,16 +4331,16 @@ int32_t main(){
     
     UH0 * v15;
     v15 = UH0_SymbolListNil();
-    USIncref0(&(v14)); (v15)->refc++;
+    (v15)->refc++;
     
     UH0 * v16;
     v16 = UH0_SymbolListCons(v14, v15);
-    USIncref0(&(v13)); (v16)->refc++;
-    USDecref0(&(v14)); UHDecref0(v15);
+    (v16)->refc++;
+    UHDecref0(v15);
     UH0 * v17;
     v17 = UH0_SymbolListCons(v13, v16);
     (v17)->refc++;
-    USDecref0(&(v13)); UHDecref0(v16);
+    UHDecref0(v16);
     UH1 * v18;
     v18 = input_singletons_from_symbols0(v17);
     (v12)->refc++; (v18)->refc++;
@@ -4104,20 +4367,20 @@ int32_t main(){
     
     UH3 * v24;
     v24 = UH3_SymbolListNil();
-    USIncref1(&(v23)); (v24)->refc++;
+    (v24)->refc++;
     
     UH3 * v25;
     v25 = UH3_SymbolListCons(v23, v24);
-    USIncref1(&(v22)); (v25)->refc++;
-    USDecref1(&(v23)); UHDecref3(v24);
+    (v25)->refc++;
+    UHDecref3(v24);
     UH3 * v26;
     v26 = UH3_SymbolListCons(v22, v25);
-    USIncref1(&(v21)); (v26)->refc++;
-    USDecref1(&(v22)); UHDecref3(v25);
+    (v26)->refc++;
+    UHDecref3(v25);
     UH3 * v27;
     v27 = UH3_SymbolListCons(v21, v26);
     (v27)->refc++;
-    USDecref1(&(v21)); UHDecref3(v26);
+    UHDecref3(v26);
     UH4 * v28;
     v28 = input_singletons_from_symbols4(v27);
     
@@ -4144,20 +4407,20 @@ int32_t main(){
     
     UH3 * v34;
     v34 = UH3_SymbolListNil();
-    USIncref1(&(v33)); (v34)->refc++;
+    (v34)->refc++;
     
     UH3 * v35;
     v35 = UH3_SymbolListCons(v33, v34);
-    USIncref1(&(v32)); (v35)->refc++;
-    USDecref1(&(v33)); UHDecref3(v34);
+    (v35)->refc++;
+    UHDecref3(v34);
     UH3 * v36;
     v36 = UH3_SymbolListCons(v32, v35);
-    USIncref1(&(v31)); (v36)->refc++;
-    USDecref1(&(v32)); UHDecref3(v35);
+    (v36)->refc++;
+    UHDecref3(v35);
     UH3 * v37;
     v37 = UH3_SymbolListCons(v31, v36);
     
-    USDecref1(&(v31)); UHDecref3(v36);
+    UHDecref3(v36);
     US1 v38;
     v38 = US1_TriA();
     
@@ -4172,20 +4435,20 @@ int32_t main(){
     
     UH3 * v41;
     v41 = UH3_SymbolListNil();
-    USIncref1(&(v40)); (v41)->refc++;
+    (v41)->refc++;
     
     UH3 * v42;
     v42 = UH3_SymbolListCons(v40, v41);
-    USIncref1(&(v39)); (v42)->refc++;
-    USDecref1(&(v40)); UHDecref3(v41);
+    (v42)->refc++;
+    UHDecref3(v41);
     UH3 * v43;
     v43 = UH3_SymbolListCons(v39, v42);
-    USIncref1(&(v38)); (v43)->refc++;
-    USDecref1(&(v39)); UHDecref3(v42);
+    (v43)->refc++;
+    UHDecref3(v42);
     UH3 * v44;
     v44 = UH3_SymbolListCons(v38, v43);
     (v44)->refc++;
-    USDecref1(&(v38)); UHDecref3(v43);
+    UHDecref3(v43);
     UH4 * v45;
     v45 = input_singletons_from_symbols4(v44);
     (v37)->refc++; (v45)->refc++;
@@ -4204,28 +4467,28 @@ int32_t main(){
     
     UH6 * v49;
     v49 = UH6_InputEmpty();
-    USIncref2(&(v48)); (v49)->refc++;
+    (v49)->refc++;
     
     UH6 * v50;
     v50 = UH6_InputCons(v48, v49);
     
-    USDecref2(&(v48)); UHDecref6(v49);
+    UHDecref6(v49);
     US0 v51;
     v51 = US0_BitZero();
-    USIncref0(&(v51));
+    
     
     UH7 * v52;
     v52 = UH7_RegexChar(v51);
     
-    USDecref0(&(v51));
+    
     US0 v53;
     v53 = US0_BitOne();
-    USIncref0(&(v53));
+    
     
     UH7 * v54;
     v54 = UH7_RegexChar(v53);
     (v52)->refc++; (v54)->refc++;
-    USDecref0(&(v53));
+    
     UH7 * v55;
     v55 = UH7_RegexAlt(v52, v54);
     (v55)->refc++;
@@ -4236,12 +4499,12 @@ int32_t main(){
     UHDecref7(v55);
     US0 v57;
     v57 = US0_BitZero();
-    USIncref0(&(v57));
+    
     
     UH7 * v58;
     v58 = UH7_RegexChar(v57);
     (v56)->refc++; (v58)->refc++;
-    USDecref0(&(v57));
+    
     UH7 * v59;
     v59 = UH7_RegexCat(v56, v58);
     (v20)->refc++; (v59)->refc++;
@@ -4256,20 +4519,20 @@ int32_t main(){
         
         US1 v61;
         v61 = US1_TriA();
-        USIncref1(&(v61));
+        
         
         UH8 * v62;
         v62 = UH8_RegexChar(v61);
         
-        USDecref1(&(v61));
+        
         US1 v63;
         v63 = US1_TriB();
-        USIncref1(&(v63));
+        
         
         UH8 * v64;
         v64 = UH8_RegexChar(v63);
         (v62)->refc++; (v64)->refc++;
-        USDecref1(&(v63));
+        
         UH8 * v65;
         v65 = UH8_RegexAlt(v62, v64);
         (v65)->refc++;
@@ -4280,12 +4543,12 @@ int32_t main(){
         UHDecref8(v65);
         US1 v67;
         v67 = US1_TriC();
-        USIncref1(&(v67));
+        
         
         UH8 * v68;
         v68 = UH8_RegexChar(v67);
         (v66)->refc++; (v68)->refc++;
-        USDecref1(&(v67));
+        
         UH8 * v69;
         v69 = UH8_RegexCat(v66, v68);
         (v47)->refc++; (v69)->refc++;
@@ -4309,13 +4572,13 @@ int32_t main(){
                 case 2: { // InventoryDfaInputOutsideInventory
                     
                     
-                    USDecref3(&(v72));
+                    
                     v75 = true;
                     break;
                 }
                 default: {
                     
-                    USDecref3(&(v72));
+                    
                     v75 = false;
                 }
             }

@@ -10,7 +10,7 @@ $fixed = New-Object System.Collections.Generic.List[string]
 $key = $null
 foreach ($item in $args) {
     $arg = if ($item -is [array]) { $item -join "," } else { "$item" }
-    if ($arg -in @("--path", "--output-path", "--spi-path", "--spir-path", "--fs-path", "--livemd-path")) {
+    if ($arg -in @("--path", "--output-path", "--output-dir", "--spi-path", "--spir-path", "--fs-path", "--livemd-path")) {
         $key = $arg
         $fixed.Add($arg)
     }
@@ -25,6 +25,38 @@ foreach ($item in $args) {
     else {
         $fixed.Add($arg)
     }
+}
+function Invoke-WarmNotebook([int] $Port, [string[]] $Arguments) {
+    $client = [System.Net.Sockets.TcpClient]::new()
+    try {
+        if (-not $client.ConnectAsync('127.0.0.1', $Port).Wait(300)) { return $null }
+        $utf8 = [System.Text.UTF8Encoding]::new($false)
+        $stream = $client.GetStream()
+        $writer = [System.IO.StreamWriter]::new($stream, $utf8)
+        $writer.NewLine = "`n"
+        $reader = [System.IO.StreamReader]::new($stream, $utf8)
+        $request = [ordered]@{ args = $Arguments; root = (Split-Path $PSScriptRoot -Parent) } | ConvertTo-Json -Compress -Depth 3
+        $writer.WriteLine("notebook`t$request")
+        $writer.Flush()
+        while ($null -ne ($line = $reader.ReadLine())) {
+            $kind, $text = $line -split "`t", 2
+            switch ($kind) {
+                'line' { [Console]::Out.WriteLine($text) }
+                'error' { [Console]::Error.WriteLine((ConvertFrom-Json $text)) }
+                'end' { return [int]$text }
+                default { return $null }
+            }
+        }
+        return $null
+    }
+    catch { return $null }
+    finally { $client.Dispose() }
+}
+if ($env:SPIRAL_KINO_WARM -ne '0') {
+    $warmArgs = [string[]] @($fixed) + $(if ($env:SPIRAL_KINO_MEMO -eq '0') { @('--no-memo') } else { @() })
+    $warmPort = if ($env:SPIRAL_KINO_COMPILER_PORT) { [int] $env:SPIRAL_KINO_COMPILER_PORT } else { 13905 }
+    $warmExit = Invoke-WarmNotebook $warmPort $warmArgs
+    if ($null -ne $warmExit) { exit $warmExit }
 }
 function Resolve-RealPath([string] $Path) {
     $full = [IO.Path]::GetFullPath($Path)

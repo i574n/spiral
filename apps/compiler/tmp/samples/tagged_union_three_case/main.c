@@ -48,7 +48,7 @@ int32_t score0(US0 v0){
         case 2: { // Flag
             bool v2 = v0.case2.v0;
             
-            USDecref0(&(v0));
+            
             if (v2){
                 
                 
@@ -63,14 +63,14 @@ int32_t score0(US0 v0){
         case 1: { // Hit
             int32_t v1 = v0.case1.v0;
             
-            USDecref0(&(v0));
+            
             return v1;
             break;
         }
         default: { // Idle
             
             
-            USDecref0(&(v0));
+            
             return 3l;
             break;
         }
@@ -109,12 +109,12 @@ int32_t main(){
             v7 = US0_Flag(true);
         }
     }
-    USIncref0(&(v7));
+    
     
     int32_t v8;
     v8 = score0(v7);
     
-    USDecref0(&(v7));
+    
     int32_t v9;
     v9 = v8 - 11l;
     

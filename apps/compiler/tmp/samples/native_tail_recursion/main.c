@@ -4,24 +4,30 @@
 #include <stdlib.h>
 #include <string.h>
 int32_t method1(int32_t v0){
-    
-    
-    int32_t v1;
-    v1 = v0 - 1l;
-    
-    
-    bool v2;
-    v2 = v1 == 0l;
-    
-    
-    if (v2){
+    while (1) {
         
         
-        return 0l;
-    } else {
+        int32_t v1;
+        v1 = v0 - 1l;
         
         
-        return method1(v1);
+        bool v2;
+        v2 = v1 == 0l;
+        
+        
+        if (v2){
+            
+            
+            return 0l;
+        } else {
+            
+            
+            {
+                int32_t tmp0 = v1;
+                v0 = tmp0;
+            }
+            continue;
+        }
     }
 }
 int32_t method0(int32_t v0){

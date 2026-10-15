@@ -90,14 +90,14 @@ int32_t main(){
         case 0: { // None
             
             
-            USDecref0(&(v3)); HeapDecref0(v4);
+            HeapDecref0(v4);
             return 1l;
             break;
         }
         default: { // Some
             int32_t v5 = v3.case1.v0;
             
-            USDecref0(&(v3));
+            
             int32_t v6;
             v6 = v4->v0;
             

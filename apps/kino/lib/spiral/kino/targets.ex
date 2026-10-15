@@ -34,6 +34,20 @@ defmodule Spiral.Kino.Targets do
     |> normalize(true)
   end
 
+  @spec build(map(), String.t(), keyword(), timeout(), integer() | :infinity) ::
+          {:ok, map()} | {:error, Exception.t()}
+  def build(%{tool: :gleam} = builder, output_path, opts, timeout, deadline) do
+    package = output_path |> Path.dirname() |> Path.dirname()
+    gleam_build(package, gleam_manifest(output_path, builder.deps, builder.target || "erlang"), opts, timeout, deadline)
+  end
+
+  def build(%{tool: :c}, output_path, opts, timeout, deadline) do
+    cc = Toolchain.cc(opts)
+    exe = Path.join(Path.dirname(output_path), exe_name())
+    run_program(cc, Path.basename(cc || "gcc"), c_args(cc || "gcc", output_path, exe, opts[:root]), opts, timeout, deadline, false)
+  end
+
+  def build(_builder, _output_path, _opts, _timeout, _deadline), do: {:ok, %{stdout: ""}}
   @spec host(String.t(), String.t(), keyword(), timeout(), integer() | :infinity) ::
           {:ok, %{stdout: String.t()}} | {:error, Exception.t()}
   def host(language, source, opts, timeout, deadline) do
@@ -51,7 +65,16 @@ defmodule Spiral.Kino.Targets do
     |> normalize(false)
   end
 
-  defp run_default(builder, output_path, opts, timeout, deadline) do
+  defp run_default(%{tool: :gleam, target: "javascript"} = builder, output_path, opts, timeout, deadline)
+       when is_list(opts) do
+    if opts[:test_cell] == true,
+      do: run_gleam(output_path, builder.deps, "javascript", opts, timeout, deadline),
+      else: dispatch_default(builder, output_path, opts, timeout, deadline)
+  end
+
+  defp run_default(builder, output_path, opts, timeout, deadline), do: dispatch_default(builder, output_path, opts, timeout, deadline)
+
+  defp dispatch_default(builder, output_path, opts, timeout, deadline) do
     case Builders.dispatch(builder, output_path) do
       {:spiral, ["rust" | _] = args} ->
         one_spiral_rust(opts, timeout, deadline, fn deadline ->
@@ -77,6 +100,20 @@ defmodule Spiral.Kino.Targets do
 
       {:dcc, path} ->
         run_dcc(path, opts, timeout, deadline)
+
+      {:gleam, path, deps} ->
+        run_gleam(path, deps, "erlang", opts, timeout, deadline)
+
+
+      {:zig, path} ->
+        run_program(Toolchain.zig(opts), "zig", ["run", path], opts, timeout, deadline, false)
+
+      {:lean, path} ->
+        {lean, args} = Toolchain.lean(opts)
+        run_program(lean, "lean", args ++ ["--run", path], opts, timeout, deadline, false)
+
+      {:wgsl, path} ->
+        run_wgsl(path, opts, timeout, deadline)
     end
   end
 
@@ -242,10 +279,9 @@ defmodule Spiral.Kino.Targets do
 
     if is_binary(cc) and File.regular?(cc) do
       exe = Path.join(Path.dirname(path), exe_name())
-      args = if cl?(cc), do: ["/nologo", "/Fe:#{exe}", path], else: ["-o", exe, path]
       shown = Path.basename(cc)
 
-      with {:ok, compiled} <- run_program(cc, shown, args, opts, timeout, deadline, false),
+      with {:ok, compiled} <- run_program(cc, shown, c_args(cc, path, exe, opts[:root]), opts, timeout, deadline, false),
            {:ok, ran} <- run_status(exe, exe_name(), [], opts, timeout, deadline, false) do
         {:ok, cell_exit(compiled, ran)}
       end
@@ -255,23 +291,188 @@ defmodule Spiral.Kino.Targets do
   end
 
   defp run_dcc(path, opts, timeout, deadline) do
+    case delphi_compiler(opts) do
+      {compiler, shown, args} -> run_delphi(compiler, shown, args ++ [path], path, opts, timeout, deadline)
+      nil -> {:error, %ProcessError{message: "`dcc32` was not found (nor fpc)", reason: :tool_missing}}
+    end
+  end
+
+  @doc false
+  @spec delphi_compiler(keyword()) :: {String.t(), String.t(), [String.t()]} | nil
+  def delphi_compiler(opts) do
     dcc = Toolchain.dcc(opts)
+    fpc = Toolchain.fpc(opts)
 
-    if is_binary(dcc) and File.regular?(dcc) do
-      with {:ok, compiled} <- run_program(dcc, "dcc32", [path], opts, timeout, deadline, false) do
-        exe = Path.join(Path.dirname(path), Path.basename(path, Path.extname(path)) <> ".exe")
+    cond do
+      is_binary(dcc) and File.regular?(dcc) -> {dcc, "dcc32", []}
+      is_binary(fpc) and File.regular?(fpc) -> {fpc, "fpc", ["-O2", "-Mdelphi"]}
+      true -> nil
+    end
+  end
 
-        if File.regular?(exe) do
-          case run_status(exe, Path.basename(exe), [], opts, timeout, deadline, false) do
-            {:ok, ran} -> {:ok, cell_exit(compiled, ran)}
-            error -> error
-          end
-        else
-          {:ok, compiled}
+  defp run_delphi(compiler, shown, args, path, opts, timeout, deadline) do
+    with {:ok, compiled} <- run_program(compiler, shown, args, opts, timeout, deadline, false) do
+      exe = Path.join(Path.dirname(path), Path.basename(path, Path.extname(path)) <> ".exe")
+
+      if File.regular?(exe) do
+        case run_status(exe, Path.basename(exe), [], opts, timeout, deadline, false) do
+          {:ok, ran} -> {:ok, cell_exit(compiled, ran)}
+          error -> error
         end
+      else
+        {:ok, compiled}
       end
+    end
+  end
+
+  @gleam_deps [
+    {"gleam_stdlib", "0.57.0"},
+    {"gleam_time", ">=1.0.0 and <2.0.0"},
+    {"gleam_erlang", ">=0.34.0 and <1.0.0"},
+    {"envoy", ">=1.0.0 and <2.0.0"},
+    {"gary", ">=1.1.0 and <2.0.0"},
+    {"gtempo", ">=7.1.0 and <8.0.0"}
+  ]
+
+  @doc false
+  def gleam_manifest(path, deps, target \\ "erlang") do
+    name = if String.contains?(Path.basename(path), "_real"), do: "main_real", else: "main"
+
+    extra =
+      for %{name: dep, version: version} <- deps, not List.keymember?(@gleam_deps, dep, 0) do
+        {dep, (version || "*") |> String.replace("\\", "") |> String.trim("\"")}
+      end
+
+    lines = Enum.map(@gleam_deps ++ extra, fn {dep, version} -> "#{dep} = #{inspect(version)}" end)
+    Enum.join(["name = #{inspect(name)}", "target = #{inspect(target)}", "", "[dependencies]" | lines], "\n") <> "\n"
+  end
+
+  defp run_gleam(path, deps, target, opts, timeout, deadline) do
+    package = path |> Path.dirname() |> Path.dirname()
+
+    with {:ok, _built} <- gleam_build(package, gleam_manifest(path, deps, target), opts, timeout, deadline) do
+      run_gleam_program(package, target, opts, Keyword.put(opts, :cwd, package), timeout, deadline)
+    end
+  end
+
+  defp gleam_build(package, manifest, opts, timeout, deadline) do
+    File.write!(Path.join(package, "gleam.toml"), manifest)
+    locked = gleam_lock_path(manifest, opts)
+    build = fn -> run_program(Toolchain.gleam(opts), "gleam build", ["build", "--no-print-progress"], Keyword.put(opts, :cwd, package), timeout, deadline, false) end
+
+    if File.regular?(locked) do
+      File.cp!(locked, Path.join(package, "manifest.toml"))
+      build.()
     else
-      {:error, %ProcessError{message: "`dcc32` was not found", reason: :tool_missing}}
+      :global.trans({{__MODULE__, :gleam_resolve, locked}, self()}, fn ->
+        if File.regular?(locked), do: File.cp!(locked, Path.join(package, "manifest.toml"))
+        result = build.()
+        if match?({:ok, _}, result), do: keep_gleam_lock(Path.join(package, "manifest.toml"), locked)
+        result
+      end)
+    end
+  end
+
+  @doc false
+  def gleam_lock_path(manifest, opts) do
+    requirements = manifest |> String.split("\n") |> Enum.drop_while(&(&1 != "[dependencies]")) |> Enum.join("\n")
+    target = Regex.run(~r/^target = (.*)$/m, manifest, capture: :all_but_first) || []
+    key = :crypto.hash(:sha256, :erlang.term_to_binary({target, requirements})) |> Base.encode16(case: :lower) |> binary_part(0, 24)
+    Path.join(Toolchain.cache_dir(opts), "kino-gleam-locks/#{key}.toml")
+  end
+
+  defp keep_gleam_lock(manifest_path, locked) do
+    with false <- File.regular?(locked),
+         {:ok, text} <- File.read(manifest_path),
+         :ok <- File.mkdir_p(Path.dirname(locked)) do
+      pending = locked <> ".#{System.unique_integer([:positive])}.tmp"
+      with :ok <- File.write(pending, text), do: File.rename(pending, locked)
+      File.rm(pending)
+    end
+
+    :ok
+  end
+
+  defp run_gleam_program(package, "javascript", opts, quiet, timeout, deadline) do
+    entry = Path.join(package, "kino_entry.mjs")
+    File.write!(entry, ~s|import { main } from "./build/dev/javascript/main/main.mjs";\nmain();\n|)
+    run_program(Toolchain.bun(opts), "bun", [entry], quiet, timeout, deadline, false)
+  end
+
+  defp run_gleam_program(package, _erlang, opts, quiet, timeout, deadline) do
+    paths = Path.wildcard(Path.join(package, "build/dev/erlang/*/ebin"))
+    entry = "try main:main(), halt(0) catch Class:Reason -> io:format(\"~p: ~p~n\", [Class, Reason]), halt(1) end."
+    run_program(Toolchain.erl(opts), "erl", ["-noshell", "-pa" | paths] ++ ["-eval", entry], quiet, timeout, deadline, false)
+  end
+  @doc false
+  def strip_gleam_warnings(text) do
+    text
+    |> String.replace("\r\n", "\n")
+    |> String.split("\n")
+    |> Enum.reduce({[], false}, fn line, {kept, skipping} ->
+      cond do
+        String.starts_with?(line, "warning: ") -> {kept, true}
+        skipping and gleam_warning_line?(line) -> {kept, true}
+        true -> {[line | kept], false}
+      end
+    end)
+    |> elem(0)
+    |> Enum.reverse()
+    |> Enum.join("\n")
+  end
+
+  defp gleam_warning_line?(line) do
+    line == "" or String.starts_with?(line, [" ", "\t", "Hint:", "│", "┌"]) or Regex.match?(~r/^\d+ │/, line)
+  end
+  @wgsl_no_adapter 3
+  defp run_wgsl(path, opts, timeout, deadline) do
+    with :ok <- naga_check(path, opts, timeout, deadline) do
+      case Toolchain.wgsl_run(opts) do
+        nil ->
+          {:error, %ProcessError{message: "`spiral-wgsl` was not found", reason: :tool_missing}}
+
+        runner ->
+          case run_status(runner, "spiral-wgsl", [path], opts, timeout, deadline, false) do
+            {:ok, %{exit_status: 0} = ran} ->
+              {:ok, ran}
+
+            {:ok, %{exit_status: @wgsl_no_adapter, output: output}} ->
+              {:error,
+               %ProcessError{
+                 message: "`spiral-wgsl` found no GPU adapter\n\n#{output}",
+                 exit_status: @wgsl_no_adapter,
+                 output: output,
+                 reason: :tool_missing
+               }}
+
+            {:ok, %{exit_status: status, output: output}} ->
+              {:error,
+               %ProcessError{
+                 message: "`spiral-wgsl` failed (exit #{status})\n\n#{output}",
+                 exit_status: status,
+                 output: output
+               }}
+
+            {:error, %ProcessError{reason: :not_found} = error} ->
+              {:error, %ProcessError{error | reason: :tool_missing}}
+
+            other ->
+              other
+          end
+      end
+    end
+  end
+
+  defp naga_check(path, opts, timeout, deadline) do
+    case Toolchain.naga(opts) do
+      nil ->
+        :ok
+
+      naga ->
+        case run_program(naga, "naga", [path], opts, timeout, deadline, false) do
+          {:ok, _} -> :ok
+          error -> error
+        end
     end
   end
 
@@ -328,11 +529,7 @@ defmodule Spiral.Kino.Targets do
   end
 
   defp cell_exit(compiled, ran) do
-    %{
-      exit_status: 0,
-      output: join_output(compiled, %{output: ran.output}),
-      value: Integer.to_string(ran.exit_status)
-    }
+    %{exit_status: ran.exit_status, output: join_output(compiled, %{output: ran.output})}
   end
 
   defp normalize({:ok, %{exit_status: 0, output: output} = ran}, present?) do
@@ -456,13 +653,27 @@ defmodule Spiral.Kino.Targets do
 
   defp json_map(_), do: nil
 
-  defp tool_env(_opts, false), do: System.get_env() |> Enum.to_list()
+  @cupy_missing_cuda_path_warning "ignore:CUDA path could not be detected:UserWarning"
+
+  defp tool_env(_opts, false), do: System.get_env() |> Enum.to_list() |> without_cupy_cuda_path_warning()
 
   defp tool_env(_opts, true) do
     System.get_env()
     |> Enum.to_list()
     |> List.keystore("SPIRAL_JSON", 0, {"SPIRAL_JSON", "1"})
     |> List.keystore("TRACE_LEVEL", 0, {"TRACE_LEVEL", "Info"})
+    |> without_cupy_cuda_path_warning()
+  end
+
+  @doc false
+  def without_cupy_cuda_path_warning(env) do
+    filters =
+      case List.keyfind(env, "PYTHONWARNINGS", 0) do
+        {_, existing} when existing not in [nil, ""] -> existing <> "," <> @cupy_missing_cuda_path_warning
+        _ -> @cupy_missing_cuda_path_warning
+      end
+
+    List.keystore(env, "PYTHONWARNINGS", 0, {"PYTHONWARNINGS", filters})
   end
 
   defp work_dir([], exe), do: Path.dirname(exe)
@@ -490,6 +701,24 @@ defmodule Spiral.Kino.Targets do
 
   defp invoke(nil, _ctx, default), do: default.()
   defp invoke(fun, ctx, _default) when is_function(fun, 1), do: fun.(ctx)
+
+  @c_flags ["-std=c11", "-O2", "-w", "-fwrapv"]
+
+  @spec c_args(String.t(), String.t(), String.t(), String.t() | nil) :: [String.t()]
+  def c_args(cc, source, exe, notebook_dir) do
+    if cl?(cc) do
+      ["/nologo", "/O2", "/Fe:#{exe}", source]
+    else
+      @c_flags ++ c_shim(notebook_dir) ++ ["-o", exe, source, "-lm"]
+    end
+  end
+
+  defp c_shim(nil), do: []
+
+  defp c_shim(dir) do
+    shim = Path.join(dir, "c-shim.h")
+    if File.regular?(shim), do: ["-include", shim], else: []
+  end
 
   defp cl?(path) do
     path |> Path.basename() |> String.downcase() |> String.trim_trailing(".exe") == "cl"

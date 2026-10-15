@@ -7842,7 +7842,7 @@ a.anchor-link {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [1]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span> <span class="n">static</span>
@@ -7940,7 +7940,7 @@ a.anchor-link {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [2]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [1]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -8004,73 +8004,93 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.gleam (gleam)
-
+11:37:50 1v _assert_fn / { input = a b c }
+__assert_eq { expected = [a, b, c] }
+11:37:50 1v _assert_fn / { input = e f "g h" i }
+__assert_eq { expected = [e, f, g h, i] }
+11:37:50 1v _assert_fn / { input = "j k" "l" "m" }
+__assert_eq { expected = [j k, l, m] }
+11:37:50 1v _assert_fn / { input = s -t "u `"v`" w" }
+__assert_eq { expected = [s, -t, u `"v`" w] }
+11:37:50 1v _assert_fn / { input = n -o "p \"q\" r" }
+__assert_eq { expected = [n, -o, p \"q\" r] }
+11:37:50 1v _assert_fn / { input = r -s "t \"u\"" }
+__assert_eq { expected = [r, -s, t \"u\"] }
+11:37:50 1v _assert_fn / { input = x -y "$z -a '(b=\"c-id=)[a-fA-F0-9]{8}', { `$_[1] + `$d++ }" }
+__assert_eq { expected = [x, -y, $z -a '(b=\"c-id=)[a-fA-F0-9]{8}', { `$_[1] + `$d++ }] }
+11:37:50 1v _assert_fn / { input = e -f "$g -h '(i=`"j-id=)[a-fA-F0-9]{8}', { `$_[1] + `$k++ }" }
+__assert_eq { expected = [e, -f, $g -h '(i=`"j-id=)[a-fA-F0-9]{8}', { `$_[1] + `$k++ }] }
+11:37:50 1v _assert_fn / { input = --l \"''' m '''\"  }
+__assert_eq { expected = [--l, ''' m '''] }
+11:37:50 1v _assert_fn / { input = n --o --p q --r "s:/t u/v.w" --x "y:/z.a" --b c.d "\e{f-g}" h.i "j (k)" }
+__assert_eq { expected = [n, --o, --p, q, --r, s:/t u/v.w, --x, y:/z.a, --b, c.d, \e{f-g}, h.i, j (k)] }
+11:37:50 1v _assert_fn / { input = l "m n:\o.p" }
+__assert_eq { expected = [l, m n:\o.p] }
+11:37:50 1v _assert_fn / { input = --r s \"' t '\" u v w \"x y\" }
+__assert_eq { expected = [--r, s, ' t ', u, v, w, x y] }
 .fsx (fsharp)
-/home/runner/work/spiral/spiral/lib/spiral/main.fsx(1638,23): warning FS0025: Incomplete pattern matches on this expression. For example, the value 'UH0_Cons (_, _)' may indicate a case not covered by the pattern(s).
-__assert_eq { expected = [|"a"; "b"; "c"|] }
-__assert_eq { expected = [|"e"; "f"; "g h"; "i"|] }
-__assert_eq { expected = [|"j k"; "l"; "m"|] }
-__assert_eq { expected = [|"s"; "-t"; "u `"v`" w"|] }
-__assert_eq { expected = [|"n"; "-o"; "p \"q\" r"|] }
-__assert_eq { expected = [|"r"; "-s"; "t \"u\""|] }
-__assert_eq { expected = [|"x"; "-y"; "$z -a '(b=\"c-id=)[a-fA-F0-9]{8}', { `$_[1] + `$d++ }"|] }
-__assert_eq { expected = [|"e"; "-f"; "$g -h '(i=`"j-id=)[a-fA-F0-9]{8}', { `$_[1] + `$k++ }"|] }
-__assert_eq { expected = [|"--l"; "''' m '''"|] }
-__assert_eq { expected = [|"n"; "--o"; "--p"; "q"; "--r"; "s:/t u/v.w"; "--x"; "y:/z.a"; "--b"; "c.d";
-  "\e{f-g}"; "h.i"; "j (k)"|] }
-__assert_eq { expected = [|"l"; "m n:\o.p"|] }
-__assert_eq { expected = [|"--r"; "s"; "' t '"; "u"; "v"; "w"; "x y"|] }
+/home/runner/work/spiral/spiral/lib/spiral/main.fsx(1906,23): warning FS0025: Incomplete pattern matches on this expression. For example, the value 'UH0_Cons (_, _)' may indicate a case not covered by the pattern(s).
+__assert_eq { expected = [a, b, c] }
+__assert_eq { expected = [e, f, g h, i] }
+__assert_eq { expected = [j k, l, m] }
+__assert_eq { expected = [s, -t, u `"v`" w] }
+__assert_eq { expected = [n, -o, p \"q\" r] }
+__assert_eq { expected = [r, -s, t \"u\"] }
+__assert_eq { expected = [x, -y, $z -a '(b=\"c-id=)[a-fA-F0-9]{8}', { `$_[1] + `$d++ }] }
+__assert_eq { expected = [e, -f, $g -h '(i=`"j-id=)[a-fA-F0-9]{8}', { `$_[1] + `$k++ }] }
+__assert_eq { expected = [--l, ''' m '''] }
+__assert_eq { expected = [n, --o, --p, q, --r, s:/t u/v.w, --x, y:/z.a, --b, c.d, \e{f-g}, h.i, j (k)] }
+__assert_eq { expected = [l, m n:\o.p] }
+__assert_eq { expected = [--r, s, ' t ', u, v, w, x y] }
 .py (cuda)
-__assert_eq { expected = ['a' 'b' 'c'] }
+__assert_eq { expected = [a, b, c] }
 
-__assert_eq { expected = ['e' 'f' 'g h' 'i'] }
+__assert_eq { expected = [e, f, g h, i] }
 
-__assert_eq { expected = ['j k' 'l' 'm'] }
+__assert_eq { expected = [j k, l, m] }
 
-__assert_eq { expected = ['s' '-t' 'u `"v`" w'] }
+__assert_eq { expected = [s, -t, u `"v`" w] }
 
-__assert_eq { expected = ['n' '-o' 'p \\"q\\" r'] }
+__assert_eq { expected = [n, -o, p \"q\" r] }
 
-__assert_eq { expected = ['r' '-s' 't \\"u\\"'] }
+__assert_eq { expected = [r, -s, t \"u\"] }
 
-__assert_eq { expected = ['x' '-y' '$z -a \'(b=\\"c-id=)[a-fA-F0-9]{8}\', { `$_[1] + `$d++ }'] }
+__assert_eq { expected = [x, -y, $z -a '(b=\"c-id=)[a-fA-F0-9]{8}', { `$_[1] + `$d++ }] }
 
-__assert_eq { expected = ['e' '-f' '$g -h \'(i=`"j-id=)[a-fA-F0-9]{8}\', { `$_[1] + `$k++ }'] }
+__assert_eq { expected = [e, -f, $g -h '(i=`"j-id=)[a-fA-F0-9]{8}', { `$_[1] + `$k++ }] }
 
-__assert_eq { expected = ['--l' "''' m '''"] }
+__assert_eq { expected = [--l, ''' m '''] }
 
-__assert_eq { expected = ['n' '--o' '--p' 'q' '--r' 's:/t u/v.w' '--x' 'y:/z.a' '--b' 'c.d'
- '\\e{f-g}' 'h.i' 'j (k)'] }
+__assert_eq { expected = [n, --o, --p, q, --r, s:/t u/v.w, --x, y:/z.a, --b, c.d, \e{f-g}, h.i, j (k)] }
 
-__assert_eq { expected = ['l' 'm n:\\o.p'] }
+__assert_eq { expected = [l, m n:\o.p] }
 
-__assert_eq { expected = ['--r' 's' "' t '" 'u' 'v' 'w' 'x y'] }
-0
+__assert_eq { expected = [--r, s, ' t ', u, v, w, x y] }
 .rs (rust)
 
-__assert_eq { expected = ["a", "b", "c"] }
+__assert_eq { expected = [a, b, c] }
 
-__assert_eq { expected = ["e", "f", "g h", "i"] }
+__assert_eq { expected = [e, f, g h, i] }
 
-__assert_eq { expected = ["j k", "l", "m"] }
+__assert_eq { expected = [j k, l, m] }
 
-__assert_eq { expected = ["s", "-t", "u `\"v`\" w"] }
+__assert_eq { expected = [s, -t, u `"v`" w] }
 
-__assert_eq { expected = ["n", "-o", "p \\\"q\\\" r"] }
+__assert_eq { expected = [n, -o, p \"q\" r] }
 
-__assert_eq { expected = ["r", "-s", "t \\\"u\\\""] }
+__assert_eq { expected = [r, -s, t \"u\"] }
 
-__assert_eq { expected = ["x", "-y", "$z -a '(b=\\\"c-id=)[a-fA-F0-9]{8}', { `$_[1] + `$d++ }"] }
+__assert_eq { expected = [x, -y, $z -a '(b=\"c-id=)[a-fA-F0-9]{8}', { `$_[1] + `$d++ }] }
 
-__assert_eq { expected = ["e", "-f", "$g -h '(i=`\"j-id=)[a-fA-F0-9]{8}', { `$_[1] + `$k++ }"] }
+__assert_eq { expected = [e, -f, $g -h '(i=`"j-id=)[a-fA-F0-9]{8}', { `$_[1] + `$k++ }] }
 
-__assert_eq { expected = ["--l", "''' m '''"] }
+__assert_eq { expected = [--l, ''' m '''] }
 
-__assert_eq { expected = ["n", "--o", "--p", "q", "--r", "s:/t u/v.w", "--x", "y:/z.a", "--b", "c.d", "\\e{f-g}", "h.i", "j (k)"] }
+__assert_eq { expected = [n, --o, --p, q, --r, s:/t u/v.w, --x, y:/z.a, --b, c.d, \e{f-g}, h.i, j (k)] }
 
-__assert_eq { expected = ["l", "m n:\\o.p"] }
+__assert_eq { expected = [l, m n:\o.p] }
 
-__assert_eq { expected = ["--r", "s", "' t '", "u", "v", "w", "x y"] }
+__assert_eq { expected = [--r, s, ' t ', u, v, w, x y] }
 .ts (typescript)
 __assert_eq { expected = [a, b, c] }
 __assert_eq { expected = [e, f, g h, i] }
@@ -8084,6 +8104,12 @@ __assert_eq { expected = [--l, ''' m '''] }
 __assert_eq { expected = [n, --o, --p, q, --r, s:/t u/v.w, --x, y:/z.a, --b, c.d, \e{f-g}, h.i, j (k)] }
 __assert_eq { expected = [l, m n:\o.p] }
 __assert_eq { expected = [--r, s, ' t ', u, v, w, x y] }</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[1]:</div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
+<pre>0</pre>
 </div>
 </div>
 </div>
@@ -8131,7 +8157,7 @@ __assert_eq { expected = [--r, s, ' t ', u, v, w, x y] }</pre>
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [3]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [2]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -8181,59 +8207,79 @@ __assert_eq { expected = [--r, s, ' t ', u, v, w, x y] }</pre>
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.gleam (gleam)
-
+11:37:45 1v _assert_fn / { input =  }
+__assert_eq { expected = (, None) }
+11:37:45 1v _assert_fn / { input = /a/b/c }
+__assert_eq { expected = (/a/b/c, None) }
+11:37:45 1v _assert_fn / { input = d e.f }
+__assert_eq { expected = (d, Some(e.f)) }
+11:37:45 1v _assert_fn / { input = ..\..\g.h i.j k.l }
+__assert_eq { expected = (../../g.h, Some(i.j k.l)) }
+11:37:45 1v _assert_fn / { input = m:\n\o.p "q.r s.t" }
+__assert_eq { expected = (m:/n/o.p, Some("q.r s.t")) }
+11:37:45 1v _assert_fn / { input = "..\..\u v\w.x" "y z.a" b.c }
+__assert_eq { expected = (../../u v/w.x, Some("y z.a" b.c)) }
+11:37:45 1v _assert_fn / { input = "..\..\d e.f" -g \\"h i\\" }
+__assert_eq { expected = (../../d e.f, Some(-g \\"h i\\")) }
+11:37:45 1v _assert_fn / { input = ..\..\j k.l -m \\"n o\\" }
+__assert_eq { expected = (../../j, Some(k.l -m \\"n o\\")) }
 .fsx (fsharp)
-__assert_eq { expected = , US3_None }
-__assert_eq { expected = /a/b/c, US3_None }
-__assert_eq { expected = d, US3_Some "e.f" }
-__assert_eq { expected = ../../g.h, US3_Some "i.j k.l" }
-__assert_eq { expected = m:/n/o.p, US3_Some ""q.r s.t"" }
-__assert_eq { expected = ../../u v/w.x, US3_Some ""y z.a" b.c" }
-__assert_eq { expected = ../../d e.f, US3_Some "-g \\"h i\\"" }
-__assert_eq { expected = ../../j, US3_Some "k.l -m \\"n o\\"" }
+__assert_eq { expected = (, None) }
+__assert_eq { expected = (/a/b/c, None) }
+__assert_eq { expected = (d, Some(e.f)) }
+__assert_eq { expected = (../../g.h, Some(i.j k.l)) }
+__assert_eq { expected = (m:/n/o.p, Some("q.r s.t")) }
+__assert_eq { expected = (../../u v/w.x, Some("y z.a" b.c)) }
+__assert_eq { expected = (../../d e.f, Some(-g \\"h i\\")) }
+__assert_eq { expected = (../../j, Some(k.l -m \\"n o\\")) }
 .py (cuda)
-__assert_eq { expected = , US3_None() }
+__assert_eq { expected = (, None) }
 
-__assert_eq { expected = /a/b/c, US3_None() }
+__assert_eq { expected = (/a/b/c, None) }
 
-__assert_eq { expected = d, US3_Some(v0='e.f') }
+__assert_eq { expected = (d, Some(e.f)) }
 
-__assert_eq { expected = ../../g.h, US3_Some(v0='i.j k.l') }
+__assert_eq { expected = (../../g.h, Some(i.j k.l)) }
 
-__assert_eq { expected = m:/n/o.p, US3_Some(v0='"q.r s.t"') }
+__assert_eq { expected = (m:/n/o.p, Some("q.r s.t")) }
 
-__assert_eq { expected = ../../u v/w.x, US3_Some(v0='"y z.a" b.c') }
+__assert_eq { expected = (../../u v/w.x, Some("y z.a" b.c)) }
 
-__assert_eq { expected = ../../d e.f, US3_Some(v0='-g \\\\"h i\\\\"') }
+__assert_eq { expected = (../../d e.f, Some(-g \\"h i\\")) }
 
-__assert_eq { expected = ../../j, US3_Some(v0='k.l -m \\\\"n o\\\\"') }
-0
+__assert_eq { expected = (../../j, Some(k.l -m \\"n o\\")) }
 .rs (rust)
 
-__assert_eq { expected = , None }
+__assert_eq { expected = (, None) }
 
-__assert_eq { expected = /a/b/c, None }
+__assert_eq { expected = (/a/b/c, None) }
 
-__assert_eq { expected = d, Some(e.f) }
+__assert_eq { expected = (d, Some(e.f)) }
 
-__assert_eq { expected = ../../g.h, Some(i.j k.l) }
+__assert_eq { expected = (../../g.h, Some(i.j k.l)) }
 
-__assert_eq { expected = m:/n/o.p, Some("q.r s.t") }
+__assert_eq { expected = (m:/n/o.p, Some("q.r s.t")) }
 
-__assert_eq { expected = ../../u v/w.x, Some("y z.a" b.c) }
+__assert_eq { expected = (../../u v/w.x, Some("y z.a" b.c)) }
 
-__assert_eq { expected = ../../d e.f, Some(-g \\"h i\\") }
+__assert_eq { expected = (../../d e.f, Some(-g \\"h i\\")) }
 
-__assert_eq { expected = ../../j, Some(k.l -m \\"n o\\") }
+__assert_eq { expected = (../../j, Some(k.l -m \\"n o\\")) }
 .ts (typescript)
-__assert_eq { expected = , None }
-__assert_eq { expected = /a/b/c, None }
-__assert_eq { expected = d, Some(e.f) }
-__assert_eq { expected = ../../g.h, Some(i.j k.l) }
-__assert_eq { expected = m:/n/o.p, Some("q.r s.t") }
-__assert_eq { expected = ../../u v/w.x, Some("y z.a" b.c) }
-__assert_eq { expected = ../../d e.f, Some(-g \\"h i\\") }
-__assert_eq { expected = ../../j, Some(k.l -m \\"n o\\") }</pre>
+__assert_eq { expected = (, None) }
+__assert_eq { expected = (/a/b/c, None) }
+__assert_eq { expected = (d, Some(e.f)) }
+__assert_eq { expected = (../../g.h, Some(i.j k.l)) }
+__assert_eq { expected = (m:/n/o.p, Some("q.r s.t")) }
+__assert_eq { expected = (../../u v/w.x, Some("y z.a" b.c)) }
+__assert_eq { expected = (../../d e.f, Some(-g \\"h i\\")) }
+__assert_eq { expected = (../../j, Some(k.l -m \\"n o\\")) }</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[2]:</div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
+<pre>0</pre>
 </div>
 </div>
 </div>
@@ -9248,7 +9294,7 @@ __assert_eq { expected = ../../j, Some(k.l -m \\"n o\\") }</pre>
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [4]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [3]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -9387,7 +9433,7 @@ __assert_eq { expected = ../../j, Some(k.l -m \\"n o\\") }</pre>
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [5]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [4]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -10521,7 +10567,7 @@ __assert_eq { expected = ../../j, Some(k.l -m \\"n o\\") }</pre>
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [6]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [5]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -11470,7 +11516,7 @@ __assert_eq { expected = ../../j, Some(k.l -m \\"n o\\") }</pre>
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [7]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [6]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -11513,15 +11559,15 @@ __assert_eq { expected = ../../j, Some(k.l -m \\"n o\\") }</pre>
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>17:17:27 1<span class="ansi-black-intense-fg">v</span> file_system.create_dir / { dir = /tmp/!create_temp_path_/spiral_9bc2c254e7e0d60ad5b31854362b1735682d8272bd7bd121f1fa1ac0206b0f37/664346c7-6234-0aa5-c6c9-79ffbb32476f }
-17:17:27 2<span class="ansi-blue-intense-fg">d</span> runtime.execute_with_options / { file_name = pwsh; arguments = ["-c", "[IO.File]::ReadAllText('/tmp/!create_temp_path_/spiral_9bc2c254e7e0d60ad5b31854362b1735682d8272bd7bd121f1fa1ac0206b0f37/664346c7-6234-0aa5-c6c9-79ffbb32476f/test.txt')"] }
-17:17:28 3<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-red-intense-fg ansi-bold">MethodInvocationException: </span><span class="ansi-red-intense-fg ansi-bold">Exception calling "ReadAllText" with "1" argument(s): "Could not find file '/tmp/!create_temp_path_/spiral_9bc2c254e7e0d60ad5b31854362b1735682d8272bd7bd121f1fa1ac0206b0f37/664346c7-6234-0aa5-c6c9-79ffbb32476f/test.txt'."</span>
-17:17:28 4<span class="ansi-black-intense-fg">v</span> runtime.execute_with_options / result / { file_name = pwsh; exit_code = 1; std_trace_len = 275 }
+<pre>11:37:58 1<span class="ansi-black-intense-fg">v</span> file_system.create_dir / { dir = /tmp/!create_temp_path_/spiral_cb54c3d879fb50985b7aaafcc129d47c2a0e1985fb02b82af33a3477d5916a7b/664346c7-6234-0aa5-c6c9-79ffbb32476f }
+11:37:58 2<span class="ansi-blue-intense-fg">d</span> runtime.execute_with_options / { file_name = pwsh; arguments = ["-c", "[IO.File]::ReadAllText('/tmp/!create_temp_path_/spiral_cb54c3d879fb50985b7aaafcc129d47c2a0e1985fb02b82af33a3477d5916a7b/664346c7-6234-0aa5-c6c9-79ffbb32476f/test.txt')"] }
+11:37:58 3<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-red-intense-fg ansi-bold">MethodInvocationException: </span><span class="ansi-red-intense-fg ansi-bold">Exception calling "ReadAllText" with "1" argument(s): "Could not find file '/tmp/!create_temp_path_/spiral_cb54c3d879fb50985b7aaafcc129d47c2a0e1985fb02b82af33a3477d5916a7b/664346c7-6234-0aa5-c6c9-79ffbb32476f/test.txt'."</span>
+11:37:58 4<span class="ansi-black-intense-fg">v</span> runtime.execute_with_options / result / { file_name = pwsh; exit_code = 1; std_trace_len = 275 }
 __assert_eq { expected = 1 }
-__assert { expected = <span class="ansi-default-inverse-fg ansi-red-intense-bg ansi-bold ansi-underline">MethodInvocationException: </span><span class="ansi-default-inverse-fg ansi-red-intense-bg ansi-bold ansi-underline">Exception calling "ReadAllText" with "1" argument(s): "Could not find file '/tmp/!create_temp_path_/spiral_9bc2c254e7e0d60ad5b31854362b1735682d8272bd7bd121f1fa1ac0206b0f37/664346c7-6234-0aa5-c6c9-79ffbb32476f/test.txt'."</span> }
-17:17:28 5<span class="ansi-blue-intense-fg">d</span> runtime.execute_with_options / { file_name = pwsh; arguments = ["-c", "[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8; [IO.File]::ReadAllText('test.txt')"] }
-17:17:28 6<span class="ansi-black-intense-fg">v</span> &gt; ╭─[ 你好，世界！こんにちは世界！ ]─╮
-17:17:28 7<span class="ansi-black-intense-fg">v</span> runtime.execute_with_options / result / { file_name = pwsh; exit_code = 0; std_trace_len = 58 }
+__assert { expected = <span class="ansi-default-inverse-fg ansi-red-intense-bg ansi-bold ansi-underline">MethodInvocationException: </span><span class="ansi-default-inverse-fg ansi-red-intense-bg ansi-bold ansi-underline">Exception calling "ReadAllText" with "1" argument(s): "Could not find file '/tmp/!create_temp_path_/spiral_cb54c3d879fb50985b7aaafcc129d47c2a0e1985fb02b82af33a3477d5916a7b/664346c7-6234-0aa5-c6c9-79ffbb32476f/test.txt'."</span> }
+11:37:58 5<span class="ansi-blue-intense-fg">d</span> runtime.execute_with_options / { file_name = pwsh; arguments = ["-c", "[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8; [IO.File]::ReadAllText('test.txt')"] }
+11:37:59 6<span class="ansi-black-intense-fg">v</span> &gt; ╭─[ 你好，世界！こんにちは世界！ ]─╮
+11:37:59 7<span class="ansi-black-intense-fg">v</span> runtime.execute_with_options / result / { file_name = pwsh; exit_code = 0; std_trace_len = 58 }
 __assert_eq { expected = 0 }
 __assert_eq { expected = ╭─[ 你好，世界！こんにちは世界！ ]─╮ }</pre>
 </div>
@@ -11533,7 +11579,7 @@ __assert_eq { expected = ╭─[ 你好，世界！こんにちは世界！ ]─
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [8]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [7]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -11558,13 +11604,13 @@ __assert_eq { expected = ╭─[ 你好，世界！こんにちは世界！ ]─
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>17:17:31 1<span class="ansi-blue-intense-fg">d</span> runtime.execute_with_options / { file_name = pwsh; arguments = ["-c", "[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8; for ($i = 0; $i -lt 5; $i++) { Write-Output `\"Line$i`\"; Start-Sleep -Milliseconds 200 }"] }
-17:17:31 2<span class="ansi-black-intense-fg">v</span> &gt; "Line0"
-17:17:32 3<span class="ansi-black-intense-fg">v</span> &gt; "Line1"
-17:17:32 4<span class="ansi-black-intense-fg">v</span> &gt; "Line2"
-17:17:32 5<span class="ansi-black-intense-fg">v</span> &gt; "Line3"
-17:17:32 6<span class="ansi-black-intense-fg">v</span> &gt; "Line4"
-17:17:32 7<span class="ansi-black-intense-fg">v</span> runtime.execute_with_options / result / { file_name = pwsh; exit_code = 0; std_trace_len = 39 }
+<pre>11:38:04 1<span class="ansi-blue-intense-fg">d</span> runtime.execute_with_options / { file_name = pwsh; arguments = ["-c", "[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8; for ($i = 0; $i -lt 5; $i++) { Write-Output `\"Line$i`\"; Start-Sleep -Milliseconds 200 }"] }
+11:38:05 2<span class="ansi-black-intense-fg">v</span> &gt; "Line0"
+11:38:05 3<span class="ansi-black-intense-fg">v</span> &gt; "Line1"
+11:38:05 4<span class="ansi-black-intense-fg">v</span> &gt; "Line2"
+11:38:05 5<span class="ansi-black-intense-fg">v</span> &gt; "Line3"
+11:38:05 6<span class="ansi-black-intense-fg">v</span> &gt; "Line4"
+11:38:06 7<span class="ansi-black-intense-fg">v</span> runtime.execute_with_options / result / { file_name = pwsh; exit_code = 0; std_trace_len = 39 }
 __assert_eq { expected = 0 }
 __assert { expected = "Line0"
 "Line1"
@@ -11622,7 +11668,7 @@ __assert { expected = "Line0"
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [9]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [8]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///&gt;</span> <span class="n">fsharp</span>
@@ -11651,7 +11697,7 @@ __assert { expected = "Line0"
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>/home/runner/work/spiral/spiral/lib/spiral/main.fsx(2062,23): warning FS0025: Incomplete pattern matches on this expression. For example, the value 'UH0_Cons (_, _)' may indicate a case not covered by the pattern(s).</pre>
+<pre>/home/runner/work/spiral/spiral/lib/spiral/main.fsx(2291,23): warning FS0025: Incomplete pattern matches on this expression. For example, the value 'UH0_Cons (_, _)' may indicate a case not covered by the pattern(s).</pre>
 </div>
 </div>
 </div>

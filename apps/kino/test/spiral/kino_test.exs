@@ -176,6 +176,8 @@ defmodule Spiral.KinoTest do
              code
            )
 
+    assert Spiral.Kino.value_result?("main.spi:4:5: ETY0009: Unification failure. Got: i32 Expected: i32 * i32", code)
+    assert Spiral.Kino.value_result?("main.spi:4:5: ETY-TermError: Unification failure. Got: i32 Expected: i32 * i32", code)
     refute Spiral.Kino.value_result?("main.spi:4:5: Unbound variable: g.", code)
 
     piped = "inl main () : i32 =\n    \"[a\"\n    |> parse\n    |> sm'.format_debug\n"
@@ -486,6 +488,54 @@ defmodule Spiral.KinoTest do
              )
   end
 
+  test "target outputs compare after harness wrappers and number formatting are normalized" do
+    chunk = fn stdout -> %{stdout: stdout, value: nil} end
+    lua = chunk.("String(\"__assert_eq { expected = 1.5707963267949 }\")\n")
+    fsharp = chunk.("__assert_eq { expected = +1.570796 }\n")
+    cuda = chunk.("__assert_eq { expected = 1.570796 }\n0\n")
+    assert Spiral.Kino.shown(lua) == Spiral.Kino.shown(fsharp)
+    assert Spiral.Kino.shown(fsharp) == Spiral.Kino.shown(cuda)
+    refute Spiral.Kino.shown(chunk.("__assert_eq { expected = 1.6 }")) == Spiral.Kino.shown(fsharp)
+    assert Spiral.Kino.shown(chunk.("\n")) == ""
+    traced = chunk.("22:18:21 1w common.retry_fn / { retry = 0 }\nat FSI_1.closure1(x)\n\e[90mvalue\e[0m\n")
+    assert Spiral.Kino.shown(traced) == "value"
+    assert Spiral.Kino.shown(chunk.("c:\\x\\main.fsx(436,54): warning FS3884: This expression is a function value.\nvalue")) == "value"
+    assert Spiral.Kino.shown(chunk.(~s(__assert_eq' { expected = "0.0-1.0" }))) == Spiral.Kino.shown(chunk.("__assert_eq' { expected = 0.0-1.0 }"))
+  end
+  test "union constructors compare in one canonical form, payload values still count" do
+    canonical = &Spiral.Kino.canonical_unions/1
+    python = "__assert_eq { expected = UH0_Cons(v0='a', v1=UH0_Cons(v0='b', v1=UH0_Nil())) }"
+    fsharp = "__assert_eq { expected = UH0_Cons (a, UH0_Cons (b, UH0_Nil)) }"
+    assert canonical.(python) == canonical.(fsharp)
+    assert canonical.(fsharp) == "__assert_eq { expected = Cons(a, Cons(b, Nil)) }"
+    assert canonical.("US0_Some(v0=1.0)") == canonical.("US1_Some 1.0")
+    assert canonical.("US1_Some 1.0") == canonical.("Us0Some(1.0)")
+    assert canonical.("US0_None()") == canonical.("US0_None")
+    assert canonical.("Us0None") == "None"
+    assert canonical.("US0_Some(v0='')") == canonical.("Us0Some()")
+    assert canonical.("Some()") == "Some"
+    refute canonical.("US0_Some(v0=1.0)") == canonical.("US1_Some 2.0")
+    chunk = fn stdout -> %{stdout: stdout, value: nil} end
+    refute Spiral.Kino.shown(chunk.("US0_Some(v0=1)")) == Spiral.Kino.shown(chunk.("US1_Some 2"))
+    assert Spiral.Kino.shown(chunk.("US0_Some(v0=1)")) == Spiral.Kino.shown(chunk.("Us0Some(1)"))
+    assert Spiral.Kino.shown(chunk.("{ expected = 3un }")) == Spiral.Kino.shown(chunk.("{ expected = 3.0 }"))
+    assert Spiral.Kino.shown(chunk.("{ expected = Some  }")) == Spiral.Kino.shown(chunk.("{ expected = Some }"))
+    refute Spiral.Kino.shown(chunk.("{ expected = 3un }")) == Spiral.Kino.shown(chunk.("{ expected = 4 }"))
+  end
+  test "arrays and tuples compare in one canonical form; values and lengths still count" do
+    canonical = &Spiral.Kino.canonical_collections/1
+    assert canonical.("[|0; 2; 4|]") == "[0, 2, 4]"
+    assert canonical.("[0 2 4]") == "[0, 2, 4]"
+    assert canonical.("[0, 2, 4]") == "[0, 2, 4]"
+    assert canonical.("[||]") == "[]"
+    assert canonical.("[1 -2]") == "[1, -2]"
+    assert canonical.("a, #(1, b)") == canonical.("a, (1, b)")
+    assert canonical.("[|struct (0, 0); struct (1, 2)|]") == canonical.("[(0, 0), (1, 2)]")
+    refute canonical.("[|0; 2|]") == canonical.("[0 3]")
+    refute canonical.("[|0; 2|]") == canonical.("[0 2 4]")
+    chunk = fn stdout -> %{stdout: stdout, value: nil} end
+    assert Spiral.Kino.shown(chunk.("__assert_eq { expected = [|0.0; 2.0|] }")) == Spiral.Kino.shown(chunk.("__assert_eq { expected = [0. 2.] }"))
+  end
   test "each builder compiles once and the outputs are labeled" do
     {:ok, agent} = Agent.start_link(fn -> [] end)
 
@@ -593,19 +643,50 @@ defmodule Spiral.KinoTest do
     assert %{type: :plain_text, text: "(no value)"} = Kino.Render.to_livebook(%Result{})
   end
 
-  test "the package fallback root is this spiral checkout; the polyglot_root option still overrides it" do
-    unless System.get_env("SPIRAL_KINO_WORKSPACE_ROOT") ||
-             System.get_env("SPIRAL_KINO_POLYGLOT_ROOT") do
+  test "the package fallback root is this spiral checkout; the workspace_root option overrides it" do
+    unless System.get_env("SPIRAL_KINO_WORKSPACE_ROOT") do
       root = Spiral.Kino.workspace_root()
       assert File.regular?(Path.join(root, "apps/kino/mix.exs")), root
     end
 
-    assert Spiral.Kino.workspace_root(polyglot_root: "/x") == "/x"
-    assert Spiral.Kino.workspace_root(workspace_root: "/y", polyglot_root: "/x") == "/y"
+    assert Spiral.Kino.workspace_root(workspace_root: "/y") == "/y"
+    assert Spiral.Kino.workspace_root(polyglot_root: "/x") == Spiral.Kino.workspace_root()
   end
 
-  test "the core package defaults to spiral's fork clone, else polyglot's" do
+  test "the core package is spiral's fork clone" do
     dir = Spiral.Kino.Toolchain.default_package_dir()
     assert String.ends_with?(dir, "deps/The-Spiral-Language/VS Code Plugin"), dir
+  end
+
+  test "the Rust host builds like the compiler harness: rustup's 1.99.0, opt-level 2, edition 2024, warnings off" do
+    assert Spiral.Kino.rustc_args("C:/Users/x/scoop/apps/rustup/current/.cargo/bin/rustc.exe", "main.rs", "main.exe") ==
+             ["+1.99.0", "-C", "opt-level=2", "-A", "warnings", "--edition", "2024", "-o", "main.exe", "main.rs"]
+
+    assert Spiral.Kino.rustc_args("/opt/rust/bin/rustc", "main.rs", "main") ==
+             ["-C", "opt-level=2", "-A", "warnings", "--edition", "2024", "-o", "main", "main.rs"]
+  end
+  test "a missing pinned Rust toolchain is installed once; a failed install is reported and never marked ready" do
+    dir = Spiral.Kino.TestHelpers.tmp_dir!("rustup")
+
+    fake = fn name, listed, install_exit ->
+      Spiral.Kino.TestHelpers.script!(dir, name, """
+      main(["toolchain", "list"]) ->
+          io:format("~s~n", ["#{listed}"]);
+      main(["toolchain", "install" | _]) ->
+          io:format("error: could not download the toolchain (offline)~n"),
+          halt(#{install_exit}).
+      """)
+    end
+
+    escript = Spiral.Kino.TestHelpers.escript()
+
+    assert :ok = Spiral.Kino.prepare_rust_toolchain({escript, [fake.("listed", "1.99.0-x86_64-pc-windows-msvc", 1)]}, 60_000)
+    assert :ok = Spiral.Kino.prepare_rust_toolchain({escript, [fake.("installs", "stable-x86_64-pc-windows-msvc", 0)]}, 60_000)
+
+    assert {:error, %ProcessError{message: message}} =
+             Spiral.Kino.prepare_rust_toolchain({escript, [fake.("offline", "stable-x86_64-pc-windows-msvc", 1)]}, 60_000)
+
+    assert message =~ "rustup toolchain install 1.99.0 failed (exit 1)"
+    assert message =~ "offline"
   end
 end

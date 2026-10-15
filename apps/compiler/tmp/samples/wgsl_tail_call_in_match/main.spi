@@ -1,0 +1,14 @@
+union step =
+    | Done : i32
+    | More : i32
+
+inl classify (k : i32) : step = if k >= 5i32 then Done k else More k
+
+let rec layers (k : i32) : i32 =
+    match classify k with
+    | More n => layers (n +. 1i32)
+    | Done n => n *. 2i32
+
+inl main () : i32 =
+    inl ~start = 0i32
+    layers start

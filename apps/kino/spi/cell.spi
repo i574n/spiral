@@ -275,9 +275,53 @@ inl join_pair (left : string) (right : string) : string =
     elif right = "" then left
     else left ++ "\n" ++ right
 
+let rec digits_between (line : string) (from : i32) (to : i32) : bool =
+    if from >= to then true
+    elif text.digit_val (text.index line from) < 0i32 then false
+    else digits_between line (from + 1i32) to
+
+inl panic_thread_open () : string = "thread '"
+inl panic_id_open () : string = "' ("
+inl panic_id_close () : string = ") panicked"
+
+inl without_panic_thread_id (line : string) : string =
+    if text.starts_with line (panic_thread_open ()) then
+        inl id_open = text.find_from line (panic_id_open ()) (text.length (panic_thread_open ()))
+        inl id_from = id_open + text.length (panic_id_open ())
+        inl id_close = if id_open >= 0i32 then text.find_from line (panic_id_close ()) id_from else -1i32
+        if id_close > id_from && digits_between line id_from id_close then text.take line (id_open + 1i32) ++ text.drop line (id_close + 1i32)
+        else line
+    else line
+
+inl panic_location_open () : string = "panicked at "
+inl rust_source_suffix () : string = ".rs:"
+inl cell_run_dir () : string = "spiral_kino"
+
+let rec last_separator_before (line : string) (i : i32) (from : i32) : i32 =
+    if i < from then -1i32
+    elif text.index line i = '/' || text.index line i = '\\' then i
+    else last_separator_before line (i - 1i32) from
+
+inl without_cell_run_dir (line : string) : string =
+    inl at = text.find_from line (panic_location_open ()) 0i32
+    inl path_from = at + text.length (panic_location_open ())
+    inl suffix = if at >= 0i32 then text.find_from line (rust_source_suffix ()) path_from else -1i32
+    if suffix > path_from then
+        inl path_to = suffix + text.length (rust_source_suffix ()) - 1i32
+        inl path = text.slice_len line path_from (path_to - path_from)
+        inl separator = last_separator_before line (path_to - 1i32) path_from
+        if text.contains path (cell_run_dir ()) && separator >= path_from then text.take line path_from ++ text.drop line (separator + 1i32)
+        else line
+    else line
+
+let rec run_stable_lines (xs : lines) : lines =
+    match xs with
+    | NoLine => NoLine
+    | Line (line, rest) => Line (without_cell_run_dir (without_panic_thread_id line), run_stable_lines rest)
+
 inl split_output (output : string) : string =
     inl textn = text.replace output "\r\n" "\n"
-    inl xs = read_lines textn
+    inl xs = run_stable_lines (read_lines textn)
     let rec find (rows : lines) (before : lines) : string =
         match rows with
         | NoLine => "0\n" ++ text.trim_trailing_newlines (join_lines (rev_lines before NoLine))

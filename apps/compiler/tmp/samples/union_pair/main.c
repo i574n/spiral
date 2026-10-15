@@ -44,7 +44,7 @@ int32_t sum0(US0 v0){
         case 1: { // Both
             int32_t v2 = v0.case1.v0; int32_t v3 = v0.case1.v1;
             
-            USDecref0(&(v0));
+            
             int32_t v4;
             v4 = v2 * 10l;
             
@@ -59,7 +59,7 @@ int32_t sum0(US0 v0){
         default: { // One
             int32_t v1 = v0.case0.v0;
             
-            USDecref0(&(v0));
+            
             return v1;
             break;
         }
@@ -94,19 +94,19 @@ int32_t main(){
         
         v6 = US0_Both(1l, 1l);
     }
-    USIncref0(&(v3));
+    
     
     int32_t v7;
     v7 = sum0(v3);
     
-    USDecref0(&(v3));
+    
     bool v8;
     v8 = v7 == 34l;
     
     
     bool v11;
     if (v8){
-        USIncref0(&(v6));
+        
         
         int32_t v9;
         v9 = sum0(v6);
@@ -123,7 +123,7 @@ int32_t main(){
         v11 = false;
     }
     
-    USDecref0(&(v6));
+    
     if (v11){
         
         

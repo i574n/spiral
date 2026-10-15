@@ -144,7 +144,7 @@ def spiral_string_slice_checked(+valid: Bool, +s: String, +from: U32, +until: U3
       IO.die(String, 3, "")
 
 def spiral_string_slice(+s: String, +from: U32, +to: U32) -> IO(String):
-  spiral_string_slice_checked(Bool.and(Bool.and(Bool.not(U32.is_ge(from, 2147483648)), U32.is_le(U32.add(to, 1), spiral_string_bytes(s))), Bool.and(Bool.and(U32.is_le(from, U32.add(to, 1)), spiral_string_is_boundary(s, {0 : U32}, from)), spiral_string_is_boundary(s, {0 : U32}, U32.add(to, 1)))), s, from, U32.add(to, 1))
+  spiral_string_slice_checked(Bool.and(Bool.and(Bool.not(U32.is_ge(from, 2147483648)), U32.is_le(U32.add(to, 1), spiral_string_bytes(s))), Bool.and(U32.is_le(from, U32.add(to, 1)), Bool.or(U32.is_eq(from, U32.add(to, 1)), Bool.and(spiral_string_is_boundary(s, {0 : U32}, from), spiral_string_is_boundary(s, {0 : U32}, U32.add(to, 1)))))), s, from, U32.add(to, 1))
 
 @unsafe
 def spiral_i32_to_f32(+value: U32) -> F32:
@@ -183,10 +183,10 @@ def spiral_array_depth(+wanted: U32) -> U32:
 
 type U0 is Type:
   U0_Empty{}
-  U0_Nested{f0: (Chan(Array<(Chan(Array<U32>) & U32)>) & U32)}
+  U0_Nested{f0: (Chan(Array<((Chan(Array<U32>) & U32))>) & U32)}
 
 @unsafe
-def spiral_array_fill_go_a0(+depth: U32, +v: (Chan(Array<U32>) & U32), leaf: Bool) -> Array<(Chan(Array<U32>) & U32)>:
+def spiral_array_fill_go_a0(+depth: U32, +v: ((Chan(Array<U32>) & U32)), leaf: Bool) -> Array<((Chan(Array<U32>) & U32))>:
   match leaf:
     case True{}:
       ALeaf{v}
@@ -194,21 +194,21 @@ def spiral_array_fill_go_a0(+depth: U32, +v: (Chan(Array<U32>) & U32), leaf: Boo
       ANode{spiral_array_fill_a0(U32.sub(depth, 1), v), spiral_array_fill_a0(U32.sub(depth, 1), v)}
 
 @unsafe
-def spiral_array_fill_a0(+depth: U32, +v: (Chan(Array<U32>) & U32)) -> Array<(Chan(Array<U32>) & U32)>:
+def spiral_array_fill_a0(+depth: U32, +v: ((Chan(Array<U32>) & U32))) -> Array<((Chan(Array<U32>) & U32))>:
   spiral_array_fill_go_a0(depth, v, U32.is_eq(depth, 0))
 
 @unsafe
-def spiral_array_peek_lo_a0(ys: Array<(Chan(Array<U32>) & U32)>, r: Array<(Chan(Array<U32>) & U32)> & (Chan(Array<U32>) & U32)) -> Array<(Chan(Array<U32>) & U32)> & (Chan(Array<U32>) & U32):
+def spiral_array_peek_lo_a0(ys: Array<((Chan(Array<U32>) & U32))>, r: Array<((Chan(Array<U32>) & U32))> & ((Chan(Array<U32>) & U32))) -> Array<((Chan(Array<U32>) & U32))> & ((Chan(Array<U32>) & U32)):
   (nxs, v) = r
   (ANode{nxs, ys}, v)
 
 @unsafe
-def spiral_array_peek_hi_a0(xs: Array<(Chan(Array<U32>) & U32)>, r: Array<(Chan(Array<U32>) & U32)> & (Chan(Array<U32>) & U32)) -> Array<(Chan(Array<U32>) & U32)> & (Chan(Array<U32>) & U32):
+def spiral_array_peek_hi_a0(xs: Array<((Chan(Array<U32>) & U32))>, r: Array<((Chan(Array<U32>) & U32))> & ((Chan(Array<U32>) & U32))) -> Array<((Chan(Array<U32>) & U32))> & ((Chan(Array<U32>) & U32)):
   (nys, v) = r
   (ANode{xs, nys}, v)
 
 @unsafe
-def spiral_array_peek_go_a0(a: Array<(Chan(Array<U32>) & U32)>, +n: U32, +i: U32, z: Bool) -> Array<(Chan(Array<U32>) & U32)> & (Chan(Array<U32>) & U32):
+def spiral_array_peek_go_a0(a: Array<((Chan(Array<U32>) & U32))>, +n: U32, +i: U32, z: Bool) -> Array<((Chan(Array<U32>) & U32))> & ((Chan(Array<U32>) & U32)):
   match a z:
     case ALeaf{+x} _:
       (ALeaf{x}, x)
@@ -221,79 +221,79 @@ def spiral_array_peek_go_a0(a: Array<(Chan(Array<U32>) & U32)>, +n: U32, +i: U32
       spiral_array_peek_hi_a0(xs, spiral_array_peek_go_a0(ys, h, j, U32.is_lt(j, U32.shr(h))))
 
 @unsafe
-def spiral_array_peek_at_a0(+i: U32, an: Array<(Chan(Array<U32>) & U32)> & U32) -> Array<(Chan(Array<U32>) & U32)> & (Chan(Array<U32>) & U32):
+def spiral_array_peek_at_a0(+i: U32, an: Array<((Chan(Array<U32>) & U32))> & U32) -> Array<((Chan(Array<U32>) & U32))> & ((Chan(Array<U32>) & U32)):
   (a, +n) = an
   spiral_array_peek_go_a0(a, n, i, U32.is_lt(i, U32.shr(n)))
 
 @unsafe
-def spiral_array_new_a0(+length: U32, +v: (Chan(Array<U32>) & U32)) -> IO(Chan(Array<(Chan(Array<U32>) & U32)>) & U32):
-  do IO<Chan(Array<(Chan(Array<U32>) & U32)>) & U32>:
-    +c : Chan(Array<(Chan(Array<U32>) & U32)>) <- Chan.new(Array<(Chan(Array<U32>) & U32)>, 1)
-    _ : Result<&1, &1, Array<(Chan(Array<U32>) & U32)>, Unit> <- Chan.send(Array<(Chan(Array<U32>) & U32)>, c, spiral_array_fill_a0(spiral_array_depth(length), v))
+def spiral_array_new_a0(+length: U32, +v: ((Chan(Array<U32>) & U32))) -> IO(Chan(Array<((Chan(Array<U32>) & U32))>) & U32):
+  do IO<Chan(Array<((Chan(Array<U32>) & U32))>) & U32>:
+    +c : Chan(Array<((Chan(Array<U32>) & U32))>) <- Chan.new(Array<((Chan(Array<U32>) & U32))>, 1)
+    _ : Result<&1, &1, Array<((Chan(Array<U32>) & U32))>, Unit> <- Chan.send(Array<((Chan(Array<U32>) & U32))>, c, spiral_array_fill_a0(spiral_array_depth(length), v))
     return (c, length)
 
 @unsafe
-def spiral_array_length_a0(+arr: Chan(Array<(Chan(Array<U32>) & U32)>) & U32) -> U32:
+def spiral_array_length_a0(+arr: Chan(Array<((Chan(Array<U32>) & U32))>) & U32) -> U32:
   (c, +n) = arr
   n
 
 @unsafe
-def spiral_array_get_back_a0(+c: Chan(Array<(Chan(Array<U32>) & U32)>), r: Array<(Chan(Array<U32>) & U32)> & (Chan(Array<U32>) & U32)) -> IO((Chan(Array<U32>) & U32)):
+def spiral_array_get_back_a0(+c: Chan(Array<((Chan(Array<U32>) & U32))>), r: Array<((Chan(Array<U32>) & U32))> & ((Chan(Array<U32>) & U32))) -> IO(((Chan(Array<U32>) & U32))):
   (a, +v) = r
-  do IO<(Chan(Array<U32>) & U32)>:
-    _ : Result<&1, &1, Array<(Chan(Array<U32>) & U32)>, Unit> <- Chan.send(Array<(Chan(Array<U32>) & U32)>, c, a)
+  do IO<((Chan(Array<U32>) & U32))>:
+    _ : Result<&1, &1, Array<((Chan(Array<U32>) & U32))>, Unit> <- Chan.send(Array<((Chan(Array<U32>) & U32))>, c, a)
     return v
 
 @unsafe
-def spiral_array_get_taken_a0(+c: Chan(Array<(Chan(Array<U32>) & U32)>), +i: U32, m: Maybe<&1, Array<(Chan(Array<U32>) & U32)>>) -> IO((Chan(Array<U32>) & U32)):
+def spiral_array_get_taken_a0(+c: Chan(Array<((Chan(Array<U32>) & U32))>), +i: U32, m: Maybe<&1, Array<((Chan(Array<U32>) & U32))>>) -> IO(((Chan(Array<U32>) & U32))):
   match m:
     case None{}:
-      IO.die((Chan(Array<U32>) & U32), 3, "")
+      IO.die(((Chan(Array<U32>) & U32)), 3, "")
     case Some{a}:
-      spiral_array_get_back_a0(c, spiral_array_peek_at_a0(i, Array.size((Chan(Array<U32>) & U32), a)))
+      spiral_array_get_back_a0(c, spiral_array_peek_at_a0(i, Array.size(((Chan(Array<U32>) & U32)), a)))
 
 @unsafe
-def spiral_array_get_checked_a0(+c: Chan(Array<(Chan(Array<U32>) & U32)>), +i: U32, inside: Bool) -> IO((Chan(Array<U32>) & U32)):
+def spiral_array_get_checked_a0(+c: Chan(Array<((Chan(Array<U32>) & U32))>), +i: U32, inside: Bool) -> IO(((Chan(Array<U32>) & U32))):
   match inside:
     case True{}:
-      do IO<(Chan(Array<U32>) & U32)>:
-        m : Maybe<&1, Array<(Chan(Array<U32>) & U32)>> <- Chan.recv(Array<(Chan(Array<U32>) & U32)>, c)
+      do IO<((Chan(Array<U32>) & U32))>:
+        m : Maybe<&1, Array<((Chan(Array<U32>) & U32))>> <- Chan.recv(Array<((Chan(Array<U32>) & U32))>, c)
         spiral_array_get_taken_a0(c, i, m)
     case False{}:
-      IO.die((Chan(Array<U32>) & U32), 3, "")
+      IO.die(((Chan(Array<U32>) & U32)), 3, "")
 
 @unsafe
-def spiral_array_get_a0(+arr: Chan(Array<(Chan(Array<U32>) & U32)>) & U32, +i: U32) -> IO((Chan(Array<U32>) & U32)):
+def spiral_array_get_a0(+arr: Chan(Array<((Chan(Array<U32>) & U32))>) & U32, +i: U32) -> IO(((Chan(Array<U32>) & U32))):
   (+c, +n) = arr
   spiral_array_get_checked_a0(c, i, U32.is_lt(i, n))
 
 @unsafe
-def spiral_array_set_back_a0(+c: Chan(Array<(Chan(Array<U32>) & U32)>), r: Array<(Chan(Array<U32>) & U32)> & (Chan(Array<U32>) & U32)) -> IO(Unit):
+def spiral_array_set_back_a0(+c: Chan(Array<((Chan(Array<U32>) & U32))>), r: Array<((Chan(Array<U32>) & U32))> & ((Chan(Array<U32>) & U32))) -> IO(Unit):
   (a, old) = r
   do IO<Unit>:
-    _ : Result<&1, &1, Array<(Chan(Array<U32>) & U32)>, Unit> <- Chan.send(Array<(Chan(Array<U32>) & U32)>, c, a)
+    _ : Result<&1, &1, Array<((Chan(Array<U32>) & U32))>, Unit> <- Chan.send(Array<((Chan(Array<U32>) & U32))>, c, a)
     return Unit{}
 
 @unsafe
-def spiral_array_set_taken_a0(+c: Chan(Array<(Chan(Array<U32>) & U32)>), +i: U32, +v: (Chan(Array<U32>) & U32), m: Maybe<&1, Array<(Chan(Array<U32>) & U32)>>) -> IO(Unit):
+def spiral_array_set_taken_a0(+c: Chan(Array<((Chan(Array<U32>) & U32))>), +i: U32, +v: ((Chan(Array<U32>) & U32)), m: Maybe<&1, Array<((Chan(Array<U32>) & U32))>>) -> IO(Unit):
   match m:
     case None{}:
       IO.die(Unit, 3, "")
     case Some{a}:
-      spiral_array_set_back_a0(c, Array.swap((Chan(Array<U32>) & U32), a, i, v))
+      spiral_array_set_back_a0(c, Array.swap(((Chan(Array<U32>) & U32)), a, i, v))
 
 @unsafe
-def spiral_array_set_checked_a0(+c: Chan(Array<(Chan(Array<U32>) & U32)>), +i: U32, +v: (Chan(Array<U32>) & U32), inside: Bool) -> IO(Unit):
+def spiral_array_set_checked_a0(+c: Chan(Array<((Chan(Array<U32>) & U32))>), +i: U32, +v: ((Chan(Array<U32>) & U32)), inside: Bool) -> IO(Unit):
   match inside:
     case True{}:
       do IO<Unit>:
-        m : Maybe<&1, Array<(Chan(Array<U32>) & U32)>> <- Chan.recv(Array<(Chan(Array<U32>) & U32)>, c)
+        m : Maybe<&1, Array<((Chan(Array<U32>) & U32))>> <- Chan.recv(Array<((Chan(Array<U32>) & U32))>, c)
         spiral_array_set_taken_a0(c, i, v, m)
     case False{}:
       IO.die(Unit, 3, "")
 
 @unsafe
-def spiral_array_set_a0(+arr: Chan(Array<(Chan(Array<U32>) & U32)>) & U32, +i: U32, +v: (Chan(Array<U32>) & U32)) -> IO(Unit):
+def spiral_array_set_a0(+arr: Chan(Array<((Chan(Array<U32>) & U32))>) & U32, +i: U32, +v: ((Chan(Array<U32>) & U32))) -> IO(Unit):
   (+c, +n) = arr
   spiral_array_set_checked_a0(c, i, v, U32.is_lt(i, n))
 
@@ -410,8 +410,8 @@ def spiral_array_set_a1(+arr: Chan(Array<U32>) & U32, +i: U32, +v: U32) -> IO(Un
   spiral_array_set_checked_a1(c, i, v, U32.is_lt(i, n))
 
 @unsafe
-def spiral_array_new_nested_a0(+length: U32) -> IO((Chan(Array<(Chan(Array<U32>) & U32)>) & U32)):
-  do IO<(Chan(Array<(Chan(Array<U32>) & U32)>) & U32)>:
+def spiral_array_new_nested_a0(+length: U32) -> IO((Chan(Array<((Chan(Array<U32>) & U32))>) & U32)):
+  do IO<(Chan(Array<((Chan(Array<U32>) & U32))>) & U32)>:
     +empty : (Chan(Array<U32>) & U32) <- spiral_array_new_a1(0, {0 : U32})
     spiral_array_new_a0(length, empty)
 
@@ -462,7 +462,7 @@ def score_1(+v0: U0) -> IO(U32):
 def spiral_main() -> IO(U32):
   do IO<U32>:
     +v0 : U32 <- IO.pure(U32, {2 : U32})
-    +v1 : (Chan(Array<(Chan(Array<U32>) & U32)>) & U32) <- spiral_array_new_nested_a0(v0)
+    +v1 : (Chan(Array<((Chan(Array<U32>) & U32))>) & U32) <- spiral_array_new_nested_a0(v0)
     +v2 : (Chan(Array<U32>) & U32) <- spiral_array_new_a1(v0, {0 : U32})
     +v3 : (Chan(Array<U32>) & U32) <- spiral_array_new_a1(v0, {0 : U32})
     spiral_array_set_a1(v2, {0 : U32}, {3 : U32})

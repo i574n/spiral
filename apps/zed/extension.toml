@@ -3,9 +3,14 @@ name = "Spiral"
 version = "0.1.0"
 schema_version = 1
 authors = ["Marko Grdinić", "i574n"]
-description = "Spiral language support for Zed: syntax highlighting, brackets, indents, and language server integration."
+description = "Spiral language support for Zed: syntax highlighting, outline, test runnables, and language server integration."
 repository = "https://github.com/i574n/The-Spiral-Language"
 
 [language_servers.spiral-lsp]
 name = "Spiral Language Server"
 languages = ["Spiral"]
+
+[grammars.spiral]
+repository = "https://github.com/i574n/spiral"
+rev = "3c76d3ed10cf9ac37576acc401e3ed190a520f08"
+path = "apps/zed/tree-sitter-spiral"

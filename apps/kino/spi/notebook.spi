@@ -157,6 +157,37 @@ inl load_sources (src : string) : sources =
     | LineDone => NoSource
     | LineGot (count, next) => rev_sources (read_sources src next (text.parse_i32 count) NoSource) NoSource
 
+let rec indent_body (src : string) (i : i32) (acc : string) : string =
+    match text.next_line src i with
+    | LineDone => acc
+    | LineGot (line, next) =>
+        inl row = if text.trim line = "" then "" else "    " ++ line
+        indent_body src next (if row = "" && acc = "" then acc else acc ++ "\n" ++ row)
+
+let rec split_declarations (src : string) (i : i32) (in_declaration : bool) (declarations : string) (rest : string) : string * string =
+    match text.next_line src i with
+    | LineDone => declarations, rest
+    | LineGot (line, next) =>
+        inl top = line <> "" && text.starts_with line " " = false
+        inl declaration = if top then cell.declaration line else in_declaration
+        if declaration then split_declarations src next true (declarations ++ "\n" ++ line) rest
+        else split_declarations src next false declarations (rest ++ "\n" ++ line)
+
+let rec last_top_block (src : string) (i : i32) (block : string) : string =
+    match text.next_line src i with
+    | LineDone => block
+    | LineGot (line, next) =>
+        if line <> "" && text.starts_with line " " = false then last_top_block src next line
+        else last_top_block src next (block ++ "\n" ++ line)
+
+inl scoped_test_body (body : string) : string =
+    inl declarations, rest = split_declarations body 0i32 false "" ""
+    if text.trim rest = "" then body
+    else
+        inl ends_in_assertion = text.contains (last_top_block rest 0i32 "") "_assert"
+        inl call = if ends_in_assertion then "\nspiral_kino_test ()\n0i32" else "\ninl _ = spiral_kino_test ()\n0i32"
+        text.trim declarations ++ "\ninl spiral_kino_test () =" ++ indent_body rest 0i32 "" ++ call
+
 inl real_entry () : string = "spiral_kino_real"
 
 inl real_program (packages : nb) (reals : nb) (body : string) : string * string =
@@ -175,37 +206,57 @@ inl planned (scope : plan_scope) (test : i32) : bool =
     | EveryCell => true
     | TestsAndWholeFile => test = 1i32 || test = 2i32
 
-inl whole_file (scope : plan_scope) (last_def : i32) (packages : nb) (opens : nb) (defs : nb) (reals : nb) (acc : steps) : steps =
+union file_budget =
+    | BudgetUnseen
+    | BudgetOf : string
+
+inl budget_after (budget : file_budget) (timeout : string) : file_budget =
+    match budget with
+    | BudgetUnseen => BudgetOf timeout
+    | BudgetOf _ => budget
+
+inl inherited_budget (budget : file_budget) : string =
+    match budget with
+    | BudgetOf timeout => if timeout = "" then "-" else timeout
+    | BudgetUnseen => "-"
+
+inl step_budget (budget : file_budget) (test : i32) (timeout : string) : string =
+    if timeout <> "" then timeout
+    elif test = 1i32 || test = 2i32 then inherited_budget budget
+    else "-"
+
+inl whole_file (scope : plan_scope) (last_def : i32) (packages : nb) (opens : nb) (defs : nb) (reals : nb) (budget : file_budget) (acc : steps) : steps =
     match scope with
     | EveryCell => acc
-    | TestsAndWholeFile => if last_def < 0i32 then acc else Step (last_def, "-", program packages opens defs "", join_nb reals, acc)
+    | TestsAndWholeFile => if last_def < 0i32 then acc else Step (last_def, inherited_budget budget, program packages opens defs "", join_nb reals, acc)
 
-let rec walk (scope : plan_scope) (xs : sources) (index : i32) (last_def : i32) (packages : nb) (opens : nb) (defs : nb) (reals : nb) (acc : steps) : steps =
+let rec walk (scope : plan_scope) (xs : sources) (index : i32) (last_def : i32) (packages : nb) (opens : nb) (defs : nb) (reals : nb) (budget : file_budget) (acc : steps) : steps =
     match xs with
-    | NoSource => whole_file scope last_def packages opens defs reals acc
+    | NoSource => whole_file scope last_def packages opens defs reals budget acc
     | Source (kind, source, rest) =>
-        if kind <> "spiral" then walk scope rest (index + 1i32) last_def packages opens defs reals acc
+        if kind <> "spiral" then walk scope rest (index + 1i32) last_def packages opens defs reals budget acc
         else
             inl cell_packages, test, is_real, timeout, body, cell_opens, skip = scan source
             inl packages2 = merge packages cell_packages
-            if test = 3i32 then walk scope rest (index + 1i32) last_def packages2 opens defs reals acc
+            inl budget2 = budget_after budget timeout
+            if test = 3i32 then walk scope rest (index + 1i32) last_def packages2 opens defs reals budget2 acc
             else
                 inl code, real_code =
                     if skip = 1i32 then "///> _", ""
                     elif is_real = 1i32 then real_program packages2 reals body
-                    else program packages2 opens defs body, join_nb reals
-                inl timeout_text = if timeout = "" then "-" else timeout
+                    else program packages2 opens defs (if test = 1i32 then scoped_test_body body else body), join_nb reals
+                inl timeout_text = step_budget budget2 test timeout
                 inl step = if planned scope test then Step (index, timeout_text, code, real_code, acc) else acc
                 inl kept = test <> 1i32 && skip = 0i32 && text.trim body <> ""
                 inl last_def2 = if kept && test = 0i32 then index else last_def
                 if is_real = 1i32 then
-                    walk scope rest (index + 1i32) last_def2 packages2 opens defs (if kept then snoc reals body else reals) step
+                    walk scope rest (index + 1i32) last_def2 packages2 opens defs (if kept then snoc reals body else reals) budget2 step
                 elif test = 1i32 then
-                    walk scope rest (index + 1i32) last_def2 packages2 (merge opens cell_opens) defs reals step
+                    walk scope rest (index + 1i32) last_def2 packages2 (merge opens cell_opens) defs reals budget2 step
                 elif kept then
-                    walk scope rest (index + 1i32) last_def2 packages2 opens (snoc defs body) reals step
+                    walk scope rest (index + 1i32) last_def2 packages2 opens (snoc defs body) reals budget2 step
                 else
-                    walk scope rest (index + 1i32) last_def2 packages2 opens defs reals step
+                    walk scope rest (index + 1i32) last_def2 packages2 opens defs reals budget2 step
 
 let rec rev_steps (xs : steps) (acc : steps) : steps =
     match xs with
@@ -229,7 +280,7 @@ inl plan_in (scope : plan_scope) (src : string) : string =
     | LineDone => "0\n"
     | LineGot (lib, next) =>
         inl packages = if lib = "-" || lib = "" then NoNb else Nb (lib, NoNb)
-        inl found = rev_steps (walk scope (load_sources (text.drop src next)) 0i32 -1i32 packages NoNb NoNb NoNb NoStep) NoStep
+        inl found = rev_steps (walk scope (load_sources (text.drop src next)) 0i32 -1i32 packages NoNb NoNb NoNb BudgetUnseen NoStep) NoStep
         text.show_i32 (count_steps found) ++ "\n" ++ emit_steps found
 
 inl plan (src : string) : string = plan_in EveryCell src

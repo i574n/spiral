@@ -1,0 +1,10 @@
+inl main () : i32 =
+    inl ~count = 6i32
+    inl cells : array_base i32 = !!!!ArrayCreate(`i32, 6i32)
+    let rec fill (i : i32) : () =
+        if !!!!LT(i, count) then
+            !!!!ArrayIndexSet(cells, i, i)
+            fill !!!!Add(i, 1i32)
+    fill 0i32
+    inl last : i32 = !!!!ArrayIndex(cells, 5i32)
+    !!!!Add(last, 2i32)

@@ -17,7 +17,7 @@ i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 =
 
 import sys
 def middle_0(v0 : string) -> string:
-    v1 = v0[1:3]
+    v1 = v0[1:(3) + 1]
     del v0
     return v1
 def main():

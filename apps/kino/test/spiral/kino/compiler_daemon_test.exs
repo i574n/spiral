@@ -24,9 +24,28 @@ defmodule Spiral.Kino.CompilerDaemonTest do
     assert CompilerClient.daemon_command_line(
              ~S"C:\e\elixir.bat",
              ~S"C:\r\k.log",
-             ~S"C:\r\k.err.log"
+             ~S"C:\r\k.err.log",
+             nil
            ) ==
              ~S{/d /c ""C:\e\elixir.bat" -S mix spiral.compiler_daemon 1>"C:\r\k.log" 2>"C:\r\k.err.log""}
+  end
+
+  test "a relaunch rotates the daemon log even while the retiring daemon still holds it open" do
+    dir = Spiral.Kino.TestHelpers.tmp_dir!("log_rotation")
+    log = Path.join(dir, "kino-1.log")
+    File.write!(log, "old daemon\n")
+    {:ok, held} = File.open(log, [:append])
+    spawn(fn -> Process.sleep(600); File.close(held) end)
+
+    assert CompilerClient.keep_previous(log, System.monotonic_time(:millisecond) + 10_000) == :ok
+    assert File.read!(Path.join(dir, "kino-1.prev.log")) == "old daemon\n"
+    refute File.exists?(log)
+  end
+  test "a compiled Kino starts the daemon straight from its ebin directories, so it never waits for mix's build lock" do
+    assert CompilerClient.daemon_command_line(~S"C:\e\elixir.bat", ~S"C:\r\k.log", ~S"C:\r\k.err.log", "C:/k/_build/dev/lib/*/ebin") ==
+             ~S{/d /c ""C:\e\elixir.bat" -pa "C:/k/_build/dev/lib/*/ebin" -e Spiral.Kino.CompilerDaemon.serve_app() 1>"C:\r\k.log" 2>"C:\r\k.err.log""}
+
+    assert CompilerClient.compiled_ebins() =~ ~r{/_build/[^/]+/lib/\*/ebin$}
   end
 
   test "queued clients share one compiler and do not overlap" do
@@ -210,6 +229,51 @@ defmodule Spiral.Kino.CompilerDaemonTest do
     assert md5 == CompilerDaemon.module_info(:md5)
   end
 
+  test "the compiler is recycled past its memory cap or compile count, never before" do
+    limits = %{max_mb: 2_500, max_compiles: 0}
+    assert CompilerDaemon.recycle_reason(10_000, 2_499, limits) == nil
+    assert CompilerDaemon.recycle_reason(1, 2_500, limits) == "reaching 2500 MB"
+    assert CompilerDaemon.recycle_reason(1, nil, limits) == nil
+    assert CompilerDaemon.recycle_reason(50, 100, %{max_mb: 0, max_compiles: 50}) == "50 compiles"
+    assert CompilerDaemon.recycle_reason(49, 9_000, %{max_mb: 0, max_compiles: 50}) == nil
+    assert CompilerDaemon.limits().max_mb > 0
+  end
+
+  test "the working set of a live process is read in MB" do
+    mb = CompilerDaemon.working_set_mb(String.to_integer(System.pid()))
+    assert is_integer(mb) and mb > 0
+    assert CompilerDaemon.working_set_mb(999_999_999) == nil
+  end
+  test "the compiler runs from a shadow copy keyed by the DLL stamp; a rebuilt DLL gets a fresh copy and restarts it" do
+    dir = Spiral.Kino.TestHelpers.tmp_dir!("shadow")
+    build = Path.join(dir, "net11.0")
+    File.mkdir_p!(build)
+    dll = Path.join(build, "SpiralCompiler.dll")
+    File.write!(dll, "v1")
+    File.write!(Path.join(build, "SpiralCompiler.deps.json"), "{}")
+    root = Path.join(dir, "shadows")
+
+    first = CompilerDaemon.shadow_dll(dll, root)
+    refute first == dll
+    assert File.read!(first) == "v1"
+    assert File.regular?(Path.join(Path.dirname(first), "SpiralCompiler.deps.json"))
+    assert CompilerDaemon.shadow_dll(dll, root) == first
+
+    stamp = CompilerDaemon.dll_stamp(dll)
+    assert CompilerDaemon.compiler_current?(%{dll_stamp: stamp}, stamp)
+
+    File.write!(dll, "v2 rebuilt")
+    {:ok, %{mtime: mtime}} = File.stat(dll, time: :posix)
+    File.touch!(dll, mtime + 5)
+    refute CompilerDaemon.compiler_current?(%{dll_stamp: stamp}, CompilerDaemon.dll_stamp(dll))
+
+    second = CompilerDaemon.shadow_dll(dll, root)
+    refute second == first
+    assert File.read!(second) == "v2 rebuilt"
+    refute File.exists?(first)
+    assert CompilerDaemon.shadow_dll(Path.join(dir, "missing.dll"), root) == Path.join(dir, "missing.dll")
+    assert CompilerDaemon.shadow_dll(dll, Path.join(dir, "shadows") <> "\u0000") == dll
+  end
   test "an exit signal from a linked process does not stop the daemon" do
     dir = Spiral.Kino.TestHelpers.tmp_dir!("daemon-exit")
 
@@ -322,5 +386,130 @@ defmodule Spiral.Kino.CompilerDaemonTest do
     assert_received :first
     assert_received :second
     :gen_tcp.close(listen)
+  end
+
+  @compiler_that_stalls_on_its_first_request """
+  $ErrorActionPreference = 'Stop'
+  if ($args[0] -eq '--capabilities') { 'server-tcp'; exit 0 }
+  $socket = $args[1]
+  $utf8 = New-Object System.Text.UTF8Encoding $false
+  $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, 0)
+  $listener.Start()
+  [System.IO.File]::WriteAllText("$socket.pid", "$PID", $utf8)
+  $stalls = -not (Test-Path -LiteralPath $env:SPIRAL_KINO_TEST_HUNG_ONCE)
+  if ($stalls) { [System.IO.File]::WriteAllText($env:SPIRAL_KINO_TEST_HUNG_ONCE, "$PID", $utf8) }
+  [System.IO.File]::WriteAllText("$socket.bridge", "$($listener.LocalEndpoint.Port)", $utf8)
+  while ($true) {
+      $client = $listener.AcceptTcpClient()
+      $stream = $client.GetStream()
+      $reader = [System.IO.StreamReader]::new($stream, $utf8)
+      $writer = [System.IO.StreamWriter]::new($stream, $utf8)
+      $writer.NewLine = "`n"
+      $writer.AutoFlush = $true
+      $parts = $reader.ReadLine().Split("`t")
+      if ($stalls) {
+          $writer.WriteLine("spiral-session`terror`t$PID`tcompiler stalled: 0 ms CPU in 5 s with a compile outstanding")
+          $client.Dispose()
+          exit 4
+      }
+      [System.IO.File]::WriteAllText($parts[3], "fn main() {}", $utf8)
+      $writer.WriteLine("spiral-session`tok`t$PID`t12`tmain`trecovered")
+      $client.Dispose()
+  }
+  """
+
+  if System.find_executable("pwsh") do
+    test "a compiler that reports a stall is restarted and the compile retried, instead of holding the daemon for the 20 min cold timeout" do
+      dir = Path.join(System.tmp_dir!(), "kst#{System.unique_integer([:positive])}")
+      File.mkdir_p!(Path.join(dir, "fake"))
+      fake = Path.join([dir, "fake", "stalling_compiler.ps1"])
+      File.write!(fake, @compiler_that_stalls_on_its_first_request)
+      saved = Map.new(["TMPDIR", "SPIRAL_KINO_TEST_HUNG_ONCE"], &{&1, System.get_env(&1)})
+      System.put_env(%{"TMPDIR" => dir, "SPIRAL_KINO_TEST_HUNG_ONCE" => Path.join(dir, "hung-once")})
+
+      {:ok, daemon} = CompilerDaemon.start_link(port: 0, dotnet: System.find_executable("pwsh"), compiler_dll: fake, workspace: dir, package_dir: dir, pool: "off")
+
+      try do
+        output = Path.join(dir, "main.rs")
+        {:ok, sock} = :gen_tcp.connect({127, 0, 0, 1}, CompilerDaemon.listen_port(daemon), [:binary, packet: :line, active: false], 5_000)
+        :ok = :gen_tcp.send(sock, "compile\tRust\t#{Path.join(dir, "main.spi")}\t#{output}\t300000\t0\tstall-test\n")
+        started = System.monotonic_time(:millisecond)
+
+        assert {:ok, "ok\trecovered" <> _} = :gen_tcp.recv(sock, 0, 120_000)
+        assert System.monotonic_time(:millisecond) - started < 90_000
+        assert File.read!(output) == "fn main() {}"
+        assert File.exists?(Path.join(dir, "hung-once"))
+      after
+        GenServer.stop(daemon, :normal, 30_000)
+        Enum.each(saved, fn {name, value} -> if value, do: System.put_env(name, value), else: System.delete_env(name) end)
+        File.rm_rf(dir)
+      end
+    end
+
+    test "a compiler whose --capabilities lacks server-tcp is refused with the reason" do
+      dir = Path.join(System.tmp_dir!(), "ksr#{System.unique_integer([:positive])}")
+      File.mkdir_p!(Path.join(dir, "fake"))
+      fake = Path.join([dir, "fake", "old_compiler.ps1"])
+      File.write!(fake, "if ($args[0] -eq '--capabilities') { 'test-blocks'; exit 0 }\nexit 2\n")
+      {:ok, daemon} = CompilerDaemon.start_link(port: 0, dotnet: System.find_executable("pwsh"), compiler_dll: fake, workspace: dir, package_dir: dir, pool: "off")
+
+      try do
+        {:ok, sock} = :gen_tcp.connect({127, 0, 0, 1}, CompilerDaemon.listen_port(daemon), [:binary, packet: :line, active: false], 5_000)
+        :ok = :gen_tcp.send(sock, "compile\tRust\t#{Path.join(dir, "main.spi")}\t#{Path.join(dir, "main.rs")}\t60000\t0\trefused-test\n")
+        assert {:ok, "error\t" <> reason} = :gen_tcp.recv(sock, 0, 60_000)
+        assert reason =~ "does not list server-tcp"
+      after
+        GenServer.stop(daemon, :normal, 30_000)
+        File.rm_rf(dir)
+      end
+    end
+  end
+  @compiler_that_listens_on_tcp """
+  $ErrorActionPreference = 'Stop'
+  if ($args[0] -eq '--capabilities') { 'server-tcp test-blocks'; exit 0 }
+  $socket = $args[1]
+  $utf8 = New-Object System.Text.UTF8Encoding $false
+  $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, 0)
+  $listener.Start()
+  [System.IO.File]::WriteAllText("$socket.pid", "$PID", $utf8)
+  [System.IO.File]::WriteAllText("$socket.bridge", "$($listener.LocalEndpoint.Port)", $utf8)
+  while ($true) {
+      $client = $listener.AcceptTcpClient()
+      $stream = $client.GetStream()
+      $reader = [System.IO.StreamReader]::new($stream, $utf8)
+      $writer = [System.IO.StreamWriter]::new($stream, $utf8)
+      $writer.NewLine = "`n"
+      $writer.AutoFlush = $true
+      $parts = $reader.ReadLine().Split("`t")
+      [System.IO.File]::WriteAllText($parts[3], "fn main() {}", $utf8)
+      $writer.WriteLine("spiral-session`tok`t$PID`t12`tmain`tdirect")
+      $client.Dispose()
+  }
+  """
+
+  if System.find_executable("pwsh") do
+    test "the compiler is reached directly over TCP on the port it writes next to its socket" do
+      dir = Path.join(System.tmp_dir!(), "ksd#{System.unique_integer([:positive])}")
+      File.mkdir_p!(Path.join(dir, "fake"))
+      fake = Path.join([dir, "fake", "tcp_compiler.ps1"])
+      File.write!(fake, @compiler_that_listens_on_tcp)
+      saved = System.get_env("TMPDIR")
+      System.put_env("TMPDIR", dir)
+      pwsh = System.find_executable("pwsh")
+      {:ok, daemon} = CompilerDaemon.start_link(port: 0, dotnet: pwsh, compiler_dll: fake, workspace: dir, package_dir: dir, pool: "off")
+
+      try do
+        assert "server-tcp" in CompilerDaemon.host_capabilities(pwsh, fake)
+        output = Path.join(dir, "main.rs")
+        {:ok, sock} = :gen_tcp.connect({127, 0, 0, 1}, CompilerDaemon.listen_port(daemon), [:binary, packet: :line, active: false], 5_000)
+        :ok = :gen_tcp.send(sock, "compile\tRust\t#{Path.join(dir, "main.spi")}\t#{output}\t300000\t0\tdirect-test\n")
+        assert {:ok, "ok\tdirect" <> _} = :gen_tcp.recv(sock, 0, 60_000)
+        assert File.read!(output) == "fn main() {}"
+      after
+        GenServer.stop(daemon, :normal, 30_000)
+        if saved, do: System.put_env("TMPDIR", saved), else: System.delete_env("TMPDIR")
+        File.rm_rf(dir)
+      end
+    end
   end
 end

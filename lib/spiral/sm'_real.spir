@@ -96,6 +96,8 @@ inl append_real (x : string) (s : string) : string =
         Zig = (fun () => $'spiralConcat(!s, !x)' : string) : () -> string
         Lean = (fun () => $'(!s ++ !x)' : string) : () -> string
         C = (fun () => !!!!StaticStringConcat(s, x)) : () -> string
+        Delphi = (fun () => $'!s + !x ' : string) : () -> string
+        Bend = (fun () => !!!!StaticStringConcat(s, x)) : () -> string
     }
 
 /// ### append
@@ -129,7 +131,7 @@ inl rec format_debug_real forall t. (x : t) : string =
                         global "import gleam/string"
                         inl x =
                             typecase t with
-                            | array_base _ => $'!x |> array.to_list' : t
+                            | array_base _ => $'!x |> spiral_array_to_list' : t
                             | _ => x
                         $'string.inspect(!x)' : string
                     ) : () -> string
@@ -259,6 +261,35 @@ inl rec format_debug_real forall t. (x : t) : string =
                         elif real_core.prim_type_is `t
                         then $'(std.fmt.allocPrint(spiral_gpa, "{d}", .{ !x }) catch \@panic("out of memory"))' : string
                         else $'(std.fmt.allocPrint(spiral_gpa, "{any}", .{ !x }) catch \@panic("out of memory"))' : string
+                ) : () -> string
+            Delphi =
+                (fun () =>
+                    typecase t with
+                    | bool => $'BoolToStr(!x, \'true\', \'false\')' : string
+                    | char => $'string(!x)' : string
+                    | f32 => $'FloatToStr(!x)' : string
+                    | f64 => $'FloatToStr(!x)' : string
+                    | () * ~b =>
+                        inl _, b = x
+                        format_debug_real `b b
+                    | ~a * ~b =>
+                        inl a, b = x
+                        (++#*) (format_debug_real `a a) ((++#*) ", " (format_debug_real `b b))
+                    | {} =>
+                        inl _, fields =
+                            real_core.record_fold
+                                fun { state = separator, acc key value } =>
+                                    "; ", acc ++#* separator ++#* symbol_to_string_real `(`key) ++#* " = " ++#* format_debug_real `(`value) value
+                                ("", "") x
+                        "{ " ++#* fields ++#* " }"
+                    | _ =>
+                        if real_core.union_type_is `t
+                        then serialize_union_rust `t x
+                        elif real_core.nominal_type_is `t
+                        then
+                            inl y = real_core.nominal_strip x
+                            format_debug_real `(`y) y
+                        else $'IntToStr(!x)' : string
                 ) : () -> string
             Lean =
                 (fun () =>
@@ -533,6 +564,10 @@ let format_real forall t. (x : t) : string =
                 (fun () =>
                     ""
                 ) : () -> string
+            Delphi =
+                (fun () =>
+                    ""
+                ) : () -> string
         }
     inl result = mut `string empty
     inl rec write x =
@@ -548,27 +583,28 @@ let format_real forall t. (x : t) : string =
                     Lua =
                         (fun () =>
                             match b with
+                            | (_ : f32) | (_ : f64) => $'(function(v) if v ~= v then return "NaN" end if v == math.huge then return "Infinity" end if v == -math.huge then return "-Infinity" end for p = 1, 17 do local s = string.format("%." .. p .. "g", v) if tonumber(s) == v then if string.find(s, "[%.e]") then return s end return s .. ".0" end end return tostring(v) end)(!b)' : string
                             | (_ : string) => b : string
                             | _ => format_debug_real `(`b) b
                         ) : () -> string
                     Fsharp =
                         (fun () =>
                             match b with
-                            | (_ : f32) | (_ : f64) => $'$"%+.6f{!b}"' : string
+                            | (_ : f32) | (_ : f64) => $'(let s = (!b).ToString("R", System.Globalization.CultureInfo.InvariantCulture) in if s.Contains(".") || s.Contains("E") || s.Contains("N") || s.Contains("I") then s.Replace("E", "e") else s + ".0")' : string
                             | (_ : string) => b : string
                             | _ => $'$"{!b}"' : string
                         ) : () -> string
                     Python =
                         (fun () =>
                             match b with
-                            | (_ : f32) | (_ : f64) => $'"{:.6f}".format(!b)' : string
+                            | (_ : f32) | (_ : f64) => $'(lambda v: (("Infinity" if v == float("inf") else ("-Infinity" if v == float("-inf") else repr(float(v)))) if v == v else "NaN"))(!b)' : string
                             | (_ : string) => b : string
                             | _ => $'f"{!b}"' : string
                         ) : () -> string
                     Rust =
                         (fun () =>
                             match b with
-                            | (_ : f32) | (_ : f64) => $'Rc::<str>::from({ let v = !b; if v.is_finite() { format\!("{:+.6}", v) } else if v.is_nan() { String::from("NaN") } else if v > 0.0 { String::from("Infinity") } else { String::from("-Infinity") } })' : string
+                            | (_ : f32) | (_ : f64) => $'Rc::<str>::from({ let v = !b; if v.is_nan() { String::from("NaN") } else if v.is_infinite() { String::from(if v > 0.0 { "Infinity" } else { "-Infinity" }) } else { format\!("{:?}", v) } })' : string
                             | (_ : string) => b : string
                             | (_ : char) => $'Rc::<str>::from(format\!("{}", !b as char))' : string
                             | _ => $'Rc::<str>::from(format\!("{}", !b))' : string
@@ -576,7 +612,7 @@ let format_real forall t. (x : t) : string =
                     TypeScript =
                         (fun () =>
                             match b with
-                            | (_ : f32) | (_ : f64) => $'(() => { const v = !b; return Number.isFinite(v) ? (v >= 0 ? "+" : "") + v.toFixed(6) : Number.isNaN(v) ? "NaN" : v > 0 ? "Infinity" : "-Infinity"; })()' : string
+                            | (_ : f32) | (_ : f64) => $'(() => { const v = !b; if (Number.isNaN(v)) return "NaN"; if (Number.isFinite(v) === false) return v > 0 ? "Infinity" : "-Infinity"; const s = String(v); return /[.e]/.test(s) ? s : s + ".0"; })()' : string
                             | (_ : string) => b : string
                             | (_ : char) => $'String.fromCharCode(!b)' : string
                             | _ => $'String(!b)' : string
@@ -584,7 +620,7 @@ let format_real forall t. (x : t) : string =
                     Zig =
                         (fun () =>
                             match b with
-                            | (_ : f32) | (_ : f64) => $'(if (std.math.isNan(!b)) "NaN" else if (std.math.isInf(!b)) (if (!b > 0) "Infinity" else "-Infinity") else (std.fmt.allocPrint(spiral_gpa, "{s}{d:.6}", .{ if (!b >= 0) "+" else "", !b }) catch \@panic("out of memory")))' : string
+                            | (_ : f32) | (_ : f64) => $'(if (std.math.isNan(!b)) "NaN" else if (std.math.isInf(!b)) (if (!b > 0) "Infinity" else "-Infinity") else spiral_shortest: { const s = std.fmt.allocPrint(spiral_gpa, "{d}", .{ !b }) catch \@panic("out of memory"); break :spiral_shortest if (std.mem.indexOfAny(u8, s, ".e") == null) (std.fmt.allocPrint(spiral_gpa, "{s}.0", .{ s }) catch \@panic("out of memory")) else s; })' : string
                             | (_ : string) => b : string
                             | (_ : char) => $'(std.fmt.allocPrint(spiral_gpa, "{c}", .{ !b }) catch \@panic("out of memory"))' : string
                             | (_ : bool) => $'(if (!b) "true" else "false")' : string
@@ -593,22 +629,32 @@ let format_real forall t. (x : t) : string =
                     Lean =
                         (fun () =>
                             match b with
-                            | (_ : f32) | (_ : f64) => $'(if (!b).isNaN then "NaN" else if (!b).isInf then (if !b > 0 then "Infinity" else "-Infinity") else (if !b >= 0 then "+" else "") ++ toString !b)' : string
+                            | (_ : f64) => $'(let v : Float := !b; if v.isNaN then "NaN" else if v.isInf then (if v > 0 then "Infinity" else "-Infinity") else if v == 0 then (if 1 / v < 0 then "-0.0" else "0.0") else Id.run do { let a := Float.abs v; let e : Int := (Float.floor (Float.log10 a)).toInt64.toInt; let mut out := toString a; for p in [1:18] do { let k : Int := e - p + 1; let n := (Float.round (if k >= 0 then a / Float.pow 10 (Float.ofInt k) else a * Float.pow 10 (Float.ofInt (-k)))).toUInt64.toNat; if Float.ofScientific n (k < 0) k.natAbs == a then { let s := toString n; let pos : Int := s.length + k; out := if k >= 0 then s ++ String.ofList (List.replicate k.toNat \'0\') ++ ".0" else if pos > 0 then String.ofList (s.toList.take pos.toNat) ++ "." ++ String.ofList (s.toList.drop pos.toNat) else "0." ++ String.ofList (List.replicate (-pos).toNat \'0\') ++ s; break } }; return (if v < 0 then "-" else "") ++ out })' : string
+                            | (_ : f32) => $'(let v : Float := Float32.toFloat !b; if v.isNaN then "NaN" else if v.isInf then (if v > 0 then "Infinity" else "-Infinity") else if v == 0 then (if 1 / v < 0 then "-0.0" else "0.0") else Id.run do { let a := Float.abs v; let e : Int := (Float.floor (Float.log10 a)).toInt64.toInt; let mut out := toString a; for p in [1:18] do { let k : Int := e - p + 1; let n := (Float.round (if k >= 0 then a / Float.pow 10 (Float.ofInt k) else a * Float.pow 10 (Float.ofInt (-k)))).toUInt64.toNat; if (Float.ofScientific n (k < 0) k.natAbs).toFloat32 == a.toFloat32 then { let s := toString n; let pos : Int := s.length + k; out := if k >= 0 then s ++ String.ofList (List.replicate k.toNat \'0\') ++ ".0" else if pos > 0 then String.ofList (s.toList.take pos.toNat) ++ "." ++ String.ofList (s.toList.drop pos.toNat) else "0." ++ String.ofList (List.replicate (-pos).toNat \'0\') ++ s; break } }; return (if v < 0 then "-" else "") ++ out })' : string
                             | (_ : string) => b : string
                             | _ => $'toString !b ' : string
                         ) : () -> string
                     C =
                         (fun () =>
                             match b with
-                            | (_ : f32) | (_ : f64) =>
+                            | (_ : f64) =>
                                 global "#include <stdio.h>"
                                 global "#include <stdint.h>"
                                 global "#include <stdlib.h>"
                                 global "#include <string.h>"
                                 global "#include <math.h>"
                                 global "static char spiral_format_buffer[64];"
-                                global "static inline uint32_t spiral_format_fixed(double x) { int n = isnan(x) ? snprintf(spiral_format_buffer, sizeof spiral_format_buffer, \"NaN\") : isinf(x) ? snprintf(spiral_format_buffer, sizeof spiral_format_buffer, x > 0 ? \"Infinity\" : \"-Infinity\") : snprintf(spiral_format_buffer, sizeof spiral_format_buffer, \"%+.6f\", x); return (uint32_t)n + 1u; }"
-                                $'StringLit(spiral_format_fixed((double)(!b)), spiral_format_buffer)' : string
+                                global "static inline uint32_t spiral_format_shortest(double x, int single) { int n = 0; if (isnan(x)) n = snprintf(spiral_format_buffer, sizeof spiral_format_buffer, \"NaN\"); else if (isinf(x)) n = snprintf(spiral_format_buffer, sizeof spiral_format_buffer, x > 0 ? \"Infinity\" : \"-Infinity\"); else { for (int p = 1; p <= 17; p++) { n = snprintf(spiral_format_buffer, sizeof spiral_format_buffer, \"%.*g\", p, x); if (single ? strtof(spiral_format_buffer, NULL) == (float)x : strtod(spiral_format_buffer, NULL) == x) break; } if (!strpbrk(spiral_format_buffer, \".e\")) { spiral_format_buffer[n++] = '.'; spiral_format_buffer[n++] = '0'; spiral_format_buffer[n] = 0; } } return (uint32_t)n + 1u; }"
+                                $'StringLit(spiral_format_shortest((double)(!b), 0), spiral_format_buffer)' : string
+                            | (_ : f32) =>
+                                global "#include <stdio.h>"
+                                global "#include <stdint.h>"
+                                global "#include <stdlib.h>"
+                                global "#include <string.h>"
+                                global "#include <math.h>"
+                                global "static char spiral_format_buffer[64];"
+                                global "static inline uint32_t spiral_format_shortest(double x, int single) { int n = 0; if (isnan(x)) n = snprintf(spiral_format_buffer, sizeof spiral_format_buffer, \"NaN\"); else if (isinf(x)) n = snprintf(spiral_format_buffer, sizeof spiral_format_buffer, x > 0 ? \"Infinity\" : \"-Infinity\"); else { for (int p = 1; p <= 17; p++) { n = snprintf(spiral_format_buffer, sizeof spiral_format_buffer, \"%.*g\", p, x); if (single ? strtof(spiral_format_buffer, NULL) == (float)x : strtod(spiral_format_buffer, NULL) == x) break; } if (!strpbrk(spiral_format_buffer, \".e\")) { spiral_format_buffer[n++] = '.'; spiral_format_buffer[n++] = '0'; spiral_format_buffer[n] = 0; } } return (uint32_t)n + 1u; }"
+                                $'StringLit(spiral_format_shortest((double)(!b), 1), spiral_format_buffer)' : string
                             | (_ : string) => b : string
                             | (_ : char) =>
                                 global "#include <stdio.h>"
@@ -618,6 +664,19 @@ let format_real forall t. (x : t) : string =
                                 global "static char spiral_format_buffer[64];"
                                 global "static inline uint32_t spiral_format_plain_char(int32_t x) { return (uint32_t)snprintf(spiral_format_buffer, sizeof spiral_format_buffer, \"%c\", (int)x) + 1u; }"
                                 $'StringLit(spiral_format_plain_char(!b), spiral_format_buffer)' : string
+                            | _ => format_debug_real `(`b) b
+                        ) : () -> string
+                    Delphi =
+                        (fun () =>
+                            match b with
+                            | (_ : f64) =>
+                                global "function SpiralFormatFloat(x: Double; single: Boolean): AnsiString;\nvar p: Integer; s: string; fs: TFormatSettings; d: Double; f: Single;\nbegin\n  if IsNan(x) then Exit('NaN');\n  if IsInfinite(x) then begin if x > 0 then Exit('Infinity') else Exit('-Infinity'); end;\n  fs := FormatSettings; fs.DecimalSeparator := '.';\n  s := '';\n  for p := 1 to 17 do begin\n    s := FloatToStrF(x, ffGeneral, p, 0, fs);\n    if single then begin f := StrToFloat(s, fs); if f = x then Break; end\n    else begin d := StrToFloat(s, fs); if d = x then Break; end;\n  end;\n  if (Pos('.', s) = 0) and (Pos('E', s) = 0) and (Pos('e', s) = 0) then s := s + '.0';\n  Result := StringReplace(s, 'E', 'e', []);\nend;"
+                                $'SpiralFormatFloat(!b, False)' : string
+                            | (_ : f32) =>
+                                global "function SpiralFormatFloat(x: Double; single: Boolean): AnsiString;\nvar p: Integer; s: string; fs: TFormatSettings; d: Double; f: Single;\nbegin\n  if IsNan(x) then Exit('NaN');\n  if IsInfinite(x) then begin if x > 0 then Exit('Infinity') else Exit('-Infinity'); end;\n  fs := FormatSettings; fs.DecimalSeparator := '.';\n  s := '';\n  for p := 1 to 17 do begin\n    s := FloatToStrF(x, ffGeneral, p, 0, fs);\n    if single then begin f := StrToFloat(s, fs); if f = x then Break; end\n    else begin d := StrToFloat(s, fs); if d = x then Break; end;\n  end;\n  if (Pos('.', s) = 0) and (Pos('E', s) = 0) and (Pos('e', s) = 0) then s := s + '.0';\n  Result := StringReplace(s, 'E', 'e', []);\nend;"
+                                $'SpiralFormatFloat(!b, True)' : string
+                            | (_ : string) => b : string
+                            | (_ : char) => $'string(!b)' : string
                             | _ => format_debug_real `(`b) b
                         ) : () -> string
                 }
@@ -662,6 +721,11 @@ let format_real forall t. (x : t) : string =
                     ) : () -> ()
 
                 C =
+                    (fun () =>
+                        join
+                            result <- append_real s ((~*) `string result)
+                    ) : () -> ()
+                Delphi =
                     (fun () =>
                         join
                             result <- append_real s ((~*) `string result)
@@ -712,6 +776,83 @@ let format_real forall t. (x : t) : string =
 /// ### (~#?)
 
 /// ### (++#?)
+
+/// ### show_real
+///- --real
+
+inl rec show_real forall t. (x : t) : string =
+    typecase t with
+    | string => x
+    | ~a * ~b => "(" ++#* show_items_real `t x ++#* ")"
+    | {} =>
+        inl _, fields =
+            real_core.record_fold
+                fun { state = separator, acc key value } =>
+                    "; ", acc ++#* separator ++#* symbol_to_string_real `(`key) ++#* " = " ++#* show_real `(`value) value
+                ("", "") x
+        "{ " ++#* fields ++#* " }"
+    | array_base ~el => show_elements_real `el x
+    | _ =>
+        if real_core.union_type_is `t
+        then show_union_real `t x
+        elif real_core.nominal_type_is `t
+        then show_nominal_real `t x
+        else format_real `t x
+and inl show_items_real forall t. (x : t) : string =
+    typecase t with
+    | () * ~b =>
+        inl _, b = x
+        show_items_real `b b
+    | ~a * ~b =>
+        inl a, b = x
+        show_real `a a ++#* ", " ++#* show_items_real `b b
+    | _ => show_real `t x
+and inl show_union_real forall t. (x : t) : string =
+    join
+        real_core.unbox x fun k, v =>
+            inl name = symbol_to_string_real `(`k)
+            typecase `v with
+            | () => name
+            | _ => name ++#* "(" ++#* show_items_real `(`v) v ++#* ")"
+    : string
+and inl show_nominal_real forall t. (x : t) : string =
+    inl y = real_core.nominal_strip x
+    if real_core.prototype_has `t show_as
+    then show_as `t x
+    elif real_core.prototype_has `t printable
+    then format_real `t x
+    elif show_structural_real `(`y) ()
+    then show_real `(`y) y
+    else format_debug_real `t x
+and inl show_structural_real forall u. () : bool =
+    typecase u with
+    | string => true
+    | ~a * ~b => true
+    | {} => true
+    | array_base _ => true
+    | _ => real_core.prim_type_is `u || real_core.union_type_is `u || real_core.nominal_type_is `u
+and inl show_elements_real forall el. (x : array_base el) : string =
+    join
+        inl n = !!!!ArrayLength(`u64, x)
+        inl i = mut `u64 (real_core.dyn 0u64)
+        inl s = mut `string (real_core.dyn "")
+        loopw.while (fun () => !!!!LT(!!!!LayoutIndex(i), n)) fun () =>
+            inl j = !!!!LayoutIndex(i)
+            inl e = show_real `el !!!!ArrayIndex(x, j)
+            s <- (if !!!!EQ(j, 0u64) then e else !!!!LayoutIndex(s) ++#* ", " ++#* e)
+            i <- !!!!Add(j, 1u64)
+        "[" ++#* !!!!LayoutIndex(s) ++#* "]"
+    : string
+
+inl show_composite_real forall t. () : bool =
+    typecase t with
+    | string => false
+    | ~a * ~b => true
+    | {} => true
+    | array_base _ => true
+    | _ => real_core.union_type_is `t
+
+/// ### show
 
 /// ### to_char_array
 

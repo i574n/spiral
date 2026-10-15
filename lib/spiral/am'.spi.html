@@ -7826,7 +7826,7 @@ a.anchor-link {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [1]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span> <span class="n">static</span>
@@ -8090,7 +8090,7 @@ a.anchor-link {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [2]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [1]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -8106,7 +8106,7 @@ a.anchor-link {
 </div>
 <div class="jp-OutputArea jp-Cell-outputArea">
 <div class="jp-OutputArea-child jp-OutputArea-executeResult">
-<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[2]:</div>
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[1]:</div>
 <div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
 <pre>0</pre>
 </div>
@@ -8258,7 +8258,7 @@ a.anchor-link {
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [3]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [2]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -8285,15 +8285,13 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx (fsharp)
-__assert_eq { expected = [|0; 2; 4; 6; 8|] }
+__assert_eq { expected = [0, 2, 4, 6, 8] }
 .py (cuda)
-__assert_eq { expected = [0 2 4 6 8] }
-0
+__assert_eq { expected = [0, 2, 4, 6, 8] }
 .ts (typescript)
 __assert_eq { expected = [0, 2, 4, 6, 8] }
 .py (cuda)
-__assert_eq { expected = [0 2 4 6 8] }
-0</pre>
+__assert_eq { expected = [0, 2, 4, 6, 8] }</pre>
 </div>
 </div>
 </div>
@@ -8329,7 +8327,7 @@ __assert_eq { expected = [0 2 4 6 8] }
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [4]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [3]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -8359,11 +8357,16 @@ __assert_eq { expected = [0 2 4 6 8] }
 __assert_eq { expected = 45 }
 .py (cuda)
 __assert_eq { expected = 45 }
-0
 .rs (rust)
 __assert_eq { expected = 45 }
 .ts (typescript)
 __assert_eq { expected = 45 }</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[3]:</div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
+<pre>0</pre>
 </div>
 </div>
 </div>
@@ -8401,7 +8404,7 @@ __assert_eq { expected = 45 }</pre>
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [5]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [4]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -8427,21 +8430,19 @@ __assert_eq { expected = 45 }</pre>
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx (fsharp)
-__assert_eq { expected = [|0; 2; 4; 6|] }
+__assert_eq { expected = [0, 2, 4, 6] }
 .py (cuda)
-__assert_eq { expected = [0 2 4 6] }
-0
+__assert_eq { expected = [0, 2, 4, 6] }
 .rs (rust)
-__assert_eq { expected = RefCell {
-    value: [
-        0,
-        2,
-        4,
-        6,
-    ],
-} }
+__assert_eq { expected = [0, 2, 4, 6] }
 .ts (typescript)
 __assert_eq { expected = [0, 2, 4, 6] }</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[4]:</div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
+<pre>0</pre>
 </div>
 </div>
 </div>
@@ -8508,7 +8509,7 @@ __assert_eq { expected = [0, 2, 4, 6] }</pre>
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [6]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [5]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -8538,11 +8539,16 @@ __assert_eq { expected = [0, 2, 4, 6] }</pre>
 __assert_eq { expected = 9 }
 .py (cuda)
 __assert_eq { expected = 9 }
-0
 .rs (rust)
 __assert_eq { expected = 9 }
 .ts (typescript)
 __assert_eq { expected = 9 }</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[5]:</div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
+<pre>0</pre>
 </div>
 </div>
 </div>
@@ -8582,7 +8588,7 @@ __assert_eq { expected = 9 }</pre>
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [7]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [6]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -8609,15 +8615,13 @@ __assert_eq { expected = 9 }</pre>
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx (fsharp)
-__assert_eq { expected = US0_Some 5 }
+__assert_eq { expected = Some(5) }
 .py (cuda)
-__assert_eq { expected = US0_Some(v0=5) }
-0
+__assert_eq { expected = Some(5) }
 .ts (typescript)
 __assert_eq { expected = Some(5) }
 .py (cuda)
-__assert_eq { expected = US0_Some(v0=5) }
-0</pre>
+__assert_eq { expected = Some(5) }</pre>
 </div>
 </div>
 </div>
@@ -8657,7 +8661,7 @@ __assert_eq { expected = US0_Some(v0=5) }
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [8]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [7]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -8683,14 +8687,19 @@ __assert_eq { expected = US0_Some(v0=5) }
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx (fsharp)
-__assert_eq' { expected = [|struct (0, 0); struct (1, 2); struct (2, 4)|] }
+__assert_eq' { expected = [(0, 0), (1, 2), (2, 4)] }
 .rs (rust)
 __assert_eq' { expected = [(0, 0), (1, 2), (2, 4)] }
 .ts (typescript)
-__assert_eq' { expected = 0,0,1,2,2,4 }
+__assert_eq' { expected = [(0, 0), (1, 2), (2, 4)] }
 .py (cuda)
-__assert_eq' { expected = [(0, 0) (1, 2) (2, 4)] }
-0</pre>
+__assert_eq' { expected = [(0, 0), (1, 2), (2, 4)] }</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[7]:</div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
+<pre>0</pre>
 </div>
 </div>
 </div>
@@ -8726,7 +8735,7 @@ __assert_eq' { expected = [(0, 0) (1, 2) (2, 4)] }
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [9]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [8]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -8755,46 +8764,26 @@ __assert_eq' { expected = [(0, 0) (1, 2) (2, 4)] }
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx (fsharp)
-__assert_eq { expected = [||] }
-__assert_eq { expected = [|1|] }
-__assert_eq { expected = [||] }
-__assert_eq { expected = [|2|] }
-__assert_eq { expected = [||] }
-__assert_eq { expected = [|1; 2|] }
+__assert_eq { expected = [] }
+__assert_eq { expected = [1] }
+__assert_eq { expected = [] }
+__assert_eq { expected = [2] }
+__assert_eq { expected = [] }
+__assert_eq { expected = [1, 2] }
 .py (cuda)
 __assert_eq { expected = [] }
 __assert_eq { expected = [1] }
 __assert_eq { expected = [] }
 __assert_eq { expected = [2] }
 __assert_eq { expected = [] }
-__assert_eq { expected = [1 2] }
-0
+__assert_eq { expected = [1, 2] }
 .rs (rust)
-__assert_eq { expected = RefCell {
-    value: [],
-} }
-__assert_eq { expected = RefCell {
-    value: [
-        1,
-    ],
-} }
-__assert_eq { expected = RefCell {
-    value: [],
-} }
-__assert_eq { expected = RefCell {
-    value: [
-        2,
-    ],
-} }
-__assert_eq { expected = RefCell {
-    value: [],
-} }
-__assert_eq { expected = RefCell {
-    value: [
-        1,
-        2,
-    ],
-} }
+__assert_eq { expected = [] }
+__assert_eq { expected = [1] }
+__assert_eq { expected = [] }
+__assert_eq { expected = [2] }
+__assert_eq { expected = [] }
+__assert_eq { expected = [1, 2] }
 .ts (typescript)
 __assert_eq { expected = [] }
 __assert_eq { expected = [1] }
@@ -8802,6 +8791,12 @@ __assert_eq { expected = [] }
 __assert_eq { expected = [2] }
 __assert_eq { expected = [] }
 __assert_eq { expected = [1, 2] }</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[8]:</div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
+<pre>0</pre>
 </div>
 </div>
 </div>
@@ -9930,7 +9925,7 @@ __assert_eq { expected = [1, 2] }</pre>
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [10]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [9]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -9954,6 +9949,12 @@ __assert_eq { expected = [1, 2] }</pre>
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>__assert_eq { expected = [0, 1] }</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[9]:</div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
+<pre>0</pre>
 </div>
 </div>
 </div>
@@ -10110,9 +10111,7 @@ __assert_eq { expected = [1, 2] }</pre>
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">to_list_base</span><span class="s1">' forall t. (items : array_base t) : listm'</span><span class="o">.</span><span class="n">list</span><span class="s1">' t =</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
-        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-            <span class="k">global</span> <span class="s2">"import gary/array"</span>
-            <span class="err">$</span><span class="s1">'!items |&gt; array.to_list'</span> <span class="p">:</span> <span class="n">listm</span><span class="s1">'.list'</span> <span class="n">t</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!items |&gt; spiral_array_to_list'</span> <span class="p">:</span> <span class="n">listm</span><span class="s1">'.list'</span> <span class="n">t</span>
         <span class="n">Lua</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">items</span> <span class="o">|&gt;</span> <span class="n">convert</span><span class="o">.</span><span class="n">to</span> <span class="p">:</span> <span class="n">listm</span><span class="s1">'.list'</span> <span class="n">t</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!items |&gt; Array.toList'</span> <span class="p">:</span> <span class="n">listm</span><span class="s1">'.list'</span> <span class="n">t</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">items</span> <span class="o">|&gt;</span> <span class="n">convert</span><span class="o">.</span><span class="n">to</span> <span class="p">:</span> <span class="n">listm</span><span class="s1">'.list'</span> <span class="n">t</span>
@@ -10155,7 +10154,7 @@ __assert_eq { expected = [1, 2] }</pre>
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [11]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [10]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -10181,14 +10180,19 @@ __assert_eq { expected = [1, 2] }</pre>
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx (fsharp)
-__assert_eq { expected = UH0_Cons (-3, UH0_Cons (6, UH0_Nil)) }
+__assert_eq { expected = Cons(-3, Cons(6, Nil)) }
 .py (cuda)
-__assert_eq { expected = UH0_Cons(v0=-3, v1=UH0_Cons(v0=6, v1=UH0_Nil())) }
-0
+__assert_eq { expected = Cons(-3, Cons(6, Nil)) }
 .rs (rust)
 __assert_eq { expected = Cons(-3, Cons(6, Nil)) }
 .ts (typescript)
 __assert_eq { expected = Cons(-3, Cons(6, Nil)) }</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[10]:</div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
+<pre>0</pre>
 </div>
 </div>
 </div>
@@ -10506,7 +10510,7 @@ __assert_eq { expected = Cons(-3, Cons(6, Nil)) }</pre>
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [12]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [11]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">try_item</span> <span class="n">forall</span> <span class="n">dim</span> <span class="n">el</span><span class="o">.</span> <span class="p">(</span><span class="n">i</span> <span class="p">:</span> <span class="n">i32</span><span class="p">)</span> <span class="p">(</span><span class="n">a</span> <span class="p">:</span> <span class="n">a</span> <span class="n">dim</span> <span class="n">el</span><span class="p">)</span> <span class="p">:</span> <span class="n">option</span> <span class="n">el</span> <span class="o">=</span>

@@ -11,7 +11,7 @@ inl resize_inner ~(xs : array i32) ~(new_length : i32) : () =
 inl capacity_inner ~(xs : array i32) : i32 =
     $'DynamicArrayCapacity1(!xs)'
 
-let score x : i32 =
+let observe_after_consume x : i32 =
     match x with
     | Empty => 0i32
     | Nested outer =>
@@ -36,4 +36,4 @@ inl main () : i32 =
     set outer 0i32 left
     set outer 1i32 right
     inl wrapped = Nested outer
-    score wrapped -. 26i32
+    observe_after_consume wrapped -. 26i32

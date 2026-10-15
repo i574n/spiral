@@ -12,7 +12,10 @@ inl main () : i32 =
     export "to_spi_tested" ((fun text => document.to_spi_tested text) : string -> string)
     export "to_spir_tested" ((fun text => document.to_spir_tested text) : string -> string)
     export "from_spi" ((fun (spi : string), (spir : string) => document.from_spi spi spir) : string * string -> string)
+    export "from_spi_bounded" ((fun (spi : string), (spir : string), (spi_bounds : string), (spir_bounds : string) => document.from_spi_bounded spi spir spi_bounds spir_bounds) : string * string * string * string -> string)
     export "test_index" ((fun text => document.test_index text) : string -> string)
+    export "target_backend" ((fun tool => targets.backend (targets.target_of tool)) : string -> string)
+    export "target_extension" ((fun tool => targets.extension (targets.target_of tool)) : string -> string)
     export "plan" ((fun text => notebook.plan text) : string -> string)
     export "plan_tests" ((fun text => notebook.plan_tests text) : string -> string)
     0i32

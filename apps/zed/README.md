@@ -1,145 +1,132 @@
-# Spiral Language Extension for Zed
+# Spiral for Zed
 
-This extension provides first-class support for **The Spiral Language** (`.spi`, `.spir`, `.spiproj`) in the [Zed](https://zed.dev) editor.
+Development-stage Spiral language support for [Zed](https://zed.dev).
 
-It is modeled after the official Spiral VS Code extension (`VS Code Plugin`), adapting its configuration, semantic captures, and language server protocol client for Zed's native extension architecture.
+> [!IMPORTANT]
+> This is not yet a verified end-to-end editor integration. The native helper
+> passes its unit and compiler-probe tests, but the latest observed Zed startup
+> still used a stale `extension.wasm` and failed to locate `spiral-zed.exe`.
+> Rebuild the dev extension in Zed and complete the manual checklist below
+> before treating diagnostics, hover, semantic tokens, or build actions as
+> working.
 
----
+See [`DEVELOPMENT.md`](DEVELOPMENT.md) for the architecture, Zed API contracts,
+known gaps, failed approaches, and continuation checklist.
 
-## Features
+## Current status
 
-- **File Types**: Automatically associates `.spi`, `.spir`, and `.spiproj` files with the Spiral language.
-- **Syntax Highlighting & Colors**:
-  - Keywords: `inl`, `inm`, `inb`, `forall`, `union`, `nominal`, `real`, `type`, `open`, `match`, `typecase`, `function`, `with`, `without`, `as`, `when`, `let`, `rec`, `if`, `then`, `elif`, `else`, `join`, `join_backend`, `prototype`, `instance`, `in`, `and`, `fun`, `exists`.
-  - Primitive Types: `i8`, `i16`, `i32`, `i64`, `u8`, `u16`, `u32`, `u64`, `f32`, `f64`, `bool`, `string`, `char`, `unit`.
-  - Type Constructors: PascalCase type and union identifiers (`GadtExpr`, `CanonicalReleaseMeasurement`, etc.).
-  - Operators: `=`, `::`, `->`, `=>`, `+`, `-`, `*`, `/`, `==`, `!=`, `<`, `>`, `&&`, `||`, `|`, `&`, `^`, `!`, `~`, `$`.
-  - Comments: line comments (`// ` with the required space) and block comments (`(* ... *)`, also with a space after `(*`).
-  - Literals: Typed integers, floats, booleans (`true`/`false`), and quoted strings.
-- **Bracket Matching & Auto-closing**: Smart auto-closing and pairing for `()`, `[]`, `{}`, `""`, and `''`.
-- **Indentation Rules**: Out-of-the-box block and match expression indentation.
-- **Symbols & Code Outline**: The Rust grammar's function, struct, and enum items. An `inl` binding is highlighted, and it is not yet an outline entry because the extension reuses Zed's Rust tree-sitter grammar.
-- **Compiler**: Zed starts the single-flight `SpiralCompiler.dll` built from `spiral/apps/compiler`. The default backend is Rust (`--backend Rust`). There is no separate `spiral-lsp` binary.
-- **Type-Level Architecture with `PhantomData`**:
-  - **GADTs**: Type-safe abstract syntax trees and protocol state machines parametrized by phantom tags (`IntTag`, `BoolTag`, `StringTag`, etc.) where constructors enforce type correctness at compile time.
-  - **Existentials**: Heterogeneous token streams and dynamic capability wrappers that safely encapsulate phantom witnesses.
-  - **HKTs**: Higher-Kinded Types simulated using the lightweight brand / type family pattern (`Functor`, `Applicative`, `Monad`).
+| Area | Status |
+| --- | --- |
+| `.spi` and `.spir` association | Implemented |
+| `.spiproj` association | Implemented, parsed with the same line grammar |
+| Tree-sitter grammar | `tree-sitter-spiral` line grammar (exact test headers, directives, comments); expressions are not parsed |
+| Highlighting/outline/runnables queries | From the grammar; brackets and indents queries are empty; expression highlighting comes from semantic tokens |
+| Native `spiral-zed` helper | Unit-tested and compiler-probed on Windows |
+| Zed-to-helper launch | Blocked pending a dev-extension rebuild and manual verification |
+| Diagnostics, hover, semantic tokens, build actions | Implemented in the helper, not currently verified in Zed |
+| `.spiproj` links/actions | Partial implementation, not verified in Zed |
+| Test task picker entries | Repository-local developer tooling only |
+| Gutter run-test button | `runnables.scm` tags each `test name =` with `spiral-test`; not yet verified in Zed |
+| Linux/macOS support | Not validated; known URI/path correctness work remains |
+| Registry publication | Blocked by helper-distribution requirements |
 
----
+The files in `src/types.rs` demonstrate GADT-, existential-, and HKT-like Rust
+encodings with `PhantomData`. They are tested examples, but they are not used by
+the extension or language-server runtime.
 
-## Type-Level Design (`PhantomData`)
+## Architecture
 
-The Rust extension implementation (`src/types.rs`) showcases how advanced type-level concepts from functional programming can be simulated in Rust via `PhantomData`:
+The integration currently has three separate pieces:
 
-### 1. GADTs (Generalized Algebraic Data Types)
-```rust
-pub struct GadtExpr<T: TypeTag> {
-    raw: ExprRaw,
-    _phantom: PhantomData<fn() -> T>,
-}
+1. `extension.wasm`: the sandboxed Zed extension component.
+2. `dist/spiral-zed.exe`: a native stdio LSP bridge built from
+   `src/bin/spiral_zed.rs`.
+3. `SpiralCompiler.dll`: the single-flight Spiral compiler invoked by the
+   native bridge.
 
-// Statically constrained constructors:
-let one: GadtExpr<IntTag> = GadtExpr::lit_int(1);
-let two: GadtExpr<IntTag> = GadtExpr::lit_int(2);
-let three: GadtExpr<IntTag> = GadtExpr::add(one, two);
+Zed builds only the WASM component. It does **not** build the native helper.
+The helper is ignored by Git and must currently be built in each developer
+checkout.
 
-// Type-safe equality and evaluation:
-let is_three: GadtExpr<BoolTag> = GadtExpr::equals(three, GadtExpr::lit_int(3));
-assert!(is_three.eval());
+## Prerequisites
+
+- Zed 1.23.2 or another version compatible with `zed_extension_api = "0.7.0"`.
+- Rust installed through `rustup`.
+- PowerShell 7 (`pwsh`).
+- The Spiral single-flight compiler cache, normally under:
+
+  ```text
+  %LOCALAPPDATA%\spiral-bin\bin\single-flight\SpiralCompiler\Release\net11.0\SpiralCompiler.dll
+  ```
+
+- Its matching .NET toolchain, normally under:
+
+  ```text
+  %LOCALAPPDATA%\spiral-bin\toolchains\dotnet\dotnet.exe
+  ```
+
+The discovery code also recognizes these host environment variables:
+
+- `SPIRAL_COMPILER`: absolute path to `SpiralCompiler.dll`.
+- `SPIRAL_BIN_CACHE_DIR`: root of the Spiral binary cache.
+- `SPIRAL_DOTNET`: absolute path to `dotnet`/`dotnet.exe`.
+- `SPIRAL_WORKSPACE_ROOT`: optional compiler workspace root passed to the helper.
+
+## Build the helper and run native checks
+
+From PowerShell:
+
+```powershell
+pwsh -NoProfile -File C:\home\git\spiral\apps\zed\test.ps1
 ```
 
-### 2. Existentials
-```rust
-// Heterogeneous token stream packing arbitrary phantom-tagged tokens:
-let kw: GadtToken<KeywordTag> = GadtToken::new("inl", 1, 1);
-let op: GadtToken<OperatorTag> = GadtToken::new("->", 1, 5);
+This command:
 
-let stream: Vec<ExistentialToken> = vec![
-    ExistentialToken::pack(kw),
-    ExistentialToken::pack(op),
-];
-```
+1. runs the Rust unit tests;
+2. builds the native `spiral-zed` helper in release mode;
+3. copies it to `apps/zed/dist/spiral-zed.exe`;
+4. verifies that `fixtures/ok/main.spi` succeeds; and
+5. verifies that `fixtures/bad/main.spi` fails.
 
-### 3. HKTs (Higher-Kinded Types)
-```rust
-// Type families and functors over type constructors:
-pub trait Functor: Hkt {
-    fn fmap<A, B, F>(fa: Self::Applied<A>, f: F) -> Self::Applied<B>
-    where
-        F: FnMut(A) -> B;
-}
+The latest recorded run passed 21 Rust tests and both compiler probes. That
+proves the native helper path, not the Zed integration.
 
-let doubled = VecFamily::fmap(vec![1, 2, 3], |x| x * 2);
-assert_eq!(doubled, vec![2, 4, 6]);
-```
+## Install or rebuild the dev extension
 
----
+1. Open Zed's command palette.
+2. Run **Zed: Install Dev Extension**.
+3. Select:
 
-## How to Install in Zed
-
-### Method 1: Install as a Dev Extension (Recommended)
-
-1. Open **Zed**.
-2. Open the Command Palette:
-   - **Windows / Linux**: `Ctrl+Shift+P`
-   - **macOS**: `Cmd+Shift+P`
-3. Type and select:
-   ```text
-   zed: install dev extension
-   ```
-4. In the folder picker dialog, select the extension directory:
    ```text
    C:\home\git\spiral\apps\zed
    ```
-   *(or `/home/git/spiral/apps/zed` on Linux)*
-5. Zed will compile/load the extension. The extension will appear under `Installed Extensions` as **Spiral (dev)**.
 
----
+4. If it is already installed, run **Zed: Rebuild Dev Extension**.
+5. Restart the `spiral-lsp` language server or reopen the Spiral project.
+6. Open **Zed: Open Log** and confirm that Zed launches
+   `dist/spiral-zed.exe` and the server prints `spiral-zed: ready`.
 
-## How to Test
-
-### 1. Probe the helper
-From the extension directory:
+A direct command such as:
 
 ```powershell
-pwsh -File C:\home\git\spiral\apps\zed\test.ps1
+cargo build --release --target wasm32-wasip1 --lib
 ```
 
-That builds `dist/spiral-zed.exe`, checks `fixtures/ok/main.spi` (must pass), and checks `fixtures/bad/main.spi` (must fail). The same binary is what Zed launches. Restart the `spiral-lsp` language server after a rebuild.
+produces a raw WASI module. It does **not** encode the Zed component and does
+not update the `extension.wasm` loaded by a dev extension. Use Zed's rebuild
+action for that boundary.
 
-A single file, without the script:
+## Configuration
 
-```powershell
-dist\spiral-zed.exe --dotnet $dotnet --compiler $dll --probe fixtures\bad\main.spi
-```
-
-The probe prints the dotnet path, the compiler dll, the backend, the exit code, and one `diagnostic line:character message` line. A compiler trace such as `Error trace on line: 2, column: 5` is reported at line 1, character 4.
-
-### 2. Test Syntax Highlighting in Zed
-1. Open any Spiral file in Zed, for example:
-   ```text
-   C:\home\git\eoie\state\coverage.spi
-   ```
-   or
-   ```text
-   C:\home\git\eoie\src\eoie_fs_actions\main.spi
-   ```
-2. Verify that:
-   - Keywords (`inl`, `union`, `open`, `match`, etc.) are colored according to your theme.
-   - Types (`u32`, `i32`, `string`, `CoverageFloor`, etc.) are highlighted.
-   - Comments (`// `, `(* *)`) and strings (`"..."`) are correctly styled. `//` is highlighted by the Rust grammar. `(* *)` is the comment command's syntax; the Rust grammar does not yet color it as a comment.
-   - Matching brackets highlight when moving the cursor across `()`, `[]`, `{}`.
-   - Auto-indentation works when pressing `Enter` inside blocks.
-
-### 3. Compiler and logs
-Zed starts `spiral-zed`, which speaks the language server protocol and runs the single-flight compiler. The compiler dll is:
-
-`%LOCALAPPDATA%\spiral-bin\bin\single-flight\SpiralCompiler\Release\net11.0\SpiralCompiler.dll`
-
-Opening a `.spi` file shows a toast, `Spiral ready`, and then checks that file. A failure is one diagnostic. When the compiler prints `Error trace on line`, the underline uses that line and column. The code actions **Spiral: Build file** and **Spiral: Show compiler** are on `.spi` and `.spir` buffers. On `package.spiproj`, a missing module offers **Create file.** and an existing module offers **Delete file.**, which removes that line. Show compiler repeats the backend and the dll name. The language server log still starts with `spiral-zed: ready` and the full dotnet and dll paths. Hover a name for the token and the latest compiler note. Semantic tokens use the VS Code legend, including `~` bindings, number suffixes such as `i32`, `.name` and `.(+)` symbols, and character literals. A line comment starts at `//` only when a space follows the marker, including `/// `, `///- `, and `///> `. `(* *)` comments nest, and each line of a block comment is its own token. `true` and `false` are numbers. A minus directly before digits is part of the number, and `_` inside a number stays in that token. `_` alone is a keyword. Quoted strings split `\n`, `\r`, `\t`, and `\b` out as `escaped_char`. Other backslash pairs are `unescaped_char`. A raw `@"..."` string stays one `string` token. Macro strings `$"..."` and `$'...'` use the same escapes, plus `\v` as `escaped_var`, `` `name `` and `@name` as `type_variable`, `!name` and `#name` as `variable`, and `!(...)` as parentheses around a nested scan. `languages/spiral/semantic_token_rules.json` maps those custom types onto theme styles. Zed leaves semantic tokens off until the Spiral language sets `"semantic_tokens": "combined"`. Build writes the `.rs` next to the module.
+Enable lexical semantic tokens for Spiral in Zed settings:
 
 ```json
 {
+  "languages": {
+    "Spiral": {
+      "semantic_tokens": "combined"
+    }
+  },
   "lsp": {
     "spiral-lsp": {
       "settings": {
@@ -151,3 +138,93 @@ Opening a `.spi` file shows a toast, `Spiral ready`, and then checks that file. 
   }
 }
 ```
+
+Do not configure `lsp.spiral-lsp.binary.path` to `SpiralCompiler.dll`. In Zed
+1.23.2, a configured binary path bypasses this extension's
+`language_server_command` and Zed tries to launch that path directly. A DLL is
+not a stdio LSP executable.
+
+Also avoid `binary.arguments` for the default helper launch. Zed replaces the
+arguments returned by the extension, which would remove required
+`--dotnet`, `--compiler`, and `--backend` flags.
+
+## Manual acceptance test
+
+After rebuilding the dev extension:
+
+1. Open `apps/zed/fixtures/ok/main.spi`.
+   - The language selector should show **Spiral**.
+   - The log should contain `spiral-zed: ready`.
+   - Zed should show `Spiral ready`.
+   - No diagnostic should be published.
+2. Open `apps/zed/fixtures/bad/main.spi`.
+   - Exactly one compiler diagnostic should appear.
+3. Request hover on an identifier.
+4. Confirm semantic-token coloring with
+   `languages.Spiral.semantic_tokens = "combined"`.
+5. Invoke **Spiral: Show compiler** and **Spiral: Build file** from code actions.
+6. Open a representative `package.spiproj` and test its links and create/delete
+   actions.
+7. Repeat helper discovery with these project roots:
+   - `C:\home\git\spiral`
+   - `C:\home\git`
+   - a sibling project such as `C:\home\git\eoie`
+
+Record the Zed version, extension rebuild time, relevant log lines, and result
+in `DEVELOPMENT.md`. Until this checklist passes, editor-facing behavior remains
+unverified.
+
+## Tests and the run button
+
+`spiral/.zed/tasks.json` and `apps/zed/tasks/test-at-row.ps1` provide two
+monorepo-only task-picker entries:
+
+- `spiral: run test at cursor`
+- `spiral: run file tests`
+
+They are not installed with the extension and do not create gutter buttons in
+downstream Spiral projects.
+
+`languages/spiral/runnables.scm` tags every `test_header` node with
+`spiral-test` and exposes the name as `ZED_CUSTOM_spiral_test_name`; the
+monorepo task `spiral: run test $ZED_CUSTOM_spiral_test_name` carries that tag,
+so each test block gets a gutter button once the dev extension is rebuilt.
+
+## Known limitations
+
+- The grammar is line-level: every token is a whole line, so test headers,
+  `///>` targets and comments are exact, while expressions get their colors
+  only from the language server's semantic tokens.
+- The native helper is not packaged or downloaded and has no release/version
+  compatibility protocol with `extension.wasm` or `SpiralCompiler.dll`.
+- Compiler checks and builds block the helper's single LSP loop for up to 90 or
+  180 seconds.
+- Checks use on-disk files on open/save; unsaved edits are not compiled.
+- Semantic tokens are lexical, not compiler-resolved, and currently count Rust
+  `char`s rather than LSP UTF-16 code units.
+- `.spiproj` parsing handles only a narrow multiline form and has URI/edit edge
+  cases documented in `DEVELOPMENT.md`.
+- Quote auto-closing is not configured; only `()`, `[]`, and `{}` are paired.
+- Linux/macOS paths and file URIs need correction and end-to-end testing.
+
+## Troubleshooting
+
+Open **Zed: Open Log**. On Windows the log is normally:
+
+```text
+%LOCALAPPDATA%\Zed\logs\Zed.log
+```
+
+Common failures:
+
+- **`spiral-zed.exe was not found`**: run `test.ps1`, then rebuild the dev
+  extension in Zed. If it persists, the WASM helper-discovery path still needs
+  work.
+- **`attempted to parse a wasm module with a component parser`**: a raw Cargo
+  WASM artifact was copied to `extension.wasm`; rebuild through Zed.
+- **Zed starts `SpiralCompiler.dll` directly**: remove the DLL from
+  `lsp.spiral-lsp.binary.path`; configure discovery with host environment
+  variables instead.
+- **No gutter test button**: rebuild the dev extension so Zed fetches the
+  `spiral` grammar at the `rev` in `extension.toml`, and open the file from the
+  `spiral` worktree so `.zed/tasks.json` is loaded.

@@ -145,6 +145,20 @@ defmodule Spiral.Kino.CellTest do
     assert {nil, "Hello"} = Cell.split_output("Hello\n")
   end
 
+  test "drops the OS thread id of a panic so reruns print the same error" do
+    panic = "thread '<unnamed>' (52388) panicked at src/main.rs:9:5:\nassertion failed"
+    assert {nil, "thread '<unnamed>' panicked at src/main.rs:9:5:\nassertion failed"} = Cell.split_output(panic)
+    assert {nil, "thread 'main' panicked at x"} = Cell.split_output("thread 'main' (7) panicked at x")
+    assert {nil, "thread 'a' (12x) panicked"} = Cell.split_output("thread 'a' (12x) panicked")
+    assert {nil, "thread 'a' () panicked"} = Cell.split_output("thread 'a' () panicked")
+  end
+
+  test "a panic location names main.rs, not the cell's temp run directory" do
+    panic = "thread '<unnamed>' (9) panicked at C:\\Users\\me\\AppData\\Local\\Temp/spiral_kino/1791980730691-35\\main.rs:9:5:\nboom"
+    assert {nil, "thread '<unnamed>' panicked at main.rs:9:5:\nboom"} = Cell.split_output(panic)
+    assert {nil, "thread 'x' panicked at src/lib.rs:1:1:"} = Cell.split_output("thread 'x' panicked at src/lib.rs:1:1:")
+  end
+
   test "recognises a unit unification failure" do
     assert Cell.unit_result?("Unification failure.\nGot:      ()\nExpected: i32")
 

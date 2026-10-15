@@ -20,4 +20,4 @@ inl native (k : i32) (flag : bool) : i32 =
 inl main () : i32 =
     inl ~k = 7i32
     inl ~flag = true
-    !!!!BackendSwitch({ C = fun () => 49i32 : i32; Rust = fun () => native k flag : i32 })
+    !!!!BackendSwitch({ C = fun () => 49i32 : i32; Rust = fun () => native k flag : i32; Bend = fun () => 49i32 : i32 })

@@ -12,5 +12,5 @@ inl evaluate forall a {score}. (derive : i32 -> a) (seed : i32) : i32 =
     score (join derive seed)
 
 inl run () : i32 =
-    inl ~derive = (fun seed => if seed =. 1i32 then Text "alpha" else Note "beta") : i32 -> outcome_t
-    evaluate derive 1i32 +. evaluate derive 2i32 +. 31i32
+    inl ~derive = (fun seed => if seed = 1i32 then Text "alpha" else Note "beta") : i32 -> outcome_t
+    evaluate derive 1i32 + evaluate derive 2i32 + 31i32

@@ -12,14 +12,6 @@ typedef struct {
 } Array0;
 typedef Array0 String;
 typedef struct {
-    int tag;
-    union {
-        struct {
-            int32_t v0;
-        } case0; // Some
-    };
-} US0;
-typedef struct {
     int refc;
     String * v0;
 } Mut0;
@@ -48,27 +40,6 @@ static inline void StringDecref(String * x){
 static inline String * StringLit(uint32_t len, char * ptr){
     return ArrayLit0(len, ptr);
 }
-static inline void USIncrefBody0(US0 * x){
-    switch (x->tag) {
-    }
-}
-static inline void USDecrefBody0(US0 * x){
-    switch (x->tag) {
-    }
-}
-void USIncref0(US0 * x){ USIncrefBody0(x); }
-void USDecref0(US0 * x){ USDecrefBody0(x); }
-US0 US0_Some(int32_t v0) { // Some
-    US0 x;
-    x.tag = 0;
-    x.case0.v0 = v0;
-    return x;
-}
-US0 US0_None() { // None
-    US0 x;
-    x.tag = 1;
-    return x;
-}
 static inline void MutDecrefBody0(Mut0 * x){
     StringDecref(x->v0);
 }
@@ -88,64 +59,6 @@ static inline String * StringConcat(String * left, String * right){
     memcpy(result->ptr, left->ptr, left_len);
     memcpy(result->ptr + left_len, right->ptr, right_len + 1);
     return result;
-}
-String * method2(US0 v0){
-    
-    
-    switch (v0.tag) {
-        case 1: { // None
-            
-            
-            USDecref0(&(v0));
-            String * v6;
-            v6 = StringLit(5, "None");
-            
-            
-            return v6;
-            break;
-        }
-        default: { // Some
-            int32_t v1 = v0.case0.v0;
-            
-            USDecref0(&(v0));
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            String * v2;
-            v2 = StringLit(spiral_format_i64((long long)(v1)), spiral_format_buffer);
-            
-            
-            String * v3;
-            v3 = StringConcat(v2, StringLit(2, ")"));
-            
-            StringDecref(v2);
-            String * v4;
-            v4 = StringConcat(StringLit(2, "("), v3);
-            
-            StringDecref(v3);
-            String * v5;
-            v5 = StringConcat(StringLit(5, "Some"), v4);
-            
-            StringDecref(v4);
-            return v5;
-            break;
-        }
-    }
 }
 static inline void AssignMut0(String * * a0, String * b0){
     (b0)->refc++;
@@ -169,7 +82,7 @@ void method3(Mut0 * v0, String * v1){
     MutDecref0(v0); StringDecref(v3);
     return ;
 }
-String * format_real1(US0 v0){
+String * format_real2(int32_t v0){
     
     
     String * v1;
@@ -178,12 +91,30 @@ String * format_real1(US0 v0){
     
     Mut0 * v2;
     v2 = MutCreate0(v1);
-    USIncref0(&(v0));
+    
     StringDecref(v1);
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     String * v3;
-    v3 = method2(v0);
+    v3 = StringLit(spiral_format_i64((long long)(v0)), spiral_format_buffer);
     (v2)->refc++; (v3)->refc++;
-    USDecref0(&(v0));
+    
     
     method3(v2, v3);
     
@@ -194,26 +125,39 @@ String * format_real1(US0 v0){
     MutDecref0(v2);
     return v4;
 }
-String * method0(){
+String * method1(){
     
     
     int32_t v0;
     v0 = 1l;
     
     
-    US0 v1;
-    v1 = US0_Some(v0);
-    USIncref0(&(v1));
+    String * v1;
+    v1 = format_real2(v0);
+    
     
     String * v2;
-    v2 = format_real1(v1);
+    v2 = StringConcat(StringLit(6, "Some("), v1);
     
-    USDecref0(&(v1));
+    StringDecref(v1);
     String * v3;
-    v3 = StringConcat(StringLit(4, "x: "), v2);
+    v3 = StringConcat(v2, StringLit(2, ")"));
     
     StringDecref(v2);
     return v3;
+}
+String * method0(){
+    
+    
+    String * v0;
+    v0 = method1();
+    
+    
+    String * v1;
+    v1 = StringConcat(StringLit(4, "x: "), v0);
+    
+    StringDecref(v0);
+    return v1;
 }
 int32_t main(){
     

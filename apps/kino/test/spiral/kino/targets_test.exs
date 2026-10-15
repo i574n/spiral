@@ -15,6 +15,54 @@ defmodule Spiral.Kino.TargetsTest do
     )
   end
 
+  test "python and cuda targets never print CuPy's missing CUDA_PATH warning" do
+    assert {"PYTHONWARNINGS", "default,ignore:CUDA path could not be detected:UserWarning"} =
+             [{"PYTHONWARNINGS", "default"}] |> Targets.without_cupy_cuda_path_warning() |> List.keyfind("PYTHONWARNINGS", 0)
+
+    case Toolchain.python([]) do
+      nil ->
+        :ok
+
+      python ->
+        warn = "import warnings; warnings.warn('CUDA path could not be detected. Set CUDA_PATH environment variable if CuPy fails to load.'); print('ok')"
+        {out, 0} = System.cmd(python, ["-c", warn], env: Targets.without_cupy_cuda_path_warning([]), stderr_to_stdout: true)
+        assert String.trim(out) == "ok"
+    end
+  end
+
+  test "gcc builds C with the compiler harness flags and links libm last" do
+    assert Targets.c_args("C:/mingw/bin/gcc.exe", "main.c", "cell.exe", nil) ==
+             ["-std=c11", "-O2", "-w", "-fwrapv", "-o", "cell.exe", "main.c", "-lm"]
+  end
+
+  test "Delphi cells build with dcc32 when present, else with fpc in Delphi mode like the compiler harness" do
+    dir = Spiral.Kino.TestHelpers.tmp_dir!("delphi-compiler")
+    dcc = Path.join(dir, "dcc32.exe")
+    fpc = Path.join(dir, "fpc.exe")
+    File.write!(fpc, "")
+    assert {^fpc, "fpc", ["-O2", "-Mdelphi"]} = Targets.delphi_compiler(dcc: dcc, fpc: fpc)
+    File.write!(dcc, "")
+    assert {^dcc, "dcc32", []} = Targets.delphi_compiler(dcc: dcc, fpc: fpc)
+  end
+
+  test "a c-shim.h next to the notebook is force-included like the harness's own shim" do
+    dir = Path.join(System.tmp_dir!(), "kino_c_shim_#{System.unique_integer([:positive])}")
+    File.mkdir_p!(dir)
+    shim = Path.join(dir, "c-shim.h")
+    File.write!(shim, "#define SHIMMED 1\n")
+
+    try do
+      assert Targets.c_args("gcc", "main.c", "cell", dir) ==
+               ["-std=c11", "-O2", "-w", "-fwrapv", "-include", shim, "-o", "cell", "main.c", "-lm"]
+    after
+      File.rm_rf(dir)
+    end
+  end
+
+  test "cl builds C optimized with its own flag spelling" do
+    assert Targets.c_args("C:/msvc/cl.exe", "main.c", "cell.exe", nil) == ["/nologo", "/O2", "/Fe:cell.exe", "main.c"]
+  end
+
   test "command_result output is kept and a trace line is dropped" do
     inner = JSON.encode!(%{"code" => "return 1", "extension" => "lua", "output" => "printed"})
     outer = "12:44:21 spiral.main / { args = [] }\n" <> JSON.encode!(%{"command_result" => inner})
@@ -83,15 +131,6 @@ defmodule Spiral.Kino.TargetsTest do
     assert {:ok, %{stdout: "1w spiral.process_lua / note / kept"}} = run_target(outer)
   end
 
-  test "a c cell's process exit is the value" do
-    dir = Spiral.Kino.TestHelpers.tmp_dir!("c-cell")
-    path = Path.join(dir, "main.c")
-    File.write!(path, "int main(void) { return 7; }\n")
-
-    assert {:ok, %{stdout: "", value: "7"}} =
-             Targets.run(%{tool: :c}, path, [], 30_000, deadline())
-  end
-
   test "an empty spiral result with an error trace fails the cell" do
     dir = Spiral.Kino.TestHelpers.tmp_dir!("spiral-error")
 
@@ -115,17 +154,124 @@ defmodule Spiral.Kino.TargetsTest do
     refute message =~ "extension"
   end
 
-  test "a cpp executable's exit code is the value" do
+  test "a cpp executable that exits non-zero fails the cell; exit 0 passes it" do
     dir = Spiral.Kino.TestHelpers.tmp_dir!("cpp-cell")
     path = Path.join(dir, "main.cpp")
     File.write!(path, "int main() { return 7; }\n")
     _built = cc!(dir, "main.cpp.out", "int main(void) { return 7; }\n")
     fake = cc!(dir, "spiral-fake", "int main(void) { return 0; }\n")
 
-    assert {:ok, %{stdout: "", value: "7"}} =
+    assert {:error, %ProcessError{exit_status: 7}} =
              Targets.run(%{tool: :cpp}, path, [spiral: fake], 30_000, deadline())
+
+    _built = cc!(dir, "main.cpp.out", "int main(void) { return 0; }\n")
+    assert {:ok, %{stdout: ""} = ran} = Targets.run(%{tool: :cpp}, path, [spiral: fake], 30_000, deadline())
+    refute Map.has_key?(ran, :value)
   end
 
+  test "a C cell whose assertion fails is a failure, not a value" do
+    dir = Spiral.Kino.TestHelpers.tmp_dir!("c-cell")
+    failing = Path.join(dir, "failing.c")
+
+    File.write!(failing, """
+    #include <stdio.h>
+    int main(void) { printf("__assert_eq { actual = 7; expected = 8 }\\n"); return 1; }
+    """)
+
+    assert {:error, %ProcessError{exit_status: 1, message: message}} =
+             Targets.run(%{tool: :c}, failing, [], 60_000, deadline())
+
+    assert message =~ "actual = 7; expected = 8"
+
+    passing = Path.join(dir, "passing.c")
+    File.write!(passing, "#include <stdio.h>\nint main(void) { printf(\"ok\\n\"); return 0; }\n")
+    assert {:ok, %{stdout: "ok"}} = Targets.run(%{tool: :c}, passing, [], 60_000, deadline())
+  end
+
+  test "zig runs its program; wgsl runs the shader: exit 0 passes, 3 (no adapter) or no runner is unsupported, others fail" do
+    assert [%{tool: :zig}, %{tool: :wgsl}] = Spiral.Kino.Builders.commands("///> zig\n///> wgsl\nx")
+    assert Spiral.Kino.Builders.backend(%{tool: :zig}) == "Zig"
+    assert [%{tool: :lean}] = Spiral.Kino.Builders.commands("///> lean\nx")
+    assert {Spiral.Kino.Builders.backend(%{tool: :lean}), Spiral.Kino.Builders.ext(%{tool: :lean})} == {"Lean", ".lean"}
+    assert Spiral.Kino.Builders.backend(%{tool: :wgsl}) == "Wgsl"
+    dir = Spiral.Kino.TestHelpers.tmp_dir!("zig-wgsl")
+    missing = Path.join(dir, "no-tool.exe")
+
+    assert {:error, %ProcessError{reason: :tool_missing}} =
+             Targets.run(%{tool: :zig}, Path.join(dir, "main.zig"), [zig: missing], 30_000, deadline())
+
+    runner =
+      cc!(dir, "spiral-wgsl-stub", """
+      #include <stdio.h>
+      int main(int argc, char **argv) { FILE *f = fopen(argv[1], "r"); int c = fgetc(f); fclose(f); printf("ran\\n"); return c - '0'; }
+      """)
+
+    shader = fn status ->
+      path = Path.join(dir, "shader#{status}.wgsl")
+      File.write!(path, "#{status}")
+      path
+    end
+
+    assert {:ok, %{stdout: "ran"}} = Targets.run(%{tool: :wgsl}, shader.(0), [wgsl_run: runner, naga: nil], 30_000, deadline())
+    assert {:error, %ProcessError{exit_status: 1, reason: nil}} = Targets.run(%{tool: :wgsl}, shader.(1), [wgsl_run: runner, naga: nil], 30_000, deadline())
+    assert {:error, %ProcessError{exit_status: 2, reason: nil}} = Targets.run(%{tool: :wgsl}, shader.(2), [wgsl_run: runner, naga: nil], 30_000, deadline())
+    assert {:error, %ProcessError{exit_status: 3, reason: :tool_missing}} = Targets.run(%{tool: :wgsl}, shader.(3), [wgsl_run: runner, naga: nil], 30_000, deadline())
+    assert {:error, %ProcessError{reason: :tool_missing}} = Targets.run(%{tool: :wgsl}, shader.(0), [wgsl_run: missing, naga: nil], 30_000, deadline())
+  end
+  test "an erlang gleam target is run by Kino in its own package with the CLI's dependencies" do
+    [builder] = Spiral.Kino.Builders.commands("///> gleam -d gleam_community_maths=\\\">=2.0.0\\\"")
+    assert {:gleam, "x/gleam/src/main.gleam", [%{name: "gleam_community_maths"}]} = Spiral.Kino.Builders.dispatch(builder, "x/gleam/src/main.gleam")
+    manifest = Targets.gleam_manifest("x/gleam/src/main.gleam", builder.deps)
+    assert manifest =~ ~s(name = "main"\ntarget = "erlang")
+    assert manifest =~ ~s(gleam_stdlib = "0.57.0")
+    assert manifest =~ ~s(gleam_community_maths = ">=2.0.0")
+    [js] = Spiral.Kino.Builders.commands("///> gleam -t javascript")
+    assert {:spiral, _} = Spiral.Kino.Builders.dispatch(js, "main.gleam")
+  end
+  test "gleam projects with the same dependencies share one resolved manifest, so Hex resolution happens once per dependency set" do
+    opts = [bin_cache_dir: "cache"]
+    lock = &Targets.gleam_lock_path(&1, opts)
+    plain = Targets.gleam_manifest("x/gleam/src/main.gleam", [])
+    assert lock.(plain) == lock.(Targets.gleam_manifest("y/gleam_real/src/main_real.gleam", []))
+    refute lock.(plain) == lock.(Targets.gleam_manifest("x/gleam/src/main.gleam", [], "javascript"))
+    refute lock.(plain) == lock.(Targets.gleam_manifest("x/gleam/src/main.gleam", [%{name: "gleam_community_maths", version: ">=2.0.0"}]))
+    assert String.starts_with?(lock.(plain), "cache/kino-gleam-locks/")
+  end
+  if System.find_executable("gleam") do
+    test "a gleam build without a kept lock resolves under the lock, keeps its manifest, and the next project builds from it" do
+      dir = Spiral.Kino.TestHelpers.tmp_dir!("gleam_lock")
+      opts = [bin_cache_dir: Path.join(dir, "cache")]
+
+      build = fn name ->
+        src = Path.join([dir, name, "gleam", "src"])
+        File.mkdir_p!(src)
+        main = Path.join(src, "main.gleam")
+        File.write!(main, "pub fn main() { Nil }\n")
+        {Targets.build(%{tool: :gleam, deps: [], target: "erlang"}, main, opts, 300_000, :infinity), main}
+      end
+
+      assert {{:ok, _}, main} = build.("first")
+      lock = Targets.gleam_lock_path(Targets.gleam_manifest(main, []), opts)
+      assert File.regular?(lock)
+      assert {{:ok, _}, _} = build.("second")
+      assert File.read!(Path.join([dir, "second", "gleam", "manifest.toml"])) == File.read!(lock)
+    end
+  end
+  test "gleam compile warnings are not program output" do
+    output = """
+    warning: Unused function argument
+       ┌─ C:\\x\\gleam\\src\\main.gleam:88:17
+       │
+    88 │ pub fn closure0(capt: Nil) -> fn(Int) -> Us0 {
+       │                 ^^^^ This argument is never used
+
+    Hint: You can ignore it with an underscore: `_capt`.
+
+    __assert_eq { expected = 2 }
+    """
+
+    assert Targets.strip_gleam_warnings(output) == "__assert_eq { expected = 2 }\n"
+  end
   test "a spiral rust builder waits for the spiral rust lock" do
     dir = Spiral.Kino.TestHelpers.tmp_dir!("rust-lock")
     lock = Path.join(dir, "rust.lock")
