@@ -20,14 +20,25 @@ where a test needs the training host.
 
 Correction 2026-10-14: every live `spiral-*` run from 2026-10-13 11:48 until the fix ran with vBot's HealBot and TargetBot active alongside our policy (a bot setting the vBot probe left enabled; BENCHMARK.md, PR-1). The findings below come from the re-measurement on the fixed harness (PR-4, 30 runs per competitor, every run checked for foreign actions); the earlier live claims are withdrawn.
 
-1. **The simulator predicts live clear times, not live potion use.** For the cyclops clear it predicts 88.6 s for the
-   rules policy and 88.1 s for the retreat policy; live they clear in 87.6 and 91.3 s (both within noise). It predicts
-   13.2 and 9.1 potions; live they use 11.5 and 12.9 (t -3.7 and 6.4). A mixed camp (one cyclops, two trolls, PR-2) repeats it: 37.3 s live against 36.2 predicted, but 0.55 potions against 1.23. Most of that gap was the first ten seconds: live monsters idle about 10 s before engaging a knight that just logged in (measured independently in the path check, PC-1), and the simulator had them attack at once. With that delay the simulator predicts 11.4 potions and 90.1 s for the rules clear (live 11.5, 87.6 s) and 0.42 potions for the mixed camp (live 0.55), but an out-of-sample two-cyclops clear (PR-6) fails: 8.25 predicted against 4.85 live, because live cyclops land 30.7 hits per clear against 43.4 simulated. So the three-cyclops match was partly luck, and how often adjacent monsters land hits is still wrong. The retreat policy is still mispredicted (7.3 against 12.9): the simulated knight escapes hits that live monsters, surrounding it against the walls, still land. That is the open fidelity gap.
-2. **The policy designed in the simulator does not win live.** Stepping back when two cyclops reach the knight saves
-   about 4 potions per clear in the simulator; live it uses 1.4 more than the plain rules (t 1.8, not significant).
+1. **The simulator predicts live clear times, and, since 2026-10-15, potion use too.** Clear times matched in every
+   live check. Potions did not: the first model predicted 13.2 and 9.1 potions for the rules and retreat clears against
+   11.5 and 12.9 live (PR-4), and the mixed and two-cyclops checks failed too (PR-2, PR-6). Three causes, each measured:
+   live monsters ignore a freshly logged-in knight for 10 s (Canary's login protection); small camps fielded three
+   cyclops through a simulator bug; and live cyclops surround the knight (about 1.75 adjacent with two monsters) while
+   the simulator's greedy steps queued them behind each other. With login protection, the bug fixed and an
+   occupancy-aware router (Canary's step weights, other creatures as obstacles), a pre-registered prediction for a clear
+   never measured before holds: two cyclops with the retreat policy, 4.67 potions predicted, 5.45 live (t 1.95, PR-7),
+   where the old movement predicted 3.49 (t 4.89). Explanatory, on data already seen: rules 13.3 vs 11.5, retreat 12.0
+   vs 12.9, two cyclops 5.2 vs 4.9, mixed camp 0.36 vs 0.55.
+2. **The policy designed in the simulator does not win live.** Stepping back when two cyclops reach the knight saved
+   about 4 potions per clear in the first simulator; with monsters surrounding the knight as they do live, the saving
+   shrinks to about 1 potion (5%), and live it uses 1.4 more than the plain rules (t 1.8, not significant).
    The earlier live win came from runs with vBot healing alongside.
 3. **Against vBot neither policy is shown better.** Retreat 12.9 vs vBot 14.0 potions, difference -1.1 (95% interval
-   -2.6 .. 0.4), the pre-registered primary test (PR-4); same clear times, no deaths on either side.
+   -2.6 .. 0.4, PR-4), and rules 12.9 vs vBot 14.2, difference -1.3 (-3.0 .. 0.5, PR-8), both pre-registered; similar
+   clear times, no deaths on either side. Against nExBot the retreat policy is narrowly better: 12.2 vs 14.6 potions,
+   difference -2.4 (-4.6 .. -0.1, PR-3a, 20 runs each, t -2.14 against 2.03). It is a single test, and nExBot's mean
+   sits where vBot's does. nExBot runs only with three harness shims (BENCHMARK.md PR-3a).
 4. **Learning wins little at this level of detail.** In every scenario tried (open field, corridor, room,
    arena spot, mixed cyclops and trolls, potion budgets, respawning hunts) tuned threshold rules match or beat neural
    and scored learned policies. On a respawning hunting ground the rule that sweeps to the next spawn due beats every fixed
@@ -51,11 +62,21 @@ Every mechanic comes from Canary's source or a live measurement, and the model i
 | Client actions | one per 250 ms (a typed readiness witness) | the same gate wraps every competitor |
 | Turn order | death checked before the knight acts | a knight killed by a hit cannot drink in the same tick |
 | Tile occupancy | no two creatures share a tile; steps go around taken tiles | as in Canary |
-| Pathing | arena spot: greedy one-tile steps, diagonals allowed (what the live clears were checked against); hunting ground: shortest path with straight steps only | Canary's A* (diagonal 25 vs straight 10); checked live (PC-1): a cyclops behind a wall takes exactly the router's straight-step path in all 5 runs, after idling 10-12 s |
+| Pathing | arena spot: occupancy-aware routing with Canary's step weights (straight 10, diagonal 25, other creatures as obstacles), so monsters detour around each other; hunting ground: shortest path with straight steps only | Canary's A* (diagonal 25 vs straight 10); checked live (PC-1): a cyclops behind a wall takes exactly the router's straight-step path in all 5 runs, after idling 10-12 s |
 | Monster wake | monsters neither move nor strike for the first 10 s of a live-mirroring scenario (`waking_at (live_wake_ms ())`); Canary's login protection (`isLoginProtected` blocks monster targeting) | the path check saw cyclops idle 10-12 s after the knight logs in; live, the standing knight takes 1.8 hits in its first 10 s against 7.9 simulated without the delay |
 | Monster sight | a monster follows only a knight within 11 tiles on both axes on its floor; otherwise it idles | Canary's viewport (8 + 3, 6 + 5) |
 
-The multi-creature simulator is bit-exact on WGSL too (`gpu_sim.spi`: a full troll hunt, 20 arena-spot cyclops
+Open gap (2026-10-15), with the router, the camp-size fix and the wake delay held fixed, 100 held-out clears against
+pooled live means: the model under-counts the retreat policy's potions by the same amount at both camp sizes (2 cyclops
+4.62 vs 5.45 live, 3 cyclops 11.78 vs 12.62) and over-counts plain rules (5.16 vs 4.85, 13.34 vs 12.22), so it still
+ranks retreat ahead of rules where live does not. One retreat-only mechanic is missing: with `classicAttackSpeed =
+false` Canary schedules the knight's next swing as its next action task and every step clears that task
+(`Player::onWalk`), so after a step the swing resumes on the next 1 s think cycle. The camp rule `swinging_on_think`
+(opt-in, like the wake delay) models it: retreat moves to 12.14 potions, 90.6 s and 58.6 hits taken per clear at 3
+cyclops (live 12.62, 90.9-91.3 s, 59.05 hits) and to 4.72 potions at 2 cyclops, while rules stay at 13.36: it explains
+part of the gap, not all of it. The pre-registered mechanic check PC-3 (5 live runs) confirms it: 31 of 36 swing gaps that span a knight step come 60-1060 ms off the 2 s grid, against 5 of 106 without a step; the live delay is mostly 150-200 ms, shorter than the modeled wait for the next think, so the delay length is the next refinement.
+
+The multi-creature simulator is bit-exact on WGSL too (`gpu_sim.spi`: a full troll hunt, five arena-spot cyclops
 clears, and a five-minute hunting-ground hunt with the shortest-path router and its scratch arrays). With parallel lanes (one seed per GPU thread, 2026-10-14) every lane matches C exactly; a launch costs about 4 s of fixed setup, then about 0.23 ms per arena clear against 1.6 ms on one C core, so the GPU pays off from about 4000 clears per launch. Large lane counts now run in chunks of 1024 (the 16384-lane hang, WGSL-LANES-LARGE-DISPATCH-HANG, is fixed in the pack-1e compiler).
 
 ## Simulator results
@@ -75,16 +96,14 @@ Profit books gold looted, 50 gp per potion and 14000 gp per death. The control i
   deaths, against 15.3 potions and 3 deaths in 20 clears in the open field. In a room with a corridor, rules evolved
   on 100 training seeds (ReachFirst, heal below 223 + 3 per attacker, step back at three attackers) dominate the fully
   tuned cavebot on 100 held-out seeds: 946 kills and -288217 gp against 942 and -477181.
-- **Arena spot** (the server map, radius 30): rules evolved for the cheapest clear within the tuned cavebot's time +15%
-  choose ReachFirst targeting, heal below 154 + 26 per attacker and stepping back at two attackers, the design of the live
-  retreat competitor. On 100 held-out clears they dominate the tuned cavebot: 909 vs 1309 potions, 0 vs 1 deaths, 88.1 vs
-  88.6 s per clear. On the client's +-7 window, which the simulator first treated as walled in, the same search could only
-  trade time for potions.
-- **Mixed camp** (one cyclops, two trolls, arena spot): rules evolved for three cyclops use 167 potions in 100
-  held-out clears at 153.2 s (they step back until the monsters lose sight of the knight), against the cavebot tuned on this camp (heal below 70): 80 potions, 1 death, 37.9 s.
-  Counting only attackers that stand and fight (`policy.temperate`: trolls flee, cyclops do not) cuts the same rules to
-  155 potions at 40.5 s. Rules evolved on this camp, kind-blind or kind-aware, settle on a lower heal (74 and 76 potions, 37.8 s)
-  but die twice, so nothing dominates the tuned cavebot.
+- **Arena spot** (the server map, radius 30, monsters routing around each other): rules evolved for the cheapest clear
+  within the tuned cavebot's time +15% choose ReachFirst targeting, heal below 96 + 8 per attacker and stepping back as
+  soon as one monster reaches the knight. On 100 held-out clears they use 1069 potions against the tuned cavebot's 1702
+  (heal below 90), with no deaths for either, at 90.9 against 90.1 s per clear: cheaper, slightly slower, not dominant.
+- **Mixed camp** (one cyclops, two trolls, arena spot): the cavebot tuned on this camp (heal below 80) uses 85 potions
+  in 100 held-out clears at 37.7 s. Rules evolved on this camp without knowing kinds use 74 potions at 37.6 s with no
+  deaths, dominating it; kind-aware rules use 68 but die once. Rules evolved for three cyclops use 190 potions; counting
+  only attackers that stand and fight (`policy.temperate`: trolls flee, cyclops do not) cuts them to 135.
 - **Hunting ground** (two cyclops and four trolls respawning every 60 s, the server map around the arena, five-minute
   hunts, 100 held-out seeds): greedy one-tile steps stick behind walls there, so knight and monsters route with a
   shortest-path search (straight steps only: a diagonal costs three straight ones, and Canary's A* agrees), and every
@@ -124,7 +143,7 @@ no deaths, no harness failures.
 | vBot 4.8 | 14.0 (sd 2.6) | 92.7 s | 2397 |
 
 Pre-registered tests: retreat vs vBot, no difference shown (t -1.45); retreat vs rules, no difference shown (t 1.82).
-Rules vs vBot was not pre-registered and is not tested here. The random control (PR-5, 10 runs: drink, engage, random step or stand with equal odds) clears in 102.7 s with 94.1 potions, far below every competitor.
+Rules vs vBot, pre-registered as a fresh replication (PR-8, 30 runs each): 12.9 vs 14.2 potions, no difference shown (t -1.47); PR-4's 11.5 for the rules did not replicate. Retreat vs nExBot 4.0.4 (PR-3a, 20 runs each, 2026-10-15): 12.2 vs 14.6 potions, significant (t -2.14), clear time 90.9 vs 88.4 s, damage taken 2030 vs 2421 (16 and 18 of 20 logs matched), no deaths. The random control (PR-5, 10 runs: drink, engage, random step or stand with equal odds) clears in 102.7 s with 94.1 potions, far below every competitor.
 
 The earlier table, kept as a record of the faulty harness:
 Measured with vBot's HealBot and TargetBot running alongside every `spiral-*` competitor (see the correction above); kept as a record until PR-4 replaces it. Cyclops clear, BENCHMARK pack v1: full gear restored before every run, the same 250 ms action gate and 100 ms decision

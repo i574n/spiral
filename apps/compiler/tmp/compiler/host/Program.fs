@@ -832,7 +832,7 @@ module Program =
 
     let private isCommentToken (_, token) = match token with TokComment _ -> true | _ -> false
 
-    let private testBlockRows (text : string) =
+    let private sourceBlocks (text : string) =
         let text = text.Replace("\r\n", "\n")
         let lines = text.Split '\n'
         let state = wdiff_tokenizer_all wdiff_tokenizer_init text
@@ -846,23 +846,43 @@ module Program =
             let opensInComment = row > 0 && row - 1 < state.lines_state.Length && state.lines_state.[row - 1].comment_depth > 0
             let commentRow = trimmed.StartsWith "//" || trimmed.StartsWith "(*" || opensInComment
             if Seq.isEmpty line then not (String.IsNullOrWhiteSpace textRow || commentRow) else line |> Seq.exists (isCommentToken >> not)
-        let rows =
+        let blocks =
             [ for block in state.blocks do
                 let blockRows = block.block |> Seq.toArray
+                let lastRow = block.offset + blockRows.Length - 1
                 match blockRows |> Array.tryFindIndex (fun line -> line |> Seq.exists (isCommentToken >> not)) with
                 | Some i ->
+                    let headerRow = block.offset + i
+                    let lastContent =
+                        blockRows |> Array.mapi (fun j line -> j, line) |> Array.filter (fun (j, line) -> j > i && isBodyContent (block.offset + j) line)
+                        |> Array.tryLast |> Option.map (fun (j, _) -> block.offset + j) |> Option.defaultValue headerRow
                     let statement = blockRows.[i] |> Seq.filter (isCommentToken >> not) |> Seq.toArray
-                    match statement.[0] with
+                    yield {| firstRow = block.offset; headerRow = Some headerRow; lastContent = lastContent; lastRow = lastRow; statement = statement |}
+                | None -> yield {| firstRow = block.offset; headerRow = None; lastContent = lastRow; lastRow = lastRow; statement = [||] |} ]
+        blocks, lineAt, sourceOf, state.errors.Length
+
+    let private testBlockRows (text : string) =
+        let blocks, lineAt, sourceOf, tokenizerErrors = sourceBlocks text
+        let rows =
+            [ for block in blocks do
+                match block.headerRow with
+                | Some headerRow ->
+                    match block.statement.[0] with
                     | _, TokVar ("test", _) ->
-                        let headerRow = block.offset + i
-                        let name = if statement.Length > 1 then sourceOf headerRow (fst statement.[1]) else ""
-                        let lastContent =
-                            blockRows |> Array.mapi (fun j line -> j, line) |> Array.filter (fun (j, line) -> j > i && isBodyContent (block.offset + j) line)
-                            |> Array.tryLast |> Option.map (fun (j, _) -> block.offset + j) |> Option.defaultValue headerRow
-                        yield $"{name}\t{headerRow + 1}\t{headerRow + 2}\t{lastContent + 1}\t{lineAt headerRow}"
+                        let name = if block.statement.Length > 1 then sourceOf headerRow (fst block.statement.[1]) else ""
+                        yield $"{name}\t{headerRow + 1}\t{headerRow + 2}\t{block.lastContent + 1}\t{lineAt headerRow}"
                     | _ -> ()
                 | None -> () ]
-        rows, state.errors.Length
+        rows, tokenizerErrors
+
+    let private sourceBlockRows (text : string) =
+        let blocks, lineAt, _, tokenizerErrors = sourceBlocks text
+        let rows =
+            [ for block in blocks do
+                match block.headerRow with
+                | Some headerRow -> yield $"{block.firstRow + 1}\t{headerRow + 1}\t{block.lastContent + 1}\t{block.lastRow + 1}\t{lineAt headerRow}"
+                | None -> yield $"{block.firstRow + 1}\t0\t0\t{block.lastRow + 1}\t" ]
+        rows, tokenizerErrors
 
     let private stalledReply (stallSeconds : int) (progressMs : float) =
         $"spiral-session\terror\t{Environment.ProcessId}\tcompiler stalled: {int progressMs} ms CPU in {stallSeconds} s with a compile outstanding"
@@ -915,6 +935,13 @@ module Program =
                         let rows, tokenizerErrors = testBlockRows (File.ReadAllText fields.[1])
                         rows |> List.iter writer.WriteLine
                         writer.WriteLine($"spiral-session\ttest-blocks\t{Environment.ProcessId}\t{rows.Length}\t{tokenizerErrors}")
+                    else
+                        writer.WriteLine($"spiral-session\terror\t{Environment.ProcessId}\tno such file {cleanProtocolText fields.[1]}")
+                elif fields.Length = 2 && fields.[0] = "source-blocks" then
+                    if File.Exists fields.[1] then
+                        let rows, tokenizerErrors = sourceBlockRows (File.ReadAllText fields.[1])
+                        rows |> List.iter writer.WriteLine
+                        writer.WriteLine($"spiral-session\tsource-blocks\t{Environment.ProcessId}\t{rows.Length}\t{tokenizerErrors}")
                     else
                         writer.WriteLine($"spiral-session\terror\t{Environment.ProcessId}\tno such file {cleanProtocolText fields.[1]}")
                 elif (fields.Length = 3 || fields.Length = 4) && fields.[0] = "compile" then
@@ -992,6 +1019,19 @@ module Program =
             if output = "-" then rows |> List.iter (printfn "%s")
             else File.WriteAllText(output, rows |> List.map (fun row -> row + "\n") |> String.concat "", UTF8Encoding(false))
             eprintfn "test-blocks ok file=%s blocks=%d tokenizer_errors=%d" path rows.Length tokenizerErrors
+            0
+
+    let private runSourceBlocks (output : string) (inputs : string []) =
+        match inputs |> Array.tryFind (File.Exists >> not) with
+        | Some missing ->
+            eprintfn "source-blocks: no such file %s" missing
+            2
+        | None ->
+            let perInput = inputs |> Array.map (fun path -> sourceBlockRows (File.ReadAllText path))
+            let rows = perInput |> Array.mapi (fun index (inputRows, _) -> inputRows |> List.map (fun row -> $"{index + 1}\t{row}")) |> List.concat
+            if output = "-" then rows |> List.iter (printfn "%s")
+            else File.WriteAllText(output, rows |> List.map (fun row -> row + "\n") |> String.concat "", UTF8Encoding(false))
+            eprintfn "source-blocks ok files=%d blocks=%d tokenizer_errors=%d" inputs.Length rows.Length (perInput |> Array.sumBy snd)
             0
 
     let private parseBuildFileArgs (argv : string []) =
@@ -1107,7 +1147,7 @@ module Program =
             eprintfn "%s" defaultTypeFlagsError.Value
             2
         elif argv.Length = 1 && argv.[0] = "--capabilities" then
-            printfn "server-tcp test-blocks"
+            printfn "server-tcp test-blocks source-blocks"
             0
         elif argv.Length = 1 && argv.[0] = "--version" then
             printfn "SpiralCompiler alpha418"
@@ -1122,6 +1162,8 @@ module Program =
             runServer argv.[1] argv.[2]
         elif argv.Length = 3 && argv.[0] = "--test-blocks" then
             runTestBlocks argv.[1] argv.[2]
+        elif argv.Length >= 3 && argv.[0] = "--source-blocks" then
+            runSourceBlocks argv.[1] argv.[2..]
         elif argv.Length = 2 && argv.[0] = "--check" then
             exit (runAttestationBounded 30000 (fun () -> runCheck argv.[1]))
         elif (argv.Length = 3 || (argv.Length = 5 && argv.[1] = "--timeout-ms")) && argv.[0] = "--plan-ir" then
@@ -1168,5 +1210,5 @@ module Program =
                 eprintfn "%s" message
                 5
         else
-            eprintfn "usage: SpiralCompiler [--default-int i8|i16|i32|i64|u8|u16|u32|u64] [--default-float f32|f64] [--backend Fsharp|C|Rust|Delphi|Zig|TypeScript|Lua|Gleam|\"Cpp + Cuda\"|\"Python + Cuda\"] <input.spi> <output.fsx|.c|.rs|.pas|.zig|.ts|.lua|.gleam|.cpp|.py> | --check INPUT.spi | --test-blocks INPUT.spi OUTPUT.tsv|- | --capabilities | --plan-ir [--timeout-ms N] INPUT.spi OUTPUT.ir | --batch JOBS.tsv RESULTS.tsv [--timeout-ms N] | --server SOCKET INPUT.spi | --server-tcp SOCKET [--stall-seconds N] | build-file IN OUT [IN OUT ...] [--timeout MS] [--exit-on-error] | fsharp IN.spi [--timeout MS]"
+            eprintfn "usage: SpiralCompiler [--default-int i8|i16|i32|i64|u8|u16|u32|u64] [--default-float f32|f64] [--backend Fsharp|C|Rust|Delphi|Zig|TypeScript|Lua|Gleam|\"Cpp + Cuda\"|\"Python + Cuda\"] <input.spi> <output.fsx|.c|.rs|.pas|.zig|.ts|.lua|.gleam|.cpp|.py> | --check INPUT.spi | --test-blocks INPUT.spi OUTPUT.tsv|- | --source-blocks OUTPUT.tsv|- INPUT.spi [INPUT.spi ...] | --capabilities | --plan-ir [--timeout-ms N] INPUT.spi OUTPUT.ir | --batch JOBS.tsv RESULTS.tsv [--timeout-ms N] | --server SOCKET INPUT.spi | --server-tcp SOCKET [--stall-seconds N] | build-file IN OUT [IN OUT ...] [--timeout MS] [--exit-on-error] | fsharp IN.spi [--timeout MS]"
             2

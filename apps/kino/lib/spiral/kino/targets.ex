@@ -38,8 +38,7 @@ defmodule Spiral.Kino.Targets do
           {:ok, map()} | {:error, Exception.t()}
   def build(%{tool: :gleam} = builder, output_path, opts, timeout, deadline) do
     package = output_path |> Path.dirname() |> Path.dirname()
-    File.write!(Path.join(package, "gleam.toml"), gleam_manifest(output_path, builder.deps, builder.target || "erlang"))
-    run_program(Toolchain.gleam(opts), "gleam build", ["build", "--no-print-progress"], Keyword.put(opts, :cwd, package), timeout, deadline, false)
+    gleam_build(package, gleam_manifest(output_path, builder.deps, builder.target || "erlang"), opts, timeout, deadline)
   end
 
   def build(%{tool: :c}, output_path, opts, timeout, deadline) do
@@ -350,13 +349,48 @@ defmodule Spiral.Kino.Targets do
 
   defp run_gleam(path, deps, target, opts, timeout, deadline) do
     package = path |> Path.dirname() |> Path.dirname()
-    File.write!(Path.join(package, "gleam.toml"), gleam_manifest(path, deps, target))
-    gleam = Toolchain.gleam(opts)
-    quiet = Keyword.put(opts, :cwd, package)
 
-    with {:ok, _built} <- run_program(gleam, "gleam build", ["build", "--no-print-progress"], quiet, timeout, deadline, false) do
-      run_gleam_program(package, target, opts, quiet, timeout, deadline)
+    with {:ok, _built} <- gleam_build(package, gleam_manifest(path, deps, target), opts, timeout, deadline) do
+      run_gleam_program(package, target, opts, Keyword.put(opts, :cwd, package), timeout, deadline)
     end
+  end
+
+  defp gleam_build(package, manifest, opts, timeout, deadline) do
+    File.write!(Path.join(package, "gleam.toml"), manifest)
+    locked = gleam_lock_path(manifest, opts)
+    build = fn -> run_program(Toolchain.gleam(opts), "gleam build", ["build", "--no-print-progress"], Keyword.put(opts, :cwd, package), timeout, deadline, false) end
+
+    if File.regular?(locked) do
+      File.cp!(locked, Path.join(package, "manifest.toml"))
+      build.()
+    else
+      :global.trans({{__MODULE__, :gleam_resolve, locked}, self()}, fn ->
+        if File.regular?(locked), do: File.cp!(locked, Path.join(package, "manifest.toml"))
+        result = build.()
+        if match?({:ok, _}, result), do: keep_gleam_lock(Path.join(package, "manifest.toml"), locked)
+        result
+      end)
+    end
+  end
+
+  @doc false
+  def gleam_lock_path(manifest, opts) do
+    requirements = manifest |> String.split("\n") |> Enum.drop_while(&(&1 != "[dependencies]")) |> Enum.join("\n")
+    target = Regex.run(~r/^target = (.*)$/m, manifest, capture: :all_but_first) || []
+    key = :crypto.hash(:sha256, :erlang.term_to_binary({target, requirements})) |> Base.encode16(case: :lower) |> binary_part(0, 24)
+    Path.join(Toolchain.cache_dir(opts), "kino-gleam-locks/#{key}.toml")
+  end
+
+  defp keep_gleam_lock(manifest_path, locked) do
+    with false <- File.regular?(locked),
+         {:ok, text} <- File.read(manifest_path),
+         :ok <- File.mkdir_p(Path.dirname(locked)) do
+      pending = locked <> ".#{System.unique_integer([:positive])}.tmp"
+      with :ok <- File.write(pending, text), do: File.rename(pending, locked)
+      File.rm(pending)
+    end
+
+    :ok
   end
 
   defp run_gleam_program(package, "javascript", opts, quiet, timeout, deadline) do

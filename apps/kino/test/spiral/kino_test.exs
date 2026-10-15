@@ -643,18 +643,17 @@ defmodule Spiral.KinoTest do
     assert %{type: :plain_text, text: "(no value)"} = Kino.Render.to_livebook(%Result{})
   end
 
-  test "the package fallback root is this spiral checkout; the polyglot_root option still overrides it" do
-    unless System.get_env("SPIRAL_KINO_WORKSPACE_ROOT") ||
-             System.get_env("SPIRAL_KINO_POLYGLOT_ROOT") do
+  test "the package fallback root is this spiral checkout; the workspace_root option overrides it" do
+    unless System.get_env("SPIRAL_KINO_WORKSPACE_ROOT") do
       root = Spiral.Kino.workspace_root()
       assert File.regular?(Path.join(root, "apps/kino/mix.exs")), root
     end
 
-    assert Spiral.Kino.workspace_root(polyglot_root: "/x") == "/x"
-    assert Spiral.Kino.workspace_root(workspace_root: "/y", polyglot_root: "/x") == "/y"
+    assert Spiral.Kino.workspace_root(workspace_root: "/y") == "/y"
+    assert Spiral.Kino.workspace_root(polyglot_root: "/x") == Spiral.Kino.workspace_root()
   end
 
-  test "the core package defaults to spiral's fork clone, else polyglot's" do
+  test "the core package is spiral's fork clone" do
     dir = Spiral.Kino.Toolchain.default_package_dir()
     assert String.ends_with?(dir, "deps/The-Spiral-Language/VS Code Plugin"), dir
   end

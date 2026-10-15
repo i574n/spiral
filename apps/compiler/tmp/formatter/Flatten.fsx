@@ -157,6 +157,23 @@ let rec flattenRegion (typeLevel : bool) (context : Opening) (lines : CodeLine l
                 if bodyLines.IsEmpty then withClosers headText else
                 let body = flattenRegion innerTypeLevel opening bodyLines
                 let armsOrCases = match (List.head bodyLines).Lexemes.[0].Token with TokOperator ("|", _) -> true | _ -> false
+                let armColumn = (List.head bodyLines).Indent
+                let operatorAfterArms =
+                    if not armsOrCases || innerTypeLevel || opening <> BodyOpening then None
+                    else
+                        bodyLines
+                        |> List.tryFindIndex (fun line -> line.Indent = armColumn && (match line.Lexemes.[0].Token with TokOperator (name, _) -> name <> "|" | _ -> false))
+                        |> Option.bind (fun at ->
+                            head.Lexemes
+                            |> Array.tryFindIndexBack (fun lexeme -> not lexeme.InsideMacro && (lexeme.Token = TokKeyword SpecFunction || lexeme.Token = TokKeyword SpecMatch))
+                            |> Option.map (fun opener -> at, opener))
+                match operatorAfterArms with
+                | Some (at, opener) when closers.IsEmpty ->
+                    let arms = flattenRegion innerTypeLevel opening (List.take at bodyLines)
+                    let after = flattenRegion typeLevel NoOpening (List.skip at bodyLines)
+                    let before = if opener = 0 then "" else codeText head.Lexemes.[0 .. opener - 1] + " "
+                    before + "(" + codeText head.Lexemes.[opener ..] + " " + arms + ")" + remarkSuffix head + " " + after
+                | _ ->
                 match opening with
                 | BodyOpening when innerTypeLevel || armsOrCases -> withClosers (headText + " " + body)
                 | BodyOpening ->
@@ -362,7 +379,21 @@ let flattenBlock (lines : Line<'phase> list) : FlatBlock =
                 | TokKeyword (SpecType | SpecNominal | SpecUnion | SpecPrototype) -> true
                 | TokKeyword SpecAnd when code.[0].Lexemes.Length > 1 && code.[0].Lexemes.[1].Token = TokKeyword SpecUnion -> true
                 | _ -> false
-            let text = flattenRegion typeLevel NoOpening (List.ofSeq code)
+            let startsArm (line : CodeLine) = match line.Lexemes.[0].Token with TokOperator ("|", _) -> true | _ -> false
+            let endsWithArrow (line : CodeLine) = match line.Lexemes.[line.Lexemes.Length - 1].Token with TokOperator ("=>", _) -> true | _ -> false
+            let guardOnOwnLine (previous : CodeLine) (line : CodeLine) =
+                line.Lexemes.[0].Token = TokKeyword SpecWhen && line.Leading.IsEmpty && previous.Remark.IsNone
+                && startsArm previous && not (endsWithArrow previous) && line.Indent > previous.Indent
+            let armsWithGuards =
+                code
+                |> Seq.fold (fun (merged : CodeLine list) line ->
+                    match merged with
+                    | previous :: earlier when guardOnOwnLine previous line ->
+                        let glued = Array.append [| { line.Lexemes.[0] with Before = Whitespace 1 } |] line.Lexemes.[1..]
+                        { previous with Lexemes = Array.append previous.Lexemes glued; Remark = line.Remark } :: earlier
+                    | _ -> line :: merged) []
+                |> List.rev
+            let text = flattenRegion typeLevel NoOpening armsWithGuards
             Flattened (leadingText @ [ Joined text ] @ trailingText, rest |> List.map render)
 
 let blocksOf (source : Source<'phase>) =

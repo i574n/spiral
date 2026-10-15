@@ -146,6 +146,13 @@ Each decision has an id. Code and reviews cite the id.
     boundaries move, the rule does not.
   - This is a deterministic fold over finished data, the same kind of thing as Bend's join slots: each child
     fills its own slot and the parent's order is fixed by the program. It is not a replay of evaluation.
+  - Measured 2026-10-15 (R4i, scoreboard): the tree's nodes are the fill-once memos whose miss can emit
+    globals. There are exactly four: method, closure and type join points (`join_point_type`), and
+    `backend_switch_validated` (D7). Each gets a list on its first evaluation and a reference on every hit,
+    and the walk expands a node at its first reference. A merge that rewrites a list also rebuilds that
+    list's membership index (`GlobalsIndex`), and evaluation after the walk (codegen-time `ty_to_data`,
+    `nominal_apply`) adds no references. With that, dfs, bfs and random orders give single-flight's output
+    byte for byte on apps/spiral and the full suite.
 - **D7. A cache is idempotent only together with its effects (P2).**
   - `backend_switch_validated` (~162354) holds, per `(backend, arm closure)` key, the arm's type plus the
     ordered effect list of the validation that filled it: globals added (a switch nested in a validated arm
@@ -779,6 +786,24 @@ Scoreboard notes:
   globals, and dfs's output gained a second `type Box` from codegen. So join-point memo order is not the
   whole story (suspect: globals from inlined code inside deferred bodies, which have no key), and the merged
   list interacts with codegen's dedup. Open; scripts in the job's tmp/hopacsota-p0.
+- D6 closed on apps/spiral (2026-10-15 02:4x): dfs, bfs and random:11 compile apps/spiral to byte-identical
+  F# (18,180 lines), equal line for line to the installed single-flight compiler. Three causes, each found by
+  dumping the per-list globals tree and logging every `global'` call for one moved global:
+  1. The second `type Box` was a stale `GlobalsIndex`: the merge cleared and refilled the root list, but its
+     membership set kept the old contents, so codegen-time evaluation (`ty_to_data`, `nominal_apply` on the
+     root env) re-appended key-list globals. Any merge that rewrites a globals list rebuilds its index.
+  2. Every memo whose miss can emit globals needs a list per key and a marker on every hit. Four exist: method,
+     closure and type join points (`join_point_type`), and the BackendSwitch validation cache
+     (`backend_switch_validated`). Markers are ignored once the session closes (codegen-time evaluation).
+  3. The nominal stubs (`type X = class end`) mostly appear while validating another backend's arm: a type
+     join point first evaluated under Rust or Gleam validation runs `fsharp_global`'s Fsharp arm, whose
+     `global` goes into the real list. Single-flight emits them at the first evaluation in its depth-first
+     order, which is what the keyed merge reproduces.
+  Suite (4,143 rows, copied tree): dfs, bfs and random:11 agree on every row's compile status and residual
+  hash; dfs differs from the installed pack-1g oracle only in the 53 rows that fail in the copied tree
+  (package paths).
+  Side finding: apps/spiral's F# output starts with two Rust lines (`thread_local!`, `#[test]`) from
+  lib/spiral/rust/testing.spi `run_tests'`, whose `global` calls are not behind a Rust switch.
 - R3 scaling corpus (2026-10-14): generated N independent modules x 6 join-point levels
   (`r3_scaling_corpus.ps1`); plain compile N=10 3.0 s, N=100 4.8 s, N=1000 stack overflow in the
   typechecker (one frame pair per sequential `let`, between 1,000 and 2,000 lets in one body). Fixed in

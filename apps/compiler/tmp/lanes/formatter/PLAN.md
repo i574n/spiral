@@ -245,6 +245,30 @@ A phase starts only when the previous phase's gate numbers are in the scoreboard
 
 ### Phase 4: front ends and the lint
 
+Design (lane A, 2026-10-14 22:10), one implementation behind every front end, so Gate 4's byte identity holds by
+construction and is checked by hashing:
+- **Core section.** The eight `.fsx` files move unchanged in shape into one shared section of `spiral_compiler.fs`
+  after `BlockParsing` (`/// ## Formatter`, no `#if` pair: it calls only shared functions, `tokenize_line`,
+  `wdiff_tokenizer_all`, `parse_block`). Entry point `formatText : Edition -> Unit' -> FormatOptions -> string ->
+  FormatResult` (text, kept-verbatim blocks, over-120 lines with their construct, guard failures). The reflection-based
+  shape comparison stays as is (it already runs on both cores' `RawExpr`). Moving it is a patch in the same anchored
+  form as the others, and the `.fsx` files become a thin `#load` of the compiled section for corpus runs.
+- **Host subcommand.** `SpiralCompiler format <file|dir>... [--check] [--flatten] [--split-literals] [--stdin
+  --path <p>]`, dispatched in `Program.fs` next to `build-file`. The edition comes from the nearest
+  `package.spiproj` (`edition: 2|3`, installed in pack-1e), the unit from the extension (`.spi` top-down, `.spir`
+  bottom-up). `--check` prints `file:line:col: over-120 <construct>` and exits 1 when a file would change; `--stdin`
+  reads the buffer and writes the result to stdout (editors), with `--path` naming the file for edition lookup.
+  `--split-literals` becomes the default once string-concat-typed is installed (pack-1f).
+- **eoie verb.** `eoie format <path> [--check]` runs the host subcommand (eoie-first: one call, no plan file); the
+  agile writer calls the same entry through the host after EOIE-AGILE-FORMATTED-WRITER's block reader lands.
+- **Zed.** The `spiral-zed` language server advertises `documentFormattingProvider` and answers
+  `textDocument/formatting` with one whole-document edit from `SpiralCompiler format --stdin --path <uri path>`;
+  format-on-save is the user's Zed setting. Kino calls the same subcommand.
+- **Gate 4 check.** For every corpus file: the host's output, `eoie format`'s and the language server's edit applied
+  to the file have the same sha256 as the `.fsx` corpus run's output.
+- **CI lint.** `SpiralCompiler format --check` over lib, the CLIs and samples as a report step that never fails the
+  build until the user says so.
+
 - The host subcommand, the eoie verb and Zed format-on-save.
 - A CI lint report: lines over 120 per repo, never failing the build until the user says so.
 
@@ -296,6 +320,19 @@ A phase starts only when the previous phase's gate numbers are in the scoreboard
 | normalize v8 (lib, apps) | G1, parse, comments, G7.2, guard | 2026-10-14 20:01 | code of 19:35, `--split-literals`, installed pack-1e core: lib 77 files: same blocks 77/77, comment words 77/77, G7.2 74/77, idempotent 75/77 (`parsing.spi`, `rust/testing.spi`: open), 1 parse-guard block (a `test` body); over 120: 76 layout lines in, 5 out, 18 over-120 lines left in all (from 41). apps 14 files: same blocks 14/14, comments 14/14, idempotent 14/14, G7.2 13/14, 1 parse-guard block; over 120: 1 |
 | normalize v8 (eoie, agile) | G1, parse, comments, G7.2, guard, over 120 | 2026-10-14 20:14 | code of 19:35, `--split-literals`, installed pack-1e core: eoie 482 files: same blocks 482/482, comment words 482/482, G7.2 480/482, idempotent 480/482 (`eoie_process/boundary_probe.spi`, `state_receipt_codec_model/lexical_probe.spi`), 5 parse-guard blocks in 2 files whose originals do not parse; lines over 120: 1,367 in, 15 out (5 created by the layout; the rest `!!!!Global` string arguments and Rust-block macros). Agile `state/agile.spi`: same blocks, 0 guard blocks, 0 lines over 120 (756 non-blank lines in, 11,883 out) |
 | G1 follow-up | idempotence | 2026-10-14 20:22 | after two fixes (a split string argument only when it does not fit unsplit; a parenthesized operator operand opens `op (` / body / `)`): the 5 files that failed G1 at 19:35 code (user `rust/rust.spi`, lib `parsing.spi`, `rust/testing.spi`, eoie `boundary_probe.spi`, `lexical_probe.spi`) are idempotent; a 43-file regression subset (user lib, leptos, rust) has same blocks, comment words, G7.2 and G1 on every file, 0 blocks kept verbatim, 0 created overflows. Full corpora not re-run with this code |
+| normalize v9 (user) | G1, parse, comments, G7.2, guard | 2026-10-14 23:28 | code of 23:10, `--split-literals`, installed pack-1e core: idempotent 86/86 (85/86 at v8), same blocks 86/86, comment words 86/86, G7.2 86/86, 0 blocks kept verbatim; lines over 120: 334 in, 21 out (0 created; macros and `///` lines in fences); 11,675 of 14,858 non-blank lines appear verbatim in the input (78.6%) |
+| normalize v9 (lib, apps) | G1, parse, comments, G7.2, guard | 2026-10-15 00:05 | code of 23:32, `--split-literals`, pack-1e formatter core: lib 77 files: idempotent 77/77 (75 at v8), same blocks 77/77, comment words 77/77, G7.2 75/77 (`parsing.spi`, `physics.spi`: `test ... static` bodies whose original does not parse as a body, kept as written in `format p` but flat in `format (flatten p)`), 0 parse-guard blocks (1 at v8); lines over 120: 12 out (0 created; `///` lines in fences, comments that are one long word). apps 14 files: 14/14 on every check, 0 guard blocks (1 at v8), 0 lines over 120 (1 at v8) |
+| normalize v9 (eoie, agile) | G1, parse, comments, G7.2, guard, over 120 | 2026-10-15 00:58 | code of 23:32, `--split-literals`, pack-1e formatter core: eoie 482 files: idempotent 482/482 (480 at v8), same blocks 482/482, comment words 482/482, G7.2 480/482 (the 2 files whose originals do not parse), 5 parse-guard blocks in those 2 files; lines over 120: 1 out (15 at v8), created by the layout in `process_observation_probe/main.spi` (a tuple arm pattern component; fixed at 01:00: a component too wide opens its tuple, `Ctor (` / items at +8 / `)`, same parse, 0 over 120). Agile `state/agile.spi`: same blocks, G1, G7.2, 0 guard blocks, 0 lines over 120 (808 non-blank lines in, 12,508 out) |
+| normalize v9 (samples) | G1, parse, comments, G7.2, guard, over 120 | 2026-10-15 02:20 | code of 01:00, `--split-literals`, pack-1e formatter core, 1,216 files: idempotent 1,216/1,216, comment words 1,216/1,216, same blocks 1,215/1,216 (`multiline_triple_string`: the refused-block bug, fixed 02:30), G7.2 1,205/1,216, 11 parse-guard blocks (mostly mega samples whose blocks fail to parse unformatted, plus 2 negative parse fixtures), 2 comment blocks kept; lines over 120: 3,323 layout lines in, 1,263 out, 917 of them created by the layout (mega samples: 614 applications, 205 type aliases and union payloads, 57 arms, 38 heads; the type rule of 02:30 addresses the second group) |
+| normalize v10 (user) | G1, parse, comments, G7.2, guard | 2026-10-15 03:34 | code of 03:20 (refused-block fix, type rules), `--split-literals`, formatter synced to installed pack-1g: idempotent 86/86, same blocks 86/86, comment words 86/86, G7.2 86/86, 0 blocks kept verbatim; lines over 120: 22 out, 10 outside ``` fences, 0 created by the layout (one more than v9 because refused blocks are now byte-for-byte) |
+| G3 samples (v9) | residual | 2026-10-15 03:50 | the v9 samples output (01:00 code, split literals), every sample package with a `main` whose own or dependency files changed (862 candidates), smallest first until the 03:50 deadline, compiled before/after on the 1f+macro-arg Debug core (`lane-a/g3v2.ps1`, C first, F# when C rejects the original): 336 checked, 303 compile on both sides (C 291, F# 12; 148 with more than one module or a package dependency), 33 fail identically on both sides, 0 differ |
+| G3 eoie (v9 + delta) | same Rust | 2026-10-15 05:09 | eoie `src` only (not `state/`): the v9 eoie output (00:16 sources) plus the 5 files lane B edited at 04:08-04:09 re-formatted on the 03:20 code, overlaid on a copy of `src`, every package with a `main` whose own or dependency files changed (131), compiled to Rust before/after on installed pack-1g: 131/131 identical residuals, 0 differ (`eoie_dev` included: the 04:35 difference was the stale overlay of `eoie_dev_model`, now 4653A11AB434 on both sides). The split `!!!!Global (` single-parenthesis form on pack-1g: the 5 packages that hold or depend on it, 5/5 identical |
+| normalize v10 (lib, apps) | G1, parse, comments, G7.2, guard, over 120 | 2026-10-15 05:49 | code of 03:20, `--split-literals`, formatter on pack-1g: lib 77 files: idempotent 77/77, same blocks 77/77, comment words 77/77, G7.2 75/77 (the two `test ... static` files), 0 kept blocks, 0 created overflows, 12 lines over 120, all inside ``` fences (0 outside: G4 met for lib); apps 14 files: every check 14/14, 0 kept, 0 lines over 120 |
+| G3 lib programs (v10) | residual | 2026-10-15 05:56 | the v10 lib/apps output (03:20 code) on installed pack-1g: `apps/spiral` Rust D621BAD2EC4A, `apps/wasm` Rust 9F266606DAF6, `apps/kino/spi` Gleam 11497F47B36A, identical before/after |
+| G3 mega (final code) | residual | 2026-10-15 06:05 | `mega_zeta_structural_laboratory` (03:20 code) F# 0248B46785F2 identical; `mega_spiral_proves_spiral_relative_consistency` failed after formatting with the type rules (parse check passed), identical (AC512ADE1E50) after reverting them |
+| G3 lib programs | residual | 2026-10-15 00:09 | the 85 v9-formatted lib/apps files (split literals) overlaid on a copy of `lib` and `apps/{spiral,wasm,kino/spi}`, compiled before/after on the pack-1f-preview Debug core (`lane-a/g3apps.ps1`): `apps/spiral` Rust D621BAD2EC4A, `apps/wasm` Rust 9F266606DAF6, `apps/kino/spi` Gleam 11497F47B36A, identical on both sides, 0 differ |
+| G3 eoie (first slice) | same Rust | 2026-10-14 23:10 | the 13 eoie files with open issues formatted at 23:00 code, every eoie package with a `main` that depends on them (dependency closure over `package.spiproj`) compiled to Rust before/after on the pack-1f-preview Debug core (`lane-a/cache-1f`): 7/7 identical residuals, 0 differ |
+| G3 repro | `!!!!Global` split | 2026-10-14 22:16 | installed pack-1e: `!!!!Global ((` / `^^` pieces / `))` = joined literal (residual 9FA5DD1AE125); candidate core with SPIRAL-MACRO-ARG-EXPRESSIONS: single parentheses and bare operator arguments give the same residual |
 | 2 | | | |
 | 3 (prototype) | literal split, parse modulo folding | 2026-10-14 12:56 | `format --split-literals` (user corpus): plain strings that do not fit are split at word boundaries into `"..."` pieces joined by the Q1 operator `^^`, pieces aligned, `f (` / pieces / `)` for an argument; the parse check folds `^^` chains back into one literal; idempotent 86/86, same blocks 86/86, comments 86/86; over 120: 334 -> 81 (60 macro lines waiting for the macro continuation, 13 pasted-output comments inside ``` fences, which Q5 exempts, 6 layout, 2 strings in nested positions). Needs the compiler half: `lane-a/patches/string-concat-operator.ps1` |
 | 4 | | | |
@@ -470,6 +507,79 @@ Phase 1 detail (`tmp/formatter`, an .fsx over the compiled `SpiralCompilerCore.d
   A head parameter whose pattern ends in a tuple too wide for one line opens the tuple (`(ctor (` / items / `))`).
 - 2026-10-14 (lane A), measured, kept: a statement `if` stays three lines (`if c` / `then a` / `else b`) even
   when it would fit on one (user corpus: 13 three-line that would fit vs 3 one-line).
+- 2026-10-14 21:50 (lane A), rules for the last created overflows in eoie (5 lines in 4 files at 19:35 code):
+  - packed lines (heads, annotations, union-case payloads) pack whole glued words, so `a.b.c` moves to the next line
+    as one word instead of overflowing after its first token: a fix of the 19:05 "never break between glued tokens"
+    decision, not a new style;
+  - an application whose words are all plain names, values or dotted names and that does not fit puts the callee on
+    the first line and each argument on its own line at +4: rule 26 (a long application, one argument per line)
+    applied to arguments the earlier code counted as part of the head;
+  - no user habit (0 of 0 in the user corpus): a union case whose record payload does not fit opens `{` / one field
+    per line at +8 without `;` / `} ->` at +4, borrowed from the type-record template (224/0 multi-line records);
+  - no user habit (0 multi-line arm patterns in the user corpus, 3 arm lines over 120, all guards or bodies): a tuple
+    arm pattern that does not fit puts one component per line, `| first,` then the others at +4, and `=>` with the
+    body at +4, the Q4 guard template applied to the pattern;
+  - an intrinsic whose single argument is a string that does not fit (`!!!!Global ("...")`, the longest eoie lines)
+    splits it like any string argument (Q1): `!!!!Global ((` / pieces at +4 / `))`. The extra parentheses are needed
+    because the installed core parses a `!!!!` argument with `application`, so a bare `"a" ^^ "b"` is a parse
+    error there (SPIRAL-MACRO-ARG-EXPRESSIONS); a core that accepts operator arguments (detected by parsing
+    `!!!!Add(1i32 + 2i32, 3i32)` with the loaded core) gets single parentheses.
+  On the 13 eoie files with open issues (19:35 listing): parse 13/13, G1 13/13, created overflows 5 -> 0, lines
+  over 120 0. G3 for these shapes is pending (`repro/global_*` and the eoie Rust gate).
+- 2026-10-14 22:40 (lane A), from the lib/apps listing at 19:35 code (4 created overflows in `convert.spi`, `sm'.spi`,
+  1 in `apps/spiral/spiral.spi`, its G1 failure and parse-guard block):
+  - `real <expr>` that does not fit puts `real` alone and the expression at +4 (user corpus: `real` alone 46 times, 0
+    inline `real` bodies over 120), so `real typecase t with ...` lays its arms out;
+  - a tuple whose last component holds a keyword (`"RUSTFLAGS", if fast then ... else ...`) breaks at the commas
+    before the keyword, one component per line (rule 26/tuples); the components after it are one item;
+  - a lambda that is the last operand of an operator chain (`>>. x |>> fun s => ...`, `|>>` is not a pipe) is laid
+    as a bare lambda after the operator with its body at +4, also when flatten wrapped it in parentheses: the first
+    pass laid `fun () =>` at +8 and the second wrapped the operand as `|>> (` / ... / `)`, which was the G1 failure;
+  - flatten joins a `when` guard written on its own line under its arm (`| Some x` / `when c =>`) onto the arm line
+    before splitting regions (user corpus: 24 guards on the arm line, 0 on their own line). Before, the guard line set
+    the region's column and the next binding's pipeline lines closed the binding early.
+  - an operator line at the arm column after `function`/`match` arms (`|> resultm.get` under `| _ =>`) continues the
+    expression around `function`, not the last arm (the parser ends the arms at a non-`|` token and the outer chain
+    takes it); flatten now writes `(function | ... )` and appends the operator after it. `apps/spiral/spiral.spi`
+    `let rec run` lays out with the same parse (guard blocks there 1 -> 0, G1 and G7.2 pass).
+  - macro splitting: a piece that would start with spaces gives them to the end of the previous piece (the
+    continuation keeps text before `\`), and pieces are sized one column smaller to leave room for that; a gap before a
+    macro token is a cut point. `runtime.spi`'s 2,264-column Rust macro now splits into 25 lines of at most 119.
+  - a split string that is the first operand of an operator chain binding tighter than `^^` (45; `++#` is 60) is
+    parenthesized, `(` / pieces / `)`, because `"a" ^^ "b" ++# x` parses as `"a" ^^ ("b" ++# x)`: same string, other
+    tree, so the guard kept the block (lib `runtime.spi` `test tests`, now laid out with the same parse).
+  - 01:00: a tuple arm pattern component that is still too wide on its own line opens its trailing tuple,
+    `Ctor (` / one item per line at +8 / `)` at +4 (the head-parameter template of 19:30 applied to patterns);
+    eoie `process_observation_probe/main.spi`, the last created overflow in eoie, now fits with the same parse.
+  - 02:30, bug found by the samples run (`multiline_triple_string`: parse differs): a block that flatten refuses
+    (it holds a multi-line `"""` string or `(* *)` comment) was emitted with its blank lines removed, which changed
+    the string's text (`"""top\n\nlevel"""` lost a newline) and dropped blank lines inside multi-line comments; the
+    comment-word check could not see it, and the file-level parse check caught it only for the string. Refused blocks
+    are now emitted exactly as written (no blank-line filter, no comment rewrap, no blank-line merging); both
+    `multiline_triple_string` files format to themselves. Every scoreboard row before this fix includes the bug for
+    refused blocks (user corpus: 24 refused blocks at 09:33).
+  - 02:30: long `type x = ...` / `nominal x = ...` bodies and union-case payloads share one type layout: break at
+    top-level `->`, then at `*` (one part per line, the operator ending the line, as the union-case rule of 13:00),
+    else pack words and open a last parenthesized argument (`(` / inner at +4 / `)`), the 19:30 annotation rule.
+  - 02:45: when packing still leaves a line too wide, a type is laid out one argument per line at +4 (the callee, or
+    `: head` in an annotation, on the first line), and an argument that is a parenthesized type too wide for its line
+    opens `(` / inner at +8 / `)`. Annotations keep packing and never break at `->`/`*` (a first try that split
+    annotations put `:` alone on a line and the guard kept 30 blocks; reverted to the rule above). On the two largest
+    mega samples: created overflows 320 -> 86, parse 2/2, guard blocks 1 (unchanged, the original fails).
+  - 03:20: the tuple arm pattern rule looks for any top-level comma; it used the comma-before-keyword test, and `_`
+    is a keyword token, so `| A _, B _, C _ =>` was never broken (mega samples: created overflows 86 -> 66).
+  - 06:05 decision change, reverted: the 02:30 type rule (type aliases and union payloads broken at `->`/`*`, a
+    parenthesized payload opened) and the 02:45 per-word type fallback. G3 on the final code found
+    `mega_spiral_proves_spiral_relative_consistency` failing type inference after formatting (`exists a b c.`
+    payloads split at `*` lost variables from the quantifier's scope: `ETY-UnboundVariable: right_usage`; with
+    quantified types kept packed, a union definition was still lost: `Unbound variable:
+    exact_linear_indexed_reduction`) while the per-block parse comparison reported the same parse. The parse check has
+    a blind spot at the type level, so type layout changes need G3 before they land. With the revert the file compiles
+    to the original's F# residual (AC512ADE1E50). Kept: the refused-block fix and the any-comma arm rule (both in that
+    G3 run). Type aliases and union payloads are packed as before 02:30.  The 43-file regression subset (user lib, leptos, rust) at 06:12 on the final 06:05 code (same at 03:20 and 03:00): parse, comment words, G7.2 and
+  G1 43/43, 0 created overflows, 0 kept verbatim, 6 lines over 120 outside ``` fences. Earlier run (01:12, 01:00 code):
+  parse, comment words, G7.2 and G1 43/43,
+  0 created overflows, 0 kept verbatim.
 
 ## How to run (lane A tooling, 2026-10-14)
 
@@ -481,22 +591,22 @@ Phase 1 detail (`tmp/formatter`, an .fsx over the compiled `SpiralCompilerCore.d
 - `lint.ps1` is G6. G3 (compile before/after, compare residual hashes) is a lane script in the job scratch
   (`lane-a/g3.ps1`); it runs single-module samples next to a copy of the samples' `core` package.
 
-## Open threads (lane A, end of 2026-10-14)
+## Open threads (lane A, 2026-10-15 03:10)
 
-- Re-run the full corpora with the 20:22 code (the G1 fixes were verified on the 5 failing files and a 43-file subset
-  only).
-- Install `patches/string-concat-typed.ps1` (next pack); until then `--split-literals` output is safe only where a
-  split string's type is fixed by context. G3 with splitting on the typed candidate: identical residuals.
-- Remaining parse-guard blocks: `test ... static` bodies that do not parse as an `inl` body even unformatted (lib
-  physics/parsing/runtime), `}` at column 0 closing a type record (eoie `path_tag_contract`, the original fails too).
-- Remaining eoie lines over 120 (15 in 482 files at 19:35 code): string arguments of `!!!!Global ("...")` (the
-  intrinsic's single string argument is not split yet, longest 14,398 columns), macros holding `{ ... }` Rust blocks,
-  a few long patterns, records and dotted names.
-- G3 compiles to C; most of the samples that fail on both sides fail only because their `main` does not return
-  i32 for the C backend, so a second pass with `-Backend Fsharp` would cover them.
-- G3 so far on single-module samples only (80 without splitting, 120 with); multi-module samples and lib programs
-  need the package layout copied next to them.
-- Macros whose pieces would start with a space, or whose split changes the parse, stay on one line (4 lines in
-  lib `file_system.spi`, 2 in the user corpus).
-- Phase 4 (host subcommand, eoie verb, Zed) not started; the agile writer needs eoie's line-based agile reader
-  replaced first (`EOIE-AGILE-FORMATTED-WRITER`).
+- Final code is 06:05 (03:20 code minus the reverted type rules). Full-corpus numbers on near-final code exist for
+  user (v10) and lib/apps (v10, both run with the since-reverted type rules; the v10 lib/apps output still compiles apps/spiral,
+  apps/wasm and apps/kino/spi to identical residuals on pack-1g, 05:56); beyond those, numbers exist only for the 43-file regression subset and the two
+  largest mega samples; user, lib/apps, eoie and samples were last run on the 23:10-01:00 code (scoreboard v9). The
+  02:30 refused-block fix changes output only for blocks flatten refuses (they are now byte-for-byte as written).
+- Samples: 917 created overflows at 01:00 code, mostly mega samples (long applications with nested parenthesized
+  arguments, arm patterns, heads); the 02:30-02:45 type rules cut the two largest files from 320 to 66 but were reverted at 06:05
+  (G3 failure the parse check missed); type layout changes need a type-level G3 before they land.
+- G7.2 differences left are blocks whose original does not parse (`test ... static` bodies in lib, eoie
+  `path_tag_contract` and the negative fixture, mega samples): `format p` keeps them as written and
+  `format (flatten p)` keeps the flat line. Excluding such blocks from G7.2 is a measurement decision not taken.
+- G4 needs `allowlist.tsv` (F10): the lines over 120 left outside ``` fences are macros the splitter cannot cut
+  (refused blocks with `#if` macro lines, macros whose cut would land inside a string), and comments that are one word.
+- Phase 4 is designed (section above), not built: the formatter section in `spiral_compiler.fs`, the host
+  `format` subcommand, `eoie format`, the Zed `textDocument/formatting` answer.
+- The agile writer still waits for eoie's block reader (EOIE-AGILE-FORMATTED-WRITER, lane B's verbs); the formatter
+  side is ready (agile.spi: same parse, G1, 0 lines over 120).

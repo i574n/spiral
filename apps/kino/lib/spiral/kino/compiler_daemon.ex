@@ -475,10 +475,7 @@ defmodule Spiral.Kino.CompilerDaemon do
     dotnet = Toolchain.dotnet(state.toolchain)
     source_dll = Toolchain.compiler_dll(state.toolchain)
     dll = shadow_dll(source_dll)
-    pwsh = pwsh_exe()
-    script = bridge_script()
     socket = socket_path()
-    bridge = socket <> ".bridge"
 
     cond do
       not is_binary(dotnet) ->
@@ -487,41 +484,13 @@ defmodule Spiral.Kino.CompilerDaemon do
       not File.regular?(dll) ->
         {:error, "Spiral compiler was not found at #{dll}", state}
 
-      not is_binary(pwsh) ->
-        {:error, "pwsh was not found", state}
-
-      not File.regular?(script) ->
-        {:error, "compiler bridge was not found at #{script}", state}
+      "server-tcp" not in host_capabilities(dotnet, dll) ->
+        {:error, "the Spiral compiler at #{source_dll} does not list server-tcp in --capabilities; rebuild it from apps/compiler/tmp/compiler/host", state}
 
       true ->
-        direct = [dll, "--server-tcp", socket, "--stall-seconds", Integer.to_string(stall_seconds())]
+        args = [dll, "--server-tcp", socket, "--stall-seconds", Integer.to_string(stall_seconds())]
 
-        relayed = [
-          "-NoProfile",
-          "-ExecutionPolicy",
-          "Bypass",
-          "-File",
-          script,
-          "-Dotnet",
-          dotnet,
-          "-Dll",
-          dll,
-          "-Socket",
-          socket,
-          "-WorkDir",
-          Toolchain.workspace(state.toolchain),
-          "-BridgeFile",
-          bridge,
-          "-StallSeconds",
-          Integer.to_string(stall_seconds())
-        ]
-
-        opened =
-          if "server-tcp" in host_capabilities(dotnet, dll),
-            do: open_compiler(state, dotnet, direct, socket, bridge, source_dll),
-            else: open_compiler(state, pwsh, relayed, socket, bridge, source_dll, dotnet)
-
-        case opened do
+        case open_compiler(state, dotnet, args, socket, source_dll) do
           {:error, reason, state} -> {:error, "Spiral compiler did not open #{socket}: #{inspect(reason)}", state}
           started -> started
         end
@@ -550,18 +519,19 @@ defmodule Spiral.Kino.CompilerDaemon do
     _ -> []
   end
 
-  defp open_compiler(state, exe, args, socket, bridge, source_dll, dotnet \\ nil) do
-    File.rm(bridge)
+  defp open_compiler(state, dotnet, args, socket, source_dll) do
+    port_file = socket <> ".bridge"
+    File.rm(port_file)
 
     port =
-      Port.open({:spawn_executable, exe}, [
+      Port.open({:spawn_executable, dotnet}, [
         :binary,
         :exit_status,
         :hide,
         :stderr_to_stdout,
         args: args,
         cd: Toolchain.workspace(state.toolchain),
-        env: port_env(state.toolchain, dotnet || exe)
+        env: port_env(state.toolchain, dotnet)
       ])
 
     os_pid =
@@ -575,21 +545,20 @@ defmodule Spiral.Kino.CompilerDaemon do
     drainer = spawn_link(fn -> drain(port, server, token) end)
     _ = Port.connect(port, drainer)
 
-    case await_bridge(port, bridge, 30_000) do
-      {:ok, bridge_port} ->
+    case await_port_file(port, port_file, 30_000) do
+      {:ok, compiler_port} ->
         compiler = %{
           port: port,
           socket: socket,
-          bridge: bridge,
-          bridge_port: bridge_port,
+          port_file: port_file,
+          compiler_port: compiler_port,
           os_pid: os_pid,
           token: token,
-          relayed: dotnet != nil,
           booted: System.os_time(:second),
           dll_stamp: dll_stamp(source_dll)
         }
 
-        IO.puts("#{clock()} compiler pid=#{os_pid} port=#{bridge_port} #{if compiler.relayed, do: "relayed through compiler_bridge.ps1", else: "direct"}")
+        IO.puts("#{clock()} compiler pid=#{os_pid} port=#{compiler_port}")
         {:ok, %{state | compiler: compiler}}
 
       {:error, reason} ->
@@ -671,7 +640,7 @@ defmodule Spiral.Kino.CompilerDaemon do
     timeout = if req.timeout == :infinity, do: :infinity, else: max(req.timeout, 0)
     timeout = if cold and timeout != :infinity, do: max(timeout, @cold_compile_ms), else: timeout
 
-    case :gen_tcp.connect({127, 0, 0, 1}, state.compiler.bridge_port, socket_opts(), 5_000) do
+    case :gen_tcp.connect({127, 0, 0, 1}, state.compiler.compiler_port, socket_opts(), 5_000) do
       {:ok, sock} ->
         :gen_tcp.send(sock, "compile\t#{req.backend}\t#{req.input}\t#{req.output}\n")
 
@@ -684,7 +653,7 @@ defmodule Spiral.Kino.CompilerDaemon do
               {:error, :timeout}
 
             {:error, reason} ->
-              IO.puts("compiler bridge closed: #{inspect(reason)} #{bridge_trace(state)}")
+              IO.puts("compiler connection closed: #{inspect(reason)}")
               {:error, "compiler socket failed: #{inspect(reason)}"}
           end
 
@@ -717,7 +686,7 @@ defmodule Spiral.Kino.CompilerDaemon do
     close_port(compiler.port)
     File.rm(compiler.socket)
     File.rm(compiler.socket <> ".pid")
-    if compiler[:bridge], do: File.rm(compiler.bridge)
+    File.rm(compiler.port_file)
     %{state | compiler: nil}
   end
 
@@ -728,18 +697,6 @@ defmodule Spiral.Kino.CompilerDaemon do
     ArgumentError -> :ok
   end
 
-  defp bridge_trace(%{compiler: %{socket: socket}}) do
-    case File.read(socket <> ".trace") do
-      {:ok, text} ->
-        text = String.trim(text)
-        if text == "", do: "", else: "\n" <> String.slice(text, -800, 800)
-
-      _ ->
-        ""
-    end
-  end
-
-  defp bridge_trace(_state), do: ""
 
   defp kill_pidfile(path) do
     case File.read(path) do
@@ -754,21 +711,21 @@ defmodule Spiral.Kino.CompilerDaemon do
     end
   end
 
-  defp await_bridge(port, bridge, left) do
+  defp await_port_file(port, port_file, left) do
     cond do
-      File.regular?(bridge) ->
-        case File.read(bridge) do
+      File.regular?(port_file) ->
+        case File.read(port_file) do
           {:ok, text} ->
             case Integer.parse(String.trim(String.trim_leading(text, "\uFEFF"))) do
               {number, ""} ->
                 {:ok, number}
 
               _ when left <= 0 ->
-                {:error, :bridge_port}
+                {:error, :compiler_port}
 
               _ ->
                 Process.sleep(50)
-                await_bridge(port, bridge, left - 50)
+                await_port_file(port, port_file, left - 50)
             end
 
           _ when left <= 0 ->
@@ -776,7 +733,7 @@ defmodule Spiral.Kino.CompilerDaemon do
 
           _ ->
             Process.sleep(50)
-            await_bridge(port, bridge, left - 50)
+            await_port_file(port, port_file, left - 50)
         end
 
       left <= 0 ->
@@ -787,7 +744,7 @@ defmodule Spiral.Kino.CompilerDaemon do
 
       true ->
         Process.sleep(50)
-        await_bridge(port, bridge, left - 50)
+        await_port_file(port, port_file, left - 50)
     end
   end
 
@@ -1027,8 +984,8 @@ defmodule Spiral.Kino.CompilerDaemon do
     do: encode({:error, "unexpected compile result: #{inspect(other)}"}, queue)
 
   defp session_lost?(message) do
-    String.contains?(message, "compiler socket") or String.contains?(message, "bridge ") or
-      String.contains?(message, "closed the socket") or String.contains?(message, "compiler stalled")
+    String.contains?(message, "compiler socket") or String.contains?(message, "closed the socket") or
+      String.contains?(message, "compiler stalled")
   end
 
   @default_stall_seconds 120
@@ -1064,22 +1021,6 @@ defmodule Spiral.Kino.CompilerDaemon do
     end
   end
 
-  defp bridge_script, do: Application.app_dir(:spiral_kino, "priv/compiler_bridge.ps1")
-
-  defp pwsh_exe do
-    cond do
-      path = System.find_executable("pwsh") ->
-        path
-
-      path = System.find_executable("pwsh.exe") ->
-        path
-
-      true ->
-        scoop = System.get_env("SCOOP") || Path.join(System.user_home!(), "scoop")
-        candidate = Path.join(scoop, "apps/pwsh/current/pwsh.exe")
-        if File.regular?(candidate), do: candidate, else: nil
-    end
-  end
 
   defp port_env(opts, dotnet) do
     System.get_env()

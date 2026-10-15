@@ -117,6 +117,21 @@ Pack v1, scenario "cyclops clear" (live through `tibia-local/run-arena.ps1`, sim
 | Primary metric, test, secondary, decision | As in PR-1 |
 | Analysis | `tibia-local/pr1-analysis.ps1 -Results <full path of arena-results-cyclops-pr3.tsv> -Baseline nexbot -Planned 30 -Label PR-3` |
 | STATUS (2026-10-14 16:33) | Not run: nExBot crashed the client in all 3 check runs (0xC0000374 about 10 s after login; TIBIA-NEXBOT-CRASH). PR-3 stays registered as written for when nExBot runs |
+| STATUS (2026-10-15 04:02) | Superseded by PR-3a: the check runs are spent, and nExBot runs only with the harness shims below |
+### Pre-registration PR-3a, retreat vs nExBot (written 2026-10-15 04:02, before any PR-3a run; amends PR-3)
+
+| Item | Value |
+| --- | --- |
+| Question | As PR-3: does the retreat policy use fewer potions than nExBot in the cyclops clear? |
+| Harness shims (nExBot only, `run-policy-scenario.ps1 -Bot nExBot` and `probe-nexbot-body.lua`) | 1. Nested `dofile` inside the bot runs as pure Lua (`tibia-local/bot-lua-dofile.lua`: read, `loadstring`, `setfenv` to the bot's module environment); a missing file returns nothing instead of raising. The client's native dofile, and any error raised under nExBot's `pcall` around it, crash OTClient Redemption with 0xC0000374; nExBot's own `dofile("nExBot/targetbot/chase_controller.lua")` names a path that does not exist from the bot root. 2. The bot sandbox (`mods/game_bot/executor.lua`) also exposes getmetatable, rawset, rawget, rawequal, next, select, unpack and xpcall, which nExBot's event bus calls; vBot calls none of them. 3. `g_game.cancelFollow` does nothing while nothing is followed: Canary 3.6.1 clears the attack target on any follow packet (`Game::playerFollowCreature`) without telling the client, so nExBot's one cancel after its first attack left it standing next to a cyclops it never hit. 4. The probe counts nExBot's attack, cancel and movement calls (pass-through wrappers) |
+| Seen before this registration | 16 diagnostic runs in `tibia-local/arena-results-cyclops-nexbot-diagnostic.tsv` while the shims were built (crashes, then no damage); one run with all shims: cleared, 86.1 s, 17 potions, no death. Not analyzed with PR-3a |
+| Competitors | `spiral-retreat` (frozen PR-4 Lua) vs `nexbot` (as in PR-3, with the shims) |
+| Scenario | Pack v1 cyclops clear, as in PR-4 |
+| Runs | 20 per competitor, alternating, foreground chunks into `tibia-local/arena-results-cyclops-pr3a.tsv`; foreign-activity `spiral-*` rows excluded; a crash is rerun once, then missing. 20, not 30, for the night's time budget: with sd about 3 it detects about 2.7 potions at 80% power |
+| Test | Potions per run, Welch two-sided, alpha 0.05, 95% interval (`pr1-analysis.ps1 -Treatment spiral-retreat -Baseline nexbot -Planned 20 -Label PR-3a -ExcludeForeign`) |
+| Secondary (descriptive only) | Clear time, deaths, damage taken, nExBot's attack and cancel counts |
+| Decision | Significant and negative: retreat uses fewer potions than nExBot. Otherwise: no difference shown. No runs are added |
+| RESULT (2026-10-15 05:50) | 40 runs, 0 harness failures, 0 deaths, every run cleared. Retreat 12.20 potions (sd 3.94) vs nExBot 14.55 (sd 2.95), difference -2.35 (95% CI -4.58 .. -0.12), Welch t -2.14 (critical 2.03): significant, retreat uses fewer potions than nExBot. Narrow and single: retreat vs vBot was not significant in PR-4 (-1.10), and nExBot's mean is close to vBot's (14.00 in PR-4, 14.17 in PR-8). Descriptive: clear time 90.9 vs 88.4 s, damage taken 2030 vs 2421 (CI of the difference -748 .. -35; from the 16 and 18 of 20 logs the analysis matched to rows; all 20 retreat logs give 2110), lowest health 106.5 vs 95.4. The policy Lua compiled from live.spi on pack-1h after the block is byte-identical to the frozen file (7FD3D538...93E5). nExBot issued 3.2 attacks per run, no attack cancels, and the cancelFollow guard fired once in every run (without it, each run would have stood still next to its first target) |
 ### Pre-registration PC-1, path check (written 2026-10-14 10:11, before any live run)
 
 | Item | Value |
@@ -177,6 +192,43 @@ Pack v1, scenario "cyclops clear" (live through `tibia-local/run-arena.ps1`, sim
 | Runs | 5 (`run-policy-scenario.ps1 -ProbeBody probe-path-body.lua -Monster cyclops -MonsterCount 1 -SpawnRadius 0 -SummonAt 1952,1338 -KnightAt 1943,1338`) |
 | Decision | The road model holds when the pooled mean is within 10% of 438 ms (394-482 ms) |
 | RESULT (2026-10-14 18:58) | Holds. Pre-registered metric (westward steps on row 1338): 6 steps from run 1, mean 456 ms (453-459). In runs 2, 3 and 5 the summon placed the cyclops at 1950,1337 and it approached along row 1337, also road (speed 100); counting those, 24 road steps, mean 452 ms. Run 4 saw no monster in 30 s (summon failure, excluded). The uniform-ground alternative (702 ms) is far off; the model's 438 ms is 3-4% fast (`tibia-local/path-check-pc2.txt`) |
+### Pre-registration PR-7, out-of-sample check of the occupancy-aware router (written 2026-10-14 23:29, before any run)
+
+| Item | Value |
+| --- | --- |
+| Question | Does the simulator with the occupancy-aware router on the arena spot (`terrain.weighted_step`: Canary-style weights, straight 10, diagonal 25, other creatures as obstacles; adopted after PR-6 because live cyclops surround the knight and simulated ones queued behind each other) predict a clear it has never been compared with? |
+| Scenario | Pack v1 with two cyclops (`/m cyclops,2,,2` by the GM at 1932,1352), end at 450 experience or 200 s |
+| Competitor | `spiral-retreat` (heal below 160, step back at 2 attackers, ReachFirst), frozen PR-4 Lua (SHA-256 7FD3D538...93E5, copied, no compile) |
+| Prediction (adopted model) | camp size 2 on the arena spot, `waking_at (live_wake_ms ())`, weighted router, 100 held-out clears: 4.67 potions per clear (sd 1.73), 59.70 s (sd 9.10), no deaths |
+| Alternative (greedy steps on the spot, otherwise identical) | 3.49 potions (sd 1.42), 58.08 s |
+| Runs | 20, foreground chunks into `tibia-local/arena-results-cyclops2-pr7.tsv`; foreign-activity rows excluded |
+| Test | `pr2-analysis.ps1 -Competitor spiral-retreat -PredictedPotions 4.67 -PredictedSeconds 59.70 -Planned 20 -Label PR-7 -ExcludeForeign`; the alternative's numbers reported alongside |
+| Decision | The adopted model holds when both its one-sample tests are within the critical value (2.09) |
+| RESULT (2026-10-15 00:15) | Holds, narrowly. 20 runs, 0 harness failures, 0 deaths, every run cleared. Potions: live 5.45 per clear (sd 1.79) vs predicted 4.67, t 1.95 (critical 2.09); clear time 62.6 s vs 59.7, t 1.23. The greedy alternative fails (3.49 predicted, t 4.89). First out-of-sample potion prediction that holds; the live mean is still 0.8 potions above it |
+### Pre-registration PC-3, a knight step delays the next swing (written 2026-10-15 06:24, before any PC-3 run)
+
+| Item | Value |
+| --- | --- |
+| Question | Does a knight step make its next swing wait for the next 1 s think, as Canary's source says (`classicAttackSpeed = false`: the next swing is the player's next action task, `Player::onWalk` clears it, `Game::checkCreatures` calls `onAttacking` every 1000 ms) and as the opt-in camp rule `swinging_on_think` models? |
+| Instrumentation | `probe-policy-body.lua` now stamps server texts and each retreat step with ms since the policy start (`@t+`); one smoke run (06:23, `arena-results-pc3-smoke.tsv`) checked the format and exercised the analysis; it is not PC-3 data |
+| Runs | 5 `spiral-retreat` runs, cyclops clear as in PR-3a, into `tibia-local/arena-results-pc3.tsv` |
+| Analysis | `tibia-local/pc3-analysis.ps1 -Logs <the 5 logs>`: consecutive landed knight hits (`due to your attack`), pairs with a kill between them excluded; residual = gap mod 2000 ms. Pairs with no step between them are the baseline; pairs with a knight step between them are the test. Missed swings are invisible but stay on the grid |
+| Prediction | Baseline pairs on the 2000 ms grid (+-60 ms) at 90% or more; step-spanning pairs late by 60-1060 ms in at least half |
+| Alternative (no rule) | Step-spanning pairs on the grid at about the baseline rate |
+| Decision | The rule holds when both predictions hold; it fails when 80% or more of step-spanning pairs are on the grid. Known confound, reported not corrected: a target switch without a kill can also move the grid |
+| RESULT (2026-10-15 06:37) | Holds. 5 runs (one did not clear: it retreated out of the fight, 23 retreats, 0 kills, the failure mode seen once in v6; its hits count). Baseline: 101 of 106 pairs on the grid (95.3%). Step-spanning: 31 of 36 late by 60-1060 ms (86.1%), 2 on the grid, 3 other. The delays cluster at 150-200 ms (median about 180 ms), not evenly over the think second: the swing mostly resumes sooner, likely through `hasExtraSwing` when a following cyclops moves next to the knight (`Creature::onCreatureMove`). The model's phase-0 think (about 500 ms on average) is the right direction and probably too long |
+### Pre-registration PR-8, rules vs vBot replication (written 2026-10-15 00:23, before any run)
+
+| Item | Value |
+| --- | --- |
+| Question | Does the Spiral rules policy use fewer potions than vBot in the cyclops clear? Motivated by PR-4's descriptive, not pre-registered, numbers (rules 11.53, vBot 14.00 potions per clear): this is a fresh replication |
+| Competitors | `spiral-policy` (rules, heal below 160, CurrentFirst; frozen PR-4 Lua) vs `vbot` (as in PR-4) |
+| Scenario | Pack v1 cyclops clear, as in PR-4 |
+| Runs | 30 per competitor, alternating, foreground chunks into `tibia-local/arena-results-cyclops-pr8.tsv`; foreign-activity rows excluded; a crash is rerun once, then missing. With PR-4's spreads (sd 2.5-2.6) this detects about 1.9 potions at 80% power |
+| Test | Potions per run, Welch two-sided, alpha 0.05, 95% interval (`pr1-analysis.ps1 -Treatment spiral-policy -Baseline vbot -Planned 30 -Label PR-8 -ExcludeForeign`) |
+| Secondary (descriptive only) | Clear time, deaths, damage taken |
+| Decision | Significant and negative: the rules policy uses fewer potions than vBot. Otherwise: no difference shown. No runs are added |
+| RESULT (2026-10-15 03:06) | 60 runs, 0 harness failures, 0 deaths, every run cleared. Rules 12.90 potions (sd 3.88) vs vBot 14.17 (sd 2.67), difference -1.27 (95% CI -2.99 .. 0.46), Welch t -1.47: no difference shown. PR-4's descriptive rules mean (11.53) did not replicate. Descriptive: clear time 92.6 vs 88.1 s, damage taken 2136 vs 2398 |
 ## Metrics
 
 | Metric | Definition |

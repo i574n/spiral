@@ -303,6 +303,10 @@ type LiteralSplitting() =
 
 let literalSplitting = LiteralSplitting ()
 
+let coreTakesOperatorMacroArguments =
+    blockShapes Edition2 TopDown "inl probe () = !!!!Add(1i32 + 2i32, 3i32)\n"
+    |> List.forall (fun block -> not (block.Shape.StartsWith "error"))
+
 let literalChain (indent : int) (node : Node) : LaidLine list option =
     match node with
     | Group (opening, inner, closing) when literalSplitting.Enabled && opening.Token = TokStringOpen && not (fits indent (inlineText [ node ])) ->
@@ -331,6 +335,14 @@ let literalChain (indent : int) (node : Node) : LaidLine list option =
         if current.Length > 0 then pieces.Add (current.ToString ())
         Some (pieces |> List.ofSeq |> List.mapi (fun index piece -> { Indent = indent; Text = (if index = 0 then "" else "^^ ") + "\"" + piece + "\"" }))
     | _ -> None
+
+let gluedWords (nodes : Node list) : Node list list =
+    nodes
+    |> List.fold (fun (words : Node list list) node ->
+        match words, (firstLexeme node).Before with
+        | word :: earlier, Whitespace 0 -> (word @ [ node ]) :: earlier
+        | _ -> [ node ] :: words) []
+    |> List.rev
 
 let rec layoutBlock (indent : int) (nodes : Node list) : LaidLine list =
     let parts = statements nodes
@@ -438,15 +450,14 @@ and packNodes (indent : int) (prefix : string) (suffix : string) (nodes : Node l
     let current = ResizeArray<Node> ()
     let mutable lineIndent = indent
     let mutable linePrefix = prefix
-    for node in nodes do
-        let candidate = linePrefix + inlineText (List.ofSeq current @ [ node ])
-        let glued = match (firstLexeme node).Before with Whitespace 0 -> true | _ -> false
-        if current.Count > 0 && not glued && not (fits lineIndent (candidate + suffix)) then
+    for word in gluedWords nodes do
+        let candidate = linePrefix + inlineText (List.ofSeq current @ word)
+        if current.Count > 0 && not (fits lineIndent (candidate + suffix)) then
             lines.Add { Indent = lineIndent; Text = linePrefix + inlineText (List.ofSeq current) }
             current.Clear ()
             lineIndent <- indent + 4
             linePrefix <- ""
-        current.Add node
+        current.AddRange word
     if current.Count > 0 then lines.Add { Indent = lineIndent; Text = linePrefix + inlineText (List.ofSeq current) + suffix }
     List.ofSeq lines
 
@@ -475,6 +486,12 @@ and layoutUnionCase (indent : int) (case : Node list) : LaidLine list =
                     let arrow = if index < segments.Length - 1 then " ->" else ""
                     if fits (indent + 4) (inlineText segment + arrow) then [ { Indent = indent + 4; Text = inlineText segment + arrow } ]
                     else
+                    match segment with
+                    | [ Group (opening, inner, closing) ] when opening.Token = TokParenthesis (Curly, Open) && not opening.InsideMacro && not inner.IsEmpty ->
+                        { Indent = indent + 4; Text = opening.Text.Text }
+                        :: (splitOn (isOperator ";") inner |> List.filter (fun field -> not field.IsEmpty) |> List.map (fun field -> { Indent = indent + 8; Text = inlineText field }))
+                        @ [ { Indent = indent + 4; Text = closing.Text.Text + arrow } ]
+                    | _ ->
                         let parts = splitOn (isOperator "*") segment |> List.filter (fun part -> not part.IsEmpty)
                         parts
                         |> List.mapi (fun position part -> packNodes (indent + 4) "" (if position < parts.Length - 1 then " *" else arrow) part)
@@ -636,6 +653,27 @@ and layoutArm (indent : int) (armNodes : Node list) : LaidLine list =
                     if (statements body).Length = 1 && fits (indent + 4) bodyText && not (opensLayout body) then [ { Indent = indent + 4; Text = bodyText } ]
                     else { Indent = indent + 4; Text = "=>" } :: layoutBlock (indent + 8) body
                 { Indent = indent; Text = "| " + inlineText (List.take (at + 1) pattern) } :: guardLines @ tail
+            elif whenAt.IsNone && not (fits indent ("| " + inlineText pattern)) && List.take at pattern |> List.exists (isOperator ",") then
+                let components = splitOn (isOperator ",") (List.take at pattern) |> List.filter (fun part -> not part.IsEmpty)
+                let bodyText = "=> " + inlineComplete body
+                let tail =
+                    if (statements body).Length = 1 && fits (indent + 4) bodyText && not (opensLayout body) then [ { Indent = indent + 4; Text = bodyText } ]
+                    else { Indent = indent + 4; Text = "=>" } :: layoutBlock (indent + 8) body
+                let componentLines =
+                    components
+                    |> List.mapi (fun index part ->
+                        let comma = if index < components.Length - 1 then "," else ""
+                        let prefix = if index = 0 then "| " else ""
+                        let partIndent = if index = 0 then indent else indent + 4
+                        match List.rev part with
+                        | Group (opening, inner, closing) :: before when not (fits partIndent (prefix + inlineText part + comma)) && opening.Token = TokParenthesis (Round, Open) && hasTopComma inner ->
+                            let items = splitOn (isOperator ",") inner |> List.filter (fun item -> not item.IsEmpty)
+                            { Indent = partIndent; Text = prefix + (if before.IsEmpty then "" else inlineText (List.rev before) + " ") + opening.Text.Text }
+                            :: (items |> List.mapi (fun position item -> { Indent = indent + 8; Text = inlineText item + (if position < items.Length - 1 then "," else "") }))
+                            @ [ { Indent = indent + 4; Text = closing.Text.Text + comma } ]
+                        | _ -> [ { Indent = partIndent; Text = prefix + inlineText part + comma } ])
+                    |> List.concat
+                componentLines @ tail
             else
                 match body with
                 | first :: _ when isKeyword SpecFun first ->
@@ -684,6 +722,8 @@ and layoutExpression (indent : int) (nodes : Node list) : LaidLine list =
     | [ Group (opening, _, _) as record ] when (opening.Token = TokParenthesis (Curly, Open) || opening.Token = TokParenthesis (Square, Open)) && not (fits indent whole) -> layoutArgument indent record
     | [ first; (Group (opening, inner, _)) ] when (isKeyword SpecReal first || isKeyword SpecJoin first) && opening.Token = TokParenthesis (Round, Open) && (not (fits indent whole) || (statements (unwrapBody inner)).Length > 1 || isStatement (unwrapBody inner) || opensLayout (unwrapBody inner)) ->
         { Indent = indent; Text = inlineText [ first ] } :: layoutBlock (indent + 4) (unwrapBody inner)
+    | first :: (second :: _ as rest) when isKeyword SpecReal first && not (fits indent whole) && (match second with Group (opening, _, _) -> opening.Token <> TokParenthesis (Round, Open) | Leaf _ -> true) ->
+        { Indent = indent; Text = inlineText [ first ] } :: layoutBlock (indent + 4) rest
     | [ Group (opening, _, _) ] when opening.Token = TokParenthesis (Round, Open) && (not (fits indent whole) || opensLayout (unwrapLambda nodes)) && (match unwrapLambda nodes with first :: _ -> isKeyword SpecFun first || isKeyword SpecFunction first | [] -> false) ->
         layoutExpression indent (unwrapLambda nodes)
     | [ Group (opening, _, _) ] when opening.Token = TokParenthesis (Round, Open) && (not (fits indent whole) || opensLayout (unwrapBody nodes)) && (match unwrapBody nodes with first :: _ -> isKeyword SpecIf first || isKeyword SpecMatch first || isKeyword SpecTypecase first || isKeyword SpecReal first || (List.tryFindIndex (fun node -> isKeyword SpecFunction node) (unwrapBody nodes)).IsSome | [] -> false) ->
@@ -790,7 +830,13 @@ and breakLong (indent : int) (nodes : Node list) : LaidLine list =
             | _ -> None
         | _ -> None
     let operators = nodes |> List.indexed |> List.filter (fun (index, node) -> index > 0 && index < limit && (precedenceOf node).IsSome)
-    let commaItems = if firstKeyword.IsNone && hasTopComma nodes then splitOn (isOperator ",") nodes |> List.filter (fun item -> not item.IsEmpty) else []
+    let commaItems =
+        if not (hasTopComma nodes) then []
+        elif firstKeyword.IsNone then splitOn (isOperator ",") nodes |> List.filter (fun item -> not item.IsEmpty)
+        else
+            let lastCommaBeforeKeyword = nodes |> List.take firstKeyword.Value |> List.findIndexBack (isOperator ",")
+            (splitOn (isOperator ",") (List.take lastCommaBeforeKeyword nodes) |> List.filter (fun item -> not item.IsEmpty))
+            @ [ List.skip (lastCommaBeforeKeyword + 1) nodes ]
     if commaItems.Length > 1 then
         commaItems
         |> List.mapi (fun index item ->
@@ -808,15 +854,28 @@ and breakLong (indent : int) (nodes : Node list) : LaidLine list =
         List.pairwise bounds
         |> List.mapi (fun index (a, b) ->
             let withGap = nodes.[a .. b - 1]
-            if index = 0 then layoutExpression indent withGap
+            if index = 0 then
+                match withGap with
+                | [ single ] when lowest >= 45 && (literalChain (indent + 4) single).IsSome ->
+                    { Indent = indent; Text = "(" } :: (literalChain (indent + 4) single).Value @ [ { Indent = indent; Text = ")" } ]
+                | _ -> layoutExpression indent withGap
             else
                 let segment, comments = withoutLeadingGap withGap
                 let commentLines = comments |> List.map (fun comment -> if comment = "" then { Indent = 0; Text = "" } else { Indent = indent; Text = comment })
                 let op = inlineText [ List.head segment ]
                 let operand = List.tail segment
                 let text = op + " " + inlineComplete operand
+                let lambdaOperand =
+                    match operand with
+                    | first :: _ when isKeyword SpecFun first -> Some operand
+                    | [ Group _ ] when index = bounds.Length - 2 && (match unwrapLambda operand with first :: _ -> isKeyword SpecFun first | [] -> false) -> Some (unwrapLambda operand)
+                    | _ -> None
                 let laidOperand =
                     if fits indent text && not (carriesComment operand) then [ { Indent = indent; Text = text } ]
+                    elif lambdaOperand.IsSome && not (carriesComment operand) then
+                        match layoutExpression indent lambdaOperand.Value with
+                        | first :: rest -> { Indent = indent; Text = op + " " + first.Text } :: rest
+                        | [] -> [ { Indent = indent; Text = text } ]
                     elif (match operand with [ single ] -> (literalChain (indent + 4) single).IsSome | _ -> false) then
                         { Indent = indent; Text = op + " (" } :: (literalChain (indent + 4) (List.head operand)).Value @ [ { Indent = indent; Text = ")" } ]
                     elif (match operand with [ Group (opening, inner, _) ] -> opening.Token = TokParenthesis (Round, Open) && not inner.IsEmpty && not (hasTopComma inner) && not (fits indent text) | _ -> false) then
@@ -855,8 +914,9 @@ and breakLong (indent : int) (nodes : Node list) : LaidLine list =
                         match lastArgumentLambda indent op stage with
                         | Some lines -> lines
                         | None ->
-                            let bareLambda = stage |> List.exists (fun node -> isKeyword SpecFun node)
-                            match layoutExpression (if bareLambda then indent else indent + op.Length + 1) stage with
+                            let wrappedLambda = index = segments.Length - 1 && (match stage with [ Group _ ] -> (match unwrapLambda stage with first :: _ -> isKeyword SpecFun first | [] -> false) | _ -> false)
+                            let bareLambda = wrappedLambda || stage |> List.exists (fun node -> isKeyword SpecFun node)
+                            match layoutExpression (if bareLambda then indent else indent + op.Length + 1) (if wrappedLambda && index = segments.Length - 1 then unwrapLambda stage else stage) with
                             | first :: rest -> { Indent = indent; Text = op + " " + first.Text } :: rest
                             | [] -> [ { Indent = indent; Text = op } ]
                 commentLines @ laidStage)
@@ -923,7 +983,25 @@ and breakLong (indent : int) (nodes : Node list) : LaidLine list =
                             @ layoutBlock (indent + 4) (unwrapBody (List.skip (arrow + 1) lambda)))
                     else None
             | _ -> None
-        match (if intrinsicTuple then None elif bracketThenLambda.IsSome then bracketThenLambda else lastArgumentLambda indent "" nodes) with
+        let rec soleLiteral (inner : Node list) =
+            match inner with
+            | [ literal ] when isStringGroup literal -> Some literal
+            | [ Group (opening, nested, _) ] when opening.Token = TokParenthesis (Round, Open) -> soleLiteral nested
+            | _ -> None
+        let intrinsicLiteral =
+            match nodes with
+            | [ Leaf bang; Leaf name; Group (opening, inner, closing) ]
+                when not bang.InsideMacro && bang.Text.Text.StartsWith "!!!!" && opening.Token = TokParenthesis (Round, Open) && (soleLiteral inner).IsSome && not (fits indent whole) ->
+                let literal = (soleLiteral inner).Value
+                literalChain (indent + 4) literal
+                |> Option.map (fun pieces ->
+                    let gap = match opening.Before with Whitespace 0 -> "" | _ -> " "
+                    let wrapOpen, wrapClose = if coreTakesOperatorMacroArguments then "", "" else opening.Text.Text, closing.Text.Text
+                    { Indent = indent; Text = inlineText [ Leaf bang; Leaf name ] + gap + opening.Text.Text + wrapOpen }
+                    :: pieces
+                    @ [ { Indent = indent; Text = wrapClose + closing.Text.Text } ])
+            | _ -> None
+        match (if intrinsicTuple then None elif intrinsicLiteral.IsSome then intrinsicLiteral elif bracketThenLambda.IsSome then bracketThenLambda else lastArgumentLambda indent "" nodes) with
         | Some lines -> lines
         | None when (match List.rev nodes with
                      | Group (opening, inner, _) :: Leaf unary :: before ->
@@ -1008,6 +1086,10 @@ and breakLong (indent : int) (nodes : Node list) : LaidLine list =
         elif restIsArguments then
             { Indent = indent; Text = inlineText (List.take headCount nodes) }
             :: (arguments |> List.collect (fun withGap -> let argument, comments = withoutLeadingGap withGap in (comments |> List.map (fun comment -> if comment = "" then { Indent = 0; Text = "" } else { Indent = indent + 4; Text = comment })) @ match argument with [ single ] when not (fits (indent + 4) (inlineText [ single ])) && (literalChain (indent + 8) single).IsSome -> { Indent = indent + 4; Text = "(" } :: (literalChain (indent + 8) single).Value @ [ { Indent = indent + 4; Text = ")" } ] | [ single ] -> layoutArgument (indent + 4) single | [ unary; (Group (opening, _, _) as array) ] when opening.Token = TokParenthesis (Square, Open) && not (fits (indent + 4) (inlineComplete argument)) -> (match layoutArgument (indent + 4) array with first :: rest -> { first with Text = inlineText [ unary ] + first.Text } :: rest | [] -> []) | bound -> [ { Indent = indent + 4; Text = inlineComplete bound } ]))
+        elif headCount = nodes.Length && not (fits indent whole) && nodes |> List.forall (fun node -> match node with Leaf l -> not l.InsideMacro && (match l.Token with TokVar _ | TokSymbol _ | TokValue _ | TokValueSuffix | TokDefaultValue _ | TokUnaryOperator _ | TokOperator (".", _) -> true | _ -> false) | Group _ -> false) && (gluedWords nodes).Length >= 2 then
+            match gluedWords nodes with
+            | callee :: words -> { Indent = indent; Text = inlineText callee } :: (words |> List.map (fun word -> { Indent = indent + 4; Text = inlineText word }))
+            | [] -> [ { Indent = indent; Text = whole } ]
         else [ { Indent = indent; Text = whole } ]
 
 and trailingLambdaNeedsBlock (nodes : Node list) =
@@ -1218,13 +1300,15 @@ let splitMacroLine (line : string) : string list =
                     collect (start + 1) []
                 let prefix = line.Substring (0, lexemes.[start].Span.From)
                 let suffix = line.Substring lexemes.[stop].Span.NearTo
-                let roomFor (index : int) = if index = 0 then 120 - prefix.Length - openText.Length - 1 else 120 - indent - 4 - 1
+                let roomFor (index : int) = if index = 0 then 120 - prefix.Length - openText.Length - 2 else 120 - indent - 4 - 2
                 let pieces = ResizeArray<string> ()
                 let current = StringBuilder ()
                 let mutable lastSpace = -1
                 for unit in units do
                     current.Append unit |> ignore
+                    let leadingSpaces = unit.Length - unit.TrimStart(' ').Length
                     if unit = " " then lastSpace <- current.Length
+                    elif leadingSpaces > 0 && leadingSpaces < unit.Length then lastSpace <- current.Length - unit.Length + leadingSpaces
                     let room = roomFor pieces.Count
                     if current.Length >= room then
                         let cut = if lastSpace > room / 2 then lastSpace else current.Length
@@ -1233,7 +1317,16 @@ let splitMacroLine (line : string) : string list =
                         current.Clear().Append (text.Substring cut) |> ignore
                         lastSpace <- -1
                 if current.Length > 0 then pieces.Add (current.ToString ())
-                let pieces = pieces |> List.ofSeq |> List.filter (fun piece -> piece.Length > 0)
+                let pieces =
+                    pieces
+                    |> List.ofSeq
+                    |> List.fold (fun (kept : string list) piece ->
+                        let leadingSpaces = piece.Length - piece.TrimStart(' ').Length
+                        match kept with
+                        | previous :: earlier when leadingSpaces > 0 -> piece.Substring leadingSpaces :: (previous + piece.Substring (0, leadingSpaces)) :: earlier
+                        | _ -> piece :: kept) []
+                    |> List.rev
+                    |> List.filter (fun piece -> piece.Length > 0)
                 if pieces.Length < 2 || roomFor 0 < 12 || pieces |> List.exists (fun piece -> piece.StartsWith " ") then [ line ]
                 else
                     let continuation = System.String (' ', indent + 4)
@@ -1321,7 +1414,7 @@ let layout (source : Source<'phase>) =
                                 | NotOneCodeLine | LaidOut _ -> "not-one-code-line"
                             layoutTally.Kept.Add (reason, head ())
                             lines)
-            | Refused (_, _, original) -> original |> List.filter (fun line -> line.Trim().Length > 0)
+            | Refused (_, _, original) -> original
         let lines = lines |> List.skipWhile (fun line -> line.Trim().Length = 0) |> List.rev |> List.skipWhile (fun line -> line.Trim().Length = 0) |> List.rev
         match lines with
         | [] -> ()
@@ -1333,8 +1426,11 @@ let layout (source : Source<'phase>) =
             match previousCode with
             | Some previous when not (isOpenLine previous && (match codeStart with Some c -> isOpenLine c && first = c | None -> false)) && not (singleInstance && previousSingleInstance) -> output.Add ""
             | _ -> ()
-            for line in rewrapComments lines do
-                if not (line.Trim().Length = 0 && output.Count > 0 && output.[output.Count - 1].Trim().Length = 0) then output.Add line
+            match block with
+            | Refused _ -> output.AddRange lines
+            | Flattened _ ->
+                for line in rewrapComments lines do
+                    if not (line.Trim().Length = 0 && output.Count > 0 && output.[output.Count - 1].Trim().Length = 0) then output.Add line
             previousCode <- match codeStart with Some c -> Some c | None -> previousCode
             previousSingleInstance <- oneLineInstance
     List.ofSeq output

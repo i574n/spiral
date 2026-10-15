@@ -388,25 +388,30 @@ defmodule Spiral.Kino.CompilerDaemonTest do
     :gen_tcp.close(listen)
   end
 
-  @compiler_that_hangs_on_its_first_request """
+  @compiler_that_stalls_on_its_first_request """
   $ErrorActionPreference = 'Stop'
+  if ($args[0] -eq '--capabilities') { 'server-tcp'; exit 0 }
   $socket = $args[1]
   $utf8 = New-Object System.Text.UTF8Encoding $false
-  $listener = [System.Net.Sockets.Socket]::new([System.Net.Sockets.AddressFamily]::Unix, [System.Net.Sockets.SocketType]::Stream, [System.Net.Sockets.ProtocolType]::Unspecified)
-  $listener.Bind([System.Net.Sockets.UnixDomainSocketEndPoint]::new($socket))
-  $listener.Listen(8)
+  $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, 0)
+  $listener.Start()
   [System.IO.File]::WriteAllText("$socket.pid", "$PID", $utf8)
-  $hangs = -not (Test-Path -LiteralPath $env:SPIRAL_KINO_TEST_HUNG_ONCE)
-  if ($hangs) { [System.IO.File]::WriteAllText($env:SPIRAL_KINO_TEST_HUNG_ONCE, "$PID", $utf8) }
+  $stalls = -not (Test-Path -LiteralPath $env:SPIRAL_KINO_TEST_HUNG_ONCE)
+  if ($stalls) { [System.IO.File]::WriteAllText($env:SPIRAL_KINO_TEST_HUNG_ONCE, "$PID", $utf8) }
+  [System.IO.File]::WriteAllText("$socket.bridge", "$($listener.LocalEndpoint.Port)", $utf8)
   while ($true) {
-      $client = $listener.Accept()
-      $stream = [System.Net.Sockets.NetworkStream]::new($client, $true)
+      $client = $listener.AcceptTcpClient()
+      $stream = $client.GetStream()
       $reader = [System.IO.StreamReader]::new($stream, $utf8)
       $writer = [System.IO.StreamWriter]::new($stream, $utf8)
       $writer.NewLine = "`n"
       $writer.AutoFlush = $true
       $parts = $reader.ReadLine().Split("`t")
-      if ($hangs) { [System.Threading.Thread]::Sleep([System.Threading.Timeout]::Infinite) }
+      if ($stalls) {
+          $writer.WriteLine("spiral-session`terror`t$PID`tcompiler stalled: 0 ms CPU in 5 s with a compile outstanding")
+          $client.Dispose()
+          exit 4
+      }
       [System.IO.File]::WriteAllText($parts[3], "fn main() {}", $utf8)
       $writer.WriteLine("spiral-session`tok`t$PID`t12`tmain`trecovered")
       $client.Dispose()
@@ -414,13 +419,13 @@ defmodule Spiral.Kino.CompilerDaemonTest do
   """
 
   if System.find_executable("pwsh") do
-    test "a compiler idle at 0 CPU with a compile outstanding is restarted and the compile retried, instead of holding the daemon for the 20 min cold timeout" do
+    test "a compiler that reports a stall is restarted and the compile retried, instead of holding the daemon for the 20 min cold timeout" do
       dir = Path.join(System.tmp_dir!(), "kst#{System.unique_integer([:positive])}")
       File.mkdir_p!(Path.join(dir, "fake"))
-      fake = Path.join([dir, "fake", "hung_compiler.ps1"])
-      File.write!(fake, @compiler_that_hangs_on_its_first_request)
-      saved = Map.new(["TMPDIR", "SPIRAL_KINO_TEST_HUNG_ONCE", "SPIRAL_KINO_COMPILER_STALL_S"], &{&1, System.get_env(&1)})
-      System.put_env(%{"TMPDIR" => dir, "SPIRAL_KINO_TEST_HUNG_ONCE" => Path.join(dir, "hung-once"), "SPIRAL_KINO_COMPILER_STALL_S" => "5"})
+      fake = Path.join([dir, "fake", "stalling_compiler.ps1"])
+      File.write!(fake, @compiler_that_stalls_on_its_first_request)
+      saved = Map.new(["TMPDIR", "SPIRAL_KINO_TEST_HUNG_ONCE"], &{&1, System.get_env(&1)})
+      System.put_env(%{"TMPDIR" => dir, "SPIRAL_KINO_TEST_HUNG_ONCE" => Path.join(dir, "hung-once")})
 
       {:ok, daemon} = CompilerDaemon.start_link(port: 0, dotnet: System.find_executable("pwsh"), compiler_dll: fake, workspace: dir, package_dir: dir, pool: "off")
 
@@ -440,8 +445,25 @@ defmodule Spiral.Kino.CompilerDaemonTest do
         File.rm_rf(dir)
       end
     end
-  end
 
+    test "a compiler whose --capabilities lacks server-tcp is refused with the reason" do
+      dir = Path.join(System.tmp_dir!(), "ksr#{System.unique_integer([:positive])}")
+      File.mkdir_p!(Path.join(dir, "fake"))
+      fake = Path.join([dir, "fake", "old_compiler.ps1"])
+      File.write!(fake, "if ($args[0] -eq '--capabilities') { 'test-blocks'; exit 0 }\nexit 2\n")
+      {:ok, daemon} = CompilerDaemon.start_link(port: 0, dotnet: System.find_executable("pwsh"), compiler_dll: fake, workspace: dir, package_dir: dir, pool: "off")
+
+      try do
+        {:ok, sock} = :gen_tcp.connect({127, 0, 0, 1}, CompilerDaemon.listen_port(daemon), [:binary, packet: :line, active: false], 5_000)
+        :ok = :gen_tcp.send(sock, "compile\tRust\t#{Path.join(dir, "main.spi")}\t#{Path.join(dir, "main.rs")}\t60000\t0\trefused-test\n")
+        assert {:ok, "error\t" <> reason} = :gen_tcp.recv(sock, 0, 60_000)
+        assert reason =~ "does not list server-tcp"
+      after
+        GenServer.stop(daemon, :normal, 30_000)
+        File.rm_rf(dir)
+      end
+    end
+  end
   @compiler_that_listens_on_tcp """
   $ErrorActionPreference = 'Stop'
   if ($args[0] -eq '--capabilities') { 'server-tcp test-blocks'; exit 0 }
@@ -466,7 +488,7 @@ defmodule Spiral.Kino.CompilerDaemonTest do
   """
 
   if System.find_executable("pwsh") do
-    test "a host that lists server-tcp in --capabilities is reached directly over TCP, without the pwsh relay" do
+    test "the compiler is reached directly over TCP on the port it writes next to its socket" do
       dir = Path.join(System.tmp_dir!(), "ksd#{System.unique_integer([:positive])}")
       File.mkdir_p!(Path.join(dir, "fake"))
       fake = Path.join([dir, "fake", "tcp_compiler.ps1"])

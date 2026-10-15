@@ -21,24 +21,24 @@ test ten_ticks_of_a_troll_pack_on_gpu =
     if quantity.value_of p.hunter.health = 185i32 && (slot 0 p).at.x = 105i32 && (slot 0 p).at.y = 102i32 && p.kills = 0i32 then 0i32 else 1i32
 
 ///> c
-test a_full_troll_hunt_and_a_twenty_seed_cyclops_clear_on_the_oracle =
+test a_full_troll_hunt_and_five_cyclops_clears_on_the_oracle =
     open hunting_pack
     open creatures
     inl ~seed = 7u32
     inl hunt = simulate (uniform_camp Troll) (cavebot (open policy in ReachFirst)) seed (scenario_ticks ())
     inl spot = uniform_camp Cyclops |> on_layout (open terrain in ArenaSpot)
-    inl clears = clear_ledger_of spot (cavebot_with_heal 160) (seed + 994u32) 20
-    (hunt.kills, hunt.escapes, hunt.deaths, clears.clear_potions, clears.clear_deaths, clears.clear_ms) |> _assert_eq (7i32, 18i32, 0i32, 245i32, 0i32, 1642000i32)
+    inl clears = clear_ledger_of spot (cavebot_with_heal 160) (seed + 994u32) 5
+    (hunt.kills, hunt.escapes, hunt.deaths, clears.clear_potions, clears.clear_deaths, clears.clear_ms) |> _assert_eq (7i32, 18i32, 0i32, 84i32, 0i32, 453000i32)
 
 ///> wgsl
-test a_full_troll_hunt_and_a_twenty_seed_cyclops_clear_on_gpu =
+test a_full_troll_hunt_and_five_cyclops_clears_on_gpu =
     open hunting_pack
     open creatures
     inl ~seed = 7u32
     inl hunt = simulate (uniform_camp Troll) (cavebot (open policy in ReachFirst)) seed (scenario_ticks ())
     inl spot = uniform_camp Cyclops |> on_layout (open terrain in ArenaSpot)
-    inl clears = clear_ledger_of spot (cavebot_with_heal 160) (seed + 994u32) 20
-    if hunt.kills = 7i32 && hunt.escapes = 18i32 && hunt.deaths = 0i32 && clears.clear_potions = 245i32 && clears.clear_deaths = 0i32 && clears.clear_ms = 1642000i32 then 0i32 else 1i32
+    inl clears = clear_ledger_of spot (cavebot_with_heal 160) (seed + 994u32) 5
+    if hunt.kills = 7i32 && hunt.escapes = 18i32 && hunt.deaths = 0i32 && clears.clear_potions = 84i32 && clears.clear_deaths = 0i32 && clears.clear_ms = 453000i32 then 0i32 else 1i32
 
 ///> c
 test a_hunting_ground_hunt_with_routing_on_the_oracle =

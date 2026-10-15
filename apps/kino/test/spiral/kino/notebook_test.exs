@@ -293,7 +293,7 @@ defmodule Spiral.Kino.NotebookTest do
 
     assert :ok =
              Notebook.run(path,
-               polyglot_root: workspace,
+               workspace_root: workspace,
                compile: fn %{spi_path: spi} ->
                  proj = File.read!(Path.join(Path.dirname(spi), "package.spiproj"))
                  assert proj =~ "pkg-"

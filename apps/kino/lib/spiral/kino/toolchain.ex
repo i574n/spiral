@@ -15,14 +15,7 @@ defmodule Spiral.Kino.Toolchain do
   end
 
   @spec default_package_dir() :: String.t()
-  def default_package_dir do
-    candidates = [
-      Path.join(@spiral_root, @core_package),
-      Path.join([@spiral_root, "../polyglot", @core_package]) |> Path.expand()
-    ]
-
-    Enum.find(candidates, &File.regular?(Path.join(&1, "core/package.spiproj"))) || hd(candidates)
-  end
+  def default_package_dir, do: Path.join(@spiral_root, @core_package)
 
   @spec compiler_dll(keyword()) :: String.t()
   def compiler_dll(opts) do
@@ -169,8 +162,9 @@ defmodule Spiral.Kino.Toolchain do
     Enum.find([Path.join(base, "dotnet.exe"), Path.join(base, "dotnet")], &File.regular?/1)
   end
 
-  defp cache_dir do
-    System.get_env("SPIRAL_BIN_CACHE_DIR") ||
+  @spec cache_dir(keyword()) :: String.t()
+  def cache_dir(opts \\ []) do
+    opts[:bin_cache_dir] || System.get_env("SPIRAL_BIN_CACHE_DIR") ||
       case System.get_env("LOCALAPPDATA") do
         nil -> Path.join(System.user_home!(), ".cache/spiral-bin")
         local -> Path.join(local, "spiral-bin")

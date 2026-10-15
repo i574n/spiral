@@ -17,8 +17,7 @@ application name stays distinct from that dependency.
   `%LOCALAPPDATA%/spiral-bin/toolchains/dotnet/dotnet.exe` is used when it is present.
 - `rustc` (edition 2021).
 - The Spiral core package (`core/package.spiproj`) from
-  `spiral/deps/The-Spiral-Language/VS Code Plugin` (the fork spiral's `scripts/init.ps1` clones; polyglot's clone of it
-  is the fallback). The cell links `|core-` and a
+  `spiral/deps/The-Spiral-Language/VS Code Plugin` (the fork spiral's `scripts/init.ps1` clones). The cell links `|core-` and a
   one-module `console.write_line` implemented in the cell package.
 
 ## Usage
@@ -112,8 +111,8 @@ Resolved in this order for each setting: the `run/2` option, then the environmen
 | `dotnet` | `:dotnet` | `SPIRAL_DOTNET` | cache `toolchains/dotnet/dotnet.exe`, then `dotnet` on `PATH` |
 | `rustc` | `:rustc_bin` | `SPIRAL_RUSTC` | `rustc` on `PATH` |
 | Workspace root | `:workspace` | `SPIRAL_WORKSPACE_ROOT` | `spiral/apps/compiler/tmp` next to this app |
-| Core package directory | `:package_dir` | `SPIRAL_COMPILER_PACKAGE_DIR` | `spiral/deps/The-Spiral-Language/VS Code Plugin`, else `polyglot/deps/...` next to it |
-| Package fallback root (a cell's `--package` path not found beside the notebook) | `:workspace_root` (`:polyglot_root`) | `SPIRAL_KINO_WORKSPACE_ROOT` (`SPIRAL_KINO_POLYGLOT_ROOT`), or `config :spiral_kino, workspace_root: ...` | this `spiral` checkout |
+| Core package directory | `:package_dir` | `SPIRAL_COMPILER_PACKAGE_DIR` | `spiral/deps/The-Spiral-Language/VS Code Plugin` |
+| Package fallback root (a cell's `--package` path not found beside the notebook) | `:workspace_root` | `SPIRAL_KINO_WORKSPACE_ROOT`, or `config :spiral_kino, workspace_root: ...` | this `spiral` checkout |
 | Compiler daemon port | - | `SPIRAL_KINO_COMPILER_PORT` | `13905` |
 | Compiler server memory cap (MB; 0: none) | - | `SPIRAL_KINO_DAEMON_MAX_MB` | `2500` |
 | Compiles per compiler server (0: no limit) | - | `SPIRAL_KINO_DAEMON_MAX_COMPILES` | `0` |
@@ -126,11 +125,9 @@ compiled code (`elixir -pa _build/<env>/lib/*/ebin -e Spiral.Kino.CompilerDaemon
 mix's build lock; `mix spiral.compiler_daemon` when nothing is compiled), on `127.0.0.1:13905` (or `SPIRAL_KINO_COMPILER_PORT`), and it keeps running after the
 Livebook session ends so later sessions reuse it. `SPIRAL_KINO_COMPILER=process` opts out: each cell then starts its
 own compiler process, and no daemon is started. Passing any of `:compiler_dll`, `:dotnet`, `:package_dir`,
-`:workspace` or `:env` also compiles in a separate process. A compiler whose `--capabilities` lists `server-tcp` runs as
+`:workspace` or `:env` also compiles in a separate process. The compiler runs as
 `SpiralCompiler.dll --server-tcp <socket> --stall-seconds N`: it listens on loopback TCP itself and its own watchdog answers
-`compiler stalled` when a compile makes no CPU progress, so no relay process runs beside it (the daemon log says `direct`).
-An older compiler runs behind `priv/compiler_bridge.ps1`; `SPIRAL_KINO_BRIDGE_TRACE=1` makes that socket bridge log every
-request and response to `<socket>.trace` (off by default).
+`compiler stalled` when a compile makes no CPU progress. A compiler whose `--capabilities` does not list `server-tcp` is refused.
 After each compile the daemon checks its .NET compiler server: past the memory cap (working set) or the compile
 count it stops it, logs `compiler recycled after ...`, and the next compile starts a fresh one (a cold compile).
 The daemon itself, its port and its queue stay up. The compiler server runs from a shadow copy of the compiler's directory

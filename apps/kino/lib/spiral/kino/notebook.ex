@@ -21,7 +21,6 @@ defmodule Spiral.Kino.Notebook do
     :workspace,
     :package_dir,
     :workspace_root,
-    :polyglot_root,
     :env,
     :print_code,
     :plot,

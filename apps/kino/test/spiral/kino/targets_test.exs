@@ -228,6 +228,35 @@ defmodule Spiral.Kino.TargetsTest do
     [js] = Spiral.Kino.Builders.commands("///> gleam -t javascript")
     assert {:spiral, _} = Spiral.Kino.Builders.dispatch(js, "main.gleam")
   end
+  test "gleam projects with the same dependencies share one resolved manifest, so Hex resolution happens once per dependency set" do
+    opts = [bin_cache_dir: "cache"]
+    lock = &Targets.gleam_lock_path(&1, opts)
+    plain = Targets.gleam_manifest("x/gleam/src/main.gleam", [])
+    assert lock.(plain) == lock.(Targets.gleam_manifest("y/gleam_real/src/main_real.gleam", []))
+    refute lock.(plain) == lock.(Targets.gleam_manifest("x/gleam/src/main.gleam", [], "javascript"))
+    refute lock.(plain) == lock.(Targets.gleam_manifest("x/gleam/src/main.gleam", [%{name: "gleam_community_maths", version: ">=2.0.0"}]))
+    assert String.starts_with?(lock.(plain), "cache/kino-gleam-locks/")
+  end
+  if System.find_executable("gleam") do
+    test "a gleam build without a kept lock resolves under the lock, keeps its manifest, and the next project builds from it" do
+      dir = Spiral.Kino.TestHelpers.tmp_dir!("gleam_lock")
+      opts = [bin_cache_dir: Path.join(dir, "cache")]
+
+      build = fn name ->
+        src = Path.join([dir, name, "gleam", "src"])
+        File.mkdir_p!(src)
+        main = Path.join(src, "main.gleam")
+        File.write!(main, "pub fn main() { Nil }\n")
+        {Targets.build(%{tool: :gleam, deps: [], target: "erlang"}, main, opts, 300_000, :infinity), main}
+      end
+
+      assert {{:ok, _}, main} = build.("first")
+      lock = Targets.gleam_lock_path(Targets.gleam_manifest(main, []), opts)
+      assert File.regular?(lock)
+      assert {{:ok, _}, _} = build.("second")
+      assert File.read!(Path.join([dir, "second", "gleam", "manifest.toml"])) == File.read!(lock)
+    end
+  end
   test "gleam compile warnings are not program output" do
     output = """
     warning: Unused function argument

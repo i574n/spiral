@@ -134,12 +134,8 @@ defmodule Spiral.Kino do
 
   @spec workspace_root(keyword()) :: String.t()
   def workspace_root(opts \\ []) do
-    opts[:workspace_root] || opts[:polyglot_root] ||
-      Application.get_env(:spiral_kino, :workspace_root) ||
-      Application.get_env(:spiral_kino, :polyglot_root) ||
-      System.get_env("SPIRAL_KINO_WORKSPACE_ROOT") ||
-      System.get_env("SPIRAL_KINO_POLYGLOT_ROOT") ||
-      @default_workspace_root
+    opts[:workspace_root] || Application.get_env(:spiral_kino, :workspace_root) ||
+      System.get_env("SPIRAL_KINO_WORKSPACE_ROOT") || @default_workspace_root
   end
 
   defp show(%Result{stdout: stdout, html: html, displays: displays}) do

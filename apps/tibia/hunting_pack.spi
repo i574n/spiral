@@ -118,7 +118,11 @@ union respawn_rule =
     | Clearing
     | RespawningAfter : i32
 
-type camp = {kinds : views.band creatures.arena_creature; size : i32; hunter_level : i32; rule : respawn_rule; layout : terrain.layout; potion_budget : i32; party : i32; wakes_at : i32}
+union swing_after_step =
+    | SwingKeepsItsTime
+    | SwingWaitsForThink
+
+type camp = {kinds : views.band creatures.arena_creature; size : i32; hunter_level : i32; rule : respawn_rule; layout : terrain.layout; potion_budget : i32; party : i32; wakes_at : i32; swing : swing_after_step}
 
 inl unlimited_potions () : i32 = 1000000
 
@@ -130,7 +134,7 @@ inl hardest_kind (kinds : views.band creatures.arena_creature) (size : i32) : cr
 
 inl default_hunter_level (kinds : views.band creatures.arena_creature) (size : i32) : i32 = (offense_against (hardest_kind kinds size)).level
 
-inl uniform_camp (kind : creatures.arena_creature) : camp = {kinds = views.band_of kind; size = 3; hunter_level = default_hunter_level (views.band_of kind) 3; rule = Respawning; layout = open terrain in OpenField; potion_budget = unlimited_potions (); party = 1; wakes_at = 0}
+inl uniform_camp (kind : creatures.arena_creature) : camp = {kinds = views.band_of kind; size = 3; hunter_level = default_hunter_level (views.band_of kind) 3; rule = Respawning; layout = open terrain in OpenField; potion_budget = unlimited_potions (); party = 1; wakes_at = 0; swing = SwingKeepsItsTime}
 
 inl with_hunter_level (level : i32) (c : camp) : camp = {c with hunter_level = level}
 
@@ -141,6 +145,18 @@ inl with_party (knights : i32) (c : camp) : camp = {c with party = knights}
 inl waking_at (ms : i32) (c : camp) : camp = {c with wakes_at = ms}
 
 inl live_wake_ms () : i32 = 10000
+
+inl swinging_on_think (c : camp) : camp = {c with swing = SwingWaitsForThink}
+
+inl player_think_ms () : i32 = 1000
+
+inl swing_after_step (camp : camp) (now : i32) (held : cooldowns.timers) : cooldowns.timers =
+    match camp.swing with
+    | SwingKeepsItsTime => held
+    | SwingWaitsForThink =>
+        inl due = cooldowns.later now (cooldowns.ready_at (cooldowns.strike_spell ()) held)
+        inl resumed = (due + player_think_ms () - 1) / player_think_ms () * player_think_ms ()
+        {held with attack_ready_at = resumed; strike_ready_at = resumed}
 
 inl clearing (c : camp) : camp = {c with rule = Clearing}
 
@@ -154,7 +170,7 @@ inl spawns_of (c : camp) : geometry.position * geometry.position * geometry.posi
 inl camp_of_entries (entries : catalog.entry * catalog.entry * catalog.entry) : camp =
     inl a, b, c = entries
     inl first, second, third = catalog.entry_creature a, catalog.entry_creature b, catalog.entry_creature c
-    {kinds = views.band (first, second, third, first, first, first); size = 3; hunter_level = default_hunter_level (views.band (first, second, third, first, first, first)) 3; rule = Respawning; layout = open terrain in OpenField; potion_budget = unlimited_potions (); party = 1; wakes_at = 0}
+    {kinds = views.band (first, second, third, first, first, first); size = 3; hunter_level = default_hunter_level (views.band (first, second, third, first, first, first)) 3; rule = Respawning; layout = open terrain in OpenField; potion_budget = unlimited_potions (); party = 1; wakes_at = 0; swing = SwingKeepsItsTime}
 
 inl hunter_of (c : camp) : offense =
     inl base = offense_against (hardest_kind c.kinds c.size)
@@ -196,7 +212,7 @@ inl start (camp : camp) : pack =
     {
         hunter = knight 0
         ally = if camp.party > 1 then second else {second with at = terrain.grave ()}
-        foes = views.band (fresh_foe (kind_of 0 camp) a, fresh_foe (kind_of 1 camp) b, fresh_foe (kind_of 2 camp) c, placed 3 d, placed 4 e, placed 5 g)
+        foes = views.band (placed 0 a, placed 1 b, placed 2 c, placed 3 d, placed 4 e, placed 5 g)
         kills = 0
         experience = 0
         escapes = 0
@@ -320,7 +336,7 @@ inl player_strikes (camp : camp) (seed : u32) (tick : i32) (proof : readiness.re
 
 inl hunter_steps (camp : camp) (now : i32) (toward : geometry.position) (p : pack) : pack =
     inl h = p.hunter
-    p |> with_hunter {h with at = toward; next_step_at = now + geometry.step_cost (terrain.on_ground_at camp.layout h.at (hunter_of camp).step_ms) h.at toward}
+    p |> with_hunter {h with at = toward; next_step_at = now + geometry.step_cost (terrain.on_ground_at camp.layout h.at (hunter_of camp).step_ms) h.at toward; timers = swing_after_step camp now h.timers}
 
 inl player_approaches (camp : camp) (now : i32) (p : pack) : pack =
     if now < p.hunter.next_step_at then p
@@ -726,7 +742,7 @@ inl against_standing_only (g : search.genome) : search.vector = temperate_genes 
 inl arena_hunt () : camp =
     open creatures
     inl kinds = views.band (Cyclops, Cyclops, Troll, Troll, Troll, Troll)
-    {kinds = kinds; size = 6; hunter_level = default_hunter_level kinds 6; rule = RespawningAfter 60000; layout = open terrain in ArenaHunt; potion_budget = unlimited_potions (); party = 1; wakes_at = 0}
+    {kinds = kinds; size = 6; hunter_level = default_hunter_level kinds 6; rule = RespawningAfter 60000; layout = open terrain in ArenaHunt; potion_budget = unlimited_potions (); party = 1; wakes_at = 0; swing = SwingKeepsItsTime}
 
 inl cyclops_hunting_ground () : camp =
     inl ground = arena_hunt ()

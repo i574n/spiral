@@ -57,12 +57,7 @@ defmodule Mix.Tasks.Compile.SpiralDomain do
     if status != 0, do: Mix.raise(output)
   end
 
-  defp core_package_dir(root) do
-    candidates =
-      Enum.map(["../../deps", "../../../polyglot/deps"], &Path.expand(&1 <> "/The-Spiral-Language/VS Code Plugin", root))
-
-    Enum.find(candidates, &File.regular?(Path.join(&1, "core/package.spiproj"))) || hd(candidates)
-  end
+  defp core_package_dir(root), do: Path.expand("../../deps/The-Spiral-Language/VS Code Plugin", root)
 
   defp gleam_build(root) do
     scoop = Path.join(System.user_home!(), "scoop/apps")

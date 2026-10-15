@@ -179,6 +179,94 @@ let route_between (tx : i32) (ty : i32) (fx : i32) (fy : i32) (free_east : bool)
         if still_searching c && k < rows * 2 && sweep 0 0u32 0u32 false then layers (k + 1) else c
     if reached fx fy then Arrived else layers 0
 
+inl straight_step_weight () : i32 = 10
+inl diagonal_step_weight () : i32 = 25
+inl unreachable_weight () : i32 = 1000000
+inl window_margin () : i32 = 6
+
+inl direction_dx (k : i32) : i32 = if k = 0 then 1 elif k = 1 then -1 elif k = 2 then 0 elif k = 3 then 0 elif k = 4 || k = 6 then 1 else -1
+inl direction_dy (k : i32) : i32 = if k = 0 || k = 1 then 0 elif k = 2 then 1 elif k = 3 then -1 elif k = 4 || k = 5 then 1 else -1
+inl direction_weight (k : i32) : i32 = if k < 4 then straight_step_weight () else diagonal_step_weight ()
+
+let weighted_choice (tx : i32) (ty : i32) (fx : i32) (fy : i32) (x0 : i32) (y0 : i32) (w : i32) (h : i32) (passable : array_base i32) : i32 =
+    inl cells = w * h
+    inl distance : array_base i32 = !!!!ArrayCreate(`i32, cells)
+    inl inside (x : i32) (y : i32) : bool = x >= x0 && x < x0 + w && y >= y0 && y < y0 + h
+    inl cell (x : i32) (y : i32) : i32 = (y - y0) * w + (x - x0)
+    inl passable_at (x : i32) (y : i32) : bool =
+        if inside x y then
+            inl walkable : i32 = !!!!ArrayIndex(passable, (cell x y))
+            walkable = 1
+        else false
+    inl distance_at (x : i32) (y : i32) : i32 =
+        if inside x y then
+            inl d : i32 = !!!!ArrayIndex(distance, (cell x y))
+            d
+        else unreachable_weight ()
+    let rec seed (c : i32) : () =
+        if c < cells then
+            inl x = x0 + c % w
+            inl y = y0 + c / w
+            inl goal = passable_at x y && geometry.chebyshev_distance (geometry.position x y 7) (geometry.position tx ty 7) <= 1 && (x <> tx || y <> ty)
+            inl start = if goal then 0 else unreachable_weight ()
+            !!!!ArrayIndexSet(distance, c, start)
+            seed (c + 1)
+    seed 0
+    inl relax (c : i32) : bool =
+        inl x = x0 + c % w
+        inl y = y0 + c / w
+        if passable_at x y = false then false
+        else
+            let rec best (k : i32) (current : i32) : i32 =
+                if k >= 8 then current
+                else
+                    inl through = distance_at (x + direction_dx k) (y + direction_dy k) + direction_weight k
+                    best (k + 1) (if through < current then through else current)
+            inl old = distance_at x y
+            inl improved = best 0 old
+            if improved < old then
+                !!!!ArrayIndexSet(distance, c, improved)
+                true
+            else false
+    let rec forward (c : i32) (changed : bool) : bool = if c >= cells then changed else forward (c + 1) (relax c || changed)
+    let rec backward (c : i32) (changed : bool) : bool = if c < 0 then changed else backward (c - 1) (relax c || changed)
+    let rec settle (round : i32) : () =
+        if round < 40 then
+            inl a = forward 0 false
+            inl b = backward (cells - 1) false
+            if a || b then settle (round + 1)
+    settle 0
+    if distance_at fx fy = 0 then 8
+    else
+        let rec pick (k : i32) (best_k : i32) (best_score : i32) : i32 =
+            if k >= 8 then best_k
+            else
+                inl nx = fx + direction_dx k
+                inl ny = fy + direction_dy k
+                inl d = distance_at nx ny
+                inl score = if passable_at nx ny && d < unreachable_weight () then d + direction_weight k else unreachable_weight ()
+                if score < best_score then pick (k + 1) k score else pick (k + 1) best_k best_score
+        pick 0 8 (unreachable_weight ())
+
+inl weighted_step (l : layout) (taken : geometry.position -> bool) (target : geometry.position) (from : geometry.position) : geometry.position =
+    inl m = window_margin ()
+    inl low_x = (if from.x < target.x then from.x else target.x) - m
+    inl low_y = (if from.y < target.y then from.y else target.y) - m
+    inl high_x = (if from.x > target.x then from.x else target.x) + m
+    inl high_y = (if from.y > target.y then from.y else target.y) + m
+    inl w = high_x - low_x + 1
+    inl h = high_y - low_y + 1
+    inl cells = w * h
+    inl passable : array_base i32 = !!!!ArrayCreate(`i32, cells)
+    let rec fill (c : i32) : () =
+        if c < cells then
+            inl p = geometry.position (low_x + c % w) (low_y + c / w) from.z
+            inl walkable : i32 = if blocked l p || (taken p && geometry.same_tile p from = false) then 0i32 else 1i32
+            !!!!ArrayIndexSet(passable, c, walkable)
+            fill (c + 1)
+    fill 0
+    inl k = weighted_choice target.x target.y from.x from.y low_x low_y w h passable
+    if k >= 8 then from else shifted (direction_dx k) (direction_dy k) from
 inl routed_step (l : layout) (taken : geometry.position -> bool) (target : geometry.position) (from : geometry.position) : geometry.position =
     inl usable dx dy = free l taken (shifted dx dy from)
     match route_between target.x target.y from.x from.y (usable 1 0) (usable -1 0) (usable 0 1) (usable 0 -1) with
@@ -191,6 +279,7 @@ inl routed_step (l : layout) (taken : geometry.position -> bool) (target : geome
 inl step_toward (l : layout) (taken : geometry.position -> bool) (target : geometry.position) (from : geometry.position) : geometry.position =
     match l with
     | ArenaHunt => routed_step l taken target from
+    | ArenaSpot => weighted_step l taken target from
     | _ => greedy_step_toward l taken target from
 
 inl step_away (l : layout) (taken : geometry.position -> bool) (threat : geometry.position) (from : geometry.position) : geometry.position =
@@ -334,3 +423,13 @@ test on_the_hunting_ground_a_road_tile_speeds_the_next_step_up =
     inl ~cyclops_ms = 650i32
     (on_ground_at ArenaHunt (geometry.position 115 93 7) cyclops_ms, on_ground_at ArenaHunt (geometry.position 115 89 7) cyclops_ms, on_ground_at ArenaSpot (geometry.position 115 89 7) cyclops_ms, arena_road (geometry.position 99 99 7))
     |> _assert_eq (702i32, 438i32, 702i32, false)
+
+///> c
+test on_the_arena_spot_a_monster_detours_around_another_with_a_diagonal_step =
+    inl ~x = 98i32
+    inl blocker (p : geometry.position) = p.x = 99i32 && p.y = 101i32
+    inl knight = geometry.position 100 100 7
+    inl first = step_toward ArenaSpot blocker knight (geometry.position x 102 7)
+    inl second = step_toward ArenaSpot blocker knight first
+    inl greedy = greedy_step_toward ArenaSpot blocker knight (geometry.position x 102 7)
+    (first.x, first.y, second.x, second.y, greedy.x, greedy.y) |> _assert_eq (99i32, 102i32, 100i32, 101i32, 98i32, 102i32)

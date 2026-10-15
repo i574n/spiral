@@ -4,7 +4,19 @@ $lines = [IO.File]::ReadAllLines($File)
 $runner = Join-Path $PSScriptRoot '../../kino/spi/run_notebook.ps1'
 $output = Join-Path ([IO.Path]::GetTempPath()) ("spiral-zed-" + [IO.Path]::GetFileNameWithoutExtension($File) + ".ipynb")
 
-function Test-StatementLine([string] $Line) { $Line -match '^\S' -and $Line -notmatch '^(//|\(\* )' }
+. (Join-Path $PSScriptRoot '../../compiler/tmp/scripts/env.ps1')
+Set-StrictMode -Off
+
+function Get-CompilerBlockRows([string] $Path) {
+    $dotnet = Resolve-SpiralDotnet
+    $dll = Get-SpiralCompilerDll 'single-flight'
+    if (-not (Test-Path -LiteralPath $dll)) { throw "SpiralCompiler.dll not found: $dll (set SPIRAL_COMPILER_DLL)" }
+    $capabilities = (& $dotnet $dll --capabilities) -split '\s+'
+    if ($capabilities -notcontains 'source-blocks') { throw "$dll has no --source-blocks: block boundaries come only from the compiler, install a compiler pack whose host lists source-blocks in --capabilities" }
+    $rows = @(& $dotnet $dll --source-blocks - $Path 2>$null)
+    if ($LASTEXITCODE -ne 0) { throw "SpiralCompiler --source-blocks failed on $Path (exit $LASTEXITCODE)" }
+    $rows
+}
 
 function Remove-LineComment([string] $Line) {
     $inString = $false
@@ -17,20 +29,15 @@ function Remove-LineComment([string] $Line) {
     $Line
 }
 
-function Get-SourceBlocks([string[]] $Lines) {
+function Get-SourceBlocks([string[]] $Lines, [string[]] $Rows) {
     $blocks = [Collections.Generic.List[object]]::new()
-    $current = $null
-    for ($i = 0; $i -lt $Lines.Count; $i++) {
-        $line = $Lines[$i]
-        if (Test-StatementLine $line) {
-            $current = [pscustomobject]@{ Start = $i + 1; CodeEnd = $i + 1; Header = $line; Text = [Text.StringBuilder]::new(); Kind = ''; Names = @(); Operators = @(); Reaches = $null }
-            $blocks.Add($current)
-        }
-        if ($current) {
-            $code = Remove-LineComment $line
-            if ($code.Trim() -and $line -notmatch '^(//|\(\* )') { $current.CodeEnd = $i + 1 }
-            [void]$current.Text.AppendLine($code)
-        }
+    foreach ($row in $Rows) {
+        $fields = $row -split "`t", 6
+        $header = [int] $fields[2]
+        if ($header -eq 0) { continue }
+        $current = [pscustomobject]@{ Start = $header; CodeEnd = [int] $fields[3]; Header = $fields[5]; Text = [Text.StringBuilder]::new(); Kind = ''; Names = @(); Operators = @(); Reaches = $null }
+        for ($i = $header - 1; $i -lt [Math]::Min([int] $fields[4], $Lines.Count); $i++) { [void]$current.Text.AppendLine((Remove-LineComment $Lines[$i])) }
+        $blocks.Add($current)
     }
     foreach ($block in $blocks) {
         $header = $block.Header
@@ -102,7 +109,7 @@ function Get-BlockAtRow($Blocks, [string[]] $Lines, [int] $Row) {
     -1
 }
 
-$blocks = @(Get-SourceBlocks $lines)
+$blocks = @(Get-SourceBlocks $lines (Get-CompilerBlockRows $File))
 Get-Reach $blocks
 $tests = @(for ($b = 0; $b -lt $blocks.Count; $b++) { if ($blocks[$b].Kind -eq 'test') { $b } })
 

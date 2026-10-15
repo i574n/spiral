@@ -1,0 +1,8 @@
+open a
+open b
+
+inl main () : i32 =
+    inl x = Hit
+    match x with
+    | Hit => 1i32
+    | _ => 0i32

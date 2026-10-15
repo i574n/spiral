@@ -45194,7 +45194,9 @@ module spiral_compiler =
                         if d.is_top_down then (blockParsingRange (squares sequence_body) |>> fun (r,x) -> RawApply(o,RawV(o,unintern "array",true), RawArray(o,x))) d
                         else Error [o, ArrayLiteralsNotAllowedInBottomUp]
                     | "!!!!" ->
-                        (blockParsingRange (read_big_var .>>. (rounds (sepBy (fun d -> application {d with is_top_down=false}) (skip_op ","))))
+                        let tuple_separator_precedence = inbuilt_operators "," |> ValueOption.get |> fst
+                        let macro_argument d = operator_chain tuple_separator_precedence {d with is_top_down=false}
+                        (blockParsingRange (read_big_var .>>. (rounds (sepBy macro_argument (skip_op ","))))
                         >>= fun (r,((ra,a), b)) _ ->
                             match string_to_op a with
                             | true, op' -> Ok(RawOp(r,op',b))
@@ -45219,6 +45221,13 @@ module spiral_compiler =
             pipe2 next (many (blockParsingIndent column (<) next)) (List.fold (fun a b -> RawApply(range_of_expr a +. range_of_expr b,a,b))) d
 
         and operators d =
+            let i = col d
+            pipe2 (operator_chain Int32.MinValue)
+                (opt (blockParsingIndent i (<=) (skip_op ":" >>. root_type_annot)))
+                (fun a -> function Some b -> RawAnnot(range_of_expr a +. range_of_texpr b,a,b) | _ -> a)
+                d
+
+        and operator_chain rbp_floor d =
             let term = application
             let i = col d
             let op = blockParsingIndent i (<=) op
@@ -45230,7 +45239,7 @@ module spiral_compiler =
                 | ParsedAnd source -> RawIfThenElse(range,left,right,RawLit(source,LitBool false))
                 | ParsedOr source -> RawIfThenElse(range,left,RawLit(source,LitBool true),right)
                 | ParsedPair -> RawPair(range,left,right)
-                | ParsedStringConcat -> RawOp(range,StaticStringConcat,[left;right])
+                | ParsedStringConcat -> RawAnnot(range,RawOp(range,StaticStringConcat,[left;right]),RawTPrim(range,StringT))
                 | ParsedHeapMutableSet ->
                     let rec collect arguments = function
                         | RawApply(_,fn,argument) -> collect (argument :: arguments) fn
@@ -45252,10 +45261,7 @@ module spiral_compiler =
                         else skip' d -1; Error []) <|>% left) d
                 (term >>= loop) d
 
-            pipe2 (tdop Int32.MinValue)
-                (opt (blockParsingIndent i (<=) (skip_op ":" >>. root_type_annot)))
-                (fun a -> function Some b -> RawAnnot(range_of_expr a +. range_of_texpr b,a,b) | _ -> a)
-                d
+            tdop rbp_floor d
 
         let statements d =
             let next = operators
@@ -51487,6 +51493,21 @@ module spiral_compiler =
                                     | TyUnion _ -> Some (case_range, case, i)
                                     | _ -> None
                                 | ValueNone -> None)
+                            |> Option.orElse (
+                                walk members (List.rev path_rev)
+                                |> Option.bind (fun members ->
+                                    if Map.containsKey (ModuleMemberNameIdOps.create case) members then None
+                                    else
+                                        match ho_index s, v_ty env name with
+                                        | ValueSome i, Some (TyModule typeMembers) ->
+                                            match top_env.nominals.[i].body with
+                                            | TyUnion _ ->
+                                                walk typeMembers (List.rev path_rev)
+                                                |> Option.bind (fun typeMembers ->
+                                                    if typeMembers |> Map.exists (fun _ t -> ho_index t = ValueSome i || ho_fun t = ValueSome i) then Some (case_range, case, i)
+                                                    else None)
+                                            | _ -> None
+                                        | _ -> None))
                         | _ -> None
                     match qualified_union_case with
                     | Some (case_range, case, i) ->
@@ -53811,6 +53832,21 @@ module spiral_compiler =
                                     | TyUnion _ -> Some (case_range, case, i)
                                     | _ -> None
                                 | ValueNone -> None)
+                            |> Option.orElse (
+                                walk members (List.rev path_rev)
+                                |> Option.bind (fun members ->
+                                    if Map.containsKey (ModuleMemberNameIdOps.create case) members then None
+                                    else
+                                        match ho_index s, v_ty env name with
+                                        | ValueSome i, Some (TyModule typeMembers) ->
+                                            match top_env.nominals.[i].body with
+                                            | TyUnion _ ->
+                                                walk typeMembers (List.rev path_rev)
+                                                |> Option.bind (fun typeMembers ->
+                                                    if typeMembers |> Map.exists (fun _ t -> ho_index t = ValueSome i || ho_fun t = ValueSome i) then Some (case_range, case, i)
+                                                    else None)
+                                            | _ -> None
+                                        | _ -> None))
                         | _ -> None
                     match qualified_union_case with
                     | Some (case_range, case, i) ->
@@ -165143,1162 +165179,7 @@ module spiral_compiler =
         let block (body : TypedBind []) : TypedBind [] = elided.GetValue(body, fun body -> elide body)
 
 #if SPIRAL_CORE_GPT5PARALLEL
-    /// ## CodegenFsharp
-    
-
-    /// ### backend_nameFsharp
-    let backend_nameFsharp = "Fsharp"
-    
-
-    /// ### litFsharp
-    let litFsharp = function
-        | LitInt8 x -> sprintf "%iy" x
-        | LitInt16 x -> sprintf "%is" x
-        | LitInt32 x -> sprintf "%i" x
-        | LitInt64 x -> sprintf "%iL" x
-        | LitUInt8 x -> sprintf "%iuy" x
-        | LitUInt16 x -> sprintf "%ius" x
-        | LitUInt32 x -> sprintf "%iu" x
-        | LitUInt64 x -> sprintf "%iUL" x
-        | LitFloat32 x ->
-            if x = infinityf then "infinityf"
-            elif x = -infinityf then "-infinityf"
-            elif Single.IsNaN x then "nanf"
-            else x.ToString("R") |> add_dec_point |> sprintf "%sf"
-        | LitFloat64 x ->
-            if x = infinity then "infinity"
-            elif x = -infinity then "-infinity"
-            elif Double.IsNaN x then "nan"
-            else x.ToString("R") |> add_dec_point
-        | LitString x ->
-            let strb = StringBuilder(x.Length+2)
-            strb.Append '"' |> ignore
-            String.iter (function
-                | '"' -> strb.Append "\\\""
-                | '\b' -> strb.Append @"\b"
-                | '\t' -> strb.Append @"\t"
-                | '\n' -> strb.Append @"\n"
-                | '\r' -> strb.Append @"\r"
-                | '\\' -> strb.Append @"\\"
-                | x -> strb.Append x
-                >> ignore
-                ) x
-            strb.Append '"' |> ignore
-            strb.ToString()
-        | LitChar x ->
-            match x with
-            | '\b' -> @"\b"
-            | '\n' -> @"\n"
-            | '\t' -> @"\t"
-            | '\r' -> @"\r"
-            | '\\' -> @"\\"
-            | x -> string x
-            |> sprintf "'%s'"
-        | LitBool x -> if x then "true" else "false"
-    
-
-    /// ### primFsharp
-    let primFsharp = function
-        | Int8T -> "int8"
-        | Int16T -> "int16"
-        | Int32T -> "int32"
-        | Int64T -> "int64"
-        | UInt8T -> "uint8"
-        | UInt16T -> "uint16"
-        | UInt32T -> "uint32"
-        | UInt64T -> "uint64"
-        | Float32T -> "float32"
-        | Float64T -> "float"
-        | BoolT -> "bool"
-        | StringT -> "string"
-        | CharT -> "char"
-    
-
-    /// ### type_litFsharp
-    let type_litFsharp = function
-        | YLit x -> litFsharp x
-        | YSymbol x -> x
-        | x -> raise_codegen_error "Compiler error: Expecting a type literal in the macro."
-    
-
-    /// ### UnionRecFsharp
-    type UnionRecFsharp = {tag : int; free_vars : Map<int * string, TyV[]>}
-    
-
-    /// ### LayoutRecFsharp
-    type LayoutRecFsharp = {tag : int; data : Data; free_vars : TyV[]; free_vars_by_key : Map<int * string, TyV[]>}
-    
-
-    /// ### MethodRecFsharp
-    type MethodRecFsharp = {tag : int; free_vars : L<Tag,Ty>[]; range : Ty; body : TypedBind[]}
-    
-
-    /// ### ClosureRecFsharp
-    type ClosureRecFsharp = {tag : int; free_vars : L<Tag,Ty>[]; domain_args : TyV[]; range : Ty; body : TypedBind[]}
-    
-
-    /// ### codegenFsharp
-    let codegenFsharp (env : PartEvalResult) (x : TypedBind []) =
-        let method_names = System.Collections.Concurrent.ConcurrentDictionary<int, string>()
-        let closure_names = System.Collections.Concurrent.ConcurrentDictionary<int, string>()
-        let types = System.Collections.Concurrent.ConcurrentQueue<string>()
-        let functions = System.Collections.Concurrent.ConcurrentQueue<string>()
-    
-
-        let print is_type show r =
-            let s = {text=StringBuilder(); indent=0}
-            show s r
-            let text = s.text.ToString()
-            if is_type then types.Enqueue(text) else functions.Enqueue(text)
-    
-
-        let layout show =
-            let dict' = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Structural)
-            let dict = System.Collections.Concurrent.ConcurrentDictionary<Ty, _>(HashIdentity.Reference)
-            let next_tag = CodegenTagAllocator()
-            let f x : LayoutRecFsharp =
-                match x with
-                | YLayout(x,_) ->
-                let x = env.ty_to_data x
-                let a, b =
-                    match x with
-                    | DRecord a -> let a = Map.map (fun _ -> data_free_vars) a in a |> Map.toArray |> HopacExtensions.S.collect snd, a
-                    | _ -> data_free_vars x, Map.empty
-                {data=x; free_vars=a; free_vars_by_key=b; tag=next_tag.Next()}
-                | _ -> raise_codegen_error $"Compiler error: Expected a layout type (3).\nGot: %s{show_ty x}"
-            fun x ->
-                let mutable dirty = false
-                let r = memoize dict (memoize dict' (fun x -> dirty <- true; f x)) x
-                if dirty then print true show r
-                r
-    
-
-        let union show =
-            let dict = System.Collections.Concurrent.ConcurrentDictionary<Map<int * string,Ty>, _>(HashIdentity.Reference)
-            let next_tag = CodegenTagAllocator()
-            let f (a : Map<int * string,Ty>) : _ = {free_vars=a |> Map.map (fun _ -> env.ty_to_data >> data_free_vars); tag=dict.Count}
-            fun x ->
-                match dict.TryGetValue x with
-                | true, r -> r
-                | _ ->
-                    let r = {free_vars=x |> Map.map (fun _ -> env.ty_to_data >> data_free_vars); tag=next_tag.Next()}
-                    if dict.TryAdd(x, r) then
-                        print true show r
-                        r
-                    else dict.[x]
-    
-
-        let jp f show =
-            let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Structural)
-            let next_tag = CodegenTagAllocator()
-            fun x ->
-                match dict.TryGetValue x with
-                | true, r -> r
-                | _ ->
-                    let r = f (x, next_tag.Next())
-                    if dict.TryAdd(x, r) then
-                        print false show r
-                        r
-                    else dict.[x]
-    
-
-        let args x = x |> HopacExtensions.S.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
-        let show_w = function WV (L(i,_)) -> sprintf "v%i" i | WLit a -> litFsharp a
-        let args' x = x |> data_term_vars |> HopacExtensions.S.map show_w |> String.concat ", "
-    
-
-        let global' =
-            let has_added = HashSet env.globals
-            fun x -> if preservesDuplicateGlobalFragment x || has_added.Add(x) then env.globals.Add x
-    
-
-        let rec tyv x =
-            match x with
-            | YUnion a ->
-                let a = a.Item
-                match a.layout with
-                | UHeap -> sprintf "UH%i" (uheap a.cases).tag
-                | UStack -> sprintf "US%i" (ustack a.cases).tag
-            | YLayout(_,lay) as a ->
-                match lay with
-                | Heap -> sprintf "Heap%i" (heap a).tag
-                | HeapMutable -> sprintf "Mut%i" (mut a).tag
-                | StackMutable -> raise_codegen_error "Compiler error: The F# backend doesn't support stack mutable layout types."
-                | StackRefs | HeapRefs -> raise_codegen_error "This backend doesn't support the stack and heap refs layout types."
-            | YMacro [Text "backend_switch "; Type (YRecord r)] ->
-                match r |> Map.tryPick (fun (_, k) v -> if k = backend_nameFsharp then Some v else None) with
-                | Some x -> tup_ty x
-                | None -> raise_codegen_error $"In the backend_switch, expected a record with the '{backend_nameFsharp}' field."
-            | YMacro a -> a |> List.map (function Text a -> a | Type a -> tup_ty a | TypeLit a -> type_litFsharp a) |> String.concat ""
-            | YPrim a -> primFsharp a
-            | YArray a -> sprintf "(%s [])" (tup_ty a)
-            | YFun(a,b,FT_Vanilla) -> sprintf "(%s -> %s)" (tup_ty a) (tup_ty b)
-            | YExists -> raise_codegen_error "Existentials are not supported at runtime. They are a compile time feature only."
-            | YForall -> raise_codegen_error "Foralls are not supported at runtime. They are a compile time feature only."
-            | a -> raise_codegen_error $"Type not supported in the codegen.\nGot: %A{a}"
-        and args_tys x = x |> HopacExtensions.S.map (fun (L(i,t)) -> sprintf "v%i : %s" i (tup_ty t)) |> String.concat ", "
-        and binds (s : CodegenEnv) (x : TypedBind []) =
-            let emit_one b =
-                let text = StringBuilder()
-                let s' = {text=text; indent=s.indent}
-                match b with
-                | TyLet(d,trace,a) ->
-                    try op s' (Some d) a
-                    with :? CodegenError as e -> raise_codegen_error' trace (e.Data0, e.Data1)
-                | TyLocalReturnOp(trace,a,_) ->
-                    try op s' None a
-                    with :? CodegenError as e -> raise_codegen_error' trace (e.Data0, e.Data1)
-                | TyLocalReturnData(d,trace) ->
-                    try line s' (tup d)
-                    with :? CodegenError as e -> raise_codegen_error' trace (e.Data0, e.Data1)
-                text.ToString()
-            // MIGRATION: hardcoded deterministic F# bind emission.  The F# backend mutates
-            // globals/layout/type/function memo tables while emitting; keep this path sequential until
-            // those tables are explicitly audited and isolated.
-            for i = 0 to x.Length - 1 do
-                s.text.Append(emit_one x.[i]) |> ignore
-        and tup x =
-            match data_term_vars x with
-            | [||] -> "()"
-            | [|x|] -> show_w x
-            | x -> HopacExtensions.S.map show_w x |> String.concat ", " |> sprintf "struct (%s)"
-        and tup_ty x =
-            match env.ty_to_data x |> data_free_vars |> HopacExtensions.S.map (fun (L(_,x)) -> tyv x) with
-            | [||] -> "unit"
-            | [|x|] -> x
-            | x -> String.concat " * " x |> sprintf "struct (%s)"
-        and op s d a =
-            let jp (a, b) =
-                let args = args b
-                match a with
-                | JPMethod(a,b) -> sprintf "%s(%s)" method_names.[(method (a,b)).tag] args
-                | JPClosure(a,b) -> sprintf "%s(%s)" closure_names.[(closure (a,b)).tag] args
-            let free_vars do_annot x =
-                let f (L(i,t)) = if do_annot then sprintf "v%i : %s" i (tyv t) else sprintf "v%i" i
-                match data_free_vars x with
-                | [||] -> "()"
-                | [|x|] -> f x
-                | x -> HopacExtensions.S.map f x |> String.concat ", " |> sprintf "struct (%s)"
-            let simple x =
-                match d with
-                | None -> x
-                | Some d -> match free_vars true d with "()" -> x | d -> sprintf "let %s = %s" d x
-                |> line s
-            let complex f =
-                match d with
-                | None -> f s : unit
-                | Some d -> match free_vars true d with "()" -> f s | d -> line s (sprintf "let %s =" d); f (indent s)
-            let layout_vars a =
-                let f i x =
-                    match x with
-                    | WV(L(i',_)) -> sprintf "l%i = v%i" i i'
-                    | WLit x -> sprintf "l%i = %s" i (litFsharp x)
-                a |> data_term_vars |> HopacExtensions.S.mapi f |> String.concat "; "
-            let layout_index i x =
-                x |> HopacExtensions.S.map (fun (L(i',_)) -> sprintf "v%i.l%i" i i')
-                |> String.concat ", "
-                |> function "" -> () | x -> simple x
-            let length_of_text a text =
-                match a with
-                | YPrim UInt8T -> sprintf "System.Convert.ToByte %s" text
-                | YPrim UInt16T -> sprintf "System.Convert.ToUInt16 %s" text
-                | YPrim UInt32T -> sprintf "System.Convert.ToUInt32 %s" text
-                | YPrim UInt64T -> sprintf "System.Convert.ToUInt64 %s" text
-                | YPrim Int8T -> sprintf "System.Convert.ToSByte %s" text
-                | YPrim Int16T -> sprintf "System.Convert.ToInt16 %s" text
-                | YPrim Int32T -> text
-                | YPrim Int64T -> sprintf "System.Convert.ToInt64 %s" text
-                | _ -> raise_codegen_error "Compiler error: Expected an int in length"
-                |> simple
-            let length (a,b) = length_of_text a (sprintf "%s.Length" (tup b))
-            let utf8_string_helpers () =
-                global' "let spiralStringIndex (s : string) (i : int) : char = char (System.Text.Encoding.UTF8.GetBytes(s).[i])"
-                global' "let spiralStringSlice (s : string) (from : int) (upto : int) : string =\n    let bytes = System.Text.Encoding.UTF8.GetBytes(s)\n    let length = bytes.Length\n    if from < 0 || from > length || upto < from - 1 || upto >= length then exit 3\n    elif upto < from then \"\"\n    elif (bytes.[from] &&& 0xC0uy) = 0x80uy || (upto + 1 < length && (bytes.[upto + 1] &&& 0xC0uy) = 0x80uy) then exit 3\n    else System.Text.Encoding.UTF8.GetString(bytes, from, upto - from + 1)"
-            match a with
-            | TyMacro a -> a |> List.map (function CMText x -> x | CMTerm (x,inl) -> (if inl then args' x else tup x) | CMType x -> tup_ty x | CMTypeLit x -> type_litFsharp x) |> String.concat "" |> simple
-            | TySizeOf t -> simple $"sizeof<{tup_ty t}>"
-            | TyIf(cond,tr,fl) ->
-                complex <| fun s ->
-                line s (sprintf "if %s then" (tup cond))
-                binds (indent s) tr
-                match fl with
-                | [|TyLocalReturnData(DB,_)|] -> ()
-                | _ ->
-                    line s "else"
-                    binds (indent s) fl
-            | TyJoinPoint(a,args) -> simple (jp (a, args))
-            | TyBackend(_,_,r) -> raise_codegen_error_backend r "The F# backend does not support nesting other backends."
-            | TyWhile(a,b) ->
-                complex <| fun s ->
-                line s (sprintf "while %s do" (jp a))
-                binds (indent s) b
-            | TyDo a ->
-                complex <| fun s ->
-                line s "do"
-                binds (indent s) a
-            | TyIndent a ->
-                complex <| fun s ->
-                binds (indent s) a
-            | TyIntSwitch(L(i,_),on_succ,on_fail) ->
-                complex <| fun s ->
-                line s (sprintf "match v%i with" i)
-                HopacExtensions.S.iteri (fun i x ->
-                    line s (sprintf "| %i ->" i)
-                    binds (indent s) x
-                    ) on_succ
-                line s "| _ ->"
-                binds (indent s) on_fail
-            | TyUnionUnbox(is,x,on_succs,on_fail) ->
-                complex <| fun s ->
-                line s (sprintf "match %s with" (is |> List.map (fun (L(i,_)) -> $"v{i}") |> String.concat ", "))
-                let union_rec, prefix =
-                    let x = x.Item
-                    match x.layout with
-                    | UHeap -> let u = uheap x.cases in u, sprintf "UH%i" u.tag
-                    | UStack -> let u = ustack x.cases in u, sprintf "US%i" u.tag
-                let case_index k =
-                    union_rec.free_vars
-                    |> Seq.map (fun (KeyValue ((_,k'),_)) -> k')
-                    |> Seq.tryFindIndex (fun k' -> UnionTagIdOps.text k = k')
-                    |> Option.defaultWith (fun () -> raise_codegen_error $"Compiler error: Emitted union type has no case named {UnionTagIdOps.text k}.")
-                Map.iter (fun k (a,b) ->
-                    let i = case_index k
-                    let cases =
-                        a |> List.map (fun a ->
-                            match data_free_vars a with
-                            | [||] -> ""
-                            | x -> sprintf "(%s)" (args x)
-                            |> fun tail -> generatedCaseName prefix union_rec.free_vars i + tail
-                            )
-                        |> String.concat ", "
-                    line s (sprintf "| %s -> (* %s *)" cases (UnionTagIdOps.text k))
-                    binds (indent s) b
-                    ) on_succs
-                on_fail |> Option.iter (fun b ->
-                    line s "| _ ->"
-                    binds (indent s) b
-                    )
-            | TyUnionBox(a,b,c) ->
-                let c = c.Item
-                let union_rec, prefix =
-                    match c.layout with
-                    | UHeap -> let u = uheap c.cases in u, sprintf "UH%i" u.tag
-                    | UStack -> let u = ustack c.cases in u, sprintf "US%i" u.tag
-                let i =
-                    union_rec.free_vars
-                    |> Seq.map (fun (KeyValue ((_,k),_)) -> k)
-                    |> Seq.tryFindIndex (fun k -> UnionTagIdOps.text a = k)
-                    |> Option.defaultWith (fun () -> raise_codegen_error $"Compiler error: Emitted union type has no case named {UnionTagIdOps.text a}.")
-                let vars =
-                    match data_term_vars b with
-                    | [||] -> ""
-                    | x -> HopacExtensions.S.map show_w x |> String.concat ", " |> sprintf "(%s)"
-                generatedCaseName prefix union_rec.free_vars i + vars
-                |> simple
-            | TyToLayout(a,b) ->
-                let a = layout_vars a
-                match b with
-                | YLayout(_,layout) ->
-                    match layout with
-                    | Heap -> if a = "" then sprintf "Heap%i()" (heap b).tag else sprintf "{%s} : Heap%i" a (heap b).tag
-                    | HeapMutable -> if a = "" then sprintf "Mut%i()" (mut b).tag else sprintf "{%s} : Mut%i" a (mut b).tag
-                    | StackMutable -> raise_codegen_error "The F# backend doesn't support stack mutable layout types."
-                    | StackRefs | HeapRefs -> raise_codegen_error "This backend doesn't support the stack and heap refs layout types."
-                | _ -> raise_codegen_error $"Compiler error: Expected a layout type (4).\nGot: %s{show_ty b}"
-                |> simple
-            | TyLayoutIndexAll(L(i,YLayout(_,lay) & a)) ->
-                match lay with
-                | Heap -> heap a
-                | HeapMutable -> mut a
-                | StackMutable -> raise_codegen_error "The F# backend doesn't support indexing into stack mutable layout types."
-                | StackRefs | HeapRefs -> raise_codegen_error "This backend doesn't support the stack and heap refs layout types."
-                |> fun x -> x.free_vars |> layout_index i
-            | TyLayoutIndexByKey(L(i,YLayout(_,lay) & a),key) ->
-                match lay with
-                | Heap -> heap a
-                | HeapMutable -> mut a
-                | StackMutable -> raise_codegen_error "The F# backend doesn't support indexing into stack mutable layout types."
-                | StackRefs | HeapRefs -> raise_codegen_error "This backend doesn't support the stack and heap refs layout types."
-                |> fun x ->
-                    x.free_vars_by_key
-                    |> Map.tryPick (fun (_, k) v -> if LayoutFieldNameIdOps.matchesText key k then Some v else None)
-                    |> Option.iter (layout_index i)
-            | TyLayoutIndexAll _ | TyLayoutIndexByKey _ -> raise_codegen_error "Compiler error: Expected the TyV in layout index to be a layout type."
-            | TyLayoutMutableSet(L(i,t),b,c) ->
-                let a = List.fold (fun s k ->
-                    match s with
-                    | DRecord l -> l |> Map.pick (fun (_,k') v -> if LayoutFieldNameIdOps.matchesText k k' then Some v else None)
-                    | _ -> raise_codegen_error "Compiler error: Expected a record.") (mut t).data b
-                Array.iter2 (fun (L(i',_)) b ->
-                    line s (FastRuntimeFormat.format "v%i.l%i <- %s" [| box i; box i'; box (show_w b) |])
-                    ) (data_free_vars a) (data_term_vars c)
-            | TyArrayLiteral(a,b) -> simple <| sprintf "[|%s|]" (List.map tup b |> String.concat "; ")
-            | TyArrayCreate(a,b) ->
-                match b with
-                | DLit(LitInt32 _) | DV(L(_,YPrim Int32T)) -> simple (sprintf "Array.zeroCreate<%s> (%s)" (tup_ty a) (tup b))
-                | _ -> simple (sprintf "Array.zeroCreate<%s> (System.Convert.ToInt32(%s))" (tup_ty a) (tup b))
-            | TyArrayLength(a,b) -> length (a,b)
-            | TyStringLength(a,b) -> length_of_text a (sprintf "(System.Text.Encoding.UTF8.GetByteCount(%s))" (tup b))
-            | TyFailwith(a,b) -> simple (sprintf "failwith<%s> %s" (tup_ty a) (tup b))
-            | TyConv(a,b) ->
-                let b = tup b
-                match a with
-                | YPrim Int8T -> $"int8 {b}"
-                | YPrim Int16T -> $"int16 {b}"
-                | YPrim Int32T -> $"int32 {b}"
-                | YPrim Int64T -> $"int64 {b}"
-                | YPrim UInt8T -> $"uint8 {b}"
-                | YPrim UInt16T -> $"uint16 {b}"
-                | YPrim UInt32T -> $"uint32 {b}"
-                | YPrim UInt64T -> $"uint64 {b}"
-                | YPrim Float32T -> $"float32 {b}"
-                | YPrim Float64T -> $"float {b}"
-                | _ -> raise_codegen_error $"Compiler error: Unexpected type in Conv. Got: {show_ty a}"
-                |> simple
-            | TyApply(L(i,_),b) -> sprintf "v%i %s" i (tup b) |> simple
-            | TyOp(Global, [DLit (LitString x)]) -> global' x
-            | TyOp(op,l) ->
-                match op, l with
-                | Dyn,[a] -> tup a
-                | TypeToVar, _ -> raise_codegen_error "The use of `` should never appear in generated code."
-                | StringIndex, [a;b] -> utf8_string_helpers (); sprintf "(spiralStringIndex %s (int %s))" (tup a) (tup b)
-                | StringSlice, [a;b;c] -> utf8_string_helpers (); FastRuntimeFormat.format "(spiralStringSlice %s (int %s) (int %s))" [| box (tup a); box (tup b); box (tup c) |]
-                | StaticStringConcat, [a;b] -> sprintf "(%s + %s)" (tup a) (tup b)
-                | ArrayIndex, [a;b] -> sprintf "%s.[int %s]" (tup a) (tup b)
-                | ArrayIndexSet, [a;b;c] -> FastRuntimeFormat.format "%s.[int %s] <- %s" [| box (tup a); box (tup b); box (tup c) |]
-    
-
-                // Math
-                | Add, [a;b] -> sprintf "%s + %s" (tup a) (tup b)
-                | Sub, [a;b] -> sprintf "%s - %s" (tup a) (tup b)
-                | Mult, [a;b] -> sprintf "%s * %s" (tup a) (tup b)
-                | Div, [a;b] -> sprintf "%s / %s" (tup a) (tup b)
-                | Mod, [a;b] -> sprintf "%s %% %s" (tup a) (tup b)
-                | Pow, [a;b] -> sprintf "%s ** %s" (tup a) (tup b)
-                | LT, [a;b] -> sprintf "%s < %s" (tup a) (tup b)
-                | LTE, [a;b] -> sprintf "%s <= %s" (tup a) (tup b)
-                | EQ, [a;b] -> sprintf "%s = %s" (tup a) (tup b)
-                | NEQ, [a;b] -> sprintf "%s <> %s" (tup a) (tup b)
-                | GT, [a;b] -> sprintf "%s > %s" (tup a) (tup b)
-                | GTE, [a;b] -> sprintf "%s >= %s" (tup a) (tup b)
-                | BoolAnd, [a;b] -> sprintf "%s && %s" (tup a) (tup b)
-                | BoolOr, [a;b] -> sprintf "%s || %s" (tup a) (tup b)
-                | BitwiseAnd, [a;b] -> sprintf "%s &&& %s" (tup a) (tup b)
-                | BitwiseOr, [a;b] -> sprintf "%s ||| %s" (tup a) (tup b)
-                | BitwiseXor, [a;b] -> sprintf "%s ^^^ %s" (tup a) (tup b)
-                | BitwiseComplement, [a] -> sprintf "~~~%s" (tup a)
-    
-
-                | ShiftLeft, [a;b] -> sprintf "%s <<< %s" (tup a) (tup b)
-                | ShiftRight, [a;b] -> sprintf "%s >>> %s" (tup a) (tup b)
-    
-
-                | Neg, [x] -> sprintf " -%s" (tup x)
-                | Log, [x] -> sprintf "log %s" (tup x)
-                | Exp, [x] -> sprintf "exp %s" (tup x)
-                | Tanh, [x] -> sprintf "tanh %s" (tup x)
-                | Sqrt, [x] -> sprintf "sqrt %s" (tup x)
-                | Sin, [x] -> sprintf "sin %s" (tup x)
-                | Cos, [x] -> sprintf "cos %s" (tup x)
-                | NanIs, [x] ->
-                    match x with
-                    | DLit(LitFloat32 _) | DV(L(_,YPrim Float32T)) -> sprintf "Single.IsNaN(%s)" (tup x)
-                    | DLit(LitFloat64 _) | DV(L(_,YPrim Float64T)) -> sprintf "Double.IsNaN(%s)" (tup x)
-                    | _ -> raise_codegen_error "Compiler error: Invalid type in NanIs."
-                | UnionTag, [DV(L(i,YUnion h))] ->
-                    let h = h.Item
-                    let union_rec, prefix =
-                        match h.layout with
-                        | UHeap -> let u = uheap h.cases in u, sprintf "UH%i" u.tag
-                        | UStack -> let u = ustack h.cases in u, sprintf "US%i" u.tag
-                    let arms =
-                        union_rec.free_vars
-                        |> Seq.mapi (fun position (KeyValue ((tag, _), fields)) ->
-                            let pattern = generatedCaseName prefix union_rec.free_vars position
-                            match fields with
-                            | [||] -> $"| {pattern} -> {tag}"
-                            | _ -> $"| {pattern} _ -> {tag}"
-                        )
-                        |> String.concat " "
-                    $"(match v{i} with {arms})"
-                | Printf, [DLit (LitString fmt); b] ->
-                    match printf_pieces fmt (data_term_vars b) with
-                    | [] -> "()"
-                    | pieces ->
-                        pieces |> List.map (function
-                            | Choice1Of2 t -> litFsharp (LitString t)
-                            | Choice2Of2 ('s', a) -> show_w a
-                            | Choice2Of2 (_, a) -> $"string ({show_w a})")
-                        |> String.concat " + " |> sprintf "System.Console.Write(%s)"
-                | _ -> raise_codegen_error <| sprintf "Compiler error: %s with %i args not supported" (opStableText op) l.Length
-                |> simple
-        and heap : _ -> LayoutRecFsharp =
-            let emit s (x : LayoutRecFsharp) =
-                let b = x.free_vars |> HopacExtensions.S.map (fun (L(i,t)) -> sprintf "l%i : %s" i (tyv t)) |> String.concat "; "
-                if b = "" then line s (sprintf "Heap%i() = class end" x.tag)
-                else line s (sprintf "Heap%i = {%s}" x.tag b)
-            layout emit
-        and mut : _ -> LayoutRecFsharp =
-            let emit s (x : LayoutRecFsharp) =
-                let b = x.free_vars |> HopacExtensions.S.map (fun (L(i,t)) -> sprintf "mutable l%i : %s" i (tyv t)) |> String.concat "; "
-                if b = "" then line s (sprintf "Mut%i() = class end" x.tag)
-                else line s (sprintf "Mut%i = {%s}" x.tag b)
-            layout emit
-        and uheap : _ -> UnionRecFsharp =
-            let emit s (x : UnionRecFsharp) =
-                line s (sprintf "UH%i =" x.tag)
-                x.free_vars |> Seq.iteri (fun position (KeyValue(_, a)) ->
-                    let case_name = generatedCaseName (sprintf "UH%i" x.tag) x.free_vars position
-                    match a with
-                    | [||] -> line (indent s) ("| " + case_name)
-                    | a -> line (indent s) (FastRuntimeFormat.format "| %s of %s" [| box case_name; box (a |> HopacExtensions.S.map (fun (L(_,t)) -> tyv t) |> String.concat " * ") |])
-                    )
-            union emit
-        and ustack : _ -> UnionRecFsharp =
-            let emit s (x : UnionRecFsharp) =
-                line s (sprintf "[<Struct>] US%i =" x.tag)
-                x.free_vars |> Seq.iteri (fun position (KeyValue(_, a)) ->
-                    let case_name = generatedCaseName (sprintf "US%i" x.tag) x.free_vars position
-                    match a with
-                    | [||] -> line (indent s) ("| " + case_name)
-                    | a -> line (indent s) (FastRuntimeFormat.format "| %s of %s" [| box case_name; box (a |> HopacExtensions.S.mapi (fun i' (L(_,t)) -> FastRuntimeFormat.format "f%i_%i : %s" [| box position; box i'; box (tyv t) |]) |> String.concat " * ") |])
-                    )
-            union emit
-        and envTrue (v: string) =
-            if isNull v then false
-            else
-                match v.Trim().ToLowerInvariant() with
-                | "1" | "true" | "yes" | "y" | "on" -> true
-                | _ -> false
-    
-
-        and method : _ -> MethodRecFsharp =
-            jp (fun ((jp_body,key & (C(args,_,_))),i) ->
-                // MIGRATION: MIGRATION reached BuildOk, but the writer gate correctly rejected
-                // the tiny F# artifact because codegen fell back to CODEGEN JP PLACEHOLDER for missing
-                // body dictionaries.  Before using a placeholder, try a conservative alias: if exactly
-                // one residual JP dictionary with the same body name exists, reuse it.  This preserves
-                // MIGRATION's no-KeyNotFound safety while avoiding fake/shrunk BuildOk when the key object
-                // changed but the materialized body table is present.
-                let jp_body_name = JpBodyOwnerIdentity.backendText jp_body
-                let jp_key_text = "jp-key-tag:" + string key.tag
-                let jp_dict, jp_dict_missing =
-                    match env.join_point_method.TryGetValue jp_body with
-                    | true, (d,_,_) -> d, false
-                    | _ ->
-                        DiagSidecar.emit (FastRuntimeFormat.format "CODEGEN JP BODY DICT OWNER_MISSING method%i body=%s key=%s" [| box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)) |])
-                        System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, Hopac.IVar<JpMethodBodyCellPayload>>(HashIdentity.Reference), true
-                let ret_ty =
-                    match key with
-                    | C(_,_,t) -> t
-    
-
-                // Codegen JP waits are fail-closed. Only the current exact owner may
-                // repair a stale captured cell; placeholder code is never a BuildOk artifact.
-                    (* legacy codegen JP method polling removed from compilation; archived for delete sweep
-                let get () =
-                    let sw = System.Diagnostics.Stopwatch.StartNew()
-                    let mutable next_log = int64 wait_log_ms
-                    let rec loop () =
-                        match jp_dict.TryGetValue key with
-                        | true, (Some a, Some range, _) -> a, range
-                        | true, (a_opt, range_opt, _) ->
-                            match jp_ev.TryGetValue key with
-                            | true, ev when ev.IsSet ->
-                                let msg =
-                                    FastRuntimeFormat.format "CODEGEN JP STUCK method%i body=%s key=%s a=%b range=%b pending=%s dict=%d ev=%d" [| box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box a_opt.IsSome; box range_opt.IsSome; box (FastRuntimeFormat.pretty (box jp_pending)); box jp_dict.Count; box jp_ev.Count |]
-                                dump_spiral_env_once ()
-                                DiagSidecar.emitEnvSnapshotOnce()
-                                if wait_fatal then raise_codegen_error' [] (None, msg)
-                                elif wait_placeholder then placeholder()
-                                else raise_codegen_error' [] (None, msg)
-                            | true, ev ->
-                                let ms = sw.ElapsedMilliseconds
-                                if ms >= int64 wait_timeout_ms then
-                                    let msg =
-                                        FastRuntimeFormat.format "CODEGEN JP TIMEOUT after %dms: method%i body=%s key=%s pending=%s dict=%d ev=%d" [| box wait_timeout_ms; box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box (FastRuntimeFormat.pretty (box jp_pending)); box jp_dict.Count; box jp_ev.Count |]
-                                    dump_spiral_env_once ()
-                                    DiagSidecar.emitEnvSnapshotOnce()
-                                    if wait_fatal then raise_codegen_error' [] (None, msg)
-                                    elif wait_placeholder then placeholder()
-                                    else raise_codegen_error' [] (None, msg)
-                                else
-                                    if ms >= next_log then
-                                        DiagSidecar.emit
-                                            (FastRuntimeFormat.format "CODEGEN JP wait %dms: method%i body=%s key=%s pending=%s dict=%d ev=%d" [| box (int ms); box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box (FastRuntimeFormat.pretty (box jp_pending)); box jp_dict.Count; box jp_ev.Count |])
-                                        next_log <- ms + int64 wait_log_ms
-                                    ev.Wait(wait_slice_ms) |> ignore
-                                    loop ()
-                            | _ ->
-                                let msg =
-                                    FastRuntimeFormat.format "CODEGEN JP MISSING EVENT method%i body=%s key=%s pending=%s dict=%d ev=%d" [| box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box (FastRuntimeFormat.pretty (box jp_pending)); box jp_dict.Count; box jp_ev.Count |]
-                                dump_spiral_env_once ()
-                                DiagSidecar.emitEnvSnapshotOnce()
-                                if wait_fatal then raise_codegen_error' [] (None, msg)
-                                elif wait_placeholder then placeholder()
-                                else raise_codegen_error' [] (None, msg)
-                        | _ ->
-                            match jp_ev.TryGetValue key with
-                            | true, ev when ev.IsSet ->
-                                let msg =
-                                    FastRuntimeFormat.format "CODEGEN JP STUCK method%i body=%s key=%s pending=%s dict=%d ev=%d (no dict entry)" [| box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box (FastRuntimeFormat.pretty (box jp_pending)); box jp_dict.Count; box jp_ev.Count |]
-                                dump_spiral_env_once ()
-                                DiagSidecar.emitEnvSnapshotOnce()
-                                if wait_fatal then raise_codegen_error' [] (None, msg)
-                                elif wait_placeholder then placeholder()
-                                else raise_codegen_error' [] (None, msg)
-                            | true, ev ->
-                                let ms = sw.ElapsedMilliseconds
-                                if ms >= int64 wait_timeout_ms then
-                                    let msg =
-                                        FastRuntimeFormat.format "CODEGEN JP TIMEOUT after %dms: method%i body=%s key=%s pending=%s dict=%d ev=%d" [| box wait_timeout_ms; box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box (FastRuntimeFormat.pretty (box jp_pending)); box jp_dict.Count; box jp_ev.Count |]
-                                    dump_spiral_env_once ()
-                                    DiagSidecar.emitEnvSnapshotOnce()
-                                    if wait_fatal then raise_codegen_error' [] (None, msg)
-                                    elif wait_placeholder then placeholder()
-                                    else raise_codegen_error' [] (None, msg)
-                                else
-                                    if ms >= next_log then
-                                        DiagSidecar.emit
-                                            (FastRuntimeFormat.format "CODEGEN JP wait %dms: method%i body=%s key=%s pending=%s dict=%d ev=%d" [| box (int ms); box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box (FastRuntimeFormat.pretty (box jp_pending)); box jp_dict.Count; box jp_ev.Count |])
-                                        next_log <- ms + int64 wait_log_ms
-                                    ev.Wait(wait_slice_ms) |> ignore
-                                    loop ()
-                            | _ ->
-                                let msg =
-                                    FastRuntimeFormat.format "CODEGEN JP MISSING method%i body=%s key=%s pending=%s dict=%d ev=%d" [| box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box (FastRuntimeFormat.pretty (box jp_pending)); box jp_dict.Count; box jp_ev.Count |]
-                                dump_spiral_env_once ()
-                                DiagSidecar.emitEnvSnapshotOnce()
-                                if wait_fatal then raise_codegen_error' [] (None, msg)
-                                elif wait_placeholder then placeholder()
-                                else raise_codegen_error' [] (None, msg)
-                    loop ()
-                    archived legacy codegen JP method polling end *)
-    
-
-                let currentMethodOwnerMaterialization () =
-                    match env.join_point_method.TryGetValue jp_body with
-                    | false, _ -> CodegenJpOwnerRegistryMissing
-                    | true, (d,_,_) ->
-                        match d.TryGetValue key with
-                        | false, _ -> CodegenJpOwnerCellMissing d.Count
-                        | true, ivar when not ivar.Full -> CodegenJpOwnerCellPending d.Count
-                        | true, ivar ->
-                            match Hopac.IVar.Now.get ivar with
-                            | JpMethodBodyCellReadyPayload(a, range, sourceName) -> CodegenJpOwnerMaterializedReady(a, (range, sourceName), d.Count)
-                            | JpMethodBodyCellCancelledPayload _ -> CodegenJpOwnerCellCancelled d.Count
-                            | JpMethodBodyCellFailedPayload _ -> CodegenJpOwnerCellFailed d.Count
-
-                let resolve_v2_from (jp_dict2: System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, Hopac.IVar<JpMethodBodyCellPayload>>) : CodegenJpMethodBodyCellResolution<TypedBind [],Ty * string option> =
-                    match jp_dict2.TryGetValue key with
-                    | true, ivar when ivar.Full ->
-                        match Hopac.IVar.Now.get ivar with
-                        | JpMethodBodyCellReadyPayload(a, range, sourceName) -> CodegenJpMethodBodyCellReady(a, (range, sourceName))
-                        | JpMethodBodyCellCancelledPayload cancellation -> CodegenJpMethodBodyCellCancelled cancellation
-                        | JpMethodBodyCellFailedPayload failure -> CodegenJpMethodBodyCellFailed failure
-                    | true, ivar -> CodegenJpMethodBodyCellPending ivar
-                    | false, _ ->
-                        match currentMethodOwnerMaterialization () with
-                        | CodegenJpOwnerMaterializedReady(a, range, _) -> CodegenJpMethodBodyCellReady(a, range)
-                        | CodegenJpOwnerRegistryMissing
-                        | CodegenJpOwnerCellMissing _
-                        | CodegenJpOwnerCellPending _
-                        | CodegenJpOwnerCellCancelled _
-                        | CodegenJpOwnerCellFailed _ -> CodegenJpMethodBodyCellMissing
-
-                let tryRefreshMethodJpDictAfterReplayDrain () =
-                    let drained : EvalWorklist.Frame option =
-                        try EvalWorklist.drainJpStallPreflight "codegen_method_body_dict_missing_preflight" 4096
-                        with _ -> None
-                    let refreshed =
-                        match env.join_point_method.TryGetValue jp_body with
-                        | true, (d,_,_) when d.ContainsKey key || d.Count > 0 -> Some d
-                        | _ -> None
-                    let methodOwnerRegistryPresent, methodOwnerKeyPresent, methodOwnerRegistryNonEmpty =
-                        match env.join_point_method.TryGetValue jp_body with
-                        | true, (d,_,_) -> true, d.ContainsKey key, d.Count > 0
-                        | false, _ -> false, false, false
-                    let ownerMaterializationAfterDrain = currentMethodOwnerMaterialization ()
-                    let drainedStatus = match drained with Some frame -> EvalWorklist.frameStatusToString frame.status | None -> "none"
-                    let drainedKind = match drained with Some frame -> EvalWorklist.frameKindText frame | None -> "none"
-                    let drainedSite = match drained with Some frame -> EvalWorklist.frameSiteText frame | None -> "none"
-                    let drainedKey = match drained with Some frame -> (EvalWorklist.frameKeyText frame) | None -> "none"
-                    let drainedReason = match drained with Some frame -> EvalWorklist.frameReasonToString frame.reason | None -> "none"
-                    let drainedCursor = match drained with Some frame -> frame.cursor | None -> -1
-                    let drainedTraceLines = match drained with Some frame -> frame.trace.Length | None -> 0
-                    let drainedCell =
-                        match drained with
-                        | Some frame ->
-                            match frame.semanticCell with
-                            | Some cell -> FastRuntimeFormat.format "semantic_eval_cell(kind=%s,shape=%s,node_id=%d,cursor=%d,step=%d,status=%s,site=%s)" [| box (EvalWorklist.replayCellKindText cell); box (EvalWorklist.replayCellShapeText cell); box cell.nodeId; box cell.cursor; box cell.step; box (EvalWorklist.replayCellStatusText cell.status); box (EvalWorklist.replayCellSiteText cell) |]
-                            | None -> "none"
-                        | None -> "none"
-                    let ewPendingNow = EvalWorklist.pendingCount()
-                    let ewQueueNow = EvalWorklist.replayQueueDepth()
-                    let ewActiveNow = EvalWorklist.replayDriverActiveDepthValue()
-                    let ewDriverNow = EvalWorklist.replayDriverStatus()
-                    let replayCompleteNow = EvalWorklist.hasReplayComplete()
-                    let writeWitnessNow = EvalWorklist.hasReplayCompleteWriteWitness()
-                    let writeWitnessSummary = EvalWorklist.replayCompleteWriteWitnessSummary()
-                    match refreshed with
-                    | Some d ->
-                        DiagJson.emit (
-                            FastRuntimeFormat.format "{\"kind\":\"eval_worklist_codegen_jp_body_dict_rechecked\",\"event\":\"method_codegen_missing\",\"body\":%s,\"key\":%s,\"dict\":%d,\"drained_status\":%s,\"drained_kind\":%s,\"drained_site\":%s,\"drained_key\":%s,\"drained_reason\":%s,\"drained_cursor\":%d,\"drained_trace_lines\":%d,\"drained_cell\":%s,\"ew_pending\":%d,\"replay_queue\":%d,\"active_depth\":%d,\"driver_state\":%s,\"replay_complete\":%b,\"write_witness\":%b,\"write_witness_summary\":%s,\"exact_owner_registry_present\":%d,\"exact_owner_key_present\":%d,\"owner_materialization_resolution_du\":%s,\"exact_owner_registry_non_empty\":%d,\"single_flight\":1,\"next\":\"retry_codegen_jp_dict_lookup\"}" [| box (DiagJson.esc jp_body_name); box (DiagJson.esc jp_key_text); box d.Count; box (DiagJson.esc drainedStatus); box (DiagJson.esc drainedKind); box (DiagJson.esc drainedSite); box (DiagJson.esc drainedKey); box (DiagJson.esc drainedReason); box drainedCursor; box drainedTraceLines; box (DiagJson.esc drainedCell); box ewPendingNow; box ewQueueNow; box ewActiveNow; box (DiagJson.esc ewDriverNow); box replayCompleteNow; box writeWitnessNow; box (DiagJson.esc writeWitnessSummary); box (if methodOwnerRegistryPresent then 1 else 0); box (if methodOwnerKeyPresent then 1 else 0); box (DiagJson.esc (codegenJpOwnerMaterializationResolutionText ownerMaterializationAfterDrain)); box (if methodOwnerRegistryNonEmpty then 1 else 0) |])
-                        Some d
-                    | None ->
-                        DiagJson.emit (
-                            FastRuntimeFormat.format "{\"kind\":\"eval_worklist_codegen_jp_body_dict_recheck_missing\",\"event\":\"method_codegen_missing\",\"body\":%s,\"key\":%s,\"dict\":%d,\"drained_status\":%s,\"drained_kind\":%s,\"drained_site\":%s,\"drained_key\":%s,\"drained_reason\":%s,\"drained_cursor\":%d,\"drained_trace_lines\":%d,\"drained_cell\":%s,\"ew_pending\":%d,\"replay_queue\":%d,\"active_depth\":%d,\"driver_state\":%s,\"replay_complete\":%b,\"write_witness\":%b,\"write_witness_summary\":%s,\"exact_owner_registry_present\":%d,\"exact_owner_key_present\":%d,\"owner_materialization_resolution_du\":%s,\"exact_owner_registry_non_empty\":%d,\"single_flight\":1,\"next\":\"defer_or_fail_codegen_missing_dict\"}" [| box (DiagJson.esc jp_body_name); box (DiagJson.esc jp_key_text); box jp_dict.Count; box (DiagJson.esc drainedStatus); box (DiagJson.esc drainedKind); box (DiagJson.esc drainedSite); box (DiagJson.esc drainedKey); box (DiagJson.esc drainedReason); box drainedCursor; box drainedTraceLines; box (DiagJson.esc drainedCell); box ewPendingNow; box ewQueueNow; box ewActiveNow; box (DiagJson.esc ewDriverNow); box replayCompleteNow; box writeWitnessNow; box (DiagJson.esc writeWitnessSummary); box (if methodOwnerRegistryPresent then 1 else 0); box (if methodOwnerKeyPresent then 1 else 0); box (DiagJson.esc (codegenJpOwnerMaterializationResolutionText ownerMaterializationAfterDrain)); box (if methodOwnerRegistryNonEmpty then 1 else 0) |])
-                        None
-
-
-                let rec requireResolvedMethodCell afterReplayDrain jp_dict2 =
-                    match resolve_v2_from jp_dict2 with
-                    | CodegenJpMethodBodyCellReady(a, range) -> a, range
-                    | CodegenJpMethodBodyCellCancelled cancellation ->
-                        let cancellationRef, repeatCount, repeatLimit, stableAgeMs, stableAgeFloorMs, stasisBasis =
-                            match cancellation with
-                            | JpMethodPatternMissStasisCancellation(cancellationRef, repeatCount, repeatLimit, stableAgeMs, stableAgeFloorMs, stasisBasis) ->
-                                cancellationRef, repeatCount, repeatLimit, stableAgeMs, stableAgeFloorMs, stasisBasis
-                        let ownerResolution = currentMethodOwnerMaterialization ()
-                        match ownerResolution with
-                        | CodegenJpOwnerMaterializedReady(a, range, _) ->
-                            DiagJson.emit (
-                                FastRuntimeFormat.format
-                                    "{\"kind\":\"codegen_jp_method_body_cell_cancelled_owner_materialization_recovered\",\"body\":%s,\"key\":%s,\"repeat_count\":%d,\"stable_age_ms\":%d,\"stasis_basis_du\":%s,\"cancellation_ref\":%s,\"owner_materialization_resolution_du\":%s,\"semantic_failure\":false,\"authority\":\"stale_captured_cancelled_cell_subordinated_to_current_exact_owner_ready_cell\",\"next\":\"continue_codegen_from_current_owner_materialization\"}"
-                                    [| box (DiagJson.esc jp_body_name); box (DiagJson.esc jp_key_text); box repeatCount; box stableAgeMs; box (DiagJson.esc (JpCodegenPatternMissStasisBasisId.text stasisBasis)); box (DiagJson.esc (CompilerIdentityKernel.ContentDigest.text cancellationRef)); box (DiagJson.esc (codegenJpOwnerMaterializationResolutionText ownerResolution)) |])
-                            a, range
-                        | CodegenJpOwnerRegistryMissing
-                        | CodegenJpOwnerCellMissing _
-                        | CodegenJpOwnerCellPending _
-                        | CodegenJpOwnerCellCancelled _
-                        | CodegenJpOwnerCellFailed _ ->
-                            DiagJson.emit (
-                                FastRuntimeFormat.format
-                                    "{\"kind\":\"codegen_jp_method_body_cell_cancelled_observed\",\"body\":%s,\"key\":%s,\"repeat_count\":%d,\"repeat_limit\":%d,\"stable_age_ms\":%d,\"stable_age_floor_ms\":%d,\"stasis_basis_du\":%s,\"cancellation_ref\":%s,\"owner_materialization_resolution_du\":%s,\"semantic_failure\":false,\"authority\":\"owner_local_method_cell_cancelled_payload\",\"next\":\"surface_required_codegen_body_unmaterialized_without_cross_owner_reuse\"}"
-                                    [| box (DiagJson.esc jp_body_name); box (DiagJson.esc jp_key_text); box repeatCount; box repeatLimit; box stableAgeMs; box stableAgeFloorMs; box (DiagJson.esc (JpCodegenPatternMissStasisBasisId.text stasisBasis)); box (DiagJson.esc (CompilerIdentityKernel.ContentDigest.text cancellationRef)); box (DiagJson.esc (codegenJpOwnerMaterializationResolutionText ownerResolution)) |])
-                            let msg =
-                                FastRuntimeFormat.format
-                                    "%s: codegen JP method body cell cancelled by typed pattern-miss stasis; current exact owner has no material body method%i body=%s key=%s owner_resolution=%s"
-                                    [| box DiagnosticClassifier.EJP0035; box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box (codegenJpOwnerMaterializationResolutionText ownerResolution) |]
-                            raise (PartEvalTypeError([], msg))
-                    | CodegenJpMethodBodyCellFailed failure ->
-                        let failureType = failure.SourceException.GetType().FullName
-                        DiagJson.emit (
-                            FastRuntimeFormat.format
-                                "{\"kind\":\"codegen_jp_method_body_cell_failure_observed\",\"body\":%s,\"key\":%s,\"exception_type\":%s,\"authority\":\"owner_local_method_cell_failed_payload\",\"next\":\"rethrow_original_failure_without_codegen_malformed_reclassification\"}"
-                                [| box (DiagJson.esc jp_body_name); box (DiagJson.esc jp_key_text); box (DiagJson.esc failureType) |])
-                        failure.Throw()
-                        failwith "unreachable after method body failure rethrow"
-                    | CodegenJpMethodBodyCellPending ivar ->
-                        DiagJson.emit (
-                            FastRuntimeFormat.format
-                                "{\"kind\":\"codegen_jp_method_body_cell_pending_wait_started\",\"body\":%s,\"key\":%s,\"dict_count\":%d,\"authority\":\"typed_owner_local_pending_cell\",\"next\":\"await_same_one_shot_terminal_payload\"}"
-                                [| box (DiagJson.esc jp_body_name); box (DiagJson.esc jp_key_text); box jp_dict2.Count |])
-                        PevalStallProbe.awaitCodegenCellOrFail ivar (fun () -> sprintf "method%i body=%s key=%s" i jp_body_name jp_key_text)
-                        requireResolvedMethodCell afterReplayDrain jp_dict2
-                    | CodegenJpMethodBodyCellMissing ->
-                        let generation = CacheGeneration.current()
-                        let invalidationCount = CacheGeneration.invalidationCount()
-                        let sequentialRequested = CacheGeneration.isSequentialRequested()
-                        let replayLive = EvalWorklist.codegenJpBodyDictShouldDefer()
-                        let recoveryDecision =
-                            if afterReplayDrain then CodegenJpBodyDictRetrySequential(generation, invalidationCount)
-                            else codegenJpBodyDictRecoveryDecision replayLive sequentialRequested generation invalidationCount
-                        DiagJson.emit (
-                            FastRuntimeFormat.format "{\"kind\":\"codegen_jp_body_cell_recovery_decision\",\"jp_kind_du\":\"method\",\"body\":%s,\"key\":%s,\"cell_state_du\":\"NotReady\",\"dict_count\":%d,\"replay_live\":%b,\"after_replay_drain\":%b,\"generation\":%d,\"invalidation_count\":%d,\"sequential_requested\":%b,\"decision_du\":%s,\"authority\":\"typed_codegen_body_cell_resolution\"}" [| box (DiagJson.esc jp_body_name); box (DiagJson.esc jp_key_text); box jp_dict2.Count; box replayLive; box afterReplayDrain; box generation; box invalidationCount; box sequentialRequested; box (DiagJson.esc (codegenJpBodyDictRecoveryDecisionText recoveryDecision)) |])
-                        match recoveryDecision with
-                        | CodegenJpBodyDictDrainReplay ->
-                            match tryRefreshMethodJpDictAfterReplayDrain () with
-                            | Some refreshedDict -> requireResolvedMethodCell true refreshedDict
-                            | None ->
-                                CacheGeneration.requestSequential ()
-                                let msg = FastRuntimeFormat.format "%s: codegen JP method body cell not ready after live replay drain method%i body=%s key=%s" [| box DiagnosticClassifier.EJP0014; box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)) |]
-                                raise (PartEvalTypeError([], msg))
-                        | CodegenJpBodyDictRetrySequential _ ->
-                            CacheGeneration.requestSequential ()
-                            let msg = FastRuntimeFormat.format "%s: codegen JP method body cell not ready; sequential generation retry requested method%i body=%s key=%s" [| box DiagnosticClassifier.EJP0014; box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)) |]
-                            raise (PartEvalTypeError([], msg))
-                        | CodegenJpBodyDictFailClosed ->
-                            let msg = FastRuntimeFormat.format "CODEGEN JP NOT READY method%i body=%s key=%s dict=%d authority=typed_closed_world_no_live_producer" [| box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box jp_dict2.Count |]
-                            DiagSidecar.emit msg
-                            raise_codegen_error' [] (None, msg)
-
-                let a, range =
-                    if jp_dict_missing then
-                        let msg = FastRuntimeFormat.format "CODEGEN JP MISSING BODY DICT BLOCKED method%i body=%s key=%s dict=%d" [| box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box jp_dict.Count |]
-                        EvalWorklist.pinCodegenJpBodyDictMissing "fsharp_codegen" EvalWorklist.CodegenMethod jp_body_name jp_key_text jp_dict.Count msg
-                        let generation = CacheGeneration.current()
-                        let invalidationCount = CacheGeneration.invalidationCount()
-                        let sequentialRequested = CacheGeneration.isSequentialRequested()
-                        let recoveryDecision =
-                            codegenJpBodyDictRecoveryDecision
-                                (EvalWorklist.codegenJpBodyDictShouldDefer())
-                                sequentialRequested
-                                generation
-                                invalidationCount
-                        DiagJson.emit (
-                            FastRuntimeFormat.format "{\"kind\":\"codegen_jp_body_dict_recovery_decision\",\"jp_kind_du\":\"method\",\"body\":%s,\"key\":%s,\"dict_count\":%d,\"generation\":%d,\"invalidation_count\":%d,\"sequential_requested\":%b,\"decision_du\":%s,\"authority\":\"typed_codegen_recovery\"}" [| box (DiagJson.esc jp_body_name); box (DiagJson.esc ("jp-key-tag:" + string key.tag)); box jp_dict.Count; box generation; box invalidationCount; box sequentialRequested; box (DiagJson.esc (codegenJpBodyDictRecoveryDecisionText recoveryDecision)) |])
-                        match recoveryDecision with
-                        | CodegenJpBodyDictDrainReplay ->
-                            match tryRefreshMethodJpDictAfterReplayDrain () with
-                            | Some refreshedDict ->
-                                DiagSidecar.emit (FastRuntimeFormat.format "CODEGEN JP BODY DICT REFRESHED method%i body=%s key=%s dict=%d" [| box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box refreshedDict.Count |])
-                                requireResolvedMethodCell true refreshedDict
-                            | None ->
-                                let ewPendingNow = EvalWorklist.pendingCount()
-                                let ewQueueNow = EvalWorklist.replayQueueDepth()
-                                let ewActiveNow = EvalWorklist.replayDriverActiveDepthValue()
-                                let ewDriverNow = EvalWorklist.replayDriverStatus()
-                                let replayCompleteNow = EvalWorklist.hasReplayComplete()
-                                let writeWitnessNow = EvalWorklist.hasReplayCompleteWriteWitness()
-                                CacheGeneration.requestSequential ()
-                                let deferMsg = FastRuntimeFormat.format "%s: codegen JP body dict missing after replay-drain recheck while producer work was live; sequential generation retry requested method%i body=%s key=%s dict=%d ew_pending=%d replay_queue=%d active_depth=%d driver=%s replay_complete=%b write_witness=%b" [| box DiagnosticClassifier.EJP0014; box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box jp_dict.Count; box ewPendingNow; box ewQueueNow; box ewActiveNow; box ewDriverNow; box replayCompleteNow; box writeWitnessNow |]
-                                DiagSidecar.emit deferMsg
-                                raise (PartEvalTypeError([], deferMsg))
-                        | CodegenJpBodyDictRetrySequential(retryGeneration, retryInvalidationCount) ->
-                            CacheGeneration.requestSequential ()
-                            let retryMsg =
-                                FastRuntimeFormat.format "%s: codegen JP body dict missing after generation recovery; retry the build through the sequential JP authority method%i body=%s key=%s dict=%d generation=%d invalidations=%d" [| box DiagnosticClassifier.EJP0014; box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box jp_dict.Count; box retryGeneration; box retryInvalidationCount |]
-                            DiagSidecar.emit retryMsg
-                            raise (PartEvalTypeError([], retryMsg))
-                        | CodegenJpBodyDictFailClosed ->
-                            DiagSidecar.emit msg
-                            raise_codegen_error' [] (None, msg)
-                    else requireResolvedMethodCell false jp_dict
-                let range, sourceName = range
-                method_names.[i] <- generatedMethodName sourceName i
-                {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
-                ) (fun s x ->
-                line s (FastRuntimeFormat.format "%s (%s) : %s =" [| box method_names.[x.tag]; box (args_tys x.free_vars); box (tup_ty x.range) |])
-                binds (indent s) x.body
-                )
-        and closure : _ -> ClosureRecFsharp =
-            jp (fun ((jp_body,key & (C(args,_,fun_ty))),i) ->
-                match fun_ty with
-                | YFun(domain,range,FT_Vanilla) ->
-                    // MIGRATION: mirror the method-side alias lookup for closure bodies.  A
-                    // missing exact JP key should not immediately generate placeholder code if a single
-                    // body-name-equivalent closure dictionary has already been materialized.
-                    let jp_body_name = JpBodyOwnerIdentity.backendText jp_body
-                    let jp_key_text = "jp-key-tag:" + string key.tag
-                    let jp_dict, jp_dict_missing =
-                        match env.join_point_closure.TryGetValue jp_body with
-                        | true, (d,_,_) -> d, false
-                        | _ ->
-                            DiagSidecar.emit (FastRuntimeFormat.format "CODEGEN JP BODY DICT OWNER_MISSING closure%i body=%s key=%s" [| box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)) |])
-                            System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, Hopac.IVar<JpClosureBodyCellPayload>>(HashIdentity.Reference), true
-                    let range_ty =
-                        match fun_ty with
-                        | YFun(_, r, FT_Vanilla) -> r
-                        | _ -> YB
-    
-
-                    // Codegen closure JP waits are fail-closed. A unique ready
-                    // Only current exact-owner materialization may repair a stale cell; placeholders are forbidden.
-                    (* legacy codegen JP closure polling removed from compilation; archived for delete sweep
-                    let get () =
-                        let sw = System.Diagnostics.Stopwatch.StartNew()
-                        let mutable next_log = int64 wait_log_ms
-                        let rec loop () =
-                            match jp_dict.TryGetValue key with
-                            | true, Some x -> x
-                            | true, None ->
-                                match jp_ev.TryGetValue key with
-                                | true, ev when ev.IsSet ->
-                                    let msg =
-                                        FastRuntimeFormat.format "CODEGEN JP STUCK closure%i body=%s key=%s pending=%s dict=%d ev=%d" [| box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box (FastRuntimeFormat.pretty (box jp_pending)); box jp_dict.Count; box jp_ev.Count |]
-                                    dump_spiral_env_once ()
-                                    DiagSidecar.emitEnvSnapshotOnce()
-                                    if wait_fatal then raise_codegen_error' [] (None, msg)
-                                    elif wait_placeholder then placeholder()
-                                    else raise_codegen_error' [] (None, msg)
-                                | true, ev ->
-                                    let ms = sw.ElapsedMilliseconds
-                                    if ms >= int64 wait_timeout_ms then
-                                        let msg =
-                                            FastRuntimeFormat.format "CODEGEN JP TIMEOUT after %dms: closure%i body=%s key=%s pending=%s dict=%d ev=%d" [| box wait_timeout_ms; box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box (FastRuntimeFormat.pretty (box jp_pending)); box jp_dict.Count; box jp_ev.Count |]
-                                        dump_spiral_env_once ()
-                                        DiagSidecar.emitEnvSnapshotOnce()
-                                        if wait_fatal then raise_codegen_error' [] (None, msg)
-                                        elif wait_placeholder then placeholder()
-                                        else raise_codegen_error' [] (None, msg)
-                                    else
-                                        if ms >= next_log then
-                                            DiagSidecar.emit
-                                                (FastRuntimeFormat.format "CODEGEN JP wait %dms: closure%i body=%s key=%s pending=%s dict=%d ev=%d" [| box (int ms); box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box (FastRuntimeFormat.pretty (box jp_pending)); box jp_dict.Count; box jp_ev.Count |])
-                                            next_log <- ms + int64 wait_log_ms
-                                        ev.Wait(wait_slice_ms) |> ignore
-                                        loop ()
-                                | _ ->
-                                    let msg =
-                                        FastRuntimeFormat.format "CODEGEN JP MISSING EVENT closure%i body=%s key=%s pending=%s dict=%d ev=%d" [| box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box (FastRuntimeFormat.pretty (box jp_pending)); box jp_dict.Count; box jp_ev.Count |]
-                                    dump_spiral_env_once ()
-                                    DiagSidecar.emitEnvSnapshotOnce()
-                                    if wait_fatal then raise_codegen_error' [] (None, msg)
-                                    elif wait_placeholder then placeholder()
-                                    else raise_codegen_error' [] (None, msg)
-                            | _ ->
-                                match jp_ev.TryGetValue key with
-                                | true, ev when ev.IsSet ->
-                                    let msg =
-                                        FastRuntimeFormat.format "CODEGEN JP STUCK closure%i body=%s key=%s pending=%s dict=%d ev=%d (no dict entry)" [| box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box (FastRuntimeFormat.pretty (box jp_pending)); box jp_dict.Count; box jp_ev.Count |]
-                                    dump_spiral_env_once ()
-                                    DiagSidecar.emitEnvSnapshotOnce()
-                                    if wait_fatal then raise_codegen_error' [] (None, msg)
-                                    elif wait_placeholder then placeholder()
-                                    else raise_codegen_error' [] (None, msg)
-                                | true, ev ->
-                                    let ms = sw.ElapsedMilliseconds
-                                    if ms >= int64 wait_timeout_ms then
-                                        let msg =
-                                            FastRuntimeFormat.format "CODEGEN JP TIMEOUT after %dms: closure%i body=%s key=%s pending=%s dict=%d ev=%d" [| box wait_timeout_ms; box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box (FastRuntimeFormat.pretty (box jp_pending)); box jp_dict.Count; box jp_ev.Count |]
-                                        dump_spiral_env_once ()
-                                        DiagSidecar.emitEnvSnapshotOnce()
-                                        if wait_fatal then raise_codegen_error' [] (None, msg)
-                                        elif wait_placeholder then placeholder()
-                                        else raise_codegen_error' [] (None, msg)
-                                    else
-                                        if ms >= next_log then
-                                            DiagSidecar.emit
-                                                (FastRuntimeFormat.format "CODEGEN JP wait %dms: closure%i body=%s key=%s pending=%s dict=%d ev=%d" [| box (int ms); box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box (FastRuntimeFormat.pretty (box jp_pending)); box jp_dict.Count; box jp_ev.Count |])
-                                            next_log <- ms + int64 wait_log_ms
-                                        ev.Wait(wait_slice_ms) |> ignore
-                                        loop ()
-                                | _ ->
-                                    let msg =
-                                        FastRuntimeFormat.format "CODEGEN JP MISSING closure%i body=%s key=%s pending=%s dict=%d ev=%d" [| box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box (FastRuntimeFormat.pretty (box jp_pending)); box jp_dict.Count; box jp_ev.Count |]
-                                    dump_spiral_env_once ()
-                                    DiagSidecar.emitEnvSnapshotOnce()
-                                    if wait_fatal then raise_codegen_error' [] (None, msg)
-                                    elif wait_placeholder then placeholder()
-                                    else raise_codegen_error' [] (None, msg)
-                        loop ()
-                    archived legacy codegen JP closure polling end *)
-    
-
-                    let currentClosureOwnerMaterialization () =
-                        match env.join_point_closure.TryGetValue jp_body with
-                        | false, _ -> CodegenJpOwnerRegistryMissing
-                        | true, (d,_,_) ->
-                            match d.TryGetValue key with
-                            | false, _ -> CodegenJpOwnerCellMissing d.Count
-                            | true, ivar when not ivar.Full -> CodegenJpOwnerCellPending d.Count
-                            | true, ivar ->
-                                match Hopac.IVar.Now.get ivar with
-                                | JpClosureBodyCellReadyPayload(data, body) -> CodegenJpOwnerMaterializedReady(data, body, d.Count)
-                                | JpClosureBodyCellCancelledPayload _ -> CodegenJpOwnerCellCancelled d.Count
-                                | JpClosureBodyCellFailedPayload _ -> CodegenJpOwnerCellFailed d.Count
-
-                    let resolve_v2_from (jp_dict2: System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, Hopac.IVar<JpClosureBodyCellPayload>>) : CodegenJpClosureBodyCellResolution<Data,TypedBind []> =
-                        match jp_dict2.TryGetValue key with
-                        | true, ivar when ivar.Full ->
-                            match Hopac.IVar.Now.get ivar with
-                            | JpClosureBodyCellReadyPayload(data, body) -> CodegenJpClosureBodyCellReady(data, body)
-                            | JpClosureBodyCellCancelledPayload cancellation -> CodegenJpClosureBodyCellCancelled cancellation
-                            | JpClosureBodyCellFailedPayload failure -> CodegenJpClosureBodyCellFailed failure
-                        | true, ivar -> CodegenJpClosureBodyCellPending ivar
-                        | false, _ ->
-                            match currentClosureOwnerMaterialization () with
-                            | CodegenJpOwnerMaterializedReady(data, body, _) -> CodegenJpClosureBodyCellReady(data, body)
-                            | CodegenJpOwnerRegistryMissing
-                            | CodegenJpOwnerCellMissing _
-                            | CodegenJpOwnerCellPending _
-                            | CodegenJpOwnerCellCancelled _
-                            | CodegenJpOwnerCellFailed _ -> CodegenJpClosureBodyCellMissing
-
-                    let tryRefreshClosureJpDictAfterReplayDrain () =
-                        let drained : EvalWorklist.Frame option =
-                            try EvalWorklist.drainJpStallPreflight "codegen_closure_body_dict_missing_preflight" 4096
-                            with _ -> None
-                        let refreshed =
-                            match env.join_point_closure.TryGetValue jp_body with
-                            | true, (d,_,_) when d.ContainsKey key || d.Count > 0 -> Some d
-                            | _ -> None
-                        let closureOwnerRegistryPresent, closureOwnerKeyPresent, closureOwnerRegistryNonEmpty =
-                            match env.join_point_closure.TryGetValue jp_body with
-                            | true, (d,_,_) -> true, d.ContainsKey key, d.Count > 0
-                            | false, _ -> false, false, false
-                        let ownerMaterializationAfterDrain = currentClosureOwnerMaterialization ()
-                        let drainedStatus = match drained with Some frame -> EvalWorklist.frameStatusToString frame.status | None -> "none"
-                        let drainedKind = match drained with Some frame -> EvalWorklist.frameKindText frame | None -> "none"
-                        let drainedSite = match drained with Some frame -> EvalWorklist.frameSiteText frame | None -> "none"
-                        let drainedKey = match drained with Some frame -> (EvalWorklist.frameKeyText frame) | None -> "none"
-                        let drainedReason = match drained with Some frame -> EvalWorklist.frameReasonToString frame.reason | None -> "none"
-                        let drainedCursor = match drained with Some frame -> frame.cursor | None -> -1
-                        let drainedTraceLines = match drained with Some frame -> frame.trace.Length | None -> 0
-                        let drainedCell =
-                            match drained with
-                            | Some frame ->
-                                match frame.semanticCell with
-                                | Some cell -> FastRuntimeFormat.format "semantic_eval_cell(kind=%s,shape=%s,node_id=%d,cursor=%d,step=%d,status=%s,site=%s)" [| box (EvalWorklist.replayCellKindText cell); box (EvalWorklist.replayCellShapeText cell); box cell.nodeId; box cell.cursor; box cell.step; box (EvalWorklist.replayCellStatusText cell.status); box (EvalWorklist.replayCellSiteText cell) |]
-                                | None -> "none"
-                            | None -> "none"
-                        let ewPendingNow = EvalWorklist.pendingCount()
-                        let ewQueueNow = EvalWorklist.replayQueueDepth()
-                        let ewActiveNow = EvalWorklist.replayDriverActiveDepthValue()
-                        let ewDriverNow = EvalWorklist.replayDriverStatus()
-                        let replayCompleteNow = EvalWorklist.hasReplayComplete()
-                        let writeWitnessNow = EvalWorklist.hasReplayCompleteWriteWitness()
-                        let writeWitnessSummary = EvalWorklist.replayCompleteWriteWitnessSummary()
-                        match refreshed with
-                        | Some d ->
-                            DiagJson.emit (
-                                FastRuntimeFormat.format "{\"kind\":\"eval_worklist_codegen_jp_body_dict_rechecked\",\"event\":\"closure_codegen_missing\",\"body\":%s,\"key\":%s,\"dict\":%d,\"drained_status\":%s,\"drained_kind\":%s,\"drained_site\":%s,\"drained_key\":%s,\"drained_reason\":%s,\"drained_cursor\":%d,\"drained_trace_lines\":%d,\"drained_cell\":%s,\"ew_pending\":%d,\"replay_queue\":%d,\"active_depth\":%d,\"driver_state\":%s,\"replay_complete\":%b,\"write_witness\":%b,\"write_witness_summary\":%s,\"exact_owner_registry_present\":%d,\"exact_owner_key_present\":%d,\"owner_materialization_resolution_du\":%s,\"exact_owner_registry_non_empty\":%d,\"single_flight\":1,\"next\":\"retry_codegen_jp_dict_lookup\"}" [| box (DiagJson.esc jp_body_name); box (DiagJson.esc jp_key_text); box d.Count; box (DiagJson.esc drainedStatus); box (DiagJson.esc drainedKind); box (DiagJson.esc drainedSite); box (DiagJson.esc drainedKey); box (DiagJson.esc drainedReason); box drainedCursor; box drainedTraceLines; box (DiagJson.esc drainedCell); box ewPendingNow; box ewQueueNow; box ewActiveNow; box (DiagJson.esc ewDriverNow); box replayCompleteNow; box writeWitnessNow; box (DiagJson.esc writeWitnessSummary); box (if closureOwnerRegistryPresent then 1 else 0); box (if closureOwnerKeyPresent then 1 else 0); box (DiagJson.esc (codegenJpOwnerMaterializationResolutionText ownerMaterializationAfterDrain)); box (if closureOwnerRegistryNonEmpty then 1 else 0) |])
-                            Some d
-                        | None ->
-                            DiagJson.emit (
-                                FastRuntimeFormat.format "{\"kind\":\"eval_worklist_codegen_jp_body_dict_recheck_missing\",\"event\":\"closure_codegen_missing\",\"body\":%s,\"key\":%s,\"dict\":%d,\"drained_status\":%s,\"drained_kind\":%s,\"drained_site\":%s,\"drained_key\":%s,\"drained_reason\":%s,\"drained_cursor\":%d,\"drained_trace_lines\":%d,\"drained_cell\":%s,\"ew_pending\":%d,\"replay_queue\":%d,\"active_depth\":%d,\"driver_state\":%s,\"replay_complete\":%b,\"write_witness\":%b,\"write_witness_summary\":%s,\"exact_owner_registry_present\":%d,\"exact_owner_key_present\":%d,\"owner_materialization_resolution_du\":%s,\"exact_owner_registry_non_empty\":%d,\"single_flight\":1,\"next\":\"defer_or_fail_codegen_missing_dict\"}" [| box (DiagJson.esc jp_body_name); box (DiagJson.esc jp_key_text); box jp_dict.Count; box (DiagJson.esc drainedStatus); box (DiagJson.esc drainedKind); box (DiagJson.esc drainedSite); box (DiagJson.esc drainedKey); box (DiagJson.esc drainedReason); box drainedCursor; box drainedTraceLines; box (DiagJson.esc drainedCell); box ewPendingNow; box ewQueueNow; box ewActiveNow; box (DiagJson.esc ewDriverNow); box replayCompleteNow; box writeWitnessNow; box (DiagJson.esc writeWitnessSummary); box (if closureOwnerRegistryPresent then 1 else 0); box (if closureOwnerKeyPresent then 1 else 0); box (DiagJson.esc (codegenJpOwnerMaterializationResolutionText ownerMaterializationAfterDrain)); box (if closureOwnerRegistryNonEmpty then 1 else 0) |])
-                            None
-
-
-                    let rec requireResolvedClosureCell afterReplayDrain jp_dict2 =
-                        match resolve_v2_from jp_dict2 with
-                        | CodegenJpClosureBodyCellReady(data, body) -> data, body
-                        | CodegenJpClosureBodyCellCancelled cancellation ->
-                            let cancellationRef, repeatCount, repeatLimit, stableAgeMs, stableAgeFloorMs, stasisBasis =
-                                match cancellation with
-                                | JpClosurePatternMissStasisCancellation(cancellationRef, repeatCount, repeatLimit, stableAgeMs, stableAgeFloorMs, stasisBasis) ->
-                                    cancellationRef, repeatCount, repeatLimit, stableAgeMs, stableAgeFloorMs, stasisBasis
-                            let ownerResolution = currentClosureOwnerMaterialization ()
-                            match ownerResolution with
-                            | CodegenJpOwnerMaterializedReady(data, body, _) ->
-                                DiagJson.emit (
-                                    FastRuntimeFormat.format
-                                        "{\"kind\":\"codegen_jp_closure_body_cell_cancelled_owner_materialization_recovered\",\"body\":%s,\"key\":%s,\"repeat_count\":%d,\"stable_age_ms\":%d,\"stasis_basis_du\":%s,\"cancellation_ref\":%s,\"owner_materialization_resolution_du\":%s,\"semantic_failure\":false,\"authority\":\"stale_captured_cancelled_cell_subordinated_to_current_exact_owner_ready_cell\",\"next\":\"continue_codegen_from_current_owner_materialization\"}"
-                                        [| box (DiagJson.esc jp_body_name); box (DiagJson.esc jp_key_text); box repeatCount; box stableAgeMs; box (DiagJson.esc (JpCodegenPatternMissStasisBasisId.text stasisBasis)); box (DiagJson.esc (CompilerIdentityKernel.ContentDigest.text cancellationRef)); box (DiagJson.esc (codegenJpOwnerMaterializationResolutionText ownerResolution)) |])
-                                data, body
-                            | CodegenJpOwnerRegistryMissing
-                            | CodegenJpOwnerCellMissing _
-                            | CodegenJpOwnerCellPending _
-                            | CodegenJpOwnerCellCancelled _
-                            | CodegenJpOwnerCellFailed _ ->
-                                DiagJson.emit (
-                                    FastRuntimeFormat.format
-                                        "{\"kind\":\"codegen_jp_closure_body_cell_cancelled_observed\",\"body\":%s,\"key\":%s,\"repeat_count\":%d,\"repeat_limit\":%d,\"stable_age_ms\":%d,\"stable_age_floor_ms\":%d,\"stasis_basis_du\":%s,\"cancellation_ref\":%s,\"owner_materialization_resolution_du\":%s,\"semantic_failure\":false,\"authority\":\"owner_local_closure_cell_cancelled_payload\",\"next\":\"surface_required_codegen_body_unmaterialized_without_cross_owner_reuse\"}"
-                                        [| box (DiagJson.esc jp_body_name); box (DiagJson.esc jp_key_text); box repeatCount; box repeatLimit; box stableAgeMs; box stableAgeFloorMs; box (DiagJson.esc (JpCodegenPatternMissStasisBasisId.text stasisBasis)); box (DiagJson.esc (CompilerIdentityKernel.ContentDigest.text cancellationRef)); box (DiagJson.esc (codegenJpOwnerMaterializationResolutionText ownerResolution)) |])
-                                let msg =
-                                    FastRuntimeFormat.format
-                                        "%s: codegen JP closure body cell cancelled by typed pattern-miss stasis; current exact owner has no material body closure%i body=%s key=%s owner_resolution=%s"
-                                        [| box DiagnosticClassifier.EJP0035; box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box (codegenJpOwnerMaterializationResolutionText ownerResolution) |]
-                                raise (PartEvalTypeError([], msg))
-                        | CodegenJpClosureBodyCellFailed failure ->
-                            let failureType = failure.SourceException.GetType().FullName
-                            DiagJson.emit (
-                                FastRuntimeFormat.format
-                                    "{\"kind\":\"codegen_jp_closure_body_cell_failure_observed\",\"body\":%s,\"key\":%s,\"exception_type\":%s,\"authority\":\"owner_local_closure_cell_failed_payload\",\"next\":\"rethrow_original_failure_without_codegen_malformed_reclassification\"}"
-                                    [| box (DiagJson.esc jp_body_name); box (DiagJson.esc jp_key_text); box (DiagJson.esc failureType) |])
-                            failure.Throw()
-                            failwith "unreachable after closure body failure rethrow"
-                        | CodegenJpClosureBodyCellPending ivar ->
-                            DiagJson.emit (
-                                FastRuntimeFormat.format
-                                    "{\"kind\":\"codegen_jp_closure_body_cell_pending_wait_started\",\"body\":%s,\"key\":%s,\"dict_count\":%d,\"authority\":\"typed_owner_local_pending_cell\",\"next\":\"await_same_one_shot_terminal_payload\"}"
-                                    [| box (DiagJson.esc jp_body_name); box (DiagJson.esc jp_key_text); box jp_dict2.Count |])
-                            PevalStallProbe.awaitCodegenCellOrFail ivar (fun () -> sprintf "closure body=%s key=%s" jp_body_name jp_key_text)
-                            requireResolvedClosureCell afterReplayDrain jp_dict2
-                        | CodegenJpClosureBodyCellMissing ->
-                            let generation = CacheGeneration.current()
-                            let invalidationCount = CacheGeneration.invalidationCount()
-                            let sequentialRequested = CacheGeneration.isSequentialRequested()
-                            let replayLive = EvalWorklist.codegenJpBodyDictShouldDefer()
-                            let recoveryDecision =
-                                if afterReplayDrain then CodegenJpBodyDictRetrySequential(generation, invalidationCount)
-                                else codegenJpBodyDictRecoveryDecision replayLive sequentialRequested generation invalidationCount
-                            DiagJson.emit (
-                                FastRuntimeFormat.format "{\"kind\":\"codegen_jp_body_cell_recovery_decision\",\"jp_kind_du\":\"closure\",\"body\":%s,\"key\":%s,\"cell_state_du\":\"NotReady\",\"dict_count\":%d,\"replay_live\":%b,\"after_replay_drain\":%b,\"generation\":%d,\"invalidation_count\":%d,\"sequential_requested\":%b,\"decision_du\":%s,\"authority\":\"typed_codegen_body_cell_resolution\"}" [| box (DiagJson.esc jp_body_name); box (DiagJson.esc jp_key_text); box jp_dict2.Count; box replayLive; box afterReplayDrain; box generation; box invalidationCount; box sequentialRequested; box (DiagJson.esc (codegenJpBodyDictRecoveryDecisionText recoveryDecision)) |])
-                            match recoveryDecision with
-                            | CodegenJpBodyDictDrainReplay ->
-                                match tryRefreshClosureJpDictAfterReplayDrain () with
-                                | Some refreshedDict -> requireResolvedClosureCell true refreshedDict
-                                | None ->
-                                    CacheGeneration.requestSequential ()
-                                    let msg = FastRuntimeFormat.format "%s: codegen JP closure body cell not ready after live replay drain closure%i body=%s key=%s" [| box DiagnosticClassifier.EJP0014; box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)) |]
-                                    raise (PartEvalTypeError([], msg))
-                            | CodegenJpBodyDictRetrySequential _ ->
-                                CacheGeneration.requestSequential ()
-                                let msg = FastRuntimeFormat.format "%s: codegen JP closure body cell not ready; sequential generation retry requested closure%i body=%s key=%s" [| box DiagnosticClassifier.EJP0014; box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)) |]
-                                raise (PartEvalTypeError([], msg))
-                            | CodegenJpBodyDictFailClosed ->
-                                let msg = FastRuntimeFormat.format "CODEGEN JP NOT READY closure%i body=%s key=%s dict=%d authority=typed_closed_world_no_live_producer" [| box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box jp_dict2.Count |]
-                                DiagSidecar.emit msg
-                                raise_codegen_error' [] (None, msg)
-
-                    let domain_args, body =
-                        if jp_dict_missing then
-                            let msg = FastRuntimeFormat.format "CODEGEN JP MISSING BODY DICT BLOCKED closure%i body=%s key=%s dict=%d" [| box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box jp_dict.Count |]
-                            EvalWorklist.pinCodegenJpBodyDictMissing "fsharp_codegen" EvalWorklist.CodegenClosure jp_body_name jp_key_text jp_dict.Count msg
-                            let generation = CacheGeneration.current()
-                            let invalidationCount = CacheGeneration.invalidationCount()
-                            let sequentialRequested = CacheGeneration.isSequentialRequested()
-                            let recoveryDecision =
-                                codegenJpBodyDictRecoveryDecision
-                                    (EvalWorklist.codegenJpBodyDictShouldDefer())
-                                    sequentialRequested
-                                    generation
-                                    invalidationCount
-                            DiagJson.emit (
-                                FastRuntimeFormat.format "{\"kind\":\"codegen_jp_body_dict_recovery_decision\",\"jp_kind_du\":\"closure\",\"body\":%s,\"key\":%s,\"dict_count\":%d,\"generation\":%d,\"invalidation_count\":%d,\"sequential_requested\":%b,\"decision_du\":%s,\"authority\":\"typed_codegen_recovery\"}" [| box (DiagJson.esc jp_body_name); box (DiagJson.esc ("jp-key-tag:" + string key.tag)); box jp_dict.Count; box generation; box invalidationCount; box sequentialRequested; box (DiagJson.esc (codegenJpBodyDictRecoveryDecisionText recoveryDecision)) |])
-                            match recoveryDecision with
-                            | CodegenJpBodyDictDrainReplay ->
-                                match tryRefreshClosureJpDictAfterReplayDrain () with
-                                | Some refreshedDict ->
-                                    DiagSidecar.emit (FastRuntimeFormat.format "CODEGEN JP BODY DICT REFRESHED closure%i body=%s key=%s dict=%d" [| box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box refreshedDict.Count |])
-                                    requireResolvedClosureCell true refreshedDict
-                                | None ->
-                                    let ewPendingNow = EvalWorklist.pendingCount()
-                                    let ewQueueNow = EvalWorklist.replayQueueDepth()
-                                    let ewActiveNow = EvalWorklist.replayDriverActiveDepthValue()
-                                    let ewDriverNow = EvalWorklist.replayDriverStatus()
-                                    let replayCompleteNow = EvalWorklist.hasReplayComplete()
-                                    let writeWitnessNow = EvalWorklist.hasReplayCompleteWriteWitness()
-                                    CacheGeneration.requestSequential ()
-                                    let deferMsg = FastRuntimeFormat.format "%s: codegen JP body dict missing after replay-drain recheck while producer work was live; sequential generation retry requested closure%i body=%s key=%s dict=%d ew_pending=%d replay_queue=%d active_depth=%d driver=%s replay_complete=%b write_witness=%b" [| box DiagnosticClassifier.EJP0014; box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box jp_dict.Count; box ewPendingNow; box ewQueueNow; box ewActiveNow; box ewDriverNow; box replayCompleteNow; box writeWitnessNow |]
-                                    DiagSidecar.emit deferMsg
-                                    raise (PartEvalTypeError([], deferMsg))
-                            | CodegenJpBodyDictRetrySequential(retryGeneration, retryInvalidationCount) ->
-                                CacheGeneration.requestSequential ()
-                                let retryMsg =
-                                    FastRuntimeFormat.format "%s: codegen JP body dict missing after generation recovery; retry the build through the sequential JP authority closure%i body=%s key=%s dict=%d generation=%d invalidations=%d" [| box DiagnosticClassifier.EJP0014; box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box jp_dict.Count; box retryGeneration; box retryInvalidationCount |]
-                                DiagSidecar.emit retryMsg
-                                raise (PartEvalTypeError([], retryMsg))
-                            | CodegenJpBodyDictFailClosed ->
-                                DiagSidecar.emit msg
-                                raise_codegen_error' [] (None, msg)
-                        else requireResolvedClosureCell false jp_dict
-                    closure_names.[i] <- generatedClosureName (closureSourceName (JpBodyOwnerIdentity.body jp_body)) i
-                    {tag=i; free_vars=rdata_free_vars args; domain_args=data_free_vars domain_args; range=range; body=body}
-                | YFun(_,_,_) -> raise_codegen_error "Non-standard functions are not supported in the F# backend."
-                | _ -> raise_codegen_error """error[EJPX004]: internal compiler error
-      |
-      = unexpected type in closure join point
-      help: capture the stack trace and the inferred/expected types for the closure join point.
-    """
-                ) (fun s x ->
-                let domain =
-                    match x.domain_args |> HopacExtensions.S.map (fun (L(i,t)) -> sprintf "v%i : %s" i (tyv t)) with
-                    | [||] -> "()"
-                    | [|x|] -> sprintf "(%s)" x
-                    | x -> String.concat ", " x |> sprintf "struct (%s)"
-                line s (FastRuntimeFormat.format "%s (%s) %s : %s =" [| box closure_names.[x.tag]; box (args_tys x.free_vars); box domain; box (tup_ty x.range) |])
-                binds (indent s) x.body
-                )
-    
-
-        let main = StringBuilder()
-        binds {text=main; indent=0} x
-    
-
-        let program = StringBuilder()
-        env.globals |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
-        // Rust-only code an F# build still carries (the join points a backend_switch's other arms create are emitted too)
-        // calls lib/spiral's emit marker: defined here so the F# compiles, it fails only if such code runs.
-        if (functions |> Seq.exists (fun x -> (string x).Contains "__spiral_emit_rust")) || main.ToString().Contains "__spiral_emit_rust" then
-            program.AppendLine("let __spiral_emit_rust (_ : 'a) (_ : 'b) : 'c = failwith \"lib/spiral: Rust-only code reached in an F# build\"") |> ignore
-        types |> Seq.iteri (fun i x -> program.Append(if i = 0 then "type " else "and ").Append(x) |> ignore)
-        functions |> Seq.iteri (fun i x -> program.Append(if i = 0 then "let rec " else "and ").Append(x) |> ignore)
-        program.Append(main).ToString()
-    
-
+    /// ## CodegenAdapter
     /// Reads a join point body cell for codegen. `IVar.Now.get` on a cell that is still being filled returns
     /// null, which crashed codegen with a bare NullReferenceException (closures created in the branches of a
     /// runtime `if`, `native_closure_branch`). Wait for the producer instead, bounded, and name the failure.
@@ -166357,7 +165238,630 @@ module spiral_compiler =
             failure.Throw()
             failwith "unreachable after closure body failure rethrow"
 
+    let codegenMethodKeyArgs (key : ConsedNode<RData [] * Ty [] * Ty>) = let args, _, _ = key.node in args
+    let codegenMemoTable (comparer : IEqualityComparer<'k>) : System.Collections.Concurrent.ConcurrentDictionary<'k, 'v> =
+        System.Collections.Concurrent.ConcurrentDictionary(comparer)
+    type RefcDecrTable = System.Collections.Concurrent.ConcurrentDictionary<TypedBind, TyV Set>
+    let refcDecrTable () : RefcDecrTable = System.Collections.Concurrent.ConcurrentDictionary(HashIdentity.Reference)
+    let refcDecrAdd (table : RefcDecrTable) key value = table.TryAdd(key, value) |> ignore
+    let codegenMethodBody (env : PartEvalResult) backend jp_body key =
+        let jp_dict, _, _ = env.join_point_method.[jp_body]
+        let body, bodyType, methodName = jpBodyCellAwait jp_dict.[key] |> jpMethodBodyCellReadyForBackend backend
+        DeadPureLetElision.block body, bodyType, methodName
+    let codegenClosureBody (env : PartEvalResult) backend jp_body key =
+        let jp_dict, _, _ = env.join_point_closure.[jp_body]
+        let domain, body = jpBodyCellAwait jp_dict.[key] |> jpClosureBodyCellReadyForBackend backend
+        domain, DeadPureLetElision.block body, closureSourceName (JpBodyOwnerIdentity.body jp_body)
+    let codegenOwnerBackendName (jp_body : JpBodyOwnerIdentity) = JpBodyOwnerIdentity.backendText jp_body
+
+    let codegenFsharpMethodBody (env : PartEvalResult) (jp_body : JpBodyOwnerIdentity) (key : ConsedNode<RData [] * Ty [] * Ty>) (i : int) =
+        let jp_body_name = JpBodyOwnerIdentity.backendText jp_body
+        let jp_key_text = "jp-key-tag:" + string key.tag
+        let jp_dict, jp_dict_missing =
+            match env.join_point_method.TryGetValue jp_body with
+            | true, (d,_,_) -> d, false
+            | _ ->
+                DiagSidecar.emit (FastRuntimeFormat.format "CODEGEN JP BODY DICT OWNER_MISSING method%i body=%s key=%s" [| box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)) |])
+                System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, Hopac.IVar<JpMethodBodyCellPayload>>(HashIdentity.Reference), true
+        let ret_ty =
+            match key with
+            | C(_,_,t) -> t
+
+
+        // Codegen JP waits are fail-closed. Only the current exact owner may
+        // repair a stale captured cell; placeholder code is never a BuildOk artifact.
+            (* legacy codegen JP method polling removed from compilation; archived for delete sweep
+        let get () =
+            let sw = System.Diagnostics.Stopwatch.StartNew()
+            let mutable next_log = int64 wait_log_ms
+            let rec loop () =
+                match jp_dict.TryGetValue key with
+                | true, (Some a, Some range, _) -> a, range
+                | true, (a_opt, range_opt, _) ->
+                    match jp_ev.TryGetValue key with
+                    | true, ev when ev.IsSet ->
+                        let msg =
+                            FastRuntimeFormat.format "CODEGEN JP STUCK method%i body=%s key=%s a=%b range=%b pending=%s dict=%d ev=%d" [| box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box a_opt.IsSome; box range_opt.IsSome; box (FastRuntimeFormat.pretty (box jp_pending)); box jp_dict.Count; box jp_ev.Count |]
+                        dump_spiral_env_once ()
+                        DiagSidecar.emitEnvSnapshotOnce()
+                        if wait_fatal then raise_codegen_error' [] (None, msg)
+                        elif wait_placeholder then placeholder()
+                        else raise_codegen_error' [] (None, msg)
+                    | true, ev ->
+                        let ms = sw.ElapsedMilliseconds
+                        if ms >= int64 wait_timeout_ms then
+                            let msg =
+                                FastRuntimeFormat.format "CODEGEN JP TIMEOUT after %dms: method%i body=%s key=%s pending=%s dict=%d ev=%d" [| box wait_timeout_ms; box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box (FastRuntimeFormat.pretty (box jp_pending)); box jp_dict.Count; box jp_ev.Count |]
+                            dump_spiral_env_once ()
+                            DiagSidecar.emitEnvSnapshotOnce()
+                            if wait_fatal then raise_codegen_error' [] (None, msg)
+                            elif wait_placeholder then placeholder()
+                            else raise_codegen_error' [] (None, msg)
+                        else
+                            if ms >= next_log then
+                                DiagSidecar.emit
+                                    (FastRuntimeFormat.format "CODEGEN JP wait %dms: method%i body=%s key=%s pending=%s dict=%d ev=%d" [| box (int ms); box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box (FastRuntimeFormat.pretty (box jp_pending)); box jp_dict.Count; box jp_ev.Count |])
+                                next_log <- ms + int64 wait_log_ms
+                            ev.Wait(wait_slice_ms) |> ignore
+                            loop ()
+                    | _ ->
+                        let msg =
+                            FastRuntimeFormat.format "CODEGEN JP MISSING EVENT method%i body=%s key=%s pending=%s dict=%d ev=%d" [| box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box (FastRuntimeFormat.pretty (box jp_pending)); box jp_dict.Count; box jp_ev.Count |]
+                        dump_spiral_env_once ()
+                        DiagSidecar.emitEnvSnapshotOnce()
+                        if wait_fatal then raise_codegen_error' [] (None, msg)
+                        elif wait_placeholder then placeholder()
+                        else raise_codegen_error' [] (None, msg)
+                | _ ->
+                    match jp_ev.TryGetValue key with
+                    | true, ev when ev.IsSet ->
+                        let msg =
+                            FastRuntimeFormat.format "CODEGEN JP STUCK method%i body=%s key=%s pending=%s dict=%d ev=%d (no dict entry)" [| box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box (FastRuntimeFormat.pretty (box jp_pending)); box jp_dict.Count; box jp_ev.Count |]
+                        dump_spiral_env_once ()
+                        DiagSidecar.emitEnvSnapshotOnce()
+                        if wait_fatal then raise_codegen_error' [] (None, msg)
+                        elif wait_placeholder then placeholder()
+                        else raise_codegen_error' [] (None, msg)
+                    | true, ev ->
+                        let ms = sw.ElapsedMilliseconds
+                        if ms >= int64 wait_timeout_ms then
+                            let msg =
+                                FastRuntimeFormat.format "CODEGEN JP TIMEOUT after %dms: method%i body=%s key=%s pending=%s dict=%d ev=%d" [| box wait_timeout_ms; box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box (FastRuntimeFormat.pretty (box jp_pending)); box jp_dict.Count; box jp_ev.Count |]
+                            dump_spiral_env_once ()
+                            DiagSidecar.emitEnvSnapshotOnce()
+                            if wait_fatal then raise_codegen_error' [] (None, msg)
+                            elif wait_placeholder then placeholder()
+                            else raise_codegen_error' [] (None, msg)
+                        else
+                            if ms >= next_log then
+                                DiagSidecar.emit
+                                    (FastRuntimeFormat.format "CODEGEN JP wait %dms: method%i body=%s key=%s pending=%s dict=%d ev=%d" [| box (int ms); box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box (FastRuntimeFormat.pretty (box jp_pending)); box jp_dict.Count; box jp_ev.Count |])
+                                next_log <- ms + int64 wait_log_ms
+                            ev.Wait(wait_slice_ms) |> ignore
+                            loop ()
+                    | _ ->
+                        let msg =
+                            FastRuntimeFormat.format "CODEGEN JP MISSING method%i body=%s key=%s pending=%s dict=%d ev=%d" [| box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box (FastRuntimeFormat.pretty (box jp_pending)); box jp_dict.Count; box jp_ev.Count |]
+                        dump_spiral_env_once ()
+                        DiagSidecar.emitEnvSnapshotOnce()
+                        if wait_fatal then raise_codegen_error' [] (None, msg)
+                        elif wait_placeholder then placeholder()
+                        else raise_codegen_error' [] (None, msg)
+            loop ()
+            archived legacy codegen JP method polling end *)
+
+
+        let currentMethodOwnerMaterialization () =
+            match env.join_point_method.TryGetValue jp_body with
+            | false, _ -> CodegenJpOwnerRegistryMissing
+            | true, (d,_,_) ->
+                match d.TryGetValue key with
+                | false, _ -> CodegenJpOwnerCellMissing d.Count
+                | true, ivar when not ivar.Full -> CodegenJpOwnerCellPending d.Count
+                | true, ivar ->
+                    match Hopac.IVar.Now.get ivar with
+                    | JpMethodBodyCellReadyPayload(a, range, sourceName) -> CodegenJpOwnerMaterializedReady(a, (range, sourceName), d.Count)
+                    | JpMethodBodyCellCancelledPayload _ -> CodegenJpOwnerCellCancelled d.Count
+                    | JpMethodBodyCellFailedPayload _ -> CodegenJpOwnerCellFailed d.Count
+
+        let resolve_v2_from (jp_dict2: System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, Hopac.IVar<JpMethodBodyCellPayload>>) : CodegenJpMethodBodyCellResolution<TypedBind [],Ty * string option> =
+            match jp_dict2.TryGetValue key with
+            | true, ivar when ivar.Full ->
+                match Hopac.IVar.Now.get ivar with
+                | JpMethodBodyCellReadyPayload(a, range, sourceName) -> CodegenJpMethodBodyCellReady(a, (range, sourceName))
+                | JpMethodBodyCellCancelledPayload cancellation -> CodegenJpMethodBodyCellCancelled cancellation
+                | JpMethodBodyCellFailedPayload failure -> CodegenJpMethodBodyCellFailed failure
+            | true, ivar -> CodegenJpMethodBodyCellPending ivar
+            | false, _ ->
+                match currentMethodOwnerMaterialization () with
+                | CodegenJpOwnerMaterializedReady(a, range, _) -> CodegenJpMethodBodyCellReady(a, range)
+                | CodegenJpOwnerRegistryMissing
+                | CodegenJpOwnerCellMissing _
+                | CodegenJpOwnerCellPending _
+                | CodegenJpOwnerCellCancelled _
+                | CodegenJpOwnerCellFailed _ -> CodegenJpMethodBodyCellMissing
+
+        let tryRefreshMethodJpDictAfterReplayDrain () =
+            let drained : EvalWorklist.Frame option =
+                try EvalWorklist.drainJpStallPreflight "codegen_method_body_dict_missing_preflight" 4096
+                with _ -> None
+            let refreshed =
+                match env.join_point_method.TryGetValue jp_body with
+                | true, (d,_,_) when d.ContainsKey key || d.Count > 0 -> Some d
+                | _ -> None
+            let methodOwnerRegistryPresent, methodOwnerKeyPresent, methodOwnerRegistryNonEmpty =
+                match env.join_point_method.TryGetValue jp_body with
+                | true, (d,_,_) -> true, d.ContainsKey key, d.Count > 0
+                | false, _ -> false, false, false
+            let ownerMaterializationAfterDrain = currentMethodOwnerMaterialization ()
+            let drainedStatus = match drained with Some frame -> EvalWorklist.frameStatusToString frame.status | None -> "none"
+            let drainedKind = match drained with Some frame -> EvalWorklist.frameKindText frame | None -> "none"
+            let drainedSite = match drained with Some frame -> EvalWorklist.frameSiteText frame | None -> "none"
+            let drainedKey = match drained with Some frame -> (EvalWorklist.frameKeyText frame) | None -> "none"
+            let drainedReason = match drained with Some frame -> EvalWorklist.frameReasonToString frame.reason | None -> "none"
+            let drainedCursor = match drained with Some frame -> frame.cursor | None -> -1
+            let drainedTraceLines = match drained with Some frame -> frame.trace.Length | None -> 0
+            let drainedCell =
+                match drained with
+                | Some frame ->
+                    match frame.semanticCell with
+                    | Some cell -> FastRuntimeFormat.format "semantic_eval_cell(kind=%s,shape=%s,node_id=%d,cursor=%d,step=%d,status=%s,site=%s)" [| box (EvalWorklist.replayCellKindText cell); box (EvalWorklist.replayCellShapeText cell); box cell.nodeId; box cell.cursor; box cell.step; box (EvalWorklist.replayCellStatusText cell.status); box (EvalWorklist.replayCellSiteText cell) |]
+                    | None -> "none"
+                | None -> "none"
+            let ewPendingNow = EvalWorklist.pendingCount()
+            let ewQueueNow = EvalWorklist.replayQueueDepth()
+            let ewActiveNow = EvalWorklist.replayDriverActiveDepthValue()
+            let ewDriverNow = EvalWorklist.replayDriverStatus()
+            let replayCompleteNow = EvalWorklist.hasReplayComplete()
+            let writeWitnessNow = EvalWorklist.hasReplayCompleteWriteWitness()
+            let writeWitnessSummary = EvalWorklist.replayCompleteWriteWitnessSummary()
+            match refreshed with
+            | Some d ->
+                DiagJson.emit (
+                    FastRuntimeFormat.format "{\"kind\":\"eval_worklist_codegen_jp_body_dict_rechecked\",\"event\":\"method_codegen_missing\",\"body\":%s,\"key\":%s,\"dict\":%d,\"drained_status\":%s,\"drained_kind\":%s,\"drained_site\":%s,\"drained_key\":%s,\"drained_reason\":%s,\"drained_cursor\":%d,\"drained_trace_lines\":%d,\"drained_cell\":%s,\"ew_pending\":%d,\"replay_queue\":%d,\"active_depth\":%d,\"driver_state\":%s,\"replay_complete\":%b,\"write_witness\":%b,\"write_witness_summary\":%s,\"exact_owner_registry_present\":%d,\"exact_owner_key_present\":%d,\"owner_materialization_resolution_du\":%s,\"exact_owner_registry_non_empty\":%d,\"single_flight\":1,\"next\":\"retry_codegen_jp_dict_lookup\"}" [| box (DiagJson.esc jp_body_name); box (DiagJson.esc jp_key_text); box d.Count; box (DiagJson.esc drainedStatus); box (DiagJson.esc drainedKind); box (DiagJson.esc drainedSite); box (DiagJson.esc drainedKey); box (DiagJson.esc drainedReason); box drainedCursor; box drainedTraceLines; box (DiagJson.esc drainedCell); box ewPendingNow; box ewQueueNow; box ewActiveNow; box (DiagJson.esc ewDriverNow); box replayCompleteNow; box writeWitnessNow; box (DiagJson.esc writeWitnessSummary); box (if methodOwnerRegistryPresent then 1 else 0); box (if methodOwnerKeyPresent then 1 else 0); box (DiagJson.esc (codegenJpOwnerMaterializationResolutionText ownerMaterializationAfterDrain)); box (if methodOwnerRegistryNonEmpty then 1 else 0) |])
+                Some d
+            | None ->
+                DiagJson.emit (
+                    FastRuntimeFormat.format "{\"kind\":\"eval_worklist_codegen_jp_body_dict_recheck_missing\",\"event\":\"method_codegen_missing\",\"body\":%s,\"key\":%s,\"dict\":%d,\"drained_status\":%s,\"drained_kind\":%s,\"drained_site\":%s,\"drained_key\":%s,\"drained_reason\":%s,\"drained_cursor\":%d,\"drained_trace_lines\":%d,\"drained_cell\":%s,\"ew_pending\":%d,\"replay_queue\":%d,\"active_depth\":%d,\"driver_state\":%s,\"replay_complete\":%b,\"write_witness\":%b,\"write_witness_summary\":%s,\"exact_owner_registry_present\":%d,\"exact_owner_key_present\":%d,\"owner_materialization_resolution_du\":%s,\"exact_owner_registry_non_empty\":%d,\"single_flight\":1,\"next\":\"defer_or_fail_codegen_missing_dict\"}" [| box (DiagJson.esc jp_body_name); box (DiagJson.esc jp_key_text); box jp_dict.Count; box (DiagJson.esc drainedStatus); box (DiagJson.esc drainedKind); box (DiagJson.esc drainedSite); box (DiagJson.esc drainedKey); box (DiagJson.esc drainedReason); box drainedCursor; box drainedTraceLines; box (DiagJson.esc drainedCell); box ewPendingNow; box ewQueueNow; box ewActiveNow; box (DiagJson.esc ewDriverNow); box replayCompleteNow; box writeWitnessNow; box (DiagJson.esc writeWitnessSummary); box (if methodOwnerRegistryPresent then 1 else 0); box (if methodOwnerKeyPresent then 1 else 0); box (DiagJson.esc (codegenJpOwnerMaterializationResolutionText ownerMaterializationAfterDrain)); box (if methodOwnerRegistryNonEmpty then 1 else 0) |])
+                None
+
+
+        let rec requireResolvedMethodCell afterReplayDrain jp_dict2 =
+            match resolve_v2_from jp_dict2 with
+            | CodegenJpMethodBodyCellReady(a, range) -> a, range
+            | CodegenJpMethodBodyCellCancelled cancellation ->
+                let cancellationRef, repeatCount, repeatLimit, stableAgeMs, stableAgeFloorMs, stasisBasis =
+                    match cancellation with
+                    | JpMethodPatternMissStasisCancellation(cancellationRef, repeatCount, repeatLimit, stableAgeMs, stableAgeFloorMs, stasisBasis) ->
+                        cancellationRef, repeatCount, repeatLimit, stableAgeMs, stableAgeFloorMs, stasisBasis
+                let ownerResolution = currentMethodOwnerMaterialization ()
+                match ownerResolution with
+                | CodegenJpOwnerMaterializedReady(a, range, _) ->
+                    DiagJson.emit (
+                        FastRuntimeFormat.format
+                            "{\"kind\":\"codegen_jp_method_body_cell_cancelled_owner_materialization_recovered\",\"body\":%s,\"key\":%s,\"repeat_count\":%d,\"stable_age_ms\":%d,\"stasis_basis_du\":%s,\"cancellation_ref\":%s,\"owner_materialization_resolution_du\":%s,\"semantic_failure\":false,\"authority\":\"stale_captured_cancelled_cell_subordinated_to_current_exact_owner_ready_cell\",\"next\":\"continue_codegen_from_current_owner_materialization\"}"
+                            [| box (DiagJson.esc jp_body_name); box (DiagJson.esc jp_key_text); box repeatCount; box stableAgeMs; box (DiagJson.esc (JpCodegenPatternMissStasisBasisId.text stasisBasis)); box (DiagJson.esc (CompilerIdentityKernel.ContentDigest.text cancellationRef)); box (DiagJson.esc (codegenJpOwnerMaterializationResolutionText ownerResolution)) |])
+                    a, range
+                | CodegenJpOwnerRegistryMissing
+                | CodegenJpOwnerCellMissing _
+                | CodegenJpOwnerCellPending _
+                | CodegenJpOwnerCellCancelled _
+                | CodegenJpOwnerCellFailed _ ->
+                    DiagJson.emit (
+                        FastRuntimeFormat.format
+                            "{\"kind\":\"codegen_jp_method_body_cell_cancelled_observed\",\"body\":%s,\"key\":%s,\"repeat_count\":%d,\"repeat_limit\":%d,\"stable_age_ms\":%d,\"stable_age_floor_ms\":%d,\"stasis_basis_du\":%s,\"cancellation_ref\":%s,\"owner_materialization_resolution_du\":%s,\"semantic_failure\":false,\"authority\":\"owner_local_method_cell_cancelled_payload\",\"next\":\"surface_required_codegen_body_unmaterialized_without_cross_owner_reuse\"}"
+                            [| box (DiagJson.esc jp_body_name); box (DiagJson.esc jp_key_text); box repeatCount; box repeatLimit; box stableAgeMs; box stableAgeFloorMs; box (DiagJson.esc (JpCodegenPatternMissStasisBasisId.text stasisBasis)); box (DiagJson.esc (CompilerIdentityKernel.ContentDigest.text cancellationRef)); box (DiagJson.esc (codegenJpOwnerMaterializationResolutionText ownerResolution)) |])
+                    let msg =
+                        FastRuntimeFormat.format
+                            "%s: codegen JP method body cell cancelled by typed pattern-miss stasis; current exact owner has no material body method%i body=%s key=%s owner_resolution=%s"
+                            [| box DiagnosticClassifier.EJP0035; box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box (codegenJpOwnerMaterializationResolutionText ownerResolution) |]
+                    raise (PartEvalTypeError([], msg))
+            | CodegenJpMethodBodyCellFailed failure ->
+                let failureType = failure.SourceException.GetType().FullName
+                DiagJson.emit (
+                    FastRuntimeFormat.format
+                        "{\"kind\":\"codegen_jp_method_body_cell_failure_observed\",\"body\":%s,\"key\":%s,\"exception_type\":%s,\"authority\":\"owner_local_method_cell_failed_payload\",\"next\":\"rethrow_original_failure_without_codegen_malformed_reclassification\"}"
+                        [| box (DiagJson.esc jp_body_name); box (DiagJson.esc jp_key_text); box (DiagJson.esc failureType) |])
+                failure.Throw()
+                failwith "unreachable after method body failure rethrow"
+            | CodegenJpMethodBodyCellPending ivar ->
+                DiagJson.emit (
+                    FastRuntimeFormat.format
+                        "{\"kind\":\"codegen_jp_method_body_cell_pending_wait_started\",\"body\":%s,\"key\":%s,\"dict_count\":%d,\"authority\":\"typed_owner_local_pending_cell\",\"next\":\"await_same_one_shot_terminal_payload\"}"
+                        [| box (DiagJson.esc jp_body_name); box (DiagJson.esc jp_key_text); box jp_dict2.Count |])
+                PevalStallProbe.awaitCodegenCellOrFail ivar (fun () -> sprintf "method%i body=%s key=%s" i jp_body_name jp_key_text)
+                requireResolvedMethodCell afterReplayDrain jp_dict2
+            | CodegenJpMethodBodyCellMissing ->
+                let generation = CacheGeneration.current()
+                let invalidationCount = CacheGeneration.invalidationCount()
+                let sequentialRequested = CacheGeneration.isSequentialRequested()
+                let replayLive = EvalWorklist.codegenJpBodyDictShouldDefer()
+                let recoveryDecision =
+                    if afterReplayDrain then CodegenJpBodyDictRetrySequential(generation, invalidationCount)
+                    else codegenJpBodyDictRecoveryDecision replayLive sequentialRequested generation invalidationCount
+                DiagJson.emit (
+                    FastRuntimeFormat.format "{\"kind\":\"codegen_jp_body_cell_recovery_decision\",\"jp_kind_du\":\"method\",\"body\":%s,\"key\":%s,\"cell_state_du\":\"NotReady\",\"dict_count\":%d,\"replay_live\":%b,\"after_replay_drain\":%b,\"generation\":%d,\"invalidation_count\":%d,\"sequential_requested\":%b,\"decision_du\":%s,\"authority\":\"typed_codegen_body_cell_resolution\"}" [| box (DiagJson.esc jp_body_name); box (DiagJson.esc jp_key_text); box jp_dict2.Count; box replayLive; box afterReplayDrain; box generation; box invalidationCount; box sequentialRequested; box (DiagJson.esc (codegenJpBodyDictRecoveryDecisionText recoveryDecision)) |])
+                match recoveryDecision with
+                | CodegenJpBodyDictDrainReplay ->
+                    match tryRefreshMethodJpDictAfterReplayDrain () with
+                    | Some refreshedDict -> requireResolvedMethodCell true refreshedDict
+                    | None ->
+                        CacheGeneration.requestSequential ()
+                        let msg = FastRuntimeFormat.format "%s: codegen JP method body cell not ready after live replay drain method%i body=%s key=%s" [| box DiagnosticClassifier.EJP0014; box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)) |]
+                        raise (PartEvalTypeError([], msg))
+                | CodegenJpBodyDictRetrySequential _ ->
+                    CacheGeneration.requestSequential ()
+                    let msg = FastRuntimeFormat.format "%s: codegen JP method body cell not ready; sequential generation retry requested method%i body=%s key=%s" [| box DiagnosticClassifier.EJP0014; box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)) |]
+                    raise (PartEvalTypeError([], msg))
+                | CodegenJpBodyDictFailClosed ->
+                    let msg = FastRuntimeFormat.format "CODEGEN JP NOT READY method%i body=%s key=%s dict=%d authority=typed_closed_world_no_live_producer" [| box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box jp_dict2.Count |]
+                    DiagSidecar.emit msg
+                    raise_codegen_error' [] (None, msg)
+
+        let a, range =
+            if jp_dict_missing then
+                let msg = FastRuntimeFormat.format "CODEGEN JP MISSING BODY DICT BLOCKED method%i body=%s key=%s dict=%d" [| box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box jp_dict.Count |]
+                EvalWorklist.pinCodegenJpBodyDictMissing "fsharp_codegen" EvalWorklist.CodegenMethod jp_body_name jp_key_text jp_dict.Count msg
+                let generation = CacheGeneration.current()
+                let invalidationCount = CacheGeneration.invalidationCount()
+                let sequentialRequested = CacheGeneration.isSequentialRequested()
+                let recoveryDecision =
+                    codegenJpBodyDictRecoveryDecision
+                        (EvalWorklist.codegenJpBodyDictShouldDefer())
+                        sequentialRequested
+                        generation
+                        invalidationCount
+                DiagJson.emit (
+                    FastRuntimeFormat.format "{\"kind\":\"codegen_jp_body_dict_recovery_decision\",\"jp_kind_du\":\"method\",\"body\":%s,\"key\":%s,\"dict_count\":%d,\"generation\":%d,\"invalidation_count\":%d,\"sequential_requested\":%b,\"decision_du\":%s,\"authority\":\"typed_codegen_recovery\"}" [| box (DiagJson.esc jp_body_name); box (DiagJson.esc ("jp-key-tag:" + string key.tag)); box jp_dict.Count; box generation; box invalidationCount; box sequentialRequested; box (DiagJson.esc (codegenJpBodyDictRecoveryDecisionText recoveryDecision)) |])
+                match recoveryDecision with
+                | CodegenJpBodyDictDrainReplay ->
+                    match tryRefreshMethodJpDictAfterReplayDrain () with
+                    | Some refreshedDict ->
+                        DiagSidecar.emit (FastRuntimeFormat.format "CODEGEN JP BODY DICT REFRESHED method%i body=%s key=%s dict=%d" [| box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box refreshedDict.Count |])
+                        requireResolvedMethodCell true refreshedDict
+                    | None ->
+                        let ewPendingNow = EvalWorklist.pendingCount()
+                        let ewQueueNow = EvalWorklist.replayQueueDepth()
+                        let ewActiveNow = EvalWorklist.replayDriverActiveDepthValue()
+                        let ewDriverNow = EvalWorklist.replayDriverStatus()
+                        let replayCompleteNow = EvalWorklist.hasReplayComplete()
+                        let writeWitnessNow = EvalWorklist.hasReplayCompleteWriteWitness()
+                        CacheGeneration.requestSequential ()
+                        let deferMsg = FastRuntimeFormat.format "%s: codegen JP body dict missing after replay-drain recheck while producer work was live; sequential generation retry requested method%i body=%s key=%s dict=%d ew_pending=%d replay_queue=%d active_depth=%d driver=%s replay_complete=%b write_witness=%b" [| box DiagnosticClassifier.EJP0014; box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box jp_dict.Count; box ewPendingNow; box ewQueueNow; box ewActiveNow; box ewDriverNow; box replayCompleteNow; box writeWitnessNow |]
+                        DiagSidecar.emit deferMsg
+                        raise (PartEvalTypeError([], deferMsg))
+                | CodegenJpBodyDictRetrySequential(retryGeneration, retryInvalidationCount) ->
+                    CacheGeneration.requestSequential ()
+                    let retryMsg =
+                        FastRuntimeFormat.format "%s: codegen JP body dict missing after generation recovery; retry the build through the sequential JP authority method%i body=%s key=%s dict=%d generation=%d invalidations=%d" [| box DiagnosticClassifier.EJP0014; box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box jp_dict.Count; box retryGeneration; box retryInvalidationCount |]
+                    DiagSidecar.emit retryMsg
+                    raise (PartEvalTypeError([], retryMsg))
+                | CodegenJpBodyDictFailClosed ->
+                    DiagSidecar.emit msg
+                    raise_codegen_error' [] (None, msg)
+            else requireResolvedMethodCell false jp_dict
+        let range, sourceName = range
+        a, range, sourceName
+    let codegenFsharpClosureBody (env : PartEvalResult) (jp_body : JpBodyOwnerIdentity) (key : ConsedNode<RData [] * Ty [] * Ty>) (i : int) =
+        let fun_ty = match key with C(_,_,t) -> t
+        let jp_body_name = JpBodyOwnerIdentity.backendText jp_body
+        let jp_key_text = "jp-key-tag:" + string key.tag
+        let jp_dict, jp_dict_missing =
+            match env.join_point_closure.TryGetValue jp_body with
+            | true, (d,_,_) -> d, false
+            | _ ->
+                DiagSidecar.emit (FastRuntimeFormat.format "CODEGEN JP BODY DICT OWNER_MISSING closure%i body=%s key=%s" [| box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)) |])
+                System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, Hopac.IVar<JpClosureBodyCellPayload>>(HashIdentity.Reference), true
+        let range_ty =
+            match fun_ty with
+            | YFun(_, r, FT_Vanilla) -> r
+            | _ -> YB
+
+
+        // Codegen closure JP waits are fail-closed. A unique ready
+        // Only current exact-owner materialization may repair a stale cell; placeholders are forbidden.
+        (* legacy codegen JP closure polling removed from compilation; archived for delete sweep
+        let get () =
+            let sw = System.Diagnostics.Stopwatch.StartNew()
+            let mutable next_log = int64 wait_log_ms
+            let rec loop () =
+                match jp_dict.TryGetValue key with
+                | true, Some x -> x
+                | true, None ->
+                    match jp_ev.TryGetValue key with
+                    | true, ev when ev.IsSet ->
+                        let msg =
+                            FastRuntimeFormat.format "CODEGEN JP STUCK closure%i body=%s key=%s pending=%s dict=%d ev=%d" [| box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box (FastRuntimeFormat.pretty (box jp_pending)); box jp_dict.Count; box jp_ev.Count |]
+                        dump_spiral_env_once ()
+                        DiagSidecar.emitEnvSnapshotOnce()
+                        if wait_fatal then raise_codegen_error' [] (None, msg)
+                        elif wait_placeholder then placeholder()
+                        else raise_codegen_error' [] (None, msg)
+                    | true, ev ->
+                        let ms = sw.ElapsedMilliseconds
+                        if ms >= int64 wait_timeout_ms then
+                            let msg =
+                                FastRuntimeFormat.format "CODEGEN JP TIMEOUT after %dms: closure%i body=%s key=%s pending=%s dict=%d ev=%d" [| box wait_timeout_ms; box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box (FastRuntimeFormat.pretty (box jp_pending)); box jp_dict.Count; box jp_ev.Count |]
+                            dump_spiral_env_once ()
+                            DiagSidecar.emitEnvSnapshotOnce()
+                            if wait_fatal then raise_codegen_error' [] (None, msg)
+                            elif wait_placeholder then placeholder()
+                            else raise_codegen_error' [] (None, msg)
+                        else
+                            if ms >= next_log then
+                                DiagSidecar.emit
+                                    (FastRuntimeFormat.format "CODEGEN JP wait %dms: closure%i body=%s key=%s pending=%s dict=%d ev=%d" [| box (int ms); box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box (FastRuntimeFormat.pretty (box jp_pending)); box jp_dict.Count; box jp_ev.Count |])
+                                next_log <- ms + int64 wait_log_ms
+                            ev.Wait(wait_slice_ms) |> ignore
+                            loop ()
+                    | _ ->
+                        let msg =
+                            FastRuntimeFormat.format "CODEGEN JP MISSING EVENT closure%i body=%s key=%s pending=%s dict=%d ev=%d" [| box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box (FastRuntimeFormat.pretty (box jp_pending)); box jp_dict.Count; box jp_ev.Count |]
+                        dump_spiral_env_once ()
+                        DiagSidecar.emitEnvSnapshotOnce()
+                        if wait_fatal then raise_codegen_error' [] (None, msg)
+                        elif wait_placeholder then placeholder()
+                        else raise_codegen_error' [] (None, msg)
+                | _ ->
+                    match jp_ev.TryGetValue key with
+                    | true, ev when ev.IsSet ->
+                        let msg =
+                            FastRuntimeFormat.format "CODEGEN JP STUCK closure%i body=%s key=%s pending=%s dict=%d ev=%d (no dict entry)" [| box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box (FastRuntimeFormat.pretty (box jp_pending)); box jp_dict.Count; box jp_ev.Count |]
+                        dump_spiral_env_once ()
+                        DiagSidecar.emitEnvSnapshotOnce()
+                        if wait_fatal then raise_codegen_error' [] (None, msg)
+                        elif wait_placeholder then placeholder()
+                        else raise_codegen_error' [] (None, msg)
+                    | true, ev ->
+                        let ms = sw.ElapsedMilliseconds
+                        if ms >= int64 wait_timeout_ms then
+                            let msg =
+                                FastRuntimeFormat.format "CODEGEN JP TIMEOUT after %dms: closure%i body=%s key=%s pending=%s dict=%d ev=%d" [| box wait_timeout_ms; box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box (FastRuntimeFormat.pretty (box jp_pending)); box jp_dict.Count; box jp_ev.Count |]
+                            dump_spiral_env_once ()
+                            DiagSidecar.emitEnvSnapshotOnce()
+                            if wait_fatal then raise_codegen_error' [] (None, msg)
+                            elif wait_placeholder then placeholder()
+                            else raise_codegen_error' [] (None, msg)
+                        else
+                            if ms >= next_log then
+                                DiagSidecar.emit
+                                    (FastRuntimeFormat.format "CODEGEN JP wait %dms: closure%i body=%s key=%s pending=%s dict=%d ev=%d" [| box (int ms); box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box (FastRuntimeFormat.pretty (box jp_pending)); box jp_dict.Count; box jp_ev.Count |])
+                                next_log <- ms + int64 wait_log_ms
+                            ev.Wait(wait_slice_ms) |> ignore
+                            loop ()
+                    | _ ->
+                        let msg =
+                            FastRuntimeFormat.format "CODEGEN JP MISSING closure%i body=%s key=%s pending=%s dict=%d ev=%d" [| box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box (FastRuntimeFormat.pretty (box jp_pending)); box jp_dict.Count; box jp_ev.Count |]
+                        dump_spiral_env_once ()
+                        DiagSidecar.emitEnvSnapshotOnce()
+                        if wait_fatal then raise_codegen_error' [] (None, msg)
+                        elif wait_placeholder then placeholder()
+                        else raise_codegen_error' [] (None, msg)
+            loop ()
+        archived legacy codegen JP closure polling end *)
+
+
+        let currentClosureOwnerMaterialization () =
+            match env.join_point_closure.TryGetValue jp_body with
+            | false, _ -> CodegenJpOwnerRegistryMissing
+            | true, (d,_,_) ->
+                match d.TryGetValue key with
+                | false, _ -> CodegenJpOwnerCellMissing d.Count
+                | true, ivar when not ivar.Full -> CodegenJpOwnerCellPending d.Count
+                | true, ivar ->
+                    match Hopac.IVar.Now.get ivar with
+                    | JpClosureBodyCellReadyPayload(data, body) -> CodegenJpOwnerMaterializedReady(data, body, d.Count)
+                    | JpClosureBodyCellCancelledPayload _ -> CodegenJpOwnerCellCancelled d.Count
+                    | JpClosureBodyCellFailedPayload _ -> CodegenJpOwnerCellFailed d.Count
+
+        let resolve_v2_from (jp_dict2: System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, Hopac.IVar<JpClosureBodyCellPayload>>) : CodegenJpClosureBodyCellResolution<Data,TypedBind []> =
+            match jp_dict2.TryGetValue key with
+            | true, ivar when ivar.Full ->
+                match Hopac.IVar.Now.get ivar with
+                | JpClosureBodyCellReadyPayload(data, body) -> CodegenJpClosureBodyCellReady(data, body)
+                | JpClosureBodyCellCancelledPayload cancellation -> CodegenJpClosureBodyCellCancelled cancellation
+                | JpClosureBodyCellFailedPayload failure -> CodegenJpClosureBodyCellFailed failure
+            | true, ivar -> CodegenJpClosureBodyCellPending ivar
+            | false, _ ->
+                match currentClosureOwnerMaterialization () with
+                | CodegenJpOwnerMaterializedReady(data, body, _) -> CodegenJpClosureBodyCellReady(data, body)
+                | CodegenJpOwnerRegistryMissing
+                | CodegenJpOwnerCellMissing _
+                | CodegenJpOwnerCellPending _
+                | CodegenJpOwnerCellCancelled _
+                | CodegenJpOwnerCellFailed _ -> CodegenJpClosureBodyCellMissing
+
+        let tryRefreshClosureJpDictAfterReplayDrain () =
+            let drained : EvalWorklist.Frame option =
+                try EvalWorklist.drainJpStallPreflight "codegen_closure_body_dict_missing_preflight" 4096
+                with _ -> None
+            let refreshed =
+                match env.join_point_closure.TryGetValue jp_body with
+                | true, (d,_,_) when d.ContainsKey key || d.Count > 0 -> Some d
+                | _ -> None
+            let closureOwnerRegistryPresent, closureOwnerKeyPresent, closureOwnerRegistryNonEmpty =
+                match env.join_point_closure.TryGetValue jp_body with
+                | true, (d,_,_) -> true, d.ContainsKey key, d.Count > 0
+                | false, _ -> false, false, false
+            let ownerMaterializationAfterDrain = currentClosureOwnerMaterialization ()
+            let drainedStatus = match drained with Some frame -> EvalWorklist.frameStatusToString frame.status | None -> "none"
+            let drainedKind = match drained with Some frame -> EvalWorklist.frameKindText frame | None -> "none"
+            let drainedSite = match drained with Some frame -> EvalWorklist.frameSiteText frame | None -> "none"
+            let drainedKey = match drained with Some frame -> (EvalWorklist.frameKeyText frame) | None -> "none"
+            let drainedReason = match drained with Some frame -> EvalWorklist.frameReasonToString frame.reason | None -> "none"
+            let drainedCursor = match drained with Some frame -> frame.cursor | None -> -1
+            let drainedTraceLines = match drained with Some frame -> frame.trace.Length | None -> 0
+            let drainedCell =
+                match drained with
+                | Some frame ->
+                    match frame.semanticCell with
+                    | Some cell -> FastRuntimeFormat.format "semantic_eval_cell(kind=%s,shape=%s,node_id=%d,cursor=%d,step=%d,status=%s,site=%s)" [| box (EvalWorklist.replayCellKindText cell); box (EvalWorklist.replayCellShapeText cell); box cell.nodeId; box cell.cursor; box cell.step; box (EvalWorklist.replayCellStatusText cell.status); box (EvalWorklist.replayCellSiteText cell) |]
+                    | None -> "none"
+                | None -> "none"
+            let ewPendingNow = EvalWorklist.pendingCount()
+            let ewQueueNow = EvalWorklist.replayQueueDepth()
+            let ewActiveNow = EvalWorklist.replayDriverActiveDepthValue()
+            let ewDriverNow = EvalWorklist.replayDriverStatus()
+            let replayCompleteNow = EvalWorklist.hasReplayComplete()
+            let writeWitnessNow = EvalWorklist.hasReplayCompleteWriteWitness()
+            let writeWitnessSummary = EvalWorklist.replayCompleteWriteWitnessSummary()
+            match refreshed with
+            | Some d ->
+                DiagJson.emit (
+                    FastRuntimeFormat.format "{\"kind\":\"eval_worklist_codegen_jp_body_dict_rechecked\",\"event\":\"closure_codegen_missing\",\"body\":%s,\"key\":%s,\"dict\":%d,\"drained_status\":%s,\"drained_kind\":%s,\"drained_site\":%s,\"drained_key\":%s,\"drained_reason\":%s,\"drained_cursor\":%d,\"drained_trace_lines\":%d,\"drained_cell\":%s,\"ew_pending\":%d,\"replay_queue\":%d,\"active_depth\":%d,\"driver_state\":%s,\"replay_complete\":%b,\"write_witness\":%b,\"write_witness_summary\":%s,\"exact_owner_registry_present\":%d,\"exact_owner_key_present\":%d,\"owner_materialization_resolution_du\":%s,\"exact_owner_registry_non_empty\":%d,\"single_flight\":1,\"next\":\"retry_codegen_jp_dict_lookup\"}" [| box (DiagJson.esc jp_body_name); box (DiagJson.esc jp_key_text); box d.Count; box (DiagJson.esc drainedStatus); box (DiagJson.esc drainedKind); box (DiagJson.esc drainedSite); box (DiagJson.esc drainedKey); box (DiagJson.esc drainedReason); box drainedCursor; box drainedTraceLines; box (DiagJson.esc drainedCell); box ewPendingNow; box ewQueueNow; box ewActiveNow; box (DiagJson.esc ewDriverNow); box replayCompleteNow; box writeWitnessNow; box (DiagJson.esc writeWitnessSummary); box (if closureOwnerRegistryPresent then 1 else 0); box (if closureOwnerKeyPresent then 1 else 0); box (DiagJson.esc (codegenJpOwnerMaterializationResolutionText ownerMaterializationAfterDrain)); box (if closureOwnerRegistryNonEmpty then 1 else 0) |])
+                Some d
+            | None ->
+                DiagJson.emit (
+                    FastRuntimeFormat.format "{\"kind\":\"eval_worklist_codegen_jp_body_dict_recheck_missing\",\"event\":\"closure_codegen_missing\",\"body\":%s,\"key\":%s,\"dict\":%d,\"drained_status\":%s,\"drained_kind\":%s,\"drained_site\":%s,\"drained_key\":%s,\"drained_reason\":%s,\"drained_cursor\":%d,\"drained_trace_lines\":%d,\"drained_cell\":%s,\"ew_pending\":%d,\"replay_queue\":%d,\"active_depth\":%d,\"driver_state\":%s,\"replay_complete\":%b,\"write_witness\":%b,\"write_witness_summary\":%s,\"exact_owner_registry_present\":%d,\"exact_owner_key_present\":%d,\"owner_materialization_resolution_du\":%s,\"exact_owner_registry_non_empty\":%d,\"single_flight\":1,\"next\":\"defer_or_fail_codegen_missing_dict\"}" [| box (DiagJson.esc jp_body_name); box (DiagJson.esc jp_key_text); box jp_dict.Count; box (DiagJson.esc drainedStatus); box (DiagJson.esc drainedKind); box (DiagJson.esc drainedSite); box (DiagJson.esc drainedKey); box (DiagJson.esc drainedReason); box drainedCursor; box drainedTraceLines; box (DiagJson.esc drainedCell); box ewPendingNow; box ewQueueNow; box ewActiveNow; box (DiagJson.esc ewDriverNow); box replayCompleteNow; box writeWitnessNow; box (DiagJson.esc writeWitnessSummary); box (if closureOwnerRegistryPresent then 1 else 0); box (if closureOwnerKeyPresent then 1 else 0); box (DiagJson.esc (codegenJpOwnerMaterializationResolutionText ownerMaterializationAfterDrain)); box (if closureOwnerRegistryNonEmpty then 1 else 0) |])
+                None
+
+
+        let rec requireResolvedClosureCell afterReplayDrain jp_dict2 =
+            match resolve_v2_from jp_dict2 with
+            | CodegenJpClosureBodyCellReady(data, body) -> data, body
+            | CodegenJpClosureBodyCellCancelled cancellation ->
+                let cancellationRef, repeatCount, repeatLimit, stableAgeMs, stableAgeFloorMs, stasisBasis =
+                    match cancellation with
+                    | JpClosurePatternMissStasisCancellation(cancellationRef, repeatCount, repeatLimit, stableAgeMs, stableAgeFloorMs, stasisBasis) ->
+                        cancellationRef, repeatCount, repeatLimit, stableAgeMs, stableAgeFloorMs, stasisBasis
+                let ownerResolution = currentClosureOwnerMaterialization ()
+                match ownerResolution with
+                | CodegenJpOwnerMaterializedReady(data, body, _) ->
+                    DiagJson.emit (
+                        FastRuntimeFormat.format
+                            "{\"kind\":\"codegen_jp_closure_body_cell_cancelled_owner_materialization_recovered\",\"body\":%s,\"key\":%s,\"repeat_count\":%d,\"stable_age_ms\":%d,\"stasis_basis_du\":%s,\"cancellation_ref\":%s,\"owner_materialization_resolution_du\":%s,\"semantic_failure\":false,\"authority\":\"stale_captured_cancelled_cell_subordinated_to_current_exact_owner_ready_cell\",\"next\":\"continue_codegen_from_current_owner_materialization\"}"
+                            [| box (DiagJson.esc jp_body_name); box (DiagJson.esc jp_key_text); box repeatCount; box stableAgeMs; box (DiagJson.esc (JpCodegenPatternMissStasisBasisId.text stasisBasis)); box (DiagJson.esc (CompilerIdentityKernel.ContentDigest.text cancellationRef)); box (DiagJson.esc (codegenJpOwnerMaterializationResolutionText ownerResolution)) |])
+                    data, body
+                | CodegenJpOwnerRegistryMissing
+                | CodegenJpOwnerCellMissing _
+                | CodegenJpOwnerCellPending _
+                | CodegenJpOwnerCellCancelled _
+                | CodegenJpOwnerCellFailed _ ->
+                    DiagJson.emit (
+                        FastRuntimeFormat.format
+                            "{\"kind\":\"codegen_jp_closure_body_cell_cancelled_observed\",\"body\":%s,\"key\":%s,\"repeat_count\":%d,\"repeat_limit\":%d,\"stable_age_ms\":%d,\"stable_age_floor_ms\":%d,\"stasis_basis_du\":%s,\"cancellation_ref\":%s,\"owner_materialization_resolution_du\":%s,\"semantic_failure\":false,\"authority\":\"owner_local_closure_cell_cancelled_payload\",\"next\":\"surface_required_codegen_body_unmaterialized_without_cross_owner_reuse\"}"
+                            [| box (DiagJson.esc jp_body_name); box (DiagJson.esc jp_key_text); box repeatCount; box repeatLimit; box stableAgeMs; box stableAgeFloorMs; box (DiagJson.esc (JpCodegenPatternMissStasisBasisId.text stasisBasis)); box (DiagJson.esc (CompilerIdentityKernel.ContentDigest.text cancellationRef)); box (DiagJson.esc (codegenJpOwnerMaterializationResolutionText ownerResolution)) |])
+                    let msg =
+                        FastRuntimeFormat.format
+                            "%s: codegen JP closure body cell cancelled by typed pattern-miss stasis; current exact owner has no material body closure%i body=%s key=%s owner_resolution=%s"
+                            [| box DiagnosticClassifier.EJP0035; box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box (codegenJpOwnerMaterializationResolutionText ownerResolution) |]
+                    raise (PartEvalTypeError([], msg))
+            | CodegenJpClosureBodyCellFailed failure ->
+                let failureType = failure.SourceException.GetType().FullName
+                DiagJson.emit (
+                    FastRuntimeFormat.format
+                        "{\"kind\":\"codegen_jp_closure_body_cell_failure_observed\",\"body\":%s,\"key\":%s,\"exception_type\":%s,\"authority\":\"owner_local_closure_cell_failed_payload\",\"next\":\"rethrow_original_failure_without_codegen_malformed_reclassification\"}"
+                        [| box (DiagJson.esc jp_body_name); box (DiagJson.esc jp_key_text); box (DiagJson.esc failureType) |])
+                failure.Throw()
+                failwith "unreachable after closure body failure rethrow"
+            | CodegenJpClosureBodyCellPending ivar ->
+                DiagJson.emit (
+                    FastRuntimeFormat.format
+                        "{\"kind\":\"codegen_jp_closure_body_cell_pending_wait_started\",\"body\":%s,\"key\":%s,\"dict_count\":%d,\"authority\":\"typed_owner_local_pending_cell\",\"next\":\"await_same_one_shot_terminal_payload\"}"
+                        [| box (DiagJson.esc jp_body_name); box (DiagJson.esc jp_key_text); box jp_dict2.Count |])
+                PevalStallProbe.awaitCodegenCellOrFail ivar (fun () -> sprintf "closure body=%s key=%s" jp_body_name jp_key_text)
+                requireResolvedClosureCell afterReplayDrain jp_dict2
+            | CodegenJpClosureBodyCellMissing ->
+                let generation = CacheGeneration.current()
+                let invalidationCount = CacheGeneration.invalidationCount()
+                let sequentialRequested = CacheGeneration.isSequentialRequested()
+                let replayLive = EvalWorklist.codegenJpBodyDictShouldDefer()
+                let recoveryDecision =
+                    if afterReplayDrain then CodegenJpBodyDictRetrySequential(generation, invalidationCount)
+                    else codegenJpBodyDictRecoveryDecision replayLive sequentialRequested generation invalidationCount
+                DiagJson.emit (
+                    FastRuntimeFormat.format "{\"kind\":\"codegen_jp_body_cell_recovery_decision\",\"jp_kind_du\":\"closure\",\"body\":%s,\"key\":%s,\"cell_state_du\":\"NotReady\",\"dict_count\":%d,\"replay_live\":%b,\"after_replay_drain\":%b,\"generation\":%d,\"invalidation_count\":%d,\"sequential_requested\":%b,\"decision_du\":%s,\"authority\":\"typed_codegen_body_cell_resolution\"}" [| box (DiagJson.esc jp_body_name); box (DiagJson.esc jp_key_text); box jp_dict2.Count; box replayLive; box afterReplayDrain; box generation; box invalidationCount; box sequentialRequested; box (DiagJson.esc (codegenJpBodyDictRecoveryDecisionText recoveryDecision)) |])
+                match recoveryDecision with
+                | CodegenJpBodyDictDrainReplay ->
+                    match tryRefreshClosureJpDictAfterReplayDrain () with
+                    | Some refreshedDict -> requireResolvedClosureCell true refreshedDict
+                    | None ->
+                        CacheGeneration.requestSequential ()
+                        let msg = FastRuntimeFormat.format "%s: codegen JP closure body cell not ready after live replay drain closure%i body=%s key=%s" [| box DiagnosticClassifier.EJP0014; box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)) |]
+                        raise (PartEvalTypeError([], msg))
+                | CodegenJpBodyDictRetrySequential _ ->
+                    CacheGeneration.requestSequential ()
+                    let msg = FastRuntimeFormat.format "%s: codegen JP closure body cell not ready; sequential generation retry requested closure%i body=%s key=%s" [| box DiagnosticClassifier.EJP0014; box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)) |]
+                    raise (PartEvalTypeError([], msg))
+                | CodegenJpBodyDictFailClosed ->
+                    let msg = FastRuntimeFormat.format "CODEGEN JP NOT READY closure%i body=%s key=%s dict=%d authority=typed_closed_world_no_live_producer" [| box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box jp_dict2.Count |]
+                    DiagSidecar.emit msg
+                    raise_codegen_error' [] (None, msg)
+
+        let domain_args, body =
+            if jp_dict_missing then
+                let msg = FastRuntimeFormat.format "CODEGEN JP MISSING BODY DICT BLOCKED closure%i body=%s key=%s dict=%d" [| box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box jp_dict.Count |]
+                EvalWorklist.pinCodegenJpBodyDictMissing "fsharp_codegen" EvalWorklist.CodegenClosure jp_body_name jp_key_text jp_dict.Count msg
+                let generation = CacheGeneration.current()
+                let invalidationCount = CacheGeneration.invalidationCount()
+                let sequentialRequested = CacheGeneration.isSequentialRequested()
+                let recoveryDecision =
+                    codegenJpBodyDictRecoveryDecision
+                        (EvalWorklist.codegenJpBodyDictShouldDefer())
+                        sequentialRequested
+                        generation
+                        invalidationCount
+                DiagJson.emit (
+                    FastRuntimeFormat.format "{\"kind\":\"codegen_jp_body_dict_recovery_decision\",\"jp_kind_du\":\"closure\",\"body\":%s,\"key\":%s,\"dict_count\":%d,\"generation\":%d,\"invalidation_count\":%d,\"sequential_requested\":%b,\"decision_du\":%s,\"authority\":\"typed_codegen_recovery\"}" [| box (DiagJson.esc jp_body_name); box (DiagJson.esc ("jp-key-tag:" + string key.tag)); box jp_dict.Count; box generation; box invalidationCount; box sequentialRequested; box (DiagJson.esc (codegenJpBodyDictRecoveryDecisionText recoveryDecision)) |])
+                match recoveryDecision with
+                | CodegenJpBodyDictDrainReplay ->
+                    match tryRefreshClosureJpDictAfterReplayDrain () with
+                    | Some refreshedDict ->
+                        DiagSidecar.emit (FastRuntimeFormat.format "CODEGEN JP BODY DICT REFRESHED closure%i body=%s key=%s dict=%d" [| box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box refreshedDict.Count |])
+                        requireResolvedClosureCell true refreshedDict
+                    | None ->
+                        let ewPendingNow = EvalWorklist.pendingCount()
+                        let ewQueueNow = EvalWorklist.replayQueueDepth()
+                        let ewActiveNow = EvalWorklist.replayDriverActiveDepthValue()
+                        let ewDriverNow = EvalWorklist.replayDriverStatus()
+                        let replayCompleteNow = EvalWorklist.hasReplayComplete()
+                        let writeWitnessNow = EvalWorklist.hasReplayCompleteWriteWitness()
+                        CacheGeneration.requestSequential ()
+                        let deferMsg = FastRuntimeFormat.format "%s: codegen JP body dict missing after replay-drain recheck while producer work was live; sequential generation retry requested closure%i body=%s key=%s dict=%d ew_pending=%d replay_queue=%d active_depth=%d driver=%s replay_complete=%b write_witness=%b" [| box DiagnosticClassifier.EJP0014; box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box jp_dict.Count; box ewPendingNow; box ewQueueNow; box ewActiveNow; box ewDriverNow; box replayCompleteNow; box writeWitnessNow |]
+                        DiagSidecar.emit deferMsg
+                        raise (PartEvalTypeError([], deferMsg))
+                | CodegenJpBodyDictRetrySequential(retryGeneration, retryInvalidationCount) ->
+                    CacheGeneration.requestSequential ()
+                    let retryMsg =
+                        FastRuntimeFormat.format "%s: codegen JP body dict missing after generation recovery; retry the build through the sequential JP authority closure%i body=%s key=%s dict=%d generation=%d invalidations=%d" [| box DiagnosticClassifier.EJP0014; box i; box jp_body_name; box (FastRuntimeFormat.pretty (box key)); box jp_dict.Count; box retryGeneration; box retryInvalidationCount |]
+                    DiagSidecar.emit retryMsg
+                    raise (PartEvalTypeError([], retryMsg))
+                | CodegenJpBodyDictFailClosed ->
+                    DiagSidecar.emit msg
+                    raise_codegen_error' [] (None, msg)
+            else requireResolvedClosureCell false jp_dict
+        domain_args, body, closureSourceName (JpBodyOwnerIdentity.body jp_body)
+
 #else
+    /// ## CodegenAdapter
+    module UnionTagIdOps =
+        let text (tag : string) = tag
+    module LayoutFieldNameIdOps =
+        let matchesText (fieldId : string) (text : string) = fieldId = text
+    let codegenMethodKeyArgs (key : ConsedNode<RData [] * Ty []>) = fst key.node
+    let codegenMemoTable (comparer : IEqualityComparer<'k>) : Dictionary<'k, 'v> = Dictionary(comparer)
+    type RefcDecrTable = Dictionary<TypedBind, TyV Set>
+    let refcDecrTable () : RefcDecrTable = Dictionary(HashIdentity.Reference)
+    let refcDecrAdd (table : RefcDecrTable) key value = table.Add(key, value)
+    let codegenMethodBody (env : PartEvalResult) (_ : string) jp_body key =
+        match (fst env.join_point_method.[jp_body]).[key] with
+        | Some body, Some range, name -> DeadPureLetElision.block body, range, name
+        | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
+    let codegenClosureBody (env : PartEvalResult) (_ : string) jp_body key =
+        match (fst env.join_point_closure.[jp_body]).[key] with
+        | Some(domain_args, body) -> domain_args, DeadPureLetElision.block body, closureSourceName (snd jp_body)
+        | _ -> raise_codegen_error "Compiler error: The closure dictionary is malformed"
+    let codegenOwnerBackendName (jp_body : string ConsedNode * E) = (fst jp_body).node
+    let codegenFsharpMethodBody (env : PartEvalResult) jp_body key (_ : int) =
+        match (fst env.join_point_method.[jp_body]).[key] with
+        | Some a, Some range, sourceName -> a, range, sourceName
+        | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
+    let codegenFsharpClosureBody (env : PartEvalResult) jp_body key (_ : int) =
+        match (fst env.join_point_closure.[jp_body]).[key] with
+        | Some(domain_args, body) -> domain_args, body, closureSourceName (snd jp_body)
+        | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
+
+#endif
     /// ## CodegenFsharp
 
     /// ### backend_nameFsharp
@@ -166638,8 +166142,8 @@ module spiral_compiler =
                 let case_index k =
                     union_rec.free_vars
                     |> Seq.map (fun (KeyValue ((_,k'),_)) -> k')
-                    |> Seq.tryFindIndex (fun k' -> k = k')
-                    |> Option.defaultWith (fun () -> raise_codegen_error $"Compiler error: Emitted union type has no case named {k}.")
+                    |> Seq.tryFindIndex (fun k' -> UnionTagIdOps.text k = k')
+                    |> Option.defaultWith (fun () -> raise_codegen_error $"Compiler error: Emitted union type has no case named {UnionTagIdOps.text k}.")
                 Map.iter (fun k (a,b) ->
                     let i = case_index k
                     let cases =
@@ -166650,7 +166154,7 @@ module spiral_compiler =
                             |> sprintf "%s%s" (generatedCaseName prefix union_rec.free_vars i)
                             )
                         |> String.concat ", "
-                    line s (sprintf "| %s -> (* %s *)" cases k)
+                    line s (sprintf "| %s -> (* %s *)" cases (UnionTagIdOps.text k))
                     binds (indent s) b
                     ) on_succs
                 on_fail |> Option.iter (fun b ->
@@ -166666,8 +166170,8 @@ module spiral_compiler =
                 let i =
                     union_rec.free_vars
                     |> Seq.map (fun (KeyValue ((_,k),_)) -> k)
-                    |> Seq.tryFindIndex (fun k -> a = k)
-                    |> Option.defaultWith (fun () -> raise_codegen_error $"Compiler error: Emitted union type has no case named {a}.")
+                    |> Seq.tryFindIndex (fun k -> UnionTagIdOps.text a = k)
+                    |> Option.defaultWith (fun () -> raise_codegen_error $"Compiler error: Emitted union type has no case named {UnionTagIdOps.text a}.")
                 let vars =
                     match data_term_vars b with
                     | [||] -> ""
@@ -166699,13 +166203,13 @@ module spiral_compiler =
                 | StackRefs | HeapRefs -> raise_codegen_error "This backend doesn't support the stack and heap refs layout types."
                 |> fun x ->
                     x.free_vars_by_key
-                    |> Map.tryPick (fun (_, k) v -> if k = key then Some v else None)
+                    |> Map.tryPick (fun (_, k) v -> if LayoutFieldNameIdOps.matchesText key k then Some v else None)
                     |> Option.iter (layout_index i)
             | TyLayoutIndexAll _ | TyLayoutIndexByKey _ -> raise_codegen_error "Compiler error: Expected the TyV in layout index to be a layout type."
             | TyLayoutMutableSet(L(i,t),b,c) ->
                 let a = List.fold (fun s k ->
                     match s with
-                    | DRecord l -> l |> Map.pick (fun (_,k') v -> if k' = k then Some v else None)
+                    | DRecord l -> l |> Map.pick (fun (_,k') v -> if LayoutFieldNameIdOps.matchesText k k' then Some v else None)
                     | _ -> raise_codegen_error "Compiler error: Expected a record.") (mut t).data b
                 Array.iter2 (fun (L(i',_)) b ->
                     line s (sprintf "v%i.l%i <- %s" i i' (show_w b))
@@ -166836,12 +166340,10 @@ module spiral_compiler =
                 )
             )
         and method : _ -> MethodRecFsharp =
-            jp (fun ((jp_body,key & (C(args,_))),i) ->
-                match (fst env.join_point_method.[jp_body]).[key] with
-                | Some a, Some range, sourceName ->
-                    method_names.[i] <- generatedMethodName sourceName i
-                    {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
-                | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
+            jp (fun ((jp_body,key),i) ->
+                let a, range, sourceName = codegenFsharpMethodBody env jp_body key i
+                method_names.[i] <- generatedMethodName sourceName i
+                {tag=i; free_vars=rdata_free_vars (codegenMethodKeyArgs key); range=range; body=a}
                 ) (fun s x ->
                 line s (sprintf "%s (%s) : %s =" method_names.[x.tag] (args_tys x.free_vars) (tup_ty x.range))
                 binds (indent s) x.body
@@ -166850,11 +166352,9 @@ module spiral_compiler =
             jp (fun ((jp_body,key & (C(args,_,fun_ty))),i) ->
                 match fun_ty with
                 | YFun(domain,range,FT_Vanilla) ->
-                    match (fst env.join_point_closure.[jp_body]).[key] with
-                    | Some(domain_args, body) ->
-                        closure_names.[i] <- generatedClosureName (closureSourceName (snd jp_body)) i
-                        {tag=i; free_vars=rdata_free_vars args; domain_args=data_free_vars domain_args; range=range; body=body}
-                    | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
+                    let domain_args, body, sourceName = codegenFsharpClosureBody env jp_body key i
+                    closure_names.[i] <- generatedClosureName sourceName i
+                    {tag=i; free_vars=rdata_free_vars args; domain_args=data_free_vars domain_args; range=range; body=body}
                 | YFun(_,_,_) -> raise_codegen_error "Non-standard functions are not supported in the F# backend."
                 | _ -> raise_codegen_error "Compiler error: Unexpected type in the closure join point."
                 ) (fun s x ->
@@ -166880,47 +166380,6 @@ module spiral_compiler =
         functions |> Seq.iteri (fun i x -> program.Append(if i = 0 then "let rec " else "and ").Append(x) |> ignore)
         program.Append(main).ToString()
 
-#endif
-#if SPIRAL_CORE_GPT5PARALLEL
-    /// ## CodegenAdapter
-    let codegenMethodKeyArgs (key : ConsedNode<RData [] * Ty [] * Ty>) = let args, _, _ = key.node in args
-    let codegenMemoTable (comparer : IEqualityComparer<'k>) : System.Collections.Concurrent.ConcurrentDictionary<'k, 'v> =
-        System.Collections.Concurrent.ConcurrentDictionary(comparer)
-    type RefcDecrTable = System.Collections.Concurrent.ConcurrentDictionary<TypedBind, TyV Set>
-    let refcDecrTable () : RefcDecrTable = System.Collections.Concurrent.ConcurrentDictionary(HashIdentity.Reference)
-    let refcDecrAdd (table : RefcDecrTable) key value = table.TryAdd(key, value) |> ignore
-    let codegenMethodBody (env : PartEvalResult) backend jp_body key =
-        let jp_dict, _, _ = env.join_point_method.[jp_body]
-        let body, bodyType, methodName = jpBodyCellAwait jp_dict.[key] |> jpMethodBodyCellReadyForBackend backend
-        DeadPureLetElision.block body, bodyType, methodName
-    let codegenClosureBody (env : PartEvalResult) backend jp_body key =
-        let jp_dict, _, _ = env.join_point_closure.[jp_body]
-        let domain, body = jpBodyCellAwait jp_dict.[key] |> jpClosureBodyCellReadyForBackend backend
-        domain, DeadPureLetElision.block body, closureSourceName (JpBodyOwnerIdentity.body jp_body)
-    let codegenOwnerBackendName (jp_body : JpBodyOwnerIdentity) = JpBodyOwnerIdentity.backendText jp_body
-
-#else
-    /// ## CodegenAdapter
-    module UnionTagIdOps =
-        let text (tag : string) = tag
-    module LayoutFieldNameIdOps =
-        let matchesText (fieldId : string) (text : string) = fieldId = text
-    let codegenMethodKeyArgs (key : ConsedNode<RData [] * Ty []>) = fst key.node
-    let codegenMemoTable (comparer : IEqualityComparer<'k>) : Dictionary<'k, 'v> = Dictionary(comparer)
-    type RefcDecrTable = Dictionary<TypedBind, TyV Set>
-    let refcDecrTable () : RefcDecrTable = Dictionary(HashIdentity.Reference)
-    let refcDecrAdd (table : RefcDecrTable) key value = table.Add(key, value)
-    let codegenMethodBody (env : PartEvalResult) (_ : string) jp_body key =
-        match (fst env.join_point_method.[jp_body]).[key] with
-        | Some body, Some range, name -> DeadPureLetElision.block body, range, name
-        | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
-    let codegenClosureBody (env : PartEvalResult) (_ : string) jp_body key =
-        match (fst env.join_point_closure.[jp_body]).[key] with
-        | Some(domain_args, body) -> domain_args, DeadPureLetElision.block body, closureSourceName (snd jp_body)
-        | _ -> raise_codegen_error "Compiler error: The closure dictionary is malformed"
-    let codegenOwnerBackendName (jp_body : string ConsedNode * E) = (fst jp_body).node
-
-#endif
     /// ## CodegenRust
 
     /// ### backend_nameRust
@@ -186093,12 +185552,74 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         match BigStack.terminalFlowGlobalReconcileHostReturnThroughReducer() with
         | Some exitCode -> DiagJson.forceProcessExitDirect exitCode DiagJson.LegacyExitClientAfterReducerOwnedTotalOrder
         | None -> DiagJson.forceProcessExitDirect 227 DiagJson.LegacyExitClientWithoutReducerOwnedPhysicalReceipt
+
+    type CompilerBootstrapPhase =
+        | BootstrapMainEntered
+        | BootstrapHudStarting
+        | BootstrapArgumentsParsing
+        | BootstrapWebHostBuilding
+        | BootstrapWebHostRunning
+
+    let private compilerBootstrapPhaseText = function
+        | BootstrapMainEntered -> "main_entered"
+        | BootstrapHudStarting -> "hud_starting"
+        | BootstrapArgumentsParsing -> "arguments_parsing"
+        | BootstrapWebHostBuilding -> "web_host_building"
+        | BootstrapWebHostRunning -> "web_host_running"
+
+    let private emitCompilerBootstrapSentinel phase =
+        let line = sprintf "[spiral_compiler] bootstrap phase=%s" (compilerBootstrapPhaseText phase)
+        System.Console.Error.WriteLine line
+        System.Console.Error.Flush()
+
+    let mainTraceLevel = SpiralTrace.TraceLevel.US0_0
+    let mainEntered () =
+        CompilerRuntimeActivation.markInProcessEntered CompilerRuntimeStandaloneMain
+        emitCompilerBootstrapSentinel BootstrapMainEntered
+    let mainBeforeArguments () =
+        emitCompilerBootstrapSentinel BootstrapHudStarting
+        Progress88.start()
+        Progress88.stage 1 4
+        Progress88.tick0 Progress88.ProgressHeartbeatBoot
+        BigStack.startTerminalFlowRuntimeInProcess ()
+        emitCompilerBootstrapSentinel BootstrapArgumentsParsing
+    let mainAnnounceServer (uri_server : string) =
+        let server_line = sprintf "[spiral_compiler] server %s" uri_server
+        if System.Console.IsErrorRedirected then CompilerConsoleHud88.writeLine server_line
+        else CompilerConsoleHud88.writeLine ($"\u001b[32m{server_line}\u001b[0m")
+    let mainBeforeWebHost () = emitCompilerBootstrapSentinel BootstrapWebHostBuilding
+    let mainBeforeRun () = emitCompilerBootstrapSentinel BootstrapWebHostRunning
+    let mainHostExitCode () =
+        let hostExitCode =
+            match BigStack.terminalFlowGlobalReconcileHostReturnThroughReducer() with
+            | Some exitCode -> exitCode
+            | None ->
+                DiagJson.forceProcessExitDirect 227 DiagJson.LegacyExitWebHostWithoutReducerOwnedPhysicalReceipt
+                227
+        CompilerConsoleHud88.completeTerminalPresentationForHostReturn hostExitCode
+        hostExitCode
+    let mainRun (mainCore : string [] -> int) (args : string []) =
+        try
+            let exitCode = mainCore args
+            CompilerConsoleHud88.completeTerminalPresentationForHostReturn exitCode
+            exitCode
+        with _ ->
+            CompilerConsoleHud88.completeTerminalPresentationForFailsafe -1
+            reraise()
 #else
     /// ## ServerHooks
     let serverTraceFilesEnabled = true
     let exitAfterParentProcessGone () = System.Environment.Exit 1
     let noteClientErrorsDelivered (_ : ClientErrorsRes) = ()
     let exitClientAfterShutdown () = System.Diagnostics.Process.GetCurrentProcess().Kill ()
+    let mainTraceLevel = SpiralTrace.TraceLevel.US0_1
+    let mainEntered () = ()
+    let mainBeforeArguments () = ()
+    let mainAnnounceServer (uri_server : string) = printfn "Server bound to: %s" uri_server
+    let mainBeforeWebHost () = ()
+    let mainBeforeRun () = ()
+    let mainHostExitCode () = 0
+    let mainRun (mainCore : string [] -> int) (args : string []) = mainCore args
 #endif
     /// ## new_server
     
@@ -186352,147 +185873,27 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 }
     
 
-#if SPIRAL_CORE_GPT5PARALLEL
-    /// ## main
-    open Microsoft.AspNetCore.Builder
-    open Microsoft.AspNetCore.Hosting
-    open Microsoft.Extensions.DependencyInjection
-    open Microsoft.Extensions.Logging
-    
-
-    type CompilerBootstrapPhase =
-        | BootstrapMainEntered
-        | BootstrapHudStarting
-        | BootstrapArgumentsParsing
-        | BootstrapWebHostBuilding
-        | BootstrapWebHostRunning
-
-    let private compilerBootstrapPhaseText = function
-        | BootstrapMainEntered -> "main_entered"
-        | BootstrapHudStarting -> "hud_starting"
-        | BootstrapArgumentsParsing -> "arguments_parsing"
-        | BootstrapWebHostBuilding -> "web_host_building"
-        | BootstrapWebHostRunning -> "web_host_running"
-
-    let private emitCompilerBootstrapSentinel phase =
-        let line = sprintf "[spiral_compiler] bootstrap phase=%s" (compilerBootstrapPhaseText phase)
-        System.Console.Error.WriteLine line
-        System.Console.Error.Flush()
-
-    let private mainCore args =
-        CompilerRuntimeActivation.markInProcessEntered CompilerRuntimeStandaloneMain
-        emitCompilerBootstrapSentinel BootstrapMainEntered
-        SpiralTrace.TraceLevel.US0_0 |> set_trace_level
-        emitCompilerBootstrapSentinel BootstrapHudStarting
-        Progress88.start()
-        Progress88.stage 1 4
-        Progress88.tick0 Progress88.ProgressHeartbeatBoot
-        BigStack.startTerminalFlowRuntimeInProcess ()
-        emitCompilerBootstrapSentinel BootstrapArgumentsParsing
-    
-
-        let env = startupParse args
-    
-
-        let uri_server = $"http://localhost:{env.port}"
-    
-
-        let server_line = sprintf "[spiral_compiler] server %s" uri_server
-        if System.Console.IsErrorRedirected then CompilerConsoleHud88.writeLine server_line
-        else CompilerConsoleHud88.writeLine ($"\u001b[32m{server_line}\u001b[0m")
-        trace Debug (fun () -> $"pwd: {System.Environment.CurrentDirectory}") _locals
-        let dllPath = System.Reflection.Assembly.GetExecutingAssembly().Location |> System.IO.Path.GetDirectoryName
-        trace Debug (fun () -> $"dllPath: {dllPath}") _locals
-        trace Debug (fun () -> $"targetDir: {targetDir}") _locals
-        emitCompilerBootstrapSentinel BootstrapWebHostBuilding
-        let builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder()
-        builder.Logging.SetMinimumLevel LogLevel.Warning |> ignore
-        builder.Services
-            .AddCors()
-            .AddSignalR(fun x ->
-                x.MaximumReceiveMessageSize <- 1 <<< 20
-                x.EnableDetailedErrors <- true
-                ) |> ignore
-    
-
-        builder.Services
-            .AddSingleton<Supervisor>(fun s ->
-                let hub = s.GetService<IHubContext<SpiralHub>>()
-                let broadcast x =
-                    hub.Clients.All.SendCoreAsync("ServerToClientMsg",[|FSharp.Json.Json.serialize x|])
-    
-
-                let server = new_server ()
-    
-
-                server.errors
-                |> FSharp.Control.AsyncSeq.mapAsync (fun x ->
-                    broadcast x |> Async.AwaitTask
-                )
-                |> FSharp.Control.AsyncSeq.iterAsyncParallel (fun x -> async { () })
-                |> Async.StartChild
-                |> Async.RunSynchronously
-                |> ignore
-    
-
-                {supervisor_ch=server.supervisor}
-                ) |> ignore
-        builder.WebHost.UseUrls [|uri_server|] |> ignore
-        builder.Logging.SetMinimumLevel(LogLevel.Warning) |> ignore
-    
-
-        let app = builder.Build()
-        app.UseCors(fun x ->
-            x.SetIsOriginAllowed(fun _ -> true)
-                .AllowAnyHeader()
-                .AllowAnyMethod()
-                .AllowCredentials() |> ignore
-            ) |> ignore
-        app.MapHub<SpiralHub> "" |> ignore
-    
-
-        startParentWatcher ()
-    
-
-        printfn $"Starting the Spiral Server. It is bound to: {uri_server}"
-        emitCompilerBootstrapSentinel BootstrapWebHostRunning
-        app.Run()
-        let hostExitCode =
-            match BigStack.terminalFlowGlobalReconcileHostReturnThroughReducer() with
-            | Some exitCode -> exitCode
-            | None ->
-                DiagJson.forceProcessExitDirect 227 DiagJson.LegacyExitWebHostWithoutReducerOwnedPhysicalReceipt
-                227
-        CompilerConsoleHud88.completeTerminalPresentationForHostReturn hostExitCode
-        hostExitCode
-
-    let main args =
-        try
-            let exitCode = mainCore args
-            CompilerConsoleHud88.completeTerminalPresentationForHostReturn exitCode
-            exitCode
-        with _ ->
-            CompilerConsoleHud88.completeTerminalPresentationForFailsafe -1
-            reraise()
-#else
     /// ## main
     open Microsoft.AspNetCore.Builder
     open Microsoft.AspNetCore.Hosting
     open Microsoft.Extensions.DependencyInjection
     open Microsoft.Extensions.Logging
 
-    let main args =
-        SpiralTrace.TraceLevel.US0_1 |> set_trace_level
+    let private mainCore (args : string []) =
+        mainEntered ()
+        mainTraceLevel |> set_trace_level
+        mainBeforeArguments ()
 
         let env = startupParse args
 
         let uri_server = $"http://localhost:{env.port}"
 
-        printfn "Server bound to: %s" uri_server
+        mainAnnounceServer uri_server
         trace Debug (fun () -> $"pwd: {System.Environment.CurrentDirectory}") _locals
         let dllPath = System.Reflection.Assembly.GetExecutingAssembly().Location |> System.IO.Path.GetDirectoryName
         trace Debug (fun () -> $"dllPath: {dllPath}") _locals
         trace Debug (fun () -> $"targetDir: {targetDir}") _locals
+        mainBeforeWebHost ()
         let builder = Microsoft.AspNetCore.Builder.WebApplication.CreateBuilder()
         builder.Logging.SetMinimumLevel LogLevel.Warning |> ignore
         builder.Services
@@ -186536,6 +185937,8 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         startParentWatcher ()
 
         printfn $"Starting the Spiral Server. It is bound to: {uri_server}"
+        mainBeforeRun ()
         app.Run()
-        0
-#endif
+        mainHostExitCode ()
+
+    let main args = mainRun mainCore args

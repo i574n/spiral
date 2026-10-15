@@ -230,6 +230,7 @@
         @{ Id = 'samples/native_fptr_capture_negative'; Contains = 'Function pointers shouldn''t have any runtime free variables' }
         @{ Id = 'samples/native_layout_stack_mutable_string_negative'; Contains = 'support stack mutable layout types' }
         @{ Id = 'samples/native_prototype_union_closure_method_missing_instance'; Contains = 'does not have the prototype score' }
+        @{ Id = 'samples/union_case_ambiguity_negative'; Contains = 'ETY-UnionCaseAmbiguous: The union case Hit is defined by more than one opened module' }
     )
 
     Backends = @{

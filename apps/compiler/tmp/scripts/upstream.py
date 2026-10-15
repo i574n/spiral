@@ -10,7 +10,7 @@
 <fork> is a clone of the fork (polyglot/deps/The-Spiral-Language); refs are git refs in it. A section
 `/// ## Name` maps to `The Spiral Language 2/Name.fs` (`SignalRSupervisor` to `Supervisor.fs`); sections
 without a file are i574n additions and are skipped. Only single-flight's text is read or written: shared
-sections, and the `#else` side of `#if SPIRAL_CORE_HOPAC` pairs (a pair's hopac side is reported, not
+sections, and the `#else` side of `#if SPIRAL_CORE_GPT5PARALLEL` pairs (a pair's gpt5parallel side is reported, not
 touched).
 
 Edits are carried as normalized-line patches, like a 3-way merge: lines are compared stripped, ignoring
@@ -65,7 +65,7 @@ def sections(lines):
         if name is not None and start is not None:
             result[name] = (start, end)
     for index, line in enumerate(lines):
-        if line == "#if SPIRAL_CORE_HOPAC" and not state:
+        if line == "#if SPIRAL_CORE_GPT5PARALLEL" and not state:
             close(index); name = start = None; state = "hopac"; depth = 0; continue
         if state and line.startswith("#if"):
             depth += 1

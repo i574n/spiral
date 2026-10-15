@@ -233,7 +233,20 @@ let runFormat (entries : Entry list) (outDir : string option) (listing : TextWri
         tally.Add (entry.Corpus + "\tlines-in-nonblank") originalLines.Length
         tally.Add (entry.Corpus + "\tlines-out-nonblank") formattedLines.Length
         tally.Add (entry.Corpus + "\tlines-out-found-in-input") kept
-        tally.Add (entry.Corpus + "\tover120-out") (formattedLines |> Array.filter (fun l -> l.Length > 120) |> Array.length)
+        tally.Add (entry.Corpus + "\tover120-out") (formattedLines |> Array.filter (fun l -> displayWidth l > 120) |> Array.length)
+        let insideFences =
+            formattedLines
+            |> Array.fold (fun (fenced : bool, marks : bool list) line ->
+                let body = line.TrimStart().TrimStart('/').TrimStart ()
+                let isComment = line.TrimStart().StartsWith "//"
+                if isComment && body.StartsWith "```" then (not fenced, true :: marks)
+                else (fenced, (fenced && isComment) :: marks)) (false, [])
+            |> snd
+            |> List.rev
+            |> Array.ofList
+        let outsideFences = Array.zip formattedLines insideFences |> Array.filter (fun (line, fenced) -> displayWidth line > 120 && not fenced) |> Array.map fst
+        tally.Add (entry.Corpus + "\tover120-out-outside-fences") outsideFences.Length
+        for line in outsideFences do listing.WriteLine (sprintf "%s\tover120-left\t%d\t%s" entry.Rel (displayWidth line) (line.Trim().Substring (0, min 60 (line.Trim().Length))))
         let formattedSource = lexText entry.Path entry.Edition formatted
         let inputSource = lexText entry.Path entry.Edition text
         let layoutOverflows (source : Source<'p>) =

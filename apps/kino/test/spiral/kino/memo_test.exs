@@ -1,7 +1,12 @@
 defmodule Spiral.Kino.MemoTest do
   use ExUnit.Case, async: true
 
-  alias Spiral.Kino.Memo
+  alias Spiral.Kino.{Memo, SourceBlocks}
+
+  defp bounds(program) do
+    {:ok, bounds} = SourceBlocks.of_texts([], [program])
+    bounds
+  end
 
   setup do
     dir = Spiral.Kino.TestHelpers.tmp_dir!("memo")
@@ -112,13 +117,14 @@ defmodule Spiral.Kino.MemoTest do
     first = key.(step.("1i32", "1i32"))
     assert key.(step.("2i32", "1i32")) == first
     refute key.(step.("1i32", "3i32")) == first
-    assert Memo.reached_program(step.("2i32", "1i32").program) =~ "inl helper"
-    refute Memo.reached_program(step.("2i32", "1i32").program) =~ "inl unused"
+    program = step.("2i32", "1i32").program
+    assert Memo.reached_program(program, bounds(program)) =~ "inl helper"
+    refute Memo.reached_program(program, bounds(program)) =~ "inl unused"
   end
 
   test "instances and comments do not hide a dependency: instances are always kept, // inside strings is not a comment" do
     program = "instance equable thing = fun a b => true\ninl url () = \"https://x//y\" |> fun _ => helper ()\ninl helper () = 1i32\ninl spiral_kino_test () = url ()\nspiral_kino_test ()\n"
-    reached = Memo.reached_program(program)
+    reached = Memo.reached_program(program, bounds(program))
     assert reached =~ "instance equable"
     assert reached =~ "inl helper"
   end
@@ -146,7 +152,8 @@ defmodule Spiral.Kino.MemoTest do
     end
 
     refute key.("cols () |> console.write_line") == key.("lines () |> console.write_line")
-    assert Memo.reached_program("inl f () = 1i32\ninl _ = f ()\n0i32\n") =~ "inl f () = 1i32"
+    discarded = "inl f () = 1i32\ninl _ = f ()\n0i32\n"
+    assert Memo.reached_program(discarded, bounds(discarded)) =~ "inl f () = 1i32"
   end
   test "the step keyed on the whole source changes with any definition, so an edit that only breaks unreached code still compiles once" do
     program = fn unused -> "inl helper () = 1i32\ninl unused () = #{unused}\ninl spiral_kino_test () = helper ()\nspiral_kino_test ()\n" end
@@ -187,5 +194,38 @@ defmodule Spiral.Kino.MemoTest do
     assert key.() == first
     File.write!(Path.join(package, "listed.spi"), "inl a () = 2i32\ninl inserted () = (\ninl z () = a ()\n")
     refute key.() == first
+  end
+
+  test "block boundaries come from the compiler: column-0 lines inside a triple-quoted string belong to its definition" do
+    program = "inl text () =\n    \"\"\"\nnot a statement: inl fake () = 0i32\n\"\"\"\ninl spiral_kino_test () = 1i32\nspiral_kino_test ()\n"
+    reached = Memo.reached_program(program, bounds(program))
+    refute reached =~ "inl text"
+    refute reached =~ "not a statement"
+    assert reached =~ "inl spiral_kino_test"
+  end
+
+  test "directive and comment lines stay in the key while an unreached definition is dropped" do
+    program = "///- --timeout 5000\n// note\ninl unused () = 2i32\ninl spiral_kino_test () = 1i32\nspiral_kino_test ()\n"
+    reached = Memo.reached_program(program, bounds(program))
+    assert reached =~ "///- --timeout 5000"
+    refute reached =~ "inl unused"
+  end
+
+  test "without a compiler that lists source-blocks every key is the whole source" do
+    dir = Spiral.Kino.TestHelpers.tmp_dir!("no_bounds")
+    dll = Path.join(dir, "SpiralCompiler.dll")
+    File.write!(dll, "not a compiler")
+    step = fn unused -> %{program: "inl helper () = 1i32\ninl unused () = #{unused}\ninl spiral_kino_test () = helper ()\nspiral_kino_test ()\n", real: ""} end
+    key = fn s -> Memo.key(Memo.context([memo: true, memo_dir: Path.join(dir, "memo"), compiler_dll: dll], [s]), s, []) end
+    refute key.(step.("1i32")) == key.(step.("2i32"))
+    assert Memo.reached_program("inl a () = 1i32\n", :unavailable) == "inl a () = 1i32\n"
+  end
+
+  test "source-blocks rows group by input and skip headerless blocks" do
+    rows = "1\t1\t2\t3\t4\tinl a () =\n1\t5\t0\t0\t6\t\n2\t1\t1\t1\t1\ttest x =\n"
+    assert SourceBlocks.parse_rows(rows) == %{
+             1 => [%{first: 1, header: 2, last_content: 3, last: 4, header_text: "inl a () ="}],
+             2 => [%{first: 1, header: 1, last_content: 1, last: 1, header_text: "test x ="}]
+           }
   end
 end

@@ -1,5 +1,5 @@
 defmodule Spiral.Kino.Memo do
-  alias Spiral.Kino.Toolchain
+  alias Spiral.Kino.{SourceBlocks, Toolchain}
 
   @format 1
   @keep_entries 5_000
@@ -10,15 +10,18 @@ defmodule Spiral.Kino.Memo do
   @spec context(keyword(), [map()]) :: map() | nil
   def context(opts, steps) do
     if enabled?(opts) do
+      bounds = source_bounds(opts, steps)
+
       %{
         dir: dir(opts),
         base: %{
           format: @format,
-          compiler: compiler_identity(opts),
+          compiler: compiler_identity(opts, bounds),
           kino: kino_identity(),
           tools: Keyword.take(opts, @tool_opts)
         },
-        packages: package_prints(steps, opts)
+        packages: package_prints(steps, bounds),
+        bounds: bounds
       }
     end
   end
@@ -34,8 +37,8 @@ defmodule Spiral.Kino.Memo do
 
   @spec key(map(), map(), [String.t()]) :: String.t()
   def key(context, step, builder_lines) do
-    whole = Map.get(step, :whole_source_key, false)
-    program = if whole, do: step.program, else: reached_program(step.program)
+    whole = Map.get(step, :whole_source_key, false) or context.bounds == :unavailable
+    program = if whole, do: step.program, else: reached_program(step.program, context.bounds)
     packages = Enum.map(package_paths(step.program), &{&1, package_print_for(Map.get(context.packages, &1), program, whole)})
 
     {context.base, program, Map.get(step, :real, ""), builder_lines, packages}
@@ -138,9 +141,34 @@ defmodule Spiral.Kino.Memo do
     end
   end
 
-  defp compiler_identity(opts) do
+  defp compiler_identity(opts, bounds) do
     dll = Toolchain.compiler_dll(opts)
-    {same_path(dll), file_print(dll), Toolchain.package_dir(opts) |> Path.join("core") |> tree_print()}
+    {same_path(dll), file_print(dll), opts |> core_dir() |> tree_print(bounds)}
+  end
+
+  defp core_dir(opts), do: opts |> Toolchain.package_dir() |> Path.join("core")
+
+  defp source_bounds(opts, steps) do
+    programs = for step <- steps, not Map.get(step, :whole_source_key, false), do: step.program
+    dirs = [core_dir(opts) | Enum.flat_map(steps, &package_paths(&1.program))]
+    files = dirs |> Enum.flat_map(&tree_files(&1, MapSet.new())) |> Enum.uniq()
+    texts = programs ++ for(file <- files, {:ok, text} <- [File.read(file)], do: text)
+
+    case SourceBlocks.of_texts(opts, texts) do
+      {:ok, spans} -> spans
+      :unavailable -> :unavailable
+    end
+  end
+
+  defp tree_files(dir, seen) do
+    dir = Path.expand(dir)
+
+    with false <- MapSet.member?(seen, dir),
+         {:ok, project} <- File.read(Path.join(dir, "package.spiproj")) do
+      module_files(dir, project) ++ Enum.flat_map(package_dependencies(project), &tree_files(Path.join(dir, &1), MapSet.put(seen, dir)))
+    else
+      _ -> []
+    end
   end
 
   @result_path_modules [
@@ -155,6 +183,7 @@ defmodule Spiral.Kino.Memo do
     Spiral.Kino.Notebook,
     Spiral.Kino.Result,
     Spiral.Kino.Runner,
+    Spiral.Kino.SourceBlocks,
     Spiral.Kino.Targets,
     Spiral.Kino.Toolchain,
     :spiral_kino@domain
@@ -186,14 +215,16 @@ defmodule Spiral.Kino.Memo do
     end
   end
 
-  defp package_prints(steps, _opts) do
+  defp package_prints(steps, bounds) do
     steps
     |> Enum.flat_map(&package_paths(&1.program))
     |> Enum.uniq()
-    |> Map.new(&{&1, package_index(&1)})
+    |> Map.new(&{&1, package_index(&1, bounds)})
   end
 
-  defp package_index(dir) do
+  defp package_index(dir, :unavailable), do: tree_print(dir, :unavailable)
+
+  defp package_index(dir, bounds) do
     dir = Path.expand(dir)
 
     case File.read(Path.join(dir, "package.spiproj")) do
@@ -201,17 +232,18 @@ defmodule Spiral.Kino.Memo do
         modules =
           for {file, opened} <- module_entries(dir, project) do
             module = file |> Path.relative_to(dir) |> String.replace("\\", "/")
-            text = read_compiled(file)
-            %{module: module, scope: module |> Path.rootname() |> String.replace("/", "."), opened: opened, text: text, opens: opened_names(text)}
+            compiled = file |> read_source() |> compiled_blocks(bounds)
+            text = Enum.map_join(compiled, "\n", &Enum.join(&1.lines, "\n"))
+            %{module: module, scope: module |> Path.rootname() |> String.replace("/", "."), opened: opened, compiled: compiled, opens: opened_names(text)}
           end
 
         blocks =
           for module <- modules,
-              block <- module.text |> String.split("\n") |> program_blocks() |> with_stable_ids(module.module) do
+              block <- module.compiled |> shaped_blocks() |> with_stable_ids(module.module) do
             Map.put(block, :scope, module.scope)
           end
 
-        deps = for dep <- package_dependencies(project), do: {dep, tree_print(Path.join(dir, dep))}
+        deps = for dep <- package_dependencies(project), do: {dep, tree_print(Path.join(dir, dep), bounds)}
 
         %{
           project: project,
@@ -240,10 +272,19 @@ defmodule Spiral.Kino.Memo do
 
     identified
   end
-  defp read_compiled(file) do
+  defp read_source(file) do
     case File.read(file) do
-      {:ok, source} -> compiled_part(source)
+      {:ok, source} -> source
       _ -> ""
+    end
+  end
+
+  @test_header ~r/^test(?![\w'])/u
+
+  defp compiled_blocks(text, bounds) do
+    case Map.fetch(bounds, text) do
+      {:ok, spans} -> text |> SourceBlocks.split(spans) |> Enum.reject(&Regex.match?(@test_header, &1.header_text))
+      :error -> [%{header_text: "", lines: String.split(text, "\n")}]
     end
   end
 
@@ -311,8 +352,27 @@ defmodule Spiral.Kino.Memo do
 
   defp scope_named?(scope, name), do: scope == name or String.ends_with?(scope, "." <> name)
   @doc false
-  def reached_program(program) do
-    blocks = program |> String.replace("\r\n", "\n") |> String.split("\n") |> program_blocks()
+  def reached_program(program, :unavailable), do: program
+
+  def reached_program(program, bounds) do
+    case Map.fetch(bounds, program) do
+      {:ok, spans} ->
+        unreached = program |> SourceBlocks.split(spans) |> shaped_blocks() |> unreached_definitions()
+        dropped = for {%{header: header, last: last}, i} <- Enum.with_index(spans), MapSet.member?(unreached, i), row <- header..last//1, into: MapSet.new(), do: row
+
+        program
+        |> String.replace("\r\n", "\n")
+        |> String.split("\n")
+        |> Enum.with_index(1)
+        |> Enum.reject(fn {_line, row} -> MapSet.member?(dropped, row) end)
+        |> Enum.map_join("\n", &elem(&1, 0))
+
+      :error ->
+        program
+    end
+  end
+
+  defp unreached_definitions(blocks) do
     indexed = Enum.with_index(blocks)
 
     by_name =
@@ -324,9 +384,7 @@ defmodule Spiral.Kino.Memo do
     roots = for {block, i} <- indexed, block.kind != :definition or block.instance or "main" in block.names, do: i
     reached = reach_blocks(roots, blocks, by_name, operators, MapSet.new())
 
-    indexed
-    |> Enum.filter(fn {block, i} -> block.kind != :definition or MapSet.member?(reached, i) end)
-    |> Enum.map_join("\n", fn {block, _} -> block.text end)
+    for {block, i} <- indexed, block.kind == :definition, not MapSet.member?(reached, i), into: MapSet.new(), do: i
   end
 
   defp reach_blocks([], _blocks, _by_name, _operators, reached), do: reached
@@ -342,20 +400,8 @@ defmodule Spiral.Kino.Memo do
     end
   end
 
-  defp program_blocks(lines) do
-    lines
-    |> Enum.reduce([], fn line, acc ->
-      if statement_line?(line) or acc == [] do
-        [[line] | acc]
-      else
-        [head | tail] = acc
-        [[line | head] | tail]
-      end
-    end)
-    |> Enum.reverse()
-    |> Enum.map(fn block_lines ->
-      block_lines = Enum.reverse(block_lines)
-      header = hd(block_lines)
+  defp shaped_blocks(blocks) do
+    Enum.map(blocks, fn %{header_text: header, lines: block_lines} ->
       code = block_lines |> Enum.map(&strip_line_comment/1) |> Enum.join("\n")
       {kind, names, operators} = block_shape(header, code)
       tokens = @identifier |> Regex.scan(code) |> List.flatten() |> Enum.uniq() |> Enum.reject(&(&1 in names))
@@ -363,8 +409,6 @@ defmodule Spiral.Kino.Memo do
       %{text: Enum.join(block_lines, "\n"), code: code, kind: kind, names: names, operators: operators, tokens: tokens, unqualified: unqualified, qualified: qualified, instance: Regex.match?(~r/^instance\s/, header)}
     end)
   end
-
-  defp statement_line?(line), do: Regex.match?(~r/^\S/u, line) and not Regex.match?(~r/^(\/\/|\(\* )/, line)
 
   defp block_shape(header, code) do
     cond do
@@ -402,9 +446,9 @@ defmodule Spiral.Kino.Memo do
     end)
   end
 
-  defp tree_print(dir), do: package_print(dir, MapSet.new())
+  defp tree_print(dir, bounds), do: package_print(dir, MapSet.new(), bounds)
 
-  defp package_print(dir, seen) do
+  defp package_print(dir, seen, bounds) do
     dir = Path.expand(dir)
 
     if MapSet.member?(seen, dir) do
@@ -414,8 +458,8 @@ defmodule Spiral.Kino.Memo do
 
       case File.read(Path.join(dir, "package.spiproj")) do
         {:ok, project} ->
-          files = Enum.map(module_files(dir, project), &{&1, content_print(&1)})
-          deps = for dep <- package_dependencies(project), do: {dep, package_print(Path.join(dir, dep), seen)}
+          files = Enum.map(module_files(dir, project), &{&1, content_print(&1, bounds)})
+          deps = for dep <- package_dependencies(project), do: {dep, package_print(Path.join(dir, dep), seen, bounds)}
           :crypto.hash(:sha256, :erlang.term_to_binary({project, files, deps}))
 
         _ ->
@@ -466,29 +510,18 @@ defmodule Spiral.Kino.Memo do
     |> Enum.map(&{String.length(&1) - String.length(String.trim_leading(&1)), String.trim(&1)})
   end
 
-  defp content_print(path) do
+  defp content_print(path, :unavailable) do
     case File.read(path) do
-      {:ok, text} -> :crypto.hash(:sha256, compiled_part(text))
+      {:ok, text} -> :crypto.hash(:sha256, text)
       _ -> :missing
     end
   end
 
-  @doc false
-  def compiled_part(text) do
-    text
-    |> String.replace("\r\n", "\n")
-    |> String.split("\n")
-    |> Enum.reduce({[], false}, fn line, {kept, in_test} ->
-      cond do
-        String.starts_with?(line, "test ") -> {kept, true}
-        in_test and (line == "" or String.starts_with?(line, [" ", "\t"])) -> {kept, true}
-        String.starts_with?(line, "///") -> {kept, false}
-        true -> {[line | kept], false}
-      end
-    end)
-    |> elem(0)
-    |> Enum.reverse()
-    |> Enum.join("\n")
+  defp content_print(path, bounds) do
+    case File.read(path) do
+      {:ok, text} -> :crypto.hash(:sha256, :erlang.term_to_binary(Enum.map(compiled_blocks(text, bounds), & &1.lines)))
+      _ -> :missing
+    end
   end
 
   defp file_print(path) do
