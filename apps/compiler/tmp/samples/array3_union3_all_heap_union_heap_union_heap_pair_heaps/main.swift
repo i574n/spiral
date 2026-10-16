@@ -1,4 +1,5 @@
 import CRT
+import WinSDK
 class Heap0 {
     let l0: Int32
     let l1: String
@@ -36,6 +37,10 @@ protocol US1 { var tag: Int32 { get } }
 struct US1_Absent: US1 { var tag: Int32 { 0 } }
 struct US1_Box: US1 { var f0: Heap3; var tag: Int32 { 1 } }
 struct US1_Mark: US1 { var f0: Int32; var tag: Int32 { 2 } }
+final class SpiralArray<T> {
+    var items: [T]
+    init(_ items: [T]) { self.items = items }
+}
 func sp_score_0(_ p0: US1) -> Int32 {
     var v0: US1 = p0
     switch v0.tag {
@@ -154,25 +159,25 @@ func spiral_main() -> Int32 {
     }
     var v18: Int32 = 0
     v18 = 3
-    var v19: Array<US1> = Array<US1>()
-    v19 = Array<US1>(repeating: US1_Absent(), count: Int(3))
-    v19[Int(0)] = v17
+    var v19: SpiralArray<US1> = SpiralArray<US1>([])
+    v19 = SpiralArray<US1>(Array(repeating: US1_Absent(), count: Int(3)))
+    v19.items[Int(0)] = v17
     var v20: US1 = US1_Absent()
     v20 = US1_Mark(f0: v18)
-    v19[Int(1)] = v20
+    v19.items[Int(1)] = v20
     var v21: US1 = US1_Absent()
     v21 = US1_Absent()
-    v19[Int(2)] = v21
+    v19.items[Int(2)] = v21
     var v22: US1 = US1_Absent()
-    v22 = v19[Int(0)]
+    v22 = v19.items[Int(0)]
     var v23: Int32 = 0
     v23 = sp_score_0(v22)
     var v24: US1 = US1_Absent()
-    v24 = v19[Int(1)]
+    v24 = v19.items[Int(1)]
     var v25: Int32 = 0
     v25 = sp_score_0(v24)
     var v26: US1 = US1_Absent()
-    v26 = v19[Int(2)]
+    v26 = v19.items[Int(2)]
     var v27: Int32 = 0
     v27 = sp_score_0(v26)
     var v28: Bool = false
@@ -199,4 +204,7 @@ func spiral_main() -> Int32 {
         return 1
     }
 }
-exit(spiral_main())
+nonisolated(unsafe) var spiral_exit_code: Int32 = 0
+let spiral_thread = CreateThread(nil, 1 << 30, { _ in spiral_exit_code = spiral_main(); return 0 }, nil, DWORD(STACK_SIZE_PARAM_IS_A_RESERVATION), nil)
+WaitForSingleObject(spiral_thread, INFINITE)
+exit(spiral_exit_code)

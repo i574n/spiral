@@ -1,4 +1,5 @@
 import CRT
+import WinSDK
 class Heap0 {
     let l0: Int32
     let l1: String
@@ -42,6 +43,10 @@ protocol US1 { var tag: Int32 { get } }
 struct US1_Absent: US1 { var tag: Int32 { 0 } }
 struct US1_Box: US1 { var f0: Heap3; var tag: Int32 { 1 } }
 struct US1_Mark: US1 { var f0: Int32; var tag: Int32 { 2 } }
+final class SpiralArray<T> {
+    var items: [T]
+    init(_ items: [T]) { self.items = items }
+}
 func f_c0(_ v0: US1, _ v1: Int32) -> (Int32) -> US1 {
     return { (v2: Int32) -> US1 in
         var v3: Bool = false
@@ -191,21 +196,21 @@ func spiral_main() -> Int32 {
     v24 = v19(0)
     var v25: Heap4 = Heap4(l0: US1_Absent())
     v25 = Heap4(l0: v24)
-    var v26: Array<Heap4> = Array<Heap4>()
-    v26 = Array<Heap4>(repeating: Heap4(l0: US1_Absent()), count: Int(3))
-    v26[Int(0)] = v21
-    v26[Int(1)] = v23
-    v26[Int(2)] = v25
+    var v26: SpiralArray<Heap4> = SpiralArray<Heap4>([])
+    v26 = SpiralArray<Heap4>(Array(repeating: Heap4(l0: US1_Absent()), count: Int(3)))
+    v26.items[Int(0)] = v21
+    v26.items[Int(1)] = v23
+    v26.items[Int(2)] = v25
     var v27: Heap4 = Heap4(l0: US1_Absent())
-    v27 = v26[Int(0)]
+    v27 = v26.items[Int(0)]
     var v28: US1 = US1_Absent()
     v28 = v27.l0
     var v29: Heap4 = Heap4(l0: US1_Absent())
-    v29 = v26[Int(1)]
+    v29 = v26.items[Int(1)]
     var v30: US1 = US1_Absent()
     v30 = v29.l0
     var v31: Heap4 = Heap4(l0: US1_Absent())
-    v31 = v26[Int(2)]
+    v31 = v26.items[Int(2)]
     var v32: US1 = US1_Absent()
     v32 = v31.l0
     var v33: Int32 = 0
@@ -238,4 +243,7 @@ func spiral_main() -> Int32 {
         return 1
     }
 }
-exit(spiral_main())
+nonisolated(unsafe) var spiral_exit_code: Int32 = 0
+let spiral_thread = CreateThread(nil, 1 << 30, { _ in spiral_exit_code = spiral_main(); return 0 }, nil, DWORD(STACK_SIZE_PARAM_IS_A_RESERVATION), nil)
+WaitForSingleObject(spiral_thread, INFINITE)
+exit(spiral_exit_code)

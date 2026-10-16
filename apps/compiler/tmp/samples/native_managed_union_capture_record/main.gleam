@@ -30,6 +30,10 @@ pub fn spiral_array_create(size: Int) -> SpiralArray(a) {
   list.repeat(option.None, size) |> array.from_list(option.None) |> spiral_array_from_storage(size)
 }
 
+pub fn spiral_array_create_filled(size: Int, value: a) -> SpiralArray(a) {
+  list.repeat(option.Some(value), size) |> array.from_list(option.None) |> spiral_array_from_storage(size)
+}
+
 pub fn spiral_array_from_list(values: List(a)) -> SpiralArray(a) {
   values |> list.map(option.Some) |> array.from_list(option.None) |> spiral_array_from_storage(list.length(values))
 }
@@ -102,7 +106,7 @@ pub fn closure1(capt: #(Us0)) -> fn(Int) -> Int {
 }
 pub fn closure0(capt: Nil) -> fn(Int) -> fn(Int) -> Int {
     fn (v0) {
-        let v1 = spiral_array_create(2)
+        let v1 = spiral_array_create_filled(2, 0)
         spiral_array_set(v1, 0, v0)
         let v2 = spiral_wrap_signed(v0 + 1, 32)
         spiral_array_set(v1, 1, v2)

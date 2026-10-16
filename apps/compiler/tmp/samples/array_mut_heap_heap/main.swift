@@ -1,4 +1,5 @@
 import CRT
+import WinSDK
 class Heap0 {
     let l0: Int32
     let l1: String
@@ -21,6 +22,10 @@ class Mut2 {
         self.l0 = l0
     }
 }
+final class SpiralArray<T> {
+    var items: [T]
+    init(_ items: [T]) { self.items = items }
+}
 func spiral_main() -> Int32 {
     var v0: Int32 = 0
     v0 = 3
@@ -34,9 +39,9 @@ func spiral_main() -> Int32 {
     v4 = Heap1(l0: v2, l1: v3)
     var v5: Mut2 = Mut2(l0: Heap1(l0: Heap0(l0: 0, l1: ""), l1: 0))
     v5 = Mut2(l0: v4)
-    var v6: Array<Mut2> = Array<Mut2>()
-    v6 = Array<Mut2>(repeating: Mut2(l0: Heap1(l0: Heap0(l0: 0, l1: ""), l1: 0)), count: Int(1))
-    v6[Int(0)] = v5
+    var v6: SpiralArray<Mut2> = SpiralArray<Mut2>([])
+    v6 = SpiralArray<Mut2>(Array(repeating: Mut2(l0: Heap1(l0: Heap0(l0: 0, l1: ""), l1: 0)), count: Int(1)))
+    v6.items[Int(0)] = v5
     var v7: Int32 = 0
     v7 = 7
     var v8: String = ""
@@ -48,7 +53,7 @@ func spiral_main() -> Int32 {
     var v11: Heap1 = Heap1(l0: Heap0(l0: 0, l1: ""), l1: 0)
     v11 = Heap1(l0: v9, l1: v10)
     var v12: Mut2 = Mut2(l0: Heap1(l0: Heap0(l0: 0, l1: ""), l1: 0))
-    v12 = v6[Int(0)]
+    v12 = v6.items[Int(0)]
     v12.l0 = v11
     var v13: Heap1 = Heap1(l0: Heap0(l0: 0, l1: ""), l1: 0)
     v13 = v12.l0
@@ -84,4 +89,7 @@ func spiral_main() -> Int32 {
         return 1
     }
 }
-exit(spiral_main())
+nonisolated(unsafe) var spiral_exit_code: Int32 = 0
+let spiral_thread = CreateThread(nil, 1 << 30, { _ in spiral_exit_code = spiral_main(); return 0 }, nil, DWORD(STACK_SIZE_PARAM_IS_A_RESERVATION), nil)
+WaitForSingleObject(spiral_thread, INFINITE)
+exit(spiral_exit_code)

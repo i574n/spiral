@@ -1,4 +1,5 @@
 import CRT
+import WinSDK
 class Heap0 {
     let l0: Int32
     let l1: String
@@ -18,6 +19,10 @@ class Heap1 {
 protocol US0 { var tag: Int32 { get } }
 struct US0_None: US0 { var tag: Int32 { 0 } }
 struct US0_Held: US0 { var f0: Heap1; var tag: Int32 { 1 } }
+final class SpiralArray<T> {
+    var items: [T]
+    init(_ items: [T]) { self.items = items }
+}
 func sp_score_0(_ p0: US0) -> Int32 {
     var v0: US0 = p0
     switch v0.tag {
@@ -71,8 +76,8 @@ func spiral_main() -> Int32 {
     v3 = 1
     var v4: Heap1 = Heap1(l0: Heap0(l0: 0, l1: ""), l1: 0)
     v4 = Heap1(l0: v2, l1: v3)
-    var v5: Array<US0> = Array<US0>()
-    v5 = Array<US0>(repeating: US0_None(), count: Int(1))
+    var v5: SpiralArray<US0> = SpiralArray<US0>([])
+    v5 = SpiralArray<US0>(Array(repeating: US0_None(), count: Int(1)))
     var v6: Bool = false
     v6 = true
     var v9: US0 = US0_None()
@@ -81,9 +86,12 @@ func spiral_main() -> Int32 {
     } else {
         v9 = US0_None()
     }
-    v5[Int(0)] = v9
+    v5.items[Int(0)] = v9
     var v10: US0 = US0_None()
-    v10 = v5[Int(0)]
+    v10 = v5.items[Int(0)]
     return sp_score_0(v10)
 }
-exit(spiral_main())
+nonisolated(unsafe) var spiral_exit_code: Int32 = 0
+let spiral_thread = CreateThread(nil, 1 << 30, { _ in spiral_exit_code = spiral_main(); return 0 }, nil, DWORD(STACK_SIZE_PARAM_IS_A_RESERVATION), nil)
+WaitForSingleObject(spiral_thread, INFINITE)
+exit(spiral_exit_code)

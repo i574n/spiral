@@ -479,13 +479,10 @@ test ellipsis =
 /// ### last_index_of
 inl last_index_of (search : string) (s : string) : i32 =
     inl search = dyn search
-    inl otherwise () =
-        run_target function
-            | Rust => fun () => $'!s.rfind(&*!search).map(|i| i as i32).unwrap_or(-1)' : i32
-            | _ => fun () => $'!s.LastIndexOf !search ' : i32
-    backend_switch_or otherwise {
-        Zig = fun () => $'(if (std.mem.lastIndexOf(u8, !s, !search)) |i| \@as(i32, \@intCast(i)) else -1)' : i32
-    }
+    run_target function
+        | Zig => fun () => $'(if (std.mem.lastIndexOf(u8, !s, !search)) |i| \@as(i32, \@intCast(i)) else -1)' : i32
+        | Rust => fun () => $'!s.rfind(&*!search).map(|i| i as i32).unwrap_or(-1)' : i32
+        | _ => fun () => $'!s.LastIndexOf !search ' : i32
 
 /// ### index_of_char
 inl index_of_char (search : char) (s : string) : int =
@@ -644,20 +641,16 @@ inl starts_with (value : string) (s : string) : bool =
 
 /// ### is_white_space
 inl is_white_space (c : char) : bool =
-    inl otherwise () =
-        c |> $'System.Char.IsWhiteSpace'
-    backend_switch_or otherwise {
-        Zig = fun () => $'std.ascii.isWhitespace(!c)' : bool
-    }
+    run_target function
+        | Zig => fun () => $'std.ascii.isWhitespace(!c)' : bool
+        | _ => fun () => c |> $'System.Char.IsWhiteSpace'
 
 /// ### substring
 inl substring (start : i32) (len : i32) (str : string) : string =
-    inl otherwise () =
-        $'!str.Substring (!start, !len)'
-    backend_switch_or otherwise {
-        Rust = fun () => $'Rc::<str>::from(&(!str)[((!start) as usize)..(((!start) + (!len)) as usize)])' : string
-        Zig = fun () => $'(!str)[\@intCast(!start)..\@intCast(!start + !len)]' : string
-    }
+    run_target function
+        | Rust => fun () => $'Rc::<str>::from(&(!str)[((!start) as usize)..(((!start) + (!len)) as usize)])' : string
+        | Zig => fun () => $'(!str)[\@intCast(!start)..\@intCast(!start + !len)]' : string
+        | _ => fun () => $'!str.Substring (!start, !len)'
 
 /// ### to_lower
 inl to_lower (input : string) : string =
@@ -1630,16 +1623,13 @@ instance to_string result t u = fun x =>
 
 /// ### format_exception
 inl format_exception (ex : exn) : string =
-    inl otherwise () =
-        run_target function
-            | Fsharp => fun () => $'$"{!ex.GetType ()}: {!ex.Message}"'
-            | Rust => fun () => $'!ex ' : string
-            | TypeScript => fun () => $'String(!ex)' : string
-            | _ => fun () => ex |> format_debug
-    backend_switch_or otherwise {
-        Zig = fun () =>
+    run_target function
+        | Zig => fun () =>
             $'!ex ' : string
-    }
+        | Fsharp => fun () => $'$"{!ex.GetType ()}: {!ex.Message}"'
+        | Rust => fun () => $'!ex ' : string
+        | TypeScript => fun () => $'String(!ex)' : string
+        | _ => fun () => ex |> format_debug
 
 ///> fsharp
 ///> cuda

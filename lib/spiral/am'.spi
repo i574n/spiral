@@ -512,12 +512,10 @@ inl distinct forall dim el. (a : a dim el) : a dim el =
 
 /// ### skip
 inl skip forall dim el. (n : dim) (a : a dim el) : a dim el =
-    inl otherwise () =
-        $'!a |> Array.skip !n '
-    backend_switch_or otherwise {
-        Rust = fun () => $'Rc::new(RefCell::new((!a).borrow().iter().skip((!n) as usize).cloned().collect::<Vec<_>>()))' : a dim el
-        Zig = fun () => $'(spiral_gpa.dupe(`el, (!a)[\@intCast(!n)..]) catch \@panic("out of memory"))' : a dim el
-    }
+    run_target function
+        | Rust => fun () => $'Rc::new(RefCell::new((!a).borrow().iter().skip((!n) as usize).cloned().collect::<Vec<_>>()))' : a dim el
+        | Zig => fun () => $'(spiral_gpa.dupe(`el, (!a)[\@intCast(!n)..]) catch \@panic("out of memory"))' : a dim el
+        | _ => fun () => $'!a |> Array.skip !n '
 
 /// ### skip_while
 inl skip_while forall dim el. (fn : el -> bool) (a : a dim el) : a dim el =
@@ -640,11 +638,9 @@ inl sort_by forall dim el key. (fn : el -> key) (a : a dim el) : a dim el =
 
 /// ### sort
 inl sort forall dim el. (a : a dim el) : a dim el =
-    inl otherwise () =
-        $'!a |> Array.sort'
-    backend_switch_or otherwise {
-        Zig = fun () => sort_by id a
-    }
+    run_target function
+        | Zig => fun () => sort_by id a
+        | _ => fun () => $'!a |> Array.sort'
 
 /// ### sort_descending
 inl sort_descending forall dim el. (a : a dim el) : a dim el =
