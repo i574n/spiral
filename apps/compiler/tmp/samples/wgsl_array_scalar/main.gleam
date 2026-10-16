@@ -28,6 +28,10 @@ pub fn spiral_array_create(size: Int) -> SpiralArray(a) {
   list.repeat(option.None, size) |> array.from_list(option.None) |> spiral_array_from_storage(size)
 }
 
+pub fn spiral_array_create_filled(size: Int, value: a) -> SpiralArray(a) {
+  list.repeat(option.Some(value), size) |> array.from_list(option.None) |> spiral_array_from_storage(size)
+}
+
 pub fn spiral_array_from_list(values: List(a)) -> SpiralArray(a) {
   values |> list.map(option.Some) |> array.from_list(option.None) |> spiral_array_from_storage(list.length(values))
 }
@@ -69,7 +73,7 @@ pub fn spiral_wrap_unsigned(value: Int, bits: Int) -> Int {
 
 pub fn main() {
 let v0 = 5
-let v1 = spiral_array_create(v0)
+let v1 = spiral_array_create_filled(v0, 0)
 spiral_array_set(v1, 0, 0)
 spiral_array_set(v1, 1, 1)
 spiral_array_set(v1, 2, 4)
@@ -77,7 +81,7 @@ let v2 = 3
 spiral_array_set(v1, v2, 9)
 let v3 = spiral_wrap_signed(v2 + 1, 32)
 spiral_array_set(v1, v3, 16)
-let v4 = spiral_array_create(3)
+let v4 = spiral_array_create_filled(3, False)
 spiral_array_set(v4, 0, False)
 spiral_array_set(v4, 1, True)
 spiral_array_set(v4, 2, False)

@@ -224,15 +224,8 @@ inl _assert_in items x =
 inl rec __assert_contains forall t u. (trace : testing_trace) (b : t) (a : u) : () =
     __expect
         fun a b =>
-            inl otherwise () =
-                a
-                |> $'List.ofSeq'
-                |> fun x => x : listm'.list' t
-                |> $'List.tryFind' ((=) b)
-                |> optionm'.unbox
-                |> fun (x : option t) => x <> None
-            backend_switch_or otherwise {
-                Rust = fun () =>
+            run_target function
+                | Rust => fun () =>
                     inl found : bool =
                         real
                             typecase u with
@@ -243,7 +236,7 @@ inl rec __assert_contains forall t u. (trace : testing_trace) (b : t) (a : u) : 
                             | array_base _ => $'!a.borrow().contains(&!b)' : bool
                             | _ => $'!a.iter().any(|x| *x == !b)' : bool
                     found
-                Zig = fun () =>
+                | Zig => fun () =>
                     inl found : bool =
                         real
                             typecase u with
@@ -256,7 +249,13 @@ inl rec __assert_contains forall t u. (trace : testing_trace) (b : t) (a : u) : 
                                 | string => $'(for (!a) |x| { if (std.mem.eql(u8, x, !b)) break true; } else false)' : bool
                                 | _ => $'(for (!a) |x| { if (x == !b) break true; } else false)' : bool
                     found
-            }
+                | _ => fun () =>
+                    a
+                    |> $'List.ofSeq'
+                    |> fun x => x : listm'.list' t
+                    |> $'List.tryFind' ((=) b)
+                    |> optionm'.unbox
+                    |> fun (x : option t) => x <> None
         trace
         "__assert_contains"
         b

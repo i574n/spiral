@@ -426,19 +426,16 @@ inl cons' forall t. (head : t) (tail : list' t) : list' t =
 
 /// ### box
 inl box forall t. (list : list t) : list' t =
-    inl otherwise () =
-        run_target function
-            | Rust => fun () =>
-                inl acc : $'Rc<RefCell<Vec<`t>>>' = $'Rc::new(RefCell::new(Vec::new()))'
-                inl _ : i32 = (0i32, list) ||> listm.fold fun n (x : t) =>
-                    $'!acc.borrow_mut().push(!x)' : ()
-                    n + 1
-                $'Rc::new(!acc.borrow().clone())' : list' t
-            | _ => fun () => (list, empty' ()) ||> listm.foldBack cons'
-    backend_switch_or otherwise {
-        Zig = fun () =>
+    run_target function
+        | Zig => fun () =>
             (list, empty' ()) ||> listm.foldBack cons'
-    }
+        | Rust => fun () =>
+            inl acc : $'Rc<RefCell<Vec<`t>>>' = $'Rc::new(RefCell::new(Vec::new()))'
+            inl _ : i32 = (0i32, list) ||> listm.fold fun n (x : t) =>
+                $'!acc.borrow_mut().push(!x)' : ()
+                n + 1
+            $'Rc::new(!acc.borrow().clone())' : list' t
+        | _ => fun () => (list, empty' ()) ||> listm.foldBack cons'
 
 /// ### rev'
 inl rev' forall t. (items : list' t) : list' t =

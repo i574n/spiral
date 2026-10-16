@@ -604,14 +604,17 @@ if ($Native) {
             $chunkDir = Join-Path $swiftDir "chunk$first"
             New-Item -ItemType Directory -Force $chunkDir | Out-Null
             $members = @($swiftJobs[$first..([Math]::Min($first + $swiftChunkSize, $swiftJobs.Count) - 1)])
+            $swiftMainLines = 'import CRT', 'import WinSDK', 'exit(spiral_main())', 'nonisolated(unsafe) var spiral_exit_code: Int32 = 0', 'WaitForSingleObject(spiral_thread, INFINITE)', 'exit(spiral_exit_code)'
             $cases = for ($slot = 0; $slot -lt $members.Count; $slot++) {
-                $wrapped = foreach ($line in [IO.File]::ReadAllLines($members[$slot].Output)) {
-                    if ($line -eq 'import CRT' -or $line -eq 'exit(spiral_main())') { continue }
+                $source = [IO.File]::ReadAllLines($members[$slot].Output)
+                $wrapped = foreach ($line in $source) {
+                    if ($line -in $swiftMainLines -or $line.StartsWith('let spiral_thread = CreateThread(')) { continue }
                     if ($line -match '^(func|var|let) ') { "    static $line"; continue }
                     "    $line"
                 }
                 [IO.File]::WriteAllText((Join-Path $chunkDir "s$slot.swift"), "import CRT`nenum SpiralBatch$slot {`n" + ($wrapped -join "`n") + "`n}`n")
-                "case `"$slot`": exit(SpiralBatch$slot.spiral_main())"
+                if ($source -match '\{ _ in spiral_main\(\); return 0 \}') { "case `"$slot`": SpiralBatch$slot.spiral_main(); exit(0)" }
+                else { "case `"$slot`": exit(SpiralBatch$slot.spiral_main())" }
             }
             [IO.File]::WriteAllText((Join-Path $chunkDir 'main.swift'), "import CRT`nswitch CommandLine.arguments[1] {`n" + ($cases -join "`n") + "`ndefault: exit(99)`n}`n")
             [pscustomobject]@{ Dir = $chunkDir; Outputs = @($members | ForEach-Object Output); Exe = Join-Path $chunkDir $(if ($IsWindows) { 'batch.exe' } else { 'batch' }) }
@@ -621,7 +624,8 @@ if ($Native) {
             $chunk = $_
             $tools = $using:swiftTools
             $sources = @(Join-Path $chunk.Dir 'main.swift') + @(0..($chunk.Outputs.Count - 1) | ForEach-Object { Join-Path $chunk.Dir "s$_.swift" })
-            & $tools.Swiftc -O -no-whole-module-optimization -j 2 -sdk $tools.SwiftSdk -o $chunk.Exe @sources *> (Join-Path $chunk.Dir 'build.log')
+            $mainThreadStack = if ($IsWindows) { @('-Xlinker', '/STACK:1073741824') } else { @() }
+            & $tools.Swiftc -O -no-whole-module-optimization -j 2 -sdk $tools.SwiftSdk @mainThreadStack -o $chunk.Exe @sources *> (Join-Path $chunk.Dir 'build.log')
             [pscustomobject]@{ Chunk = $chunk; Ok = ($LASTEXITCODE -eq 0 -and (Test-Path -LiteralPath $chunk.Exe)) }
         }
         foreach ($built in @($swiftBuilt | Where-Object Ok)) {

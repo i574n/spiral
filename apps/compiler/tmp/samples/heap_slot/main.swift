@@ -1,4 +1,5 @@
 import CRT
+import WinSDK
 class Heap0 {
     let l0: US0
     let l1: Int32
@@ -41,4 +42,7 @@ func spiral_main() -> Int32 {
             fatalError("unreachable union case")
     }
 }
-exit(spiral_main())
+nonisolated(unsafe) var spiral_exit_code: Int32 = 0
+let spiral_thread = CreateThread(nil, 1 << 30, { _ in spiral_exit_code = spiral_main(); return 0 }, nil, DWORD(STACK_SIZE_PARAM_IS_A_RESERVATION), nil)
+WaitForSingleObject(spiral_thread, INFINITE)
+exit(spiral_exit_code)

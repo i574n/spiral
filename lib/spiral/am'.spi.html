@@ -10042,12 +10042,10 @@ __assert_eq { expected = [1, 2] }</pre>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">skip</span> <span class="n">forall</span> <span class="n">dim</span> <span class="n">el</span><span class="o">.</span> <span class="p">(</span><span class="n">n</span> <span class="p">:</span> <span class="n">dim</span><span class="p">)</span> <span class="p">(</span><span class="n">a</span> <span class="p">:</span> <span class="n">a</span> <span class="n">dim</span> <span class="n">el</span><span class="p">)</span> <span class="p">:</span> <span class="n">a</span> <span class="n">dim</span> <span class="n">el</span> <span class="o">=</span>
-    <span class="n">inl</span> <span class="n">otherwise</span> <span class="p">()</span> <span class="o">=</span>
-        <span class="err">$</span><span class="s1">'!a |&gt; Array.skip !n '</span>
-    <span class="n">backend_switch_or</span> <span class="n">otherwise</span> <span class="p">{</span>
-        <span class="n">Rust</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Rc::new(RefCell::new((!a).borrow().iter().skip((!n) as usize).cloned().collect::&lt;Vec&lt;_&gt;&gt;()))'</span> <span class="p">:</span> <span class="n">a</span> <span class="n">dim</span> <span class="n">el</span>
-        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'(spiral_gpa.dupe(`el, (!a)[\@intCast(!n)..]) catch \@panic("out of memory"))'</span> <span class="p">:</span> <span class="n">a</span> <span class="n">dim</span> <span class="n">el</span>
-    <span class="p">}</span>
+    <span class="n">run_target</span> <span class="n">function</span>
+        <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Rc::new(RefCell::new((!a).borrow().iter().skip((!n) as usize).cloned().collect::&lt;Vec&lt;_&gt;&gt;()))'</span> <span class="p">:</span> <span class="n">a</span> <span class="n">dim</span> <span class="n">el</span>
+        <span class="o">|</span> <span class="n">Zig</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'(spiral_gpa.dupe(`el, (!a)[\@intCast(!n)..]) catch \@panic("out of memory"))'</span> <span class="p">:</span> <span class="n">a</span> <span class="n">dim</span> <span class="n">el</span>
+        <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!a |&gt; Array.skip !n '</span>
 </pre></div>
 </div>
 </div>
@@ -10428,11 +10426,9 @@ __assert_eq { expected = Cons(-3, Cons(6, Nil)) }</pre>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">sort</span> <span class="n">forall</span> <span class="n">dim</span> <span class="n">el</span><span class="o">.</span> <span class="p">(</span><span class="n">a</span> <span class="p">:</span> <span class="n">a</span> <span class="n">dim</span> <span class="n">el</span><span class="p">)</span> <span class="p">:</span> <span class="n">a</span> <span class="n">dim</span> <span class="n">el</span> <span class="o">=</span>
-    <span class="n">inl</span> <span class="n">otherwise</span> <span class="p">()</span> <span class="o">=</span>
-        <span class="err">$</span><span class="s1">'!a |&gt; Array.sort'</span>
-    <span class="n">backend_switch_or</span> <span class="n">otherwise</span> <span class="p">{</span>
-        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">sort_by</span> <span class="nb">id</span> <span class="n">a</span>
-    <span class="p">}</span>
+    <span class="n">run_target</span> <span class="n">function</span>
+        <span class="o">|</span> <span class="n">Zig</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">sort_by</span> <span class="nb">id</span> <span class="n">a</span>
+        <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!a |&gt; Array.sort'</span>
 </pre></div>
 </div>
 </div>

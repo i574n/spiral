@@ -8301,24 +8301,24 @@ __assert_eq' { expected = Some(1) }</pre>
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx (fsharp)
-04:49:33 1w common.retry_fn / { retry = 0; ex = System.Exception: test
+09:52:01 1w common.retry_fn / { retry = 0; ex = System.Exception: test
    at FSI_0001.closure1(Mut0 v0, Int32 v1, Unit unitVar2) in /home/runner/work/spiral/spiral/lib/spiral/main.fsx:line 56
    at FSI_0001.method0(Mut0 v0, Int32 v1) in /home/runner/work/spiral/spiral/lib/spiral/main.fsx:line 436 }
-04:49:33 2w common.retry_fn / { retry = 1; ex = System.Exception: test
+09:52:01 2w common.retry_fn / { retry = 1; ex = System.Exception: test
    at FSI_0001.closure1(Mut0 v0, Int32 v1, Unit unitVar2) in /home/runner/work/spiral/spiral/lib/spiral/main.fsx:line 56
    at FSI_0001.method0(Mut0 v0, Int32 v1) in /home/runner/work/spiral/spiral/lib/spiral/main.fsx:line 436 }
 __assert_eq' { expected = Some(2) }
 .rs (rust)
-04:49:35 1<span class="ansi-yellow-intense-fg">w</span> common.retry_fn / { retry = 0; ex = "test" }
-04:49:35 2<span class="ansi-yellow-intense-fg">w</span> common.retry_fn / { retry = 1; ex = "test" }
+09:52:04 1<span class="ansi-yellow-intense-fg">w</span> common.retry_fn / { retry = 0; ex = "test" }
+09:52:04 2<span class="ansi-yellow-intense-fg">w</span> common.retry_fn / { retry = 1; ex = "test" }
 __assert_eq' { expected = Some(2) }
 .ts (typescript)
-04:49:36 1w common.retry_fn / { retry = 0; ex = Error: test }
-04:49:36 2w common.retry_fn / { retry = 1; ex = Error: test }
+09:52:06 1w common.retry_fn / { retry = 0; ex = Error: test }
+09:52:06 2w common.retry_fn / { retry = 1; ex = Error: test }
 __assert_eq' { expected = Some(2) }
 .py (cuda)
-04:49:36 1<span class="ansi-yellow-intense-fg">w</span> common.retry_fn / { retry = 0; ex = test }
-04:49:36 2<span class="ansi-yellow-intense-fg">w</span> common.retry_fn / { retry = 1; ex = test }
+09:52:08 1<span class="ansi-yellow-intense-fg">w</span> common.retry_fn / { retry = 0; ex = test }
+09:52:08 2<span class="ansi-yellow-intense-fg">w</span> common.retry_fn / { retry = 1; ex = test }
 __assert_eq' { expected = Some(2) }</pre>
 </div>
 </div>
@@ -8361,8 +8361,10 @@ __assert_eq' { expected = Some(2) }</pre>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">random</span><span class="s1">' forall t. (min : t) (max : t) : t =</span>
-    <span class="n">inl</span> <span class="n">otherwise</span> <span class="p">()</span> <span class="o">=</span>
-        <span class="n">run_target</span> <span class="n">function</span>
+    <span class="n">run_target</span> <span class="n">function</span>
+        <span class="o">|</span> <span class="n">Zig</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="n">inl</span> <span class="n">x</span> <span class="o">=</span> <span class="n">guid</span><span class="o">.</span><span class="n">zig_random_u64</span> <span class="p">()</span>
+            <span class="err">$</span><span class="s1">'(blk: { const lo: i128 = !min; const span: i128 = \@as(i128, !max) - lo; const n: i128 = if (span &lt;= 0) 0 else \@intCast(\@as(u128, !x) % \@as(u128, \@intCast(span))); break :blk \@as(`t, \@intCast(lo + n)); })'</span> <span class="p">:</span> <span class="n">t</span>
         <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="nb">open</span> <span class="n">rust</span><span class="o">.</span><span class="n">rust_operators</span>
             <span class="err">!</span>\\<span class="p">((</span><span class="nb">min</span><span class="p">,</span> <span class="nb">max</span><span class="p">),</span> <span class="err">$</span><span class="s1">'"{ use std::sync::atomic::{AtomicU64, Ordering}; use std::hash::{BuildHasher, Hasher}; static SPIRAL_NATIVE_RNG: AtomicU64 = AtomicU64::new(0); let mut x = SPIRAL_NATIVE_RNG.load(Ordering::Relaxed); if x == 0 { let mut h = std::collections::hash_map::RandomState::new().build_hasher(); h.write_u128(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0)); x = h.finish() | 1; } x ^= x &lt;&lt; 13; x ^= x &gt;&gt; 7; x ^= x &lt;&lt; 17; SPIRAL_NATIVE_RNG.store(x, Ordering::Relaxed); let span = ($1 as i128) - ($0 as i128); let n = if span &lt;= 0 { 0 } else { (x as i128) </span><span class="si">% s</span><span class="s1">pan }; (($0 as i128) + n) as _ }"'</span><span class="p">)</span>
@@ -8373,11 +8375,6 @@ __assert_eq' { expected = Some(2) }</pre>
             <span class="err">$</span><span class="s1">'(() =&gt; { const a = Number(!min), b = Number(!max); const r = a + Math.floor(Math.random() * Math.max(0, b - a)); return (typeof !min === "bigint" ? BigInt(r) : r); })()'</span> <span class="p">:</span> <span class="n">t</span>
         <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="n">random</span> <span class="p">()</span> <span class="o">|&gt;</span> <span class="n">random_next</span> <span class="p">(</span><span class="n">convert</span><span class="o">.</span><span class="n">i32</span> <span class="nb">min</span><span class="p">)</span> <span class="p">(</span><span class="n">convert</span><span class="o">.</span><span class="n">i32</span> <span class="nb">max</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">convert</span><span class="o">.</span><span class="n">convert</span>
-    <span class="n">backend_switch_or</span> <span class="n">otherwise</span> <span class="p">{</span>
-        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-            <span class="n">inl</span> <span class="n">x</span> <span class="o">=</span> <span class="n">guid</span><span class="o">.</span><span class="n">zig_random_u64</span> <span class="p">()</span>
-            <span class="err">$</span><span class="s1">'(blk: { const lo: i128 = !min; const span: i128 = \@as(i128, !max) - lo; const n: i128 = if (span &lt;= 0) 0 else \@intCast(\@as(u128, !x) % \@as(u128, \@intCast(span))); break :blk \@as(`t, \@intCast(lo + n)); })'</span> <span class="p">:</span> <span class="n">t</span>
-    <span class="p">}</span>
 </pre></div>
 </div>
 </div>

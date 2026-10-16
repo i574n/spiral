@@ -141,117 +141,90 @@ inl write_ln l : () =
 
 /// ### color_reset
 inl color_reset () =
-    inl otherwise () =
-        run_target function
-            | Gleam _ => fun () => $'"\\u{001b}[0m"'
-            | Lua _ => fun () => $'""'
-            | Rust => fun () => $'Rc::<str>::from("\\u{001b}[0m")' : string
-            | _ => fun () => $'"\\u001b[0m"'
-    backend_switch_or otherwise {
-        Zig = fun () =>
+    run_target function
+        | Zig => fun () =>
             $'"\\u{001b}[0m"' : string
-    }
+        | Gleam _ => fun () => $'"\\u{001b}[0m"'
+        | Lua _ => fun () => $'""'
+        | Rust => fun () => $'Rc::<str>::from("\\u{001b}[0m")' : string
+        | _ => fun () => $'"\\u001b[0m"'
 
 /// ### color_bright_black
 inl color_bright_black () =
-    inl otherwise () =
-        run_target function
-            | Gleam _ => fun () => $'"\\u{001b}[90m"'
-            | Lua _ => fun () => $'""'
-            | Rust => fun () => $'Rc::<str>::from("\\u{001b}[90m")' : string
-            | _ => fun () => $'"\\u001b[90m"'
-    backend_switch_or otherwise {
-        Zig = fun () =>
+    run_target function
+        | Zig => fun () =>
             $'"\\u{001b}[90m"' : string
-    }
+        | Gleam _ => fun () => $'"\\u{001b}[90m"'
+        | Lua _ => fun () => $'""'
+        | Rust => fun () => $'Rc::<str>::from("\\u{001b}[90m")' : string
+        | _ => fun () => $'"\\u001b[90m"'
 
 /// ### color_bright_red
 inl color_bright_red () =
-    inl otherwise () =
-        run_target function
-            | Gleam _ => fun () => $'"\\u{001b}[91m"'
-            | Lua _ => fun () => $'""'
-            | Rust => fun () => $'Rc::<str>::from("\\u{001b}[91m")' : string
-            | _ => fun () => $'"\\u001b[91m"'
-    backend_switch_or otherwise {
-        Zig = fun () =>
+    run_target function
+        | Zig => fun () =>
             $'"\\u{001b}[91m"' : string
-    }
+        | Gleam _ => fun () => $'"\\u{001b}[91m"'
+        | Lua _ => fun () => $'""'
+        | Rust => fun () => $'Rc::<str>::from("\\u{001b}[91m")' : string
+        | _ => fun () => $'"\\u001b[91m"'
 
 /// ### color_bright_green
 inl color_bright_green () =
-    inl otherwise () =
-        run_target function
-            | Gleam _ => fun () => $'"\\u{001b}[92m"'
-            | Lua _ => fun () => $'""'
-            | Rust => fun () => $'Rc::<str>::from("\\u{001b}[92m")' : string
-            | _ => fun () => $'"\\u001b[92m"'
-    backend_switch_or otherwise {
-        Zig = fun () =>
+    run_target function
+        | Zig => fun () =>
             $'"\\u{001b}[92m"' : string
-    }
+        | Gleam _ => fun () => $'"\\u{001b}[92m"'
+        | Lua _ => fun () => $'""'
+        | Rust => fun () => $'Rc::<str>::from("\\u{001b}[92m")' : string
+        | _ => fun () => $'"\\u001b[92m"'
 
 /// ### color_yellow
 inl color_yellow () =
-    inl otherwise () =
-        run_target function
-            | Gleam _ => fun () => $'"\\u{001b}[93m"'
-            | Lua _ => fun () => $'""'
-            | Rust => fun () => $'Rc::<str>::from("\\u{001b}[93m")' : string
-            | _ => fun () => $'"\\u001b[93m"'
-    backend_switch_or otherwise {
-        Zig = fun () =>
+    run_target function
+        | Zig => fun () =>
             $'"\\u{001b}[93m"' : string
-    }
+        | Gleam _ => fun () => $'"\\u{001b}[93m"'
+        | Lua _ => fun () => $'""'
+        | Rust => fun () => $'Rc::<str>::from("\\u{001b}[93m")' : string
+        | _ => fun () => $'"\\u001b[93m"'
 
 /// ### color_bright_blue
 inl color_bright_blue () =
-    inl otherwise () =
-        run_target function
-            | Gleam _ => fun () => $'"\\u{001b}[94m"'
-            | Lua _ => fun () => $'""'
-            | Rust => fun () => $'Rc::<str>::from("\\u{001b}[94m")' : string
-            | _ => fun () => $'"\\u001b[94m"'
-    backend_switch_or otherwise {
-        Zig = fun () =>
+    run_target function
+        | Zig => fun () =>
             $'"\\u{001b}[94m"' : string
-    }
+        | Gleam _ => fun () => $'"\\u{001b}[94m"'
+        | Lua _ => fun () => $'""'
+        | Rust => fun () => $'Rc::<str>::from("\\u{001b}[94m")' : string
+        | _ => fun () => $'"\\u001b[94m"'
 
 /// ### color_bright_magenta
 inl color_bright_magenta () =
-    inl otherwise () =
-        run_target function
-            | Gleam _ => fun () => $'"\\u{001b}[95m"'
-            | Lua _ => fun () => $'""'
-            | Rust => fun () => $'Rc::<str>::from("\\u{001b}[95m")' : string
-            | _ => fun () => $'"\\u001b[95m"'
-    backend_switch_or otherwise {
-        Zig = fun () =>
+    run_target function
+        | Zig => fun () =>
             $'"\\u{001b}[95m"' : string
-    }
+        | Gleam _ => fun () => $'"\\u{001b}[95m"'
+        | Lua _ => fun () => $'""'
+        | Rust => fun () => $'Rc::<str>::from("\\u{001b}[95m")' : string
+        | _ => fun () => $'"\\u001b[95m"'
 
 /// ### color_bright_cyan
 inl color_bright_cyan () =
-    inl otherwise () =
-        run_target function
-            | Gleam _ => fun () => $'"\\u{001b}[96m"'
-            | Lua _ => fun () => $'""'
-            | Rust => fun () => $'Rc::<str>::from("\\u{001b}[96m")' : string
-            | _ => fun () => $'"\\u001b[96m"'
-    backend_switch_or otherwise {
-        Zig = fun () =>
+    run_target function
+        | Zig => fun () =>
             $'"\\u{001b}[96m"' : string
-    }
+        | Gleam _ => fun () => $'"\\u{001b}[96m"'
+        | Lua _ => fun () => $'""'
+        | Rust => fun () => $'Rc::<str>::from("\\u{001b}[96m")' : string
+        | _ => fun () => $'"\\u001b[96m"'
 
 /// ### color_bright_white
 inl color_bright_white () =
-    inl otherwise () =
-        run_target function
-            | Gleam _ => fun () => $'"\\u{001b}[97m"'
-            | Lua _ => fun () => $'""'
-            | Rust => fun () => $'Rc::<str>::from("\\u{001b}[97m")' : string
-            | _ => fun () => $'"\\u001b[97m"'
-    backend_switch_or otherwise {
-        Zig = fun () =>
+    run_target function
+        | Zig => fun () =>
             $'"\\u{001b}[97m"' : string
-    }
+        | Gleam _ => fun () => $'"\\u{001b}[97m"'
+        | Lua _ => fun () => $'""'
+        | Rust => fun () => $'Rc::<str>::from("\\u{001b}[97m")' : string
+        | _ => fun () => $'"\\u001b[97m"'

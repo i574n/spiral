@@ -1,11 +1,19 @@
 import CRT
+import WinSDK
 protocol US0 { var tag: Int32 { get } }
 struct US0_Living: US0 { var f0: Int32; var f1: Int32; var tag: Int32 { 0 } }
+final class SpiralArray<T> {
+    var items: [T]
+    init(_ items: [T]) { self.items = items }
+}
 func spiral_main() -> Int32 {
     var v0: Int32 = 0
     v0 = 3
-    var v1: Array<US0> = Array<US0>()
-    v1 = Array<US0>(repeating: US0_Living(f0: 0, f1: 0), count: Int(v0))
+    var v1: SpiralArray<US0> = SpiralArray<US0>([])
+    v1 = SpiralArray<US0>(Array(repeating: US0_Living(f0: 0, f1: 0), count: Int(v0)))
     return 0
 }
-exit(spiral_main())
+nonisolated(unsafe) var spiral_exit_code: Int32 = 0
+let spiral_thread = CreateThread(nil, 1 << 30, { _ in spiral_exit_code = spiral_main(); return 0 }, nil, DWORD(STACK_SIZE_PARAM_IS_A_RESERVATION), nil)
+WaitForSingleObject(spiral_thread, INFINITE)
+exit(spiral_exit_code)

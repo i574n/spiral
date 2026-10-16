@@ -1,4 +1,5 @@
 import CRT
+import WinSDK
 func f_c0(_ v0: Int32, _ v1: Int32) -> (Int32) -> Int32 {
     return { (v2: Int32) -> Int32 in
         var v3: Int32 = 0
@@ -17,4 +18,7 @@ func spiral_main() -> Int32 {
     v2 = f_c0(v0, v1)
     return v2(39)
 }
-exit(spiral_main())
+nonisolated(unsafe) var spiral_exit_code: Int32 = 0
+let spiral_thread = CreateThread(nil, 1 << 30, { _ in spiral_exit_code = spiral_main(); return 0 }, nil, DWORD(STACK_SIZE_PARAM_IS_A_RESERVATION), nil)
+WaitForSingleObject(spiral_thread, INFINITE)
+exit(spiral_exit_code)

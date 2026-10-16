@@ -7942,49 +7942,46 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">read_state</span> <span class="p">()</span> <span class="o">=</span>
-    <span class="n">inl</span> <span class="n">otherwise</span> <span class="p">()</span> <span class="o">=</span>
-        <span class="n">run_target</span> <span class="n">function</span>
-            <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-                <span class="p">{</span>
-                    <span class="n">trace_level</span> <span class="o">=</span> <span class="s2">"TRACE_LEVEL"</span> <span class="o">|&gt;</span> <span class="n">env</span><span class="o">.</span><span class="n">get_environment_variable</span> <span class="o">|&gt;</span> <span class="n">reflection</span><span class="o">.</span><span class="n">union_try_pick</span>
-                    <span class="n">repl_start</span> <span class="o">=</span> <span class="kc">None</span>
-                <span class="p">}</span>
-            <span class="o">|</span> <span class="n">TypeScript</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-                <span class="p">{</span>
-                    <span class="n">trace_level</span> <span class="o">=</span> <span class="s2">"TRACE_LEVEL"</span> <span class="o">|&gt;</span> <span class="n">env</span><span class="o">.</span><span class="n">get_environment_variable</span> <span class="o">|&gt;</span> <span class="n">reflection</span><span class="o">.</span><span class="n">union_try_pick</span><span class="s1">'</span>
-                    <span class="n">repl_start</span> <span class="o">=</span> <span class="kc">None</span>
-                <span class="p">}</span>
-            <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-                <span class="n">join</span>
-                    <span class="p">{</span>
-                        <span class="n">trace_level</span> <span class="o">=</span>
-                            <span class="n">inl</span> <span class="n">get_result</span> <span class="p">()</span> <span class="o">=</span>
-                                <span class="s2">"TRACE_LEVEL"</span>
-                                <span class="o">|&gt;</span> <span class="n">env</span><span class="o">.</span><span class="n">get_environment_variable</span>
-                                <span class="o">|&gt;</span> <span class="n">reflection</span><span class="o">.</span><span class="n">union_try_pick</span>
-                            <span class="n">backend_switch</span> <span class="p">{</span>
-                                <span class="n">Gleam</span> <span class="o">=</span> <span class="n">get_result</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">option</span> <span class="n">trace_level</span>
-                                <span class="n">Lua</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="kc">None</span> <span class="p">:</span> <span class="n">option</span> <span class="n">trace_level</span>
-                                <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">get_result</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">option</span> <span class="n">trace_level</span>
-                                <span class="n">Python</span> <span class="o">=</span> <span class="n">get_result</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">option</span> <span class="n">trace_level</span>
-                            <span class="p">}</span>
-                        <span class="n">repl_start</span> <span class="o">=</span>
-                            <span class="n">inl</span> <span class="n">automation</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">get_environment_variable</span> <span class="s2">"AUTOMATION"</span>
-                            <span class="k">if</span> <span class="n">automation</span> <span class="o">&lt;&gt;.</span> <span class="s2">"True"</span>
-                            <span class="n">then</span> <span class="kc">None</span>
-                            <span class="k">else</span>
-                                <span class="n">date_time</span><span class="o">.</span><span class="n">now</span> <span class="p">()</span>
-                                <span class="o">|&gt;</span> <span class="n">date_time</span><span class="o">.</span><span class="n">to_timestamp</span>
-                                <span class="o">|&gt;</span> <span class="n">fun</span> <span class="p">(</span><span class="n">date_time</span><span class="o">.</span><span class="n">timestamp</span> <span class="n">x</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">x</span>
-                                <span class="o">|&gt;</span> <span class="n">Some</span>
-                    <span class="p">}</span>
-    <span class="n">backend_switch_or</span> <span class="n">otherwise</span> <span class="p">{</span>
-        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+    <span class="n">run_target</span> <span class="n">function</span>
+        <span class="o">|</span> <span class="n">Zig</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="p">{</span>
                 <span class="n">trace_level</span> <span class="o">=</span> <span class="s2">"TRACE_LEVEL"</span> <span class="o">|&gt;</span> <span class="n">env</span><span class="o">.</span><span class="n">get_environment_variable</span> <span class="o">|&gt;</span> <span class="n">reflection</span><span class="o">.</span><span class="n">union_try_pick</span> <span class="p">:</span> <span class="n">option</span> <span class="n">trace_level</span>
                 <span class="n">repl_start</span> <span class="o">=</span> <span class="kc">None</span> <span class="p">:</span> <span class="n">option</span> <span class="n">i64</span>
             <span class="p">}</span>
-    <span class="p">}</span>
+        <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="p">{</span>
+                <span class="n">trace_level</span> <span class="o">=</span> <span class="s2">"TRACE_LEVEL"</span> <span class="o">|&gt;</span> <span class="n">env</span><span class="o">.</span><span class="n">get_environment_variable</span> <span class="o">|&gt;</span> <span class="n">reflection</span><span class="o">.</span><span class="n">union_try_pick</span>
+                <span class="n">repl_start</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="p">}</span>
+        <span class="o">|</span> <span class="n">TypeScript</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="p">{</span>
+                <span class="n">trace_level</span> <span class="o">=</span> <span class="s2">"TRACE_LEVEL"</span> <span class="o">|&gt;</span> <span class="n">env</span><span class="o">.</span><span class="n">get_environment_variable</span> <span class="o">|&gt;</span> <span class="n">reflection</span><span class="o">.</span><span class="n">union_try_pick</span><span class="s1">'</span>
+                <span class="n">repl_start</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="p">}</span>
+        <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="n">join</span>
+                <span class="p">{</span>
+                    <span class="n">trace_level</span> <span class="o">=</span>
+                        <span class="n">inl</span> <span class="n">get_result</span> <span class="p">()</span> <span class="o">=</span>
+                            <span class="s2">"TRACE_LEVEL"</span>
+                            <span class="o">|&gt;</span> <span class="n">env</span><span class="o">.</span><span class="n">get_environment_variable</span>
+                            <span class="o">|&gt;</span> <span class="n">reflection</span><span class="o">.</span><span class="n">union_try_pick</span>
+                        <span class="n">backend_switch</span> <span class="p">{</span>
+                            <span class="n">Gleam</span> <span class="o">=</span> <span class="n">get_result</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">option</span> <span class="n">trace_level</span>
+                            <span class="n">Lua</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="kc">None</span> <span class="p">:</span> <span class="n">option</span> <span class="n">trace_level</span>
+                            <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">get_result</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">option</span> <span class="n">trace_level</span>
+                            <span class="n">Python</span> <span class="o">=</span> <span class="n">get_result</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">option</span> <span class="n">trace_level</span>
+                        <span class="p">}</span>
+                    <span class="n">repl_start</span> <span class="o">=</span>
+                        <span class="n">inl</span> <span class="n">automation</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">get_environment_variable</span> <span class="s2">"AUTOMATION"</span>
+                        <span class="k">if</span> <span class="n">automation</span> <span class="o">&lt;&gt;.</span> <span class="s2">"True"</span>
+                        <span class="n">then</span> <span class="kc">None</span>
+                        <span class="k">else</span>
+                            <span class="n">date_time</span><span class="o">.</span><span class="n">now</span> <span class="p">()</span>
+                            <span class="o">|&gt;</span> <span class="n">date_time</span><span class="o">.</span><span class="n">to_timestamp</span>
+                            <span class="o">|&gt;</span> <span class="n">fun</span> <span class="p">(</span><span class="n">date_time</span><span class="o">.</span><span class="n">timestamp</span> <span class="n">x</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">x</span>
+                            <span class="o">|&gt;</span> <span class="n">Some</span>
+                <span class="p">}</span>
 </pre></div>
 </div>
 </div>
@@ -8344,30 +8341,27 @@ __assert_eq { expected = true }</pre>
                 <span class="o">|&gt;</span> <span class="n">exec_unit</span>
                 <span class="nb">open</span> <span class="n">rust</span>
                 <span class="nb">open</span> <span class="n">rust</span><span class="o">.</span><span class="n">rust_operators</span>
-                <span class="n">inl</span> <span class="n">otherwise</span> <span class="p">()</span> <span class="o">=</span>
-                    <span class="n">run_target_args</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">text</span><span class="p">,</span> <span class="n">console</span><span class="o">.</span><span class="n">write_line</span><span class="p">)</span> <span class="n">function</span>
-                        <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">text</span><span class="p">,</span> <span class="n">_</span> <span class="o">=&gt;</span>
-                            <span class="k">global</span> <span class="s2">"#[cfg(target_arch = </span><span class="se">\"</span><span class="s2">wasm32</span><span class="se">\"</span><span class="s2">)]</span><span class="se">\n</span><span class="s2">fn spiral_trace_near_log(text: &amp;str) {</span><span class="se">\n</span><span class="s2">    use std::sync::atomic::{AtomicUsize, Ordering};</span><span class="se">\n</span><span class="s2">    static LOGGED: AtomicUsize = AtomicUsize::new(0);</span><span class="se">\n</span><span class="s2">    let cs: Vec&lt;char&gt; = text.chars().collect();</span><span class="se">\n</span><span class="s2">    for c in cs.chunks(15000) {</span><span class="se">\n</span><span class="s2">        let s: String = c.iter().collect();</span><span class="se">\n</span><span class="s2">        let used = LOGGED.load(Ordering::Relaxed);</span><span class="se">\n</span><span class="s2">        let budget = 16000usize.saturating_sub(used);</span><span class="se">\n</span><span class="s2">        if budget &lt; 13 {</span><span class="se">\n</span><span class="s2">            break;</span><span class="se">\n</span><span class="s2">        }</span><span class="se">\n</span><span class="s2">        let s = if s.len() &lt;= budget {</span><span class="se">\n</span><span class="s2">            s</span><span class="se">\n</span><span class="s2">        } else {</span><span class="se">\n</span><span class="s2">            let mut end = budget - 12;</span><span class="se">\n</span><span class="s2">            while !s.is_char_boundary(end) {</span><span class="se">\n</span><span class="s2">                end -= 1;</span><span class="se">\n</span><span class="s2">            }</span><span class="se">\n</span><span class="s2">            format!(</span><span class="se">\"</span><span class="si">{}</span><span class="s2"> [truncated]</span><span class="se">\"</span><span class="s2">, &amp;s[..end])</span><span class="se">\n</span><span class="s2">        };</span><span class="se">\n</span><span class="s2">        LOGGED.store(used + s.len(), Ordering::Relaxed);</span><span class="se">\n</span><span class="s2">        near_sdk::env::log_str(&amp;s);</span><span class="se">\n</span><span class="s2">    }</span><span class="se">\n</span><span class="s2">}"</span>
-                            <span class="k">if</span> <span class="err">$</span><span class="s1">'cfg\!(target_arch = "wasm32")'</span> <span class="p">:</span> <span class="nb">bool</span>
-                            <span class="n">then</span>
-                                <span class="n">inl</span> <span class="n">new_acc</span> <span class="o">=</span>
-                                    <span class="k">if</span> <span class="o">*</span><span class="n">acc</span> <span class="o">=</span> <span class="s2">""</span>
-                                    <span class="n">then</span> <span class="n">text</span>
-                                    <span class="k">elif</span> <span class="n">text</span> <span class="o">=</span> <span class="s2">""</span>
-                                    <span class="n">then</span> <span class="o">*</span><span class="n">acc</span>
-                                    <span class="k">else</span> <span class="o">*</span><span class="n">acc</span> <span class="o">++</span>\<span class="c1"># text</span>
-                                <span class="n">inl</span> <span class="n">chunks_len</span> <span class="p">:</span> <span class="n">i32</span> <span class="o">=</span> <span class="err">!</span>\\<span class="p">(</span><span class="n">new_acc</span><span class="p">,</span> <span class="err">$</span><span class="s1">'"(($0.chars().count() + 14999) / 15000) as i32"'</span><span class="p">)</span>
-                                <span class="k">if</span> <span class="n">text</span> <span class="o">&lt;&gt;.</span> <span class="s2">""</span> <span class="o">&amp;&amp;</span> <span class="n">chunks_len</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="n">i32</span>
-                                <span class="n">then</span> <span class="n">acc</span> <span class="o">&lt;-</span> <span class="n">new_acc</span>
-                                <span class="k">else</span>
-                                    <span class="n">acc</span> <span class="o">&lt;-</span> <span class="s2">""</span>
-                                    <span class="err">!</span>\\<span class="p">(</span><span class="n">new_acc</span><span class="p">,</span> <span class="err">$</span><span class="s1">'"{ \#[cfg(target_arch = </span><span class="se">\\\"</span><span class="s1">wasm32</span><span class="se">\\\"</span><span class="s1">)] spiral_trace_near_log(&amp;$0); }"'</span><span class="p">)</span>
-                            <span class="k">else</span> <span class="err">!</span>\\<span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="err">$</span><span class="s1">'"println\!(</span><span class="se">\\\"</span><span class="si">{}</span><span class="se">\\\"</span><span class="s1">, $0)"'</span><span class="p">)</span>
-                        <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">text</span><span class="p">,</span> <span class="n">write_line</span> <span class="o">=&gt;</span>
-                            <span class="n">text</span> <span class="o">|&gt;</span> <span class="n">write_line</span>
-                <span class="n">backend_switch_or</span> <span class="n">otherwise</span> <span class="p">{</span>
-                    <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">text</span> <span class="o">|&gt;</span> <span class="n">console</span><span class="o">.</span><span class="n">write_line</span>
-                <span class="p">}</span>
+                <span class="n">run_target_args</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">text</span><span class="p">,</span> <span class="n">console</span><span class="o">.</span><span class="n">write_line</span><span class="p">)</span> <span class="n">function</span>
+                    <span class="o">|</span> <span class="n">Zig</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">text</span> <span class="o">|&gt;</span> <span class="n">console</span><span class="o">.</span><span class="n">write_line</span>
+                    <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">text</span><span class="p">,</span> <span class="n">_</span> <span class="o">=&gt;</span>
+                        <span class="k">global</span> <span class="s2">"#[cfg(target_arch = </span><span class="se">\"</span><span class="s2">wasm32</span><span class="se">\"</span><span class="s2">)]</span><span class="se">\n</span><span class="s2">fn spiral_trace_near_log(text: &amp;str) {</span><span class="se">\n</span><span class="s2">    use std::sync::atomic::{AtomicUsize, Ordering};</span><span class="se">\n</span><span class="s2">    static LOGGED: AtomicUsize = AtomicUsize::new(0);</span><span class="se">\n</span><span class="s2">    let cs: Vec&lt;char&gt; = text.chars().collect();</span><span class="se">\n</span><span class="s2">    for c in cs.chunks(15000) {</span><span class="se">\n</span><span class="s2">        let s: String = c.iter().collect();</span><span class="se">\n</span><span class="s2">        let used = LOGGED.load(Ordering::Relaxed);</span><span class="se">\n</span><span class="s2">        let budget = 16000usize.saturating_sub(used);</span><span class="se">\n</span><span class="s2">        if budget &lt; 13 {</span><span class="se">\n</span><span class="s2">            break;</span><span class="se">\n</span><span class="s2">        }</span><span class="se">\n</span><span class="s2">        let s = if s.len() &lt;= budget {</span><span class="se">\n</span><span class="s2">            s</span><span class="se">\n</span><span class="s2">        } else {</span><span class="se">\n</span><span class="s2">            let mut end = budget - 12;</span><span class="se">\n</span><span class="s2">            while !s.is_char_boundary(end) {</span><span class="se">\n</span><span class="s2">                end -= 1;</span><span class="se">\n</span><span class="s2">            }</span><span class="se">\n</span><span class="s2">            format!(</span><span class="se">\"</span><span class="si">{}</span><span class="s2"> [truncated]</span><span class="se">\"</span><span class="s2">, &amp;s[..end])</span><span class="se">\n</span><span class="s2">        };</span><span class="se">\n</span><span class="s2">        LOGGED.store(used + s.len(), Ordering::Relaxed);</span><span class="se">\n</span><span class="s2">        near_sdk::env::log_str(&amp;s);</span><span class="se">\n</span><span class="s2">    }</span><span class="se">\n</span><span class="s2">}"</span>
+                        <span class="k">if</span> <span class="err">$</span><span class="s1">'cfg\!(target_arch = "wasm32")'</span> <span class="p">:</span> <span class="nb">bool</span>
+                        <span class="n">then</span>
+                            <span class="n">inl</span> <span class="n">new_acc</span> <span class="o">=</span>
+                                <span class="k">if</span> <span class="o">*</span><span class="n">acc</span> <span class="o">=</span> <span class="s2">""</span>
+                                <span class="n">then</span> <span class="n">text</span>
+                                <span class="k">elif</span> <span class="n">text</span> <span class="o">=</span> <span class="s2">""</span>
+                                <span class="n">then</span> <span class="o">*</span><span class="n">acc</span>
+                                <span class="k">else</span> <span class="o">*</span><span class="n">acc</span> <span class="o">++</span>\<span class="c1"># text</span>
+                            <span class="n">inl</span> <span class="n">chunks_len</span> <span class="p">:</span> <span class="n">i32</span> <span class="o">=</span> <span class="err">!</span>\\<span class="p">(</span><span class="n">new_acc</span><span class="p">,</span> <span class="err">$</span><span class="s1">'"(($0.chars().count() + 14999) / 15000) as i32"'</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">text</span> <span class="o">&lt;&gt;.</span> <span class="s2">""</span> <span class="o">&amp;&amp;</span> <span class="n">chunks_len</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="n">i32</span>
+                            <span class="n">then</span> <span class="n">acc</span> <span class="o">&lt;-</span> <span class="n">new_acc</span>
+                            <span class="k">else</span>
+                                <span class="n">acc</span> <span class="o">&lt;-</span> <span class="s2">""</span>
+                                <span class="err">!</span>\\<span class="p">(</span><span class="n">new_acc</span><span class="p">,</span> <span class="err">$</span><span class="s1">'"{ \#[cfg(target_arch = </span><span class="se">\\\"</span><span class="s1">wasm32</span><span class="se">\\\"</span><span class="s1">)] spiral_trace_near_log(&amp;$0); }"'</span><span class="p">)</span>
+                        <span class="k">else</span> <span class="err">!</span>\\<span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="err">$</span><span class="s1">'"println\!(</span><span class="se">\\\"</span><span class="si">{}</span><span class="se">\\\"</span><span class="s1">, $0)"'</span><span class="p">)</span>
+                    <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">text</span><span class="p">,</span> <span class="n">write_line</span> <span class="o">=&gt;</span>
+                        <span class="n">text</span> <span class="o">|&gt;</span> <span class="n">write_line</span>
                 <span class="n">text</span> <span class="o">|&gt;</span> <span class="o">*</span><span class="n">trace_state</span><span class="o">.</span><span class="n">trace_file</span>
                 <span class="n">trace_state</span> <span class="o">|&gt;</span> <span class="n">Some</span>
         <span class="n">backend_switch</span> <span class="p">{</span>
@@ -8409,49 +8403,48 @@ __assert_eq { expected = true }</pre>
         <span class="n">inl</span> <span class="n">trace_state</span> <span class="o">=</span> <span class="n">get_trace_state_or_init</span> <span class="kc">None</span>
         <span class="n">inl</span> <span class="n">time</span> <span class="o">=</span>
             <span class="n">join</span>
-                <span class="n">inl</span> <span class="n">otherwise</span> <span class="p">()</span> <span class="o">=</span>
-                    <span class="n">run_target</span> <span class="n">fun</span> <span class="n">target</span> <span class="o">=&gt;</span>
-                        <span class="k">match</span> <span class="n">target</span> <span class="k">with</span>
-                        <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-                            <span class="nb">open</span> <span class="n">rust</span><span class="o">.</span><span class="n">rust_operators</span>
-                            <span class="n">inl</span> <span class="n">seconds_of_day</span> <span class="p">:</span> <span class="n">u64</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'{ \#[cfg(target_arch = "wasm32")] let (h, m, s) = { let secs = near_sdk::env::block_timestamp() / 1_000_000_000; ((secs / 3600) % 24, (secs / 60) % 60, secs % 60) }; \#[cfg(all(windows, not(target_arch = "wasm32")))] let (h, m, s) = { \#[repr(C)] struct St([u16; 8]); unsafe extern "system" { fn GetLocalTime(t: *mut St); } let mut t = St([0; 8]); unsafe { GetLocalTime(&amp;mut t) }; (t.0[4] as u64, t.0[5] as u64, t.0[6] as u64) }; \#[cfg(all(unix, not(target_arch = "wasm32")))] let (h, m, s) = { \#[repr(C, align(8))] struct Tm([i32; 16]); unsafe extern "C" { fn localtime_r(t: *const std::os::raw::c_long, tm: *mut Tm) -&gt; *mut Tm; } let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0) as std::os::raw::c_long; let mut tm = Tm([0; 16]); unsafe { localtime_r(&amp;secs, &amp;mut tm) }; (tm.0[2] as u64, tm.0[1] as u64, tm.0[0] as u64) }; \#[cfg(not(any(windows, unix, target_arch = "wasm32")))] let (h, m, s) = { let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0); ((secs / 3600) % 24, (secs / 60) % 60, secs % 60) }; h * 3600 + m * 60 + s }'</span>
-                            <span class="n">inl</span> <span class="n">two_digits</span> <span class="p">(</span><span class="n">n</span> <span class="p">:</span> <span class="n">u64</span><span class="p">)</span> <span class="p">:</span> <span class="n">string</span> <span class="o">=</span> <span class="p">(</span><span class="k">if</span> <span class="n">n</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="n">u64</span> <span class="n">then</span> <span class="s2">"0"</span> <span class="k">else</span> <span class="s2">""</span><span class="p">)</span> <span class="o">++</span><span class="c1"># sm'.obj_to_string n</span>
-                            <span class="n">two_digits</span> <span class="p">(</span><span class="n">seconds_of_day</span> <span class="o">/</span> <span class="mi">3600</span><span class="n">u64</span><span class="p">)</span> <span class="o">++</span><span class="c1"># ":" ++# two_digits ((seconds_of_day / 60u64) % 60u64) ++# ":" ++# two_digits (seconds_of_day % 60u64)</span>
-                        <span class="o">|</span> <span class="n">TypeScript</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-                            <span class="err">$</span><span class="s1">'(() =&gt; { const d = new Date(); const p = (n: number) =&gt; String(n).padStart(2, "0"); return p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds()); })()'</span> <span class="p">:</span> <span class="n">string</span>
-                        <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-                            <span class="k">match</span> <span class="n">trace_state</span><span class="o">.</span><span class="n">repl_start</span> <span class="o">|&gt;</span> <span class="n">optionm</span><span class="s1">'.unbox with</span>
-                            <span class="o">|</span> <span class="n">Some</span> <span class="n">repl_start</span> <span class="o">=&gt;</span>
-                                <span class="n">inl</span> <span class="n">t</span> <span class="o">=</span>
-                                    <span class="n">date_time</span><span class="o">.</span><span class="n">now</span> <span class="p">()</span>
-                                    <span class="o">|&gt;</span> <span class="n">date_time</span><span class="o">.</span><span class="n">to_timestamp</span>
-                                    <span class="o">|&gt;</span> <span class="n">fun</span> <span class="p">(</span><span class="n">date_time</span><span class="o">.</span><span class="n">timestamp</span> <span class="n">x</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">x</span>
-                                    <span class="o">|&gt;</span> <span class="n">flip</span> <span class="p">(</span><span class="o">-</span><span class="p">)</span> <span class="n">repl_start</span>
-                                    <span class="o">|&gt;</span> <span class="n">date_time</span><span class="o">.</span><span class="n">time_span_of_micros</span>
-                                <span class="n">date_time</span><span class="o">.</span><span class="n">date_time_milliseconds</span>
-                                    <span class="mi">1</span><span class="n">i32</span> <span class="mi">1</span><span class="n">i32</span> <span class="mi">1</span><span class="n">i32</span>
-                                    <span class="p">(</span><span class="n">t</span> <span class="o">|&gt;</span> <span class="n">date_time</span><span class="o">.</span><span class="n">hours</span><span class="p">)</span>
-                                    <span class="p">(</span><span class="n">t</span> <span class="o">|&gt;</span> <span class="n">date_time</span><span class="o">.</span><span class="n">minutes</span><span class="p">)</span>
-                                    <span class="p">(</span><span class="n">t</span> <span class="o">|&gt;</span> <span class="n">date_time</span><span class="o">.</span><span class="n">seconds</span><span class="p">)</span>
-                                    <span class="p">(</span><span class="n">t</span> <span class="o">|&gt;</span> <span class="n">date_time</span><span class="o">.</span><span class="n">milliseconds</span><span class="p">)</span>
-                            <span class="o">|</span> <span class="kc">None</span> <span class="o">=&gt;</span> <span class="n">date_time</span><span class="o">.</span><span class="n">now</span> <span class="p">()</span>
-                            <span class="o">|&gt;</span> <span class="n">date_time</span><span class="o">.</span><span class="n">format</span> <span class="p">(</span>
-                                <span class="n">backend_switch</span> <span class="p">{</span>
-                                    <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="s2">"HH:mm:ss"</span>
-                                    <span class="n">Lua</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="s2">"%H:%M:%S"</span>
-                                    <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-                                        <span class="k">match</span> <span class="n">target</span> <span class="k">with</span>
-                                        <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">join</span> <span class="s2">"hh:mm:ss"</span>
-                                        <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">join</span> <span class="s2">"HH:mm:ss"</span>
-                                    <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="s2">"%H:%M:%S"</span>
-                                <span class="p">}</span>
-                            <span class="p">)</span>
-                <span class="n">backend_switch_or</span> <span class="n">otherwise</span> <span class="p">{</span>
-                    <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                <span class="n">run_target</span> <span class="n">function</span>
+                    <span class="o">|</span> <span class="n">Zig</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
                         <span class="k">global</span> <span class="s2">"extern </span><span class="se">\"</span><span class="s2">kernel32</span><span class="se">\"</span><span class="s2"> fn GetLocalTime(t: *[8]u16) callconv(.winapi) void;"</span>
                         <span class="k">global</span> <span class="s2">"fn spiralClock() []const u8 {</span><span class="se">\n</span><span class="s2">    var secs: u64 = 0;</span><span class="se">\n</span><span class="s2">    if (builtin.os.tag == .windows) {</span><span class="se">\n</span><span class="s2">        var t: [8]u16 = undefined;</span><span class="se">\n</span><span class="s2">        GetLocalTime(&amp;t);</span><span class="se">\n</span><span class="s2">        secs = @as(u64, t[4]) * 3600 + @as(u64, t[5]) * 60 + @as(u64, t[6]);</span><span class="se">\n</span><span class="s2">    } else if (builtin.os.tag == .linux) {</span><span class="se">\n</span><span class="s2">        var ts: std.os.linux.timespec = undefined;</span><span class="se">\n</span><span class="s2">        _ = std.os.linux.clock_gettime(.REALTIME, &amp;ts);</span><span class="se">\n</span><span class="s2">        secs = @intCast(ts.sec);</span><span class="se">\n</span><span class="s2">    }</span><span class="se">\n</span><span class="s2">    return std.fmt.allocPrint(spiral_gpa, </span><span class="se">\"</span><span class="si">{d:0&gt;2}</span><span class="s2">:</span><span class="si">{d:0&gt;2}</span><span class="s2">:</span><span class="si">{d:0&gt;2}</span><span class="se">\"</span><span class="s2">, .{ (secs / 3600) % 24, (secs / 60) % 60, secs % 60 }) catch @panic(</span><span class="se">\"</span><span class="s2">out of memory</span><span class="se">\"</span><span class="s2">);</span><span class="se">\n</span><span class="s2">}"</span>
                         <span class="err">$</span><span class="s1">'spiralClock()'</span> <span class="p">:</span> <span class="n">string</span>
-                <span class="p">}</span>
+                    <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                        <span class="n">run_target</span> <span class="n">fun</span> <span class="n">target</span> <span class="o">=&gt;</span>
+                            <span class="k">match</span> <span class="n">target</span> <span class="k">with</span>
+                            <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                                <span class="nb">open</span> <span class="n">rust</span><span class="o">.</span><span class="n">rust_operators</span>
+                                <span class="n">inl</span> <span class="n">seconds_of_day</span> <span class="p">:</span> <span class="n">u64</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'{ \#[cfg(target_arch = "wasm32")] let (h, m, s) = { let secs = near_sdk::env::block_timestamp() / 1_000_000_000; ((secs / 3600) % 24, (secs / 60) % 60, secs % 60) }; \#[cfg(all(windows, not(target_arch = "wasm32")))] let (h, m, s) = { \#[repr(C)] struct St([u16; 8]); unsafe extern "system" { fn GetLocalTime(t: *mut St); } let mut t = St([0; 8]); unsafe { GetLocalTime(&amp;mut t) }; (t.0[4] as u64, t.0[5] as u64, t.0[6] as u64) }; \#[cfg(all(unix, not(target_arch = "wasm32")))] let (h, m, s) = { \#[repr(C, align(8))] struct Tm([i32; 16]); unsafe extern "C" { fn localtime_r(t: *const std::os::raw::c_long, tm: *mut Tm) -&gt; *mut Tm; } let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0) as std::os::raw::c_long; let mut tm = Tm([0; 16]); unsafe { localtime_r(&amp;secs, &amp;mut tm) }; (tm.0[2] as u64, tm.0[1] as u64, tm.0[0] as u64) }; \#[cfg(not(any(windows, unix, target_arch = "wasm32")))] let (h, m, s) = { let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0); ((secs / 3600) % 24, (secs / 60) % 60, secs % 60) }; h * 3600 + m * 60 + s }'</span>
+                                <span class="n">inl</span> <span class="n">two_digits</span> <span class="p">(</span><span class="n">n</span> <span class="p">:</span> <span class="n">u64</span><span class="p">)</span> <span class="p">:</span> <span class="n">string</span> <span class="o">=</span> <span class="p">(</span><span class="k">if</span> <span class="n">n</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="n">u64</span> <span class="n">then</span> <span class="s2">"0"</span> <span class="k">else</span> <span class="s2">""</span><span class="p">)</span> <span class="o">++</span><span class="c1"># sm'.obj_to_string n</span>
+                                <span class="n">two_digits</span> <span class="p">(</span><span class="n">seconds_of_day</span> <span class="o">/</span> <span class="mi">3600</span><span class="n">u64</span><span class="p">)</span> <span class="o">++</span><span class="c1"># ":" ++# two_digits ((seconds_of_day / 60u64) % 60u64) ++# ":" ++# two_digits (seconds_of_day % 60u64)</span>
+                            <span class="o">|</span> <span class="n">TypeScript</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                                <span class="err">$</span><span class="s1">'(() =&gt; { const d = new Date(); const p = (n: number) =&gt; String(n).padStart(2, "0"); return p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds()); })()'</span> <span class="p">:</span> <span class="n">string</span>
+                            <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                                <span class="k">match</span> <span class="n">trace_state</span><span class="o">.</span><span class="n">repl_start</span> <span class="o">|&gt;</span> <span class="n">optionm</span><span class="s1">'.unbox with</span>
+                                <span class="o">|</span> <span class="n">Some</span> <span class="n">repl_start</span> <span class="o">=&gt;</span>
+                                    <span class="n">inl</span> <span class="n">t</span> <span class="o">=</span>
+                                        <span class="n">date_time</span><span class="o">.</span><span class="n">now</span> <span class="p">()</span>
+                                        <span class="o">|&gt;</span> <span class="n">date_time</span><span class="o">.</span><span class="n">to_timestamp</span>
+                                        <span class="o">|&gt;</span> <span class="n">fun</span> <span class="p">(</span><span class="n">date_time</span><span class="o">.</span><span class="n">timestamp</span> <span class="n">x</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">x</span>
+                                        <span class="o">|&gt;</span> <span class="n">flip</span> <span class="p">(</span><span class="o">-</span><span class="p">)</span> <span class="n">repl_start</span>
+                                        <span class="o">|&gt;</span> <span class="n">date_time</span><span class="o">.</span><span class="n">time_span_of_micros</span>
+                                    <span class="n">date_time</span><span class="o">.</span><span class="n">date_time_milliseconds</span>
+                                        <span class="mi">1</span><span class="n">i32</span> <span class="mi">1</span><span class="n">i32</span> <span class="mi">1</span><span class="n">i32</span>
+                                        <span class="p">(</span><span class="n">t</span> <span class="o">|&gt;</span> <span class="n">date_time</span><span class="o">.</span><span class="n">hours</span><span class="p">)</span>
+                                        <span class="p">(</span><span class="n">t</span> <span class="o">|&gt;</span> <span class="n">date_time</span><span class="o">.</span><span class="n">minutes</span><span class="p">)</span>
+                                        <span class="p">(</span><span class="n">t</span> <span class="o">|&gt;</span> <span class="n">date_time</span><span class="o">.</span><span class="n">seconds</span><span class="p">)</span>
+                                        <span class="p">(</span><span class="n">t</span> <span class="o">|&gt;</span> <span class="n">date_time</span><span class="o">.</span><span class="n">milliseconds</span><span class="p">)</span>
+                                <span class="o">|</span> <span class="kc">None</span> <span class="o">=&gt;</span> <span class="n">date_time</span><span class="o">.</span><span class="n">now</span> <span class="p">()</span>
+                                <span class="o">|&gt;</span> <span class="n">date_time</span><span class="o">.</span><span class="n">format</span> <span class="p">(</span>
+                                    <span class="n">backend_switch</span> <span class="p">{</span>
+                                        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="s2">"HH:mm:ss"</span>
+                                        <span class="n">Lua</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="s2">"%H:%M:%S"</span>
+                                        <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                                            <span class="k">match</span> <span class="n">target</span> <span class="k">with</span>
+                                            <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">join</span> <span class="s2">"hh:mm:ss"</span>
+                                            <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">join</span> <span class="s2">"HH:mm:ss"</span>
+                                        <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="s2">"%H:%M:%S"</span>
+                                    <span class="p">}</span>
+                                <span class="p">)</span>
         <span class="n">inl</span> <span class="n">level_str</span> <span class="o">=</span>
             <span class="n">join</span>
                 <span class="n">inl</span> <span class="n">color</span> <span class="o">=</span>
@@ -8521,28 +8514,28 @@ __assert_eq { expected = true }</pre>
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.gleam (gleam)
-04:48:54 1d test1
-04:48:54 2d test2
+09:51:03 1d test1
+09:51:03 2d test2
 __assert_eq { expected = 3 }
 .lua (lua)
-04:48:54 1d test1
-04:48:54 2d test2
+09:51:04 1d test1
+09:51:04 2d test2
 __assert_eq { expected = 3 }
 .fsx (fsharp)
-04:48:57 1d test1
-04:48:57 2d test2
+09:51:07 1d test1
+09:51:07 2d test2
 __assert_eq { expected = 3 }
 .py (cuda)
-04:48:57 1<span class="ansi-blue-intense-fg">d</span> test1
-04:48:57 2<span class="ansi-blue-intense-fg">d</span> test2
+09:51:08 1<span class="ansi-blue-intense-fg">d</span> test1
+09:51:08 2<span class="ansi-blue-intense-fg">d</span> test2
 __assert_eq { expected = 3 }
 .rs (rust)
-04:48:58 1<span class="ansi-blue-intense-fg">d</span> test1
-04:48:58 2<span class="ansi-blue-intense-fg">d</span> test2
+09:51:10 1<span class="ansi-blue-intense-fg">d</span> test1
+09:51:10 2<span class="ansi-blue-intense-fg">d</span> test2
 __assert_eq { expected = 3 }
 .ts (typescript)
-04:48:59 1d test1
-04:48:59 2d test2
+09:51:11 1d test1
+09:51:11 2d test2
 __assert_eq { expected = 3 }</pre>
 </div>
 </div>

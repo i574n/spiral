@@ -520,22 +520,19 @@ test get_current_directory =
 
 /// ### directory_exists
 let directory_exists (path : string) : bool =
-    inl otherwise () =
-        run_target_args' path function
-            | Fsharp => fun path =>
-                path |> $'System.IO.Directory.Exists'
-            | Rust => fun path =>
-                inl path = path |> sm'.to_std_string |> new_path_buf
-                path_buf_exists path && path_buf_is_dir path
-            | TypeScript => fun path =>
-                global "import * as spiral_node_fs from 'node:fs';"
-                $'(spiral_node_fs.existsSync(!path) && spiral_node_fs.statSync(!path).isDirectory())' : bool
-            | _ => fun _ => null ()
-    backend_switch_or otherwise {
-        Zig = fun () =>
+    run_target_args' path function
+        | Zig => fun _ =>
             global "var spiral_io_threaded: std.Io.Threaded = .init_single_threaded;"
             $'(if (std.Io.Dir.cwd().statFile(spiral_io_threaded.io(), !path, .{})) |s| s.kind == .directory else |_| false)' : bool
-    }
+        | Fsharp => fun path =>
+            path |> $'System.IO.Directory.Exists'
+        | Rust => fun path =>
+            inl path = path |> sm'.to_std_string |> new_path_buf
+            path_buf_exists path && path_buf_is_dir path
+        | TypeScript => fun path =>
+            global "import * as spiral_node_fs from 'node:fs';"
+            $'(spiral_node_fs.existsSync(!path) && spiral_node_fs.statSync(!path).isDirectory())' : bool
+        | _ => fun _ => null ()
 
 /// ### directory_get_parent
 let directory_get_parent (path : string) : optionm'.option' string =
@@ -604,22 +601,19 @@ let file_copy (new_path : string) (old_path : string) : () =
 
 /// ### file_exists
 let file_exists (path : string) : bool =
-    inl otherwise () =
-        run_target_args' path function
-            | Fsharp => fun path =>
-                path |> $'System.IO.File.Exists'
-            | Rust => fun path =>
-                inl path_buf = path |> sm'.to_std_string |> new_path_buf
-                path_buf_exists path_buf && path_buf_is_file path_buf
-            | TypeScript => fun path =>
-                global "import * as spiral_node_fs from 'node:fs';"
-                $'(spiral_node_fs.existsSync(!path) && spiral_node_fs.statSync(!path).isFile())' : bool
-            | _ => fun _ => null ()
-    backend_switch_or otherwise {
-        Zig = fun () =>
+    run_target_args' path function
+        | Zig => fun _ =>
             global "var spiral_io_threaded: std.Io.Threaded = .init_single_threaded;"
             $'(if (std.Io.Dir.cwd().statFile(spiral_io_threaded.io(), !path, .{})) |s| s.kind == .file else |_| false)' : bool
-    }
+        | Fsharp => fun path =>
+            path |> $'System.IO.File.Exists'
+        | Rust => fun path =>
+            inl path_buf = path |> sm'.to_std_string |> new_path_buf
+            path_buf_exists path_buf && path_buf_is_file path_buf
+        | TypeScript => fun path =>
+            global "import * as spiral_node_fs from 'node:fs';"
+            $'(spiral_node_fs.existsSync(!path) && spiral_node_fs.statSync(!path).isFile())' : bool
+        | _ => fun _ => null ()
 
 /// ### directory_delete
 let directory_delete recursive (path : string) : () =
@@ -635,18 +629,15 @@ let directory_delete recursive (path : string) : () =
 
 /// ### write_all_text
 inl write_all_text (path : string) (text : string) : () =
-    inl otherwise () =
-        run_target_args' (path, text) function
-            | Fsharp => fun path, text =>
-                $'System.IO.File.WriteAllText (!path, !text)'
-            | Rust => fun path, text =>
-                !\\((path, text), $'"std::fs::write(&*$0, &*$1).unwrap()"')
-            | _ => fun _ => ()
-    backend_switch_or otherwise {
-        Zig = fun () =>
+    run_target_args' (path, text) function
+        | Zig => fun _ =>
             global "var spiral_io_threaded: std.Io.Threaded = .init_single_threaded;"
             $'std.Io.Dir.cwd().writeFile(spiral_io_threaded.io(), .{ .sub_path = !path, .data = !text }) catch \@panic("file_system.write_all_text failed")' : ()
-    }
+        | Fsharp => fun path, text =>
+            $'System.IO.File.WriteAllText (!path, !text)'
+        | Rust => fun path, text =>
+            !\\((path, text), $'"std::fs::write(&*$0, &*$1).unwrap()"')
+        | _ => fun _ => ()
 
 /// ### read_all_bytes
 inl read_all_bytes (path : string) : am'.vec u8 =
@@ -660,22 +651,19 @@ inl read_all_bytes (path : string) : am'.vec u8 =
 
 /// ### read_all_text
 inl read_all_text (path : string) : string =
-    inl otherwise () =
-        run_target function
-            | Fsharp => fun () =>
-                $'!path |> System.IO.File.ReadAllText'
-            | Rust => fun () =>
-                path
-                |> read_all_bytes
-                |> sm'.string_from_utf8
-                |> resultm.unwrap'
-                |> sm'.from_std_string
-            | _ => fun () => null ()
-    backend_switch_or otherwise {
-        Zig = fun () =>
+    run_target function
+        | Zig => fun () =>
             global "var spiral_io_threaded: std.Io.Threaded = .init_single_threaded;"
             $'(std.Io.Dir.cwd().readFileAlloc(spiral_io_threaded.io(), !path, spiral_gpa, .unlimited) catch \@panic("file_system.read_all_text failed"))' : string
-    }
+        | Fsharp => fun () =>
+            $'!path |> System.IO.File.ReadAllText'
+        | Rust => fun () =>
+            path
+            |> read_all_bytes
+            |> sm'.string_from_utf8
+            |> resultm.unwrap'
+            |> sm'.from_std_string
+        | _ => fun () => null ()
 
 /// ### directory_create_symbolic_link
 inl directory_create_symbolic_link (target : string) (path : string) : () =
@@ -760,24 +748,21 @@ test find_parent_2 =
 
 /// ### file_delete
 inl file_delete (path : string) : () =
-    inl otherwise () =
-        run_target function
-            | Fsharp => fun () =>
-                path |> $'System.IO.File.Delete'
-            | Rust => fun () =>
-                inl result : resultm.result' () stream.io_error =
-                    if path |> file_exists
-                    then !\\(path, $'"std::fs::remove_file(&*$0)"')
-                    else Ok () |> resultm.box
-                match result |> resultm.map_error' sm'.format |> resultm.unbox with
-                | Ok () => ()
-                | Error error' => trace Critical (fun () => "file_system.file_delete") fun () => { error' }
-            | _ => fun () => ()
-    backend_switch_or otherwise {
-        Zig = fun () =>
+    run_target function
+        | Zig => fun () =>
             global "var spiral_io_threaded: std.Io.Threaded = .init_single_threaded;"
             $'std.Io.Dir.cwd().deleteFile(spiral_io_threaded.io(), !path) catch {}' : ()
-    }
+        | Fsharp => fun () =>
+            path |> $'System.IO.File.Delete'
+        | Rust => fun () =>
+            inl result : resultm.result' () stream.io_error =
+                if path |> file_exists
+                then !\\(path, $'"std::fs::remove_file(&*$0)"')
+                else Ok () |> resultm.box
+            match result |> resultm.map_error' sm'.format |> resultm.unbox with
+            | Ok () => ()
+            | Error error' => trace Critical (fun () => "file_system.file_delete") fun () => { error' }
+        | _ => fun () => ()
 
 /// ### read_link
 let read_link (path : string) : resultm.result' path_buf stream.io_error =

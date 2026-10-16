@@ -1,7 +1,12 @@
 import CRT
+import WinSDK
 protocol US0 { var tag: Int32 { get } }
 struct US0_None: US0 { var tag: Int32 { 0 } }
 struct US0_Both: US0 { var f0: String; var f1: String; var tag: Int32 { 1 } }
+final class SpiralArray<T> {
+    var items: [T]
+    init(_ items: [T]) { self.items = items }
+}
 func sp_score_0(_ p0: US0) -> Int32 {
     var v0: US0 = p0
     switch v0.tag {
@@ -30,8 +35,8 @@ func sp_score_0(_ p0: US0) -> Int32 {
     }
 }
 func spiral_main() -> Int32 {
-    var v0: Array<US0> = Array<US0>()
-    v0 = Array<US0>(repeating: US0_None(), count: Int(1))
+    var v0: SpiralArray<US0> = SpiralArray<US0>([])
+    v0 = SpiralArray<US0>(Array(repeating: US0_None(), count: Int(1)))
     var v1: String = ""
     v1 = "hi"
     var v2: String = ""
@@ -44,9 +49,12 @@ func spiral_main() -> Int32 {
     } else {
         v6 = US0_None()
     }
-    v0[Int(0)] = v6
+    v0.items[Int(0)] = v6
     var v7: US0 = US0_None()
-    v7 = v0[Int(0)]
+    v7 = v0.items[Int(0)]
     return sp_score_0(v7)
 }
-exit(spiral_main())
+nonisolated(unsafe) var spiral_exit_code: Int32 = 0
+let spiral_thread = CreateThread(nil, 1 << 30, { _ in spiral_exit_code = spiral_main(); return 0 }, nil, DWORD(STACK_SIZE_PARAM_IS_A_RESERVATION), nil)
+WaitForSingleObject(spiral_thread, INFINITE)
+exit(spiral_exit_code)

@@ -1,18 +1,23 @@
 import CRT
-func sp_method0(_ p0: Int32) -> Array<Int32> {
+import WinSDK
+final class SpiralArray<T> {
+    var items: [T]
+    init(_ items: [T]) { self.items = items }
+}
+func sp_method0(_ p0: Int32) -> SpiralArray<Int32> {
     var v0: Int32 = p0
-    var v1: Array<Int32> = Array<Int32>()
-    v1 = Array<Int32>(repeating: 0, count: Int(1))
-    v1[Int(0)] = v0
+    var v1: SpiralArray<Int32> = SpiralArray<Int32>([])
+    v1 = SpiralArray<Int32>(Array(repeating: 0, count: Int(1)))
+    v1.items[Int(0)] = v0
     return v1
 }
 func spiral_main() -> Int32 {
     var v0: Int32 = 0
     v0 = 7
-    var v1: Array<Int32> = Array<Int32>()
+    var v1: SpiralArray<Int32> = SpiralArray<Int32>([])
     v1 = sp_method0(v0)
     var v2: Int32 = 0
-    v2 = v1[Int(0)]
+    v2 = v1.items[Int(0)]
     var v3: Bool = false
     v3 = (v2 == 7)
     if (v3) {
@@ -21,4 +26,7 @@ func spiral_main() -> Int32 {
         return 1
     }
 }
-exit(spiral_main())
+nonisolated(unsafe) var spiral_exit_code: Int32 = 0
+let spiral_thread = CreateThread(nil, 1 << 30, { _ in spiral_exit_code = spiral_main(); return 0 }, nil, DWORD(STACK_SIZE_PARAM_IS_A_RESERVATION), nil)
+WaitForSingleObject(spiral_thread, INFINITE)
+exit(spiral_exit_code)

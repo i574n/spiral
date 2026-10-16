@@ -9441,19 +9441,16 @@ __assert_eq { expected = false }</pre>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">box</span> <span class="n">forall</span> <span class="n">t</span><span class="o">.</span> <span class="p">(</span><span class="nb">list</span> <span class="p">:</span> <span class="nb">list</span> <span class="n">t</span><span class="p">)</span> <span class="p">:</span> <span class="nb">list</span><span class="s1">' t =</span>
-    <span class="n">inl</span> <span class="n">otherwise</span> <span class="p">()</span> <span class="o">=</span>
-        <span class="n">run_target</span> <span class="n">function</span>
-            <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-                <span class="n">inl</span> <span class="n">acc</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'Rc&lt;RefCell&lt;Vec&lt;`t&gt;&gt;&gt;'</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'Rc::new(RefCell::new(Vec::new()))'</span>
-                <span class="n">inl</span> <span class="n">_</span> <span class="p">:</span> <span class="n">i32</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="n">i32</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="o">||&gt;</span> <span class="n">listm</span><span class="o">.</span><span class="n">fold</span> <span class="n">fun</span> <span class="n">n</span> <span class="p">(</span><span class="n">x</span> <span class="p">:</span> <span class="n">t</span><span class="p">)</span> <span class="o">=&gt;</span>
-                    <span class="err">$</span><span class="s1">'!acc.borrow_mut().push(!x)'</span> <span class="p">:</span> <span class="p">()</span>
-                    <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span>
-                <span class="err">$</span><span class="s1">'Rc::new(!acc.borrow().clone())'</span> <span class="p">:</span> <span class="nb">list</span><span class="s1">' t</span>
-            <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">empty</span><span class="s1">' ()) ||&gt; listm.foldBack cons'</span>
-    <span class="n">backend_switch_or</span> <span class="n">otherwise</span> <span class="p">{</span>
-        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+    <span class="n">run_target</span> <span class="n">function</span>
+        <span class="o">|</span> <span class="n">Zig</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">empty</span><span class="s1">' ()) ||&gt; listm.foldBack cons'</span>
-    <span class="p">}</span>
+        <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="n">inl</span> <span class="n">acc</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'Rc&lt;RefCell&lt;Vec&lt;`t&gt;&gt;&gt;'</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'Rc::new(RefCell::new(Vec::new()))'</span>
+            <span class="n">inl</span> <span class="n">_</span> <span class="p">:</span> <span class="n">i32</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="n">i32</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="o">||&gt;</span> <span class="n">listm</span><span class="o">.</span><span class="n">fold</span> <span class="n">fun</span> <span class="n">n</span> <span class="p">(</span><span class="n">x</span> <span class="p">:</span> <span class="n">t</span><span class="p">)</span> <span class="o">=&gt;</span>
+                <span class="err">$</span><span class="s1">'!acc.borrow_mut().push(!x)'</span> <span class="p">:</span> <span class="p">()</span>
+                <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="err">$</span><span class="s1">'Rc::new(!acc.borrow().clone())'</span> <span class="p">:</span> <span class="nb">list</span><span class="s1">' t</span>
+        <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">empty</span><span class="s1">' ()) ||&gt; listm.foldBack cons'</span>
 </pre></div>
 </div>
 </div>

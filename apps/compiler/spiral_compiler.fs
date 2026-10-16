@@ -165911,33 +165911,46 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 let false_branch = branch fl
                 defs.Add($"@unsafe\ndef {name}(+c: Bool{params captured}) -> IO({result}):\n  match c:\n    case True{{}}:\n{true_branch}    case False{{}}:\n{false_branch}")
                 $"{name}({tup cond}{args captured})"
-            | TyUnionUnbox([L(u,_)], x, on_succs, on_fail) ->
+            | TyUnionUnbox(scrutinees, x, on_succs, on_fail) ->
                 let cases = x.Item.cases
                 let tag = union_tag cases
                 let name = $"{owner}_unbox{next_fresh ()}"
                 let captured = scope.ToArray()
                 let text = StringBuilder()
-                cases |> Map.toArray |> Array.iteri (fun c ((_, k), t) ->
-                    let handled = on_succs |> Map.tryPick (fun k' v -> if UnionTagIdOps.text k' = k then Some v else None)
-                    let case_name = generatedCaseName (sprintf "U%i" tag) cases c
-                    match handled, on_fail with
-                    | Some (a, b), _ ->
-                        let fields = a |> List.collect (data_free_vars >> List.ofArray) |> Array.ofList
-                        let binders = fields |> Array.map (fun (L(j,_)) -> $"+v{j}") |> String.concat ", "
-                        text.Append($"    case {case_name}{{{binders}}}:\n") |> ignore
-                        binds name "      " result text (ResizeArray(Array.append captured fields)) b
-                    | None, Some b ->
-                        let width = env.ty_to_data t |> data_free_vars |> Array.length
-                        let ignored = Array.init width (fun j -> $"unused{j}") |> String.concat ", "
-                        text.Append($"    case {case_name}{{{ignored}}}:\n") |> ignore
-                        binds name "      " result text (ResizeArray captured) b
-                    | None, None ->
-                        let width = env.ty_to_data t |> data_free_vars |> Array.length
-                        let ignored = Array.init width (fun j -> $"unused{j}") |> String.concat ", "
-                        text.Append($"    case {case_name}{{{ignored}}}:\n      do IO<{result}>:\n        IO.die({result}, 3, \"\")\n") |> ignore)
-                defs.Add($"@unsafe\ndef {name}(+u: U{tag}{params captured}) -> IO({result}):\n  match u:\n{text}")
-                $"{name}(v{u}{args captured})"
-            | TyUnionUnbox _ -> unsupported "union unboxes over several values"
+                let subjects = List.toArray scrutinees
+                let subject k = if k = 0 then "u" else $"u{k}"
+                let last = subjects.Length - 1
+                let ruled_out (pad : string) =
+                    match on_fail with
+                    | Some b -> binds name pad result text (ResizeArray captured) b
+                    | None -> text.Append($"{pad}do IO<{result}>:\n{pad}  IO.die({result}, 3, \"\")\n") |> ignore
+                let rec level k (bound : TyV []) (only : int option) =
+                    let case_pad = String.replicate (4 + 4 * k) " "
+                    let body_pad = String.replicate (6 + 4 * k) " "
+                    let match_pad = String.replicate (2 + 4 * k) " "
+                    if k > 0 then text.Append($"{match_pad}match {subject k}:\n") |> ignore
+                    cases |> Map.toArray |> Array.iteri (fun c ((_, case_text), t) ->
+                        let handled = on_succs |> Map.tryPick (fun k' v -> if UnionTagIdOps.text k' = case_text then Some v else None)
+                        let case_name = generatedCaseName (sprintf "U%i" tag) cases c
+                        let same_case = match only with Some c' -> c' = c | None -> true
+                        match handled with
+                        | Some (payloads, b) when same_case ->
+                            let fields = data_free_vars (List.item k payloads)
+                            let binders = fields |> Array.map (fun (L(j,_)) -> $"+v{j}") |> String.concat ", "
+                            text.Append($"{case_pad}case {case_name}{{{binders}}}:\n") |> ignore
+                            let bound = Array.append bound fields
+                            if k = last then binds name body_pad result text (ResizeArray(Array.append captured bound)) b
+                            else level (k + 1) bound (Some c)
+                        | _ ->
+                            let width = env.ty_to_data t |> data_free_vars |> Array.length
+                            let ignored = Array.init width (fun j -> $"unused{j}") |> String.concat ", "
+                            text.Append($"{case_pad}case {case_name}{{{ignored}}}:\n") |> ignore
+                            ruled_out body_pad)
+                level 0 [||] None
+                let parameters = subjects |> Array.mapi (fun k _ -> $"+{subject k}: U{tag}") |> String.concat ", "
+                let arguments = subjects |> Array.map (fun (L(i,_)) -> $"v{i}") |> String.concat ", "
+                defs.Add($"@unsafe\ndef {name}({parameters}{params captured}) -> IO({result}):\n  match u:\n{text}")
+                $"{name}({arguments}{args captured})"
             | TyUnionBox(a,b,c) ->
                 let c = c.Item
                 let tag = union_tag c.cases
@@ -166340,7 +166353,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             global' "import gary/array"
             global' "import gleam/list"
             global' "import gleam/option"
-            let decl = "pub type SpiralArrayKey\n\npub type SpiralArray(a) {\n  SpiralArray(key: SpiralArrayKey, size: Int)\n}\n\n@external(erlang, \"erlang\", \"make_ref\")\npub fn spiral_array_new_key() -> SpiralArrayKey\n\n@external(erlang, \"erlang\", \"put\")\npub fn spiral_array_store(key: SpiralArrayKey, storage: gary.ErlangArray(option.Option(a))) -> b\n\n@external(erlang, \"erlang\", \"get\")\npub fn spiral_array_load(key: SpiralArrayKey) -> gary.ErlangArray(option.Option(a))\n\npub fn spiral_array_from_storage(storage: gary.ErlangArray(option.Option(a)), size: Int) -> SpiralArray(a) {\n  let key = spiral_array_new_key()\n  let _ = spiral_array_store(key, storage)\n  SpiralArray(key: key, size: size)\n}\n\npub fn spiral_array_create(size: Int) -> SpiralArray(a) {\n  list.repeat(option.None, size) |> array.from_list(option.None) |> spiral_array_from_storage(size)\n}\n\npub fn spiral_array_from_list(values: List(a)) -> SpiralArray(a) {\n  values |> list.map(option.Some) |> array.from_list(option.None) |> spiral_array_from_storage(list.length(values))\n}\n\npub fn spiral_array_to_list(xs: SpiralArray(a)) -> List(a) {\n  list.repeat(Nil, xs.size) |> list.index_map(fn(_, i) { spiral_array_get(xs, i) })\n}\n\npub fn spiral_array_get(xs: SpiralArray(a), i: Int) -> a {\n  case i >= 0 && i < xs.size {\n    True ->\n      case spiral_array_load(xs.key) |> array.get(i) {\n        Ok(option.Some(x)) -> x\n        _ -> panic as \"spiral array: read of an element that was never set\"\n      }\n    False -> panic as \"spiral array: index out of bounds\"\n  }\n}\n\npub fn spiral_array_set(xs: SpiralArray(a), i: Int, value: a) -> Nil {\n  case i >= 0 && i < xs.size {\n    True -> {\n      let assert Ok(storage) = spiral_array_load(xs.key) |> array.set(i, option.Some(value))\n      let _ = spiral_array_store(xs.key, storage)\n      Nil\n    }\n    False -> panic as \"spiral array: index out of bounds\"\n  }\n}"
+            let decl = "pub type SpiralArrayKey\n\npub type SpiralArray(a) {\n  SpiralArray(key: SpiralArrayKey, size: Int)\n}\n\n@external(erlang, \"erlang\", \"make_ref\")\npub fn spiral_array_new_key() -> SpiralArrayKey\n\n@external(erlang, \"erlang\", \"put\")\npub fn spiral_array_store(key: SpiralArrayKey, storage: gary.ErlangArray(option.Option(a))) -> b\n\n@external(erlang, \"erlang\", \"get\")\npub fn spiral_array_load(key: SpiralArrayKey) -> gary.ErlangArray(option.Option(a))\n\npub fn spiral_array_from_storage(storage: gary.ErlangArray(option.Option(a)), size: Int) -> SpiralArray(a) {\n  let key = spiral_array_new_key()\n  let _ = spiral_array_store(key, storage)\n  SpiralArray(key: key, size: size)\n}\n\npub fn spiral_array_create(size: Int) -> SpiralArray(a) {\n  list.repeat(option.None, size) |> array.from_list(option.None) |> spiral_array_from_storage(size)\n}\n\npub fn spiral_array_create_filled(size: Int, value: a) -> SpiralArray(a) {\n  list.repeat(option.Some(value), size) |> array.from_list(option.None) |> spiral_array_from_storage(size)\n}\n\npub fn spiral_array_from_list(values: List(a)) -> SpiralArray(a) {\n  values |> list.map(option.Some) |> array.from_list(option.None) |> spiral_array_from_storage(list.length(values))\n}\n\npub fn spiral_array_to_list(xs: SpiralArray(a)) -> List(a) {\n  list.repeat(Nil, xs.size) |> list.index_map(fn(_, i) { spiral_array_get(xs, i) })\n}\n\npub fn spiral_array_get(xs: SpiralArray(a), i: Int) -> a {\n  case i >= 0 && i < xs.size {\n    True ->\n      case spiral_array_load(xs.key) |> array.get(i) {\n        Ok(option.Some(x)) -> x\n        _ -> panic as \"spiral array: read of an element that was never set\"\n      }\n    False -> panic as \"spiral array: index out of bounds\"\n  }\n}\n\npub fn spiral_array_set(xs: SpiralArray(a), i: Int, value: a) -> Nil {\n  case i >= 0 && i < xs.size {\n    True -> {\n      let assert Ok(storage) = spiral_array_load(xs.key) |> array.set(i, option.Some(value))\n      let _ = spiral_array_store(xs.key, storage)\n      Nil\n    }\n    False -> panic as \"spiral array: index out of bounds\"\n  }\n}"
             if not (externals.Contains decl) then externals.Add decl
         let spiralRefs () =
             spiralArrays ()
@@ -166681,7 +166694,15 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 |> simple
             | TyArrayCreate(a,b) ->
                 spiralArrays ()
-                $"spiral_array_create({tup b})" |> simple
+                let gleamPrimZero = function
+                    | Float32T | Float64T -> "0.0"
+                    | BoolT -> "False"
+                    | StringT -> "\"\""
+                    | CharT -> "\"\\u{0000}\""
+                    | _ -> "0"
+                match env.ty_to_data a |> data_free_vars with
+                | [|L(_, YPrim p)|] -> $"spiral_array_create_filled({tup b}, {gleamPrimZero p})" |> simple
+                | _ -> $"spiral_array_create({tup b})" |> simple
             | TyArrayLength(a,b) ->
                 spiralArrays ()
                 $"{tup b}.size" |> simple
@@ -169877,6 +169898,8 @@ end
         let is_unit_ty = function YB -> true | _ -> false
         // Locals are always initialized. A union's zero is its first case built from zeros.
         let union_types = ResizeArray<string>()
+        let union_zero_pending = HashSet<string>()
+        let union_zero_sentinels = HashSet<string>()
         let union_zeros = Dictionary<string, string>()
         let union_seen = Dictionary(HashIdentity.Reference)
         let union_recs = Dictionary(HashIdentity.Reference)
@@ -169885,6 +169908,16 @@ end
         let layout_types = ResizeArray<string>()
         let layout_zeros = Dictionary<string, string>()
         let layout_seen = Dictionary<string, int * Data * TyV[]>()
+        let tuple_name (tys : string []) =
+            let key = String.concat "," tys
+            match tuple_names.TryGetValue key with
+            | true, name -> name
+            | _ ->
+                let name = $"SpiralTuple{tuple_names.Count}"
+                tuple_names.[key] <- name
+                let fields = tys |> Array.mapi (fun i t -> $"val v{i}: {t}") |> String.concat ", "
+                tuple_bodies.Add($"class {name}({fields})\n")
+                name
         let rec tyv = function
             | YPrim Int32T | YPrim CharT -> "Int"
             | YPrim UInt32T -> "UInt"
@@ -169901,23 +169934,17 @@ end
             | YArray a ->
                 match env.ty_to_data a |> data_free_vars with
                 | [|L(_, t)|] -> $"Array<{tyv t}>"
-                | _ -> unsupported "an array whose element is not one value"
+                | [||] -> unsupported "an array of unit elements"
+                | many ->
+                    let element = many |> Array.map (fun (L(_, t)) -> tyv t) |> tuple_name
+                    $"Array<{element}>"
             | YFun(domain, range, FT_Vanilla) ->
                 let dom = env.ty_to_data domain |> data_free_vars |> Array.map (fun (L(_, t)) -> tyv t)
                 let ret =
                     match env.ty_to_data range |> data_free_vars |> Array.map (fun (L(_, t)) -> tyv t) with
                     | [||] -> "Unit"
                     | [|t|] -> t
-                    | rets ->
-                        let key = String.concat "," rets
-                        match tuple_names.TryGetValue key with
-                        | true, name -> name
-                        | _ ->
-                            let name = $"SpiralTuple{tuple_names.Count}"
-                            tuple_names.[key] <- name
-                            let fields = rets |> Array.mapi (fun i t -> $"val v{i}: {t}") |> String.concat ", "
-                            tuple_bodies.Add($"class {name}({fields})\n")
-                            name
+                    | rets -> tuple_name rets
                 let dom_text = dom |> String.concat ", "
                 let text = if dom.Length = 0 then $"() -> {ret}" else $"({dom_text}) -> {ret}"
                 if not (fun_zeros.ContainsKey text) then
@@ -169978,14 +170005,14 @@ end
                 let prefix = match key.layout with UHeap -> "UH" | UStack -> "US"
                 let name = $"{prefix}{tag}"
                 union_seen.[key] <- name
+                let sentinel = $"{name}_Zero"
+                union_zeros.[name] <- sentinel
+                union_zero_pending.Add name |> ignore
                 let rec_f : UnionRecFsharp = { tag = tag; free_vars = key.cases |> Map.map (fun _ -> env.ty_to_data >> data_free_vars) }
                 union_recs.[key] <- rec_f
                 let cases = rec_f.free_vars |> Map.toArray
                 if cases.Length = 0 then unsupported "an empty union"
-                cases |> Array.iter (fun (_, fields) ->
-                    fields |> Array.iter (fun (L(_, t)) ->
-                        let ft = tyv t
-                        if ft = name && not (union_zeros.ContainsKey name) then unsupported "a recursive union"))
+                cases |> Array.iter (fun (_, fields) -> fields |> Array.iter (fun (L(_, t)) -> tyv t |> ignore))
                 let text = StringBuilder()
                 text.AppendLine($"sealed interface {name} {{ val tag: Int }}") |> ignore
                 cases |> Array.iter (fun ((i, _), fields) ->
@@ -170004,6 +170031,8 @@ end
                         let args = fields0 |> Array.map (fun (L(_, t)) -> zero (tyv t)) |> String.concat ", "
                         $"{case0}({args})"
                 union_zeros.[name] <- first
+                union_zero_pending.Remove name |> ignore
+                if union_zero_sentinels.Contains name then text.AppendLine($"object {sentinel} : {name} {{ override val tag: Int = -1 }}") |> ignore
                 union_types.Add(text.ToString())
                 name
         and zero = function
@@ -170019,7 +170048,9 @@ end
             | "Float" -> "0.0f"
             | "Double" -> "0.0"
             | "String" -> "\"\""
-            | name when union_zeros.ContainsKey name -> union_zeros.[name]
+            | name when union_zeros.ContainsKey name ->
+                if union_zero_pending.Contains name then union_zero_sentinels.Add name |> ignore
+                union_zeros.[name]
             | name when layout_zeros.ContainsKey name -> layout_zeros.[name]
             | name when fun_zeros.ContainsKey name -> fun_zeros.[name]
             | array when array.StartsWith("Array<") ->
@@ -170089,30 +170120,9 @@ end
             | [|w|] -> show_w w
             | [||] -> ""
             | _ -> unsupported "tuple values"
-        let rec flatten_ty t =
-            match t with
-            | YB -> [||]
-            | YPair(a, b) -> Array.append (flatten_ty a) (flatten_ty b)
-            | _ -> [|t|]
-        let tuple_name (tys : string []) =
-            let key = String.concat "," tys
-            match tuple_names.TryGetValue key with
-            | true, name -> name
-            | _ ->
-                let name = $"SpiralTuple{tuple_names.Count}"
-                tuple_names.[key] <- name
-                let fields = tys |> Array.mapi (fun i t -> $"val v{i}: {t}") |> String.concat ", "
-                tuple_bodies.Add($"class {name}({fields})\n")
-                name
+        let flatten_ty t = env.ty_to_data t |> data_free_vars |> Array.map (fun (L(_, inner)) -> inner)
         let ret_ty range =
-            // A nominal's name is not a Kotlin type. Unwrap each value, including a pair element.
-            let rec value_tys t =
-                match t with
-                | YB -> [||]
-                | YPair(a, b) -> Array.append (value_tys a) (value_tys b)
-                | YNominal _ -> env.ty_to_data t |> data_free_vars |> Array.map (fun (L(_, inner)) -> tyv inner)
-                | other -> [|tyv other|]
-            match value_tys range with
+            match flatten_ty range |> Array.map tyv with
             | [||] -> ""
             | [|t|] -> t
             | many -> tuple_name many
@@ -170126,7 +170136,7 @@ end
         let rec emit_function (name : string) (tag : int option) (parameters : TyV []) (range : Ty) (body : TypedBind []) =
             let saved = self_loop.Value
             let tail = match tag with Some t when self_tail t body -> true | _ -> false
-            if tail then self_loop.Value <- Some (tag.Value, parameters)
+            self_loop.Value <- if tail then Some (tag.Value, parameters) else None
             try
                 let text = StringBuilder()
                 let formals = parameters |> Array.map (fun (L(i,t)) -> $"p{i}: {tyv t}") |> String.concat ", "
@@ -170180,7 +170190,7 @@ end
                             Array.iter2 (fun (L(i,_)) w -> line s $"v{i} = {show_w w}") targets values
                         | KotlinTail range ->
                             match data_term_vars d with
-                            | [||] -> ()
+                            | [||] -> if self_loop.Value.IsSome then line s "return"
                             | [|w|] -> line s $"return {show_w w}"
                             | many ->
                                 let args = many |> Array.map show_w |> String.concat ", "
@@ -170196,7 +170206,9 @@ end
                     let name = $"spiral_tuple{s.text.Length}"
                     line s $"val {name} = {x}"
                     targets |> Array.iteri (fun k (L(i,_)) -> line s $"v{i} = {name}.v{k}")
-                | KotlinTail range when is_unit_ty range -> if x <> "" then line s x
+                | KotlinTail range when is_unit_ty range ->
+                    if x <> "" then line s x
+                    if self_loop.Value.IsSome then line s "return"
                 | KotlinTail _ -> line s $"return {x}"
             let jp_text (jp, args) =
                 match jp with
@@ -170248,6 +170260,9 @@ end
                 line (indent s) $"if (!({jp_text cond})) break"
                 binds (indent s) (KotlinLocal [||]) body
                 line s "}"
+                match ret with
+                | KotlinTail _ when self_loop.Value.IsSome -> line s "return"
+                | _ -> ()
             | TyDo body | TyIndent body -> binds s ret body
             | TyConv(YPrim target, b) ->
                 let source = prim_of b
@@ -170367,16 +170382,42 @@ end
                         $"{tup a}[{index}]"
                     | ArrayIndexSet, [a;b;c] ->
                         let index = match kotlin_of b with "Int" -> tup b | _ -> unsupported "an array index that is not an i32"
-                        $"{tup a}[{index}] = {tup c}"
+                        let value =
+                            match data_term_vars c with
+                            | [|w|] -> show_w w
+                            | many ->
+                                let element = many |> Array.map (function WV(L(_, t)) -> tyv t | WLit l -> tyv (YPrim (lit_to_primitive_type l))) |> tuple_name
+                                let args = many |> Array.map show_w |> String.concat ", "
+                                $"{element}({args})"
+                        $"{tup a}[{index}] = {value}"
+                    | (Sqrt | Log | Exp | Tanh | Sin | Cos), [a] when (match prim_of a with Some (Float32T | Float64T) -> true | _ -> false) ->
+                        let name = match operation with Sqrt -> "sqrt" | Log -> "ln" | Exp -> "exp" | Tanh -> "tanh" | Sin -> "sin" | _ -> "cos"
+                        $"kotlin.math.{name}({tup a})"
+                    | Pow, [a;b] when (match prim_of a with Some Float32T -> true | _ -> false) -> $"Math.pow(({tup a}).toDouble(), ({tup b}).toDouble()).toFloat()"
+                    | Pow, [a;b] when (match prim_of a with Some Float64T -> true | _ -> false) -> $"Math.pow({tup a}, {tup b})"
+                    | Printf, [DLit (LitString fmt); b] ->
+                        match printf_pieces fmt (data_term_vars b) with
+                        | [] -> ""
+                        | pieces ->
+                            let text =
+                                pieces |> List.map (function
+                                    | Choice1Of2 piece -> show_w (WLit (LitString piece))
+                                    | Choice2Of2 ('s', a) -> show_w a
+                                    | Choice2Of2 (_, a) -> $"({show_w a}).toString()")
+                                |> String.concat " + "
+                            $"System.out.write(({text}).toByteArray(Charsets.UTF_8)); System.out.flush()"
                     | _ -> unsupported $"the operation {operation}"
                 return' expr
             | TyArrayCreate(a, b) ->
-                let element =
-                    match env.ty_to_data a |> data_free_vars with
-                    | [|L(_, t)|] -> t
-                    | _ -> unsupported "an array whose element is not one value"
+                let element_zero =
+                    match env.ty_to_data a |> data_free_vars |> Array.map (fun (L(_, t)) -> tyv t) with
+                    | [|t|] -> zero t
+                    | [||] -> unsupported "an array of unit elements"
+                    | many ->
+                        let zeros = many |> Array.map zero |> String.concat ", "
+                        $"{tuple_name many}({zeros})"
                 let n = match kotlin_of b with "Int" -> tup b | _ -> unsupported "an array length that is not an i32"
-                return' $"Array({n}) {{ {zero (tyv element)} }}"
+                return' $"Array({n}) {{ {element_zero} }}"
             | TyArrayLength(t, b) ->
                 match t with
                 | YPrim (Int32T | CharT) -> return' $"{tup b}.size"
@@ -170392,21 +170433,26 @@ end
                 let case_name = $"{name}_{unionCaseSuffix rec_f i}"
                 let args = data_term_vars payload |> Array.map show_w |> String.concat ", "
                 return' $"{case_name}({args})"
-            | TyUnionUnbox([L(i,_)], union_h, on_succs, on_fail) ->
+            | TyUnionUnbox(scrutinees, union_h, on_succs, on_fail) ->
                 let name, rec_f = union_ref union_h
                 let s' = indent s
                 let s'' = indent s'
-                line s $"when (v{i}.tag) {{"
+                let head = match scrutinees with L(i,_) :: _ -> $"v{i}.tag" | [] -> raise_codegen_error "Compiler error: A union unbox has no scrutinee."
+                let shared_tag =
+                    match List.pairwise scrutinees |> List.map (fun (L(i,_), L(i',_)) -> $"v{i}.tag == v{i'}.tag") with
+                    | [] -> head
+                    | equal ->
+                        let all_equal = String.concat " && " equal
+                        $"if ({all_equal}) {head} else -1"
+                line s $"when ({shared_tag}) {{"
                 on_succs |> Map.iter (fun k (payloads, body) ->
                     let c = union_case_tag rec_f k
                     let case_name = $"{name}_{unionCaseSuffix rec_f c}"
                     line s' $"{c} -> {{"
-                    match payloads with
-                    | [a] ->
+                    List.iter2 (fun (L(i,_)) a ->
                         data_free_vars a |> Array.iteri (fun f (L(vi, t)) ->
                             let ft = tyv t
-                            line s'' $"var v{vi}: {ft} = (v{i} as {case_name}).f{f}")
-                    | _ -> unsupported "union unboxes over several values"
+                            line s'' $"var v{vi}: {ft} = (v{i} as {case_name}).f{f}")) scrutinees payloads
                     binds s'' ret body
                     line s' "}")
                 match on_fail with
@@ -170454,7 +170500,6 @@ end
                 let terms = data_term_vars value
                 if fields.Length <> terms.Length then raise_codegen_error "Compiler error: A layout set has the wrong number of values."
                 Array.iter2 (fun (L(fi,_)) term -> line s $"v{i}.l{fi} = {show_w term}") fields terms
-            | TyUnionUnbox _ -> unsupported "union unboxes over several values"
             | other ->
                 let construct = (sprintf "%A" other).Split('(').[0]
                 unsupported construct
@@ -170538,8 +170583,12 @@ end
         tuple_bodies |> Seq.iter (fun text -> program.Append(text) |> ignore)
         functions |> Seq.iter (fun fn -> program.Append(fn) |> ignore)
         program.AppendLine("fun main() {") |> ignore
-        if unit_main then program.AppendLine("    System.exit(0)") |> ignore
-        else program.AppendLine("    System.exit(spiral_main())") |> ignore
+        program.AppendLine("    var spiral_exit_code = 0") |> ignore
+        if unit_main then program.AppendLine("    val spiral_thread = Thread(null, { spiral_main() }, \"spiral_main\", 1L shl 30)") |> ignore
+        else program.AppendLine("    val spiral_thread = Thread(null, { spiral_exit_code = spiral_main() }, \"spiral_main\", 1L shl 30)") |> ignore
+        program.AppendLine("    spiral_thread.start()") |> ignore
+        program.AppendLine("    spiral_thread.join()") |> ignore
+        program.AppendLine("    System.exit(spiral_exit_code)") |> ignore
         program.AppendLine("}") |> ignore
         program.ToString()
 
@@ -170595,9 +170644,20 @@ end
                     line "    return String(decoding: bytes[f...t], as: UTF8.self)" +
                     line "}")
         let unsupported what = raise_codegen_error $"The Swift backend doesn't support {what} yet."
+        let arrays_ready = ref false
+        let array_helpers () =
+            if not arrays_ready.Value then
+                arrays_ready.Value <- true
+                helpers.Add(
+                    "final class SpiralArray<T> {\n" +
+                    "    var items: [T]\n" +
+                    "    init(_ items: [T]) { self.items = items }\n" +
+                    "}\n")
         let is_unit_ty = function YB -> true | _ -> false
         // Locals are always initialized. A union's zero is its first case built from zeros.
         let union_types = ResizeArray<string>()
+        let union_zero_pending = HashSet<string>()
+        let union_zero_sentinels = HashSet<string>()
         let union_zeros = Dictionary<string, string>()
         let union_seen = Dictionary(HashIdentity.Reference)
         let union_recs = Dictionary(HashIdentity.Reference)
@@ -170621,10 +170681,14 @@ end
             | YPrim StringT -> "String"
             | YArray a ->
                 match env.ty_to_data a |> data_free_vars with
-                | [|L(_, t)|] -> $"Array<{tyv t}>"
-                | _ -> unsupported "an array whose element is not one value"
+                | [|L(_, t)|] -> array_helpers (); $"SpiralArray<{tyv t}>"
+                | [||] -> unsupported "an array of unit elements"
+                | many ->
+                    array_helpers ()
+                    let element = many |> Array.map (fun (L(_, t)) -> tyv t) |> String.concat ", "
+                    $"SpiralArray<({element})>"
             | YFun(domain, range, FT_Vanilla) ->
-                let dom = env.ty_to_data domain |> data_free_vars |> Array.map (fun (L(_, t)) -> tyv t)
+                let dom = env.ty_to_data domain |> data_free_vars |> Array.map (fun (L(_, t)) -> match t with YFun _ -> "@escaping " + tyv t | _ -> tyv t)
                 let ret =
                     match env.ty_to_data range |> data_free_vars |> Array.map (fun (L(_, t)) -> tyv t) with
                     | [||] -> "Void"
@@ -170701,14 +170765,14 @@ end
                 let prefix = match key.layout with UHeap -> "UH" | UStack -> "US"
                 let name = $"{prefix}{tag}"
                 union_seen.[key] <- name
+                let sentinel = $"{name}_Zero"
+                union_zeros.[name] <- sentinel + "()"
+                union_zero_pending.Add name |> ignore
                 let rec_f : UnionRecFsharp = { tag = tag; free_vars = key.cases |> Map.map (fun _ -> env.ty_to_data >> data_free_vars) }
                 union_recs.[key] <- rec_f
                 let cases = rec_f.free_vars |> Map.toArray
                 if cases.Length = 0 then unsupported "an empty union"
-                cases |> Array.iter (fun (_, fields) ->
-                    fields |> Array.iter (fun (L(_, t)) ->
-                        let ft = tyv t
-                        if ft = name && not (union_zeros.ContainsKey name) then unsupported "a recursive union"))
+                cases |> Array.iter (fun (_, fields) -> fields |> Array.iter (fun (L(_, t)) -> tyv t |> ignore))
                 let text = StringBuilder()
                 text.AppendLine($"protocol {name} {{ var tag: Int32 {{ get }} }}") |> ignore
                 cases |> Array.iter (fun ((i, _), fields) ->
@@ -170727,6 +170791,8 @@ end
                         let args = fields0 |> Array.mapi (fun f (L(_, t)) -> $"f{f}: {zero (tyv t)}") |> String.concat ", "
                         $"{case0}({args})"
                 union_zeros.[name] <- first
+                union_zero_pending.Remove name |> ignore
+                if union_zero_sentinels.Contains name then text.AppendLine($"struct {sentinel}: {name} {{ var tag: Int32 {{ -1 }} }}") |> ignore
                 union_types.Add(text.ToString())
                 name
         and zero = function
@@ -170742,10 +170808,12 @@ end
             | "Float" -> "(0.0 as Float)"
             | "Double" -> "(0.0 as Double)"
             | "String" -> "\"\""
-            | name when union_zeros.ContainsKey name -> union_zeros.[name]
+            | name when union_zeros.ContainsKey name ->
+                if union_zero_pending.Contains name then union_zero_sentinels.Add name |> ignore
+                union_zeros.[name]
             | name when layout_zeros.ContainsKey name -> layout_zeros.[name]
             | name when fun_zeros.ContainsKey name -> fun_zeros.[name]
-            | array when array.StartsWith("Array<") -> $"{array}()"
+            | array when array.StartsWith("SpiralArray<") -> $"{array}([])"
             | other -> unsupported $"a zero value of {other}"
         let union_ref (h : Union) : string * UnionRecFsharp =
             let name = ensure_union h
@@ -170816,20 +170884,10 @@ end
             | [|w|] -> show_w w
             | [||] -> ""
             | _ -> unsupported "tuple values"
-        let rec flatten_ty t =
-            match t with
-            | YB -> [||]
-            | YPair(a, b) -> Array.append (flatten_ty a) (flatten_ty b)
-            | _ -> [|t|]
+        let flatten_ty t = env.ty_to_data t |> data_free_vars |> Array.map (fun (L(_, inner)) -> inner)
+        let parameter_ty t = match t with YFun _ -> "@escaping " + tyv t | _ -> tyv t
         let ret_ty range =
-            // A nominal's name is not a Swift type. Unwrap each value, including a pair element.
-            let rec value_tys t =
-                match t with
-                | YB -> [||]
-                | YPair(a, b) -> Array.append (value_tys a) (value_tys b)
-                | YNominal _ -> env.ty_to_data t |> data_free_vars |> Array.map (fun (L(_, inner)) -> tyv inner)
-                | other -> [|tyv other|]
-            match value_tys range with
+            match flatten_ty range |> Array.map tyv with
             | [||] -> ""
             | [|t|] -> t
             | many -> "(" + String.concat ", " many + ")"
@@ -170845,10 +170903,10 @@ end
         let rec emit_function (name : string) (tag : int option) (parameters : TyV []) (range : Ty) (body : TypedBind []) =
             let saved = self_loop.Value
             let tail = match tag with Some t when self_tail t body -> true | _ -> false
-            if tail then self_loop.Value <- Some (tag.Value, parameters)
+            self_loop.Value <- if tail then Some (tag.Value, parameters) else None
             try
                 let text = StringBuilder()
-                let formals = parameters |> Array.map (fun (L(i,t)) -> $"_ p{i}: {tyv t}") |> String.concat ", "
+                let formals = parameters |> Array.map (fun (L(i,t)) -> $"_ p{i}: {parameter_ty t}") |> String.concat ", "
                 let result = ret_ty range
                 let signature = if result = "" then $"func {name}({formals}) {{" else $"func {name}({formals}) -> {result} {{"
                 text.AppendLine(signature) |> ignore
@@ -170897,7 +170955,7 @@ end
                             Array.iter2 (fun (L(i,_)) w -> line s $"v{i} = {show_w w}") targets values
                         | SwiftTail range ->
                             match data_term_vars d with
-                            | [||] -> ()
+                            | [||] -> if self_loop.Value.IsSome then line s "return"
                             | [|w|] -> line s $"return {show_w w}"
                             | many ->
                                 let args = many |> Array.map show_w |> String.concat ", "
@@ -170913,7 +170971,9 @@ end
                     let name = $"spiral_tuple{s.text.Length}"
                     line s $"let {name} = {x}"
                     targets |> Array.iteri (fun k (L(i,_)) -> line s $"v{i} = {name}.{k}")
-                | SwiftTail range when is_unit_ty range -> if x <> "" then line s x
+                | SwiftTail range when is_unit_ty range ->
+                    if x <> "" then line s x
+                    if self_loop.Value.IsSome then line s "return"
                 | SwiftTail _ -> line s $"return {x}"
             let jp_text (jp, args) =
                 match jp with
@@ -170965,6 +171025,9 @@ end
                 line (indent s) $"if !({jp_text cond}) {{ break }}"
                 binds (indent s) (SwiftLocal [||]) body
                 line s "}"
+                match ret with
+                | SwiftTail _ when self_loop.Value.IsSome -> line s "return"
+                | _ -> ()
             | TyDo body | TyIndent body -> binds s ret body
             | TyConv(YPrim target, b) ->
                 let source = prim_of b
@@ -171065,22 +171128,50 @@ end
                     | StaticStringConcat, [a;b] -> $"({tup a} + {tup b})"
                     | ArrayIndex, [a;b] ->
                         let index = match swift_of b with "Int32" -> tup b | _ -> unsupported "an array index that is not an i32"
-                        $"{tup a}[Int({index})]"
+                        $"{tup a}.items[Int({index})]"
                     | ArrayIndexSet, [a;b;c] ->
                         let index = match swift_of b with "Int32" -> tup b | _ -> unsupported "an array index that is not an i32"
-                        $"{tup a}[Int({index})] = {tup c}"
+                        let value =
+                            match data_term_vars c with
+                            | [|w|] -> show_w w
+                            | many ->
+                                let items = many |> Array.map show_w |> String.concat ", "
+                                $"({items})"
+                        $"{tup a}.items[Int({index})] = {value}"
+                    | (Sqrt | Log | Exp | Tanh | Sin | Cos), [a] when floated a a ->
+                        let name = match operation with Sqrt -> "sqrt" | Log -> "log" | Exp -> "exp" | Tanh -> "tanh" | Sin -> "sin" | _ -> "cos"
+                        let suffix = match prim_of a with Some Float32T -> "f" | _ -> ""
+                        $"{name}{suffix}({tup a})"
+                    | Pow, [a;b] when floated a b ->
+                        let suffix = match prim_of a with Some Float32T -> "f" | _ -> ""
+                        $"pow{suffix}({tup a}, {tup b})"
+                    | Printf, [DLit (LitString fmt); b] ->
+                        match printf_pieces fmt (data_term_vars b) with
+                        | [] -> ""
+                        | pieces ->
+                            let text =
+                                pieces |> List.map (function
+                                    | Choice1Of2 piece -> show_w (WLit (LitString piece))
+                                    | Choice2Of2 ('s', a) -> show_w a
+                                    | Choice2Of2 (_, a) -> $"String({show_w a})")
+                                |> String.concat " + "
+                            $"_ = fputs({text}, stdout)"
                     | _ -> unsupported $"the operation {operation}"
                 return' expr
             | TyArrayCreate(a, b) ->
-                let element =
-                    match env.ty_to_data a |> data_free_vars with
-                    | [|L(_, t)|] -> t
-                    | _ -> unsupported "an array whose element is not one value"
+                let element, element_zero =
+                    match env.ty_to_data a |> data_free_vars |> Array.map (fun (L(_, t)) -> tyv t) with
+                    | [|t|] -> t, zero t
+                    | [||] -> unsupported "an array of unit elements"
+                    | many ->
+                        let types = String.concat ", " many
+                        let zeros = many |> Array.map zero |> String.concat ", "
+                        $"({types})", $"({zeros})"
                 let n = match swift_of b with "Int32" -> tup b | _ -> unsupported "an array length that is not an i32"
-                return' $"Array<{tyv element}>(repeating: {zero (tyv element)}, count: Int({n}))"
+                return' $"SpiralArray<{element}>(Array(repeating: {element_zero}, count: Int({n})))"
             | TyArrayLength(t, b) ->
                 match t with
-                | YPrim (Int32T | CharT) -> return' $"Int32({tup b}.count)"
+                | YPrim (Int32T | CharT) -> return' $"Int32({tup b}.items.count)"
                 | _ -> unsupported "array length of this width"
             | TyStringLength(t, b) ->
                 string_helpers ()
@@ -171093,21 +171184,26 @@ end
                 let case_name = $"{name}_{unionCaseSuffix rec_f i}"
                 let args = data_term_vars payload |> Array.mapi (fun f w -> $"f{f}: {show_w w}") |> String.concat ", "
                 return' $"{case_name}({args})"
-            | TyUnionUnbox([L(i,_)], union_h, on_succs, on_fail) ->
+            | TyUnionUnbox(scrutinees, union_h, on_succs, on_fail) ->
                 let name, rec_f = union_ref union_h
                 let s' = indent s
                 let s'' = indent s'
-                line s $"switch v{i}.tag {{"
+                let head = match scrutinees with L(i,_) :: _ -> $"v{i}.tag" | [] -> raise_codegen_error "Compiler error: A union unbox has no scrutinee."
+                let shared_tag =
+                    match List.pairwise scrutinees |> List.map (fun (L(i,_), L(i',_)) -> $"v{i}.tag == v{i'}.tag") with
+                    | [] -> head
+                    | equal ->
+                        let all_equal = String.concat " && " equal
+                        $"({all_equal} ? {head} : -1)"
+                line s $"switch {shared_tag} {{"
                 on_succs |> Map.iter (fun k (payloads, body) ->
                     let c = union_case_tag rec_f k
                     let case_name = $"{name}_{unionCaseSuffix rec_f c}"
                     line s' $"case {c}:"
-                    match payloads with
-                    | [a] ->
+                    List.iter2 (fun (L(i,_)) a ->
                         data_free_vars a |> Array.iteri (fun f (L(vi, t)) ->
                             let ft = tyv t
-                            line s'' $"var v{vi}: {ft} = (v{i} as! {case_name}).f{f}")
-                    | _ -> unsupported "union unboxes over several values"
+                            line s'' $"var v{vi}: {ft} = (v{i} as! {case_name}).f{f}")) scrutinees payloads
                     binds s'' ret body)
                 line s' "default:"
                 match on_fail with
@@ -171152,7 +171248,6 @@ end
                 let terms = data_term_vars value
                 if fields.Length <> terms.Length then raise_codegen_error "Compiler error: A layout set has the wrong number of values."
                 Array.iter2 (fun (L(fi,_)) term -> line s $"v{i}.l{fi} = {show_w term}") fields terms
-            | TyUnionUnbox _ -> unsupported "union unboxes over several values"
             | other ->
                 let construct = (sprintf "%A" other).Split('(').[0]
                 unsupported construct
@@ -171187,13 +171282,13 @@ end
                             let captured = rdata_free_vars args
                             let domain_vs = data_free_vars domain_args
                             let text = StringBuilder()
-                            let cap_formals = captured |> Array.map (fun (L(i,t)) -> $"_ v{i}: {tyv t}") |> String.concat ", "
+                            let cap_formals = captured |> Array.map (fun (L(i,t)) -> $"_ v{i}: {parameter_ty t}") |> String.concat ", "
                             text.AppendLine($"func {closure_names.[tag]}({cap_formals}) -> {tyv fun_ty} {{") |> ignore
                             let s0 = { text = text; indent = 4 }
                             let dom =
                                 match domain_vs with
                                 | [||] -> "()"
-                                | vs -> vs |> Array.map (fun (L(i,t)) -> $"v{i}: {tyv t}") |> String.concat ", " |> sprintf "(%s)"
+                                | vs -> vs |> Array.map (fun (L(i,t)) -> $"v{i}: {parameter_ty t}") |> String.concat ", " |> sprintf "(%s)"
                             let result =
                                 match env.ty_to_data range |> data_free_vars |> Array.map (fun (L(_, t)) -> tyv t) with
                                 | [||] -> "Void"
@@ -171223,14 +171318,15 @@ end
             | _ -> true
         emit_function "spiral_main" None [||] (if unit_main then YB else YPrim Int32T) x
         let program = StringBuilder()
-        // Windows swiftc resolves exit through the CRT module.
-        program.AppendLine("import CRT") |> ignore
+        program.AppendLine("import CRT").AppendLine("import WinSDK") |> ignore
         layout_types |> Seq.iter (fun text -> program.Append(text) |> ignore)
         union_types |> Seq.iter (fun text -> program.Append(text) |> ignore)
         helpers |> Seq.iter (fun text -> program.Append(text) |> ignore)
         functions |> Seq.iter (fun fn -> program.Append(fn) |> ignore)
-        if unit_main then program.AppendLine("exit(0)") |> ignore
-        else program.AppendLine("exit(spiral_main())") |> ignore
+        program.AppendLine("nonisolated(unsafe) var spiral_exit_code: Int32 = 0") |> ignore
+        if unit_main then program.AppendLine("let spiral_thread = CreateThread(nil, 1 << 30, { _ in spiral_main(); return 0 }, nil, DWORD(STACK_SIZE_PARAM_IS_A_RESERVATION), nil)") |> ignore
+        else program.AppendLine("let spiral_thread = CreateThread(nil, 1 << 30, { _ in spiral_exit_code = spiral_main(); return 0 }, nil, DWORD(STACK_SIZE_PARAM_IS_A_RESERVATION), nil)") |> ignore
+        program.AppendLine("WaitForSingleObject(spiral_thread, INFINITE)").AppendLine("exit(spiral_exit_code)") |> ignore
         program.ToString()
 
     // OpenQASM 3 classical subset. Fixed-width arithmetic wraps in the simulator.

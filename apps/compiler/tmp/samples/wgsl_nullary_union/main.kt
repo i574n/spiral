@@ -1,0 +1,121 @@
+sealed interface US0 { val tag: Int }
+class US0_North : US0 { override val tag: Int = 0 }
+class US0_East : US0 { override val tag: Int = 1 }
+class US0_South : US0 { override val tag: Int = 2 }
+class US0_West : US0 { override val tag: Int = 3 }
+fun spiral_main(): Int {
+    var v0: US0 = US0_North()
+    v0 = US0_North()
+    var v8: US0 = US0_North()
+    when (v0.tag) {
+        1 -> {
+            v8 = US0_South()
+        }
+        0 -> {
+            v8 = US0_East()
+        }
+        2 -> {
+            v8 = US0_West()
+        }
+        3 -> {
+            v8 = US0_North()
+        }
+        else -> throw RuntimeException()
+    }
+    var v16: US0 = US0_North()
+    when (v8.tag) {
+        1 -> {
+            v16 = US0_South()
+        }
+        0 -> {
+            v16 = US0_East()
+        }
+        2 -> {
+            v16 = US0_West()
+        }
+        3 -> {
+            v16 = US0_North()
+        }
+        else -> throw RuntimeException()
+    }
+    var v17: US0 = US0_North()
+    v17 = US0_South()
+    var v18: Boolean = false
+    when (if (v16.tag == v17.tag) v16.tag else -1) {
+        1 -> {
+            v18 = true
+        }
+        0 -> {
+            v18 = true
+        }
+        2 -> {
+            v18 = true
+        }
+        3 -> {
+            v18 = true
+        }
+        else -> {
+            v18 = false
+        }
+    }
+    var v19: Int = 0
+    if (v18) {
+        v19 = 100
+    } else {
+        v19 = 0
+    }
+    var v21: Int = 0
+    when (v0.tag) {
+        1 -> {
+            v21 = 2
+        }
+        0 -> {
+            v21 = 1
+        }
+        else -> {
+            v21 = 7
+        }
+    }
+    var v23: Int = 0
+    when (v8.tag) {
+        1 -> {
+            v23 = 2
+        }
+        0 -> {
+            v23 = 1
+        }
+        else -> {
+            v23 = 7
+        }
+    }
+    var v24: Int = 0
+    v24 = (v23 * 3)
+    var v25: Int = 0
+    v25 = (v21 + v24)
+    var v27: Int = 0
+    when (v16.tag) {
+        1 -> {
+            v27 = 2
+        }
+        0 -> {
+            v27 = 1
+        }
+        else -> {
+            v27 = 7
+        }
+    }
+    var v28: Int = 0
+    v28 = (v27 * 9)
+    var v29: Int = 0
+    v29 = (v25 + v28)
+    var v30: Int = 0
+    v30 = (v29 + v19)
+    return v30
+}
+fun main() {
+    var spiral_exit_code = 0
+    val spiral_thread = Thread(null, { spiral_exit_code = spiral_main() }, "spiral_main", 1L shl 30)
+    spiral_thread.start()
+    spiral_thread.join()
+    System.exit(spiral_exit_code)
+}

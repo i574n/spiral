@@ -26,8 +26,8 @@ nominal guid = $'backend_switch `(guid_switch)'
 
 /// ### new_guid
 inl new_guid (x : string) : guid =
-    inl otherwise () =
-        run_target_args (fun () => x) function
+    run_target_args (fun () => x) function
+        | Zig => fun _ => $'(std.ascii.allocLowerString(spiral_gpa, !x) catch \@panic("out of memory"))' : guid
         | Gleam => fun x => $'!x '
         | Lua => fun x => $'!x '
         | Cuda => fun x =>
@@ -36,9 +36,6 @@ inl new_guid (x : string) : guid =
         | Rust => fun x => $'Rc::<str>::from(!x.to_lowercase())'
         | TypeScript => fun x => $'!x.toLowerCase()'
         | _ => fun x => $'!x |> `guid '
-    backend_switch_or otherwise {
-        Zig = fun () => $'(std.ascii.allocLowerString(spiral_gpa, !x) catch \@panic("out of memory"))' : guid
-    }
 
 /// ### zig_random_u64
 inl zig_random_u64 () : u64 =
@@ -80,12 +77,9 @@ let hash_guid (hash : string) : hash_guid =
             inl e = hash |> sm'.range (am'.Start 20i32) (am'.End fun _ => 32)
             a ++# dash ++# b ++# dash ++# c ++# dash ++# d ++# dash ++# e
             |> new_guid
-    inl otherwise () =
-        run_target function
-            | _ => body
-    backend_switch_or otherwise {
-        Zig = fun () => body ()
-    }
+    run_target function
+        | Zig => fun () => body ()
+        | _ => body
 
 ///> gleam
 ///> fsharp

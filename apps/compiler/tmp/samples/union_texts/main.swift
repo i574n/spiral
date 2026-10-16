@@ -1,13 +1,18 @@
 import CRT
+import WinSDK
 protocol US0 { var tag: Int32 { get } }
 struct US0_Missing: US0 { var tag: Int32 { 0 } }
-struct US0_Held: US0 { var f0: Array<String>; var tag: Int32 { 1 } }
+struct US0_Held: US0 { var f0: SpiralArray<String>; var tag: Int32 { 1 } }
+final class SpiralArray<T> {
+    var items: [T]
+    init(_ items: [T]) { self.items = items }
+}
 func spiral_main() -> Int32 {
-    var v0: Array<String> = Array<String>()
-    v0 = Array<String>(repeating: "", count: Int(1))
+    var v0: SpiralArray<String> = SpiralArray<String>([])
+    v0 = SpiralArray<String>(Array(repeating: "", count: Int(1)))
     var v1: String = ""
     v1 = "hi"
-    v0[Int(0)] = v1
+    v0.items[Int(0)] = v1
     var v2: Bool = false
     v2 = true
     var v5: US0 = US0_Missing()
@@ -18,9 +23,9 @@ func spiral_main() -> Int32 {
     }
     switch v5.tag {
         case 1:
-            var v6: Array<String> = (v5 as! US0_Held).f0
+            var v6: SpiralArray<String> = (v5 as! US0_Held).f0
             var v7: String = ""
-            v7 = v6[Int(0)]
+            v7 = v6.items[Int(0)]
             var v8: Bool = false
             v8 = (v7 == "hi")
             if (v8) {
@@ -34,4 +39,7 @@ func spiral_main() -> Int32 {
             fatalError("unreachable union case")
     }
 }
-exit(spiral_main())
+nonisolated(unsafe) var spiral_exit_code: Int32 = 0
+let spiral_thread = CreateThread(nil, 1 << 30, { _ in spiral_exit_code = spiral_main(); return 0 }, nil, DWORD(STACK_SIZE_PARAM_IS_A_RESERVATION), nil)
+WaitForSingleObject(spiral_thread, INFINITE)
+exit(spiral_exit_code)

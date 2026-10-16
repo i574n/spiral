@@ -1,12 +1,17 @@
 import CRT
+import WinSDK
+final class SpiralArray<T> {
+    var items: [T]
+    init(_ items: [T]) { self.items = items }
+}
 func spiral_main() -> Int32 {
-    var v0: Array<Int16> = Array<Int16>()
-    v0 = Array<Int16>(repeating: Int16(0), count: Int(1))
+    var v0: SpiralArray<Int16> = SpiralArray<Int16>([])
+    v0 = SpiralArray<Int16>(Array(repeating: Int16(0), count: Int(1)))
     var v1: Int16 = Int16(0)
     v1 = Int16(20000)
-    v0[Int(0)] = v1
+    v0.items[Int(0)] = v1
     var v2: Int16 = Int16(0)
-    v2 = v0[Int(0)]
+    v2 = v0.items[Int(0)]
     var v3: Bool = false
     v3 = (v2 == Int16(20000))
     if (v3) {
@@ -15,4 +20,7 @@ func spiral_main() -> Int32 {
         return 1
     }
 }
-exit(spiral_main())
+nonisolated(unsafe) var spiral_exit_code: Int32 = 0
+let spiral_thread = CreateThread(nil, 1 << 30, { _ in spiral_exit_code = spiral_main(); return 0 }, nil, DWORD(STACK_SIZE_PARAM_IS_A_RESERVATION), nil)
+WaitForSingleObject(spiral_thread, INFINITE)
+exit(spiral_exit_code)

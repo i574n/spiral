@@ -1,4 +1,5 @@
 import CRT
+import WinSDK
 protocol US0 { var tag: Int32 { get } }
 struct US0_Idle: US0 { var tag: Int32 { 0 } }
 struct US0_Hit: US0 { var f0: Int32; var tag: Int32 { 1 } }
@@ -45,4 +46,7 @@ func spiral_main() -> Int32 {
     v9 = (v8 &- 11)
     return v9
 }
-exit(spiral_main())
+nonisolated(unsafe) var spiral_exit_code: Int32 = 0
+let spiral_thread = CreateThread(nil, 1 << 30, { _ in spiral_exit_code = spiral_main(); return 0 }, nil, DWORD(STACK_SIZE_PARAM_IS_A_RESERVATION), nil)
+WaitForSingleObject(spiral_thread, INFINITE)
+exit(spiral_exit_code)
