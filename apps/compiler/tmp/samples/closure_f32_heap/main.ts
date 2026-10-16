@@ -1,0 +1,29 @@
+type Heap0 = { readonly l0: number, readonly l1: string };
+function f_c0(v0: Heap0): ((a0: number) => Heap0) {
+    return (v1: number): Heap0 => {
+        return v0;
+    };
+}
+export function main(): number {
+    let v0: number = 1.5;
+    let v1: string = "hi";
+    let v2: Heap0 = { l0: v0, l1: v1 };
+    let v3: ((a0: number) => Heap0) = f_c0(v2);
+    let v4: Heap0 = v3(1);
+    let v5: number = v4.l0;
+    let v6: string = v4.l1;
+    let v7: boolean = v5 === 1.5;
+    let v9: boolean;
+    if (v7) {
+        let v8: boolean = v6 === "hi";
+        v9 = v8;
+    } else {
+        v9 = false;
+    }
+    if (v9) {
+        return 0;
+    } else {
+        return 1;
+    }
+}
+process.exitCode = main();

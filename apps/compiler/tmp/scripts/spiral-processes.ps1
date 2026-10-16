@@ -6,7 +6,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $patterns = [ordered]@{
-    daemon = @('spiral\.compiler_daemon', 'compiler_bridge', 'SpiralCompiler\.dll"?\s+--server(-tcp)?\s')
+    daemon = @('spiral\.compiler_daemon', 'SpiralCompiler\.dll"?\s+--server(-tcp)?\s')
     worker = @('SpiralCompiler\.dll"?\s+--batch\s', 'SpiralCompiler\.dll"?\s+--backend\s')
     test   = @('(^|[\\/\s"])scripts[\\/]test\.ps1')
 }

@@ -222,12 +222,15 @@ the way the harness builds its Delphi rows: `fpc -O2 -Mdelphi` (`SPIRAL_FPC`, `f
 `~/.elan` or scoop's elan, else `lean` on PATH with `+leanprover/lean4:v4.35.0-rc4`.
 A cell's `///>` lines are its whole target list (no Rust run beside them).
 A test without `///>` lines runs on its file's default targets: the `///>` lines of the file's `static` prelude test
-(`///> c` above `test tibia static =`), else `SPIRAL_KINO_DEFAULT_TARGET` (or `default_target:`, e.g. `c`), else the Rust host.
+(`///> c` above `test tibia static =`), else `SPIRAL_KINO_DEFAULT_TARGET` (or `default_target:`, e.g. `fsharp`), else Zig.
+`SPIRAL_KINO_DEFAULT_TARGET=rust` keeps the Rust host (an empty variable is unset on Windows); `default_target: ""` does too.
 The `static` prelude itself is never compiled or run: its `open`s and types reach every later test, which compiles them,
 and its row says `static` (counted in `static`, not in `executed`). A static block whose body is only `open` lines
 (after its `///` lines) is the file's prelude, not a test: its row says `prelude`, it is counted in `preludes`, and it is
 left out of `discovered`, which then counts real tests only. A static block that defines something stays `static`.
-`///> zig` compiles the Zig backend and runs it with `zig run` (`SPIRAL_ZIG`, else `zig` on `PATH`). `///> wgsl` compiles
+`///> zig` compiles the Zig backend and runs it with `zig run` (`SPIRAL_ZIG`, else `zig` on `PATH`), on the self-hosted
+x86_64 backend (`-fno-llvm`, about 2 s for a new cell against about 9 s through LLVM; `SPIRAL_KINO_ZIG_LLVM=1` forces LLVM)
+with a global cache kept in the spiral-bin cache directory (`kino-zig-cache`). `///> wgsl` compiles
 the WGSL backend, validates it with `naga` when found (`SPIRAL_NAGA`), and runs it with `spiral-wgsl <file>`:
 `SPIRAL_WGSL_RUN`, else `<spiral-bin>/toolchains/wgsl-run/release/spiral-wgsl[.exe]`. The runner exits with the shader's
 `main` status: 0 passes, 3 (no GPU adapter) is unsupported, any other code fails; no runner is unsupported, never a pass.
@@ -316,7 +319,7 @@ thing X would rewrite: `#` before a letter (hashtag), `@` before a name (mention
 X would autolink as a domain (`cell.ai`, `listm.map`; shortened to a 23-character t.co link). These are warnings: the run's
 result does not change. `mix spiral.x_compat <file or dir>...` is the CI report over `.spi`, `.spir` and `.livemd`
 files: every finding plus a summary line, always exit 0. The checker is `Spiral.Kino.XCompat` (IANA TLD list in
-`priv/tlds.txt`, twitter-text weights); `apps/xsim` uses it for its thread frames and per-post limits.
+`priv/tlds.txt`, twitter-text weights); the `x` repository's `apps/sim` (formerly `apps/xsim`) uses it for its thread frames and per-post limits.
 
 ### Target audit
 

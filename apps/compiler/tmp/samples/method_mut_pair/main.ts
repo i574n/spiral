@@ -1,0 +1,29 @@
+type Mut0 = { l0: number, l1: string };
+function method0(v0: number, v1: string): Mut0 {
+    return { l0: v0, l1: v1 };
+}
+export function main(): number {
+    let v0: number = 3;
+    let v1: string = "no";
+    let v2: Mut0 = method0(v0, v1);
+    let v3: number = 7;
+    let v4: string = "hi";
+    v2.l0 = v3;
+    v2.l1 = v4;
+    let v5: number = v2.l0;
+    let v6: string = v2.l1;
+    let v7: boolean = v5 === 7;
+    let v9: boolean;
+    if (v7) {
+        let v8: boolean = v6 === "hi";
+        v9 = v8;
+    } else {
+        v9 = false;
+    }
+    if (v9) {
+        return 0;
+    } else {
+        return 1;
+    }
+}
+process.exitCode = main();

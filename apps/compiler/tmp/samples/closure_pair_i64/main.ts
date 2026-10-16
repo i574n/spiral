@@ -1,0 +1,31 @@
+function f_c0(v0: bigint, v1: string): ((a0: number) => [bigint, string]) {
+    return (v2: number): [bigint, string] => {
+        let v3: boolean = v2 === 0;
+        if (v3) {
+            let v4: string = "no";
+            return [0n, v4];
+        } else {
+            return [v0, v1];
+        }
+    };
+}
+export function main(): number {
+    let v0: bigint = 5000000000n;
+    let v1: string = "hi";
+    let v2: ((a0: number) => [bigint, string]) = f_c0(v0, v1);
+    let [v3, v4]: [bigint, string] = v2(1);
+    let v5: boolean = v3 === 5000000000n;
+    let v7: boolean;
+    if (v5) {
+        let v6: boolean = v4 === "hi";
+        v7 = v6;
+    } else {
+        v7 = false;
+    }
+    if (v7) {
+        return 0;
+    } else {
+        return 1;
+    }
+}
+process.exitCode = main();

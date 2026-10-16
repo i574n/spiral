@@ -1,0 +1,21 @@
+local Heap0
+Heap0 = function(l0, l1) return { __tag = "Heap0", l0, l1 } end
+
+local v0 = true
+local v1 = "hi"
+local v2 = { __tag = "Heap0", l0 = v0, l1 = v1 }
+local v3, v4 = v2 ~= nil and v2.l0, v2 ~= nil and v2.l1
+local getv6 = function()
+    if v3 then
+        local v5 = v4 == "hi"
+        return v5
+    else
+        return false
+    end
+end
+local v6 = getv6()
+if v6 then
+    return 0
+else
+    return 1
+end

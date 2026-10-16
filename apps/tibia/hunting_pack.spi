@@ -26,6 +26,7 @@ inl purpose_player_heal () : u32 = 12
 inl purpose_creature_hit () : u32 = 13
 inl purpose_loot () : u32 = 14
 inl purpose_random_control () : u32 = 15
+inl purpose_wander () : u32 = 16
 
 type foe =
     {
@@ -84,6 +85,7 @@ union brain =
 
 union footing_rule =
     | StepAway
+    | StepAwayLikeTheLiveProbe
     | ScoredStep : terrain.footing
 
 type patrol_route = {points : views.band geometry.position; count : i32}
@@ -120,9 +122,22 @@ union respawn_rule =
 
 union swing_after_step =
     | SwingKeepsItsTime
-    | SwingWaitsForThink
+    | SwingWaitsForThinkOrMove
 
-type camp = {kinds : views.band creatures.arena_creature; size : i32; hunter_level : i32; rule : respawn_rule; layout : terrain.layout; potion_budget : i32; party : i32; wakes_at : i32; swing : swing_after_step}
+union idle_behavior =
+    | StandsStill
+    | WandersLikeCanary
+
+union knight_placement =
+    | AtLayoutStart
+    | StandsAt : geometry.position
+
+union melee_timing =
+    | MeleeWhenReady
+    | MeleeWhenReadyEvery : i32
+    | MeleeEveryOnceTargeted : i32
+
+type camp = {kinds : views.band creatures.arena_creature; size : i32; hunter_level : i32; rule : respawn_rule; layout : terrain.layout; potion_budget : i32; party : i32; wakes_at : i32; swing : swing_after_step; melee : melee_timing; idle : idle_behavior; placement : knight_placement}
 
 inl unlimited_potions () : i32 = 1000000
 
@@ -134,7 +149,7 @@ inl hardest_kind (kinds : views.band creatures.arena_creature) (size : i32) : cr
 
 inl default_hunter_level (kinds : views.band creatures.arena_creature) (size : i32) : i32 = (offense_against (hardest_kind kinds size)).level
 
-inl uniform_camp (kind : creatures.arena_creature) : camp = {kinds = views.band_of kind; size = 3; hunter_level = default_hunter_level (views.band_of kind) 3; rule = Respawning; layout = open terrain in OpenField; potion_budget = unlimited_potions (); party = 1; wakes_at = 0; swing = SwingKeepsItsTime}
+inl uniform_camp (kind : creatures.arena_creature) : camp = {kinds = views.band_of kind; size = 3; hunter_level = default_hunter_level (views.band_of kind) 3; rule = Respawning; layout = open terrain in OpenField; potion_budget = unlimited_potions (); party = 1; wakes_at = 0; swing = SwingKeepsItsTime; melee = MeleeWhenReady; idle = StandsStill; placement = AtLayoutStart}
 
 inl with_hunter_level (level : i32) (c : camp) : camp = {c with hunter_level = level}
 
@@ -146,17 +161,42 @@ inl waking_at (ms : i32) (c : camp) : camp = {c with wakes_at = ms}
 
 inl live_wake_ms () : i32 = 10000
 
-inl swinging_on_think (c : camp) : camp = {c with swing = SwingWaitsForThink}
+inl swinging_like_canary (c : camp) : camp = {c with swing = SwingWaitsForThinkOrMove}
+
+inl wandering_while_idle (c : camp) : camp = {c with idle = WandersLikeCanary}
+
+inl knight_standing_at (at : geometry.position) (c : camp) : camp = {c with placement = StandsAt at}
+
+inl live_creature_strike_ms () : i32 = 2166
+
+inl meleeing_every (ms : i32) (c : camp) : camp = {c with melee = MeleeWhenReadyEvery ms}
+
+inl meleeing_every_once_targeted (ms : i32) (c : camp) : camp = {c with melee = MeleeEveryOnceTargeted ms}
+
+inl mirroring_the_live_arena (c : camp) : camp = c |> waking_at (live_wake_ms ()) |> wandering_while_idle |> meleeing_every (live_creature_strike_ms ()) |> swinging_like_canary
 
 inl player_think_ms () : i32 = 1000
+
+inl next_think_at (ms : i32) : i32 = (ms + player_think_ms () - 1) / player_think_ms () * player_think_ms ()
+
+inl swing_is_waiting (held : cooldowns.timers) : bool = held.strike_ready_at > held.attack_ready_at
+
+inl swing_resumes_at (now : i32) (held : cooldowns.timers) : cooldowns.timers =
+    if swing_is_waiting held && now >= held.attack_ready_at then {held with strike_ready_at = now} else held
 
 inl swing_after_step (camp : camp) (now : i32) (held : cooldowns.timers) : cooldowns.timers =
     match camp.swing with
     | SwingKeepsItsTime => held
-    | SwingWaitsForThink =>
-        inl due = cooldowns.later now (cooldowns.ready_at (cooldowns.strike_spell ()) held)
-        inl resumed = (due + player_think_ms () - 1) / player_think_ms () * player_think_ms ()
-        {held with attack_ready_at = resumed; strike_ready_at = resumed}
+    | SwingWaitsForThinkOrMove =>
+        inl due = cooldowns.ready_at (cooldowns.strike_spell ()) held
+        if swing_is_waiting held then swing_resumes_at now held
+        elif due <= now then held
+        else {held with attack_ready_at = due; strike_ready_at = next_think_at due}
+
+inl swing_after_target_moves (camp : camp) (now : i32) (held : cooldowns.timers) : cooldowns.timers =
+    match camp.swing with
+    | SwingKeepsItsTime => held
+    | SwingWaitsForThinkOrMove => swing_resumes_at now held
 
 inl clearing (c : camp) : camp = {c with rule = Clearing}
 
@@ -170,7 +210,7 @@ inl spawns_of (c : camp) : geometry.position * geometry.position * geometry.posi
 inl camp_of_entries (entries : catalog.entry * catalog.entry * catalog.entry) : camp =
     inl a, b, c = entries
     inl first, second, third = catalog.entry_creature a, catalog.entry_creature b, catalog.entry_creature c
-    {kinds = views.band (first, second, third, first, first, first); size = 3; hunter_level = default_hunter_level (views.band (first, second, third, first, first, first)) 3; rule = Respawning; layout = open terrain in OpenField; potion_budget = unlimited_potions (); party = 1; wakes_at = 0; swing = SwingKeepsItsTime}
+    {kinds = views.band (first, second, third, first, first, first); size = 3; hunter_level = default_hunter_level (views.band (first, second, third, first, first, first)) 3; rule = Respawning; layout = open terrain in OpenField; potion_budget = unlimited_potions (); party = 1; wakes_at = 0; swing = SwingKeepsItsTime; melee = MeleeWhenReady; idle = StandsStill; placement = AtLayoutStart}
 
 inl hunter_of (c : camp) : offense =
     inl base = offense_against (hardest_kind c.kinds c.size)
@@ -182,7 +222,7 @@ inl kind_of (index : i32) (c : camp) : creatures.arena_creature =
     views.band_at index c.kinds
 
 inl knight_start (camp : camp) (sign : i32) : geometry.position =
-    inl first = terrain.player_start camp.layout
+    inl first = match camp.placement with AtLayoutStart => terrain.player_start camp.layout | StandsAt at => at
     if sign = 0 then first else geometry.position (first.x + 1) first.y first.z
 
 inl start (camp : camp) : pack =
@@ -238,6 +278,30 @@ inl key (seed : u32) (tick : i32) (entity : i32) (purpose : u32) : rng.roll_key 
 
 inl distance_to (f : foe) (p : pack) : i32 = geometry.chebyshev_distance p.hunter.at f.at
 
+inl creature_hits_hunter (camp : camp) (seed : u32) (tick : i32) (index : i32) (struck : foe) (p : pack) : pack =
+    inl stats = creatures.stats_of (kind_of index camp)
+    inl h = p.hunter
+    inl shielded = h.block_charges > 0
+    inl hurt = combat.creature_hit stats.melee_max (combat.knight_sample_gear ()) shielded (key seed tick index (purpose_creature_hit ()))
+    with_slot index struck (p |> with_hunter {h with health = quantity.minus h.health (quantity.hp hurt); block_charges = if shielded then h.block_charges - 1 else h.block_charges; hits_taken = if hurt > 0 then h.hits_taken + 1 else h.hits_taken; damage_taken = quantity.plus h.damage_taken (quantity.hp hurt)})
+
+inl creature_think_phase_ms (seed : u32) (index : i32) : i32 = conv ((seed + conv index * 7u32) % 10u32) * tick_ms ()
+
+inl cardinal_step (k : i32) (from : geometry.position) : geometry.position =
+    if k = 0 then terrain.shifted 0 -1 from elif k = 1 then terrain.shifted -1 0 from elif k = 2 then terrain.shifted 1 0 from else terrain.shifted 0 1 from
+
+inl wanders (camp : camp) (seed : u32) (tick : i32) (now : i32) (index : i32) (p : pack) : pack =
+    inl f = slot index p
+    inl open_step k = terrain.free camp.layout (taken_by_others index p) (cardinal_step k f.at)
+    inl count_open : i32 = (if open_step 0 then 1 else 0) + (if open_step 1 then 1 else 0) + (if open_step 2 then 1 else 0) + (if open_step 3 then 1 else 0)
+    if f.next_step_at >= never () || now % player_think_ms () <> creature_think_phase_ms seed index || now < f.next_step_at || count_open = 0 then p
+    else
+        inl pick : i32 = conv (rng.roll_between 1 (conv count_open) (key seed tick index (purpose_wander ())))
+        let rec nth (k : i32) (left : i32) : i32 = if open_step k then (if left = 1 then k else nth (k + 1) (left - 1)) else nth (k + 1) left
+        inl toward = cardinal_step (nth 0 pick) f.at
+        inl stats = creatures.stats_of (kind_of index camp)
+        with_slot index {f with at = toward; next_step_at = now + geometry.step_cost (terrain.on_ground_at camp.layout f.at stats.step_ms) f.at toward} p
+
 inl foe_turn (camp : camp) (seed : u32) (tick : i32) (now : i32) (index : i32) (p : pack) : pack =
     inl kind = kind_of index camp
     inl stats = creatures.stats_of kind
@@ -259,19 +323,31 @@ inl foe_turn (camp : camp) (seed : u32) (tick : i32) (now : i32) (index : i32) (
             inl toward = terrain.step_toward camp.layout (taken_by_others index p) p.hunter.at f.at
             inl base = terrain.on_ground_at camp.layout f.at stats.step_ms
             inl straight = if f.met_target then base * chase_step_factor () else base
-            with_slot index {f with at = toward; next_step_at = now + geometry.step_cost straight f.at toward} p
+            inl chased = with_slot index {f with at = toward; next_step_at = now + geometry.step_cost straight f.at toward} p
+            inl h = chased.hunter
+            if h.target = index then chased |> with_hunter {h with timers = swing_after_target_moves camp now h.timers} else chased
     inl g = slot index moved
-    if distance_to g moved <= 1 && g.strikes_at <= now && vitality.health g.life >= stats.run_health then
-        inl h = moved.hunter
-        inl shielded = h.block_charges > 0
-        inl hurt = combat.creature_hit stats.melee_max (combat.knight_sample_gear ()) shielded (key seed tick index (purpose_creature_hit ()))
-        with_slot index {g with strikes_at = now + creature_strike_ms ()} (moved |> with_hunter {h with health = quantity.minus h.health (quantity.hp hurt); block_charges = if shielded then h.block_charges - 1 else h.block_charges; hits_taken = if hurt > 0 then h.hits_taken + 1 else h.hits_taken; damage_taken = quantity.plus h.damage_taken (quantity.hp hurt)})
-    else moved
+    if vitality.health g.life < stats.run_health then moved
+    else
+        match camp.melee with
+        | MeleeWhenReady =>
+            if distance_to g moved <= 1 && g.strikes_at <= now then creature_hits_hunter camp seed tick index {g with strikes_at = now + creature_strike_ms ()} moved
+            else moved
+        | MeleeEveryOnceTargeted period =>
+            if distance_to g moved <= 1 && g.strikes_at <= now && now >= camp.wakes_at + period then
+                inl paced = if now - g.strikes_at < tick_ms () then g.strikes_at else now
+                creature_hits_hunter camp seed tick index {g with strikes_at = paced + period} moved
+            else moved
+        | MeleeWhenReadyEvery period =>
+            if distance_to g moved <= 1 && g.strikes_at <= now then
+                inl paced = if now - g.strikes_at < tick_ms () then g.strikes_at else now
+                creature_hits_hunter camp seed tick index {g with strikes_at = paced + period} moved
+            else moved
 
 inl ally_is_nearer (f : foe) (p : pack) : bool = geometry.chebyshev_distance p.ally.at f.at < geometry.chebyshev_distance p.hunter.at f.at
 
 inl foe_acts (camp : camp) (seed : u32) (tick : i32) (now : i32) (index : i32) (p : pack) : pack =
-    if now < camp.wakes_at then p
+    if now < camp.wakes_at then (match camp.idle with StandsStill => p | WandersLikeCanary => wanders camp seed tick now index p)
     elif camp.party > 1 && ally_is_nearer (slot index p) p then turned (foe_turn camp seed tick now index (turned p))
     else foe_turn camp seed tick now index p
 
@@ -360,6 +436,7 @@ inl player_retreats (camp : camp) (rule : footing_rule) (slot : readiness.ready 
     inl away =
         match rule with
         | StepAway => terrain.step_away camp.layout (taken_by_foes p) threat.at p.hunter.at
+        | StepAwayLikeTheLiveProbe => terrain.step_away_like_the_live_probe camp.layout (taken_by_foes p) threat.at p.hunter.at
         | ScoredStep w => terrain.scored_step camp.layout (taken_by_foes p) foes_near w threat.at p.hunter.at
     inl h = p.hunter
     inl stuck = geometry.same_tile away h.at
@@ -704,6 +781,10 @@ inl cavebot_network (camp : camp) (heal : i32) : network.weights = network.thres
 
 inl tactic_with_order (order : policy.targeting) (g : search.genome) : tactic = {brain = Rules {heal_base = g.first; heal_per_attacker = g.second; strike_above = 0; retreat_at = g.third}; order = order; footing = StepAway; patrol = Stays}
 
+inl live_retreat_tactic (heal : i32) (retreat_at : i32) : tactic =
+    inl evolved_shape : tactic = tactic_with_order (open policy in ReachFirst) {first = heal; second = 0; third = retreat_at}
+    {evolved_shape with footing = StepAwayLikeTheLiveProbe}
+
 inl genes_of (g0 : i32) (g1 : i32) (g2 : i32) (g3 : i32) (g4 : i32) (g5 : i32) (g6 : i32) (g7 : i32) (g8 : i32) (g9 : i32) (g10 : i32) (g11 : i32) : search.vector =
     search.vector_of 12 0 |> search.with_gene 11 g11 |> search.with_gene 10 g10 |> search.with_gene 0 g0 |> search.with_gene 1 g1 |> search.with_gene 2 g2 |> search.with_gene 3 g3 |> search.with_gene 4 g4
     |> search.with_gene 5 g5 |> search.with_gene 6 g6 |> search.with_gene 7 g7 |> search.with_gene 8 g8 |> search.with_gene 9 g9
@@ -742,7 +823,7 @@ inl against_standing_only (g : search.genome) : search.vector = temperate_genes 
 inl arena_hunt () : camp =
     open creatures
     inl kinds = views.band (Cyclops, Cyclops, Troll, Troll, Troll, Troll)
-    {kinds = kinds; size = 6; hunter_level = default_hunter_level kinds 6; rule = RespawningAfter 60000; layout = open terrain in ArenaHunt; potion_budget = unlimited_potions (); party = 1; wakes_at = 0; swing = SwingKeepsItsTime}
+    {kinds = kinds; size = 6; hunter_level = default_hunter_level kinds 6; rule = RespawningAfter 60000; layout = open terrain in ArenaHunt; potion_budget = unlimited_potions (); party = 1; wakes_at = 0; swing = SwingKeepsItsTime; melee = MeleeWhenReady; idle = StandsStill; placement = AtLayoutStart}
 
 inl cyclops_hunting_ground () : camp =
     inl ground = arena_hunt ()

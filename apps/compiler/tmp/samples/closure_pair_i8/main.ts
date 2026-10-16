@@ -1,0 +1,29 @@
+function f_c0(v0: number): ((a0: number) => [number, number]) {
+    return (v1: number): [number, number] => {
+        let v2: boolean = v1 === 0;
+        if (v2) {
+            return [0, 0];
+        } else {
+            return [v0, 7];
+        }
+    };
+}
+export function main(): number {
+    let v0: number = 100;
+    let v1: ((a0: number) => [number, number]) = f_c0(v0);
+    let [v2, v3]: [number, number] = v1(1);
+    let v4: boolean = v2 === 100;
+    let v6: boolean;
+    if (v4) {
+        let v5: boolean = v3 === 7;
+        v6 = v5;
+    } else {
+        v6 = false;
+    }
+    if (v6) {
+        return 0;
+    } else {
+        return 1;
+    }
+}
+process.exitCode = main();

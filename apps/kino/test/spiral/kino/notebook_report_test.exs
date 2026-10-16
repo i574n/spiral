@@ -561,7 +561,7 @@ defmodule Spiral.Kino.NotebookReportTest do
     assert ["prelude", "static", "test"] = Enum.map(Document.tests(doc), & &1.mode)
   end
 
-  test "untargeted tests use the static prelude's targets, else default_target, else the Rust host; the prelude itself never runs" do
+  test "untargeted tests use the static prelude's targets, else default_target, else Zig; a default_target of rust or empty keeps the Rust host; the prelude itself never runs" do
     prelude = Document.parse_spi("///> c\ntest tibia static =\n    open testing\n\ntest one =\n    1i32 |> _assert_eq 1i32\n", "")
     assert [%{tool: :c}] = Notebook.default_builders(prelude.cells, [])
     assert [%{tool: :c}] = Notebook.default_builders(prelude.cells, default_target: "lua")
@@ -569,6 +569,16 @@ defmodule Spiral.Kino.NotebookReportTest do
     plain = Document.parse_spi("test tibia static =\n    open testing\n\ntest one =\n    1i32 |> _assert_eq 1i32\n", "")
     assert [%{tool: :lua}] = Notebook.default_builders(plain.cells, default_target: "lua")
     assert Notebook.default_builders(plain.cells, default_target: "") == []
+    assert [%{tool: :fsharp}] = Notebook.default_builders(plain.cells, default_target: "fsharp")
+    assert [%{tool: :rust}] = Notebook.default_builders(plain.cells, default_target: "rust")
+    assert [%{tool: :zig}] = Notebook.default_builders(plain.cells, default_target: nil)
+  end
+
+  test "zig cells run the self-hosted backend with a persistent global cache under the spiral-bin cache dir" do
+    args = Spiral.Kino.Targets.zig_run_args("C:/tmp/cell/main.zig", bin_cache_dir: "C:/cache")
+    assert ["run" | _] = args
+    assert List.last(args) == "C:/tmp/cell/main.zig"
+    assert Enum.drop_while(args, &(&1 != "--global-cache-dir")) |> Enum.at(1) == Path.join("C:/cache", "kino-zig-cache")
   end
 
   test "a package module named like a prefix of the notebook's stem stays in the test program", %{dir: dir} do

@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('single-flight', 'sf', 'gpt5parallel', 'gp')][string]$Mode = 'single-flight',
+    [ValidateSet('single-flight', 'sf', 'gpt5parallel', 'gp', 'hopacsota', 'hs')][string]$Mode = 'single-flight',
     [int]$BudgetSeconds = 0,
     [string]$ListPath
 )
@@ -12,7 +12,7 @@ function Get-SpiralSampleFamily([string]$Id) {
 }
 
 function Get-SpiralRunHistoryDirs([string]$Mode) {
-    $prefixes = if ((ConvertTo-SpiralMode $Mode) -eq 'gpt5parallel') { 'gpt5parallel-', 'hopac-' } else { , 'single-flight-' }
+    $prefixes = switch (ConvertTo-SpiralMode $Mode) { 'gpt5parallel' { 'gpt5parallel-', 'hopac-' } 'hopacsota' { , 'hopacsota-' } default { , 'single-flight-' } }
     $runsRoot = Join-Path (Get-SpiralCacheDir) 'runs'
     if (-not (Test-Path $runsRoot)) { return @() }
     @(Get-ChildItem $runsRoot -Directory | Where-Object {
@@ -188,7 +188,7 @@ function Format-SpiralFastTier($Tier) {
     ($Tier.CostSeconds / [Math]::Max($Tier.AllCostSeconds, 1)), $Tier.Signal, $Tier.AllSignal, ($Tier.Signal / [Math]::Max($Tier.AllSignal, 1)), $Tier.Young, $Tier.FlipHistoriesCovered, $Tier.FlipHistories
 }
 
-$policy = (Import-PowerShellDataFile (Join-Path $BundleRoot 'tests/harness.psd1')).Fast
+$policy = (Import-PowerShellDataFile (Join-Path $BundleRoot 'tests/harness.psd1') -SkipLimitCheck).Fast
 if ($BudgetSeconds -gt 0) { $policy = $policy.Clone(); $policy.BudgetSeconds = $BudgetSeconds }
 $tier = Get-SpiralFastTier $Mode $policy
 Format-SpiralFastTier $tier

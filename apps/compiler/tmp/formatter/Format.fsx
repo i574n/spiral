@@ -255,6 +255,69 @@ let runFormat (entries : Entry list) (outDir : string option) (listing : TextWri
         tally.Add (entry.Corpus + "\tover120-layout-out") (layoutOverflows formattedSource).Length
         let inputTrimmed = System.Collections.Generic.HashSet<string> (originalLines |> Array.map (fun l -> l.Trim ()))
         let created = layoutOverflows formattedSource |> Array.filter (fun overflow -> not (inputTrimmed.Contains ((splitLines formatted).[overflow.Line - 1].Trim ())))
+        let fencedLineNumbers =
+            let all = splitLines formatted
+            let mutable fenced = false
+            all
+            |> Array.mapi (fun index line ->
+                let isComment = line.TrimStart().StartsWith "//"
+                let body = line.TrimStart().TrimStart('/').TrimStart ()
+                if isComment && body.StartsWith "```" then
+                    fenced <- not fenced
+                    None
+                elif fenced && isComment then Some (index + 1)
+                else None)
+            |> Array.choose id
+            |> Set.ofArray
+        let sha256 (text : string) = Security.Cryptography.SHA256.HashData(Text.Encoding.UTF8.GetBytes text) |> Convert.ToHexString |> fun hex -> hex.ToLowerInvariant ()
+        let unparsableLines =
+            let shapes = blockShapes entry.Edition formattedSource.FileUnit formatted
+            let total = (splitLines formatted).Length
+            shapes
+            |> List.mapi (fun index block ->
+                let stop = match List.tryItem (index + 1) shapes with Some next -> next.Offset | None -> total
+                if block.Shape.StartsWith "error (" || block.Shape.StartsWith "test error (" then [ block.Offset + 1 .. stop ] else [])
+            |> List.concat
+            |> Set.ofList
+        for overflow in overflows formattedSource do
+            let sourceLine = formattedSource.SourceLines |> Array.find (fun line -> line.Number = overflow.Line)
+            let longIdentifier =
+                match sourceLine.Shape with
+                | Code (_, lexemes, _) ->
+                    let leading =
+                        match lexemes |> Array.tryHead with
+                        | Some first when (match first.Token with Polyglot.spiral_compiler.TokOperator ("|", _) | Polyglot.spiral_compiler.TokParenthesis (_, Polyglot.spiral_compiler.Open) -> true | _ -> false) -> Array.truncate 2 lexemes |> Array.skip 1
+                        | _ -> Array.truncate 1 lexemes
+                    leading
+                    |> Array.tryFind (fun lexeme ->
+                        not lexeme.InsideMacro
+                        && (match lexeme.Token with Polyglot.spiral_compiler.TokVar _ | Polyglot.spiral_compiler.TokSymbol _ -> true | _ -> false)
+                        && lexeme.Span.NearTo - lexeme.Span.From >= 40
+                        && lexeme.Span.NearTo > 118)
+                | _ -> None
+            let unparsable = unparsableLines.Contains overflow.Line
+            let allowable = match overflow.Construct with LiteralTooWide _ | CommentTail | OpaqueText -> true | _ -> longIdentifier.IsSome || unparsable
+            if allowable && not (fencedLineNumbers.Contains overflow.Line) then
+                let lineText = (render sourceLine).Trim ()
+                let key =
+                    match overflow.Construct, sourceLine.Shape with
+                    | LiteralTooWide (_, width), Code (_, lexemes, _) ->
+                        let rendered = render sourceLine
+                        literalSpans lexemes
+                        |> List.indexed
+                        |> List.tryFind (fun (_, (_, spanWidth)) -> spanWidth = width)
+                        |> Option.bind (fun (position, _) ->
+                            let opens = lexemes |> Array.filter (fun lexeme -> match lexeme.Token with Polyglot.spiral_compiler.TokMacroOpen -> true | Polyglot.spiral_compiler.TokStringOpen -> true | Polyglot.spiral_compiler.TokValue value -> (match value with Polyglot.spiral_compiler.LitString _ -> true | Polyglot.spiral_compiler.LitChar _ -> true | _ -> false) | _ -> false)
+                            Array.tryItem position opens |> Option.map (fun opening -> rendered.Substring (opening.Span.From, min width (rendered.Length - opening.Span.From))))
+                        |> Option.defaultValue lineText
+                    | _ -> match longIdentifier with Some lexeme -> lexeme.Text.Text | None -> lineText
+                let kind =
+                    match overflow.Construct, longIdentifier with
+                    | (LiteralTooWide _ | CommentTail | OpaqueText), _ -> constructName overflow.Construct
+                    | _, Some _ -> "identifier"
+                    | _, None when unparsable -> "unparsable"
+                    | _, None -> constructName overflow.Construct
+                listing.WriteLine (sprintf "%s\tallow\t%s\t%s\t%d" entry.Rel kind (sha256 key) overflow.Width)
         tally.Add (entry.Corpus + "\tover120-layout-created") created.Length
         for overflow in created do listing.WriteLine (sprintf "%s:%d\tover120-created\t%s" entry.Rel overflow.Line (constructName overflow.Construct))
         let before = commentWords inputSource |> Array.sort

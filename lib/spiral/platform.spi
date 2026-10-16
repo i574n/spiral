@@ -51,18 +51,17 @@ inl is_windows' () : bool =
 
 /// ### is_windows
 inl is_windows () : bool =
-    run_target function
-        | Rust => fun () =>
-            $'cfg\!(windows)' : bool
-        | Fsharp _ => fun () =>
-            Windows |> os_platform |> is_os_platform
-        | Gleam _ => fun () =>
+    backend_switch_or (fun () => failwith "platform.is_windows / no arm for this target") {
+        Rust = fun () => $'cfg\!(windows)' : bool
+        Fsharp = fun () => Windows |> os_platform |> is_os_platform
+        Gleam = fun () =>
             backend_switch {
                 Gleam = fun () =>
                     global "import gleam/erlang/os"
             }
-            $'os.family() == os.WindowsNt'
-        | target => fun () => failwith $'$"platform.is_windows / target: {!target}"'
+            $'os.family() == os.WindowsNt' : bool
+        Zig = fun () => $'(\@import("builtin").os.tag == .windows)' : bool
+    }
 
 /// ### get_executable_suffix
 inl get_executable_suffix () =
@@ -70,6 +69,7 @@ inl get_executable_suffix () =
     then ".exe"
     else ""
 
+///> rust
 test get_executable_suffix =
     get_executable_suffix ()
 

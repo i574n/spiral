@@ -1,0 +1,91 @@
+import gary
+import gary/array
+import gleam/list
+import gleam/option
+import gleam/int
+pub type SpiralArrayKey
+
+pub type SpiralArray(a) {
+  SpiralArray(key: SpiralArrayKey, size: Int)
+}
+
+@external(erlang, "erlang", "make_ref")
+pub fn spiral_array_new_key() -> SpiralArrayKey
+
+@external(erlang, "erlang", "put")
+pub fn spiral_array_store(key: SpiralArrayKey, storage: gary.ErlangArray(option.Option(a))) -> b
+
+@external(erlang, "erlang", "get")
+pub fn spiral_array_load(key: SpiralArrayKey) -> gary.ErlangArray(option.Option(a))
+
+pub fn spiral_array_from_storage(storage: gary.ErlangArray(option.Option(a)), size: Int) -> SpiralArray(a) {
+  let key = spiral_array_new_key()
+  let _ = spiral_array_store(key, storage)
+  SpiralArray(key: key, size: size)
+}
+
+pub fn spiral_array_create(size: Int) -> SpiralArray(a) {
+  list.repeat(option.None, size) |> array.from_list(option.None) |> spiral_array_from_storage(size)
+}
+
+pub fn spiral_array_from_list(values: List(a)) -> SpiralArray(a) {
+  values |> list.map(option.Some) |> array.from_list(option.None) |> spiral_array_from_storage(list.length(values))
+}
+
+pub fn spiral_array_to_list(xs: SpiralArray(a)) -> List(a) {
+  list.repeat(Nil, xs.size) |> list.index_map(fn(_, i) { spiral_array_get(xs, i) })
+}
+
+pub fn spiral_array_get(xs: SpiralArray(a), i: Int) -> a {
+  case i >= 0 && i < xs.size {
+    True ->
+      case spiral_array_load(xs.key) |> array.get(i) {
+        Ok(option.Some(x)) -> x
+        _ -> panic as "spiral array: read of an element that was never set"
+      }
+    False -> panic as "spiral array: index out of bounds"
+  }
+}
+
+pub fn spiral_array_set(xs: SpiralArray(a), i: Int, value: a) -> Nil {
+  case i >= 0 && i < xs.size {
+    True -> {
+      let assert Ok(storage) = spiral_array_load(xs.key) |> array.set(i, option.Some(value))
+      let _ = spiral_array_store(xs.key, storage)
+      Nil
+    }
+    False -> panic as "spiral array: index out of bounds"
+  }
+}
+
+pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
+  let half = int.bitwise_shift_left(1, bits - 1)
+  int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
+}
+
+pub fn spiral_wrap_unsigned(value: Int, bits: Int) -> Int {
+  int.bitwise_and(value, int.bitwise_shift_left(1, bits) - 1)
+}
+
+pub fn fill_0(v0: Int, v1: SpiralArray(Int), v2: Int) -> Nil {
+    let v3 = v2 < v0
+    case v3 {
+        True -> {
+            spiral_array_set(v1, v2, v2)
+            let v4 = spiral_wrap_signed(v2 + 1, 32)
+            fill_0(v0, v1, v4)
+        }
+        False -> {
+        Nil
+        }
+    }
+}
+pub fn main() {
+let v0 = 6
+let v1 = spiral_array_create(6)
+let v2 = 0
+fill_0(v0, v1, v2)
+let v3 = spiral_array_get(v1, 5)
+let v4 = spiral_wrap_signed(v3 + 2, 32)
+v4
+}

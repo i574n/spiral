@@ -58,10 +58,17 @@ inl write_line_bend forall t. (x : t) : () =
         | i32 => !!!!Printf("%d\n", x)
         | _ => $'backend_switch_has_no_Bend_arm_in_lib_spiral' : ()
 
+inl write_line_lua forall t. (obj : t) : () =
+    real
+        typecase t with
+        | i64 => $'print(spiral_w64.tostring(!obj, true))' : ()
+        | u64 => $'print(spiral_w64.tostring(!obj, false))' : ()
+        | _ => $'print(!obj)' : ()
+
 inl write_line forall t. (obj : t) : () =
     backend_switch {
         Gleam = fun () => write_line_gleam obj
-        Lua = fun () => $'print(!obj)' : ()
+        Lua = fun () => write_line_lua obj
         Fsharp = fun () =>
             fun () => obj |> $'System.Console.WriteLine'
             |> exec_unit
@@ -96,10 +103,17 @@ inl write_gleam forall t. (x : t) : () =
         global "import gleam/int"
         $'io.print(int.to_string(!x))' : ()
 
+inl write_lua forall t. (x : t) : () =
+    real
+        typecase t with
+        | i64 => $'io.write(spiral_w64.tostring(!x, true))' : ()
+        | u64 => $'io.write(spiral_w64.tostring(!x, false))' : ()
+        | _ => $'io.write(!x)' : ()
+
 inl write forall t. (x : t) : () =
     backend_switch {
         Gleam = fun () => write_gleam x
-        Lua = fun () => $'io.write(!x)' : ()
+        Lua = fun () => write_lua x
         Fsharp = fun () => $'!x |> System.Console.Write' : ()
         Python = fun () => $'print(!x, end="")' : ()
         Rust = fun () => $'{ use std::io::Write; print\!("{}", !x); std::io::stdout().flush().unwrap(); }' : ()
@@ -127,72 +141,117 @@ inl write_ln l : () =
 
 /// ### color_reset
 inl color_reset () =
-    run_target function
-        | Gleam _ => fun () => $'"\\u{001b}[0m"'
-        | Lua _ => fun () => $'""'
-        | Rust => fun () => $'Rc::<str>::from("\\u{001b}[0m")' : string
-        | _ => fun () => $'"\\u001b[0m"'
+    inl otherwise () =
+        run_target function
+            | Gleam _ => fun () => $'"\\u{001b}[0m"'
+            | Lua _ => fun () => $'""'
+            | Rust => fun () => $'Rc::<str>::from("\\u{001b}[0m")' : string
+            | _ => fun () => $'"\\u001b[0m"'
+    backend_switch_or otherwise {
+        Zig = fun () =>
+            $'"\\u{001b}[0m"' : string
+    }
 
 /// ### color_bright_black
 inl color_bright_black () =
-    run_target function
-        | Gleam _ => fun () => $'"\\u{001b}[90m"'
-        | Lua _ => fun () => $'""'
-        | Rust => fun () => $'Rc::<str>::from("\\u{001b}[90m")' : string
-        | _ => fun () => $'"\\u001b[90m"'
+    inl otherwise () =
+        run_target function
+            | Gleam _ => fun () => $'"\\u{001b}[90m"'
+            | Lua _ => fun () => $'""'
+            | Rust => fun () => $'Rc::<str>::from("\\u{001b}[90m")' : string
+            | _ => fun () => $'"\\u001b[90m"'
+    backend_switch_or otherwise {
+        Zig = fun () =>
+            $'"\\u{001b}[90m"' : string
+    }
 
 /// ### color_bright_red
 inl color_bright_red () =
-    run_target function
-        | Gleam _ => fun () => $'"\\u{001b}[91m"'
-        | Lua _ => fun () => $'""'
-        | Rust => fun () => $'Rc::<str>::from("\\u{001b}[91m")' : string
-        | _ => fun () => $'"\\u001b[91m"'
+    inl otherwise () =
+        run_target function
+            | Gleam _ => fun () => $'"\\u{001b}[91m"'
+            | Lua _ => fun () => $'""'
+            | Rust => fun () => $'Rc::<str>::from("\\u{001b}[91m")' : string
+            | _ => fun () => $'"\\u001b[91m"'
+    backend_switch_or otherwise {
+        Zig = fun () =>
+            $'"\\u{001b}[91m"' : string
+    }
 
 /// ### color_bright_green
 inl color_bright_green () =
-    run_target function
-        | Gleam _ => fun () => $'"\\u{001b}[92m"'
-        | Lua _ => fun () => $'""'
-        | Rust => fun () => $'Rc::<str>::from("\\u{001b}[92m")' : string
-        | _ => fun () => $'"\\u001b[92m"'
+    inl otherwise () =
+        run_target function
+            | Gleam _ => fun () => $'"\\u{001b}[92m"'
+            | Lua _ => fun () => $'""'
+            | Rust => fun () => $'Rc::<str>::from("\\u{001b}[92m")' : string
+            | _ => fun () => $'"\\u001b[92m"'
+    backend_switch_or otherwise {
+        Zig = fun () =>
+            $'"\\u{001b}[92m"' : string
+    }
 
 /// ### color_yellow
 inl color_yellow () =
-    run_target function
-        | Gleam _ => fun () => $'"\\u{001b}[93m"'
-        | Lua _ => fun () => $'""'
-        | Rust => fun () => $'Rc::<str>::from("\\u{001b}[93m")' : string
-        | _ => fun () => $'"\\u001b[93m"'
+    inl otherwise () =
+        run_target function
+            | Gleam _ => fun () => $'"\\u{001b}[93m"'
+            | Lua _ => fun () => $'""'
+            | Rust => fun () => $'Rc::<str>::from("\\u{001b}[93m")' : string
+            | _ => fun () => $'"\\u001b[93m"'
+    backend_switch_or otherwise {
+        Zig = fun () =>
+            $'"\\u{001b}[93m"' : string
+    }
 
 /// ### color_bright_blue
 inl color_bright_blue () =
-    run_target function
-        | Gleam _ => fun () => $'"\\u{001b}[94m"'
-        | Lua _ => fun () => $'""'
-        | Rust => fun () => $'Rc::<str>::from("\\u{001b}[94m")' : string
-        | _ => fun () => $'"\\u001b[94m"'
+    inl otherwise () =
+        run_target function
+            | Gleam _ => fun () => $'"\\u{001b}[94m"'
+            | Lua _ => fun () => $'""'
+            | Rust => fun () => $'Rc::<str>::from("\\u{001b}[94m")' : string
+            | _ => fun () => $'"\\u001b[94m"'
+    backend_switch_or otherwise {
+        Zig = fun () =>
+            $'"\\u{001b}[94m"' : string
+    }
 
 /// ### color_bright_magenta
 inl color_bright_magenta () =
-    run_target function
-        | Gleam _ => fun () => $'"\\u{001b}[95m"'
-        | Lua _ => fun () => $'""'
-        | Rust => fun () => $'Rc::<str>::from("\\u{001b}[95m")' : string
-        | _ => fun () => $'"\\u001b[95m"'
+    inl otherwise () =
+        run_target function
+            | Gleam _ => fun () => $'"\\u{001b}[95m"'
+            | Lua _ => fun () => $'""'
+            | Rust => fun () => $'Rc::<str>::from("\\u{001b}[95m")' : string
+            | _ => fun () => $'"\\u001b[95m"'
+    backend_switch_or otherwise {
+        Zig = fun () =>
+            $'"\\u{001b}[95m"' : string
+    }
 
 /// ### color_bright_cyan
 inl color_bright_cyan () =
-    run_target function
-        | Gleam _ => fun () => $'"\\u{001b}[96m"'
-        | Lua _ => fun () => $'""'
-        | Rust => fun () => $'Rc::<str>::from("\\u{001b}[96m")' : string
-        | _ => fun () => $'"\\u001b[96m"'
+    inl otherwise () =
+        run_target function
+            | Gleam _ => fun () => $'"\\u{001b}[96m"'
+            | Lua _ => fun () => $'""'
+            | Rust => fun () => $'Rc::<str>::from("\\u{001b}[96m")' : string
+            | _ => fun () => $'"\\u001b[96m"'
+    backend_switch_or otherwise {
+        Zig = fun () =>
+            $'"\\u{001b}[96m"' : string
+    }
 
 /// ### color_bright_white
 inl color_bright_white () =
-    run_target function
-        | Gleam _ => fun () => $'"\\u{001b}[97m"'
-        | Lua _ => fun () => $'""'
-        | Rust => fun () => $'Rc::<str>::from("\\u{001b}[97m")' : string
-        | _ => fun () => $'"\\u001b[97m"'
+    inl otherwise () =
+        run_target function
+            | Gleam _ => fun () => $'"\\u{001b}[97m"'
+            | Lua _ => fun () => $'""'
+            | Rust => fun () => $'Rc::<str>::from("\\u{001b}[97m")' : string
+            | _ => fun () => $'"\\u001b[97m"'
+    backend_switch_or otherwise {
+        Zig = fun () =>
+            $'"\\u{001b}[97m"' : string
+    }

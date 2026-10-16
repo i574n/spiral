@@ -255,34 +255,94 @@ defmodule Spiral.Kino.Mounts do
     end
   end
 
-  defp local_package_names(text) do
-    {names, _mode} =
-      Enum.reduce(String.split(text, ~r/\r?\n/), {[], :out}, fn line, {names, mode} ->
-        cond do
-          String.starts_with?(line, "packages:") ->
-            {names, :in}
+  defp local_package_names(text), do: Enum.map(package_entries(text), &elem(&1, 0))
 
-          String.starts_with?(line, "modules:") ->
-            {names, :out}
+  @spec declared_dependencies(String.t()) :: [%{name: String.t(), target: String.t(), import: String.t()}]
+  def declared_dependencies(dir) do
+    case File.read(Path.join(dir, "package.spiproj")) do
+      {:ok, text} ->
+        base = package_base(dir, text)
 
-          mode == :in and package_name(line) != nil ->
-            {[package_name(line) | names], :in}
+        for {item, declared} <- package_entries(text) do
+          name = Path.basename(item)
+          suffix = String.replace_prefix(declared, item, "")
+          %{name: name, target: Path.expand(item, base), import: name <> suffix}
+        end
 
-          true ->
-            {names, mode}
+      _ ->
+        []
+    end
+  end
+
+  @spec dependency_closure([{String.t(), String.t()}]) :: [{String.t(), String.t()}]
+  def dependency_closure(targets) do
+    named = MapSet.new(targets, &elem(&1, 1))
+    closure(Enum.map(targets, &elem(&1, 0)), named, [])
+  end
+
+  @spec qualified_imports([{String.t(), String.t()}]) :: [String.t()]
+  def qualified_imports(targets) do
+    named = MapSet.new(targets, &elem(&1, 1))
+
+    targets
+    |> Enum.flat_map(fn {target, _name} -> declared_dependencies(target) end)
+    |> Enum.reject(&MapSet.member?(named, &1.name))
+    |> Enum.map(& &1.import)
+    |> Enum.uniq()
+  end
+
+  defp closure([], _named, found), do: Enum.reverse(found)
+
+  defp closure([dir | rest], named, found) do
+    {named, found, queue} =
+      Enum.reduce(declared_dependencies(dir), {named, found, rest}, fn dependency, {named, found, queue} ->
+        if MapSet.member?(named, dependency.name) or
+             not File.regular?(Path.join(dependency.target, "package.spiproj")) do
+          {named, found, queue}
+        else
+          {MapSet.put(named, dependency.name), [{dependency.target, dependency.name} | found],
+           queue ++ [dependency.target]}
         end
       end)
 
-    Enum.reverse(names)
+    closure(queue, named, found)
   end
 
-  defp package_name(line) do
+  defp package_base(dir, text) do
+    case Regex.run(~r/^packageDir:\s*(.+?)\s*$/m, text) do
+      [_, packages] -> Path.expand(packages, dir)
+      _ -> Path.expand("..", dir)
+    end
+  end
+
+  defp package_entries(text) do
+    {entries, _mode} =
+      Enum.reduce(String.split(text, ~r/\r?\n/), {[], :out}, fn line, {entries, mode} ->
+        cond do
+          String.starts_with?(line, "packages:") ->
+            {entries, :in}
+
+          String.starts_with?(line, "modules:") ->
+            {entries, :out}
+
+          mode == :in and package_entry(line) != nil ->
+            {[package_entry(line) | entries], :in}
+
+          true ->
+            {entries, mode}
+        end
+      end)
+
+    Enum.reverse(entries)
+  end
+
+  defp package_entry(line) do
     item = String.trim(line)
 
     cond do
       item == "" -> nil
       String.starts_with?(item, "|") -> nil
-      true -> String.trim_trailing(item, "-")
+      true -> {item |> String.trim_trailing("-") |> String.trim_trailing("*"), item}
     end
   end
 

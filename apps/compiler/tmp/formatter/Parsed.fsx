@@ -97,6 +97,11 @@ and shapeOf (builder : StringBuilder) (depth : int) (value : obj) =
             for field in FSharpValue.GetRecordFields (value, true) do
                 shapeOf builder (depth + 1) field
             builder.Append '}' |> ignore
+        elif shape.IsGenericType && shape.GetGenericTypeDefinition () = typedefof<Collections.Generic.KeyValuePair<_, _>> then
+            builder.Append '{' |> ignore
+            shapeOf builder (depth + 1) (shape.GetProperty("Key").GetValue value)
+            shapeOf builder (depth + 1) (shape.GetProperty("Value").GetValue value)
+            builder.Append '}' |> ignore
         elif shape.IsArray then
             builder.Append '[' |> ignore
             for item in (value :?> Array) do

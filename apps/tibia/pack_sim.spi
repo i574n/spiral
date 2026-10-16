@@ -321,7 +321,7 @@ test the_random_control_stays_far_below_every_rule =
     inl spot = uniform_camp (open creatures in Cyclops) |> on_layout (open terrain in ArenaSpot)
     inl clears = clears_judged_on spot (random_control ()) (held_out_block ())
     (quantity.value_of (judged_on Experience camp (random_control ()) (held_out_block ())) + marker, l.hunt_kills, l.hunt_deaths, quantity.value_of l.hunt_profit, clears.clear_potions, clears.clear_deaths, clears.clear_ms)
-    |> _assert_eq (47610i32, 905i32, 0i32, -1146982i32, 7132i32, 0i32, 9247700i32)
+    |> _assert_eq (47630i32, 906i32, 0i32, -1147020i32, 7132i32, 0i32, 9247700i32)
 
 ///> c
 test on_the_cyclops_hunting_ground_sweeping_leads_and_stepping_back_buys_cost =
@@ -334,7 +334,7 @@ test on_the_cyclops_hunting_ground_sweeping_leads_and_stepping_back_buys_cost =
         quantity.value_of (judged_on Experience camp t (held_out_block ())), l.hunt_deaths, quantity.value_of l.hunt_profit
     inl retreating = tactic_with_order (open policy in ReachFirst) {first = 154; second = 26; third = 2}
     (standing_heal, sweeping_heal, judged (cavebot_with_heal standing_heal), judged (cavebot_with_heal sweeping_heal |> sweeping_spawns), judged (cavebot_with_heal standing_heal |> patrolling (central_shuttle_route ())), judged retreating, judged (retreating |> sweeping_spawns))
-    |> _assert_eq (110i32, 190i32, (121050i32, 0i32, -184112i32), (138900i32, 0i32, -254055i32), (103600i32, 7i32, -349233i32), (100950i32, 0i32, -107900i32), (127200i32, 0i32, -150159i32))
+    |> _assert_eq (110i32, 190i32, (121050i32, 0i32, -184112i32), (138900i32, 0i32, -254055i32), (103600i32, 7i32, -349233i32), (100350i32, 0i32, -107850i32), (127200i32, 0i32, -150159i32))
 ///> c
 test the_live_wake_delay_brings_the_arena_clears_toward_the_live_potion_counts =
     open hunting_pack
@@ -352,7 +352,8 @@ test the_live_wake_delay_brings_the_arena_clears_toward_the_live_potion_counts =
     (totals spot (cavebot_with_heal 160), totals spot retreat, totals mixed (cavebot_with_heal 160))
     |> _assert_eq ((1334i32, 8838000i32, 6417i32), (1201i32, 9037600i32, 5837i32), (36i32, 3708400i32, 946i32))
 
-test after_a_step_the_swing_waits_for_the_next_think_so_retreating_costs_more_potions_and_rules_stay =
+///> c
+test after_a_step_the_swing_waits_for_a_think_or_a_move_which_barely_changes_a_clear =
     open hunting_pack
     inl totals (camp : camp) (t : tactic) : i32 * i32 * i32 =
         let rec each (i : i32) (potions : i32) (ms : i32) (hits : i32) : i32 * i32 * i32 =
@@ -363,5 +364,37 @@ test after_a_step_the_swing_waits_for_the_next_think_so_retreating_costs_more_po
         each 0 0 0 0
     inl spot = uniform_camp (open creatures in Cyclops) |> on_layout (open terrain in ArenaSpot) |> waking_at (live_wake_ms ())
     inl live_retreat = tactic_with_order (open policy in ReachFirst) {first = 160; second = 0; third = 2}
-    (totals spot live_retreat, totals (spot |> swinging_on_think) live_retreat, totals (spot |> swinging_on_think) (cavebot_with_heal 160))
-    |> _assert_eq ((1178i32, 8952000i32, 5747i32), (1214i32, 9060800i32, 5856i32), (1336i32, 8876000i32, 6424i32))
+    (totals spot live_retreat, totals (spot |> swinging_like_canary) live_retreat, totals (spot |> swinging_like_canary) (cavebot_with_heal 160))
+    |> _assert_eq ((1178i32, 8952000i32, 5747i32), (1172i32, 8925900i32, 5725i32), (1334i32, 8838000i32, 6417i32))
+
+///> c
+test mirroring_the_live_arena_predicts_rules_and_retreat_within_the_live_noise_at_two_and_three_cyclops =
+    open hunting_pack
+    inl totals (camp : camp) (t : tactic) : i32 * i32 * i32 =
+        let rec each (i : i32) (potions : i32) (ms : i32) (hits : i32) : i32 * i32 * i32 =
+            if i >= (range_of (held_out_block ())).count then potions, ms, hits
+            else
+                inl elapsed, p = clear_run camp t ((range_of (held_out_block ())).first + conv i) 6000
+                each (i + 1) (potions + p.hunter.potions) (ms + elapsed) (hits + p.hunter.hits_taken)
+        each 0 0 0 0
+    inl three = uniform_camp (open creatures in Cyclops) |> on_layout (open terrain in ArenaSpot) |> mirroring_the_live_arena
+    inl two = {three with size = 2}
+    (totals three (cavebot_with_heal 160), totals three (live_retreat_tactic 160 2), totals two (cavebot_with_heal 160), totals two (live_retreat_tactic 160 2))
+    |> _assert_eq ((1274i32, 9074000i32, 6132i32), (1178i32, 9189800i32, 5714i32), (483i32, 6070100i32, 2900i32), (509i32, 6106500i32, 2981i32))
+
+///> c
+test a_cyclops_first_swing_waits_one_period_after_it_can_target_which_fits_six_live_means_best =
+    open hunting_pack
+    inl totals (camp : camp) (t : tactic) : i32 * i32 =
+        let rec each (i : i32) (potions : i32) (hits : i32) : i32 * i32 =
+            if i >= (range_of (held_out_block ())).count then potions, hits
+            else
+                inl elapsed, p = clear_run camp t ((range_of (held_out_block ())).first + conv i) 6000
+                each (i + 1) (potions + p.hunter.potions) (hits + p.hunter.hits_taken)
+        each 0 0 0
+    inl three = uniform_camp (open creatures in Cyclops) |> on_layout (open terrain in ArenaSpot) |> mirroring_the_live_arena |> meleeing_every_once_targeted (live_creature_strike_ms ())
+    inl two = {three with size = 2}
+    inl bare = three |> waking_at 0
+    inl reach = tactic_with_order (open policy in ReachFirst) {first = 160; second = 0; third = policy.never_retreat ()}
+    (totals three (cavebot_with_heal 160), totals three reach, totals three (live_retreat_tactic 160 2), totals two (cavebot_with_heal 160), totals two (live_retreat_tactic 160 2), totals bare (cavebot_with_heal 160))
+    |> _assert_eq ((1247i32, 6043i32), (1322i32, 6281i32), (1175i32, 5620i32), (465i32, 2772i32), (474i32, 2821i32), (1529i32, 7076i32))

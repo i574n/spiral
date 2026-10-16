@@ -512,9 +512,12 @@ inl distinct forall dim el. (a : a dim el) : a dim el =
 
 /// ### skip
 inl skip forall dim el. (n : dim) (a : a dim el) : a dim el =
-    if is_rust ()
-    then $'Rc::new(RefCell::new((!a).borrow().iter().skip((!n) as usize).cloned().collect::<Vec<_>>()))'
-    else $'!a |> Array.skip !n '
+    inl otherwise () =
+        $'!a |> Array.skip !n '
+    backend_switch_or otherwise {
+        Rust = fun () => $'Rc::new(RefCell::new((!a).borrow().iter().skip((!n) as usize).cloned().collect::<Vec<_>>()))' : a dim el
+        Zig = fun () => $'(spiral_gpa.dupe(`el, (!a)[\@intCast(!n)..]) catch \@panic("out of memory"))' : a dim el
+    }
 
 /// ### skip_while
 inl skip_while forall dim el. (fn : el -> bool) (a : a dim el) : a dim el =
@@ -531,6 +534,7 @@ inl to_list_base' forall t. (items : array_base t) : listm'.list' t =
         Python = fun () => items |> convert.to : listm'.list' t
         Rust = fun () => $'Rc::new((!items).borrow().clone())' : listm'.list' t
         TypeScript = fun () => $'[...!items]' : listm'.list' t
+        Zig = fun () => $'!items ' : listm'.list' t
     }
 
 /// ### to_list'
@@ -636,7 +640,11 @@ inl sort_by forall dim el key. (fn : el -> key) (a : a dim el) : a dim el =
 
 /// ### sort
 inl sort forall dim el. (a : a dim el) : a dim el =
-    $'!a |> Array.sort'
+    inl otherwise () =
+        $'!a |> Array.sort'
+    backend_switch_or otherwise {
+        Zig = fun () => sort_by id a
+    }
 
 /// ### sort_descending
 inl sort_descending forall dim el. (a : a dim el) : a dim el =

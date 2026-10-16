@@ -60,6 +60,7 @@ inl from_try forall t. (fn : () -> t) (ex_fn : (() -> exn) -> exn) : result t ex
             $'x' : result t exn
         TypeScript = fun () =>
             $'(() => { try { return !ok(!fn()); } catch (ex) { return !error(!ex_fn(() => ex)); } })()' : result t exn
+        Zig = fun () => fn () |> ok
     }
 
 /// ### get
@@ -76,6 +77,7 @@ inl get forall t e. (source : result t e) : t =
             Python = fun () => $'f"resultm.get / Error x: {!x}"' : string
             TypeScript = fun () => $'"resultm.get / Error x: " + String(!x)' : string
             Rust = fun () => $'Rc::<str>::from({ struct SpiralDebug<T>(T); trait SpiralDebugShow { fn show(&self) -> String; } impl<T: std::fmt::Debug> SpiralDebugShow for SpiralDebug<T> { fn show(&self) -> String { format\!("{:?}", self.0) } } trait SpiralTypeShow { fn show(&self) -> String; } impl<T> SpiralTypeShow for &SpiralDebug<T> { fn show(&self) -> String { String::from(std::any::type_name::<T>()) } } format\!("resultm.get / Error x: {}", (&SpiralDebug(&!x)).show()) })' : string
+            Zig = fun () => $'(std.fmt.allocPrint(spiral_gpa, "resultm.get / Error x: {any}", .{ !x }) catch \@panic("out of memory"))' : string
         }
         |> failwith
 
@@ -104,6 +106,7 @@ inl unwrap_err forall t u. (x : result t u) : u =
             Python = fun () => $'f"resultm.unwrap_err / Ok x: {!x}"' : string
             TypeScript = fun () => $'"resultm.unwrap_err / Ok x: " + String(!x)' : string
             Rust = fun () => $'Rc::<str>::from({ struct SpiralDebug<T>(T); trait SpiralDebugShow { fn show(&self) -> String; } impl<T: std::fmt::Debug> SpiralDebugShow for SpiralDebug<T> { fn show(&self) -> String { format\!("{:?}", self.0) } } trait SpiralTypeShow { fn show(&self) -> String; } impl<T> SpiralTypeShow for &SpiralDebug<T> { fn show(&self) -> String { String::from(std::any::type_name::<T>()) } } format\!("resultm.unwrap_err / Ok x: {}", (&SpiralDebug(&!x)).show()) })' : string
+            Zig = fun () => $'(std.fmt.allocPrint(spiral_gpa, "resultm.unwrap_err / Ok x: {any}", .{ !x }) catch \@panic("out of memory"))' : string
         }
         |> failwith
     | Error x => x
@@ -129,6 +132,7 @@ type result'_switch t u =
         Python : result t u
         Rust : $'Result<`t, `u>'
         TypeScript : result t u
+        Zig : result t u
     }
 nominal result' t u = $'backend_switch `(result'_switch t u)'
 
@@ -144,6 +148,7 @@ inl result'_union () : bool =
         Delphi = fun () => false
         Cuda = fun () => false
         Rust = fun () => false
+        Zig = fun () => true
     }
 
 inl result'_python () : bool =
@@ -158,7 +163,30 @@ inl result'_python () : bool =
         Delphi = fun () => false
         Cuda = fun () => false
         Rust = fun () => false
+        Zig = fun () => false
     }
+
+inl result'_zig () : bool =
+    backend_switch {
+        Gleam = fun () => false
+        Lua = fun () => false
+        Fsharp = fun () => false
+        Python = fun () => false
+        TypeScript = fun () => false
+        Cpp = fun () => false
+        CppHost = fun () => false
+        Delphi = fun () => false
+        Cuda = fun () => false
+        Rust = fun () => false
+        Zig = fun () => true
+        Lean = fun () => false
+        C = fun () => false
+        Wasm = fun () => false
+        Bend = fun () => false
+    }
+
+inl result'_error_text forall e. (prefix : string) (e : e) : string =
+    $'(std.fmt.allocPrint(spiral_gpa, "{s}{any}", .{ !prefix, !e }) catch \@panic("out of memory"))'
 
 /// ### unbox
 inl unbox forall t u. (x : result' t u) : result t u =
@@ -283,7 +311,9 @@ inl try' forall t u. (x : result' t u) : t =
         | Ok x => x
         | Error e =>
             inl msg : string =
-                if result'_python ()
+                if result'_zig ()
+                then result'_error_text "resultm.try' / e: " e
+                elif result'_python ()
                 then $'f"resultm.try\' / e: {!e}"'
                 else $'"resultm.try\' / e: " .. tostring(!e)'
             failwith msg
@@ -303,7 +333,9 @@ inl unwrap' forall t u. (x : result' t u) : t =
         | Ok x => x
         | Error e =>
             inl msg : string =
-                if result'_python ()
+                if result'_zig ()
+                then result'_error_text "resultm.unwrap' / e: " e
+                elif result'_python ()
                 then $'f"resultm.unwrap\' / e: {!e}"'
                 else $'"resultm.unwrap\' / e: " .. tostring(!e)'
             failwith msg
@@ -317,7 +349,9 @@ inl unwrap'' forall t u. (x : result' t u) : t =
         | Ok x => x
         | Error e =>
             inl msg : string =
-                if result'_python ()
+                if result'_zig ()
+                then result'_error_text "resultm.unwrap'' / e: " e
+                elif result'_python ()
                 then $'f"resultm.unwrap\'\' / e: {!e}"'
                 else $'"resultm.unwrap\'\' / e: " .. tostring(!e)'
             failwith msg
@@ -333,7 +367,9 @@ inl unwrap_err' forall t u. (x : result' t u) : u =
         match unbox x with
         | Ok x =>
             inl msg : string =
-                if result'_python ()
+                if result'_zig ()
+                then result'_error_text "resultm.unwrap_err' / x: " x
+                elif result'_python ()
                 then $'f"resultm.unwrap_err\' / x: {!x}"'
                 else $'"resultm.unwrap_err\' / x: " .. tostring(!x)'
             failwith msg

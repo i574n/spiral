@@ -388,6 +388,7 @@ type list'_switch t =
         Python : $'list'
         Rust : $'Rc<Vec<`t>>'
         TypeScript : $'Array<`t>'
+        Zig : $'[]const `(t)'
     }
 nominal list' t = $'backend_switch `(list'_switch t)'
 
@@ -400,6 +401,7 @@ inl empty' forall t. () : list' t =
         Python = fun () => $'[]' : list' t
         Rust = fun () => $'Rc::new(<Vec<`t>>::new())' : list' t
         TypeScript = fun () => $'[]' : list' t
+        Zig = fun () => $'&[_]`t{}' : list' t
     }
 
 /// ### cons'
@@ -415,18 +417,28 @@ inl cons' forall t. (head : t) (tail : list' t) : list' t =
             $'!tail ' : list' t
         Rust = fun () => $'Rc::new({ let mut v = (!tail).as_ref().clone(); v.insert(0, !head); v })' : list' t
         TypeScript = fun () => $'[!head, ...!tail]' : list' t
+        Zig = fun () =>
+            inl len : i32 = $'\@as(i32, \@intCast(!tail.len))'
+            inl r : a i32 t = am.init (len + 1i32) fun i => if i = 0i32 then head else $'!tail[\@intCast(!i - 1)]' : t
+            inl (a r) = r
+            $'!r ' : list' t
     }
 
 /// ### box
 inl box forall t. (list : list t) : list' t =
-    run_target function
-        | Rust => fun () =>
-            inl acc : $'Rc<RefCell<Vec<`t>>>' = $'Rc::new(RefCell::new(Vec::new()))'
-            inl _ : i32 = (0i32, list) ||> listm.fold fun n (x : t) =>
-                $'!acc.borrow_mut().push(!x)' : ()
-                n + 1
-            $'Rc::new(!acc.borrow().clone())' : list' t
-        | _ => fun () => (list, empty' ()) ||> listm.foldBack cons'
+    inl otherwise () =
+        run_target function
+            | Rust => fun () =>
+                inl acc : $'Rc<RefCell<Vec<`t>>>' = $'Rc::new(RefCell::new(Vec::new()))'
+                inl _ : i32 = (0i32, list) ||> listm.fold fun n (x : t) =>
+                    $'!acc.borrow_mut().push(!x)' : ()
+                    n + 1
+                $'Rc::new(!acc.borrow().clone())' : list' t
+            | _ => fun () => (list, empty' ()) ||> listm.foldBack cons'
+    backend_switch_or otherwise {
+        Zig = fun () =>
+            (list, empty' ()) ||> listm.foldBack cons'
+    }
 
 /// ### rev'
 inl rev' forall t. (items : list' t) : list' t =
@@ -446,6 +458,7 @@ inl rev' forall t. (items : list' t) : list' t =
         Python = fun () => $'list(reversed(!items))' : list' t
         Rust = fun () => $'Rc::new({ let mut v = (!items).as_ref().clone(); v.reverse(); v })' : list' t
         TypeScript = fun () => $'[...!items].reverse()' : list' t
+        Zig = fun () => $'blk: { const r = spiral_gpa.dupe(`t, !items) catch \@panic("out of memory"); std.mem.reverse(`t, r); break :blk r; }' : list' t
     }
 
 /// ### fold'
@@ -496,6 +509,14 @@ inl fold' forall t u. (fn : t -> u) (init : list u) (list : list' t) : list u =
                     inl item : t = $'!list[!i]'
                     루프 (i + 1i32) (Cons (fn item, acc))
             루프 0i32 init
+        Zig = fun () =>
+            inl len : i32 = $'\@as(i32, \@intCast(!list.len))'
+            let rec 루프 (i : i32) (acc : list u) : list u =
+                if i >= len then acc
+                else
+                    inl item : t = $'!list[\@intCast(!i)]'
+                    루프 (i + 1i32) (Cons (fn item, acc))
+            루프 0i32 init
     }
 
 /// ### fold_back'
@@ -533,6 +554,14 @@ inl fold_back' forall t u. (fn : t -> u) (list : list' t) (init : list u) : list
                 if i < 0i32 then acc
                 else
                     inl item : t = $'!list[!i]'
+                    루프 (i - 1i32) (Cons (fn item, acc))
+            루프 (len - 1i32) init
+        Zig = fun () =>
+            inl len : i32 = $'\@as(i32, \@intCast(!list.len))'
+            let rec 루프 (i : i32) (acc : list u) : list u =
+                if i < 0i32 then acc
+                else
+                    inl item : t = $'!list[\@intCast(!i)]'
                     루프 (i - 1i32) (Cons (fn item, acc))
             루프 (len - 1i32) init
     }
@@ -573,6 +602,14 @@ inl filter' forall t. (fn : t -> bool) (list : list' t) : list' t =
                     inl item : t = $'!list[!i]'
                     루프 (i - 1i32) (if fn item then Cons (item, acc) else acc)
             루프 (len - 1i32) Nil |> box
+        Zig = fun () =>
+            inl len : i32 = $'\@as(i32, \@intCast(!list.len))'
+            let rec 루프 (i : i32) (acc : list t) : list t =
+                if i < 0i32 then acc
+                else
+                    inl item : t = $'!list[\@intCast(!i)]'
+                    루프 (i - 1i32) (if fn item then Cons (item, acc) else acc)
+            루프 (len - 1i32) Nil |> box
     }
 
 /// ### map
@@ -594,6 +631,7 @@ inl map forall t u. (fn : t -> u) (list : list' t) : list' u =
         Python = fun () => $'list(map(!fn, !list))' : list' u
         Rust = fun () => fold_back' fn list Nil |> box
         TypeScript = fun () => fold_back' fn list Nil |> box
+        Zig = fun () => fold_back' fn list Nil |> box
     }
 
 /// ### unbox
@@ -643,6 +681,14 @@ inl distinct' forall t. (list : list' t) : list' t =
                     inl item : t = $'!list[!i]'
                     루프 (i + 1i32) (if exists' (fun x => x = item) seen then seen else Cons (item, seen))
             루프 0i32 Nil |> box |> rev'
+        Zig = fun () =>
+            inl len : i32 = $'\@as(i32, \@intCast(!list.len))'
+            let rec 루프 (i : i32) (seen : list t) : list t =
+                if i >= len then seen
+                else
+                    inl item : t = $'!list[\@intCast(!i)]'
+                    루프 (i + 1i32) (if exists' (fun x => x = item) seen then seen else Cons (item, seen))
+            루프 0i32 Nil |> box |> rev'
     }
 
 ///> gleam
@@ -687,6 +733,7 @@ inl to_array' forall t. (items : list' t) : array_base t =
             루프 0i32
         Rust = fun () => $'Rc::new(RefCell::new((!items).as_ref().clone()))' : array_base t
         TypeScript = fun () => $'[...!items]' : array_base t
+        Zig = fun () => $'(spiral_gpa.dupe(`t, !items) catch \@panic("out of memory"))' : array_base t
     }
 
 /// ### contains

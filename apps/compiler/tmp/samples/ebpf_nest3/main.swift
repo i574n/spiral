@@ -1,0 +1,52 @@
+import CRT
+func sp_method1(_ p0: Int32, _ p1: UInt32, _ p2: Float) -> (Int32, UInt32, Float) {
+    var v0: Int32 = p0
+    var v1: UInt32 = p1
+    var v2: Float = p2
+    return (v0, v1, v2)
+}
+func sp_method0(_ p0: Int32, _ p1: UInt32, _ p2: Float) -> Int32 {
+    var v0: Int32 = p0
+    var v1: UInt32 = p1
+    var v2: Float = p2
+    var v3: Int32 = 0
+    var v4: UInt32 = UInt32(0)
+    var v5: Float = (0.0 as Float)
+    let spiral_tuple232 = sp_method1(v0, v1, v2)
+    v3 = spiral_tuple232.0
+    v4 = spiral_tuple232.1
+    v5 = spiral_tuple232.2
+    var v6: Bool = false
+    v6 = (v3 == 2)
+    var v8: Bool = false
+    if (v6) {
+        var v7: Bool = false
+        v7 = (v4 == UInt32(3))
+        v8 = v7
+    } else {
+        v8 = false
+    }
+    var v10: Bool = false
+    if (v8) {
+        var v9: Bool = false
+        v9 = (v5 == (1.5 as Float))
+        v10 = v9
+    } else {
+        v10 = false
+    }
+    if (v10) {
+        return 0
+    } else {
+        return 1
+    }
+}
+func spiral_main() -> Int32 {
+    var v0: Int32 = 0
+    v0 = 2
+    var v1: UInt32 = UInt32(0)
+    v1 = UInt32(3)
+    var v2: Float = (0.0 as Float)
+    v2 = (1.5 as Float)
+    return sp_method0(v0, v1, v2)
+}
+exit(spiral_main())

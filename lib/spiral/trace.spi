@@ -24,41 +24,49 @@ inl severity = function
 
 /// ### read_state
 inl read_state () =
-    run_target function
-        | Rust => fun () =>
-            {
-                trace_level = "TRACE_LEVEL" |> env.get_environment_variable |> reflection.union_try_pick
-                repl_start = None
-            }
-        | TypeScript => fun () =>
-            {
-                trace_level = "TRACE_LEVEL" |> env.get_environment_variable |> reflection.union_try_pick'
-                repl_start = None
-            }
-        | _ => fun () =>
-            join
+    inl otherwise () =
+        run_target function
+            | Rust => fun () =>
                 {
-                    trace_level =
-                        inl get_result () =
-                            "TRACE_LEVEL"
-                            |> env.get_environment_variable
-                            |> reflection.union_try_pick
-                        backend_switch {
-                            Gleam = get_result : () -> option trace_level
-                            Lua = fun () => None : option trace_level
-                            Fsharp = get_result : () -> option trace_level
-                            Python = get_result : () -> option trace_level
-                        }
-                    repl_start =
-                        inl automation = env.get_environment_variable "AUTOMATION"
-                        if automation <>. "True"
-                        then None
-                        else
-                            date_time.now ()
-                            |> date_time.to_timestamp
-                            |> fun (date_time.timestamp x) => x
-                            |> Some
+                    trace_level = "TRACE_LEVEL" |> env.get_environment_variable |> reflection.union_try_pick
+                    repl_start = None
                 }
+            | TypeScript => fun () =>
+                {
+                    trace_level = "TRACE_LEVEL" |> env.get_environment_variable |> reflection.union_try_pick'
+                    repl_start = None
+                }
+            | _ => fun () =>
+                join
+                    {
+                        trace_level =
+                            inl get_result () =
+                                "TRACE_LEVEL"
+                                |> env.get_environment_variable
+                                |> reflection.union_try_pick
+                            backend_switch {
+                                Gleam = get_result : () -> option trace_level
+                                Lua = fun () => None : option trace_level
+                                Fsharp = get_result : () -> option trace_level
+                                Python = get_result : () -> option trace_level
+                            }
+                        repl_start =
+                            inl automation = env.get_environment_variable "AUTOMATION"
+                            if automation <>. "True"
+                            then None
+                            else
+                                date_time.now ()
+                                |> date_time.to_timestamp
+                                |> fun (date_time.timestamp x) => x
+                                |> Some
+                    }
+    backend_switch_or otherwise {
+        Zig = fun () =>
+            {
+                trace_level = "TRACE_LEVEL" |> env.get_environment_variable |> reflection.union_try_pick : option trace_level
+                repl_start = None : option i64
+            }
+    }
 
 /// ### trace_state
 type trace_state =
@@ -121,6 +129,7 @@ inl init_trace_state trace_level : () =
             inl fresh = fun () => new_trace_state trace_level
             open rust.rust_operators
             !\\(fresh, $'"{ let _ = spiral_trace_hold(&$0); }"') : ()
+        Zig = fun () => ()
     }
 
 /// ### get_trace_state_or_init
@@ -144,6 +153,11 @@ inl get_trace_state_or_init trace_level : trace_state =
             inl fresh = fun () => new_trace_state level'
             open rust.rust_operators
             !\\(fresh, $'"{ spiral_trace_hold(&$0) }"') : trace_state
+        Zig = fun () =>
+            global "fn spiralHold(comptime T: type, fresh: anytype) T {\n    const S = struct {\n        var slot: ?T = null;\n    };\n    if (S.slot == null) S.slot = fresh.call(fresh.ctx);\n    return S.slot.?;\n}"
+            inl level' = trace_level |> optionm'.default_value Verbose
+            inl fresh = dyn (fun () => new_trace_state level')
+            $'spiralHold(`trace_state, !fresh)' : trace_state
     }
 
 /// ### set_trace_level
@@ -157,6 +171,7 @@ inl set_trace_level new_level =
         Python = id : () -> ()
         Rust = id : () -> ()
         TypeScript = id : () -> ()
+        Zig = id : () -> ()
     }
 
 /// ### test_trace_level
@@ -197,26 +212,30 @@ inl trace_raw level fn =
                 |> exec_unit
                 open rust
                 open rust.rust_operators
-                run_target_args (fun () => text, console.write_line) function
-                    | Rust => fun text, _ =>
-                        global "#[cfg(target_arch = \"wasm32\")]\nfn spiral_trace_near_log(text: &str) {\n    use std::sync::atomic::{AtomicUsize, Ordering};\n    static LOGGED: AtomicUsize = AtomicUsize::new(0);\n    let cs: Vec<char> = text.chars().collect();\n    for c in cs.chunks(15000) {\n        let s: String = c.iter().collect();\n        let used = LOGGED.load(Ordering::Relaxed);\n        let budget = 16000usize.saturating_sub(used);\n        if budget < 13 {\n            break;\n        }\n        let s = if s.len() <= budget {\n            s\n        } else {\n            let mut end = budget - 12;\n            while !s.is_char_boundary(end) {\n                end -= 1;\n            }\n            format!(\"{} [truncated]\", &s[..end])\n        };\n        LOGGED.store(used + s.len(), Ordering::Relaxed);\n        near_sdk::env::log_str(&s);\n    }\n}"
-                        if $'cfg\!(target_arch = "wasm32")' : bool
-                        then
-                            inl new_acc =
-                                if *acc = ""
-                                then text
-                                elif text = ""
-                                then *acc
-                                else *acc ++\# text
-                            inl chunks_len : i32 = !\\(new_acc, $'"(($0.chars().count() + 14999) / 15000) as i32"')
-                            if text <>. "" && chunks_len <= 1i32
-                            then acc <- new_acc
-                            else
-                                acc <- ""
-                                !\\(new_acc, $'"{ \#[cfg(target_arch = \\\"wasm32\\\")] spiral_trace_near_log(&$0); }"')
-                        else !\\(text, $'"println\!(\\\"{}\\\", $0)"')
-                    | _ => fun text, write_line =>
-                        text |> write_line
+                inl otherwise () =
+                    run_target_args (fun () => text, console.write_line) function
+                        | Rust => fun text, _ =>
+                            global "#[cfg(target_arch = \"wasm32\")]\nfn spiral_trace_near_log(text: &str) {\n    use std::sync::atomic::{AtomicUsize, Ordering};\n    static LOGGED: AtomicUsize = AtomicUsize::new(0);\n    let cs: Vec<char> = text.chars().collect();\n    for c in cs.chunks(15000) {\n        let s: String = c.iter().collect();\n        let used = LOGGED.load(Ordering::Relaxed);\n        let budget = 16000usize.saturating_sub(used);\n        if budget < 13 {\n            break;\n        }\n        let s = if s.len() <= budget {\n            s\n        } else {\n            let mut end = budget - 12;\n            while !s.is_char_boundary(end) {\n                end -= 1;\n            }\n            format!(\"{} [truncated]\", &s[..end])\n        };\n        LOGGED.store(used + s.len(), Ordering::Relaxed);\n        near_sdk::env::log_str(&s);\n    }\n}"
+                            if $'cfg\!(target_arch = "wasm32")' : bool
+                            then
+                                inl new_acc =
+                                    if *acc = ""
+                                    then text
+                                    elif text = ""
+                                    then *acc
+                                    else *acc ++\# text
+                                inl chunks_len : i32 = !\\(new_acc, $'"(($0.chars().count() + 14999) / 15000) as i32"')
+                                if text <>. "" && chunks_len <= 1i32
+                                then acc <- new_acc
+                                else
+                                    acc <- ""
+                                    !\\(new_acc, $'"{ \#[cfg(target_arch = \\\"wasm32\\\")] spiral_trace_near_log(&$0); }"')
+                            else !\\(text, $'"println\!(\\\"{}\\\", $0)"')
+                        | _ => fun text, write_line =>
+                            text |> write_line
+                backend_switch_or otherwise {
+                    Zig = fun () => text |> console.write_line
+                }
                 text |> *trace_state.trace_file
                 trace_state |> Some
         backend_switch {
@@ -226,6 +245,7 @@ inl trace_raw level fn =
             Python = id : () -> ()
             Rust = id : () -> ()
             TypeScript = id : () -> ()
+            Zig = id : () -> ()
         }
     |> exec_unit
 
@@ -235,42 +255,49 @@ inl trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
         inl trace_state = get_trace_state_or_init None
         inl time =
             join
-                run_target fun target =>
-                    match target with
-                    | Rust => fun () =>
-                        open rust.rust_operators
-                        inl seconds_of_day : u64 = $'{ \#[cfg(target_arch = "wasm32")] let (h, m, s) = { let secs = near_sdk::env::block_timestamp() / 1_000_000_000; ((secs / 3600) % 24, (secs / 60) % 60, secs % 60) }; \#[cfg(all(windows, not(target_arch = "wasm32")))] let (h, m, s) = { \#[repr(C)] struct St([u16; 8]); unsafe extern "system" { fn GetLocalTime(t: *mut St); } let mut t = St([0; 8]); unsafe { GetLocalTime(&mut t) }; (t.0[4] as u64, t.0[5] as u64, t.0[6] as u64) }; \#[cfg(all(unix, not(target_arch = "wasm32")))] let (h, m, s) = { \#[repr(C, align(8))] struct Tm([i32; 16]); unsafe extern "C" { fn localtime_r(t: *const std::os::raw::c_long, tm: *mut Tm) -> *mut Tm; } let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0) as std::os::raw::c_long; let mut tm = Tm([0; 16]); unsafe { localtime_r(&secs, &mut tm) }; (tm.0[2] as u64, tm.0[1] as u64, tm.0[0] as u64) }; \#[cfg(not(any(windows, unix, target_arch = "wasm32")))] let (h, m, s) = { let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0); ((secs / 3600) % 24, (secs / 60) % 60, secs % 60) }; h * 3600 + m * 60 + s }'
-                        inl two_digits (n : u64) : string = (if n < 10u64 then "0" else "") ++# sm'.obj_to_string n
-                        two_digits (seconds_of_day / 3600u64) ++# ":" ++# two_digits ((seconds_of_day / 60u64) % 60u64) ++# ":" ++# two_digits (seconds_of_day % 60u64)
-                    | TypeScript => fun () =>
-                        $'(() => { const d = new Date(); const p = (n: number) => String(n).padStart(2, "0"); return p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds()); })()' : string
-                    | _ => fun () =>
-                        match trace_state.repl_start |> optionm'.unbox with
-                        | Some repl_start =>
-                            inl t =
-                                date_time.now ()
-                                |> date_time.to_timestamp
-                                |> fun (date_time.timestamp x) => x
-                                |> flip (-) repl_start
-                                |> date_time.time_span_of_micros
-                            date_time.date_time_milliseconds
-                                1i32 1i32 1i32
-                                (t |> date_time.hours)
-                                (t |> date_time.minutes)
-                                (t |> date_time.seconds)
-                                (t |> date_time.milliseconds)
-                        | None => date_time.now ()
-                        |> date_time.format (
-                            backend_switch {
-                                Gleam = fun () => "HH:mm:ss"
-                                Lua = fun () => "%H:%M:%S"
-                                Fsharp = fun () =>
-                                    match target with
-                                    | Rust => join "hh:mm:ss"
-                                    | _ => join "HH:mm:ss"
-                                Python = fun () => "%H:%M:%S"
-                            }
-                        )
+                inl otherwise () =
+                    run_target fun target =>
+                        match target with
+                        | Rust => fun () =>
+                            open rust.rust_operators
+                            inl seconds_of_day : u64 = $'{ \#[cfg(target_arch = "wasm32")] let (h, m, s) = { let secs = near_sdk::env::block_timestamp() / 1_000_000_000; ((secs / 3600) % 24, (secs / 60) % 60, secs % 60) }; \#[cfg(all(windows, not(target_arch = "wasm32")))] let (h, m, s) = { \#[repr(C)] struct St([u16; 8]); unsafe extern "system" { fn GetLocalTime(t: *mut St); } let mut t = St([0; 8]); unsafe { GetLocalTime(&mut t) }; (t.0[4] as u64, t.0[5] as u64, t.0[6] as u64) }; \#[cfg(all(unix, not(target_arch = "wasm32")))] let (h, m, s) = { \#[repr(C, align(8))] struct Tm([i32; 16]); unsafe extern "C" { fn localtime_r(t: *const std::os::raw::c_long, tm: *mut Tm) -> *mut Tm; } let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0) as std::os::raw::c_long; let mut tm = Tm([0; 16]); unsafe { localtime_r(&secs, &mut tm) }; (tm.0[2] as u64, tm.0[1] as u64, tm.0[0] as u64) }; \#[cfg(not(any(windows, unix, target_arch = "wasm32")))] let (h, m, s) = { let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0); ((secs / 3600) % 24, (secs / 60) % 60, secs % 60) }; h * 3600 + m * 60 + s }'
+                            inl two_digits (n : u64) : string = (if n < 10u64 then "0" else "") ++# sm'.obj_to_string n
+                            two_digits (seconds_of_day / 3600u64) ++# ":" ++# two_digits ((seconds_of_day / 60u64) % 60u64) ++# ":" ++# two_digits (seconds_of_day % 60u64)
+                        | TypeScript => fun () =>
+                            $'(() => { const d = new Date(); const p = (n: number) => String(n).padStart(2, "0"); return p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds()); })()' : string
+                        | _ => fun () =>
+                            match trace_state.repl_start |> optionm'.unbox with
+                            | Some repl_start =>
+                                inl t =
+                                    date_time.now ()
+                                    |> date_time.to_timestamp
+                                    |> fun (date_time.timestamp x) => x
+                                    |> flip (-) repl_start
+                                    |> date_time.time_span_of_micros
+                                date_time.date_time_milliseconds
+                                    1i32 1i32 1i32
+                                    (t |> date_time.hours)
+                                    (t |> date_time.minutes)
+                                    (t |> date_time.seconds)
+                                    (t |> date_time.milliseconds)
+                            | None => date_time.now ()
+                            |> date_time.format (
+                                backend_switch {
+                                    Gleam = fun () => "HH:mm:ss"
+                                    Lua = fun () => "%H:%M:%S"
+                                    Fsharp = fun () =>
+                                        match target with
+                                        | Rust => join "hh:mm:ss"
+                                        | _ => join "HH:mm:ss"
+                                    Python = fun () => "%H:%M:%S"
+                                }
+                            )
+                backend_switch_or otherwise {
+                    Zig = fun () =>
+                        global "extern \"kernel32\" fn GetLocalTime(t: *[8]u16) callconv(.winapi) void;"
+                        global "fn spiralClock() []const u8 {\n    var secs: u64 = 0;\n    if (builtin.os.tag == .windows) {\n        var t: [8]u16 = undefined;\n        GetLocalTime(&t);\n        secs = @as(u64, t[4]) * 3600 + @as(u64, t[5]) * 60 + @as(u64, t[6]);\n    } else if (builtin.os.tag == .linux) {\n        var ts: std.os.linux.timespec = undefined;\n        _ = std.os.linux.clock_gettime(.REALTIME, &ts);\n        secs = @intCast(ts.sec);\n    }\n    return std.fmt.allocPrint(spiral_gpa, \"{d:0>2}:{d:0>2}:{d:0>2}\", .{ (secs / 3600) % 24, (secs / 60) % 60, secs % 60 }) catch @panic(\"out of memory\");\n}"
+                        $'spiralClock()' : string
+                }
         inl level_str =
             join
                 inl color =

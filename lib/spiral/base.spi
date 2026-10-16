@@ -281,7 +281,10 @@ test join_body_unit_5 =
 inl (=.) forall t. (a : t) (b : t) : bool =
     backend_switch {
         Gleam = fun () => $'!a == !b ' : bool
-        Lua = fun () => $'!a == !b ' : bool
+        Lua = fun () =>
+            if (real typecase t with i64 => true | u64 => true | _ => false)
+            then $'spiral_w64.eq(!a, !b)' : bool
+            else $'!a == !b ' : bool
         Fsharp = fun () => $'!a = !b ' : bool
         Python = fun () => $'!a == !b ' : bool
         Rust = fun () => $'!a == !b ' : bool
@@ -306,7 +309,10 @@ test join_body_unit_6 =
 inl (<>.) forall t. (a : t) (b : t) : bool =
     backend_switch {
         Gleam = fun () => $'!a \!= !b ' : bool
-        Lua = fun () => $'!a ~= !b ' : bool
+        Lua = fun () =>
+            if (real typecase t with i64 => true | u64 => true | _ => false)
+            then $'(not spiral_w64.eq(!a, !b))' : bool
+            else $'!a ~= !b ' : bool
         Fsharp = fun () => $'!a <> !b ' : bool
         Python = fun () => $'!a \!= !b ' : bool
         Rust = fun () => $'!a \!= !b ' : bool
@@ -359,6 +365,7 @@ type pair_switch a b =
         Python : $'(`a, `b)'
         Rust : $'(`a, `b)'
         TypeScript : $'[`a, `b]'
+        Zig : $'\@Tuple(&.{ `a, `b })'
     }
 nominal pair a b = $'backend_switch `(pair_switch a b)'
 
@@ -389,6 +396,7 @@ inl new_pair forall a b. (a : a) (b : b) : pair a b =
             inl a, b = join (a, b)
             $'(!a, !b)' : pair a b
         TypeScript = fun () => $'[!a, !b]' : pair a b
+        Zig = fun () => $'.{ !a, !b }' : pair a b
     }
 
 /// ### from_pair
@@ -400,6 +408,7 @@ inl from_pair forall a b. (pair : pair a b) : a * b =
         Python = fun () => ($'!pair[0]' : a), ($'!pair[1]' : b)
         Rust = fun () => ($'!pair.0.clone()' : a), ($'!pair.1.clone()' : b)
         TypeScript = fun () => ($'!pair[0]' : a), ($'!pair[1]' : b)
+        Zig = fun () => ($'!pair[0]' : a), ($'!pair[1]' : b)
     }
 
 ///> gleam
@@ -466,6 +475,7 @@ inl null forall t. () : t =
         Fsharp = fun () => $'null |> unbox<`t>' : t
         Python = fun () => $'None' : t
         TypeScript = fun () => $'null' : t
+        Zig = fun () => $'std.mem.zeroes(`t)' : t
     }
 
 /// ### defaultof
@@ -575,6 +585,7 @@ type exn_switch =
         Python : $'BaseException'
         Rust : $'Rc<str>'
         TypeScript : $'any'
+        Zig : $'[]const u8'
     }
 nominal exn = $'backend_switch `(exn_switch)'
 
@@ -606,6 +617,8 @@ inl try forall t. (fn : () -> t) (ex_fn : exn -> option t) : option t =
             catch_unwind_rust (fun () => some (fn ())) ex_fn
         TypeScript = fun () =>
             $'(() => { try { return !some(!fn()); } catch (ex) { return !ex_fn(ex); } })()' : option t
+        Zig = fun () =>
+            fn () |> some
     }
 
 ///> fsharp
@@ -655,55 +668,60 @@ inl try_unit_fsharp_python () : bool =
     }
 
 inl try_unit forall t. (fn : () -> ()) (ex_fn : (() -> exn) -> ()) : t =
-    if is_rust ()
-    then
-        catch_unwind_rust fn (fun ex => ex_fn fun () => ex)
-        $'()' : t
-    elif try_unit_fsharp_python ()
-    then
-        inl fn = dyn fn
-        inl ex_fn = dyn ex_fn
-        backend_switch {
-            Fsharp = fun () =>
-                $'try !fn () with ex -> !ex_fn (fun () -> ex)' : ()
-                $'()' : t
-            Python = fun () =>
-                global "def _spiral_try_unit(fn, ex_fn):\n    try: fn()\n    except Exception as ex: ex_fn(lambda: ex)"
-                $'_spiral_try_unit(!fn, !ex_fn)' : ()
-                $'None' : t
-        }
-    else
-        backend_switch {
-            Gleam = fun () => $'// base.try_unit' : ()
-            Lua = fun () => $'-- base.try_unit' : ()
-            Fsharp = fun () => $'try' : ()
-            Python = fun () => $'try:' : ()
-        }
-        fn |> indent
-        backend_switch {
-            Gleam = fun () => $'// base.try_unit' : ()
-            Lua = fun () => $'-- base.try_unit' : ()
-            Fsharp = fun () => $'with ex ->' : ()
-            Python = fun () => $'except Exception as ex:' : ()
-        }
-        fun () =>
-            inl ex = $'ex'
+    inl otherwise () =
+        if try_unit_fsharp_python ()
+        then
+            inl fn = dyn fn
+            inl ex_fn = dyn ex_fn
             backend_switch {
-                Fsharp = fun () => $'()' : ()
+                Fsharp = fun () =>
+                    $'try !fn () with ex -> !ex_fn (fun () -> ex)' : ()
+                    $'()' : t
+                Python = fun () =>
+                    global "def _spiral_try_unit(fn, ex_fn):\n    try: fn()\n    except Exception as ex: ex_fn(lambda: ex)"
+                    $'_spiral_try_unit(!fn, !ex_fn)' : ()
+                    $'None' : t
             }
-            inl ex () =
-                ex
-            ex_fn ex
-        |> indent
-        backend_switch {
-            Gleam = fun () => $'// base.try_unit' : ()
-            Lua = fun () => $'-- base.try_unit' : ()
-            Fsharp = fun () =>
-                $'|> ignore'
-                $'(* try_unit'
-                $'try_unit *)' : t
-            Python = fun () => $'None' : t
-        }
+        else
+            backend_switch {
+                Gleam = fun () => $'// base.try_unit' : ()
+                Lua = fun () => $'-- base.try_unit' : ()
+                Fsharp = fun () => $'try' : ()
+                Python = fun () => $'try:' : ()
+            }
+            fn |> indent
+            backend_switch {
+                Gleam = fun () => $'// base.try_unit' : ()
+                Lua = fun () => $'-- base.try_unit' : ()
+                Fsharp = fun () => $'with ex ->' : ()
+                Python = fun () => $'except Exception as ex:' : ()
+            }
+            fun () =>
+                inl ex = $'ex'
+                backend_switch {
+                    Fsharp = fun () => $'()' : ()
+                }
+                inl ex () =
+                    ex
+                ex_fn ex
+            |> indent
+            backend_switch {
+                Gleam = fun () => $'// base.try_unit' : ()
+                Lua = fun () => $'-- base.try_unit' : ()
+                Fsharp = fun () =>
+                    $'|> ignore'
+                    $'(* try_unit'
+                    $'try_unit *)' : t
+                Python = fun () => $'None' : t
+            }
+    backend_switch_or otherwise {
+        Rust = fun () =>
+            catch_unwind_rust fn (fun ex => ex_fn fun () => ex)
+            $'()' : t
+        Zig = fun () =>
+            fn ()
+            $'std.mem.zeroes(`t)' : t
+    }
 
 /// ### try_unit'
 inl try_unit' forall t. (ex_fn : (() -> exn) -> ()) (fn : () -> ()) : t =
@@ -711,49 +729,55 @@ inl try_unit' forall t. (ex_fn : (() -> exn) -> ()) (fn : () -> ()) : t =
 
 /// ### try_finally
 inl try_finally forall t. (fn : () -> ()) (finally : () -> ()) : t =
-    if is_rust ()
-    then
-        inl fn = dyn fn
-        inl finally = dyn finally
-        $'{ let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (!fn)())); (!finally)(); if let Err(e) = r { std::panic::resume_unwind(e) } }' : ()
-        $'()' : t
-    elif try_unit_fsharp_python ()
-    then
-        inl fn = dyn fn
-        inl finally = dyn finally
-        backend_switch {
-            Fsharp = fun () =>
-                $'try !fn () finally !finally ()' : ()
-                $'()' : t
-            Python = fun () =>
-                global "def _spiral_try_finally(fn, finally_fn):\n    try: fn()\n    finally: finally_fn()"
-                $'_spiral_try_finally(!fn, !finally)' : ()
-                $'None' : t
-        }
-    else
-        backend_switch {
-            Gleam = fun () => $'// base.try_finally' : ()
-            Lua = fun () => $'-- base.try_finally' : ()
-            Fsharp = fun () => $'try' : ()
-            Python = fun () => $'try:' : ()
-        }
-        fn |> indent
-        backend_switch {
-            Gleam = fun () => $'// base.try_finally' : ()
-            Lua = fun () => $'-- base.try_finally' : ()
-            Fsharp = fun () => $'finally' : ()
-            Python = fun () => $'finally:' : ()
-        }
-        finally |> indent
-        backend_switch {
-            Gleam = fun () => $'// base.try_finally' : ()
-            Lua = fun () => $'-- base.try_finally' : ()
-            Fsharp = fun () =>
-                $'(* try_finally'
-                $'try_finally *)'
-                ()
-            Python = fun () => $'// base.try_finally' : ()
-        }
+    inl otherwise () =
+        if try_unit_fsharp_python ()
+        then
+            inl fn = dyn fn
+            inl finally = dyn finally
+            backend_switch {
+                Fsharp = fun () =>
+                    $'try !fn () finally !finally ()' : ()
+                    $'()' : t
+                Python = fun () =>
+                    global "def _spiral_try_finally(fn, finally_fn):\n    try: fn()\n    finally: finally_fn()"
+                    $'_spiral_try_finally(!fn, !finally)' : ()
+                    $'None' : t
+            }
+        else
+            backend_switch {
+                Gleam = fun () => $'// base.try_finally' : ()
+                Lua = fun () => $'-- base.try_finally' : ()
+                Fsharp = fun () => $'try' : ()
+                Python = fun () => $'try:' : ()
+            }
+            fn |> indent
+            backend_switch {
+                Gleam = fun () => $'// base.try_finally' : ()
+                Lua = fun () => $'-- base.try_finally' : ()
+                Fsharp = fun () => $'finally' : ()
+                Python = fun () => $'finally:' : ()
+            }
+            finally |> indent
+            backend_switch {
+                Gleam = fun () => $'// base.try_finally' : ()
+                Lua = fun () => $'-- base.try_finally' : ()
+                Fsharp = fun () =>
+                    $'(* try_finally'
+                    $'try_finally *)'
+                    ()
+                Python = fun () => $'// base.try_finally' : ()
+            }
+    backend_switch_or otherwise {
+        Rust = fun () =>
+            inl fn = dyn fn
+            inl finally = dyn finally
+            $'{ let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (!fn)())); (!finally)(); if let Err(e) = r { std::panic::resume_unwind(e) } }' : ()
+            $'()' : t
+        Zig = fun () =>
+            fn ()
+            finally ()
+            $'std.mem.zeroes(`t)' : t
+    }
 
 /// ### (:>)
 prototype (~:>) r : forall t. t -> r

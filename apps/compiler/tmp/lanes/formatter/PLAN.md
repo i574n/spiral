@@ -333,6 +333,20 @@ construction and is checked by hashing:
 | G3 lib programs | residual | 2026-10-15 00:09 | the 85 v9-formatted lib/apps files (split literals) overlaid on a copy of `lib` and `apps/{spiral,wasm,kino/spi}`, compiled before/after on the pack-1f-preview Debug core (`lane-a/g3apps.ps1`): `apps/spiral` Rust D621BAD2EC4A, `apps/wasm` Rust 9F266606DAF6, `apps/kino/spi` Gleam 11497F47B36A, identical on both sides, 0 differ |
 | G3 eoie (first slice) | same Rust | 2026-10-14 23:10 | the 13 eoie files with open issues formatted at 23:00 code, every eoie package with a `main` that depends on them (dependency closure over `package.spiproj`) compiled to Rust before/after on the pack-1f-preview Debug core (`lane-a/cache-1f`): 7/7 identical residuals, 0 differ |
 | G3 repro | `!!!!Global` split | 2026-10-14 22:16 | installed pack-1e: `!!!!Global ((` / `^^` pieces / `))` = joined literal (residual 9FA5DD1AE125); candidate core with SPIRAL-MACRO-ARG-EXPRESSIONS: single parentheses and bare operator arguments give the same residual |
+| G3 (type rules, fixed guard) | residual | 2026-10-15 09:07 | 07:32 code (type layout behind the KeyValuePair-fixed guard), installed compiler: the 4 mega mains formatted (`lane-a/g3-mega4b.txt`): `mega_spiral_proves_spiral_relative_consistency` F# AC512ADE1E50, `mega_zeta_structural_laboratory` 0248B46785F2, `mega_lean_cic_bottom_up_kernel` 59A47BC0ACF1, `mega_omniledger_erp_kernel` BAF5716659C6, 4/4 identical (the first is the 06:05 failure); `g3-c3`: `array_heap_heap_pair` C, `contract_higher_rank_hot_swap` F# identical, `contract_cross_backend_probe` fails identically on both sides |
+| normalize (mega mains) | over 120 | 2026-10-15 08:25 | 07:32 code, 4 mega mains: layout lines over 120 620 in, 161 out (95 created; v9: 517 created in these files), parse 4/4, G1 4/4, the same 5 parse-guard blocks as v9 (originals that fail), G7.2 1/4 (3 files with blocks whose originals do not parse) |
+| normalize v12 (samples) | G1, parse, comments, G7.2, guard, over 120 | 2026-10-15 12:23 | code of 11:46, `--split-literals`, pack-1g formatter core (`lane-a/format-v12-samples.txt`), 1,216 files: parse 1,216/1,216, G1 1,216/1,216, comments 1,216/1,216, G7.2 1,210/1,216 (the 6 files with blocks whose originals do not parse or are kept), 5 parse-guard blocks (4 negative fixtures whose originals fail, 1 omniledger block with `= join` ending its head, a flatten gap), 1 comment block kept; layout lines over 120: 3,323 in, 38 out (v9: 1,263; v11: 71), 12 created (v9: 917); 41 lines over 120 outside fences: 32 `identifier`, 3 opaque (macro continuation inside an escaped string), 6 layout lines left (fixed 12:23-12:35, not yet re-measured on the full corpus) |
+| normalize v12 (lib, apps, user) | G1, parse, comments, G7.2, guard, over 120 | 2026-10-15 12:42 | code of 11:46 (user: the 12:35 code): lib 77: parse 77/77, G1 77/77, comments 77/77, G7.2 75/77 (the two `test ... static` files), 0 guard blocks, 0 created, 0 lines over 120 outside fences (G4 met); apps 14: every check 14/14, 0 over 120; user 86: parse 86/86, G1 86/86, G7.2 86/86, 0 guard blocks, 0 created, 10 over 120 outside fences (macros, as v10) |
+| normalize v12 (eoie, agile) | G1, parse, comments, guard, over 120 | 2026-10-15 13:08 | code as of 12:35: eoie 482: parse 482/482, G1 482/482, comments 482/482, G7.2 480/482, 5 parse-guard blocks (the 2 files whose originals do not parse), 0 created, 1 line over 120 (an opaque Rust macro line); agile.spi: parse, G1, G7.2, 1 line over 120 (a split string piece holding Hangul, sized by characters; pieces are sized by display width since 13:15) |
+| normalize v14 (samples, lib, apps), G4 | G1, parse, comments, guard, G4 | 2026-10-15 17:20 | code as of 15:33 (last edit before the v14 launches; v14 ran 16:05-17:20) (`lane-a/format-v14-samples.txt`, `format-v14-libapps.txt`): samples 1,216: parse 1,216/1,216, G1 1,216/1,216, comments 1,216/1,216, G7.2 1,211/1,216, 4 parse-guard blocks (all originals that do not parse: 3 negative parse fixtures and `negative_quantified_no_closed_false_inhabited_empty_match`), layout lines over 120 3,323 in / 31 out; lib 77 and apps 14: parse, G1, comments pass, 0 lines over 120 outside fences. **G4 met (superseded by the 18:58 row, which audits the identifier rows)**: 34 lines over 120 outside fences in lib, the CLIs and samples, all in `allowlist.tsv` (27 keys: 30 `identifier` lines, 3 `opaque` macro-continuation lines inside an escaped string, 1 `unparsable` line of a block whose original does not parse); 0 layout lines outside it |
+| normalize v14 (user, eoie, agile) | G1, parse, comments, guard, over 120 | 2026-10-15 18:08 | code as of 15:33 (last edit before the v14 launches; v14 ran 16:05-17:20): user 86: parse 86/86, G1 86/86, comments 86/86, G7.2 86/86, 0 guard blocks, 0 created, 10 over 120 outside fences (macros); eoie 482: parse 482/482, G1 482/482, comments 482/482, G7.2 480/482, 5 parse-guard blocks (originals that do not parse), 0 created, 1 opaque macro line over 120; its output is byte-identical to v12's, so the v12 eoie G3 (131/131) covers it; agile.spi: parse, G1, G7.2, 0 lines over 120 |
+| G4 (final, 18:58) | limit | 2026-10-15 18:58 | v14 samples with `mega_zeta_structural_laboratory/main.spi` and the two zeta/lean negatives replaced by the v15 run (code as of 18:49: `identifier` tightened, two layout fixes), lib/apps v14 (`lane-a/format-final-g4.txt`): 32 lines over 120 outside fences in lib, the CLIs and samples, all in `allowlist.tsv` (25 keys): 28 `identifier`, 3 `opaque`, 1 `unparsable`; 0 layout lines outside it. **Caveat:** 12 of the 28 identifier lines are created by the canonical layout (the authors' nesting kept them under 120; the formatter nests arm bodies and opened patterns deeper), so they are unbreakable only at the depth the formatter chose; next step: a nesting-budget rule (arm body at +4 after an opened pattern) to remove them. G4 scope is lib 77 + apps 14 + samples 1,216; the user snapshot's 10 macro lines are outside it |
+| normalize v16 (samples, lib, apps), G4 final | G1, parse, comments, G4 | 2026-10-15 20:00 | code as of 18:49 over the full corpora (`lane-a/format-v16-samples.txt`, `format-v16-libapps.txt`): samples 1,216: parse, G1, comments 1,216/1,216, G7.2 1,211/1,216, 4 parse-guard blocks (originals that do not parse), layout lines over 120 3,323 in / 29 out, 12 created; lib 77, apps 14: parse, G1, comments pass, 0 over 120 outside fences. G4: 32 lines over 120 outside fences, all in `allowlist.tsv` (25 keys): 28 `identifier`, 3 `opaque`, 1 `unparsable`, 0 layout lines; the caveat of the 18:58 row stands (12 identifier lines are layout-created). v16 differs from v14 in 6 sample files: the 4 `array_*heap*` samples, G3 4/4 identical (C 6E7AC6D454DA, 627AAFF08E8C, 2A081A5E324D, 2DCB5B570AA9), and zeta and its negative, equal to v15 (G3 above). eoie was not re-run on the 18:49 code |
+| G3 (v15 delta) | residual | 2026-10-15 19:00 | `mega_zeta_structural_laboratory/main.spi` at 18:49 code overlaid alone: F# 0248B46785F2, identical (the changed lean file is a negative sample, which G3 excludes) |
+| G3 lib programs (v14) | residual | 2026-10-15 18:20 | the 85 v14-formatted lib/apps files overlaid on copies of `lib` and `apps/{spiral,wasm,kino/spi}`, installed compiler (`lane-a/g3-v14-apps.txt`): `apps/spiral` Rust D621BAD2EC4A, `apps/wasm` Rust 9F266606DAF6, `apps/kino/spi` Gleam 11497F47B36A, identical before/after |
+| G3 samples (v14 delta) | residual | 2026-10-15 17:31 | the 4 sample files whose v14 output differs from v12 (`array_mut_heap_heap_pair`, the lean, omniledger and spiral-proves mega mains) overlaid alone on the originals: 4/4 identical (C 2DCB5B570AA9; F# 59A47BC0ACF1, BAF5716659C6, AC512ADE1E50), so the full v12 G3 plus this delta covers the v14 output |
+| G3 samples (v12, full) | residual | 2026-10-15 15:47 | the v12 samples output (11:46 code, split literals), every sample package with a `main` whose own or dependency files changed, negatives excluded: 863 packages in three resumed passes (`lane-a/g3-v12-samples.txt.part1`, `-b`, `-c`; a package whose `.spi` changed after 11:46 is skipped; 863 distinct packages were checked, v9 had 862 candidates), compiled before/after on the installed compiler, C first, F# when C rejects the original: 863/863 same, 0 differ; 684 compile on both sides (C 485, F# 199; 228 with more than one module or a package dependency), 179 fail identically on both sides. First full-corpus G3 (v9 reached 336 of 862) |
+| G3 eoie (v12) | same Rust | 2026-10-15 13:37 | the v12 eoie output overlaid on a copy of eoie `src`, every package with a `main` whose own or dependency files changed (131, 121 multi-module), compiled to Rust before/after on the installed compiler (`lane-a/g3-v12-eoie.txt`): 131/131 identical residuals, 0 differ |
 | 2 | | | |
 | 3 (prototype) | literal split, parse modulo folding | 2026-10-14 12:56 | `format --split-literals` (user corpus): plain strings that do not fit are split at word boundaries into `"..."` pieces joined by the Q1 operator `^^`, pieces aligned, `f (` / pieces / `)` for an argument; the parse check folds `^^` chains back into one literal; idempotent 86/86, same blocks 86/86, comments 86/86; over 120: 334 -> 81 (60 macro lines waiting for the macro continuation, 13 pasted-output comments inside ``` fences, which Q5 exempts, 6 layout, 2 strings in nested positions). Needs the compiler half: `lane-a/patches/string-concat-operator.ps1` |
 | 4 | | | |
@@ -581,6 +595,77 @@ Phase 1 detail (`tmp/formatter`, an .fsx over the compiled `SpiralCompilerCore.d
   parse, comment words, G7.2 and G1 43/43,
   0 created overflows, 0 kept verbatim.
 
+- 2026-10-15 07:32 (lane A), the type-level blind spot of the parse check, found and fixed: `shapeOf` (`Parsed.fsx`)
+  printed every `KeyValuePair` as `?KeyValuePair`2`, and the parser keeps union cases and record types in F# `Map`s,
+  so the body of every `union` and every type record was never compared. The 06:05 G3 failure reproduces: the failing
+  `mega_spiral_proves_spiral_relative_consistency` union block compared equal before the fix and differs after it (the
+  formatted payload parsed as `(exists ... . a) b c * ...`, a type application of the `exists`, because the packed
+  continuation sat at the column of its own application: `apply` takes a later line as an argument only when it starts
+  right of the line the application began on). `shapeOf` now prints a pair's key and value; no `?` marker is left in
+  the shapes of that block. Every earlier "same blocks" number skipped union and type-record bodies.
+- 2026-10-15 07:32 (lane A), type layout again, behind the fixed guard (so a wrong type layout keeps its block as
+  written instead of compiling differently), each from the mega samples' own multi-line types:
+  - `type x =` / body at +4 and union-case payloads share `layoutType`: break at top-level `->`, then `*` (operator
+    ending the line); a quantifier `exists a b.` / `forall a.` on its own line with the body at +4; a parenthesized
+    type `(` / inner at +4 / `)`, or `(exists a b.` / parts at +4 / last part `)` (the authors' template, 80+ such
+    payloads in the mega samples); an application puts the callee first and packs plain-word arguments at +4 (author
+    lines 3689-3690), one argument per line when an argument is a group.
+  - a head parameter `(name : long type)` opens `(name :` / type at +8 with `)` closing the last line; a too-long
+    `name forall a b.` first head line and a too-long `union x a b =` head pack at +4.
+  - an application whose single argument is a parenthesized group that does not fit glues `(` to the callee line
+    (`Ctor (` / inner at +4 / `)`, the authors' nested-constructor template); a call whose last argument is a tuple
+    (`f !!!!ArrayCreate (` / items / `)`) opens it the same way.
+  - 08:40, from the 4 mega mains (07:32 code: layout over 120 620 in, 161 out, 95 created; v9 had 517 created
+    there; parse 4/4, G1 4/4, the same 5 parse-guard blocks as v9, all originals that fail): an arm whose pattern is a
+    constructor with a tuple payload opens it (`| Ctor (` / items at +8 / `)` at +4 / `=>`), the 01:00 tuple-pattern
+    template one level down; a head annotation whose packed lines still overflow and that has no top-level `->`/`*`
+    or quantifier takes `layoutType` with `:` kept on the callee line (the 02:45 attempt put `:` alone); a
+    too-long `exists`/`forall` variable list and a too-long `type`/`nominal` head pack at +4; plain-word type
+    arguments next to group arguments pack into runs; a tuple item that fits only without its comma is laid one
+    column narrower.
+- 2026-10-15 11:46 (lane A), from the v11 samples run (09:38 code; listing `lane-a/format-v11-samples.txt`: parse
+  1,216/1,216, layout lines over 120 3,323 in, 71 out, 27 created (v9: 1,263 out, 917 created), G1 1,214/1,216,
+  11 parse-guard blocks):
+  - root causes of guard blocks, each fixed: a lambda, `match`, `function`, `typecase` or `if` that is a tuple item
+    other than the last keeps its parentheses (laid bare it swallowed the following items:
+    `fun symbols => ..., finite_alphabet_cardinality descriptor`); a head annotation whose packed lines would break
+    an application at the column it started on (packing past a `*`) is laid by `layoutType` (`: part *` / parts at the
+    same column, arguments at +4), so `:` stays on the first type line;
+  - G1 fixes: an application whose single argument is a parenthesized group that does not fit always opens it on the
+    callee line (`f (` / inner / `)`), decided on the whole application rather than on the argument at its own
+    indentation (the second pass saw the argument fit one column further left); a parenthesized pure application
+    that is an operand of an operator chain loses its parentheses (`(f a b) && g` = `f a b && g`; flatten adds them
+    back on the second pass otherwise);
+  - layout: a union case with a vanilla `:` payload breaks after `:` like `::`; tuple patterns open recursively
+    (`Ctor (` / `Ctor (` / items) and the `_`-first tuple bug of 03:20 is fixed in the component rule too; a too-long
+    `join a b +. ...` puts `join` alone with the expression at +4 (breaking the chain under `join` changed the parse
+    and the guard kept the block); a type record that does not fit is `{` / `field :` / type at +8 / `}`; a
+    type-in-term `` `(...) `` that does not fit is `` `( `` / type at +4 / `)`; a trailing `//` remark before a `.`
+    statement separator or a closing `)` stays at the end of its statement, and goes on its own line above the
+    statement when the line would pass 120.
+  - F10 decision change: allowlist kind `identifier`, for a line holding one identifier at least 40 columns wide that
+    ends past column 116 (the zeta mega sample's 100-130 column names at their nesting depth): no break can fit such a
+    line, since indentation is syntax and identifiers are not split. Keyed by the identifier's text.
+  Regression subset at 11:46 code (43 user/lib/leptos/rust files + 17 sample files that failed at v11): parse 60/60,
+  comments 60/60, G1 60/60, G7.2 59/60 (the negative sample whose original does not parse), 0 created overflows outside
+  `identifier` lines.
+- 2026-10-15 18:49 (lane A), F10 `identifier` tightened after an audit of its 30 v14 rows: the identifier must be the
+  first token of its line (after an optional `|` or `(`) and end past column 118. Two rows failed the audit and were
+  layout bugs, both fixed: a callee followed by plain-word arguments that do not fit with it now puts the arguments on
+  their own lines (the lean negative sample), and a tuple argument opens on the callee line only when `callee (`
+  fits (zeta 6316, 121 columns).
+- 2026-10-15 15:33 (lane A), F10 decision change: allowlist kind `unparsable`, for a line inside a block whose
+  original does not parse (the guard never lays such a block out, since two broken texts can give the same error
+  shape); today 1 line, the head of `negative_quantified_no_closed_false_inhabited_empty_match`. Also fixed in the
+  same pass: a `= join` that ends a definition head absorbs the block below it in flatten (the omniledger block the
+  guard kept since v9; all 600 omniledger blocks now lay out with the same parse), split string pieces are sized by
+  display width (a Hangul piece in agile.spi reached 124), and an annotation laid by `layoutType` is measured with
+  its `: ` prefix.
+- 2026-10-15 08:40 (lane A), F10 tooling: `format --list` writes `file<TAB>allow<TAB>kind<TAB>sha256<TAB>width` for
+  every over-120 line outside ``` fences whose construct is a literal, a comment or opaque text (the key is the
+  literal's own text for literals, the trimmed line otherwise); `allowlist.tsv` is built from those rows only.
+  Layout constructs are never allowlisted.
+
 ## How to run (lane A tooling, 2026-10-14)
 
 - Code: `apps/compiler/tmp/formatter/` (`Lexed`, `Parsed`, `Spacing`, `Check`, `Convert`, `Flatten`, `Layout`,
@@ -591,7 +676,21 @@ Phase 1 detail (`tmp/formatter`, an .fsx over the compiled `SpiralCompilerCore.d
 - `lint.ps1` is G6. G3 (compile before/after, compare residual hashes) is a lane script in the job scratch
   (`lane-a/g3.ps1`); it runs single-module samples next to a copy of the samples' `core` package.
 
-## Open threads (lane A, 2026-10-15 03:10)
+## Open threads (lane A, 2026-10-15 18:10, updated 20:00)
+
+- Final code is 18:49 (v16: samples, lib, apps). eoie and user were last run on the 15:33 code (eoie output
+  byte-identical to v12; the 43-file user/lib regression subset passes on 18:49 code). Next: the nesting-budget rule
+  for the 12 layout-created identifier lines, then Phase 4.
+
+- Gate 2 numbers at the 15:33 code: G1 and parse on every corpus (user 86, lib 77, apps 14, samples 1,216, eoie 482,
+  agile), G3 on every sample package (863, plus the v14 delta) and every eoie package with a `main` (131), G4 met
+  with `allowlist.tsv` (27 keys), G6 lint 0 hits (18:15), G5 on the user corpus (two processes, 15:33 code): 86 files,
+  0 byte differences (18:35).
+- G7.2 differences left are blocks whose original does not parse (lib `test ... static` bodies, eoie negatives,
+  sample negative fixtures).
+- Phase 4 (compiler section, host `format` subcommand, eoie verb, Zed) is still design only.
+
+## Open threads (lane A, 2026-10-15 03:10, superseded above)
 
 - Final code is 06:05 (03:20 code minus the reverted type rules). Full-corpus numbers on near-final code exist for
   user (v10) and lib/apps (v10, both run with the since-reverted type rules; the v10 lib/apps output still compiles apps/spiral,

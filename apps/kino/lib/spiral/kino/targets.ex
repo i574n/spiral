@@ -106,7 +106,7 @@ defmodule Spiral.Kino.Targets do
 
 
       {:zig, path} ->
-        run_program(Toolchain.zig(opts), "zig", ["run", path], opts, timeout, deadline, false)
+        run_program(Toolchain.zig(opts), "zig", zig_run_args(path, opts), opts, timeout, deadline, false)
 
       {:lean, path} ->
         {lean, args} = Toolchain.lean(opts)
@@ -115,6 +115,19 @@ defmodule Spiral.Kino.Targets do
       {:wgsl, path} ->
         run_wgsl(path, opts, timeout, deadline)
     end
+  end
+
+  @doc false
+  def zig_run_args(path, opts) do
+    global_cache = Path.join(Toolchain.cache_dir(opts), "kino-zig-cache")
+    local_cache = Path.join(Path.dirname(path), ".zig-cache")
+    backend = if zig_self_hosted?(), do: ["-fno-llvm"], else: []
+    ["run"] ++ backend ++ ["--global-cache-dir", global_cache, "--cache-dir", local_cache, path]
+  end
+
+  defp zig_self_hosted? do
+    System.get_env("SPIRAL_KINO_ZIG_LLVM") != "1" and
+      Regex.match?(~r/x86_64|amd64|win32/i, to_string(:erlang.system_info(:system_architecture)))
   end
 
   @spiral_rust_wait_ms 3_600_000

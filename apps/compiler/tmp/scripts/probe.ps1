@@ -1,6 +1,6 @@
 param(
     [Parameter(Mandatory, Position = 0)][string]$Sample,
-    [ValidateSet('single-flight', 'sf', 'gpt5parallel', 'gp')][string]$Mode = 'gpt5parallel',
+    [ValidateSet('single-flight', 'sf', 'gpt5parallel', 'gp', 'hopacsota', 'hs')][string]$Mode = 'gpt5parallel',
     [ValidateSet('Fsharp', 'C', 'Rust', 'Delphi', 'TypeScript', 'Cpp', 'Python')][string]$Backend = 'Fsharp',
     [int]$Repeat = 1,
     [int]$BudgetSec = 180,

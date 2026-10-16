@@ -57,9 +57,9 @@ defmodule Spiral.Kino do
           spi = Path.join(dir, "main.spi")
           exe = Path.join(dir, exe_name())
 
-          with {:ok, names, package_dir} <-
+          with {:ok, names, imports, package_dir} <-
                  timed(:mount_ms, fn -> mount_packages(dir, prepared.packages, opts[:root], workspace_root(opts)) end),
-               :ok <- timed(:mount_ms, fn -> write_package(dir, names, package_dir, opts[:real]) end) do
+               :ok <- timed(:mount_ms, fn -> write_package(dir, names, imports, package_dir, opts[:real]) end) do
             run_builders(builders, dir, spi, exe, prepared, opts, timeout, deadline, started)
           end
         after
@@ -289,10 +289,21 @@ defmodule Spiral.Kino do
     if List.last(lines) == "0", do: Enum.drop(lines, -1), else: lines
   end
 
+  @f64_exact_integer_limit 9_007_199_254_740_992
+
   defp same_number(number) do
-    case Float.parse(String.replace(number, ~r/[a-zA-Z]+\z/, "")) do
-      {value, _} -> :erlang.float_to_binary(value, [{:decimals, 6}, :compact])
-      :error -> number
+    digits = String.replace(number, ~r/[a-zA-Z]+\z/, "")
+
+    case Integer.parse(digits) do
+      {value, ""} when abs(value) > @f64_exact_integer_limit ->
+        Integer.to_string(value)
+
+      _ ->
+        case Float.parse(digits) do
+          {value, _} when abs(value) > @f64_exact_integer_limit -> Integer.to_string(trunc(value))
+          {value, _} -> :erlang.float_to_binary(value, [{:decimals, 6}, :compact])
+          :error -> number
+        end
     end
   end
   @doc false
@@ -1013,8 +1024,15 @@ defmodule Spiral.Kino do
     |> String.trim()
   end
 
-  defp write_package(dir, names, package_dir, real) do
+  defp write_package(dir, names, imports, package_dir, real) do
     text = Cell.package_project(names)
+
+    text =
+      if imports == [] do
+        text
+      else
+        String.replace(text, "modules:\n", Enum.map_join(imports, "", &("    " <> &1 <> "\n")) <> "modules:\n", global: false)
+      end
 
     text =
       if package_dir do
@@ -1036,7 +1054,7 @@ defmodule Spiral.Kino do
     :ok
   end
 
-  defp mount_packages(_dir, [], _root, _workspace), do: {:ok, [], nil}
+  defp mount_packages(_dir, [], _root, _workspace), do: {:ok, [], [], nil}
 
   defp mount_packages(_dir, paths, root, workspace) do
     targets =
@@ -1045,12 +1063,13 @@ defmodule Spiral.Kino do
         {target, Path.basename(target)}
       end)
 
-    sibling_names = Enum.map(targets, &elem(&1, 1))
+    dependencies = Mounts.dependency_closure(targets)
+    sibling_names = Enum.map(targets ++ dependencies, &elem(&1, 1))
 
-    case mount_entries(targets, sibling_names) do
+    case mount_entries(targets ++ dependencies, sibling_names) do
       {:ok, entries} ->
         case Mounts.ensure(entries) do
-          {:ok, package_dir} -> {:ok, Enum.map(entries, & &1.name), package_dir}
+          {:ok, package_dir} -> {:ok, Enum.map(targets, &elem(&1, 1)), Mounts.qualified_imports(targets), package_dir}
           {:error, message} -> {:error, %ProcessError{message: message}}
         end
 

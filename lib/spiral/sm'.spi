@@ -124,6 +124,7 @@ inl string_builder (initial : string) : string_builder =
             $'CustomStringIO(!initial)' : string_builder
         Rust = fun () => $'String::from(&*!initial)' : string_builder
         TypeScript = fun () => $'!initial ' : string_builder
+        Zig = fun () => $'!initial ' : string_builder
     }
 
 /// ### append_real
@@ -168,7 +169,7 @@ inl obj_to_string_wasm forall t. (x : t) : string =
     elif (real typecase t with u8 => true | u16 => true | u32 => true | _ => false) then $'(call $u64_to_str (i64.extend_i32_u !x))' : string
     else $'backend_switch_has_no_Wasm_arm_in_lib_spiral' : string
 inl obj_to_string_zig forall t. (x : t) : string =
-    if (real typecase t with string => true | _ => false) then $'!x ' : string
+    if (real typecase t with string => true | string_builder_real => true | _ => false) then $'!x ' : string
     elif (real typecase t with char => true | _ => false) then $'(std.fmt.allocPrint(spiral_gpa, "{c}", .{ !x }) catch \@panic("out of memory"))' : string
     elif (real typecase t with bool => true | _ => false) then $'(if (!x) "true" else "false")' : string
     elif (real typecase t with f32 => true | f64 => true | i8 => true | i16 => true | i32 => true | i64 => true | u8 => true | u16 => true | u32 => true | u64 => true | _ => false)
@@ -478,9 +479,13 @@ test ellipsis =
 /// ### last_index_of
 inl last_index_of (search : string) (s : string) : i32 =
     inl search = dyn search
-    run_target function
-        | Rust => fun () => $'!s.rfind(&*!search).map(|i| i as i32).unwrap_or(-1)' : i32
-        | _ => fun () => $'!s.LastIndexOf !search ' : i32
+    inl otherwise () =
+        run_target function
+            | Rust => fun () => $'!s.rfind(&*!search).map(|i| i as i32).unwrap_or(-1)' : i32
+            | _ => fun () => $'!s.LastIndexOf !search ' : i32
+    backend_switch_or otherwise {
+        Zig = fun () => $'(if (std.mem.lastIndexOf(u8, !s, !search)) |i| \@as(i32, \@intCast(i)) else -1)' : i32
+    }
 
 /// ### index_of_char
 inl index_of_char (search : char) (s : string) : int =
@@ -604,6 +609,7 @@ inl convert_to_utf32 (c : char) : int =
         Python = fun () => $'ord(!c)' : int
         Rust = fun () => $'(!c as `int)' : int
         TypeScript = fun () => $'(!c)' : int
+        Zig = fun () => $'\@as(`int, !c)' : int
     }
 
 /// ### ends_with
@@ -638,13 +644,20 @@ inl starts_with (value : string) (s : string) : bool =
 
 /// ### is_white_space
 inl is_white_space (c : char) : bool =
-    c |> $'System.Char.IsWhiteSpace'
+    inl otherwise () =
+        c |> $'System.Char.IsWhiteSpace'
+    backend_switch_or otherwise {
+        Zig = fun () => $'std.ascii.isWhitespace(!c)' : bool
+    }
 
 /// ### substring
 inl substring (start : i32) (len : i32) (str : string) : string =
-    if is_rust ()
-    then $'Rc::<str>::from(&(!str)[((!start) as usize)..(((!start) + (!len)) as usize)])'
-    else $'!str.Substring (!start, !len)'
+    inl otherwise () =
+        $'!str.Substring (!start, !len)'
+    backend_switch_or otherwise {
+        Rust = fun () => $'Rc::<str>::from(&(!str)[((!start) as usize)..(((!start) + (!len)) as usize)])' : string
+        Zig = fun () => $'(!str)[\@intCast(!start)..\@intCast(!start + !len)]' : string
+    }
 
 /// ### to_lower
 inl to_lower (input : string) : string =
@@ -706,6 +719,7 @@ inl builder_append (item : string) (sb : string_builder) : string_builder =
             sb
         Rust = fun () => $'{ let mut r = !sb.clone(); r.push_str(&*!item); r }' : string_builder
         TypeScript = fun () => $'!sb + !item ' : string_builder
+        Zig = fun () => $'spiralConcat(!sb, !item)' : string_builder
     }
 
 ///> gleam
@@ -737,6 +751,8 @@ inl builder_append_line (sb : string_builder) : string_builder =
             sb |> builder_append "\n"
         TypeScript = fun () =>
             sb |> builder_append "\n"
+        Zig = fun () =>
+            sb |> builder_append "\n"
     }
 
 /// ### builder_replace
@@ -754,6 +770,7 @@ inl builder_replace (old : string) (new : string) (sb : string_builder) : string
             ($'!sb.getvalue().replace(!old, !new)' : string) |> string_builder
         Rust = fun () => $'!sb.replace(&*!old, &*!new)' : string_builder
         TypeScript = fun () => $'!sb.split(!old).join(!new)' : string_builder
+        Zig = fun () => $'(std.mem.replaceOwned(u8, spiral_gpa, !sb, !old, !new) catch \@panic("out of memory"))' : string_builder
     }
 
 ///> gleam
@@ -788,6 +805,7 @@ inl builder_clear (sb : string_builder) : string_builder =
             sb
         Rust = fun () => $'String::new()' : string_builder
         TypeScript = fun () => $'""' : string_builder
+        Zig = fun () => $'""' : string_builder
     }
 
 ///> gleam
@@ -824,6 +842,7 @@ inl builder_insert (i : int) (s : string) (sb : string_builder) : string_builder
             inl sb = sb |> obj_to_string
             $'"".join([!sb[:!i], !s, !sb[!i:]])' |> string_builder
         Rust = fun () => $'{ let mut r = !sb.clone(); let at = r.char_indices().nth(!i as usize).map(|(b, _)| b).unwrap_or(r.len()); r.insert_str(at, &*!s); r }' : string_builder
+        Zig = fun () => $'(std.mem.concat(spiral_gpa, u8, &.{ (!sb)[0..\@intCast(!i)], !s, (!sb)[\@intCast(!i)..] }) catch \@panic("out of memory"))' : string_builder
     }
 
 ///> gleam
@@ -965,6 +984,7 @@ inl concat (a : string) (b : seq.seq' string) : string =
             $'!a.join(!b)' : string
         Rust = fun () => $'Rc::<str>::from(!b.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(&*!a))' : string
         TypeScript = fun () => $'!b.join(!a)' : string
+        Zig = fun () => $'(std.mem.join(spiral_gpa, !a, !b) catch \@panic("out of memory"))' : string
     }
 
 /// ### length'
@@ -1027,6 +1047,7 @@ inl split (separator : string) (str : string) : array_base string =
             $'Rc::new(RefCell::new(!str.split(&*!separator).map(|x| Rc::<str>::from(x)).collect::<Vec<Rc<str>>>()))'
             : array_base string
         TypeScript = fun () => $'!str.split(!separator)' : array_base string
+        Zig = fun () => $'blk: { var parts: std.ArrayList([]const u8) = .empty; var it = std.mem.splitSequence(u8, !str, !separator); while (it.next()) |p| parts.append(spiral_gpa, p) catch \@panic("out of memory"); break :blk parts.items; }' : array_base string
     }
 
 /// ### split_string
@@ -1609,11 +1630,16 @@ instance to_string result t u = fun x =>
 
 /// ### format_exception
 inl format_exception (ex : exn) : string =
-    run_target function
-        | Fsharp => fun () => $'$"{!ex.GetType ()}: {!ex.Message}"'
-        | Rust => fun () => $'!ex ' : string
-        | TypeScript => fun () => $'String(!ex)' : string
-        | _ => fun () => ex |> format_debug
+    inl otherwise () =
+        run_target function
+            | Fsharp => fun () => $'$"{!ex.GetType ()}: {!ex.Message}"'
+            | Rust => fun () => $'!ex ' : string
+            | TypeScript => fun () => $'String(!ex)' : string
+            | _ => fun () => ex |> format_debug
+    backend_switch_or otherwise {
+        Zig = fun () =>
+            $'!ex ' : string
+    }
 
 ///> fsharp
 ///> cuda
