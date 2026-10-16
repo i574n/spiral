@@ -1,4 +1,4 @@
-param([ValidateSet('single-flight', 'gpt5parallel')][string]$Mode = 'single-flight')
+param([ValidateSet('single-flight', 'gpt5parallel', 'hopacsota')][string]$Mode = 'single-flight')
 $ErrorActionPreference = 'Stop'
 . $PSScriptRoot/env.ps1
 $dotnet = Resolve-SpiralDotnet

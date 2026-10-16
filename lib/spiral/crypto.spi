@@ -202,7 +202,8 @@ inl sha256_hexdigest (sha256 : py_sha256) : string =
 
 /// ### hash_text
 let hash_text (~input : string) =
-    run_target function
+    inl otherwise () =
+        run_target function
         | Fsharp => fun () =>
             inl sha256 = sha256 () |> use
             input
@@ -228,6 +229,9 @@ let hash_text (~input : string) =
             |> sha256_update (input |> sm'.encode_utf8)
             |> sha256_hexdigest
         | _ => fun () => null ()
+    backend_switch_or otherwise {
+        Zig = fun () => $'(blk: { var digest: [32]u8 = undefined; std.crypto.hash.sha2.Sha256.hash(!input, &digest, .{}); const hex = std.fmt.bytesToHex(digest, .lower); break :blk (spiral_gpa.dupe(u8, &hex) catch \@panic("out of memory")); })' : string
+    }
 
 ///> fsharp
 ///> cuda

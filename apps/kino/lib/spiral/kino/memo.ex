@@ -165,7 +165,7 @@ defmodule Spiral.Kino.Memo do
 
     with false <- MapSet.member?(seen, dir),
          {:ok, project} <- File.read(Path.join(dir, "package.spiproj")) do
-      module_files(dir, project) ++ Enum.flat_map(package_dependencies(project), &tree_files(Path.join(dir, &1), MapSet.put(seen, dir)))
+      module_files(dir, project) ++ Enum.flat_map(Spiral.Kino.Mounts.declared_dependencies(dir), &tree_files(&1.target, MapSet.put(seen, dir)))
     else
       _ -> []
     end
@@ -243,7 +243,7 @@ defmodule Spiral.Kino.Memo do
             Map.put(block, :scope, module.scope)
           end
 
-        deps = for dep <- package_dependencies(project), do: {dep, tree_print(Path.join(dir, dep), bounds)}
+        deps = for dep <- Spiral.Kino.Mounts.declared_dependencies(dir), do: {dep.name, tree_print(dep.target, bounds)}
 
         %{
           project: project,
@@ -459,7 +459,7 @@ defmodule Spiral.Kino.Memo do
       case File.read(Path.join(dir, "package.spiproj")) do
         {:ok, project} ->
           files = Enum.map(module_files(dir, project), &{&1, content_print(&1, bounds)})
-          deps = for dep <- package_dependencies(project), do: {dep, package_print(Path.join(dir, dep), seen, bounds)}
+          deps = for dep <- Spiral.Kino.Mounts.declared_dependencies(dir), do: {dep.name, package_print(dep.target, seen, bounds)}
           :crypto.hash(:sha256, :erlang.term_to_binary({project, files, deps}))
 
         _ ->
@@ -490,13 +490,6 @@ defmodule Spiral.Kino.Memo do
   end
   defp candidates(dir, name) do
     [".spi", ".spir"] |> Enum.map(&Path.join(dir, name <> &1)) |> Enum.filter(&File.regular?/1)
-  end
-
-  defp package_dependencies(project) do
-    project
-    |> section("packages")
-    |> Enum.map(fn {_indent, entry} -> entry |> String.trim_trailing("-") |> String.trim_trailing("*") end)
-    |> Enum.reject(&String.starts_with?(&1, "|"))
   end
 
   defp section(project, name) do

@@ -1160,6 +1160,7 @@ inl timestamp_guid_from_timestamp (guid : guid.guid) (timestamp : timestamp) : t
     then $'Rc::<str>::from(format\!("{}-{}-{}-{}{}", &!timestamp[0..8], &!timestamp[8..12], &!timestamp[12..16], &!timestamp[16..18], &!guid[21..]))'
     else $'`timestamp_guid $"{!timestamp.[0..7]}-{!timestamp.[8..11]}-{!timestamp.[12..15]}-{!timestamp.[16..17]}{!guid.[21..]}"'
 
+///> rust
 test timestamp_guid_from_timestamp =
     timestamp_guid_from_timestamp (test_guid ()) (0i64 |> timestamp)
     |> _assert_eq' (guid.new_guid "00000000-0000-0000-0043-210fedcba987")
@@ -1176,6 +1177,7 @@ inl timestamp_from_guid (guid : date_time_guid) : timestamp =
     then $'format\!("{}{}{}{}", &!guid[0..8], &!guid[9..13], &!guid[14..18], &!guid[19..21]).parse::<i64>().unwrap()'
     else $'`i64 $"{!guid.[0..7]}{!guid.[9..12]}{!guid.[14..17]}{!guid.[19..20]}"'
 
+///> rust
 test timestamp_from_guid =
     timestamp_from_guid (guid.new_guid "00000000-0000-0000-00dc-ba9876543210")
     |> _assert_eq' (0i64 |> timestamp)

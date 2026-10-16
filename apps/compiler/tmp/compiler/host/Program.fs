@@ -1112,14 +1112,12 @@ module Program =
             | Ok raw ->
                 let declared = [ raw.defaultInt; raw.defaultFloat; raw.edition ]
                 List.zip packageDefaultFields declared
-                |> List.fold (fun state ((field, variable, allowed), value) ->
+                |> List.fold (fun state ((field, _, allowed), value) ->
                     match state, value with
                     | Error _, _ | _, None -> state
                     | Ok (), Some (_, text) when not (List.contains text allowed) ->
                         Error $"""{project}: {field} expects one of {String.concat ", " allowed}, got '{text}'"""
-                    | Ok (), Some (_, text) ->
-                        if String.IsNullOrEmpty (Environment.GetEnvironmentVariable variable) then Environment.SetEnvironmentVariable (variable, text)
-                        Ok ()) (Ok ())
+                    | Ok (), Some _ -> Ok ()) (Ok ())
 
     let private takeDefaultTypeFlags (argv : string []) : Result<string [], string> =
         let flagOf (text : string) = defaultTypeFlags |> List.tryFind (fun (name, _, _) -> name = text)
@@ -1135,6 +1133,30 @@ module Program =
             | head :: tail -> go tail (head :: kept)
             | [] -> Ok (List.rev kept |> Array.ofList)
         go (List.ofArray argv) []
+
+    let private runXCompatReport (paths : string []) =
+        let extensions = set [ ".spi"; ".spir"; ".livemd" ]
+        let files =
+            paths
+            |> Array.collect (fun path ->
+                if Directory.Exists path then
+                    Directory.GetFiles (path, "*", SearchOption.AllDirectories)
+                    |> Array.filter (fun file -> extensions.Contains (Path.GetExtension file))
+                    |> Array.map (fun file -> file.Replace ('\\', '/'))
+                    |> Array.sort
+                elif File.Exists path then [| path |]
+                else [||])
+            |> Array.distinct
+        let findings = [ for file in files do for finding in xCompatFindings (File.ReadAllText file) -> file, finding ]
+        for file, finding in findings do printfn "%s" (xCompatReportLine file finding)
+        let byKind =
+            findings
+            |> List.countBy (fun (_, finding) -> xCompatKindName finding.kind)
+            |> List.sortBy fst
+            |> List.map (fun (kind, count) -> $"{kind} {count}")
+            |> String.concat ", "
+        printfn "x-compat report: %d finding(s) in %d file(s)%s" findings.Length files.Length (if byKind = "" then "" else $" ({byKind})")
+        0
 
     [<EntryPoint>]
     let main rawArgv =
@@ -1164,6 +1186,8 @@ module Program =
             runTestBlocks argv.[1] argv.[2]
         elif argv.Length >= 3 && argv.[0] = "--source-blocks" then
             runSourceBlocks argv.[1] argv.[2..]
+        elif argv.Length >= 2 && argv.[0] = "--x-compat" then
+            runXCompatReport argv.[1..]
         elif argv.Length = 2 && argv.[0] = "--check" then
             exit (runAttestationBounded 30000 (fun () -> runCheck argv.[1]))
         elif (argv.Length = 3 || (argv.Length = 5 && argv.[1] = "--timeout-ms")) && argv.[0] = "--plan-ir" then

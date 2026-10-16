@@ -6176,8 +6176,6 @@ module spiral_compiler =
     module RecordFieldNameIdOps =
         let create (value : string) : RecordFieldNameId = value
         let text (value : RecordFieldNameId) : string = value
-    let termMapToModuleMembers (source : Map<TermNameId,'a>) : Map<ModuleMemberNameId,'a> = source
-    let typeMapToModuleMembers (source : Map<TypeNameId,'a>) : Map<ModuleMemberNameId,'a> = source
 #endif
 #if SPIRAL_CORE_GPT5PARALLEL
     /// ## HopacProgress
@@ -44466,7 +44464,9 @@ module spiral_compiler =
     /// ### join_point
     let join_point is_let name = function // Has the effect of removing nested join points due to not duplicating them.
         | RawJoinPoint(a,b,c,_) -> RawJoinPoint(a,b,c,name)
-        | x -> if is_let then RawJoinPoint(range_of_expr x, None, x, name) else x
+        | RawAnnot(r,a,b) when is_let -> RawAnnot(r, RawJoinPoint(r, None, RawAnnot(r,a,b), name), b)
+        | x when is_let -> RawJoinPoint(range_of_expr x, None, x, name)
+        | x -> x
 
     /// ### join_point_backend
     let join_point_backend (a,b) = RawJoinPoint(range_of_expr b, Some a, b, None)
@@ -49375,6 +49375,20 @@ module spiral_compiler =
         $"ETY-{case.Name}: {message}"
 
 #if SPIRAL_CORE_GPT5PARALLEL
+    /// ## InferAdapter
+    module InferAdapter =
+        type CompilerErrorReason = CompilerIdentityKernel.OperationalReasonId
+        let compilerErrorReasonText (reason : CompilerErrorReason) = CompilerIdentityKernel.OperationalReasonIdOps.text reason
+        let reportModuleNotImmediatelyApplied (_ : unit -> unit) = ()
+        let failedDeclaration (_ : unit -> 'a) (recover : unit -> 'a) : 'a = recover ()
+#else
+    /// ## InferAdapter
+    module InferAdapter =
+        type CompilerErrorReason = string
+        let compilerErrorReasonText (reason : CompilerErrorReason) = reason
+        let reportModuleNotImmediatelyApplied (report : unit -> unit) = report ()
+        let failedDeclaration (fail : unit -> 'a) (_ : unit -> 'a) : 'a = fail ()
+#endif
     /// ## Infer
     
 
@@ -49535,7 +49549,7 @@ module spiral_compiler =
         | OrphanInstance
         | ShadowedInstance
         | UnusedTypeVariable of TypeNameId list
-        | CompilerError of CompilerIdentityKernel.OperationalReasonId
+        | CompilerError of InferAdapter.CompilerErrorReason
         | IncorrectGADTConstructorType
         | IncorrectRecursiveNominal
     
@@ -50121,7 +50135,7 @@ module spiral_compiler =
                     l |> Map.toList |> List.map (fun (k,v) ->
                         let a,b = ModuleMemberNameIdOps.text k, f -1 v
                         match v with
-                        | TyComment(com,_) -> FastRuntimeFormat.format "%s : %s\n---\n%s\n---\n" [| box a; box b; box com |]
+                        | TyComment(com,_) -> sprintf "%s : %s\n---\n%s\n---\n" a b com
                         | _ -> sprintf "%s : %s" a b
                         )
                     |> String.concat "\n"
@@ -50166,7 +50180,7 @@ module spiral_compiler =
         | ModuleIndexWouldShadowLocalVars [|v|] -> $"The module open would shadow a local type variable: {TypeNameIdOps.text v}."
         | ModuleIndexWouldShadowLocalVars vars -> let v = vars |> Array.map TypeNameIdOps.text |> String.concat ", " in $"The module open would shadow the local type variables: {v}."
         | TypeVarScopeError(a,_,_) -> sprintf "Tried to unify the type variable %s with a metavar outside its scope." (TypeNameIdOps.text a)
-        | ForallVarConstraintError(n,a,b) -> FastRuntimeFormat.format "Metavariable's constraints must be a subset of the forall var %s's.\nGot: %s\nExpected: %s" [| box (TypeNameIdOps.text n); box (show_constraints env a); box (show_constraints env b) |]
+        | ForallVarConstraintError(n,a,b) -> sprintf "Metavariable's constraints must be a subset of the forall var %s's.\nGot: %s\nExpected: %s" (TypeNameIdOps.text n) (show_constraints env a) (show_constraints env b)
         | MetavarsNotAllowedInRecordWith -> sprintf "In the top-down segment the record keys need to be fully known. Please add an annotation."
         | LayoutSetMustBeAnnotated -> sprintf "The layout type being set must be annotated."
         | ExpectedMutableLayout a -> sprintf "Expected a mutable layout type.\nGot: %s" (f a)
@@ -50218,7 +50232,7 @@ module spiral_compiler =
         | ShadowedInstance -> "The instance cannot be defined twice."
         | UnusedTypeVariable [x] -> sprintf "The type variable %s is unused in the function's type signature." (TypeNameIdOps.text x)
         | UnusedTypeVariable vars -> sprintf "The type variables %s are unused in the function's type signature." (vars |> List.map TypeNameIdOps.text |> String.concat ", ")
-        | CompilerError reasonId -> CompilerIdentityKernel.OperationalReasonIdOps.text reasonId
+        | CompilerError reasonId -> InferAdapter.compilerErrorReasonText reasonId
     
 
     /// ### autogen_name_in_fun
@@ -50976,7 +50990,7 @@ module spiral_compiler =
                                 if is_in_left_apply then
                                     match b with RawSymbol(r,_) -> hover_types.AddHover(r,(a,"")) | _ -> ()
                                     unify r s a
-                                // (disabled) else errors.Add(r,ModuleMustBeImmediatelyApplied)
+                                else InferAdapter.reportModuleNotImmediatelyApplied (fun () -> errors.Add(r,ModuleMustBeImmediatelyApplied))
                             | Some a' ->
                                 let typevars,a = forall_subst_all scope a'
                                 if List.isEmpty typevars = false then
@@ -51556,7 +51570,7 @@ module spiral_compiler =
     
 
         let psucc = Hopac.Job.thunk >> Hopac.Hopac.memo
-        let pfail = psucc (fun () -> FError(Unchecked.defaultof<_>))
+        let pfail = InferAdapter.failedDeclaration (fun () -> Hopac.Promise.Now.withFailure (System.Exception "Compiler error: Tried to read from a FilledTop that has errors.")) (fun () -> psucc (fun () -> FError(Unchecked.defaultof<_>)))
     
 
         let top_env_nominal top_env (global_id : GlobalId) tt name vars v : TopEnv =
@@ -51839,2331 +51853,26 @@ module spiral_compiler =
             base_types x
     
 
-#else
-    /// ## Infer
-
-    /// ### 'a ref'
-    type [<ReferenceEquality>] 'a ref' = {mutable contents' : 'a}
-
-    /// ### TT
-    type TT =
-        | KindType
-        | KindFun of TT * TT
-        | KindMetavar of TT option ref'
-
-    /// ### Constraint
-    type Constraint =
-        | CUInt
-        | CSInt
-        | CInt
-        | CFloat
-        | CNumber
-        | CPrim
-        | CSymbol
-        | CRecord
-        | CPrototype of GlobalId
-
-    /// ### ConstraintOrModule
-    type ConstraintOrModule = C of Constraint | M of Map<string,ConstraintOrModule>
-
-    /// ### Var
-    type [<ReferenceEquality>] Var = {
-        scope : int
-        constraints : Constraint Set // Must be stated up front and needs to be static in forall vars
-        kind : TT // Is not supposed to have metavars.
-        name : string // Is what gets printed.
-        }
-
-    /// ### MVar
-    type [<ReferenceEquality>] MVar = {
-        mutable scope : int
-        mutable constraints : Constraint Set // Must be stated up front and needs to be static in forall vars
-        kind : TT // Has metavars, and so is mutable.
-        }
-
-    /// ### TM
-    type TM =
-        | TMText of string
-        | TMVar of T
-        | TMLitVar of T
-    and T =
-        | TyB
-        | TyLit of Literal
-        | TyPrim of PrimitiveType
-        | TySymbol of string
-        | TyPair of T * T
-        | TyRecord of Map<int * string, T>
-        | TyModule of Map<string, T>
-        | TyComment of Comments * T
-        | TyFun of T * T * FunType
-        | TyArray of T
-        | TyNominal of GlobalId
-        | TyUnion of Map<int * string,bool * T> * UnionLayout // The boolean arg determines whether the union case is generalized.
-        | TyApply of T * T * TT // Regular type functions (TyInl) get reduced, while this represents the staged reduction of nominals.
-        | TyInl of Var * T
-        | TyForall of Var * T
-        | TyExists of Var list * T
-        | TyMetavar of MVar * T option ref
-        | TyVar of Var * T option ref
-        | TyMacro of TM list
-        | TyLayout of T * Layout
-
-    /// ### tyvar
-    let tyvar x = TyVar(x, ref None)
-
-    /// ### TypeError
-    type TypeError =
-        | KindError of TT * TT
-        | KindErrorInConstraint of TT * TT
-        | ExpectedSymbolAsRecordKey of T
-        | ExpectedSymbolAsModuleKey of T
-        | UnboundVariable of string
-        | UnboundModule
-        | ModuleIndexFailedInOpen
-        | ModuleIndexWouldShadowLocalVars of string []
-        | TermError of T * T
-        | TypeVarScopeError of string * T * T
-        | RecursiveMetavarsNotAllowed of T * T
-        | RecursiveTypevarsNotAllowed of T * T
-        | ForallVarConstraintError of string * Constraint Set * Constraint Set
-        | MetavarsNotAllowedInRecordWith
-        | ExpectedRecord of T
-        | ExpectedExistentialInTerm of T
-        | ExpectedExistentialInPattern of T
-        | UnexpectedNumberOfArgumentsInExistsPattern of got: int * expected: int
-        | UnexpectedNumberOfArgumentsInExistsBody of got: int * expected: int
-        | ExistsShouldntHaveMetavars of T list
-        | ExpectedRecordInsideALayout of T
-        | UnionsCannotBeApplied
-        | ExpectedNominalInApply of T
-        | MalformedNominal
-        | LayoutSetMustBeAnnotated
-        | ExpectedMutableLayout of T
-        | ExpectedLayout of T
-        | ExpectedRecordAsResultOfIndex of T
-        | RecordIndexFailed of string
-        | ModuleIndexFailed of string
-        | ModuleIndexAmbiguous of string * string
-        | ExpectedModule of T
-        | ExpectedSymbol' of T
-        | ExpectedSymbolInRecordWith of T
-        | RealFunctionInTopDown
-        | UnionCaseAmbiguous of string
-        | ModuleMustBeImmediatelyApplied
-        | MissingRecordFieldsInPattern of T * string list
-        | CasePatternNotFoundForType of GlobalId * string
-        | CasePatternNotFound of string
-        | CannotInferCasePatternFromTermInEnv of T
-        | NominalInPatternUnbox of GlobalId
-        | TypeInEnvIsNotNominal of T
-        | UnionInPatternNominal of GlobalId
-        | ConstraintError of Constraint * T
-        | PrototypeConstraintCannotPropagateToMetavar of GlobalId * T
-        | PrototypeConstraintCannotPropagateToVar of GlobalId * T
-        | ExpectedAnnotation
-        | ExpectedSinglePattern
-        | RecursiveAnnotationHasMetavars of T
-        | ValueRestriction of T
-        | DuplicateRecInlName
-        | DuplicateKeyInRecUnion
-        | ExpectedConstraintInsteadOfModule
-        | InstanceNotFound of prototype: GlobalId * instance: GlobalId
-        | ExpectedPrototypeConstraint of Constraint
-        | ExpectedPrototypeInsteadOfModule
-        | ExpectedHigherOrder of T
-        | InstanceArityError of prototype_arity: int * instance_arity: int
-        | InstanceCoreVarsShouldMatchTheArityDifference of got: int * expected: int
-        | InstanceKindError of TT * TT
-        | KindNotAllowedInInstanceForall
-        | InstanceVarShouldNotMatchAnyOfPrototypes
-        | MissingBody
-        | MacroIsMissingAnnotation
-        | ArrayIsMissingAnnotation
-        | ExistsIsMissingAnnotation
-        | ShadowedForall
-        | ShadowedExists
-        | UnionTypesMustHaveTheSameLayout
-        | OrphanInstance
-        | ShadowedInstance
-        | UnusedTypeVariable of string list
-        | CompilerError of string
-        | IncorrectGADTConstructorType
-        | IncorrectRecursiveNominal
-
-    /// ### shorten'<'a>
-    let inline shorten'<'a> (x : 'a) link next =
-        let x' : 'a = next x
-        if System.Object.ReferenceEquals(x,x') = false then link.contents' <- Some x'
-        x'
-
-    /// ### visit_tt
-    let rec visit_tt = function
-        | KindMetavar({contents'=Some x} & link) -> shorten' x link visit_tt
-        | a -> a
-
-    /// ### shorten<'a>
-    let inline shorten<'a> (x : 'a) (link : ref<option<'a>>) next =
-        let x' : 'a = next x
-        if System.Object.ReferenceEquals(x,x') = false then link.Value <- Some x'
-        x'
-
-    /// ### visit_t_mvar
-    let rec visit_t_mvar = function
-        | TyComment(_,a) -> visit_t_mvar a
-        | TyMetavar(_,{contents=Some x} & link) -> shorten x link visit_t_mvar
-        | a -> a
-
-    /// ### visit_t
-    let rec visit_t x =
-        match visit_t_mvar x with
-        | TyVar(_,{contents=Some x}) -> visit_t x
-        | x -> x
-
-    /// ### InferTypeErrorException
-    exception InferTypeErrorException of (VSCRange * TypeError) list
-
-    /// ### metavars
-    let rec metavars = function
-        | RawTTypecase _ | RawTExists _ | RawTFilledNominal _ | RawTMacro _ | RawTVar _ | RawTTerm _
-        | RawTPrim _ | RawTWildcard _ | RawTLit _ | RawTB _ | RawTSymbol _ -> Set.empty
-        | RawTMetaVar(_,a) -> Set.singleton a
-        | RawTArray(_,a) | RawTLayout(_,a,_) | RawTForall(_,_,a) -> metavars a
-        | RawTPair(_,a,b) | RawTApply(_,a,b) | RawTFun(_,a,b,_) -> metavars a + metavars b
-        | RawTUnion(_,l,_,this) -> Map.fold (fun s _ (_,v) -> s + metavars v) (metavars this) l
-        | RawTRecord(_,l) -> Map.fold (fun s _ v -> s + metavars v) Set.empty l
-
-    /// ### TopEnv
-    type NominalAux = {|name : string; kind : TT|}
-    type NominalDef = {|vars : Var list; body : T|}
-    type PrototypeDef = {|name : string; signature : T; kind : TT|}
-    type TopEnv = {
-        nominals_next_tag : int
-        nominals_aux : Map<GlobalId,NominalAux>
-        nominals : Map<GlobalId,NominalDef>
-        prototypes_next_tag : int
-        prototypes_instances : Map<GlobalId * GlobalId, Constraint Set list>
-        prototypes : Map<GlobalId,PrototypeDef>
-        ty : Map<string,T>
-        term : Map<string,T>
-        constraints : Map<string,ConstraintOrModule>
-        }
-
-    /// ### inferTop_env_empty
-    let inferTop_env_empty = {
-        nominals_next_tag = 0
-        nominals_aux = Map.empty
-        nominals = Map.empty
-        prototypes_next_tag = 0
-        prototypes_instances = Map.empty
-        prototypes = Map.empty
-        ty = Map.empty
-        term = Map.empty
-        constraints = Map.empty
-        }
-
-    /// ### inferUnion
-    let inferUnion small big = {
-        nominals_next_tag = max small.nominals_next_tag big.nominals_next_tag
-        nominals_aux = Map.foldBack Map.add small.nominals_aux big.nominals_aux
-        nominals = Map.foldBack Map.add small.nominals big.nominals
-        prototypes_next_tag = max small.prototypes_next_tag big.prototypes_next_tag
-        prototypes_instances = Map.foldBack Map.add small.prototypes_instances big.prototypes_instances
-        prototypes = Map.foldBack Map.add small.prototypes big.prototypes
-        ty =
-            Map.foldBack (fun k v s ->
-                let v =
-                    match v, s |> Map.tryFind k with
-                    | TyModule x, Some (TyModule x') -> Map.foldBack Map.add x x' |> TyModule
-                    | _ -> v
-                s |> Map.add k v
-            ) small.ty big.ty
-        term =
-            Map.foldBack (fun k v s ->
-                let v =
-                    match v, s |> Map.tryFind k with
-                    | TyModule x, Some (TyModule x') -> Map.foldBack Map.add x x' |> TyModule
-                    | _ -> v
-                s |> Map.add k v
-            ) small.term big.term
-        constraints =
-            Map.foldBack (fun k v s ->
-                let v =
-                    match v, s |> Map.tryFind k with
-                    | M x, Some (M x') -> Map.foldBack Map.add x x' |> M
-                    | _ -> v
-                s |> Map.add k v
-            ) small.constraints big.constraints
-        }
-
-    /// ### inferIn_module
-    let inferIn_module m a : TopEnv =
-        {a with
-            ty = Map.add m (TyModule a.ty) Map.empty
-            term = Map.add m (TyModule a.term) Map.empty
-            constraints = Map.add m (M a.constraints) Map.empty
-            }
-
-    /// ### InferEnv
-    type InferEnv = { ty : Map<string,T>; term : Map<string,T>; constraints : Map<string,ConstraintOrModule> }
-
-    /// ### kind_get
-    let kind_get x =
-        let rec loop = function
-            | KindFun(a,b) -> a :: loop b
-            | a -> [a]
-        let l = loop x
-        {|arity=List.length l; args=l|}
-
-    /// ### prototype_init_forall_kind
-    let prototype_init_forall_kind = function
-        | TyForall(a,_) -> a.kind
-        | _ -> failwith "Compiler error: The prototype should have at least one forall."
-
-    /// ### show_primt
-    let show_primt = function
-        | UInt8T -> "u8"
-        | UInt16T -> "u16"
-        | UInt32T -> "u32"
-        | UInt64T -> "u64"
-        | Int8T -> "i8"
-        | Int16T -> "i16"
-        | Int32T -> "i32"
-        | Int64T -> "i64"
-        | Float32T -> "f32"
-        | Float64T -> "f64"
-        | BoolT -> "bool"
-        | StringT -> "string"
-        | CharT -> "char"
-
-    /// ### constraint_name
-    let rec constraint_name (env : TopEnv) = function
-        | CSInt -> "sint" | CUInt -> "uint" | CInt -> "int"
-        | CFloat -> "float" | CNumber -> "number" | CPrim -> "prim"
-        | CSymbol -> "symbol" | CRecord -> "record"
-        | CPrototype i -> env.prototypes.[i].name
-
-    /// ### constraint_kind
-    let constraint_kind (env : TopEnv) = function
-        | CSInt | CUInt | CInt | CFloat | CNumber | CPrim | CSymbol | CRecord -> KindType
-        | CPrototype i -> env.prototypes.[i].kind
-
-    /// ### tt
-    let rec tt (env : TopEnv) = function
-        | TyComment(_,x) | TyMetavar(_,{contents=Some x}) -> tt env x
-        | TyNominal i -> env.nominals_aux.[i].kind
-        | TyApply(_,_,x) | TyMetavar({kind=x},_) | TyVar({kind=x},_) -> x
-        | TyExists _ | TyLit _ | TyUnion _ | TyLayout _ | TyMacro _ | TyB | TyPrim _ | TyForall _ | TyFun _ | TyRecord _ | TyModule _ | TyPair _ | TySymbol _ | TyArray _ -> KindType
-        | TyInl(v,a) -> KindFun(v.kind,tt env a)
-
-    /// ### has_metavars
-    let rec has_metavars x =
-        let f = has_metavars
-        match visit_t x with
-        | TyMetavar _ -> true
-        | TyVar _ | TyNominal _ | TyB | TyLit _ | TyPrim _ | TySymbol _ | TyModule _ -> false
-        | TyExists(_,a) | TyComment(_,a) | TyLayout(a,_) | TyForall(_,a) | TyInl(_,a) | TyArray a -> f a
-        | TyApply(a,b,_) | TyFun(a,b,_) | TyPair(a,b) -> f a || f b
-        | TyUnion(l,_) -> Map.exists (fun _ -> snd >> f) l
-        | TyRecord l -> Map.exists (fun _ -> f) l
-        | TyMacro a -> List.exists (function TMVar x -> has_metavars x | _ -> false) a
-
-    /// ### term_subst
-    // Eliminates the metavars in the type if possible.
-    let term_subst a =
-        let h = System.Collections.Generic.HashSet(HashIdentity.Reference)
-        // 'a = 'b = ('c = int * 'd = float)
-        // visit_t shortens to:
-        // 'a = ('c = int * 'd = float)
-        // visit_t returns:
-        // ('c = int * 'd = float)
-        // term_subst returns:
-        // int * float
-        let inline g a f =
-            let _ = h.Add(a)
-            let x = f()
-            let _ = h.Remove(a)
-            x
-        let rec f a =
-            match visit_t a with
-            | TyMetavar _ | TyNominal _ | TyB | TyLit _ | TyPrim _ | TySymbol _ as x -> x
-            | TyVar(x,r) -> TyVar(x, if h.Contains x then ref None else r)
-            | TyComment(a,b) -> TyComment(a,f b)
-            | TyPair(a,b) -> TyPair(f a, f b)
-            | TyRecord a -> TyRecord(Map.map (fun _ -> f) a)
-            | TyModule a -> TyModule(Map.map (fun _ -> f) a)
-            | TyUnion(a,b) -> TyUnion(Map.map (fun _ (is_gadt, x) -> is_gadt, f x) a,b)
-            | TyFun(a,b,t) -> TyFun(f a, f b, t)
-            | TyForall(a,b) -> g a <| fun () -> TyForall(a,f b)
-            | TyExists(a,b) -> TyExists(a,f b)
-            | TyArray a -> TyArray(f a)
-            | TyApply(a,b,c) -> TyApply(f a, f b, c)
-            | TyInl(a,b) -> g a <| fun () -> TyInl(a,f b)
-            | TyMacro a -> TyMacro(List.map (function TMVar x -> TMVar(f x) | x -> x) a)
-            | TyLayout(a,b) -> TyLayout(f a,b)
-        f a
-
-    /// ### HoverTypes
-    type HoverTypes() =
-        // This is to allocate less trash for code that doesn't use GADTs.
-        // Unfortunately, we cannot use memoization instead as term_subst is not functionally pure.
-        let rec has_substituted_tvars x =
-            let f = has_substituted_tvars
-            match x with
-            | TyMetavar(_,{contents=Some _}) -> true
-            | TyVar (_, {contents=Some x}) | TyComment(_,x) -> f x
-            | TyVar _ | TyMetavar _ | TyNominal _ | TyB | TyLit _ | TyPrim _ | TySymbol _ | TyModule _ -> false
-            | TyExists(_,a) | TyComment(_,a) | TyLayout(a,_) | TyForall(_,a) | TyInl(_,a) | TyArray a -> f a
-            | TyApply(a,b,_) | TyFun(a,b,_) | TyPair(a,b) -> f a || f b
-            | TyUnion(l,_) -> Map.exists (fun _ -> snd >> f) l
-            | TyRecord l -> Map.exists (fun _ -> f) l
-            | TyMacro a -> List.exists (function TMVar x -> has_metavars x | _ -> false) a
-        let hover_types = ResizeArray()
-        member _.AddHover((r : VSCRange),(x,(com : string))) = hover_types.Add(r,((if has_substituted_tvars x then term_subst x else x), com))
-        member _.ToArray() = hover_types.ToArray()
-
-    /// ### inferModule_open
-    let inferModule_open (hover_types : HoverTypes option) (top_env : InferEnv) (local_env_ty : Map<string,T>) (r : VSCRange) b l =
-        let tryFind env x =
-            match Map.tryFind x env.term, Map.tryFind x env.ty, Map.tryFind x env.constraints with
-            | Some (TyModule a), Some (TyModule b), Some (M c) -> ValueSome {term=a; ty=b; constraints=c}
-            | _ -> ValueNone
-        match tryFind top_env b with
-        | ValueNone -> Error(r, UnboundModule)
-        | ValueSome env ->
-            hover_types |> Option.iter (fun hover_types -> hover_types.AddHover(r,(TyModule env.term,"")))
-            let rec loop env = function
-                | (r,x) :: x' ->
-                    match tryFind env x with
-                    | ValueSome env ->
-                        hover_types |> Option.iter (fun hover_types -> hover_types.AddHover(r,(TyModule env.term,"")))
-                        loop env x'
-                    | _ -> Error(r, ModuleIndexFailedInOpen)
-                | [] -> Ok env
-            loop env l |> Result.bind (fun env ->
-                let h = ResizeArray()
-                local_env_ty |> Map.iter (fun k _ -> if env.ty.ContainsKey k then h.Add k)
-                if h.Count > 0 then Error(r, ModuleIndexWouldShadowLocalVars(h.ToArray()))
-                else Ok env
-                )
-
-    /// ### validate_bound_vars
-    let validate_bound_vars (top_env : InferEnv) constraints term ty x =
-        let errors = ResizeArray()
-        let check_term term (a,b) = if Set.contains b term = false && Map.containsKey b top_env.term = false then errors.Add(a,UnboundVariable b)
-        let check_ty ty (a,b) = if Set.contains b ty = false && Map.containsKey b top_env.ty = false then errors.Add(a,UnboundVariable b)
-        let check_cons constraints (a,b) =
-            match Map.tryFind b constraints |> Option.orElseWith (fun () -> Map.tryFind b top_env.constraints) with
-            | Some (C _) -> ()
-            | Some (M _) -> errors.Add(a,ExpectedConstraintInsteadOfModule)
-            | None -> errors.Add(a,UnboundVariable b)
-        let rec cterm constraints (term, ty) x =
-            match x with
-            | RawSymbol _ | RawDefaultLit _ | RawLit _ | RawB _ -> ()
-            | RawV(a,b,_) -> check_term term (a,b)
-            | RawType(_,x) -> ctype constraints term ty x
-            | RawMatch(_,body,l) -> cterm constraints (term, ty) body; List.iter (fun (a,b) -> cterm constraints (cpattern constraints term ty a) b) l
-            | RawFun(_,l) -> List.iter (fun (a,b) -> cterm constraints (cpattern constraints term ty a) b) l
-            | RawForall(_,((_,(a,_)),l),b) -> List.iter (check_cons constraints) l; cterm constraints (term, Set.add a ty) b
-            | RawFilledForall _ -> failwith "Compiler error: Should not appear during variable validation."
-            | RawRecBlock(_,l,on_succ) ->
-                let term = List.fold (fun s ((_,x),_) -> Set.add x s) term l
-                List.iter (fun (_,x) -> cterm constraints (term, ty) x) l
-                cterm constraints (term, ty) on_succ
-            | RawRecordWith(_,a,b,c) ->
-                List.iter (cterm constraints (term, ty)) a
-                List.iter (function
-                    | RawRecordWithSymbol(_,e) | RawRecordWithSymbolModify(_,e) -> cterm constraints (term, ty) e
-                    | RawRecordWithInjectVar(v,e) | RawRecordWithInjectVarModify(v,e) -> check_term term v; cterm constraints (term, ty) e
-                    ) b
-                List.iter (function RawRecordWithoutSymbol _ -> () | RawRecordWithoutInjectVar (a,b) -> check_term term (a,b)) c
-            | RawOp(_,_,l) -> List.iter (cterm constraints (term, ty)) l
-            | RawReal(_,x) | RawJoinPoint(_,_,x,_) -> cterm constraints (term, ty) x
-            | RawExists(_,(_,a),b) -> Option.iter (List.iter (ctype constraints term ty)) a; cterm constraints (term, ty) b
-            | RawAnnot(_,RawMacro(_,a),b) -> cmacro constraints term ty a; ctype constraints term ty b
-            | RawMacro(r,a) -> errors.Add(r,MacroIsMissingAnnotation); cmacro constraints term ty a
-            | RawAnnot(_,RawArray(_,a),b) -> List.iter (cterm constraints (term, ty)) a; ctype constraints term ty b
-            | RawArray(r,a) -> errors.Add(r,ArrayIsMissingAnnotation); List.iter (cterm constraints (term, ty)) a
-            | RawLayoutIndex(_,a) -> cterm constraints (term, ty) a
-            | RawAnnot(_,a,b) -> cterm constraints (term, ty) a; ctype constraints term ty b
-            | RawTypecase(_,a,b) ->
-                ctype constraints term ty a
-                List.iter (fun (a,b) ->
-                    ctype constraints term ty a
-                    cterm constraints (term, ty + metavars a) b
-                    ) b
-            | RawOpen(_,(a,b),l,on_succ) ->
-                match inferModule_open None top_env Map.empty a b l with
-                | Ok x ->
-                    let combine e m = Map.fold (fun s k _ -> Set.add k s) e m
-                    cterm (Map.foldBack Map.add x.constraints constraints) (combine term x.term, combine ty x.ty) on_succ
-                | Error e -> errors.Add(e)
-            | RawHeapMutableSet(_,a,b,c) -> cterm constraints (term, ty) a; List.iter (cterm constraints (term, ty)) b; cterm constraints (term, ty) c
-            | RawSeq(_,a,b) | RawPair(_,a,b) | RawIfThen(_,a,b) | RawApply(_,a,b) -> cterm constraints (term, ty) a; cterm constraints (term, ty) b
-            | RawIfThenElse(_,a,b,c) -> cterm constraints (term, ty) a; cterm constraints (term, ty) b; cterm constraints (term, ty) c
-            | RawTypeIfThenElse(_,a,b,c,d) -> ctype constraints term ty a; ctype constraints term ty b; cterm constraints (term, ty) c; cterm constraints (term, ty) d
-            | RawTypeIfThen(_,a,b,c) -> ctype constraints term ty a; ctype constraints term ty b; cterm constraints (term, ty) c
-            | RawMissingBody r -> errors.Add(r,MissingBody)
-        and cmacro constraints term ty a =
-            List.iter (function
-                | RawMacroText _ -> ()
-                | RawMacroTerm(r,a,_) -> cterm constraints (term, ty) a
-                | RawMacroType(r,a) | RawMacroTypeLit(r,a) -> ctype constraints term ty a
-                ) a
-        and ctype constraints term ty x =
-            match x with
-            | RawTFilledNominal(_,_) | RawTPrim _ | RawTWildcard _ | RawTLit _ | RawTB _ | RawTSymbol _ | RawTMetaVar _ -> ()
-            | RawTTypecase(_,a,b) ->
-                ctype constraints term ty a
-                List.iter (fun (a,b) ->
-                    ctype constraints term ty a
-                    ctype constraints term (ty + metavars a) b
-                    ) b
-            | RawTVar(a,b) -> check_ty ty (a,b)
-            | RawTArray(_,a) | RawTLayout(_,a,_) -> ctype constraints term ty a
-            | RawTPair(_,a,b) | RawTApply(_,a,b) | RawTFun(_,a,b,_) -> ctype constraints term ty a; ctype constraints term ty b
-            | RawTUnion(_,l,_,this) -> Map.iter (fun _ (_,x) -> ctype constraints term ty x) l; ctype constraints term ty this
-            | RawTRecord(_,l) -> Map.iter (fun _ -> ctype constraints term ty) l
-            | RawTForall(_,((_,(a,_)),l),b) -> List.iter (check_cons constraints) l; ctype constraints term (Set.add a ty) b
-            | RawTExists(_,a,b) ->
-                let ty =
-                    List.fold (fun ty ((_,(a,_)),l) ->
-                        List.iter (check_cons constraints) l
-                        Set.add a ty
-                        ) ty a
-                ctype constraints term ty b
-            | RawTTerm (_,a) -> cterm constraints (term, ty) a
-            | RawTMacro(_,a) -> cmacro constraints term ty a
-        and cpattern constraints term ty x =
-            //let is_first = System.Collections.Generic.HashSet()
-            let rec loop (term, ty) x =
-                let f = loop (term, ty)
-                match x with
-                | PatDefaultValue _ | PatFilledDefaultValue _ | PatValue _ | PatSymbol _ | PatB _ | PatE _ -> term, ty
-                | PatExists(_,a,b) ->
-                    let ty = List.fold (fun s (_,x) -> Set.add x s) ty a
-                    loop (term, ty) b
-                | PatVar(_,b) ->
-                    //if is_first.Add b then () // TODO: I am doing it like this so I can reuse this code later for variable highlighting.
-                    Set.add b term, ty
-                | PatDyn(_,x) | PatUnbox(_,_,x) -> f x
-                | PatPair(_,a,b) -> loop (f a) b
-                | PatRecordMembers(_,l) ->
-                    List.fold (fun s -> function
-                        | PatRecordMembersSymbol(_,x) -> loop s x
-                        | PatRecordMembersInjectVar((a,b),x) -> check_term term (a,b); loop s x
-                        ) (term, ty) l
-                | PatAnd(_,a,b) | PatOr(_,a,b) -> loop (loop (term, ty) a) b
-                | PatAnnot(_,a,b) -> ctype constraints term ty b; f a
-                | PatWhen(_,a,b) -> let r = f a in cterm constraints r b; r
-                | PatNominal(_,(r,a),_,b) -> check_ty ty (r,a); f b
-                | PatArray(_,a) -> List.fold loop (term, ty) a
-            loop (term, ty) x
-
-        match x with
-        | Choice1Of2 x -> cterm constraints (term, ty) x
-        | Choice2Of2 x -> ctype constraints term ty x
-        errors
-
-    /// ### assert_bound_vars
-    let assert_bound_vars (top_env : InferEnv) constraints term ty x =
-        let errors = validate_bound_vars top_env constraints term ty x
-        if 0 < errors.Count then raise (InferTypeErrorException (Seq.toList errors))
-
-    /// ### subst
-    let rec subst (m : (Var * T) list) x =
-        let f = subst m
-        if List.isEmpty m then x
-        else
-            match x with
-            | TyComment(_,x)
-            | TyMetavar(_,{contents=Some x})
-            | TyVar (_,{contents=Some x}) -> f x // Don't do path shortening here.
-            | TyMetavar _ | TyNominal _ | TyB | TyLit _ | TyPrim _ | TySymbol _ -> x
-            | TyPair(a,b) -> TyPair(f a, f b)
-            | TyRecord a -> TyRecord(Map.map (fun _ -> f) a)
-            | TyModule a -> TyModule(Map.map (fun _ -> f) a)
-            | TyUnion(a,b) -> TyUnion(Map.map (fun _ (is_gadt,body) -> is_gadt, f body) a,b)
-            | TyFun(a,b,t) -> TyFun(f a, f b, t)
-            | TyArray a -> TyArray(f a)
-            | TyApply(a,b,c) -> TyApply(f a, f b, c)
-            | TyVar (a,_) -> List.tryPick (fun (v,x) -> if a = v then Some x else None) m |> Option.defaultValue x
-            | TyForall(a,b) -> TyForall(a, f b)
-            | TyExists(a,b) -> TyExists(a, f b)
-            | TyInl(a,b) -> TyInl(a, f b)
-            | TyMacro a -> TyMacro(List.map (function TMVar x -> TMVar(f x) | x -> x) a)
-            | TyLayout(a,b) -> TyLayout(f a,b)
-
-    /// ### type_apply_split
-    let type_apply_split x =
-        let rec loop s x =
-            match visit_t x with
-            | TyApply(a,b,_) -> loop (b :: s) a
-            | x -> x, s
-        loop [] x
-
-    /// ### kind_subst
-    let rec kind_subst = function
-        | KindMetavar ({contents'=Some x} & link) -> shorten' x link kind_subst
-        | KindMetavar _ | KindType as x -> x
-        | KindFun(a,b) -> KindFun(kind_subst a,kind_subst b)
-
-    /// ### foralls_get
-    let rec foralls_get = function
-        | RawForall(_,a,b) -> let a', b = foralls_get b in a :: a', b
-        | b -> [], b
-
-    /// ### foralls_ty_get
-    let rec foralls_ty_get = function
-        | TyForall(a,b) -> let a', b = foralls_ty_get b in a :: a', b
-        | b -> [], b
-
-    /// ### kind_force
-    let rec kind_force = function
-        | KindMetavar ({contents'=Some x} & link) -> shorten' x link kind_force
-        | KindMetavar link -> let x = KindType in link.contents' <- Some x; x
-        | KindType as x -> x
-        | KindFun(a,b) -> KindFun(kind_force a,kind_force b)
-
-    /// ### p
-    let p prec prec' x = if prec < prec' then x else sprintf "(%s)" x
-
-    /// ### show_kind
-    let show_kind x =
-        let rec f prec x =
-            let p = p prec
-            match x with
-            | KindMetavar {contents'=Some x} -> f prec x
-            | KindMetavar _ -> "?"
-            | KindType -> "*"
-            | KindFun(a,b) -> p 20 (sprintf "%s -> %s" (f 20 a) (f 19 b))
-        f -1 x
-
-    /// ### show_constraints
-    let show_constraints env x = Set.toList x |> List.map (constraint_name env) |> String.concat "; " |> sprintf "{%s}"
-
-    /// ### show_nominal
-    let show_nominal (env : TopEnv) i = match Map.tryFind i env.nominals_aux with Some x -> x.name | None -> "?"
-
-    /// ### show_layout_type
-    let show_layout_type = function Heap -> "heap" | HeapMutable -> "mut" | StackMutable -> "stack_mut" | StackRefs -> "stack_refs" | HeapRefs -> "heap_refs"
-
-    /// ### show_t
-    let show_t (env : TopEnv) x =
-        let show_var (a : Var) =
-            let n = match a.kind with KindType -> a.name | _ -> sprintf "(%s : %s)" a.name (show_kind a.kind)
-            if Set.isEmpty a.constraints then n
-            else sprintf "%s %s" n (show_constraints env a.constraints)
-        let rec f prec x =
-            let p = p prec
-            match x with
-            | TyVar (_, {contents=Some x}) | TyComment(_,x) | TyMetavar(_,{contents=Some x}) -> f prec x
-            | TyMetavar _ -> "_"
-            | TyVar (a, _) -> a.name
-            | TyNominal i ->
-                match Map.tryFind i env.nominals_aux with
-                | Some x when prec < 0 -> sprintf "(%s : %s)" x.name (show_kind x.kind)
-                | Some x -> x.name
-                | _ -> "?"
-            | TyB -> "()"
-            | TyLit x -> Tokenize.show_lit x
-            | TyPrim x -> show_primt x
-            | TySymbol x -> sprintf ".%s" x
-            | TyExists(a,b) ->
-                let a = List.map show_var a |> String.concat " "
-                p 0 (sprintf "exists %s. %s" a (f -1 b))
-            | TyForall _ ->
-                let a, b =
-                    let rec loop = function
-                        | TyForall(a,b) -> let a',b = loop b in (a :: a'), b
-                        | b -> [], b
-                    loop x
-                let a = List.map show_var a |> String.concat " "
-                p 0 (sprintf "forall %s. %s" a (f -1 b))
-            | TyInl _ ->
-                let a, b =
-                    let rec loop = function
-                        | TyInl(a,b) -> let a',b = loop b in (a :: a'), b
-                        | b -> [], b
-                    loop x
-                let a = List.map show_var a |> String.concat " "
-                p 0 (sprintf "%s => %s" a (f -1 b))
-            | TyArray a -> p 30 (sprintf "array_base %s" (f 30 a))
-            | TyApply(a,b,_) -> p 30 (sprintf "%s %s" (f 29 a) (f 30 b))
-            | TyPair(a,b) -> p 25 (sprintf "%s * %s" (f 25 a) (f 24 b))
-            | TyFun(a,b,FT_Vanilla) -> p 20 (sprintf "%s -> %s" (f 20 a) (f 19 b))
-            | TyFun(a,b,FT_Pointer) -> p 20 (sprintf "fptr (%s -> %s)" (f 20 a) (f 19 b))
-            | TyFun(a,b,FT_Closure) -> p 20 (sprintf "closure (%s -> %s)" (f 20 a) (f 19 b))
-            | TyModule l ->
-                if prec = -2 then
-                    l |> Map.toList |> List.map (fun (k,v) ->
-                        let a,b = k, f -1 v
-                        match v with
-                        | TyComment(com,_) -> sprintf "%s : %s\n---\n%s\n---\n" a b com
-                        | _ -> sprintf "%s : %s" a b
-                        )
-                    |> String.concat "\n"
-                else "module"
-            | TyRecord l -> sprintf "{%s}" (l |> Map.toList |> List.map (fun ((_,k),v) -> sprintf "%s : %s" k (f -1 v)) |> String.concat "; ")
-            | TyUnion(l,_) -> sprintf "{%s}" (l |> Map.toList |> List.map (fun ((_,k),(_,v)) -> sprintf "%s : %s" k (f -1 v)) |> String.concat "| ")
-            | TyMacro a -> p 30 (List.map (function TMLitVar a | TMVar a -> f -1 a | TMText a -> a) a |> String.concat "")
-            | TyLayout(a,b) -> p 30 (sprintf "%s %s" (show_layout_type b) (f 30 a))
-
-        f -2 x
-
-    /// ### show_type_error
-    let show_type_error (env : TopEnv) x =
-        let f = show_t env
-        match x with
-        | IncorrectRecursiveNominal -> "The non-recursive nominals should not use their own type in the clause."
-        | IncorrectGADTConstructorType -> "The GADT case in the union has to result in an instance of the union being constructed. Any type other than the self being in the range of the union is not allowed."
-        | ExistsShouldntHaveMetavars a -> sprintf "The variables of the exists body shouldn't have metavariables left over in them.\nGot: [%s]"  (List.map f a |> String.concat ", ")
-        | ExpectedExistentialInPattern a -> sprintf "The variable being destructured in the pattern match need to be explicitly annotated and with an existential type.\nGot: %s" (f a)
-        | UnexpectedNumberOfArgumentsInExistsPattern(got,exp) -> sprintf "The number of arguments in the existential pattern doesn't match the one in the type.\nGot: %i\nExpected: %i" got exp
-        | UnexpectedNumberOfArgumentsInExistsBody(got,exp) -> sprintf "The number of arguments in the existential body doesn't match the one in the type.\nGot: %i\nExpected: %i" got exp
-        | ExpectedExistentialInTerm a -> sprintf "The body of `expects` need to be explicitly annotated and with an existential type.\nGot: %s" (f a)
-        | UnionsCannotBeApplied -> "Unions cannot be applied."
-        | ExpectedNominalInApply a -> sprintf "Expected a nominal.\nGot: %s" (f a)
-        | MalformedNominal -> "Malformed nominal."
-        | ModuleMustBeImmediatelyApplied -> "Module must be immediately applied."
-        | ExpectedSymbol' a -> sprintf "Expected a symbol.\nGot: %s" (f a)
-        | KindError(a,b) -> sprintf "Kind unification failure.\nGot:      %s\nExpected: %s" (show_kind a) (show_kind b)
-        | KindErrorInConstraint(a,b) -> sprintf "Kind unification failure when propagating them from constraints.\nGot:      %s\nExpected: %s" (show_kind a) (show_kind b)
-        | TermError(a,b) -> sprintf "Unification failure.\nGot:      %s\nExpected: %s" (f a) (f b)
-        | RecursiveMetavarsNotAllowed(a,b) -> sprintf "Recursive metavariables are not allowed. A metavar cannot be unified with a type that has itself.\nGot:      %s\nExpected: %s" (f a) (f b)
-        | RecursiveTypevarsNotAllowed(a,b) -> sprintf "Recursive type variables are not allowed. A type variable cannot be unified with a type that has itself.\nGot:      %s\nExpected: %s" (f a) (f b)
-        | ExpectedSymbolAsRecordKey a -> sprintf "Expected symbol as a record key.\nGot: %s" (f a)
-        | ExpectedSymbolAsModuleKey a -> sprintf "Expected symbol as a module key.\nGot: %s" (f a)
-        | UnboundVariable x -> sprintf "Unbound variable: %s." x
-        | UnboundModule -> sprintf "Unbound module."
-        | ModuleIndexFailedInOpen -> sprintf "Module does not have a submodule with that key."
-        | ModuleIndexWouldShadowLocalVars [|v|] -> $"The module open would shadow a local variable: {v}."
-        | ModuleIndexWouldShadowLocalVars vars -> let v = String.concat ", " vars in $"The module open would shadow the local variables: {v}."
-        | TypeVarScopeError(a,_,_) -> sprintf "Tried to unify the type variable %s with a metavar outside its scope." a
-        | ForallVarConstraintError(n,a,b) -> sprintf "Metavariable's constraints must be a subset of the forall var %s's.\nGot: %s\nExpected: %s" n (show_constraints env a) (show_constraints env b)
-        | MetavarsNotAllowedInRecordWith -> sprintf "In the top-down segment the record keys need to be fully known. Please add an annotation."
-        | LayoutSetMustBeAnnotated -> sprintf "The layout type being set must be annotated."
-        | ExpectedMutableLayout a -> sprintf "Expected a mutable layout type.\nGot: %s" (f a)
-        | ExpectedLayout a -> sprintf "Expected a layout type.\nGot: %s" (f a)
-        | ExpectedRecord a -> sprintf "Expected a record.\nGot: %s" (f a)
-        | ExpectedRecordInsideALayout a -> sprintf "Expected a record inside a layout type.\nGot: %s" (f a)
-        | ExpectedRecordAsResultOfIndex a -> sprintf "Expected a record as result of index.\nGot: %s" (f a)
-        | RecordIndexFailed a -> sprintf "The record does not have the key: %s" a
-        | ModuleIndexFailed a -> sprintf "The module does not have the key: %s" a
-        | ModuleIndexAmbiguous(folder,key) -> $"`{folder}.{key}` is ambiguous: the folder `{folder}` has a module `{key}`, and its index module `{folder}.{folder}` has a member `{key}`."
-        | ExpectedModule a -> sprintf "Expected a module.\nGot: %s" (f a)
-        | ExpectedSymbolInRecordWith a -> sprintf "Expected a symbol.\nGot: %s" (f a)
-        | RealFunctionInTopDown -> sprintf "Real segment functions are forbidden in the top-down segment. They can only be used in `real` expressions or .spir modules."
-        | UnionCaseAmbiguous name -> sprintf "The union case %s is defined by more than one opened module. Qualify it (module.%s) or open only one of the modules." name name
-        | MissingRecordFieldsInPattern(a,b) -> sprintf "The record is missing the following fields: %s.\nGot: %s" (String.concat ", " b) (f a)
-        | CasePatternNotFoundForType(i,n) -> sprintf "%s does not have the %s case." (show_nominal env i) n
-        | CasePatternNotFound n -> sprintf "Cannot find a function with the same name as the %s case in the environment." n
-        | CannotInferCasePatternFromTermInEnv a -> sprintf "Cannot infer the higher order type that has this case from the following type.\nGot: %s" (f a)
-        | NominalInPatternUnbox i -> sprintf "Expected an union type, but %s is a nominal." (show_nominal env i)
-        | TypeInEnvIsNotNominal a -> sprintf "Expected a nominal type.\nGot: %s" (f a)
-        | UnionInPatternNominal i -> sprintf "Expected a nominal type, but %s is an union." (show_nominal env i)
-        | ConstraintError(a,b) -> sprintf "Constraint satisfaction error.\nGot: %s\nFails to satisfy: %s" (f b) (constraint_name env a)
-        | ExpectedAnnotation -> sprintf "Recursive functions with foralls must be fully annotated."
-        | ExpectedSinglePattern -> sprintf "Recursive functions with foralls must not have multiple clauses in their patterns."
-        | RecursiveAnnotationHasMetavars a -> sprintf "Recursive functions with foralls must not have metavars.\nGot: %s" (f a)
-        | ValueRestriction a -> sprintf "Metavars that are not part of the enclosing function's signature are not allowed. They need to be values.\nGot: %s" (f a)
-        | DuplicateRecInlName -> "Shadowing of functions by the members of the same mutually recursive block is not allowed."
-        | DuplicateKeyInRecUnion -> "Mutually recursive unions should not have overlapping keys."
-        | ExpectedConstraintInsteadOfModule -> sprintf "Expected a constraint instead of module."
-        | InstanceNotFound(prot,ins) -> sprintf "The higher order type instance %s does not have the prototype %s." (show_nominal env ins) env.prototypes.[prot].name
-        | ExpectedPrototypeConstraint a -> sprintf "Expected a prototype constraint.\nGot: %s" (constraint_name env a)
-        | PrototypeConstraintCannotPropagateToMetavar(a,b) -> sprintf "Cannot propagate the %s prototype constraint to the applied metavariable as the kinds would not match. If this is not intended to be a type var, provide a type annotation to a concrete type.\nGot: %s" env.prototypes.[a].name (f b)
-        | PrototypeConstraintCannotPropagateToVar(a,b) -> sprintf "Cannot propagate the %s prototype constraint to the applied type variable as the kinds would not match.\nGot: %s" env.prototypes.[a].name (f b)
-        | ExpectedPrototypeInsteadOfModule -> "Expected a prototype instead of module."
-        | ExpectedHigherOrder a -> sprintf "Expected a higher order type.\nGot: %s" (f a)
-        | InstanceArityError(prot,ins) -> sprintf "The arity of the instance must be greater or equal to that of the prototype.\nInstance arity:  %i\nPrototype arity: %i" ins prot
-        | InstanceCoreVarsShouldMatchTheArityDifference(num_vars,expected) -> sprintf "The number of forall variables in the instance needs to be specified so it equals the difference between the instance arity and the prototype arity.\nInstance variables specified: %i\nExpected:                     %i" num_vars expected
-        | InstanceKindError(a,b) -> sprintf "The kinds of the instance foralls are incompatible with those of the prototype.\nGot:      %s\nExpected: %s" (show_kind a) (show_kind b)
-        | KindNotAllowedInInstanceForall -> "Kinds should not be explicitly stated in instance foralls."
-        | InstanceVarShouldNotMatchAnyOfPrototypes -> "Instance forall must not have the same name as any of the prototype foralls."
-        | MissingBody -> "The function body is missing."
-        | MacroIsMissingAnnotation -> "The macro needs an annotation."
-        | ArrayIsMissingAnnotation -> "The array needs an annotation."
-        | ExistsIsMissingAnnotation -> "The existential type needs an annotation."
-        | ShadowedForall -> "Shadowing of foralls is not allowed in the top-down segment."
-        | ShadowedExists -> "Shadowing of existential type variables is not allowed in the top-down segment."
-        | UnionTypesMustHaveTheSameLayout -> "The two union types must have the same layout."
-        | OrphanInstance -> "The instance has to be defined in the same package as either the prototype or the nominal."
-        | ShadowedInstance -> "The instance cannot be defined twice."
-        | UnusedTypeVariable [x] -> sprintf "The type variable %s is unused in the function's type signature." x
-        | UnusedTypeVariable vars -> sprintf "The type variables %s are unused in the function's type signature." (vars |> String.concat ", ")
-        | CompilerError x -> x
-
-    /// ### loc_env
-    let loc_env (x : TopEnv) = {term=x.term; ty=x.ty; constraints=x.constraints}
-
-    /// ### names_of
-    let names_of vars = List.map (fun x -> x.name) vars |> Set
-
-    /// ### lit
-    let lit = function
-        | LitUInt8 _ -> TyPrim UInt8T
-        | LitUInt16 _ -> TyPrim UInt16T
-        | LitUInt32 _ -> TyPrim UInt32T
-        | LitUInt64 _ -> TyPrim UInt64T
-        | LitInt8 _ -> TyPrim Int8T
-        | LitInt16 _ -> TyPrim Int16T
-        | LitInt32 _ -> TyPrim Int32T
-        | LitInt64 _ -> TyPrim Int64T
-        | LitFloat32 _ -> TyPrim Float32T
-        | LitFloat64 _ -> TyPrim Float64T
-        | LitBool _ -> TyPrim BoolT
-        | LitString _ -> TyPrim StringT
-        | LitChar _ -> TyPrim CharT
-
-    /// ### autogen_name_in_fun
-    let autogen_name_in_fun (i : int) = let x = char i + 'a' in if 'z' < x then sprintf "'%i" i else sprintf "'%c" x
-
-    /// ### autogen_name_in_typecase
-    let autogen_name_in_typecase (i : int) = let x = char i + 'a' in if 'z' < x then sprintf "'t%i" i else sprintf "'t%c" x
-
-    /// ### trim_kind
-    let trim_kind = function KindFun(_,k) -> k | _ -> failwith "impossible"
-
-    /// ### FilledTop
-    // Similar to BundleTop except with type annotations and type application filled in.
-    type FilledTop =
-        | FType of VSCRange * RString * HoVar list * RawTExpr
-        | FNominal of VSCRange * RString * HoVar list * RawTExpr
-        | FNominalRec of (VSCRange * RString * HoVar list * RawTExpr) list
-        | FInl of VSCRange * RString * RawExpr
-        | FRecInl of (VSCRange * RString * RawExpr) list
-        | FPrototype of VSCRange * RString * RString * TypeVar list * RawTExpr
-        | FInstance of VSCRange * RGlobalId * RGlobalId * RawExpr
-        | FOpen of VSCRange * RString * RString list
-
-    /// ### 'a AdditionType
-    type 'a AdditionType =
-        | AOpen of 'a
-        | AInclude of 'a
-        | AIncludePrivate of exported : 'a * local : 'a
-
-    /// ### InferScope
-    type InferScope = int
-
-    /// ### markAmbiguousUnionCases
-    let ambiguousUnionCasePrefix = "<ambiguous union case "
-
-    let rec unionCaseResultNominal (t : T) =
-        match t with
-        | TyForall (_, b) | TyInl (_, b) | TyFun (_, b, _) | TyComment (_, b) -> unionCaseResultNominal b
-        | TyApply (a, _, _) -> unionCaseResultNominal a
-        | TyNominal i -> ValueSome i
-        | _ -> ValueNone
-
-    let unionCaseOwner (top_env : TopEnv) (name : string) (t : T) =
-        match unionCaseResultNominal t with
-        | ValueSome i ->
-            match Map.tryFind i top_env.nominals with
-            | Some n ->
-                match n.body with
-                | TyUnion (cases, _) when cases |> Map.exists (fun (_, name') _ -> name' = name) -> ValueSome i
-                | _ -> ValueNone
-            | None -> ValueNone
-        | ValueNone -> ValueNone
-
-    let markAmbiguousUnionCases (top_env : TopEnv) (opened : Map<TermNameId, T>) =
-        opened |> Map.map (fun key t ->
-            let name = TermNameIdOps.text key
-            match unionCaseOwner top_env name t, Map.tryFind key top_env.term with
-            | ValueSome i, Some existing ->
-                match unionCaseOwner top_env name existing with
-                | ValueSome j when j <> i -> TySymbol (ambiguousUnionCasePrefix + name + ">")
-                | _ -> t
-            | _ -> t)
-
-    /// ### InferResult
-    type [<ReferenceEquality>] InferResult = {
-        filled_top : FilledTop Hopac.Promise
-        top_env_additions : TopEnv AdditionType
-        offset : int
-        hovers : RString []
-        errors : RString list
-        }
-
-    /// ### dispose_gadt_links
-    let dispose_gadt_links gadt_links = Seq.iter (fun (x : ref<option<'a>>) -> x.Value <- None) gadt_links
-
-    /// ### assert_foralls_used'
-    let assert_foralls_used' (errors : (VSCRange * TypeError) ResizeArray) outside_foralls r x =
-        let h = HashSet()
-        let rec f x =
-            match visit_t x with
-            | TyVar (v,_) -> Set.singleton v.name
-            | TyExists(v,a) ->
-                List.fold (fun a v ->
-                    if Set.contains v.name a = false then h.Add(v.name) |> ignore; a
-                    else Set.remove v.name a
-                    ) (f a) v
-            | TyForall(v,a) ->
-                let a = f a
-                if Set.contains v.name a = false then h.Add(v.name) |> ignore; a
-                else Set.remove v.name a
-            | TyUnion _ | TyModule _ | TyMetavar _ | TyNominal _ | TyB | TyLit _ | TyPrim _ | TySymbol _ -> Set.empty
-            | TyPair(a,b) | TyApply(a,b,_) | TyFun(a,b,_) -> f a + f b
-            | TyRecord a -> Map.fold (fun s _ x -> Set.union s (f x)) Set.empty a
-            | TyComment(_,a) | TyLayout(a,_) | TyInl(_,a) | TyArray a -> f a
-            | TyMacro a ->
-                List.fold (fun s x ->
-                    match x with
-                    | TMLitVar a | TMVar a -> f a
-                    | TMText _ -> Set.empty
-                    ) Set.empty a
-        let used_vars = f x
-        Seq.iter (h.Add >> ignore) (outside_foralls - used_vars)
-        if 0 < h.Count then
-            errors.Add(r, UnusedTypeVariable (Seq.toList h))
-
-    /// ### assert_foralls_used
-    let assert_foralls_used errors r x = assert_foralls_used' errors Set.empty r x
-
-    /// ### validate_nominal
-    let validate_nominal (errors : _ ResizeArray) global_id body v =
-        // Stack union types and regular nominals must not be recursive.
-        // Unlike in the previous version of Spiral which simply didn't put the nominal type in the environment
-        // this one has to do it becaus the GADT constructors need access to it.
-        let rec assert_nominal_non_recursive v =
-            let f = assert_nominal_non_recursive
-            match visit_t v with
-            | TyNominal global_id' -> if global_id = global_id' then errors.Add(range_of_texpr_gadt_body body, IncorrectRecursiveNominal)
-            | TyMetavar _ | TyVar _ | TyModule _ | TyUnion _ | TyB | TyLit _ | TyPrim _ | TySymbol _ -> ()
-            | TyPair(a,b) | TyApply(a,b,_) | TyFun(a,b,_) -> f a; f b
-            | TyRecord a -> Map.iter (fun _ -> f) a
-            | TyExists(_,a) | TyComment(_,a) | TyLayout(a,_) | TyForall(_,a) | TyInl(_,a) | TyArray a -> f a
-            | TyMacro a -> List.iter (function TMLitVar a | TMVar a -> f a | TMText _ -> ()) a
-        match v with // Validates the union type.
-        | TyUnion(a,b) ->
-            a |> Map.iter (fun name (is_gadt, v) ->
-                let body =
-                    match body with
-                    | RawTUnion(_,a,_,_) -> Map.find name a |> snd
-                    | _ -> failwith "Compiler error: Expected an union."
-                let is_stack = b = UStack
-
-                // Makes sure that the GADT constructor is resulting in its own type.
-                // Also make sure that it's not using an instance of itself in its constructor other than in first position.
-                let rec assert_gadt_has_proper_specialized_constructor = function
-                    | TyNominal global_id' -> if global_id <> global_id' then errors.Add(range_of_texpr_gadt_constructor body, IncorrectGADTConstructorType)
-                    | TyApply(a,b,_) ->
-                        assert_gadt_has_proper_specialized_constructor a
-                        if is_stack then assert_nominal_non_recursive b
-                    | _ -> errors.Add(range_of_texpr_gadt_constructor body, IncorrectGADTConstructorType)
-
-                let assert_gadt_is_valid v =
-                    let rec find_gadt_constructor outside_foralls = function
-                        | TyForall(n,t) -> find_gadt_constructor (Set.add n.name outside_foralls) t
-                        | TyFun(a,b,_) ->
-                            if is_stack then assert_nominal_non_recursive a
-                            assert_gadt_has_proper_specialized_constructor b
-                            assert_foralls_used errors (range_of_texpr_gadt_body body) a
-                            assert_foralls_used' errors outside_foralls (range_of_texpr_gadt_constructor body) b
-                        | b ->
-                            assert_gadt_has_proper_specialized_constructor b
-                            assert_foralls_used' errors outside_foralls (range_of_texpr_gadt_constructor body) b
-
-                    find_gadt_constructor Set.empty v
-
-                if is_gadt then assert_gadt_is_valid v
-                else
-                    if is_stack then assert_nominal_non_recursive v
-                    assert_foralls_used errors (range_of_texpr body) v // We need to assert that the foralls in regular union bodies are checked.
-                )
-        | _ ->
-            assert_nominal_non_recursive v
-
-    /// ### kind_to_rawkind
-    let rec kind_to_rawkind (x : TT) : RawKindExpr =
-        match visit_tt x with
-        | KindMetavar _ | KindType -> RawKindStar
-        | KindFun(a,b) -> RawKindFun(kind_to_rawkind a, kind_to_rawkind b)
-
-    /// ### var_to_hovar
-    let var_to_hovar r (x : Var) : HoVar = r,(x.name,kind_to_rawkind x.kind)
-
-    /// ### var_to_typevar
-    let var_to_typevar r (x : Var) : TypeVar = var_to_hovar r x, [] // In the bottom up segment the constrains aren't checked anywhere so we'll put an empty list here.
-
-    /// ### infer
-    let infer package_id module_id (top_env' : TopEnv) expr =
-        let at_tag i = {package_id=package_id; module_id=module_id; tag=i}
-        let mutable top_env = top_env' // Is mutated only in two places at the top level. During actual inference can otherwise be thought of as immutable.
-        let errors = ResizeArray()
-        let generalized_statements = Dictionary(HashIdentity.Reference)
-        let type_apply_args = Dictionary(HashIdentity.Reference)
-        let module_type_apply_args = Dictionary(HashIdentity.Reference)
-        let qualified_union_case_patterns = Dictionary<Pattern, VSCRange * VarString>(HashIdentity.Reference)
-        let annotations = Dictionary<obj,_>(HashIdentity.Reference)
-        let exists_vars = Dictionary<obj,_>(HashIdentity.Reference)
-        let gadt_typecases = Dictionary<obj,_>(HashIdentity.Reference)
-        let mutable autogened_forallvar_count_in_typecase = 0
-        let mutable autogened_forallvar_count_in_funs = 0
-        let hover_types = HoverTypes()
-
-        /// Fills in the type applies and annotations, and generalizes statements. Also strips annotations from terms and patterns.
-        /// Dealing with recursive statement type applies requires some special consideration.
-        let fill r rec_term expr =
-            assert (0 = errors.Count)
-            let t_to_rawtexpr r vars_to_metavars expr =
-                let rec f x =
-                    match visit_t x with
-                    | TyUnion _ | TyMetavar _  | TyInl _  | TyModule _ as x -> failwithf "Compiler error: These cases should not appear in fill.\nGot: %A" x
-                    | TyForall(a,b) -> RawTForall(r,var_to_typevar r a,f b)
-                    | TyComment(_,x) -> f x
-                    | TyB -> RawTB r
-                    | TyLit x -> RawTLit(r,x)
-                    | TyPrim x -> RawTPrim(r,x)
-                    | TySymbol x -> RawTSymbol(r,x)
-                    | TyPair(a,b) -> RawTPair(r,f a,f b)
-                    | TyRecord l -> RawTRecord(r,Map.map (fun _ -> f) l)
-                    | TyFun(a,b,t) -> RawTFun(r,f a,f b,t)
-                    | TyExists(a,b) -> RawTExists(r,a |> List.map (fun n -> (r,(n.name,RawKindWildcard)),[]), f b)
-                    | TyArray a -> RawTArray(r,f a)
-                    | TyNominal i -> RawTFilledNominal(r,i)
-                    | TyApply(a,b,_) -> RawTApply(r,f a,f b)
-                    | TyVar (a,_) ->
-                        let is_typecase_metavar = List.tryFind (function TyVar(b,_) -> a = b | _ -> failwith "Compiler error: Expected a TyVar.") vars_to_metavars |> Option.isSome
-                        if is_typecase_metavar then RawTMetaVar(r,a.name) else RawTVar(r,a.name)
-                    | TyMacro l -> l |> List.map (function TMText x -> RawMacroText(r,x) | TMVar x -> RawMacroType(r,f x) | TMLitVar x -> RawMacroTypeLit(r,f x)) |> fun l -> RawTMacro(r,l)
-                    | TyLayout(a,b) -> RawTLayout(r,f a,b)
-                f expr
-            let annot r x = t_to_rawtexpr r [] (snd annotations.[x])
-            let rec fill_typecases rec_term x =
-                match gadt_typecases.TryGetValue(x) with
-                | true, typecase_data ->
-                    Seq.foldBack (fun (typecase_cond,forall_vars,typecase_constructor) typecase_body ->
-                        let r = range_of_expr typecase_body
-                        RawTypecase(r, t_to_rawtexpr r [] typecase_cond, [t_to_rawtexpr r forall_vars typecase_constructor, typecase_body])
-                        ) typecase_data (term rec_term x)
-                | _ ->
-                    term rec_term x
-            and fill_foralls r rec_term body =
-                let _,body = foralls_get body
-                let l,_ = foralls_ty_get generalized_statements.[body]
-                List.foldBack (fun (x : Var) s -> RawFilledForall(r,x.name,s)) l (term rec_term body)
-            and term rec_term x =
-                let f = term rec_term
-                let clauses l =
-                    List.map (fun (a, b) ->
-                        let rec_term,a = pattern rec_term a
-                        a,fill_typecases rec_term b
-                        ) l
-                match x with
-                | RawFilledForall _ | RawMissingBody _ | RawType _ as x -> failwithf "Compiler error: These cases should not appear in fill. It is intended to be called on top level statements only.\nGot: %A" x
-                | RawOp(r,op,l) when op_args_inferred op -> RawOp(r,op,l |> List.map (function RawType _ as a -> a | a -> f a))
-                | RawTypecase _
-                | RawSymbol _ | RawB _ | RawLit _ | RawOp _ -> x
-                | RawReal(_,x) -> x
-                | RawV(r,n,false) -> x
-                | RawV(r,n,true) ->
-                    match type_apply_args.TryGetValue(n) with
-                    | true, type_apply_args ->
-                        match Map.tryFind n rec_term with
-                        | None -> fst type_apply_args
-                        | Some t -> t |> snd type_apply_args
-                        |> List.fold (fun s x -> RawApply(r,s,RawType(r,t_to_rawtexpr r [] x))) x
-                    | _ -> x
-                | RawDefaultLit(r,_) -> RawAnnot(r,x,annot r x)
-                | RawForall(r,a,b) -> RawForall(r,a,f b)
-                | RawMatch(r'',(RawForall _ | RawFun _) & body,[PatVar(r,name), on_succ]) ->
-                    let _,body = foralls_get body
-                    RawMatch(r'',fill_foralls r rec_term body,[PatVar(r,name), fill_typecases (Map.remove name rec_term) on_succ])
-                | RawMatch(r,a,b) -> RawMatch(r,f a,clauses b)
-                | RawFun(r,a) -> RawAnnot(r,RawFun(r,clauses a),annot r x)
-                | RawExists(r,(r',a),b) -> RawExists(r,(r',Some(Option.defaultWith (fun () -> List.map (t_to_rawtexpr r []) exists_vars.[x]) a)),f b)
-                | RawRecBlock(r,l,on_succ) ->
-                    let has_foralls = List.exists (function (_,RawForall _) -> true | _ -> false) l
-                    if has_foralls then RawRecBlock(r,List.map (fun (a,b) -> a, f b) l,f on_succ)
-                    else
-                        let rec_term = List.fold (fun s ((_,name),b) -> Map.add name generalized_statements.[foralls_get b |> snd] s) rec_term l
-                        let l = List.map (fun (a,b) -> a, fill_foralls (fst a) rec_term b) l
-                        RawRecBlock(r,l,f on_succ)
-                | RawRecordWith(r,a,b,c) ->
-                    let b = b |> List.map (function
-                        | RawRecordWithSymbol(a,b) -> RawRecordWithSymbol(a,f b)
-                        | RawRecordWithSymbolModify(a,b) -> RawRecordWithSymbolModify(a,f b)
-                        | RawRecordWithInjectVar(a,b) -> RawRecordWithInjectVar(a,f b)
-                        | RawRecordWithInjectVarModify(a,b) -> RawRecordWithInjectVarModify(a,f b)
-                        )
-                    RawRecordWith(r,List.map f a,b,c)
-                | RawJoinPoint(r,q,a,b) -> RawAnnot(r,RawJoinPoint(r,q,f a,b),annot r x)
-                | RawAnnot(r,a,_) -> f a
-                | RawOpen(r,a,b,c) ->
-                    let f = function TyModule s -> s | _ -> failwith "Compiler error: Module open should always succeed in fill."
-                    List.fold (fun s x -> (f s).[snd x]) top_env.term.[snd a] b |> f
-                    |> Map.fold (fun s k _ -> Map.remove k s) rec_term
-                    |> fun rec_term -> RawOpen(r,a,b,term rec_term c)
-                | RawApply(r,a,b) ->
-                    let q = RawApply(r,f a,f b)
-                    match module_type_apply_args.TryGetValue(x) with
-                    | true, typevars -> List.fold (fun a b -> RawApply(r,a,RawType(r,t_to_rawtexpr r [] b))) q typevars
-                    | _ -> q
-                | RawIfThenElse(r,a,b,c) -> RawIfThenElse(r,f a,f b,f c)
-                | RawIfThen(r,a,b) -> RawIfThen(r,f a,f b)
-                | RawTypeIfThenElse(r,a,b,c,d) -> RawTypeIfThenElse(r,a,b,f c,f d)
-                | RawTypeIfThen(r,a,b,c) -> RawTypeIfThen(r,a,b,f c)
-                | RawPair(r,a,b) -> RawPair(r,f a,f b)
-                | RawSeq(r,a,b) -> RawSeq(r,f a,f b)
-                | RawHeapMutableSet(r,a,b,c) -> RawHeapMutableSet(r,f a,List.map f b,f c)
-                | RawMacro(r,l) ->
-                    let l = l |> List.map (function RawMacroTerm(r,x,b) -> RawMacroTerm(r,f x,b) | x -> x )
-                    RawAnnot(r,RawMacro(r,l),annot r x)
-                | RawArray(r,a) -> RawAnnot(r,RawArray(r,List.map f a),annot r x)
-                | RawLayoutIndex(r,a) -> RawLayoutIndex(r,f a)
-            and pattern recbterm x' =
-                let mutable rec_term = rec_term
-                let rec f = function
-                    | PatFilledDefaultValue _ -> failwith "Compiler error: PatDefaultValueFilled should not appear in fill."
-                    | PatValue _ | PatSymbol _ | PatE _ | PatB _ as x -> x
-                    | PatVar(r,name) as x -> rec_term <- Map.remove name rec_term; x
-                    | PatDyn(r,a) -> PatDyn(r,f a)
-                    | PatUnbox(r,q,a) -> PatUnbox(r,q,f a)
-                    | PatExists(r,q,a) -> PatExists(r,q,f a)
-                    | PatAnnot(_,a,_) -> f a
-                    | PatPair(r,a,b) -> PatPair(r,f a,f b)
-                    | PatRecordMembers(r,a) ->
-                        let a = a |> List.map (function
-                            | PatRecordMembersSymbol(a,b) -> PatRecordMembersSymbol(a,f b)
-                            | PatRecordMembersInjectVar(a,b) -> PatRecordMembersInjectVar(a,f b)
-                            )
-                        PatRecordMembers(r,a)
-                    | PatOr(r,a,b) -> PatOr(r,f a,f b)
-                    | PatAnd(r,a,b) -> PatAnd(r,f a,f b)
-                    | PatDefaultValue(r,a) as x -> PatFilledDefaultValue(r,a,annot r x)
-                    | PatWhen(r,a,b) -> PatWhen(r,f a,term rec_term b)
-                    | PatNominal(r,a,b,c) as nominal_pattern ->
-                        match qualified_union_case_patterns.TryGetValue nominal_pattern with
-                        | true, (case_range, case) -> PatUnbox(case_range, case, f c)
-                        | _ -> PatNominal(r,a,b,f c)
-                    | PatArray(r,a) -> PatArray(r,List.map f a)
-                rec_term, f x'
-
-            let x = fill_foralls r rec_term expr
-            assert (0 = errors.Count)
-            x
-
-        let fresh_kind () = KindMetavar {contents'=None}
-        let fresh_var'' x = TyMetavar (x, ref None)
-        let fresh_var' scope kind = fresh_var'' {scope=scope; constraints=Set.empty; kind=kind}
-        let fresh_subst_var scope cons kind = fresh_var'' {scope=scope; constraints=cons; kind=kind}
-        let forall_subst_all scope x =
-            let rec loop m x =
-                match visit_t x with
-                | TyForall(a,b) ->
-                    let v = fresh_subst_var scope a.constraints a.kind
-                    let type_apply_args,b = loop ((a, v) :: m) b
-                    v :: type_apply_args, b
-                | x -> [], subst m x
-            loop [] x
-
-        let exists_subst_term scope (l : Var list, body) =
-            let vars = l |> List.map (fun a -> fresh_subst_var scope a.constraints a.kind)
-            vars, subst (List.zip l vars) body
-
-        let assert_exists_hasnt_metavars r vars =
-            if List.exists has_metavars vars then errors.Add(r, ExistsShouldntHaveMetavars vars)
-
-        let generalize r scope (forall_vars : Var list) (body : T) =
-            let h = HashSet(HashIdentity.Reference)
-            List.iter (h.Add >> ignore) forall_vars
-            let generalized_metavars = ResizeArray()
-            let rec replace_metavars x =
-                let f = replace_metavars
-                match x with
-                | TyVar (_,{contents=Some x})
-                | TyMetavar(_,{contents=Some x}) -> f x
-                | TyMetavar(x, link) when scope = x.scope ->
-                    let v = tyvar {scope=x.scope; constraints=x.constraints; kind=kind_force x.kind; name=autogen_name_in_fun autogened_forallvar_count_in_funs}
-                    autogened_forallvar_count_in_funs <- autogened_forallvar_count_in_funs+1
-                    link.Value <- Some v
-                    replace_metavars v
-                // This scheme with the HashSet is so generalize works for mutually recursive statements.
-                | TyVar (v,_) -> if scope = v.scope && h.Add(v) then generalized_metavars.Add(v)
-                | TyMetavar _ | TyNominal _ | TyB | TyLit _ | TyPrim _ | TySymbol _ -> ()
-                | TyPair(a,b) | TyApply(a,b,_) | TyFun(a,b,_) -> f a; f b
-                | TyUnion(a,_) -> Map.iter (fun _ -> snd >> f) a
-                | TyRecord a -> Map.iter (fun _ -> f) a
-                | TyExists(v,a) -> List.iter (h.Add >> ignore) v; f a
-                | TyForall(v,a) -> (h.Add >> ignore) v; f a
-                | TyComment(_,a) | TyLayout(a,_) | TyArray a -> f a
-                | TyMacro a -> List.iter (function TMLitVar a | TMVar a -> f a | TMText _ -> ()) a
-                | TyModule _ | TyInl _ -> ()
-
-            let f x s = TyForall(x,s)
-            replace_metavars body
-            let x = Seq.foldBack f generalized_metavars body |> List.foldBack f forall_vars |> term_subst
-            if List.isEmpty forall_vars = false then assert_foralls_used errors r x
-            x
-
-        let gadt_extract scope (v : T) =
-            let forall_subst_all_gadt x =
-                let rec loop m x =
-                    match visit_t x with
-                    | TyForall(a,b) ->
-                        let v = tyvar {a with name=autogen_name_in_typecase autogened_forallvar_count_in_typecase; scope=scope}
-                        autogened_forallvar_count_in_typecase <- autogened_forallvar_count_in_typecase+1
-                        let type_apply_args,b = loop ((a, v) :: m) b
-                        v :: type_apply_args, b
-                    | x -> [], subst m x
-                loop [] x
-            let forall_vars,v = forall_subst_all_gadt v
-            match v with
-            | TyFun(a,b,_) -> forall_vars,a,b
-            | b -> forall_vars,TyB,b
-
-        let inline unify_kind' er r got expected =
-            let rec loop (a'',b'') =
-                match visit_tt a'', visit_tt b'' with
-                | KindType, KindType -> ()
-                | KindFun(a,a'), KindFun(b,b') -> loop (a,b); loop (a',b')
-                | KindMetavar a, KindMetavar b & b' -> if a <> b then a.contents' <- Some b'
-                | KindMetavar link, b | b, KindMetavar link -> link.contents' <- Some b
-                | _ -> raise (InferTypeErrorException [r, er (got, expected)])
-            loop (got, expected)
-        let unify_kind r got expected = try unify_kind' KindError r got expected with :? InferTypeErrorException as e -> errors.AddRange e.Data0
-        let unify_gadt (gadt_links : T option ref ResizeArray option) (r : VSCRange) (got : T) (expected : T) : unit =
-            let unify_kind got expected = unify_kind' KindError r got expected
-            let er () = raise (InferTypeErrorException [r, TermError(got, expected)])
-
-            let rec constraint_process (con : Constraint Set) b =
-                let unify_kind got expected = unify_kind' KindErrorInConstraint r got expected
-                let body = function
-                    | CUInt, TyPrim (UInt8T | UInt16T | UInt32T | UInt64T)
-                    | CSInt, TyPrim (Int8T | Int16T | Int32T | Int64T)
-                    | CInt, TyPrim (UInt8T | UInt16T | UInt32T | UInt64T | Int8T | Int16T | Int32T | Int64T)
-                    | CFloat, TyPrim (Float32T | Float64T)
-                    | CNumber, TyPrim (UInt8T | UInt16T | UInt32T | UInt64T | Int8T | Int16T | Int32T | Int64T | Float32T | Float64T)
-                    | CPrim, TyPrim _
-                    | CSymbol, TySymbol _
-                    | CRecord, TyRecord _ -> []
-                    | con, TyMetavar(x,_) -> x.constraints <- Set.add con x.constraints; []
-                    | CPrototype prot & con, x ->
-                        match type_apply_split x with
-                        | TyNominal ins, x' ->
-                            match Map.tryFind (prot,ins) top_env.prototypes_instances with
-                            | Some cons ->
-                                try List.fold2 (fun ers con x -> List.append (constraint_process con (visit_t x)) ers) [] cons x'
-                                with :? System.ArgumentException -> [] // This case can occur due when kind application overflows in a previous expression.
-                            | None -> [InstanceNotFound(prot,ins)]
-                        | TyMetavar _ & x, _ -> [PrototypeConstraintCannotPropagateToMetavar(prot,x)]
-                        | TyVar _ & x, _ -> [PrototypeConstraintCannotPropagateToVar(prot,x)]
-                        | _ -> [ConstraintError(con,x)]
-                    | con, x -> [ConstraintError(con,x)]
-
-                match b with
-                | TyVar (_,{contents=Some x}) -> constraint_process con x
-                | TyVar (b,_) -> if con.IsSubsetOf b.constraints = false then [ForallVarConstraintError(b.name,con,b.constraints)] else []
-                | b ->
-                    let b_kind = tt top_env b
-                    Set.fold (fun ers con ->
-                        unify_kind b_kind (constraint_kind top_env con)
-                        List.append (body (con,b)) ers
-                        ) [] con
-
-            // Does occurs checking for recursive metavariables.
-            // Does scope checking in forall vars.
-            let validate_mvar_unification i x =
-                let nested_tvars = HashSet(HashIdentity.Reference)
-                let rec f x =
-                    match visit_t x with
-                    | TyModule _ | TyNominal _ | TyB | TyLit _ | TyPrim _ | TySymbol _ -> ()
-                    | TyMacro a -> a |> List.iter (function TMText _ -> () | TMLitVar a | TMVar a -> f a)
-                    | TyForall(v,a) | TyInl(v,a) ->
-                        let _ = nested_tvars.Add(v)
-                        f a
-                        let _ = nested_tvars.Remove(v)
-                        ()
-                    | TyExists(v,a) ->
-                        v |> List.iter (nested_tvars.Add >> ignore)
-                        f a
-                        v |> List.iter (nested_tvars.Remove >> ignore)
-                    | TyComment(_,a) | TyArray a -> f a
-                    | TyApply(a,b,_) | TyFun(a,b,_) | TyPair(a,b) -> f a; f b
-                    | TyUnion(l,_) -> Map.iter (fun _ -> snd >> f) l
-                    | TyRecord l -> Map.iter (fun _ -> f) l
-                    | TyVar(b,_) -> if nested_tvars.Contains b = false && i.scope < b.scope then raise (InferTypeErrorException [r,TypeVarScopeError(b.name,got,expected)])
-                    | TyMetavar(x,_) -> if i = x then raise (InferTypeErrorException [r,RecursiveMetavarsNotAllowed(got,expected)]) elif i.scope < x.scope then x.scope <- i.scope
-                    | TyLayout(a,_) -> f a
-                f x
-
-            // Does occurs checking for recursive type variables.
-            let rec validate_tvar_unification i x =
-                let f = validate_tvar_unification i
-                match visit_t x with
-                | TyMetavar _ | TyModule _ | TyNominal _ | TyB | TyLit _ | TyPrim _ | TySymbol _ -> ()
-                | TyMacro a -> a |> List.iter (function TMText _ -> () | TMLitVar a | TMVar a -> f a)
-                | TyExists(_,a) | TyComment(_,a) | TyForall(_,a) | TyInl(_,a) | TyArray a -> f a
-                | TyApply(a,b,_) | TyFun(a,b,_) | TyPair(a,b) -> f a; f b
-                | TyUnion(l,_) -> Map.iter (fun _ -> snd >> f) l
-                | TyRecord l -> Map.iter (fun _ -> f) l
-                | TyVar(x,_) -> if i = x then raise (InferTypeErrorException [r,RecursiveTypevarsNotAllowed(got,expected)])
-                | TyLayout(a,_) -> f a
-
-            let rec loop (a'',b'') =
-                match visit_t a'', visit_t b'' with
-                | TyComment(_,a), b | a, TyComment(_,b) -> loop (a,b)
-                | TyMetavar(a,link), TyMetavar(b,_) & b' ->
-                    if a <> b then
-                        unify_kind a.kind b.kind
-                        b.scope <- min a.scope b.scope
-                        b.constraints <- a.constraints + b.constraints
-                        link.Value <- Some b'
-                | TyMetavar(a,link), b | b, TyMetavar(a,link) ->
-                    validate_mvar_unification a b
-                    unify_kind a.kind (tt top_env b)
-                    match constraint_process a.constraints b with
-                    | [] -> link.Value <- Some b
-                    | constraint_errors -> raise (InferTypeErrorException (List.map (fun x -> r,x) constraint_errors))
-                | TyVar (a,_), TyVar (b,_) when a = b -> ()
-                | TyVar (va,la), TyVar (vb,lb) when gadt_links.IsSome && va.scope <> vb.scope ->
-                    let ta, tb = visit_t a'', visit_t b''
-                    let inner_var, inner_link, outer_ty, outer_var, outer_link, inner_ty =
-                        if va.scope > vb.scope then va, la, tb, vb, lb, ta else vb, lb, ta, va, la, tb
-                    validate_tvar_unification inner_var outer_ty
-                    unify_kind inner_var.kind (tt top_env outer_ty)
-                    match constraint_process inner_var.constraints outer_ty with
-                    | [] -> inner_link.Value <- Some outer_ty; gadt_links.Value.Add(inner_link)
-                    | _ ->
-                        match constraint_process outer_var.constraints inner_ty with
-                        | [] -> outer_link.Value <- Some inner_ty; gadt_links.Value.Add(outer_link)
-                        | constraint_errors -> raise (InferTypeErrorException (List.map (fun x -> r,x) constraint_errors))
-                | TyVar (a,link), b | b, TyVar (a,link) when gadt_links.IsSome ->
-                    validate_tvar_unification a b
-                    unify_kind a.kind (tt top_env b)
-                    match constraint_process a.constraints b with
-                    | [] -> link.Value <- Some b; gadt_links.Value.Add(link)
-                    | constraint_errors -> raise (InferTypeErrorException (List.map (fun x -> r,x) constraint_errors))
-                | TyFun(a,a',ta), TyFun(b,b',tb) when ta = tb -> loop (a,b); loop (a',b')
-                | TyPair(a,a'), TyPair(b,b') -> loop (a,b); loop (a',b')
-                | TyApply(a,a',_), TyApply(b,b',_) -> loop (a',b'); loop (a,b)
-                | TyUnion(l,q), TyUnion(l',q') ->
-                    if q = q' then
-                        let a,b = Map.toArray l, Map.toArray l'
-                        if a.Length <> b.Length then er ()
-                        else Array.iter2 (fun (ka,a) (kb,b) -> if ka = kb && fst a = fst b then loop (snd a,snd b) else er()) a b
-                    else raise (InferTypeErrorException [r,UnionTypesMustHaveTheSameLayout])
-                | TyRecord l, TyRecord l' ->
-                    let a,b = Map.toArray l, Map.toArray l'
-                    if a.Length <> b.Length then er ()
-                    else
-                        let a = a |> Array.sortBy (fun ((_,k),_) -> k)
-                        let b = b |> Array.sortBy (fun ((_,k),_) -> k)
-                        Array.iter2 (fun (ka,a) (kb,b) ->
-                            if (ka |> snd) = (kb |> snd)
-                            then loop (a,b)
-                            else er()
-                        ) a b
-                | TyNominal i, TyNominal i' when i = i' -> ()
-                | TyB, TyB -> ()
-                | TyPrim x, TyPrim x' when x = x' -> ()
-                | TyLit a, TyLit b when a = b -> ()
-                | TySymbol x, TySymbol x' when x = x' -> ()
-                | TyArray a, TyArray b -> loop (a,b)
-                // Note: Unifying these 3 only makes sense if the `expected` is fully inferred already.
-                | TyExists(a,b), TyExists(a',b') when
-                        List.length a = List.length a'
-                        && List.forall2 (fun (a : Var) (a' : Var) -> a.kind = a'.kind && a.constraints = a'.constraints) a a' ->
-                    loop (b, subst (List.map2 (fun a a' -> a', tyvar a) a a') b')
-                | TyForall(a,b), TyForall(a',b')
-                | TyInl(a,b), TyInl(a',b') when a.kind = a'.kind && a.constraints = a'.constraints -> loop (b, subst [a',tyvar a] b')
-                | TyMacro a, TyMacro b ->
-                    List.iter2 (fun a b ->
-                        match a,b with
-                        | TMText a, TMText b when System.Object.ReferenceEquals(a,b) || a = b -> ()
-                        | TMVar a, TMVar b -> loop(a,b)
-                        | _ -> er ()
-                        ) a b
-                | TyLayout(a,a'), TyLayout(b,b') when a' = b' -> loop (a,b)
-                | _ -> er ()
-
-            try loop (got, expected)
-            with :? InferTypeErrorException as e -> errors.AddRange e.Data0
-
-        let unify range got expected = unify_gadt None range got expected
-
-        let apply_record r s l x =
-            match visit_t x with
-            | TySymbol x ->
-                match l |> Map.tryPick (fun (_, k) v -> if k = x then Some v else None) with
-                | Some x ->
-                    let com = match x with TyComment(com,_) -> com | _ -> ""
-                    unify r s x
-                    hover_types.AddHover (r,(x,com))
-                | None -> errors.Add(r,RecordIndexFailed x)
-            | x -> errors.Add(r,ExpectedSymbolAsRecordKey x)
-
-        let assert_bound_vars env a =
-            let keys_of m = Map.fold (fun s k _ -> Set.add k s) Set.empty m
-            validate_bound_vars (loc_env top_env) env.constraints (keys_of env.term) (keys_of env.ty) (Choice1Of2 a) |> errors.AddRange
-
-        let fresh_var scope = fresh_var' scope KindType
-
-        let v_cons env a = Map.tryFind a env |> Option.orElseWith (fun () -> Map.tryFind a top_env.constraints)
-        let v env top_env a = Map.tryFind a env |> Option.orElseWith (fun () -> Map.tryFind a top_env)
-        let v_term env a = v env.term top_env.term a |> Option.map (function TyComment(com,x) -> com, visit_t x | x -> "", visit_t x)
-        let v_ty env a = v env.ty top_env.ty a
-
-        let typevar_to_var scope cons (((_,(name,kind)),constraints) : TypeVar) : Var =
-            let rec typevar = function
-                | RawKindWildcard -> fresh_kind()
-                | RawKindStar -> KindType
-                | RawKindFun(a,b) -> KindFun(typevar a, typevar b)
-            let kind = typevar kind
-            let cons =
-                constraints |> List.choose (fun (r,x) ->
-                    match v_cons cons x with
-                    | Some (M _) -> errors.Add(r,ExpectedConstraintInsteadOfModule); None
-                    | Some (C x) -> unify_kind r kind (constraint_kind top_env x); Some x
-                    | None -> errors.Add(r,UnboundVariable x); None
-                    ) |> Set.ofList
-
-            {scope=scope; constraints=cons; kind=kind_force kind; name=name}
-
-        let typevars scope env (l : TypeVar list) =
-            List.mapFold (fun s x ->
-                let v = typevar_to_var scope env.constraints x
-                v, Map.add v.name (tyvar v) s
-                ) env.ty l
-
-        let rec term scope env s x = term' scope false env s x
-        and term' scope is_in_left_apply (env : InferEnv) s x =
-            let f = term scope env
-            let f' x = let v = fresh_var scope in f v x; visit_t v
-            let f'' x = let v = fresh_var scope in term' scope true env v x; visit_t v
-            let inline rawv (r,name,is_tvar_applied) =
-                match v_term env name with
-                | None -> errors.Add(r,UnboundVariable name)
-                | Some (_,TySymbol "<real>") -> errors.Add(r,RealFunctionInTopDown)
-                | Some (_,TySymbol ambiguous) when ambiguous.StartsWith(ambiguousUnionCasePrefix, StringComparison.Ordinal) -> errors.Add(r,UnionCaseAmbiguous (ambiguous.Substring(ambiguousUnionCasePrefix.Length).TrimEnd '>'))
-                | Some (com,TyModule _ & m) when is_in_left_apply = false ->
-                    hover_types.AddHover(r,(m,com))
-                    errors.Add(r,ModuleMustBeImmediatelyApplied)
-                | Some (com,a) ->
-                    if is_tvar_applied then
-                        match a with TyForall _ -> annotations.Add(x,(r,s)) | _ -> ()
-                        let f a = let l,v = forall_subst_all scope a in unify r s v; l
-                        let l = f a
-                        hover_types.AddHover(r,(s,com))
-                        type_apply_args.Add(name,(l,f))
-                    else
-                        unify r s a
-                        hover_types.AddHover(r,(s,com))
-            let inline type_if_then_else r type_a type_b tr =
-                let gadt_links = ResizeArray()
-                let q,w = fresh_var scope, fresh_var scope
-                ty_init scope env q type_a; ty_init scope env w type_b
-                unify_gadt (Some gadt_links) r q w
-                f s tr
-                dispose_gadt_links gadt_links
-            let match_clause (q,w) (a,b) =
-                let gadt_links, gadt_typecases', (scope, env) = pattern scope env q a
-                term scope env w b
-                dispose_gadt_links gadt_links
-                gadt_typecases.Add(b,gadt_typecases')
-            match x with
-            | RawB r -> unify r s TyB
-            | RawV(r,a,is_tvar_applied) -> rawv (r,a,is_tvar_applied)
-            | RawDefaultLit(r,_) -> unify r s (fresh_subst_var scope (Set.singleton CNumber) KindType); hover_types.AddHover(r,(s,"")); annotations.Add(x,(r,s))
-            | RawLit(r,a) -> unify r s (lit a)
-            | RawSymbol(r,x) -> unify r s (TySymbol x)
-            | RawIfThenElse(_,cond,tr,fl) -> f (TyPrim BoolT) cond; f s tr; f s fl
-            | RawIfThen(r,cond,tr) -> f (TyPrim BoolT) cond; unify r s TyB; f TyB tr
-            | RawTypeIfThenElse(r,type_a,type_b,tr,fl) -> type_if_then_else r type_a type_b tr; f s fl
-            | RawTypeIfThen(r,type_a,type_b,tr) -> unify r s TyB; type_if_then_else r type_a type_b tr
-            | RawPair(r,a,b) ->
-                let q,w = fresh_var scope, fresh_var scope
-                unify r s (TyPair(q, w))
-                f q a; f w b
-            | RawSeq(_,a,b) -> f TyB a; f s b
-            | RawReal(_,a) -> assert_bound_vars env a
-            // ws: the term arguments of the value ops (op_args_inferred) are type checked like any term, so `*x`, `a + b` or
-            // an `if` in them get their type applications; type arguments and the other ops stay unchecked.
-            | RawOp(_,op,l) when op_args_inferred op -> l |> List.iter (function RawType _ as a -> assert_bound_vars env a | a -> f' a |> ignore)
-            | RawOp(_,_,l) -> List.iter (assert_bound_vars env) l
-            | RawJoinPoint(r,None,a,_) -> annotations.Add(x,(r,s)); f s a
-            | RawJoinPoint(r,Some _,a,_) ->
-                unify r s (TySymbol "tuple_of_free_vars")
-                let s = fresh_var scope
-                annotations.Add(x,(r,s))
-                f s a
-            | RawApply(r,a',b) ->
-                let rec loop = function
-                    | TyNominal _ | TyApply _ as a ->
-                        match type_apply_split a with
-                        | TyNominal i, l ->
-                            let n = top_env.nominals.[i]
-                            match n.body with
-                            | TyUnion _ -> errors.Add(r,UnionsCannotBeApplied)
-                            | _ ->
-                                match Utils.list_try_zip n.vars l with
-                                | Some l -> loop (subst l n.body)
-                                | None -> errors.Add(r,MalformedNominal)
-                        | _ -> errors.Add(r,ExpectedNominalInApply a)
-                    | TyLayout(a,_) ->
-                        match visit_t a with
-                        | TyRecord l -> apply_record r s l (f' b)
-                        | a -> errors.Add(r,ExpectedRecordInsideALayout a)
-                    | TyRecord l -> apply_record r s l (f' b)
-                    | TyModule l ->
-                        match f' b with
-                        | TySymbol n ->
-                            // `x.key`: the module's own member, else its index module's (folder `x/` holding a module `x`).
-                            let folder = match a' with RawV(_,m,_) -> Some m | RawApply(_,_,RawSymbol(_,m)) -> Some m | _ -> None
-                            let index = folder |> Option.bind (fun m -> if m = n then None else match Map.tryFind m l with Some (TyModule i) -> Some i | _ -> None)
-                            let direct = Map.tryFind n l
-                            if (match direct with Some (TyModule _) -> true | _ -> false) && (index |> Option.exists (Map.containsKey n)) then errors.Add(r,ModuleIndexAmbiguous(Option.get folder, n)) else
-                            match (match direct with Some _ -> direct | None -> index |> Option.bind (Map.tryFind n)) with
-                            | Some (TyModule _ as a) ->
-                                if is_in_left_apply then
-                                    match b with RawSymbol(r,_) -> hover_types.AddHover(r,(a,"")) | _ -> ()
-                                    unify r s a
-                                else errors.Add(r,ModuleMustBeImmediatelyApplied)
-                            | Some a' ->
-                                let typevars,a = forall_subst_all scope a'
-                                if List.isEmpty typevars = false then
-                                    annotations.Add(x,(r,s))
-                                    module_type_apply_args.Add(x,typevars)
-                                unify r s a
-                                match b with
-                                | RawSymbol(r,_) ->
-                                    let com = match a' with TyComment(com,_) -> com | _ -> ""
-                                    hover_types.AddHover(r,(a,com))
-                                | _ -> ()
-                            | None -> errors.Add(r,ModuleIndexFailed n)
-                        | b -> errors.Add(r,ExpectedSymbolAsModuleKey b)
-                    | TyFun(domain,range,_) -> unify (range_of_expr a') range s; f domain b
-                    | a -> let v = fresh_var scope in unify (range_of_expr a') a (TyFun(v,s,FT_Vanilla)); f v b
-                loop (f'' a')
-            | RawAnnot(r,a,b) ->  ty_init scope env s b; f s a
-            | RawOpen(_,(r,a),l,on_succ) ->
-                match inferModule_open (Some hover_types) (loc_env top_env) env.ty r a l with
-                | Ok x ->
-                    let combine big small = Map.foldBack Map.add small big
-                    term scope {term = combine env.term x.term; ty = combine env.ty x.ty; constraints = combine env.constraints x.constraints} s on_succ
-                | Error e -> errors.Add(e)
-            | RawRecordWith(r,l,withs,withouts) ->
-                let i = errors.Count
-                let withouts,fields =
-                    List.foldBack (fun x (l,s as state) ->
-                        match x with
-                        | RawRecordWithoutSymbol(r,a) -> {|range=r; symbol = a|} :: l, Set.add a s
-                        | RawRecordWithoutInjectVar(r,a) ->
-                            match v_term env a with
-                            | Some (com, TySymbol a & x) -> hover_types.AddHover(r,(x,com)); {|range=r; symbol = a|} :: l, Set.add a s
-                            | Some (_,x) -> errors.Add(r, ExpectedSymbolAsRecordKey x); state
-                            | None -> errors.Add(r, UnboundVariable a); state
-                        ) withouts ([],Set.empty)
-                let withs,_ =
-                    List.foldBack (fun x (l,s as state) ->
-                        let with_symbol ((r,a),b) = {|range=r; symbol = a; is_blocked=Set.contains a s; is_modify=false; var=fresh_var scope; body=b|} :: l, Set.add a s
-                        let with_symbol_modify ((r,a),b) = {|range=r; symbol = a; is_blocked=Set.contains a s; is_modify=true; var=TyFun(fresh_var scope,fresh_var scope,FT_Vanilla); body=b|} :: l, Set.add a s
-                        let inline with_inject next ((r,a),b) =
-                            match v_term env a with
-                            | Some (com, TySymbol a & x) -> hover_types.AddHover(r,(x,com)); next ((r,a),b)
-                            | Some (_, x) -> errors.Add(r, ExpectedSymbolAsRecordKey x); f' b |> ignore; state
-                            | None -> errors.Add(r, UnboundVariable a); f' b |> ignore; state
-                        match x with
-                        | RawRecordWithSymbol(a,b) -> with_symbol (a,b)
-                        | RawRecordWithSymbolModify(a,b) -> with_symbol_modify (a,b)
-                        | RawRecordWithInjectVar(a,b) -> with_inject with_symbol (a,b)
-                        | RawRecordWithInjectVarModify(a,b) -> with_inject with_symbol_modify (a,b)
-                        ) withs ([],fields)
-
-                let eval m =
-                    let m = (m,withs) ||> List.fold (fun m x ->
-                        if x.is_modify then
-                            let i, q =
-                                match m |> Map.tryPick (fun (i, k) v -> if k = x.symbol then Some (i, v) else None) with
-                                | Some q -> q
-                                | None -> errors.Add(x.range,RecordIndexFailed x.symbol); m.Count, fresh_var scope
-                            let w = fresh_var scope
-                            unify x.range (TyFun(q,w,FT_Vanilla)) x.var
-                            f x.var x.body
-                            Map.add (i, x.symbol) w m
-                        else
-                            f x.var x.body
-                            let i =
-                                m
-                                |> Map.tryPick (fun (i, k) v -> if k = x.symbol then Some i else None)
-                                |> Option.defaultValue m.Count
-                            Map.add (i, x.symbol) x.var m
-                        )
-                    withouts |> List.fold (fun m x -> m |> Map.filter (fun (_, k) _ -> k <> x.symbol)) m
-
-                let bind s = withs |> List.iter (fun x ->
-                    if x.is_blocked = false then
-                        if x.is_modify then
-                            s
-                            |> Map.tryPick (fun (i, k') v -> if k' = x.symbol then Some (i, v) else None)
-                            |> Option.iter (fun (_, k) -> unify x.range x.var (TyFun(fresh_var scope,k,FT_Vanilla)))
-                        else
-                            s
-                            |> Map.tryPick (fun (i, k') v -> if k' = x.symbol then Some (i, v) else None)
-                            |> Option.iter (fun (_, k) -> k |> unify x.range x.var)
-                    )
-
-                let rec tail' m = function
-                    | x :: xs ->
-                        match f' x with
-                        | TySymbol k ->
-                            match m |> Map.tryPick (fun (i, k') v -> if k' = k then Some (i, v) else None) with
-                            | Some (i, m) ->
-                                match visit_t m with
-                                | TyRecord m -> tail' m xs
-                                | m -> errors.Add(range_of_expr x, ExpectedRecordAsResultOfIndex m); eval Map.empty
-                            | _ -> errors.Add(range_of_expr x, RecordIndexFailed k); eval Map.empty
-                            |> fun v ->
-                                let i = m |> Map.tryPick (fun (i, k') v -> if k' = k then Some (i, v) else None)
-                                match i with
-                                | Some (i, _) -> Map.add (i, k) (TyRecord v) m
-                                | None -> Map.add (m.Count, k) (TyRecord v) m
-                        | TyMetavar _ -> errors.Add(range_of_expr x, MetavarsNotAllowedInRecordWith); eval Map.empty
-                        | a -> errors.Add(range_of_expr x, ExpectedSymbolInRecordWith a); eval Map.empty
-                    | [] -> eval m
-
-                let rec tail (m,s) = function
-                    | x :: xs ->
-                        match f' x with
-                        | TySymbol k ->
-                            match
-                                m |> Map.tryPick (fun (i, k') v -> if k' = k then Some (i, v) else None),
-                                s |> Map.tryPick (fun (i, k') v -> if k' = k then Some (i, v) else None)
-                            with
-                            | Some (i,m), Some (_i',s) ->
-                                match visit_t m, visit_t s with
-                                | TyRecord m, TyRecord s -> i, tail (m,s) xs
-                                | TyRecord m, _ -> i, tail' m xs
-                                | m, _ -> errors.Add(range_of_expr x, ExpectedRecordAsResultOfIndex m); i, eval Map.empty
-                            | Some (i,m), None ->
-                                match visit_t m with
-                                | TyRecord m -> i, tail' m xs
-                                | m -> errors.Add(range_of_expr x, ExpectedRecordAsResultOfIndex m); i, eval Map.empty
-                            | _ -> errors.Add(range_of_expr x, RecordIndexFailed k); i, eval Map.empty
-                            |> fun (i,v) -> Map.add (i,k) (TyRecord v) m
-                        | TyMetavar _ -> errors.Add(range_of_expr x, MetavarsNotAllowedInRecordWith); eval Map.empty
-                        | a -> errors.Add(range_of_expr x, ExpectedSymbolInRecordWith a); eval Map.empty
-                    | [] -> bind s; eval m
-
-                match l with
-                | [] ->
-                    match visit_t s with TyRecord s -> bind s | _ -> ()
-                    eval Map.empty
-                | m :: l ->
-                    match f' m, visit_t s with
-                    | TyRecord m, TyRecord s -> tail (m,s) l
-                    | TyRecord m, _ -> tail' m l
-                    | TyMetavar _, _ -> errors.Add(range_of_expr x, MetavarsNotAllowedInRecordWith); eval Map.empty
-                    | a,_ -> errors.Add(range_of_expr x, ExpectedRecord a); eval Map.empty
-                |> fun v -> if errors.Count = i then unify r (TyRecord v) s
-            | RawExists(r,(r',l),body) ->
-                match visit_t s with
-                | TyExists(type_vars,type_body) ->
-                    let vars, s = exists_subst_term scope (type_vars,type_body)
-                    l |> Option.iter (fun l ->
-                        let l1,l2 = vars.Length, l.Length
-                        if l1 = l2 then List.iter2 (ty_init scope env) vars l
-                        else errors.Add(r', UnexpectedNumberOfArgumentsInExistsBody(l1,l2))
-                        )
-                    term scope env s body
-                    assert_exists_hasnt_metavars (range_of_expr x) vars
-                    exists_vars.Add(x,vars)
-                | s -> errors.Add(r, ExpectedExistentialInTerm s); f (fresh_var scope) body
-            | RawFun(r,l) ->
-                annotations.Add(x,(r,s))
-                let q,w = fresh_var scope, fresh_var scope
-                unify r s (TyFun(q,w,FT_Vanilla))
-                List.iter (match_clause (q,w)) l
-            | RawForall _ -> failwith "Compiler error: Should be handled in let statements."
-            | RawMatch(_,(RawForall _ | RawFun _) & body,[PatVar(r,name), on_succ]) -> term scope (inl scope env ((r, name), body)) s on_succ
-            | RawRecBlock(_,l',on_succ) -> term scope (rec_block scope env l') s on_succ
-            | RawMatch(_,body,l) ->
-                let body_var = fresh_var scope
-                f body_var body
-                List.iter (match_clause (body_var,s)) l
-            | RawMissingBody r -> errors.Add(r,MissingBody)
-            | RawMacro(r,a) ->
-                annotations.Add(x,(r,s))
-                List.iter (function
-                    | RawMacroText _ -> ()
-                    | RawMacroTerm(_,a,_) -> term scope env (fresh_var scope) a
-                    | RawMacroType(_,a) | RawMacroTypeLit(_,a) -> ty_init scope env (fresh_var scope) a
-                    ) a
-            | RawHeapMutableSet(r,a,b,c) ->
-                unify r s TyB
-                try let v = fresh_var scope
-                    let i = errors.Count
-                    f v a
-                    match visit_t v with
-                    | TyMetavar _ -> raise (InferTypeErrorException [r, LayoutSetMustBeAnnotated])
-                    | TyLayout(v,lay) ->
-                        match lay with
-                        | HeapMutable | StackMutable | StackRefs | HeapRefs ->
-                            if i <> errors.Count then raise (InferTypeErrorException [])
-                            let b = List.map (fun x -> range_of_expr x, f' x) b
-                            List.fold (fun (r,a') (r',b') ->
-                                match visit_t a' with
-                                | TyRecord a ->
-                                    match b' with
-                                    | TySymbol b ->
-                                        match a |> Map.tryPick (fun (_, k) v -> if k = b then Some v else None) with
-                                        | Some x -> r', x
-                                        | _ -> raise (InferTypeErrorException [r, RecordIndexFailed b])
-                                    | b -> raise (InferTypeErrorException [r', ExpectedSymbol' b])
-                                | a -> raise (InferTypeErrorException [r, ExpectedRecord a])
-                                ) (range_of_expr a, v) b |> snd
-                        | Heap -> raise (InferTypeErrorException [r, ExpectedMutableLayout v])
-                    | v -> raise (InferTypeErrorException [r, ExpectedMutableLayout v])
-                with :? InferTypeErrorException as e -> errors.AddRange e.Data0; fresh_var scope
-                |> fun v -> f v c
-            | RawLayoutIndex(r,a) ->
-                try let v = fresh_var scope
-                    let i = errors.Count
-                    f v a
-                    match visit_t v with
-                    | TyMetavar _ -> raise (InferTypeErrorException [r, LayoutSetMustBeAnnotated])
-                    | TyLayout(v,lay) ->
-                        if i <> errors.Count then raise (InferTypeErrorException [])
-                        unify r s v
-                    | v -> raise (InferTypeErrorException [r, ExpectedLayout v])
-                with :? InferTypeErrorException as e -> errors.AddRange e.Data0
-            | RawArray(r,a) ->
-                annotations.Add(x,(r,s))
-                let v = fresh_var scope
-                unify r s (TyArray v)
-                List.iter (f v) a
-            | RawFilledForall _ -> failwith "Compiler error: Should not manifest during type inference."
-            | RawType _ -> failwith "Compiler error: RawType should not appear in the top down segment."
-            | RawTypecase _ -> failwith "Compiler error: `typecase` should not appear in the top down segment."
-        and inl scope env ((r, name), body) =
-            let scope = scope + 1
-            let vars,body = foralls_get body
-            vars |> List.iter (fun ((r,(name,_)),_) -> if Map.containsKey name env.ty then errors.Add(r,ShadowedForall))
-            let vars,env_ty = typevars scope env vars
-            let body_var = fresh_var scope
-            term scope {env with ty = env_ty} body_var body
-            let t = generalize r scope vars body_var
-            generalized_statements.Add(body,t)
-            hover_types.AddHover(r,(t,""))
-            {env with term = Map.add name t env.term }
-        and rec_block scope env l' =
-            let rec term_annotations scope env x =
-                let f t =
-                    let i = errors.Count
-                    let v = fresh_var scope
-                    ty_init scope env v t
-                    if i = errors.Count && has_metavars v then errors.Add(range_of_texpr t, RecursiveAnnotationHasMetavars v)
-                    v
-                match x with
-                | RawFun(_,[(PatAnnot(_,_,t) | PatDyn(_,PatAnnot(_,_,t))),body]) -> TyFun(f t, term_annotations scope env body,FT_Vanilla)
-                | RawFun(_,[pat,body]) -> errors.Add(range_of_pattern pat, ExpectedAnnotation); TyFun(fresh_var scope, term_annotations scope env body,FT_Vanilla)
-                | RawFun(r,_) -> errors.Add(r, ExpectedSinglePattern); TyFun(fresh_var scope, fresh_var scope, FT_Vanilla)
-                | RawJoinPoint(_,_,RawAnnot(_,_,t),_) | RawAnnot(_,_,t) -> f t
-                | x -> errors.Add(range_of_expr x,ExpectedAnnotation); fresh_var scope
-            let scope = scope + 1
-            let has_foralls = List.exists (function (_,RawForall _) -> true | _ -> false) l'
-            let l,m =
-                if has_foralls then
-                    List.mapFold (fun s ((r,name),body) ->
-                        let vars,body = foralls_get body
-                        vars |> List.iter (fun x -> if Map.containsKey (typevar_name x) env.ty then errors.Add(range_of_typevar x,ShadowedForall))
-                        let vars, env_ty = typevars scope env vars
-                        let body_var = term_annotations scope {env with ty = env_ty} body
-                        let term env = term scope {env with ty = env_ty} body_var body
-                        let gen env : InferEnv =
-                            let t = generalize r scope vars body_var
-                            generalized_statements.Add(body,t)
-                            hover_types.AddHover(r,(t,""))
-                            {env with term = Map.add name t env.term}
-                        let ty = List.foldBack (fun x s -> TyForall(x,s)) vars body_var |> term_subst
-                        (term, gen), Map.add name ty s
-                        ) env.term l'
-                else
-                    List.mapFold (fun s ((r,name),body) ->
-                        let body_var = fresh_var scope
-                        let term env = term scope env body_var body
-                        let gen env : InferEnv =
-                            let t = generalize r scope [] body_var
-                            generalized_statements.Add(body,t)
-                            hover_types.AddHover(r,(t,""))
-                            {env with term = Map.add name t env.term}
-                        (term, gen), Map.add name body_var s
-                        ) env.term l'
-            let _ =
-                let env = {env with term = m}
-                List.iter (fun (term, _) -> term env) l
-            List.fold (fun env (_, gen) -> gen env) env l
-        and ty_init scope env s x =
-            ty scope env s x
-            assert_foralls_used errors (range_of_texpr x) s
-        and ty scope env s x = ty' scope false env s x
-        and ty' scope is_in_left_apply (env : InferEnv) s x =
-            let f s x = ty scope env s x
-            match x with
-            | RawTTypecase _ -> failwith "Compiler error: Type level typecase should not appear in the top down segment."
-            | RawTWildcard r -> hover_types.AddHover(r,(s,""))
-            | RawTArray(r,a) ->
-                let v = fresh_var scope
-                unify r s (TyArray v)
-                f v a
-            | RawTVar(r,x) ->
-                match v_ty env x with
-                | Some (TyModule _ & m) when is_in_left_apply = false -> hover_types.AddHover(r,(m,"")); errors.Add(r,ModuleMustBeImmediatelyApplied)
-                | Some x -> unify r s x; hover_types.AddHover(r,(x,""))
-                | None -> errors.Add(r, UnboundVariable x)
-            | RawTB r -> unify r s TyB
-            | RawTLit(r,x) -> unify r s (TyLit x)
-            | RawTSymbol(r,x) -> unify r s (TySymbol x)
-            | RawTPrim(r,x) -> unify r s (TyPrim x)
-            | RawTPair(r,a,b) ->
-                let q,w = fresh_var scope, fresh_var scope
-                unify r s (TyPair(q,w))
-                f q a; f w b
-            | RawTFun(r,a,b,t) ->
-                let q,w = fresh_var scope, fresh_var scope
-                unify r s (TyFun(q,w,t))
-                f q a; f w b
-            | RawTRecord(r,l) ->
-                let l' = Map.map (fun _ _ -> fresh_var scope) l
-                unify r s (TyRecord l')
-                Map.iter (fun k s -> f s l.[k]) l'
-            | RawTUnion(r,l,lay,_) ->
-                let l' = Map.map (fun _ (is_gadt,_) -> is_gadt, fresh_var scope) l
-                unify r s (TyUnion(l',lay))
-                Map.iter (fun k (is_gadt,s) -> let x = snd l.[k] in if is_gadt then ty scope {env with ty = Map.empty} s x else f s x) l'
-            | RawTExists(r,a,b) ->
-                let a = List.map (typevar_to_var scope env.constraints) a
-                let body_var = fresh_var scope
-                ty scope {env with ty = List.fold (fun s a -> Map.add a.name (tyvar a) s) env.ty a} body_var b
-                unify r s (TyExists(a, body_var))
-            | RawTForall(r,a,b) ->
-                let a = typevar_to_var scope env.constraints a
-                let body_var = fresh_var scope
-                ty scope {env with ty = Map.add a.name (tyvar a) env.ty} body_var b
-                unify r s (TyForall(a, body_var))
-            | RawTApply(r,a',b) ->
-                let f' b k x = let v = fresh_var' scope k in ty' scope b env v x; visit_t v
-                match f' true (fresh_kind ()) a' with
-                | TyModule l ->
-                    match f' false KindType b with
-                    | TySymbol x ->
-                        // `x.key` in a type: as in terms, the module's own member, else its index module's.
-                        let folder = match a' with RawTVar(_,m) -> Some m | RawTApply(_,_,RawTSymbol(_,m)) -> Some m | _ -> None
-                        let index = folder |> Option.bind (fun m -> if m = x then None else match Map.tryFind m l with Some (TyModule i) -> Some i | _ -> None)
-                        let direct = Map.tryFind x l
-                        if (match direct with Some (TyModule _) -> true | _ -> false) && (index |> Option.exists (Map.containsKey x)) then errors.Add(r,ModuleIndexAmbiguous(Option.get folder, x)) else
-                        match (match direct with Some _ -> direct | None -> index |> Option.bind (Map.tryFind x)) with
-                        | Some (TyModule _ as a) ->
-                            if is_in_left_apply then
-                                unify r s a
-                                match b with RawTSymbol(r,_) -> hover_types.AddHover(r,(a,"")) | _ -> ()
-                            else errors.Add(r,ModuleMustBeImmediatelyApplied)
-                        | Some a ->
-                            unify r s a
-                            match b with
-                            | RawTSymbol(r,_) ->
-                                let com = match a with TyComment(com,_) -> com | _ -> ""
-                                hover_types.AddHover(r,(a,com))
-                            | _ -> ()
-                        | None -> errors.Add(r,ModuleIndexFailed x)
-                    | b -> errors.Add(r,ExpectedSymbolAsRecordKey b)
-                | TyInl(a,body) -> let v = fresh_var' scope a.kind in f v b; unify r s (subst [a,v] body)
-                | a ->
-                    let q,w = fresh_kind(), fresh_kind()
-                    unify_kind (range_of_texpr a') (tt top_env a) (KindFun(q,w))
-                    let x = fresh_var' scope q
-                    f x b
-                    unify r s (TyApply(a,x,w))
-            | RawTTerm(r,a) -> assert_bound_vars env a; unify r s (TySymbol "<term>")
-            | RawTMacro(r,a) ->
-                List.map (function
-                    | RawMacroText(_,a) -> TMText a
-                    | RawMacroTerm _ -> failwith "Compiler error: Term vars should never appear at the type level."
-                    | RawMacroType(r,a) | RawMacroTypeLit(r,a) -> let v = fresh_var scope in f v a; TMVar v
-                    ) a
-                |> TyMacro |> unify r s
-            | RawTLayout(r,a,b) ->
-                let v = fresh_var scope
-                unify r s (TyLayout(v,b))
-                f v a
-            | RawTFilledNominal _ -> failwith "Compiler error: RawTNominal should be filled in by the inferencer."
-            | RawTMetaVar _ -> failwith "Compiler error: This particular metavar is only for typecase's clauses. This happens during the bottom-up segment."
-        and pattern (scope : InferScope) (env : InferEnv) s a : T option ref ResizeArray * (T * T list * T) ResizeArray * (InferScope * InferEnv) =
-            let gadt_links = ResizeArray()
-            let gadt_typecases = ResizeArray()
-            let term_vars = Dictionary(HashIdentity.Structural)
-            let ty_vars = Dictionary(HashIdentity.Structural)
-            let mutable scope = scope
-            let update_env () =
-                scope,
-                {env with
-                    ty = (env.ty,ty_vars) ||> Seq.fold (fun s x -> Map.add x.Key x.Value s)
-                    term = (env.term,term_vars) ||> Seq.fold (fun s x -> Map.add x.Key x.Value s)
-                    }
-            let ho_make (i : GlobalId) (l : Var list) =
-                let h = TyNominal i
-                let l' = List.map (fun (x : Var) -> x, fresh_subst_var scope x.constraints x.kind) l
-                List.fold (fun s (_,x) -> match tt top_env s with KindFun(_,k) -> TyApply(s,x,k) | _ -> failwith "impossible") h l', l'
-            let rec ho_index x =
-                match visit_t x with
-                | TyApply(a,_,_) -> ho_index a
-                | TyNominal i -> ValueSome i
-                | _ -> ValueNone
-            let rec ho_fun x =
-                match visit_t x with
-                | TyFun(_,a,_) | TyForall(_,a) -> ho_fun a
-                | a -> ho_index a
-            let rec loop s x : unit =
-                let f = loop
-                match x with
-                | PatFilledDefaultValue _ -> failwith "Compiler error: PatDefaultValueFilled should not appear during inference."
-                | PatB r -> unify r s TyB
-                | PatE r -> hover_types.AddHover(r,(s,""))
-                | PatVar(r,a) ->
-                    match term_vars.TryGetValue(a) with
-                    | true, v -> unify r s v
-                    | _ -> term_vars.Add(a,s)
-                    hover_types.AddHover(r,(s,""))
-                | PatDyn(_,a) -> f s a
-                | PatAnnot(_,a,b) -> ty_init scope env s b; f s a
-                | PatWhen(_,a,b) ->
-                    f s a
-                    let scope,env = update_env()
-                    term scope env (TyPrim BoolT) b
-                | PatPair(r,a,b) ->
-                    let q,w = fresh_var scope, fresh_var scope
-                    unify r s (TyPair(q,w))
-                    loop q a; loop w b
-                | PatSymbol(r,a) -> unify r s (TySymbol a)
-                | PatOr(_,a,b) | PatAnd(_,a,b) -> loop s a; loop s b
-                | PatValue(r,a) -> unify r s (lit a)
-                | PatDefaultValue(r,_) ->
-                    annotations.Add(x,(r,s))
-                    unify r s (fresh_subst_var scope (Set.singleton CNumber) KindType)
-                    hover_types.AddHover(r,(s,""))
-                | PatRecordMembers(r,l) ->
-                    let l =
-                        List.choose (function
-                            | PatRecordMembersSymbol((r,a),b) -> Some (a,b)
-                            | PatRecordMembersInjectVar((r,a),b) ->
-                                match v_term env a with
-                                | Some (com,TySymbol a & x) -> hover_types.AddHover(r,(x,com)); Some (a,b)
-                                | Some (_,x) -> errors.Add(r, ExpectedSymbolAsRecordKey x); None
-                                | None -> errors.Add(r, UnboundVariable a); None
-                            ) l
-                    match visit_t s with
-                    | TyRecord l' as s ->
-                        let l, missing =
-                            List.mapFoldBack (fun (a,b) missing ->
-                                match l' |> Map.tryPick (fun (i, k) v -> if k = a then Some (i, v) else None) with
-                                | Some (_,x) -> (x,b), missing
-                                | None -> (fresh_var scope,b), a :: missing
-                                ) l []
-                        if List.isEmpty missing = false then errors.Add(r, MissingRecordFieldsInPattern(s, missing))
-                        List.iter (fun (a,b) -> loop a b) l
-                    | s ->
-                        let l =
-                            List.mapi (fun i (a,b) ->
-                                let v = fresh_var scope
-                                loop v b
-                                (i, a), v
-                                ) l
-                        unify r s (l |> Map |> TyRecord)
-                | PatExists(r,l,p) ->
-                    l |> List.iter (fun (r,name) -> if Map.containsKey name env.ty then errors.Add(r,ShadowedExists))
-                    match visit_t s with
-                    | TyExists(type_var_list,type_body) ->
-                        if l.Length = type_var_list.Length then
-                            scope <- scope + 1
-                            let vars = (l, type_var_list) ||> List.map2 (fun (_,name) l ->
-                                Utils.memoize ty_vars (fun name -> tyvar {l with scope=scope; name=name}) name
-                                )
-                            loop (subst (List.zip type_var_list vars) type_body) p
-                        else
-                        errors.Add(r, UnexpectedNumberOfArgumentsInExistsPattern(l.Length,type_var_list.Length))
-                    | s -> errors.Add(r, ExpectedExistentialInPattern s)
-                | PatUnbox(r,name,a) ->
-                    let assume i =
-                        let n = top_env.nominals.[i]
-                        match n.body with
-                        | TyUnion(cases,_) ->
-                            let x,m = ho_make i n.vars
-                            unify r s x
-                            match Map.tryPick (fun (_, name') v -> if name = name' then Some v else None) cases with
-                            | Some (is_gadt, v) ->
-                                if is_gadt then
-                                    scope <- scope + 1
-                                    let forall_vars,body,specialized_constructor = gadt_extract scope v
-                                    gadt_typecases.Add(s, forall_vars, specialized_constructor)
-                                    match a with PatE r' when r = r' -> () | _ -> loop body a // This check for PatE is so the hovers for it don't overwrite the main pattern.
-                                    unify_gadt (Some gadt_links) r s specialized_constructor
-                                else
-                                    match a with PatE r' when r = r' -> () | _ -> f (subst m v) a
-                                hover_types.AddHover(r,(s,""))
-                            | None -> errors.Add(r,CasePatternNotFoundForType(i,name)); f (fresh_var scope) a
-                        | _ -> errors.Add(r,NominalInPatternUnbox i); f (fresh_var scope) a
-                    match ho_index s with
-                    | ValueSome i -> assume i
-                    | ValueNone ->
-                        match v_term env name with
-                        | Some (_,x) ->
-                            match ho_fun x with
-                            | ValueSome i -> assume i
-                            | ValueNone -> errors.Add(r,CannotInferCasePatternFromTermInEnv x); f (fresh_var scope) a
-                        | None -> errors.Add(r,CasePatternNotFound name); f (fresh_var scope) a
-                | PatNominal(_,(r,name),l,a) as nominal_pattern ->
-                    let qualified_union_case =
-                        match v_term env name, List.rev l with
-                        | Some (_, TyModule members), (case_range, case) :: path_rev ->
-                            let rec walk members = function
-                                | (_, key) :: rest ->
-                                    match Map.tryFind (ModuleMemberNameIdOps.create key) members with
-                                    | Some (TyModule members) -> walk members rest
-                                    | _ -> None
-                                | [] -> Some members
-                            walk members (List.rev path_rev)
-                            |> Option.bind (fun members -> Map.tryFind (ModuleMemberNameIdOps.create case) members)
-                            |> Option.bind (fun constructor ->
-                                match ho_fun constructor with
-                                | ValueSome i ->
-                                    match top_env.nominals.[i].body with
-                                    | TyUnion _ -> Some (case_range, case, i)
-                                    | _ -> None
-                                | ValueNone -> None)
-                            |> Option.orElse (
-                                walk members (List.rev path_rev)
-                                |> Option.bind (fun members ->
-                                    if Map.containsKey (ModuleMemberNameIdOps.create case) members then None
-                                    else
-                                        match ho_index s, v_ty env name with
-                                        | ValueSome i, Some (TyModule typeMembers) ->
-                                            match top_env.nominals.[i].body with
-                                            | TyUnion _ ->
-                                                walk typeMembers (List.rev path_rev)
-                                                |> Option.bind (fun typeMembers ->
-                                                    if typeMembers |> Map.exists (fun _ t -> ho_index t = ValueSome i || ho_fun t = ValueSome i) then Some (case_range, case, i)
-                                                    else None)
-                                            | _ -> None
-                                        | _ -> None))
-                        | _ -> None
-                    match qualified_union_case with
-                    | Some (case_range, case, i) ->
-                        let x,_ = ho_make i top_env.nominals.[i].vars
-                        unify r s x
-                        qualified_union_case_patterns.[nominal_pattern] <- (case_range, case)
-                        loop s (PatUnbox(case_range, case, a))
-                    | None ->
-                        match v_ty env name with
-                        | Some x ->
-                            let rec loop r x = function
-                                | (r,name) :: l ->
-                                    match x with
-                                    | TyModule x ->
-                                        match Map.tryFind name x with
-                                        | Some x -> loop r x l
-                                        | None -> errors.Add(r,ModuleIndexFailed name); f (fresh_var scope) a
-                                    | _ ->
-                                        errors.Add(r,ExpectedModule x); f (fresh_var scope) a
-                                | [] ->
-                                    match ho_index x with
-                                    | ValueSome i ->
-                                        let n = top_env.nominals.[i]
-                                        match n.body with
-                                        | TyUnion _ -> errors.Add(r,UnionInPatternNominal i); f (fresh_var scope) a
-                                        | _ -> let x,m = ho_make i n.vars in unify r s x; f (subst m n.body) a
-                                    | ValueNone -> errors.Add(r,TypeInEnvIsNotNominal x); f (fresh_var scope) a
-                            loop r x l
-                        | _ -> errors.Add(r,UnboundVariable name); f (fresh_var scope) a
-                | PatArray(r,a) ->
-                    let v = fresh_var scope
-                    unify r s (TyArray v)
-                    List.iter (fun x -> loop v x) a
-            loop s a
-            gadt_links, gadt_typecases, update_env()
-
-        let nominal_term global_id tt name vars v =
-            let constructor body =
-                let t,_ = List.fold (fun (a,k) b -> let k = trim_kind k in TyApply(a,tyvar b,k),k) (TyNominal global_id,tt) vars
-                let x = match body with TyB -> t | _ -> TyFun(body,t,FT_Vanilla)
-                List.foldBack (fun var ty -> TyForall(var,ty)) vars x
-            match v with
-            | TyUnion(l,_) -> Map.fold (fun s (_,name) (is_gadt,v) -> Map.add name (if is_gadt then v else constructor v) s) Map.empty l
-            | _ -> Map.add name (constructor v) Map.empty
-
-        let psucc = Hopac.Job.thunk >> Hopac.Hopac.memo
-        let pfail = Hopac.Promise.Now.withFailure (System.Exception "Compiler error: Tried to read from a FilledTop that has errors.")
-
-        let top_env_nominal top_env (global_id : GlobalId) tt name vars v : TopEnv =
-            { top_env with
-                nominals_next_tag = max top_env.nominals_next_tag global_id.tag + 1
-                nominals_aux = Map.add global_id {|kind=tt; name=name|} top_env.nominals_aux
-                nominals = Map.add global_id {|vars=vars; body=v|} top_env.nominals
-                term = Map.foldBack Map.add (nominal_term global_id tt name vars v) top_env.term
-                ty = Map.add name (TyNominal global_id) top_env.ty
-                }
-
-        let rec typevar = function
-            | RawKindWildcard | RawKindStar -> KindType
-            | RawKindFun(a,b) -> KindFun(typevar a, typevar b)
-        let hovars (x : HoVar list) =
-            List.mapFold (fun s (_,(n,t)) ->
-                let v = {scope=0; kind=typevar t; name=n; constraints=Set.empty}
-                v, Map.add n (tyvar v) s
-                ) Map.empty x
-
-        let scope = 0
-        let bundle_nominal_rec l' =
-            let l,_ =
-                List.mapFold (fun i (_,name,vars,body) ->
-                    let l,env = hovars vars
-                    let tt = List.foldBack (fun (x : Var) s -> KindFun(x.kind,s)) l KindType
-                    (at_tag i,name,l,env,tt,body), i+1
-                    ) top_env.nominals_next_tag l'
-
-            top_env <-
-                {top_env with
-                    nominals_aux = (top_env.nominals_aux, l) ||> List.fold (fun s (i,(_,name),_,_,tt,_) -> Map.add i {|name=name; kind=tt|} s)
-                    ty = (top_env.ty, l) ||> List.fold (fun s (i,(_,name),_,_,_,_) -> Map.add name (TyNominal i) s)
-                    }
-
-            List.fold (fun top_env (global_id,(r,name),vars,env_ty,tt,body) ->
-                let v = fresh_var scope
-                ty_init scope {term=Map.empty; ty=env_ty; constraints=Map.empty} v body
-                let v = term_subst v
-                validate_nominal errors global_id body v
-                top_env_nominal top_env global_id tt name vars v
-                ) inferTop_env_empty l
-
-        match expr with
-        | BundleType(q,(r,name),vars',expr) ->
-            let vars,env_ty = hovars vars'
-            let v = fresh_var scope
-            ty_init scope {term=Map.empty; ty=env_ty; constraints=Map.empty} v expr
-            let t = List.foldBack (fun x s -> TyInl(x,s)) vars (term_subst v)
-            hover_types.AddHover(r,(t,""))
-            if 0 = errors.Count then psucc (fun () -> FType(q,(r,name),vars',expr)), AInclude {inferTop_env_empty with ty = Map.add name t Map.empty}
-            else pfail, AInclude inferTop_env_empty
-        | BundleNominal(q,(r,marked),vars',expr) ->
-            let isPrivate, name = privateNominalName marked
-            let x = bundle_nominal_rec [q,(r,name),vars',expr]
-            if 0 = errors.Count then psucc (fun () -> FNominal(q,(r,name),vars',expr)), (if isPrivate then AIncludePrivate ({x with term = Map.empty}, x) else AInclude x)
-            else pfail, AInclude inferTop_env_empty
-        | BundleNominalRec l ->
-            let _ = // Checks that mutually recursive unions do not have duplicates.
-                let h = HashSet()
-                l |> List.iter (fun (_,_,_,x) ->
-                    match x with
-                    | RawTUnion(_,l,_,_) -> l |> Map.iter (fun k v -> if h.Add k = false then errors.Add(range_of_texpr (snd v),DuplicateKeyInRecUnion))
-                    | _ -> ()
-                    )
-            let isPrivate = l |> List.exists (fun (_,(_,name),_,_) -> fst (privateNominalName name))
-            let l = l |> List.map (fun (q,(r,name),vars',expr) -> q,(r,snd (privateNominalName name)),vars',expr)
-            let x = bundle_nominal_rec l
-            if 0 = errors.Count then psucc (fun () -> FNominalRec l), (if isPrivate then AIncludePrivate ({x with term = Map.empty}, x) else AInclude x)
-            else pfail, AInclude inferTop_env_empty
-        | BundlePrototype(com,r,(r',name),(w,var_init),vars',expr) ->
-            let i = at_tag top_env'.prototypes_next_tag
-            let cons = CPrototype i
-            let scope = 0
-            let vars,env_ty = typevars scope {term=Map.empty; constraints=Map.empty; ty=Map.empty} vars'
-            let kind = List.foldBack (fun (k : Var) s -> KindFun(k.kind,s)) vars KindType
-            let v' = {scope=scope; constraints=Set.singleton cons; name=var_init; kind=kind}
-            let env_ty = Map.add var_init (tyvar v') env_ty
-            let vars = v' :: vars
-            let v = fresh_var scope
-            ty_init scope {term=Map.empty; ty=env_ty; constraints=Map.empty} v expr
-            let body = List.foldBack (fun a b -> TyForall(a,b)) vars (term_subst v)
-            if 0 = errors.Count && (assert_foralls_used errors r' body; 0 = errors.Count) then
-                let x =
-                    { inferTop_env_empty with
-                        prototypes_next_tag = i.tag + 1
-                        prototypes = Map.add i {|name=name; signature=body; kind=v'.kind|} Map.empty
-                        term = Map.add name (if com <> "" then TyComment(com,body) else body) Map.empty
-                        constraints = Map.add name (C cons) Map.empty
-                        }
-                psucc (fun () -> FPrototype(r,(r',name),(w,var_init),vars',expr)), AInclude x
-            else pfail, AInclude inferTop_env_empty
-        | BundleInl(com,q,(_,name as w),a,true) ->
-            let env = inl scope {term=Map.empty; ty=Map.empty; constraints=Map.empty} (w,a)
-            let term =
-                let x = env.term.[name]
-                if com <> "" then TyComment(com, x) else x
-            (if 0 = errors.Count then psucc (fun () -> FInl(q,w,fill q Map.empty a)) else pfail),
-            AInclude { inferTop_env_empty with term = Map.add name term Map.empty}
-        | BundleInl(com,q,(_,name as w),a,false) ->
-            assert_bound_vars {term=Map.empty; ty=Map.empty; constraints=Map.empty} a
-            (if 0 = errors.Count then psucc (fun () -> FInl(q,w,a)) else pfail),
-            AInclude { inferTop_env_empty with term = Map.add name (TySymbol "<real>") Map.empty }
-        | BundleRecInl(l,is_top_down) ->
-            let _ =
-                let h = HashSet()
-                List.iter (fun (_,_,(r,n),_) -> if h.Add n = false then errors.Add(r,DuplicateRecInlName)) l
-            let env_term =
-                if is_top_down then
-                    let l = List.map (fun (com,_,a,b) -> a,b) l
-                    (rec_block scope {term=Map.empty; ty=Map.empty; constraints=Map.empty} l).term
-                else
-                    let env_term = List.fold (fun s (com,_,(_,a),_) -> Map.add a (TySymbol "<real>") s) Map.empty l
-                    l |> List.iter (fun (com,_,_,x) -> assert_bound_vars {term = env_term; ty = Map.empty; constraints=Map.empty} x)
-                    env_term
-            let filled_top =
-                if 0 = errors.Count then
-                    if is_top_down then psucc (fun () -> FRecInl(List.map (fun (_,a,b,c) -> a,b,fill a env_term c) l))
-                    else psucc (fun () -> FRecInl(List.map (fun (_,a,b,c) -> a,b,c) l))
-                else pfail
-            let env_term =
-                List.fold (fun env_term (com,_,(_,n),_) ->
-                    if com <> "" then Map.add n (TyComment(com, Map.find n env_term)) env_term else env_term
-                    ) env_term l
-            filled_top, AInclude (Map.fold (fun s k v -> {s with term = Map.add k v s.term}) inferTop_env_empty env_term)
-        | BundleInstance(r,prot,ins,vars,body) ->
-            let fail = pfail,AInclude inferTop_env_empty
-            let assert_no_kind x = x |> List.iter (fun ((r,(_,k)),_) -> match k with RawKindWildcard -> () | _ -> errors.Add(r,KindNotAllowedInInstanceForall))
-            let assert_vars_count vars_count vars_expected = if vars_count <> vars_expected then errors.Add(r,InstanceCoreVarsShouldMatchTheArityDifference(vars_count,vars_expected))
-            let assert_kind_compatibility got expected =
-                try unify_kind' InstanceKindError r got expected
-                with :? InferTypeErrorException as e -> errors.AddRange e.Data0
-            let assert_kind_arity prot_kind_arity ins_kind_arity = if ins_kind_arity < prot_kind_arity then errors.Add(r,InstanceArityError(prot_kind_arity,ins_kind_arity))
-            let assert_instance_forall_does_not_shadow_prototype_forall prot_forall_name = List.iter (fun ((r,(a,_)),_) -> if a = prot_forall_name then errors.Add(r,InstanceVarShouldNotMatchAnyOfPrototypes)) vars
-            let assert_orphan_shadow_check (prot_id : GlobalId) (ins_id : GlobalId) =
-                // if Map.containsKey (prot_id, ins_id) top_env.prototypes_instances
-                // then errors.Add(r,ShadowedInstance)
-                ()
-            let assert_orphan_instance_check (prot_id : GlobalId) (ins_id : GlobalId) =
-                // if (prot_id.package_id = package_id || ins_id.package_id = package_id) = false then errors.Add(r,OrphanInstance)
-                ()
-            let body prot_id ins_id =
-                let ins_kind' = top_env.nominals_aux.[ins_id].kind
-                let guard next = if 0 = errors.Count then next () else fail
-                let ins_kind = kind_get ins_kind'
-                let prototype = top_env.prototypes.[prot_id]
-                hover_types.AddHover(fst prot, (prototype.signature,"")) // TODO: Add the hover for the instance signature.
-                let prototype_init_forall_kind = prototype_init_forall_kind prototype.signature
-                let prot_kind = kind_get prototype_init_forall_kind
-                assert_kind_arity prot_kind.arity ins_kind.arity
-                guard <| fun () ->
-                let vars_expected = ins_kind.arity - prot_kind.arity
-                assert_kind_compatibility (List.skip vars_expected ins_kind.args |> List.reduceBack (fun a b -> KindFun(a,b))) prototype_init_forall_kind
-                guard <| fun () ->
-                assert_vars_count (List.length vars) vars_expected
-                guard <| fun () ->
-                assert_no_kind vars
-                guard <| fun () ->
-                let ins_vars, env_ty =
-                    List.mapFold (fun s (((r,_),_) & x,k) ->
-                        let v = {typevar_to_var scope Map.empty x with kind = k}
-                        let x = tyvar v
-                        hover_types.AddHover(r,(x,""))
-                        x, Map.add v.name x s
-                        ) Map.empty (List.zip vars (List.take vars_expected ins_kind.args))
-                let ins_constraints = ins_vars |> List.map (visit_t >> function TyVar (x,_) -> x.constraints | _ -> failwith "impossible")
-                let ins_core, _ = List.fold (fun (a,k) (b : T) -> let k = trim_kind k in TyApply(a,b,k),k) (TyNominal ins_id,ins_kind') ins_vars
-                let env_ty, prot_body =
-                    match foralls_ty_get prototype.signature with
-                    | (prot_core :: prot_foralls), prot_body ->
-                        List.fold (fun ty x ->
-                            assert_instance_forall_does_not_shadow_prototype_forall x.name
-                            Map.add x.name (tyvar x) ty) env_ty prot_foralls,
-                        let prot_body = subst [prot_core, ins_core] prot_body
-                        let _ =
-                            List.foldBack (fun x s -> TyForall(x,s)) prot_foralls prot_body
-                            |> List.foldBack (fun x s -> match visit_t x with TyVar(x,_) -> TyForall(x,s) | _ -> failwith "impossible") ins_vars
-                            |> fun x -> generalized_statements.Add(body,x)
-                        prot_body
-                    | _ -> failwith "impossible"
-                assert_orphan_shadow_check prot_id ins_id
-                assert_orphan_instance_check prot_id ins_id
-                guard <| fun () ->
-                top_env <- {top_env with prototypes_instances = Map.add (prot_id,ins_id) ins_constraints top_env.prototypes_instances}
-                term scope {term=Map.empty; ty=env_ty; constraints=Map.empty} prot_body body
-                (if 0 = errors.Count then psucc (fun () -> FInstance(r,(fst prot, prot_id),(fst ins, ins_id),fill r Map.empty body)) else pfail),
-                AInclude {inferTop_env_empty with prototypes_instances = Map.add (prot_id,ins_id) ins_constraints Map.empty}
-
-            let fake _ = fail
-            let check_ins on_succ =
-                match Map.tryFind (snd ins) top_env.ty with
-                | None -> errors.Add(fst ins, UnboundVariable (snd ins)); fail
-                | Some(TyNominal i') -> on_succ i'
-                | Some x -> errors.Add(fst ins, ExpectedHigherOrder x); fail
-            match Map.tryFind (snd prot) top_env.constraints with
-            | None -> errors.Add(fst prot, UnboundVariable (snd prot)); check_ins fake
-            | Some(C (CPrototype i)) -> check_ins (body i)
-            | Some(C x) -> errors.Add(fst prot, ExpectedPrototypeConstraint x); check_ins fake
-            | Some(M _) -> errors.Add(fst prot, ExpectedPrototypeInsteadOfModule); check_ins fake
-        | BundleOpen(q,(r,a),b) ->
-            match inferModule_open (Some hover_types) (loc_env top_env) Map.empty r a b with
-            | Ok x -> psucc (fun () -> FOpen(q,(r,a),b)), AOpen {inferTop_env_empty with term=markAmbiguousUnionCases top_env x.term; ty=x.ty; constraints=x.constraints}
-            | Error er -> errors.Add(er); pfail, AOpen inferTop_env_empty
-        |> fun (filled_top, top_env_additions) ->
-            if 0 = errors.Count then
-                annotations |> Seq.iter (fun (KeyValue(_,(r,x))) -> if has_metavars x then errors.Add(r, ValueRestriction x))
-            {
-            filled_top = filled_top
-            top_env_additions = top_env_additions
-            offset = bundle_range expr |> fst |> fun x -> x.line
-            // ws: SPIRAL_HOVERS=0 (set by the CLI host, which never serves hovers) skips rendering every hover type to text.
-            hovers = if System.Environment.GetEnvironmentVariable "SPIRAL_HOVERS" = "0" then [||] else hover_types.ToArray() |> Array.map (fun ((a:VSCRange),(b,(com : string))) -> a, let b = show_t top_env b in if com <> "" then sprintf "%s\n---\n%s" b com else b)
-            errors = errors |> Seq.toList |> List.map (fun (a,b) -> a, type_error_report (show_type_error top_env b) (box b))
-            }
-
-    /// ### base_types
-    let base_types (default_env : DefaultEnv) =
-        let var name = {scope=0; kind=KindType; constraints=Set.empty; name=name}
-        let inline inl f = let x = var "x" in TyInl(x,f x)
-        let inline inl2 f = let x,y = var "x", var "y" in TyInl(x,TyInl(y,f x y))
-        [
-        "i8", TyPrim Int8T
-        "i16", TyPrim Int16T
-        "i32", TyPrim Int32T
-        "i64", TyPrim Int64T
-        "u8", TyPrim UInt8T
-        "u16", TyPrim UInt16T
-        "u32", TyPrim UInt32T
-        "u64", TyPrim UInt64T
-        "f32", TyPrim Float32T
-        "f64", TyPrim Float64T
-        "string", TyPrim StringT
-        "bool", TyPrim BoolT
-        "char", TyPrim CharT
-        "array_base", inl (fun x -> TyArray(tyvar x))
-        "heap", inl (fun x -> TyLayout(tyvar x,Layout.Heap))
-        "mut", inl (fun x -> TyLayout(tyvar x,Layout.HeapMutable))
-        "stack_mut", inl (fun x -> TyLayout(tyvar x,Layout.StackMutable))
-        "stack_refs", inl (fun x -> TyLayout(tyvar x,Layout.StackRefs))
-        "heap_refs", inl (fun x -> TyLayout(tyvar x,Layout.HeapRefs))
-        "fptr", inl2 (fun x y -> TyFun(tyvar x,tyvar y,FT_Pointer))
-        "closure", inl2 (fun x y -> TyFun(tyvar x,tyvar y,FT_Closure))
-        "int", TyPrim default_env.default_int
-        "uint", TyPrim default_env.default_uint
-        "float", TyPrim default_env.default_float
-        ]
-
-    /// ### inferTop_env_default
-    let inferTop_env_default default_env : TopEnv =
-        // Note: `top_env_default` should have no nominals, prototypes or terms.
-        {inferTop_env_empty with
-            ty = Map.ofList (base_types default_env)
-            constraints =
-                [
-                "uint", CUInt
-                "sint", CSInt
-                "int", CInt
-                "float", CFloat
-                "number", CNumber
-                "prim", CPrim
-                "record", CRecord
-                "symbol", CSymbol
-                ] |> Map.ofList |> Map.map (fun _ -> C)
-            }
-
-    module Infer =
-        let base_types x =
-            base_types x
-
-#endif
 #if SPIRAL_CORE_GPT5PARALLEL
+    /// ## PrepassAdapter
+    module PrepassAdapter =
+        let memoPatternRef (table : Dictionary<obj,'v>) (key : obj) (placeholder : 'v) (compute : unit -> 'v) : 'v =
+            match table.TryGetValue key with
+            | true, v -> v
+            | false, _ ->
+                table.Add(key, placeholder)
+                let v = compute ()
+                table.[key] <- v
+                v
+        let visitPatternRefOnce (seen : HashSet<obj>) (key : obj) (visit : unit -> unit) = if seen.Add key then visit ()
+        let isErrorBind (x : FilledTop) = match x with FError _ -> true | _ -> false
+#else
+    /// ## PrepassAdapter
+    module PrepassAdapter =
+        let memoPatternRef (_ : Dictionary<obj,'v>) (_ : obj) (_ : 'v) (compute : unit -> 'v) : 'v = compute ()
+        let visitPatternRefOnce (_ : HashSet<obj>) (_ : obj) (visit : unit -> unit) = visit ()
+        let isErrorBind (_ : FilledTop) = false
+#endif
     /// ## Prepass
     
 
@@ -54388,19 +52097,11 @@ module spiral_compiler =
 
         let eval x =
             let recs = System.Collections.Generic.HashSet(HashIdentity.Reference)
-            let pat_ref_term = Dictionary(HashIdentity.Reference)
-            let pat_ref_ty = Dictionary(HashIdentity.Reference)
+            let pat_ref_term = Dictionary<obj,_>(HashIdentity.Reference)
+            let pat_ref_ty = Dictionary<obj,_>(HashIdentity.Reference)
             let rec term = function
                 | E.ETypecase(r,a,b) -> ETypecase(ty a,b |> List.map (fun (a,b) -> ty a, term b))
-                | E.EPatternRef a ->
-                    match pat_ref_term.TryGetValue a with
-                    | true, v -> v
-                    | false, _ ->
-                        pat_ref_term.Add(a, EOmmitedRecursive)
-                        let r = a.Value
-                        let v = if isNull (box r) then EOmmitedRecursive else term r
-                        pat_ref_term.[a] <- v
-                        v
+                | E.EPatternRef a -> PrepassAdapter.memoPatternRef pat_ref_term (box a) EOmmitedRecursive (fun () -> let r = a.Value in if isNull (box r) then EOmmitedRecursive else term r)
                 | E.EFun'(_,a,b,c,d) -> EFun'(a,b,term c,Option.map ty d)
                 | E.EForall'(_,a,b,c) -> EForall'(a,b,term c)
                 | E.EArray(_,a,b) -> EArray(List.map term a,ty b)
@@ -54486,15 +52187,7 @@ module spiral_compiler =
                 | E.EDefaultLitTest(_,a,b,c,d,e) -> EDefaultLitTest(a,ty b,c,term d,term e)
             and ty = function
                 | TPrepass.TTypecase(_,a,b) -> TTypecase(ty a,List.map (fun (a,b) -> ty a, ty b) b)
-                | TPrepass.TPatternRef a ->
-                    match pat_ref_ty.TryGetValue a with
-                    | true, v -> v
-                    | false, _ ->
-                        pat_ref_ty.Add(a, TB)
-                        let r = a.Value
-                        let v = if isNull (box r) then TB else ty r
-                        pat_ref_ty.[a] <- v
-                        v
+                | TPrepass.TPatternRef a -> PrepassAdapter.memoPatternRef pat_ref_ty (box a) TB (fun () -> let r = a.Value in if isNull (box r) then TB else ty r)
                 | TPrepass.TForall'(_,a,b,c) -> TForall'(a,b,ty c)
                 | TPrepass.TForall(_,a,b) -> TForall(a,ty b)
                 | TPrepass.TArrow'(a,b,c) -> TArrow'(a,b,ty c)
@@ -54533,11 +52226,12 @@ module spiral_compiler =
     
 
     /// ### PrepassTopEnv
+    type PrepassNominal = {|body : TPrepass; name : string|}
     type PrepassTopEnv = {
         prototypes_next_tag : int
         prototypes_instances : Map<GlobalId * GlobalId,E>
         nominals_next_tag : int
-        nominals : Map<GlobalId,{|body : TPrepass; name : string|}>
+        nominals : Map<GlobalId,PrepassNominal>
         term : Map<TermNameId,E>
         ty : Map<TypeNameId,TPrepass>
         }
@@ -54599,7 +52293,7 @@ module spiral_compiler =
     // Attaches scopes to all the nodes.
     let propagate x =
         let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference)
-        let pat_ref_dict = Dictionary(HashIdentity.Reference)
+        let pat_ref_dict = Dictionary<obj,_>(HashIdentity.Reference)
         let (+*) a b =
             match a,b with
             | Some(min',max'), Some(min'',max'') -> Some(min min' min'', max max' max'')
@@ -54628,14 +52322,7 @@ module spiral_compiler =
         let rec term x =
             match x with
             | EFun' _ | EForall' _ | ERecursiveFun' _ | ERecursiveForall' _ | ERecursive _ | EJoinPoint' _ | EModule _ | ESymbol _ | ELit _ | EB _ -> empty
-            | EPatternRef a ->
-                match pat_ref_dict.TryGetValue a with
-                | true, v -> v
-                | false, _ ->
-                    pat_ref_dict.Add(a, empty)
-                    let v = term a.Value
-                    pat_ref_dict.[a] <- v
-                    v
+            | EPatternRef a -> PrepassAdapter.memoPatternRef pat_ref_dict (box a) empty (fun () -> term a.Value)
             | EV i -> singleton_term i
             | EPrototypeApply(_,_,a) | EType(_,a) | ETypePatternMiss a | EDefaultLit(_,_,a) -> ty a
             | ESeq(_,a,b) | EPair(_,a,b) | EIfThen(_,a,b) | EApply(_,a,b) -> term a + term b
@@ -54743,8 +52430,8 @@ module spiral_compiler =
     /// ### resolve
     let resolve (scope : Dictionary<obj,PropagatedVars>) x =
         let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference)
-        let pat_ref_term = HashSet(HashIdentity.Reference)
-        let pat_ref_ty = HashSet(HashIdentity.Reference)
+        let pat_ref_term = HashSet<obj>(HashIdentity.Reference)
+        let pat_ref_ty = HashSet<obj>(HashIdentity.Reference)
         let subst' (env : ResolveEnv) (x : PropagatedVars) : PropagatedVars =
             let f (s : ResolveEnvValue) x =
                 if x < 0 then
@@ -54759,7 +52446,7 @@ module spiral_compiler =
             let f = term env
             match x with
             | EForall' _ | EFun' _ | ERecursiveForall' _ | ERecursiveFun' _ | ERecursive _ | EJoinPoint' _ | EModule _ | EV _ | ESymbol _ | ELit _ | EB _ -> ()
-            | EPatternRef a -> if pat_ref_term.Add(a) then f a.Value else ()
+            | EPatternRef a -> PrepassAdapter.visitPatternRefOnce pat_ref_term (box a) (fun () -> f a.Value)
             | EDefaultLit(_,_,a) | EPrototypeApply(_,_,a) | EType(_,a) | ETypePatternMiss a -> ty env a
             | EJoinPoint(_,a,b,_,_) | EFun(_,_,a,b) -> subst env x; f a; Option.iter (ty env) b
             | EForall(_,_,a) -> subst env x; f a
@@ -54816,7 +52503,7 @@ module spiral_compiler =
             match x with
             | TExists | TJoinPoint' _ | TForall' _ | TArrow' _ | TNominal _ | TPrim _ | TSymbol _ | TV _ | TMetaV _ | TLit _ | TB _ -> ()
             | TTypecase(_,a,b) -> ty env a; b |> List.iter (fun (a,b) -> ty env a; ty env b)
-            | TPatternRef a -> if pat_ref_ty.Add(a) then f a.Value else ()
+            | TPatternRef a -> PrepassAdapter.visitPatternRefOnce pat_ref_ty (box a) (fun () -> f a.Value)
             | TForall(_,_,a)
             | TArrow(_,a) -> subst env x; f a
             | TApply(_,a,b) | TFun(a,b,_) | TPair(_,a,b) -> f a; f b
@@ -54860,8 +52547,8 @@ module spiral_compiler =
     /// ### lower
     let lower (scope : Dictionary<obj,PropagatedVars>) x =
         let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference)
-        let pat_ref_term = Dictionary(HashIdentity.Reference)
-        let pat_ref_ty = Dictionary(HashIdentity.Reference)
+        let pat_ref_term = Dictionary<obj,_>(HashIdentity.Reference)
+        let pat_ref_ty = Dictionary<obj,_>(HashIdentity.Reference)
         let scope (env : LowerEnv) x =
             let v = scope.[x]
             let fv v env = v |> Set.toArray |> HopacExtensions.A.map (fun i -> Map.find i env)
@@ -54896,14 +52583,7 @@ module spiral_compiler =
             let g = ty env_rec
             match x with
             | EForall' _ | EJoinPoint' _ | EFun' _ | ERecursiveForall' _ | ERecursiveFun' _ | ERecursive _ | EModule _ | ESymbol _ | ELit _ | EB _ -> x
-            | EPatternRef a ->
-                match pat_ref_term.TryGetValue a with
-                | true, v -> v
-                | false, _ ->
-                    pat_ref_term.Add(a, EB Unchecked.defaultof<_>)
-                    let v = f a.Value
-                    pat_ref_term.[a] <- v
-                    v
+            | EPatternRef a -> PrepassAdapter.memoPatternRef pat_ref_term (box a) (EB Unchecked.defaultof<_>) (fun () -> f a.Value)
             | EFun(r,pat,body,t) ->
                 let scope, env = scope env x
                 let pat, env = adj_term env pat
@@ -55075,14 +52755,7 @@ module spiral_compiler =
                     a, ty env_rec env_case b
                     )
                 TTypecase(r,ty env_rec env a,b)
-            | TPatternRef a ->
-                match pat_ref_ty.TryGetValue a with
-                | true, v -> v
-                | false, _ ->
-                    pat_ref_ty.Add(a, TB Unchecked.defaultof<_>)
-                    let v = f a.Value
-                    pat_ref_ty.[a] <- v
-                    v
+            | TPatternRef a -> PrepassAdapter.memoPatternRef pat_ref_ty (box a) (TB Unchecked.defaultof<_>) (fun () -> f a.Value)
             | TJoinPoint(r,a) as x ->
                 let scope, env = scope env x
                 TJoinPoint'(r,scope,ty env_rec env a)
@@ -55587,6 +53260,7 @@ module spiral_compiler =
                     term,Map.add (TypeNameIdOps.create name) nom ty', Map.add at_tag_i {|body=bodyt; name=name|} nominals, i+1
                     ) (Map.empty, Map.empty, Map.empty, top_env.nominals_next_tag) l
             match x with
+            | x when PrepassAdapter.isErrorBind x -> AInclude prepassTop_env_empty
             | FType(_,(_,name),l,body) -> AInclude {prepassTop_env_empty with ty = Map.add (TypeNameIdOps.create name) (eval_type' env l (fun env -> ty env body)) Map.empty}
             | FNominal(r,a,b,c) ->
                 let term,ty,nominals,i = nominal_rec [r,a,b,c]
@@ -55617,7 +53291,6 @@ module spiral_compiler =
             | FOpen(r,a,b) ->
                 let x = prepassModule_open top_env env a b
                 AOpen {prepassTop_env_empty with term=x.term.env; ty=x.ty.env}
-            | FError _ -> AInclude prepassTop_env_empty
         |}
     
 
@@ -55642,1393 +53315,6 @@ module spiral_compiler =
             ) prepassTop_env_empty (Infer.base_types default_env)
     
 
-#else
-    /// ## Prepass
-
-    /// ### Id
-    type Id = int32
-
-    /// ### ScopeEnv
-    type ScopeEnv = {|free_vars : int []; stack_size : int|}
-
-    /// ### Scope
-    type Scope = {term : ScopeEnv; ty : ScopeEnv}
-
-    /// ### Range
-    type Range = {path : string; range : VSCRange}
-
-    /// ### Macro
-    type Macro =
-        | MText of string
-        | MTerm of E * is_inline : bool
-        | MType of TPrepass
-        | MLitType of TPrepass
-    and TypeMacro =
-        | TMText of string
-        | TMType of TPrepass
-        | TMLitType of TPrepass
-    and RecordWith =
-        | RSymbol of (Range * string) * E
-        | RSymbolModify of (Range * string) * E
-        | RVar of (Range * E) * E
-        | RVarModify of (Range * E) * E
-    and RecordWithout =
-        | WSymbol of Range * string
-        | WVar of Range * E
-    and PatRecordMemberPrepass =
-        | Symbol of (Range * string) * Id
-        | Var of (Range * E) * Id
-    and [<ReferenceEquality>] E =
-        | EFun of Range * Id * E * TPrepass option
-        | EFun' of Range * Scope * Id * E * TPrepass option
-        | EForall of Range * Id * E
-        | EForall' of Range * Scope * Id * E
-        | ERecursiveFun' of Range * Scope * Id * E ref * TPrepass option
-        | ERecursiveForall' of Range * Scope * Id * E ref
-        | ERecursive of E ref // For global mutually recursive functions
-        | EPatternRef of E ref
-        | EJoinPoint of Range * E * TPrepass option * backend: (Range * string) option * name: string option
-        | EJoinPoint' of Range * Scope * E * TPrepass option * backend: (Range * string) option * name: string option
-        | EB of Range
-        | EV of Id
-        | ELit of Range * Literal
-        | EDefaultLit of Range * string * TPrepass
-        | ESymbol of Range * string
-        | EType of Range * TPrepass
-        | EApply of Range * E * E
-        | EArray of Range * E list * TPrepass
-        | ETypeApply of Range * E * TPrepass
-        | ERecBlock of Range * (Id * E) list * on_succ: E
-        | ERecordWith of Range * (Range * E) list * RecordWith list * RecordWithout list
-        | EModule of Map<string, E>
-        | EOp of Range * Op * E list
-        | EPatternMiss of E
-        | ETypePatternMiss of TPrepass
-        | EAnnot of Range * E * TPrepass
-        | EIfThenElse of Range * E * E * E
-        | EIfThen of Range * E * E
-        | EPair of Range * E * E
-        | ESeq of Range * E * E
-        | EMutableSet of Range * E * (Range * E) list * E
-        | EReal of Range * E
-        | EExists of Range * TPrepass list * E
-        | EMacro of Range * Macro list * TPrepass
-        | EPrototypeApply of Range * prototype_id: GlobalId * TPrepass
-        | EPatternMemo of E
-        | ENominal of Range * E * TPrepass
-        // Regular pattern matching
-        | ELet of Range * Id * E * E
-        | EUnbox of Range * symbol: string * Id * body: E * on_succ: E * on_fail: E
-        | EExistsTest of Range * bind: Id * pat_type: Id [] * pat: Id * on_succ: E * on_fail: E
-        | EPairTest of Range * bind: Id * pat1: Id * pat2: Id * on_succ: E * on_fail: E
-        | ESymbolTest of Range * string * bind: Id * on_succ: E * on_fail: E
-        | ERecordTest of Range * PatRecordMemberPrepass list * bind: Id * on_succ: E * on_fail: E
-        | EAnnotTest of Range * TPrepass * bind: Id * on_succ: E * on_fail: E
-        | EUnitTest of Range * bind: Id * on_succ: E * on_fail: E
-        | ENominalTest of Range * TPrepass * bind: Id * pat: Id * on_succ: E * on_fail: E
-        | ELitTest of Range * Literal * bind: Id * on_succ: E * on_fail: E
-        | EDefaultLitTest of Range * string * TPrepass * bind: Id * on_succ: E * on_fail: E
-        | ETypecase of Range * TPrepass * (TPrepass * E) list
-    and [<ReferenceEquality>] TPrepass =
-        | TForall' of Range * Scope * Id * TPrepass
-        | TForall of Range * Id * TPrepass
-        | TArrow' of Scope * Id * TPrepass
-        | TArrow of Id * TPrepass
-        | TExists
-        | TJoinPoint' of Range * Scope * TPrepass
-        | TJoinPoint of Range * TPrepass
-        | TPatternRef of TPrepass ref
-        | TB of Range
-        | TLit of Range * Literal
-        | TV of Id
-        | TPair of Range * TPrepass * TPrepass
-        | TFun of TPrepass * TPrepass * FunType
-        | TRecord of Range * Map<int * string,TPrepass>
-        | TModule of Map<string,TPrepass>
-        | TUnion of Range * (Map<int * string,TPrepass * TPrepass option> * UnionLayout)
-        | TSymbol of Range * string
-        | TApply of Range * TPrepass * TPrepass
-        | TPrim of PrimitiveType
-        | TTerm of Range * E
-        | TMacro of Range * TypeMacro list
-        | TNominal of GlobalId
-        | TArray of TPrepass
-        | TLayout of TPrepass * Layout
-        | TMetaV of Id
-        | TTypecase of Range * TPrepass * (TPrepass * TPrepass) list
-
-    /// ### Printable
-    module Printable =
-        type PMacro =
-            | MText of string
-            | MTerm of PE * bool
-            | MType of PT
-            | MLitType of PT
-        and PTypeMacro =
-            | TMText of string
-            | TMType of PT
-            | TMLitType of PT
-        and PRecordWith =
-            | RSymbol of string * PE
-            | RSymbolModify of string * PE
-            | RVar of PE * PE
-            | RVarModify of PE * PE
-        and PRecordWithout =
-            | WSymbol of string
-            | WVar of PE
-        and PPatRecordMember =
-            | Symbol of string * Id
-            | Var of PE * Id
-        and [<ReferenceEquality>] PE =
-            | EFun' of Scope * Id * PE * PT option
-            | EForall' of Scope * Id * PE
-            | ERecursiveFun' of Scope * Id * PE * PT option
-            | ERecursiveForall' of Scope * Id * PE
-            | ERecursive of PE
-            | EJoinPoint of PE * PT option * string option
-            | EJoinPoint' of Scope * PE * PT option * string option
-            | EArray of PE list * PT
-            | EFun of Id * PE * PT option
-            | EForall of Id * PE
-            | EB
-            | EV of Id
-            | ELit of Literal
-            | EDefaultLit of string * PT
-            | ESymbol of string
-            | EType of PT
-            | EApply of PE * PE
-            | ETypeApply of PE * PT
-            | ERecBlock of (Id * PE) list * on_succ: PE
-            | ERecordWith of PE list * PRecordWith list * PRecordWithout list
-            | EModule of Map<string, PE>
-            | EOp of Op * PE list
-            | EPatternMiss of PE
-            | ETypePatternMiss of PT
-            | EAnnot of PE * PT
-            | EIfThenElse of PE * PE * PE
-            | EIfThen of PE * PE
-            | EPair of PE * PE
-            | ESeq of PE * PE
-            | EHeapMutableSet of PE * PE list * PE
-            | EReal of PE
-            | EExists of PT list * PE
-            | EMacro of PMacro list * PT
-            | EPrototypeApply of prototype_id: GlobalId * PT
-            | EPatternMemo of PE
-            | ENominal of PE * PT
-            // Regular pattern matching
-            | ELet of Id * PE * PE
-            | EUnbox of Id * string * PE * PE * PE
-            | EExistsTest of bind: Id * pat_type: Id [] * pat: Id * on_succ: PE * on_fail: PE
-            | EPairTest of bind: Id * pat1: Id * pat2: Id * on_succ: PE * on_fail: PE
-            | ESymbolTest of string * bind: Id * on_succ: PE * on_fail: PE
-            | ERecordTest of PPatRecordMember list * bind: Id * on_succ: PE * on_fail: PE
-            | EAnnotTest of PT * bind: Id * on_succ: PE * on_fail: PE
-            | EUnitTest of bind: Id * on_succ: PE * on_fail: PE
-            | ENominalTest of PT * bind: Id * pat: Id * on_succ: PE * on_fail: PE
-            | ELitTest of Literal * bind: Id * on_succ: PE * on_fail: PE
-            | EDefaultLitTest of string * PT * bind: Id * on_succ: PE * on_fail: PE
-            | ETypecase of PT * (PT * PE) list
-            | EOmmitedRecursive
-        and [<ReferenceEquality>] PT =
-            | TTypecase of PT * (PT * PT) list
-            | TForall' of Scope * Id * PT
-            | TForall of Id * PT
-            | TArrow' of Scope * Id * PT
-            | TArrow of Id * PT
-            | TExists
-            | TJoinPoint' of Scope * PT
-            | TJoinPoint of PT
-            | TB
-            | TLit of Literal
-            | TV of Id
-            | TMetaV of Id
-            | TPair of PT * PT
-            | TFun of PT * PT * FunType
-            | TFunPtr of PT * PT
-            | TRecord of Map<int * string,PT>
-            | TModule of Map<string,PT>
-            | TUnion of Map<int * string,PT> * UnionLayout
-            | TSymbol of string
-            | TApply of PT * PT
-            | TPrim of PrimitiveType
-            | TTerm of PE
-            | TMacro of PTypeMacro list
-            | TNominal of GlobalId
-            | TArray of PT
-            | TLayout of PT * Layout
-
-        let eval x =
-            let recs = System.Collections.Generic.HashSet(HashIdentity.Reference)
-            let rec term = function
-                | E.ETypecase(r,a,b) -> ETypecase(ty a,b |> List.map (fun (a,b) -> ty a, term b))
-                | E.EPatternRef a -> term a.Value
-                | E.EFun'(_,a,b,c,d) -> EFun'(a,b,term c,Option.map ty d)
-                | E.EForall'(_,a,b,c) -> EForall'(a,b,term c)
-                | E.EArray(_,a,b) -> EArray(List.map term a,ty b)
-                | E.ERecursiveFun'(_,a,b,c,d) ->
-                    let r = c.Value
-                    let r = if recs.Add(r) then term r else EOmmitedRecursive
-                    ERecursiveFun'(a,b,r,Option.map ty d)
-                | E.ERecursiveForall'(_,a,b,c) ->
-                    let r = c.Value
-                    let r = if recs.Add(r) then term r else EOmmitedRecursive
-                    ERecursiveForall'(a,b,r)
-                | E.ERecursive a ->
-                    let r = a.Value
-                    if isNull (box r) then EOmmitedRecursive
-                    else
-                        let r = if recs.Add(r) then term r else EOmmitedRecursive
-                        ERecursive r
-                | E.EJoinPoint(_,a,b,d,_) -> EJoinPoint(term a,Option.map ty b,Option.map snd d)
-                | E.EJoinPoint'(_,a,b,c,d,_) -> EJoinPoint'(a,term b,Option.map ty c,Option.map snd d)
-                | E.EFun(_,a,b,c) -> EFun(a,term b,Option.map ty c)
-                | E.EForall(_,a,b) -> EForall(a,term b)
-                | E.EB _ -> EB
-                | E.EV i -> EV i
-                | E.ELit(_,a) -> ELit(a)
-                | E.EDefaultLit(_,a,b) -> EDefaultLit(a,ty b)
-                | E.ESymbol(_,a) -> ESymbol a
-                | E.EType(_,a) -> EType(ty a)
-                | E.EApply(_,a,b) -> EApply(term a,term b)
-                | E.ETypeApply(_,a,b) -> ETypeApply(term a,ty b)
-                | E.ERecBlock(_,a,b) -> ERecBlock(List.map (fun (a,b) -> a, term b) a,term b)
-                | E.ERecordWith(_,a,b,c) ->
-                    let a = a |> List.map (fun (_,a) -> term a)
-                    let b = b |> List.map (function
-                        | RecordWith.RSymbol((_,a),b) -> RSymbol(a,term b)
-                        | RecordWith.RSymbolModify((_,a),b) -> RSymbolModify(a,term b)
-                        | RecordWith.RVar((_,a),b) -> RVar(term a,term b)
-                        | RecordWith.RVarModify((_,a),b) -> RVarModify(term a,term b)
-                        )
-                    let c = c |> List.map (function
-                        | RecordWithout.WSymbol(_,a) -> WSymbol a
-                        | RecordWithout.WVar(_,a) -> WVar(term a)
-                        )
-                    ERecordWith(a,b,c)
-                | E.EModule a -> EModule(Map.map (fun _ -> term) a)
-                | E.EOp(_,a,b) -> EOp(a,List.map term b)
-                | E.EPatternMiss a -> EPatternMiss(term a)
-                | E.ETypePatternMiss a -> ETypePatternMiss(ty a)
-                | E.EAnnot(_,a,b) -> EAnnot(term a,ty b)
-                | E.EIfThenElse(_,a,b,c) -> EIfThenElse(term a,term b,term c)
-                | E.EIfThen(_,a,b) -> EIfThen(term a,term b)
-                | E.EPair(_,a,b) -> EPair(term a,term b)
-                | E.ESeq(_,a,b) -> ESeq(term a,term b)
-                | E.EMutableSet(_,a,b,c) -> EHeapMutableSet(term a,List.map (snd >> term) b,term c)
-                | E.EReal(_, a) -> EReal(term a)
-                | E.EExists(_, a, b) -> EExists(List.map ty a, term b)
-                | E.EMacro(_,a,b) ->
-                    let a = a |> List.map (function
-                        | Macro.MText a -> MText a
-                        | Macro.MTerm (a,b) -> MTerm(term a,b)
-                        | Macro.MType a -> MType(ty a)
-                        | Macro.MLitType a -> MLitType(ty a)
-                        )
-                    EMacro(a,ty b)
-                | E.EPrototypeApply(_,a,b) -> EPrototypeApply(a,ty b)
-                | E.EPatternMemo a -> EPatternMemo(term a)
-                | E.ENominal(_,a,b) -> ENominal(term a,ty b)
-                // Regular pattern matching
-                | E.ELet(_,a,b,c) -> ELet(a,term b,term c)
-                | E.EUnbox(_,q,a,b,c,d) -> EUnbox(a,q,term b,term c,term d)
-                | E.EExistsTest(_,a,l,q,d,e) -> EExistsTest(a,l,q,term d,term e)
-                | E.EPairTest(_,a,b,c,d,e) -> EPairTest(a,b,c,term d,term e)
-                | E.ESymbolTest(_,a,b,c,d) -> ESymbolTest(a,b,term c,term d)
-                | E.ERecordTest(_,a,b,c,d) ->
-                    let a = a |> List.map (function
-                        | PatRecordMemberPrepass.Symbol((_,a),b) -> Symbol(a,b)
-                        | PatRecordMemberPrepass.Var((_,a),b) -> Var(term a,b)
-                        )
-                    ERecordTest(a,b,term c,term d)
-                | E.EAnnotTest(_,a,b,c,d) -> EAnnotTest(ty a,b,term c,term d)
-                | E.EUnitTest(_,a,b,c) -> EUnitTest(a,term b,term c)
-                | E.ENominalTest(_,a,b,c,d,e) -> ENominalTest(ty a,b,c,term d,term e)
-                | E.ELitTest(_,a,b,c,d) -> ELitTest(a,b,term c,term d)
-                | E.EDefaultLitTest(_,a,b,c,d,e) -> EDefaultLitTest(a,ty b,c,term d,term e)
-            and ty = function
-                | TPrepass.TTypecase(_,a,b) -> TTypecase(ty a,List.map (fun (a,b) -> ty a, ty b) b)
-                | TPrepass.TPatternRef a -> ty a.Value
-                | TPrepass.TForall'(_,a,b,c) -> TForall'(a,b,ty c)
-                | TPrepass.TForall(_,a,b) -> TForall(a,ty b)
-                | TPrepass.TArrow'(a,b,c) -> TArrow'(a,b,ty c)
-                | TPrepass.TArrow(a,b) -> TArrow(a,ty b)
-                | TPrepass.TExists -> TExists
-                | TPrepass.TJoinPoint'(_,a,b) -> TJoinPoint'(a,ty b)
-                | TPrepass.TJoinPoint(_,a) -> TJoinPoint(ty a)
-                | TPrepass.TB _ -> TB
-                | TPrepass.TLit(_,x) -> TLit x
-                | TPrepass.TV a -> TV a
-                | TPrepass.TMetaV a -> TMetaV a
-                | TPrepass.TPair(_,a,b) -> TPair(ty a,ty b)
-                | TPrepass.TFun(a,b,t) -> TFun(ty a,ty b,t)
-                | TPrepass.TRecord(_,a) -> TRecord(Map.map (fun _ -> ty) a)
-                | TPrepass.TModule a -> TModule(Map.map (fun _ -> ty) a)
-                | TPrepass.TUnion(_,(a,b)) -> TUnion(Map.map (fun _ x -> ty (fst x)) a,b)
-                | TPrepass.TSymbol(_,a) -> TSymbol a
-                | TPrepass.TApply(_,a,b) -> TApply(ty a, ty b)
-                | TPrepass.TPrim a -> TPrim a
-                | TPrepass.TTerm(_,a) -> TTerm(term a)
-                | TPrepass.TMacro(_,a) ->
-                    let a = a |> List.map (function
-                        | TypeMacro.TMText a -> TMText a
-                        | TypeMacro.TMType a -> TMType(ty a)
-                        | TypeMacro.TMLitType a -> TMLitType(ty a)
-                        )
-                    TMacro(a)
-                | TPrepass.TNominal a -> TNominal a
-                | TPrepass.TArray a -> TArray(ty a)
-                | TPrepass.TLayout(a,b) -> TLayout(ty a,b)
-
-            match x with
-            | Choice1Of2(x,ret) -> ret (term x)
-            | Choice2Of2(x,ret) -> ret (ty x)
-
-    /// ### PrepassTopEnv
-    type PrepassNominal = {|body : TPrepass; name : string|}
-    type PrepassTopEnv = {
-        prototypes_next_tag : int
-        prototypes_instances : Map<GlobalId * GlobalId,E>
-        nominals_next_tag : int
-        nominals : Map<GlobalId,PrepassNominal>
-        term : Map<string,E>
-        ty : Map<string,TPrepass>
-        }
-
-    /// ### prepassTop_env_empty
-    let prepassTop_env_empty = {
-        prototypes_next_tag = 0
-        prototypes_instances = Map.empty
-        nominals_next_tag = 0
-        nominals = Map.empty
-        term = Map.empty
-        ty = Map.empty
-        }
-
-    // Cross-assembly factory for PrepassTopEnv.nominals values.
-    let nominal_prepass body name : PrepassNominal = {|body=body; name=name|}
-
-    /// ### prepassUnion
-    let prepassUnion small big = {
-        prototypes_next_tag = max small.prototypes_next_tag big.prototypes_next_tag
-        prototypes_instances = Map.foldBack Map.add small.prototypes_instances big.prototypes_instances
-        nominals_next_tag = max small.nominals_next_tag big.nominals_next_tag
-        nominals = Map.foldBack Map.add small.nominals big.nominals
-        term =
-            Map.foldBack (fun k v s ->
-                let v =
-                    match v, s |> Map.tryFind k with
-                    | EModule x, Some (EModule x') -> Map.foldBack Map.add x x' |> EModule
-                    | _ -> v
-                s |> Map.add k v
-            ) small.term big.term
-        ty =
-            Map.foldBack (fun k v s ->
-                let v =
-                    match v, s |> Map.tryFind k with
-                    | TModule x, Some (TModule x') -> Map.foldBack Map.add x x' |> TModule
-                    | _ -> v
-                s |> Map.add k v
-            ) small.ty big.ty
-        }
-
-    /// ### in_modulePrepass
-    let in_modulePrepass m (a : PrepassTopEnv) =
-        {a with
-            ty = Map.add m (TModule a.ty) Map.empty
-            term = Map.add m (EModule a.term) Map.empty
-            }
-
-    /// ### PropagatedVarsEnv
-    type PropagatedVarsEnv = {|vars : Set<int>; range : (int * int) option|}
-
-    // Cross-assembly factory for PropagatedVarsEnv updates.
-    let propagated_vars_env_with_vars (x : PropagatedVarsEnv) vars : PropagatedVarsEnv =
-        {|x with vars=vars|}
-
-    /// ### PropagatedVars
-    type PropagatedVars = {term : PropagatedVarsEnv; ty : PropagatedVarsEnv}
-
-    /// ### propagate
-    // Attaches scopes to all the nodes.
-    let propagate x =
-        let dict = Dictionary(HashIdentity.Reference)
-        let (+*) a b =
-            match a,b with
-            | Some(min',max'), Some(min'',max'') -> Some(min min' min'', max max' max'')
-            | Some(a,b), _ | _, Some(a,b) -> Some(a,b)
-            | None, None -> None
-        let (+) (a : PropagatedVars) (b : PropagatedVars) : PropagatedVars = {
-            term = {|vars = Set.union a.term.vars b.term.vars; range = a.term.range +* b.term.range |}
-            ty = {|vars = Set.union a.ty.vars b.ty.vars; range = a.ty.range +* b.ty.range |}
-            }
-        let (-*) a i =
-            if 0 <= i then
-                match a with
-                | Some(min',max') -> Some(min min' i, max max' i)
-                | None -> Some(i,i)
-            else a // Recursive vars are negative and get inlined so they should be ignored when calculating the range of a scope.
-        let (-) (a : PropagatedVars) i = {a with term = {|vars = Set.remove i a.term.vars; range = a.term.range -* i |} }
-        let (-.) (a : PropagatedVars) i = {a with ty = {|vars = Set.remove i a.ty.vars; range = a.ty.range -* i |} }
-        let empty' term ty = let f x = {|vars = x; range=None|} in {term = f term; ty = f ty}
-        let empty = empty' Set.empty Set.empty
-        let singleton_term i = empty' (Set.singleton i) Set.empty
-        let singleton_ty i = empty' Set.empty (Set.singleton i)
-
-        let scope_dict = Dictionary<obj,_>(HashIdentity.Reference)
-        let scope x (v : PropagatedVars) = scope_dict.Add(x,v); empty' v.term.vars v.ty.vars
-        let rec term x =
-            match x with
-            | EFun' _ | EForall' _ | ERecursiveFun' _ | ERecursiveForall' _ | ERecursive _ | EJoinPoint' _ | EModule _ | ESymbol _ | ELit _ | EB _ -> empty
-            | EPatternRef a -> term a.Value
-            | EV i -> singleton_term i
-            | EPrototypeApply(_,_,a) | EType(_,a) | ETypePatternMiss a | EDefaultLit(_,_,a) -> ty a
-            | ESeq(_,a,b) | EPair(_,a,b) | EIfThen(_,a,b) | EApply(_,a,b) -> term a + term b
-            | EArray(_,a,b) -> List.fold (fun s x -> s + term x) (ty b) a
-            | ENominal(_,a,b) | EAnnot(_,a,b) | ETypeApply(_,a,b) -> term a + ty b
-            | EForall(_,i,a) -> scope x (term a -. i)
-            | EJoinPoint(_,a,t,_,_) -> scope x (match t with Some t -> term a + ty t | None -> term a)
-            | EFun(_,i,a,t) -> scope x (match t with Some t -> term a - i + ty t | None -> term a - i)
-            | ERecBlock(_,l,on_succ) ->
-                let s = List.fold (fun s (_,body) -> s + term body) (term on_succ) l
-                List.fold (fun s (id,_) -> s - id) s l
-            | ERecordWith(_,a,b,c) ->
-                let fold f a b = List.fold f b a
-                List.fold (fun s (_,a) -> s + term a) empty a
-                |> fold (fun s -> function
-                        | RSymbolModify(_,a) | RSymbol(_,a) -> s + term a
-                        | RVar((_,a),b) | RVarModify((_,a),b) -> s + term a + term b
-                        ) b
-                |> fold (fun s -> function
-                    | WSymbol _ -> s
-                    | WVar(_,a) -> s + term a
-                    ) c
-            | EOp(_,_,a) -> List.fold (fun s a -> s + term a) empty a
-            | EMutableSet(_,a,b,c) -> term a + List.fold (fun s (_,a) -> s + term a) empty b + term c
-            | EIfThenElse(_,a,b,c) -> term a + term b + term c
-            | EExists(_,a,b) -> List.fold (fun s a -> s + ty a) (term b) a
-            | EPatternMiss a | EReal(_,a) -> term a
-            | EMacro(_,a,b) -> List.fold (fun s -> function MLitType x | MType x -> s + ty x | MTerm (x,_) -> s + term x | MText _ -> s) (ty b) a
-            | EPatternMemo a -> Utils.memoize dict term a
-            // Regular pattern matching
-            | ELet(_,bind,body,on_succ) -> term on_succ - bind + term body
-            | EUnbox(_,_,bind,body,on_succ,on_fail) -> term on_succ - bind + term body + term on_fail
-            | EExistsTest(_,bind,pat_type,pat,on_succ,on_fail) -> singleton_term bind + (Array.fold (-.) (term on_succ) pat_type - pat) + term on_fail
-            | EPairTest(_,bind,pat1,pat2,on_succ,on_fail) -> singleton_term bind + (term on_succ - pat1 - pat2) + term on_fail
-            | ESymbolTest(_,_,bind,on_succ,on_fail)
-            | EUnitTest(_,bind,on_succ,on_fail)
-            | ELitTest(_,_,bind,on_succ,on_fail) -> singleton_term bind + term on_succ + term on_fail
-            | ERecordTest(_,a,bind,on_succ,on_fail) ->
-                let on_succ_and_injects =
-                    let on_succ = List.fold (fun s (Symbol(_,a) | Var(_,a)) -> s - a) (term on_succ) a
-                    List.fold (fun s -> function Var((_,a),_) -> s + term a | Symbol _ -> s) on_succ a // Though it is less efficient, I am using two passes here to guard against future changes to pattern compilation breaking this part by accident.
-                singleton_term bind + term on_fail + on_succ_and_injects
-            | EDefaultLitTest(_,_,t,bind,on_succ,on_fail)
-            | EAnnotTest(_,t,bind,on_succ,on_fail) -> singleton_term bind + ty t + term on_succ + term on_fail
-            | ENominalTest(_,t,bind,pat,on_succ,on_fail) -> singleton_term bind + ty t + (term on_succ - pat) + term on_fail
-            | ETypecase(_,a,b) ->
-                List.fold (fun s (a,b) ->
-                    let a = ty a
-                    let mutable b = term b
-                    match a.ty.range with
-                    | Some(a,a') -> for i=a to a' do b <- b -. i
-                    | None -> ()
-                    s + a + b
-                    ) (ty a) b
-        and ty = function
-            | TExists | TJoinPoint' _ | TForall' _ | TArrow' _ | TSymbol _ | TPrim _ | TNominal _ | TLit _ | TB _ -> empty
-            | TTypecase(_,a,b) ->
-                List.fold (fun s (a,b) ->
-                    let a = ty a
-                    let mutable b = ty b
-                    match a.ty.range with
-                    | Some(a,a') -> for i=a to a' do b <- b -. i
-                    | None -> ()
-                    s + a + b
-                    ) (ty a) b
-            | TPatternRef a -> ty a.Value
-            | TV i -> singleton_ty i
-            | TMetaV i -> {empty with ty = {|empty.ty with range = Some(i,i)|} }
-            | TApply(_,a,b) | TPair(_,a,b) | TFun(a,b,_) -> ty a + ty b
-            | TUnion(_,(a,_)) -> a |> Map.fold (fun s k (a,b) -> s + ty a + (Option.map ty b |> Option.defaultValue empty)) empty
-            | TRecord(_,a) -> Map.fold (fun s k v -> s + ty v) empty a
-            | TModule a -> Map.fold (fun s k v -> s + ty v) empty a
-            | TTerm(_,a) -> term a
-            | TMacro(_,a) -> a |> List.fold (fun s -> function TMText _ -> s | TMLitType x | TMType x -> s + ty x) empty
-            | TForall(_,i,a) | TArrow(i,a) as x -> scope x (ty a -. i)
-            | TJoinPoint(_,a) as x -> scope x (ty a)
-            | TArray(a) | TLayout(a,_) -> ty a
-
-        let _ = match x with Choice1Of2 x -> term x | Choice2Of2 x -> ty x
-        scope_dict
-
-    /// ### ResolveEnvValue
-    type ResolveEnvValue = {|term : Set<Id>; ty : Set<Id> |}
-
-    // Cross-assembly factory for ResolveEnvValue.
-    let resolve_env_value term ty : ResolveEnvValue = {|term=term; ty=ty|}
-
-    /// ### ResolveEnv
-    type ResolveEnv = Map<int, ResolveEnvValue>
-
-    /// ### resolve_recursive_free_vars
-    let resolve_recursive_free_vars env =
-        Map.fold (fun (env : ResolveEnv) k v ->
-            let has_visited = HashSet()
-            let rec f (s : ResolveEnvValue) k v =
-                if has_visited.Add(k) then
-                    let s = Set.fold (fun s k -> if k < 0 then f s k env.[k] else {|s with term = Set.add k s.term|}) s v.term
-                    Set.fold (fun s k -> {|s with ty = Set.add k s.ty|}) s v.ty
-                else s
-            Map.add k (f (resolve_env_value Set.empty Set.empty) k v) env
-            ) env env
-
-    /// ### resolve
-    let resolve (scope : Dictionary<obj,PropagatedVars>) x =
-        let dict = Dictionary(HashIdentity.Reference)
-        let subst' (env : ResolveEnv) (x : PropagatedVars) : PropagatedVars =
-            let f (s : ResolveEnvValue) x =
-                if x < 0 then
-                    match Map.tryFind x env with
-                    | Some x -> resolve_env_value (Set.union s.term x.term) (Set.union s.ty x.ty)
-                    | None -> resolve_env_value (Set.add x s.term) s.ty
-                else resolve_env_value (Set.add x s.term) s.ty
-            let fv = Set.fold f (resolve_env_value Set.empty Set.empty) x.term.vars
-            {term = propagated_vars_env_with_vars x.term fv.term; ty = propagated_vars_env_with_vars x.ty (Set.union fv.ty x.ty.vars) }
-        let subst env (x : obj) = match scope.TryGetValue(x) with true, v -> scope.[x] <- subst' env v | _ -> ()
-        let rec term (env : ResolveEnv) x =
-            let f = term env
-            match x with
-            | EForall' _ | EFun' _ | ERecursiveForall' _ | ERecursiveFun' _ | ERecursive _ | EJoinPoint' _ | EModule _ | EV _ | ESymbol _ | ELit _ | EB _ -> ()
-            | EPatternRef a -> f a.Value
-            | EDefaultLit(_,_,a) | EPrototypeApply(_,_,a) | EType(_,a) | ETypePatternMiss a -> ty env a
-            | EJoinPoint(_,a,b,_,_) | EFun(_,_,a,b) -> subst env x; f a; Option.iter (ty env) b
-            | EForall(_,_,a) -> subst env x; f a
-            | ERecBlock(r,a,b) ->
-                // Goes over all the functions in a recursive block, resolving them.
-                // The reason why this is sound is because the outer blocks are progressively resolved as they go in.
-                let env =
-                    let l =
-                        List.fold (fun s (id,body) ->
-                            let x = subst' env scope.[body]
-                            Map.add id (resolve_env_value x.term.vars x.ty.vars) s
-                            ) Map.empty a
-                        |> resolve_recursive_free_vars
-                    Map.foldBack Map.add l env
-                a |> List.iter (fun (id,body) ->
-                    scope.[body] <-
-                        let x = env.[id]
-                        let v = scope.[body]
-                        {term = propagated_vars_env_with_vars v.term x.term; ty = propagated_vars_env_with_vars v.ty x.ty }
-                    term env body
-                    )
-                term env b
-            | ERecordWith(_,a,b,c) ->
-                List.iter (snd >> f) a
-                b |> List.iter (function
-                    | RSymbolModify(_,a) | RSymbol(_,a) -> f a
-                    | RVarModify((_,a),b) | RVar((_,a),b) -> f a; f b)
-                c |> List.iter (function
-                    | WSymbol _ -> ()
-                    | WVar(_,a) -> f a)
-            | ENominal(_,a,b) | ETypeApply(_,a,b) | EAnnot(_,a,b) -> f a; ty env b
-            | EOp(_,_,a) -> List.iter f a
-            | EExists(_,a,b) -> List.iter (ty env) a; f b
-            | EPatternMiss a | EReal(_,a) -> f a
-            | EArray(_,a,b) -> List.iter f a; ty env b
-            | EExistsTest(_,_,_,_,a,b)
-            | EUnitTest(_,_,a,b) | ESymbolTest(_,_,_,a,b) | EPairTest(_,_,_,_,a,b) | ELitTest(_,_,_,a,b)
-            | ELet(_,_,a,b) | EIfThen(_,a,b) | EPair(_,a,b) | ESeq(_,a,b) | EApply(_,a,b) -> f a; f b
-            | EMutableSet(_,a,b,c) -> f a; List.iter (snd >> f) b; f c
-            | EUnbox(_,_,_,a,b,c) | EIfThenElse(_,a,b,c) -> f a; f b; f c
-            | EMacro(_,a,b) ->
-                a |> List.iter (function MLitType a | MType a -> ty env a | MTerm (a,_) -> f a | MText _ -> ())
-                ty env b
-            | EPatternMemo a -> Utils.memoize dict f a
-            | ERecordTest(_,l,_,a,b) ->
-                l |> List.iter (function Symbol _ -> () | Var((_,a),_) -> f a)
-                f a; f b
-            | EDefaultLitTest(_,_,t,_,a,b) | ENominalTest(_,t,_,_,a,b) | EAnnotTest(_,t,_,a,b) -> ty env t; f a; f b
-            | ETypecase(_,a,b) -> ty env a; b |> List.iter (fun (a,b) -> ty env a; term env b)
-
-        and ty (env : ResolveEnv) x =
-            let f = ty env
-            match x with
-            | TExists | TJoinPoint' _ | TForall' _ | TArrow' _ | TNominal _ | TPrim _ | TSymbol _ | TV _ | TMetaV _ | TLit _ | TB _ -> ()
-            | TTypecase(_,a,b) -> ty env a; b |> List.iter (fun (a,b) -> ty env a; ty env b)
-            | TPatternRef a -> f a.Value
-            | TForall(_,_,a)
-            | TArrow(_,a) -> subst env x; f a
-            | TApply(_,a,b) | TFun(a,b,_) | TPair(_,a,b) -> f a; f b
-            | TUnion(_,(a,_)) -> a |> Map.iter (fun _ (a,b) -> f a; Option.iter f b)
-            | TRecord(_,a) -> Map.iter (fun _ -> f) a
-            | TModule a -> Map.iter (fun _ -> f) a
-            | TTerm(_,a) -> term env a
-            | TMacro(_,a) -> a |> List.iter (function TMText _ -> () | TMLitType a | TMType a -> f a)
-            | TJoinPoint(_,a) | TLayout(a,_) | TArray(a) -> f a
-
-        match x with
-        | Choice1Of2 x -> term Map.empty x
-        | Choice2Of2 x -> ty Map.empty x
-
-    /// ### LowerSubEnv
-    type LowerSubEnv = {|var : Map<int,int>; adj : int|}
-
-    /// ### LowerEnv
-    type LowerEnv = {term : LowerSubEnv; ty : LowerSubEnv }
-
-    /// ### LowerEnvRec
-    type LowerEnvRec = Map<int,LowerEnv -> E>
-
-    // Source names for `inl f = <function>`, keyed by the function node and then by the
-    // lowered body that closure conversion stores. Filled during prepass, read at codegen.
-    let closureBindingNames = System.Runtime.CompilerServices.ConditionalWeakTable<E, string>()
-    let noteClosureName (node : E) (name : string) =
-        match closureBindingNames.TryGetValue node with
-        | true, _ -> ()
-        | _ -> closureBindingNames.Add(node, name)
-    let copyClosureName (source : E) (dest : E) =
-        match closureBindingNames.TryGetValue source with
-        | true, name -> noteClosureName dest name
-        | _ -> ()
-
-    /// ### lower
-    let lower (scope : Dictionary<obj,PropagatedVars>) x =
-        let dict = Dictionary(HashIdentity.Reference)
-        let scope (env : LowerEnv) x =
-            let v = scope.[x]
-            let fv v env = v |> Set.toArray |> Array.map (fun i -> Map.find i env)
-            let sz = function Some(min',max') -> max' - min' + 1 | None -> 0
-            let scope : Scope = {
-                term = {|free_vars = fv v.term.vars env.term.var; stack_size = sz v.term.range|}
-                ty = {|free_vars = fv v.ty.vars env.ty.var; stack_size = sz v.ty.range|}
-                }
-
-            let vars v = Set.fold (fun (s,i) x -> Map.add x i s,i+1) (Map.empty, 0) v |> fst
-            let adj len = function Some(min',_) -> len - min' | None -> 0
-            let env : LowerEnv = {
-                term = {|var = vars v.term.vars; adj = adj scope.term.free_vars.Length v.term.range|}
-                ty = {|var = vars v.ty.vars; adj = adj scope.ty.free_vars.Length v.ty.range|}
-                }
-
-            scope, env
-
-        let adj_term (env : LowerEnv) i =
-            let i' = i + env.term.adj
-            i', {env with term = {|env.term with var = Map.add i i' env.term.var|}}
-        let adj_ty (env : LowerEnv) i =
-            let i' = i + env.ty.adj
-            i', {env with ty = {|env.ty with var = Map.add i i' env.ty.var|}}
-
-        let rec term (env_rec : LowerEnvRec) (env : LowerEnv) x =
-            let f = term env_rec env
-            let g = ty env_rec
-            match x with
-            | EForall' _ | EJoinPoint' _ | EFun' _ | ERecursiveForall' _ | ERecursiveFun' _ | ERecursive _ | EModule _ | ESymbol _ | ELit _ | EB _ -> x
-            | EPatternRef a -> f a.Value
-            | EFun(r,pat,body,t) ->
-                let scope, env = scope env x
-                let pat, env = adj_term env pat
-                assert (scope.term.free_vars.Length = pat)
-                let inner = term env_rec env body
-                copyClosureName x inner
-                EFun'(r,scope,pat,inner,Option.map (g env) t)
-            | EForall(r,pat,body) ->
-                let scope, env = scope env x
-                let pat, env = adj_ty env pat
-                assert (scope.ty.free_vars.Length = pat)
-                EForall'(r,scope,pat,term env_rec env body)
-            | EJoinPoint(r,body,t,q,name) ->
-                let scope, env = scope env x
-                EJoinPoint'(r,scope,term env_rec env body,Option.map (g env) t,q,name)
-            | EV i when 0 <= i -> EV env.term.var.[i]
-            | EV i -> env_rec.[i] env
-            | EDefaultLit(r,a,b) -> EDefaultLit(r,a,g env b)
-            | EType(r,a) -> EType(r,g env a)
-            | ETypePatternMiss a -> ETypePatternMiss(g env a)
-            | EApply(r,a,b) -> EApply(r,f a,f b)
-            | ETypeApply(r,a,b) -> ETypeApply(r,f a,g env b)
-            | ENominal(r,a,b) -> ENominal(r,f a,g env b)
-            | ERecBlock(r,a,b) ->
-                let l,env_rec =
-                    List.mapFold (fun (env_rec : LowerEnvRec) (i,body) ->
-                        let re = ref Unchecked.defaultof<_>
-                        let eval env_rec =
-                            let _,env = scope env body
-                            re.Value <-
-                                match body with
-                                | EFun(_,i,body,_) ->
-                                    let _,env = adj_term env i
-                                    term env_rec env body
-                                | EForall(_,i,body) ->
-                                    let _,env = adj_ty env i
-                                    term env_rec env body
-                                | _ -> failwith "Compiler error: Expected a fun or a forall."
-                        let body env =
-                            let scope,env = scope env body
-                            match body with
-                            | EFun(r,i,_,d) ->
-                                let i,_ = adj_term env i
-                                ERecursiveFun'(r,scope,i,re,d)
-                            | EForall(r,i,_) ->
-                                let i,_ = adj_ty env i
-                                ERecursiveForall'(r,scope,i,re)
-                            | _ -> failwith "Compiler error: Expected a fun or a forall."
-                        eval,Map.add i body env_rec
-                        ) env_rec a
-                List.iter (fun eval -> eval env_rec) l
-                term env_rec env b
-            | ERecordWith(r,a,b,c) ->
-                let a = List.map (fun (r,a) -> r, f a) a
-                let b = b |> List.map (function
-                    | RSymbol(a,b) -> RSymbol(a,f b)
-                    | RSymbolModify(a,b) -> RSymbolModify(a,f b)
-                    | RVar((r,a),b) -> RVar((r,f a),f b)
-                    | RVarModify((r,a),b) -> RVarModify((r,f a),f b)
-                    )
-                let c = c |> List.map (function
-                    | WSymbol _ as x -> x
-                    | WVar(r,a) -> WVar(r,f a)
-                    )
-                ERecordWith(r,a,b,c)
-            | EOp(r,a,b) -> EOp(r,a,List.map f b)
-            | EAnnot(r,a,b) ->
-                copyClosureName x a
-                EAnnot(r,f a,g env b)
-            | EIfThenElse(r,a,b,c) -> EIfThenElse(r,f a,f b,f c)
-            | EIfThen(r,a,b) -> EIfThen(r,f a,f b)
-            | EArray(r,a,b) -> EArray(r,List.map f a, g env b)
-            | EPair(r,a,b) -> EPair(r,f a,f b)
-            | ESeq(r,a,b) -> ESeq(r,f a,f b)
-            | EMutableSet(r,a,b,c) -> EMutableSet(r,f a,List.map (fun (a,b) -> a, f b) b,f c)
-            | EPatternMiss a -> EPatternMiss(f a)
-            | EReal(r,a) -> EReal(r,f a)
-            | EExists(r,a,b) -> EExists(r,List.map (g env) a,f b)
-            | EMacro(r,a,b) ->
-                let a = a |> List.map (function
-                    | MText _ as x -> x
-                    | MLitType a -> MLitType(g env a)
-                    | MType a -> MType(g env a)
-                    | MTerm (a,b) -> MTerm(f a,b)
-                    )
-                EMacro(r,a,g env b)
-            | EPrototypeApply(r,a,b) -> EPrototypeApply(r,a,g env b)
-            | EPatternMemo x -> Utils.memoize dict f x
-            // Regular pattern matching
-            | ELet(r,pat,body,on_succ) ->
-                let body = term env_rec env body
-                let pat,env = adj_term env pat
-                let on_succ = term env_rec env on_succ
-                ELet(r,pat,body,on_succ)
-            | EUnbox(r,q,pat,body,on_succ,on_fail) ->
-                let body = term env_rec env body
-                let on_fail = term env_rec env on_fail
-                let pat,env = adj_term env pat
-                let on_succ = term env_rec env on_succ
-                EUnbox(r,q,pat,body,on_succ,on_fail)
-            | EPairTest(r,i,pat1,pat2,on_succ,on_fail) ->
-                let on_fail = term env_rec env on_fail
-                let i = env.term.var.[i]
-                let pat1,env = adj_term env pat1
-                let pat2,env = adj_term env pat2
-                let on_succ = term env_rec env on_succ
-                EPairTest(r,i,pat1,pat2,on_succ,on_fail)
-            | EExistsTest(r,i,pat_type,pat,on_succ,on_fail) ->
-                let on_fail = term env_rec env on_fail
-                let i = env.term.var.[i]
-                let pat,env = adj_term env pat
-                let pat_type,env = Array.mapFold adj_ty env pat_type
-                let on_succ = term env_rec env on_succ
-                EExistsTest(r,i,pat_type,pat,on_succ,on_fail)
-            | ESymbolTest(r,a,i,on_succ,on_fail) ->
-                let on_fail = term env_rec env on_fail
-                let i = env.term.var.[i]
-                let on_succ = term env_rec env on_succ
-                ESymbolTest(r,a,i,on_succ,on_fail)
-            | ERecordTest(r,a,i,on_succ,on_fail) ->
-                let on_fail = term env_rec env on_fail
-                let b = env.term.var.[i]
-                let a, env =
-                    List.mapFold (fun env x ->
-                        match x with
-                        | Symbol(a,b) -> let b,env = adj_term env b in Symbol(a,b), env
-                        | Var((r,a),b) -> let b,env = adj_term env b in Var((r,f a),b), env
-                        ) env a
-                ERecordTest(r,a,b,term env_rec env on_succ,on_fail)
-            | EAnnotTest(r,a,i,on_succ,on_fail) -> EAnnotTest(r,g env a,env.term.var.[i],f on_succ,f on_fail)
-            | ELitTest(r,a,i,on_succ,on_fail) -> ELitTest(r,a,env.term.var.[i],f on_succ,f on_fail)
-            | EUnitTest(r,i,on_succ,on_fail) -> EUnitTest(r,env.term.var.[i],f on_succ,f on_fail)
-            | ENominalTest(r,a,i,pat,on_succ,on_fail) ->
-                let on_fail = term env_rec env on_fail
-                let i = env.term.var.[i]
-                let pat, env = adj_term env pat
-                let on_succ = term env_rec env on_succ
-                ENominalTest(r,g env a,i,pat,on_succ,on_fail)
-            | EDefaultLitTest(r,a,b,i,on_succ,on_fail) -> EDefaultLitTest(r,a,g env b,env.term.var.[i],f on_succ,f on_fail)
-            | ETypecase(r,a,b) ->
-                let b = b |> List.map (fun (a,b) ->
-                    let metavars = Dictionary()
-                    let mutable env_case = env
-                    let a =
-                        ty' (Utils.memoize metavars (fun i ->
-                            let i, env = adj_ty env_case i
-                            env_case <- env
-                            TMetaV i
-                            )) env_rec env_case a
-                    a, term env_rec env_case b
-                    )
-                ETypecase(r,g env a,b)
-        and ty env_rec env x = ty' (fun _ -> failwith "Compiler error: TMetaV should not appear here.") env_rec env x
-        and ty' case_tmetav env_rec env x =
-            let f = ty' case_tmetav env_rec env
-            match x with
-            | TMetaV i -> case_tmetav i
-            | TExists | TJoinPoint' _ | TForall' _ | TArrow' _ | TNominal  _ | TPrim _ | TSymbol _ | TLit _ | TB _ as x -> x
-            | TTypecase(r,a,b) ->
-                let b = b |> List.map (fun (a,b) ->
-                    let metavars = Dictionary()
-                    let mutable env_case = env
-                    let a =
-                        ty' (Utils.memoize metavars (fun i ->
-                            let i, env = adj_ty env_case i
-                            env_case <- env
-                            TMetaV i
-                            )) env_rec env_case a
-                    a, ty env_rec env_case b
-                    )
-                TTypecase(r,ty env_rec env a,b)
-            | TPatternRef a -> f a.Value
-            | TJoinPoint(r,a) as x ->
-                let scope, env = scope env x
-                TJoinPoint'(r,scope,ty env_rec env a)
-            | TForall(r,a,b) as x ->
-                let scope, env = scope env x
-                let a, env = adj_ty env a
-                TForall'(r,scope,a,ty env_rec env b)
-            | TArrow(a,b) as x ->
-                let scope, env = scope env x
-                let a, env = adj_ty env a
-                TArrow'(scope,a,ty env_rec env b)
-            | TV i -> TV(env.ty.var.[i])
-            | TPair(r,a,b) -> TPair(r,f a,f b)
-            | TFun(a,b,t) -> TFun(f a,f b,t)
-            | TRecord(r,a) -> TRecord(r,Map.map (fun _ -> f) a)
-            | TModule a -> TModule(Map.map (fun _ -> f) a)
-            | TUnion(r,(a,b)) -> TUnion(r,(Map.map (fun _ (a,b) -> f a, Option.map f b) a,b))
-            | TApply(r,a,b) -> TApply(r,f a,f b)
-            | TTerm(r,a) -> TTerm(r,term env_rec env a)
-            | TMacro(r,a) ->
-                let a = a |> List.map (function
-                    | TMText _ as x -> x
-                    | TMType a -> TMType(f a)
-                    | TMLitType a -> TMLitType(f a)
-                    )
-                TMacro(r,a)
-            | TArray(a) -> TArray(f a)
-            | TLayout(a,b) -> TLayout(f a,b)
-        let env : LowerEnv = {
-            term = {|var = Map.empty; adj = 0|}
-            ty = {|var = Map.empty; adj = 0|}
-            }
-        match x with
-        | Choice1Of2(x,ret) -> ret (term Map.empty env x)
-        | Choice2Of2(x,ret) -> ret (ty Map.empty env x)
-
-    /// ### PartEvalPrepassEnv
-    type PartEvalPrepassEnv = {
-        term : {| env : Map<string,E>; i : Id; i_rec : Id |}
-        ty : {| env : Map<string,TPrepass>; i : Id |}
-        }
-
-    /// ### add_term
-    let add_term (e : PartEvalPrepassEnv) k v = let term = e.term in {e with term = {|term with i = term.i+1; env = Map.add k v term.env|} }
-
-    /// ### add_term_rec
-    let add_term_rec (e : PartEvalPrepassEnv) k v = let term = e.term in {e with term = {|term with i_rec = term.i_rec-1; env = Map.add k v term.env|} }
-
-    /// ### add_ty
-    let add_ty (e : PartEvalPrepassEnv) k v = let ty = e.ty in {e with ty = {|ty with i = ty.i+1; env = Map.add k v ty.env|} }
-
-    /// ### add_wildcard
-    let add_wildcard (e : PartEvalPrepassEnv) = let ty = e.ty in {e with ty = {|ty with i = ty.i+1|} }
-
-    /// ### add_term_var
-    let add_term_var (e : PartEvalPrepassEnv) k = e.term.i, add_term e k (EV e.term.i)
-
-    /// ### fresh_term_var
-    let fresh_term_var (e : PartEvalPrepassEnv) = e.term.i, (let term = e.term in {e with term = {|term with i = term.i+1|} })
-
-    /// ### fresh_ty_var
-    let fresh_ty_var (e : PartEvalPrepassEnv) = e.ty.i, (let ty = e.ty in {e with ty = {|ty with i = ty.i+1|} })
-
-    /// ### add_term_rec_var
-    let add_term_rec_var (e : PartEvalPrepassEnv) k = e.term.i_rec, add_term_rec e k (EV e.term.i_rec)
-
-    /// ### add_ty_var
-    let add_ty_var (e : PartEvalPrepassEnv) k = e.ty.i, add_ty e k (TV e.ty.i)
-
-    /// ### add_ty_wildcard
-    let add_ty_wildcard (e : PartEvalPrepassEnv) = e.ty.i, add_wildcard e
-
-    /// ### process_term
-    let process_term (x : E) =
-        let scope = propagate (Choice1Of2 x)
-        resolve scope (Choice1Of2 x)
-        lower scope (Choice1Of2(x,id))
-
-    /// ### process_ty
-    let process_ty (x : TPrepass) =
-        let scope = propagate (Choice2Of2 x)
-        resolve scope (Choice2Of2 x)
-        lower scope (Choice2Of2(x,id))
-
-    /// ### prepassModule_open
-    let prepassModule_open (top_env : PrepassTopEnv) env a l =
-        let a,b =
-            match top_env.term.[snd a], top_env.ty.[snd a] with
-            | EModule a, TModule b ->
-                List.fold (fun (a,b) (_,x) ->
-                    match Map.find x a, Map.find x b with
-                    | EModule a, TModule b -> a,b
-                    | _ -> failwith "Compiler error: Module open's symbol index should have been validated."
-                    ) (a,b) l
-            | _ -> failwith "Compiler error: Module open should have been validated."
-        {
-        term = {|env.term with env = Map.foldBack Map.add a env.term.env|}
-        ty = {|env.ty with env = Map.foldBack Map.add b env.ty.env|}
-        }
-
-    /// ### prepassPrepass
-    let prepassPrepass package_id module_id path (top_env : PrepassTopEnv) =
-        let p r = {path=path; range=r}
-        let at_tag i = { package_id = package_id; module_id = module_id; tag = i }
-        let v_term (env : PartEvalPrepassEnv) x = Map.tryFind x env.term.env |> Option.defaultWith (fun () -> top_env.term.[x])
-        let v_ty (env : PartEvalPrepassEnv) x = Map.tryFind x env.ty.env |> Option.defaultWith (fun () -> top_env.ty.[x])
-
-        // The functions in this block are basically renaming string id to int ids, in addition to pattern compilation.
-        let rec compile_pattern (id : Id) (env : PartEvalPrepassEnv) (clauses : (Pattern * RawExpr) list) =
-            let mutable term_var_count = env.term.i
-            let mutable ty_var_count = env.ty.i
-            let patvar () = let x = term_var_count in term_var_count <- term_var_count+1; x
-            let ty_patvar () = let x = ty_var_count in ty_var_count <- ty_var_count+1; x
-            let loop (pat, on_succ) on_fail =
-                let mutable dict = Map.empty
-                let mutable dict_type = Map.empty
-                let pat_refs_term = ResizeArray()
-                //let pat_ref_term x = let re = ref Unchecked.defaultof<_> in pat_refs_term.Add(x,dict,re); EPatternRef re
-                let pat_ref_term' x k =
-                    let re = ref Unchecked.defaultof<_>
-                    let r = k (EPatternRef re)
-                    pat_refs_term.Add(x,(dict,dict_type),re)
-                    r
-                let pat_refs_ty = ResizeArray()
-                let pat_ref_ty x = let re = ref Unchecked.defaultof<_> in pat_refs_ty.Add(x,(dict,dict_type),re); TPatternRef re
-                let rec cp id pat on_succ on_fail =
-                    let v x =
-                        match Map.tryFind x dict with
-                        | Some x -> x
-                        | None -> let v = patvar() in dict <- Map.add x v dict; v
-                    let tv x =
-                        match Map.tryFind x dict_type with
-                        | Some x -> x
-                        | None -> let v = ty_patvar() in dict_type <- Map.add x v dict_type; v
-                    let step pat on_succ =
-                        match pat with
-                        | PatVar(_,x) -> v x, on_succ
-                        | _ -> let id = patvar() in id, cp id pat on_succ on_fail
-                    match pat with
-                    | PatDefaultValue _ -> failwith "Compiler error: The default value should be filled."
-                    | PatE _ -> on_succ
-                    | PatB r -> EUnitTest(p r,id,on_succ,on_fail)
-                    | PatVar(r,a) -> ELet(p r,v a,EV id,on_succ)
-                    | PatAnnot(r,a,b) -> EAnnotTest(p r,pat_ref_ty b,id,cp id a on_succ on_fail,on_fail)
-                    | PatPair(r,a,b) ->
-                        // Evaling the b then a causes the call args to be rotated in join points during peval.
-                        // This is not a problem, but it might be surprising if you aren't aware why that is happening.
-                        // Swapping the next two statements would fix it for pairs.
-                        let b,on_succ = step b on_succ
-                        let a,on_succ = step a on_succ
-                        EPairTest(p r,id,a,b,on_succ,on_fail)
-                    | PatExists(r,l,b) ->
-                        let pat_type = List.map (snd >> tv) l |> List.toArray
-                        let pat,on_succ = step b on_succ
-                        EExistsTest(p r,id,pat_type,pat,on_succ,on_fail)
-                    | PatArray(r,a) ->
-                        let r = p r
-                        let ar_ids,on_succ = List.mapFoldBack step a on_succ
-                        let a_length = List.length a
-                        let on_succ,_ =
-                            List.foldBack (fun id' (on_succ,i) ->
-                                ELet(r,id',EOp(r,ArrayIndex,[EV id; ELit(r,LitInt32 i)]),on_succ), i-1
-                                ) ar_ids (on_succ, a_length - 1)
-                        let id_length = EOp(r,ArrayLength,[EType(r,TPrim UInt64T); EV id])
-                        let pat_length = ELit(r,LitUInt64(uint64 a_length))
-                        EIfThenElse(r,EOp(r,EQ,[id_length;pat_length]),on_succ,on_fail)
-                    | PatSymbol(r,a) -> ESymbolTest(p r,a,id,on_succ,on_fail)
-                    | PatRecordMembers(r,items) ->
-                        let inject_vars = Dictionary(HashIdentity.Reference)
-                        List.iter (function
-                            | PatRecordMembersSymbol _ -> ()
-                            | PatRecordMembersInjectVar((_,var),_) ->
-                                match dict.TryGetValue(var) with
-                                | true, x -> inject_vars.[var] <- EV x
-                                | _ -> inject_vars.[var] <- v_term env var
-                            ) items
-                        let binds, on_succ =
-                            List.mapFoldBack (fun item on_succ ->
-                                match item with
-                                | PatRecordMembersSymbol((r,keyword),name) -> let arg, on_succ = step name on_succ in Symbol((p r,keyword),arg), on_succ
-                                | PatRecordMembersInjectVar((r,var),name) -> let arg, on_succ = step name on_succ in Var((p r,inject_vars.[var]),arg), on_succ
-                                ) items on_succ
-                        ERecordTest(p r,binds,id,on_succ,on_fail)
-                    | PatOr(r,a,b) -> let on_succ = EPatternMemo on_succ in cp id a on_succ (cp id b on_succ on_fail)
-                    | PatAnd(r,a,b) -> let on_fail = EPatternMemo on_fail in cp id a (cp id b on_succ on_fail) on_fail
-                    | PatValue(r,x) -> ELitTest(p r,x,id,on_succ,on_fail)
-                    | PatWhen(r,p',e) -> pat_ref_term' e (fun e -> cp id p' (EIfThenElse(p r, e, on_succ, on_fail)) on_fail)
-                    | PatNominal(r,(_,a),l,b) ->
-                        let id', on_succ = step b on_succ
-                        let a = List.fold (fun s (r',x) -> TApply(p (r +. r'),s,TSymbol(p r',x))) (v_ty env a) l
-                        ENominalTest(p r,a,id,id',on_succ,on_fail)
-                    | PatFilledDefaultValue(r,a,b) -> EDefaultLitTest(p r,a,pat_ref_ty b,id,on_succ,on_fail)
-                    | PatDyn(r,a) -> let id' = patvar() in ELet(p r,id',EOp(p r,Dyn,[EV id]),cp id' a on_succ on_fail)
-                    | PatUnbox(r,q,a) -> let id' = patvar() in EUnbox(p r,q,id',EV id,cp id' a on_succ on_fail,on_fail)
-                (pat_refs_term, pat_refs_ty), pat_ref_term' on_succ (fun on_succ -> cp id pat on_succ (EPatternMemo on_fail))
-
-            let l, e = List.mapFoldBack loop clauses (EPatternMiss(EV id))
-            l |> List.iter (fun (terms,tys) -> // The reason I am not evaling it in place is because of the var count which is mutable. I need to deal with the patterns first before replacing the strings in the body.
-                let env (dict,dict_type) =
-                    {env with
-                        term = {|env.term with i=term_var_count; env=dict |> Map.fold (fun s k v -> Map.add k (EV v) s) env.term.env|}
-                        ty = {|env.ty with i=ty_var_count; env=dict_type |> Map.fold (fun s k v -> Map.add k (TV v) s) env.ty.env|}
-                        }
-                terms |> Seq.iter (fun (a,dict,b) -> b.Value <- term (env dict) a)
-                tys |> Seq.iter (fun (a,dict,b) -> b.Value <- ty (env dict) a)
-                )
-            e
-        and pattern_match (env : PartEvalPrepassEnv) r body clauses =
-            match clauses with
-            | [PatVar(_,x), on_succ] ->
-                let id,env = add_term_var env x
-                let rec namesFunction e =
-                    match e with
-                    | EFun _ | EFun' _ | EForall _ | EForall' _ -> true
-                    | EAnnot(_, e, _) | EJoinPoint(_, e, _, _, _) | EJoinPoint'(_, _, e, _, _, _) -> namesFunction e
-                    | _ -> false
-                if namesFunction body then noteClosureName body x
-                ELet(r,id,body,term env on_succ)
-            | _ ->
-                let id,env = fresh_term_var env
-                ELet(r,id,body,compile_pattern id env clauses)
-        and pattern_function env r clauses annot =
-            match clauses with
-            | [PatVar(_,x), on_succ] ->
-                let id,env = add_term_var env x
-                EFun(r,id,term env on_succ,annot)
-            | _ ->
-                let id,env = fresh_term_var env
-                EFun(r,id,compile_pattern id env clauses,annot)
-        and ty env x = ty' (fun _ -> failwith "Compiler error: RawTMetaVar should not appear here.") env x
-        and ty' case_metavar (env : PartEvalPrepassEnv) x =
-            let f = ty' case_metavar env
-            match x with
-            | RawTMetaVar(_,name) -> case_metavar (Some name)
-            | RawTWildcard _ -> case_metavar None
-            | RawTForall(r,a,b) ->
-                let id, env = add_ty_var env (typevar_name a)
-                TForall(p r,id,ty' case_metavar env b)
-            | RawTB r -> TB (p r)
-            | RawTLit (r, x) -> TLit(p r,x)
-            | RawTVar(r,a) -> v_ty env a
-            | RawTPair(r,a,b) -> TPair(p r,f a,f b)
-            | RawTFun(r,a,b,t) -> TFun(f a,f b,t)
-            | RawTExists(r,l,b) -> TExists
-            | RawTRecord(r,l) -> TRecord(p r,Map.map (fun _ -> f) l)
-            | RawTUnion(r,a,b,this) ->
-                let rec subst_vars_with_metavars vars a =
-                    let f = subst_vars_with_metavars vars
-                    match a with
-                    | RawTTypecase _ | RawTUnion _ -> failwith "Compiler error: Not expecting typecase or union here."
-                    | RawTVar(r,n) -> if List.contains n vars then RawTMetaVar(r,n) else a
-                    | RawTPrim _ | RawTFilledNominal _ | RawTTerm _ | RawTSymbol _ | RawTLit _ | RawTMetaVar _ | RawTB _ | RawTWildcard _ -> a
-                    | RawTPair(r,a,b) -> RawTPair(r,f a,f b)
-                    | RawTFun(r,a,b,c) -> RawTFun(r,f a,f b,c)
-                    | RawTArray(r,a) -> RawTArray(r,f a)
-                    | RawTRecord(r,a) -> RawTRecord(r,Map.map (fun _ -> f) a)
-                    | RawTApply(r,a,b) -> RawTApply(r,f a,f b)
-                    | RawTForall(r,a,b) -> RawTForall(r,a,subst_vars_with_metavars (List.removeAt (List.findIndex ((=) (typevar_name a)) vars) vars) b)
-                    | RawTExists(r,a,b) ->
-                        let f vars a = List.removeAt (List.findIndex ((=) (typevar_name a)) vars) vars
-                        RawTExists(r,a,subst_vars_with_metavars (List.fold f vars a) b)
-                    | RawTMacro(r,a) ->
-                        let f = function (RawMacroText _ | RawMacroTerm _ | RawMacroTypeLit _) as a -> a | RawMacroType(r,a) -> RawMacroType(r,f a)
-                        RawTMacro(r, List.map f a)
-                    | RawTLayout(r,a,b) -> RawTLayout(r,f a,b)
-
-                let make_typecase x =
-                    let rec loop vars x =
-                        match x with
-                        | RawTForall(_,a,b) -> loop (typevar_name a :: vars) b
-                        | RawTFun(r,a,b,_) -> RawTTypecase(r,this,[subst_vars_with_metavars vars b,a])
-                        | b -> let r = range_of_texpr b in RawTTypecase(r,this,[subst_vars_with_metavars vars b,RawTB r])
-                    loop [] x |> f
-                TUnion(p r,(Map.map (fun _ (is_gadt,x) -> f x, if is_gadt then Some (make_typecase x) else None) a,b))
-            | RawTTypecase(r,a,b) ->
-                let b = b |> List.map (fun (t,e) ->
-                    let metavars = Dictionary()
-                    let mutable env_case = env
-                    let t =
-                        let f (id,env) = env_case <- env; TMetaV id
-                        ty' (function
-                            | None -> add_ty_wildcard env_case |> f
-                            | Some name -> Utils.memoize metavars (add_ty_var env_case >> f) name
-                            ) env t
-                    t, ty env_case e
-                    )
-                TTypecase(p r,ty env a,b)
-            | RawTSymbol(r,a) -> TSymbol(p r,a)
-            | RawTApply(r,a,b) ->
-                let raw_a = a
-                match f a, f b with
-                | TRecord(_,a') & a, TSymbol(_,b') & b ->
-                    // As in terms: the module's own member, else its index module's (folder `x/` holding a module `x`).
-                    let find k (m : Map<_,_>) = m |> Map.tryPick (fun (_, k') v -> if k' = k then Some v else None)
-                    let folder = match raw_a with RawTVar(_,m) -> Some m | RawTApply(_,_,RawTSymbol(_,m)) -> Some m | _ -> None
-                    let index = folder |> Option.bind (fun m -> if m = b' then None else match find m a' with Some (TRecord(_,i)) -> Some i | _ -> None)
-                    match find b' a', index |> Option.bind (find b') with
-                    | Some (TRecord _), Some _ | None, None -> TApply(p r,a,b) // Ambiguous or missing (the type checker reported it): an error during partial evaluation.
-                    | Some x, _ | None, Some x -> x
-                | a,b -> TApply(p r,a,b)
-            | RawTPrim(r,a) -> TPrim(a)
-            | RawTTerm(r,a) -> TTerm(p r,term env a)
-            | RawTMacro(r,l) ->
-                let f = function
-                    | RawMacroText(r,a) -> TMText a
-                    | RawMacroType(r,a) -> TMType(f a)
-                    | RawMacroTypeLit(r,a) -> TMLitType(f a)
-                    | RawMacroTerm _ -> failwith "Compiler error: Term vars should not appear on the type level."
-                TMacro(p r,List.map f l)
-            | RawTArray(r,a) -> TArray(f a)
-            | RawTFilledNominal(r,a) -> TNominal a
-            | RawTLayout(r,a,b) -> TLayout(f a,b)
-        and term env x =
-            let f = term env
-            match x with
-            | RawDefaultLit(r,a) -> failwith "Compiler error: Default values should have been annotated in `fill` by prepass time."
-            | RawAnnot(_,RawDefaultLit(r,a),b) -> EDefaultLit(p r,a,ty env b)
-            | RawAnnot(_,RawLit(r,a),b) -> EDefaultLit(p r,a.LitToString(),ty env b)
-            | RawB r -> EB(p r)
-            | RawV(r,a,_) -> v_term env a
-            | RawLit(r,a) -> ELit(p r,a)
-            | RawSymbol(r,a) -> ESymbol(p r,a)
-            | RawType(r,a) -> EType(p r,ty env a)
-            | RawMatch(r,a,b) -> pattern_match env (p r) (f a) b
-            | RawFun(r,a) -> pattern_function env (p r) a None
-            | RawAnnot(_,RawFun(r,a),t) -> pattern_function env (p r) a (Some (ty env t))
-            | RawArray(r,a) -> failwith "Compiler error: The array should have been annotated in `fill` by prepass time."
-            | RawLayoutIndex(r,a) -> EOp(p r,LayoutIndex,[f a])
-            | RawAnnot(_,RawArray(r,a),b) -> EArray(p r,List.map f a,ty env b)
-            | RawTypecase(r,a,b) ->
-                let b = b |> List.map (fun (t,e) ->
-                    let metavars = Dictionary()
-                    let mutable env_case = env
-                    let t =
-                        let f (id,env) = env_case <- env; TMetaV id
-                        ty' (function
-                            | None -> add_ty_wildcard env_case |> f
-                            | Some name -> Utils.memoize metavars (add_ty_var env_case >> f) name
-                            ) env t
-                    t, term env_case e
-                    )
-                ETypecase(p r,ty env a,b)
-            | RawFilledForall(r,name,b)
-            | RawForall(r,((_,(name,_)),_),b) ->
-                let id, env = add_ty_var env name
-                EForall(p r,id,term env b)
-            | RawRecBlock(r,l,on_succ) ->
-                let l,env = List.mapFold (fun env ((r,name),body) -> let id,env = add_term_rec_var env name in (id,body), env) env l
-                ERecBlock(p r,List.map (fun (id,body) -> id, term env body) l,term env on_succ)
-            | RawRecordWith(r,a,b,c) ->
-                let a = List.map (fun a -> p (range_of_expr a), f a) a
-                let b = b |> List.map (function
-                    | RawRecordWithSymbol((r,a),b) -> RSymbol((p r,a),f b)
-                    | RawRecordWithSymbolModify((r,a),b) -> RSymbolModify((p r,a),f b)
-                    | RawRecordWithInjectVar((r,a),b) -> RVar((p r,v_term env a),f b)
-                    | RawRecordWithInjectVarModify((r,a),b) -> RVarModify((p r,v_term env a),f b))
-                let c = c |> List.map (function
-                    | RawRecordWithoutSymbol(r,a) -> WSymbol(p r,a)
-                    | RawRecordWithoutInjectVar(r,a) -> WVar(p r,v_term env a))
-                ERecordWith(p r,a,b,c)
-            | RawOp(r,a,b) -> EOp(p r,a,List.map f b)
-            | RawJoinPoint(r,q,a,name) -> EJoinPoint(p r,f a,None,Option.map (fun (r',w) -> p r',w) q,name)
-            | RawAnnot(_,RawJoinPoint(r,q,a,name),b) -> EJoinPoint(p r,f a,Some (ty env b),Option.map (fun (r',w) -> p r',w) q,name)
-            | RawOpen (_,a,l,on_succ) -> term (prepassModule_open top_env env a l) on_succ
-            | RawApply(r,a,b) ->
-                // `x.key` on a module: its own member, else the member of its index module (a folder `x/` holding a module
-                // `x`, as lib/spiral's rust/rust: `rust.box` works where `rust` names the folder). A key that is both a
-                // sibling of the index module and one of its members is an error, never a silent pick; so is a missing one.
-                let module_member name (m : Map<_,E>) key =
-                    let index = name |> Option.bind (fun n -> match Map.tryFind (id n) m with Some (EModule i) when n <> key -> Some i | _ -> None)
-                    match Map.tryFind (id key) m, index |> Option.bind (Map.tryFind (id key)) with
-                    | Some (EModule _), Some _ -> Error (sprintf "`%s.%s` is ambiguous: the folder `%s` has a module `%s`, and its index module `%s.%s` has a member `%s`." (Option.get name) key (Option.get name) key (Option.get name) (Option.get name) key)
-                    | Some x, _ | None, Some x -> Ok x
-                    | None, None ->
-                        let keys = m |> Map.toList |> List.map (fst >> id) |> String.concat ", "
-                        let index_keys = match index with Some i -> i |> Map.toList |> List.map (fst >> id) |> String.concat ", " |> sprintf " (and its index module's: %s)" | None -> ""
-                        Error (sprintf "The module%s has no member `%s`. Its keys: %s%s." (match name with Some n -> sprintf " `%s`" n | None -> "") key keys index_keys)
-                let error msg = EOp(p r,ErrorType,[ELit(p r,LitString msg)])
-                let rec loop name = function
-                    | EModule a' & a, EPair(_,ESymbol(_, b'),b'') & b ->
-                        match module_member name a' b' with
-                        | Ok a -> loop (Some b') (a,b'')
-                        | Error msg -> error msg
-                    | EModule a' & a, ESymbol(_,b') & b ->
-                        match module_member name a' b' with
-                        | Ok a -> a
-                        | Error msg -> error msg
-                    | a,EType(_,b) -> ETypeApply(p r,a,b)
-                    | a,b -> EApply(p r,a,b)
-                let name = match a with RawV(_,n,_) -> Some n | RawApply(_,_,RawSymbol(_,n)) -> Some n | _ -> None
-                loop name (f a, f b)
-            | RawIfThenElse(r,a,b,c) -> EIfThenElse(p r,f a,f b,f c)
-            | RawIfThen(r,a,b) -> EIfThen(p r,f a,f b)
-            | RawTypeIfThenElse(r,a,b,tr,fl) -> let r = p r in EIfThenElse(r,EOp(r,TypeEq,[EType(r,ty env a); EType(r,ty env b)]),f tr,f fl)
-            | RawTypeIfThen(r,a,b,tr) -> let r = p r in EIfThen(r,EOp(r,TypeEq,[EType(r,ty env a); EType(r,ty env b)]),f tr)
-            | RawPair(r,a,b) -> EPair(p r,f a,f b)
-            | RawSeq(r,a,b) -> ESeq(p r,f a,f b)
-            | RawHeapMutableSet(r,a,b,c) -> EMutableSet(p r,f a,List.map (fun a -> p (range_of_expr a), f a) b,f c)
-            | RawReal(r,a) -> f a
-            | RawExists(r,(_,Some a),b) -> EExists(p r, List.map (ty env) a, f b)
-            | RawExists(_,(_,None),_) -> failwith "Compiler error: The exists' vars should have been added during `fill`."
-            | RawMacro _ -> failwith "Compiler error: The macro's annotation should have been added during `fill`."
-            | RawAnnot(_,RawMacro(r,a),b) ->
-                let a = a |> List.map (function
-                    | RawMacroText(r,a) -> MText a
-                    | RawMacroTerm(r,a,b) -> MTerm(f a,b)
-                    | RawMacroType(r,a) -> MType(ty env a)
-                    | RawMacroTypeLit(r,a) -> MLitType(ty env a)
-                    )
-                EMacro(p r,a,ty env b)
-            | RawMissingBody _ -> failwith "Compiler error: The missing body cases should have been validated."
-            | RawAnnot(r,a,b) -> EAnnot(p r,f a,ty env b)
-
-        let env : PartEvalPrepassEnv =
-            {
-            term = {|env=Map.empty; i=0; i_rec= -1|}
-            ty = {|env=Map.empty; i=0|}
-            }
-
-        let eval_type ((r,(name,kind)) : HoVar) on_succ env =
-            let id, env = add_ty_var env name
-            TArrow(id,on_succ env)
-        let eval_type' env l body = List.foldBack eval_type l body env |> process_ty
-
-        {|
-        base_type = process_ty
-        filled_top = fun x ->
-            let nominal_rec l =
-                let env,_ =
-                    List.fold (fun (env,i) (r,(_,name),l,body) ->
-                        add_ty env name (TNominal (at_tag i)), i+1
-                        ) (env, top_env.nominals_next_tag) l
-                List.fold (fun (term,ty',nominals,i) (r, (_,name),l,body) ->
-                    let r = p r
-                    let at_tag_i = at_tag i
-                    let nom = TNominal at_tag_i
-                    let bodyUnlowered = List.foldBack eval_type l (fun env -> TJoinPoint(p (range_of_texpr body), ty env body)) env
-                    let bodyt = process_ty bodyUnlowered
-                    let term =
-                        match body with
-                        | RawTUnion(_,l,_,_) ->
-                            Map.fold (fun term (_,name) (is_gadt,_) ->
-                                if is_gadt then
-                                    let rec loop_outer = function
-                                        | TArrow(_,t) -> loop_outer t // GADTs have the foralls in their cases' type, not here.
-                                        | TJoinPoint(r,TUnion(_,(l,_))) ->
-                                            let rec loop vars = function
-                                                | TForall(r,id,t) -> EForall(r,id,loop (id :: vars) t)
-                                                | TFun(t,t',_) -> EFun(r,0,ENominal(r,EPair(r,ESymbol(r,name),EV 0),t'),Some(TFun(t,t',FT_Vanilla)))
-                                                | t' -> ENominal(r,EPair(r,ESymbol(r,name),EB r),t')
-                                            let t = l |> Map.pick (fun (_, k) v -> if k = name then Some v else None) |> fst
-                                            loop [] t
-                                        | _ -> failwith "Compiler error: Expected a join point with a gadt union."
-                                    Map.add name (loop_outer bodyUnlowered |> process_term) term
-                                else
-                                    let rec loop vars = function
-                                        | TArrow(id,t) -> EForall(r,id,loop (id :: vars) t)
-                                        | TJoinPoint(r,TUnion(_,(l,_))) ->
-                                            let t = l |> Map.pick (fun (_, k) v -> if k = name then Some v else None) |> fst
-                                            let t' = List.foldBack (fun id nom -> TApply(r,nom,TV id)) vars nom
-                                            match t with
-                                            | TB _ -> ENominal(r,EPair(r,ESymbol(r,name),EB r),t')
-                                            | _ -> EFun(r,0,ENominal(r,EPair(r,ESymbol(r,name),EV 0),t'),Some(TFun(t,t',FT_Vanilla)))
-                                        | _ -> failwith "Compiler error: Expected a join point with an union."
-                                    Map.add name (loop [] bodyUnlowered |> process_term) term
-                                ) term l
-                        | _ ->
-                            let rec loop vars = function
-                                | TArrow(id,t) -> EForall(r,id,loop (id :: vars) t)
-                                | TJoinPoint(r,t) ->
-                                    let t' = List.foldBack (fun id nom -> TApply(r,nom,TV id)) vars nom
-                                    match t with
-                                    | TB _ -> ENominal(r,EB r,t')
-                                    | _ -> EFun(r,0,ENominal(r,EV 0,t'),Some(TFun(t,t',FT_Vanilla)))
-                                | _ -> failwith "Compiler error: Expected a join point."
-                            Map.add name (loop [] bodyUnlowered |> process_term) term
-                    term,Map.add name nom ty', Map.add at_tag_i (nominal_prepass bodyt name) nominals, i+1
-                    ) (Map.empty, Map.empty, Map.empty, top_env.nominals_next_tag) l
-            match x with
-            | FType(_,(_,name),l,body) -> AInclude {prepassTop_env_empty with ty = Map.add name (eval_type' env l (fun env -> ty env body)) Map.empty}
-            | FNominal(r,a,b,c) ->
-                let term,ty,nominals,i = nominal_rec [r,a,b,c]
-                AInclude {prepassTop_env_empty with term = term; ty = ty; nominals = nominals; nominals_next_tag=i}
-            | FNominalRec l ->
-                let term,ty,nominals,i = nominal_rec l
-                AInclude {prepassTop_env_empty with term = term; ty = ty; nominals = nominals; nominals_next_tag=i}
-            | FInl(_,(_,name),body) -> AInclude {prepassTop_env_empty with term = Map.add name (term env body |> process_term) Map.empty}
-            | FRecInl l ->
-                let l, env =
-                    List.mapFold (fun env (_,(_,name),_ as x) ->
-                        let r = ref Unchecked.defaultof<_>
-                        (x,r), add_term_rec env name (ERecursive r)
-                        ) env l
-                let term =
-                    List.fold (fun top_env_term ((_,(_,name),body),(r : ref<E>)) ->
-                        r.Value <- term env body |> process_term
-                        Map.add name r.Value top_env_term
-                        ) Map.empty l
-                AInclude {prepassTop_env_empty with term = term}
-            | FPrototype(r,(_,name),_,_,_) ->
-                let i = at_tag top_env.prototypes_next_tag
-                let r = p r
-                let x = EForall(r,0,EPrototypeApply(r,i,TV 0)) |> process_term
-                AInclude {prepassTop_env_empty with term = Map.add name x Map.empty; prototypes_next_tag = i.tag+1}
-            | FInstance(_,(_,prot_id),(_,ins_id),body) ->
-                AInclude {prepassTop_env_empty with prototypes_instances = Map.add (prot_id,ins_id) (term env body |> process_term) Map.empty}
-            | FOpen(r,a,b) ->
-                let x = prepassModule_open top_env env a b
-                AOpen {prepassTop_env_empty with term=x.term.env; ty=x.ty.env}
-        |}
-
-    /// ### prepassTop_env_default
-    let prepassTop_env_default default_env =
-        let convert_infer_to_prepass x =
-            let m = Dictionary(HashIdentity.Reference)
-            let rec f = function
-                | TyVar (_,{contents=Some x}) -> f x
-                | TyVar (x,_) -> TV m.[x.name]
-                | TyPrim x -> TPrim x
-                | TyArray x -> TArray (f x)
-                | TyLayout(a,b) -> TLayout(f a,b)
-                | TyInl(a,b) -> let i = m.Count in m.Add(a.name,i); TArrow(i,f b)
-                | TyFun(a,b,t) -> TFun(f a, f b, t)
-                | _ -> failwith "Compiler error: The base type in Infer is not supported in the prepass yet."
-            f x
-
-        List.fold (fun (top_env : PrepassTopEnv) (k, x) ->
-            {top_env with ty = Map.add k ((prepassPrepass -1 0 "<base_types>" top_env).base_type (convert_infer_to_prepass x)) top_env.ty}
-            ) prepassTop_env_empty (Infer.base_types default_env)
-
-#endif
 #if SPIRAL_CORE_GPT5PARALLEL
     /// ## PartEval
     
@@ -168092,6 +164378,7 @@ fn spiralPanic(message: []const u8, _: ?usize) noreturn {
     std.process.exit(3);
 }
 var spiral_gpa: std.mem.Allocator = undefined;
+var spiral_environ: std.process.Environ = .empty;
 var spiral_true: bool = true;
 var spiral_out_buffer: [1 << 16]u8 = undefined;
 var spiral_out_len: usize = 0;
@@ -168309,7 +164596,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
             let binds = binds locals
             let return' (x : string) =
                 match ret with
-                | ZLocal [||] -> line s $"_ = {x};"
+                | ZLocal [||] -> if x.Trim() <> "" then line s $"_ = {x};"
                 | ZLocal [|L(i,_)|] -> line s $"v{i} = {x};"
                 | ZLocal l ->
                     let tmp = temp locals (tuple_type (l |> Array.map (fun (L(_,t)) -> tyv t)) |> sprintf "Tuple%i")
@@ -168317,7 +164604,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
                     l |> Array.iteri (fun k (L(i,_)) -> line s $"v{i} = {tmp}.f{k};")
                 | ZTail range ->
                     if tup_ty range = "void" then
-                        line s $"_ = {x};"
+                        if x.Trim() <> "" then line s $"_ = {x};"
                         if self_loop.Value.IsSome then line s "return;"
                     else line s $"return {x};"
             let layout_index (i : int) (fields : TyV []) =
@@ -168607,9 +164894,11 @@ fn spiralCreate(comptime T: type, v: T) *T {
         globals |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
         types |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
         bodies |> Seq.iter (fun x -> program.Append(x) |> ignore)
-        program.AppendLine("pub fn main() void {") |> ignore
-        program.AppendLine("    spiral_gpa = spiral_arena.allocator();").AppendLine("    const code = spiralMain();").AppendLine("    spiralFlush();") |> ignore
-        program.AppendLine("    std.process.exit(@truncate(@as(u32, @bitCast(code))));").AppendLine("}") |> ignore
+        program.AppendLine("var spiral_exit_code: i32 = 0;").AppendLine("fn spiralMainThread() void {").AppendLine("    spiral_exit_code = spiralMain();").AppendLine("}") |> ignore
+        program.AppendLine("pub fn main(init: std.process.Init.Minimal) void {") |> ignore
+        program.AppendLine("    spiral_gpa = spiral_arena.allocator();").AppendLine("    spiral_environ = init.environ;") |> ignore
+        program.AppendLine("    const thread = std.Thread.spawn(.{ .stack_size = 1 << 30 }, spiralMainThread, .{}) catch @panic(\"spiral: could not start the main thread\");").AppendLine("    thread.join();").AppendLine("    spiralFlush();") |> ignore
+        program.AppendLine("    std.process.exit(@truncate(@as(u32, @bitCast(spiral_exit_code))));").AppendLine("}") |> ignore
         program.ToString()
 
     /// ## CodegenLean
@@ -169400,7 +165689,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         let types = ResizeArray<string>()
         let unsupported what = raise_codegen_error $"The Bend backend doesn't support {what} yet."
         let primBend = function
-            | Int32T | UInt32T | CharT -> "U32"
+            | Int32T | UInt32T | CharT | Int8T | Int16T | UInt8T | UInt16T -> "U32"
             | BoolT -> "Bool"
             | StringT -> "String"
             | Float32T -> "F32"
@@ -169477,6 +165766,10 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         let lit = function
             | LitInt32 x -> $"{{{uint32 x} : U32}}"
             | LitUInt32 x -> $"{{{x} : U32}}"
+            | LitInt8 x -> $"{{{uint32 (int32 x)} : U32}}"
+            | LitInt16 x -> $"{{{uint32 (int32 x)} : U32}}"
+            | LitUInt8 x -> $"{{{x} : U32}}"
+            | LitUInt16 x -> $"{{{x} : U32}}"
             | LitBool x -> if x then "True{}" else "False{}"
             | LitString x -> bendString x
             | LitChar x -> $"{{{int x} : U32}}"
@@ -169496,6 +165789,14 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             | DV(L(_,YPrim t)) -> Some t
             | DLit l -> Some (lit_to_primitive_type l)
             | _ -> None
+        let narrow_small (t : PrimitiveType) (e : string) =
+            match t with
+            | Int8T -> $"spiral_narrow_i8({e})"
+            | Int16T -> $"spiral_narrow_i16({e})"
+            | UInt8T -> $"U32.and({e}, 255)"
+            | UInt16T -> $"U32.and({e}, 65535)"
+            | _ -> e
+        let is_small_int = function Some (Int8T | Int16T | UInt8T | UInt16T) -> true | _ -> false
         let param (L(i,t)) = $"+v{i}: {tyv t}"
         let params (vs : TyV seq) = vs |> Seq.map (fun v -> ", " + param v) |> String.concat ""
         let args (vs : TyV seq) = vs |> Seq.map (fun (L(i,_)) -> $", v{i}") |> String.concat ""
@@ -169532,7 +165833,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         let rec default_value (depth : int) (t : Ty) : string =
             if depth > default_depth_limit then unsupported $"default values of the recursive type {show_ty t}"
             match t with
-            | YPrim (Int32T | UInt32T | CharT) -> "{0 : U32}"
+            | YPrim (Int32T | UInt32T | CharT | Int8T | Int16T | UInt8T | UInt16T) -> "{0 : U32}"
             | YPrim BoolT -> "False{}"
             | YPrim StringT -> bendString ""
             | YPrim Float32T -> "0.0"
@@ -169597,7 +165898,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                         with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
             go 0
         and op owner (result : string) (scope : ResizeArray<TyV>) a =
-            let signed l = match l with x :: _ -> prim_of x = Some Int32T | [] -> false
+            let signed l = match l with x :: _ -> (match prim_of x with Some (Int32T | Int8T | Int16T) -> true | _ -> false) | [] -> false
             match a with
             | TyIf(cond, tr, fl) ->
                 let name = $"{owner}_if{next_fresh ()}"
@@ -169653,6 +165954,8 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 $"IO.pure({result}, d => {name}({captured_args}d))"
             | TyApply(L(i,_), b) -> $"v{i}({tup b})"
             | TyConv(YPrim (Int32T | UInt32T), b) when (match prim_of b with Some (Int32T | UInt32T) -> true | _ -> false) -> $"IO.pure({result}, {tup b})"
+            | TyConv(YPrim (Int8T | Int16T | UInt8T | UInt16T as t), b) when is_small_int (prim_of b) || prim_of b = Some Int32T || prim_of b = Some UInt32T -> $"IO.pure({result}, {narrow_small t (tup b)})"
+            | TyConv(YPrim (Int32T | UInt32T), b) when is_small_int (prim_of b) -> $"IO.pure({result}, {tup b})"
             | TyConv(YPrim Float32T, b) when prim_of b = Some Float32T -> $"IO.pure({result}, {tup b})"
             | TyConv(YPrim Float32T, b) when prim_of b = Some Int32T -> $"IO.pure({result}, spiral_i32_to_f32({tup b}))"
             | TyConv(YPrim Float32T, b) when prim_of b = Some UInt32T -> $"IO.pure({result}, U32.to_f32({tup b}))"
@@ -169666,6 +165969,8 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                             match w with
                             | WV(L(_,YPrim Int32T)) | WLit (LitInt32 _) -> $"spiral_i32_show({show_w w})"
                             | WV(L(_,YPrim UInt32T)) | WLit (LitUInt32 _) -> $"U32.show({show_w w})"
+                            | WV(L(_,YPrim (Int8T | Int16T))) | WLit (LitInt8 _ | LitInt16 _) -> $"spiral_i32_show({show_w w})"
+                            | WV(L(_,YPrim (UInt8T | UInt16T))) | WLit (LitUInt8 _ | LitUInt16 _) -> $"U32.show({show_w w})"
                             | WV(L(_,YPrim StringT)) | WLit (LitString _) -> show_w w
                             | _ -> unsupported "printing this value type")
                 match pieces with
@@ -169735,7 +166040,11 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                   | ShiftRight -> bin (if signed l then sprintf "spiral_i32_shift_right(%s, %s)" else sprintf "U32.shrn(%s, U32.to_nat(%s))")
                   | Neg -> unary (sprintf "U32.sub(0, %s)")
                   | _ -> unsupported $"the operation %A{op}"
-                $"IO.pure({result}, {expr})"
+                let narrowed =
+                    match op, (match l with x :: _ -> prim_of x | [] -> None) with
+                    | (Add | Sub | Mult | Div | Mod | Neg | BitwiseAnd | BitwiseOr | BitwiseXor | BitwiseComplement | ShiftLeft | ShiftRight), Some t -> narrow_small t expr
+                    | _ -> expr
+                $"IO.pure({result}, {narrowed})"
             | TyFailwith(_, b) -> $"IO.die({result}, 1, {tup b})"
             | TyToLayout(a, (YLayout(_, Heap))) -> $"IO.pure({result}, {tup a})"
             | TyToLayout(a, (YLayout(_, HeapMutable) as t)) ->
@@ -169861,6 +166170,9 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         emit_def "spiral_main" [||] (if unitMain then YB else YPrim Int32T) x
         let program = StringBuilder()
         program.Append(bendPrelude) |> ignore
+        let emittedDefs = String.concat "\n" defs
+        if emittedDefs.Contains "spiral_narrow_i8(" then program.Append("def spiral_narrow_i8(+x: U32) -> U32:\n  U32.sub(U32.xor(U32.and(x, 255), 128), 128)\n\n") |> ignore
+        if emittedDefs.Contains "spiral_narrow_i16(" then program.Append("def spiral_narrow_i16(+x: U32) -> U32:\n  U32.sub(U32.xor(U32.and(x, 65535), 32768), 32768)\n\n") |> ignore
         types |> Seq.iter (fun x -> program.Append(x).Append('\n') |> ignore)
         defs |> Seq.iter (fun x -> program.Append(x).Append('\n') |> ignore)
         program.Append(if unitMain then "@unsafe\ndef main() -> IO(Unit):\n  do IO<Unit>:\n    spiral_main()\n    return Unit{}\n" else "@unsafe\ndef main() -> IO(Unit):\n  do IO<Unit>:\n    +code : U32 <- spiral_main()\n    IO.die(Unit, code, \"\")\n").ToString()
@@ -170785,6 +167097,224 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         let luaBit (d : Data) (call : string) =
             useLuaHelper luaBitHelpers
             luaWrap d call
+        let luaW64Helpers = """local spiral_w64 = {}
+function spiral_w64.split(x)
+    if type(x) == "table" then return x[1], x[2] end
+    local lo = x % 4294967296
+    return ((x - lo) / 4294967296) % 4294967296, lo
+end
+function spiral_w64.make(h, l, s)
+    if h < 2097152 then return h * 4294967296 + l end
+    if s and h >= 4292870144 then return (h - 4294967296) * 4294967296 + l end
+    return { h, l }
+end
+function spiral_w64.small(r, s)
+    return r < 9007199254740992 and r > -9007199254740992 and (s or r >= 0)
+end
+function spiral_w64.neg_halves(h, l)
+    if l == 0 then return (4294967296 - h) % 4294967296, 0 end
+    return 4294967295 - h, 4294967296 - l
+end
+function spiral_w64.add(a, b, s)
+    if type(a) == "number" and type(b) == "number" then
+        local r = a + b
+        if spiral_w64.small(r, s) then return r + 0 end
+    end
+    local ah, al = spiral_w64.split(a)
+    local bh, bl = spiral_w64.split(b)
+    local l, c = al + bl, 0
+    if l >= 4294967296 then l, c = l - 4294967296, 1 end
+    return spiral_w64.make((ah + bh + c) % 4294967296, l, s)
+end
+function spiral_w64.sub(a, b, s)
+    if type(a) == "number" and type(b) == "number" then
+        local r = a - b
+        if spiral_w64.small(r, s) then return r + 0 end
+    end
+    local ah, al = spiral_w64.split(a)
+    local bh, bl = spiral_w64.split(b)
+    local l, c = al - bl, 0
+    if l < 0 then l, c = l + 4294967296, 1 end
+    return spiral_w64.make((ah - bh - c) % 4294967296, l, s)
+end
+function spiral_w64.neg(a, s)
+    return spiral_w64.sub(0, a, s)
+end
+function spiral_w64.mul(a, b, s)
+    if type(a) == "number" and type(b) == "number" then
+        local r = a * b
+        if spiral_w64.small(r, s) then return r + 0 end
+    end
+    local ah, al = spiral_w64.split(a)
+    local bh, bl = spiral_w64.split(b)
+    local a0, a1, a2, a3 = al % 65536, math.floor(al / 65536), ah % 65536, math.floor(ah / 65536)
+    local b0, b1, b2, b3 = bl % 65536, math.floor(bl / 65536), bh % 65536, math.floor(bh / 65536)
+    local c = a0 * b0
+    local d0 = c % 65536
+    c = math.floor(c / 65536) + a1 * b0 + a0 * b1
+    local d1 = c % 65536
+    c = math.floor(c / 65536) + a2 * b0 + a1 * b1 + a0 * b2
+    local d2 = c % 65536
+    c = math.floor(c / 65536) + a3 * b0 + a2 * b1 + a1 * b2 + a0 * b3
+    local d3 = c % 65536
+    return spiral_w64.make(d3 * 65536 + d2, d1 * 65536 + d0, s)
+end
+function spiral_w64.udivmod(ah, al, bh, bl)
+    if bh == 0 and bl == 0 then error("spiral: integer division by zero") end
+    if ah == 0 and bh == 0 then
+        local r = math.fmod(al, bl)
+        return 0, (al - r) / bl, 0, r
+    end
+    local qh, ql, rh, rl = 0, 0, 0, 0
+    for i = 63, 0, -1 do
+        local d
+        if i >= 32 then d = math.floor(ah / 2 ^ (i - 32)) % 2 else d = math.floor(al / 2 ^ i) % 2 end
+        rh = rh * 2 + math.floor(rl / 2147483648)
+        rl = (rl % 2147483648) * 2 + d
+        qh = (qh * 2 + math.floor(ql / 2147483648)) % 4294967296
+        ql = (ql % 2147483648) * 2
+        if rh > bh or (rh == bh and rl >= bl) then
+            rl, rh = rl - bl, rh - bh
+            if rl < 0 then rl, rh = rl + 4294967296, rh - 1 end
+            ql = ql + 1
+        end
+    end
+    return qh, ql, rh, rl
+end
+function spiral_w64.divmod(a, b, s)
+    if type(a) == "number" and type(b) == "number" and b ~= 0 then
+        local r = math.fmod(a, b)
+        return (a - r) / b + 0, r + 0
+    end
+    local ah, al = spiral_w64.split(a)
+    local bh, bl = spiral_w64.split(b)
+    local an, bn = false, false
+    if s and ah >= 2147483648 then an = true; ah, al = spiral_w64.neg_halves(ah, al) end
+    if s and bh >= 2147483648 then bn = true; bh, bl = spiral_w64.neg_halves(bh, bl) end
+    local qh, ql, rh, rl = spiral_w64.udivmod(ah, al, bh, bl)
+    if an ~= bn then qh, ql = spiral_w64.neg_halves(qh, ql) end
+    if an then rh, rl = spiral_w64.neg_halves(rh, rl) end
+    return spiral_w64.make(qh, ql, s), spiral_w64.make(rh, rl, s)
+end
+function spiral_w64.div(a, b, s)
+    local q = spiral_w64.divmod(a, b, s)
+    return q
+end
+function spiral_w64.mod(a, b, s)
+    local _, r = spiral_w64.divmod(a, b, s)
+    return r
+end
+function spiral_w64.eq(a, b)
+    if type(a) == "number" and type(b) == "number" then return a == b end
+    local ah, al = spiral_w64.split(a)
+    local bh, bl = spiral_w64.split(b)
+    return ah == bh and al == bl
+end
+function spiral_w64.lt(a, b, s)
+    if type(a) == "number" and type(b) == "number" then return a < b end
+    local ah, al = spiral_w64.split(a)
+    local bh, bl = spiral_w64.split(b)
+    if s then ah, bh = (ah + 2147483648) % 4294967296, (bh + 2147483648) % 4294967296 end
+    return ah < bh or (ah == bh and al < bl)
+end
+function spiral_w64.bits(a, b, s, f)
+    local ah, al = spiral_w64.split(a)
+    local bh, bl = spiral_w64.split(b)
+    return spiral_w64.make(f(ah, bh) % 4294967296, f(al, bl) % 4294967296, s)
+end
+function spiral_w64.band(a, b, s) return spiral_w64.bits(a, b, s, bit.band) end
+function spiral_w64.bor(a, b, s) return spiral_w64.bits(a, b, s, bit.bor) end
+function spiral_w64.bxor(a, b, s) return spiral_w64.bits(a, b, s, bit.bxor) end
+function spiral_w64.bnot(a, s)
+    local h, l = spiral_w64.split(a)
+    return spiral_w64.make(4294967295 - h, 4294967295 - l, s)
+end
+function spiral_w64.count(n)
+    if type(n) == "table" then n = n[2] end
+    return n % 64
+end
+function spiral_w64.shl(a, n, s)
+    local h, l = spiral_w64.split(a)
+    n = spiral_w64.count(n)
+    if n >= 32 then
+        h, l = (l % 2 ^ (64 - n)) * 2 ^ (n - 32), 0
+    elseif n > 0 then
+        h, l = (h % 2 ^ (32 - n)) * 2 ^ n + math.floor(l / 2 ^ (32 - n)), (l % 2 ^ (32 - n)) * 2 ^ n
+    end
+    return spiral_w64.make(h, l, s)
+end
+function spiral_w64.lshr(h, l, n)
+    if n >= 32 then return 0, math.floor(h / 2 ^ (n - 32)) end
+    if n == 0 then return h, l end
+    return math.floor(h / 2 ^ n), math.floor(l / 2 ^ n) + (h % 2 ^ n) * 2 ^ (32 - n)
+end
+function spiral_w64.shr(a, n, s)
+    local h, l = spiral_w64.split(a)
+    n = spiral_w64.count(n)
+    if s and h >= 2147483648 then
+        h, l = spiral_w64.lshr(4294967295 - h, 4294967295 - l, n)
+        return spiral_w64.make(4294967295 - h, 4294967295 - l, s)
+    end
+    h, l = spiral_w64.lshr(h, l, n)
+    return spiral_w64.make(h, l, s)
+end
+function spiral_w64.cast(a, s)
+    local h, l = spiral_w64.split(a)
+    return spiral_w64.make(h, l, s)
+end
+function spiral_w64.of_float(x, s)
+    local t = math.modf(x)
+    if spiral_w64.small(t, s) then return t + 0 end
+    local h, l = spiral_w64.split(t)
+    return spiral_w64.make(h, l, s)
+end
+function spiral_w64.to_float(a, s)
+    if type(a) == "number" then return a end
+    local h, l = a[1], a[2]
+    if s and h >= 2147483648 then
+        h, l = spiral_w64.neg_halves(h, l)
+        return -(h * 4294967296 + l)
+    end
+    return h * 4294967296 + l
+end
+function spiral_w64.low(a)
+    if type(a) == "number" then return a % 4294967296 end
+    return a[2]
+end
+function spiral_w64.tostring(a, s)
+    if type(a) == "number" then
+        if a == 0 then return "0" end
+        return string.format("%.0f", a)
+    end
+    local h, l = a[1], a[2]
+    local sign = ""
+    if s and h >= 2147483648 then sign, h, l = "-", spiral_w64.neg_halves(h, l) end
+    local limbs = { math.floor(h / 65536), h % 65536, math.floor(l / 65536), l % 65536 }
+    local digits = {}
+    repeat
+        local r, more = 0, false
+        for i = 1, 4 do
+            local cur = r * 65536 + limbs[i]
+            limbs[i] = math.floor(cur / 10)
+            r = cur % 10
+            if limbs[i] ~= 0 then more = true end
+        end
+        digits[#digits + 1] = string.char(48 + r)
+    until not more
+    return sign .. string.reverse(table.concat(digits))
+end
+"""
+        let luaW64Use () =
+            useLuaHelper luaWrapHelpers
+            useLuaHelper luaBitHelpers
+            useLuaHelper luaW64Helpers
+        let luaBoolText (b : bool) = if b then "true" else "false"
+        let luaW64 (d : Data) =
+            match luaIntegerWidth d with
+            | Some (64, signed) ->
+                luaW64Use ()
+                Some (luaBoolText signed)
+            | _ -> None
 
         let types = ResizeArray()
         let functions = ResizeArray()
@@ -170841,7 +167371,11 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 r
 
         let args x = x |> Array.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
-        let show_w = function WV (L(i,_)) -> sprintf "v%i" i | WLit a -> litLua a
+        let show_w = function
+            | WV (L(i,_)) -> sprintf "v%i" i
+            | WLit (LitInt64 x) when x >= 9007199254740992L || x < -9007199254740992L -> let u = uint64 x in sprintf "{ %d, %d }" (u >>> 32) (u &&& 0xFFFFFFFFUL)
+            | WLit (LitUInt64 x) when x >= 9007199254740992UL -> sprintf "{ %d, %d }" (x >>> 32) (x &&& 0xFFFFFFFFUL)
+            | WLit a -> litLua a
         let args' x = x |> data_term_vars |> Array.map show_w |> String.concat ", "
 
         let global' =
@@ -170962,7 +167496,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 let f i x =
                     match x with
                     | WV(L(i',_)) -> sprintf "l%i = v%i" i i'
-                    | WLit x -> sprintf "l%i = %s" i (litLua x)
+                    | WLit _ as w -> sprintf "l%i = %s" i (show_w w)
                 a |> data_term_vars |> Array.mapi f |> String.concat ", "
             let layout_index i x =
                 let fields = x |> Array.map (fun (L(i',_)) -> $"v{i} ~= nil and v{i}.l{i'}")
@@ -170976,7 +167510,10 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 |> simple
             let listToArray _ x = x
             match a with
-            | TyMacro a -> a |> List.map (function CMText x -> x | CMTerm (x,inl) -> (if inl then args' x else tup x) | CMType x -> tup_ty x | CMTypeLit x -> type_litLua x) |> String.concat "" |> simple
+            | TyMacro a ->
+                let text = a |> List.map (function CMText x -> x | CMTerm (x,inl) -> (if inl then args' x else tup x) | CMType x -> tup_ty x | CMTypeLit x -> type_litLua x) |> String.concat ""
+                if text.Contains "spiral_w64." then luaW64Use ()
+                simple text
             | TySizeOf t -> simple $"0"
             | TyIf(cond,tr,fl) ->
                 complex <| fun s ->
@@ -171155,9 +167692,18 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             | TyConv(a,b) ->
                 let d = tup b
                 let from_float = match data_term_vars b with [|WV(L(_,YPrim (Float32T | Float64T)))|] | [|WLit (LitFloat32 _ | LitFloat64 _)|] -> true | _ -> false
-                match a with
-                | YPrim (Int8T | Int16T | Int32T | Int64T | UInt8T | UInt16T | UInt32T | UInt64T) when from_float -> simple $"(math.modf({d}))"
-                | _ -> simple d
+                let target = DV(L(0,a))
+                match luaIntegerWidth target, luaIntegerWidth b with
+                | Some (64, signed), _ when from_float -> luaW64Use (); simple $"spiral_w64.of_float({d}, {luaBoolText signed})"
+                | Some (64, signed), Some (64, source_signed) when signed = source_signed -> simple d
+                | Some (64, signed), Some (64, _) -> luaW64Use (); simple $"spiral_w64.cast({d}, {luaBoolText signed})"
+                | Some (64, false), Some (_, true) -> luaW64Use (); simple $"spiral_w64.cast({d}, false)"
+                | Some (bits, _), Some (64, _) when bits < 64 -> luaW64Use (); simple (luaWrap target $"spiral_w64.low({d})")
+                | None, Some (64, source_signed) when (match a with YPrim (Float32T | Float64T) -> true | _ -> false) -> luaW64Use (); simple $"spiral_w64.to_float({d}, {luaBoolText source_signed})"
+                | _ ->
+                    match a with
+                    | YPrim (Int8T | Int16T | Int32T | Int64T | UInt8T | UInt16T | UInt32T | UInt64T) when from_float -> simple $"(math.modf({d}))"
+                    | _ -> simple d
             | TyApply (L(i, t), b) ->
                 let arg_code = tup b
                 let call =
@@ -171189,6 +167735,23 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     if System.Text.RegularExpressions.Regex.IsMatch(target, @"^[A-Za-z_][A-Za-z0-9_]*$") then sprintf "%s[(%s)+1] = %s" target (tup b) (tup c)
                     else sprintf ";(%s)[(%s)+1] = %s" target (tup b) (tup c)
 
+                | (Add | Sub | Mult | Div | Mod | BitwiseAnd | BitwiseOr | BitwiseXor | ShiftLeft | ShiftRight), [a;b] when (luaW64 a).IsSome ->
+                    let name =
+                        match op with
+                        | Add -> "add" | Sub -> "sub" | Mult -> "mul" | Div -> "div" | Mod -> "mod"
+                        | BitwiseAnd -> "band" | BitwiseOr -> "bor" | BitwiseXor -> "bxor" | ShiftLeft -> "shl" | _ -> "shr"
+                    sprintf "spiral_w64.%s(%s, %s, %s)" name (tup a) (tup b) (luaW64 a).Value
+                | (LT | LTE | GT | GTE | EQ | NEQ), [a;b] when (luaW64 a).IsSome ->
+                    let signed = (luaW64 a).Value
+                    match op with
+                    | LT -> sprintf "spiral_w64.lt(%s, %s, %s)" (tup a) (tup b) signed
+                    | LTE -> sprintf "(not spiral_w64.lt(%s, %s, %s))" (tup b) (tup a) signed
+                    | GT -> sprintf "spiral_w64.lt(%s, %s, %s)" (tup b) (tup a) signed
+                    | GTE -> sprintf "(not spiral_w64.lt(%s, %s, %s))" (tup a) (tup b) signed
+                    | EQ -> sprintf "spiral_w64.eq(%s, %s)" (tup a) (tup b)
+                    | _ -> sprintf "(not spiral_w64.eq(%s, %s))" (tup a) (tup b)
+                | (Neg | BitwiseComplement), [x] when (luaW64 x).IsSome ->
+                    sprintf "spiral_w64.%s(%s, %s)" (match op with Neg -> "neg" | _ -> "bnot") (tup x) (luaW64 x).Value
                 | Add, [a;b] -> luaWrap a (sprintf "(%s + %s)" (tup a) (tup b))
                 | Sub, [a;b] -> luaWrap a (sprintf "(%s - %s)" (tup a) (tup b))
                 | Mult, [a;b] ->
@@ -171249,7 +167812,11 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     |> List.map (function
                         | Choice1Of2 t -> litLua (LitString t)
                         | Choice2Of2 ('s', a) -> show_w a
-                        | Choice2Of2 (_, (WV(L(_,YPrim (Int64T | UInt64T))) | WLit (LitInt64 _ | LitUInt64 _) as a)) -> "string.format(\"%.0f\", " + show_w a + " + 0.0)"
+                        | Choice2Of2 (_, (WV(L(_,YPrim (Int64T | UInt64T))) | WLit (LitInt64 _ | LitUInt64 _) as a)) ->
+                            luaW64Use ()
+                            let signed = match a with WV(L(_,YPrim Int64T)) | WLit (LitInt64 _) -> "true" | _ -> "false"
+                            "spiral_w64.tostring(" + show_w a + ", " + signed + ")"
+                        | Choice2Of2 (_, (WV(L(_,YPrim UInt32T)) | WLit (LitUInt32 _) as a)) -> "string.format(\"%.0f\", " + show_w a + ")"
                         | Choice2Of2 (_, a) -> "string.format(\"%d\", " + show_w a + ")")
                     |> String.concat ", " |> sprintf "io.write(%s)"
                 | _ -> raise_codegen_error <| sprintf "Compiler error: %A with %i args not supported" op l.Length
@@ -172784,7 +169351,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
     /// ### codegenCalyx
     let codegenCalyx (env : PartEvalResult) (x : TypedBind []) =
         let components = ResizeArray<string>()
-        let method_info = Dictionary<int, string * int option * TyV []>()
+        let method_info = Dictionary<int, string * int [] * TyV []>()
         let unsupported what = raise_codegen_error $"The Calyx backend doesn't support {what} yet."
         let is_unit_ty = function YB -> true | _ -> false
         let width = function
@@ -172795,9 +169362,14 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             | YPrim (Int64T | UInt64T) -> unsupported "64-bit integers"
             | YPrim t -> unsupported $"the primitive {t}"
             | t -> unsupported $"the type {show_ty t}"
-        let ret_width = function
-            | YB -> None
-            | t -> Some (width t)
+        let rec flatten_ty t =
+            match t with
+            | YB -> [||]
+            | YPair(a, b) -> Array.append (flatten_ty a) (flatten_ty b)
+            | _ -> [|t|]
+        let ret_widths range = flatten_ty range |> Array.map width
+        let ret_register count index = if count = 1 then "spiral_ret" else sprintf "spiral_ret%d" index
+        let out_port count index = if count = 1 then "out" else sprintf "out%d" index
         let lit = function
             | LitInt32 x -> sprintf "32'd%u" (uint32 x)
             | LitUInt32 x -> sprintf "32'd%u" x
@@ -172862,9 +169434,8 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                       calls = Dictionary<int, string>()
                       serial = ref 0 }
                 add_cell part "spiral_tick = std_reg(1);"
-                match ret_width range with
-                | Some w -> add_cell part (sprintf "spiral_ret = std_reg(%d);" w)
-                | None -> ()
+                let widths = ret_widths range
+                widths |> Array.iteri (fun index w -> add_cell part (sprintf "%s = std_reg(%d);" (ret_register widths.Length index) w))
                 for L(i,t) in parameters do ensure part i (width t)
                 let rec binds (control : ResizeArray<string>) (ret : CalyxRet) (stmts : TypedBind []) =
                     Array.iter (function
@@ -172880,25 +169451,24 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                         | TyLocalReturnData(d,trace) ->
                             try
                                 match ret with
-                                | CalyxLocal targets ->
-                                    let values = data_term_vars d
-                                    if targets.Length <> values.Length then raise_codegen_error "Compiler error: A binding has the wrong number of values."
-                                    if targets.Length > 1 then unsupported "tuple values"
-                                    if targets.Length = 1 then
-                                        let (L(i,t)) = targets.[0]
-                                        ensure part i (width t)
-                                        let dest = sprintf "v%d" i
-                                        let port = show_port values.[0]
-                                        if port <> dest + ".out" then write_group part control [] [(dest, port)] "1'd1"
-                                | CalyxTail _ ->
-                                    match data_term_vars d with
-                                    | [||] -> clear_go control
-                                    | [|w|] ->
-                                        write_group part control [] [("spiral_ret", show_port w)] "1'd1"
-                                        clear_go control
-                                    | _ -> unsupported "tuple values"
+                                | _ -> give control ret (data_term_vars d)
                             with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
                         ) stmts
+                and give (control : ResizeArray<string>) (ret : CalyxRet) values =
+                    match ret with
+                    | CalyxLocal targets ->
+                        if targets.Length <> Array.length values then raise_codegen_error "Compiler error: A binding has the wrong number of values."
+                        let assigns =
+                            Array.map2 (fun (L(i,t)) value ->
+                                ensure part i (width t)
+                                sprintf "v%d" i, show_port value) targets values
+                            |> Array.filter (fun (dest, port) -> port <> dest + ".out")
+                            |> Array.toList
+                        write_group part control [] assigns "1'd1"
+                    | CalyxTail _ ->
+                        if Array.length values > 0 then
+                            write_group part control [] (values |> Array.mapi (fun index value -> ret_register values.Length index, show_port value) |> Array.toList) "1'd1"
+                        clear_go control
                 and clear_go (control : ResizeArray<string>) =
                     match self_loop.Value with
                     | Some _ -> write_group part control [] [("spiral_go", "1'd0")] "1'd1"
@@ -172935,8 +169505,6 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                         let wa, wb = width_of a, width_of b
                         if wa <> wb then unsupported "operands of different widths"
                         wa
-                    let latch_call (dest : string) cell =
-                        write_group part control [] [(dest, cell + ".out")] "1'd1"
                     let invoke (a, c) (args : TyV []) =
                         let mname, mwidth, mparams, mtag = method (a, c)
                         if part.tag = Some mtag then unsupported "recursion that is not a self-tail call"
@@ -173004,18 +169572,19 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                             Array.iter2 (fun (L(i,_)) temp ->
                                 write_group part control [] [(sprintf "v%d" i, temp + ".out")] "1'd1") parameters temps
                         else
-                            let cell, out_width = invoke (a, c) arguments
-                            match ret, out_width with
-                            | CalyxLocal [||], _ -> ()
-                            | CalyxTail range, _ when is_unit_ty range -> ()
-                            | _, None -> unsupported "a unit method in value position"
-                            | CalyxLocal [|L(i,t)|], Some _ ->
-                                ensure part i (width t)
-                                latch_call (sprintf "v%d" i) cell
-                            | CalyxTail _, Some _ ->
-                                latch_call "spiral_ret" cell
+                            let cell, out_widths = invoke (a, c) arguments
+                            let outs = out_widths |> Array.mapi (fun index _ -> sprintf "%s.%s" cell (out_port out_widths.Length index))
+                            match ret with
+                            | CalyxLocal [||] -> ()
+                            | CalyxTail range when is_unit_ty range -> ()
+                            | _ when outs.Length = 0 -> unsupported "a unit method in value position"
+                            | CalyxLocal targets ->
+                                if targets.Length <> outs.Length then raise_codegen_error "Compiler error: A call has the wrong number of results."
+                                targets |> Array.iter (fun (L(i,t)) -> ensure part i (width t))
+                                write_group part control [] (Array.map2 (fun (L(i,_)) port -> sprintf "v%d" i, port) targets outs |> Array.toList) "1'd1"
+                            | CalyxTail _ ->
+                                write_group part control [] (outs |> Array.mapi (fun index port -> ret_register outs.Length index, port) |> Array.toList) "1'd1"
                                 clear_go control
-                            | _ -> unsupported "tuple values"
                     | TyJoinPoint(JPClosure _, _) -> unsupported "closures"
                     | TyBackend(_,_,r) -> raise_codegen_error_backend r "The Calyx backend does not support nesting other backends."
                     | TyWhile(cond, body) ->
@@ -173029,14 +169598,14 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                             let jp, args = cond
                             match jp with
                             | JPMethod(a,c) ->
-                                let cell, out_width = invoke (a, c) args
-                                match out_width with
-                                | Some 1 -> write_group part buf [] [(guard, cell + ".out")] "1'd1"
-                                | Some _ ->
+                                let cell, out_widths = invoke (a, c) args
+                                match out_widths with
+                                | [|1|] -> write_group part buf [] [(guard, cell + ".out")] "1'd1"
+                                | [|_|] ->
                                     let cell_ne = sprintf "op%d" (fresh part)
                                     add_cell part (cell_ne + " = std_neq(32);")
                                     write_group part buf [sprintf "%s.left = %s.out;" cell_ne cell; sprintf "%s.right = 32'd0;" cell_ne] [(guard, cell_ne + ".out")] "1'd1"
-                                | None -> unsupported "a unit while condition"
+                                | _ -> unsupported "a while condition that is not one value"
                             | JPClosure _ -> unsupported "closures"
                         refresh control
                         let loop_body = ResizeArray<string>()
@@ -173108,6 +169677,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                             | "rsh" -> comb dest (if signed_of a then "std_srsh" else "std_rsh") w left right
                             | other -> unsupported other
                         match operation, l with
+                        | Dyn, [a] when (data_term_vars a).Length <> 1 -> give control ret (data_term_vars a)
                         | Dyn, [a] -> place control ret (fun dest -> if one_port a <> dest + ".out" then write_group part control [] [(dest, one_port a)] "1'd1")
                         | TypeToVar, _ -> raise_codegen_error "The use of `` should never appear in generated code."
                         | Add, [a;b] -> place control ret (fun dest -> binary "add" a b dest)
@@ -173173,16 +169743,15 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 if control.Count = 0 then write_group part control [] [("spiral_tick", "1'd0")] "1'd1"
                 let text = StringBuilder()
                 let formals = parameters |> Array.map (fun (L(i,t)) -> sprintf "in%d: %d" i (width t)) |> String.concat ", "
-                let outs = match ret_width range with None -> "()" | Some w -> sprintf "(out: %d)" w
+                let outs = widths |> Array.mapi (fun index w -> sprintf "%s: %d" (out_port widths.Length index) w) |> String.concat ", " |> sprintf "(%s)"
                 text.AppendLine(sprintf "component %s(%s) -> %s {" name formals outs) |> ignore
                 text.AppendLine "  cells {" |> ignore
                 for cell in part.cells do text.AppendLine cell |> ignore
                 text.AppendLine "  }" |> ignore
                 text.AppendLine "  wires {" |> ignore
                 for wire in part.wires do text.AppendLine wire |> ignore
-                match ret_width range with
-                | Some _ -> text.AppendLine "    out = spiral_ret.out;" |> ignore
-                | None -> ()
+                for index in 0 .. widths.Length - 1 do
+                    text.AppendLine(sprintf "    %s = %s.out;" (out_port widths.Length index) (ret_register widths.Length index)) |> ignore
                 text.AppendLine "  }" |> ignore
                 text.AppendLine "  control {" |> ignore
                 text.AppendLine "    seq {" |> ignore
@@ -173206,10 +169775,10 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     | body, range, name ->
                         let mname = "sp_" + generatedMethodName name tag
                         let parameters = rdata_free_vars args
-                        method_info.[tag] <- (mname, ret_width range, parameters)
+                        method_info.[tag] <- (mname, ret_widths range, parameters)
                         emit_function mname (Some tag) parameters range body
                     tag)
-        and method (a, b) : string * int option * TyV [] * int =
+        and method (a, b) : string * int [] * TyV [] * int =
             let tag = method_memo.Force() (a, b)
             let name, out_width, parameters = method_info.[tag]
             name, out_width, parameters, tag
@@ -174684,7 +171253,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             | YPrim UInt32T -> "uint[32]"
             | YPrim BoolT -> "bool"
             | YPrim Float32T -> "float[32]"
-            | YPrim Float64T -> unsupported "f64"
+            | YPrim Float64T -> "float[64]"
             | YPrim Int64T -> "int[64]"
             | YPrim UInt64T -> "uint[64]"
             | YPrim t -> unsupported $"the primitive {t}"
@@ -174696,6 +171265,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             | "uint[64]" -> "0"
             | "bool" -> "false"
             | "float[32]" -> "0.0"
+            | "float[64]" -> "0.0"
             | other -> unsupported $"a zero value of {other}"
         let lit = function
             | LitInt32 x when x = Int32.MinValue -> "(-2147483648)"
@@ -174710,6 +171280,11 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             | LitFloat32 x when Single.IsPositiveInfinity x -> unsupported "infinity"
             | LitFloat32 x when Single.IsNegativeInfinity x -> unsupported "infinity"
             | LitFloat32 x ->
+                let text = x.ToString("R", Globalization.CultureInfo.InvariantCulture)
+                if text.Contains('.') || text.Contains('e') || text.Contains('E') then text else text + ".0"
+            | LitFloat64 x when Double.IsNaN x -> unsupported "NaN"
+            | LitFloat64 x when Double.IsInfinity x -> unsupported "infinity"
+            | LitFloat64 x ->
                 let text = x.ToString("R", Globalization.CultureInfo.InvariantCulture)
                 if text.Contains('.') || text.Contains('e') || text.Contains('E') then text else text + ".0"
             | l -> unsupported $"the literal {l}"
@@ -174870,8 +171445,9 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                         let integral = function Int32T | UInt32T | CharT | Int64T | UInt64T -> true | _ -> false
                         match source, target with
                         | Some s, t when integral s && integral t -> text
-                        | Some s, Float32T when integral s -> $"float[32]({text})"
-                        | Some Float32T, t when integral t -> $"{tyv (YPrim t)}({text})"
+                        | Some s, (Float32T | Float64T) when integral s -> $"{tyv (YPrim target)}({text})"
+                        | Some (Float32T | Float64T), (Float32T | Float64T) -> $"{tyv (YPrim target)}({text})"
+                        | Some (Float32T | Float64T), t when integral t -> $"{tyv (YPrim t)}({text})"
                         | Some BoolT, t when integral t -> $"(if {text} {{ 1 }} else {{ 0 }})"
                         | Some s, BoolT when integral s -> $"({text} != 0)"
                         | _ -> unsupported "this conversion"
@@ -174914,6 +171490,12 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     | Neg, [a] -> $"(-({tup a}))"
                     | NanIs, [a] -> unsupported "NaN"
                     | StdoutFlush, [] -> ""
+                    | Sqrt, [a] -> $"sqrt({tup a})"
+                    | Exp, [a] -> $"exp({tup a})"
+                    | Log, [a] -> $"log({tup a})"
+                    | Sin, [a] -> $"sin({tup a})"
+                    | Cos, [a] -> $"cos({tup a})"
+                    | Pow, [a;b] when (match prim_of a with Some (Float32T | Float64T) -> true | _ -> false) -> $"pow({tup a}, {tup b})"
                     | _ -> unsupported $"the operation {operation}"
                 return' expr
             | other ->
@@ -179752,7 +176334,8 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
     let funs_proj_package_tc = {new ProjPackageFuns<TypecheckerStatePropagated,TypecheckerStateTop> with
         member funs.unions default_env l =
             let f = function Some name, small -> funs.in_module(name,small) | None, small -> small
-            List.fold (fun big x -> funs.union(f x,big)) (funs.default' default_env) l
+            let dependencies = List.fold (fun big x -> funs.union(f x,big)) (funs.default' default_env) l
+            funs.union(funs.default' default_env, dependencies)
         member _.union(small,big) =
             Job.delay <| fun () ->
                 if Promise.Now.isFulfilled big = false then HopacExtensions.start (big >>- ignore)
@@ -179826,10 +176409,10 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
     
 
     /// ### wdiff_projenv
-    let wdiff_projenv default_env funs_packages funs_files (s : Map<PackageId,ProjState<'a,'b,'state>>) l =
+    let wdiff_projenv (default_env_of : PackageId -> DefaultEnv) funs_packages funs_files (s : Map<PackageId,ProjState<'a,'b,'state>>) l =
         List.fold (fun s -> function
-            | UpdatePackageModule(uid,packages,files) -> Map.add uid (wdiff_proj default_env funs_packages funs_files s.[uid] (map_packages s packages,files)) s
-            | UpdatePackage(uid,packages) -> Map.add uid (wdiff_proj_update_packages default_env funs_packages funs_files s.[uid] (map_packages s packages)) s
+            | UpdatePackageModule(uid,packages,files) -> Map.add uid (wdiff_proj (default_env_of uid) funs_packages funs_files s.[uid] (map_packages s packages,files)) s
+            | UpdatePackage(uid,packages) -> Map.add uid (wdiff_proj_update_packages (default_env_of uid) funs_packages funs_files s.[uid] (map_packages s packages)) s
             ) s l
     
 
@@ -179981,7 +176564,8 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
     let funs_proj_package_prepass = {new ProjPackageFuns<PrepassStatePropagated,PrepassPackageEnv Promise> with
         member funs.unions default_env l =
             let f = function Some name, small -> funs.in_module(name,small) | None, small -> small
-            List.fold (fun big x -> funs.union(f x,big)) (funs.default' default_env) l
+            let dependencies = List.fold (fun big x -> funs.union(f x,big)) (funs.default' default_env) l
+            funs.union(funs.default' default_env, dependencies)
         member _.union(small,big) =
             Job.delay <| fun () ->
                 if Promise.Now.isFulfilled big = false then HopacExtensions.start (big >>- ignore)
@@ -180238,6 +176822,9 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         modules : FileHierarchy list
         packageDir : VSCRange option * string
         packages : SchemaPackages list
+        defaultInt : string option
+        defaultFloat : string option
+        edition : string option
         }
 
     /// ### SchemaException
@@ -180315,7 +176902,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     let dir = dir''
                     {name = name; dir = x.range, dir}
                     )
-            Ok {moduleDir = module_dir; modules = modules; packageDir = package_dir; packages = packages}
+            Ok {moduleDir = module_dir; modules = modules; packageDir = package_dir; packages = packages; defaultInt = x.defaultInt |> Option.map snd; defaultFloat = x.defaultFloat |> Option.map snd; edition = x.edition |> Option.map snd}
         with :? SchemaException as e -> Error [e.Data0]
         )
 
@@ -180578,7 +177165,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
 
     /// ### ss_empty
     let ss_empty = {
-        schema = {moduleDir = None, null; modules = []; packageDir = None, null; packages = []}
+        schema = {moduleDir = None, null; modules = []; packageDir = None, null; packages = []; defaultInt = None; defaultFloat = None; edition = None}
         errors_parse = []; errors_modules = []; errors_packages = []
         }
     
@@ -180618,6 +177205,39 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
     /// ### ss_has_error
     let ss_has_error x =
         (List.isEmpty x.errors_parse && List.isEmpty x.errors_modules && List.isEmpty x.errors_packages) = false
+
+    /// ### package_default_env
+    let package_default_env (default_env : DefaultEnv) (schema : SchemaState) : DefaultEnv =
+        let env =
+            match schema.schema.defaultInt with
+            | Some "i8" -> {default_env with default_int = Int8T; default_uint = UInt8T}
+            | Some "i16" -> {default_env with default_int = Int16T; default_uint = UInt16T}
+            | Some "i32" -> {default_env with default_int = Int32T; default_uint = UInt32T}
+            | Some "i64" -> {default_env with default_int = Int64T; default_uint = UInt64T}
+            | Some "u8" -> {default_env with default_int = UInt8T; default_uint = UInt8T}
+            | Some "u16" -> {default_env with default_int = UInt16T; default_uint = UInt16T}
+            | Some "u32" -> {default_env with default_int = UInt32T; default_uint = UInt32T}
+            | Some "u64" -> {default_env with default_int = UInt64T; default_uint = UInt64T}
+            | _ -> default_env
+        let env =
+            match schema.schema.defaultFloat with
+            | Some "f32" -> {env with default_float = Float32T}
+            | Some "f64" -> {env with default_float = Float64T}
+            | _ -> env
+        match schema.schema.edition with
+        | Some "2" -> {env with edition = UpstreamEdition2}
+        | Some "3" -> {env with edition = ForkEdition3}
+        | _ -> env
+
+    /// ### file_default_env
+    let file_default_env (default_env : DefaultEnv) (packages : SchemaEnv) (file : string) : DefaultEnv =
+        let rec owner (dir : string) =
+            if System.String.IsNullOrEmpty dir then default_env
+            else
+                match SchemaEnv.tryFindText (SpiralFileSystem.standardize_path dir) packages with
+                | Some schema -> package_default_env default_env schema
+                | None -> owner (System.IO.Path.GetDirectoryName dir)
+        owner (System.IO.Path.GetDirectoryName file)
     
 
     /// ### ss_validate_packages
@@ -180675,7 +177295,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     | Some x, None, true -> {ok=Map.remove pid s.ok; error=Map.add pid x s.error}
                     | None, Some x, false -> {ok=Map.add pid x s.ok; error=Map.remove pid s.error}
                     | None, None, c ->
-                        let x = wdiff_proj_init default_env funs_packages funs_files pid
+                        let x = wdiff_proj_init (package_default_env default_env schema) funs_packages funs_files pid
                         if c then {s with error=Map.add pid x s.error} else {s with ok=Map.add pid x s.ok}
                     | _ -> s
                 | None -> {ok=Map.remove pid s.ok; error=Map.remove pid s.error}
@@ -180686,6 +177306,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
     /// ### projenv_update_packages
     let projenv_update_packages default_env funs_packages funs_files (ids : PackagePathIndex) (packages : SchemaEnv)
             (state : Map<PackageId,ProjState<'a,'b,'state>>)  (dirty_packages : Dictionary<_,_>, order : string []) =
+        let package_envs = Dictionary<PackageId,DefaultEnv>()
         Array.foldBack (fun x l ->
             let x' = x |> SpiralFileSystem.standardize_path
             let xId = SchemaPathIdOps.create x'
@@ -180695,6 +177316,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             | Some schema when ss_has_error schema -> l
             | Some schema ->
                 let pid = ids.[xId]
+                package_envs.[pid] <- package_default_env default_env schema
                 let packages =
                     schema.schema.packages
                     |> List.map (fun dependency ->
@@ -180704,7 +177326,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 | true, x -> UpdatePackageModule(pid,packages,x) :: l
                 | false, _ -> UpdatePackage(pid,packages) :: l
             ) order []
-        |> wdiff_projenv default_env funs_packages funs_files state
+        |> wdiff_projenv (fun pid -> match package_envs.TryGetValue pid with | true, env -> env | _ -> default_env) funs_packages funs_files state
     
 
     /// ### proj_file_iter_file
@@ -180845,7 +177467,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 task {
                     if File.Exists path then
                         try let! x = File.ReadAllTextAsync(path)
-                            return LoadModule(path,wdiff_module_init_all default_env (is_top_down path) x |> Some)
+                            return LoadModule(path,wdiff_module_init_all (file_default_env default_env packages path) (is_top_down path) x |> Some)
                         with _ -> return LoadModule(path,None)
                     else return LoadModule(path,None) // Note: We need this case otherwise 'con' might cause the file read to deadlock. https://superuser.com/questions/86999/why-cant-i-name-a-folder-or-file-con-in-windows
                 } |> queue.Enqueue
@@ -180977,6 +177599,197 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         List.fold (fun s x -> {ok=Map.remove x s.ok; error=Map.remove x s.error}) s l
     
 
+    /// ## XCompat
+    type XCompatKind =
+        | XCompatHashtag
+        | XCompatMention
+        | XCompatCashtag
+        | XCompatAutolink
+
+    /// ### XCompatFinding
+    type XCompatFinding = { kind : XCompatKind; line : int; column : int; text : string }
+
+    /// ### xCompatKindName
+    let xCompatKindName kind =
+        match kind with
+        | XCompatHashtag -> "hashtag"
+        | XCompatMention -> "mention"
+        | XCompatCashtag -> "cashtag"
+        | XCompatAutolink -> "autolink"
+
+    /// ### xCompatCode
+    let xCompatCode kind =
+        match kind with
+        | XCompatHashtag -> "XC001"
+        | XCompatMention -> "XC002"
+        | XCompatCashtag -> "XC003"
+        | XCompatAutolink -> "XC004"
+
+    /// ### xCompatHint
+    let xCompatHint kind =
+        match kind with
+        | XCompatHashtag -> "X turns '#' before a letter into a hashtag link"
+        | XCompatMention -> "X turns '@' before a name into a mention"
+        | XCompatCashtag -> "X turns '$' before letters into a cashtag link"
+        | XCompatAutolink -> "X shortens what looks like a domain to a 23-character t.co link"
+
+    /// ### xCompatTopLevelDomains
+    let xCompatTopLevelDomains =
+        lazy (
+            [
+            "aaa aarp abb abbott abbvie abc able abogado abudhabi ac academy accenture accountant accountants aco"
+            "actor ad ads adult ae aeg aero aetna af afl africa ag agakhan agency ai aig airbus airforce airtel"
+            "akdn al alibaba alipay allfinanz allstate ally alsace alstom am amazon americanexpress"
+            "americanfamily amex amfam amica amsterdam analytics android anquan anz ao aol apartments app apple"
+            "aq aquarelle ar arab aramco archi army arpa art arte as asda asia associates at athleta attorney au"
+            "auction audi audible audio auspost author auto autos aw aws ax axa az azure ba baby baidu banamex"
+            "band bank bar barcelona barclaycard barclays barefoot bargains baseball basketball bauhaus bayern bb"
+            "bbc bbt bbva bcg bcn bd be beats beauty beer berlin best bestbuy bet bf bg bh bharti bi bible bid"
+            "bike bing bingo bio biz bj black blackfriday blockbuster blog bloomberg blue bm bms bmw bn"
+            "bnpparibas bo boats boehringer bofa bom bond boo book booking bosch bostik boston bot boutique box"
+            "br bradesco bridgestone broadway broker brother brussels bs bt build builders business buy buzz bv"
+            "bw by bz bzh ca cab cafe cal call calvinklein cam camera camp canon capetown capital capitalone car"
+            "caravan cards care career careers cars casa case cash casino cat catering catholic cba cbn cbre cc"
+            "cd center ceo cern cf cfa cfd cg ch chanel channel charity chase chat cheap chintai christmas chrome"
+            "church ci cipriani circle cisco citadel citi citic city ck cl claims cleaning click clinic clinique"
+            "clothing cloud club clubmed cm cn co coach codes coffee college cologne com commbank community"
+            "company compare computer comsec condos construction consulting contact contractors cooking cool coop"
+            "corsica country coupon coupons courses cpa cr credit creditcard creditunion cricket crown crs cruise"
+            "cruises cu cuisinella cv cw cx cy cymru cyou cz dad dance data date dating datsun day dclk dds de"
+            "deal dealer deals degree delivery dell deloitte delta democrat dental dentist desi design dev dhl"
+            "diamonds diet digital direct directory discount discover dish diy dj dk dm dnp do docs doctor dog"
+            "domains dot download drive dtv dubai dupont durban dvag dvr dz earth eat ec eco edeka edu education"
+            "ee eg email emerck energy engineer engineering enterprises epson equipment er ericsson erni es esq"
+            "estate et eu eurovision eus events exchange expert exposed express extraspace fage fail fairwinds"
+            "faith family fan fans farm farmers fashion fast fedex feedback ferrari ferrero fi fidelity fido film"
+            "final finance financial fire firestone firmdale fish fishing fit fitness fj fk flickr flights flir"
+            "florist flowers fly fm fo foo food football ford forex forsale forum foundation fox fr free"
+            "fresenius frl frogans frontier ftr fujitsu fun fund furniture futbol fyi ga gal gallery gallo gallup"
+            "game games gap garden gay gb gbiz gd gdn ge gea gent genting george gf gg ggee gh gi gift gifts"
+            "gives giving gl glass gle global globo gm gmail gmbh gmo gmx gn godaddy gold goldpoint golf goodyear"
+            "goog google gop got gov gp gq gr grainger graphics gratis green gripe grocery group gs gt gu gucci"
+            "guge guide guitars guru gw gy hair hamburg hangout haus hbo hdfc hdfcbank health healthcare help"
+            "helsinki here hermes hiphop hisamitsu hitachi hiv hk hkt hm hn hockey holdings holiday homedepot"
+            "homegoods homes homesense honda horse hospital host hosting hot hotels hotmail house how hr hsbc ht"
+            "hu hughes hyatt hyundai ibm icbc ice icu id ie ieee ifm ikano il im imamat imdb immo immobilien in"
+            "inc industries infiniti info ing ink institute insurance insure int international intuit investments"
+            "io ipiranga iq ir irish is ismaili ist istanbul it itau itv jaguar java jcb je jeep jetzt jewelry"
+            "jio jll jm jmp jnj jo jobs joburg jot joy jp jpmorgan jprs juegos kaufen kddi ke kerryhotels"
+            "kerryproperties kfh kg kh ki kia kids kim kindle kitchen kiwi km kn koeln komatsu kosher kp kpmg kpn"
+            "kr krd kred kuokgroup kw ky kyoto kz la lacaixa lamborghini lamer land landrover lanxess lasalle lat"
+            "latino latrobe law lawyer lb lc lds lease leclerc lefrak legal lego lexus lgbt li lidl life"
+            "lifeinsurance lifestyle lighting like lilly limited limo lincoln link live living lk llc llp loan"
+            "loans locker locus lol london lotte lotto love lpl lplfinancial lr ls lt ltd ltda lu lundbeck luxe"
+            "luxury lv ly ma madrid maif maison makeup man management mango map market marketing markets marriott"
+            "marshalls mattel mba mc mckinsey md me med media meet melbourne meme memorial men menu merck"
+            "merckmsd mg mh miami microsoft mil mini mint mit mitsubishi mk ml mlb mls mm mma mn mo mobi mobile"
+            "moda moe moi mom monash money monster mormon mortgage moscow moto motorcycles mov movie mp mq mr ms"
+            "msd mt mtn mtr mu museum music mv mw mx my mz na nab nagoya name navy nba nc ne nec net netbank"
+            "netflix network neustar new news next nextdirect nexus nf nfl ng ngo nhk ni nico nike nikon ninja"
+            "nissan nissay nl no nokia norton now nowruz nowtv np nr nra nrw ntt nu nyc nz obi observer office"
+            "okinawa olayan olayangroup ollo om omega one ong onl online ooo open oracle orange org organic"
+            "origins osaka otsuka ott ovh pa page panasonic paris pars partners parts party pay pccw pe pet pf"
+            "pfizer pg ph pharmacy phd philips phone photo photography photos physio pics pictet pictures pid pin"
+            "ping pink pioneer pizza pk pl place play playstation plumbing plus pm pn pnc pohl poker politie porn"
+            "post pr praxi press prime pro prod productions prof progressive promo properties property protection"
+            "pru prudential ps pt pub pw pwc py qa qpon quebec quest racing radio re read realestate realtor"
+            "realty recipes red redumbrella rehab reise reisen reit reliance ren rent rentals repair report"
+            "republican rest restaurant review reviews rexroth rich richardli ricoh ril rio rip ro rocks rodeo"
+            "rogers room rs rsvp ru rugby ruhr run rw rwe ryukyu sa saarland safe safety sakura sale salon"
+            "samsclub samsung sandvik sandvikcoromant sanofi sap sarl sas save saxo sb sbi sbs sc scb schaeffler"
+            "schmidt scholarships school schule schwarz science scot sd se search seat secure security seek"
+            "select sener services seven sew sex sexy sfr sg sh shangrila sharp shell shia shiksha shoes shop"
+            "shopping shouji show si silk sina singles site sj sk ski skin sky skype sl sling sm smart smile sn"
+            "sncf so soccer social softbank software sohu solar solutions song sony soy spa space sport spot sr"
+            "srl ss st stada staples star statebank statefarm stc stcgroup stockholm storage store stream studio"
+            "study style su sucks supplies supply support surf surgery suzuki sv swatch swiss sx sy sydney"
+            "systems sz tab taipei talk taobao target tatamotors tatar tattoo tax taxi tc tci td tdk team tech"
+            "technology tel temasek tennis teva tf tg th thd theater theatre tiaa tickets tienda tips tires tirol"
+            "tj tjmaxx tjx tk tkmaxx tl tm tmall tn to today tokyo tools top toray toshiba total tours town"
+            "toyota toys tr trade trading training travel travelers travelersinsurance trust trv tt tube tui"
+            "tunes tushu tv tvs tw tz ua ubank ubs ug uk unicom university uno uol ups us uy uz va vacations vana"
+            "vanguard vc ve vegas ventures verisign versicherung vet vg vi viajes video vig viking villas vin vip"
+            "virgin visa vision viva vivo vlaanderen vn vodka volvo vote voting voto voyage vu wales walmart"
+            "walter wang wanggou watch watches weather weatherchannel web webcam weber website wed wedding weibo"
+            "weir wf whoswho wien wiki williamhill win windows wine winners wme woodside work works world wow ws"
+            "wtc wtf xbox xerox xihuan xin xxx xyz yachts yahoo yamaxun yandex ye yodobashi yoga yokohama you"
+            "youtube yt yun za zappos zara zero zip zm zone zuerich zw"
+            ]
+            |> List.collect (fun row -> row.Split ' ' |> List.ofArray)
+            |> Set.ofList)
+
+    /// ### xCompatShortDomainsThatXLinks
+    let xCompatShortDomainsThatXLinks = set [ "t.co" ]
+
+    /// ### xCompatPatterns
+    let xCompatHashtagPattern = Text.RegularExpressions.Regex @"(?<![\p{L}\p{N}_&#＃])[#＃](?=[\p{L}\p{N}_]*\p{L})[\p{L}\p{N}_]+"
+    let xCompatMentionPattern = Text.RegularExpressions.Regex @"(?<![\p{L}\p{N}_!#$%&*@＠])[@＠][A-Za-z0-9_]{1,15}(?![A-Za-z0-9_@＠])"
+    let xCompatCashtagPattern = Text.RegularExpressions.Regex @"(?<![\p{L}\p{N}_$])\$[A-Za-z]{1,6}(?:[._][A-Za-z]{1,2})?(?![\p{L}\p{N}_])"
+    let xCompatDomainPattern = Text.RegularExpressions.Regex @"(?<![\p{L}\p{N}@\-_./])(?:[A-Za-z0-9](?:[A-Za-z0-9\-_]*[A-Za-z0-9])?\.)+([A-Za-z]{2,63})(?![\p{L}\p{N}_\-])"
+
+    /// ### xCompatLinks
+    let xCompatLinks (link : string) (topLevelDomain : string) =
+        if not (xCompatTopLevelDomains.Force().Contains topLevelDomain) then false
+        elif xCompatShortDomainsThatXLinks.Contains (link.ToLowerInvariant ()) then true
+        elif topLevelDomain.Length = 2 then
+            let labels = link.Split '.'
+            labels.[labels.Length - 2].Length > 2
+        else true
+
+    /// ### xCompatLineFindings
+    let xCompatLineFindings (line : string) (row : int) =
+        let marks =
+            [ XCompatHashtag, xCompatHashtagPattern; XCompatMention, xCompatMentionPattern; XCompatCashtag, xCompatCashtagPattern ]
+            |> List.collect (fun (kind, pattern) -> [ for found in pattern.Matches line -> kind, found.Index, found.Value ])
+        let links =
+            [ for found in xCompatDomainPattern.Matches line do
+                if xCompatLinks found.Value (found.Groups.[1].Value.ToLowerInvariant ()) then yield XCompatAutolink, found.Index, found.Value ]
+        marks @ links
+        |> List.sortBy (fun (_, start, _) -> start)
+        |> List.map (fun (kind, start, text) ->
+            { kind = kind; line = row; column = Globalization.StringInfo(line.Substring (0, start)).LengthInTextElements + 1; text = text })
+
+    /// ### xCompatFindings
+    let xCompatFindings (source : string) =
+        source.Replace("\r\n", "\n").Split '\n'
+        |> List.ofArray
+        |> List.mapi (fun index line -> xCompatLineFindings line (index + 1))
+        |> List.concat
+
+    /// ### xCompatReportLine
+    let xCompatReportLine (path : string) (finding : XCompatFinding) =
+        $"{path}:{finding.line}:{finding.column}: {xCompatKindName finding.kind}: {finding.text} ({xCompatHint finding.kind})"
+
+    /// ### xCompatWarningLine
+    let xCompatWarningLine (path : string) (finding : XCompatFinding) =
+        $"warning: {path}:{finding.line}:{finding.column}: {xCompatCode finding.kind} {xCompatKindName finding.kind}: {finding.text} ({xCompatHint finding.kind})"
+
+    /// ### xCompatPackageEditionThree
+    let xCompatPackageEditionThree (file : string) =
+        let rec nearest (directory : string) =
+            if isNull directory then None
+            else
+                let project = IO.Path.Combine (directory, "package.spiproj")
+                if IO.File.Exists project then Some project else nearest (IO.Path.GetDirectoryName directory)
+        match nearest (IO.Path.GetDirectoryName (IO.Path.GetFullPath file)) with
+        | Some project -> IO.File.ReadAllLines project |> Array.exists (fun line -> line.Trim () = "edition: 3")
+        | None -> false
+
+    /// ### xCompatEnabled
+    let xCompatEnabled (file : string) =
+        Environment.GetEnvironmentVariable "SPIRAL_X_COMPAT" = "1" || (try xCompatPackageEditionThree file with _ -> false)
+
+    /// ### xCompatWarnedTexts
+    let xCompatWarnedTexts = Collections.Concurrent.ConcurrentDictionary<string * string, unit> ()
+
+    /// ### xCompatWarnEntry
+    let xCompatWarnEntry (file : string) =
+        try
+            if xCompatEnabled file && IO.File.Exists file then
+                let text = IO.File.ReadAllText file
+                if xCompatWarnedTexts.TryAdd ((file, text), ()) then
+                    for finding in xCompatFindings text do eprintfn "%s" (xCompatWarningLine file finding)
+        with _ -> ()
 #if SPIRAL_CORE_GPT5PARALLEL
     /// ## SignalRSupervisor
     // open System
@@ -181864,8 +178677,8 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 let file = file x.uri
                 // trace Verbose (fun () -> $"Supervisor.supervisor_server.loop.FileOpen / x: %A{x} / file: {file}") _locals
                 match ModuleEnv.tryFindText file s.modules with
-                | Some m -> wdiff_module_all default_env m x.spiText
-                | None -> wdiff_module_init_all default_env (is_top_down file) x.spiText
+                | Some m -> wdiff_module_all (file_default_env default_env s.packages file) m x.spiText
+                | None -> wdiff_module_init_all (file_default_env default_env s.packages file) (is_top_down file) x.spiText
                 |> fun v -> proj_revalidate_owner default_env {s with modules = ModuleEnv.addText file v s.modules} file
                 |> handle_file_packages file
             | SupervisorReq.FileChange x ->
@@ -181874,7 +178687,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 match ModuleEnv.tryFindText file s.modules with
                 | None -> fatal "It is not possible to apply a change to a file that is not present in the environment. Try reopening it in the editor."; s
                 | Some m ->
-                    match wdiff_module_edit default_env m x.spiEdit with
+                    match wdiff_module_edit (file_default_env default_env s.packages file) m x.spiEdit with
                     | Ok v -> proj_revalidate_owner default_env {s with modules = ModuleEnv.addText file v s.modules} file |> handle_file_packages file
                     | Error er -> fatal er; s
             | SupervisorReq.FileDelete x ->
@@ -182652,6 +179465,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                                     else acc
                                 let tokenizer_errors = match ModuleEnv.tryFindText file s.modules with Some m -> m.tokenizer.errors | None -> []
                                 available tokenizer_errors bundles
+                        xCompatWarnEntry file
                         let body() =
                             emitBuildFileInitializationStage BuildFileBodyEntered
                             // The "Check" backend type-checks without partial evaluation or codegen (ported from
@@ -185033,8 +181847,8 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 let file = file x.uri
                 // trace Verbose (fun () -> $"Supervisor.supervisor_server.loop.FileOpen / x: %A{x} / file: {file}") _locals
                 match Map.tryFind file s.modules with
-                | Some m -> wdiff_module_all default_env m x.spiText
-                | None -> wdiff_module_init_all default_env (is_top_down file) x.spiText
+                | Some m -> wdiff_module_all (file_default_env default_env s.packages file) m x.spiText
+                | None -> wdiff_module_init_all (file_default_env default_env s.packages file) (is_top_down file) x.spiText
                 |> fun v -> proj_revalidate_owner default_env {s with modules = Map.add file v s.modules} file
                 |> handle_file_packages file
             | SupervisorReq.FileChange x ->
@@ -185043,7 +181857,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 match Map.tryFind file s.modules with
                 | None -> fatal "It is not possible to apply a change to a file that is not present in the environment. Try reopening it in the editor."; s
                 | Some m ->
-                    match wdiff_module_edit default_env m x.spiEdit with
+                    match wdiff_module_edit (file_default_env default_env s.packages file) m x.spiEdit with
                     | Ok v -> proj_revalidate_owner default_env {s with modules = Map.add file v s.modules} file |> handle_file_packages file
                     | Error er -> fatal er; s
             | SupervisorReq.FileDelete x ->
@@ -185380,6 +182194,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                         entry_errors >>=* fun entry_errors ->
                         let entry_errors = if own_main then entry_errors else entry_errors @ package_errors
                         if List.isEmpty entry_errors then dependency_warnings ()
+                        xCompatWarnEntry file
                         let body() =
                             match backend, Map.tryFind "main" env.term with
                             | "Check", _ -> BuildSkip

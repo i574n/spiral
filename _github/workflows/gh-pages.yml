@@ -4,9 +4,18 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: "compiler test.ps1 -Suite value"
+        required: false
+        default: "all"
 
 jobs:
   build:
+    if: github.event_name != 'schedule'
     timeout-minutes: 420
     runs-on: ${{ matrix.os }}
     strategy:
@@ -34,6 +43,10 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
 
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.17.0
+
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12.10"
@@ -46,6 +59,43 @@ jobs:
           name: gh-pages
           path: dist
           retention-days: 30
+
+  compiler:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    timeout-minutes: 360
+    runs-on: ubuntu-24.04
+    env:
+      SPIRAL_BIN_CACHE_DIR: ${{ github.workspace }}/../spiral-bin
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: "27"
+          elixir-version: "1.18"
+          gleam-version: "1.19.1"
+          rebar3-version: '3.24.0'
+
+      - uses: oven-sh/setup-bun@v2
+
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.17.0
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12.10"
+
+      - run: pwsh scripts/workflow.ps1 -Compiler -Suite ${{ github.event.inputs.suite || 'all' }}
+
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: compiler-oracle
+          path: |
+            ${{ env.SPIRAL_BIN_CACHE_DIR }}/baseline/EXPECTED.tsv
+            ${{ env.SPIRAL_BIN_CACHE_DIR }}/runs
+          retention-days: 14
 
   push:
     needs: build

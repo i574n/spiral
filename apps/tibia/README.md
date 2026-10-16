@@ -20,25 +20,28 @@ where a test needs the training host.
 
 Correction 2026-10-14: every live `spiral-*` run from 2026-10-13 11:48 until the fix ran with vBot's HealBot and TargetBot active alongside our policy (a bot setting the vBot probe left enabled; BENCHMARK.md, PR-1). The findings below come from the re-measurement on the fixed harness (PR-4, 30 runs per competitor, every run checked for foreign actions); the earlier live claims are withdrawn.
 
-1. **The simulator predicts live clear times, and, since 2026-10-15, potion use too.** Clear times matched in every
-   live check. Potions did not: the first model predicted 13.2 and 9.1 potions for the rules and retreat clears against
-   11.5 and 12.9 live (PR-4), and the mixed and two-cyclops checks failed too (PR-2, PR-6). Three causes, each measured:
-   live monsters ignore a freshly logged-in knight for 10 s (Canary's login protection); small camps fielded three
-   cyclops through a simulator bug; and live cyclops surround the knight (about 1.75 adjacent with two monsters) while
-   the simulator's greedy steps queued them behind each other. With login protection, the bug fixed and an
-   occupancy-aware router (Canary's step weights, other creatures as obstacles), a pre-registered prediction for a clear
-   never measured before holds: two cyclops with the retreat policy, 4.67 potions predicted, 5.45 live (t 1.95, PR-7),
-   where the old movement predicted 3.49 (t 4.89). Explanatory, on data already seen: rules 13.3 vs 11.5, retreat 12.0
-   vs 12.9, two cyclops 5.2 vs 4.9, mixed camp 0.36 vs 0.55.
-2. **The policy designed in the simulator does not win live.** Stepping back when two cyclops reach the knight saved
+1. **The simulator predicts live clear times and, mostly, potion use.** Clear times matched in every live check.
+   Potions took four corrections, each measured live or read from Canary's source: login protection keeps monsters off
+   a fresh knight for 10 s; a simulator bug fielded three cyclops in small camps; monsters surround the knight instead
+   of queueing (occupancy-aware routing, PR-7 holds out of sample); and monsters wander while the knight is protected,
+   so every clear starts from a different geometry (before, every seed replayed one), with the cyclops swing pace
+   measured at 2166 ms (`mirroring_the_live_arena`). Potions per unit of damage were always right; the misses were in
+   hits taken. Against pooled live means the model now sits within the noise for rules and retreat at two and three
+   cyclops (in-sample). Its out-of-sample check failed in one direction (PR-10): it predicted that preferring a monster
+   already in reach costs 0.8 potions, and live it costs nothing (12.3 vs 12.5 for rules). Live, our policies drink
+   alike; the model still reacts too strongly to targeting and retreat.2. **The policy designed in the simulator does not win live.** Stepping back when two cyclops reach the knight saved
    about 4 potions per clear in the first simulator; with monsters surrounding the knight as they do live, the saving
    shrinks to about 1 potion (5%), and live it uses 1.4 more than the plain rules (t 1.8, not significant).
    The earlier live win came from runs with vBot healing alongside.
-3. **Against vBot neither policy is shown better.** Retreat 12.9 vs vBot 14.0 potions, difference -1.1 (95% interval
-   -2.6 .. 0.4, PR-4), and rules 12.9 vs vBot 14.2, difference -1.3 (-3.0 .. 0.5, PR-8), both pre-registered; similar
-   clear times, no deaths on either side. Against nExBot the retreat policy is narrowly better: 12.2 vs 14.6 potions,
-   difference -2.4 (-4.6 .. -0.1, PR-3a, 20 runs each, t -2.14 against 2.03). It is a single test, and nExBot's mean
-   sits where vBot's does. nExBot runs only with three harness shims (BENCHMARK.md PR-3a).
+3. **Our rules policy is level with vBot.** With enough runs (PR-9, 50 each, pre-registered) the
+   Spiral rules policy drinks 12.5 potions per cyclops clear against vBot's 14.7 (difference -2.2, t -3.8), but the
+   whole difference sits in the first 10 s: Canary ends a fresh login's protection when the player moves, turns, talks
+   or uses an item, which vBot does and our probe does not, so vBot takes 9.1 hits in that window against our 1.6. After
+   it the two take the same hits (60.1 vs 60.4). Re-tested with the protection ended for both (PR-11, 50 each): 14.4 vs
+   14.8 potions, no difference shown (t -0.6), identical hits (69.1 vs 69.2). Our three policies drink alike live (rules
+   12.5, ReachFirst 12.3, retreat 12.2). Against nExBot the retreat policy was narrowly better (12.2 vs 14.6 potions,
+   PR-3a, t -2.14), but about half of that is the same login rule (nExBot talks right after login); a fair re-test is
+   open. nExBot runs only with three harness shims (BENCHMARK.md PR-3a).
 4. **Learning wins little at this level of detail.** In every scenario tried (open field, corridor, room,
    arena spot, mixed cyclops and trolls, potion budgets, respawning hunts) tuned threshold rules match or beat neural
    and scored learned policies. On a respawning hunting ground the rule that sweeps to the next spawn due beats every fixed
@@ -65,16 +68,21 @@ Every mechanic comes from Canary's source or a live measurement, and the model i
 | Pathing | arena spot: occupancy-aware routing with Canary's step weights (straight 10, diagonal 25, other creatures as obstacles), so monsters detour around each other; hunting ground: shortest path with straight steps only | Canary's A* (diagonal 25 vs straight 10); checked live (PC-1): a cyclops behind a wall takes exactly the router's straight-step path in all 5 runs, after idling 10-12 s |
 | Monster wake | monsters neither move nor strike for the first 10 s of a live-mirroring scenario (`waking_at (live_wake_ms ())`); Canary's login protection (`isLoginProtected` blocks monster targeting) | the path check saw cyclops idle 10-12 s after the knight logs in; live, the standing knight takes 1.8 hits in its first 10 s against 7.9 simulated without the delay |
 | Monster sight | a monster follows only a knight within 11 tiles on both axes on its floor; otherwise it idles | Canary's viewport (8 + 3, 6 + 5) |
+| Monster idle walk | `wandering_while_idle`: until it targets the knight, a monster takes a random free cardinal step once 1000 ms have passed since its last move | Canary `Monster::doRandomStep`; PC-1 saw cyclops wander 0-7 steps during the 10 s login protection |
+| Monster swing period | `meleeing_every (live_creature_strike_ms ())`: 2166 ms between swings of an adjacent cyclops | single-cyclops live runs: 28 of 30 gaps between landed hits are one swing, mean 2166 ms (Canary's 100 ms creature check runs a few ms late per cycle) |
+| Knight swing after a step | `swinging_like_canary`: a step cancels the pending swing; it resumes at the next think or the next knight or target move once due | Canary `Player::onWalk`, `hasExtraSwing`; PC-3: 31 of 36 swing gaps spanning a step come late, mostly by 150-200 ms |
+| Monster first swing | `meleeing_every_once_targeted`: a cyclops's first swing waits one swing period after it can target the knight | Canary: a monster's `attackTicks` starts at 0 when it acquires a target; live, the first hit lands about 3.4 s after login, simulated before at 0.2 s. Scored best against the six live potion means (sum of squared t 13.5 vs 16.7, none beyond 2) |
 
-Open gap (2026-10-15), with the router, the camp-size fix and the wake delay held fixed, 100 held-out clears against
-pooled live means: the model under-counts the retreat policy's potions by the same amount at both camp sizes (2 cyclops
-4.62 vs 5.45 live, 3 cyclops 11.78 vs 12.62) and over-counts plain rules (5.16 vs 4.85, 13.34 vs 12.22), so it still
-ranks retreat ahead of rules where live does not. One retreat-only mechanic is missing: with `classicAttackSpeed =
-false` Canary schedules the knight's next swing as its next action task and every step clears that task
-(`Player::onWalk`), so after a step the swing resumes on the next 1 s think cycle. The camp rule `swinging_on_think`
-(opt-in, like the wake delay) models it: retreat moves to 12.14 potions, 90.6 s and 58.6 hits taken per clear at 3
-cyclops (live 12.62, 90.9-91.3 s, 59.05 hits) and to 4.72 potions at 2 cyclops, while rules stay at 13.36: it explains
-part of the gap, not all of it. The pre-registered mechanic check PC-3 (5 live runs) confirms it: 31 of 36 swing gaps that span a knight step come 60-1060 ms off the 2 s grid, against 5 of 106 without a step; the live delay is mostly 150-200 ms, shorter than the modeled wait for the next think, so the delay length is the next refinement.
+Live-mirroring model (2026-10-15): `mirroring_the_live_arena` turns on the four rules above that only matter live (wake,
+idle walk, swing period, swing after a step), and `live_retreat_tactic` steps exactly like the live probe. Before it, every
+seed replayed one geometry (fixed spawns, monsters frozen while the knight is protected), and the simulated knight escaped
+along the corridor that the live knight rarely reaches; live, the retreating knight sits cornered in the dead-end pocket at
+1936,1349 for 43% of the clear. Healing was never the gap: potions per 1000 hp of damage are about 5.8 live and simulated.
+Against pooled live means (in-sample, these data shaped the rules): 3 cyclops rules 12.74 vs 12.22 potions, retreat 11.77 vs
+12.62; 2 cyclops rules 4.83 vs 4.85, retreat 5.09 vs 5.45; every clear time within 2 s. The 3-cyclops ranking of retreat vs
+rules is still off by about 1.4 potions (borderline). Under this model a lower heal threshold or a better standing tile saves
+at most 0.3 potions per clear, so no live-runnable change to the rules policy is predicted to show live.
+The 10 s wake and the idle walk describe the harness before 2026-10-15 14:17, when our probe kept the login protection. Since then the parity layer ends the protection for every competitor at login, so the matching scenario is `mirroring_the_live_arena |> waking_at 0` (no wake, so no idle walk); its first prediction (rules 15.6 potions, 72 hits) ran about 5% high (PR-11: 14.4, 69).
 
 The multi-creature simulator is bit-exact on WGSL too (`gpu_sim.spi`: a full troll hunt, five arena-spot cyclops
 clears, and a five-minute hunting-ground hunt with the shortest-path router and its scratch arrays). With parallel lanes (one seed per GPU thread, 2026-10-14) every lane matches C exactly; a launch costs about 4 s of fixed setup, then about 0.23 ms per arena clear against 1.6 ms on one C core, so the GPU pays off from about 4000 clears per launch. Large lane counts now run in chunks of 1024 (the 16384-lane hang, WGSL-LANES-LARGE-DISPATCH-HANG, is fixed in the pack-1e compiler).
@@ -134,7 +142,7 @@ Profit books gold looted, 50 gp per potion and 14000 gp per death. The control i
 
 PR-4 (2026-10-14, fixed harness): cyclops clear, BENCHMARK pack v1, full gear restored before every run, the same 250 ms
 action gate and 100 ms decision tick for every competitor, heal below 160, 30 runs each, alternating, every run cleared,
-no deaths, no harness failures.
+no deaths, no harness failures. These runs predate the login-protection fix: vBot ended its protection at login and our probes did not, so the vBot row carries about 7 extra hits per clear (BENCHMARK.md PR-9 addendum; level on the fixed harness, PR-11).
 
 | Competitor | Potions | Clear time | Damage taken |
 | --- | --- | --- | --- |
@@ -143,7 +151,7 @@ no deaths, no harness failures.
 | vBot 4.8 | 14.0 (sd 2.6) | 92.7 s | 2397 |
 
 Pre-registered tests: retreat vs vBot, no difference shown (t -1.45); retreat vs rules, no difference shown (t 1.82).
-Rules vs vBot, pre-registered as a fresh replication (PR-8, 30 runs each): 12.9 vs 14.2 potions, no difference shown (t -1.47); PR-4's 11.5 for the rules did not replicate. Retreat vs nExBot 4.0.4 (PR-3a, 20 runs each, 2026-10-15): 12.2 vs 14.6 potions, significant (t -2.14), clear time 90.9 vs 88.4 s, damage taken 2030 vs 2421 (16 and 18 of 20 logs matched), no deaths. The random control (PR-5, 10 runs: drink, engage, random step or stand with equal odds) clears in 102.7 s with 94.1 potions, far below every competitor.
+Rules vs vBot, pre-registered as a fresh replication (PR-8, 30 runs each): 12.9 vs 14.2 potions, no difference shown (t -1.47); PR-4's 11.5 for the rules did not replicate. Rules vs vBot with 50 runs each (PR-9, 2026-10-15): 12.5 vs 14.7 potions, significant (t -3.80), clear time 88.7 vs 87.9 s, damage taken 2145 vs 2479; the whole difference comes from vBot ending its login protection in the first 10 s (BENCHMARK.md PR-9 addendum). With the protection ended for both (PR-11, 50 runs each): 14.4 vs 14.8 potions, no difference shown (t -0.58). Retreat vs nExBot 4.0.4 (PR-3a, 20 runs each, 2026-10-15): 12.2 vs 14.6 potions, significant (t -2.14), clear time 90.9 vs 88.4 s, damage taken 2030 vs 2421 (16 and 18 of 20 logs matched), no deaths. The random control (PR-5, 10 runs: drink, engage, random step or stand with equal odds) clears in 102.7 s with 94.1 potions, far below every competitor.
 
 The earlier table, kept as a record of the faulty harness:
 Measured with vBot's HealBot and TargetBot running alongside every `spiral-*` competitor (see the correction above); kept as a record until PR-4 replaces it. Cyclops clear, BENCHMARK pack v1: full gear restored before every run, the same 250 ms action gate and 100 ms decision

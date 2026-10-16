@@ -1,0 +1,229 @@
+:< main
+
+:! normalization_shape_empty = ()
+:! normalization_shape_epsilon = ()
+:! normalization_shape_char = ()
+:! normalization_shape_alt left right = ()
+:! normalization_shape_cat left right = ()
+:! normalization_shape_star inner = ()
+
+:| ^ normalization_derivation alphabet shape =
+    | NormalizationDerivationEmpty :: \* alphabet. normalization_derivation alphabet normalization_shape_empty
+    | NormalizationDerivationEpsilon :: \* alphabet. normalization_derivation alphabet normalization_shape_epsilon
+    | NormalizationDerivationChar :: \* alphabet. alphabet -> normalization_derivation alphabet normalization_shape_char
+    | NormalizationDerivationAlt :: \* alphabet left right. normalization_derivation alphabet left * normalization_derivation alphabet right -> normalization_derivation alphabet (normalization_shape_alt left right)
+    | NormalizationDerivationCat :: \* alphabet left right. normalization_derivation alphabet left * normalization_derivation alphabet right -> normalization_derivation alphabet (normalization_shape_cat left right)
+    | NormalizationDerivationStar :: \* alphabet inner. normalization_derivation alphabet inner -> normalization_derivation alphabet (normalization_shape_star inner)
+
+:| packed_normalization_derivation alphabet =
+    | PackedNormalizationDerivation : (\? shape. normalization_derivation alphabet shape)
+
+:= ^ normalization_derivation_pack \* alphabet. (value : regex alphabet) : packed_normalization_derivation alphabet =
+    ?= value ?|
+    | RegexEmpty => PackedNormalizationDerivation (\? NormalizationDerivationEmpty)
+    | RegexEpsilon => PackedNormalizationDerivation (\? NormalizationDerivationEpsilon)
+    | RegexChar symbol => PackedNormalizationDerivation (\? (NormalizationDerivationChar symbol))
+    | RegexAlt (left, right) =>
+        ?= normalization_derivation_pack left, normalization_derivation_pack right ?|
+        | PackedNormalizationDerivation left_packed, PackedNormalizationDerivation right_packed =>
+            := \? left_shape. left_derivation = left_packed
+            := \? right_shape. right_derivation = right_packed
+            PackedNormalizationDerivation (\? (NormalizationDerivationAlt (left_derivation, right_derivation)))
+    | RegexCat (left, right) =>
+        ?= normalization_derivation_pack left, normalization_derivation_pack right ?|
+        | PackedNormalizationDerivation left_packed, PackedNormalizationDerivation right_packed =>
+            := \? left_shape. left_derivation = left_packed
+            := \? right_shape. right_derivation = right_packed
+            PackedNormalizationDerivation (\? (NormalizationDerivationCat (left_derivation, right_derivation)))
+    | RegexStar inner =>
+        ?= normalization_derivation_pack inner ?|
+        | PackedNormalizationDerivation packed =>
+            := \? inner_shape. inner_derivation = packed
+            PackedNormalizationDerivation (\? (NormalizationDerivationStar inner_derivation))
+
+:= ^ normalization_derivation_source \* alphabet shape. (derivation : normalization_derivation alphabet shape) : regex alphabet =
+    ?= derivation ?|
+    | NormalizationDerivationEmpty => RegexEmpty
+    | NormalizationDerivationEpsilon => RegexEpsilon
+    | NormalizationDerivationChar symbol => RegexChar symbol
+    | NormalizationDerivationAlt (left, right) => RegexAlt (normalization_derivation_source left, normalization_derivation_source right)
+    | NormalizationDerivationCat (left, right) => RegexCat (normalization_derivation_source left, normalization_derivation_source right)
+    | NormalizationDerivationStar inner => RegexStar (normalization_derivation_source inner)
+
+:~ ^ normalization_referee_alt_insert \* alphabet {symbol_compare}. (term : regex alphabet) (value : regex alphabet) : regex alphabet =
+    ?= value ?|
+    | RegexEmpty => term
+    | RegexAlt (head, tail) =>
+        ?= regex_compare term head ?|
+        | SymbolLess => RegexAlt (term, value)
+        | SymbolSame => value
+        | SymbolGreater => RegexAlt (head, normalization_referee_alt_insert term tail)
+    | atom =>
+        ?= regex_compare term atom ?|
+        | SymbolLess => RegexAlt (term, atom)
+        | SymbolSame => atom
+        | SymbolGreater => RegexAlt (atom, term)
+
+:~ ^ normalization_referee_alt \* alphabet {symbol_compare}. (left : regex alphabet) (right : regex alphabet) : regex alphabet =
+    ?= left ?|
+    | RegexEmpty => right
+    | RegexAlt (head, tail) => normalization_referee_alt tail (normalization_referee_alt_insert head right)
+    | atom => normalization_referee_alt_insert atom right
+
+:~ ^ normalization_referee_cat \* alphabet {symbol_compare}. (left : regex alphabet) (right : regex alphabet) : regex alphabet =
+    ?= right ?|
+    | RegexEmpty => RegexEmpty
+    | RegexEpsilon => left
+    | _ =>
+        ?= left ?|
+        | RegexEmpty => RegexEmpty
+        | RegexEpsilon => right
+        | RegexStar left_inner =>
+            ?= right ?|
+            | RegexStar right_inner =>
+                ? regex_equal left_inner right_inner ?> RegexStar left_inner |: RegexCat (left, right)
+            | _ => RegexCat (left, right)
+        | RegexCat (head, tail) => RegexCat (head, normalization_referee_cat tail right)
+        | _ => RegexCat (left, right)
+
+:= normalization_referee_star \* alphabet. (value : regex alphabet) : regex alphabet =
+    ?= value ?|
+    | RegexEmpty => RegexEpsilon
+    | RegexEpsilon => RegexEpsilon
+    | RegexStar inner => RegexStar inner
+    | atom => RegexStar atom
+
+:~ ^ normalization_referee \* alphabet {symbol_compare}. (value : regex alphabet) : regex alphabet =
+    ?= value ?|
+    | RegexEmpty => RegexEmpty
+    | RegexEpsilon => RegexEpsilon
+    | RegexChar symbol => RegexChar symbol
+    | RegexAlt (left, right) => normalization_referee_alt (normalization_referee left) (normalization_referee right)
+    | RegexCat (left, right) => normalization_referee_cat (normalization_referee left) (normalization_referee right)
+    | RegexStar inner => normalization_referee_star (normalization_referee inner)
+
+:= normalization_referee_language_law \* alphabet {symbol_compare}.
+    (value : regex alphabet)
+    (input : linear_input alphabet)
+    : bool =
+    input_list_set_equal
+        (language_remainders value input)
+        (language_remainders (normalization_referee value) input)
+
+:~ ^ normalization_referee_language_law_suffixes \* alphabet {symbol_compare}.
+    (value : regex alphabet)
+    (suffixes : input_list alphabet)
+    : bool =
+    ?= suffixes ?|
+    | InputListNil => !+
+    | InputListCons (suffix, rest) =>
+        ? normalization_referee_language_law value suffix ?>
+            normalization_referee_language_law_suffixes value rest
+        |: !-
+
+:~ ^ normalization_referee_language_law_corpus \* alphabet {symbol_compare}.
+    (values : regex_list alphabet)
+    (suffixes : input_list alphabet)
+    : bool =
+    ?= values ?|
+    | RegexListNil => !+
+    | RegexListCons (value, rest) =>
+        ? normalization_referee_language_law_suffixes value suffixes ?>
+            normalization_referee_language_law_corpus rest suffixes
+        |: !-
+
+:! normalization_structural_certificate alphabet =
+    packed_normalization_derivation alphabet * regex alphabet * regex alphabet
+
+:! normalization_equal_capability alphabet = regex alphabet -> regex alphabet -> bool
+
+:= normalization_equal_capability_default \* alphabet {symbol_compare}. : normalization_equal_capability alphabet =
+    normalization_equal_capability regex_equal
+
+:= normalization_structural_certificate_make \* alphabet {symbol_compare}.
+    (value : regex alphabet) : normalization_structural_certificate alphabet =
+    normalization_structural_certificate (
+        normalization_derivation_pack value,
+        normalization_referee value,
+        normalize value)
+
+:= normalization_structural_certificate_valid \* alphabet {symbol_compare}.
+    (claimed_source : regex alphabet)
+    (certificate : normalization_structural_certificate alphabet) : bool =
+    := expected_referee = normalization_referee claimed_source
+    := expected_production = normalize claimed_source
+    := equal_capability : normalization_equal_capability alphabet = normalization_equal_capability_default
+    ?= certificate ?|
+    | normalization_structural_certificate (packed, referee, production) =>
+        := value_agreement =
+            regex_equal referee expected_referee &&
+            regex_equal production expected_production &&
+            regex_equal referee production
+        ?= equal_capability, packed ?|
+        | normalization_equal_capability equal, PackedNormalizationDerivation hidden =>
+            := \? shape. derivation = hidden
+            value_agreement && equal claimed_source (normalization_derivation_source derivation)
+
+:~ ^ normalization_structural_certificate_corpus \* alphabet {symbol_compare}.
+    (values : regex_list alphabet) : bool =
+    ?= values ?|
+    | RegexListNil => !+
+    | RegexListCons (value, rest) =>
+        := certificate = normalization_structural_certificate_make value
+        ? normalization_structural_certificate_valid value certificate ?>
+            normalization_structural_certificate_corpus rest
+        |: !-
+
+:= main () : string =
+    := bit_descriptor : finite_alphabet_descriptor bit_alphabet = finite_alphabet ()
+    := tri_descriptor : finite_alphabet_descriptor tri_alphabet = finite_alphabet ()
+    := bit_symbols = finite_alphabet_symbols bit_descriptor
+    := tri_symbols = finite_alphabet_symbols tri_descriptor
+    := bit_corpus = regex_corpus_depth_one bit_symbols
+    := tri_corpus = regex_corpus_depth_one tri_symbols
+    := bit_suffix_corpus = input_corpus_depth_two bit_symbols
+    := tri_suffix_corpus = input_corpus_depth_two tri_symbols
+    assert_static
+        (normalization_referee_language_law_corpus bit_corpus bit_suffix_corpus)
+        "independent referee must preserve bit-language remainders over the structural corpus"
+    assert_static
+        (normalization_referee_language_law_corpus tri_corpus tri_suffix_corpus)
+        "independent referee must preserve ternary-language remainders over the structural corpus"
+    assert_static
+        (normalization_structural_certificate_corpus bit_corpus)
+        "every bit structural regex must bind a shape derivation and agree with the independent normalizer"
+    assert_static
+        (normalization_structural_certificate_corpus tri_corpus)
+        "every ternary structural regex must bind a shape derivation and agree with the independent normalizer"
+
+    := source = RegexAlt (RegexChar (one ()), RegexChar (zero ()))
+    := certificate = normalization_structural_certificate_make source
+    assert_static
+        (normalization_structural_certificate_valid source certificate)
+        "structural certificate must bind source, independent referee and production normalization"
+
+    := epsilon_certificate : normalization_structural_certificate bit_alphabet =
+        normalization_structural_certificate_make RegexEpsilon
+    assert_static
+        (bool_same (normalization_structural_certificate_valid RegexEmpty epsilon_certificate) !-)
+        "certificate from another source must not validate"
+
+    := forged_result : normalization_structural_certificate bit_alphabet =
+        normalization_structural_certificate (
+            normalization_derivation_pack source,
+            normalization_referee source,
+            RegexEmpty)
+    assert_static
+        (bool_same (normalization_structural_certificate_valid source forged_result) !-)
+        "forged production result must not validate"
+
+    := forged_shape : normalization_structural_certificate bit_alphabet =
+        normalization_structural_certificate (
+            normalization_derivation_pack RegexEpsilon,
+            normalization_referee source,
+            normalize source)
+    assert_static
+        (bool_same (normalization_structural_certificate_valid source forged_shape) !-)
+        "certificate with a derivation from another source must not validate"
+
+    "brzozowski-normalization-structural-derivation-green"

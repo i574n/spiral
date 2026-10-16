@@ -8307,21 +8307,21 @@ struct ("b", "b")	| "b"     	| "b"   	| struct (1L, 110L)</p>
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>```
-11:44:15 1v benchmark.run_all / { test_name = empty_2_tests; count = 2000000 }
-11:44:15 2v benchmark.run / { input_str = struct ("a", "a") }
-11:44:15 3v benchmark.run / solutions.map / { i = 1; test_name = A; time = 49 }
-11:44:15 4v benchmark.run / solutions.map / { i = 2; test_name = B; time = 13 }
-11:44:15 5v benchmark.run / { input_str = struct ("b", "b") }
-11:44:15 6v benchmark.run / solutions.map / { i = 1; test_name = A; time = 12 }
-11:44:15 7v benchmark.run / solutions.map / { i = 2; test_name = B; time = 12 }
+04:52:46 1v benchmark.run_all / { test_name = empty_2_tests; count = 2000000 }
+04:52:46 2v benchmark.run / { input_str = struct ("a", "a") }
+04:52:46 3v benchmark.run / solutions.map / { i = 1; test_name = A; time = 29 }
+04:52:46 4v benchmark.run / solutions.map / { i = 2; test_name = B; time = 7 }
+04:52:46 5v benchmark.run / { input_str = struct ("b", "b") }
+04:52:46 6v benchmark.run / solutions.map / { i = 1; test_name = A; time = 6 }
+04:52:46 7v benchmark.run / solutions.map / { i = 2; test_name = B; time = 6 }
 ```
-input            	| expected	| result	| best   
----              	| ---     	| ---   	| ---    
-struct ("a", "a")	| a       	| a     	| (2, 13)
-struct ("b", "b")	| b       	| b     	| (1, 12)
+input            	| expected	| result	| best  
+---              	| ---     	| ---   	| ---   
+struct ("a", "a")	| a       	| a     	| (2, 7)
+struct ("b", "b")	| b       	| b     	| (1, 6)
 ```
-11:44:15 8v benchmark.sort_result_list / averages.iter / { i = 2; avg = 12 }
-11:44:15 9v benchmark.sort_result_list / averages.iter / { i = 1; avg = 30 }
+04:52:46 8v benchmark.sort_result_list / averages.iter / { i = 2; avg = 6 }
+04:52:46 9v benchmark.sort_result_list / averages.iter / { i = 1; avg = 17 }
 ```</pre>
 </div>
 </div>
@@ -8455,21 +8455,21 @@ Test case 1. Average Time: 64L</p>
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>```
-11:44:15 1v benchmark.run_all / { test_name = empty_1_tests; count = 2000000 }
-11:44:15 2v benchmark.run / { input_str = 0.0 }
-11:44:15 3v benchmark.run / solutions.map / { i = 1; test_name = A; time = 40 }
-11:44:15 4v benchmark.run / { input_str = 2.0 }
-11:44:15 5v benchmark.run / solutions.map / { i = 1; test_name = A; time = 11 }
-11:44:15 6v benchmark.run / { input_str = 5.0 }
-11:44:15 7v benchmark.run / solutions.map / { i = 1; test_name = A; time = 11 }
+04:52:46 1v benchmark.run_all / { test_name = empty_1_tests; count = 2000000 }
+04:52:46 2v benchmark.run / { input_str = 0.0 }
+04:52:46 3v benchmark.run / solutions.map / { i = 1; test_name = A; time = 26 }
+04:52:46 4v benchmark.run / { input_str = 2.0 }
+04:52:46 5v benchmark.run / solutions.map / { i = 1; test_name = A; time = 10 }
+04:52:46 6v benchmark.run / { input_str = 5.0 }
+04:52:46 7v benchmark.run / solutions.map / { i = 1; test_name = A; time = 5 }
 ```
 input	| expected	| result	| best   
 ---  	| ---     	| ---   	| ---    
-0.0  	| 1.0     	| 1.0   	| (1, 40)
-2.0  	| 3.0     	| 3.0   	| (1, 11)
-5.0  	| 6.0     	| 6.0   	| (1, 11)
+0.0  	| 1.0     	| 1.0   	| (1, 26)
+2.0  	| 3.0     	| 3.0   	| (1, 10)
+5.0  	| 6.0     	| 6.0   	| (1, 5) 
 ```
-11:44:15 8v benchmark.sort_result_list / averages.iter / { i = 1; avg = 20 }
+04:52:46 8v benchmark.sort_result_list / averages.iter / { i = 1; avg = 13 }
 ```</pre>
 </div>
 </div>

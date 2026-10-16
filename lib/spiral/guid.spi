@@ -20,12 +20,14 @@ type guid_switch =
         Python : guid_python
         Rust : $'Rc<str>'
         TypeScript : string
+        Zig : string
     }
 nominal guid = $'backend_switch `(guid_switch)'
 
 /// ### new_guid
 inl new_guid (x : string) : guid =
-    run_target_args (fun () => x) function
+    inl otherwise () =
+        run_target_args (fun () => x) function
         | Gleam => fun x => $'!x '
         | Lua => fun x => $'!x '
         | Cuda => fun x =>
@@ -34,6 +36,15 @@ inl new_guid (x : string) : guid =
         | Rust => fun x => $'Rc::<str>::from(!x.to_lowercase())'
         | TypeScript => fun x => $'!x.toLowerCase()'
         | _ => fun x => $'!x |> `guid '
+    backend_switch_or otherwise {
+        Zig = fun () => $'(std.ascii.allocLowerString(spiral_gpa, !x) catch \@panic("out of memory"))' : guid
+    }
+
+/// ### zig_random_u64
+inl zig_random_u64 () : u64 =
+    global "extern \"kernel32\" fn QueryPerformanceCounter(count: *i64) callconv(.winapi) c_int;"
+    global "var spiral_random_state: u64 = 0;\nfn spiralRandomU64() u64 {\n    if (spiral_random_state == 0) {\n        var seed: u64 = 0;\n        if (builtin.os.tag == .windows) {\n            var count: i64 = 0;\n            _ = QueryPerformanceCounter(&count);\n            seed = @bitCast(count);\n        } else if (builtin.os.tag == .linux) {\n            var ts: std.os.linux.timespec = undefined;\n            _ = std.os.linux.clock_gettime(.MONOTONIC, &ts);\n            seed = @as(u64, @bitCast(@as(i64, ts.sec))) *% 1000000007 +% @as(u64, @bitCast(@as(i64, ts.nsec)));\n        }\n        spiral_random_state = (seed ^ @intFromPtr(&spiral_random_state)) | 1;\n    }\n    var x = spiral_random_state;\n    x ^= x << 13;\n    x ^= x >> 7;\n    x ^= x << 17;\n    spiral_random_state = x;\n    return x;\n}"
+    $'spiralRandomU64()' : u64
 
 /// ### new_raw_guid
 inl new_raw_guid () : guid =
@@ -47,6 +58,10 @@ inl new_raw_guid () : guid =
         Python = fun () =>
             global "import uuid"
             $'uuid.uuid4()' : guid
+        Zig = fun () =>
+            inl a = zig_random_u64 ()
+            inl b = zig_random_u64 ()
+            $'(std.fmt.allocPrint(spiral_gpa, "{x:0>8}-{x:0>4}-4{x:0>3}-{x:0>4}-{x:0>12}", .{ !a & 0xffffffff, (!a >> 32) & 0xffff, (!a >> 48) & 0xfff, (!b & 0x3fff) | 0x8000, (!b >> 16) & 0xffffffffffff }) catch \@panic("out of memory"))' : guid
         Rust = fun () => $'{ use std::hash::{BuildHasher, Hasher}; let mut h = std::collections::hash_map::RandomState::new().build_hasher(); h.write_u128(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0)); let a = h.finish(); h.write_u64(a); let b = h.finish(); let a = (a & 0xffff_ffff_ffff_0fff) | 0x4000; let b = (b & 0x3fff_ffff_ffff_ffff) | 0x8000_0000_0000_0000; Rc::<str>::from(format\!("{:08x}-{:04x}-{:04x}-{:04x}-{:012x}", a >> 32, (a >> 16) & 0xffff, a & 0xffff, b >> 48, b & 0xffff_ffff_ffff)) }' : guid
     }
 
@@ -54,18 +69,23 @@ inl new_raw_guid () : guid =
 type hash_guid = guid
 
 let hash_guid (hash : string) : hash_guid =
-    run_target function
-        | _ => fun () =>
-            inl dash = "-"
-            join
-                inl hash = hash |> sm'.pad_left 32i32 '0'
-                inl a = hash |> sm'.range (am'.Start 0i32) (am'.End fun _ => 8)
-                inl b = hash |> sm'.range (am'.Start 8i32) (am'.End fun _ => 12)
-                inl c = hash |> sm'.range (am'.Start 12i32) (am'.End fun _ => 16)
-                inl d = hash |> sm'.range (am'.Start 16i32) (am'.End fun _ => 20)
-                inl e = hash |> sm'.range (am'.Start 20i32) (am'.End fun _ => 32)
-                a ++# dash ++# b ++# dash ++# c ++# dash ++# d ++# dash ++# e
-                |> new_guid
+    inl body () =
+        inl dash = "-"
+        join
+            inl hash = hash |> sm'.pad_left 32i32 '0'
+            inl a = hash |> sm'.range (am'.Start 0i32) (am'.End fun _ => 8)
+            inl b = hash |> sm'.range (am'.Start 8i32) (am'.End fun _ => 12)
+            inl c = hash |> sm'.range (am'.Start 12i32) (am'.End fun _ => 16)
+            inl d = hash |> sm'.range (am'.Start 16i32) (am'.End fun _ => 20)
+            inl e = hash |> sm'.range (am'.Start 20i32) (am'.End fun _ => 32)
+            a ++# dash ++# b ++# dash ++# c ++# dash ++# d ++# dash ++# e
+            |> new_guid
+    inl otherwise () =
+        run_target function
+            | _ => body
+    backend_switch_or otherwise {
+        Zig = fun () => body ()
+    }
 
 ///> gleam
 ///> fsharp

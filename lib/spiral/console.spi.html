@@ -7995,10 +7995,17 @@ a.anchor-link {
         <span class="o">|</span> <span class="n">i32</span> <span class="o">=&gt;</span> <span class="err">!!!!</span><span class="n">Printf</span><span class="p">(</span><span class="s2">"</span><span class="si">%d</span><span class="se">\n</span><span class="s2">"</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
         <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'backend_switch_has_no_Bend_arm_in_lib_spiral'</span> <span class="p">:</span> <span class="p">()</span>
 
+<span class="n">inl</span> <span class="n">write_line_lua</span> <span class="n">forall</span> <span class="n">t</span><span class="o">.</span> <span class="p">(</span><span class="n">obj</span> <span class="p">:</span> <span class="n">t</span><span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">=</span>
+    <span class="n">real</span>
+        <span class="n">typecase</span> <span class="n">t</span> <span class="k">with</span>
+        <span class="o">|</span> <span class="n">i64</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'print(spiral_w64.tostring(!obj, true))'</span> <span class="p">:</span> <span class="p">()</span>
+        <span class="o">|</span> <span class="n">u64</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'print(spiral_w64.tostring(!obj, false))'</span> <span class="p">:</span> <span class="p">()</span>
+        <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'print(!obj)'</span> <span class="p">:</span> <span class="p">()</span>
+
 <span class="n">inl</span> <span class="n">write_line</span> <span class="n">forall</span> <span class="n">t</span><span class="o">.</span> <span class="p">(</span><span class="n">obj</span> <span class="p">:</span> <span class="n">t</span><span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">=</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
         <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">write_line_gleam</span> <span class="n">obj</span>
-        <span class="n">Lua</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'print(!obj)'</span> <span class="p">:</span> <span class="p">()</span>
+        <span class="n">Lua</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">write_line_lua</span> <span class="n">obj</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">obj</span> <span class="o">|&gt;</span> <span class="err">$</span><span class="s1">'System.Console.WriteLine'</span>
             <span class="o">|&gt;</span> <span class="n">exec_unit</span>
@@ -8055,10 +8062,17 @@ a.anchor-link {
         <span class="k">global</span> <span class="s2">"import gleam/int"</span>
         <span class="err">$</span><span class="s1">'io.print(int.to_string(!x))'</span> <span class="p">:</span> <span class="p">()</span>
 
+<span class="n">inl</span> <span class="n">write_lua</span> <span class="n">forall</span> <span class="n">t</span><span class="o">.</span> <span class="p">(</span><span class="n">x</span> <span class="p">:</span> <span class="n">t</span><span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">=</span>
+    <span class="n">real</span>
+        <span class="n">typecase</span> <span class="n">t</span> <span class="k">with</span>
+        <span class="o">|</span> <span class="n">i64</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'io.write(spiral_w64.tostring(!x, true))'</span> <span class="p">:</span> <span class="p">()</span>
+        <span class="o">|</span> <span class="n">u64</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'io.write(spiral_w64.tostring(!x, false))'</span> <span class="p">:</span> <span class="p">()</span>
+        <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'io.write(!x)'</span> <span class="p">:</span> <span class="p">()</span>
+
 <span class="n">inl</span> <span class="n">write</span> <span class="n">forall</span> <span class="n">t</span><span class="o">.</span> <span class="p">(</span><span class="n">x</span> <span class="p">:</span> <span class="n">t</span><span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">=</span>
     <span class="n">backend_switch</span> <span class="p">{</span>
         <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">write_gleam</span> <span class="n">x</span>
-        <span class="n">Lua</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'io.write(!x)'</span> <span class="p">:</span> <span class="p">()</span>
+        <span class="n">Lua</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">write_lua</span> <span class="n">x</span>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!x |&gt; System.Console.Write'</span> <span class="p">:</span> <span class="p">()</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'print(!x, end="")'</span> <span class="p">:</span> <span class="p">()</span>
         <span class="n">Rust</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'{ use std::io::Write; print\!("</span><span class="si">{}</span><span class="s1">", !x); std::io::stdout().flush().unwrap(); }'</span> <span class="p">:</span> <span class="p">()</span>
@@ -8130,11 +8144,16 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">color_reset</span> <span class="p">()</span> <span class="o">=</span>
-    <span class="n">run_target</span> <span class="n">function</span>
-        <span class="o">|</span> <span class="n">Gleam</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[0m"'</span>
-        <span class="o">|</span> <span class="n">Lua</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'""'</span>
-        <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Rc::&lt;str&gt;::from("</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[0m")'</span> <span class="p">:</span> <span class="n">string</span>
-        <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[0m"'</span>
+    <span class="n">inl</span> <span class="n">otherwise</span> <span class="p">()</span> <span class="o">=</span>
+        <span class="n">run_target</span> <span class="n">function</span>
+            <span class="o">|</span> <span class="n">Gleam</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[0m"'</span>
+            <span class="o">|</span> <span class="n">Lua</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'""'</span>
+            <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Rc::&lt;str&gt;::from("</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[0m")'</span> <span class="p">:</span> <span class="n">string</span>
+            <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[0m"'</span>
+    <span class="n">backend_switch_or</span> <span class="n">otherwise</span> <span class="p">{</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[0m"'</span> <span class="p">:</span> <span class="n">string</span>
+    <span class="p">}</span>
 </pre></div>
 </div>
 </div>
@@ -8160,11 +8179,16 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">color_bright_black</span> <span class="p">()</span> <span class="o">=</span>
-    <span class="n">run_target</span> <span class="n">function</span>
-        <span class="o">|</span> <span class="n">Gleam</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[90m"'</span>
-        <span class="o">|</span> <span class="n">Lua</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'""'</span>
-        <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Rc::&lt;str&gt;::from("</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[90m")'</span> <span class="p">:</span> <span class="n">string</span>
-        <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[90m"'</span>
+    <span class="n">inl</span> <span class="n">otherwise</span> <span class="p">()</span> <span class="o">=</span>
+        <span class="n">run_target</span> <span class="n">function</span>
+            <span class="o">|</span> <span class="n">Gleam</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[90m"'</span>
+            <span class="o">|</span> <span class="n">Lua</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'""'</span>
+            <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Rc::&lt;str&gt;::from("</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[90m")'</span> <span class="p">:</span> <span class="n">string</span>
+            <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[90m"'</span>
+    <span class="n">backend_switch_or</span> <span class="n">otherwise</span> <span class="p">{</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[90m"'</span> <span class="p">:</span> <span class="n">string</span>
+    <span class="p">}</span>
 </pre></div>
 </div>
 </div>
@@ -8190,11 +8214,16 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">color_bright_red</span> <span class="p">()</span> <span class="o">=</span>
-    <span class="n">run_target</span> <span class="n">function</span>
-        <span class="o">|</span> <span class="n">Gleam</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[91m"'</span>
-        <span class="o">|</span> <span class="n">Lua</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'""'</span>
-        <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Rc::&lt;str&gt;::from("</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[91m")'</span> <span class="p">:</span> <span class="n">string</span>
-        <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[91m"'</span>
+    <span class="n">inl</span> <span class="n">otherwise</span> <span class="p">()</span> <span class="o">=</span>
+        <span class="n">run_target</span> <span class="n">function</span>
+            <span class="o">|</span> <span class="n">Gleam</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[91m"'</span>
+            <span class="o">|</span> <span class="n">Lua</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'""'</span>
+            <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Rc::&lt;str&gt;::from("</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[91m")'</span> <span class="p">:</span> <span class="n">string</span>
+            <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[91m"'</span>
+    <span class="n">backend_switch_or</span> <span class="n">otherwise</span> <span class="p">{</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[91m"'</span> <span class="p">:</span> <span class="n">string</span>
+    <span class="p">}</span>
 </pre></div>
 </div>
 </div>
@@ -8220,11 +8249,16 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">color_bright_green</span> <span class="p">()</span> <span class="o">=</span>
-    <span class="n">run_target</span> <span class="n">function</span>
-        <span class="o">|</span> <span class="n">Gleam</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[92m"'</span>
-        <span class="o">|</span> <span class="n">Lua</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'""'</span>
-        <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Rc::&lt;str&gt;::from("</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[92m")'</span> <span class="p">:</span> <span class="n">string</span>
-        <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[92m"'</span>
+    <span class="n">inl</span> <span class="n">otherwise</span> <span class="p">()</span> <span class="o">=</span>
+        <span class="n">run_target</span> <span class="n">function</span>
+            <span class="o">|</span> <span class="n">Gleam</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[92m"'</span>
+            <span class="o">|</span> <span class="n">Lua</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'""'</span>
+            <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Rc::&lt;str&gt;::from("</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[92m")'</span> <span class="p">:</span> <span class="n">string</span>
+            <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[92m"'</span>
+    <span class="n">backend_switch_or</span> <span class="n">otherwise</span> <span class="p">{</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[92m"'</span> <span class="p">:</span> <span class="n">string</span>
+    <span class="p">}</span>
 </pre></div>
 </div>
 </div>
@@ -8250,11 +8284,16 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">color_yellow</span> <span class="p">()</span> <span class="o">=</span>
-    <span class="n">run_target</span> <span class="n">function</span>
-        <span class="o">|</span> <span class="n">Gleam</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[93m"'</span>
-        <span class="o">|</span> <span class="n">Lua</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'""'</span>
-        <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Rc::&lt;str&gt;::from("</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[93m")'</span> <span class="p">:</span> <span class="n">string</span>
-        <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[93m"'</span>
+    <span class="n">inl</span> <span class="n">otherwise</span> <span class="p">()</span> <span class="o">=</span>
+        <span class="n">run_target</span> <span class="n">function</span>
+            <span class="o">|</span> <span class="n">Gleam</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[93m"'</span>
+            <span class="o">|</span> <span class="n">Lua</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'""'</span>
+            <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Rc::&lt;str&gt;::from("</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[93m")'</span> <span class="p">:</span> <span class="n">string</span>
+            <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[93m"'</span>
+    <span class="n">backend_switch_or</span> <span class="n">otherwise</span> <span class="p">{</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[93m"'</span> <span class="p">:</span> <span class="n">string</span>
+    <span class="p">}</span>
 </pre></div>
 </div>
 </div>
@@ -8280,11 +8319,16 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">color_bright_blue</span> <span class="p">()</span> <span class="o">=</span>
-    <span class="n">run_target</span> <span class="n">function</span>
-        <span class="o">|</span> <span class="n">Gleam</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[94m"'</span>
-        <span class="o">|</span> <span class="n">Lua</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'""'</span>
-        <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Rc::&lt;str&gt;::from("</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[94m")'</span> <span class="p">:</span> <span class="n">string</span>
-        <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[94m"'</span>
+    <span class="n">inl</span> <span class="n">otherwise</span> <span class="p">()</span> <span class="o">=</span>
+        <span class="n">run_target</span> <span class="n">function</span>
+            <span class="o">|</span> <span class="n">Gleam</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[94m"'</span>
+            <span class="o">|</span> <span class="n">Lua</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'""'</span>
+            <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Rc::&lt;str&gt;::from("</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[94m")'</span> <span class="p">:</span> <span class="n">string</span>
+            <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[94m"'</span>
+    <span class="n">backend_switch_or</span> <span class="n">otherwise</span> <span class="p">{</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[94m"'</span> <span class="p">:</span> <span class="n">string</span>
+    <span class="p">}</span>
 </pre></div>
 </div>
 </div>
@@ -8310,11 +8354,16 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">color_bright_magenta</span> <span class="p">()</span> <span class="o">=</span>
-    <span class="n">run_target</span> <span class="n">function</span>
-        <span class="o">|</span> <span class="n">Gleam</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[95m"'</span>
-        <span class="o">|</span> <span class="n">Lua</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'""'</span>
-        <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Rc::&lt;str&gt;::from("</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[95m")'</span> <span class="p">:</span> <span class="n">string</span>
-        <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[95m"'</span>
+    <span class="n">inl</span> <span class="n">otherwise</span> <span class="p">()</span> <span class="o">=</span>
+        <span class="n">run_target</span> <span class="n">function</span>
+            <span class="o">|</span> <span class="n">Gleam</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[95m"'</span>
+            <span class="o">|</span> <span class="n">Lua</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'""'</span>
+            <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Rc::&lt;str&gt;::from("</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[95m")'</span> <span class="p">:</span> <span class="n">string</span>
+            <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[95m"'</span>
+    <span class="n">backend_switch_or</span> <span class="n">otherwise</span> <span class="p">{</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[95m"'</span> <span class="p">:</span> <span class="n">string</span>
+    <span class="p">}</span>
 </pre></div>
 </div>
 </div>
@@ -8340,11 +8389,16 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">color_bright_cyan</span> <span class="p">()</span> <span class="o">=</span>
-    <span class="n">run_target</span> <span class="n">function</span>
-        <span class="o">|</span> <span class="n">Gleam</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[96m"'</span>
-        <span class="o">|</span> <span class="n">Lua</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'""'</span>
-        <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Rc::&lt;str&gt;::from("</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[96m")'</span> <span class="p">:</span> <span class="n">string</span>
-        <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[96m"'</span>
+    <span class="n">inl</span> <span class="n">otherwise</span> <span class="p">()</span> <span class="o">=</span>
+        <span class="n">run_target</span> <span class="n">function</span>
+            <span class="o">|</span> <span class="n">Gleam</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[96m"'</span>
+            <span class="o">|</span> <span class="n">Lua</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'""'</span>
+            <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Rc::&lt;str&gt;::from("</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[96m")'</span> <span class="p">:</span> <span class="n">string</span>
+            <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[96m"'</span>
+    <span class="n">backend_switch_or</span> <span class="n">otherwise</span> <span class="p">{</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[96m"'</span> <span class="p">:</span> <span class="n">string</span>
+    <span class="p">}</span>
 </pre></div>
 </div>
 </div>
@@ -8370,11 +8424,16 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">color_bright_white</span> <span class="p">()</span> <span class="o">=</span>
-    <span class="n">run_target</span> <span class="n">function</span>
-        <span class="o">|</span> <span class="n">Gleam</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[97m"'</span>
-        <span class="o">|</span> <span class="n">Lua</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'""'</span>
-        <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Rc::&lt;str&gt;::from("</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[97m")'</span> <span class="p">:</span> <span class="n">string</span>
-        <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[97m"'</span>
+    <span class="n">inl</span> <span class="n">otherwise</span> <span class="p">()</span> <span class="o">=</span>
+        <span class="n">run_target</span> <span class="n">function</span>
+            <span class="o">|</span> <span class="n">Gleam</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[97m"'</span>
+            <span class="o">|</span> <span class="n">Lua</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'""'</span>
+            <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Rc::&lt;str&gt;::from("</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[97m")'</span> <span class="p">:</span> <span class="n">string</span>
+            <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u001b[97m"'</span>
+    <span class="n">backend_switch_or</span> <span class="n">otherwise</span> <span class="p">{</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="err">$</span><span class="s1">'"</span><span class="se">\\</span><span class="s1">u</span><span class="si">{001b}</span><span class="s1">[97m"'</span> <span class="p">:</span> <span class="n">string</span>
+    <span class="p">}</span>
 </pre></div>
 </div>
 </div>

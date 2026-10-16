@@ -32,6 +32,7 @@ fn spiralPanic(message: []const u8, _: ?usize) noreturn {
     std.process.exit(3);
 }
 var spiral_gpa: std.mem.Allocator = undefined;
+var spiral_environ: std.process.Environ = .empty;
 var spiral_true: bool = true;
 var spiral_out_buffer: [1 << 16]u8 = undefined;
 var spiral_out_len: usize = 0;
@@ -127,9 +128,15 @@ fn spiralMain() i32 {
     v1 = closureCreate0(v0);
     return v1.call(v1.ctx, @as(i32, 40));
 }
-pub fn main() void {
+var spiral_exit_code: i32 = 0;
+fn spiralMainThread() void {
+    spiral_exit_code = spiralMain();
+}
+pub fn main(init: std.process.Init.Minimal) void {
     spiral_gpa = spiral_arena.allocator();
-    const code = spiralMain();
+    spiral_environ = init.environ;
+    const thread = std.Thread.spawn(.{ .stack_size = 1 << 30 }, spiralMainThread, .{}) catch @panic("spiral: could not start the main thread");
+    thread.join();
     spiralFlush();
-    std.process.exit(@truncate(@as(u32, @bitCast(code))));
+    std.process.exit(@truncate(@as(u32, @bitCast(spiral_exit_code))));
 }

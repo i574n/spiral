@@ -645,6 +645,15 @@ Every gate is a command plus a number. "Looks fine" is not a gate.
 
 ### Phase 1: the layer and the deferred worklist (single thread)
 
+- Starting point (2026-10-15): R4's gate is met. The R4i copy (job scratch `hopacsota-p0/r4_deferred.ps1`)
+  gives byte-identical output under DFS, BFS and random:11 on apps/spiral and on every `-Suite all` row, with
+  0 depth or dynamic-if restarts. Phase 1 carries its merge over unchanged: a list per key for the four
+  global-emitting memos (method, closure and type join points, `backend_switch_validated`), a reference on
+  every hit, expansion at the first reference in depth-first order, the `GlobalsIndex` rebuilt after the
+  merge, and no references once the session closes.
+- `frontier_hopacsota_globals_order` covers the two cases R4 found: a nominal stub first emitted while
+  validating another backend's arm, and a type join point hit by a deferred body before the caller that
+  single-flight evaluated it under.
 - `-Mode hopacsota` and `SPIRAL_CORE_HOPACSOTA` in `build.ps1`, `test.ps1`, `probe.ps1`, `env.ps1`,
   `projection-hash.ps1` and the core project. Use the same mode plumbing as gpt5parallel.
 - The seam hooks of D10, with single-flight's code moved unchanged as the single-flight side.

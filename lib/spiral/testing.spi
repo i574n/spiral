@@ -224,23 +224,39 @@ inl _assert_in items x =
 inl rec __assert_contains forall t u. (trace : testing_trace) (b : t) (a : u) : () =
     __expect
         fun a b =>
-            if is_rust ()
-            then
-                real
-                    typecase u with
-                    | string =>
-                        typecase t with
-                        | char => $'!a.contains(!b as char)' : bool
-                        | _ => $'!a.contains(&*!b)' : bool
-                    | array_base _ => $'!a.borrow().contains(&!b)' : bool
-                    | _ => $'!a.iter().any(|x| *x == !b)' : bool
-            else
+            inl otherwise () =
                 a
                 |> $'List.ofSeq'
                 |> fun x => x : listm'.list' t
                 |> $'List.tryFind' ((=) b)
                 |> optionm'.unbox
                 |> fun (x : option t) => x <> None
+            backend_switch_or otherwise {
+                Rust = fun () =>
+                    inl found : bool =
+                        real
+                            typecase u with
+                            | string =>
+                                typecase t with
+                                | char => $'!a.contains(!b as char)' : bool
+                                | _ => $'!a.contains(&*!b)' : bool
+                            | array_base _ => $'!a.borrow().contains(&!b)' : bool
+                            | _ => $'!a.iter().any(|x| *x == !b)' : bool
+                    found
+                Zig = fun () =>
+                    inl found : bool =
+                        real
+                            typecase u with
+                            | string =>
+                                typecase t with
+                                | char => $'(std.mem.indexOfScalar(u8, !a, !b) \!= null)' : bool
+                                | _ => $'(std.mem.indexOf(u8, !a, !b) \!= null)' : bool
+                            | _ =>
+                                typecase t with
+                                | string => $'(for (!a) |x| { if (std.mem.eql(u8, x, !b)) break true; } else false)' : bool
+                                | _ => $'(for (!a) |x| { if (x == !b) break true; } else false)' : bool
+                    found
+            }
         trace
         "__assert_contains"
         b
@@ -249,10 +265,12 @@ inl rec __assert_contains forall t u. (trace : testing_trace) (b : t) (a : u) : 
 inl _assert_contains b a =
     __assert_contains Console b a
 
+///> rust
 test assert_contains =
     ;[ "a"; "b"; "c" ]
     |> _assert_contains "b"
 
+///> rust
 test assert_contains_2 =
     "abcd"
     |> _assert_contains 'b'
@@ -281,6 +299,9 @@ inl _throws (fn : () -> ()) : option exn =
                 $'x' : option exn
             TypeScript = fun () =>
                 $'(() => { try { !fn(); return !none; } catch (ex) { return !some(ex); } })()' : option exn
+            Zig = fun () =>
+                fn ()
+                none
         }
 
 /// ### print_and_return

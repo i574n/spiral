@@ -7879,6 +7879,7 @@ a.anchor-link {
         <span class="n">Delphi</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'unativeint'</span>
         <span class="n">Cuda</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'unativeint'</span>
         <span class="n">Rust</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'usize'</span>
+        <span class="n">Zig</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'usize'</span>
     <span class="p">}</span>
 <span class="n">nominal</span> <span class="n">unativeint</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'backend_switch `(unativeint_switch)'</span>
 </pre></div>
@@ -8019,6 +8020,7 @@ a.anchor-link {
             <span class="k">elif</span> <span class="n">base</span> <span class="o">=</span> <span class="mi">10</span> <span class="n">then</span> <span class="err">$</span><span class="s1">'StrToInt(!x)'</span> <span class="p">:</span> <span class="n">i32</span>
             <span class="k">else</span> <span class="err">$</span><span class="s1">'backend_switch_has_no_Delphi_arm_in_lib_spiral'</span> <span class="p">:</span> <span class="n">i32</span>
         <span class="n">Wasm</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'(i32.wrap_i64 (call $parse_i64 !x !base))'</span> <span class="p">:</span> <span class="n">i32</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'(std.fmt.parseInt(i32, std.mem.trim(u8, !x, " </span><span class="se">\\</span><span class="s1">t</span><span class="se">\\</span><span class="s1">r</span><span class="se">\\</span><span class="s1">n"), \@intCast(!base)) catch 0)'</span> <span class="p">:</span> <span class="n">i32</span>
     <span class="p">}</span>
 </pre></div>
 </div>
@@ -8084,6 +8086,12 @@ a.anchor-link {
             <span class="n">then</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="n">convert_i32_base</span> <span class="mi">10</span> <span class="p">:</span> <span class="nb">int</span>
             <span class="k">elif</span> <span class="n">is_float_type</span> <span class="n">x</span>
             <span class="n">then</span> <span class="err">$</span><span class="s1">'(i32.trunc_sat_f64_s (f64.nearest !x))'</span> <span class="p">:</span> <span class="nb">int</span>
+            <span class="k">else</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="n">numeric_conv</span> <span class="p">:</span> <span class="nb">int</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="k">if</span> <span class="n">is_string_type</span> <span class="n">x</span>
+            <span class="n">then</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="n">convert_i32_base</span> <span class="mi">10</span> <span class="p">:</span> <span class="nb">int</span>
+            <span class="k">elif</span> <span class="n">is_float_type</span> <span class="n">x</span>
+            <span class="n">then</span> <span class="err">$</span><span class="s1">'\@as(i32, \@intFromFloat(if (\@abs(!x - \@trunc(!x)) == 0.5) 2.0 * \@round(!x / 2.0) else \@round(!x)))'</span> <span class="p">:</span> <span class="nb">int</span>
             <span class="k">else</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="n">numeric_conv</span> <span class="p">:</span> <span class="nb">int</span>
     <span class="p">}</span>
 </pre></div>
@@ -8182,6 +8190,12 @@ a.anchor-link {
             <span class="n">Wasm</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
                 <span class="k">if</span> <span class="n">is_string_type</span> <span class="n">x</span>
                 <span class="n">then</span> <span class="n">parsed_integer</span> <span class="p">(</span><span class="err">$</span><span class="s1">'(call $integer_text_ok !x)'</span> <span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="p">(</span><span class="err">$</span><span class="s1">'(call $parse_i64 !x (i32.const 10))'</span> <span class="p">:</span> <span class="n">i64</span><span class="p">)</span>
+                <span class="k">else</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="n">to</span> <span class="o">|&gt;</span> <span class="n">Some</span> <span class="p">:</span> <span class="n">_</span> <span class="n">u</span>
+            <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                <span class="k">if</span> <span class="n">is_string_type</span> <span class="n">x</span>
+                <span class="n">then</span>
+                    <span class="n">inl</span> <span class="n">ok</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'(if (std.fmt.parseInt(i64, std.mem.trim(u8, !x, " </span><span class="se">\\</span><span class="s1">t</span><span class="se">\\</span><span class="s1">r</span><span class="se">\\</span><span class="s1">n"), 10)) |_| true else |_| false)'</span>
+                    <span class="n">parsed_integer</span> <span class="n">ok</span> <span class="p">(</span><span class="err">$</span><span class="s1">'(std.fmt.parseInt(i64, std.mem.trim(u8, !x, " </span><span class="se">\\</span><span class="s1">t</span><span class="se">\\</span><span class="s1">r</span><span class="se">\\</span><span class="s1">n"), 10) catch 0)'</span> <span class="p">:</span> <span class="n">i64</span><span class="p">)</span>
                 <span class="k">else</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="n">to</span> <span class="o">|&gt;</span> <span class="n">Some</span> <span class="p">:</span> <span class="n">_</span> <span class="n">u</span>
         <span class="p">}</span>
 </pre></div>
@@ -8368,6 +8382,7 @@ __assert_eq { expected = Some(0) }</pre>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!x |&gt; unbox&lt;`u&gt;'</span> <span class="p">:</span> <span class="n">u</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="n">to</span> <span class="p">:</span> <span class="n">u</span>
         <span class="n">Rust</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'(!x)'</span> <span class="p">:</span> <span class="n">u</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span> <span class="o">|&gt;</span> <span class="n">to</span> <span class="p">:</span> <span class="n">u</span>
     <span class="p">}</span>
 </pre></div>
 </div>

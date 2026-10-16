@@ -200,9 +200,9 @@ let rec flattenRegion (typeLevel : bool) (context : Opening) (lines : CodeLine l
             let grouped = ResizeArray<ResizeArray<CodeLine * CodeLine list>> ()
             let rec absorbBody (elements : (CodeLine * CodeLine list) list) =
                 match elements with
-                | (head, []) :: rest when not rest.IsEmpty && (match head.Lexemes.[head.Lexemes.Length - 1].Token with TokOperator ("=", _) -> true | _ -> false) ->
+                | (head, []) :: rest when not rest.IsEmpty && (match head.Lexemes.[head.Lexemes.Length - 1].Token with TokOperator ("=", _) | TokKeyword SpecJoin -> true | _ -> false) ->
                     [ (head, rest |> List.collect (fun (h, i) -> h :: i)) ]
-                | (head, inside) :: rest when not rest.IsEmpty && not inside.IsEmpty && (let last = List.last inside in match last.Lexemes.[last.Lexemes.Length - 1].Token with TokOperator ("=", _) -> true | _ -> false) ->
+                | (head, inside) :: rest when not rest.IsEmpty && not inside.IsEmpty && (let last = List.last inside in match last.Lexemes.[last.Lexemes.Length - 1].Token with TokOperator ("=", _) | TokKeyword SpecJoin -> true | _ -> false) ->
                     let last = List.last inside
                     let absorbed = rest |> List.collect (fun (h, i) -> h :: i)
                     let shift = last.Indent + 4 - (absorbed |> List.map (fun line -> line.Indent) |> List.min)

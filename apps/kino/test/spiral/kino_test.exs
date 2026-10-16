@@ -396,6 +396,25 @@ defmodule Spiral.KinoTest do
     end
   end
 
+  test "a mounted package's own dependencies are mounted beside it and imported as it declares them" do
+    root = Spiral.Kino.TestHelpers.tmp_dir!("mount_dependencies")
+
+    for {name, packages} <- [{"leaf", ""}, {"middle", "    leaf\n"}, {"top", "    middle\n    flat-\n"}, {"flat", ""}] do
+      dir = Path.join(root, name)
+      File.mkdir_p!(dir)
+      File.write!(Path.join(dir, "package.spiproj"), "packages:\n    |core-\n" <> packages <> "modules:\n    a\n")
+    end
+
+    top = {Path.join(root, "top"), "top"}
+
+    try do
+      assert Enum.map(Spiral.Kino.Mounts.dependency_closure([top]), &elem(&1, 1)) == ["middle", "flat", "leaf"]
+      assert Spiral.Kino.Mounts.qualified_imports([top]) == ["middle", "flat-"]
+    after
+      File.rm_rf!(root)
+    end
+  end
+
   test "two cells share one package directory" do
     root = Path.expand("../fixtures", __DIR__)
     parent = self()
@@ -521,6 +540,15 @@ defmodule Spiral.KinoTest do
     assert Spiral.Kino.shown(chunk.("{ expected = 3un }")) == Spiral.Kino.shown(chunk.("{ expected = 3.0 }"))
     assert Spiral.Kino.shown(chunk.("{ expected = Some  }")) == Spiral.Kino.shown(chunk.("{ expected = Some }"))
     refute Spiral.Kino.shown(chunk.("{ expected = 3un }")) == Spiral.Kino.shown(chunk.("{ expected = 4 }"))
+  end
+  test "integers beyond 2^53 compare exactly; integral floats beyond 2^53 match their integer text" do
+    chunk = fn stdout -> %{stdout: stdout, value: nil} end
+    refute Spiral.Kino.shown(chunk.("9007199254740993")) == Spiral.Kino.shown(chunk.("9007199254740992"))
+    assert Spiral.Kino.shown(chunk.("{ a = 9007199254740993 }")) == "{ a = 9007199254740993 }"
+    assert Spiral.Kino.shown(chunk.("18446744073709551615UL")) == Spiral.Kino.shown(chunk.("18446744073709551615"))
+    assert Spiral.Kino.shown(chunk.("-9223372036854775808L")) == "-9223372036854775808"
+    assert Spiral.Kino.shown(chunk.("9007199254740994.0")) == Spiral.Kino.shown(chunk.("9007199254740994"))
+    assert Spiral.Kino.shown(chunk.("3")) == Spiral.Kino.shown(chunk.("3.0"))
   end
   test "arrays and tuples compare in one canonical form; values and lengths still count" do
     canonical = &Spiral.Kino.canonical_collections/1

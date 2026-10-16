@@ -8502,7 +8502,7 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>11:45:01 1d _assert_in / { x = spiral; x' = spiral }</pre>
+<pre>04:53:14 1d _assert_in / { x = spiral; x' = spiral }</pre>
 </div>
 </div>
 </div>
@@ -9772,6 +9772,7 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
+<span class="o">///&gt;</span> <span class="n">rust</span>
 
 <span class="n">get_current_directory</span> <span class="p">()</span>
 <span class="o">|&gt;</span> <span class="n">_assert_contains</span> <span class="p">(</span><span class="n">directory_separator_char</span> <span class="p">())</span>
@@ -9818,16 +9819,22 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">let</span> <span class="n">directory_exists</span> <span class="p">(</span><span class="n">path</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span>
-    <span class="n">run_target_args</span><span class="s1">' path function</span>
-        <span class="o">|</span> <span class="n">Fsharp</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">path</span> <span class="o">=&gt;</span>
-            <span class="n">path</span> <span class="o">|&gt;</span> <span class="err">$</span><span class="s1">'System.IO.Directory.Exists'</span>
-        <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">path</span> <span class="o">=&gt;</span>
-            <span class="n">inl</span> <span class="n">path</span> <span class="o">=</span> <span class="n">path</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.to_std_string |&gt; new_path_buf</span>
-            <span class="n">path_buf_exists</span> <span class="n">path</span> <span class="o">&amp;&amp;</span> <span class="n">path_buf_is_dir</span> <span class="n">path</span>
-        <span class="o">|</span> <span class="n">TypeScript</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">path</span> <span class="o">=&gt;</span>
-            <span class="k">global</span> <span class="s2">"import * as spiral_node_fs from 'node:fs';"</span>
-            <span class="err">$</span><span class="s1">'(spiral_node_fs.existsSync(!path) &amp;&amp; spiral_node_fs.statSync(!path).isDirectory())'</span> <span class="p">:</span> <span class="nb">bool</span>
-        <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">null</span> <span class="p">()</span>
+    <span class="n">inl</span> <span class="n">otherwise</span> <span class="p">()</span> <span class="o">=</span>
+        <span class="n">run_target_args</span><span class="s1">' path function</span>
+            <span class="o">|</span> <span class="n">Fsharp</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">path</span> <span class="o">=&gt;</span>
+                <span class="n">path</span> <span class="o">|&gt;</span> <span class="err">$</span><span class="s1">'System.IO.Directory.Exists'</span>
+            <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">path</span> <span class="o">=&gt;</span>
+                <span class="n">inl</span> <span class="n">path</span> <span class="o">=</span> <span class="n">path</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.to_std_string |&gt; new_path_buf</span>
+                <span class="n">path_buf_exists</span> <span class="n">path</span> <span class="o">&amp;&amp;</span> <span class="n">path_buf_is_dir</span> <span class="n">path</span>
+            <span class="o">|</span> <span class="n">TypeScript</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">path</span> <span class="o">=&gt;</span>
+                <span class="k">global</span> <span class="s2">"import * as spiral_node_fs from 'node:fs';"</span>
+                <span class="err">$</span><span class="s1">'(spiral_node_fs.existsSync(!path) &amp;&amp; spiral_node_fs.statSync(!path).isDirectory())'</span> <span class="p">:</span> <span class="nb">bool</span>
+            <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">null</span> <span class="p">()</span>
+    <span class="n">backend_switch_or</span> <span class="n">otherwise</span> <span class="p">{</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="k">global</span> <span class="s2">"var spiral_io_threaded: std.Io.Threaded = .init_single_threaded;"</span>
+            <span class="err">$</span><span class="s1">'(if (std.Io.Dir.cwd().statFile(spiral_io_threaded.io(), !path, .</span><span class="si">{}</span><span class="s1">)) |s| s.kind == .directory else |_| false)'</span> <span class="p">:</span> <span class="nb">bool</span>
+    <span class="p">}</span>
 </pre></div>
 </div>
 </div>
@@ -10034,16 +10041,22 @@ __assert_contains { expected = / }</pre>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">let</span> <span class="n">file_exists</span> <span class="p">(</span><span class="n">path</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span>
-    <span class="n">run_target_args</span><span class="s1">' path function</span>
-        <span class="o">|</span> <span class="n">Fsharp</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">path</span> <span class="o">=&gt;</span>
-            <span class="n">path</span> <span class="o">|&gt;</span> <span class="err">$</span><span class="s1">'System.IO.File.Exists'</span>
-        <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">path</span> <span class="o">=&gt;</span>
-            <span class="n">inl</span> <span class="n">path_buf</span> <span class="o">=</span> <span class="n">path</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.to_std_string |&gt; new_path_buf</span>
-            <span class="n">path_buf_exists</span> <span class="n">path_buf</span> <span class="o">&amp;&amp;</span> <span class="n">path_buf_is_file</span> <span class="n">path_buf</span>
-        <span class="o">|</span> <span class="n">TypeScript</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">path</span> <span class="o">=&gt;</span>
-            <span class="k">global</span> <span class="s2">"import * as spiral_node_fs from 'node:fs';"</span>
-            <span class="err">$</span><span class="s1">'(spiral_node_fs.existsSync(!path) &amp;&amp; spiral_node_fs.statSync(!path).isFile())'</span> <span class="p">:</span> <span class="nb">bool</span>
-        <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">null</span> <span class="p">()</span>
+    <span class="n">inl</span> <span class="n">otherwise</span> <span class="p">()</span> <span class="o">=</span>
+        <span class="n">run_target_args</span><span class="s1">' path function</span>
+            <span class="o">|</span> <span class="n">Fsharp</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">path</span> <span class="o">=&gt;</span>
+                <span class="n">path</span> <span class="o">|&gt;</span> <span class="err">$</span><span class="s1">'System.IO.File.Exists'</span>
+            <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">path</span> <span class="o">=&gt;</span>
+                <span class="n">inl</span> <span class="n">path_buf</span> <span class="o">=</span> <span class="n">path</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.to_std_string |&gt; new_path_buf</span>
+                <span class="n">path_buf_exists</span> <span class="n">path_buf</span> <span class="o">&amp;&amp;</span> <span class="n">path_buf_is_file</span> <span class="n">path_buf</span>
+            <span class="o">|</span> <span class="n">TypeScript</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">path</span> <span class="o">=&gt;</span>
+                <span class="k">global</span> <span class="s2">"import * as spiral_node_fs from 'node:fs';"</span>
+                <span class="err">$</span><span class="s1">'(spiral_node_fs.existsSync(!path) &amp;&amp; spiral_node_fs.statSync(!path).isFile())'</span> <span class="p">:</span> <span class="nb">bool</span>
+            <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">null</span> <span class="p">()</span>
+    <span class="n">backend_switch_or</span> <span class="n">otherwise</span> <span class="p">{</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="k">global</span> <span class="s2">"var spiral_io_threaded: std.Io.Threaded = .init_single_threaded;"</span>
+            <span class="err">$</span><span class="s1">'(if (std.Io.Dir.cwd().statFile(spiral_io_threaded.io(), !path, .</span><span class="si">{}</span><span class="s1">)) |s| s.kind == .file else |_| false)'</span> <span class="p">:</span> <span class="nb">bool</span>
+    <span class="p">}</span>
 </pre></div>
 </div>
 </div>
@@ -10103,12 +10116,18 @@ __assert_contains { expected = / }</pre>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">write_all_text</span> <span class="p">(</span><span class="n">path</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="p">(</span><span class="n">text</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">=</span>
-    <span class="n">run_target_args</span><span class="s1">' (path, text) function</span>
-        <span class="o">|</span> <span class="n">Fsharp</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">path</span><span class="p">,</span> <span class="n">text</span> <span class="o">=&gt;</span>
-            <span class="err">$</span><span class="s1">'System.IO.File.WriteAllText (!path, !text)'</span>
-        <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">path</span><span class="p">,</span> <span class="n">text</span> <span class="o">=&gt;</span>
-            <span class="err">!</span>\\<span class="p">((</span><span class="n">path</span><span class="p">,</span> <span class="n">text</span><span class="p">),</span> <span class="err">$</span><span class="s1">'"std::fs::write(&amp;*$0, &amp;*$1).unwrap()"'</span><span class="p">)</span>
-        <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="p">()</span>
+    <span class="n">inl</span> <span class="n">otherwise</span> <span class="p">()</span> <span class="o">=</span>
+        <span class="n">run_target_args</span><span class="s1">' (path, text) function</span>
+            <span class="o">|</span> <span class="n">Fsharp</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">path</span><span class="p">,</span> <span class="n">text</span> <span class="o">=&gt;</span>
+                <span class="err">$</span><span class="s1">'System.IO.File.WriteAllText (!path, !text)'</span>
+            <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">path</span><span class="p">,</span> <span class="n">text</span> <span class="o">=&gt;</span>
+                <span class="err">!</span>\\<span class="p">((</span><span class="n">path</span><span class="p">,</span> <span class="n">text</span><span class="p">),</span> <span class="err">$</span><span class="s1">'"std::fs::write(&amp;*$0, &amp;*$1).unwrap()"'</span><span class="p">)</span>
+            <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="p">()</span>
+    <span class="n">backend_switch_or</span> <span class="n">otherwise</span> <span class="p">{</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="k">global</span> <span class="s2">"var spiral_io_threaded: std.Io.Threaded = .init_single_threaded;"</span>
+            <span class="err">$</span><span class="s1">'std.Io.Dir.cwd().writeFile(spiral_io_threaded.io(), .{ .sub_path = !path, .data = !text }) catch \@panic("file_system.write_all_text failed")'</span> <span class="p">:</span> <span class="p">()</span>
+    <span class="p">}</span>
 </pre></div>
 </div>
 </div>
@@ -10166,16 +10185,22 @@ __assert_contains { expected = / }</pre>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">read_all_text</span> <span class="p">(</span><span class="n">path</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="p">:</span> <span class="n">string</span> <span class="o">=</span>
-    <span class="n">run_target</span> <span class="n">function</span>
-        <span class="o">|</span> <span class="n">Fsharp</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-            <span class="err">$</span><span class="s1">'!path |&gt; System.IO.File.ReadAllText'</span>
-        <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-            <span class="n">path</span>
-            <span class="o">|&gt;</span> <span class="n">read_all_bytes</span>
-            <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.string_from_utf8</span>
-            <span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">unwrap</span><span class="s1">'</span>
-            <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.from_std_string</span>
-        <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">null</span> <span class="p">()</span>
+    <span class="n">inl</span> <span class="n">otherwise</span> <span class="p">()</span> <span class="o">=</span>
+        <span class="n">run_target</span> <span class="n">function</span>
+            <span class="o">|</span> <span class="n">Fsharp</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                <span class="err">$</span><span class="s1">'!path |&gt; System.IO.File.ReadAllText'</span>
+            <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                <span class="n">path</span>
+                <span class="o">|&gt;</span> <span class="n">read_all_bytes</span>
+                <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.string_from_utf8</span>
+                <span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">unwrap</span><span class="s1">'</span>
+                <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.from_std_string</span>
+            <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">null</span> <span class="p">()</span>
+    <span class="n">backend_switch_or</span> <span class="n">otherwise</span> <span class="p">{</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="k">global</span> <span class="s2">"var spiral_io_threaded: std.Io.Threaded = .init_single_threaded;"</span>
+            <span class="err">$</span><span class="s1">'(std.Io.Dir.cwd().readFileAlloc(spiral_io_threaded.io(), !path, spiral_gpa, .unlimited) catch \@panic("file_system.read_all_text failed"))'</span> <span class="p">:</span> <span class="n">string</span>
+    <span class="p">}</span>
 </pre></div>
 </div>
 </div>
@@ -10347,7 +10372,7 @@ __assert_contains { expected = / }</pre>
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>11:45:04 1d _assert_in / { x = [spiral]; x' = [spiral] }</pre>
+<pre>04:53:15 1d _assert_in / { x = [spiral]; x' = [spiral] }</pre>
 </div>
 </div>
 </div>
@@ -10427,18 +10452,24 @@ __assert_eq { expected = spiral }</pre>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">file_delete</span> <span class="p">(</span><span class="n">path</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">=</span>
-    <span class="n">run_target</span> <span class="n">function</span>
-        <span class="o">|</span> <span class="n">Fsharp</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-            <span class="n">path</span> <span class="o">|&gt;</span> <span class="err">$</span><span class="s1">'System.IO.File.Delete'</span>
-        <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-            <span class="n">inl</span> <span class="n">result</span> <span class="p">:</span> <span class="n">resultm</span><span class="o">.</span><span class="n">result</span><span class="s1">' () stream.io_error =</span>
-                <span class="k">if</span> <span class="n">path</span> <span class="o">|&gt;</span> <span class="n">file_exists</span>
-                <span class="n">then</span> <span class="err">!</span>\\<span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="err">$</span><span class="s1">'"std::fs::remove_file(&amp;*$0)"'</span><span class="p">)</span>
-                <span class="k">else</span> <span class="n">Ok</span> <span class="p">()</span> <span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">box</span>
-            <span class="k">match</span> <span class="n">result</span> <span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">map_error</span><span class="s1">' sm'</span><span class="o">.</span><span class="n">format</span> <span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">unbox</span> <span class="k">with</span>
-            <span class="o">|</span> <span class="n">Ok</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">()</span>
-            <span class="o">|</span> <span class="n">Error</span> <span class="n">error</span><span class="s1">' =&gt; trace Critical (fun () =&gt; "file_system.file_delete") fun () =&gt; { error'</span> <span class="p">}</span>
-        <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">()</span>
+    <span class="n">inl</span> <span class="n">otherwise</span> <span class="p">()</span> <span class="o">=</span>
+        <span class="n">run_target</span> <span class="n">function</span>
+            <span class="o">|</span> <span class="n">Fsharp</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                <span class="n">path</span> <span class="o">|&gt;</span> <span class="err">$</span><span class="s1">'System.IO.File.Delete'</span>
+            <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                <span class="n">inl</span> <span class="n">result</span> <span class="p">:</span> <span class="n">resultm</span><span class="o">.</span><span class="n">result</span><span class="s1">' () stream.io_error =</span>
+                    <span class="k">if</span> <span class="n">path</span> <span class="o">|&gt;</span> <span class="n">file_exists</span>
+                    <span class="n">then</span> <span class="err">!</span>\\<span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="err">$</span><span class="s1">'"std::fs::remove_file(&amp;*$0)"'</span><span class="p">)</span>
+                    <span class="k">else</span> <span class="n">Ok</span> <span class="p">()</span> <span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">box</span>
+                <span class="k">match</span> <span class="n">result</span> <span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">map_error</span><span class="s1">' sm'</span><span class="o">.</span><span class="n">format</span> <span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">unbox</span> <span class="k">with</span>
+                <span class="o">|</span> <span class="n">Ok</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">()</span>
+                <span class="o">|</span> <span class="n">Error</span> <span class="n">error</span><span class="s1">' =&gt; trace Critical (fun () =&gt; "file_system.file_delete") fun () =&gt; { error'</span> <span class="p">}</span>
+            <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">()</span>
+    <span class="n">backend_switch_or</span> <span class="n">otherwise</span> <span class="p">{</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="k">global</span> <span class="s2">"var spiral_io_threaded: std.Io.Threaded = .init_single_threaded;"</span>
+            <span class="err">$</span><span class="s1">'std.Io.Dir.cwd().deleteFile(spiral_io_threaded.io(), !path) catch </span><span class="si">{}</span><span class="s1">'</span> <span class="p">:</span> <span class="p">()</span>
+    <span class="p">}</span>
 </pre></div>
 </div>
 </div>
@@ -10792,7 +10823,7 @@ __assert_eq { expected = spiral }</pre>
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>11:45:09 1d _assert_in / { x = spiral; x' = spiral }</pre>
+<pre>04:53:18 1d _assert_in / { x = spiral; x' = spiral }</pre>
 </div>
 </div>
 </div>
@@ -11282,7 +11313,7 @@ __assert_eq { expected = spiral }</pre>
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>11:45:13 1<span class="ansi-black-intense-fg">v</span> file_system.create_dir / { dir = /tmp/!create_temp_path_/spiral_8dda7c442656f7efb85f528b62483421ee2bd98c15d25f91a49346f6b0bc47f1/20261015-1145-1302-9961-4000009766d3 }
+<pre>04:53:21 1<span class="ansi-black-intense-fg">v</span> file_system.create_dir / { dir = /tmp/!create_temp_path_/spiral_8dda7c442656f7efb85f528b62483421ee2bd98c15d25f91a49346f6b0bc47f1/20261016-0453-2170-3148-5000004ffcf5 }
 __assert_eq { expected = true }
 __assert_eq { expected = true }
 __assert_eq { expected = false }</pre>
@@ -11481,8 +11512,8 @@ __assert_eq { expected = false }</pre>
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>11:45:15 1<span class="ansi-black-intense-fg">v</span> file_system.create_dir / { dir = /home/runner/work/spiral/spiral/target/test/file_system/d2a575f48045e269d7c0d7a17d801aad61db34f865675c516636a3bb2c28cd38 }
-11:45:15 2<span class="ansi-black-intense-fg">v</span> file_system.create_dir / { dir = /home/runner/work/spiral/spiral/target/test/file_system/d2a575f48045e269d7c0d7a17d801aad61db34f865675c516636a3bb2c28cd38/dir1 }
+<pre>04:53:23 1<span class="ansi-black-intense-fg">v</span> file_system.create_dir / { dir = /home/runner/work/spiral/spiral/target/test/file_system/d2a575f48045e269d7c0d7a17d801aad61db34f865675c516636a3bb2c28cd38 }
+04:53:23 2<span class="ansi-black-intense-fg">v</span> file_system.create_dir / { dir = /home/runner/work/spiral/spiral/target/test/file_system/d2a575f48045e269d7c0d7a17d801aad61db34f865675c516636a3bb2c28cd38/dir1 }
 __assert_eq { expected = LICENSE }
 __assert { expected = /home/runner/work/spiral/spiral/target/test/file_system/d2a575f48045e269d7c0d7a17d801aad61db34f865675c516636a3bb2c28cd38/dir1 }
 __assert { expected = /home/runner/work/spiral/spiral/target/test/file_system/d2a575f48045e269d7c0d7a17d801aad61db34f865675c516636a3bb2c28cd38/dir1/LICENSE }

@@ -8022,6 +8022,7 @@ a.anchor-link {
             <span class="err">$</span><span class="s1">'x'</span> <span class="p">:</span> <span class="n">result</span> <span class="n">t</span> <span class="n">exn</span>
         <span class="n">TypeScript</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="err">$</span><span class="s1">'(() =&gt; { try { return !ok(!fn()); } catch (ex) { return !error(!ex_fn(() =&gt; ex)); } })()'</span> <span class="p">:</span> <span class="n">result</span> <span class="n">t</span> <span class="n">exn</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">fn</span> <span class="p">()</span> <span class="o">|&gt;</span> <span class="n">ok</span>
     <span class="p">}</span>
 </pre></div>
 </div>
@@ -8060,6 +8061,7 @@ a.anchor-link {
             <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'f"resultm.get / Error x: {!x}"'</span> <span class="p">:</span> <span class="n">string</span>
             <span class="n">TypeScript</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"resultm.get / Error x: " + String(!x)'</span> <span class="p">:</span> <span class="n">string</span>
             <span class="n">Rust</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Rc::&lt;str&gt;::from({ struct SpiralDebug&lt;T&gt;(T); trait SpiralDebugShow { fn show(&amp;self) -&gt; String; } impl&lt;T: std::fmt::Debug&gt; SpiralDebugShow for SpiralDebug&lt;T&gt; { fn show(&amp;self) -&gt; String { format\!("{:?}", self.0) } } trait SpiralTypeShow { fn show(&amp;self) -&gt; String; } impl&lt;T&gt; SpiralTypeShow for &amp;SpiralDebug&lt;T&gt; { fn show(&amp;self) -&gt; String { String::from(std::any::type_name::&lt;T&gt;()) } } format\!("resultm.get / Error x: </span><span class="si">{}</span><span class="s1">", (&amp;SpiralDebug(&amp;!x)).show()) })'</span> <span class="p">:</span> <span class="n">string</span>
+            <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'(std.fmt.allocPrint(spiral_gpa, "resultm.get / Error x: </span><span class="si">{any}</span><span class="s1">", .{ !x }) catch \@panic("out of memory"))'</span> <span class="p">:</span> <span class="n">string</span>
         <span class="p">}</span>
         <span class="o">|&gt;</span> <span class="n">failwith</span>
 </pre></div>
@@ -8154,6 +8156,7 @@ a.anchor-link {
             <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'f"resultm.unwrap_err / Ok x: {!x}"'</span> <span class="p">:</span> <span class="n">string</span>
             <span class="n">TypeScript</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'"resultm.unwrap_err / Ok x: " + String(!x)'</span> <span class="p">:</span> <span class="n">string</span>
             <span class="n">Rust</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Rc::&lt;str&gt;::from({ struct SpiralDebug&lt;T&gt;(T); trait SpiralDebugShow { fn show(&amp;self) -&gt; String; } impl&lt;T: std::fmt::Debug&gt; SpiralDebugShow for SpiralDebug&lt;T&gt; { fn show(&amp;self) -&gt; String { format\!("{:?}", self.0) } } trait SpiralTypeShow { fn show(&amp;self) -&gt; String; } impl&lt;T&gt; SpiralTypeShow for &amp;SpiralDebug&lt;T&gt; { fn show(&amp;self) -&gt; String { String::from(std::any::type_name::&lt;T&gt;()) } } format\!("resultm.unwrap_err / Ok x: </span><span class="si">{}</span><span class="s1">", (&amp;SpiralDebug(&amp;!x)).show()) })'</span> <span class="p">:</span> <span class="n">string</span>
+            <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'(std.fmt.allocPrint(spiral_gpa, "resultm.unwrap_err / Ok x: </span><span class="si">{any}</span><span class="s1">", .{ !x }) catch \@panic("out of memory"))'</span> <span class="p">:</span> <span class="n">string</span>
         <span class="p">}</span>
         <span class="o">|&gt;</span> <span class="n">failwith</span>
     <span class="o">|</span> <span class="n">Error</span> <span class="n">x</span> <span class="o">=&gt;</span> <span class="n">x</span>
@@ -8232,6 +8235,7 @@ a.anchor-link {
         <span class="n">Python</span> <span class="p">:</span> <span class="n">result</span> <span class="n">t</span> <span class="n">u</span>
         <span class="n">Rust</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'Result&lt;`t, `u&gt;'</span>
         <span class="n">TypeScript</span> <span class="p">:</span> <span class="n">result</span> <span class="n">t</span> <span class="n">u</span>
+        <span class="n">Zig</span> <span class="p">:</span> <span class="n">result</span> <span class="n">t</span> <span class="n">u</span>
     <span class="p">}</span>
 <span class="n">nominal</span> <span class="n">result</span><span class="s1">' t u = $'</span><span class="n">backend_switch</span> <span class="err">`</span><span class="p">(</span><span class="n">result</span><span class="s1">'_switch t u)'</span>
 
@@ -8247,6 +8251,7 @@ a.anchor-link {
         <span class="n">Delphi</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">false</span>
         <span class="n">Cuda</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">false</span>
         <span class="n">Rust</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">false</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">true</span>
     <span class="p">}</span>
 
 <span class="n">inl</span> <span class="n">result</span><span class="s1">'_python () : bool =</span>
@@ -8261,7 +8266,30 @@ a.anchor-link {
         <span class="n">Delphi</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">false</span>
         <span class="n">Cuda</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">false</span>
         <span class="n">Rust</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">false</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">false</span>
     <span class="p">}</span>
+
+<span class="n">inl</span> <span class="n">result</span><span class="s1">'_zig () : bool =</span>
+    <span class="n">backend_switch</span> <span class="p">{</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">false</span>
+        <span class="n">Lua</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">false</span>
+        <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">false</span>
+        <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">false</span>
+        <span class="n">TypeScript</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">false</span>
+        <span class="n">Cpp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">false</span>
+        <span class="n">CppHost</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">false</span>
+        <span class="n">Delphi</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">false</span>
+        <span class="n">Cuda</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">false</span>
+        <span class="n">Rust</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">false</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">true</span>
+        <span class="n">Lean</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">false</span>
+        <span class="n">C</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">false</span>
+        <span class="n">Wasm</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">false</span>
+        <span class="n">Bend</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">false</span>
+    <span class="p">}</span>
+
+<span class="n">inl</span> <span class="n">result</span><span class="s1">'_error_text forall e. (prefix : string) (e : e) : string =</span>
+    <span class="err">$</span><span class="s1">'(std.fmt.allocPrint(spiral_gpa, "</span><span class="si">{s}{any}</span><span class="s1">", .{ !prefix, !e }) catch \@panic("out of memory"))'</span>
 </pre></div>
 </div>
 </div>
@@ -8569,7 +8597,9 @@ __assert_eq' { expected = (Ok(3), Error(error1)) }</pre>
         <span class="o">|</span> <span class="n">Ok</span> <span class="n">x</span> <span class="o">=&gt;</span> <span class="n">x</span>
         <span class="o">|</span> <span class="n">Error</span> <span class="n">e</span> <span class="o">=&gt;</span>
             <span class="n">inl</span> <span class="n">msg</span> <span class="p">:</span> <span class="n">string</span> <span class="o">=</span>
-                <span class="k">if</span> <span class="n">result</span><span class="s1">'_python ()</span>
+                <span class="k">if</span> <span class="n">result</span><span class="s1">'_zig ()</span>
+                <span class="n">then</span> <span class="n">result</span><span class="s1">'_error_text "resultm.try'</span> <span class="o">/</span> <span class="n">e</span><span class="p">:</span> <span class="s2">" e</span>
+                <span class="k">elif</span> <span class="n">result</span><span class="s1">'_python ()</span>
                 <span class="n">then</span> <span class="err">$</span><span class="s1">'f"resultm.try</span><span class="se">\'</span><span class="s1"> / e: {!e}"'</span>
                 <span class="k">else</span> <span class="err">$</span><span class="s1">'"resultm.try</span><span class="se">\'</span><span class="s1"> / e: " .. tostring(!e)'</span>
             <span class="n">failwith</span> <span class="n">msg</span>
@@ -8633,7 +8663,9 @@ __assert_eq' { expected = (Ok(3), Error(error1)) }</pre>
         <span class="o">|</span> <span class="n">Ok</span> <span class="n">x</span> <span class="o">=&gt;</span> <span class="n">x</span>
         <span class="o">|</span> <span class="n">Error</span> <span class="n">e</span> <span class="o">=&gt;</span>
             <span class="n">inl</span> <span class="n">msg</span> <span class="p">:</span> <span class="n">string</span> <span class="o">=</span>
-                <span class="k">if</span> <span class="n">result</span><span class="s1">'_python ()</span>
+                <span class="k">if</span> <span class="n">result</span><span class="s1">'_zig ()</span>
+                <span class="n">then</span> <span class="n">result</span><span class="s1">'_error_text "resultm.unwrap'</span> <span class="o">/</span> <span class="n">e</span><span class="p">:</span> <span class="s2">" e</span>
+                <span class="k">elif</span> <span class="n">result</span><span class="s1">'_python ()</span>
                 <span class="n">then</span> <span class="err">$</span><span class="s1">'f"resultm.unwrap</span><span class="se">\'</span><span class="s1"> / e: {!e}"'</span>
                 <span class="k">else</span> <span class="err">$</span><span class="s1">'"resultm.unwrap</span><span class="se">\'</span><span class="s1"> / e: " .. tostring(!e)'</span>
             <span class="n">failwith</span> <span class="n">msg</span>
@@ -8669,7 +8701,9 @@ __assert_eq' { expected = (Ok(3), Error(error1)) }</pre>
         <span class="o">|</span> <span class="n">Ok</span> <span class="n">x</span> <span class="o">=&gt;</span> <span class="n">x</span>
         <span class="o">|</span> <span class="n">Error</span> <span class="n">e</span> <span class="o">=&gt;</span>
             <span class="n">inl</span> <span class="n">msg</span> <span class="p">:</span> <span class="n">string</span> <span class="o">=</span>
-                <span class="k">if</span> <span class="n">result</span><span class="s1">'_python ()</span>
+                <span class="k">if</span> <span class="n">result</span><span class="s1">'_zig ()</span>
+                <span class="n">then</span> <span class="n">result</span><span class="s1">'_error_text "resultm.unwrap'' / e: " e</span>
+                <span class="k">elif</span> <span class="n">result</span><span class="s1">'_python ()</span>
                 <span class="n">then</span> <span class="err">$</span><span class="s1">'f"resultm.unwrap</span><span class="se">\'\'</span><span class="s1"> / e: {!e}"'</span>
                 <span class="k">else</span> <span class="err">$</span><span class="s1">'"resultm.unwrap</span><span class="se">\'\'</span><span class="s1"> / e: " .. tostring(!e)'</span>
             <span class="n">failwith</span> <span class="n">msg</span>
@@ -8707,7 +8741,9 @@ __assert_eq' { expected = (Ok(3), Error(error1)) }</pre>
         <span class="k">match</span> <span class="n">unbox</span> <span class="n">x</span> <span class="k">with</span>
         <span class="o">|</span> <span class="n">Ok</span> <span class="n">x</span> <span class="o">=&gt;</span>
             <span class="n">inl</span> <span class="n">msg</span> <span class="p">:</span> <span class="n">string</span> <span class="o">=</span>
-                <span class="k">if</span> <span class="n">result</span><span class="s1">'_python ()</span>
+                <span class="k">if</span> <span class="n">result</span><span class="s1">'_zig ()</span>
+                <span class="n">then</span> <span class="n">result</span><span class="s1">'_error_text "resultm.unwrap_err'</span> <span class="o">/</span> <span class="n">x</span><span class="p">:</span> <span class="s2">" x</span>
+                <span class="k">elif</span> <span class="n">result</span><span class="s1">'_python ()</span>
                 <span class="n">then</span> <span class="err">$</span><span class="s1">'f"resultm.unwrap_err</span><span class="se">\'</span><span class="s1"> / x: {!x}"'</span>
                 <span class="k">else</span> <span class="err">$</span><span class="s1">'"resultm.unwrap_err</span><span class="se">\'</span><span class="s1"> / x: " .. tostring(!x)'</span>
             <span class="n">failwith</span> <span class="n">msg</span>

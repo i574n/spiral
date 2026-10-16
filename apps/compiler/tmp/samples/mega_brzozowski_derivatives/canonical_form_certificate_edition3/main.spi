@@ -1,0 +1,115 @@
+:< main
+
+:= canonical_alt_atom \* alphabet. (value : regex alphabet) : bool =
+    ?= value ?|
+    | RegexEmpty => !-
+    | RegexAlt _ => !-
+    | _ => !+
+
+:~ ^ canonical_alt_ordered \* alphabet {symbol_compare}.
+    (head : regex alphabet) (tail : regex alphabet) : bool =
+    ?= tail ?|
+    | RegexEmpty => !-
+    | RegexAlt (next, rest) =>
+        ?= regex_compare head next ?|
+        | SymbolLess => canonical_alt_ordered next rest
+        | _ => !-
+    | value =>
+        ?= regex_compare head value ?|
+        | SymbolLess => !+
+        | _ => !-
+
+:= canonical_cat_left \* alphabet. (value : regex alphabet) : bool =
+    ?= value ?|
+    | RegexEmpty => !-
+    | RegexEpsilon => !-
+    | RegexCat _ => !-
+    | _ => !+
+
+:= canonical_cat_right \* alphabet. (value : regex alphabet) : bool =
+    ?= value ?|
+    | RegexEmpty => !-
+    | RegexEpsilon => !-
+    | _ => !+
+
+:= canonical_cat_star_reduced \* alphabet {symbol_compare}.
+    (left : regex alphabet) (right : regex alphabet) : bool =
+    ?= left, right ?|
+    | RegexStar left_inner, RegexStar right_inner =>
+        ? regex_equal left_inner right_inner ?> !- |: !+
+    | _ => !+
+
+:= canonical_star_inner \* alphabet. (value : regex alphabet) : bool =
+    ?= value ?|
+    | RegexEmpty => !-
+    | RegexEpsilon => !-
+    | RegexStar _ => !-
+    | _ => !+
+
+:~ ^ canonical_regex_form \* alphabet {symbol_compare}.
+    (value : regex alphabet) : bool =
+    ?= value ?|
+    | RegexEmpty => !+
+    | RegexEpsilon => !+
+    | RegexChar _ => !+
+    | RegexAlt (head, tail) => canonical_alt_atom head && canonical_regex_form head && canonical_regex_form tail && canonical_alt_ordered head tail
+    | RegexCat (left, right) => canonical_cat_left left && canonical_cat_right right && canonical_cat_star_reduced left right && canonical_regex_form left && canonical_regex_form right
+    | RegexStar inner => canonical_star_inner inner && canonical_regex_form inner
+
+:~ ^ normalized_corpus_is_canonical \* alphabet {symbol_compare}.
+    (values : regex_list alphabet) : bool =
+    ?= values ?|
+    | RegexListNil => !+
+    | RegexListCons (value, rest) =>
+        ? canonical_regex_form (normalize value) ?> normalized_corpus_is_canonical rest
+        |: !-
+
+:~ ^ canonical_derivatives_are_canonical_symbols \* alphabet {symbol_compare}.
+    (value : regex alphabet)
+    (symbols : symbol_list alphabet) : bool =
+    ?= symbols ?|
+    | SymbolListNil => !+
+    | SymbolListCons (symbol, rest) =>
+        ? canonical_regex_form (canonical_derivative value symbol) ?>
+            canonical_derivatives_are_canonical_symbols value rest
+        |: !-
+
+:~ ^ canonical_derivatives_are_canonical_corpus \* alphabet {symbol_compare}.
+    (values : regex_list alphabet)
+    (symbols : symbol_list alphabet) : bool =
+    ?= values ?|
+    | RegexListNil => !+
+    | RegexListCons (value, rest) =>
+        ? canonical_derivatives_are_canonical_symbols value symbols ?>
+            canonical_derivatives_are_canonical_corpus rest symbols
+        |: !-
+
+:= main () : string =
+    := z = RegexChar (zero ())
+    := o = RegexChar (one ())
+    := zstar = RegexStar z
+    := empty_star : regex bit_alphabet = RegexStar RegexEmpty
+    := bit_descriptor : finite_alphabet_descriptor bit_alphabet = finite_alphabet ()
+    := tri_descriptor : finite_alphabet_descriptor tri_alphabet = finite_alphabet ()
+    := bit_symbols = finite_alphabet_symbols bit_descriptor
+    := tri_symbols = finite_alphabet_symbols tri_descriptor
+    := bit_corpus = regex_corpus_depth_one bit_symbols
+    := tri_corpus = regex_corpus_depth_one tri_symbols
+    assert_static (normalized_corpus_is_canonical bit_corpus) "every normalized bit corpus term must satisfy structural canonical form"
+    assert_static (normalized_corpus_is_canonical tri_corpus) "every normalized ternary corpus term must satisfy structural canonical form"
+    assert_static (canonical_derivatives_are_canonical_corpus bit_corpus bit_symbols) "every canonical bit derivative must already satisfy structural canonical form"
+    assert_static (canonical_derivatives_are_canonical_corpus tri_corpus tri_symbols) "every canonical ternary derivative must already satisfy structural canonical form"
+    assert_static (bool_same (canonical_regex_form (RegexAlt (o, z))) !-) "unsorted alternation must not be canonical"
+    assert_static (bool_same (canonical_regex_form (RegexAlt (z, z))) !-) "duplicate alternation must not be canonical"
+    assert_static (bool_same (canonical_regex_form (RegexAlt (RegexAlt (z, o), RegexEpsilon))) !-) "left-nested alternation must not be canonical"
+    assert_static (bool_same (canonical_regex_form (RegexCat (RegexEpsilon, z))) !-) "epsilon concatenation identity must not remain in canonical form"
+    assert_static (bool_same (canonical_regex_form (RegexCat (RegexCat (z, o), z))) !-) "left-associated concatenation must not remain in canonical form"
+    assert_static (bool_same (canonical_regex_form empty_star) !-) "star of empty must not remain in canonical form"
+    assert_static (bool_same (canonical_regex_form (RegexStar zstar)) !-) "nested star must not remain in canonical form"
+    assert_static (bool_same (canonical_regex_form (RegexCat (zstar, zstar))) !-) "duplicate adjacent stars must be reduced in canonical form"
+    assert_static (canonical_regex_form (normalize (RegexAlt (o, z)))) "normalization must repair unsorted alternation"
+    assert_static (canonical_regex_form (normalize (RegexAlt (z, z)))) "normalization must remove duplicate alternation"
+    assert_static (canonical_regex_form (normalize (RegexCat (RegexEpsilon, z)))) "normalization must remove concatenation identity"
+    assert_static (canonical_regex_form (normalize (RegexStar zstar))) "normalization must collapse nested star"
+    assert_static (canonical_regex_form (normalize (RegexCat (zstar, zstar)))) "normalization must collapse duplicate adjacent stars"
+    "brzozowski-canonical-form-certificate-green"

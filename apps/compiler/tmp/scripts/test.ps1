@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('single-flight', 'sf', 'gpt5parallel', 'gp')][string]$Mode = 'single-flight',
+    [ValidateSet('single-flight', 'sf', 'gpt5parallel', 'gp', 'hopacsota', 'hs')][string]$Mode = 'single-flight',
     [string[]]$Suite = @('smoke'),
     [string]$Filter,
     [string[]]$Backend,
@@ -12,10 +12,10 @@ param(
     [switch]$WarmRecycle,
     [ValidateSet('Release', 'Debug')][string]$Configuration = 'Release',
     [string]$WorkspaceRoot,
-    [ValidateSet('Zig', 'Wasm', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Python', 'Rust', 'Delphi', 'Cpp')][string]$Probe
+    [ValidateSet('Zig', 'Wasm', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Python', 'Rust', 'Delphi', 'Cpp', 'Kotlin', 'Swift', 'Wgsl', 'Calyx', 'OpenQasm', 'Ebpf')][string]$Probe
 )
 . $PSScriptRoot/env.ps1
-$harness = Import-PowerShellDataFile (Join-Path $BundleRoot 'tests/harness.psd1')
+$harness = Import-PowerShellDataFile (Join-Path $BundleRoot 'tests/harness.psd1') -SkipLimitCheck
 $Suite = @($Suite | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 $Backend = @($Backend | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 foreach ($s in $Suite) { if ($s -notin 'frontier', 'smoke', 'examples', 'contracts', 'mega', 'all', 'fast') { throw "unknown suite '$s'" } }
@@ -84,10 +84,10 @@ function Test-ContractSample([string]$relative) { $relative -like 'samples/contr
 $sampleBackends = @{}
 foreach ($set in $harness.Backends.Keys) { foreach ($sample in $harness.Backends[$set]) { $sampleBackends[$sample] = @($set -split ',') } }
 $listedSamples = @{}
-foreach ($listed in 'Zig', 'Wasm', 'Wgsl', 'Calyx', 'Kotlin', 'Swift', 'OpenQasm', 'Ebpf', 'Lean', 'Bend', 'Gleam', 'Lua') { $listedSamples[$listed] = @{}; foreach ($sample in @($harness[$listed])) { if ($sample) { $listedSamples[$listed][$sample] = $true } } }
+foreach ($listed in 'Zig', 'Wasm', 'Wgsl', 'Calyx', 'Kotlin', 'Swift', 'OpenQasm', 'Ebpf', 'Lean', 'Bend', 'Gleam', 'Lua', 'Python') { $listedSamples[$listed] = @{}; foreach ($sample in @($harness[$listed])) { if ($sample) { $listedSamples[$listed][$sample] = $true } } }
 function Add-ListedBackends([string]$relative, [string[]]$backends) {
     $result = @($backends)
-    foreach ($listed in 'Zig', 'Wasm', 'Wgsl', 'Calyx', 'Kotlin', 'Swift', 'OpenQasm', 'Ebpf', 'Lean', 'Bend', 'Gleam', 'Lua') { if ($listedSamples[$listed].ContainsKey($relative) -and $result -notcontains $listed) { $result += $listed } }
+    foreach ($listed in 'Zig', 'Wasm', 'Wgsl', 'Calyx', 'Kotlin', 'Swift', 'OpenQasm', 'Ebpf', 'Lean', 'Bend', 'Gleam', 'Lua', 'Python') { if ($listedSamples[$listed].ContainsKey($relative) -and $result -notcontains $listed) { $result += $listed } }
     if ($Probe -and $result -contains 'C' -and $result -notcontains $Probe) { $result += $Probe }
     $result
 }
@@ -263,7 +263,7 @@ if ($zigExe -and $zigExe -match '[\\/]scoop[\\/]shims[\\/]') {
     if (Test-Path $shim) { $real = (Get-Content $shim | Where-Object { $_ -match '^\s*path\s*=' } | Select-Object -First 1) -replace '^\s*path\s*=\s*"?([^"]+)"?\s*$', '$1'; if ($real -and (Test-Path $real)) { $zigExe = $real } }
 }
 $zigCacheGen = 0
-$zigCache = Join-Path $scratch "zig-cache-$stamp-0"
+$zigCache = Join-Path $scratch 'zig-cache-shared'
 $shimDir = Join-Path $BundleRoot 'tests/native-shims'
 $cFlagRules = @($harness.CFlags | ForEach-Object { [pscustomobject]$_ })
 function Get-CFlags($job) {
@@ -770,7 +770,7 @@ foreach ($row in $rows) {
     $e = $expected["$($row.id)|$($row.backend)"]
     if (-not $e) { $row.baseline = 'new'; continue }
     $produced = $row.compile -in 'ok', 'emitted'
-    $broken = if ($mode -eq 'gpt5parallel') { 'missing' } else { 'REGRESSED' }
+    $broken = if ($mode -in 'gpt5parallel', 'hopacsota') { 'missing' } else { 'REGRESSED' }
     $nativeMatch = (-not $Native) -or ($e.native -ne 'ran') -or ($row.native -eq 'no-toolchain') -or ($row.native -eq 'ran' -and $e.exit -eq $row.exit -and $e.stdout -eq $row.stdout)
     $row.baseline =
         if ($e.compile -in 'timeout', 'crash', 'not-run') { if ($produced) { 'FIXED' } else { 'no-oracle' } }
@@ -807,7 +807,7 @@ if ($Native) {
     Write-Host ("native: {0} ran, {1} build-fail, oracle agree {2}, DISAGREE {3}" -f (Count $nat { $_.native -eq 'ran' }), (Count $nat { $_.native -eq 'build-fail' }),
         (Count $rows { $_.oracle -eq 'agree' }), (Count $rows { $_.oracle -eq 'DISAGREE' }))
 }
-$bad = @($rows | Where-Object { $_.baseline -in 'REGRESSED', 'NATIVE-DIFF' -or ($mode -ne 'gpt5parallel' -and $_.baseline -eq 'UNEXPECTED-OUTPUT') -or $_.oracle -eq 'DISAGREE' -or $_.oracle -eq 'WRONG-ERROR' })
+$bad = @($rows | Where-Object { $_.baseline -in 'REGRESSED', 'NATIVE-DIFF' -or ($mode -notin 'gpt5parallel', 'hopacsota' -and $_.baseline -eq 'UNEXPECTED-OUTPUT') -or $_.oracle -eq 'DISAGREE' -or $_.oracle -eq 'WRONG-ERROR' })
 foreach ($b in $bad | Select-Object -First 20) { Write-Host "  !! $($b.id) [$($b.backend)] $($b.baseline) $($b.oracle) $($b.detail)" -ForegroundColor Red }
 Write-Host "results: $resultPath"
 Write-Host "outputs: written next to their sources; git diff samples shows what changed"

@@ -7894,6 +7894,7 @@ a.anchor-link {
         <span class="n">Python</span> <span class="p">:</span> <span class="n">guid_python</span>
         <span class="n">Rust</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'Rc&lt;str&gt;'</span>
         <span class="n">TypeScript</span> <span class="p">:</span> <span class="n">string</span>
+        <span class="n">Zig</span> <span class="p">:</span> <span class="n">string</span>
     <span class="p">}</span>
 <span class="n">nominal</span> <span class="n">guid</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'backend_switch `(guid_switch)'</span>
 </pre></div>
@@ -7921,7 +7922,8 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">new_guid</span> <span class="p">(</span><span class="n">x</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="p">:</span> <span class="n">guid</span> <span class="o">=</span>
-    <span class="n">run_target_args</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span><span class="p">)</span> <span class="n">function</span>
+    <span class="n">inl</span> <span class="n">otherwise</span> <span class="p">()</span> <span class="o">=</span>
+        <span class="n">run_target_args</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span><span class="p">)</span> <span class="n">function</span>
         <span class="o">|</span> <span class="n">Gleam</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">x</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!x '</span>
         <span class="o">|</span> <span class="n">Lua</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">x</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!x '</span>
         <span class="o">|</span> <span class="n">Cuda</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">x</span> <span class="o">=&gt;</span>
@@ -7930,6 +7932,9 @@ a.anchor-link {
         <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">x</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Rc::&lt;str&gt;::from(!x.to_lowercase())'</span>
         <span class="o">|</span> <span class="n">TypeScript</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">x</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!x.toLowerCase()'</span>
         <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">x</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!x |&gt; `guid '</span>
+    <span class="n">backend_switch_or</span> <span class="n">otherwise</span> <span class="p">{</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'(std.ascii.allocLowerString(spiral_gpa, !x) catch \@panic("out of memory"))'</span> <span class="p">:</span> <span class="n">guid</span>
+    <span class="p">}</span>
 </pre></div>
 </div>
 </div>
@@ -7942,11 +7947,39 @@ a.anchor-link {
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h3 id="new_raw_guid">new_raw_guid<a class="anchor-link" href="#new_raw_guid">¶</a></h3>
+<h3 id="zig_random_u64">zig_random_u64<a class="anchor-link" href="#zig_random_u64">¶</a></h3>
 </div>
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=10">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">zig_random_u64</span> <span class="p">()</span> <span class="p">:</span> <span class="n">u64</span> <span class="o">=</span>
+    <span class="k">global</span> <span class="s2">"extern </span><span class="se">\"</span><span class="s2">kernel32</span><span class="se">\"</span><span class="s2"> fn QueryPerformanceCounter(count: *i64) callconv(.winapi) c_int;"</span>
+    <span class="k">global</span> <span class="s2">"var spiral_random_state: u64 = 0;</span><span class="se">\n</span><span class="s2">fn spiralRandomU64() u64 {</span><span class="se">\n</span><span class="s2">    if (spiral_random_state == 0) {</span><span class="se">\n</span><span class="s2">        var seed: u64 = 0;</span><span class="se">\n</span><span class="s2">        if (builtin.os.tag == .windows) {</span><span class="se">\n</span><span class="s2">            var count: i64 = 0;</span><span class="se">\n</span><span class="s2">            _ = QueryPerformanceCounter(&amp;count);</span><span class="se">\n</span><span class="s2">            seed = @bitCast(count);</span><span class="se">\n</span><span class="s2">        } else if (builtin.os.tag == .linux) {</span><span class="se">\n</span><span class="s2">            var ts: std.os.linux.timespec = undefined;</span><span class="se">\n</span><span class="s2">            _ = std.os.linux.clock_gettime(.MONOTONIC, &amp;ts);</span><span class="se">\n</span><span class="s2">            seed = @as(u64, @bitCast(@as(i64, ts.sec))) *% 1000000007 +% @as(u64, @bitCast(@as(i64, ts.nsec)));</span><span class="se">\n</span><span class="s2">        }</span><span class="se">\n</span><span class="s2">        spiral_random_state = (seed ^ @intFromPtr(&amp;spiral_random_state)) | 1;</span><span class="se">\n</span><span class="s2">    }</span><span class="se">\n</span><span class="s2">    var x = spiral_random_state;</span><span class="se">\n</span><span class="s2">    x ^= x &lt;&lt; 13;</span><span class="se">\n</span><span class="s2">    x ^= x &gt;&gt; 7;</span><span class="se">\n</span><span class="s2">    x ^= x &lt;&lt; 17;</span><span class="se">\n</span><span class="s2">    spiral_random_state = x;</span><span class="se">\n</span><span class="s2">    return x;</span><span class="se">\n</span><span class="s2">}"</span>
+    <span class="err">$</span><span class="s1">'spiralRandomU64()'</span> <span class="p">:</span> <span class="n">u64</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=11">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="new_raw_guid">new_raw_guid<a class="anchor-link" href="#new_raw_guid">¶</a></h3>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=12">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7965,6 +7998,10 @@ a.anchor-link {
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="k">global</span> <span class="s2">"import uuid"</span>
             <span class="err">$</span><span class="s1">'uuid.uuid4()'</span> <span class="p">:</span> <span class="n">guid</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="n">inl</span> <span class="n">a</span> <span class="o">=</span> <span class="n">zig_random_u64</span> <span class="p">()</span>
+            <span class="n">inl</span> <span class="n">b</span> <span class="o">=</span> <span class="n">zig_random_u64</span> <span class="p">()</span>
+            <span class="err">$</span><span class="s1">'(std.fmt.allocPrint(spiral_gpa, "</span><span class="si">{x:0&gt;8}</span><span class="s1">-</span><span class="si">{x:0&gt;4}</span><span class="s1">-4</span><span class="si">{x:0&gt;3}</span><span class="s1">-</span><span class="si">{x:0&gt;4}</span><span class="s1">-</span><span class="si">{x:0&gt;12}</span><span class="s1">", .{ !a &amp; 0xffffffff, (!a &gt;&gt; 32) &amp; 0xffff, (!a &gt;&gt; 48) &amp; 0xfff, (!b &amp; 0x3fff) | 0x8000, (!b &gt;&gt; 16) &amp; 0xffffffffffff }) catch \@panic("out of memory"))'</span> <span class="p">:</span> <span class="n">guid</span>
         <span class="n">Rust</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'{ use std::hash::{BuildHasher, Hasher}; let mut h = std::collections::hash_map::RandomState::new().build_hasher(); h.write_u128(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0)); let a = h.finish(); h.write_u64(a); let b = h.finish(); let a = (a &amp; 0xffff_ffff_ffff_0fff) | 0x4000; let b = (b &amp; 0x3fff_ffff_ffff_ffff) | 0x8000_0000_0000_0000; Rc::&lt;str&gt;::from(format\!("</span><span class="si">{:08x}</span><span class="s1">-</span><span class="si">{:04x}</span><span class="s1">-</span><span class="si">{:04x}</span><span class="s1">-</span><span class="si">{:04x}</span><span class="s1">-</span><span class="si">{:012x}</span><span class="s1">", a &gt;&gt; 32, (a &gt;&gt; 16) &amp; 0xffff, a &amp; 0xffff, b &gt;&gt; 48, b &amp; 0xffff_ffff_ffff)) }'</span> <span class="p">:</span> <span class="n">guid</span>
     <span class="p">}</span>
 </pre></div>
@@ -7973,7 +8010,7 @@ a.anchor-link {
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=11">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=13">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7983,7 +8020,7 @@ a.anchor-link {
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=12">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=14">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7994,24 +8031,29 @@ a.anchor-link {
 <div class="highlight hl-ipython3"><pre><span></span><span class="nb">type</span> <span class="n">hash_guid</span> <span class="o">=</span> <span class="n">guid</span>
 
 <span class="n">let</span> <span class="n">hash_guid</span> <span class="p">(</span><span class="nb">hash</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="p">:</span> <span class="n">hash_guid</span> <span class="o">=</span>
-    <span class="n">run_target</span> <span class="n">function</span>
-        <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-            <span class="n">inl</span> <span class="n">dash</span> <span class="o">=</span> <span class="s2">"-"</span>
-            <span class="n">join</span>
-                <span class="n">inl</span> <span class="nb">hash</span> <span class="o">=</span> <span class="nb">hash</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.pad_left 32i32 '</span><span class="mi">0</span><span class="s1">'</span>
-                <span class="n">inl</span> <span class="n">a</span> <span class="o">=</span> <span class="nb">hash</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.range (am'</span><span class="o">.</span><span class="n">Start</span> <span class="mi">0</span><span class="n">i32</span><span class="p">)</span> <span class="p">(</span><span class="n">am</span><span class="s1">'.End fun _ =&gt; 8)</span>
-                <span class="n">inl</span> <span class="n">b</span> <span class="o">=</span> <span class="nb">hash</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.range (am'</span><span class="o">.</span><span class="n">Start</span> <span class="mi">8</span><span class="n">i32</span><span class="p">)</span> <span class="p">(</span><span class="n">am</span><span class="s1">'.End fun _ =&gt; 12)</span>
-                <span class="n">inl</span> <span class="n">c</span> <span class="o">=</span> <span class="nb">hash</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.range (am'</span><span class="o">.</span><span class="n">Start</span> <span class="mi">12</span><span class="n">i32</span><span class="p">)</span> <span class="p">(</span><span class="n">am</span><span class="s1">'.End fun _ =&gt; 16)</span>
-                <span class="n">inl</span> <span class="n">d</span> <span class="o">=</span> <span class="nb">hash</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.range (am'</span><span class="o">.</span><span class="n">Start</span> <span class="mi">16</span><span class="n">i32</span><span class="p">)</span> <span class="p">(</span><span class="n">am</span><span class="s1">'.End fun _ =&gt; 20)</span>
-                <span class="n">inl</span> <span class="n">e</span> <span class="o">=</span> <span class="nb">hash</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.range (am'</span><span class="o">.</span><span class="n">Start</span> <span class="mi">20</span><span class="n">i32</span><span class="p">)</span> <span class="p">(</span><span class="n">am</span><span class="s1">'.End fun _ =&gt; 32)</span>
-                <span class="n">a</span> <span class="o">++</span><span class="c1"># dash ++# b ++# dash ++# c ++# dash ++# d ++# dash ++# e</span>
-                <span class="o">|&gt;</span> <span class="n">new_guid</span>
+    <span class="n">inl</span> <span class="n">body</span> <span class="p">()</span> <span class="o">=</span>
+        <span class="n">inl</span> <span class="n">dash</span> <span class="o">=</span> <span class="s2">"-"</span>
+        <span class="n">join</span>
+            <span class="n">inl</span> <span class="nb">hash</span> <span class="o">=</span> <span class="nb">hash</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.pad_left 32i32 '</span><span class="mi">0</span><span class="s1">'</span>
+            <span class="n">inl</span> <span class="n">a</span> <span class="o">=</span> <span class="nb">hash</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.range (am'</span><span class="o">.</span><span class="n">Start</span> <span class="mi">0</span><span class="n">i32</span><span class="p">)</span> <span class="p">(</span><span class="n">am</span><span class="s1">'.End fun _ =&gt; 8)</span>
+            <span class="n">inl</span> <span class="n">b</span> <span class="o">=</span> <span class="nb">hash</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.range (am'</span><span class="o">.</span><span class="n">Start</span> <span class="mi">8</span><span class="n">i32</span><span class="p">)</span> <span class="p">(</span><span class="n">am</span><span class="s1">'.End fun _ =&gt; 12)</span>
+            <span class="n">inl</span> <span class="n">c</span> <span class="o">=</span> <span class="nb">hash</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.range (am'</span><span class="o">.</span><span class="n">Start</span> <span class="mi">12</span><span class="n">i32</span><span class="p">)</span> <span class="p">(</span><span class="n">am</span><span class="s1">'.End fun _ =&gt; 16)</span>
+            <span class="n">inl</span> <span class="n">d</span> <span class="o">=</span> <span class="nb">hash</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.range (am'</span><span class="o">.</span><span class="n">Start</span> <span class="mi">16</span><span class="n">i32</span><span class="p">)</span> <span class="p">(</span><span class="n">am</span><span class="s1">'.End fun _ =&gt; 20)</span>
+            <span class="n">inl</span> <span class="n">e</span> <span class="o">=</span> <span class="nb">hash</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.range (am'</span><span class="o">.</span><span class="n">Start</span> <span class="mi">20</span><span class="n">i32</span><span class="p">)</span> <span class="p">(</span><span class="n">am</span><span class="s1">'.End fun _ =&gt; 32)</span>
+            <span class="n">a</span> <span class="o">++</span><span class="c1"># dash ++# b ++# dash ++# c ++# dash ++# d ++# dash ++# e</span>
+            <span class="o">|&gt;</span> <span class="n">new_guid</span>
+    <span class="n">inl</span> <span class="n">otherwise</span> <span class="p">()</span> <span class="o">=</span>
+        <span class="n">run_target</span> <span class="n">function</span>
+            <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">body</span>
+    <span class="n">backend_switch_or</span> <span class="n">otherwise</span> <span class="p">{</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">body</span> <span class="p">()</span>
+    <span class="p">}</span>
 </pre></div>
 </div>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=13">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=15">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8071,7 +8113,7 @@ __assert_eq' { expected = 12345678-9012-3456-7890-123456789012 }</pre>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=14">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=16">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8081,7 +8123,7 @@ __assert_eq' { expected = 12345678-9012-3456-7890-123456789012 }</pre>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=15">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=17">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>

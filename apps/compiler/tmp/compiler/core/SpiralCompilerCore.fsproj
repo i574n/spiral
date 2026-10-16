@@ -16,6 +16,9 @@
   <PropertyGroup Condition="'$(SpiralCore)' == 'gpt5parallel'">
     <DefineConstants>$(DefineConstants);SPIRAL_CORE_GPT5PARALLEL</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(SpiralCore)' == 'hopacsota'">
+    <DefineConstants>$(DefineConstants);SPIRAL_CORE_HOPACSOTA</DefineConstants>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(SpiralCoreSource)" Link="spiral_compiler.fs" />
   </ItemGroup>

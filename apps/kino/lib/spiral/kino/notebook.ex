@@ -603,12 +603,17 @@ defmodule Spiral.Kino.Notebook do
         _ -> nil
       end)
 
-    explicit = opts[:default_target] || System.get_env("SPIRAL_KINO_DEFAULT_TARGET")
+    explicit =
+      case Access.fetch(opts, :default_target) do
+        {:ok, target} -> target
+        :error -> System.get_env("SPIRAL_KINO_DEFAULT_TARGET")
+      end
 
     cond do
       prelude -> prelude
-      explicit not in [nil, ""] -> Builders.commands("///> " <> explicit)
-      true -> []
+      explicit == "" -> []
+      explicit != nil -> Builders.commands("///> " <> explicit)
+      true -> Builders.commands("///> zig")
     end
   end
 

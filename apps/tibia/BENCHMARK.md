@@ -44,6 +44,12 @@ Every competitor, ours included, plays under the same conditions, so a win canno
   probe decided every 250 ms in v1 and v2 and reacted later to damage bursts, so it now ticks every 100 ms too. The
   simulator's knight decides on its 100 ms tick (`hunting_pack.client_decision_ms`) behind the same 250 ms action
   witness (`readiness.action_gate`).
+- Same login state: Canary keeps monsters off a freshly logged-in player for 10 s unless the player moves, auto-walks,
+  turns, talks, uses an item or cancels an attack (starting an attack does not end it). Until 2026-10-15 14:17 our probe
+  kept that protection and vBot and nExBot ended it, which decided PR-9 and half of PR-3a. Since then `parity.lua` makes
+  one native turn 300 ms after login, outside the gate, for every competitor. Known remaining asymmetry: the policy
+  probe acts from about 2.5 s after login, vBot at once; a test for a win should start every competitor's logic at the
+  same moment.
 - Same character, equipment, supplies, scenario and seeds.
 - Same server build and tick timing; no client-side speed hacks.
 
@@ -132,6 +138,7 @@ Pack v1, scenario "cyclops clear" (live through `tibia-local/run-arena.ps1`, sim
 | Secondary (descriptive only) | Clear time, deaths, damage taken, nExBot's attack and cancel counts |
 | Decision | Significant and negative: retreat uses fewer potions than nExBot. Otherwise: no difference shown. No runs are added |
 | RESULT (2026-10-15 05:50) | 40 runs, 0 harness failures, 0 deaths, every run cleared. Retreat 12.20 potions (sd 3.94) vs nExBot 14.55 (sd 2.95), difference -2.35 (95% CI -4.58 .. -0.12), Welch t -2.14 (critical 2.03): significant, retreat uses fewer potions than nExBot. Narrow and single: retreat vs vBot was not significant in PR-4 (-1.10), and nExBot's mean is close to vBot's (14.00 in PR-4, 14.17 in PR-8). Descriptive: clear time 90.9 vs 88.4 s, damage taken 2030 vs 2421 (CI of the difference -748 .. -35; from the 16 and 18 of 20 logs the analysis matched to rows; all 20 retreat logs give 2110), lowest health 106.5 vs 95.4. The policy Lua compiled from live.spi on pack-1h after the block is byte-identical to the frozen file (7FD3D538...93E5). nExBot issued 3.2 attacks per run, no attack cancels, and the cancelFollow guard fired once in every run (without it, each run would have stood still next to its first target) |
+| Addendum (2026-10-15 18:45, post-hoc, explanatory) | About half of the difference is the login-protection artifact found after PR-9: nExBot ends the knight's protection early (its probe saw one `talk` per run), taking 8.85 hits in the first 10 s against 3.45 for retreat; after 10 s nExBot still takes 4.7 more hits per clear (60.3 vs 55.6), about one potion, which no test has established. A fair re-test needs the PR-11 harness (protection ended alike) |
 ### Pre-registration PC-1, path check (written 2026-10-14 10:11, before any live run)
 
 | Item | Value |
@@ -217,6 +224,63 @@ Pack v1, scenario "cyclops clear" (live through `tibia-local/run-arena.ps1`, sim
 | Alternative (no rule) | Step-spanning pairs on the grid at about the baseline rate |
 | Decision | The rule holds when both predictions hold; it fails when 80% or more of step-spanning pairs are on the grid. Known confound, reported not corrected: a target switch without a kill can also move the grid |
 | RESULT (2026-10-15 06:37) | Holds. 5 runs (one did not clear: it retreated out of the fight, 23 retreats, 0 kills, the failure mode seen once in v6; its hits count). Baseline: 101 of 106 pairs on the grid (95.3%). Step-spanning: 31 of 36 late by 60-1060 ms (86.1%), 2 on the grid, 3 other. The delays cluster at 150-200 ms (median about 180 ms), not evenly over the think second: the swing mostly resumes sooner, likely through `hasExtraSwing` when a following cyclops moves next to the knight (`Creature::onCreatureMove`). The model's phase-0 think (about 500 ms on average) is the right direction and probably too long |
+### Pre-registration PR-12, retreat vs nExBot on the fixed harness (written 2026-10-15 18:52, not yet run)
+
+| Item | Value |
+| --- | --- |
+| Question | With login protection ended alike for both, does the retreat policy use fewer potions than nExBot in the cyclops clear? |
+| Why | PR-3a found retreat 2.35 potions under nExBot (t -2.14), but about half of that is the login-protection artifact (nExBot talks after login); after the first 10 s nExBot still took 4.7 more hits per clear, about one potion, untested |
+| Harness | As PR-11 (`parity.lua` ends the protection for every competitor at login) plus the nExBot shims of PR-3a; the policy probe skips floor-change tiles when it retreats (since 2026-10-15 12:45) |
+| Competitors | `spiral-retreat` (heal below 160, retreat at 2, ReachFirst; frozen PR-4 Lua or live.spi if its compile is byte-identical, SHA-256 7FD3D538...93E5) vs `nexbot` (as in PR-3a) |
+| Scenario | Pack v1 cyclops clear, as in PR-11 |
+| Runs | 40 per competitor, alternating, foreground chunks into `tibia-local/arena-results-cyclops-pr12.tsv`; foreign-activity rows excluded; a crash is rerun once, then missing. With sd about 3 this detects about 1.9 potions at 80% power |
+| Test | Potions per run, Welch two-sided, alpha 0.05, 95% interval (`pr1-analysis.ps1 -Treatment spiral-retreat -Baseline nexbot -Planned 40 -Label PR-12 -ExcludeForeign`) |
+| Expectation, stated now | A smaller difference than PR-3a, likely not significant at this size |
+| Secondary (descriptive only) | Clear time, deaths, damage taken, hits in the first 10 s, floor changes (any `,6` position) |
+| Decision | Significant and negative: retreat uses fewer potions than nExBot. Significant and positive: nExBot uses fewer. Otherwise: no difference shown. No runs are added; no interim looks at potions |
+### Pre-registration PR-11, rules vs vBot without the login-protection artifact (written 2026-10-15 14:21, before any PR-11 run)
+
+| Item | Value |
+| --- | --- |
+| Question | With login protection ended the same way for both, does the Spiral rules policy use fewer potions than vBot in the cyclops clear? |
+| Harness change | `tibia-local/parity.lua` (prepended to every probe) makes one native turn 300 ms after login, outside the parity gate, so Canary ends the 10 s login protection for every competitor alike. Check run (14:17-14:20, `arena-results-cyclops-pr11-check.tsv`, not analyzed): hits in the first 10 s 9 (rules) and 10 (vBot), against 1.6 and 9.1 per run in PR-9; 0 foreign actions |
+| Competitors | `spiral-policy` (as in PR-9, frozen PR-4 Lua) vs `vbot` (as in PR-9) |
+| Scenario | Pack v1 cyclops clear, as in PR-9, with the harness change |
+| Runs | 50 per competitor, alternating, foreground chunks into `tibia-local/arena-results-cyclops-pr11.tsv`; foreign-activity rows excluded; a crash is rerun once, then missing |
+| Test | Potions per run, Welch two-sided, alpha 0.05, 95% interval (`pr1-analysis.ps1 -Treatment spiral-policy -Baseline vbot -Planned 50 -Label PR-11 -ExcludeForeign`) |
+| Expectation, stated now | No difference: after the first 10 s of PR-9 both took the same hits (60.1 vs 60.4) |
+| Side prediction (2026-10-15 15:16, during the block, before any look at PR-11 data; not part of the pre-registration) | The live-mirroring model without a wake (`mirroring_the_live_arena |> waking_at 0`, no protection so no idle wandering), rules heal 160, 100 held-out clears: 15.63 potions (sd 2.88), 90.1 s, 72.4 hits, no deaths |
+| Secondary (descriptive only) | Clear time, deaths, damage taken, hits in the first 10 s |
+| Decision | Significant and negative: the rules policy uses fewer potions than vBot. Significant and positive: vBot uses fewer. Otherwise: no difference shown. No runs are added; no interim looks at potions |
+| RESULT (2026-10-15 18:40) | No difference shown. 100 runs, 0 harness failures, 0 deaths, every run cleared. Rules 14.42 potions (sd 3.30) vs vBot 14.78 (sd 2.84), difference -0.36 (95% CI -1.58 .. 0.86), Welch t -0.58. Descriptive: clear time 88.3 vs 87.4 s, damage taken 2421 vs 2505, hits per clear 69.1 vs 69.2, hits in the first 10 s 9.6 vs 9.0. With the login protection ended alike, our rules policy and vBot are level; PR-9's win was the protection artifact. The side prediction (15.63 potions, 72.4 hits) is about 1.2 potions high (one-sample t about -2.6) |
+### Pre-registration PR-10, out-of-sample check of the live-mirroring model (written 2026-10-15 12:57, before any run)
+
+| Item | Value |
+| --- | --- |
+| Question | Does the live-mirroring model (`mirroring_the_live_arena`: wake, idle wandering, 2166 ms cyclops swings, swing after a step) predict a configuration it has never been compared with? |
+| Competitor | `spiral-reach` (new in run-arena.ps1): the rules policy, heal below 160, ReachFirst targeting (prefer a monster already in reach), never retreats; frozen PR-4 Lua, whose targeting functions are the simulator's own `policy.spi` |
+| Scenario | Pack v1 cyclops clear, as in PR-9 |
+| Prediction (adopted model) | `tactic_with_order ReachFirst {160, 0, never_retreat}` on the arena spot with `mirroring_the_live_arena`, 100 held-out clears: 13.51 potions per clear (sd 3.14), 91.08 s, 63.8 hits taken, 1 death in 100 |
+| Alternative (targeting makes no difference) | the CurrentFirst rules prediction, 12.74 potions, 90.74 s |
+| Runs | 30, foreground chunks into `tibia-local/arena-results-cyclops-pr10.tsv`; foreign-activity rows excluded; a crash is rerun once, then missing |
+| Test | `pr2-analysis.ps1 -Competitor spiral-reach -PredictedPotions 13.51 -PredictedSeconds 91.08 -Planned 30 -Label PR-10 -ExcludeForeign` (one-sample t, critical 2.05 at df 29); the alternative's potion t reported alongside |
+| Decision | The model holds when both one-sample tests are within the critical value. With sd about 3.1 and 30 runs the test cannot separate 13.51 from 12.74 (standard error about 0.57); it is a calibration check, not a discrimination test |
+| RESULT (2026-10-15 14:11) | Fails on potions. 30 runs, 0 harness failures, 0 deaths, every run cleared. Potions 12.30 (sd 2.73) vs predicted 13.51, t -2.43 (critical 2.05); clear time 89.1 s vs 91.1, t -0.86 (holds). The no-targeting-effect alternative fits (12.74, t -0.88). Live, our three policies drink alike (rules 12.46 in PR-9, ReachFirst 12.30, retreat 12.20 in PR-3a; damage 2110-2149 per clear), while the model spreads them over 11.8-13.5: it reacts too strongly to targeting and retreat |
+### Pre-registration PR-9, rules vs vBot with enough runs (written 2026-10-15 08:13, before any PR-9 run)
+
+| Item | Value |
+| --- | --- |
+| Question | Does the Spiral rules policy use fewer potions than vBot in the cyclops clear? |
+| Why again | PR-4 (descriptive) and PR-8 (pre-registered) both point the same way (rules about 1.3 potions under vBot) with t near -1.5; each had 30 runs per side, enough only for about 1.9 potions. Pooling them after the fact gives t about -3.4, which is not a valid test; this block is |
+| Competitors | `spiral-policy` (rules, heal below 160, CurrentFirst; frozen PR-4 Lua, SHA-256 7FD3D538...93E5, byte-identical to live.spi compiled on pack-1h) vs `vbot` (as in PR-4 and PR-8) |
+| Scenario | Pack v1 cyclops clear, as in PR-4 |
+| Runs | 50 per competitor, alternating, foreground chunks into `tibia-local/arena-results-cyclops-pr9.tsv`; foreign-activity rows excluded; a crash is rerun once, then missing. With sd about 3.3 and 2.7 this detects about 1.7 potions at 80% power |
+| Test | Potions per run, Welch two-sided, alpha 0.05, 95% interval (`pr1-analysis.ps1 -Treatment spiral-policy -Baseline vbot -Planned 50 -Label PR-9 -ExcludeForeign`) |
+| Secondary (descriptive only) | Clear time, deaths, damage taken; the live-mirroring model's rules prediction (12.74 potions, 90.7 s) next to the live mean, in-sample since PR-4 and PR-8 rules data shaped that model |
+| Decision | Significant and negative: the rules policy uses fewer potions than vBot. Otherwise: no difference shown. No runs are added |
+| RESULT (2026-10-15 12:42) | 100 runs, 0 harness failures, 0 deaths, every run cleared. Rules 12.46 potions (sd 3.07) vs vBot 14.66 (sd 2.71), difference -2.20 (95% CI -3.35 .. -1.05), Welch t -3.80 (critical 1.98): significant, the rules policy uses fewer potions than vBot. Descriptive: clear time 88.7 vs 87.9 s, lowest health 100.1 vs 100.0, damage taken 2145 vs 2479 (difference -334, CI -528 .. -140; 39 and 50 of 50 logs matched), so the saving is damage avoided, not healing. The live-mirroring model's rules prediction (12.74 potions, 90.7 s) sits within the live noise (in-sample) |
+| Addendum (2026-10-15 14:20, post-hoc, explanatory) | The difference comes from the knight's login protection, not from hunting skill. Canary 3.6.1 ends a player's 10 s login protection on any own move, auto-walk, turn, speech, item use or attack cancel (`Game::playerMove`, `playerAutoWalk`, `playerTurn`, `playerSay`, `playerUseItem*`, cancel in `playerSetAttackedCreature`); starting an attack does not. Our probe only attacks in the first seconds and keeps the protection; vBot ends it. Hits taken in the first 10 s: vBot 9.14 per run, rules 1.58; vBot's whole excess is 7.2 hits per clear (69.2 vs 62.0). After the first 10 s the two are level (60.1 vs 60.4 hits). The verdict stands as computed, but it measures a scenario artifact: every run starts from a fresh login with cyclopes summoned next to the knight |
+| Interim look (2026-10-15 10:37, disclosed) | At 25 of 50 pairs, a log query meant for a side question (do vBot's drinks get rejected?) pooled all logs since 00:23, so it printed potions per run for PR-8 and the PR-9 runs so far together. The run count stays 50 per side and nothing stops early, so the decision rule is unchanged; no further looks until the block ends |
 ### Pre-registration PR-8, rules vs vBot replication (written 2026-10-15 00:23, before any run)
 
 | Item | Value |

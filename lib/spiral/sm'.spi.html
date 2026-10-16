@@ -8510,6 +8510,7 @@ __assert_eq { expected = Cons(a, Cons(b, Cons(c, Nil))) }</pre>
         <span class="n">Python</span> <span class="p">:</span> <span class="n">string_builder_python</span>
         <span class="n">Rust</span> <span class="p">:</span> <span class="err">$</span><span class="s1">'String'</span>
         <span class="n">TypeScript</span> <span class="p">:</span> <span class="n">string</span>
+        <span class="n">Zig</span> <span class="p">:</span> <span class="n">string</span>
     <span class="p">}</span>
 <span class="n">nominal</span> <span class="n">string_builder_real</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'backend_switch `(string_builder_switch)'</span>
 </pre></div>
@@ -8554,6 +8555,7 @@ __assert_eq { expected = Cons(a, Cons(b, Cons(c, Nil))) }</pre>
             <span class="err">$</span><span class="s1">'CustomStringIO(!initial)'</span> <span class="p">:</span> <span class="n">string_builder</span>
         <span class="n">Rust</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'String::from(&amp;*!initial)'</span> <span class="p">:</span> <span class="n">string_builder</span>
         <span class="n">TypeScript</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!initial '</span> <span class="p">:</span> <span class="n">string_builder</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!initial '</span> <span class="p">:</span> <span class="n">string_builder</span>
     <span class="p">}</span>
 </pre></div>
 </div>
@@ -8785,6 +8787,8 @@ __assert_eq { expected = Cons(a, Cons(b, Cons(c, Nil))) }</pre>
                     <span class="o">|</span> <span class="p">{}</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'table.concat(!x, ", ")   '</span> <span class="p">:</span> <span class="n">string</span>
                     <span class="o">|</span> <span class="n">array_base</span> <span class="n">_</span> <span class="o">=&gt;</span>
                         <span class="p">(</span><span class="o">++</span><span class="c1">#*) ((++#*) "[" ($'table.concat(!x, ", ")' : string)) "]"</span>
+                    <span class="o">|</span> <span class="n">i64</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'spiral_w64.tostring(!x, true)'</span> <span class="p">:</span> <span class="n">string</span>
+                    <span class="o">|</span> <span class="n">u64</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'spiral_w64.tostring(!x, false)'</span> <span class="p">:</span> <span class="n">string</span>
                     <span class="o">|</span> <span class="n">t</span> <span class="o">=&gt;</span>
                         <span class="k">if</span> <span class="n">real_core</span><span class="o">.</span><span class="n">union_type_is</span> <span class="err">`</span><span class="n">t</span>
                         <span class="n">then</span> <span class="n">serialize_union</span> <span class="err">`</span><span class="n">t</span> <span class="n">x</span>
@@ -9154,7 +9158,7 @@ __assert_eq { expected = Cons(a, Cons(b, Cons(c, Nil))) }</pre>
     <span class="k">elif</span> <span class="p">(</span><span class="n">real</span> <span class="n">typecase</span> <span class="n">t</span> <span class="k">with</span> <span class="n">u8</span> <span class="o">=&gt;</span> <span class="n">true</span> <span class="o">|</span> <span class="n">u16</span> <span class="o">=&gt;</span> <span class="n">true</span> <span class="o">|</span> <span class="n">u32</span> <span class="o">=&gt;</span> <span class="n">true</span> <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">false</span><span class="p">)</span> <span class="n">then</span> <span class="err">$</span><span class="s1">'(call $u64_to_str (i64.extend_i32_u !x))'</span> <span class="p">:</span> <span class="n">string</span>
     <span class="k">else</span> <span class="err">$</span><span class="s1">'backend_switch_has_no_Wasm_arm_in_lib_spiral'</span> <span class="p">:</span> <span class="n">string</span>
 <span class="n">inl</span> <span class="n">obj_to_string_zig</span> <span class="n">forall</span> <span class="n">t</span><span class="o">.</span> <span class="p">(</span><span class="n">x</span> <span class="p">:</span> <span class="n">t</span><span class="p">)</span> <span class="p">:</span> <span class="n">string</span> <span class="o">=</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">real</span> <span class="n">typecase</span> <span class="n">t</span> <span class="k">with</span> <span class="n">string</span> <span class="o">=&gt;</span> <span class="n">true</span> <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">false</span><span class="p">)</span> <span class="n">then</span> <span class="err">$</span><span class="s1">'!x '</span> <span class="p">:</span> <span class="n">string</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">real</span> <span class="n">typecase</span> <span class="n">t</span> <span class="k">with</span> <span class="n">string</span> <span class="o">=&gt;</span> <span class="n">true</span> <span class="o">|</span> <span class="n">string_builder_real</span> <span class="o">=&gt;</span> <span class="n">true</span> <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">false</span><span class="p">)</span> <span class="n">then</span> <span class="err">$</span><span class="s1">'!x '</span> <span class="p">:</span> <span class="n">string</span>
     <span class="k">elif</span> <span class="p">(</span><span class="n">real</span> <span class="n">typecase</span> <span class="n">t</span> <span class="k">with</span> <span class="n">char</span> <span class="o">=&gt;</span> <span class="n">true</span> <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">false</span><span class="p">)</span> <span class="n">then</span> <span class="err">$</span><span class="s1">'(std.fmt.allocPrint(spiral_gpa, "</span><span class="si">{c}</span><span class="s1">", .{ !x }) catch \@panic("out of memory"))'</span> <span class="p">:</span> <span class="n">string</span>
     <span class="k">elif</span> <span class="p">(</span><span class="n">real</span> <span class="n">typecase</span> <span class="n">t</span> <span class="k">with</span> <span class="nb">bool</span> <span class="o">=&gt;</span> <span class="n">true</span> <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">false</span><span class="p">)</span> <span class="n">then</span> <span class="err">$</span><span class="s1">'(if (!x) "true" else "false")'</span> <span class="p">:</span> <span class="n">string</span>
     <span class="k">elif</span> <span class="p">(</span><span class="n">real</span> <span class="n">typecase</span> <span class="n">t</span> <span class="k">with</span> <span class="n">f32</span> <span class="o">=&gt;</span> <span class="n">true</span> <span class="o">|</span> <span class="n">f64</span> <span class="o">=&gt;</span> <span class="n">true</span> <span class="o">|</span> <span class="n">i8</span> <span class="o">=&gt;</span> <span class="n">true</span> <span class="o">|</span> <span class="n">i16</span> <span class="o">=&gt;</span> <span class="n">true</span> <span class="o">|</span> <span class="n">i32</span> <span class="o">=&gt;</span> <span class="n">true</span> <span class="o">|</span> <span class="n">i64</span> <span class="o">=&gt;</span> <span class="n">true</span> <span class="o">|</span> <span class="n">u8</span> <span class="o">=&gt;</span> <span class="n">true</span> <span class="o">|</span> <span class="n">u16</span> <span class="o">=&gt;</span> <span class="n">true</span> <span class="o">|</span> <span class="n">u32</span> <span class="o">=&gt;</span> <span class="n">true</span> <span class="o">|</span> <span class="n">u64</span> <span class="o">=&gt;</span> <span class="n">true</span> <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">false</span><span class="p">)</span>
@@ -10448,7 +10452,8 @@ __assert_eq { expected = (1.5, 0.1, 2.0, 1.5707963267948966, -0.25) }
 __assert_eq { expected = (1.5, 0.1, 2.0, 1.5707963267948966, -0.25) }
 .c (c)
 __assert_eq { expected = (1.5, 0.1, 2.0, 1.5707963267948966, -0.25) }
-zig: unavailable on this machine (`zig` was not found)
+.zig (zig)
+__assert_eq { expected = (1.5, 0.1, 2.0, 1.5707963267948966, -0.25) }
 delphi: unavailable on this machine (`dcc32` was not found (nor fpc))
 lean: unavailable on this machine (`lean` was not found)</pre>
 </div>
@@ -10733,9 +10738,13 @@ __assert_eq { expected = 1234... }</pre>
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">last_index_of</span> <span class="p">(</span><span class="n">search</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="p">(</span><span class="n">s</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="p">:</span> <span class="n">i32</span> <span class="o">=</span>
     <span class="n">inl</span> <span class="n">search</span> <span class="o">=</span> <span class="n">dyn</span> <span class="n">search</span>
-    <span class="n">run_target</span> <span class="n">function</span>
-        <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!s.rfind(&amp;*!search).map(|i| i as i32).unwrap_or(-1)'</span> <span class="p">:</span> <span class="n">i32</span>
-        <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!s.LastIndexOf !search '</span> <span class="p">:</span> <span class="n">i32</span>
+    <span class="n">inl</span> <span class="n">otherwise</span> <span class="p">()</span> <span class="o">=</span>
+        <span class="n">run_target</span> <span class="n">function</span>
+            <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!s.rfind(&amp;*!search).map(|i| i as i32).unwrap_or(-1)'</span> <span class="p">:</span> <span class="n">i32</span>
+            <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!s.LastIndexOf !search '</span> <span class="p">:</span> <span class="n">i32</span>
+    <span class="n">backend_switch_or</span> <span class="n">otherwise</span> <span class="p">{</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'(if (std.mem.lastIndexOf(u8, !s, !search)) |i| \@as(i32, \@intCast(i)) else -1)'</span> <span class="p">:</span> <span class="n">i32</span>
+    <span class="p">}</span>
 </pre></div>
 </div>
 </div>
@@ -10827,12 +10836,6 @@ __assert_eq { expected = 1234... }</pre>
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>__assert_eq { expected = 4 }</pre>
-</div>
-</div>
-<div class="jp-OutputArea-child jp-OutputArea-executeResult">
-<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[17]:</div>
-<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
-<pre>0</pre>
 </div>
 </div>
 </div>
@@ -11220,6 +11223,7 @@ __assert_eq { expected = 123    }</pre>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'ord(!c)'</span> <span class="p">:</span> <span class="nb">int</span>
         <span class="n">Rust</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'(!c as `int)'</span> <span class="p">:</span> <span class="nb">int</span>
         <span class="n">TypeScript</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'(!c)'</span> <span class="p">:</span> <span class="nb">int</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'\@as(`int, !c)'</span> <span class="p">:</span> <span class="nb">int</span>
     <span class="p">}</span>
 </pre></div>
 </div>
@@ -11320,7 +11324,11 @@ __assert_eq { expected = 123    }</pre>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">is_white_space</span> <span class="p">(</span><span class="n">c</span> <span class="p">:</span> <span class="n">char</span><span class="p">)</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span>
-    <span class="n">c</span> <span class="o">|&gt;</span> <span class="err">$</span><span class="s1">'System.Char.IsWhiteSpace'</span>
+    <span class="n">inl</span> <span class="n">otherwise</span> <span class="p">()</span> <span class="o">=</span>
+        <span class="n">c</span> <span class="o">|&gt;</span> <span class="err">$</span><span class="s1">'System.Char.IsWhiteSpace'</span>
+    <span class="n">backend_switch_or</span> <span class="n">otherwise</span> <span class="p">{</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'std.ascii.isWhitespace(!c)'</span> <span class="p">:</span> <span class="nb">bool</span>
+    <span class="p">}</span>
 </pre></div>
 </div>
 </div>
@@ -11346,9 +11354,12 @@ __assert_eq { expected = 123    }</pre>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">substring</span> <span class="p">(</span><span class="n">start</span> <span class="p">:</span> <span class="n">i32</span><span class="p">)</span> <span class="p">(</span><span class="nb">len</span> <span class="p">:</span> <span class="n">i32</span><span class="p">)</span> <span class="p">(</span><span class="nb">str</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="p">:</span> <span class="n">string</span> <span class="o">=</span>
-    <span class="k">if</span> <span class="n">is_rust</span> <span class="p">()</span>
-    <span class="n">then</span> <span class="err">$</span><span class="s1">'Rc::&lt;str&gt;::from(&amp;(!str)[((!start) as usize)..(((!start) + (!len)) as usize)])'</span>
-    <span class="k">else</span> <span class="err">$</span><span class="s1">'!str.Substring (!start, !len)'</span>
+    <span class="n">inl</span> <span class="n">otherwise</span> <span class="p">()</span> <span class="o">=</span>
+        <span class="err">$</span><span class="s1">'!str.Substring (!start, !len)'</span>
+    <span class="n">backend_switch_or</span> <span class="n">otherwise</span> <span class="p">{</span>
+        <span class="n">Rust</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Rc::&lt;str&gt;::from(&amp;(!str)[((!start) as usize)..(((!start) + (!len)) as usize)])'</span> <span class="p">:</span> <span class="n">string</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'(!str)[\@intCast(!start)..\@intCast(!start + !len)]'</span> <span class="p">:</span> <span class="n">string</span>
+    <span class="p">}</span>
 </pre></div>
 </div>
 </div>
@@ -11498,6 +11509,7 @@ __assert_eq { expected = 123    }</pre>
             <span class="n">sb</span>
         <span class="n">Rust</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'{ let mut r = !sb.clone(); r.push_str(&amp;*!item); r }'</span> <span class="p">:</span> <span class="n">string_builder</span>
         <span class="n">TypeScript</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!sb + !item '</span> <span class="p">:</span> <span class="n">string_builder</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'spiralConcat(!sb, !item)'</span> <span class="p">:</span> <span class="n">string_builder</span>
     <span class="p">}</span>
 </pre></div>
 </div>
@@ -11591,6 +11603,8 @@ __assert_eq { expected = abcdef }</pre>
             <span class="n">sb</span> <span class="o">|&gt;</span> <span class="n">builder_append</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span>
         <span class="n">TypeScript</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="n">sb</span> <span class="o">|&gt;</span> <span class="n">builder_append</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="n">sb</span> <span class="o">|&gt;</span> <span class="n">builder_append</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span>
     <span class="p">}</span>
 </pre></div>
 </div>
@@ -11630,6 +11644,7 @@ __assert_eq { expected = abcdef }</pre>
             <span class="p">(</span><span class="err">$</span><span class="s1">'!sb.getvalue().replace(!old, !new)'</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">string_builder</span>
         <span class="n">Rust</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!sb.replace(&amp;*!old, &amp;*!new)'</span> <span class="p">:</span> <span class="n">string_builder</span>
         <span class="n">TypeScript</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!sb.split(!old).join(!new)'</span> <span class="p">:</span> <span class="n">string_builder</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'(std.mem.replaceOwned(u8, spiral_gpa, !sb, !old, !new) catch \@panic("out of memory"))'</span> <span class="p">:</span> <span class="n">string_builder</span>
     <span class="p">}</span>
 </pre></div>
 </div>
@@ -11726,6 +11741,7 @@ __assert_eq { expected = abefgh }</pre>
             <span class="n">sb</span>
         <span class="n">Rust</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'String::new()'</span> <span class="p">:</span> <span class="n">string_builder</span>
         <span class="n">TypeScript</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'""'</span> <span class="p">:</span> <span class="n">string_builder</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'""'</span> <span class="p">:</span> <span class="n">string_builder</span>
     <span class="p">}</span>
 </pre></div>
 </div>
@@ -11824,6 +11840,7 @@ __assert_eq { expected = gh }</pre>
             <span class="n">inl</span> <span class="n">sb</span> <span class="o">=</span> <span class="n">sb</span> <span class="o">|&gt;</span> <span class="n">obj_to_string</span>
             <span class="err">$</span><span class="s1">'"".join([!sb[:!i], !s, !sb[!i:]])'</span> <span class="o">|&gt;</span> <span class="n">string_builder</span>
         <span class="n">Rust</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'{ let mut r = !sb.clone(); let at = r.char_indices().nth(!i as usize).map(|(b, _)| b).unwrap_or(r.len()); r.insert_str(at, &amp;*!s); r }'</span> <span class="p">:</span> <span class="n">string_builder</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'(std.mem.concat(spiral_gpa, u8, &amp;.{ (!sb)[0..\@intCast(!i)], !s, (!sb)[\@intCast(!i)..] }) catch \@panic("out of memory"))'</span> <span class="p">:</span> <span class="n">string_builder</span>
     <span class="p">}</span>
 </pre></div>
 </div>
@@ -12212,12 +12229,6 @@ __assert_eq { expected = ab }</pre>
 <pre>__assert_eq { expected = jkl }</pre>
 </div>
 </div>
-<div class="jp-OutputArea-child jp-OutputArea-executeResult">
-<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[29]:</div>
-<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
-<pre>0</pre>
-</div>
-</div>
 </div>
 </div>
 </div>
@@ -12274,12 +12285,6 @@ __assert_eq { expected = ab }</pre>
 <pre>__assert_eq { expected = ghi }</pre>
 </div>
 </div>
-<div class="jp-OutputArea-child jp-OutputArea-executeResult">
-<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[30]:</div>
-<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
-<pre>0</pre>
-</div>
-</div>
 </div>
 </div>
 </div>
@@ -12317,6 +12322,7 @@ __assert_eq { expected = ab }</pre>
             <span class="err">$</span><span class="s1">'!a.join(!b)'</span> <span class="p">:</span> <span class="n">string</span>
         <span class="n">Rust</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Rc::&lt;str&gt;::from(!b.iter().map(|x| x.to_string()).collect::&lt;Vec&lt;_&gt;&gt;().join(&amp;*!a))'</span> <span class="p">:</span> <span class="n">string</span>
         <span class="n">TypeScript</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!b.join(!a)'</span> <span class="p">:</span> <span class="n">string</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'(std.mem.join(spiral_gpa, !a, !b) catch \@panic("out of memory"))'</span> <span class="p">:</span> <span class="n">string</span>
     <span class="p">}</span>
 </pre></div>
 </div>
@@ -12495,6 +12501,7 @@ __assert_eq { expected = 3 }</pre>
             <span class="err">$</span><span class="s1">'Rc::new(RefCell::new(!str.split(&amp;*!separator).map(|x| Rc::&lt;str&gt;::from(x)).collect::&lt;Vec&lt;Rc&lt;str&gt;&gt;&gt;()))'</span>
             <span class="p">:</span> <span class="n">array_base</span> <span class="n">string</span>
         <span class="n">TypeScript</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!str.split(!separator)'</span> <span class="p">:</span> <span class="n">array_base</span> <span class="n">string</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'blk: { var parts: std.ArrayList([]const u8) = .empty; var it = std.mem.splitSequence(u8, !str, !separator); while (it.next()) |p| parts.append(spiral_gpa, p) catch \@panic("out of memory"); break :blk parts.items; }'</span> <span class="p">:</span> <span class="n">array_base</span> <span class="n">string</span>
     <span class="p">}</span>
 </pre></div>
 </div>
@@ -14845,11 +14852,16 @@ __assert_eq { expected = 3 }</pre>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">format_exception</span> <span class="p">(</span><span class="n">ex</span> <span class="p">:</span> <span class="n">exn</span><span class="p">)</span> <span class="p">:</span> <span class="n">string</span> <span class="o">=</span>
-    <span class="n">run_target</span> <span class="n">function</span>
-        <span class="o">|</span> <span class="n">Fsharp</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'$"{!ex.GetType ()}: {!ex.Message}"'</span>
-        <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!ex '</span> <span class="p">:</span> <span class="n">string</span>
-        <span class="o">|</span> <span class="n">TypeScript</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'String(!ex)'</span> <span class="p">:</span> <span class="n">string</span>
-        <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">ex</span> <span class="o">|&gt;</span> <span class="n">format_debug</span>
+    <span class="n">inl</span> <span class="n">otherwise</span> <span class="p">()</span> <span class="o">=</span>
+        <span class="n">run_target</span> <span class="n">function</span>
+            <span class="o">|</span> <span class="n">Fsharp</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'$"{!ex.GetType ()}: {!ex.Message}"'</span>
+            <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!ex '</span> <span class="p">:</span> <span class="n">string</span>
+            <span class="o">|</span> <span class="n">TypeScript</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'String(!ex)'</span> <span class="p">:</span> <span class="n">string</span>
+            <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">ex</span> <span class="o">|&gt;</span> <span class="n">format_debug</span>
+    <span class="n">backend_switch_or</span> <span class="n">otherwise</span> <span class="p">{</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="err">$</span><span class="s1">'!ex '</span> <span class="p">:</span> <span class="n">string</span>
+    <span class="p">}</span>
 </pre></div>
 </div>
 </div>

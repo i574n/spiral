@@ -15,6 +15,9 @@
   <PropertyGroup Condition="'$(SpiralCore)' == 'single-flight'">
     <DefineConstants>$(DefineConstants);SPIRAL_CORE_SINGLE_FLIGHT</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(SpiralCore)' == 'hopacsota'">
+    <DefineConstants>$(DefineConstants);SPIRAL_CORE_SINGLE_FLIGHT;SPIRAL_CORE_HOPACSOTA</DefineConstants>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(SpiralCore)' == 'gpt5parallel'">
     <DefineConstants>$(DefineConstants);SPIRAL_CORE_GPT5PARALLEL</DefineConstants>
     <!-- gpt5parallel runs one compile per process: tier-0 PGO instrumentation costs more than it pays back (~7%). -->

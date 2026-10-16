@@ -8022,18 +8022,17 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">is_windows</span> <span class="p">()</span> <span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span>
-    <span class="n">run_target</span> <span class="n">function</span>
-        <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-            <span class="err">$</span><span class="s1">'cfg\!(windows)'</span> <span class="p">:</span> <span class="nb">bool</span>
-        <span class="o">|</span> <span class="n">Fsharp</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-            <span class="n">Windows</span> <span class="o">|&gt;</span> <span class="n">os_platform</span> <span class="o">|&gt;</span> <span class="n">is_os_platform</span>
-        <span class="o">|</span> <span class="n">Gleam</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+    <span class="n">backend_switch_or</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">failwith</span> <span class="s2">"platform.is_windows / no arm for this target"</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">Rust</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'cfg\!(windows)'</span> <span class="p">:</span> <span class="nb">bool</span>
+        <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">Windows</span> <span class="o">|&gt;</span> <span class="n">os_platform</span> <span class="o">|&gt;</span> <span class="n">is_os_platform</span>
+        <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="n">backend_switch</span> <span class="p">{</span>
                 <span class="n">Gleam</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
                     <span class="k">global</span> <span class="s2">"import gleam/erlang/os"</span>
             <span class="p">}</span>
-            <span class="err">$</span><span class="s1">'os.family() == os.WindowsNt'</span>
-        <span class="o">|</span> <span class="n">target</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">failwith</span> <span class="err">$</span><span class="s1">'$"platform.is_windows / target: {!target}"'</span>
+            <span class="err">$</span><span class="s1">'os.family() == os.WindowsNt'</span> <span class="p">:</span> <span class="nb">bool</span>
+        <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'(\@import("builtin").os.tag == .windows)'</span> <span class="p">:</span> <span class="nb">bool</span>
+    <span class="p">}</span>
 </pre></div>
 </div>
 </div>
@@ -8076,6 +8075,7 @@ a.anchor-link {
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
+<span class="o">///&gt;</span> <span class="n">rust</span>
 
 <span class="n">get_executable_suffix</span> <span class="p">()</span>
 </pre></div>

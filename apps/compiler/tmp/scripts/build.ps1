@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('single-flight', 'sf', 'gpt5parallel', 'gp', 'both')][string]$Mode = 'single-flight',
+    [ValidateSet('single-flight', 'sf', 'gpt5parallel', 'gp', 'hopacsota', 'hs', 'both')][string]$Mode = 'single-flight',
     [ValidateSet('Release', 'Debug')][string]$Configuration = 'Release',
     [string]$CoreSource
 )
@@ -8,6 +8,11 @@ param(
 if (-not $CoreSource) {
     pwsh -NoProfile -File (Join-Path $PSScriptRoot 'pair-drift.ps1')
     if ($LASTEXITCODE -ne 0) { throw 'pair-drift: a SPIRAL_CORE_GPT5PARALLEL pair changed on one side only; change both sides or unify the pair' }
+}
+if ($Mode -in 'hopacsota', 'hs') {
+    $lintArgs = if ($CoreSource) { @('-CoreSource', $CoreSource) } else { @() }
+    pwsh -NoProfile -File (Join-Path $PSScriptRoot 'hopacsota-lint.ps1') @lintArgs
+    if ($LASTEXITCODE -ne 0) { throw 'hopacsota-lint: gate G1 (size) or G2 (banned constructs) failed' }
 }
 
 $dotnet = Resolve-SpiralDotnet

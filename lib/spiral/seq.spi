@@ -344,6 +344,7 @@ type seq_switch' t =
         Python : $'list'
         Rust : $'Rc<Vec<`t>>'
         TypeScript : $'Array<`t>'
+        Zig : $'[]const `(t)'
     }
 nominal seq' t = $'backend_switch `(seq_switch' t)'
 
@@ -357,6 +358,7 @@ inl length' forall t. (items : seq' t) : int =
         Python = fun () => $'len(!items)' : int
         Rust = fun () => $'(!items.len() as `int)' : int
         TypeScript = fun () => $'!items.length' : int
+        Zig = fun () => $'\@as(`int, \@intCast(!items.len))' : int
     }
 
 /// ### to_list'
@@ -367,6 +369,7 @@ inl to_list' forall t. (items : seq' t) : listm'.list' t =
         Python = fun () => $'!items ' : listm'.list' t
         Rust = fun () => $'(!items).clone()' : listm'.list' t
         TypeScript = fun () => $'[...!items]' : listm'.list' t
+        Zig = fun () => $'!items ' : listm'.list' t
     }
 
 /// ### new_seq
@@ -408,6 +411,7 @@ inl of_array' forall dim t. (items : a dim t) : seq' t =
         Python = fun () => $'[item for item in !items]' : seq' t
         Rust = fun () => $'Rc::new(!items.borrow().clone())' : seq' t
         TypeScript = fun () => $'[...!items]' : seq' t
+        Zig = fun () => $'!items ' : seq' t
     }
 
 ///> fsharp
@@ -429,6 +433,7 @@ inl of_array forall dim t. (items : a dim t) : seq' t =
         Python = fun () => $'list(iter(!items))' : seq' t
         Rust = fun () => $'Rc::new(!items.borrow().clone())' : seq' t
         TypeScript = fun () => $'[...!items]' : seq' t
+        Zig = fun () => $'!items ' : seq' t
     }
 
 ///> fsharp
@@ -469,6 +474,7 @@ inl to_array' forall dim t. (items : seq' t) : a dim t =
             $'!x ' : a dim t
         Rust = fun () => $'Rc::new(RefCell::new((*!items).clone()))' : a dim t
         TypeScript = fun () => $'[...!items]' : a dim t
+        Zig = fun () => $'(spiral_gpa.dupe(`t, !items) catch \@panic("out of memory"))' : a dim t
     }
 
 ///> fsharp
@@ -496,6 +502,7 @@ inl of_list' forall t. (items : listm'.list' t) : seq' t =
         Python = fun () => $'!items ' : seq' t
         Rust = fun () => $'(!items).clone()' : seq' t
         TypeScript = fun () => $'[...!items]' : seq' t
+        Zig = fun () => $'!items ' : seq' t
     }
 
 /// ### cast'
@@ -515,6 +522,7 @@ inl cast' forall t u. (items : u) : seq' t =
                     | _ => $'Rc::new(IntoIterator::into_iter(!items).collect::<Vec<`t>>())' : seq' t
             x
         TypeScript = fun () => $'Array.from(!items)' : seq' t
+        Zig = fun () => $'!items ' : seq' t
     }
 
 /// ### rev'
@@ -527,6 +535,7 @@ inl rev'' forall t. (items : seq' t) : seq' t =
         Python = fun () => $'list(reversed(!items))' : seq' t
         Rust = fun () => $'Rc::new({ let mut v = (!items).as_ref().clone(); v.reverse(); v })' : seq' t
         TypeScript = fun () => $'[...!items].reverse()' : seq' t
+        Zig = fun () => $'blk: { const r = spiral_gpa.dupe(`t, !items) catch \@panic("out of memory"); std.mem.reverse(`t, r); break :blk r; }' : seq' t
     }
 
 ///> fsharp

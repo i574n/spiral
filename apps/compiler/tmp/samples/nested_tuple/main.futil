@@ -1,0 +1,212 @@
+import "primitives/core.futil";
+import "primitives/binary_operators.futil";
+import "primitives/memories/comb.futil";
+component sp_method0(in0: 32) -> (out0: 32, out1: 32, out2: 32, out3: 32) {
+  cells {
+    spiral_tick = std_reg(1);
+    spiral_ret0 = std_reg(32);
+    spiral_ret1 = std_reg(32);
+    spiral_ret2 = std_reg(32);
+    spiral_ret3 = std_reg(32);
+    v0 = std_reg(32);
+    v1 = std_reg(32);
+    op2 = std_add(32);
+    v2 = std_reg(32);
+    op4 = std_add(32);
+    v3 = std_reg(32);
+    op6 = std_add(32);
+  }
+  wires {
+    group g1 {
+      v0.in = in0;
+      v0.write_en = 1'd1;
+      g1[done] = v0.done;
+    }
+    group g3 {
+      op2.left = v0.out;
+      op2.right = 32'd1;
+      v1.in = op2.out;
+      v1.write_en = 1'd1;
+      g3[done] = v1.done;
+    }
+    group g5 {
+      op4.left = v0.out;
+      op4.right = 32'd2;
+      v2.in = op4.out;
+      v2.write_en = 1'd1;
+      g5[done] = v2.done;
+    }
+    group g7 {
+      op6.left = v0.out;
+      op6.right = 32'd3;
+      v3.in = op6.out;
+      v3.write_en = 1'd1;
+      g7[done] = v3.done;
+    }
+    group g8 {
+      spiral_ret0.in = v0.out;
+      spiral_ret0.write_en = 1'd1;
+      spiral_ret1.in = v1.out;
+      spiral_ret1.write_en = 1'd1;
+      spiral_ret2.in = v2.out;
+      spiral_ret2.write_en = 1'd1;
+      spiral_ret3.in = v3.out;
+      spiral_ret3.write_en = 1'd1;
+      g8[done] = spiral_ret0.done & spiral_ret1.done & spiral_ret2.done & spiral_ret3.done ? 1'd1;
+    }
+    out0 = spiral_ret0.out;
+    out1 = spiral_ret1.out;
+    out2 = spiral_ret2.out;
+    out3 = spiral_ret3.out;
+  }
+  control {
+    seq {
+      g1;
+      g3;
+      g5;
+      g7;
+      g8;
+    }
+  }
+}
+component sp_method1(in0: 32, in1: 32, in2: 32, in3: 32) -> (out: 32) {
+  cells {
+    spiral_tick = std_reg(1);
+    spiral_ret = std_reg(32);
+    v0 = std_reg(32);
+    v1 = std_reg(32);
+    v2 = std_reg(32);
+    v3 = std_reg(32);
+    v4 = std_reg(32);
+    op2 = std_add(32);
+    v5 = std_reg(32);
+    op4 = std_add(32);
+    v6 = std_reg(32);
+    op6 = std_add(32);
+    v7 = std_reg(32);
+    op8 = std_sub(32);
+  }
+  wires {
+    group g1 {
+      v0.in = in0;
+      v0.write_en = 1'd1;
+      v1.in = in1;
+      v1.write_en = 1'd1;
+      v2.in = in2;
+      v2.write_en = 1'd1;
+      v3.in = in3;
+      v3.write_en = 1'd1;
+      g1[done] = v0.done & v1.done & v2.done & v3.done ? 1'd1;
+    }
+    group g3 {
+      op2.left = v0.out;
+      op2.right = v1.out;
+      v4.in = op2.out;
+      v4.write_en = 1'd1;
+      g3[done] = v4.done;
+    }
+    group g5 {
+      op4.left = v4.out;
+      op4.right = v2.out;
+      v5.in = op4.out;
+      v5.write_en = 1'd1;
+      g5[done] = v5.done;
+    }
+    group g7 {
+      op6.left = v5.out;
+      op6.right = v3.out;
+      v6.in = op6.out;
+      v6.write_en = 1'd1;
+      g7[done] = v6.done;
+    }
+    group g9 {
+      op8.left = v6.out;
+      op8.right = 32'd10;
+      v7.in = op8.out;
+      v7.write_en = 1'd1;
+      g9[done] = v7.done;
+    }
+    group g10 {
+      spiral_ret.in = v7.out;
+      spiral_ret.write_en = 1'd1;
+      g10[done] = spiral_ret.done;
+    }
+    out = spiral_ret.out;
+  }
+  control {
+    seq {
+      g1;
+      g3;
+      g5;
+      g7;
+      g9;
+      g10;
+    }
+  }
+}
+component spiral_main() -> (out: 32) {
+  cells {
+    spiral_tick = std_reg(1);
+    spiral_ret = std_reg(32);
+    v0 = std_reg(32);
+    v1 = std_reg(32);
+    v2 = std_reg(32);
+    v3 = std_reg(32);
+    v4 = std_reg(32);
+    c2 = sp_method0();
+    c4 = sp_method1();
+  }
+  wires {
+    group g1 {
+      v0.in = 32'd1;
+      v0.write_en = 1'd1;
+      g1[done] = v0.done;
+    }
+    group g3 {
+      v1.in = c2.out0;
+      v1.write_en = 1'd1;
+      v2.in = c2.out1;
+      v2.write_en = 1'd1;
+      v3.in = c2.out2;
+      v3.write_en = 1'd1;
+      v4.in = c2.out3;
+      v4.write_en = 1'd1;
+      g3[done] = v1.done & v2.done & v3.done & v4.done ? 1'd1;
+    }
+    group g5 {
+      spiral_ret.in = c4.out;
+      spiral_ret.write_en = 1'd1;
+      g5[done] = spiral_ret.done;
+    }
+    out = spiral_ret.out;
+  }
+  control {
+    seq {
+      g1;
+      invoke c2(in0 = v0.out)();
+      g3;
+      invoke c4(in0 = v1.out, in1 = v2.out, in2 = v3.out, in3 = v4.out)();
+      g5;
+    }
+  }
+}
+component main() -> () {
+  cells {
+    @external spiral_io = comb_mem_d1(32, 1, 1);
+    entry = spiral_main();
+  }
+  wires {
+    group spiral_store {
+      spiral_io.addr0 = 1'd0;
+      spiral_io.write_en = 1'd1;
+      spiral_io.write_data = entry.out;
+      spiral_store[done] = spiral_io.done;
+    }
+  }
+  control {
+    seq {
+      invoke entry()();
+      spiral_store;
+    }
+  }
+}

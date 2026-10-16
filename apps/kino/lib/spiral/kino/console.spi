@@ -18,11 +18,21 @@ inl show_value forall t. (value : t) : () =
         Fsharp = fun () => $'System.Console.WriteLine(match box !value with :? string as s -> s | v -> sprintf "%A" v)' : ()
         TypeScript = fun () => $'console.log(!value)' : ()
         Python = fun () => $'print(!value)' : ()
-        Lua = fun () => $'print(!value)' : ()
+        Lua = fun () =>
+            real
+                typecase t with
+                | i64 => $'print(spiral_w64.tostring(!value, true))' : ()
+                | u64 => $'print(spiral_w64.tostring(!value, false))' : ()
+                | _ => $'print(!value)' : ()
         Gleam = fun () => gleam ()
         Cpp = fun () => cpp ()
         Zig = fun () => $'{ spiralPrintAny(!value); spiralPrint(&[_]u8{10}); }' : ()
         Lean = fun () => $'IO.println (toString !value)' : ()
+        CppHost = fun () => cpp ()
+        C = fun () => $'backend_switch_has_no_C_arm_in_kino_console' : ()
+        Delphi = fun () => $'backend_switch_has_no_Delphi_arm_in_kino_console' : ()
+        Wasm = fun () => $'backend_switch_has_no_Wasm_arm_in_kino_console' : ()
+        Bend = fun () => $'backend_switch_has_no_Bend_arm_in_kino_console' : ()
     })
 
 inl write_line forall t. (text : t) : () =
@@ -41,11 +51,21 @@ inl write_line forall t. (text : t) : () =
         Fsharp = fun () => $'System.Console.WriteLine(!text)' : ()
         TypeScript = fun () => $'console.log(!text)' : ()
         Python = fun () => $'print(!text)' : ()
-        Lua = fun () => $'print(!text)' : ()
+        Lua = fun () =>
+            real
+                typecase t with
+                | i64 => $'print(spiral_w64.tostring(!text, true))' : ()
+                | u64 => $'print(spiral_w64.tostring(!text, false))' : ()
+                | _ => $'print(!text)' : ()
         Gleam = fun () => gleam ()
         Cpp = fun () => cpp ()
         Zig = fun () => $'{ spiralPrintAny(!text); spiralPrint(&[_]u8{10}); }' : ()
         Lean = fun () => $'IO.println (toString !text)' : ()
+        CppHost = fun () => cpp ()
+        C = fun () => $'backend_switch_has_no_C_arm_in_kino_console' : ()
+        Delphi = fun () => $'backend_switch_has_no_Delphi_arm_in_kino_console' : ()
+        Wasm = fun () => $'backend_switch_has_no_Wasm_arm_in_kino_console' : ()
+        Bend = fun () => $'backend_switch_has_no_Bend_arm_in_kino_console' : ()
     })
 
 inl display (mime : string) (data : string) : () =

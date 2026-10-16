@@ -33,10 +33,36 @@ inl stats_of (kind : arena_creature) : creature_stats =
 inl server_beat_ms () : i32 = 50
 inl grass_ground_speed () : i32 = 150
 
-inl step_ms_from_canary_formula (speed : i32) (ground_speed : i32) : i32 =
+inl canary_step_speed_exact_up_to () : i32 = 408
+
+inl canary_step_speed (speed : i32) : i32 =
+    if speed < 8 then 1
+    elif speed <= 35 then (12289 * speed - 81935) / 4096
+    elif speed <= 47 then (11606 * speed - 57372) / 4096
+    elif speed <= 61 then (11118 * speed - 33954) / 4096
+    elif speed <= 80 then (10582 * speed - 732) / 4096
+    elif speed <= 96 then (10013 * speed + 45006) / 4096
+    elif speed <= 114 then (9558 * speed + 88680) / 4096
+    elif speed <= 122 then (9217 * speed + 127881) / 4096
+    elif speed <= 137 then (9012 * speed + 153088) / 4096
+    elif speed <= 156 then (8648 * speed + 202848) / 4096
+    elif speed <= 196 then (8056 * speed + 295768) / 4096
+    elif speed <= 214 then (7510 * speed + 400590) / 4096
+    elif speed <= 232 then (7282 * speed + 449600) / 4096
+    elif speed <= 255 then (6964 * speed + 523272) / 4096
+    elif speed <= 281 then (6617 * speed + 612091) / 4096
+    elif speed <= 301 then (6372 * speed + 680716) / 4096
+    elif speed <= 337 then (6063 * speed + 774007) / 4096
+    elif speed <= 362 then (5735 * speed + 883711) / 4096
+    elif speed <= 388 then (5559 * speed + 947585) / 4096
+    else (5325 * speed + 1037437) / 4096
+
+inl canary_step_speed_in_double (speed : i32) : i32 =
     inl rounded : i32 = conv (857.36 * log (conv speed + 261.29 : f64) - 4795.01 + 0.5)
-    inl effective : i32 = if rounded < 1 then 1 else rounded
-    inl duration = 1000 * ground_speed / effective
+    if rounded < 1 then 1 else rounded
+
+inl step_ms_from_canary_formula (speed : i32) (ground_speed : i32) : i32 =
+    inl duration = 1000 * ground_speed / canary_step_speed speed
     (duration + server_beat_ms () - 1) / server_beat_ms () * server_beat_ms ()
 
 inl player_step_ms (level : i32) : i32 = step_ms_from_canary_formula (110 + level - 1) (grass_ground_speed ())
@@ -91,3 +117,17 @@ test step_ms_matches_canary_step_formula_on_grass =
 test stats_on_gpu =
     inl ~marker = 0i32
     if (stats_of Troll).max_health + marker = 50i32 && experience_per_health Skeleton + marker = 700i32 then 0i32 else 1i32
+
+///> c
+test integer_step_speed_equals_canary_double_formula_for_every_speed_up_to_its_exact_limit =
+    let rec mismatches (speed : i32) (count : i32) : i32 =
+        if speed > canary_step_speed_exact_up_to () then count
+        elif canary_step_speed speed = canary_step_speed_in_double speed then mismatches (speed + 1) count
+        else mismatches (speed + 1) (count + 1)
+    inl ~first = 1i32
+    mismatches first 0 |> _assert_eq 0i32
+
+///> wgsl
+test integer_step_speed_on_gpu =
+    inl ~cyclops = 95i32
+    if canary_step_speed cyclops = 243i32 && step_ms_from_canary_formula cyclops (grass_ground_speed ()) = 650i32 then 0i32 else 1i32

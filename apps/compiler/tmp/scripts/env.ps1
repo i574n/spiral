@@ -16,7 +16,8 @@ function ConvertTo-SpiralMode([string]$Mode) {
     switch -Regex ($Mode) {
         '^(sf|single|single-flight)$' { 'single-flight' }
         '^(gp|gpt5parallel)$' { 'gpt5parallel' }
-        default { throw "unknown mode '$Mode' (use single-flight or gpt5parallel)" }
+        '^(hs|hopacsota)$' { 'hopacsota' }
+        default { throw "unknown mode '$Mode' (use single-flight, gpt5parallel or hopacsota)" }
     }
 }
 
@@ -25,9 +26,9 @@ function Get-SpiralCoreSource([string]$Mode) {
     Join-Path (Split-Path $BundleRoot -Parent) 'spiral_compiler.fs'
 }
 
-function Get-SpiralCoreProjection([string]$Mode, [string]$Destination) {
+function Get-SpiralCoreProjection([string]$Mode, [string]$Destination, [string]$Source) {
     $gpt5parallel = (ConvertTo-SpiralMode $Mode) -eq 'gpt5parallel'
-    $text = [IO.File]::ReadAllText((Get-SpiralCoreSource $Mode))
+    $text = [IO.File]::ReadAllText($(if ($Source) { $Source } else { Get-SpiralCoreSource $Mode }))
     $out = [Text.StringBuilder]::new($text.Length)
     $depth = 0
     $ours = [Collections.Generic.List[object]]::new()

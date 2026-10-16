@@ -2,8 +2,9 @@
 # Integers wrap at their declared width, 32 or 64 bits. Division and remainder
 # go toward zero, matching C. Signed >> is arithmetic and unsigned >> is
 # logical. The shift count keeps its low 5 bits (6 for 64-bit values).
-# float[32] rounds after every operation. The process prints nothing and exits
-# with spiral_io.
+# float[32] rounds after every operation and float[64] is a Python float. A
+# float literal stays exact until it meets a typed value. The process prints
+# nothing and exits with spiral_io.
 
 import math
 import struct
@@ -15,6 +16,7 @@ MASK64 = 0xFFFFFFFFFFFFFFFF
 SIGN64 = 0x8000000000000000
 INTEGER_KINDS = ('i32', 'u32', 'i64', 'u64')
 WIDE_KINDS = ('i64', 'u64')
+FLOAT_KINDS = ('f32', 'f64', 'real')
 
 
 class QasmError(Exception):
@@ -60,6 +62,13 @@ def as_u64(n):
 
 def f32(n):
     return struct.unpack('<f', struct.pack('<f', float(n)))[0]
+
+
+def f64(n):
+    return float(n)
+
+
+ROUND = {'f32': f32, 'f64': f64, 'real': f64}
 
 
 def idiv(a, b):
@@ -225,9 +234,9 @@ class Parser:
             self.expect('[')
             width = self.expect('num')[1]
             self.expect(']')
-            if width != 32:
-                fail(f'line {self.cur[2]}: only float[32] is supported')
-            return 'f32'
+            if width not in (32, 64):
+                fail(f'line {self.cur[2]}: only float[32] and float[64] are supported')
+            return 'f32' if width == 32 else 'f64'
         fail(f'line {self.cur[2]}: expected a type, got {self.cur[0]}')
 
     def parse_ret(self):
@@ -419,25 +428,28 @@ COMPARE = {
 }
 
 
-def float_div(a, b):
-    if b == 0.0:
-        fail('division by zero')
-    return f32(a / b)
+def float_ops(round_to):
+    def div(a, b):
+        if b == 0.0:
+            fail('division by zero')
+        return round_to(a / b)
+
+    def mod(a, b):
+        if b == 0.0:
+            fail('division by zero')
+        return round_to(math.fmod(a, b))
+    return {
+        '+': lambda a, b: round_to(a + b),
+        '-': lambda a, b: round_to(a - b),
+        '*': lambda a, b: round_to(a * b),
+        '/': div,
+        '%': mod,
+    }
 
 
-def float_mod(a, b):
-    if b == 0.0:
-        fail('division by zero')
-    return f32(math.fmod(a, b))
+FLOAT_OPS = {kind: float_ops(ROUND[kind]) for kind in FLOAT_KINDS}
 
-
-FLOAT_OPS = {
-    '+': lambda a, b: f32(a + b),
-    '-': lambda a, b: f32(a - b),
-    '*': lambda a, b: f32(a * b),
-    '/': float_div,
-    '%': float_mod,
-}
+MATH_BUILTINS = {'sqrt': math.sqrt, 'exp': math.exp, 'log': math.log, 'sin': math.sin, 'cos': math.cos, 'pow': math.pow}
 
 INT_OPS = {
     '+': lambda a, b: a + b,
@@ -462,7 +474,7 @@ def int_ops_for(kind):
 
 
 NARROW = {'i32': as_i32, 'u32': as_u32, 'i64': as_i64, 'u64': as_u64}
-QASM_TYPE = {'i32': 'int[32]', 'u32': 'uint[32]', 'i64': 'int[64]', 'u64': 'uint[64]'}
+QASM_TYPE = {'i32': 'int[32]', 'u32': 'uint[32]', 'i64': 'int[64]', 'u64': 'uint[64]', 'f32': 'float[32]', 'f64': 'float[64]', 'real': 'float'}
 
 DYN = 'dyn'
 TOP = 'top'
@@ -506,13 +518,13 @@ def converter(source, target):
     if target in INTEGER_KINDS:
         if source in INTEGER_KINDS or source == 'raw':
             return NARROW[target]
-        if source == 'f32':
+        if source in FLOAT_KINDS:
             return to_int_checked(NARROW[target], 'int' if target in ('i32', 'i64') else 'uint')
         fail(f"cannot convert {source} to {QASM_TYPE[target]}")
-    if target == 'f32':
+    if target in FLOAT_KINDS:
         if source == 'bool':
-            fail('cannot convert bool to float[32]')
-        return lambda x: f32(x)
+            fail(f'cannot convert bool to {QASM_TYPE[target]}')
+        return ROUND[target]
     if target == 'bool':
         fail(f'cannot convert {source} to bool')
     fail(f'unknown type {target}')
@@ -592,7 +604,16 @@ def bool_test(kind, fn):
 
 
 def static_scalar(kind):
-    return kind in INTEGER_KINDS or kind in ('f32', 'bool', 'raw')
+    return kind in INTEGER_KINDS or kind in FLOAT_KINDS or kind in ('bool', 'raw')
+
+
+def float_unify(ka, kb):
+    for kind in ('f64', 'f32', 'real'):
+        if ka == kind or kb == kind:
+            converter(ka, kind)
+            converter(kb, kind)
+            return kind
+    return None
 
 
 def integer_unify(ka, kb):
@@ -610,18 +631,18 @@ def integer_unify(ka, kb):
 def static_unify(ka, kb):
     if ka == kb and ka != 'raw':
         return ka
-    if ka == 'f32' or kb == 'f32':
-        converter(ka, 'f32')
-        converter(kb, 'f32')
-        return 'f32'
+    floating = float_unify(ka, kb)
+    if floating is not None:
+        return floating
     if ka == 'bool' or kb == 'bool':
         fail('bool mixed with a number')
     return integer_unify(ka, kb)
 
 
 def dyn_unify(a, b):
-    if kind_of(a) == 'f32' or kind_of(b) == 'f32':
-        return dyn_coerce(a, 'f32'), dyn_coerce(b, 'f32'), 'f32'
+    floating = float_unify(kind_of(a), kind_of(b))
+    if floating is not None:
+        return dyn_coerce(a, floating), dyn_coerce(b, floating), floating
     ka, kb = a.kind, b.kind
     if ka == 'bool' or kb == 'bool':
         if ka == kb:
@@ -647,11 +668,11 @@ def dyn_bin(op, a, b):
         return Tagged('bool', compare(x, y))
     if kind == 'bool':
         fail(f'{op} on bool')
-    if kind == 'f32':
-        float_op = FLOAT_OPS.get(op)
+    if kind in FLOAT_KINDS:
+        float_op = FLOAT_OPS[kind].get(op)
         if float_op is None:
-            fail(f'{op} on float[32]')
-        return Tagged('f32', float_op(x, y))
+            fail(f'{op} on {QASM_TYPE[kind]}')
+        return Tagged(kind, float_op(x, y))
     return Tagged(kind, NARROW[kind](int_ops_for(kind)[op](x, y)))
 
 
@@ -661,7 +682,7 @@ def dyn_unary(op, value):
         if kind == 'raw':
             value = Tagged('i32', as_i32(value.n))
             kind = 'i32'
-        if kind in ('f32', 'bool'):
+        if kind in FLOAT_KINDS or kind == 'bool':
             fail(f'complement of {kind}')
         return Tagged(kind, NARROW[kind](~value.n))
     if op == 'neg':
@@ -669,8 +690,8 @@ def dyn_unary(op, value):
             return Tagged('raw', -value.n)
         if kind == 'bool':
             fail('negation of bool')
-        if kind == 'f32':
-            return Tagged('f32', f32(-value.n))
+        if kind in FLOAT_KINDS:
+            return Tagged(kind, ROUND[kind](-value.n))
         return Tagged(kind, NARROW[kind](-value.n))
     if kind == 'bool':
         fail('unary plus of bool')
@@ -680,7 +701,7 @@ def dyn_unary(op, value):
 def zero_raw(kind):
     if kind == 'bool':
         return False
-    if kind == 'f32':
+    if kind in FLOAT_KINDS:
         return 0.0
     if kind in INTEGER_KINDS:
         return 0
@@ -704,10 +725,7 @@ class Machine:
         if kind == 'num':
             return 'raw', constant(expr[1])
         if kind == 'real':
-            try:
-                return 'f32', constant(f32(expr[1]))
-            except Exception as exc:
-                return DYN, raising(exc)
+            return 'real', constant(expr[1])
         if kind == 'bool':
             return 'bool', constant(expr[1])
         if kind == 'var':
@@ -748,7 +766,7 @@ class Machine:
             if source == 'raw':
                 inner = coerced('raw', inner, 'i32')
                 source = 'i32'
-            if source in ('f32', 'bool'):
+            if source in FLOAT_KINDS or source == 'bool':
                 return DYN, failing(f'complement of {source}', inner)
             narrow = NARROW[source]
             return source, lambda env: narrow(~inner(env))
@@ -757,8 +775,9 @@ class Machine:
                 return 'raw', lambda env: -inner(env)
             if source == 'bool':
                 return DYN, failing('negation of bool', inner)
-            if source == 'f32':
-                return 'f32', lambda env: f32(-inner(env))
+            if source in FLOAT_KINDS:
+                round_to = ROUND[source]
+                return source, lambda env: round_to(-inner(env))
             narrow = NARROW[source]
             return source, lambda env: narrow(-inner(env))
         if source == 'bool':
@@ -827,11 +846,11 @@ class Machine:
             return 'bool', lambda env: compare(left(env), right(env))
         if kind == 'bool':
             return DYN, failing(f'{op} on bool', left, right)
-        if kind == 'f32':
-            float_op = FLOAT_OPS.get(op)
+        if kind in FLOAT_KINDS:
+            float_op = FLOAT_OPS[kind].get(op)
             if float_op is None:
-                return DYN, failing(f'{op} on float[32]', left, right)
-            return 'f32', lambda env: float_op(left(env), right(env))
+                return DYN, failing(f'{op} on {QASM_TYPE[kind]}', left, right)
+            return kind, lambda env: float_op(left(env), right(env))
         int_op = int_ops_for(kind)[op]
         narrow = NARROW[kind]
         if kind == 'i32' and op in ('+', '-'):
@@ -847,7 +866,29 @@ class Machine:
             return kind, lambda env: (left(env) - right(env)) & MASK32
         return kind, lambda env: narrow(int_op(left(env), right(env)))
 
+    def math_call(self, name, args, table):
+        arity = 2 if name == 'pow' else 1
+        if len(args) != arity:
+            return DYN, failing(f'{name} expected {arity} arguments, got {len(args)}')
+        parts = [self.expr(arg, table) for arg in args]
+        kinds = [kind for kind, _ in parts]
+        if not all(kind in FLOAT_KINDS for kind in kinds):
+            return DYN, failing(f'{name} needs float arguments, got {kinds}')
+        kind = kinds[0] if arity == 1 else static_unify(kinds[0], kinds[1])
+        fns = [coerced(source, fn, kind) for source, fn in parts]
+        builtin = MATH_BUILTINS[name]
+        round_to = ROUND[kind]
+
+        def run(env):
+            try:
+                return round_to(builtin(*[fn(env) for fn in fns]))
+            except (ValueError, OverflowError):
+                fail(f'{name} outside its domain')
+        return kind, run
+
     def call(self, name, args, table):
+        if name not in self.signatures and name in MATH_BUILTINS:
+            return self.math_call(name, args, table)
         if name not in self.signatures:
             return DYN, failing(f'unknown function {name}')
         params, ret, _ = self.signatures[name]
@@ -1177,6 +1218,40 @@ def spiral_main() -> int[32] {
     float[32] v2 = sp_method0(v0, v1);
     bool v3 = (v2 >= 3.5);
     if (v3) { return 0; } else { return 1; }
+}
+output int[32] spiral_io;
+spiral_io = spiral_main();
+''', 0)
+    check('double', '''OPENQASM 3.0;
+def spiral_main() -> int[32] {
+    float[64] v0 = 0.1;
+    float[64] v1 = (v0 + 0.2);
+    float[32] v2 = float[32](v0);
+    float[64] v3 = float[64](v2);
+    float[64] v4 = 1E+22;
+    float[64] v5 = (v4 * v4);
+    bool v6 = (v1 == 0.30000000000000004);
+    bool v7 = (v3 != v0);
+    bool v8 = (v5 > v4);
+    int[32] v9 = int[32]((-(2.9)));
+    if ((v6 && v7) && (v8 && (v9 == (-2)))) { return 0; } else { return 1; }
+}
+output int[32] spiral_io;
+spiral_io = spiral_main();
+''', 0)
+    check('math', '''OPENQASM 3.0;
+def spiral_main() -> int[32] {
+    float[32] v0 = 144.0;
+    float[64] v1 = 81.0;
+    float[32] v2 = sqrt(v0);
+    float[64] v3 = sqrt(v1);
+    float[64] v4 = pow(v1, 0.5);
+    float[64] v5 = exp(0.0);
+    float[64] v6 = log(v5);
+    float[32] v7 = cos(v6);
+    bool v8 = ((v2 == 12.0) && (v3 == 9.0));
+    bool v9 = ((v4 == 9.0) && ((v6 == 0.0) && (v7 == 1.0)));
+    if ((v8 && v9) && (sin(v6) == 0.0)) { return 0; } else { return 1; }
 }
 output int[32] spiral_io;
 spiral_io = spiral_main();
