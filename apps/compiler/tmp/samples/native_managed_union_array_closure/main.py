@@ -14,11 +14,15 @@ except Exception:
 from dataclasses import dataclass
 from typing import NamedTuple, Union, Callable, Tuple
 i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 = int; f32 = float; f64 = float; char = str; string = str
+import sys
+sys.setrecursionlimit(1 << 30)
 
+def spiral_wrap(x, bits, signed):
+    x &= (1 << bits) - 1
+    return x - (1 << bits) if signed and x >> (bits - 1) else x
 def spiral_array_index(array, index):
     value = array[index]
     return value.item() if isinstance(array, cp.ndarray) and array.dtype.kind != 'O' else value
-import sys
 class US0_Empty(NamedTuple): # Empty
     tag = 0
 class US0_Values(NamedTuple): # Values
@@ -33,9 +37,9 @@ def closure0():
             return US0_Empty()
         else:
             del v1
-            v3 = cp.empty(2,dtype=cp.int32)
+            v3 = cp.zeros(2,dtype=cp.int32)
             v3[0] = v0
-            v4 = v0 + 1
+            v4 = spiral_wrap(v0 + 1, 32, True)
             v3[1] = v4
             del v4
             return US0_Values(v3)
@@ -51,11 +55,11 @@ def score_1(v0 : US0) -> i32:
             del v0
             v2 = v1.size
             v3 = spiral_array_index(v1, 0)
-            v4 = v2 + v3
+            v4 = spiral_wrap(v2 + v3, 32, True)
             del v2, v3
             v5 = spiral_array_index(v1, 1)
             del v1
-            v6 = v4 + v5
+            v6 = spiral_wrap(v4 + v5, 32, True)
             del v4, v5
             return v6
         case t:
@@ -71,9 +75,9 @@ def main():
     del v0
     v4 = score_1(v3)
     del v3
-    v5 = v2 + v4
+    v5 = spiral_wrap(v2 + v4, 32, True)
     del v2, v4
-    v6 = v5 + 28
+    v6 = spiral_wrap(v5 + 28, 32, True)
     del v5
     return v6
 

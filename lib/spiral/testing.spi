@@ -264,12 +264,10 @@ inl rec __assert_contains forall t u. (trace : testing_trace) (b : t) (a : u) : 
 inl _assert_contains b a =
     __assert_contains Console b a
 
-///> rust
 test assert_contains =
     ;[ "a"; "b"; "c" ]
     |> _assert_contains "b"
 
-///> rust
 test assert_contains_2 =
     "abcd"
     |> _assert_contains 'b'

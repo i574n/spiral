@@ -378,19 +378,30 @@ let withListing (path : string option) (action : TextWriter -> 'result) =
         action writer
     | None -> action TextWriter.Null
 
-match arguments with
-| "check" :: rest ->
-    let tally = withListing (option "--list" rest) (runCheck (readEntries (positional rest)))
-    exit (if corpora (readEntries (positional rest)) |> List.exists (fun corpus -> tally.Get (corpus + "\tover120") > 0) then 1 else 0)
-| "space" :: rest ->
-    withListing (option "--list" rest) (fun writer -> runSpace (readEntries (positional rest)) (option "--out" rest) writer (not (List.contains "--no-parse" rest))) |> ignore
-| "convert" :: rest ->
-    withListing (option "--list" rest) (fun writer -> runConvert (readEntries (positional rest)) (option "--out" rest) writer (not (List.contains "--no-parse" rest))) |> ignore
-| "flatten" :: rest ->
-    withListing (option "--list" rest) (fun writer -> runFlatten (readEntries (positional rest)) (option "--out" rest) writer) |> ignore
-| "format" :: rest ->
-    literalSplitting.Enabled <- List.contains "--split-literals" rest
-    withListing (option "--list" rest) (fun writer -> runFormat (readEntries (positional rest)) (option "--out" rest) writer) |> ignore
-| _ ->
-    eprintfn "usage: Format.fsx check|space|convert|flatten|format [--list file] [--out dir] [--no-parse] <corpus.tsv|file.spi>..."
-    exit 2
+let runCli () =
+    match arguments with
+    | "check" :: rest ->
+        let tally = withListing (option "--list" rest) (runCheck (readEntries (positional rest)))
+        if corpora (readEntries (positional rest)) |> List.exists (fun corpus -> tally.Get (corpus + "\tover120") > 0) then 1 else 0
+    | "space" :: rest ->
+        withListing (option "--list" rest) (fun writer -> runSpace (readEntries (positional rest)) (option "--out" rest) writer (not (List.contains "--no-parse" rest))) |> ignore
+        0
+    | "convert" :: rest ->
+        withListing (option "--list" rest) (fun writer -> runConvert (readEntries (positional rest)) (option "--out" rest) writer (not (List.contains "--no-parse" rest))) |> ignore
+        0
+    | "flatten" :: rest ->
+        withListing (option "--list" rest) (fun writer -> runFlatten (readEntries (positional rest)) (option "--out" rest) writer) |> ignore
+        0
+    | "format" :: rest ->
+        literalSplitting.Enabled <- List.contains "--split-literals" rest
+        withListing (option "--list" rest) (fun writer -> runFormat (readEntries (positional rest)) (option "--out" rest) writer) |> ignore
+        0
+    | _ ->
+        eprintfn "usage: Format.fsx check|space|convert|flatten|format [--list file] [--out dir] [--no-parse] <corpus.tsv|file.spi>..."
+        2
+
+let exitCode = ref 0
+let worker = Threading.Thread ((fun () -> exitCode.Value <- runCli ()), 1 <<< 30)
+worker.Start ()
+worker.Join ()
+exit exitCode.Value

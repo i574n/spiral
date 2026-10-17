@@ -68,6 +68,9 @@ inl numeric_conv forall t u. (x : t) : u =
     then real conv `t `u x
     else $'!x ' : u
 
+inl lean_parse_helpers () : () =
+    global "def spiralParseInt? (s : String) : Option Int :=\n  let u := s.trimAscii.toString\n  let v := if u.startsWith \"+\" then (u.drop 1).toString else u\n  v.toInt?\n\ndef spiralDigit (c : Char) : Int :=\n  if c.isDigit then (c.toNat : Int) - 48\n  else if 'a' ≤ c && c ≤ 'z' then (c.toNat : Int) - 87\n  else if 'A' ≤ c && c ≤ 'Z' then (c.toNat : Int) - 55\n  else 0\n\ndef spiralParseIntBase (s : String) (base : Int32) : Int32 :=\n  let u := s.trimAscii.toString\n  let neg := u.startsWith \"-\"\n  let body := if neg || u.startsWith \"+\" then (u.drop 1).toString else u\n  let v := body.foldl (fun acc c => acc * base.toInt + spiralDigit c) 0\n  Int32.ofInt (if neg then -v else v)"
+
 /// ### convert_i32_base
 inl convert_i32_base forall t. (base : i32) (x : t) : i32 =
     backend_switch {
@@ -92,6 +95,11 @@ inl convert_i32_base forall t. (base : i32) (x : t) : i32 =
             elif base = 10 then $'StrToInt(!x)' : i32
             else $'backend_switch_has_no_Delphi_arm_in_lib_spiral' : i32
         Wasm = fun () => $'(i32.wrap_i64 (call $parse_i64 !x !base))' : i32
+        Lean = fun () =>
+            lean_parse_helpers ()
+            $'(spiralParseIntBase !x !base)' : i32
+        Kotlin = fun () => $'((!x).trim().toIntOrNull(!base) ?: 0)' : i32
+        Swift = fun () => $'(Int32(String((!x).split(separator: " ").first ?? ""), radix: Int(!base)) ?? 0)' : i32
         Zig = fun () => $'(std.fmt.parseInt(i32, std.mem.trim(u8, !x, " \\t\\r\\n"), \@intCast(!base)) catch 0)' : i32
     }
 
@@ -143,6 +151,24 @@ inl convert_i32 forall t. (x : t) : int =
             elif is_float_type x
             then $'\@as(i32, \@intFromFloat(if (\@abs(!x - \@trunc(!x)) == 0.5) 2.0 * \@round(!x / 2.0) else \@round(!x)))' : int
             else x |> numeric_conv : int
+        Lean = fun () =>
+            if is_string_type x
+            then x |> convert_i32_base 10 : int
+            elif is_float_type x
+            then $'backend_switch_has_no_Lean_float_rounding_in_lib_spiral' : int
+            else $'(Int32.ofInt (SpiralToInt.toI !x))' : int
+        Kotlin = fun () =>
+            if is_string_type x
+            then x |> convert_i32_base 10 : int
+            elif is_float_type x
+            then $'kotlin.math.round(!x).toInt()' : int
+            else $'(!x).toInt()' : int
+        Swift = fun () =>
+            if is_string_type x
+            then x |> convert_i32_base 10 : int
+            elif is_float_type x
+            then $'Int32((!x).rounded(.toNearestOrEven))' : int
+            else $'Int32(truncatingIfNeeded: !x)' : int
     }
 
 /// ### try_convert
@@ -163,7 +189,7 @@ inl try_convert forall t u. (x : t) : option u =
     x |> to' fun x =>
         backend_switch {
             Gleam = fun () =>
-                if (real typecase u with int => true | _ => false) then
+                if is_string_type x && (real typecase u with i8 => true | i16 => true | i32 => true | i64 => true | u8 => true | u16 => true | u32 => true | u64 => true | _ => false) then
                     global "import gleam/int"
                     global "import gleam/string"
                     inl (n : int), (err : int) =
@@ -225,6 +251,20 @@ inl try_convert forall t u. (x : t) : option u =
                     inl ok : bool = $'(if (std.fmt.parseInt(i64, std.mem.trim(u8, !x, " \\t\\r\\n"), 10)) |_| true else |_| false)'
                     parsed_integer ok ($'(std.fmt.parseInt(i64, std.mem.trim(u8, !x, " \\t\\r\\n"), 10) catch 0)' : i64)
                 else x |> to |> Some : _ u
+            Lean = fun () =>
+                if is_string_type x
+                then
+                    lean_parse_helpers ()
+                    parsed_integer ($'(spiralParseInt? !x).isSome' : bool) ($'(Int64.ofInt ((spiralParseInt? !x).getD 0))' : i64)
+                else x |> to |> Some : _ u
+            Kotlin = fun () =>
+                if is_string_type x
+                then parsed_integer ($'((!x).trim().toLongOrNull() \!= null)' : bool) ($'((!x).trim().toLongOrNull() ?: 0L)' : i64)
+                else x |> to |> Some : _ u
+            Swift = fun () =>
+                if is_string_type x
+                then parsed_integer ($'((!x).split(separator: " ").count == 1 && Int64(String((!x).split(separator: " ")[0])) \!= nil)' : bool) ($'(Int64(String((!x).split(separator: " ").first ?? "")) ?? 0)' : i64)
+                else x |> to |> Some : _ u
         }
 
 ///> gleam
@@ -253,6 +293,10 @@ test try_convert_2 =
     "3"
     |> try_convert
     |> _assert_eq (3i32 |> Some)
+
+    "999999999999999"
+    |> try_convert
+    |> _assert_eq (999999999999999i64 |> Some)
 
     "a"
     |> try_convert

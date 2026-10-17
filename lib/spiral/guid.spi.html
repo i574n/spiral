@@ -7924,11 +7924,16 @@ a.anchor-link {
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">new_guid</span> <span class="p">(</span><span class="n">x</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="p">:</span> <span class="n">guid</span> <span class="o">=</span>
     <span class="n">run_target_args</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span><span class="p">)</span> <span class="n">function</span>
         <span class="o">|</span> <span class="n">Zig</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'(std.ascii.allocLowerString(spiral_gpa, !x) catch \@panic("out of memory"))'</span> <span class="p">:</span> <span class="n">guid</span>
-        <span class="o">|</span> <span class="n">Gleam</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">x</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!x '</span>
-        <span class="o">|</span> <span class="n">Lua</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">x</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!x '</span>
+        <span class="o">|</span> <span class="n">Gleam</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">x</span> <span class="o">=&gt;</span>
+            <span class="n">inl</span> <span class="n">lower</span> <span class="o">=</span> <span class="n">sm</span><span class="s1">'.to_lower x</span>
+            <span class="err">$</span><span class="s1">'!lower '</span>
+        <span class="o">|</span> <span class="n">Lua</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">x</span> <span class="o">=&gt;</span>
+            <span class="n">inl</span> <span class="n">lower</span> <span class="o">=</span> <span class="n">sm</span><span class="s1">'.to_lower x</span>
+            <span class="err">$</span><span class="s1">'!lower '</span>
         <span class="o">|</span> <span class="n">Cuda</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">x</span> <span class="o">=&gt;</span>
             <span class="k">global</span> <span class="s2">"import uuid"</span>
-            <span class="err">$</span><span class="s1">'!x '</span>
+            <span class="n">inl</span> <span class="n">lower</span> <span class="o">=</span> <span class="n">sm</span><span class="s1">'.to_lower x</span>
+            <span class="err">$</span><span class="s1">'!lower '</span>
         <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">x</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Rc::&lt;str&gt;::from(!x.to_lowercase())'</span>
         <span class="o">|</span> <span class="n">TypeScript</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">x</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!x.toLowerCase()'</span>
         <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">x</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!x |&gt; `guid '</span>
@@ -7944,11 +7949,39 @@ a.anchor-link {
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h3 id="zig_random_u64">zig_random_u64<a class="anchor-link" href="#zig_random_u64">¶</a></h3>
+<h3 id="to_string">to_string<a class="anchor-link" href="#to_string">¶</a></h3>
 </div>
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=10">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">to_string</span> <span class="p">(</span><span class="n">x</span> <span class="p">:</span> <span class="n">guid</span><span class="p">)</span> <span class="p">:</span> <span class="n">string</span> <span class="o">=</span>
+    <span class="n">run_target_args</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">x</span><span class="p">)</span> <span class="n">function</span>
+        <span class="o">|</span> <span class="n">Fsharp</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">x</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!x.ToString()'</span> <span class="p">:</span> <span class="n">string</span>
+        <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">x</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!x '</span> <span class="p">:</span> <span class="n">string</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=11">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="zig_random_u64">zig_random_u64<a class="anchor-link" href="#zig_random_u64">¶</a></h3>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=12">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7966,7 +7999,7 @@ a.anchor-link {
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=11">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=13">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7976,7 +8009,7 @@ a.anchor-link {
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=12">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=14">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8007,7 +8040,7 @@ a.anchor-link {
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=13">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=15">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8017,7 +8050,7 @@ a.anchor-link {
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=14">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=16">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8047,7 +8080,7 @@ a.anchor-link {
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=15">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=17">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8107,7 +8140,72 @@ __assert_eq' { expected = 12345678-9012-3456-7890-123456789012 }</pre>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=16">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=18">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="to_string_is_lowercase_text-(test)">to_string_is_lowercase_text (test)<a class="anchor-link" href="#to_string_is_lowercase_text-(test)">¶</a></h4>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=19">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [2]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
+<span class="o">///&gt;</span> <span class="n">fsharp</span>
+<span class="o">///&gt;</span> <span class="n">rust</span>
+<span class="o">///&gt;</span> <span class="n">zig</span>
+<span class="o">///&gt;</span> <span class="n">cuda</span>
+<span class="o">///&gt;</span> <span class="n">gleam</span>
+<span class="o">///&gt;</span> <span class="n">lua</span>
+
+<span class="s2">"6543210F-EDCB-A987-6543-210FEDCBA987"</span>
+<span class="o">|&gt;</span> <span class="n">new_guid</span>
+<span class="o">|&gt;</span> <span class="n">to_string</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="s2">"6543210f-edcb-a987-6543-210fedcba987"</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>.fsx (fsharp)
+__assert_eq { expected = 6543210f-edcb-a987-6543-210fedcba987 }
+.rs (rust)
+__assert_eq { expected = 6543210f-edcb-a987-6543-210fedcba987 }
+.zig (zig)
+__assert_eq { expected = 6543210f-edcb-a987-6543-210fedcba987 }
+.py (cuda)
+__assert_eq { expected = 6543210f-edcb-a987-6543-210fedcba987 }
+.gleam (gleam)
+__assert_eq { expected = 6543210f-edcb-a987-6543-210fedcba987 }
+.lua (lua)
+__assert_eq { expected = 6543210f-edcb-a987-6543-210fedcba987 }</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[2]:</div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
+<pre>0</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=20">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8117,12 +8215,12 @@ __assert_eq' { expected = 12345678-9012-3456-7890-123456789012 }</pre>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=17">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=21">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [2]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [3]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///&gt;</span> <span class="n">fsharp</span>

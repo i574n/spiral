@@ -677,6 +677,41 @@ Every gate is a command plus a number. "Looks fine" is not a gate.
 
 ### Phase 2: the Hopac engine
 
+- Entry analysis (2026-10-16, after Gate 1): the four memos (`join_point_method`, `join_point_closure`, `join_point_type`, `backend_switch_validated`) are single-flight `Dictionary`s read with `Utils.memoize` (`TryGetValue` then `TryAdd`) and a separate pending write, so two bodies running at once can both miss one key. D3's fill-once claim therefore has to replace that check-then-act at each of the four sites, and the claim is a Hopac server request, which only a job can make: the bodies that reach it run as jobs, so the evaluator around the four sites becomes job-shaped in the layer (G1's budget of 2x PartEval is sized for that). The seam call sites from Phase 1 stay; the first grain is the claim seam per memo kind with the single-thread table behind it (G3 at 1 worker), then the server table and N workers.
+- Grain 1 design (2026-10-16 19:33, read from single-flight's PartEval on pack-1z). The four sites share one shape: `Utils.memoize`
+  creates the per-body table (`join_point_closure` keyed by `(s.backend, body)`, `join_point_type` by `body`,
+  `join_point_method` by `(backend', body)`), `hc_table.Add` interns the specialization key, `TryGetValue` decides,
+  a pending value is written (`None` for closures, `(None, annot, name)` for methods, `None` for types), and the
+  deferred body fills it. `backend_switch_validated` has no pending state (`ContainsKey` then a write after
+  `apply`). Grain 1 replaces each decide-and-mark with one `PartEvalSeams.claim kind table key` returning
+  `Hit value | Pending | Owner`: `Pending` keeps today's error per kind ("Recursive join points must be
+  annotated", "Type join points must not be unboxed during their definition"; a closure's pending entry is a hit), and
+  `Owner` runs today's body path. Single-flight's side is today's code inlined, so its projection changes only by the
+  four calls (G6 `-Seams`). Shared mutable state the claim does not cover and that Phase 2 must also own: the per-body
+  `HashConsTable`s (`hc_table.Add` is check-then-act), the outer `Utils.memoize` (two bodies can create two inner
+  tables), `backend_strings.Add`, `backend_switch_validated_hc` and the `RustGapTrace.validating` counter. Proof
+  for grain 1: G3 on every policy at 1 worker (0 cells vs the single-flight run), apps/spiral byte-identical, G1/G2.
+- Grain 1 result (2026-10-17 00:15, staged as the job's tmp/night/pack-b/claim-seam.ps1, not in the tree):
+  `PartEvalSeams.claim` (`Found of 'v | Owner`) on both seam sides, used at the type, closure and method sites;
+  the method site keeps its `(None, annot, jp_name)` write before the body, because annotated recursion resolves
+  through that pending entry. Both cores and the hopacsota mode build; G6: 11 added single-flight lines, all seam
+  calls; G3 on `-Suite all` compile-only (6,906 rows): single-flight with the claim equals the pack-1y bless and
+  hopacsota inline and random:23 equal it, except one F# error row whose diagnostic blocks come in a different
+  order from run to run (host diagnostics, not partial evaluation). `backend_switch_validated` keeps a plain lookup.
+- Grain 2 design (2026-10-17 02:42, read from single-flight's PartEval with grain 1 applied). The three claim sites have
+  three final writes and one early write (`backend_switch_validated` has no pending state): closure `dict.[key] <- Some(domain_data, seq)`, type
+  `dict.[key] <- Some ret_ty`, method `dict.[key] <- (Some seq, Some ty, jp_name)`, and the method's
+  `(None, annot, jp_name)` before its body, which is how annotated recursion reads its own type (D4: an
+  annotated method is not pending). Grain 2 turns those writes into seams and gives `Claim` its waiting case,
+  still at one worker: `Claim<'v> = Found of 'v | Owner | Waiting of Pending<'v>` on both seam sides
+  (single-flight never builds `Waiting`); `PartEvalSeams.fill hopacsota dict key value` replaces the three
+  final writes and `PartEvalSeams.announce` the method's annotation write; each claim site gains
+  `| PartEvalSeams.Waiting pending -> PartEvalSeams.await hopacsota pending s` with D4's ancestor rule inside
+  `await` (a key on the waiter's own chain keeps today's per-kind result: the method error, the type error, a
+  closure's key hit). Single-flight's projection changes only by seam calls (G6). On hopacsota the table stays
+  the per-body `Dictionary` under the single-thread policies and becomes the D3 shard server under
+  `parallel`; the proof is G3 with `parallel` at `SPIRAL_HOPACSOTA_WORKERS=1` equal to `inline`, then
+  Gate 2's 2, 4 and 8 workers once the bodies that reach `await` run as jobs.
 - The Parallel policy: a local scheduler (D5), owner jobs per specialization, D3 servers with sharded
   tables, the D4 wait-for server, and the D13 event stream (off by default).
 - **Gate 2:**
@@ -758,8 +793,10 @@ Every gate is a command plus a number. "Looks fine" is not a gate.
 | 0 | R2 | 2026-10-14 00:54 | 31 entries, 0 without a line, 3/3 decided, 34/34 writes; P1-P5 | see notes |
 | 0 | R3 | 2026-10-14 07:52 | apps/spiral W/S 2.80 (8 workers 2.76x); mega roots W/S 1.00; scaling corpus N=1000 blocked by a typecheck stack overflow (fixed in source) | see notes |
 | 0 | R4 | 2026-10-14 12:08 | -Suite all 4098 rows, 5 policies, 0 differ; apps/spiral 636 methods + 579 closures deferred, output differs only in global order (55-58 lines) | see notes |
+| 1 | Gate 1 | 2026-10-16 11:18 | G1 131 lines, G2 0; -Suite all compile-only 6,758 rows: single-flight with seams = pack-1u oracle (0 cells), hopacsota inline/dfs/bfs/random:11/23/37 0 cells each; apps/spiral F# and Rust byte-identical under all 7; inline A/B 0.996 sum, 1.007 median, mega roots <= 1.031 | single-flight-20261016-104801, hopacsota-20261016-105126..110811 (job tmp/hopacsota-p1) |
 
 Scoreboard notes:
+- Phase 1 Gate 1 (2026-10-16): seams via `PartEvalSeams` (`/// ## PartEvalSeamsHopacsota` / `/// ## PartEvalSeams` pair before PartEval; job script `tmp/hopacsota-p1/seams.ps1`): session start, closure and annotated-method body deferral (type-known bodies only), key lists and hit markers for the four global-emitting memos, compile-time prints (`PrintStatic`, `PrintRaw`) as markers, root drain. D4's first-error rule: a failing deferred body or root leaves a fail marker at its position and the first one on the depth-first walk is raised; `frontier_hopacsota_two_errors` failed `random:23` before that rule and passes after it. Deferral is real: a PrintStatic probe printed `first,second,inner` (bfs) and `second,first,inner` (random:23) before prints became markers, `first,inner,second` (single-flight's order) after. Still open in Phase 1's structure: D3's Owner/Waiter capability shape and D8's phantom keys, which carry weight only with Phase 2's engine; `frontier_hopacsota_globals_order` does not yet pin R4's two concrete cases (apps/spiral does).
 - R1: functions read: `term_infer`, `term_check`, `term_descend`, `term_check_kind`, `def_inst`, the
   `book_valid` header; `emit_task`, `emit_jump`, `emit_fork`, `emit_match`, `monk_step`, `err_post`; bench:
   `gates/perf.ts`, `bend2/docs/gen_pins.ts`. Every D12 addition cites a file and function or a page.
@@ -821,6 +858,7 @@ Scoreboard notes:
 
 ## Decision changes
 
+- **2026-10-16 08:51, main: G6 compares projections modulo whitespace.** The R4 edit list (job scratch `hopacsota-p0/r4_deferred.ps1`) has twelve seam sites; ten are one-line hooks (memo hit markers, key lists, depth notes, session start, root drain), but the two deferred bodies (closure, annotated method) are 20-40 line blocks that must become an `evaluate` closure handed to the seam, which re-indents them. `projection-hash.ps1 -Seams` therefore diffs with whitespace ignored (`git diff -w`) and also accepts added lines that are only closing punctuation (`)`); every other added line must still call `PartEvalSeams.`. The `/// ## PartEvalSeams` section itself (the single-flight side of the seam pair: inline no-ops) is stripped from both projections before the diff, and `Get-SpiralCoreProjection` resolves `SPIRAL_CORE_HOPACSOTA` blocks like gpt5parallel ones (single-flight and gpt5parallel keep their `#else` side). The single-flight oracle staying identical (full-suite review, no row differs) remains the semantic half of G6.
 - **2026-10-13 23:2x, user: "why you're even considering dropping parallel evaluation? we need that for the
   abyssal codebases that'll come".** The first version of R3 made the measurement a go/no-go: below 1.5x
   simulated speedup, parallelism would move away from peval. That clause entered with this plan; it did not

@@ -1153,17 +1153,23 @@ test date_time_from_guid_3 =
     |> _assert_eq' $'System.DateTime.UnixEpoch'
 
 /// ### timestamp_guid_from_timestamp
-inl timestamp_guid_from_timestamp (guid : guid.guid) (timestamp : timestamp) : timestamp_guid =
-    inl guid = guid |> sm'.obj_to_string
-    inl timestamp = timestamp |> sm'.obj_to_string |> sm'.pad_left 18i32 '0'
-    if is_rust ()
-    then $'Rc::<str>::from(format\!("{}-{}-{}-{}{}", &!timestamp[0..8], &!timestamp[8..12], &!timestamp[12..16], &!timestamp[16..18], &!guid[21..]))'
-    else $'`timestamp_guid $"{!timestamp.[0..7]}-{!timestamp.[8..11]}-{!timestamp.[12..15]}-{!timestamp.[16..17]}{!guid.[21..]}"'
+inl timestamp_guid_from_timestamp (source : guid.guid) ((timestamp micros) : timestamp) : timestamp_guid =
+    inl digits = micros |> sm'.obj_to_string |> sm'.pad_left 18i32 '0'
+    inl piece first last = digits |> sm'.slice first last
+    piece 0i32 7i32 ++# "-" ++# piece 8i32 11i32 ++# "-" ++# piece 12i32 15i32 ++# "-" ++# piece 16i32 17i32
+    ++# (source |> guid.to_string |> sm'.range (am'.Start 21i32) (am'.End eval))
+    |> guid.new_guid
 
+///> fsharp
 ///> rust
+///> zig
+///> cuda
+///> gleam
+///> lua
 test timestamp_guid_from_timestamp =
     timestamp_guid_from_timestamp (test_guid ()) (0i64 |> timestamp)
-    |> _assert_eq' (guid.new_guid "00000000-0000-0000-0043-210fedcba987")
+    |> guid.to_string
+    |> _assert_eq "00000000-0000-0000-0043-210fedcba987"
 
 ///> fsharp
 test timestamp_guid_from_timestamp_2 =
@@ -1171,16 +1177,24 @@ test timestamp_guid_from_timestamp_2 =
     |> _assert_eq' (guid.new_guid $'$"99999999-9999-9999-9943-2{(!test_guid () |> string |> fun s -> s.Substring (s.Length - 11))}"')
 
 /// ### timestamp_from_guid
-inl timestamp_from_guid (guid : date_time_guid) : timestamp =
-    inl guid = guid |> sm'.obj_to_string
-    if is_rust ()
-    then $'format\!("{}{}{}{}", &!guid[0..8], &!guid[9..13], &!guid[14..18], &!guid[19..21]).parse::<i64>().unwrap()'
-    else $'`i64 $"{!guid.[0..7]}{!guid.[9..12]}{!guid.[14..17]}{!guid.[19..20]}"'
+inl timestamp_from_guid (source : date_time_guid) : timestamp =
+    inl text = source |> guid.to_string
+    inl piece first last = text |> sm'.slice first last
+    piece 0i32 7i32 ++# piece 9i32 12i32 ++# piece 14i32 17i32 ++# piece 19i32 20i32
+    |> convert.try_convert
+    |> optionm.value
+    |> fun (micros : i64) => micros |> timestamp
 
+///> fsharp
 ///> rust
+///> zig
+///> cuda
+///> gleam
+///> lua
 test timestamp_from_guid =
     timestamp_from_guid (guid.new_guid "00000000-0000-0000-00dc-ba9876543210")
-    |> _assert_eq' (0i64 |> timestamp)
+    |> fun (timestamp micros) => micros
+    |> _assert_eq 0i64
 
 ///> fsharp
 test timestamp_from_guid_2 =

@@ -8001,10 +8001,10 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>11:50:08 1<span class="ansi-black-intense-fg">v</span> file_system.create_dir / { dir = /tmp/!create_temp_path_/spiral_b2719437395e07afb3bae0dc829ac65a5fdc79a40048a1b898f371d89c2e71b8/11673ef1-3afd-b48c-b456-054dcc9be5a8 }
-11:50:08 2<span class="ansi-blue-intense-fg">d</span> runtime.execute_with_options / { file_name = pwsh; arguments = ["-c", "(Get-FileHash '/tmp/!create_temp_path_/spiral_b2719437395e07afb3bae0dc829ac65a5fdc79a40048a1b898f371d89c2e71b8/11673ef1-3afd-b48c-b456-054dcc9be5a8/test.txt' -Algorithm SHA256).Hash"] }
-11:50:09 3<span class="ansi-black-intense-fg">v</span> &gt; 01BA4719C80B6FE911B091A7C05124B64EEECE964E09C058EF8F9805DACA546B
-11:50:09 4<span class="ansi-black-intense-fg">v</span> runtime.execute_with_options / result / { file_name = pwsh; exit_code = 0; std_trace_len = 64 }
+<pre>11:23:41 1<span class="ansi-black-intense-fg">v</span> file_system.create_dir / { dir = /tmp/!create_temp_path_/spiral_b2719437395e07afb3bae0dc829ac65a5fdc79a40048a1b898f371d89c2e71b8/11673ef1-3afd-b48c-b456-054dcc9be5a8 }
+11:23:41 2<span class="ansi-blue-intense-fg">d</span> runtime.execute_with_options / { file_name = pwsh; arguments = ["-c", "(Get-FileHash '/tmp/!create_temp_path_/spiral_b2719437395e07afb3bae0dc829ac65a5fdc79a40048a1b898f371d89c2e71b8/11673ef1-3afd-b48c-b456-054dcc9be5a8/test.txt' -Algorithm SHA256).Hash"] }
+11:23:41 3<span class="ansi-black-intense-fg">v</span> &gt; 01BA4719C80B6FE911B091A7C05124B64EEECE964E09C058EF8F9805DACA546B
+11:23:42 4<span class="ansi-black-intense-fg">v</span> runtime.execute_with_options / result / { file_name = pwsh; exit_code = 0; std_trace_len = 64 }
 __assert_eq { expected = 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b }</pre>
 </div>
 </div>
@@ -8249,7 +8249,7 @@ __assert_eq { expected = 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f980
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>11:49:59 1<span class="ansi-black-intense-fg">v</span> file_system.create_dir / { dir = /tmp/!create_temp_path_/spiral_fc756a1ac4a64a4532d7144c9f0a771d224928c7774d6bbe8a3b2464da734610/11673ef1-3afd-b48c-b456-054dcc9be5a8 }
+<pre>11:23:31 1<span class="ansi-black-intense-fg">v</span> file_system.create_dir / { dir = /tmp/!create_temp_path_/spiral_fc756a1ac4a64a4532d7144c9f0a771d224928c7774d6bbe8a3b2464da734610/11673ef1-3afd-b48c-b456-054dcc9be5a8 }
 __assert_eq { expected = 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b }</pre>
 </div>
 </div>
@@ -8293,7 +8293,7 @@ __assert_eq { expected = 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f980
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>11:50:01 1<span class="ansi-black-intense-fg">v</span> file_system.create_dir / { dir = /tmp/!create_temp_path_/spiral_03b9c50d60e7f7d0c20f6475e0e907ea2fb0dbe6aedf2098169a3c603b7e891b/536878b7-182d-4692-f1ac-23e55345bf6d }
+<pre>11:23:32 1<span class="ansi-black-intense-fg">v</span> file_system.create_dir / { dir = /tmp/!create_temp_path_/spiral_03b9c50d60e7f7d0c20f6475e0e907ea2fb0dbe6aedf2098169a3c603b7e891b/536878b7-182d-4692-f1ac-23e55345bf6d }
 __assert_eq { expected = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 }</pre>
 </div>
 </div>
@@ -8689,16 +8689,16 @@ __assert_eq { expected = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx (fsharp)
-11:50:04 1v crypto.hash_to_port / { first_letter_code = 48; hash_part = 01ba4719; combined_value = 18249 }
+11:23:36 1v crypto.hash_to_port / { first_letter_code = 48; hash_part = 01ba4719; combined_value = 18249 }
 __assert_eq { expected = 19273 }
 .py (cuda)
-11:50:07 1<span class="ansi-black-intense-fg">v</span> crypto.hash_to_port / { first_letter_code = 48; hash_part = 01ba4719; combined_value = 18249 }
+11:23:42 1<span class="ansi-black-intense-fg">v</span> crypto.hash_to_port / { first_letter_code = 48; hash_part = 01ba4719; combined_value = 18249 }
 __assert_eq { expected = 19273 }
 .rs (rust)
-11:50:09 1<span class="ansi-black-intense-fg">v</span> crypto.hash_to_port / { first_letter_code = 48; hash_part = 01ba4719; combined_value = 18249 }
+11:23:44 1<span class="ansi-black-intense-fg">v</span> crypto.hash_to_port / { first_letter_code = 48; hash_part = 01ba4719; combined_value = 18249 }
 __assert_eq { expected = 19273 }
 .ts (typescript)
-11:50:10 1v crypto.hash_to_port / { first_letter_code = 48; hash_part = 01ba4719; combined_value = 18249 }
+11:23:45 1v crypto.hash_to_port / { first_letter_code = 48; hash_part = 01ba4719; combined_value = 18249 }
 __assert_eq { expected = 19273 }</pre>
 </div>
 </div>

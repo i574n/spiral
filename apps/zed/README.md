@@ -24,6 +24,7 @@ known gaps, failed approaches, and continuation checklist.
 | Native `spiral-zed` helper | Unit-tested and compiler-probed on Windows |
 | Zed-to-helper launch | Blocked pending a dev-extension rebuild and manual verification |
 | Diagnostics, hover, semantic tokens, build actions | Implemented in the helper, not currently verified in Zed |
+| Format document | `textDocument/formatting` answers one whole-document edit from `SpiralCompiler format --stdin --path`; `spiral-zed --format FILE` prints the edited file; not yet verified in Zed |
 | `.spiproj` links/actions | Partial implementation, not verified in Zed |
 | Test task picker entries | Repository-local developer tooling only |
 | Gutter run-test button | `runnables.scm` tags each `test name =` with `spiral-test`; not yet verified in Zed |

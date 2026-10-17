@@ -98,6 +98,8 @@ inl append_real (x : string) (s : string) : string =
         Lean = (fun () => $'(!s ++ !x)' : string) : () -> string
         C = (fun () => !!!!StaticStringConcat(s, x)) : () -> string
         Delphi = (fun () => $'!s + !x ' : string) : () -> string
+        Kotlin = (fun () => $'!s + !x ' : string) : () -> string
+        Swift = (fun () => $'!s + !x ' : string) : () -> string
         Bend = (fun () => !!!!StaticStringConcat(s, x)) : () -> string
     }
 
@@ -147,7 +149,13 @@ inl rec format_debug_real forall t. (x : t) : string =
                         inl head_str = format_debug_real `a a
                         inl tail_str = format_debug_real `b b
                         (++#*) head_str ((++#*) ", " tail_str)
-                    | {} => $'table.concat(!x, ", ")   ' : string
+                    | {} =>
+                        inl _, fields =
+                            real_core.record_fold
+                                fun { state = separator, acc key value } =>
+                                    ", ", acc ++#* separator ++#* format_debug_real `(`value) value
+                                ("", "") x
+                        fields
                     | array_base _ =>
                         (++#*) ((++#*) "[" ($'table.concat(!x, ", ")' : string)) "]"
                     | i64 => $'spiral_w64.tostring(!x, true)' : string

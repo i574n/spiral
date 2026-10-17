@@ -28,6 +28,7 @@ function Get-SpiralCoreSource([string]$Mode) {
 
 function Get-SpiralCoreProjection([string]$Mode, [string]$Destination, [string]$Source) {
     $gpt5parallel = (ConvertTo-SpiralMode $Mode) -eq 'gpt5parallel'
+    $hopacsota = (ConvertTo-SpiralMode $Mode) -eq 'hopacsota'
     $text = [IO.File]::ReadAllText($(if ($Source) { $Source } else { Get-SpiralCoreSource $Mode }))
     $out = [Text.StringBuilder]::new($text.Length)
     $depth = 0
@@ -35,17 +36,18 @@ function Get-SpiralCoreProjection([string]$Mode, [string]$Destination, [string]$
     foreach ($line in [regex]::Split($text, '(?<=\n)')) {
         if ($line.Length -eq 0) { continue }
         $bare = $line.TrimEnd("`r", "`n")
-        if ($bare -ceq '#if SPIRAL_CORE_GPT5PARALLEL') { $depth++; $ours.Add(@($depth, $true)); continue }
+        if ($bare -ceq '#if SPIRAL_CORE_GPT5PARALLEL') { $depth++; $ours.Add(@($depth, $true, $gpt5parallel)); continue }
+        if ($bare -ceq '#if SPIRAL_CORE_HOPACSOTA') { $depth++; $ours.Add(@($depth, $true, $hopacsota)); continue }
         if ($ours.Count -and $depth -eq $ours[$ours.Count - 1][0] -and ($bare -ceq '#else' -or $bare -ceq '#endif')) {
-            if ($bare -ceq '#else') { $ours[$ours.Count - 1] = @($depth, $false) } else { $ours.RemoveAt($ours.Count - 1); $depth-- }
+            if ($bare -ceq '#else') { $ours[$ours.Count - 1] = @($depth, $false, $ours[$ours.Count - 1][2]) } else { $ours.RemoveAt($ours.Count - 1); $depth-- }
             continue
         }
         if ($line -match '^\s*#if\b') { $depth++ } elseif ($line -match '^\s*#endif\b') { $depth-- }
         $keep = $true
-        foreach ($block in $ours) { if ($block[1] -ne $gpt5parallel) { $keep = $false; break } }
+        foreach ($block in $ours) { if ($block[1] -ne $block[2]) { $keep = $false; break } }
         if ($keep) { [void]$out.Append($line) }
     }
-    if ($ours.Count) { throw 'unterminated #if SPIRAL_CORE_GPT5PARALLEL block in the core' }
+    if ($ours.Count) { throw 'unterminated #if SPIRAL_CORE_GPT5PARALLEL or SPIRAL_CORE_HOPACSOTA block in the core' }
     New-Item -ItemType Directory -Force (Split-Path $Destination) | Out-Null
     [IO.File]::WriteAllText($Destination, $out.ToString())
     $Destination

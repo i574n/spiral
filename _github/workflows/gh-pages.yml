@@ -64,9 +64,9 @@ jobs:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     timeout-minutes: 360
     runs-on: ubuntu-24.04
-    env:
-      SPIRAL_BIN_CACHE_DIR: ${{ github.workspace }}/../spiral-bin
     steps:
+      - run: echo "SPIRAL_BIN_CACHE_DIR=$RUNNER_TEMP/spiral-bin" >> "$GITHUB_ENV"
+
       - uses: actions/checkout@v6
 
       - uses: erlef/setup-beam@v1

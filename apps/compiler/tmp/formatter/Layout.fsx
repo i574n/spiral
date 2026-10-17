@@ -304,10 +304,6 @@ type LiteralSplitting() =
 
 let literalSplitting = LiteralSplitting ()
 
-let coreTakesOperatorMacroArguments =
-    blockShapes Edition2 TopDown "inl probe () = !!!!Add(1i32 + 2i32, 3i32)\n"
-    |> List.forall (fun block -> not (block.Shape.StartsWith "error"))
-
 let literalChain (indent : int) (node : Node) : LaidLine list option =
     match node with
     | Group (opening, inner, closing) when literalSplitting.Enabled && opening.Token = TokStringOpen && not (fits indent (inlineText [ node ])) ->
@@ -1162,10 +1158,9 @@ and breakLong (indent : int) (nodes : Node list) : LaidLine list =
                 literalChain (indent + 4) literal
                 |> Option.map (fun pieces ->
                     let gap = match opening.Before with Whitespace 0 -> "" | _ -> " "
-                    let wrapOpen, wrapClose = if coreTakesOperatorMacroArguments then "", "" else opening.Text.Text, closing.Text.Text
-                    { Indent = indent; Text = inlineText [ Leaf bang; Leaf name ] + gap + opening.Text.Text + wrapOpen }
+                    { Indent = indent; Text = inlineText [ Leaf bang; Leaf name ] + gap + opening.Text.Text }
                     :: pieces
-                    @ [ { Indent = indent; Text = wrapClose + closing.Text.Text } ])
+                    @ [ { Indent = indent; Text = closing.Text.Text } ])
             | _ -> None
         match (if intrinsicTuple then None elif intrinsicLiteral.IsSome then intrinsicLiteral elif bracketThenLambda.IsSome then bracketThenLambda else lastArgumentLambda indent "" nodes) with
         | Some lines -> lines
@@ -1449,13 +1444,8 @@ let joinMacroContinuations (text : string) =
         pending |> Option.iter output.Add
         String.concat "\n" output + (if text.EndsWith "\n" then "\n" else "")
 
-let coreContinuesMacros =
-    match lexLine lex_state_init "$'a \\" with
-    | Opaque (_, InMacro), next -> next <> lex_state_init
-    | _ -> false
-
 let splitMacroLine (line : string) : string list =
-    if not literalSplitting.Enabled || not coreContinuesMacros || line.Length <= 120 then [ line ]
+    if not literalSplitting.Enabled || line.Length <= 120 then [ line ]
     else
         match lexLine lex_state_init line with
         | Code (indent, lexemes, tail), _ when tail.Text.Trim().Length = 0 ->

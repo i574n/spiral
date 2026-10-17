@@ -11168,12 +11168,12 @@ __assert_eq { expected = 19700102-0000-0000-0000-000000cba987 }</pre>
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">timestamp_guid_from_timestamp</span> <span class="p">(</span><span class="n">guid</span> <span class="p">:</span> <span class="n">guid</span><span class="o">.</span><span class="n">guid</span><span class="p">)</span> <span class="p">(</span><span class="n">timestamp</span> <span class="p">:</span> <span class="n">timestamp</span><span class="p">)</span> <span class="p">:</span> <span class="n">timestamp_guid</span> <span class="o">=</span>
-    <span class="n">inl</span> <span class="n">guid</span> <span class="o">=</span> <span class="n">guid</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.obj_to_string</span>
-    <span class="n">inl</span> <span class="n">timestamp</span> <span class="o">=</span> <span class="n">timestamp</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.obj_to_string |&gt; sm'</span><span class="o">.</span><span class="n">pad_left</span> <span class="mi">18</span><span class="n">i32</span> <span class="s1">'0'</span>
-    <span class="k">if</span> <span class="n">is_rust</span> <span class="p">()</span>
-    <span class="n">then</span> <span class="err">$</span><span class="s1">'Rc::&lt;str&gt;::from(format\!("</span><span class="si">{}</span><span class="s1">-</span><span class="si">{}</span><span class="s1">-</span><span class="si">{}</span><span class="s1">-</span><span class="si">{}{}</span><span class="s1">", &amp;!timestamp[0..8], &amp;!timestamp[8..12], &amp;!timestamp[12..16], &amp;!timestamp[16..18], &amp;!guid[21..]))'</span>
-    <span class="k">else</span> <span class="err">$</span><span class="s1">'`timestamp_guid $"{!timestamp.[0..7]}-{!timestamp.[8..11]}-{!timestamp.[12..15]}-{!timestamp.[16..17]}{!guid.[21..]}"'</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">timestamp_guid_from_timestamp</span> <span class="p">(</span><span class="n">source</span> <span class="p">:</span> <span class="n">guid</span><span class="o">.</span><span class="n">guid</span><span class="p">)</span> <span class="p">((</span><span class="n">timestamp</span> <span class="n">micros</span><span class="p">)</span> <span class="p">:</span> <span class="n">timestamp</span><span class="p">)</span> <span class="p">:</span> <span class="n">timestamp_guid</span> <span class="o">=</span>
+    <span class="n">inl</span> <span class="n">digits</span> <span class="o">=</span> <span class="n">micros</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.obj_to_string |&gt; sm'</span><span class="o">.</span><span class="n">pad_left</span> <span class="mi">18</span><span class="n">i32</span> <span class="s1">'0'</span>
+    <span class="n">inl</span> <span class="n">piece</span> <span class="n">first</span> <span class="n">last</span> <span class="o">=</span> <span class="n">digits</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.slice first last</span>
+    <span class="n">piece</span> <span class="mi">0</span><span class="n">i32</span> <span class="mi">7</span><span class="n">i32</span> <span class="o">++</span><span class="c1"># "-" ++# piece 8i32 11i32 ++# "-" ++# piece 12i32 15i32 ++# "-" ++# piece 16i32 17i32</span>
+    <span class="o">++</span><span class="c1"># (source |&gt; guid.to_string |&gt; sm'.range (am'.Start 21i32) (am'.End eval))</span>
+    <span class="o">|&gt;</span> <span class="n">guid</span><span class="o">.</span><span class="n">new_guid</span>
 </pre></div>
 </div>
 </div>
@@ -11188,10 +11188,16 @@ __assert_eq { expected = 19700102-0000-0000-0000-000000cba987 }</pre>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
+<span class="o">///&gt;</span> <span class="n">fsharp</span>
 <span class="o">///&gt;</span> <span class="n">rust</span>
+<span class="o">///&gt;</span> <span class="n">zig</span>
+<span class="o">///&gt;</span> <span class="n">cuda</span>
+<span class="o">///&gt;</span> <span class="n">gleam</span>
+<span class="o">///&gt;</span> <span class="n">lua</span>
 
 <span class="n">timestamp_guid_from_timestamp</span> <span class="p">(</span><span class="n">test_guid</span> <span class="p">())</span> <span class="p">(</span><span class="mi">0</span><span class="n">i64</span> <span class="o">|&gt;</span> <span class="n">timestamp</span><span class="p">)</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span><span class="s1">' (guid.new_guid "00000000-0000-0000-0043-210fedcba987")</span>
+<span class="o">|&gt;</span> <span class="n">guid</span><span class="o">.</span><span class="n">to_string</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="s2">"00000000-0000-0000-0043-210fedcba987"</span>
 </pre></div>
 </div>
 </div>
@@ -11204,7 +11210,18 @@ __assert_eq { expected = 19700102-0000-0000-0000-000000cba987 }</pre>
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq' { expected = "00000000-0000-0000-0043-210fedcba987" }</pre>
+<pre>.fsx (fsharp)
+__assert_eq { expected = 00000000-0000-0000-0043-210fedcba987 }
+.rs (rust)
+__assert_eq { expected = 00000000-0000-0000-0043-210fedcba987 }
+.zig (zig)
+__assert_eq { expected = 00000000-0000-0000-0043-210fedcba987 }
+.py (cuda)
+__assert_eq { expected = 00000000-0000-0000-0043-210fedcba987 }
+.gleam (gleam)
+__assert_eq { expected = 00000000-0000-0000-0043-210fedcba987 }
+.lua (lua)
+__assert_eq { expected = 00000000-0000-0000-0043-210fedcba987 }</pre>
 </div>
 </div>
 <div class="jp-OutputArea-child jp-OutputArea-executeResult">
@@ -11264,11 +11281,13 @@ __assert_eq { expected = 19700102-0000-0000-0000-000000cba987 }</pre>
 <div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">timestamp_from_guid</span> <span class="p">(</span><span class="n">guid</span> <span class="p">:</span> <span class="n">date_time_guid</span><span class="p">)</span> <span class="p">:</span> <span class="n">timestamp</span> <span class="o">=</span>
-    <span class="n">inl</span> <span class="n">guid</span> <span class="o">=</span> <span class="n">guid</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.obj_to_string</span>
-    <span class="k">if</span> <span class="n">is_rust</span> <span class="p">()</span>
-    <span class="n">then</span> <span class="err">$</span><span class="s1">'format\!("</span><span class="si">{}{}{}{}</span><span class="s1">", &amp;!guid[0..8], &amp;!guid[9..13], &amp;!guid[14..18], &amp;!guid[19..21]).parse::&lt;i64&gt;().unwrap()'</span>
-    <span class="k">else</span> <span class="err">$</span><span class="s1">'`i64 $"{!guid.[0..7]}{!guid.[9..12]}{!guid.[14..17]}{!guid.[19..20]}"'</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">timestamp_from_guid</span> <span class="p">(</span><span class="n">source</span> <span class="p">:</span> <span class="n">date_time_guid</span><span class="p">)</span> <span class="p">:</span> <span class="n">timestamp</span> <span class="o">=</span>
+    <span class="n">inl</span> <span class="n">text</span> <span class="o">=</span> <span class="n">source</span> <span class="o">|&gt;</span> <span class="n">guid</span><span class="o">.</span><span class="n">to_string</span>
+    <span class="n">inl</span> <span class="n">piece</span> <span class="n">first</span> <span class="n">last</span> <span class="o">=</span> <span class="n">text</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.slice first last</span>
+    <span class="n">piece</span> <span class="mi">0</span><span class="n">i32</span> <span class="mi">7</span><span class="n">i32</span> <span class="o">++</span><span class="c1"># piece 9i32 12i32 ++# piece 14i32 17i32 ++# piece 19i32 20i32</span>
+    <span class="o">|&gt;</span> <span class="n">convert</span><span class="o">.</span><span class="n">try_convert</span>
+    <span class="o">|&gt;</span> <span class="n">optionm</span><span class="o">.</span><span class="n">value</span>
+    <span class="o">|&gt;</span> <span class="n">fun</span> <span class="p">(</span><span class="n">micros</span> <span class="p">:</span> <span class="n">i64</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">micros</span> <span class="o">|&gt;</span> <span class="n">timestamp</span>
 </pre></div>
 </div>
 </div>
@@ -11283,10 +11302,16 @@ __assert_eq { expected = 19700102-0000-0000-0000-000000cba987 }</pre>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
+<span class="o">///&gt;</span> <span class="n">fsharp</span>
 <span class="o">///&gt;</span> <span class="n">rust</span>
+<span class="o">///&gt;</span> <span class="n">zig</span>
+<span class="o">///&gt;</span> <span class="n">cuda</span>
+<span class="o">///&gt;</span> <span class="n">gleam</span>
+<span class="o">///&gt;</span> <span class="n">lua</span>
 
 <span class="n">timestamp_from_guid</span> <span class="p">(</span><span class="n">guid</span><span class="o">.</span><span class="n">new_guid</span> <span class="s2">"00000000-0000-0000-00dc-ba9876543210"</span><span class="p">)</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span><span class="s1">' (0i64 |&gt; timestamp)</span>
+<span class="o">|&gt;</span> <span class="n">fun</span> <span class="p">(</span><span class="n">timestamp</span> <span class="n">micros</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">micros</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="mi">0</span><span class="n">i64</span>
 </pre></div>
 </div>
 </div>
@@ -11299,7 +11324,18 @@ __assert_eq { expected = 19700102-0000-0000-0000-000000cba987 }</pre>
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>__assert_eq' { expected = 0 }</pre>
+<pre>.fsx (fsharp)
+__assert_eq { expected = 0 }
+.rs (rust)
+__assert_eq { expected = 0 }
+.zig (zig)
+__assert_eq { expected = 0 }
+.py (cuda)
+__assert_eq { expected = 0 }
+.gleam (gleam)
+__assert_eq { expected = 0 }
+.lua (lua)
+__assert_eq { expected = 0 }</pre>
 </div>
 </div>
 <div class="jp-OutputArea-child jp-OutputArea-executeResult">

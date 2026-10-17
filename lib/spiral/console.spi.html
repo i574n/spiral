@@ -8016,6 +8016,8 @@ a.anchor-link {
         <span class="n">Lean</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'IO.println (toString !obj)'</span> <span class="p">:</span> <span class="p">()</span>
         <span class="n">C</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">write_line_c</span> <span class="n">obj</span>
         <span class="n">Delphi</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Writeln(!obj)'</span> <span class="p">:</span> <span class="p">()</span>
+        <span class="n">Kotlin</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'run { System.out.write((!obj.toString() + "</span><span class="se">\\</span><span class="s1">n").toByteArray(Charsets.UTF_8)); System.out.flush() }'</span> <span class="p">:</span> <span class="p">()</span>
+        <span class="n">Swift</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'print(!obj)'</span> <span class="p">:</span> <span class="p">()</span>
         <span class="n">Bend</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">write_line_bend</span> <span class="n">obj</span>
         <span class="n">Wasm</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="n">write_wasm</span> <span class="n">obj</span>
@@ -8081,6 +8083,8 @@ a.anchor-link {
         <span class="n">Lean</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'IO.print (toString !x)'</span> <span class="p">:</span> <span class="p">()</span>
         <span class="n">C</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">write_c</span> <span class="n">x</span>
         <span class="n">Delphi</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Write(!x)'</span> <span class="p">:</span> <span class="p">()</span>
+        <span class="n">Kotlin</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'run { System.out.write(!x.toString().toByteArray(Charsets.UTF_8)); System.out.flush() }'</span> <span class="p">:</span> <span class="p">()</span>
+        <span class="n">Swift</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'print(!x, terminator: "")'</span> <span class="p">:</span> <span class="p">()</span>
         <span class="n">Wasm</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">write_wasm</span> <span class="n">x</span>
     <span class="p">}</span>
 </pre></div>

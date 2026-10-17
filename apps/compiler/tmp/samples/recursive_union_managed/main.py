@@ -14,8 +14,12 @@ except Exception:
 from dataclasses import dataclass
 from typing import NamedTuple, Union, Callable, Tuple
 i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 = int; f32 = float; f64 = float; char = str; string = str
-
 import sys
+sys.setrecursionlimit(1 << 30)
+
+def spiral_wrap(x, bits, signed):
+    x &= (1 << bits) - 1
+    return x - (1 << bits) if signed and x >> (bits - 1) else x
 UH0 = Union["UH0_Nil", "UH0_Cons"]
 class UH0_Nil(NamedTuple): # Nil
     tag = 0
@@ -31,7 +35,7 @@ def sum_0(v0 : UH0) -> i32:
             del v1
             v4 = sum_0(v2)
             del v2
-            v5 = v3 + v4
+            v5 = spiral_wrap(v3 + v4, 32, True)
             del v3, v4
             return v5
         case UH0_Nil(): # Nil
@@ -41,7 +45,7 @@ def sum_0(v0 : UH0) -> i32:
             raise Exception(f'Pattern matching miss. Got: {t}')
 def main():
     v0 = 2
-    v1 = cp.empty(v0,dtype=cp.int32)
+    v1 = cp.zeros(v0,dtype=cp.int32)
     del v0
     v2 = UH0_Nil()
     v3 = UH0_Cons(v1, v2)
@@ -50,7 +54,7 @@ def main():
     del v1, v3
     v5 = sum_0(v4)
     del v4
-    v6 = v5 - 4
+    v6 = spiral_wrap(v5 - 4, 32, True)
     del v5
     return v6
 

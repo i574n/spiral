@@ -27,15 +27,19 @@ mutual
 structure H0 where
   l0 : Int32
   l1 : String
+end
+deriving instance Inhabited for H0
+mutual
 structure H1 where
   l0 : H0
   l1 : Int32
+end
+deriving instance Inhabited for H1
+mutual
 structure H2 where
   l0 : H1
   l1 : Int32
 end
-deriving instance Inhabited for H0
-deriving instance Inhabited for H1
 deriving instance Inhabited for H2
 mutual
 partial def f_c0 (p0 : H2) (p1 : Int32) : IO H2 := do

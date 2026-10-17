@@ -195,6 +195,14 @@ test format_debug no_agree "tests each backend's native rendering" =
         }
     )
 
+///> lua
+test format_debug_lua_record_fields =
+    inl ~a = 5i64
+    { a } |> format_debug |> _assert_eq "5"
+    inl ~w = -9223372036854775807i64
+    inl ~u = 18446744073709551615u64
+    { w; u } |> format_debug |> _assert_eq "-9223372036854775807, 18446744073709551615"
+
 ///> gleam
 ///> lua
 ///> fsharp
@@ -524,7 +532,7 @@ inl index_of (search : string) (s : string) : int =
             $'x |> option.unwrap(-1)' : int
         Lua = fun () => $'string.find(!s, !search) - 1' : int
         Fsharp = fun () => $'!s.IndexOf !search ' : int
-        Python = fun () => $'!s.find(!search)' : int
+        Python = fun () => $'(lambda spiral_found: -1 if spiral_found < 0 else len((!s)[:spiral_found].encode("utf-8", "surrogateescape")))((!s).find(!search))' : int
         Rust = fun () => $'!s.find(&*!search).map(|i| i as `int).unwrap_or(-1)' : int
         TypeScript = fun () => $'!s.indexOf(!search)' : int
         Zig = fun () => $'(if (std.mem.indexOf(u8, !s, !search)) |i| \@as(`int, \@intCast(i)) else -1)' : int
@@ -988,7 +996,7 @@ inl length' forall dim. (input : string) : dim =
             $'string.length(!input)' : dim
         Lua = fun () => $'##!input ' : dim
         Fsharp = fun () => input |> $'String.length' : dim
-        Python = fun () => $'len(!input)' : dim
+        Python = fun () => $'len((!input).encode("utf-8", "surrogateescape"))' : dim
         Rust = fun () => $'(!input.len() as `dim)' : dim
         Zig = fun () => $'\@as(`dim, \@intCast(!input.len))' : dim
         Lean = fun () => $'(`dim.ofNat (!input).utf8ByteSize)' : dim

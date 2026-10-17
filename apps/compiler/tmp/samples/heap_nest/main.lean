@@ -26,10 +26,12 @@ def spiralStringSlice (s : String) (a b : Int) : IO String := do
 mutual
 structure H0 where
   l0 : Int32
+end
+deriving instance Inhabited for H0
+mutual
 structure H1 where
   l0 : H0
 end
-deriving instance Inhabited for H0
 deriving instance Inhabited for H1
 mutual
 partial def spiralMain : IO Int32 := do

@@ -1189,6 +1189,7 @@ module Program =
         elif argv.Length >= 2 && argv.[0] = "--x-compat" then
             runXCompatReport argv.[1..]
         elif argv.Length = 2 && argv.[0] = "--check" then
+            Polyglot.spiral_compiler.xCompatWarnEntry argv.[1]
             exit (runAttestationBounded 30000 (fun () -> runCheck argv.[1]))
         elif (argv.Length = 3 || (argv.Length = 5 && argv.[1] = "--timeout-ms")) && argv.[0] = "--plan-ir" then
             let inputIndex = if argv.Length = 5 then 3 else 1
@@ -1202,6 +1203,10 @@ module Program =
         elif (argv.Length = 3 || argv.Length = 5) && argv.[0] = "--batch" then
             let timeoutMs = if argv.Length = 5 && argv.[3] = "--timeout-ms" then int argv.[4] else 120000
             exit (runBatch argv.[1] argv.[2] timeoutMs)
+        elif argv.Length >= 1 && argv.[0] = "format" then
+            Polyglot.spiral_compiler.FormatterCli.run (List.ofArray argv.[1..])
+        elif argv.Length >= 1 && argv.[0] = "format-corpus" then
+            Polyglot.spiral_compiler.FormatterCli.corpus (List.ofArray argv.[1..])
         elif argv.Length >= 1 && (argv.[0] = "build-file" || argv.[0] = "--build-file" || argv.[0] = "fsharp") then
             match parseBuildFileArgs argv with
             | Ok (jobs, timeoutMs, exitOnError) -> runBuildFiles jobs timeoutMs exitOnError
@@ -1234,5 +1239,5 @@ module Program =
                 eprintfn "%s" message
                 5
         else
-            eprintfn "usage: SpiralCompiler [--default-int i8|i16|i32|i64|u8|u16|u32|u64] [--default-float f32|f64] [--backend Fsharp|C|Rust|Delphi|Zig|TypeScript|Lua|Gleam|\"Cpp + Cuda\"|\"Python + Cuda\"] <input.spi> <output.fsx|.c|.rs|.pas|.zig|.ts|.lua|.gleam|.cpp|.py> | --check INPUT.spi | --test-blocks INPUT.spi OUTPUT.tsv|- | --source-blocks OUTPUT.tsv|- INPUT.spi [INPUT.spi ...] | --capabilities | --plan-ir [--timeout-ms N] INPUT.spi OUTPUT.ir | --batch JOBS.tsv RESULTS.tsv [--timeout-ms N] | --server SOCKET INPUT.spi | --server-tcp SOCKET [--stall-seconds N] | build-file IN OUT [IN OUT ...] [--timeout MS] [--exit-on-error] | fsharp IN.spi [--timeout MS]"
+            eprintfn "usage: SpiralCompiler [--default-int i8|i16|i32|i64|u8|u16|u32|u64] [--default-float f32|f64] [--backend Fsharp|C|Rust|Delphi|Zig|TypeScript|Lua|Gleam|\"Cpp + Cuda\"|\"Python + Cuda\"] <input.spi> <output.fsx|.c|.rs|.pas|.zig|.ts|.lua|.gleam|.cpp|.py> | --check INPUT.spi | --test-blocks INPUT.spi OUTPUT.tsv|- | --source-blocks OUTPUT.tsv|- INPUT.spi [INPUT.spi ...] | --capabilities | --plan-ir [--timeout-ms N] INPUT.spi OUTPUT.ir | --batch JOBS.tsv RESULTS.tsv [--timeout-ms N] | --server SOCKET INPUT.spi | --server-tcp SOCKET [--stall-seconds N] | build-file IN OUT [IN OUT ...] [--timeout MS] [--exit-on-error] | fsharp IN.spi [--timeout MS] | format FILE|DIR ... [--check] [--no-split-literals] | format --stdin --path PATH | format-corpus check|space|convert|flatten|format [--list FILE] [--out DIR] CORPUS.tsv"
             2

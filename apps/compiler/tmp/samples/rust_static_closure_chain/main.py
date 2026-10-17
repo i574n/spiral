@@ -14,8 +14,15 @@ except Exception:
 from dataclasses import dataclass
 from typing import NamedTuple, Union, Callable, Tuple
 i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 = int; f32 = float; f64 = float; char = str; string = str
-
 import sys
+sys.setrecursionlimit(1 << 30)
+
+def spiral_wrap(x, bits, signed):
+    x &= (1 << bits) - 1
+    return x - (1 << bits) if signed and x >> (bits - 1) else x
+def spiral_mod_trunc(a, b):
+    r = abs(a) % abs(b)
+    return -r if a < 0 else r
 UH0 = Union["UH0_Cons", "UH0_Nil"]
 class UH0_Cons(NamedTuple): # Cons
     v0 : u64
@@ -429,7 +436,7 @@ def loop_0(v0 : UH0, v1 : u64) -> u64:
                 del v0
                 v4 = v3()
                 del v3
-                v5 = v1 + v2
+                v5 = spiral_wrap(v1 + v2, 64, False)
                 del v1, v2
                 v0, v1 = v4, v5
                 continue
@@ -446,9 +453,9 @@ def main():
     v3 = 0
     v4 = loop_0(v2, v3)
     del v2, v3
-    v5 = v4 % 200
+    v5 = spiral_mod_trunc(v4, 200)
     del v4
-    v6 = i32(v5)
+    v6 = spiral_wrap(int(v5), 32, True)
     del v5
     return v6
 

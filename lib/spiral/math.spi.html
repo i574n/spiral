@@ -8217,6 +8217,8 @@ a.anchor-link {
         <span class="n">Delphi</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'ArcTan2(!y, !x)'</span> <span class="p">:</span> <span class="nb">float</span>
         <span class="n">Wasm</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'(call $math_atan2 !y !x)'</span> <span class="p">:</span> <span class="nb">float</span>
         <span class="n">TypeScript</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Math.atan2(!y, !x)'</span> <span class="p">:</span> <span class="nb">float</span>
+        <span class="n">Kotlin</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'kotlin.math.atan2(!y, !x)'</span> <span class="p">:</span> <span class="nb">float</span>
+        <span class="n">Swift</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'atan2(!y, !x)'</span> <span class="p">:</span> <span class="nb">float</span>
     <span class="p">}</span>
 </pre></div>
 </div>
@@ -8304,6 +8306,8 @@ __assert_eq { expected = 1.5707963267948966 }</pre>
         <span class="n">Delphi</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Int(!n) - Ord(Frac(!n) &lt; 0)'</span> <span class="p">:</span> <span class="n">t</span>
         <span class="n">Wasm</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'(`t.floor !n)'</span> <span class="p">:</span> <span class="n">t</span>
         <span class="n">TypeScript</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Math.floor(!n)'</span> <span class="p">:</span> <span class="n">t</span>
+        <span class="n">Kotlin</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'kotlin.math.floor(!n)'</span> <span class="p">:</span> <span class="n">t</span>
+        <span class="n">Swift</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'(!n).rounded(.down)'</span> <span class="p">:</span> <span class="n">t</span>
     <span class="p">}</span>
 </pre></div>
 </div>
@@ -8391,6 +8395,8 @@ __assert_eq { expected = 0.0 }</pre>
         <span class="n">Delphi</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Int(!n) + Ord(Frac(!n) &gt; 0)'</span> <span class="p">:</span> <span class="n">t</span>
         <span class="n">Wasm</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'(`t.ceil !n)'</span> <span class="p">:</span> <span class="n">t</span>
         <span class="n">TypeScript</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Math.ceil(!n)'</span> <span class="p">:</span> <span class="n">t</span>
+        <span class="n">Kotlin</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'kotlin.math.ceil(!n)'</span> <span class="p">:</span> <span class="n">t</span>
+        <span class="n">Swift</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'(!n).rounded(.up)'</span> <span class="p">:</span> <span class="n">t</span>
     <span class="p">}</span>
 </pre></div>
 </div>
@@ -8477,6 +8483,8 @@ __assert_eq { expected = 1.0 }</pre>
         <span class="n">Delphi</span> <span class="o">=</span> <span class="n">round_half_to_even</span>
         <span class="n">TypeScript</span> <span class="o">=</span> <span class="n">round_half_to_even</span>
         <span class="n">Wasm</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'(`t.nearest !x)'</span> <span class="p">:</span> <span class="n">t</span>
+        <span class="n">Kotlin</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'kotlin.math.round(!x)'</span> <span class="p">:</span> <span class="n">t</span>
+        <span class="n">Swift</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'(!x).rounded(.toNearestOrEven)'</span> <span class="p">:</span> <span class="n">t</span>
     <span class="p">}</span>
 </pre></div>
 </div>
@@ -8580,6 +8588,8 @@ __assert_eq { expected = 4.0 }</pre>
         <span class="n">TypeScript</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">log</span> <span class="n">a</span> <span class="o">/</span> <span class="n">log</span> <span class="n">new_base</span>
         <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">log</span> <span class="n">a</span> <span class="o">/</span> <span class="n">log</span> <span class="n">new_base</span>
         <span class="n">Lean</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">log</span> <span class="n">a</span> <span class="o">/</span> <span class="n">log</span> <span class="n">new_base</span>
+        <span class="n">Kotlin</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">log</span> <span class="n">a</span> <span class="o">/</span> <span class="n">log</span> <span class="n">new_base</span>
+        <span class="n">Swift</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">log</span> <span class="n">a</span> <span class="o">/</span> <span class="n">log</span> <span class="n">new_base</span>
     <span class="p">}</span>
 </pre></div>
 </div>

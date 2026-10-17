@@ -116,12 +116,12 @@ fn spiralMain() i32 {
     var v6: bool = undefined; _ = &v6;
     v0 = @as(i32, 41);
     v1 = (std.fmt.allocPrint(spiral_gpa, "{d}", .{ v0 }) catch @panic("out of memory"));
-    _ = { spiralPrintAny(v1); spiralPrint(&[_]u8{10}); };
+    { spiralPrintAny(v1); spiralPrint(&[_]u8{10}); }
     v2 = "hi";
-    _ = { spiralPrintAny(v2); spiralPrint(&[_]u8{10}); };
+    { spiralPrintAny(v2); spiralPrint(&[_]u8{10}); }
     v3 = true;
     v4 = (if (v3) "true" else "false");
-    _ = { spiralPrintAny(v4); spiralPrint(&[_]u8{10}); };
+    { spiralPrintAny(v4); spiralPrint(&[_]u8{10}); }
     v5 = v0 +% @as(i32, 1);
     v6 = v5 == @as(i32, 42);
     if (v6) {

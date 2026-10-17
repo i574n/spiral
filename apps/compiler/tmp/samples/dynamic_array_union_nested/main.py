@@ -14,11 +14,15 @@ except Exception:
 from dataclasses import dataclass
 from typing import NamedTuple, Union, Callable, Tuple
 i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 = int; f32 = float; f64 = float; char = str; string = str
+import sys
+sys.setrecursionlimit(1 << 30)
 
 def spiral_array_index(array, index):
     value = array[index]
     return value.item() if isinstance(array, cp.ndarray) and array.dtype.kind != 'O' else value
-import sys
+def spiral_wrap(x, bits, signed):
+    x &= (1 << bits) - 1
+    return x - (1 << bits) if signed and x >> (bits - 1) else x
 class US0_Empty(NamedTuple): # Empty
     tag = 0
 class US0_Nested(NamedTuple): # Nested
@@ -37,18 +41,18 @@ def score_0(v0 : US0) -> i32:
             v4 = v1.size
             del v1
             v5 = spiral_array_index(v2, 0)
-            v6 = v4 + v5
+            v6 = spiral_wrap(v4 + v5, 32, True)
             del v4, v5
             v7 = spiral_array_index(v2, 1)
             del v2
-            v8 = v6 + v7
+            v8 = spiral_wrap(v6 + v7, 32, True)
             del v6, v7
             v9 = spiral_array_index(v3, 0)
-            v10 = v8 + v9
+            v10 = spiral_wrap(v8 + v9, 32, True)
             del v8, v9
             v11 = spiral_array_index(v3, 1)
             del v3
-            v12 = v10 + v11
+            v12 = spiral_wrap(v10 + v11, 32, True)
             del v10, v11
             return v12
         case t:
@@ -56,8 +60,8 @@ def score_0(v0 : US0) -> i32:
 def main():
     v0 = 2
     v1 = __import__('numpy').empty(v0,dtype=object)
-    v2 = cp.empty(v0,dtype=cp.int32)
-    v3 = cp.empty(v0,dtype=cp.int32)
+    v2 = cp.zeros(v0,dtype=cp.int32)
+    v3 = cp.zeros(v0,dtype=cp.int32)
     del v0
     v2[0] = 3
     v2[1] = 4
@@ -71,7 +75,7 @@ def main():
     del v1
     v5 = score_0(v4)
     del v4
-    v6 = v5 - 20
+    v6 = spiral_wrap(v5 - 20, 32, True)
     del v5
     return v6
 

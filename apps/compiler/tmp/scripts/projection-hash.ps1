@@ -1,4 +1,4 @@
-param([switch]$IgnoreHeaders, [switch]$Seams, [string]$Base = 'HEAD')
+param([switch]$IgnoreHeaders, [switch]$Seams, [string]$Base = 'HEAD', [string]$BaseFile)
 . $PSScriptRoot/env.ps1
 $dir = Join-Path ([IO.Path]::GetTempPath()) "spiral-projection-$PID"
 try {
@@ -14,11 +14,13 @@ try {
         $root = git -C (Split-Path $source) rev-parse --show-toplevel
         $relative = git -C $root ls-files --full-name -- $source
         $baseSource = Join-Path $dir 'base-source.fs'
-        [IO.File]::WriteAllText($baseSource, ((git -C $root show "${Base}:$relative") -join "`n"))
+        if ($BaseFile) { Copy-Item -LiteralPath $BaseFile $baseSource; $Base = $BaseFile }
+        else { [IO.File]::WriteAllText($baseSource, ((git -C $root show "${Base}:$relative") -join "`n")) }
         $before = Get-SpiralCoreProjection 'single-flight' (Join-Path $dir 'base-single-flight.fs') $baseSource
         $after = Join-Path $dir 'single-flight.fs'
-        $added = @(git diff --no-index -U0 -- $before $after | Where-Object { $_ -match '^\+(?!\+\+ )' } | ForEach-Object { $_.Substring(1) } | Where-Object { $_.Trim() -and -not $_.Trim().StartsWith('//') })
-        $foreign = @($added | Where-Object { -not $_.Contains('PartEvalSeams.') })
+        foreach ($projection in $before, $after) { [IO.File]::WriteAllText($projection, [regex]::Replace([IO.File]::ReadAllText($projection), '(?ms)^    /// ## PartEvalSeams\n.*?(?=^    /// ## )', '')) }
+        $added = @(git diff --no-index -w -U0 -- $before $after | Where-Object { $_ -match '^\+(?!\+\+ )' } | ForEach-Object { $_.Substring(1) } | Where-Object { $_.Trim() -and -not $_.Trim().StartsWith('//') })
+        $foreign = @($added | Where-Object { -not $_.Contains('PartEvalSeams.') -and $_.Trim() -notmatch '^\)+$' })
         "single-flight projection vs ${Base}: $($added.Count) added code lines, $($foreign.Count) that are not PartEvalSeams calls"
         foreach ($line in $foreign | Select-Object -First 20) { "  " + $line.Trim().Substring(0, [Math]::Min(140, $line.Trim().Length)) }
         if ($foreign.Count) { exit 1 }

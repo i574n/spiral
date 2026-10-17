@@ -114,17 +114,17 @@ fn spiralMain() i32 {
     var v4: []const u8 = undefined; _ = &v4;
     var v5: i64 = undefined; _ = &v5;
     v0 = "hello";
-    _ = { spiralPrintAny(v0); spiralPrint(&[_]u8{10}); };
+    { spiralPrintAny(v0); spiralPrint(&[_]u8{10}); }
     v1 = @as(i32, 42);
-    _ = { spiralPrintAny(v1); spiralPrint(&[_]u8{10}); };
+    { spiralPrintAny(v1); spiralPrint(&[_]u8{10}); }
     v2 = "a";
-    _ = spiralPrintAny(v2);
+    spiralPrintAny(v2);
     v3 = "b";
-    _ = spiralPrintAny(v3);
+    spiralPrintAny(v3);
     v4 = "";
-    _ = { spiralPrintAny(v4); spiralPrint(&[_]u8{10}); };
+    { spiralPrintAny(v4); spiralPrint(&[_]u8{10}); }
     v5 = @as(i64, -7);
-    _ = { spiralPrintAny(v5); spiralPrint(&[_]u8{10}); };
+    { spiralPrintAny(v5); spiralPrint(&[_]u8{10}); }
     return @as(i32, 0);
 }
 var spiral_exit_code: i32 = 0;

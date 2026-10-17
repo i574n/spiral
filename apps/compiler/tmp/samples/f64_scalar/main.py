@@ -14,8 +14,12 @@ except Exception:
 from dataclasses import dataclass
 from typing import NamedTuple, Union, Callable, Tuple
 i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 = int; f32 = float; f64 = float; char = str; string = str
-
 import sys
+sys.setrecursionlimit(1 << 30)
+
+def spiral_wrap(x, bits, signed):
+    x &= (1 << bits) - 1
+    return x - (1 << bits) if signed and x >> (bits - 1) else x
 def main():
     v0 = 1.5
     v1 = -2.0
@@ -33,9 +37,9 @@ def main():
     del v8
     v10 = 2.9
     v11 = -1.9
-    v12 = i32(v10)
+    v12 = spiral_wrap(int(v10), 32, True)
     del v10
-    v13 = i32(v11)
+    v13 = spiral_wrap(int(v11), 32, True)
     del v11
     v14 = 1.5
     v15 = f64(v14)

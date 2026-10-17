@@ -14,15 +14,29 @@ except Exception:
 from dataclasses import dataclass
 from typing import NamedTuple, Union, Callable, Tuple
 i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 = int; f32 = float; f64 = float; char = str; string = str
+import sys
+sys.setrecursionlimit(1 << 30)
 
 import sys
+def spiral_utf8(s):
+    return s.encode('utf-8', 'surrogateescape')
+def spiral_string_length(s):
+    return len(s) if s.isascii() else len(spiral_utf8(s))
+def spiral_string_index(s, i):
+    return s[i] if s.isascii() else chr(spiral_utf8(s)[i])
+def spiral_string_slice(s, a, b):
+    data = s.encode('ascii') if s.isascii() else spiral_utf8(s)
+    n = len(data)
+    if a < 0 or a > n or b < a - 1 or b >= n: sys.exit(3)
+    if b >= a and ((data[a] & 0xC0) == 0x80 or (b + 1 < n and (data[b + 1] & 0xC0) == 0x80)): sys.exit(3)
+    return s[a:b + 1] if s.isascii() else data[a:b + 1].decode('utf-8', 'surrogateescape')
 def main():
     v0 = "a \"b\" c"
     v1 = ""
     v2 = "a\\nb"
     v3 = "first\n(* not a comment *)\n// nor this\n\n$\"not a macro\" !x\ninl fake () = 1\n  indented"
     v4 = "\ntop\n\nlevel"
-    v5 = len(v0)
+    v5 = spiral_string_length(v0)
     v6 = v5 == 7
     del v5
     v7 = v6 != True
@@ -32,7 +46,7 @@ def main():
         return 1
     else:
         del v7
-        v8 = v0[2]
+        v8 = spiral_string_index(v0, 2)
         del v0
         v9 = v8 == '"'
         del v8
@@ -43,7 +57,7 @@ def main():
             return 2
         else:
             del v10
-            v11 = len(v1)
+            v11 = spiral_string_length(v1)
             del v1
             v12 = v11 == 0
             del v11
@@ -54,7 +68,7 @@ def main():
                 return 3
             else:
                 del v13
-                v14 = len(v2)
+                v14 = spiral_string_length(v2)
                 v15 = v14 == 4
                 del v14
                 v16 = v15 != True
@@ -64,7 +78,7 @@ def main():
                     return 4
                 else:
                     del v16
-                    v17 = v2[1]
+                    v17 = spiral_string_index(v2, 1)
                     del v2
                     v18 = v17 == '\\'
                     del v17
@@ -75,7 +89,7 @@ def main():
                         return 5
                     else:
                         del v19
-                        v20 = len(v3)
+                        v20 = spiral_string_length(v3)
                         v21 = v20 == 83
                         del v20
                         v22 = v21 != True
@@ -85,7 +99,7 @@ def main():
                             return 6
                         else:
                             del v22
-                            v23 = v3[5]
+                            v23 = spiral_string_index(v3, 5)
                             v24 = v23 == '\n'
                             del v23
                             v25 = v24 != True
@@ -95,7 +109,7 @@ def main():
                                 return 7
                             else:
                                 del v25
-                                v26 = v3[37]
+                                v26 = spiral_string_index(v3, 37)
                                 v27 = v26 == '\n'
                                 del v26
                                 v28 = v27 != True
@@ -105,7 +119,7 @@ def main():
                                     return 8
                                 else:
                                     del v28
-                                    v29 = v3[38]
+                                    v29 = spiral_string_index(v3, 38)
                                     v30 = v29 == '\n'
                                     del v29
                                     v31 = v30 != True
@@ -115,7 +129,7 @@ def main():
                                         return 9
                                     else:
                                         del v31
-                                        v32 = v3[39]
+                                        v32 = spiral_string_index(v3, 39)
                                         v33 = v32 == '$'
                                         del v32
                                         v34 = v33 != True
@@ -125,7 +139,7 @@ def main():
                                             return 10
                                         else:
                                             del v34
-                                            v35 = v3[57]
+                                            v35 = spiral_string_index(v3, 57)
                                             v36 = v35 == 'i'
                                             del v35
                                             v37 = v36 != True
@@ -135,7 +149,7 @@ def main():
                                                 return 11
                                             else:
                                                 del v37
-                                                v38 = v3[82]
+                                                v38 = spiral_string_index(v3, 82)
                                                 del v3
                                                 v39 = v38 == 'd'
                                                 del v38
@@ -146,7 +160,7 @@ def main():
                                                     return 12
                                                 else:
                                                     del v40
-                                                    v41 = len(v4)
+                                                    v41 = spiral_string_length(v4)
                                                     v42 = v41 == 11
                                                     del v41
                                                     v43 = v42 != True
@@ -156,7 +170,7 @@ def main():
                                                         return 13
                                                     else:
                                                         del v43
-                                                        v44 = v4[0]
+                                                        v44 = spiral_string_index(v4, 0)
                                                         v45 = v44 == '\n'
                                                         del v44
                                                         v46 = v45 != True
@@ -166,7 +180,7 @@ def main():
                                                             return 14
                                                         else:
                                                             del v46
-                                                            v47 = v4[5]
+                                                            v47 = spiral_string_index(v4, 5)
                                                             del v4
                                                             v48 = v47 == '\n'
                                                             del v47

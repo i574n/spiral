@@ -27,16 +27,20 @@ mutual
 structure H0 where
   l0 : Int32
   l1 : String
+end
+deriving instance Inhabited for H0
+mutual
 structure H1 where
   l0 : H0
   l1 : Int32
+end
+deriving instance Inhabited for H1
+mutual
 inductive U0 where
   | None : U0
   | Held : H1 → U0
 end
 deriving instance Inhabited for U0
-deriving instance Inhabited for H0
-deriving instance Inhabited for H1
 def U0.spiralTag : U0 → Int32
   | .None .. => 0
   | .Held .. => 1

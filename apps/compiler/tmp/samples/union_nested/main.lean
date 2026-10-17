@@ -27,11 +27,13 @@ mutual
 inductive U1 where
   | A : Int32 → U1
   | B : Int32 → U1
+end
+deriving instance Inhabited for U1
+mutual
 inductive U0 where
   | Wrap : U1 → U0
   | Other : Int32 → U0
 end
-deriving instance Inhabited for U1
 deriving instance Inhabited for U0
 def U1.spiralTag : U1 → Int32
   | .A .. => 0
