@@ -89,6 +89,30 @@ defmodule Spiral.Kino.MemoTest do
     windows = String.replace(dll, "/", "\\")
     assert key.(dll) == key.(if(match?({:win32, _}, :os.type()), do: String.upcase(windows), else: dll))
   end
+  test "a change to the compiler core re-keys even when the host DLL is untouched", %{package: package} do
+    dll = Path.join(package, "SpiralCompiler.dll")
+    core = Path.join(package, "SpiralCompilerCore.dll")
+    File.write!(dll, "host")
+    File.write!(core, "core one")
+    step = %{program: "inl main () = 0i32\n", real: ""}
+    key = fn -> Memo.key(Memo.context([memo: true, compiler_dll: dll], [step]), step, []) end
+    before = key.()
+    File.write!(core, "core two")
+    refute key.() == before
+  end
+  test "the same compiler binaries key the same from another folder and with other timestamps", %{package: package} do
+    step = %{program: "inl main () = 0i32\n", real: ""}
+    key = fn dir -> Memo.key(Memo.context([memo: true, compiler_dll: Path.join(dir, "SpiralCompiler.dll")], [step]), step, []) end
+    first = Path.join(package, "first")
+    second = Path.join(package, "second")
+    for dir <- [first, second] do
+      File.mkdir_p!(dir)
+      File.write!(Path.join(dir, "SpiralCompiler.dll"), "host")
+      File.write!(Path.join(dir, "SpiralCompilerCore.dll"), "core")
+    end
+    File.touch!(Path.join(second, "SpiralCompilerCore.dll"), {{2026, 1, 2}, {3, 4, 5}})
+    assert key.(first) == key.(second)
+  end
   test "Kino's identity covers the modules that shape a result, not the editor or report ones" do
     modules = Memo.result_path_modules()
     assert Spiral.Kino.Targets in modules
@@ -221,6 +245,21 @@ defmodule Spiral.Kino.MemoTest do
     assert Memo.reached_program("inl a () = 1i32\n", :unavailable) == "inl a () = 1i32\n"
   end
 
+  test "source-block bounds are stored once and reused when the same compiler cannot answer later" do
+    dir = Spiral.Kino.TestHelpers.tmp_dir!("bounds_cache")
+    memo = Path.join(dir, "memo")
+    step = %{program: "inl helper () = 1i32\ninl unused () = 2i32\ninl spiral_kino_test () = helper ()\nspiral_kino_test ()\n", real: ""}
+    real_dll = Spiral.Kino.Toolchain.compiler_dll([])
+    answered = Memo.context([memo: true, memo_dir: memo, compiler_dll: real_dll], [step])
+    refute answered.bounds == :unavailable
+    silent = Path.join(dir, "silent")
+    File.mkdir_p!(silent)
+    for name <- ["SpiralCompiler.dll", "SpiralCompilerCore.dll"], do: File.cp!(Path.join(Path.dirname(real_dll), name), Path.join(silent, name))
+    refute SourceBlocks.available?(compiler_dll: Path.join(silent, "SpiralCompiler.dll"))
+    reused = Memo.context([memo: true, memo_dir: memo, compiler_dll: Path.join(silent, "SpiralCompiler.dll")], [step])
+    assert reused.bounds == answered.bounds
+    assert Memo.key(reused, step, []) == Memo.key(answered, step, [])
+  end
   test "source-blocks rows group by input and skip headerless blocks" do
     rows = "1\t1\t2\t3\t4\tinl a () =\n1\t5\t0\t0\t6\t\n2\t1\t1\t1\t1\ttest x =\n"
     assert SourceBlocks.parse_rows(rows) == %{

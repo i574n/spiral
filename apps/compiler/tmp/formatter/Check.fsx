@@ -1,6 +1,6 @@
 #load "Lexed.fsx"
 
-open Polyglot.spiral_compiler
+open Spiral.spiral_compiler
 open Lexed
 
 let lineLimit = 120

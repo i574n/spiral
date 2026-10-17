@@ -5,51 +5,14 @@ use std::rc::Rc;
 enum US1 {
     US1_Living(i32, i32),
 }
-impl US1 {
-    fn tag(&self) -> i32 {
-        match self {
-            US1::US1_Living(..) => 0,
-        }
-    }
-}
-impl Default for US1 {
-    fn default() -> Self {
-        US1::US1_Living(<i32>::default(), <i32>::default())
-    }
-}
 #[derive(Clone)]
 enum US2 {
     US2_Fallen(i32),
-}
-impl US2 {
-    fn tag(&self) -> i32 {
-        match self {
-            US2::US2_Fallen(..) => 1,
-        }
-    }
-}
-impl Default for US2 {
-    fn default() -> Self {
-        US2::US2_Fallen(<i32>::default())
-    }
 }
 #[derive(Clone)]
 enum US0 {
     US0_Survived(US1),
     US0_Slain(US2),
-}
-impl US0 {
-    fn tag(&self) -> i32 {
-        match self {
-            US0::US0_Survived(..) => 0,
-            US0::US0_Slain(..) => 1,
-        }
-    }
-}
-impl Default for US0 {
-    fn default() -> Self {
-        US0::US0_Survived(<US1>::default())
-    }
 }
 fn spiral_main() -> i32 {
     let mut v0: i32 = 60i32;
@@ -85,5 +48,5 @@ fn spiral_main() -> i32 {
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 1 });
 }

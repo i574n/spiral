@@ -10,6 +10,8 @@ param(
     [switch]$Record,
     [switch]$FreshProcess,
     [switch]$WarmRecycle,
+    [switch]$ReuseNative,
+    [switch]$ReuseCompile,
     [ValidateSet('Release', 'Debug')][string]$Configuration = 'Release',
     [string]$WorkspaceRoot,
     [ValidateSet('Zig', 'Wasm', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Python', 'Rust', 'Delphi', 'Cpp', 'Kotlin', 'Swift', 'Wgsl', 'Calyx', 'OpenQasm', 'Ebpf')][string]$Probe,
@@ -36,6 +38,8 @@ if ($Parallel -le 0) {
     $Parallel = [int][Math]::Max(1, [Math]::Min($byCpu, [Math]::Floor($freeGb / 1.5)))
 }
 if ($Bless -and $Probe) { throw '-Probe runs are never blessed: they only measure a backend against the C rows' }
+if ($ReuseCompile -and ($Bless -or $Record)) { throw '-ReuseCompile replays stored compile results: -Bless and -Record compile every row' }
+if ($ReuseNative -and ($Bless -or $Record)) { throw '-ReuseNative replays stored native outcomes: -Bless and -Record run every native row' }
 if ($Bless -and $mode -ne 'single-flight') { throw '-Bless records the oracle baseline and is only valid in single-flight mode' }
 
 $dotnet = Resolve-SpiralDotnet
@@ -217,16 +221,49 @@ $workerScript = {
     $results
 }
 
+$compiled = @{}
+$compileMemoDir = Join-Path $cache 'compile-memo'
+New-Item -ItemType Directory -Force $compileMemoDir | Out-Null
+$compileSignatureLines = [Collections.Generic.List[string]]::new()
+foreach ($binary in @(Get-ChildItem (Split-Path $compiler) -Filter '*.dll' -File | Sort-Object Name)) { $compileSignatureLines.Add("$($binary.Name)=$([Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([IO.File]::ReadAllBytes($binary.FullName))))") }
+foreach ($root in @($BundleRoot, (Join-Path $BundleRoot '../../../lib'), $env:SPIRAL_COMPILER_PACKAGE_DIR) | Where-Object { $_ -and (Test-Path $_) }) {
+    $sources = Get-ChildItem $root -Recurse -File -Include '*.spi', '*.spir', '*.spiproj' -ErrorAction SilentlyContinue | Where-Object FullName -notmatch '[\\/](target|_build|node_modules|\.git)[\\/]' | Sort-Object FullName
+    foreach ($source in $sources) { $compileSignatureLines.Add("$([IO.Path]::GetRelativePath($root, $source.FullName))=$([Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([IO.File]::ReadAllBytes($source.FullName))))") }
+}
+Get-ChildItem Env: | Where-Object { $_.Name -like 'SPIRAL_*' -and $_.Name -notin 'SPIRAL_NATIVE_PARALLEL', 'SPIRAL_BIN_CACHE_DIR' -and $_.Name -notlike 'SPIRAL_KINO_*' } | Sort-Object Name | ForEach-Object { $compileSignatureLines.Add("env $($_.Name)=$($_.Value)") }
+$compileSignature = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes(($compileSignatureLines -join "`n") + "`n$mode`n$compiler"))).ToLowerInvariant()
+$compileMemoKeys = @{}
+$compileReused = 0
+$jobsToCompile = @(foreach ($job in $jobs) {
+    $memoKey = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes("$compileSignature`n$($job.Key)`n$($job.CoreBackend)`n$($job.Input)`n$($job.Output)`n$($job.TimeoutSec)"))).ToLowerInvariant()
+    $compileMemoKeys[$job.Key] = $memoKey
+    $memoPath = Join-Path $compileMemoDir "$memoKey.json"
+    if ($ReuseCompile -and (Test-Path -LiteralPath $memoPath)) {
+        $stored = Get-Content -LiteralPath $memoPath -Raw | ConvertFrom-Json
+        $outputPath = Join-Path $compileMemoDir "$memoKey.out"
+        if ($stored.Status -eq 'ok') {
+            if (-not (Test-Path -LiteralPath $outputPath)) { $job; continue }
+            $bytes = [IO.File]::ReadAllBytes($outputPath)
+            $current = if (Test-Path -LiteralPath $job.Output) { [IO.File]::ReadAllBytes($job.Output) } else { $null }
+            if ($null -eq $current -or -not [Linq.Enumerable]::SequenceEqual([byte[]]$current, [byte[]]$bytes)) { New-Item -ItemType Directory -Force (Split-Path $job.Output) | Out-Null; [IO.File]::WriteAllBytes($job.Output, $bytes) }
+        }
+        $compiled[$job.Key] = [pscustomobject]@{ Status = $stored.Status; Ms = [int64]$stored.Ms; Detail = ("$($stored.Detail) compile-reused").Trim(); Log = '' }
+        $compileReused++
+        continue
+    }
+    $job
+})
+if ($ReuseCompile) { Write-Host ("== compile memo: {0} jobs replayed, {1} to compile" -f $compileReused, $jobsToCompile.Count) }
+
 $groups = @{}
 $sampleIndex = 0
-foreach ($bySample in ($jobs | Group-Object Id)) {
+foreach ($bySample in ($jobsToCompile | Group-Object Id)) {
     $g = $sampleIndex++ % $Parallel
     if (-not $groups.ContainsKey($g)) { $groups[$g] = [Collections.Generic.List[object]]::new() }
     foreach ($j in $bySample.Group) { $groups[$g].Add($j) }
 }
 $sw = [Diagnostics.Stopwatch]::StartNew()
 $workerText = $workerScript.ToString()
-$compiled = @{}
 $workers = $groups.Keys | ForEach-Object { [pscustomobject]@{ Index = $_; Jobs = @($groups[$_]) } }
 $partials = $workers | ForEach-Object -ThrottleLimit $Parallel -Parallel {
     $runner = [scriptblock]::Create($using:workerText)
@@ -256,6 +293,15 @@ foreach ($job in $jobs) {
     $c.Status = 'emitted'
     $c.Detail = "output written, compile did not return ($($c.Detail))"
 }
+foreach ($job in $jobsToCompile) {
+    $c = $compiled[$job.Key]
+    if (-not $c -or $c.Status -notin 'ok', 'error') { continue }
+    $memoKey = $compileMemoKeys[$job.Key]
+    try {
+        if ($c.Status -eq 'ok') { [IO.File]::Copy($job.Output, (Join-Path $compileMemoDir "$memoKey.out"), $true) }
+        [IO.File]::WriteAllText((Join-Path $compileMemoDir "$memoKey.json"), ([ordered]@{ Status = $c.Status; Ms = [int64]$c.Ms; Detail = "$($c.Detail)" } | ConvertTo-Json -Compress))
+    } catch { }
+}
 
 $tools = Get-SpiralNativeTools
 $zigExe = $tools.Zig
@@ -275,6 +321,48 @@ function Get-CFlags($job) {
     $own = Join-Path (Split-Path $job.Input) 'c-shim.h'
     if (Test-Path $own) { $flags += @('-include', $own) }
     $flags
+}
+function Get-FileSha256([string]$path) { [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([IO.File]::ReadAllBytes($path))).ToLowerInvariant() }
+function Get-TextKey([string]$text) { [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($text))).ToLowerInvariant() }
+function Get-ToolStamp([string]$path) {
+    if (-not $path -or -not (Test-Path -LiteralPath $path)) { return "$path|missing" }
+    $real = $path
+    $scoopShim = [IO.Path]::ChangeExtension($real, '.shim')
+    if ($real -match '[\\/]scoop[\\/]shims[\\/]' -and (Test-Path -LiteralPath $scoopShim)) {
+        $target = (Get-Content -LiteralPath $scoopShim | Where-Object { $_ -match '^\s*path\s*=' } | Select-Object -First 1) -replace '^\s*path\s*=\s*"?([^"]+)"?\s*$', '$1'
+        if ($target -and (Test-Path -LiteralPath $target)) { $real = $target }
+    }
+    $parts = @($real -split '[\\/]')
+    $current = [Array]::LastIndexOf($parts, 'current')
+    if ($current -gt 0) {
+        $link = (Get-Item -LiteralPath ($parts[0..$current] -join [IO.Path]::DirectorySeparatorChar)).LinkTarget
+        if ($link) { $real = (@($link) + @($parts | Select-Object -Skip ($current + 1))) -join [IO.Path]::DirectorySeparatorChar }
+    }
+    $item = Get-Item -LiteralPath $real
+    $size = if ($item -is [IO.FileInfo]) { $item.Length } else { 'dir' }
+    "$real|$size|$($item.LastWriteTimeUtc.Ticks)"
+}
+function Get-NativeSignature {
+    $lines = [Collections.Generic.List[string]]::new()
+    $script = [System.Management.Automation.Language.Parser]::ParseFile($PSCommandPath, [ref]$null, [ref]$null)
+    $nativeCode = $script.FindAll({ param($node)
+            ($node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -in 'Build-And-Run', 'Invoke-Native', 'Get-CFlags') -or
+            ($node -is [System.Management.Automation.Language.IfStatementAst] -and $node.Clauses[0].Item1.Extent.Text -eq '$Native' -and $node.Extent.Text.Contains('$nativeJobs')) }, $true) |
+        ForEach-Object { $_.Extent.Text }
+    $lines.Add('native code=' + (Get-TextKey ($nativeCode -join "`n")))
+    foreach ($tool in @($tools.PSObject.Properties | Sort-Object Name)) { $lines.Add("$($tool.Name)=" + (Get-ToolStamp "$($tool.Value)")) }
+    $lines.Add('zig=' + (Get-ToolStamp $zigExe))
+    $lines.Add("SPIRAL_CXX=$env:SPIRAL_CXX")
+    foreach ($file in @(Get-ChildItem $shimDir -Recurse -File | Where-Object FullName -notmatch '[\\/](target|build|node_modules)[\\/]' | Sort-Object FullName)) {
+        $lines.Add("shim $([IO.Path]::GetRelativePath($shimDir, $file.FullName))=" + (Get-FileSha256 $file.FullName))
+    }
+    Get-TextKey ($lines -join "`n")
+}
+function Get-NativeMemoKey($job, [string]$signature) {
+    $flags = if ($job.Backend -eq 'C') { (Get-CFlags $job) -join ' ' } else { '' }
+    $ownShim = Join-Path (Split-Path $job.Input) 'c-shim.h'
+    $ownShimHash = if ($job.Backend -eq 'C' -and (Test-Path -LiteralPath $ownShim)) { Get-FileSha256 $ownShim } else { '' }
+    Get-TextKey "$signature`n$($job.Backend)`n$(Get-FileSha256 $job.Output)`n$flags`n$ownShimHash"
 }
 function Invoke-Native([string]$exe, [string[]]$arguments, [string]$workDir, [int]$timeoutSec, [string]$PathPrefix) {
     $info = [Diagnostics.ProcessStartInfo]::new($exe)
@@ -559,6 +647,28 @@ $nativeResults = @{}
 if ($Native) {
     $sw.Restart()
     $nativeJobs = @($jobs | Where-Object { $_.Backend -ne 'Fsharp' -and $compiled[$_.Key] -and $compiled[$_.Key].Status -in 'ok', 'emitted' })
+    $nativeMemoDir = Join-Path $cache 'native-memo'
+    New-Item -ItemType Directory -Force $nativeMemoDir | Out-Null
+    $nativeSignature = Get-NativeSignature
+    $nativeMemoKeys = @{}
+    $nativeReused = 0
+    $nativeReusedMs = 0
+    $nativeJobs = @(foreach ($job in $nativeJobs) {
+        if (-not (Test-Path -LiteralPath $job.Output)) { $job; continue }
+        $memoKey = Get-NativeMemoKey $job $nativeSignature
+        $nativeMemoKeys[$job.Key] = $memoKey
+        $memoPath = Join-Path $nativeMemoDir "$memoKey.json"
+        if ($ReuseNative -and (Test-Path -LiteralPath $memoPath)) {
+            $stored = Get-Content -LiteralPath $memoPath -Raw | ConvertFrom-Json
+            $stored.Detail = ("$($stored.Detail) native-reused").Trim()
+            $nativeResults[$job.Key] = $stored
+            $nativeReused++
+            $nativeReusedMs += [int]$stored.Ms
+            continue
+        }
+        $job
+    })
+    if ($ReuseNative) { Write-Host ("== native memo: {0} rows replayed (they took {1:N1} min summed), {2} to run" -f $nativeReused, ($nativeReusedMs / 60000), $nativeJobs.Count) }
     $laneCount = if ($env:SPIRAL_NATIVE_PARALLEL) { [int]$env:SPIRAL_NATIVE_PARALLEL } else { [Math]::Max(1, [Math]::Min(6, [Environment]::ProcessorCount - 2)) }
     $lanes = [Collections.Generic.List[object]]::new()
     for ($i = 0; $i -lt $laneCount; $i++) {
@@ -707,6 +817,14 @@ public static extern uint SetErrorMode(uint mode);
         $laneResult
     }
     foreach ($laneResult in $laneResults) { foreach ($k in $laneResult.Keys) { $nativeResults[$k] = $laneResult[$k] } }
+    foreach ($job in $nativeJobs) {
+        $result = $nativeResults[$job.Key]
+        $memoKey = $nativeMemoKeys[$job.Key]
+        if (-not $memoKey -or -not $result -or $result.Status -notin 'ran', 'build-fail' -or "$($result.Exit)" -eq 'timeout') { continue }
+        if ($result.Status -eq 'build-fail' -and -not "$($result.Detail)".Trim()) { continue }
+        $memo = [ordered]@{ Status = $result.Status; Exit = "$($result.Exit)"; Stdout = "$($result.Stdout)"; Detail = "$($result.Detail)"; Ms = [int]$result.Ms; RunMs = $result.RunMs }
+        try { [IO.File]::WriteAllText((Join-Path $nativeMemoDir "$memoKey.json"), ($memo | ConvertTo-Json -Compress)) } catch { }
+    }
     Write-Host ("== native lanes: {0}, each with its own gleam project and zig cache" -f $lanes.Count)
     Get-ChildItem $scratch -Directory -Filter "zig-cache-$stamp-*" -ErrorAction SilentlyContinue | ForEach-Object { try { [IO.Directory]::Delete($_.FullName, $true) } catch { } }
     Write-Host ("== native tier in {0:N1}s" -f $sw.Elapsed.TotalSeconds)
@@ -746,10 +864,14 @@ function Test-SharedFailure($c, $row) {
 }
 $byId = $rows | Group-Object id -AsHashTable
 $known = @{}
-$harness.Known | ForEach-Object { $known["$($_.Id)|$($_.Backend)"] = $_.Reason }
+$harness.Known | Where-Object { -not $_.ContainsKey('Oracle') -or $_['Oracle'] -eq $Oracle } | ForEach-Object { $known["$($_.Id)|$($_.Backend)"] = $_.Reason }
 $noOracle = if ($Oracle -eq 'C') { 'no-c' } else { "no-$($Oracle.ToLowerInvariant())" }
 foreach ($row in $rows | Where-Object { $_.backend -in 'C', 'Rust', 'Delphi', 'Zig', 'Wasm', 'Wgsl', 'Calyx', 'Kotlin', 'Swift', 'OpenQasm', 'Ebpf', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python' -and $_.backend -ne $Oracle -and $_.native -eq 'ran' }) {
     $c = $byId[$row.id] | Where-Object { $_.backend -eq $Oracle -and $_.native -eq 'ran' } | Select-Object -First 1
+    if (-not $c -and $Oracle -ne 'C' -and $row.backend -ne 'C') {
+        $c = $byId[$row.id] | Where-Object { $_.backend -eq 'C' -and $_.native -eq 'ran' } | Select-Object -First 1
+        if ($c) { $row.detail = ("oracle C (no $Oracle row); $($row.detail)").Trim() }
+    }
     $bothFailed = $c -and (Test-SharedFailure $c $row)
     $row.oracle =
         if (-not $c) { $noOracle }

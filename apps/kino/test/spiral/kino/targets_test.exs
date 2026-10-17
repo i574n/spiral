@@ -256,6 +256,28 @@ defmodule Spiral.Kino.TargetsTest do
       assert {{:ok, _}, _} = build.("second")
       assert File.read!(Path.join([dir, "second", "gleam", "manifest.toml"])) == File.read!(lock)
     end
+
+    test "gleam cells with the same manifest run in a warm package whose src is replaced, so each cell runs its own program" do
+      dir = Spiral.Kino.TestHelpers.tmp_dir!("gleam_warm")
+      opts = [bin_cache_dir: Path.join(dir, "cache")]
+
+      run = fn name, text ->
+        src = Path.join([dir, name, "gleam", "src"])
+        File.mkdir_p!(src)
+        main = Path.join(src, "main.gleam")
+        File.write!(main, "import gleam/io\npub fn main() { io.println(\"#{text}\") }\n")
+        {Targets.run(%{tool: :gleam, deps: [], target: "erlang"}, main, opts, 300_000, System.monotonic_time(:millisecond) + 300_000), main}
+      end
+
+      assert {{:ok, %{stdout: first}}, main} = run.("first", "warm one")
+      assert first =~ "warm one"
+      warm = Targets.gleam_warm_dir(Targets.gleam_manifest(main, [], "erlang"), 0, opts)
+      assert File.read!(Path.join(warm, "src/main.gleam")) =~ "warm one"
+      assert {{:ok, %{stdout: second}}, _} = run.("second", "warm two")
+      assert second =~ "warm two"
+      refute second =~ "warm one"
+      refute File.dir?(Path.join([dir, "second", "gleam", "build"]))
+    end
   end
   test "gleam compile warnings are not program output" do
     output = """

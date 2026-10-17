@@ -1,7 +1,7 @@
 #load "Lexed.fsx"
 
 open System.Text
-open Polyglot.spiral_compiler
+open Spiral.spiral_compiler
 open Lexed
 
 type Unflattenable =

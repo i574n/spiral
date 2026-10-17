@@ -2,17 +2,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 struct Heap0 { l0: i32 }
-impl Default for Heap0 {
-    fn default() -> Self {
-        Heap0 { l0: <i32>::default() }
-    }
-}
 struct Heap1 { l0: Rc<Heap0> }
-impl Default for Heap1 {
-    fn default() -> Self {
-        Heap1 { l0: <Rc<Heap0>>::default() }
-    }
-}
 fn spiral_main() -> i32 {
     let mut v0: i32 = 7i32;
     let mut v1: Rc<Heap0> = Rc::new(Heap0 { l0: v0 });
@@ -28,5 +18,5 @@ fn spiral_main() -> i32 {
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 1 });
 }

@@ -6,19 +6,6 @@ enum US0 {
     US0_Empty,
     US0_Item(Rc<str>, Rc<RefCell<Vec<i32>>>),
 }
-impl US0 {
-    fn tag(&self) -> i32 {
-        match self {
-            US0::US0_Empty => 0,
-            US0::US0_Item(..) => 1,
-        }
-    }
-}
-impl Default for US0 {
-    fn default() -> Self {
-        US0::US0_Empty
-    }
-}
 fn closure1(mut v0: US0) -> Rc<dyn Fn(i32) -> i32> {
     Rc::new(move |mut v1: i32| -> i32 {
         let mut v12: i32 = match &v0 {
@@ -89,5 +76,5 @@ fn spiral_main() -> i32 {
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 1 });
 }

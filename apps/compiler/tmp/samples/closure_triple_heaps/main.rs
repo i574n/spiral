@@ -2,11 +2,6 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 struct Heap0 { l0: i32, l1: Rc<str> }
-impl Default for Heap0 {
-    fn default() -> Self {
-        Heap0 { l0: <i32>::default(), l1: { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) } }
-    }
-}
 fn f_c0(mut v0: Rc<Heap0>, mut v1: Rc<Heap0>, mut v2: Rc<Heap0>) -> Rc<dyn Fn(i32) -> (Rc<Heap0>, Rc<Heap0>, Rc<Heap0>)> {
     Rc::new(move |mut v3: i32| -> (Rc<Heap0>, Rc<Heap0>, Rc<Heap0>) {
         (v0.clone(), v1.clone(), v2.clone())
@@ -66,5 +61,5 @@ fn spiral_main() -> i32 {
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 1 });
 }

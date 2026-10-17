@@ -3,7 +3,7 @@
 #nowarn 51
 
 #if !INTERACTIVE
-namespace Polyglot
+namespace Spiral
 #endif
 
 module spiral_compiler =
@@ -49324,7 +49324,7 @@ module spiral_compiler =
         | Printf | Add | Sub | Mult | Div | Mod | Pow | LT | LTE | EQ | NEQ | GT | GTE
         | BitwiseAnd | BitwiseOr | BitwiseXor | BitwiseComplement | ShiftLeft | ShiftRight
         | Neg | Log | Exp | Tanh | Sqrt | Sin | Cos | NanIs | Conv
-        | StringLength | StringIndex | StringSlice | ArrayIndex | ArrayIndexSet | ArrayLength | MonotonicDelayMs -> true
+        | StringLength | StringIndex | StringSlice | ArrayIndex | ArrayIndexSet | ArrayLength | MonotonicDelayMs | Export -> true
         | _ -> false
 
     /// ### semantic_tokens
@@ -53447,6 +53447,17 @@ module spiral_compiler =
         let key_hit (session : Session<'env>) (key : obj) (s : 'env) = if not (isNull session) then session.KeyHit(key, s)
         let key_body (session : Session<'env>) (key : obj) (label : string) (s : 'env) : 'env = if isNull session then s else session.KeyBody(key, label, s)
         let print (session : Session<'env>) (s : 'env) (text : string) = if isNull session then printfn "%s" text else session.Print(s, text)
+        type Claim<'v> =
+            | Found of 'v
+            | Owner
+        let claim (_ : Session<'env>) (table : Dictionary<'k, 'v>) (key : 'k) (pending : 'v) : Claim<'v> =
+            match table.TryGetValue key with
+            | true, value -> Found value
+            | false, _ ->
+                table.[key] <- pending
+                Owner
+        let fill (_ : Session<'env>) (table : Dictionary<'k, 'v>) (key : 'k) (value : 'v) = table.[key] <- value
+        let announce (_ : Session<'env>) (table : Dictionary<'k, 'v>) (key : 'k) (value : 'v) = table.[key] <- value
 #else
     /// ## PartEvalSeams
     module PartEvalSeams =
@@ -53467,6 +53478,17 @@ module spiral_compiler =
         let inline key_hit (_ : Session<'env>) (_ : obj) (_ : 'env) = ()
         let inline key_body (_ : Session<'env>) (_ : obj) (_ : string) (s : 'env) : 'env = s
         let inline print (_ : Session<'env>) (_ : 'env) (text : string) = printfn "%s" text
+        type Claim<'v> =
+            | Found of 'v
+            | Owner
+        let inline claim (_ : Session<'env>) (table : System.Collections.Generic.Dictionary<'k, 'v>) (key : 'k) (pending : 'v) : Claim<'v> =
+            match table.TryGetValue key with
+            | true, value -> Found value
+            | false, _ ->
+                table.[key] <- pending
+                Owner
+        let inline fill (_ : Session<'env>) (table : System.Collections.Generic.Dictionary<'k, 'v>) (key : 'k) (value : 'v) = table.[key] <- value
+        let inline announce (_ : Session<'env>) (table : System.Collections.Generic.Dictionary<'k, 'v>) (key : 'k) (value : 'v) = table.[key] <- value
 #endif
 #if SPIRAL_CORE_GPT5PARALLEL
     /// ## PartEval
@@ -137170,6 +137192,7 @@ module spiral_compiler =
             System.Collections.Concurrent.ConcurrentDictionary<JpClosureMemoCellIdentity,JpClosureMemoPendingEntry>()
         let join_point_closure = System.Collections.Concurrent.ConcurrentDictionary<_,_>(jp_body_key_comparer)
         let join_point_type = System.Collections.Concurrent.ConcurrentDictionary<_,_>(jp_type_body_comparer)
+        let uninhabited_nesting = new System.Threading.ThreadLocal<int>(fun () -> 0)
         /// Inline recompute for each owned JP body cell, keyed by the cell (its IVar object). A cell still pending once
         /// the JP graph is quiescent has no producer left (its work unit was retired, e.g. as a control-only replay
         /// sentinel); peval's root recomputes exactly those cells in place (FRONTIER.md fix 50).
@@ -147203,7 +147226,11 @@ module spiral_compiler =
                         // A nominal still being defined (a type join point) can't be inspected: count it inhabited.
                         try loop (depth-1) (nominal_type_apply s nominal) with PartEvalTypeError _ -> false
                     | _ -> false
-            loop 32 x
+            if uninhabited_nesting.Value >= 32 then false
+            else
+                uninhabited_nesting.Value <- uninhabited_nesting.Value + 1
+                try loop 32 x
+                finally uninhabited_nesting.Value <- uninhabited_nesting.Value - 1
         and nominal_type_apply s x =
             // Flatten the left-associated application spine explicitly so deeply nested
             // type-level application does not recurse through nominal_type_apply itself.
@@ -158976,6 +159003,7 @@ module spiral_compiler =
         let join_point_method = Dictionary(HashIdentity.Structural)
         let join_point_closure = Dictionary(HashIdentity.Structural)
         let join_point_type = Dictionary(HashIdentity.Structural)
+        let uninhabited_nesting = ref 0
         let backend_strings = HashConsTable()
         // BackendSwitch: the type of each non-current arm already validated, by (backend, arm closure as a join point key).
         let backend_switch_validated = Dictionary<string * RData [], Ty>(HashIdentity.Structural)
@@ -159049,17 +159077,16 @@ module spiral_compiler =
                 | YFun(_,_,FT_Pointer) when call_args.Length <> 0 -> raise_type_error s "Function pointers shouldn't have any runtime free variables in their environment."
                 | _ -> ()
 
-                match dict.TryGetValue(join_point_key) with
-                | true, _ -> PartEvalSeams.key_hit hopacsota (box (dict, join_point_key)) s
-                | false, _ ->
+                match PartEvalSeams.claim hopacsota dict join_point_key None with
+                | PartEvalSeams.Found _ -> PartEvalSeams.key_hit hopacsota (box (dict, join_point_key)) s
+                | PartEvalSeams.Owner ->
                     let s = rename_global_term s
                     let domain_data = ty_to_data s domain
                     s.env_stack_term.[0] <- domain_data
-                    dict.[join_point_key] <- None
                     let s = PartEvalSeams.key_body hopacsota (box (dict, join_point_key)) "closure" s
                     PartEvalSeams.defer hopacsota s { s with trace = []; inline_depth = InlineDepthOps.root } (Some ()) (fun (s : LangEnv) ->
                         let seq,ty = term_scope'' s body (Some fun_ty)
-                        dict.[join_point_key] <- Some(domain_data, seq)
+                        PartEvalSeams.fill hopacsota dict join_point_key (Some(domain_data, seq))
                         let ty =
                             match ty with
                             | YRecord a ->
@@ -159184,7 +159211,11 @@ module spiral_compiler =
                     | YNominal _ | YApply _ as nominal ->
                         try loop (depth-1) (nominal_type_apply s nominal) with PartEvalTypeError _ -> false
                     | _ -> false
-            loop 32 x
+            if uninhabited_nesting.Value >= 32 then false
+            else
+                uninhabited_nesting.Value <- uninhabited_nesting.Value + 1
+                try loop 32 x
+                finally uninhabited_nesting.Value <- uninhabited_nesting.Value - 1
         and ty s x =
             match x with
             | TPatternRef _ -> failwith "Compiler error: TPatternRef should have been eliminated during the prepass."
@@ -159201,10 +159232,10 @@ module spiral_compiler =
 
                 let dict, hc_table = Utils.memoize join_point_type (fun _ -> Dictionary(HashIdentity.Structural), HashConsTable()) body
                 let join_point_key = hc_table.Add(env_global_type)
-                match dict.TryGetValue(join_point_key) with
-                | true, Some ret_ty -> PartEvalSeams.key_hit hopacsota (box (dict, join_point_key)) s; ret_ty
-                | true, None -> raise_type_error (add_trace s r) "Type join points must not be unboxed during their definition."
-                | false, _ ->
+                match PartEvalSeams.claim hopacsota dict join_point_key None with
+                | PartEvalSeams.Found (Some ret_ty) -> PartEvalSeams.key_hit hopacsota (box (dict, join_point_key)) s; ret_ty
+                | PartEvalSeams.Found None -> raise_type_error (add_trace s r) "Type join points must not be unboxed during their definition."
+                | PartEvalSeams.Owner ->
                     assert (0 = scope.term.free_vars.Length)
                     let s : LangEnv = {
                         trace = r :: s.trace
@@ -159222,9 +159253,8 @@ module spiral_compiler =
                         }
                     let s = rename_global_term s
                     let s = PartEvalSeams.key_body hopacsota (box (dict, join_point_key)) "type" s
-                    dict.[join_point_key] <- None
                     let ret_ty = ty s body
-                    dict.[join_point_key] <- Some ret_ty
+                    PartEvalSeams.fill hopacsota dict join_point_key (Some ret_ty)
                     ret_ty
             | TB _ -> YB
             | TLit(_,x) -> YLit x
@@ -159626,10 +159656,10 @@ module spiral_compiler =
                 let join_point_key = hc_table.Add(env_global_value, env_global_type)
 
                 let ret_ty =
-                    match dict.TryGetValue(join_point_key) with
-                    | true, (_, Some ret_ty, _) -> PartEvalSeams.key_hit hopacsota (box (dict, join_point_key)) s; ret_ty
-                    | true, (_, None, _) -> raise_type_error (add_trace s r) "Recursive join points must be annotated."
-                    | false, _ ->
+                    match PartEvalSeams.claim hopacsota dict join_point_key (None, None, jp_name) with
+                    | PartEvalSeams.Found (_, Some ret_ty, _) -> PartEvalSeams.key_hit hopacsota (box (dict, join_point_key)) s; ret_ty
+                    | PartEvalSeams.Found (_, None, _) -> raise_type_error (add_trace s r) "Recursive join points must be annotated."
+                    | PartEvalSeams.Owner ->
                         let s : LangEnv = {
                             trace = r :: s.trace
                             inline_depth = s.inline_depth
@@ -159646,11 +159676,11 @@ module spiral_compiler =
                             }
                         let s = rename_global_term s
                         let annot = Option.map (ty s) annot
-                        dict.[join_point_key] <- (None, annot, jp_name)
+                        PartEvalSeams.announce hopacsota dict join_point_key (None, annot, jp_name)
                         let s = PartEvalSeams.key_body hopacsota (box (dict, join_point_key)) "method" s
                         PartEvalSeams.defer hopacsota s { s with trace = [r]; inline_depth = InlineDepthOps.root } annot (fun (s : LangEnv) ->
                             let seq,ty = term_scope'' s body annot
-                            dict.[join_point_key] <- (Some seq, Some ty, jp_name)
+                            PartEvalSeams.fill hopacsota dict join_point_key (Some seq, Some ty, jp_name)
                             annot |> Option.iter (fun annot -> if annot <> ty then raise_type_error s <| sprintf "The annotation of the join point does not match its body's type.Got: %s\nExpected: %s" (show_ty ty) (show_ty annot))
                             ty
                         )
@@ -163211,6 +163241,9 @@ module spiral_compiler =
         let exports = ResizeArray()
         let closure_of_var = Dictionary<int, int>()
         let export_names = HashSet<string>()
+        let union_tag_impls = Dictionary<string, string>()
+        let union_tags_used = HashSet<string>()
+        let default_impls = Dictionary<string, string>()
 
         let print is_type show r =
             let s = {text=StringBuilder(); indent=0}
@@ -163691,17 +163724,20 @@ module spiral_compiler =
                     let quoted = litRust (LitString (rfmt.ToString()))
                     let quoted = quoted.Substring(quoted.IndexOf '"', quoted.LastIndexOf '"' - quoted.IndexOf '"' + 1)
                     String.concat ", " (quoted :: List.ofSeq args) |> sprintf "print!(%s)"
-                | UnionTag, [DV(L(i,YUnion _))] ->
+                | UnionTag, [DV(L(i,YUnion u))] ->
                     let ty = match d with Some (DV(L(_,t))) -> tyv t | _ -> "i32"
+                    union_tags_used.Add(union_name u.Item) |> ignore
                     $"(v{i}.tag() as {ty})"
                 | _ -> raise_codegen_error <| sprintf "Compiler error: %A with %i args not supported in the Rust backend" op l.Length
                 |> simple
         and rust_emit_default (s : CodegenEnv) (name : string) (body : string) =
-            line s $"impl Default for {name} {{"
-            line (indent s) "fn default() -> Self {"
-            line (indent (indent s)) body
-            line (indent s) "}"
-            line s "}"
+            let impl = {text=StringBuilder(); indent=s.indent}
+            line impl $"impl Default for {name} {{"
+            line (indent impl) "fn default() -> Self {"
+            line (indent (indent impl)) body
+            line (indent impl) "}"
+            line impl "}"
+            default_impls.[name] <- impl.text.ToString()
         // Rc<str> has no Default, and dyn Fn cannot. A derive on every heap would reject samples that never call default().
         and rust_layout_default (kind : string) (x : LayoutRecFsharp) =
             let key = $"{kind}{x.tag}"
@@ -163812,19 +163848,25 @@ module spiral_compiler =
                 | a -> line (indent s) $"""{name}_{unionCaseSuffix x i}({a |> Array.map (fun (L(_,t)) -> tyv t) |> String.concat ", "}),"""
                 )
             line s "}"
-            line s $"impl {name} {{"
-            line (indent s) "fn tag(&self) -> i32 {"
-            line (indent (indent s)) "match self {"
+            let impl = {text=StringBuilder(); indent=s.indent}
+            line impl $"impl {name} {{"
+            line (indent impl) "fn tag(&self) -> i32 {"
+            line (indent (indent impl)) "match self {"
             x.free_vars |> Map.iter (fun (i,_) a ->
                 let pattern = match a with [||] -> $"{name}::{name}_{unionCaseSuffix x i}" | _ -> $"{name}::{name}_{unionCaseSuffix x i}(..)"
-                line (indent (indent (indent s))) $"{pattern} => {i},"
+                line (indent (indent (indent impl))) $"{pattern} => {i},"
                 )
-            line (indent (indent s)) "}"
-            line (indent s) "}"
-            line s "}"
+            line (indent (indent impl)) "}"
+            line (indent impl) "}"
+            line impl "}"
+            union_tag_impls.[name] <- impl.text.ToString()
             match rust_union_default prefix x with
             | Some body -> rust_emit_default s name body
             | None -> ()
+        and union_name (a : _) =
+            match a.layout with
+            | UHeap -> $"UH{(uheap a.cases).tag}"
+            | UStack -> $"US{(ustack a.cases).tag}"
         and union_has_moving_field (x : UnionRecFsharp) = x.free_vars |> Map.exists (fun _ a -> a |> Array.exists (fun (L(_,t)) -> moves t))
         and uheap : _ -> UnionRecFsharp = union (union_type "UH")
         and ustack : _ -> UnionRecFsharp = union (union_type "US")
@@ -163903,6 +163945,18 @@ module spiral_compiler =
         program.AppendLine("use std::cell::RefCell;").AppendLine("use std::rc::Rc;") |> ignore
         globals |> Array.iter (fun x -> program.AppendLine(x) |> ignore)
         types |> Seq.iter (fun x -> program.Append(x) |> ignore)
+        union_tag_impls |> Seq.iter (fun kv -> if union_tags_used.Contains kv.Key then program.Append(kv.Value) |> ignore)
+        let default_uses = System.Text.RegularExpressions.Regex(@"(\w+)>+::default\(\)")
+        let defaults_reached = HashSet<string>()
+        let rec reach_defaults (text : string) =
+            for found in default_uses.Matches text do
+                let name = found.Groups.[1].Value
+                if default_impls.ContainsKey name && defaults_reached.Add name then reach_defaults default_impls.[name]
+        functions |> Seq.iter reach_defaults
+        exports |> Seq.iter reach_defaults
+        types |> Seq.iter reach_defaults
+        reach_defaults (main.ToString())
+        default_impls |> Seq.iter (fun kv -> if defaults_reached.Contains kv.Key then program.Append(kv.Value) |> ignore)
         functions |> Seq.iter (fun x -> program.Append(x) |> ignore)
         if exports.Count > 0 then
             exports |> Seq.iter (fun x -> program.Append(x) |> ignore)
@@ -163924,7 +163978,7 @@ module spiral_compiler =
                 elif text.EndsWith "}" || text.EndsWith ";" || text = "" then text + "\n    0\n"
                 else text + ";\n    0\n"
             program.AppendLine("fn spiral_main() -> i32 {").Append(main).AppendLine("}") |> ignore
-            program.AppendLine("fn main() { #[cfg(target_arch = \"wasm32\")] { spiral_main(); return; }").AppendLine("    let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();").AppendLine("    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });").AppendLine("}") |> ignore
+            program.AppendLine("fn main() { #[cfg(target_arch = \"wasm32\")] { spiral_main(); return; }").AppendLine("    let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();").AppendLine("    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 1 });").AppendLine("}") |> ignore
         program.ToString() |> translateFsharpInterpolations |> foldStringBindings |> inlineRustEmits
         |> cacheRustStringLiterals
 
@@ -164558,11 +164612,16 @@ fn spiralPrint(s: []const u8) void {
     @memcpy(spiral_out_buffer[spiral_out_len..][0..s.len], s);
     spiral_out_len += s.len;
 }
+fn spiralFloatText(x: anytype) []u8 {
+    var buffer: [std.fmt.float.bufferSize(.decimal, @TypeOf(x))]u8 = undefined;
+    const text = std.fmt.float.render(&buffer, x, .{ .mode = .decimal }) catch unreachable;
+    return spiral_gpa.dupe(u8, text) catch @panic("out of memory");
+}
 fn spiralPrintAny(x: anytype) void {
     const T = @TypeOf(x);
     if (T == []const u8) return spiralPrint(x);
+    if (@typeInfo(T) == .float) return spiralPrint(spiralFloatText(x));
     const s = switch (@typeInfo(T)) {
-        .float => std.fmt.allocPrint(spiral_gpa, "{d}", .{x}),
         .bool => std.fmt.allocPrint(spiral_gpa, "{}", .{x}),
         else => std.fmt.allocPrint(spiral_gpa, "{d}", .{x}),
     } catch @panic("out of memory");
@@ -165065,10 +165124,14 @@ fn spiralCreate(comptime T: type, v: T) *T {
         types |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
         bodies |> Seq.iter (fun x -> program.Append(x) |> ignore)
         program.AppendLine("var spiral_exit_code: i32 = 0;").AppendLine("fn spiralMainThread() void {").AppendLine("    spiral_exit_code = spiralMain();").AppendLine("}") |> ignore
+        program.AppendLine("extern \"kernel32\" fn CreateThread(attributes: ?*anyopaque, stack_size: usize, start: *const fn (?*anyopaque) callconv(.winapi) u32, parameter: ?*anyopaque, flags: u32, id: ?*u32) callconv(.winapi) ?std.os.windows.HANDLE;") |> ignore
+        program.AppendLine("extern \"kernel32\" fn WaitForSingleObject(handle: std.os.windows.HANDLE, milliseconds: u32) callconv(.winapi) u32;") |> ignore
+        program.AppendLine("extern \"kernel32\" fn ExitProcess(code: u32) callconv(.winapi) noreturn;") |> ignore
+        program.AppendLine("fn spiralMainThreadReserved(_: ?*anyopaque) callconv(.winapi) u32 {").AppendLine("    spiralMainThread();").AppendLine("    return 0;").AppendLine("}") |> ignore
         program.AppendLine("pub fn main(init: std.process.Init.Minimal) void {") |> ignore
         program.AppendLine("    spiral_gpa = spiral_arena.allocator();").AppendLine("    spiral_environ = init.environ;") |> ignore
-        program.AppendLine("    const thread = std.Thread.spawn(.{ .stack_size = 1 << 30 }, spiralMainThread, .{}) catch @panic(\"spiral: could not start the main thread\");").AppendLine("    thread.join();").AppendLine("    spiralFlush();") |> ignore
-        program.AppendLine("    std.process.exit(@truncate(@as(u32, @bitCast(spiral_exit_code))));").AppendLine("}") |> ignore
+        program.AppendLine("    if (@import(\"builtin\").os.tag == .windows) {").AppendLine("        const handle = CreateThread(null, 1 << 30, spiralMainThreadReserved, null, 0x00010000, null) orelse @panic(\"spiral: could not start the main thread\");").AppendLine("        _ = WaitForSingleObject(handle, 0xFFFFFFFF);").AppendLine("    } else {").AppendLine("        const thread = std.Thread.spawn(.{ .stack_size = 1 << 30 }, spiralMainThread, .{}) catch @panic(\"spiral: could not start the main thread\");").AppendLine("        thread.join();").AppendLine("    }").AppendLine("    spiralFlush();") |> ignore
+        program.AppendLine("    if (@import(\"builtin\").os.tag == .windows) ExitProcess(@bitCast(spiral_exit_code)) else std.process.exit(@truncate(@as(u32, @bitCast(spiral_exit_code))));").AppendLine("}") |> ignore
         program.ToString()
 
     /// ## CodegenLean
@@ -181276,6 +181339,7 @@ end
         | XCompatMention
         | XCompatCashtag
         | XCompatAutolink
+        | XCompatOverweight
 
     /// ### XCompatFinding
     type XCompatFinding = { kind : XCompatKind; line : int; column : int; text : string }
@@ -181287,6 +181351,7 @@ end
         | XCompatMention -> "mention"
         | XCompatCashtag -> "cashtag"
         | XCompatAutolink -> "autolink"
+        | XCompatOverweight -> "overweight"
 
     /// ### xCompatCode
     let xCompatCode kind =
@@ -181295,6 +181360,7 @@ end
         | XCompatMention -> "XC002"
         | XCompatCashtag -> "XC003"
         | XCompatAutolink -> "XC004"
+        | XCompatOverweight -> "XC005"
 
     /// ### xCompatHint
     let xCompatHint kind =
@@ -181303,6 +181369,7 @@ end
         | XCompatMention -> "X turns '@' before a name into a mention"
         | XCompatCashtag -> "X turns '$' before letters into a cashtag link"
         | XCompatAutolink -> "X shortens what looks like a domain to a 23-character t.co link"
+        | XCompatOverweight -> "one post holds 280 weighted characters (CJK and emoji weigh 2, links 23); split this definition"
 
     /// ### xCompatTopLevelDomains
     let xCompatTopLevelDomains =
@@ -181407,6 +181474,43 @@ end
             labels.[labels.Length - 2].Length > 2
         else true
 
+    /// ### xCompatPostWeightLimit
+    let xCompatPostWeightLimit = 280
+
+    /// ### xCompatCodePointWeight
+    let xCompatCodePointWeight (codePoint : int) =
+        if codePoint <= 0x10FF
+           || (codePoint >= 0x2000 && codePoint <= 0x200D)
+           || (codePoint >= 0x2010 && codePoint <= 0x201F)
+           || (codePoint >= 0x2032 && codePoint <= 0x2037) then 1
+        else 2
+
+    /// ### xCompatLinkWeight
+    let xCompatLinkWeight = 23
+
+    /// ### xCompatPostWeight
+    let xCompatPostWeight (post : string) =
+        let links = [ for found in xCompatDomainPattern.Matches post do if xCompatLinks found.Value (found.Groups.[1].Value.ToLowerInvariant ()) then yield found ]
+        let unlinked = links |> List.rev |> List.fold (fun (rest : string) found -> rest.Remove (found.Index, found.Length)) post
+        let characters = unlinked.EnumerateRunes () |> Seq.sumBy (fun rune -> xCompatCodePointWeight rune.Value)
+        characters + xCompatLinkWeight * links.Length
+
+    /// ### xCompatTopLevelBlocks
+    let xCompatTopLevelBlocks (lines : string []) =
+        let starts = [ for index in 0 .. lines.Length - 1 do if lines.[index].Length > 0 && not (Char.IsWhiteSpace lines.[index].[0]) then yield index ]
+        starts
+        |> List.mapi (fun position start ->
+            let stop = if position + 1 < starts.Length then starts.[position + 1] else lines.Length
+            let body = lines.[start .. stop - 1] |> Array.toList |> List.rev |> List.skipWhile String.IsNullOrWhiteSpace |> List.rev
+            start + 1, String.Join ("\n", body))
+
+    /// ### xCompatOverweightFindings
+    let xCompatOverweightFindings (lines : string []) =
+        [ for row, block in xCompatTopLevelBlocks lines do
+            let weight = xCompatPostWeight block
+            if weight > xCompatPostWeightLimit then
+                yield { kind = XCompatOverweight; line = row; column = 1; text = $"weight {weight} > {xCompatPostWeightLimit}" } ]
+
     /// ### xCompatLineFindings
     let xCompatLineFindings (line : string) (row : int) =
         let marks =
@@ -181422,10 +181526,9 @@ end
 
     /// ### xCompatFindings
     let xCompatFindings (source : string) =
-        source.Replace("\r\n", "\n").Split '\n'
-        |> List.ofArray
-        |> List.mapi (fun index line -> xCompatLineFindings line (index + 1))
-        |> List.concat
+        let lines = source.Replace("\r\n", "\n").Split '\n'
+        let marks = lines |> List.ofArray |> List.mapi (fun index line -> xCompatLineFindings line (index + 1)) |> List.concat
+        marks @ xCompatOverweightFindings lines |> List.sortBy (fun finding -> finding.line, finding.column)
 
     /// ### xCompatReportLine
     let xCompatReportLine (path : string) (finding : XCompatFinding) =

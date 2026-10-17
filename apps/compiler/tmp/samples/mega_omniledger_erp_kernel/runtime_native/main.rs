@@ -6,19 +6,6 @@ enum US0 {
     US0_TypedFxHashedStatementChecksumValidationAccepted(i64, i64, i64, i64, i64, Rc<str>),
     US0_TypedFxHashedStatementChecksumValidationRejected(i64, i64, Rc<str>),
 }
-impl US0 {
-    fn tag(&self) -> i32 {
-        match self {
-            US0::US0_TypedFxHashedStatementChecksumValidationAccepted(..) => 0,
-            US0::US0_TypedFxHashedStatementChecksumValidationRejected(..) => 1,
-        }
-    }
-}
-impl Default for US0 {
-    fn default() -> Self {
-        US0::US0_TypedFxHashedStatementChecksumValidationAccepted(<i64>::default(), <i64>::default(), <i64>::default(), <i64>::default(), <i64>::default(), { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) })
-    }
-}
 fn spiral_main() -> i32 {
     let mut v0: i64 = 0i64 + 1i64;
     let mut v1: i64 = v0 + 1i64;
@@ -4647,5 +4634,5 @@ fn spiral_main() -> i32 {
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 1 });
 }

@@ -10,13 +10,14 @@ defmodule Spiral.Kino.Memo do
   @spec context(keyword(), [map()]) :: map() | nil
   def context(opts, steps) do
     if enabled?(opts) do
-      bounds = source_bounds(opts, steps)
+      binaries = compiler_binaries_print(Toolchain.compiler_dll(opts))
+      bounds = source_bounds(opts, steps, binaries)
 
       %{
         dir: dir(opts),
         base: %{
           format: @format,
-          compiler: compiler_identity(opts, bounds),
+          compiler: {binaries, opts |> core_dir() |> tree_print(bounds)},
           kino: kino_identity(),
           tools: Keyword.take(opts, @tool_opts)
         },
@@ -141,23 +142,61 @@ defmodule Spiral.Kino.Memo do
     end
   end
 
-  defp compiler_identity(opts, bounds) do
-    dll = Toolchain.compiler_dll(opts)
-    {same_path(dll), file_print(dll), opts |> core_dir() |> tree_print(bounds)}
+  @doc false
+  def compiler_binaries_print(dll) do
+    dir = Path.dirname(dll)
+
+    [Path.basename(dll) | dir |> Path.join("SpiralCompiler*.dll") |> Path.wildcard() |> Enum.map(&Path.basename/1)]
+    |> Enum.map(&String.downcase/1)
+    |> Enum.uniq()
+    |> Enum.sort()
+    |> Enum.map(&{&1, content_hash(Path.join(dir, &1))})
+  end
+
+  defp content_hash(path) do
+    case File.read(path) do
+      {:ok, binary} -> :crypto.hash(:sha256, binary)
+      _ -> :missing
+    end
   end
 
   defp core_dir(opts), do: opts |> Toolchain.package_dir() |> Path.join("core")
 
-  defp source_bounds(opts, steps) do
+  defp source_bounds(opts, steps, binaries) do
     programs = for step <- steps, not Map.get(step, :whole_source_key, false), do: step.program
     dirs = [core_dir(opts) | Enum.flat_map(steps, &package_paths(&1.program))]
     files = dirs |> Enum.flat_map(&tree_files(&1, MapSet.new())) |> Enum.uniq()
-    texts = programs ++ for(file <- files, {:ok, text} <- [File.read(file)], do: text)
+    texts = Enum.uniq(programs ++ for(file <- files, {:ok, text} <- [File.read(file)], do: text))
+    store_context = %{dir: dir(opts)}
+    keyed = Enum.map(texts, &{&1, bounds_key(binaries, &1)})
 
-    case SourceBlocks.of_texts(opts, texts) do
-      {:ok, spans} -> spans
-      :unavailable -> :unavailable
+    {known, unknown} =
+      Enum.reduce(keyed, {%{}, []}, fn {text, key}, {known, unknown} ->
+        case fetch(store_context, key) do
+          {:ok, {:source_blocks, spans}} -> {Map.put(known, text, spans), unknown}
+          _ -> {known, [{text, key} | unknown]}
+        end
+      end)
+
+    if unknown == [] do
+      known
+    else
+      case SourceBlocks.of_texts(opts, Enum.map(unknown, &elem(&1, 0))) do
+        {:ok, spans} ->
+          Enum.each(unknown, fn {text, key} -> store(store_context, key, {:source_blocks, Map.get(spans, text, [])}) end)
+          Map.merge(known, spans)
+
+        :unavailable ->
+          :unavailable
+      end
     end
+  end
+
+  defp bounds_key(binaries, text) do
+    {:source_blocks, binaries, text}
+    |> :erlang.term_to_binary()
+    |> then(&:crypto.hash(:sha256, &1))
+    |> Base.encode16(case: :lower)
   end
 
   defp tree_files(dir, seen) do
@@ -191,11 +230,6 @@ defmodule Spiral.Kino.Memo do
 
   @doc false
   def result_path_modules, do: @result_path_modules
-
-  defp same_path(path) do
-    expanded = Path.expand(path)
-    if match?({:win32, _}, :os.type()), do: String.downcase(expanded), else: expanded
-  end
 
   defp kino_identity do
     case :persistent_term.get({__MODULE__, :kino}, nil) do
@@ -513,13 +547,6 @@ defmodule Spiral.Kino.Memo do
   defp content_print(path, bounds) do
     case File.read(path) do
       {:ok, text} -> :crypto.hash(:sha256, :erlang.term_to_binary(Enum.map(compiled_blocks(text, bounds), & &1.lines)))
-      _ -> :missing
-    end
-  end
-
-  defp file_print(path) do
-    case File.stat(path, time: :posix) do
-      {:ok, %{size: size, mtime: mtime}} -> {size, mtime}
       _ -> :missing
     end
   end

@@ -8,7 +8,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AssemblyName>SpiralCompiler</AssemblyName>
-    <RootNamespace>Polyglot</RootNamespace>
+    <RootNamespace>Spiral</RootNamespace>
     <ServerGarbageCollection>true</ServerGarbageCollection>
     <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
   </PropertyGroup>

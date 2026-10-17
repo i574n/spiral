@@ -255,20 +255,13 @@ inl show_exit () : string = "let spiral_kino_value = main.join().unwrap();\n    
 
 inl unit_exit () : string = "let _ = main.join().unwrap();\n    std::process::exit(0);"
 
-inl show_join () : string = "match main.join() {\n        Ok(spiral_kino_value) => { println!(\"SPIRAL_KINO_VALUE:{}\", spiral_kino_value); std::process::exit(0) }\n        Err(_) => std::process::exit(101),\n    }"
+inl show_join (panic_code : string) : string = "match main.join() {\n        Ok(spiral_kino_value) => { println!(\"SPIRAL_KINO_VALUE:{}\", spiral_kino_value); std::process::exit(0) }\n        Err(_) => std::process::exit(" ++ panic_code ++ "),\n    }"
 
-inl unit_join () : string = "match main.join() {\n        Ok(_) => std::process::exit(0),\n        Err(_) => std::process::exit(101),\n    }"
+inl unit_join (panic_code : string) : string = "match main.join() {\n        Ok(_) => std::process::exit(0),\n        Err(_) => std::process::exit(" ++ panic_code ++ "),\n    }"
 
-inl patch_rust (rust : string) (show_value : string) : string =
-    inl textn = text.replace rust "\r\n" "\n"
-    inl xs = read_lines textn
-    inl known = snippets xs NoPair
-    inl joined = join_lines (rewrite_lines xs known)
-    inl collapsed = text.collapse_newlines joined
-    inl joined_exit = "std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });"
-    if show_value = "1" then
-        text.replace (text.replace collapsed "std::process::exit(main.join().unwrap());" (show_exit ())) joined_exit (show_join ())
-    else text.replace (text.replace collapsed "std::process::exit(main.join().unwrap());" (unit_exit ())) joined_exit (unit_join ())
+inl join_exit_open () : string = "std::process::exit(match main.join() { Ok(code) => code, Err(_) => "
+
+inl join_exit_close () : string = " });"
 
 inl join_pair (left : string) (right : string) : string =
     if left = "" then right
@@ -279,6 +272,29 @@ let rec digits_between (line : string) (from : i32) (to : i32) : bool =
     if from >= to then true
     elif text.digit_val (text.index line from) < 0i32 then false
     else digits_between line (from + 1i32) to
+
+inl patch_join_exit (rust : string) (show_value : string) : string =
+    inl at = text.find_from rust (join_exit_open ()) 0i32
+    if at < 0i32 then rust
+    else
+        inl code_at = at + text.length (join_exit_open ())
+        inl close_at = text.find_from rust (join_exit_close ()) code_at
+        if close_at <= code_at then rust
+        elif digits_between rust code_at close_at = false then rust
+        else
+            inl panic_code = text.slice_len rust code_at (close_at - code_at)
+            inl patched = if show_value = "1" then show_join panic_code else unit_join panic_code
+            text.take rust at ++ patched ++ text.drop rust (close_at + text.length (join_exit_close ()))
+
+inl patch_rust (rust : string) (show_value : string) : string =
+    inl textn = text.replace rust "\r\n" "\n"
+    inl xs = read_lines textn
+    inl known = snippets xs NoPair
+    inl joined = join_lines (rewrite_lines xs known)
+    inl collapsed = text.collapse_newlines joined
+    inl unwrapped = "std::process::exit(main.join().unwrap());"
+    if show_value = "1" then patch_join_exit (text.replace collapsed unwrapped (show_exit ())) show_value
+    else patch_join_exit (text.replace collapsed unwrapped (unit_exit ())) show_value
 
 inl panic_thread_open () : string = "thread '"
 inl panic_id_open () : string = "' ("

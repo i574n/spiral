@@ -1,7 +1,7 @@
 #load "Lexed.fsx" "Flatten.fsx" "Parsed.fsx"
 
 open System.Text
-open Polyglot.spiral_compiler
+open Spiral.spiral_compiler
 open Lexed
 open Flatten
 open Parsed

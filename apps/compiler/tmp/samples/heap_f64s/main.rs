@@ -2,11 +2,6 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 struct Heap0 { l0: Rc<RefCell<Vec<f64>>> }
-impl Default for Heap0 {
-    fn default() -> Self {
-        Heap0 { l0: <Rc<RefCell<Vec<f64>>>>::default() }
-    }
-}
 fn spiral_main() -> i32 {
     let mut v0: Rc<RefCell<Vec<f64>>> = Rc::new(RefCell::new(vec![<f64>::default(); 1i32 as usize]));
     let mut v1: f64 = 1.5f64;
@@ -23,5 +18,5 @@ fn spiral_main() -> i32 {
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 1 });
 }

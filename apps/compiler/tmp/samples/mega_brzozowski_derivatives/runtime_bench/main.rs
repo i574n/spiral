@@ -6,19 +6,6 @@ enum US0 {
     US0_BitZero,
     US0_BitOne,
 }
-impl US0 {
-    fn tag(&self) -> i32 {
-        match self {
-            US0::US0_BitZero => 0,
-            US0::US0_BitOne => 1,
-        }
-    }
-}
-impl Default for US0 {
-    fn default() -> Self {
-        US0::US0_BitZero
-    }
-}
 #[derive(Clone)]
 enum UH0 {
     UH0_RegexEmpty,
@@ -28,40 +15,10 @@ enum UH0 {
     UH0_RegexCat(Rc<UH0>, Rc<UH0>),
     UH0_RegexStar(Rc<UH0>),
 }
-impl UH0 {
-    fn tag(&self) -> i32 {
-        match self {
-            UH0::UH0_RegexEmpty => 0,
-            UH0::UH0_RegexEpsilon => 1,
-            UH0::UH0_RegexChar(..) => 2,
-            UH0::UH0_RegexAlt(..) => 3,
-            UH0::UH0_RegexCat(..) => 4,
-            UH0::UH0_RegexStar(..) => 5,
-        }
-    }
-}
-impl Default for UH0 {
-    fn default() -> Self {
-        UH0::UH0_RegexEmpty
-    }
-}
 #[derive(Clone)]
 enum UH1 {
     UH1_InputEmpty,
     UH1_InputCons(US0, Rc<UH1>),
-}
-impl UH1 {
-    fn tag(&self) -> i32 {
-        match self {
-            UH1::UH1_InputEmpty => 0,
-            UH1::UH1_InputCons(..) => 1,
-        }
-    }
-}
-impl Default for UH1 {
-    fn default() -> Self {
-        UH1::UH1_InputEmpty
-    }
 }
 #[derive(Clone)]
 enum US1 {
@@ -69,55 +26,15 @@ enum US1 {
     US1_SymbolSame,
     US1_SymbolGreater,
 }
-impl US1 {
-    fn tag(&self) -> i32 {
-        match self {
-            US1::US1_SymbolLess => 0,
-            US1::US1_SymbolSame => 1,
-            US1::US1_SymbolGreater => 2,
-        }
-    }
-}
-impl Default for US1 {
-    fn default() -> Self {
-        US1::US1_SymbolLess
-    }
-}
 #[derive(Clone)]
 enum US2 {
     US2_Nullable,
     US2_NonNullable,
 }
-impl US2 {
-    fn tag(&self) -> i32 {
-        match self {
-            US2::US2_Nullable => 0,
-            US2::US2_NonNullable => 1,
-        }
-    }
-}
-impl Default for US2 {
-    fn default() -> Self {
-        US2::US2_Nullable
-    }
-}
 #[derive(Clone)]
 enum UH2 {
     UH2_RegexListNil,
     UH2_RegexListCons(Rc<UH0>, Rc<UH2>),
-}
-impl UH2 {
-    fn tag(&self) -> i32 {
-        match self {
-            UH2::UH2_RegexListNil => 0,
-            UH2::UH2_RegexListCons(..) => 1,
-        }
-    }
-}
-impl Default for UH2 {
-    fn default() -> Self {
-        UH2::UH2_RegexListNil
-    }
 }
 fn random_bit_input_1(mut v0: u64, mut v1: i32, mut v2: Rc<UH1>) -> (Rc<UH1>, u64) {
     loop {
@@ -2130,5 +2047,5 @@ fn spiral_main() -> i32 {
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 1 });
 }

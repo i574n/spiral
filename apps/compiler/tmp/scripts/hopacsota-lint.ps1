@@ -22,6 +22,7 @@ $bannedPatterns = [ordered]@{
     'Alt.chooser' = '\bAlt\.chooser\b'
     'Alt.random' = '\bAlt\.random\b'
     'Job.Random' = '\bJob\.Random\b'
+    'Stream.mapPipelined' = '\bStream\.mapPipelined\w*'
     'replay/record identifiers' = '(?i)\w*(replay|record|resume|snapshot|ledger)\w*'
 }
 $allowlist = @()

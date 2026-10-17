@@ -6,72 +6,20 @@ enum US0 {
     US0_BitZero,
     US0_BitOne,
 }
-impl US0 {
-    fn tag(&self) -> i32 {
-        match self {
-            US0::US0_BitZero => 0,
-            US0::US0_BitOne => 1,
-        }
-    }
-}
-impl Default for US0 {
-    fn default() -> Self {
-        US0::US0_BitZero
-    }
-}
 #[derive(Clone)]
 enum UH0 {
     UH0_SymbolListNil,
     UH0_SymbolListCons(US0, Rc<UH0>),
-}
-impl UH0 {
-    fn tag(&self) -> i32 {
-        match self {
-            UH0::UH0_SymbolListNil => 0,
-            UH0::UH0_SymbolListCons(..) => 1,
-        }
-    }
-}
-impl Default for UH0 {
-    fn default() -> Self {
-        UH0::UH0_SymbolListNil
-    }
 }
 #[derive(Clone)]
 enum UH2 {
     UH2_InputEmpty,
     UH2_InputCons(US0, Rc<UH2>),
 }
-impl UH2 {
-    fn tag(&self) -> i32 {
-        match self {
-            UH2::UH2_InputEmpty => 0,
-            UH2::UH2_InputCons(..) => 1,
-        }
-    }
-}
-impl Default for UH2 {
-    fn default() -> Self {
-        UH2::UH2_InputEmpty
-    }
-}
 #[derive(Clone)]
 enum UH1 {
     UH1_InputListNil,
     UH1_InputListCons(Rc<UH2>, Rc<UH1>),
-}
-impl UH1 {
-    fn tag(&self) -> i32 {
-        match self {
-            UH1::UH1_InputListNil => 0,
-            UH1::UH1_InputListCons(..) => 1,
-        }
-    }
-}
-impl Default for UH1 {
-    fn default() -> Self {
-        UH1::UH1_InputListNil
-    }
 }
 #[derive(Clone)]
 enum US1 {
@@ -79,73 +27,20 @@ enum US1 {
     US1_TriB,
     US1_TriC,
 }
-impl US1 {
-    fn tag(&self) -> i32 {
-        match self {
-            US1::US1_TriA => 0,
-            US1::US1_TriB => 1,
-            US1::US1_TriC => 2,
-        }
-    }
-}
-impl Default for US1 {
-    fn default() -> Self {
-        US1::US1_TriA
-    }
-}
 #[derive(Clone)]
 enum UH3 {
     UH3_SymbolListNil,
     UH3_SymbolListCons(US1, Rc<UH3>),
-}
-impl UH3 {
-    fn tag(&self) -> i32 {
-        match self {
-            UH3::UH3_SymbolListNil => 0,
-            UH3::UH3_SymbolListCons(..) => 1,
-        }
-    }
-}
-impl Default for UH3 {
-    fn default() -> Self {
-        UH3::UH3_SymbolListNil
-    }
 }
 #[derive(Clone)]
 enum UH5 {
     UH5_InputEmpty,
     UH5_InputCons(US1, Rc<UH5>),
 }
-impl UH5 {
-    fn tag(&self) -> i32 {
-        match self {
-            UH5::UH5_InputEmpty => 0,
-            UH5::UH5_InputCons(..) => 1,
-        }
-    }
-}
-impl Default for UH5 {
-    fn default() -> Self {
-        UH5::UH5_InputEmpty
-    }
-}
 #[derive(Clone)]
 enum UH4 {
     UH4_InputListNil,
     UH4_InputListCons(Rc<UH5>, Rc<UH4>),
-}
-impl UH4 {
-    fn tag(&self) -> i32 {
-        match self {
-            UH4::UH4_InputListNil => 0,
-            UH4::UH4_InputListCons(..) => 1,
-        }
-    }
-}
-impl Default for UH4 {
-    fn default() -> Self {
-        UH4::UH4_InputListNil
-    }
 }
 #[derive(Clone)]
 enum US2 {
@@ -153,37 +48,10 @@ enum US2 {
     US2_ModelB,
     US2_ModelC,
 }
-impl US2 {
-    fn tag(&self) -> i32 {
-        match self {
-            US2::US2_ModelA => 0,
-            US2::US2_ModelB => 1,
-            US2::US2_ModelC => 2,
-        }
-    }
-}
-impl Default for US2 {
-    fn default() -> Self {
-        US2::US2_ModelA
-    }
-}
 #[derive(Clone)]
 enum UH6 {
     UH6_InputEmpty,
     UH6_InputCons(US2, Rc<UH6>),
-}
-impl UH6 {
-    fn tag(&self) -> i32 {
-        match self {
-            UH6::UH6_InputEmpty => 0,
-            UH6::UH6_InputCons(..) => 1,
-        }
-    }
-}
-impl Default for UH6 {
-    fn default() -> Self {
-        UH6::UH6_InputEmpty
-    }
 }
 #[derive(Clone)]
 enum UH7 {
@@ -194,42 +62,11 @@ enum UH7 {
     UH7_RegexCat(Rc<UH7>, Rc<UH7>),
     UH7_RegexStar(Rc<UH7>),
 }
-impl UH7 {
-    fn tag(&self) -> i32 {
-        match self {
-            UH7::UH7_RegexEmpty => 0,
-            UH7::UH7_RegexEpsilon => 1,
-            UH7::UH7_RegexChar(..) => 2,
-            UH7::UH7_RegexAlt(..) => 3,
-            UH7::UH7_RegexCat(..) => 4,
-            UH7::UH7_RegexStar(..) => 5,
-        }
-    }
-}
-impl Default for UH7 {
-    fn default() -> Self {
-        UH7::UH7_RegexEmpty
-    }
-}
 #[derive(Clone)]
 enum US3 {
     US3_InventoryDfaAccepted,
     US3_InventoryDfaRejected,
     US3_InventoryDfaInputOutsideInventory,
-}
-impl US3 {
-    fn tag(&self) -> i32 {
-        match self {
-            US3::US3_InventoryDfaAccepted => 0,
-            US3::US3_InventoryDfaRejected => 1,
-            US3::US3_InventoryDfaInputOutsideInventory => 2,
-        }
-    }
-}
-impl Default for US3 {
-    fn default() -> Self {
-        US3::US3_InventoryDfaAccepted
-    }
 }
 #[derive(Clone)]
 enum US4 {
@@ -237,37 +74,10 @@ enum US4 {
     US4_SymbolSame,
     US4_SymbolGreater,
 }
-impl US4 {
-    fn tag(&self) -> i32 {
-        match self {
-            US4::US4_SymbolLess => 0,
-            US4::US4_SymbolSame => 1,
-            US4::US4_SymbolGreater => 2,
-        }
-    }
-}
-impl Default for US4 {
-    fn default() -> Self {
-        US4::US4_SymbolLess
-    }
-}
 #[derive(Clone)]
 enum US5 {
     US5_Nullable,
     US5_NonNullable,
-}
-impl US5 {
-    fn tag(&self) -> i32 {
-        match self {
-            US5::US5_Nullable => 0,
-            US5::US5_NonNullable => 1,
-        }
-    }
-}
-impl Default for US5 {
-    fn default() -> Self {
-        US5::US5_Nullable
-    }
 }
 #[derive(Clone)]
 enum UH8 {
@@ -277,23 +87,6 @@ enum UH8 {
     UH8_RegexAlt(Rc<UH8>, Rc<UH8>),
     UH8_RegexCat(Rc<UH8>, Rc<UH8>),
     UH8_RegexStar(Rc<UH8>),
-}
-impl UH8 {
-    fn tag(&self) -> i32 {
-        match self {
-            UH8::UH8_RegexEmpty => 0,
-            UH8::UH8_RegexEpsilon => 1,
-            UH8::UH8_RegexChar(..) => 2,
-            UH8::UH8_RegexAlt(..) => 3,
-            UH8::UH8_RegexCat(..) => 4,
-            UH8::UH8_RegexStar(..) => 5,
-        }
-    }
-}
-impl Default for UH8 {
-    fn default() -> Self {
-        UH8::UH8_RegexEmpty
-    }
 }
 fn input_singletons_from_symbols_0(mut v0: Rc<UH0>) -> Rc<UH1> {
     match &*v0 {
@@ -2147,5 +1940,5 @@ fn spiral_main() -> i32 {
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 1 });
 }

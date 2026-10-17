@@ -631,7 +631,7 @@ let format_real forall t. (x : t) : string =
                     Zig =
                         (fun () =>
                             match b with
-                            | (_ : f32) | (_ : f64) => $'(if (std.math.isNan(!b)) "NaN" else if (std.math.isInf(!b)) (if (!b > 0) "Infinity" else "-Infinity") else spiral_shortest: { const s = std.fmt.allocPrint(spiral_gpa, "{d}", .{ !b }) catch \@panic("out of memory"); break :spiral_shortest if (std.mem.indexOfAny(u8, s, ".e") == null) (std.fmt.allocPrint(spiral_gpa, "{s}.0", .{ s }) catch \@panic("out of memory")) else s; })' : string
+                            | (_ : f32) | (_ : f64) => $'(if (std.math.isNan(!b)) "NaN" else if (std.math.isInf(!b)) (if (!b > 0) "Infinity" else "-Infinity") else spiral_shortest: { const s = spiralFloatText(!b); break :spiral_shortest if (std.mem.indexOfAny(u8, s, ".e") == null) (std.fmt.allocPrint(spiral_gpa, "{s}.0", .{ s }) catch \@panic("out of memory")) else s; })' : string
                             | (_ : string) => b : string
                             | (_ : char) => $'(std.fmt.allocPrint(spiral_gpa, "{c}", .{ !b }) catch \@panic("out of memory"))' : string
                             | (_ : bool) => $'(if (!b) "true" else "false")' : string

@@ -9,7 +9,7 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <AssemblyName>SpiralCompilerCore</AssemblyName>
-    <RootNamespace>Polyglot</RootNamespace>
+    <RootNamespace>Spiral</RootNamespace>
     <SpiralCoreSource Condition="'$(SpiralCoreSource)' == ''">../../../spiral_compiler.fs</SpiralCoreSource>
     <Tailcalls>true</Tailcalls>
   </PropertyGroup>

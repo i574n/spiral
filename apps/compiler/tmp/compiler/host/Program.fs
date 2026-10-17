@@ -1,4 +1,4 @@
-namespace Polyglot
+namespace Spiral
 
 open System
 open System.IO
@@ -1189,7 +1189,7 @@ module Program =
         elif argv.Length >= 2 && argv.[0] = "--x-compat" then
             runXCompatReport argv.[1..]
         elif argv.Length = 2 && argv.[0] = "--check" then
-            Polyglot.spiral_compiler.xCompatWarnEntry argv.[1]
+            Spiral.spiral_compiler.xCompatWarnEntry argv.[1]
             exit (runAttestationBounded 30000 (fun () -> runCheck argv.[1]))
         elif (argv.Length = 3 || (argv.Length = 5 && argv.[1] = "--timeout-ms")) && argv.[0] = "--plan-ir" then
             let inputIndex = if argv.Length = 5 then 3 else 1
@@ -1204,9 +1204,9 @@ module Program =
             let timeoutMs = if argv.Length = 5 && argv.[3] = "--timeout-ms" then int argv.[4] else 120000
             exit (runBatch argv.[1] argv.[2] timeoutMs)
         elif argv.Length >= 1 && argv.[0] = "format" then
-            Polyglot.spiral_compiler.FormatterCli.run (List.ofArray argv.[1..])
+            Spiral.spiral_compiler.FormatterCli.run (List.ofArray argv.[1..])
         elif argv.Length >= 1 && argv.[0] = "format-corpus" then
-            Polyglot.spiral_compiler.FormatterCli.corpus (List.ofArray argv.[1..])
+            Spiral.spiral_compiler.FormatterCli.corpus (List.ofArray argv.[1..])
         elif argv.Length >= 1 && (argv.[0] = "build-file" || argv.[0] = "--build-file" || argv.[0] = "fsharp") then
             match parseBuildFileArgs argv with
             | Ok (jobs, timeoutMs, exitOnError) -> runBuildFiles jobs timeoutMs exitOnError
@@ -1230,7 +1230,11 @@ module Program =
                 if backend = "Fsharp" && String.Equals(Environment.GetEnvironmentVariable "SPIRAL_DIRECT_PROJECT_BUILD", "1", StringComparison.Ordinal) then
                     directProjectCompileFsharp input output
                 else
-                    compileOne server.supervisor router revisions cache server.job_val backend input output
+                    let result = ref (Error "compile thread did not finish")
+                    let worker = Threading.Thread((fun () -> result.Value <- compileOne server.supervisor router revisions cache server.job_val backend input output), 1 <<< 30)
+                    worker.Start()
+                    worker.Join()
+                    result.Value
             match compileResult with
             | Ok (bytes, binding, revisionMode) ->
                 printfn "compiled %s -> %s (%s, %d bytes, entry=%s, revision=%s, pid=%d)" input output backend bytes binding revisionMode Environment.ProcessId

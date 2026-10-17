@@ -17,6 +17,7 @@ if ($Mode -in 'hopacsota', 'hs') {
 
 $dotnet = Resolve-SpiralDotnet
 $cache = Get-SpiralCacheDir
+$sharedCache = if ($IsWindows) { Join-Path $env:LOCALAPPDATA 'spiral-bin' } else { Join-Path $HOME '.cache/spiral-bin' }
 $project = Join-Path $BundleRoot 'compiler/host/SpiralCompiler.fsproj'
 $modes = if ($Mode -eq 'both') { 'single-flight', 'gpt5parallel' } else { ConvertTo-SpiralMode $Mode }
 $receipts = Join-Path $cache 'results/builds.tsv'
@@ -87,20 +88,28 @@ function Unlock-SpiralOutputs([string]$OutDir) {
 $failed = $false
 foreach ($m in $modes) {
     $core = if ($CoreSource) { (Resolve-Path $CoreSource).Path } else { Get-SpiralCoreSource $m }
-    $staged = Join-Path $cache "core-src/$m/spiral_compiler.fs"
+    $coreSha = Get-FileSha256 $core
+    $staged = Join-Path $sharedCache "core-src/$m/$($coreSha.Substring(0, 16))/spiral_compiler.fs"
     New-Item -ItemType Directory -Force (Split-Path $staged) | Out-Null
-    if (-not (Test-Path $staged) -or (Get-FileSha256 $staged) -ne (Get-FileSha256 $core)) {
-        Copy-Item -LiteralPath $core -Destination $staged -Force
+    if (-not (Test-Path $staged) -or (Get-FileSha256 $staged) -ne $coreSha) { Copy-Item -LiteralPath $core -Destination $staged -Force }
+    (Get-Item -LiteralPath (Split-Path $staged)).LastWriteTime = Get-Date
+    $lastStaged = Join-Path $cache "obj/$m/last-staged-core.txt"
+    New-Item -ItemType Directory -Force (Split-Path $lastStaged) | Out-Null
+    if (-not (Test-Path $lastStaged) -or (Get-Content -LiteralPath $lastStaged -Raw).Trim() -ne $staged) {
         (Get-Item -LiteralPath $staged).LastWriteTime = Get-Date
+        [IO.File]::WriteAllText($lastStaged, $staged)
     }
-    $args = @('build', $project, '-c', $Configuration, "-p:SpiralCore=$m", "-p:SpiralCacheDir=$cache", "-p:SpiralCoreSource=$staged", '-nologo', '-v:m')
+    Get-ChildItem (Join-Path $sharedCache "core-src/$m") -Directory -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -Skip 8 |
+        ForEach-Object { try { [IO.Directory]::Delete($_.FullName, $true) } catch { } }
+    $args = @('build', $project, '-c', $Configuration, "-p:SpiralCore=$m", "-p:SpiralCacheDir=$cache", "-p:SpiralCoreSource=$staged", "-p:PathMap=$cache=$sharedCache", '-nologo', '-v:m')
     Write-Host "== building $m ($Configuration) from $core"
     $sw = [Diagnostics.Stopwatch]::StartNew()
     $gcSaved = $env:DOTNET_gcServer, $env:DOTNET_GCConserveMemory, $env:MSBUILDDISABLENODEREUSE
     $env:DOTNET_gcServer = '0'; $env:DOTNET_GCConserveMemory = '9'; $env:MSBUILDDISABLENODEREUSE = '1'
     if ($Configuration -eq 'Release') { Unlock-SpiralOutputs (Join-Path $cache "bin/$m/SpiralCompiler/$Configuration/net11.0") }
+    Push-Location (Join-Path $BundleRoot 'compiler')
     try { & $dotnet @args }
-    finally { $env:DOTNET_gcServer, $env:DOTNET_GCConserveMemory, $env:MSBUILDDISABLENODEREUSE = $gcSaved }
+    finally { $env:DOTNET_gcServer, $env:DOTNET_GCConserveMemory, $env:MSBUILDDISABLENODEREUSE = $gcSaved; Pop-Location }
     $exit = $LASTEXITCODE
     if ($exit -eq 0 -and $Configuration -eq 'Release') { Invoke-SpiralReadyToRun $dotnet (Join-Path $cache "bin/$m/SpiralCompiler/$Configuration/net11.0") }
     $seconds = [math]::Round($sw.Elapsed.TotalSeconds, 1)

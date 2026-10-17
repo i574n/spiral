@@ -1,0 +1,10 @@
+nominal zero = ()
+nominal succ n = ()
+
+union rec transcript pending =
+    | Done :: transcript zero
+    | Result :: forall n. i32 * transcript (succ n) -> transcript n
+
+inl main () : i32 =
+    inl t : transcript zero = Done
+    7i32

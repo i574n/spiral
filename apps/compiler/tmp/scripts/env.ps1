@@ -62,6 +62,8 @@ function Resolve-SpiralDotnet {
     $candidates = @()
     if ($env:SPIRAL_DOTNET) { $candidates += $env:SPIRAL_DOTNET }
     $candidates += Join-Path (Get-SpiralCacheDir) "toolchains/dotnet/$exe"
+    $sharedCache = if ($IsWindows) { Join-Path $env:LOCALAPPDATA 'spiral-bin' } else { Join-Path $HOME '.cache/spiral-bin' }
+    $candidates += Join-Path $sharedCache "toolchains/dotnet/$exe"
     $onPath = Get-Command dotnet -ErrorAction SilentlyContinue
     if ($onPath) { $candidates += $onPath.Source }
     foreach ($candidate in $candidates) {

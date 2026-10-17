@@ -124,6 +124,25 @@ defmodule Spiral.Kino.CellTest do
     assert unit =~ "Err(_) => std::process::exit(101)"
   end
 
+  test "the panic code of the compiler's join is kept as emitted, so a compiler that exits 1 on a panic still gets the value print" do
+    rust = """
+    fn main() {
+        let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
+        std::process::exit(match main.join() { Ok(code) => code, Err(_) => 1 });
+    }
+    """
+
+    shown = Cell.patch_rust(rust, true)
+    assert shown =~ ~s|println!("SPIRAL_KINO_VALUE:{}", spiral_kino_value)|
+    assert shown =~ "Err(_) => std::process::exit(1),"
+    refute shown =~ "Ok(code) => code"
+
+    unit = Cell.patch_rust(rust, false)
+    assert unit =~ "Ok(_) => std::process::exit(0)"
+    assert unit =~ "Err(_) => std::process::exit(1),"
+    refute unit =~ "Ok(code) => code"
+  end
+
   test "the four-line main with its wasm32 early return is patched the same way" do
     rust = """
     fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }

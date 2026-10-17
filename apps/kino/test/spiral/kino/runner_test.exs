@@ -124,16 +124,17 @@ defmodule Spiral.Kino.RunnerTest do
            "child #{child_pid} survived the timeout"
   end
 
-  @tree_attempts 3
+  @tree_timeouts [8_000, 20_000, 40_000]
 
   defp tree_timed_out_after_start!(dir, attempt) do
     {args, pidfile} = slow_tree!(Path.join(dir, "attempt_#{attempt}"))
     test_pid = self()
+    timeout = Enum.at(@tree_timeouts, attempt - 1)
 
     task =
       Task.async(fn ->
         Runner.run(escript(), args,
-          timeout: 40_000,
+          timeout: timeout,
           on_start: fn os_pid -> send(test_pid, {:child, os_pid}) end
         )
       end)
@@ -142,17 +143,17 @@ defmodule Spiral.Kino.RunnerTest do
     grandchild_pid = wait_until(fn -> read_pid(pidfile) || (not Process.alive?(task.pid) and :timed_out_before_start) end, 60_000)
     grandchild_alive? = is_integer(grandchild_pid) and Runner.os_pid_alive?(grandchild_pid)
 
-    assert {:error, {:timeout, %{timeout: 40_000, output: output}}} = Task.await(task, 120_000)
+    assert {:error, {:timeout, %{timeout: ^timeout, output: output}}} = Task.await(task, 120_000)
 
     cond do
       grandchild_alive? ->
         %{child: child_pid, grandchild: grandchild_pid, output: output}
 
-      attempt < @tree_attempts ->
+      attempt < length(@tree_timeouts) ->
         tree_timed_out_after_start!(dir, attempt + 1)
 
       true ->
-        flunk("the 40 s timeout fired before the grandchild was running in all #{@tree_attempts} attempts (machine too loaded to start two escripts)")
+        flunk("every timeout in #{inspect(@tree_timeouts)} ms fired before the grandchild was running (machine too loaded to start two escripts)")
     end
   end
 

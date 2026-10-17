@@ -6,19 +6,6 @@ enum US0 {
     US0_None,
     US0_Both(f64, i32),
 }
-impl US0 {
-    fn tag(&self) -> i32 {
-        match self {
-            US0::US0_None => 0,
-            US0::US0_Both(..) => 1,
-        }
-    }
-}
-impl Default for US0 {
-    fn default() -> Self {
-        US0::US0_None
-    }
-}
 fn score_0(mut v0: US0) -> i32 {
     match &v0 {
         US0::US0_Both(v1, v2) => {
@@ -55,5 +42,5 @@ fn spiral_main() -> i32 {
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 1 });
 }

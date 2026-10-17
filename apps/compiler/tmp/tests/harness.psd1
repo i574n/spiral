@@ -28,11 +28,16 @@
         @{ Id = 'samples/mega_brzozowski_derivatives/runtime_bench'; Backend = 'Lua'; Reason = 'exact 64-bit integers (spiral_w64 helpers) make it agree with C, but its Lua run takes about 17.4 s against the 20 s row timeout, so under suite load it would time out and break bless reproduction' }
         @{ Id = 'samples/native_cube_flush_delay_direct'; Backend = 'C'; Reason = 'POSIX-only residual (poll.h); native C runs only on Linux' }
         @{ Id = 'samples/native_cube_monotonic_delay_direct'; Backend = 'C'; Reason = 'POSIX-only residual (poll.h/clock_gettime); native C runs only on Linux' }
-        @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'Rust'; Reason = 'C residual has no bounds check (exits 0); Rust panics as the fixture intends' }
-        @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'Zig'; Reason = 'C residual has no bounds check (exits 0); Zig traps the index (exit 3) as the fixture intends' }
-        @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'Gleam'; Reason = 'C residual has no bounds check (exits 0); Gleam''s checked SpiralArray index halts with 3 as the fixture intends' }
-        @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'Lean'; Reason = 'C residual has no bounds check (exits 0); Lean''s checked index exits 3 as the fixture intends' }
-        @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'Bend'; Reason = 'C residual has no bounds check (exits 0); Bend''s checked array cell exits 3 as the fixture intends' }
+        @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'Rust'; Oracle = 'C'; Reason = 'C residual has no bounds check (exits 0); Rust panics as the fixture intends' }
+        @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'Zig'; Oracle = 'C'; Reason = 'C residual has no bounds check (exits 0); Zig traps the index (exit 3) as the fixture intends' }
+        @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'Gleam'; Oracle = 'C'; Reason = 'C residual has no bounds check (exits 0); Gleam''s checked SpiralArray index halts with 3 as the fixture intends' }
+        @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'Lean'; Oracle = 'C'; Reason = 'C residual has no bounds check (exits 0); Lean''s checked index exits 3 as the fixture intends' }
+        @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'Bend'; Oracle = 'C'; Reason = 'C residual has no bounds check (exits 0); Bend''s checked array cell exits 3 as the fixture intends' }
+        @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'C'; Oracle = 'Zig'; Reason = 'C indexes unchecked (reads 0); the Zig oracle traps the index with exit 3 as the fixture intends' }
+        @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'Delphi'; Oracle = 'Zig'; Reason = 'Delphi indexes unchecked (reads 0); the Zig oracle traps the index with exit 3 as the fixture intends' }
+        @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'Wasm'; Oracle = 'Zig'; Reason = 'the Wasm array index is unchecked (reads 0); the Zig oracle traps the index with exit 3 as the fixture intends' }
+        @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'Kotlin'; Oracle = 'Zig'; Reason = 'Kotlin indexes unchecked like C (reads 0); the Zig oracle traps the index with exit 3 as the fixture intends' }
+        @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'Lua'; Oracle = 'Zig'; Reason = 'the Lua array index is unchecked (reads 0); the Zig oracle traps the index with exit 3 as the fixture intends' }
         @{ Id = 'samples/native_float_infinity'; Backend = 'Gleam'; Reason = 'BEAM floats are never infinite or NaN: a 0x7FF0000000000000 float bit-pattern match fails and binary_to_term raises badarg, so !!!!Infinity has no Gleam residual that compiles' }
     )
 
@@ -2946,6 +2951,7 @@
     )
     Zig = @(
         'samples/gleam_match_narrowed'
+        'samples/zig_exit_wide'
         'samples/array_bool',
         'samples/array_cell',
         'samples/array_closure_union3_all_heap_union_heap_union_heap_pair_heaps',

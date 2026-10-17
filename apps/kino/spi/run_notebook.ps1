@@ -1,4 +1,12 @@
 $ErrorActionPreference = "Stop"
+$notebookStarted = Get-Date
+. (Join-Path $PSScriptRoot "../../compiler/tmp/scripts/heavy.ps1")
+function Write-NotebookLedger([string] $Route, [int] $Code) {
+    $notebook = $fixed[[Math]::Max(0, $fixed.IndexOf('--path') + 1)]
+    $label = "kino notebook $([IO.Path]::GetFileName($notebook)) ($Route)"
+    $outcome = if ($Code) { "exit $Code" } else { 'ok' }
+    try { Write-RunLedger 'notebook' $label ([scriptblock]::Create("'" + ("run_notebook.ps1 $($fixed -join ' ')" -replace "'", "''") + "'")) $notebookStarted $notebookStarted '-' $outcome 0 } catch { Write-Warning "run ledger: $($_.Exception.Message)" }
+}
 $homeDir = if ($env:USERPROFILE) { $env:USERPROFILE } else { $env:HOME }
 $erlang = Join-Path $homeDir "scoop/apps/erlang/current/bin"
 $elixir = Join-Path $homeDir "scoop/apps/elixir/current/bin"
@@ -56,7 +64,7 @@ if ($env:SPIRAL_KINO_WARM -ne '0') {
     $warmArgs = [string[]] @($fixed) + $(if ($env:SPIRAL_KINO_MEMO -eq '0') { @('--no-memo') } else { @() })
     $warmPort = if ($env:SPIRAL_KINO_COMPILER_PORT) { [int] $env:SPIRAL_KINO_COMPILER_PORT } else { 13905 }
     $warmExit = Invoke-WarmNotebook $warmPort $warmArgs
-    if ($null -ne $warmExit) { exit $warmExit }
+    if ($null -ne $warmExit) { Write-NotebookLedger 'warm' $warmExit; exit $warmExit }
 }
 function Resolve-RealPath([string] $Path) {
     $full = [IO.Path]::GetFullPath($Path)
@@ -105,5 +113,6 @@ if (-not (Test-Path "deps/kino/mix.exs")) {
 }
 
 & $mix spiral.notebook @fixed
-if ($null -eq $LASTEXITCODE) { exit 1 }
-exit $LASTEXITCODE
+$notebookExit = if ($null -eq $LASTEXITCODE) { 1 } else { $LASTEXITCODE }
+Write-NotebookLedger 'mix' $notebookExit
+exit $notebookExit

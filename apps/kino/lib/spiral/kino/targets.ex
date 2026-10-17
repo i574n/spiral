@@ -360,12 +360,49 @@ defmodule Spiral.Kino.Targets do
     Enum.join(["name = #{inspect(name)}", "target = #{inspect(target)}", "", "[dependencies]" | lines], "\n") <> "\n"
   end
 
+  @gleam_warm_slots 4
+
   defp run_gleam(path, deps, target, opts, timeout, deadline) do
     package = path |> Path.dirname() |> Path.dirname()
+    manifest = gleam_manifest(path, deps, target)
+    build_and_run = fn dir -> build_and_run_gleam(dir, manifest, target, opts, timeout, deadline) end
 
-    with {:ok, _built} <- gleam_build(package, gleam_manifest(path, deps, target), opts, timeout, deadline) do
+    case in_warm_gleam_package(package, manifest, opts, build_and_run) do
+      :all_slots_busy -> build_and_run.(package)
+      result -> result
+    end
+  end
+
+  defp build_and_run_gleam(package, manifest, target, opts, timeout, deadline) do
+    with {:ok, _built} <- gleam_build(package, manifest, opts, timeout, deadline) do
       run_gleam_program(package, target, opts, Keyword.put(opts, :cwd, package), timeout, deadline)
     end
+  end
+
+  @doc false
+  def gleam_warm_dir(manifest, slot, opts) do
+    key = :crypto.hash(:sha256, manifest) |> Base.encode16(case: :lower) |> binary_part(0, 24)
+    Path.join(Toolchain.cache_dir(opts), "kino-gleam-warm/#{key}-#{slot}")
+  end
+
+  defp in_warm_gleam_package(package, manifest, opts, fun) do
+    Enum.reduce_while(0..(@gleam_warm_slots - 1), :all_slots_busy, fn slot, busy ->
+      warm = gleam_warm_dir(manifest, slot, opts)
+      claimed = Spiral.Kino.FileLock.with_lock(warm <> ".lock", fn -> {:claimed, fun.(with_cell_sources(warm, package))} end, 0)
+
+      case claimed do
+        {:claimed, result} -> {:halt, result}
+        _ -> {:cont, busy}
+      end
+    end)
+  end
+
+  defp with_cell_sources(warm, package) do
+    src = Path.join(warm, "src")
+    File.rm_rf!(src)
+    File.mkdir_p!(src)
+    File.cp_r!(Path.join(package, "src"), src)
+    warm
   end
 
   defp gleam_build(package, manifest, opts, timeout, deadline) do
@@ -413,7 +450,7 @@ defmodule Spiral.Kino.Targets do
   end
 
   defp run_gleam_program(package, _erlang, opts, quiet, timeout, deadline) do
-    paths = Path.wildcard(Path.join(package, "build/dev/erlang/*/ebin"))
+    paths = package |> Path.join("build/dev/erlang/*/ebin") |> String.replace("\\", "/") |> Path.wildcard()
     entry = "try main:main(), halt(0) catch Class:Reason -> io:format(\"~p: ~p~n\", [Class, Reason]), halt(1) end."
     run_program(Toolchain.erl(opts), "erl", ["-noshell", "-pa" | paths] ++ ["-eval", entry], quiet, timeout, deadline, false)
   end

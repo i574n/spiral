@@ -6,36 +6,10 @@ enum US0 {
     US0_BitZero,
     US0_BitOne,
 }
-impl US0 {
-    fn tag(&self) -> i32 {
-        match self {
-            US0::US0_BitZero => 0,
-            US0::US0_BitOne => 1,
-        }
-    }
-}
-impl Default for US0 {
-    fn default() -> Self {
-        US0::US0_BitZero
-    }
-}
 #[derive(Clone)]
 enum UH0 {
     UH0_InputEmpty,
     UH0_InputCons(US0, Rc<UH0>),
-}
-impl UH0 {
-    fn tag(&self) -> i32 {
-        match self {
-            UH0::UH0_InputEmpty => 0,
-            UH0::UH0_InputCons(..) => 1,
-        }
-    }
-}
-impl Default for UH0 {
-    fn default() -> Self {
-        UH0::UH0_InputEmpty
-    }
 }
 #[derive(Clone)]
 enum US1 {
@@ -43,37 +17,10 @@ enum US1 {
     US1_TriB,
     US1_TriC,
 }
-impl US1 {
-    fn tag(&self) -> i32 {
-        match self {
-            US1::US1_TriA => 0,
-            US1::US1_TriB => 1,
-            US1::US1_TriC => 2,
-        }
-    }
-}
-impl Default for US1 {
-    fn default() -> Self {
-        US1::US1_TriA
-    }
-}
 #[derive(Clone)]
 enum UH1 {
     UH1_InputEmpty,
     UH1_InputCons(US1, Rc<UH1>),
-}
-impl UH1 {
-    fn tag(&self) -> i32 {
-        match self {
-            UH1::UH1_InputEmpty => 0,
-            UH1::UH1_InputCons(..) => 1,
-        }
-    }
-}
-impl Default for UH1 {
-    fn default() -> Self {
-        UH1::UH1_InputEmpty
-    }
 }
 #[derive(Clone)]
 enum UH2 {
@@ -84,60 +31,16 @@ enum UH2 {
     UH2_RegexCat(Rc<UH2>, Rc<UH2>),
     UH2_RegexStar(Rc<UH2>),
 }
-impl UH2 {
-    fn tag(&self) -> i32 {
-        match self {
-            UH2::UH2_RegexEmpty => 0,
-            UH2::UH2_RegexEpsilon => 1,
-            UH2::UH2_RegexChar(..) => 2,
-            UH2::UH2_RegexAlt(..) => 3,
-            UH2::UH2_RegexCat(..) => 4,
-            UH2::UH2_RegexStar(..) => 5,
-        }
-    }
-}
-impl Default for UH2 {
-    fn default() -> Self {
-        UH2::UH2_RegexEmpty
-    }
-}
 #[derive(Clone)]
 enum US2 {
     US2_SymbolLess,
     US2_SymbolSame,
     US2_SymbolGreater,
 }
-impl US2 {
-    fn tag(&self) -> i32 {
-        match self {
-            US2::US2_SymbolLess => 0,
-            US2::US2_SymbolSame => 1,
-            US2::US2_SymbolGreater => 2,
-        }
-    }
-}
-impl Default for US2 {
-    fn default() -> Self {
-        US2::US2_SymbolLess
-    }
-}
 #[derive(Clone)]
 enum US3 {
     US3_Nullable,
     US3_NonNullable,
-}
-impl US3 {
-    fn tag(&self) -> i32 {
-        match self {
-            US3::US3_Nullable => 0,
-            US3::US3_NonNullable => 1,
-        }
-    }
-}
-impl Default for US3 {
-    fn default() -> Self {
-        US3::US3_Nullable
-    }
 }
 #[derive(Clone)]
 enum UH3 {
@@ -148,54 +51,13 @@ enum UH3 {
     UH3_RegexCat(Rc<UH3>, Rc<UH3>),
     UH3_RegexStar(Rc<UH3>),
 }
-impl UH3 {
-    fn tag(&self) -> i32 {
-        match self {
-            UH3::UH3_RegexEmpty => 0,
-            UH3::UH3_RegexEpsilon => 1,
-            UH3::UH3_RegexChar(..) => 2,
-            UH3::UH3_RegexAlt(..) => 3,
-            UH3::UH3_RegexCat(..) => 4,
-            UH3::UH3_RegexStar(..) => 5,
-        }
-    }
-}
-impl Default for UH3 {
-    fn default() -> Self {
-        UH3::UH3_RegexEmpty
-    }
-}
 #[derive(Clone)]
 enum US4 {
     US4_BitMatcherRaw(Rc<UH2>, Rc<UH0>),
 }
-impl US4 {
-    fn tag(&self) -> i32 {
-        match self {
-            US4::US4_BitMatcherRaw(..) => 0,
-        }
-    }
-}
-impl Default for US4 {
-    fn default() -> Self {
-        US4::US4_BitMatcherRaw(<Rc<UH2>>::default(), <Rc<UH0>>::default())
-    }
-}
 #[derive(Clone)]
 enum US5 {
     US5_BitMatcherDecided(Rc<UH2>, Rc<UH0>, bool),
-}
-impl US5 {
-    fn tag(&self) -> i32 {
-        match self {
-            US5::US5_BitMatcherDecided(..) => 1,
-        }
-    }
-}
-impl Default for US5 {
-    fn default() -> Self {
-        US5::US5_BitMatcherDecided(<Rc<UH2>>::default(), <Rc<UH0>>::default(), <bool>::default())
-    }
 }
 fn regex_compare_5(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> US2 {
     loop {
@@ -1608,5 +1470,5 @@ fn spiral_main() -> i32 {
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 1 });
 }

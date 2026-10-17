@@ -13,7 +13,7 @@ WAIT = re.compile(r"Wait|Sleep|Monitor\.Enter|SpinWait|Poll|UNMANAGED_CODE_TIME|
 
 def short(n):
     n = re.sub(r"\(.*$", "", n)
-    n = n.replace("SpiralCompilerCore!Polyglot.spiral_compiler+", "").replace("SpiralCompilerCore!Polyglot.spiral_compiler.", "")
+    n = n.replace("SpiralCompilerCore!Spiral.spiral_compiler+", "").replace("SpiralCompilerCore!Spiral.spiral_compiler.", "")
     return re.sub(r"@\d+[-\d]*", "", n)[:120]
 
 names = [short(n) for n in frames]

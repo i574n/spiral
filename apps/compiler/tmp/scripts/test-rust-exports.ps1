@@ -68,8 +68,15 @@ Test-Consumer 'exports' 'spiral_exports' (Join-Path $exports 'consumer.rs')
 
 $policy = Join-Path $fixtures 'library'
 $source = [IO.File]::ReadAllText((Join-Path $policy 'main.spi'))
+$forall = @(
+    'inl same forall t. (x : t) : t = x'
+    'inl main () : i32 ='
+    '    !!!!Export("same_export", ((fun (value : i32) => same value) : i32 -> i32))'
+    '    0i32'
+) -join "`n"
 Invoke-Cases $policy ([ordered]@{
     library = @($source, '')
+    forall_in_export = @($forall, '')
     library_duplicate = @($source.Replace('    0i32', '    !!!!Export("export_admitted", ((fun (value, reserved) => admitted value reserved) : i32 * i32 -> i32))' + "`n" + '    0i32'), 'Duplicate export: export_admitted')
 })
 $harness = Join-Path $work 'library/harness.rs'
