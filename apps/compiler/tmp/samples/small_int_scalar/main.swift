@@ -28,7 +28,7 @@ func spiral_main() -> Int32 {
     var v12: Int32 = 0
     v12 = 7
     var v13: Int8 = Int8(0)
-    v13 = Int8(v12)
+    v13 = Int8(truncatingIfNeeded: v12)
     var v14: Int8 = Int8(0)
     v14 = Int8(9)
     var v15: Int32 = 0

@@ -1,0 +1,5 @@
+let rec count (n : i32) =
+    if n <= 0i32 then 0i32
+    else count (n - 1i32)
+
+inl main () : i32 = count (dyn 5i32)

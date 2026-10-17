@@ -65,7 +65,7 @@ jobs:
     timeout-minutes: 360
     runs-on: ubuntu-24.04
     env:
-      SPIRAL_BIN_CACHE_DIR: ${{ github.workspace }}/../spiral-bin
+      SPIRAL_BIN_CACHE_DIR: ${{ runner.temp }}/spiral-bin
     steps:
       - uses: actions/checkout@v6
 

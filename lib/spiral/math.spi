@@ -77,6 +77,8 @@ inl atan2 (y : f64) (x : f64) : f64 =
         Delphi = fun () => $'ArcTan2(!y, !x)' : float
         Wasm = fun () => $'(call $math_atan2 !y !x)' : float
         TypeScript = fun () => $'Math.atan2(!y, !x)' : float
+        Kotlin = fun () => $'kotlin.math.atan2(!y, !x)' : float
+        Swift = fun () => $'atan2(!y, !x)' : float
     }
 
 ///> gleam -d gleam_community_maths=\">=2.0.0\"
@@ -110,6 +112,8 @@ inl floor forall t {float}. (n : t) : t =
         Delphi = fun () => $'Int(!n) - Ord(Frac(!n) < 0)' : t
         Wasm = fun () => $'(`t.floor !n)' : t
         TypeScript = fun () => $'Math.floor(!n)' : t
+        Kotlin = fun () => $'kotlin.math.floor(!n)' : t
+        Swift = fun () => $'(!n).rounded(.down)' : t
     }
 
 ///> gleam
@@ -143,6 +147,8 @@ inl ceil forall t {float}. (n : t) : t =
         Delphi = fun () => $'Int(!n) + Ord(Frac(!n) > 0)' : t
         Wasm = fun () => $'(`t.ceil !n)' : t
         TypeScript = fun () => $'Math.ceil(!n)' : t
+        Kotlin = fun () => $'kotlin.math.ceil(!n)' : t
+        Swift = fun () => $'(!n).rounded(.up)' : t
     }
 
 ///> gleam
@@ -175,6 +181,8 @@ inl round forall t {number; float}. (x : t) : t =
         Delphi = round_half_to_even
         TypeScript = round_half_to_even
         Wasm = fun () => $'(`t.nearest !x)' : t
+        Kotlin = fun () => $'kotlin.math.round(!x)' : t
+        Swift = fun () => $'(!x).rounded(.toNearestOrEven)' : t
     }
 
 ///> gleam
@@ -208,6 +216,8 @@ inl log_base (new_base : f64) (a : f64) : f64 =
         TypeScript = fun () => log a / log new_base
         Zig = fun () => log a / log new_base
         Lean = fun () => log a / log new_base
+        Kotlin = fun () => log a / log new_base
+        Swift = fun () => log a / log new_base
     }
 
 test log_base =

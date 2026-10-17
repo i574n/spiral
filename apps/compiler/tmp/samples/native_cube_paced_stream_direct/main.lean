@@ -1,0 +1,1056 @@
+set_option linter.all false
+class SpiralToInt (α : Type) where toI : α → Int
+instance : SpiralToInt Int8 := ⟨Int8.toInt⟩
+instance : SpiralToInt Int16 := ⟨Int16.toInt⟩
+instance : SpiralToInt Int32 := ⟨Int32.toInt⟩
+instance : SpiralToInt Int64 := ⟨Int64.toInt⟩
+instance : SpiralToInt UInt8 := ⟨fun x => x.toNat⟩
+instance : SpiralToInt UInt16 := ⟨fun x => x.toNat⟩
+instance : SpiralToInt UInt32 := ⟨fun x => x.toNat⟩
+instance : SpiralToInt UInt64 := ⟨fun x => x.toNat⟩
+instance : SpiralToInt Float := ⟨fun x => if x < 0 then -(Int.ofNat (Float.toUInt64 (-x)).toNat) else Int.ofNat (Float.toUInt64 x).toNat⟩
+instance : SpiralToInt Float32 := ⟨fun x => if x < 0 then -(Int.ofNat (Float32.toUInt64 (-x)).toNat) else Int.ofNat (Float32.toUInt64 x).toNat⟩
+def spiralFail {α : Type} (msg : String) : IO α := throw (IO.userError msg)
+def spiralIdx {α : Type} [SpiralToInt α] (i : α) : Nat := (SpiralToInt.toI i).toNat
+def spiralAbort {α : Type} [Inhabited α] : IO α := do (← IO.getStdout).flush; IO.Process.exit 3
+def spiralIsContinuation (b : UInt8) : Bool := b &&& 0xC0 == 0x80
+def spiralIndex {α : Type} (xs : Array α) (i : Nat) : IO α := match xs[i]? with
+  | some x => pure x
+  | none => IO.Process.exit 3
+def spiralStringSlice (s : String) (a b : Int) : IO String := do
+  let bytes := s.toUTF8
+  let length : Int := bytes.size
+  if a < 0 || a > length || b < a - 1 || b >= length then spiralAbort
+  else if b >= a && (spiralIsContinuation (bytes.get! a.toNat) || (b + 1 < length && spiralIsContinuation (bytes.get! (b + 1).toNat))) then spiralAbort
+  else pure (String.Pos.Raw.extract s ⟨a.toNat⟩ ⟨(b + 1).toNat⟩)
+mutual
+inductive U0 where
+  | Hidden : U0
+  | Visible : Float → Float → Float → U0
+end
+deriving instance Inhabited for U0
+def U0.spiralTag : U0 → Int32
+  | .Hidden .. => 0
+  | .Visible .. => 1
+mutual
+partial def method0 (p0 : Int32) : IO Bool := do
+    let mut v0 : Int32 := p0
+    let mut v1 : Bool := default
+    v1 := (decide (v0 < (3 : Int32)))
+    return v1
+partial def method1 (p0 : Int32) : IO Bool := do
+    let mut v0 : Int32 := p0
+    let mut v1 : Bool := default
+    v1 := (decide (v0 < (7040 : Int32)))
+    return v1
+partial def method2 (p0 : (IO.Ref (Array Int32))) (p1 : Float) (p2 : Float) (p3 : Float) : IO Int32 := do
+    let mut v0 : (IO.Ref (Array Int32)) := p0
+    let mut v1 : Float := p1
+    let mut v2 : Float := p2
+    let mut v3 : Float := p3
+    let mut v4 : Float := default
+    let mut v5 : Float := default
+    let mut v6 : Float := default
+    let mut v7 : Float := default
+    let mut v8 : Float := default
+    let mut v9 : Float := default
+    let mut v10 : Float := default
+    let mut v11 : Float := default
+    let mut v12 : Float := default
+    let mut v13 : Float := default
+    let mut v14 : Float := default
+    let mut v15 : Float := default
+    let mut v16 : Float := default
+    let mut v17 : Float := default
+    let mut v18 : Float := default
+    let mut v19 : Float := default
+    let mut v20 : Float := default
+    let mut v21 : Float := default
+    let mut v22 : Float := default
+    let mut v23 : Float := default
+    let mut v24 : Float := default
+    let mut v25 : Float := default
+    let mut v26 : Float := default
+    let mut v27 : Float := default
+    let mut v28 : Float := default
+    let mut v29 : Float := default
+    let mut v30 : Float := default
+    let mut v31 : Float := default
+    let mut v32 : Float := default
+    let mut v33 : Float := default
+    let mut v34 : Float := default
+    let mut v35 : Float := default
+    let mut v36 : Float := default
+    let mut v37 : Float := default
+    let mut v38 : Float := default
+    let mut v39 : Float := default
+    let mut v40 : Float := default
+    let mut v41 : Float := default
+    let mut v42 : Float := default
+    let mut v43 : Float := default
+    let mut v44 : Float := default
+    let mut v45 : Float := default
+    let mut v46 : Float := default
+    let mut v47 : Float := default
+    let mut v48 : Bool := default
+    let mut v50 : Bool := default
+    let mut v49 : Bool := default
+    let mut v52 : Bool := default
+    let mut v51 : Bool := default
+    let mut v54 : Bool := default
+    let mut v53 : Bool := default
+    let mut v57 : U0 := default
+    let mut v58 : Float := default
+    let mut v59 : Float := default
+    let mut v60 : Float := default
+    let mut v61 : Bool := default
+    let mut v63 : Bool := default
+    let mut v62 : Bool := default
+    let mut v65 : Bool := default
+    let mut v64 : Bool := default
+    let mut v66 : Int32 := default
+    let mut v67 : Int32 := default
+    let mut v68 : Int32 := default
+    let mut v69 : Int32 := default
+    v4 := (Float.sin v1)
+    v5 := ((20.0 : Float) * v4)
+    v6 := (Float.sin v2)
+    v7 := (v5 * v6)
+    v8 := (Float.cos v3)
+    v9 := (v7 * v8)
+    v10 := (Float.cos v1)
+    v11 := ((-20.0 : Float) * v10)
+    v12 := (v11 * v6)
+    v13 := (v12 * v8)
+    v14 := (v9 - v13)
+    v15 := ((20.0 : Float) * v10)
+    v16 := (Float.sin v3)
+    v17 := (v15 * v16)
+    v18 := (v14 + v17)
+    v19 := ((-20.0 : Float) * v4)
+    v20 := (v19 * v16)
+    v21 := (v18 + v20)
+    v22 := (Float.cos v2)
+    v23 := ((20.0 : Float) * v22)
+    v24 := (v23 * v8)
+    v25 := (v21 + v24)
+    v26 := (v15 * v8)
+    v27 := (v19 * v8)
+    v28 := (v26 + v27)
+    v29 := (v7 * v16)
+    v30 := (v28 - v29)
+    v31 := (v12 * v16)
+    v32 := (v30 + v31)
+    v33 := (v23 * v16)
+    v34 := (v32 - v33)
+    v35 := (v11 * v22)
+    v36 := (v5 * v22)
+    v37 := (v35 - v36)
+    v38 := ((20.0 : Float) * v6)
+    v39 := (v37 + v38)
+    v40 := (v39 + (100.0 : Float))
+    v41 := ((1.0 : Float) / v40)
+    v42 := ((40.0 : Float) * v41)
+    v43 := (v42 * v25)
+    v44 := (v43 * (2.0 : Float))
+    v45 := ((40.0 : Float) + v44)
+    v46 := (v42 * v34)
+    v47 := ((22.0 : Float) + v46)
+    v48 := (decide (v45 >= (0.0 : Float)))
+    if v48 then
+        v49 := (decide (v45 < (160.0 : Float)))
+        v50 := v49
+    else
+        v50 := false
+    if v50 then
+        v51 := (decide (v47 >= (0.0 : Float)))
+        v52 := v51
+    else
+        v52 := false
+    if v52 then
+        v53 := (decide (v47 < (44.0 : Float)))
+        v54 := v53
+    else
+        v54 := false
+    if v54 then
+        v57 := (U0.Visible v45 v47 v41)
+    else
+        v57 := U0.Hidden
+    match v57 with
+    | U0.Visible f58 f59 f60 =>
+        v58 := f58
+        v59 := f59
+        v60 := f60
+        v61 := (decide (v58 >= (0.0 : Float)))
+        if v61 then
+            v62 := (decide (v59 >= (0.0 : Float)))
+            v63 := v62
+        else
+            v63 := false
+        if v63 then
+            v64 := (decide (v60 > (0.0 : Float)))
+            v65 := v64
+        else
+            v65 := false
+        if v65 then
+            v66 := (Int32.ofInt (SpiralToInt.toI v58))
+            v67 := (Int32.ofInt (SpiralToInt.toI v59))
+            v68 := (v67 * (160 : Int32))
+            v69 := (v66 + v68)
+            v0.modify (fun xs => xs.set! (spiralIdx v69) (35 : Int32))
+            return v69
+        else
+            return (0 : Int32)
+    | _ =>
+        return (0 : Int32)
+partial def method3 (p0 : (IO.Ref (Array Int32))) (p1 : Float) (p2 : Float) (p3 : Float) : IO Int32 := do
+    let mut v0 : (IO.Ref (Array Int32)) := p0
+    let mut v1 : Float := p1
+    let mut v2 : Float := p2
+    let mut v3 : Float := p3
+    let mut v4 : Float := default
+    let mut v5 : Float := default
+    let mut v6 : Float := default
+    let mut v7 : Float := default
+    let mut v8 : Float := default
+    let mut v9 : Float := default
+    let mut v10 : Float := default
+    let mut v11 : Float := default
+    let mut v12 : Float := default
+    let mut v13 : Float := default
+    let mut v14 : Float := default
+    let mut v15 : Float := default
+    let mut v16 : Float := default
+    let mut v17 : Float := default
+    let mut v18 : Float := default
+    let mut v19 : Float := default
+    let mut v20 : Float := default
+    let mut v21 : Float := default
+    let mut v22 : Float := default
+    let mut v23 : Float := default
+    let mut v24 : Float := default
+    let mut v25 : Float := default
+    let mut v26 : Float := default
+    let mut v27 : Float := default
+    let mut v28 : Float := default
+    let mut v29 : Float := default
+    let mut v30 : Float := default
+    let mut v31 : Float := default
+    let mut v32 : Float := default
+    let mut v33 : Float := default
+    let mut v34 : Float := default
+    let mut v35 : Float := default
+    let mut v36 : Float := default
+    let mut v37 : Float := default
+    let mut v38 : Float := default
+    let mut v39 : Float := default
+    let mut v40 : Float := default
+    let mut v41 : Float := default
+    let mut v42 : Float := default
+    let mut v43 : Float := default
+    let mut v44 : Float := default
+    let mut v45 : Float := default
+    let mut v46 : Float := default
+    let mut v47 : Float := default
+    let mut v48 : Bool := default
+    let mut v50 : Bool := default
+    let mut v49 : Bool := default
+    let mut v52 : Bool := default
+    let mut v51 : Bool := default
+    let mut v54 : Bool := default
+    let mut v53 : Bool := default
+    let mut v57 : U0 := default
+    let mut v58 : Float := default
+    let mut v59 : Float := default
+    let mut v60 : Float := default
+    let mut v61 : Bool := default
+    let mut v63 : Bool := default
+    let mut v62 : Bool := default
+    let mut v65 : Bool := default
+    let mut v64 : Bool := default
+    let mut v66 : Int32 := default
+    let mut v67 : Int32 := default
+    let mut v68 : Int32 := default
+    let mut v69 : Int32 := default
+    v4 := (Float.sin v1)
+    v5 := ((10.0 : Float) * v4)
+    v6 := (Float.sin v2)
+    v7 := (v5 * v6)
+    v8 := (Float.cos v3)
+    v9 := (v7 * v8)
+    v10 := (Float.cos v1)
+    v11 := ((-10.0 : Float) * v10)
+    v12 := (v11 * v6)
+    v13 := (v12 * v8)
+    v14 := (v9 - v13)
+    v15 := ((10.0 : Float) * v10)
+    v16 := (Float.sin v3)
+    v17 := (v15 * v16)
+    v18 := (v14 + v17)
+    v19 := ((-10.0 : Float) * v4)
+    v20 := (v19 * v16)
+    v21 := (v18 + v20)
+    v22 := (Float.cos v2)
+    v23 := ((10.0 : Float) * v22)
+    v24 := (v23 * v8)
+    v25 := (v21 + v24)
+    v26 := (v15 * v8)
+    v27 := (v19 * v8)
+    v28 := (v26 + v27)
+    v29 := (v7 * v16)
+    v30 := (v28 - v29)
+    v31 := (v12 * v16)
+    v32 := (v30 + v31)
+    v33 := (v23 * v16)
+    v34 := (v32 - v33)
+    v35 := (v11 * v22)
+    v36 := (v5 * v22)
+    v37 := (v35 - v36)
+    v38 := ((10.0 : Float) * v6)
+    v39 := (v37 + v38)
+    v40 := (v39 + (100.0 : Float))
+    v41 := ((1.0 : Float) / v40)
+    v42 := ((40.0 : Float) * v41)
+    v43 := (v42 * v25)
+    v44 := (v43 * (2.0 : Float))
+    v45 := ((90.0 : Float) + v44)
+    v46 := (v42 * v34)
+    v47 := ((22.0 : Float) + v46)
+    v48 := (decide (v45 >= (0.0 : Float)))
+    if v48 then
+        v49 := (decide (v45 < (160.0 : Float)))
+        v50 := v49
+    else
+        v50 := false
+    if v50 then
+        v51 := (decide (v47 >= (0.0 : Float)))
+        v52 := v51
+    else
+        v52 := false
+    if v52 then
+        v53 := (decide (v47 < (44.0 : Float)))
+        v54 := v53
+    else
+        v54 := false
+    if v54 then
+        v57 := (U0.Visible v45 v47 v41)
+    else
+        v57 := U0.Hidden
+    match v57 with
+    | U0.Visible f58 f59 f60 =>
+        v58 := f58
+        v59 := f59
+        v60 := f60
+        v61 := (decide (v58 >= (0.0 : Float)))
+        if v61 then
+            v62 := (decide (v59 >= (0.0 : Float)))
+            v63 := v62
+        else
+            v63 := false
+        if v63 then
+            v64 := (decide (v60 > (0.0 : Float)))
+            v65 := v64
+        else
+            v65 := false
+        if v65 then
+            v66 := (Int32.ofInt (SpiralToInt.toI v58))
+            v67 := (Int32.ofInt (SpiralToInt.toI v59))
+            v68 := (v67 * (160 : Int32))
+            v69 := (v66 + v68)
+            v0.modify (fun xs => xs.set! (spiralIdx v69) (64 : Int32))
+            return v69
+        else
+            return (0 : Int32)
+    | _ =>
+        return (0 : Int32)
+partial def method4 (p0 : (IO.Ref (Array Int32))) (p1 : Float) (p2 : Float) (p3 : Float) : IO Int32 := do
+    let mut v0 : (IO.Ref (Array Int32)) := p0
+    let mut v1 : Float := p1
+    let mut v2 : Float := p2
+    let mut v3 : Float := p3
+    let mut v4 : Float := default
+    let mut v5 : Float := default
+    let mut v6 : Float := default
+    let mut v7 : Float := default
+    let mut v8 : Float := default
+    let mut v9 : Float := default
+    let mut v10 : Float := default
+    let mut v11 : Float := default
+    let mut v12 : Float := default
+    let mut v13 : Float := default
+    let mut v14 : Float := default
+    let mut v15 : Float := default
+    let mut v16 : Float := default
+    let mut v17 : Float := default
+    let mut v18 : Float := default
+    let mut v19 : Float := default
+    let mut v20 : Float := default
+    let mut v21 : Float := default
+    let mut v22 : Float := default
+    let mut v23 : Float := default
+    let mut v24 : Float := default
+    let mut v25 : Float := default
+    let mut v26 : Float := default
+    let mut v27 : Float := default
+    let mut v28 : Float := default
+    let mut v29 : Float := default
+    let mut v30 : Float := default
+    let mut v31 : Float := default
+    let mut v32 : Float := default
+    let mut v33 : Float := default
+    let mut v34 : Float := default
+    let mut v35 : Float := default
+    let mut v36 : Float := default
+    let mut v37 : Float := default
+    let mut v38 : Float := default
+    let mut v39 : Float := default
+    let mut v40 : Float := default
+    let mut v41 : Float := default
+    let mut v42 : Float := default
+    let mut v43 : Float := default
+    let mut v44 : Float := default
+    let mut v45 : Float := default
+    let mut v46 : Float := default
+    let mut v47 : Float := default
+    let mut v48 : Bool := default
+    let mut v50 : Bool := default
+    let mut v49 : Bool := default
+    let mut v52 : Bool := default
+    let mut v51 : Bool := default
+    let mut v54 : Bool := default
+    let mut v53 : Bool := default
+    let mut v57 : U0 := default
+    let mut v58 : Float := default
+    let mut v59 : Float := default
+    let mut v60 : Float := default
+    let mut v61 : Bool := default
+    let mut v63 : Bool := default
+    let mut v62 : Bool := default
+    let mut v65 : Bool := default
+    let mut v64 : Bool := default
+    let mut v66 : Int32 := default
+    let mut v67 : Int32 := default
+    let mut v68 : Int32 := default
+    let mut v69 : Int32 := default
+    v4 := (Float.sin v1)
+    v5 := ((5.0 : Float) * v4)
+    v6 := (Float.sin v2)
+    v7 := (v5 * v6)
+    v8 := (Float.cos v3)
+    v9 := (v7 * v8)
+    v10 := (Float.cos v1)
+    v11 := ((-5.0 : Float) * v10)
+    v12 := (v11 * v6)
+    v13 := (v12 * v8)
+    v14 := (v9 - v13)
+    v15 := ((5.0 : Float) * v10)
+    v16 := (Float.sin v3)
+    v17 := (v15 * v16)
+    v18 := (v14 + v17)
+    v19 := ((-5.0 : Float) * v4)
+    v20 := (v19 * v16)
+    v21 := (v18 + v20)
+    v22 := (Float.cos v2)
+    v23 := ((5.0 : Float) * v22)
+    v24 := (v23 * v8)
+    v25 := (v21 + v24)
+    v26 := (v15 * v8)
+    v27 := (v19 * v8)
+    v28 := (v26 + v27)
+    v29 := (v7 * v16)
+    v30 := (v28 - v29)
+    v31 := (v12 * v16)
+    v32 := (v30 + v31)
+    v33 := (v23 * v16)
+    v34 := (v32 - v33)
+    v35 := (v11 * v22)
+    v36 := (v5 * v22)
+    v37 := (v35 - v36)
+    v38 := ((5.0 : Float) * v6)
+    v39 := (v37 + v38)
+    v40 := (v39 + (100.0 : Float))
+    v41 := ((1.0 : Float) / v40)
+    v42 := ((40.0 : Float) * v41)
+    v43 := (v42 * v25)
+    v44 := (v43 * (2.0 : Float))
+    v45 := ((120.0 : Float) + v44)
+    v46 := (v42 * v34)
+    v47 := ((22.0 : Float) + v46)
+    v48 := (decide (v45 >= (0.0 : Float)))
+    if v48 then
+        v49 := (decide (v45 < (160.0 : Float)))
+        v50 := v49
+    else
+        v50 := false
+    if v50 then
+        v51 := (decide (v47 >= (0.0 : Float)))
+        v52 := v51
+    else
+        v52 := false
+    if v52 then
+        v53 := (decide (v47 < (44.0 : Float)))
+        v54 := v53
+    else
+        v54 := false
+    if v54 then
+        v57 := (U0.Visible v45 v47 v41)
+    else
+        v57 := U0.Hidden
+    match v57 with
+    | U0.Visible f58 f59 f60 =>
+        v58 := f58
+        v59 := f59
+        v60 := f60
+        v61 := (decide (v58 >= (0.0 : Float)))
+        if v61 then
+            v62 := (decide (v59 >= (0.0 : Float)))
+            v63 := v62
+        else
+            v63 := false
+        if v63 then
+            v64 := (decide (v60 > (0.0 : Float)))
+            v65 := v64
+        else
+            v65 := false
+        if v65 then
+            v66 := (Int32.ofInt (SpiralToInt.toI v58))
+            v67 := (Int32.ofInt (SpiralToInt.toI v59))
+            v68 := (v67 * (160 : Int32))
+            v69 := (v66 + v68)
+            v0.modify (fun xs => xs.set! (spiralIdx v69) (43 : Int32))
+            return v69
+        else
+            return (0 : Int32)
+    | _ =>
+        return (0 : Int32)
+partial def frame_text_loop_5 (p0 : (IO.Ref (Array Int32))) (p1 : Int32) (p2 : Int32) (p3 : Int32) (p4 : String) : IO String := do
+    let mut v0 : (IO.Ref (Array Int32)) := p0
+    let mut v1 : Int32 := p1
+    let mut v2 : Int32 := p2
+    let mut v3 : Int32 := p3
+    let mut v4 : String := p4
+    let mut v5 : Bool := default
+    let mut v6 : Int32 := default
+    let mut v7 : Bool := default
+    let mut v16 : String := default
+    let mut v8 : String := default
+    let mut v9 : Bool := default
+    let mut v10 : String := default
+    let mut v11 : Bool := default
+    let mut v12 : String := default
+    let mut v13 : String := default
+    let mut v17 : String := default
+    let mut v18 : Int32 := default
+    let mut v19 : Int32 := default
+    let mut v20 : Int32 := default
+    let mut v21 : Bool := default
+    let mut v23 : Bool := default
+    let mut v22 : Bool := default
+    let mut v24 : String := default
+    repeat
+        v5 := (v3 == v2)
+        if v5 then
+            return v4
+        else
+            v6 := (← spiralIndex (← v0.get) (spiralIdx v3))
+            v7 := (v6 == (35 : Int32))
+            if v7 then
+                v8 := "#"
+                v16 := v8
+            else
+                v9 := (v6 == (43 : Int32))
+                if v9 then
+                    v10 := "+"
+                    v16 := v10
+                else
+                    v11 := (v6 == (64 : Int32))
+                    if v11 then
+                        v12 := "@"
+                        v16 := v12
+                    else
+                        v13 := "."
+                        v16 := v13
+            v17 := (v4 ++ v16)
+            v18 := (v3 + (1 : Int32))
+            v19 := (v3 % v1)
+            v20 := (v1 - (1 : Int32))
+            v21 := (v19 == v20)
+            if v21 then
+                v22 := (decide (v18 < v2))
+                v23 := v22
+            else
+                v23 := false
+            if v23 then
+                v24 := (v17 ++ "\n")
+                let t0 := v0
+                let t1 := v1
+                let t2 := v2
+                let t18 := v18
+                let t24 := v24
+                v0 := t0
+                v1 := t1
+                v2 := t2
+                v3 := t18
+                v4 := t24
+                continue
+            else
+                let t0 := v0
+                let t1 := v1
+                let t2 := v2
+                let t18 := v18
+                let t17 := v17
+                v0 := t0
+                v1 := t1
+                v2 := t2
+                v3 := t18
+                v4 := t17
+                continue
+partial def runtime_byte_8 (p0 : String) (p1 : Int32) : IO Char := do
+    let mut v0 : String := p0
+    let mut v1 : Int32 := p1
+    let mut v2 : Char := default
+    v2 := (Char.ofNat (v0.toUTF8.get! (spiralIdx v1)).toNat)
+    return v2
+partial def utf8_scalar_at_byte_offset_7 (p0 : String) (p1 : Int32) : IO Int32 := do
+    let mut v0 : String := p0
+    let mut v1 : Int32 := p1
+    let mut v2 : Int32 := default
+    let mut v3 : Bool := default
+    let mut v5 : Bool := default
+    let mut v7 : Char := default
+    let mut v8 : Int32 := default
+    let mut v9 : Bool := default
+    let mut v10 : Bool := default
+    let mut v12 : Bool := default
+    let mut v13 : Int32 := default
+    let mut v14 : Bool := default
+    let mut v16 : Char := default
+    let mut v17 : Int32 := default
+    let mut v18 : Bool := default
+    let mut v20 : Bool := default
+    let mut v19 : Bool := default
+    let mut v21 : Int32 := default
+    let mut v22 : Int32 := default
+    let mut v23 : Int32 := default
+    let mut v24 : Int32 := default
+    let mut v28 : Bool := default
+    let mut v29 : Int32 := default
+    let mut v30 : Bool := default
+    let mut v32 : Int32 := default
+    let mut v33 : Char := default
+    let mut v34 : Int32 := default
+    let mut v35 : Char := default
+    let mut v36 : Int32 := default
+    let mut v37 : Bool := default
+    let mut v39 : Bool := default
+    let mut v38 : Bool := default
+    let mut v40 : Bool := default
+    let mut v42 : Bool := default
+    let mut v41 : Bool := default
+    let mut v43 : Int32 := default
+    let mut v44 : Int32 := default
+    let mut v45 : Int32 := default
+    let mut v46 : Int32 := default
+    let mut v47 : Int32 := default
+    let mut v48 : Int32 := default
+    let mut v49 : Int32 := default
+    let mut v50 : Bool := default
+    let mut v52 : Bool := default
+    let mut v53 : Bool := default
+    let mut v63 : Bool := default
+    let mut v64 : Int32 := default
+    let mut v65 : Bool := default
+    let mut v67 : Int32 := default
+    let mut v68 : Char := default
+    let mut v69 : Int32 := default
+    let mut v70 : Int32 := default
+    let mut v71 : Char := default
+    let mut v72 : Int32 := default
+    let mut v73 : Char := default
+    let mut v74 : Int32 := default
+    let mut v75 : Bool := default
+    let mut v77 : Bool := default
+    let mut v76 : Bool := default
+    let mut v78 : Bool := default
+    let mut v80 : Bool := default
+    let mut v79 : Bool := default
+    let mut v81 : Bool := default
+    let mut v83 : Bool := default
+    let mut v82 : Bool := default
+    let mut v84 : Int32 := default
+    let mut v85 : Int32 := default
+    let mut v86 : Int32 := default
+    let mut v87 : Int32 := default
+    let mut v88 : Int32 := default
+    let mut v89 : Int32 := default
+    let mut v90 : Int32 := default
+    let mut v91 : Int32 := default
+    let mut v92 : Int32 := default
+    let mut v93 : Int32 := default
+    let mut v94 : Bool := default
+    let mut v96 : Bool := default
+    v2 := (Int32.ofNat v0.utf8ByteSize)
+    v3 := (decide (v1 < (0 : Int32)))
+    if v3 then
+        spiralFail "UTF-8 byte offset is negative."
+    else
+        v5 := (decide (v1 >= v2))
+        if v5 then
+            spiralFail "UTF-8 byte offset is outside the string."
+        else
+            v7 := (← runtime_byte_8 v0 v1)
+            v8 := (Int32.ofNat (v7).toNat)
+            v9 := (decide (v8 < (128 : Int32)))
+            if v9 then
+                return v8
+            else
+                v10 := (decide (v8 < (194 : Int32)))
+                if v10 then
+                    spiralFail "UTF-8 scalar starts with an invalid lead byte."
+                else
+                    v12 := (decide (v8 < (224 : Int32)))
+                    if v12 then
+                        v13 := (v1 + (1 : Int32))
+                        v14 := (decide (v13 >= v2))
+                        if v14 then
+                            spiralFail "UTF-8 sequence is truncated."
+                        else
+                            v16 := (← runtime_byte_8 v0 v13)
+                            v17 := (Int32.ofNat (v16).toNat)
+                            v18 := (decide (v17 < (128 : Int32)))
+                            if v18 then
+                                v20 := false
+                            else
+                                v19 := (decide (v17 < (192 : Int32)))
+                                v20 := v19
+                            if v20 then
+                                v21 := (v8 - (192 : Int32))
+                                v22 := (v21 * (64 : Int32))
+                                v23 := (v17 - (128 : Int32))
+                                v24 := (v22 + v23)
+                                return v24
+                            else
+                                spiralFail "UTF-8 sequence has an invalid continuation byte."
+                    else
+                        v28 := (decide (v8 < (240 : Int32)))
+                        if v28 then
+                            v29 := (v1 + (2 : Int32))
+                            v30 := (decide (v29 >= v2))
+                            if v30 then
+                                spiralFail "UTF-8 sequence is truncated."
+                            else
+                                v32 := (v1 + (1 : Int32))
+                                v33 := (← runtime_byte_8 v0 v32)
+                                v34 := (Int32.ofNat (v33).toNat)
+                                v35 := (← runtime_byte_8 v0 v29)
+                                v36 := (Int32.ofNat (v35).toNat)
+                                v37 := (decide (v34 < (128 : Int32)))
+                                if v37 then
+                                    v39 := false
+                                else
+                                    v38 := (decide (v34 < (192 : Int32)))
+                                    v39 := v38
+                                if v39 then
+                                    v40 := (decide (v36 < (128 : Int32)))
+                                    if v40 then
+                                        v42 := false
+                                    else
+                                        v41 := (decide (v36 < (192 : Int32)))
+                                        v42 := v41
+                                    if v42 then
+                                        v43 := (v8 - (224 : Int32))
+                                        v44 := (v43 * (4096 : Int32))
+                                        v45 := (v34 - (128 : Int32))
+                                        v46 := (v45 * (64 : Int32))
+                                        v47 := (v44 + v46)
+                                        v48 := (v36 - (128 : Int32))
+                                        v49 := (v47 + v48)
+                                        v50 := (decide (v49 < (2048 : Int32)))
+                                        if v50 then
+                                            spiralFail "UTF-8 sequence is overlong."
+                                        else
+                                            v52 := (decide (v49 >= (55296 : Int32)))
+                                            if v52 then
+                                                v53 := (decide (v49 <= (57343 : Int32)))
+                                                if v53 then
+                                                    spiralFail "UTF-8 sequence encodes a surrogate."
+                                                else
+                                                    return v49
+                                            else
+                                                return v49
+                                    else
+                                        spiralFail "UTF-8 sequence has an invalid continuation byte."
+                                else
+                                    spiralFail "UTF-8 sequence has an invalid continuation byte."
+                        else
+                            v63 := (decide (v8 < (245 : Int32)))
+                            if v63 then
+                                v64 := (v1 + (3 : Int32))
+                                v65 := (decide (v64 >= v2))
+                                if v65 then
+                                    spiralFail "UTF-8 sequence is truncated."
+                                else
+                                    v67 := (v1 + (1 : Int32))
+                                    v68 := (← runtime_byte_8 v0 v67)
+                                    v69 := (Int32.ofNat (v68).toNat)
+                                    v70 := (v1 + (2 : Int32))
+                                    v71 := (← runtime_byte_8 v0 v70)
+                                    v72 := (Int32.ofNat (v71).toNat)
+                                    v73 := (← runtime_byte_8 v0 v64)
+                                    v74 := (Int32.ofNat (v73).toNat)
+                                    v75 := (decide (v69 < (128 : Int32)))
+                                    if v75 then
+                                        v77 := false
+                                    else
+                                        v76 := (decide (v69 < (192 : Int32)))
+                                        v77 := v76
+                                    if v77 then
+                                        v78 := (decide (v72 < (128 : Int32)))
+                                        if v78 then
+                                            v80 := false
+                                        else
+                                            v79 := (decide (v72 < (192 : Int32)))
+                                            v80 := v79
+                                        if v80 then
+                                            v81 := (decide (v74 < (128 : Int32)))
+                                            if v81 then
+                                                v83 := false
+                                            else
+                                                v82 := (decide (v74 < (192 : Int32)))
+                                                v83 := v82
+                                            if v83 then
+                                                v84 := (v8 - (240 : Int32))
+                                                v85 := (v84 * (262144 : Int32))
+                                                v86 := (v69 - (128 : Int32))
+                                                v87 := (v86 * (4096 : Int32))
+                                                v88 := (v85 + v87)
+                                                v89 := (v72 - (128 : Int32))
+                                                v90 := (v89 * (64 : Int32))
+                                                v91 := (v88 + v90)
+                                                v92 := (v74 - (128 : Int32))
+                                                v93 := (v91 + v92)
+                                                v94 := (decide (v93 < (65536 : Int32)))
+                                                if v94 then
+                                                    spiralFail "UTF-8 sequence is overlong."
+                                                else
+                                                    v96 := (decide (v93 > (1114111 : Int32)))
+                                                    if v96 then
+                                                        spiralFail "UTF-8 scalar is above U+10FFFF."
+                                                    else
+                                                        return v93
+                                            else
+                                                spiralFail "UTF-8 sequence has an invalid continuation byte."
+                                        else
+                                            spiralFail "UTF-8 sequence has an invalid continuation byte."
+                                    else
+                                        spiralFail "UTF-8 sequence has an invalid continuation byte."
+                            else
+                                spiralFail "UTF-8 scalar starts with an invalid lead byte."
+partial def loop_6 (p0 : String) (p1 : Int32) (p2 : Int32) (p3 : Int32) : IO Int32 := do
+    let mut v0 : String := p0
+    let mut v1 : Int32 := p1
+    let mut v2 : Int32 := p2
+    let mut v3 : Int32 := p3
+    let mut v4 : Bool := default
+    let mut v5 : Bool := default
+    let mut v7 : Int32 := default
+    let mut v8 : Bool := default
+    let mut v13 : Int32 := default
+    let mut v9 : Bool := default
+    let mut v10 : Bool := default
+    let mut v14 : Int32 := default
+    let mut v15 : Int32 := default
+    repeat
+        v4 := (v2 == v1)
+        if v4 then
+            return v3
+        else
+            v5 := (decide (v2 > v1))
+            if v5 then
+                spiralFail "UTF-8 scalar width exceeds the string."
+            else
+                v7 := (← utf8_scalar_at_byte_offset_7 v0 v2)
+                v8 := (decide (v7 < (128 : Int32)))
+                if v8 then
+                    v13 := (1 : Int32)
+                else
+                    v9 := (decide (v7 < (2048 : Int32)))
+                    if v9 then
+                        v13 := (2 : Int32)
+                    else
+                        v10 := (decide (v7 < (65536 : Int32)))
+                        if v10 then
+                            v13 := (3 : Int32)
+                        else
+                            v13 := (4 : Int32)
+                v14 := (v2 + v13)
+                v15 := (v3 + v7)
+                let t0 := v0
+                let t1 := v1
+                let t14 := v14
+                let t15 := v15
+                v0 := t0
+                v1 := t1
+                v2 := t14
+                v3 := t15
+                continue
+partial def method9 (p0 : Int32) : IO Bool := do
+    let mut v0 : Int32 := p0
+    let mut v1 : Bool := default
+    v1 := (decide (v0 < (4096 : Int32)))
+    return v1
+partial def spiralMain : IO Int32 := do
+    let mut v0 : (IO.Ref (Array Int32)) ← IO.mkRef #[]
+    let mut v1 : (IO.Ref (Array Int32)) ← IO.mkRef #[]
+    let mut v2 : Int32 := default
+    let mut v3 : Int32 := default
+    let mut v5 : Bool := default
+    let mut v10 : Float := default
+    let mut v11 : Float := default
+    let mut v12 : Float := default
+    let mut v6 : Bool := default
+    let mut v13 : Int32 := default
+    let mut v15 : Int32 := default
+    let mut v16 : Int32 := default
+    let mut v17 : Int32 := default
+    let mut v18 : Int32 := default
+    let mut v19 : Int32 := default
+    let mut v20 : Int32 := default
+    let mut v21 : Int32 := default
+    let mut v22 : String := default
+    let mut v23 : String := default
+    let mut v24 : Int32 := default
+    let mut v25 : Int32 := default
+    let mut v26 : Int32 := default
+    let mut v27 : Int32 := default
+    let mut v28 : String := default
+    let mut v29 : Int32 := default
+    let mut v30 : Int32 := default
+    let mut v31 : Int32 := default
+    let mut v32 : Int32 := default
+    let mut v33 : Bool := default
+    let mut v35 : Bool := default
+    let mut v34 : Bool := default
+    let mut v36 : Int32 := default
+    let mut v37 : Bool := default
+    let mut v38 : Int32 := default
+    let mut v39 : Int32 := default
+    let mut v41 : Int32 := default
+    let mut v42 : Int32 := default
+    let mut v43 : Int32 := default
+    let mut v44 : Int32 := default
+    let mut v45 : Int32 := default
+    let mut v46 : Int32 := default
+    let mut v47 : Int32 := default
+    let mut v48 : Int32 := default
+    let mut v49 : Int32 := default
+    let mut v50 : Int32 := default
+    let mut v51 : Bool := default
+    let mut v53 : Bool := default
+    let mut v52 : Bool := default
+    let mut v55 : Bool := default
+    let mut v54 : Bool := default
+    let mut v57 : Bool := default
+    let mut v56 : Bool := default
+    v0 := (← IO.mkRef (Array.replicate (spiralIdx (7040 : Int32)) (default : Int32)))
+    v1 := (← IO.mkRef (Array.replicate (spiralIdx (3 : Int32)) (default : Int32)))
+    v2 := (0 : Int32)
+    v3 := (0 : Int32)
+    repeat
+        if !(← method0 v3) then break
+        v5 := (v3 == (0 : Int32))
+        if v5 then
+            v10 := (0.0 : Float)
+            v11 := (0.0 : Float)
+            v12 := (0.0 : Float)
+        else
+            v6 := (v3 == (1 : Int32))
+            if v6 then
+                v10 := (0.1 : Float)
+                v11 := (0.05 : Float)
+                v12 := (0.02 : Float)
+            else
+                v10 := (0.2 : Float)
+                v11 := (0.1 : Float)
+                v12 := (0.04 : Float)
+        v13 := (0 : Int32)
+        repeat
+            if !(← method1 v13) then break
+            v0.modify (fun xs => xs.set! (spiralIdx v13) (46 : Int32))
+            v15 := (v13 + (1 : Int32))
+            v13 := v15
+        v16 := (← method2 v0 v10 v11 v12)
+        v17 := (← method3 v0 v10 v11 v12)
+        v18 := (← method4 v0 v10 v11 v12)
+        v19 := (160 : Int32)
+        v20 := (7040 : Int32)
+        v21 := (0 : Int32)
+        v22 := ""
+        v23 := (← frame_text_loop_5 v0 v19 v20 v21 v22)
+        v24 := (Int32.ofNat v23.utf8ByteSize)
+        v25 := (0 : Int32)
+        v26 := (0 : Int32)
+        v27 := (← loop_6 v23 v24 v25 v26)
+        v28 := ("\x1b[H" ++ v23)
+        IO.print (toString v28)
+        v29 := (v17 * (3 : Int32))
+        v30 := (v16 + v29)
+        v31 := (v18 * (7 : Int32))
+        v32 := (v30 + v31)
+        v33 := (v24 == (7083 : Int32))
+        if v33 then
+            v34 := (v27 == (324274 : Int32))
+            v35 := v34
+        else
+            v35 := false
+        if v35 then
+            v36 := v32
+        else
+            v36 := (0 : Int32)
+        v1.modify (fun xs => xs.set! (spiralIdx v3) v36)
+        v37 := (decide (v3 < (2 : Int32)))
+        if v37 then
+            v38 := (0 : Int32)
+            v39 := (v3 + (1 : Int32))
+            repeat
+                if !(← method9 v38) then break
+                v41 := (v38 % (17 : Int32))
+                v42 := (v39 + v41)
+                v43 := (v42 + (1 : Int32))
+                v44 := (v43 % (997 : Int32))
+                v39 := v44
+                v45 := (v38 + (1 : Int32))
+                v38 := v45
+            v46 := (v2 + v39)
+            v2 := v46
+        else
+            pure ()
+        v47 := (v3 + (1 : Int32))
+        v3 := v47
+    v48 := (← spiralIndex (← v1.get) (spiralIdx (0 : Int32)))
+    v49 := (← spiralIndex (← v1.get) (spiralIdx (1 : Int32)))
+    v50 := (← spiralIndex (← v1.get) (spiralIdx (2 : Int32)))
+    v51 := (v48 == (45702 : Int32))
+    if v51 then
+        v52 := (v49 == (43786 : Int32))
+        v53 := v52
+    else
+        v53 := false
+    if v53 then
+        v54 := (v50 == (43631 : Int32))
+        v55 := v54
+    else
+        v55 := false
+    if v55 then
+        v56 := (v2 == (1931 : Int32))
+        v57 := v56
+    else
+        v57 := false
+    if v57 then
+        return (42 : Int32)
+    else
+        return (1 : Int32)
+end
+def main : IO UInt32 := do
+  let code ← spiralMain
+  return code.toUInt32

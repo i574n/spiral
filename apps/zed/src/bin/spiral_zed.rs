@@ -16,6 +16,7 @@ struct Options {
 enum Launch {
     Serve(Options),
     Probe(Options, PathBuf),
+    FormatProbe(Options, PathBuf),
 }
 
 struct Doc {
@@ -34,6 +35,7 @@ fn main() {
     match launch {
         Launch::Serve(options) => serve(options),
         Launch::Probe(options, path) => std::process::exit(probe(&options, &path)),
+        Launch::FormatProbe(options, path) => std::process::exit(format_probe(&options, &path)),
     }
 }
 
@@ -62,7 +64,7 @@ fn serve(options: Options) {
 }
 
 fn usage() -> &'static str {
-    "usage: spiral-zed --dotnet DOTNET --compiler DLL [--backend Rust] [--probe FILE.spi]"
+    "usage: spiral-zed --dotnet DOTNET --compiler DLL [--backend Rust] [--probe FILE.spi | --format FILE.spi]"
 }
 
 impl Launch {
@@ -72,6 +74,7 @@ impl Launch {
         let mut compiler = None;
         let mut backend = "Rust".to_string();
         let mut probe = None;
+        let mut format = None;
         while let Some(arg) = args.next() {
             match arg.as_str() {
                 "--dotnet" => dotnet = args.next(),
@@ -80,6 +83,7 @@ impl Launch {
                     backend = args.next().unwrap_or_else(|| "Rust".to_string());
                 }
                 "--probe" => probe = Some(PathBuf::from(args.next().ok_or("--probe needs a .spi path")?)),
+                "--format" => format = Some(PathBuf::from(args.next().ok_or("--format needs a .spi path")?)),
                 "--help" | "-h" => return Err(usage().to_string()),
                 other => return Err(format!("unknown argument {other}\n{}", usage())),
             }
@@ -89,9 +93,10 @@ impl Launch {
             compiler: compiler.ok_or_else(|| format!("--compiler is required\n{}", usage()))?,
             backend,
         };
-        Ok(match probe {
-            Some(path) => Launch::Probe(options, path),
-            None => Launch::Serve(options),
+        Ok(match (probe, format) {
+            (Some(path), _) => Launch::Probe(options, path),
+            (None, Some(path)) => Launch::FormatProbe(options, path),
+            (None, None) => Launch::Serve(options),
         })
     }
 }
@@ -142,13 +147,104 @@ fn format_diagnostic(diagnostic: &Value) -> String {
 }
 
 fn toast_diagnostic(diagnostic: &Value) -> String {
-    format_diagnostic(diagnostic)
-        .lines()
-        .next()
-        .unwrap_or("")
-        .chars()
-        .take(180)
-        .collect()
+    toast_line(&format_diagnostic(diagnostic))
+}
+
+fn toast_line(text: &str) -> String {
+    text.lines().next().unwrap_or("").chars().take(180).collect()
+}
+
+fn formatted_text(options: &Options, path: &Path, text: &str) -> Result<String, String> {
+    let output = run_with_input(
+        options,
+        &[
+            &options.compiler,
+            "format",
+            "--stdin",
+            "--path",
+            &path.to_string_lossy(),
+        ],
+        Some(text),
+        Duration::from_secs(60),
+    );
+    if output.status == 0 {
+        Ok(output.stdout)
+    } else {
+        Err(format!(
+            "format exit {} for {}\n{}",
+            output.status,
+            path.display(),
+            clip(output.stderr.trim(), 2000)
+        ))
+    }
+}
+
+fn whole_document_edit(original: &str, formatted: &str) -> Option<Value> {
+    if original == formatted {
+        return None;
+    }
+    let last_line = original.matches('\n').count();
+    let last_line_units = original.rsplit('\n').next().unwrap_or("").encode_utf16().count();
+    Some(json!({
+        "range": {
+            "start": { "line": 0, "character": 0 },
+            "end": { "line": last_line, "character": last_line_units }
+        },
+        "newText": formatted
+    }))
+}
+
+fn byte_offset_of(text: &str, line: usize, units: usize) -> usize {
+    let mut offset = 0;
+    for (index, segment) in text.split('\n').enumerate() {
+        if index == line {
+            let mut counted = 0;
+            for (byte, ch) in segment.char_indices() {
+                if counted >= units {
+                    return offset + byte;
+                }
+                counted += ch.len_utf16();
+            }
+            return offset + segment.len();
+        }
+        offset += segment.len() + 1;
+    }
+    text.len()
+}
+
+fn apply_edit(text: &str, edit: &Value) -> String {
+    let offset = |end: &str| {
+        let field = |name: &str| edit.pointer(&format!("/range/{end}/{name}")).and_then(Value::as_u64).unwrap_or(0) as usize;
+        byte_offset_of(text, field("line"), field("character"))
+    };
+    let new_text = edit.get("newText").and_then(Value::as_str).unwrap_or("");
+    format!("{}{new_text}{}", &text[..offset("start")], &text[offset("end")..])
+}
+
+fn format_probe(options: &Options, path: &Path) -> i32 {
+    let text = match std::fs::read_to_string(path) {
+        Ok(text) => text,
+        Err(error) => {
+            eprintln!("spiral-zed: read {}: {error}", path.display());
+            return 2;
+        }
+    };
+    match formatted_text(options, path, &text) {
+        Ok(formatted) => {
+            let applied = match whole_document_edit(&text, &formatted) {
+                Some(edit) => apply_edit(&text, &edit),
+                None => text,
+            };
+            let mut stdout = std::io::stdout();
+            let _ = stdout.write_all(applied.as_bytes());
+            let _ = stdout.flush();
+            0
+        }
+        Err(error) => {
+            eprintln!("spiral-zed: {error}");
+            1
+        }
+    }
 }
 
 struct Server {
@@ -170,6 +266,7 @@ impl Server {
                         "capabilities": {
                             "textDocumentSync": { "openClose": true, "change": 1, "save": true },
                             "hoverProvider": true,
+                            "documentFormattingProvider": true,
                             "documentLinkProvider": { "resolveProvider": false },
                             "executeCommandProvider": {
                                 "commands": ["spiral.buildFile", "spiral.showStatus", "spiral.createFile", "spiral.deleteFile", "spiral.createDirectory"]
@@ -267,6 +364,11 @@ impl Server {
                     .map(|(uri, doc)| document_links(&uri, &doc.text))
                     .unwrap_or_default();
                 self.respond(id, Value::Array(links));
+                false
+            }
+            "textDocument/formatting" => {
+                let edits = self.formatting(&message);
+                self.respond(id, edits);
                 false
             }
             "textDocument/codeAction" => {
@@ -457,6 +559,27 @@ impl Server {
         })
     }
 
+    fn formatting(&self, message: &Value) -> Value {
+        let uri = message
+            .pointer("/params/textDocument/uri")
+            .and_then(Value::as_str)
+            .unwrap_or("");
+        let Some(doc) = self.docs.get(uri) else {
+            return Value::Null;
+        };
+        if !is_module(&doc.path) {
+            return Value::Null;
+        }
+        match formatted_text(&self.options, &doc.path, &doc.text) {
+            Ok(formatted) => Value::Array(whole_document_edit(&doc.text, &formatted).into_iter().collect()),
+            Err(error) => {
+                self.log(1, &error);
+                self.show(1, &toast_line(&error));
+                Value::Null
+            }
+        }
+    }
+
     fn code_actions(&self, message: &Value) -> Vec<Value> {
         let uri = message
             .pointer("/params/textDocument/uri")
@@ -585,6 +708,10 @@ struct RunOutput {
 }
 
 fn run(options: &Options, args: &[&str], timeout: Duration) -> RunOutput {
+    run_with_input(options, args, None, timeout)
+}
+
+fn run_with_input(options: &Options, args: &[&str], input: Option<&str>, timeout: Duration) -> RunOutput {
     let mut command = Command::new(&options.dotnet);
     command
         .args(args)
@@ -592,6 +719,9 @@ fn run(options: &Options, args: &[&str], timeout: Duration) -> RunOutput {
         .env("DOTNET_CLI_TELEMETRY_OPTOUT", "1")
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped());
+    if input.is_some() {
+        command.stdin(std::process::Stdio::piped());
+    }
     if let Some(root) = Path::new(&options.dotnet).parent() {
         command.env("DOTNET_ROOT", root);
     }
@@ -604,6 +734,15 @@ fn run(options: &Options, args: &[&str], timeout: Duration) -> RunOutput {
                 stderr: format!("failed to start dotnet: {error}"),
             };
         }
+    };
+    let stdin_thread = match (child.stdin.take(), input) {
+        (Some(mut pipe), Some(text)) => {
+            let bytes = text.as_bytes().to_vec();
+            Some(std::thread::spawn(move || {
+                let _ = pipe.write_all(&bytes);
+            }))
+        }
+        _ => None,
     };
     let stdout_pipe = child.stdout.take();
     let stderr_pipe = child.stderr.take();
@@ -621,6 +760,9 @@ fn run(options: &Options, args: &[&str], timeout: Duration) -> RunOutput {
         }
         std::thread::sleep(Duration::from_millis(50));
     };
+    if let Some(thread) = stdin_thread {
+        let _ = thread.join();
+    }
     let stdout = stdout_thread.join().unwrap_or_default();
     let mut stderr = stderr_thread.join().unwrap_or_default();
     if status == 3 {
@@ -1544,6 +1686,24 @@ mod tests {
         assert_eq!(diagnostics.len(), 1);
         assert_eq!(diagnostics[0].pointer("/range/start/line").and_then(Value::as_u64), Some(1));
         assert_eq!(diagnostics[0].pointer("/range/start/character").and_then(Value::as_u64), Some(4));
+    }
+
+    #[test]
+    fn formatting_edit_replaces_the_whole_document() {
+        assert!(whole_document_edit("inl x = 1\n", "inl x = 1\n").is_none());
+        for (original, formatted) in [
+            ("inl x=1\n", "inl x = 1\n"),
+            ("inl x=1\nlast 한", "inl x = 1\nlast 한\n"),
+            ("a\n😀 b", "a\n"),
+            ("", "inl x = 1\n"),
+        ] {
+            let edit = whole_document_edit(original, formatted).unwrap();
+            assert_eq!(apply_edit(original, &edit), formatted);
+        }
+        let edit = whole_document_edit("inl x=1\nlast 한", "y").unwrap();
+        assert_eq!(edit.pointer("/range/end/line").and_then(Value::as_u64), Some(1));
+        assert_eq!(edit.pointer("/range/end/character").and_then(Value::as_u64), Some(6));
+        assert_eq!(byte_offset_of("a\n😀 b", 1, 2), 6);
     }
 
     #[test]

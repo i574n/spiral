@@ -23,6 +23,7 @@ def spiralStringSlice (s : String) (a b : Int) : IO String := do
   if a < 0 || a > length || b < a - 1 || b >= length then spiralAbort
   else if b >= a && (spiralIsContinuation (bytes.get! a.toNat) || (b + 1 < length && spiralIsContinuation (bytes.get! (b + 1).toNat))) then spiralAbort
   else pure (String.Pos.Raw.extract s ⟨a.toNat⟩ ⟨(b + 1).toNat⟩)
+set_option maxRecDepth 100000
 mutual
 partial def runtime_byte_1 (p0 : String) (p1 : Int32) : IO Char := do
     let mut v0 : String := p0

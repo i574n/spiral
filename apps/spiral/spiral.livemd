@@ -2022,7 +2022,7 @@ Spiral.Kino.eval!(
 
 ### process_lua
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal lua =\n    `(\n        rust_type\n            `($'mlua_Lua')\n            `($'mlua::Lua')\n            \"type mlua_Lua = obj\"\n    )\n\nnominal lua_function =\n    `(\n        rust_type\n            `($'mlua_LuaFunction')\n            `($'mlua::prelude::LuaFunction')\n            \"type mlua_LuaFunction = obj\"\n    )\n\nnominal lua_error =\n    `(\n        rust_type\n            `($'mlua_LuaError')\n            `($'mlua::prelude::LuaError')\n            \"type mlua_LuaError = obj\"\n    )\n\nnominal lua_value =\n    `(\n        rust_type\n            `($'mlua_LuaValue')\n            `($'mlua::prelude::LuaValue')\n            \"type mlua_LuaValue = obj\"\n    )\n\nnominal lua_multi_value =\n    `(\n        rust_type\n            `($'mlua_LuaMultiValue')\n            `($'mlua::prelude::LuaMultiValue')\n            \"type mlua_LuaMultiValue = obj\"\n    )\n\ninl lua_values_debug (values : lua_multi_value) : am'.vec string =\n    run_target_args (fun () => values) function\n        | Rust => fun values =>\n            $'!values.iter().map(|x| Rc::<str>::from(format\\!(\"{:?}\", x))).collect::<Vec<_>>()' : am'.vec string\n        | _ => fun values =>\n            inl values : am'.vec (rust.ref lua_value) = !\\\\(values, $'$\"$0.iter().collect()\"')\n            values |> am'.vec_map (rust.deref >> sm'.format_debug)\n\ninl lua_values_text (values : lua_multi_value) : am'.vec string =\n    run_target_args (fun () => values) function\n        | Rust => fun values =>\n            $'!values.iter().map(|x| Rc::<str>::from(x.to_string().unwrap_or_else(|_| format\\!(\"{:?}\", x)))).collect::<Vec<_>>()' : am'.vec string\n        | _ => fun values => lua_values_debug values\n\ninl process_lua { lua_path } =\n    inl extension = \"lua\"\n\n    inl new_code_path = lua_path\n    inl new_code = new_code_path |> file_system.read_all_text\n\n    inl hash = #?{ extension new_code } |> crypto.hash_text\n\n    inl workspace_root_external = file_system.get_workspace_root_external ()\n    inl workspace_root =\n        workspace_root_external |> resultm.box |> resultm.unwrap_or_else id |> file_system.standardize_path\n\n    inl src_dir =\n        new_code_path\n        |> file_system.directory_get_parent\n        |> optionm'.default_value' \"\"\n        |> file_system.standardize_path\n\n    inl package_dir = src_dir </> \"..\" |> file_system.standardize_path\n\n    inl stdio = [] |> mut\n    inl stdio_clone = stdio |> rust.clone\n\n    inl lua : lua =\n        !\\($'$\"mlua::Lua::new_with(mlua::StdLib::ALL_SAFE, mlua::LuaOptions::default()).unwrap()\"')\n\n    inl custom_print (args : lua_multi_value) : _ _ lua_error =\n        inl args =\n            args\n            |> lua_values_text\n            |> am'.from_vec_base\n            |> am'.to_list_base'\n            |> listm'.unbox\n            |> sm'.concat_list \"\\t\"\n        stdio <- args :: *stdio\n        Ok () |> resultm.box\n\n    inl custom_print : lua_function =\n        !\\\\(\n            (lua, custom_print),\n            $'$\"$0.create_function(move |_, args: mlua::prelude::LuaMultiValue| $1(args)).unwrap()\"'\n        )\n\n    !\\\\((lua, custom_print), $'$\"$0.globals().set(\\\\\\\"print\\\\\\\", $1).unwrap()\"')\n\n    inl output : lua_multi_value =\n        inl new_code = new_code |> sm'.to_std_string\n        !\\\\((lua, new_code), $'$\"$0.load($1).eval::<mlua::MultiValue>().unwrap()\"')\n    inl output =\n        output |> lua_values_text |> am'.from_vec |> sm'.concat_array \"\\n\"\n\n    inl stdio =\n        *stdio_clone\n        |> listm.rev\n        |> sm'.concat_list \"\\n\"\n\n    fun () =>\n        inl ci = \"CI\" |> env.get_environment_variable\n        if ci <> \"\" && package_owns_code src_dir then\n            package_dir\n            |> file_system.directory_delete true\n    |> new_disposable\n    |> fun x => x : _ ()\n    |> use\n    |> ignore\n\n    {\n        extension = Some extension\n        code = Some new_code\n        code_path = Some new_code_path\n        output = Some output\n        stdio = Some stdio\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal lua =\n    `(\n        rust_type\n            `($'mlua_Lua')\n            `($'mlua::Lua')\n            \"type mlua_Lua = obj\"\n    )\n\nnominal lua_function =\n    `(\n        rust_type\n            `($'mlua_LuaFunction')\n            `($'mlua::prelude::LuaFunction')\n            \"type mlua_LuaFunction = obj\"\n    )\n\nnominal lua_error =\n    `(\n        rust_type\n            `($'mlua_LuaError')\n            `($'mlua::prelude::LuaError')\n            \"type mlua_LuaError = obj\"\n    )\n\nnominal lua_value =\n    `(\n        rust_type\n            `($'mlua_LuaValue')\n            `($'mlua::prelude::LuaValue')\n            \"type mlua_LuaValue = obj\"\n    )\n\nnominal lua_multi_value =\n    `(\n        rust_type\n            `($'mlua_LuaMultiValue')\n            `($'mlua::prelude::LuaMultiValue')\n            \"type mlua_LuaMultiValue = obj\"\n    )\n\ninl lua_values_debug (values : lua_multi_value) : am'.vec string =\n    run_target_args (fun () => values) function\n        | Rust => fun values =>\n            $'!values.iter().map(|x| Rc::<str>::from(format\\!(\"{:?}\", x))).collect::<Vec<_>>()' : am'.vec string\n        | _ => fun values =>\n            inl values : am'.vec (rust.ref lua_value) = !\\\\(values, $'$\"$0.iter().collect()\"')\n            values |> am'.vec_map (rust.deref >> sm'.format_debug)\n\ninl lua_values_text (values : lua_multi_value) : am'.vec string =\n    run_target_args (fun () => values) function\n        | Rust => fun values =>\n            $'!values.iter().map(|x| Rc::<str>::from(x.to_string().unwrap_or_else(|_| format\\!(\"{:?}\", x)))).collect::<Vec<_>>()' : am'.vec string\n        | _ => fun values => lua_values_debug values\n\ninl process_lua { lua_path } =\n    inl extension = \"lua\"\n\n    inl new_code_path = lua_path\n    inl new_code = new_code_path |> file_system.read_all_text\n\n    inl hash = #?{ extension new_code } |> crypto.hash_text\n\n    inl workspace_root_external = file_system.get_workspace_root_external ()\n    inl workspace_root =\n        workspace_root_external |> resultm.box |> resultm.unwrap_or_else id |> file_system.standardize_path\n\n    inl src_dir =\n        new_code_path\n        |> file_system.directory_get_parent\n        |> optionm'.default_value' \"\"\n        |> file_system.standardize_path\n\n    inl package_dir = src_dir </> \"..\" |> file_system.standardize_path\n\n    inl stdio = [] |> mut\n    inl stdio_clone = stdio |> rust.clone\n    inl partial_line = \"\" |> mut\n    inl partial_line_write = partial_line |> rust.clone\n    inl partial_line_final = partial_line |> rust.clone\n\n    inl lua : lua =\n        !\\($'$\"mlua::Lua::new_with(mlua::StdLib::ALL_SAFE, mlua::LuaOptions::default()).unwrap()\"')\n\n    inl custom_print (args : lua_multi_value) : _ _ lua_error =\n        inl args =\n            args\n            |> lua_values_text\n            |> am'.from_vec_base\n            |> am'.to_list_base'\n            |> listm'.unbox\n            |> sm'.concat_list \"\\t\"\n        stdio <- (*partial_line ++# args) :: *stdio\n        partial_line <- \"\"\n        Ok () |> resultm.box\n\n    inl custom_print : lua_function =\n        !\\\\(\n            (lua, custom_print),\n            $'$\"$0.create_function(move |_, args: mlua::prelude::LuaMultiValue| $1(args)).unwrap()\"'\n        )\n\n    !\\\\((lua, custom_print), $'$\"$0.globals().set(\\\\\\\"print\\\\\\\", $1).unwrap()\"')\n\n    inl custom_write (args : lua_multi_value) : _ _ lua_error =\n        inl text =\n            args\n            |> lua_values_text\n            |> am'.from_vec_base\n            |> am'.to_list_base'\n            |> listm'.unbox\n            |> sm'.concat_list \"\"\n        partial_line_write <- *partial_line_write ++# text\n        Ok () |> resultm.box\n\n    inl custom_write : lua_function =\n        !\\\\(\n            (lua, custom_write),\n            $'$\"$0.create_function(move |_, args: mlua::prelude::LuaMultiValue| $1(args)).unwrap()\"'\n        )\n\n    !\\\\((lua, custom_write), $'$\"$0.globals().get::<mlua::Table>(\\\\\\\"io\\\\\\\").unwrap().set(\\\\\\\"write\\\\\\\", $1).unwrap()\"')\n\n    inl output : lua_multi_value =\n        inl new_code = new_code |> sm'.to_std_string\n        !\\\\((lua, new_code), $'$\"$0.load($1).eval::<mlua::MultiValue>().unwrap()\"')\n    inl output =\n        output |> lua_values_text |> am'.from_vec |> sm'.concat_array \"\\n\"\n\n    inl stdio =\n        inl lines = if *partial_line_final = \"\" then *stdio_clone else *partial_line_final :: *stdio_clone\n        lines\n        |> listm.rev\n        |> sm'.concat_list \"\\n\"\n\n    fun () =>\n        inl ci = \"CI\" |> env.get_environment_variable\n        if ci <> \"\" && package_owns_code src_dir then\n            package_dir\n            |> file_system.directory_delete true\n    |> new_disposable\n    |> fun x => x : _ ()\n    |> use\n    |> ignore\n\n    {\n        extension = Some extension\n        code = Some new_code\n        code_path = Some new_code_path\n        output = Some output\n        stdio = Some stdio\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -2103,6 +2103,9 @@ Spiral.Kino.eval!(
 
       inl stdio = [] |> mut
       inl stdio_clone = stdio |> rust.clone
+      inl partial_line = "" |> mut
+      inl partial_line_write = partial_line |> rust.clone
+      inl partial_line_final = partial_line |> rust.clone
 
       inl lua : lua =
           !\($'$"mlua::Lua::new_with(mlua::StdLib::ALL_SAFE, mlua::LuaOptions::default()).unwrap()"')
@@ -2115,7 +2118,8 @@ Spiral.Kino.eval!(
               |> am'.to_list_base'
               |> listm'.unbox
               |> sm'.concat_list "\t"
-          stdio <- args :: *stdio
+          stdio <- (*partial_line ++# args) :: *stdio
+          partial_line <- ""
           Ok () |> resultm.box
 
       inl custom_print : lua_function =
@@ -2126,6 +2130,25 @@ Spiral.Kino.eval!(
 
       !\\((lua, custom_print), $'$"$0.globals().set(\\\"print\\\", $1).unwrap()"')
 
+      inl custom_write (args : lua_multi_value) : _ _ lua_error =
+          inl text =
+              args
+              |> lua_values_text
+              |> am'.from_vec_base
+              |> am'.to_list_base'
+              |> listm'.unbox
+              |> sm'.concat_list ""
+          partial_line_write <- *partial_line_write ++# text
+          Ok () |> resultm.box
+
+      inl custom_write : lua_function =
+          !\\(
+              (lua, custom_write),
+              $'$"$0.create_function(move |_, args: mlua::prelude::LuaMultiValue| $1(args)).unwrap()"'
+          )
+
+      !\\((lua, custom_write), $'$"$0.globals().get::<mlua::Table>(\\\"io\\\").unwrap().set(\\\"write\\\", $1).unwrap()"')
+
       inl output : lua_multi_value =
           inl new_code = new_code |> sm'.to_std_string
           !\\((lua, new_code), $'$"$0.load($1).eval::<mlua::MultiValue>().unwrap()"')
@@ -2133,7 +2156,8 @@ Spiral.Kino.eval!(
           output |> lua_values_text |> am'.from_vec |> sm'.concat_array "\n"
 
       inl stdio =
-          *stdio_clone
+          inl lines = if *partial_line_final = "" then *stdio_clone else *partial_line_final :: *stdio_clone
+          lines
           |> listm.rev
           |> sm'.concat_list "\n"
 

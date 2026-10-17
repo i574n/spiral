@@ -1,0 +1,15 @@
+inl rec spin (k : i32) : i32 =
+    if k = 0i32 then 0i32
+    else spin (k - 1i32)
+
+let first () : i32 =
+    inl _ = spin 2000i32
+    error_type "first body fails"
+
+let second () : i32 =
+    error_type "second body fails"
+
+inl main () : i32 =
+    inl x = first ()
+    inl y = second ()
+    x + y

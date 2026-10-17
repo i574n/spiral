@@ -53,81 +53,87 @@ let rec foldedConcat (value : obj) : string option =
                     | _ -> None
             | _ -> None
 
-and shapeOf (builder : StringBuilder) (depth : int) (value : obj) =
-    if depth > 4000 then failwith "parse tree deeper than 4000"
+type ShapeStep =
+    | Emit of string
+    | Visit of obj
+
+let rawSeqHalves (item : obj) =
+    if isNull item || not (FSharpType.IsUnion (item.GetType (), true)) then None
+    else
+        let case, fields = FSharpValue.GetUnionFields (item, item.GetType (), true)
+        if case.Name = "RawSeq" && fields.Length = 3 then Some (fields.[1], fields.[2]) else None
+
+let sequenced (value : obj) =
+    let items = ResizeArray<obj> ()
+    let unopened = Collections.Generic.Stack<obj> ()
+    unopened.Push value
+    while unopened.Count > 0 do
+        let item = unopened.Pop ()
+        match rawSeqHalves item with
+        | Some (first, rest) ->
+            unopened.Push rest
+            unopened.Push first
+        | None -> items.Add item
+    List.ofSeq items
+
+let macroTextOf (item : obj) =
+    if isNull item || not (FSharpType.IsUnion (item.GetType (), true)) then None
+    else
+        let case, fields = FSharpValue.GetUnionFields (item, item.GetType (), true)
+        if case.Name = "RawMacroText" && fields.Length = 2 && (fields.[1] :? string) then Some (fields.[1] :?> string) else None
+
+let enumeratedSteps (value : Collections.IEnumerable) =
+    let steps = ResizeArray<ShapeStep> ()
+    let joined = StringBuilder ()
+    let flush () =
+        if joined.Length > 0 then
+            steps.Add (Emit ("(RawMacroText <pp> \"" + string joined.Length + ":" + joined.ToString () + ")"))
+            joined.Clear () |> ignore
+    for item in value do
+        match macroTextOf item with
+        | Some text -> joined.Append text |> ignore
+        | None ->
+            flush ()
+            steps.Add (Visit item)
+    flush ()
+    List.ofSeq steps
+
+let shapeSteps (value : obj) : ShapeStep list =
+    let enclosed (opening : string) (children : obj seq) (closing : string) = Emit opening :: [ for child in children -> Visit child ] @ [ Emit closing ]
+    let spaced (opening : string) (children : obj seq) = Emit opening :: [ for child in children do yield! [ Emit " "; Visit child ] ] @ [ Emit ")" ]
     match value with
-    | null -> builder.Append 'n' |> ignore
-    | :? string as text -> builder.Append('"').Append(text.Length).Append(':').Append(text) |> ignore
-    | :? bool | :? char | :? int | :? int8 | :? int16 | :? int64 | :? uint8 | :? uint16 | :? uint32 | :? uint64 ->
-        builder.Append(value.ToString ()).Append(';') |> ignore
-    | :? float32 as number -> builder.Append(BitConverter.SingleToInt32Bits number).Append('f') |> ignore
-    | :? float as number -> builder.Append(BitConverter.DoubleToInt64Bits number).Append('d') |> ignore
+    | null -> [ Emit "n" ]
+    | :? string as text -> [ Emit ("\"" + string text.Length + ":" + text) ]
+    | :? bool | :? char | :? int | :? int8 | :? int16 | :? int64 | :? uint8 | :? uint16 | :? uint32 | :? uint64 -> [ Emit (value.ToString () + ";") ]
+    | :? float32 as number -> [ Emit (string (BitConverter.SingleToInt32Bits number) + "f") ]
+    | :? float as number -> [ Emit (string (BitConverter.DoubleToInt64Bits number) + "d") ]
     | _ ->
         let shape = value.GetType ()
-        if isPosition shape then builder.Append 'p' |> ignore
-        elif shape.IsEnum then builder.Append(value.ToString ()).Append(';') |> ignore
-        elif FSharpType.IsUnion (shape, true) && (foldedConcat value).IsSome then
-            let text = (foldedConcat value).Value
-            builder.Append("(RawLit <pp> (LitString \"").Append(text.Length).Append(':').Append(text).Append("))") |> ignore
-        elif FSharpType.IsUnion (shape, true) && (let case, fields = FSharpValue.GetUnionFields (value, shape, true) in case.Name = "RawSeq" && fields.Length = 3) then
-            let rec sequenced (item : obj) : obj list =
-                if isNull item || not (FSharpType.IsUnion (item.GetType (), true)) then [ item ]
-                else
-                    let case, fields = FSharpValue.GetUnionFields (item, item.GetType (), true)
-                    if case.Name = "RawSeq" && fields.Length = 3 then sequenced fields.[1] @ sequenced fields.[2] else [ item ]
-            builder.Append "(RawSeq*" |> ignore
-            for item in sequenced value do
-                builder.Append ' ' |> ignore
-                shapeOf builder (depth + 1) item
-            builder.Append ')' |> ignore
+        if isPosition shape then [ Emit "p" ]
+        elif shape.IsEnum then [ Emit (value.ToString () + ";") ]
         elif FSharpType.IsUnion (shape, true) then
-            let case, fields = FSharpValue.GetUnionFields (value, shape, true)
-            builder.Append('(').Append(case.Name) |> ignore
-            for field in fields do
-                builder.Append ' ' |> ignore
-                shapeOf builder (depth + 1) field
-            builder.Append ')' |> ignore
-        elif FSharpType.IsTuple shape then
-            builder.Append '<' |> ignore
-            for field in FSharpValue.GetTupleFields value do
-                shapeOf builder (depth + 1) field
-            builder.Append '>' |> ignore
-        elif FSharpType.IsRecord (shape, true) then
-            builder.Append '{' |> ignore
-            for field in FSharpValue.GetRecordFields (value, true) do
-                shapeOf builder (depth + 1) field
-            builder.Append '}' |> ignore
+            match foldedConcat value with
+            | Some text -> [ Emit ("(RawLit <pp> (LitString \"" + string text.Length + ":" + text + "))") ]
+            | None when (rawSeqHalves value).IsSome -> spaced "(RawSeq*" (sequenced value)
+            | None ->
+                let case, fields = FSharpValue.GetUnionFields (value, shape, true)
+                spaced ("(" + case.Name) fields
+        elif FSharpType.IsTuple shape then enclosed "<" (FSharpValue.GetTupleFields value) ">"
+        elif FSharpType.IsRecord (shape, true) then enclosed "{" (FSharpValue.GetRecordFields (value, true)) "}"
         elif shape.IsGenericType && shape.GetGenericTypeDefinition () = typedefof<Collections.Generic.KeyValuePair<_, _>> then
-            builder.Append '{' |> ignore
-            shapeOf builder (depth + 1) (shape.GetProperty("Key").GetValue value)
-            shapeOf builder (depth + 1) (shape.GetProperty("Value").GetValue value)
-            builder.Append '}' |> ignore
-        elif shape.IsArray then
-            builder.Append '[' |> ignore
-            for item in (value :?> Array) do
-                shapeOf builder (depth + 1) item
-            builder.Append ']' |> ignore
+            enclosed "{" [ shape.GetProperty("Key").GetValue value; shape.GetProperty("Value").GetValue value ] "}"
+        elif shape.IsArray then enclosed "[" (Seq.cast<obj> (value :?> Array)) "]"
         elif typeof<Collections.IEnumerable>.IsAssignableFrom shape then
-            builder.Append '[' |> ignore
-            let pending = StringBuilder ()
-            let flush () =
-                if pending.Length > 0 then
-                    builder.Append("(RawMacroText <pp> \"").Append(pending.Length).Append(':').Append(pending.ToString ()).Append(")") |> ignore
-                    pending.Clear () |> ignore
-            for item in (value :?> Collections.IEnumerable) do
-                let macroText =
-                    if isNull item || not (FSharpType.IsUnion (item.GetType (), true)) then None
-                    else
-                        let case, fields = FSharpValue.GetUnionFields (item, item.GetType (), true)
-                        if case.Name = "RawMacroText" && fields.Length = 2 && (fields.[1] :? string) then Some (fields.[1] :?> string) else None
-                match macroText with
-                | Some text -> pending.Append text |> ignore
-                | None ->
-                    flush ()
-                    shapeOf builder (depth + 1) item
-            flush ()
-            builder.Append ']' |> ignore
-        else builder.Append('?').Append(shape.Name) |> ignore
+            Emit "[" :: enumeratedSteps (value :?> Collections.IEnumerable) @ [ Emit "]" ]
+        else [ Emit ("?" + shape.Name) ]
+
+let shapeOf (builder : StringBuilder) (root : obj) =
+    let pending = Collections.Generic.Stack<ShapeStep> ()
+    pending.Push (Visit root)
+    while pending.Count > 0 do
+        match pending.Pop () with
+        | Emit text -> builder.Append text |> ignore
+        | Visit value -> for step in List.rev (shapeSteps value) do pending.Push step
 
 type BlockShape =
     { Offset : int
@@ -140,12 +146,12 @@ let blockShapes (edition : Edition) (unit : Unit') (text : string) =
     let shapeOfResult (result : ParseResult) =
         let builder = StringBuilder ()
         match result with
-        | Ok statement -> shapeOf builder 0 (box statement)
+        | Ok statement -> shapeOf builder (box statement)
         | Error errors ->
             builder.Append "error" |> ignore
             for (_, error) in errors do
                 builder.Append ' ' |> ignore
-                shapeOf builder 0 (box error)
+                shapeOf builder (box error)
         builder.ToString ()
     let testHeader (block : LineTokens Block) =
         block.block

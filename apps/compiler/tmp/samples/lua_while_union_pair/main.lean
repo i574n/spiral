@@ -26,17 +26,23 @@ def spiralStringSlice (s : String) (a b : Int) : IO String := do
 mutual
 structure M0 where
   l0 : Int32
+end
+deriving instance Inhabited for M0
+mutual
 structure M1 where
   l0 : Int32
+end
+deriving instance Inhabited for M1
+mutual
 inductive U0 where
   | Nil : U0
   | Cons : Int32 → U0 → U0
+end
+deriving instance Inhabited for U0
+mutual
 structure M2 where
   l0 : U0
 end
-deriving instance Inhabited for U0
-deriving instance Inhabited for M0
-deriving instance Inhabited for M1
 deriving instance Inhabited for M2
 def U0.spiralTag : U0 → Int32
   | .Nil .. => 0

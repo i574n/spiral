@@ -14,8 +14,12 @@ except Exception:
 from dataclasses import dataclass
 from typing import NamedTuple, Union, Callable, Tuple
 i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 = int; f32 = float; f64 = float; char = str; string = str
-
 import sys
+sys.setrecursionlimit(1 << 30)
+
+def spiral_wrap(x, bits, signed):
+    x &= (1 << bits) - 1
+    return x - (1 << bits) if signed and x >> (bits - 1) else x
 UH0 = Union["UH0_Cons", "UH0_Nil"]
 class UH0_Cons(NamedTuple): # Cons
     v0 : u64
@@ -27,7 +31,7 @@ def closure0(env_v0 : u64):
     def inner() -> UH0:
         nonlocal env_v0
         v0 = env_v0
-        v1 = v0 - 1
+        v1 = spiral_wrap(v0 - 1, 64, False)
         del v0
         return build_0(v1)
     return inner
@@ -47,7 +51,7 @@ def sum_1(v0 : UH0, v1 : u64) -> u64:
                 del v0
                 v4 = v3()
                 del v3
-                v5 = v1 + v2
+                v5 = spiral_wrap(v1 + v2, 64, False)
                 del v1, v2
                 v0, v1 = v4, v5
                 continue
@@ -64,12 +68,12 @@ def main():
     v3 = sum_1(v1, v2)
     del v1, v2
     v4 = 5
-    v5 = i32(v3)
+    v5 = spiral_wrap(int(v3), 32, True)
     del v3
-    v6 = v4 * 2
-    v7 = v4 + v6
+    v6 = spiral_wrap(v4 * 2, 32, True)
+    v7 = spiral_wrap(v4 + v6, 32, True)
     del v4, v6
-    v8 = v5 + v7
+    v8 = spiral_wrap(v5 + v7, 32, True)
     del v5, v7
     return v8
 

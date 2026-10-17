@@ -14,8 +14,12 @@ except Exception:
 from dataclasses import dataclass
 from typing import NamedTuple, Union, Callable, Tuple
 i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 = int; f32 = float; f64 = float; char = str; string = str
-
 import sys
+sys.setrecursionlimit(1 << 30)
+
+def spiral_wrap(x, bits, signed):
+    x &= (1 << bits) - 1
+    return x - (1 << bits) if signed and x >> (bits - 1) else x
 @dataclass
 class Mut0:
     v0 : string
@@ -31,14 +35,14 @@ def main():
     del v1
     v5 = v2 == 3
     if v5:
-        v6 = v2 + 1
+        v6 = spiral_wrap(v2 + 1, 32, True)
         v7 = v6
     else:
         v7 = 0
     del v5
     print(v4, " ", v7, "\n", sep='', end='')
     del v4, v7
-    v8 = v2 * 2
+    v8 = spiral_wrap(v2 * 2, 32, True)
     v9 = v2 > 0
     del v2
     if v9:

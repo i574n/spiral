@@ -12,7 +12,8 @@ param(
     [switch]$WarmRecycle,
     [ValidateSet('Release', 'Debug')][string]$Configuration = 'Release',
     [string]$WorkspaceRoot,
-    [ValidateSet('Zig', 'Wasm', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Python', 'Rust', 'Delphi', 'Cpp', 'Kotlin', 'Swift', 'Wgsl', 'Calyx', 'OpenQasm', 'Ebpf')][string]$Probe
+    [ValidateSet('Zig', 'Wasm', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Python', 'Rust', 'Delphi', 'Cpp', 'Kotlin', 'Swift', 'Wgsl', 'Calyx', 'OpenQasm', 'Ebpf')][string]$Probe,
+    [ValidateSet('C', 'Zig', 'Rust', 'Delphi', 'Wasm', 'Lean', 'Gleam', 'Lua', 'TypeScript', 'Python', 'Kotlin', 'Swift')][string]$Oracle = 'C'
 )
 . $PSScriptRoot/env.ps1
 $harness = Import-PowerShellDataFile (Join-Path $BundleRoot 'tests/harness.psd1') -SkipLimitCheck
@@ -467,6 +468,7 @@ function Build-And-Run($job) {
     if ($job.Backend -eq 'Bend') {
         if (-not $tools.Bun -or -not $tools.BendMain) { return 'no-toolchain' }
         $env:BEND_NO_TELEMETRY = '1'
+        $env:BUN_JSC_maxPerThreadStackUsage = '16777216'
         $run = Invoke-Native $tools.Bun @($tools.BendMain, $job.Output) (Split-Path $tools.BendMain) 120
         if (($run.Out + "`n" + $run.Err) -match '(?m)^Error:\s*$') {
             $msg = ((($run.Out + "`n" + $run.Err) -split "`n" | Where-Object { $_.Trim() } | Select-Object -First 4) -join ' / ') -replace '\s+', ' '
@@ -745,11 +747,12 @@ function Test-SharedFailure($c, $row) {
 $byId = $rows | Group-Object id -AsHashTable
 $known = @{}
 $harness.Known | ForEach-Object { $known["$($_.Id)|$($_.Backend)"] = $_.Reason }
-foreach ($row in $rows | Where-Object { $_.backend -in 'Rust', 'Delphi', 'Zig', 'Wasm', 'Wgsl', 'Calyx', 'Kotlin', 'Swift', 'OpenQasm', 'Ebpf', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python' -and $_.native -eq 'ran' }) {
-    $c = $byId[$row.id] | Where-Object { $_.backend -eq 'C' -and $_.native -eq 'ran' } | Select-Object -First 1
+$noOracle = if ($Oracle -eq 'C') { 'no-c' } else { "no-$($Oracle.ToLowerInvariant())" }
+foreach ($row in $rows | Where-Object { $_.backend -in 'C', 'Rust', 'Delphi', 'Zig', 'Wasm', 'Wgsl', 'Calyx', 'Kotlin', 'Swift', 'OpenQasm', 'Ebpf', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python' -and $_.backend -ne $Oracle -and $_.native -eq 'ran' }) {
+    $c = $byId[$row.id] | Where-Object { $_.backend -eq $Oracle -and $_.native -eq 'ran' } | Select-Object -First 1
     $bothFailed = $c -and (Test-SharedFailure $c $row)
     $row.oracle =
-        if (-not $c) { 'no-c' }
+        if (-not $c) { $noOracle }
         elseif ($c.exit -eq $row.exit -and $c.stdout -eq $row.stdout) { 'agree' }
         elseif ($bothFailed) { 'agree-fail' }
         else { 'DISAGREE' }

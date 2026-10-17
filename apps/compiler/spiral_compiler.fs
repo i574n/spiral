@@ -53315,6 +53315,159 @@ module spiral_compiler =
             ) prepassTop_env_empty (Infer.base_types default_env)
     
 
+#if SPIRAL_CORE_HOPACSOTA
+    /// ## PartEvalSeamsHopacsota
+    module PartEvalSeams =
+        open System.Collections.Generic
+        type Adapter<'env> =
+            {
+                globals : 'env -> ResizeArray<string>
+                with_globals : 'env -> ResizeArray<string> -> 'env
+                dynamic_if : unit -> int
+                set_dynamic_if : int -> unit
+                validating : unit -> int
+                set_validating : int -> unit
+                rebuild_index : ResizeArray<string> -> unit
+            }
+        type Policy =
+            | DepthFirst
+            | BreadthFirst
+            | Seeded of int
+        let policy =
+            match System.Environment.GetEnvironmentVariable "SPIRAL_HOPACSOTA_POLICY" with
+            | null | "" | "inline" -> None
+            | "dfs" -> Some DepthFirst
+            | "bfs" -> Some BreadthFirst
+            | text when text.StartsWith "random:" -> Some (Seeded (int (text.Substring 7)))
+            | text -> failwithf "SPIRAL_HOPACSOTA_POLICY must be inline, dfs, bfs or random:<seed>, got %s" text
+        [<AllowNullLiteral>]
+        type Session<'env>(policy : Policy, adapter : Adapter<'env>) =
+            let queue = ResizeArray<unit -> unit>()
+            let children = Dictionary<string, ResizeArray<string>>()
+            let key_lists = Dictionary<obj, string>(HashIdentity.Structural)
+            let seeded = match policy with Seeded seed -> System.Random(seed) | _ -> null
+            let failures = Dictionary<string, exn>()
+            let prints = Dictionary<string, string>()
+            let mutable active = true
+            let fail (list : ResizeArray<string>) (error : exn) =
+                let marker = sprintf "\u0001hopacsota-fail-%d" failures.Count
+                failures.[marker] <- error
+                list.Add marker
+            member _.Defer<'a>(s : 'env, relative : 'env, deferred : 'a option, evaluate : 'env -> 'a) : 'a =
+                match policy, deferred with
+                | (BreadthFirst | Seeded _), Some result when active ->
+                    let child = ResizeArray<string>()
+                    let marker = sprintf "\u0001hopacsota-globals-%d" children.Count
+                    children.[marker] <- child
+                    (adapter.globals s).Add marker
+                    let body_env = adapter.with_globals relative child
+                    queue.Add(fun () ->
+                        let saved_if = adapter.dynamic_if ()
+                        let saved_validating = adapter.validating ()
+                        adapter.set_dynamic_if 0
+                        adapter.set_validating 0
+                        try
+                            try evaluate body_env |> ignore
+                            with error -> fail child error
+                        finally
+                            adapter.set_dynamic_if saved_if
+                            adapter.set_validating saved_validating)
+                    result
+                | _ -> evaluate s
+            member _.Drain() =
+                let mutable head = 0
+                while head < queue.Count do
+                    let index = match policy with Seeded _ -> head + seeded.Next(queue.Count - head) | _ -> head
+                    let job = queue.[index]
+                    queue.[index] <- queue.[head]
+                    head <- head + 1
+                    job ()
+                queue.Clear()
+            member _.KeyHit(key : obj, s : 'env) =
+                match key_lists.TryGetValue key with
+                | true, marker when active -> (adapter.globals s).Add marker
+                | _ -> ()
+            member _.KeyBody(key : obj, label : string, s : 'env) : 'env =
+                if not active then s
+                else
+                    let list = ResizeArray<string>()
+                    let marker = sprintf "\u0001hopacsota-key-%d:%s" key_lists.Count label
+                    key_lists.[key] <- marker
+                    children.[marker] <- list
+                    (adapter.globals s).Add marker
+                    adapter.with_globals s list
+            member _.Print(s : 'env, text : string) =
+                if active then
+                    let marker = sprintf "\u0001hopacsota-print-%d" prints.Count
+                    prints.[marker] <- text
+                    (adapter.globals s).Add marker
+                else printfn "%s" text
+            member _.Finish(root : ResizeArray<string>) : exn option =
+                let seen = HashSet<string>()
+                let expanded = HashSet<string>()
+                let result = ResizeArray<string>()
+                let mutable failure = None
+                let rec walk (items : ResizeArray<string>) =
+                    for item in items do
+                        if Option.isNone failure then
+                            match prints.TryGetValue item with
+                            | true, text -> printfn "%s" text
+                            | _ ->
+                                match failures.TryGetValue item with
+                                | true, error -> failure <- Some error
+                                | _ ->
+                                    match children.TryGetValue item with
+                                    | true, child -> if expanded.Add item then walk child
+                                    | _ ->
+                                        let fragment = System.String.IsNullOrEmpty item || System.Char.IsWhiteSpace item.[0] || item.[0] = '}'
+                                        if fragment || seen.Add item then result.Add item
+                walk root
+                if Option.isNone failure && children.Count + prints.Count > 0 then
+                    root.Clear()
+                    root.AddRange result
+                    adapter.rebuild_index root
+                failure
+            member this.Root<'a>(root : ResizeArray<string>, f : unit -> 'a) : 'a =
+                try
+                    let result = try Some (f ()) with error -> fail root error; None
+                    this.Drain()
+                    active <- false
+                    match this.Finish root with
+                    | Some error -> raise error
+                    | None -> result.Value
+                finally active <- false
+        let start (adapter : Adapter<'env>) : Session<'env> =
+            match policy with
+            | Some policy -> Session(policy, adapter)
+            | None -> null
+        let defer (session : Session<'env>) (s : 'env) (relative : 'env) (deferred : 'a option) (evaluate : 'env -> 'a) : 'a =
+            if isNull session then evaluate s else session.Defer(s, relative, deferred, evaluate)
+        let root (session : Session<'env>) (globals : ResizeArray<string>) (f : unit -> 'a) : 'a =
+            if isNull session then f () else session.Root(globals, f)
+        let key_hit (session : Session<'env>) (key : obj) (s : 'env) = if not (isNull session) then session.KeyHit(key, s)
+        let key_body (session : Session<'env>) (key : obj) (label : string) (s : 'env) : 'env = if isNull session then s else session.KeyBody(key, label, s)
+        let print (session : Session<'env>) (s : 'env) (text : string) = if isNull session then printfn "%s" text else session.Print(s, text)
+#else
+    /// ## PartEvalSeams
+    module PartEvalSeams =
+        type Adapter<'env> =
+            {
+                globals : 'env -> ResizeArray<string>
+                with_globals : 'env -> ResizeArray<string> -> 'env
+                dynamic_if : unit -> int
+                set_dynamic_if : int -> unit
+                validating : unit -> int
+                set_validating : int -> unit
+                rebuild_index : ResizeArray<string> -> unit
+            }
+        type Session<'env> = | Inline
+        let inline start (_ : Adapter<'env>) : Session<'env> = Inline
+        let inline defer (_ : Session<'env>) (s : 'env) (_ : 'env) (_ : 'a option) (evaluate : 'env -> 'a) : 'a = evaluate s
+        let inline root (_ : Session<'env>) (_ : ResizeArray<string>) (f : unit -> 'a) : 'a = f ()
+        let inline key_hit (_ : Session<'env>) (_ : obj) (_ : 'env) = ()
+        let inline key_body (_ : Session<'env>) (_ : obj) (_ : string) (s : 'env) : 'env = s
+        let inline print (_ : Session<'env>) (_ : 'env) (text : string) = printfn "%s" text
+#endif
 #if SPIRAL_CORE_GPT5PARALLEL
     /// ## PartEval
     
@@ -158819,6 +158972,7 @@ module spiral_compiler =
                 if seen.Add frames then eprintfn "RUST-GAP %s | %s" text frames
 
     let peval (env : PartEvalTopEnv) (x : E) =
+        let hopacsota = PartEvalSeams.start { globals = (fun (s : LangEnv) -> s.globals); with_globals = (fun s globals -> { s with globals = globals }); dynamic_if = (fun () -> DynamicIfNesting.depth.Value); set_dynamic_if = (fun depth -> DynamicIfNesting.depth.Value <- depth); validating = (fun () -> RustGapTrace.validating.Value); set_validating = (fun depth -> RustGapTrace.validating.Value <- depth); rebuild_index = (fun root -> let index = GlobalsIndex.get root in index.Clear(); index.UnionWith root) }
         let join_point_method = Dictionary(HashIdentity.Structural)
         let join_point_closure = Dictionary(HashIdentity.Structural)
         let join_point_type = Dictionary(HashIdentity.Structural)
@@ -158896,31 +159050,34 @@ module spiral_compiler =
                 | _ -> ()
 
                 match dict.TryGetValue(join_point_key) with
-                | true, _ -> ()
+                | true, _ -> PartEvalSeams.key_hit hopacsota (box (dict, join_point_key)) s
                 | false, _ ->
                     let s = rename_global_term s
                     let domain_data = ty_to_data s domain
                     s.env_stack_term.[0] <- domain_data
                     dict.[join_point_key] <- None
-                    let seq,ty = term_scope'' s body (Some fun_ty)
-                    dict.[join_point_key] <- Some(domain_data, seq)
-                    let ty =
-                        match ty with
-                        | YRecord a ->
-                            a
-                            |> Seq.map (fun (KeyValue ((i, k), v)) ->
-                                let i =
-                                    match range with
-                                    | YRecord a ->
-                                        a |> Map.tryPick (fun (i', k') _ -> if k = k' then Some i' else None)
-                                    | _ -> None
-                                    |> Option.defaultValue i
-                                (i, k), v
-                            )
-                            |> Map.ofSeq
-                            |> YRecord
-                        | _ -> ty
-                    if range <> ty then raise_type_error s <| sprintf "The annotation of the function does not match its body's type.\nGot: %s\nExpected: %s" (show_ty ty) (show_ty range)
+                    let s = PartEvalSeams.key_body hopacsota (box (dict, join_point_key)) "closure" s
+                    PartEvalSeams.defer hopacsota s { s with trace = []; inline_depth = InlineDepthOps.root } (Some ()) (fun (s : LangEnv) ->
+                        let seq,ty = term_scope'' s body (Some fun_ty)
+                        dict.[join_point_key] <- Some(domain_data, seq)
+                        let ty =
+                            match ty with
+                            | YRecord a ->
+                                a
+                                |> Seq.map (fun (KeyValue ((i, k), v)) ->
+                                    let i =
+                                        match range with
+                                        | YRecord a ->
+                                            a |> Map.tryPick (fun (i', k') _ -> if k = k' then Some i' else None)
+                                        | _ -> None
+                                        |> Option.defaultValue i
+                                    (i, k), v
+                                )
+                                |> Map.ofSeq
+                                |> YRecord
+                            | _ -> ty
+                        if range <> ty then raise_type_error s <| sprintf "The annotation of the function does not match its body's type.\nGot: %s\nExpected: %s" (show_ty ty) (show_ty range)
+                    )
                 join_point_key, call_args, fun_ty
             push_typedop s (TyJoinPoint(JPClosure((s.backend,body),join_point_key),call_args)) fun_ty, fun_ty
         and data_to_ty s x =
@@ -159045,7 +159202,7 @@ module spiral_compiler =
                 let dict, hc_table = Utils.memoize join_point_type (fun _ -> Dictionary(HashIdentity.Structural), HashConsTable()) body
                 let join_point_key = hc_table.Add(env_global_type)
                 match dict.TryGetValue(join_point_key) with
-                | true, Some ret_ty -> ret_ty
+                | true, Some ret_ty -> PartEvalSeams.key_hit hopacsota (box (dict, join_point_key)) s; ret_ty
                 | true, None -> raise_type_error (add_trace s r) "Type join points must not be unboxed during their definition."
                 | false, _ ->
                     assert (0 = scope.term.free_vars.Length)
@@ -159064,6 +159221,7 @@ module spiral_compiler =
                         globals = s.globals
                         }
                     let s = rename_global_term s
+                    let s = PartEvalSeams.key_body hopacsota (box (dict, join_point_key)) "type" s
                     dict.[join_point_key] <- None
                     let ret_ty = ty s body
                     dict.[join_point_key] <- Some ret_ty
@@ -159469,7 +159627,7 @@ module spiral_compiler =
 
                 let ret_ty =
                     match dict.TryGetValue(join_point_key) with
-                    | true, (_, Some ret_ty, _) -> ret_ty
+                    | true, (_, Some ret_ty, _) -> PartEvalSeams.key_hit hopacsota (box (dict, join_point_key)) s; ret_ty
                     | true, (_, None, _) -> raise_type_error (add_trace s r) "Recursive join points must be annotated."
                     | false, _ ->
                         let s : LangEnv = {
@@ -159489,10 +159647,13 @@ module spiral_compiler =
                         let s = rename_global_term s
                         let annot = Option.map (ty s) annot
                         dict.[join_point_key] <- (None, annot, jp_name)
-                        let seq,ty = term_scope'' s body annot
-                        dict.[join_point_key] <- (Some seq, Some ty, jp_name)
-                        annot |> Option.iter (fun annot -> if annot <> ty then raise_type_error s <| sprintf "The annotation of the join point does not match its body's type.Got: %s\nExpected: %s" (show_ty ty) (show_ty annot))
-                        ty
+                        let s = PartEvalSeams.key_body hopacsota (box (dict, join_point_key)) "method" s
+                        PartEvalSeams.defer hopacsota s { s with trace = [r]; inline_depth = InlineDepthOps.root } annot (fun (s : LangEnv) ->
+                            let seq,ty = term_scope'' s body annot
+                            dict.[join_point_key] <- (Some seq, Some ty, jp_name)
+                            annot |> Option.iter (fun annot -> if annot <> ty then raise_type_error s <| sprintf "The annotation of the join point does not match its body's type.Got: %s\nExpected: %s" (show_ty ty) (show_ty annot))
+                            ty
+                        )
 
                 match backend with
                 | None -> push_typedop_no_rewrite s (TyJoinPoint(JPMethod((backend',body),join_point_key),call_args)) ret_ty
@@ -159915,8 +160076,9 @@ module spiral_compiler =
                             // that captures a mutable compile-time HashMap/HashSet has no key and is evaluated every time.
                             let key = try Some (backend, snd (data_to_rdata s backend_switch_validated_hc [|b|])) with :? PartEvalTypeError -> None
                             match key with
-                            | Some key when backend_switch_validated.ContainsKey key -> validate_type backend_switch_validated.[key]
+                            | Some key when backend_switch_validated.ContainsKey key -> PartEvalSeams.key_hit hopacsota (box key) s; validate_type backend_switch_validated.[key]
                             | _ ->
+                                let s = match key with Some key -> PartEvalSeams.key_body hopacsota (box key) "bsv" s | None -> s
                                 let s = {s with seq=ResizeArray(); cse=Dictionary HashIdentity.Structural :: s.cse; backend=backend_strings.Add backend; i=backend_switch_validation_tags ()}
                                 RustGapTrace.validating.Value <- RustGapTrace.validating.Value + 1
                                 try
@@ -160843,9 +161005,9 @@ module spiral_compiler =
                 | _,a -> raise_type_error s "Expected a string as input to failwith.\nGot: %s" (show_data a)
             | EOp(_,FailWith,_) -> raise_type_error s "Malformed FailWith"
             | EOp(_,ErrorType,[a]) -> term s a |> show_data |> raise_type_error s
-            | EOp(_,PrintStatic,[EType(_,a)]) -> printfn "%s" (ty s a |> show_ty); DB
-            | EOp(_,PrintStatic,[a]) -> printfn "%s" (term s a |> show_data); DB
-            | EOp(_,PrintRaw,[a]) -> printfn "%A" (Printable.eval(Choice1Of2(a,id))); DB
+            | EOp(_,PrintStatic,[EType(_,a)]) -> PartEvalSeams.print hopacsota s (ty s a |> show_ty); DB
+            | EOp(_,PrintStatic,[a]) -> PartEvalSeams.print hopacsota s (term s a |> show_data); DB
+            | EOp(_,PrintRaw,[a]) -> PartEvalSeams.print hopacsota s (sprintf "%A" (Printable.eval(Choice1Of2(a,id)))); DB
             | EOp(_,UnionTag,[a]) ->
                 let eval k (h : Union) = h.Item.tags.[k] |> LitInt32 |> DLit
                 match term s a with
@@ -161058,7 +161220,7 @@ module spiral_compiler =
         let nominal_apply x = nominal_type_apply {s with i = ref 0} x
 
         match x with
-        | EFun'(r,_,_,_,_) -> term_scope s (EApply(r,x,EB r)), {join_point_method=join_point_method; join_point_closure=join_point_closure; ty_to_data=ty_to_data; nominal_apply=nominal_apply; globals=s.globals}
+        | EFun'(r,_,_,_,_) -> PartEvalSeams.root hopacsota s.globals (fun () -> term_scope s (EApply(r,x,EB r))), {join_point_method=join_point_method; join_point_closure=join_point_closure; ty_to_data=ty_to_data; nominal_apply=nominal_apply; globals=s.globals}
         | EForall' _ -> raise_type_error s "The main function should not have a forall."
         | _ -> raise_type_error s "Expected a function as the main."
 
@@ -164617,7 +164779,15 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 | JPClosure(a,c) -> $"closureCreate{(closure (a,c)).tag}({args b})"
             let unary f = function [x] -> f (tup x) | _ -> raise_codegen_error "Compiler error: Expected one argument."
             match a with
-            | TyMacro a -> a |> List.map (function CMText x -> x | CMTerm (x,inl) -> (if inl then args' x else tup x) | CMType x -> tup_ty x | CMTypeLit x -> type_litZig x) |> String.concat "" |> return'
+            | TyMacro a ->
+                let text = a |> List.map (function CMText x -> x | CMTerm (x,inl) -> (if inl then args' x else tup x) | CMType x -> tup_ty x | CMTypeLit x -> type_litZig x) |> String.concat ""
+                let statement () = if text.Trim() <> "" then (let t = text.Trim() in if t.StartsWith "{" && t.EndsWith "}" then line s t else line s $"{text};")
+                match ret with
+                | ZLocal [||] -> statement ()
+                | ZTail range when tup_ty range = "void" ->
+                    statement ()
+                    if self_loop.Value.IsSome then line s "return;"
+                | _ -> return' text
             | TySizeOf t -> return' $"@as(i64, @sizeOf({tup_ty t}))"
             | TyIf(cond,tr,fl) ->
                 line s $"if ({tup cond}) {{"
@@ -165189,7 +165359,10 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 match a with
                 | YPrim (Int8T | Int16T | Int32T | Int64T as t) -> return' $"({primLean t}.ofInt (SpiralToInt.toI {tup b}))"
                 | YPrim (UInt8T | UInt16T | UInt32T | UInt64T as t) -> return' $"({primLean t}.ofInt (SpiralToInt.toI {tup b}))"
+                | YPrim Float64T when prim_of b = Some Float32T -> return' $"(Float32.toFloat {tup b})"
                 | YPrim Float64T -> return' (if is_float b then tup b else $"(Float.ofInt (SpiralToInt.toI {tup b}))")
+                | YPrim Float32T when prim_of b = Some Float64T -> return' $"(Float.toFloat32 {tup b})"
+                | YPrim Float32T -> return' (if is_float b then tup b else $"(Float.toFloat32 (Float.ofInt (SpiralToInt.toI {tup b})))")
                 | _ -> raise_codegen_error $"Compiler error: Unexpected type in Conv. Got: {show_ty a}"
             | TyStringLength(a,b) -> return' $"({tyv a}.ofNat {tup b}.utf8ByteSize)"
             | TyOp(ArrayIndexSet, [a;b;c]) ->
@@ -165348,13 +165521,47 @@ fn spiralCreate(comptime T: type, v: T) *T {
         emit_function "spiralMain" None [||] (if unitMain then YB else YPrim Int32T) x
         let program = StringBuilder()
         program.Append(leanPrelude) |> ignore
+        if bodies |> Seq.exists (fun (x : string) -> x.Split('\n').Length > 400) then program.Append("set_option maxRecDepth 100000\n") |> ignore
         env.globals |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
         globals |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
         if types.Count > 0 then
-            program.AppendLine("mutual") |> ignore
-            types |> Seq.iter (fun (x : string) -> program.Append(x) |> ignore)
-            program.AppendLine("end") |> ignore
-            Seq.append union_names structure_names |> Seq.iter (fun (x : string) -> program.AppendLine($"deriving instance Inhabited for {x}") |> ignore)
+            if types |> Seq.exists (fun (x : string) -> x.Contains "IO.Ref") then program.Append("private unsafe def spiralRefDefaultUnsafe {α : Type} : IO.Ref α := unsafeCast ()\naxiom spiralRefNonempty {α : Type} : Nonempty (IO.Ref α)\nattribute [instance] spiralRefNonempty\n@[implemented_by spiralRefDefaultUnsafe] opaque spiralRefDefault {α : Type} : IO.Ref α\ninstance {α : Type} : Inhabited (IO.Ref α) := ⟨spiralRefDefault⟩\n") |> ignore
+            let type_names = types |> Seq.map (fun (x : string) -> x.Split([|' '; '\n'|], System.StringSplitOptions.RemoveEmptyEntries).[1]) |> Seq.toArray
+            let type_index = type_names |> Array.mapi (fun i name -> name, i) |> dict
+            let type_deps = types |> Seq.map (fun (x : string) -> System.Text.RegularExpressions.Regex.Matches(x, @"\b[UHM]\d+\b") |> Seq.map (fun m -> m.Value) |> Seq.filter type_index.ContainsKey |> Seq.map (fun name -> type_index.[name]) |> Set.ofSeq) |> Seq.toArray
+            let components = ResizeArray<int []>()
+            let visit_index = Array.create type_names.Length -1
+            let low_link = Array.zeroCreate<int> type_names.Length
+            let on_stack = Array.zeroCreate<bool> type_names.Length
+            let pending = System.Collections.Generic.Stack<int>()
+            let next_index = ref 0
+            let rec strong_component v =
+                visit_index.[v] <- next_index.Value
+                low_link.[v] <- next_index.Value
+                next_index.Value <- next_index.Value + 1
+                pending.Push v
+                on_stack.[v] <- true
+                for w in type_deps.[v] do
+                    if visit_index.[w] < 0 then
+                        strong_component w
+                        low_link.[v] <- min low_link.[v] low_link.[w]
+                    elif on_stack.[w] then low_link.[v] <- min low_link.[v] visit_index.[w]
+                if low_link.[v] = visit_index.[v] then
+                    let members = ResizeArray<int>()
+                    let mutable popping = true
+                    while popping do
+                        let w = pending.Pop()
+                        on_stack.[w] <- false
+                        members.Add w
+                        popping <- w <> v
+                    components.Add(members |> Seq.sort |> Seq.toArray)
+            for v in 0 .. type_names.Length - 1 do if visit_index.[v] < 0 then strong_component v
+            for members in components do
+                let cyclic = members.Length > 1 || type_deps.[members.[0]].Contains members.[0]
+                if cyclic then program.AppendLine("mutual") |> ignore
+                for i in members do program.Append(types.[i]) |> ignore
+                if cyclic then program.AppendLine("end") |> ignore
+                for i in members do program.AppendLine($"deriving instance Inhabited for {type_names.[i]}") |> ignore
             union_tags |> Seq.iter (fun (x : string) -> program.Append(x) |> ignore)
         program.AppendLine("mutual") |> ignore
         bodies |> Seq.iter (fun x -> program.Append(x) |> ignore)
@@ -166122,7 +166329,10 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 defs.Add($"@unsafe\ndef {name}_step(+c: Bool{params captured}) -> IO(Unit):\n  match c:\n    case True{{}}:\n      do IO<Unit>:\n        {name}_body({arguments})\n        {name}({arguments})\n    case False{{}}:\n      do IO<Unit>:\n        return Unit{{}}\n")
                 defs.Add($"@unsafe\ndef {name}({parameters}) -> IO(Unit):\n  do IO<Unit>:\n    +c : Bool <- {cond}\n    {name}_step(c{args captured})\n")
                 $"{name}({arguments})"
-            | TyMacro _ -> unsupported "macros"
+            | TyMacro a when result <> "" && result <> "Unit" ->
+                let text = a |> List.map (function CMText x -> x | CMTerm (x, _) -> tup x | CMType x -> tyv x | CMTypeLit _ -> unsupported "type literals in macros") |> String.concat ""
+                $"IO.pure({result}, {text})"
+            | TyMacro _ -> unsupported "unit macros"
             | a ->
                 let construct = (sprintf "%A" a).Split('(').[0]
                 unsupported construct
@@ -166195,6 +166405,13 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
     let backend_nameGleam = "Gleam"
 
     /// ### litGleam
+    let gleamFloatText (text : string) =
+        match text.IndexOfAny [|'E'; 'e'|] with
+        | -1 -> text |> add_dec_point
+        | at ->
+            let mantissa = text.Substring(0, at)
+            let exponent = text.Substring(at + 1).Replace("+", "")
+            (if mantissa.Contains "." then mantissa else mantissa + ".0") + "e" + exponent
     let litGleam = function
         | LitInt8 x -> sprintf "%i" x
         | LitInt16 x -> sprintf "%i" x
@@ -166208,12 +166425,12 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             if x = infinityf then "infinityf"
             elif x = -infinityf then "-infinityf"
             elif Single.IsNaN x then "nanf"
-            else x.ToString("R") |> add_dec_point |> sprintf "%s"
+            else x.ToString("R") |> gleamFloatText
         | LitFloat64 x ->
             if x = infinity then "infinity"
             elif x = -infinity then "-infinity"
             elif Double.IsNaN x then "nan"
-            else x.ToString("R") |> add_dec_point
+            else x.ToString("R") |> gleamFloatText
         | LitString x ->
             let strb = StringBuilder(x.Length+2)
             strb.Append '"' |> ignore
@@ -166619,7 +166836,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     | UHeap -> sprintf "Uh%i" (uheap x.cases).tag
                     | UStack -> sprintf "Us%i" (ustack x.cases).tag
                 Map.iter (fun k (a,b) ->
-                    let i = case_tags.[k]
+                    let i = x.Item.cases |> Seq.tryFindIndex (fun (KeyValue ((_, k'), _)) -> k' = UnionTagIdOps.text k) |> Option.defaultWith (fun () -> case_tags.[k])
                     let cases =
                         a |> List.map (fun a ->
                             match data_free_vars a with
@@ -166633,17 +166850,18 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     line (indent s) "}"
                     ) on_succs
                 let covers_every_case = is.Length = 1 && Map.count on_succs = Map.count x.Item.cases
+                let wildcard = is |> List.map (fun _ -> "_") |> String.concat ","
                 match on_fail with
                 | Some on_fail ->
-                    line (indent s) "_ -> {"
+                    line (indent s) $"{wildcard} -> {{"
                     binds (indent (indent s)) on_fail
                     line (indent s) "}"
                 | None when covers_every_case -> ()
-                | None -> line (indent s) "_ -> panic as \"spiral: union case ruled out by partial evaluation\""
+                | None -> line (indent s) $"{wildcard} -> panic as \"spiral: union case ruled out by partial evaluation\""
                 line s "}"
             | TyUnionBox(a,b,c) ->
                 let c = c.Item
-                let i = c.tags.[a]
+                let i = c.cases |> Seq.tryFindIndex (fun (KeyValue ((_, k), _)) -> k = UnionTagIdOps.text a) |> Option.defaultWith (fun () -> c.tags.[a])
                 let vars =
                     match data_term_vars b with
                     | [||] -> ""
@@ -166803,6 +167021,10 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 | Div, [a;b] -> $"{a |> tup} /{a |> dot} {b |> tup}"
                 | Mod, [a;b] -> $"{a |> tup} %%{a |> dot} {b |> tup}"
                 | Pow, [a;b] -> if dot a = "." then (spiralFloatPower (); $"spiral_math_pow({tup a}, {tup b})") else (spiralIntPower (); wrapInteger a $"spiral_int_power({tup a}, {tup b})")
+                | LT, [(DV(L(_,YPrim (StringT | CharT))) | DLit(LitString _ | LitChar _)) as a;b] -> global' "import gleam/string"; global' "import gleam/order"; $"string.compare({tup a}, {tup b}) == order.Lt"
+                | LTE, [(DV(L(_,YPrim (StringT | CharT))) | DLit(LitString _ | LitChar _)) as a;b] -> global' "import gleam/string"; global' "import gleam/order"; $"string.compare({tup a}, {tup b}) != order.Gt"
+                | GT, [(DV(L(_,YPrim (StringT | CharT))) | DLit(LitString _ | LitChar _)) as a;b] -> global' "import gleam/string"; global' "import gleam/order"; $"string.compare({tup a}, {tup b}) == order.Gt"
+                | GTE, [(DV(L(_,YPrim (StringT | CharT))) | DLit(LitString _ | LitChar _)) as a;b] -> global' "import gleam/string"; global' "import gleam/order"; $"string.compare({tup a}, {tup b}) != order.Lt"
                 | LT, [a;b] -> $"{a |> tup} <{a |> dot} {b |> tup}"
                 | LTE, [a;b] -> $"{a |> tup} <={a |> dot} {b |> tup}"
                 | EQ, [a;b] -> sprintf "%s == %s" (tup a) (tup b)
@@ -169964,7 +170186,7 @@ end
             match t with
             | YLayout(inner, lay) ->
                 match lay with
-                | StackMutable -> unsupported "a stack mutable layout"
+                | StackMutable -> unsupported "stack mutable layout types"
                 | StackRefs | HeapRefs -> unsupported "a ref layout"
                 | Heap | HeapMutable ->
                     let key = show_ty t
@@ -170294,6 +170516,10 @@ end
                         | Some UInt64T, (Int32T | CharT) -> $"({text}).toInt()"
                         | Some UInt64T, UInt32T -> $"({text}).toUInt()"
                         | Some UInt64T, Int64T -> $"({text}).toLong()"
+                        | Some (Int64T | UInt64T), Float64T -> $"({text}).toDouble()"
+                        | Some (Int64T | UInt64T), Float32T -> $"({text}).toFloat()"
+                        | Some (Float32T | Float64T), Int64T -> $"({text}).toLong()"
+                        | Some (Float32T | Float64T), UInt64T -> $"({text}).toULong()"
                         | Some (Int32T | CharT), Int8T -> $"({text}).toByte()"
                         | Some (Int32T | CharT), Int16T -> $"({text}).toShort()"
                         | Some (Int32T | CharT), UInt8T -> $"({text}).toUByte()"
@@ -170486,7 +170712,7 @@ end
                 match layout_ty with
                 | YLayout(_, HeapMutable) -> ()
                 | YLayout(_, Heap) -> unsupported "setting an immutable layout"
-                | YLayout(_, StackMutable) -> unsupported "a stack mutable layout"
+                | YLayout(_, StackMutable) -> unsupported "stack mutable layout types"
                 | YLayout _ -> unsupported "a ref layout"
                 | _ -> raise_codegen_error "Compiler error: Expected a layout type."
                 ensure_layout layout_ty |> ignore
@@ -170713,7 +170939,7 @@ end
             match t with
             | YLayout(inner, lay) ->
                 match lay with
-                | StackMutable -> unsupported "a stack mutable layout"
+                | StackMutable -> unsupported "stack mutable layout types"
                 | StackRefs | HeapRefs -> unsupported "a ref layout"
                 | Heap | HeapMutable ->
                     let key = show_ty t
@@ -171052,17 +171278,21 @@ end
                         | Some Float64T, (Int32T | CharT) -> $"Int32({text})"
                         | Some Float64T, UInt32T -> $"UInt32({text})"
                         | Some (Int32T | CharT | UInt32T), Int64T -> $"Int64({text})"
-                        | Some (Int32T | CharT | UInt32T), UInt64T -> $"UInt64({text})"
-                        | Some Int64T, (Int32T | CharT) -> $"Int32({text})"
-                        | Some Int64T, UInt32T -> $"UInt32({text})"
-                        | Some Int64T, UInt64T -> $"UInt64({text})"
-                        | Some UInt64T, (Int32T | CharT) -> $"Int32({text})"
-                        | Some UInt64T, UInt32T -> $"UInt32({text})"
-                        | Some UInt64T, Int64T -> $"Int64({text})"
-                        | Some (Int32T | CharT), Int8T -> $"Int8({text})"
-                        | Some (Int32T | CharT), Int16T -> $"Int16({text})"
-                        | Some (Int32T | CharT), UInt8T -> $"UInt8({text})"
-                        | Some (Int32T | CharT), UInt16T -> $"UInt16({text})"
+                        | Some (Int32T | CharT | UInt32T), UInt64T -> $"UInt64(truncatingIfNeeded: {text})"
+                        | Some Int64T, (Int32T | CharT) -> $"Int32(truncatingIfNeeded: {text})"
+                        | Some Int64T, UInt32T -> $"UInt32(truncatingIfNeeded: {text})"
+                        | Some Int64T, UInt64T -> $"UInt64(bitPattern: {text})"
+                        | Some UInt64T, (Int32T | CharT) -> $"Int32(truncatingIfNeeded: {text})"
+                        | Some UInt64T, UInt32T -> $"UInt32(truncatingIfNeeded: {text})"
+                        | Some UInt64T, Int64T -> $"Int64(bitPattern: {text})"
+                        | Some (Int64T | UInt64T), Float64T -> $"Double({text})"
+                        | Some (Int64T | UInt64T), Float32T -> $"Float({text})"
+                        | Some (Float32T | Float64T), Int64T -> $"Int64({text})"
+                        | Some (Float32T | Float64T), UInt64T -> $"UInt64({text})"
+                        | Some (Int32T | CharT), Int8T -> $"Int8(truncatingIfNeeded: {text})"
+                        | Some (Int32T | CharT), Int16T -> $"Int16(truncatingIfNeeded: {text})"
+                        | Some (Int32T | CharT), UInt8T -> $"UInt8(truncatingIfNeeded: {text})"
+                        | Some (Int32T | CharT), UInt16T -> $"UInt16(truncatingIfNeeded: {text})"
                         | Some (Int8T | Int16T | UInt8T | UInt16T), (Int32T | CharT) -> $"Int32({text})"
                         | Some BoolT, (Int32T | CharT) -> $"(if {text} {{ 1 }} else {{ 0 }})"
                         | Some BoolT, UInt32T -> $"UInt32(if {text} {{ 1 }} else {{ 0 }})"
@@ -171234,7 +171464,7 @@ end
                 match layout_ty with
                 | YLayout(_, HeapMutable) -> ()
                 | YLayout(_, Heap) -> unsupported "setting an immutable layout"
-                | YLayout(_, StackMutable) -> unsupported "a stack mutable layout"
+                | YLayout(_, StackMutable) -> unsupported "stack mutable layout types"
                 | YLayout _ -> unsupported "a ref layout"
                 | _ -> raise_codegen_error "Compiler error: Expected a layout type."
                 ensure_layout layout_ty |> ignore
@@ -175113,6 +175343,16 @@ end
         open System.Collections.Generic
 
         let private backend_name = "Python"
+        let private pythonWrapHelper = "def spiral_wrap(x, bits, signed):\n    x &= (1 << bits) - 1\n    return x - (1 << bits) if signed and x >> (bits - 1) else x"
+        let private pythonStringHelpers = "import sys\ndef spiral_utf8(s):\n    return s.encode('utf-8', 'surrogateescape')\ndef spiral_string_length(s):\n    return len(s) if s.isascii() else len(spiral_utf8(s))\ndef spiral_string_index(s, i):\n    return s[i] if s.isascii() else chr(spiral_utf8(s)[i])\ndef spiral_string_slice(s, a, b):\n    data = s.encode('ascii') if s.isascii() else spiral_utf8(s)\n    n = len(data)\n    if a < 0 or a > n or b < a - 1 or b >= n: sys.exit(3)\n    if b >= a and ((data[a] & 0xC0) == 0x80 or (b + 1 < n and (data[b + 1] & 0xC0) == 0x80)): sys.exit(3)\n    return s[a:b + 1] if s.isascii() else data[a:b + 1].decode('utf-8', 'surrogateescape')"
+        let private pythonPrimWidth = function
+            | Int8T -> Some (8, true) | Int16T -> Some (16, true) | Int32T -> Some (32, true) | Int64T -> Some (64, true)
+            | UInt8T -> Some (8, false) | UInt16T -> Some (16, false) | UInt32T -> Some (32, false) | UInt64T -> Some (64, false)
+            | _ -> None
+        let private pythonIntWidth = function
+            | DV(L(_,YPrim t)) -> pythonPrimWidth t
+            | DLit l -> pythonPrimWidth (lit_to_primitive_type l)
+            | _ -> None
 
         let lit = function
             | LitInt8 x -> sprintf "%i" x
@@ -175489,15 +175729,22 @@ end
                     else return' <| sprintf "cp.array([%s],dtype=%s)" (List.map tup_data' b |> String.concat ", ") dt
                 | TyArrayCreate(a,b) ->
                     let dt = cupy_ty a
-                    let m = if dt = "object" then "__import__('numpy')" else "cp"
-                    return' $"{m}.empty({tup_data b},dtype={dt})"
+                    if dt = "object" then return' $"__import__('numpy').empty({tup_data b},dtype={dt})"
+                    else return' $"cp.zeros({tup_data b},dtype={dt})"
                 | TyFailwith(a,b) -> line s $"raise Exception({tup_data' b})"
-                | TyConv(a,b) -> return' $"{tyv a}({tup_data b})"
+                | TyConv(a,b) ->
+                    match (match a with YPrim t -> pythonPrimWidth t | _ -> None) with
+                    | Some (bits, signed) -> global' pythonWrapHelper; return' (sprintf "spiral_wrap(int(%s), %i, %s)" (tup_data b) bits (if signed then "True" else "False"))
+                    | None -> return' $"{tyv a}({tup_data b})"
                 | TyApply(L(i,_),b) -> return' $"v{i}({tup_data' b})"
                 | TyArrayLength(a,b) -> return' $"{tup_data b}.size"
-                | TyStringLength(a,b) -> return' $"len({tup_data b})"
+                | TyStringLength(a,b) -> global' pythonStringHelpers; return' $"spiral_string_length({tup_data b})"
                 | TyOp(Global,[DLit (LitString x)]) -> global' x
                 | TyOp(op,l) ->
+                    let pythonWrapped d expr =
+                        match pythonIntWidth d with
+                        | Some (bits, signed) -> global' pythonWrapHelper; sprintf "spiral_wrap(%s, %i, %s)" expr bits (if signed then "True" else "False")
+                        | None -> expr
                     match op, l with
                     | ToPythonRecord,[DRecord x] -> Map.foldBack (fun k v l -> $"'{snd k}': {tup_data v}" :: l) x [] |> String.concat ", " |> sprintf "{%s}" // ws: `snd k` (records keyed `int * string`)
                     | ToPythonNamedTuple,[n;DRecord x] ->
@@ -175507,8 +175754,8 @@ end
                         $"collections.namedtuple({tup_data n},[{field_names}])({args})"
                     | Dyn,[a] -> tup_data a
                     | TypeToVar, _ -> raise_codegen_error "The use of `` should never appear in generated code."
-                    | StringIndex, [a;b] -> sprintf "%s[%s]" (tup_data a) (tup_data b)
-                    | StringSlice, [a;b;c] -> sprintf "%s[%s:(%s) + 1]" (tup_data a) (tup_data b) (tup_data c)
+                    | StringIndex, [a;b] -> global' pythonStringHelpers; sprintf "spiral_string_index(%s, %s)" (tup_data a) (tup_data b)
+                    | StringSlice, [a;b;c] -> global' pythonStringHelpers; sprintf "spiral_string_slice(%s, %s, %s)" (tup_data a) (tup_data b) (tup_data c)
                     | StaticStringConcat, [a;b] -> sprintf "%s + %s" (tup_data a) (tup_data b) // ws: upstream's Python generator has no string concat (sm.concat)
                     | ArrayIndex, [a;b] ->
                         // Upstream assumes primitive CuPy arrays. Foreign/corelib containers can return
@@ -175520,11 +175767,13 @@ end
                         | "" -> "pass # void array set"
                         | c -> sprintf "%s[%s] = %s" (tup_data a) (tup_data b) c
                     // Math
-                    | Add, [a;b] -> sprintf "%s + %s" (tup_data a) (tup_data b)
-                    | Sub, [a;b] -> sprintf "%s - %s" (tup_data a) (tup_data b)
-                    | Mult, [a;b] -> sprintf "%s * %s" (tup_data a) (tup_data b)
+                    | Add, [a;b] -> pythonWrapped a (sprintf "%s + %s" (tup_data a) (tup_data b))
+                    | Sub, [a;b] -> pythonWrapped a (sprintf "%s - %s" (tup_data a) (tup_data b))
+                    | Mult, [a;b] -> pythonWrapped a (sprintf "%s * %s" (tup_data a) (tup_data b))
                     | Div, [(DV(L(_,YPrim (Float32T | Float64T))) | DLit(LitFloat32 _ | LitFloat64 _)) & a;b] -> sprintf "%s / %s" (tup_data a) (tup_data b)
+                    | Div, [a;b] when (pythonIntWidth a).IsSome -> global' "def spiral_div_trunc(a, b):\n    q = abs(a) // abs(b)\n    return q if (a < 0) == (b < 0) else -q"; pythonWrapped a (sprintf "spiral_div_trunc(%s, %s)" (tup_data a) (tup_data b))
                     | Div, [a;b] -> sprintf "%s // %s" (tup_data a) (tup_data b)
+                    | Mod, [a;b] when (pythonIntWidth a).IsSome -> global' "def spiral_mod_trunc(a, b):\n    r = abs(a) % abs(b)\n    return -r if a < 0 else r"; sprintf "spiral_mod_trunc(%s, %s)" (tup_data a) (tup_data b)
                     | Mod, [a;b] -> sprintf "%s %% %s" (tup_data a) (tup_data b)
                     | Pow, [a;b] -> sprintf "pow(%s,%s)" (tup_data a) (tup_data b)
                     | LT, [a;b] -> sprintf "%s < %s" (tup_data a) (tup_data b)
@@ -175538,12 +175787,12 @@ end
                     | BitwiseAnd, [a;b] -> sprintf "%s & %s" (tup_data a) (tup_data b)
                     | BitwiseOr, [a;b] -> sprintf "%s | %s" (tup_data a) (tup_data b)
                     | BitwiseXor, [a;b] -> sprintf "%s ^ %s" (tup_data a) (tup_data b)
-                    | BitwiseComplement, [a] -> sprintf "~%s" (tup_data a)
+                    | BitwiseComplement, [a] -> pythonWrapped a (sprintf "~%s" (tup_data a))
 
-                    | ShiftLeft, [a;b] -> sprintf "%s << %s" (tup_data a) (tup_data b)
+                    | ShiftLeft, [a;b] -> pythonWrapped a (sprintf "%s << %s" (tup_data a) (tup_data b))
                     | ShiftRight, [a;b] -> sprintf "%s >> %s" (tup_data a) (tup_data b)
 
-                    | Neg, [x] -> sprintf "-%s" (tup_data x)
+                    | Neg, [x] -> pythonWrapped x (sprintf "-%s" (tup_data x))
                     | Log, [x] -> import "math"; sprintf "math.log(%s)" (tup_data x)
                     | Exp, [x] -> import "math"; sprintf "math.exp(%s)" (tup_data x)
                     | Tanh, [x] -> import "math"; sprintf "math.tanh(%s)" (tup_data x)
@@ -175656,6 +175905,8 @@ end
                 from "typing import NamedTuple, Union, Callable, Tuple"
                 part_eval_env.globals |> Seq.toArray |> Array.iter global' // ws: globals collected by the partial evaluator (PartEvalResult.globals), as in CodegenC
                 code_env.globals.Add "i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 = int; f32 = float; f64 = float; char = str; string = str"
+                import "sys"
+                code_env.globals.Add "sys.setrecursionlimit(1 << 30)"
                 code_env.globals.Add ""
 
                 let s = {text=StringBuilder(); indent=0}
@@ -177001,6 +177252,3330 @@ end
             Ok {moduleDir = module_dir; modules = modules; packageDir = package_dir; packages = packages; defaultInt = x.defaultInt |> Option.map snd; defaultFloat = x.defaultFloat |> Option.map snd; edition = x.edition |> Option.map snd}
         with :? SchemaException as e -> Error [e.Data0]
         )
+
+    /// ## Formatter
+    module FormatterLexed =
+
+
+        [<AbstractClass; Sealed>]
+        type AsRead = class end
+
+        [<AbstractClass; Sealed>]
+        type Spaced = class end
+
+        [<AbstractClass; Sealed>]
+        type Flat = class end
+
+        [<AbstractClass; Sealed>]
+        type Laid = class end
+
+        [<Struct>]
+        type Span = { From : int; NearTo : int }
+
+        type Verbatim =
+            private
+            | Verbatim of string
+            member this.Text = let (Verbatim text) = this in text
+            member this.Length = this.Text.Length
+
+        type Gap =
+            | Whitespace of int
+            | Embedded of Verbatim
+
+        type Lexeme =
+            { Span : Span
+              Token : SpiralToken
+              Text : Verbatim
+              InsideMacro : bool
+              Before : Gap }
+
+        type OpaqueCause =
+            | InComment
+            | InString
+            | InMacro
+            | Unlexable
+
+        type LineShape =
+            | Blank
+            | Code of indent : int * lexemes : Lexeme[] * tail : Verbatim
+            | Opaque of Verbatim * OpaqueCause
+            | Remark of Verbatim
+
+        type Line<'phase> = { Number : int; Shape : LineShape }
+
+        type Edition =
+            | Edition2
+            | Edition3
+
+        type Unit' =
+            | TopDown
+            | BottomUp
+
+        type Source<'phase> =
+            private
+                { Path : string
+                  Edition : Edition
+                  Unit : Unit'
+                  Lines : Line<'phase>[] }
+            member this.FilePath = this.Path
+            member this.FileEdition = this.Edition
+            member this.FileUnit = this.Unit
+            member this.SourceLines = this.Lines
+
+        type SourceUser<'result> =
+            abstract Use<'phase> : Source<'phase> -> 'result
+
+        type AnySource =
+            abstract Apply<'result> : SourceUser<'result> -> 'result
+
+        let seal (source : Source<'phase>) =
+            { new AnySource with
+                member _.Apply user = user.Use source }
+
+        let verbatimOf (text : string) (span : Span) = Verbatim (text.Substring (span.From, span.NearTo - span.From))
+
+        let verbatimTail (text : string) (from : int) = Verbatim (text.Substring from)
+
+        let trimmedTail (tail : Verbatim) = Verbatim (tail.Text.TrimEnd ())
+
+        let verbatimLine (text : string) = Verbatim text
+
+        let render (line : Line<'phase>) =
+            match line.Shape with
+            | Blank -> ""
+            | Opaque (text, _) -> text.Text
+            | Remark text -> text.Text
+            | Code (indent, lexemes, tail) ->
+                let builder = System.Text.StringBuilder ()
+                builder.Append (' ', indent) |> ignore
+                lexemes
+                |> Array.iteri (fun index lexeme ->
+                    if index > 0 then
+                        match lexeme.Before with
+                        | Whitespace count -> builder.Append (' ', count) |> ignore
+                        | Embedded text -> builder.Append text.Text |> ignore
+                    builder.Append lexeme.Text.Text |> ignore)
+                builder.Append(tail.Text).ToString ()
+
+        let displayWidth (text : string) =
+            let wide (rune : int) =
+                (rune >= 0x1100 && rune <= 0x115F) || (rune >= 0x2E80 && rune <= 0xA4CF) || (rune >= 0xAC00 && rune <= 0xD7A3)
+                || (rune >= 0xF900 && rune <= 0xFAFF) || (rune >= 0xFE30 && rune <= 0xFE4F) || (rune >= 0xFF00 && rune <= 0xFF60)
+                || (rune >= 0xFFE0 && rune <= 0xFFE6) || (rune >= 0x1F300 && rune <= 0x1FAFF) || (rune >= 0x20000 && rune <= 0x3FFFD)
+            let elements = System.Globalization.StringInfo.GetTextElementEnumerator text
+            let mutable width = 0
+            while elements.MoveNext () do
+                let element = elements.GetTextElement ()
+                let rune = System.Char.ConvertToUtf32 (element, 0)
+                width <- width + (if wide rune then 2 elif System.Globalization.CharUnicodeInfo.GetUnicodeCategory rune = System.Globalization.UnicodeCategory.NonSpacingMark then 0 else 1)
+            width
+
+        let isMacroOpening token =
+            match token with
+            | TokMacroOpen -> true
+            | _ -> false
+
+        let isMacroClosing token =
+            match token with
+            | TokMacroClose -> true
+            | _ -> false
+
+        let lexLine (state : LexState) (text : string) =
+            let tokens, errors, next = tokenize_line state text
+            let startsPlain = state = lex_state_init
+            let endsPlain = next = lex_state_init
+            let shape =
+                if text.Length = 0 && startsPlain && endsPlain then Blank
+                elif not startsPlain || not endsPlain || not (List.isEmpty errors) then
+                    let cause =
+                        if 0 < state.comment_depth || 0 < next.comment_depth then InComment
+                        elif state.in_triple || next.in_triple then InString
+                        elif not (List.isEmpty errors) then Unlexable
+                        else InMacro
+                    Opaque (verbatimLine text, cause)
+                elif tokens.Length = 0 then Remark (verbatimLine text)
+                else
+                    let mutable depth = 0
+                    let mutable previous = 0
+                    let lexemes =
+                        [| for (range, token) in tokens do
+                               if isMacroOpening token then depth <- depth + 1
+                               let inside = depth > 0
+                               if isMacroClosing token then depth <- depth - 1
+                               let span = { From = range.from; NearTo = range.nearTo }
+                               let between = text.Substring (previous, max 0 (range.from - previous))
+                               let gap = if between.Trim().Length = 0 then Whitespace between.Length else Embedded (Verbatim between)
+                               previous <- range.nearTo
+                               yield { Span = span; Token = token; Text = verbatimOf text span; InsideMacro = inside; Before = gap } |]
+                    let last = lexemes.[lexemes.Length - 1].Span.NearTo
+                    Code (lexemes.[0].Span.From, lexemes, verbatimTail text last)
+            shape, next
+
+        let splitLines (text : string) =
+            let lines = text.Replace("\r\n", "\n").Split '\n'
+            if lines.Length > 1 && lines.[lines.Length - 1] = "" then lines.[0 .. lines.Length - 2] else lines
+
+        let lexText (path : string) (edition : Edition) (text : string) : Source<AsRead> =
+            let mutable state = lex_state_init
+            let lines =
+                splitLines text
+                |> Array.mapi (fun index lineText ->
+                    let shape, next = lexLine state lineText
+                    state <- next
+                    { Number = index + 1; Shape = shape })
+            { Path = path
+              Edition = edition
+              Unit = (if path.EndsWith ".spir" then BottomUp else TopDown)
+              Lines = lines }
+
+        let relex (source : Source<'phase>) (texts : string[]) : Source<'next> =
+            let mutable state = lex_state_init
+            let lines =
+                texts
+                |> Array.mapi (fun index lineText ->
+                    let shape, next = lexLine state lineText
+                    state <- next
+                    { Number = index + 1; Shape = shape })
+            { Path = source.Path
+              Edition = source.Edition
+              Unit = source.Unit
+              Lines = lines }
+
+        let renderAll (source : Source<'phase>) = source.Lines |> Array.map render
+
+        let joinLines (lines : string[]) = String.concat "\n" lines + "\n"
+
+    module FormatterParsed =
+
+        open System
+        open System.Text
+        open Microsoft.FSharp.Reflection
+        open FormatterLexed
+
+        let environmentOf edition : DefaultEnv =
+            { port = 0
+              default_int = Int32T
+              default_uint = UInt32T
+              default_float = Float64T
+              edition = (match edition with Edition2 -> UpstreamEdition2 | Edition3 -> ForkEdition3) }
+
+        let isPosition (shape : Type) =
+            FSharpType.IsRecord (shape, true)
+            && (FSharpType.GetRecordFields (shape, true) |> Array.map (fun field -> field.Name) |> Array.sort) = [| "character"; "line" |]
+
+        let rec foldedConcat (value : obj) : string option =
+            if isNull value then None
+            else
+                let shape = value.GetType ()
+                if not (FSharpType.IsUnion (shape, true)) then None
+                else
+                    let case, fields = FSharpValue.GetUnionFields (value, shape, true)
+                    match case.Name with
+                    | "RawLit" when fields.Length = 2 ->
+                        let literal = fields.[1]
+                        let literalCase, literalFields = FSharpValue.GetUnionFields (literal, literal.GetType (), true)
+                        if literalCase.Name = "LitString" then Some (literalFields.[0] :?> string) else None
+                    | "RawApply" when fields.Length = 3 && not (isNull fields.[1]) ->
+                        let inner = fields.[1]
+                        let innerCase, innerFields = FSharpValue.GetUnionFields (inner, inner.GetType (), true)
+                        if innerCase.Name <> "RawApply" || innerFields.Length <> 3 || isNull innerFields.[1] then None
+                        else
+                            let operatorCase, operatorFields = FSharpValue.GetUnionFields (innerFields.[1], innerFields.[1].GetType (), true)
+                            if operatorCase.Name = "RawV" && operatorFields.Length >= 2 && (operatorFields.[1] :? string) && (operatorFields.[1] :?> string) = "^^" then
+                                match foldedConcat innerFields.[2], foldedConcat fields.[2] with
+                                | Some a, Some b -> Some (a + b)
+                                | _ -> None
+                            else None
+                    | "RawAnnot" when fields.Length = 3 && not (isNull fields.[2]) ->
+                        let typeCase, typeFields = FSharpValue.GetUnionFields (fields.[2], fields.[2].GetType (), true)
+                        if typeCase.Name = "RawTPrim" && typeFields.Length = 2 && string typeFields.[1] = "StringT" then foldedConcat fields.[1] else None
+                    | "RawOp" when fields.Length = 3 ->
+                        let opCase, _ = FSharpValue.GetUnionFields (fields.[1], fields.[1].GetType (), true)
+                        if opCase.Name <> "StaticStringConcat" then None
+                        else
+                            let args = (fields.[2] :?> Collections.IEnumerable) |> Seq.cast<obj> |> List.ofSeq
+                            match args |> List.map foldedConcat with
+                            | [ Some a; Some b ] -> Some (a + b)
+                            | _ -> None
+                    | _ -> None
+
+        type ShapeStep =
+            | Emit of string
+            | Visit of obj
+
+        let rawSeqHalves (item : obj) =
+            if isNull item || not (FSharpType.IsUnion (item.GetType (), true)) then None
+            else
+                let case, fields = FSharpValue.GetUnionFields (item, item.GetType (), true)
+                if case.Name = "RawSeq" && fields.Length = 3 then Some (fields.[1], fields.[2]) else None
+
+        let sequenced (value : obj) =
+            let items = ResizeArray<obj> ()
+            let unopened = Collections.Generic.Stack<obj> ()
+            unopened.Push value
+            while unopened.Count > 0 do
+                let item = unopened.Pop ()
+                match rawSeqHalves item with
+                | Some (first, rest) ->
+                    unopened.Push rest
+                    unopened.Push first
+                | None -> items.Add item
+            List.ofSeq items
+
+        let macroTextOf (item : obj) =
+            if isNull item || not (FSharpType.IsUnion (item.GetType (), true)) then None
+            else
+                let case, fields = FSharpValue.GetUnionFields (item, item.GetType (), true)
+                if case.Name = "RawMacroText" && fields.Length = 2 && (fields.[1] :? string) then Some (fields.[1] :?> string) else None
+
+        let enumeratedSteps (value : Collections.IEnumerable) =
+            let steps = ResizeArray<ShapeStep> ()
+            let joined = StringBuilder ()
+            let flush () =
+                if joined.Length > 0 then
+                    steps.Add (Emit ("(RawMacroText <pp> \"" + string joined.Length + ":" + joined.ToString () + ")"))
+                    joined.Clear () |> ignore
+            for item in value do
+                match macroTextOf item with
+                | Some text -> joined.Append text |> ignore
+                | None ->
+                    flush ()
+                    steps.Add (Visit item)
+            flush ()
+            List.ofSeq steps
+
+        let shapeSteps (value : obj) : ShapeStep list =
+            let enclosed (opening : string) (children : obj seq) (closing : string) = Emit opening :: [ for child in children -> Visit child ] @ [ Emit closing ]
+            let spaced (opening : string) (children : obj seq) = Emit opening :: [ for child in children do yield! [ Emit " "; Visit child ] ] @ [ Emit ")" ]
+            match value with
+            | null -> [ Emit "n" ]
+            | :? string as text -> [ Emit ("\"" + string text.Length + ":" + text) ]
+            | :? bool | :? char | :? int | :? int8 | :? int16 | :? int64 | :? uint8 | :? uint16 | :? uint32 | :? uint64 -> [ Emit (value.ToString () + ";") ]
+            | :? float32 as number -> [ Emit (string (BitConverter.SingleToInt32Bits number) + "f") ]
+            | :? float as number -> [ Emit (string (BitConverter.DoubleToInt64Bits number) + "d") ]
+            | _ ->
+                let shape = value.GetType ()
+                if isPosition shape then [ Emit "p" ]
+                elif shape.IsEnum then [ Emit (value.ToString () + ";") ]
+                elif FSharpType.IsUnion (shape, true) then
+                    match foldedConcat value with
+                    | Some text -> [ Emit ("(RawLit <pp> (LitString \"" + string text.Length + ":" + text + "))") ]
+                    | None when (rawSeqHalves value).IsSome -> spaced "(RawSeq*" (sequenced value)
+                    | None ->
+                        let case, fields = FSharpValue.GetUnionFields (value, shape, true)
+                        spaced ("(" + case.Name) fields
+                elif FSharpType.IsTuple shape then enclosed "<" (FSharpValue.GetTupleFields value) ">"
+                elif FSharpType.IsRecord (shape, true) then enclosed "{" (FSharpValue.GetRecordFields (value, true)) "}"
+                elif shape.IsGenericType && shape.GetGenericTypeDefinition () = typedefof<Collections.Generic.KeyValuePair<_, _>> then
+                    enclosed "{" [ shape.GetProperty("Key").GetValue value; shape.GetProperty("Value").GetValue value ] "}"
+                elif shape.IsArray then enclosed "[" (Seq.cast<obj> (value :?> Array)) "]"
+                elif typeof<Collections.IEnumerable>.IsAssignableFrom shape then
+                    Emit "[" :: enumeratedSteps (value :?> Collections.IEnumerable) @ [ Emit "]" ]
+                else [ Emit ("?" + shape.Name) ]
+
+        let shapeOf (builder : StringBuilder) (root : obj) =
+            let pending = Collections.Generic.Stack<ShapeStep> ()
+            pending.Push (Visit root)
+            while pending.Count > 0 do
+                match pending.Pop () with
+                | Emit text -> builder.Append text |> ignore
+                | Visit value -> for step in List.rev (shapeSteps value) do pending.Push step
+
+        type BlockShape =
+            { Offset : int
+              Shape : string }
+
+        let blockShapes (edition : Edition) (unit : Unit') (text : string) =
+            let state = wdiff_tokenizer_all wdiff_tokenizer_init text
+            let environment = environmentOf edition
+            let topDown = (match unit with TopDown -> true | BottomUp -> false)
+            let shapeOfResult (result : ParseResult) =
+                let builder = StringBuilder ()
+                match result with
+                | Ok statement -> shapeOf builder (box statement)
+                | Error errors ->
+                    builder.Append "error" |> ignore
+                    for (_, error) in errors do
+                        builder.Append ' ' |> ignore
+                        shapeOf builder (box error)
+                builder.ToString ()
+            let testHeader (block : LineTokens Block) =
+                block.block
+                |> Seq.tryFindIndex (fun line -> line.Length > 0)
+                |> Option.bind (fun index ->
+                    match snd block.block.[index].[0] with
+                    | TokVar ("test", _) -> Some index
+                    | _ -> None)
+            state.blocks
+            |> List.map (fun block ->
+                match testHeader block with
+                | Some header ->
+                    let body = [ for index in header + 1 .. block.block.Length - 1 -> state.lines_text.[block.offset + index] ]
+                    let headerText = state.lines_text.[block.offset + header]
+                    let sameLine =
+                        block.block.[header]
+                        |> Seq.tryFind (fun (_, token) -> match token with TokOperator ("=", _) -> true | _ -> false)
+                        |> Option.map (fun (range, _) -> headerText.Substring range.nearTo)
+                        |> Option.defaultValue ""
+                    let synthetic = String.concat "\n" (("inl test_block_body () =" + sameLine) :: body)
+                    let inner = wdiff_tokenizer_all wdiff_tokenizer_init synthetic
+                    let shape =
+                        match inner.blocks with
+                        | first :: _ ->
+                            "test " + shapeOfResult (parse_block environment topDown first.block).result
+                        | [] -> "test empty"
+                    { Offset = block.offset; Shape = shape }
+                | None -> { Offset = block.offset; Shape = shapeOfResult (parse_block environment topDown block.block).result })
+
+        let shapeKeyOf (shapes : BlockShape list) =
+            shapes |> List.map (fun shape -> shape.Shape) |> String.concat "\n"
+
+        type ParseAgreement =
+            | SameParse
+            | ParseDiffers of firstBlockLine : int
+            | OriginalHasErrors
+
+        let compareParses (edition : Edition) (unit : Unit') (before : string) (after : string) =
+            let left = blockShapes edition unit before |> List.filter (fun block -> block.Shape <> "error")
+            let leftHasErrors = left |> List.exists (fun block -> block.Shape.StartsWith "error (" || block.Shape.StartsWith "test error (")
+            let right = blockShapes edition unit after |> List.filter (fun block -> block.Shape <> "error")
+            let pairs = List.zip (List.truncate (min left.Length right.Length) left) (List.truncate (min left.Length right.Length) right)
+            match pairs |> List.tryFind (fun (a, b) -> a.Shape <> b.Shape && not (a.Shape.StartsWith "error (") && not (a.Shape.StartsWith "test error (")) with
+            | Some (a, _) when not leftHasErrors || left.Length = right.Length -> ParseDiffers (a.Offset + 1)
+            | _ when left.Length <> right.Length && leftHasErrors -> OriginalHasErrors
+            | Some (a, _) -> ParseDiffers (a.Offset + 1)
+            | None when left.Length <> right.Length ->
+                let line = if left.Length < right.Length then right.[left.Length].Offset else left.[right.Length].Offset
+                ParseDiffers (line + 1)
+            | None -> SameParse
+
+    module FormatterSpacing =
+
+        open FormatterLexed
+
+        type Respacing =
+            | OperatorSpace
+            | SeparatorTight
+            | SeparatorSpace
+            | ApplicationSpace
+            | BracketInnerSpace
+            | EmptyBracketTight
+            | ConstraintBraceTight
+            | OperatorSectionTight
+
+        type GapRule =
+            | AsWritten
+            | Fixed of Respacing * width : int
+
+        type LineChange =
+            | TrailingWhitespace
+            | Respaced of Respacing
+            | GuardKept
+
+        type SpacedLine =
+            { Line : Line<Spaced>
+              Changes : LineChange list }
+
+        let binaryOperator token =
+            match token with
+            | TokOperator (name, _) -> Some name
+            | _ -> None
+
+        let isUnary token =
+            match token with
+            | TokUnaryOperator _ -> true
+            | _ -> false
+
+        let isOpening shape token =
+            match token with
+            | TokParenthesis (kind, Open) -> kind = shape
+            | _ -> false
+
+        let isClosing shape token =
+            match token with
+            | TokParenthesis (kind, Close) -> kind = shape
+            | _ -> false
+
+        let isAnyOpening token =
+            match token with
+            | TokParenthesis (_, Open) -> true
+            | _ -> false
+
+        let isSeparator name = name = "," || name = ";"
+
+        let isSequence name = name = "."
+
+        let appliesToParenthesis token =
+            match token with
+            | TokVar _ -> true
+            | TokParenthesis (Round, Close) -> true
+            | _ -> false
+
+        let constraintBraces (lexemes : Lexeme[]) =
+            let marks = Array.zeroCreate lexemes.Length
+            let mutable inForall = false
+            let mutable inInstanceHead = false
+            let mutable braceDepth = 0
+            lexemes
+            |> Array.iteri (fun index lexeme ->
+                match lexeme.Token with
+                | TokKeyword SpecForall -> inForall <- true
+                | TokKeyword SpecInstance when index = 0 -> inInstanceHead <- true
+                | TokOperator (".", _) when inForall && braceDepth = 0 -> inForall <- false
+                | TokOperator ("=", _) when inInstanceHead && braceDepth = 0 -> inInstanceHead <- false
+                | TokParenthesis (Curly, Open) when inForall || inInstanceHead ->
+                    braceDepth <- braceDepth + 1
+                    marks.[index] <- true
+                | TokParenthesis (Curly, Close) when braceDepth > 0 ->
+                    braceDepth <- braceDepth - 1
+                    marks.[index] <- true
+                | _ -> ())
+            marks
+
+        let gapRule (lexemes : Lexeme[]) (constraintMarks : bool[]) (index : int) =
+            let left = lexemes.[index - 1]
+            let right = lexemes.[index]
+            let at offset = if index + offset >= 0 && index + offset < lexemes.Length then Some lexemes.[index + offset].Token else None
+            let macroInterior =
+                (right.InsideMacro && right.Token <> TokMacroOpen) || (left.InsideMacro && left.Token <> TokMacroClose)
+            match left.Before, right.Before with
+            | _, Embedded _ -> AsWritten
+            | _ when macroInterior -> AsWritten
+            | _ when isUnary left.Token -> AsWritten
+            | _ ->
+                let sectionOpen = isOpening Round left.Token && (binaryOperator right.Token).IsSome && (at 1 |> Option.exists (isClosing Round))
+                let sectionClose = isClosing Round right.Token && (binaryOperator left.Token).IsSome && (at -2 |> Option.exists (isOpening Round))
+                let innerOperator =
+                    ((binaryOperator left.Token).IsSome && (match right.Token with TokParenthesis (_, Close) -> true | _ -> false))
+                    || ((binaryOperator right.Token).IsSome && isAnyOpening left.Token)
+                if sectionOpen || sectionClose then Fixed (OperatorSectionTight, 0)
+                elif innerOperator then AsWritten
+                else
+                    match binaryOperator left.Token, binaryOperator right.Token with
+                    | _, Some name when isSeparator name -> Fixed (SeparatorTight, 0)
+                    | Some name, _ when isSeparator name -> Fixed (SeparatorSpace, 1)
+                    | Some name, _ when isSequence name -> AsWritten
+                    | _, Some name when isSequence name -> AsWritten
+                    | Some _, _ -> Fixed (OperatorSpace, 1)
+                    | _, Some _ -> Fixed (OperatorSpace, 1)
+                    | None, None ->
+                        let constraintGap = constraintMarks.[index - 1] && isAnyOpening left.Token || constraintMarks.[index] && not (isAnyOpening right.Token)
+                        if constraintGap then Fixed (ConstraintBraceTight, 0)
+                        elif appliesToParenthesis left.Token && isOpening Round right.Token && left.Span.NearTo = right.Span.From then Fixed (ApplicationSpace, 1)
+                        elif isOpening Curly left.Token && isClosing Curly right.Token then Fixed (EmptyBracketTight, 0)
+                        elif isOpening Square left.Token && isClosing Square right.Token then Fixed (EmptyBracketTight, 0)
+                        elif isOpening Curly left.Token || isOpening Square left.Token then Fixed (BracketInnerSpace, 1)
+                        elif isClosing Curly right.Token || isClosing Square right.Token then Fixed (BracketInnerSpace, 1)
+                        else AsWritten
+
+        let tokenSignature (lexemes : Lexeme[]) =
+            lexemes |> Array.map (fun lexeme -> lexeme.Text.Text, (sprintf "%A" lexeme.Token).GetHashCode ())
+
+        let tokenKinds (lexemes : Lexeme[]) =
+            lexemes
+            |> Array.map (fun lexeme ->
+                let kind =
+                    match lexeme.Token with
+                    | TokOperator _ -> "op"
+                    | TokUnaryOperator _ -> "unary"
+                    | TokVar _ -> "var"
+                    | TokSymbol _ -> "symbol"
+                    | TokKeyword keyword -> sprintf "%A" keyword
+                    | TokParenthesis (shape, state) -> sprintf "%A%A" shape state
+                    | other -> (sprintf "%A" other).Split(' ').[0]
+                kind, lexeme.Text.Text)
+
+        let respaceLine (line : Line<AsRead>) : Line<Spaced> * LineChange list * string option =
+            match line.Shape with
+            | Blank | Opaque _ -> { Number = line.Number; Shape = line.Shape }, [], None
+            | Remark text ->
+                let trimmed = trimmedTail text
+                if trimmed.Length = text.Length then { Number = line.Number; Shape = line.Shape }, [], None
+                else
+                    match lexLine lex_state_init trimmed.Text with
+                    | Remark _, _ -> { Number = line.Number; Shape = Remark trimmed }, [ TrailingWhitespace ], None
+                    | Blank, _ -> { Number = line.Number; Shape = Blank }, [ TrailingWhitespace ], None
+                    | _ -> { Number = line.Number; Shape = line.Shape }, [ GuardKept ], Some trimmed.Text
+            | Code (indent, lexemes, tail) ->
+                let marks = constraintBraces lexemes
+                let changes = ResizeArray ()
+                let respaced =
+                    lexemes
+                    |> Array.mapi (fun index lexeme ->
+                        if index = 0 then lexeme
+                        else
+                            match gapRule lexemes marks index, lexeme.Before with
+                            | Fixed (reason, width), Whitespace current when current <> width ->
+                                changes.Add (Respaced reason)
+                                { lexeme with Before = Whitespace width }
+                            | _ -> lexeme)
+                let trimmed = trimmedTail tail
+                if trimmed.Length <> tail.Length then changes.Add TrailingWhitespace
+                let candidate = { Number = line.Number; Shape = Code (indent, respaced, trimmed) }
+                if changes.Count = 0 then candidate, [], None
+                else
+                    let text = render candidate
+                    match lexLine lex_state_init text with
+                    | Code (_, relexed, _), _ when tokenKinds relexed = tokenKinds lexemes -> candidate, List.ofSeq changes, None
+                    | _ ->
+                        let original = { Number = line.Number; Shape = Code (indent, lexemes, trimmed) }
+                        original, [ GuardKept ], Some text
+
+        let respace (source : Source<AsRead>) =
+            let results = source.SourceLines |> Array.map respaceLine
+            let lines = results |> Array.map (fun (line, _, _) -> line)
+            let mutable last = lines.Length
+            while last > 0 && (match lines.[last - 1].Shape with Blank -> true | _ -> false) do
+                last <- last - 1
+            let texts = lines.[0 .. last - 1] |> Array.map render
+            let spaced : Source<Spaced> = relex source texts
+            let changes = results |> Array.map (fun (line, changes, guard) -> line.Number, changes, guard)
+            spaced, changes
+
+    module FormatterCheck =
+
+        open FormatterLexed
+
+        let lineLimit = 120
+
+        type LiteralKind =
+            | PlainString
+            | Macro
+            | RawString
+            | Character
+
+        type Construct =
+            | LiteralTooWide of LiteralKind * width : int
+            | CommentTail
+            | OpaqueText
+            | DefinitionHead
+            | Binding
+            | Pipeline
+            | MatchArm
+            | IfThenElse
+            | Record
+            | UnionCase
+            | TypeDefinition
+            | Application
+
+        type Overflow =
+            { Line : int
+              Width : int
+              Construct : Construct }
+
+        let constructName construct =
+            match construct with
+            | LiteralTooWide (PlainString, _) -> "literal-string"
+            | LiteralTooWide (Macro, _) -> "literal-macro"
+            | LiteralTooWide (RawString, _) -> "literal-raw"
+            | LiteralTooWide (Character, _) -> "literal-char"
+            | CommentTail -> "comment"
+            | OpaqueText -> "opaque"
+            | DefinitionHead -> "head"
+            | Binding -> "binding"
+            | Pipeline -> "pipeline"
+            | MatchArm -> "arm"
+            | IfThenElse -> "if"
+            | Record -> "record"
+            | UnionCase -> "union-case"
+            | TypeDefinition -> "type"
+            | Application -> "application"
+
+        let literalSpans (lexemes : Lexeme[]) =
+            let spans = ResizeArray ()
+            let mutable opened = None
+            for lexeme in lexemes do
+                match lexeme.Token, opened with
+                | TokMacroOpen, None -> opened <- Some (Macro, lexeme.Span.From)
+                | TokStringOpen, None -> opened <- Some (PlainString, lexeme.Span.From)
+                | TokMacroClose, Some (Macro, from) ->
+                    spans.Add (Macro, lexeme.Span.NearTo - from)
+                    opened <- None
+                | TokStringClose, Some (PlainString, from) ->
+                    spans.Add (PlainString, lexeme.Span.NearTo - from)
+                    opened <- None
+                | TokValue (LitString _), None -> spans.Add (RawString, lexeme.Span.NearTo - lexeme.Span.From)
+                | TokValue (LitChar _), None -> spans.Add (Character, lexeme.Span.NearTo - lexeme.Span.From)
+                | _ -> ()
+            List.ofSeq spans
+
+        let topLevelOperators (lexemes : Lexeme[]) =
+            let mutable depth = 0
+            [ for lexeme in lexemes do
+                  match lexeme.Token with
+                  | _ when lexeme.InsideMacro -> ()
+                  | TokParenthesis (_, Open) -> depth <- depth + 1
+                  | TokParenthesis (_, Close) -> depth <- depth - 1
+                  | TokOperator (name, _) when depth = 0 -> yield name, lexeme
+                  | TokKeyword keyword when depth = 0 -> yield sprintf "%A" keyword, lexeme
+                  | _ -> () ]
+
+        let classify (indent : int) (lexemes : Lexeme[]) =
+            let room = lineLimit - indent - 4
+            let codeEnd = lexemes.[lexemes.Length - 1].Span.NearTo
+            match literalSpans lexemes |> List.tryFind (fun (_, width) -> width > room) with
+            | Some (kind, width) -> LiteralTooWide (kind, width)
+            | None when codeEnd <= lineLimit -> CommentTail
+            | None ->
+                let operators = topLevelOperators lexemes
+                let has name = operators |> List.exists (fun (found, _) -> found = name)
+                match lexemes.[0].Token with
+                | TokKeyword (SpecInl | SpecLet | SpecAnd) ->
+                    match operators |> List.tryFind (fun (name, _) -> name = "=") with
+                    | Some (_, equals) when equals.Span.NearTo < codeEnd && equals.Span.NearTo <= lineLimit -> Binding
+                    | _ -> DefinitionHead
+                | TokKeyword (SpecType | SpecNominal | SpecUnion | SpecPrototype | SpecInstance) -> TypeDefinition
+                | TokOperator ("|", _) -> if has "=>" then MatchArm else UnionCase
+                | TokKeyword (SpecIf | SpecElif | SpecThen | SpecElse) -> IfThenElse
+                | _ when has "SpecIf" -> IfThenElse
+                | _ when has "|>" || has "||>" || has "|||>" -> Pipeline
+                | TokParenthesis (Curly, Open) -> Record
+                | _ -> Application
+
+        let overflows (source : Source<'phase>) =
+            source.SourceLines
+            |> Array.choose (fun line ->
+                let text = render line
+                if displayWidth text <= lineLimit then None
+                else
+                    let construct =
+                        match line.Shape with
+                        | Code (indent, lexemes, _) -> classify indent lexemes
+                        | Remark _ -> CommentTail
+                        | Opaque _ | Blank -> OpaqueText
+                    Some { Line = line.Number; Width = displayWidth text; Construct = construct })
+
+    module FormatterConvert =
+
+        open FormatterLexed
+
+        type Spelling =
+            | Words
+            | Symbols
+
+        let symbolOf keyword =
+            match keyword with
+            | SpecInl -> Some ":="
+            | SpecLet -> Some ":~"
+            | SpecRec -> Some "^"
+            | SpecAnd -> Some ":&"
+            | SpecIn -> Some ";;"
+            | SpecFun -> Some "\\"
+            | SpecFunction -> Some "\\|"
+            | SpecForall -> Some "\\*"
+            | SpecExists -> Some "\\?"
+            | SpecIf -> Some "?"
+            | SpecThen -> Some "?>"
+            | SpecElif -> Some "|?"
+            | SpecElse -> Some "|:"
+            | SpecMatch -> Some "?="
+            | SpecTypecase -> Some "?:"
+            | SpecWith -> Some "?|"
+            | SpecWithout -> Some "-|"
+            | SpecAs -> Some "&="
+            | SpecWhen -> Some "?&"
+            | SpecType -> Some ":=="
+            | SpecNominal -> Some ":!"
+            | SpecUnion -> Some ":|"
+            | SpecPrototype -> Some ":?"
+            | SpecInstance -> Some ":+"
+            | SpecOpen -> Some ":<"
+            | SpecReal -> Some "~>"
+            | SpecJoin -> Some "~~"
+            | SpecJoinBackend -> Some "~~>"
+            | SpecInm | SpecInb | SpecWildcard -> None
+
+        let wordOf keyword =
+            match keyword with
+            | SpecIn -> "in" | SpecAnd -> "and" | SpecFun -> "fun" | SpecMatch -> "match" | SpecTypecase -> "typecase"
+            | SpecFunction -> "function" | SpecWith -> "with" | SpecWithout -> "without" | SpecAs -> "as" | SpecWhen -> "when"
+            | SpecInl -> "inl" | SpecForall -> "forall" | SpecExists -> "exists" | SpecLet -> "let" | SpecInm -> "inm"
+            | SpecInb -> "inb" | SpecRec -> "rec" | SpecIf -> "if" | SpecThen -> "then" | SpecElif -> "elif" | SpecElse -> "else"
+            | SpecJoin -> "join" | SpecJoinBackend -> "join_backend" | SpecType -> "type" | SpecNominal -> "nominal"
+            | SpecReal -> "real" | SpecUnion -> "union" | SpecOpen -> "open" | SpecWildcard -> "_" | SpecPrototype -> "prototype"
+            | SpecInstance -> "instance"
+
+        let isWordText (text : string) = text.Length > 0 && (System.Char.IsLetterOrDigit text.[0] || text.[0] = '_')
+
+        let respell (target : Spelling) (lexeme : Lexeme) =
+            if lexeme.InsideMacro then None
+            else
+                match target, lexeme.Token with
+                | Symbols, TokKeyword keyword when isWordText lexeme.Text.Text -> symbolOf keyword
+                | Symbols, TokValue (LitBool value) when isWordText lexeme.Text.Text -> Some (if value then "!+" else "!-")
+                | Words, TokKeyword keyword when not (isWordText lexeme.Text.Text) -> Some (wordOf keyword)
+                | Words, TokValue (LitBool value) when not (isWordText lexeme.Text.Text) -> Some (if value then "true" else "false")
+                | _ -> None
+
+        let tokenIdentity (token : SpiralToken) =
+            match token with
+            | TokKeyword keyword -> sprintf "keyword %A" keyword
+            | TokValue (LitBool value) -> sprintf "bool %b" value
+            | TokOperator (name, _) -> "op " + name
+            | TokUnaryOperator (name, _) -> "unary " + name
+            | other -> sprintf "%A" other
+
+        let fuses (left : string) (right : string) =
+            let last = left.[left.Length - 1]
+            let first = right.[0]
+            (is_var_char last && is_var_char first) || (is_operator_char last && is_operator_char first && first <> ',')
+
+        type LineConversion =
+            | Unchanged
+            | Converted of string
+            | Rejected of attempted : string
+
+        let convertLine (target : Spelling) (line : Line<'phase>) =
+            match line.Shape with
+            | Code (_, lexemes, tail) ->
+                let pieces = lexemes |> Array.map (fun lexeme -> lexeme, respell target lexeme)
+                if pieces |> Array.forall (fun (_, spelled) -> spelled.IsNone) then Unchanged
+                else
+                    let builder = System.Text.StringBuilder ()
+                    pieces
+                    |> Array.iteri (fun index (lexeme, spelled) ->
+                        let text = defaultArg spelled lexeme.Text.Text
+                        if index = 0 then builder.Append (' ', lexeme.Span.From) |> ignore
+                        else
+                            let previousEnd = (fst pieces.[index - 1]).Span.NearTo
+                            let gap = lexeme.Span.From - previousEnd
+                            let previousText = match snd pieces.[index - 1] with Some t -> t | None -> (fst pieces.[index - 1]).Text.Text
+                            let needsSpace = gap = 0 && (spelled.IsSome || (snd pieces.[index - 1]).IsSome) && fuses previousText text
+                            match lexeme.Before with
+                            | Embedded embedded -> builder.Append embedded.Text |> ignore
+                            | Whitespace width -> builder.Append (' ', (if needsSpace then max 1 width else width)) |> ignore
+                        builder.Append text |> ignore)
+                    builder.Append tail.Text |> ignore
+                    let attempted = builder.ToString ()
+                    match lexLine lex_state_init attempted with
+                    | Code (_, relexed, _), _ when (relexed |> Array.map (fun l -> tokenIdentity l.Token)) = (lexemes |> Array.map (fun l -> tokenIdentity l.Token)) -> Converted attempted
+                    | _ -> Rejected attempted
+            | _ -> Unchanged
+
+        let convert (target : Spelling) (source : Source<'phase>) =
+            let results = source.SourceLines |> Array.map (fun line -> line, convertLine target line)
+            let texts =
+                results
+                |> Array.map (fun (line, result) ->
+                    match result with
+                    | Converted text -> text
+                    | Unchanged | Rejected _ -> render line)
+            let rejected = results |> Array.choose (fun (line, result) -> match result with Rejected text -> Some (line.Number, text) | _ -> None)
+            let converted = results |> Array.filter (fun (_, result) -> match result with Converted _ -> true | _ -> false) |> Array.length
+            texts, converted, rejected
+
+    module FormatterFlatten =
+
+        open System.Text
+        open FormatterLexed
+
+        type Unflattenable =
+            | MultilineLiteralOrComment
+            | CommentWithDelimiters
+            | IndentationBelowBlock
+
+        type FlatLine =
+            | Kept of string
+            | Joined of string
+
+        type FlatBlock =
+            | Flattened of FlatLine list * original : string list
+            | Refused of Unflattenable * firstLine : int * lines : string list
+
+        type CodeLine =
+            { Number : int
+              Indent : int
+              Lexemes : Lexeme[]
+              Remark : string option
+              Leading : string list }
+
+        let blankMarker = "(* *)"
+
+        let leadingPrefix (line : CodeLine) = if line.Leading.IsEmpty then "" else String.concat " " line.Leading + " "
+
+        let codeText (lexemes : Lexeme[]) =
+            let builder = StringBuilder ()
+            lexemes
+            |> Array.iteri (fun index lexeme ->
+                if index > 0 then
+                    match lexeme.Before with
+                    | Whitespace count -> builder.Append (' ', count) |> ignore
+                    | Embedded text -> builder.Append text.Text |> ignore
+                builder.Append lexeme.Text.Text |> ignore)
+            builder.ToString ()
+
+        let inlineComment (text : string) =
+            let body = text.Trim ()
+            if body.Contains "(*" || body.Contains "*)" then None
+            else Some ("(* " + body + " *)")
+
+        let isStatementStart (lexemes : Lexeme[]) =
+            match lexemes.[0].Token with
+            | TokKeyword (SpecInl | SpecLet | SpecOpen) -> true
+            | _ -> false
+
+        let startsAsContinuation (lexemes : Lexeme[]) =
+            match lexemes.[0].Token with
+            | TokOperator _ -> true
+            | TokKeyword (SpecThen | SpecElse | SpecElif | SpecWith | SpecWhen | SpecIn | SpecAs | SpecAnd) -> true
+            | TokParenthesis (_, Close) -> true
+            | _ -> false
+
+        type Opening =
+            | BodyOpening
+            | ItemsOpening
+            | GroupOpening
+            | NoOpening
+
+        let unclosedCurly (lexemes : Lexeme[]) =
+            let depth =
+                lexemes
+                |> Array.fold (fun depth lexeme ->
+                    match lexeme.Token with
+                    | TokParenthesis (Curly, Open) when not lexeme.InsideMacro -> depth + 1
+                    | TokParenthesis (Curly, Close) when not lexeme.InsideMacro -> depth - 1
+                    | _ -> depth) 0
+            depth > 0
+
+        let openingOf (lexemes : Lexeme[]) =
+            match lexemes.[lexemes.Length - 1].Token with
+            | TokKeyword SpecWith when unclosedCurly lexemes -> ItemsOpening
+            | TokOperator (("=" | "=>"), _) -> BodyOpening
+            | TokKeyword (SpecThen | SpecElse | SpecIn | SpecReal | SpecFunction | SpecWith | SpecJoin | SpecJoinBackend) -> BodyOpening
+            | TokParenthesis ((Curly | Square), Open) -> ItemsOpening
+            | TokParenthesis (Round, Open) -> GroupOpening
+            | _ -> NoOpening
+
+        let lambdaStart (lexemes : Lexeme[]) =
+            match lexemes.[lexemes.Length - 1].Token with
+            | TokOperator ("=>", _) ->
+                let arm = match lexemes.[0].Token with TokOperator ("|", _) -> true | _ -> false
+                if arm then None
+                else
+                    match lexemes |> Array.tryFindIndexBack (fun lexeme -> lexeme.Token = TokKeyword SpecFun || lexeme.Token = TokKeyword SpecFunction) with
+                    | Some index -> Some index
+                    | None -> lexemes |> Array.tryFindIndex (fun lexeme -> lexeme.Token = TokKeyword SpecForall)
+            | _ -> None
+
+        let separatorAfter (typeLevel : bool) (context : Opening) (element : CodeLine) (lastLine : CodeLine) (next : CodeLine) =
+            if startsAsContinuation next.Lexemes then " "
+            else
+                match lastLine.Lexemes.[lastLine.Lexemes.Length - 1].Token with
+                | TokOperator _ | TokParenthesis (_, Open) -> " "
+                | TokKeyword (SpecThen | SpecElse | SpecIn | SpecWith | SpecFun) -> " "
+                | _ when context = ItemsOpening -> "; "
+                | _ when typeLevel -> " "
+                | _ when context = NoOpening -> " "
+                | _ when isStatementStart element.Lexemes -> " in "
+                | _ -> " . "
+
+        let roundDepth (lexemes : Lexeme[]) =
+            lexemes
+            |> Array.fold (fun depth lexeme ->
+                match lexeme.Token with
+                | TokParenthesis (Round, Open) when not lexeme.InsideMacro -> depth + 1
+                | TokParenthesis (Round, Close) when not lexeme.InsideMacro -> depth - 1
+                | _ -> depth) 0
+
+        let itemDepth (lexemes : Lexeme[]) =
+            lexemes
+            |> Array.fold (fun depth lexeme ->
+                match lexeme.Token with
+                | TokParenthesis ((Curly | Square), Open) when not lexeme.InsideMacro -> depth + 1
+                | TokParenthesis ((Curly | Square), Close) when not lexeme.InsideMacro -> depth - 1
+                | _ -> depth) 0
+
+        let remarkSuffix (line : CodeLine) = match line.Remark with Some comment when comment <> "" -> " " + comment | _ -> ""
+
+        let rec flattenRegion (typeLevel : bool) (context : Opening) (lines : CodeLine list) : string =
+            match lines with
+            | [] -> ""
+            | first :: _ ->
+                let column = first.Indent
+                let rec split (rest : CodeLine list) =
+                    match rest with
+                    | [] -> []
+                    | head :: tail ->
+                        let inside = tail |> List.takeWhile (fun line -> line.Indent > column)
+                        (head, inside) :: split (List.skip inside.Length tail)
+                let rec elementText (head : CodeLine) (inside : CodeLine list) =
+                    let prefix = leadingPrefix head
+                    if prefix <> "" then prefix + elementText { head with Leading = [] } inside else
+                    let headText = codeText head.Lexemes + remarkSuffix head
+                    if inside.IsEmpty then headText
+                    else
+                        let opening =
+                            match openingOf head.Lexemes with
+                            | BodyOpening when context = ItemsOpening && head.Lexemes.[head.Lexemes.Length - 1].Token = TokKeyword SpecWith -> ItemsOpening
+                            | other -> other
+                        let quotesTerm =
+                            head.Lexemes.Length >= 2
+                            && (match head.Lexemes.[head.Lexemes.Length - 2].Token with TokUnaryOperator ("`", _) -> true | _ -> false)
+                        let innerTypeLevel = typeLevel && not quotesTerm
+                        let trailingClosers =
+                            List.rev inside |> List.takeWhile (fun line -> match line.Lexemes.[0].Token with TokParenthesis (Round, Close) -> true | _ -> false) |> List.rev
+                        let beforeClosers = List.take (inside.Length - trailingClosers.Length) inside
+                        let unclosedRound = roundDepth head.Lexemes > 0 && roundDepth head.Lexemes + (beforeClosers |> List.sumBy (fun line -> roundDepth line.Lexemes)) > 0
+                        let closers, bodyLines = if unclosedRound then trailingClosers, beforeClosers else [], inside
+                        let closerText = closers |> List.map (fun line -> codeText line.Lexemes + remarkSuffix line) |> String.concat " "
+                        let withClosers (text : string) = if closerText = "" then text else text + " " + closerText
+                        if bodyLines.IsEmpty then withClosers headText else
+                        let body = flattenRegion innerTypeLevel opening bodyLines
+                        let armsOrCases = match (List.head bodyLines).Lexemes.[0].Token with TokOperator ("|", _) -> true | _ -> false
+                        let armColumn = (List.head bodyLines).Indent
+                        let operatorAfterArms =
+                            if not armsOrCases || innerTypeLevel || opening <> BodyOpening then None
+                            else
+                                bodyLines
+                                |> List.tryFindIndex (fun line -> line.Indent = armColumn && (match line.Lexemes.[0].Token with TokOperator (name, _) -> name <> "|" | _ -> false))
+                                |> Option.bind (fun at ->
+                                    head.Lexemes
+                                    |> Array.tryFindIndexBack (fun lexeme -> not lexeme.InsideMacro && (lexeme.Token = TokKeyword SpecFunction || lexeme.Token = TokKeyword SpecMatch))
+                                    |> Option.map (fun opener -> at, opener))
+                        match operatorAfterArms with
+                        | Some (at, opener) when closers.IsEmpty ->
+                            let arms = flattenRegion innerTypeLevel opening (List.take at bodyLines)
+                            let after = flattenRegion typeLevel NoOpening (List.skip at bodyLines)
+                            let before = if opener = 0 then "" else codeText head.Lexemes.[0 .. opener - 1] + " "
+                            before + "(" + codeText head.Lexemes.[opener ..] + " " + arms + ")" + remarkSuffix head + " " + after
+                        | _ ->
+                        match opening with
+                        | BodyOpening when innerTypeLevel || armsOrCases -> withClosers (headText + " " + body)
+                        | BodyOpening ->
+                            match lambdaStart head.Lexemes with
+                            | Some index when not unclosedRound ->
+                                let before = if index = 0 then "" else codeText head.Lexemes.[0 .. index - 1] + " "
+                                before + "(" + codeText head.Lexemes.[index ..] + " (" + body + "))" + remarkSuffix head
+                            | _ -> withClosers (headText + " (" + body + ")")
+                        | ItemsOpening | GroupOpening | NoOpening -> withClosers (headText + " " + body)
+                let opensScope (head : CodeLine) =
+                    head.Lexemes
+                    |> Array.exists (fun lexeme ->
+                        not lexeme.InsideMacro
+                        && (match lexeme.Token with
+                            | TokKeyword (SpecFun | SpecFunction | SpecMatch | SpecIf | SpecInl | SpecLet) -> true
+                            | _ -> false))
+                let continues (last : CodeLine) (next : CodeLine) =
+                    startsAsContinuation next.Lexemes
+                    || (match last.Lexemes.[last.Lexemes.Length - 1].Token with
+                        | TokOperator _ | TokParenthesis (_, Open) -> true
+                        | TokKeyword (SpecThen | SpecElse | SpecIn | SpecWith | SpecFun) -> true
+                        | _ -> false)
+                let items =
+                    let grouped = ResizeArray<ResizeArray<CodeLine * CodeLine list>> ()
+                    let rec absorbBody (elements : (CodeLine * CodeLine list) list) =
+                        match elements with
+                        | (head, []) :: rest when not rest.IsEmpty && (match head.Lexemes.[head.Lexemes.Length - 1].Token with TokOperator ("=", _) | TokKeyword SpecJoin -> true | _ -> false) ->
+                            [ (head, rest |> List.collect (fun (h, i) -> h :: i)) ]
+                        | (head, inside) :: rest when not rest.IsEmpty && not inside.IsEmpty && (let last = List.last inside in match last.Lexemes.[last.Lexemes.Length - 1].Token with TokOperator ("=", _) | TokKeyword SpecJoin -> true | _ -> false) ->
+                            let last = List.last inside
+                            let absorbed = rest |> List.collect (fun (h, i) -> h :: i)
+                            let shift = last.Indent + 4 - (absorbed |> List.map (fun line -> line.Indent) |> List.min)
+                            [ (head, inside @ (absorbed |> List.map (fun line -> { line with Indent = line.Indent + max 0 shift }))) ]
+                        | (head, inside) :: rest when not rest.IsEmpty && (let last = (match List.tryLast inside with Some l -> l | None -> head) in match last.Lexemes.[last.Lexemes.Length - 1].Token with TokKeyword (SpecThen | SpecElse) | TokOperator ("=>", _) -> true | _ -> false)
+                                                      && not (startsAsContinuation (fst (List.head rest)).Lexemes) ->
+                            let last = match List.tryLast inside with Some l -> l | None -> head
+                            let taken =
+                                let balanceOf (h : CodeLine, i : CodeLine list) = (h :: i) |> List.sumBy (fun line -> itemDepth line.Lexemes + roundDepth line.Lexemes)
+                                let opensArms (h : CodeLine, i : CodeLine list) =
+                                    let lastLine = match List.tryLast i with Some line -> line | None -> h
+                                    match lastLine.Lexemes.[lastLine.Lexemes.Length - 1].Token with
+                                    | TokKeyword (SpecWith | SpecFunction) -> true
+                                    | _ -> false
+                                let isArm (h : CodeLine) = match h.Lexemes.[0].Token with TokOperator ("|", _) -> true | _ -> false
+                                let rec take (items : (CodeLine * CodeLine list) list) (openIfs : int) (balance : int) (armsOpen : bool) =
+                                    match items with
+                                    | (h, i) :: tail when balance > 0 && balance + balanceOf (h, i) >= 0 ->
+                                        (h, i) :: take tail openIfs (balance + balanceOf (h, i)) (armsOpen || opensArms (h, i))
+                                    | (h, i) :: tail when armsOpen && isArm h ->
+                                        (h, i) :: take tail openIfs (balance + balanceOf (h, i)) true
+                                    | (h, i) :: tail when not (startsAsContinuation h.Lexemes) ->
+                                        let opensIf = h.Lexemes.[0].Token = TokKeyword SpecIf
+                                        (h, i) :: take tail (if opensIf then openIfs + 1 else openIfs) (balance + balanceOf (h, i)) (armsOpen || opensArms (h, i))
+                                    | (h, i) :: tail when openIfs > 0 && (h.Lexemes.[0].Token = TokKeyword SpecElse || h.Lexemes.[0].Token = TokKeyword SpecElif || h.Lexemes.[0].Token = TokKeyword SpecThen) ->
+                                        (h, i) :: take tail (if h.Lexemes.[0].Token = TokKeyword SpecElse then openIfs - 1 else openIfs) (balance + balanceOf (h, i)) armsOpen
+                                    | _ -> []
+                                take rest 0 0 false
+                            let remaining = List.skip taken.Length rest
+                            let absorbed = taken |> List.collect (fun (h, i) -> h :: i)
+                            let shift = last.Indent + 4 - (absorbed |> List.map (fun line -> line.Indent) |> List.min)
+                            (head, inside @ (absorbed |> List.map (fun line -> { line with Indent = line.Indent + max 0 shift }))) :: absorbBody remaining
+                        | element :: rest -> element :: absorbBody rest
+                        | [] -> []
+                    let mutable openBrackets = 0
+                    for (head, inside) in absorbBody (split lines) do
+                        let lastOfCurrent =
+                            if grouped.Count = 0 then None
+                            else
+                                let (h, i) = grouped.[grouped.Count - 1].[grouped.[grouped.Count - 1].Count - 1]
+                                Some (match List.tryLast i with Some line -> line | None -> h)
+                        let balance = itemDepth head.Lexemes + (inside |> List.sumBy (fun line -> itemDepth line.Lexemes))
+                        match lastOfCurrent with
+                        | Some last when openBrackets > 0 || continues last head ->
+                            grouped.[grouped.Count - 1].Add (head, inside)
+                            openBrackets <- openBrackets + balance
+                        | _ ->
+                            grouped.Add (ResizeArray [ (head, inside) ])
+                            openBrackets <- max 0 balance
+                    grouped |> Seq.map List.ofSeq |> List.ofSeq
+                let statementRegion = not typeLevel && context <> ItemsOpening && context <> NoOpening && items.Length > 1
+                let openerIndex (lexemes : Lexeme[]) =
+                    let mutable depth = 0
+                    let mutable found = None
+                    for index in 0 .. lexemes.Length - 1 do
+                        let lexeme = lexemes.[index]
+                        if not lexeme.InsideMacro && found.IsNone then
+                            match lexeme.Token with
+                            | TokParenthesis (_, Open) -> depth <- depth + 1
+                            | TokParenthesis (_, Close) -> depth <- max 0 (depth - 1)
+                            | TokKeyword (SpecFun | SpecFunction | SpecMatch | SpecIf | SpecReal | SpecJoin | SpecJoinBackend) when depth = 0 -> found <- Some index
+                            | _ -> ()
+                    found
+                let isOperatorContinuation (head : CodeLine) =
+                    match head.Lexemes.[0].Token with
+                    | TokOperator (name, _) -> name <> "|"
+                    | _ -> false
+                let itemText (item : (CodeLine * CodeLine list) list) =
+                    let array = Array.ofList item
+                    let first = fst array.[0]
+                    let builder = StringBuilder ()
+                    let openers = System.Collections.Generic.Stack<int * bool> ()
+                    let note (head : CodeLine) (start : int) =
+                        let isArm = match head.Lexemes.[0].Token with TokOperator ("|", _) -> true | _ -> false
+                        if not isArm then
+                            match openerIndex head.Lexemes with
+                            | Some at ->
+                                let prefix = (leadingPrefix head).Length + (if at = 0 then 0 else (codeText head.Lexemes.[0 .. at - 1]).Length + 1)
+                                openers.Push ((start + prefix, head.Lexemes.[at].Token = TokKeyword SpecIf))
+                            | None -> ()
+                    let close (stopAtIf : bool) =
+                        let mutable stop = false
+                        while openers.Count > 0 && not stop do
+                            let position, isIf = openers.Peek ()
+                            if stopAtIf && isIf then stop <- true
+                            else
+                                openers.Pop () |> ignore
+                                builder.Insert (position, "(") |> ignore
+                                builder.Append ")" |> ignore
+                    let depthOf (head : CodeLine, inside : CodeLine list) = itemDepth head.Lexemes + (inside |> List.sumBy (fun line -> itemDepth line.Lexemes))
+                    let mutable bracketDepth = depthOf array.[0]
+                    note first 0
+                    builder.Append (elementText first (snd array.[0])) |> ignore
+                    for index in 1 .. array.Length - 1 do
+                        let head, inside = array.[index]
+                        let previousHead, previousInside = array.[index - 1]
+                        let previousLast = match List.tryLast previousInside with Some line -> line | None -> previousHead
+                        let previousOpen =
+                            match previousLast.Lexemes.[previousLast.Lexemes.Length - 1].Token with
+                            | TokOperator _ | TokParenthesis (_, Open) -> true
+                            | _ -> false
+                        let field = bracketDepth > 0 && not previousOpen && not (startsAsContinuation head.Lexemes)
+                        bracketDepth <- bracketDepth + depthOf (head, inside)
+                        if isOperatorContinuation head then close false
+                        else
+                            match head.Lexemes.[0].Token with
+                            | TokKeyword (SpecThen | SpecElse | SpecElif) -> close true
+                            | _ -> ()
+                        builder.Append (if field then "; " else " ") |> ignore
+                        let start = builder.Length
+                        note head start
+                        builder.Append (elementText head inside) |> ignore
+                    let text = builder.ToString ()
+                    let head = first
+                    if context = NoOpening && head.Indent > 0 && opensScope head && not (startsAsContinuation head.Lexemes) then "(" + text + ")"
+                    elif statementRegion && not (isStatementStart head.Lexemes) then "(" + text + ")"
+                    else text
+                let rec join (items : (CodeLine * CodeLine list) list list) =
+                    match items with
+                    | [] -> ""
+                    | item :: rest ->
+                        let text = itemText item
+                        match rest with
+                        | [] -> text
+                        | next :: _ ->
+                            let head = fst (List.head item)
+                            let nextHead = fst (List.head next)
+                            let separator =
+                                if context = ItemsOpening then "; "
+                                elif typeLevel || context = NoOpening then " "
+                                elif isStatementStart head.Lexemes then " in "
+                                else " . "
+                            let tail = join rest
+                            let tail = if separator = " . " && isStatementStart nextHead.Lexemes then "(" + tail + ")" else tail
+                            text + separator + tail
+                join items
+
+        let flattenBlock (lines : Line<'phase> list) : FlatBlock =
+            let leading = lines |> List.takeWhile (fun line -> match line.Shape with Code (0, _, _) -> false | _ -> true)
+            let afterLeading = lines |> List.skip leading.Length
+            let lastCode = afterLeading |> List.tryFindIndexBack (fun line -> match line.Shape with Code _ | Opaque _ -> true | _ -> false)
+            let rest, trailingLines =
+                match lastCode with
+                | Some at -> List.take (at + 1) afterLeading, List.skip (at + 1) afterLeading
+                | None -> afterLeading, []
+            let leadingText = leading |> List.map (fun line -> Kept (render line))
+            let trailingText = trailingLines |> List.map (fun line -> Kept (render line))
+            if rest |> List.exists (fun line -> match line.Shape with Opaque _ -> true | _ -> false) then
+                Refused (MultilineLiteralOrComment, (List.head lines).Number, lines |> List.map render)
+            elif rest.IsEmpty then Flattened (leadingText @ trailingText, [])
+            else
+                let code = ResizeArray<CodeLine> ()
+                let pending = ResizeArray<string> ()
+                let mutable refused = None
+                for line in rest do
+                    match line.Shape with
+                    | Code (indent, lexemes, tail) ->
+                        let remark = if tail.Text.Trim().Length = 0 then None else inlineComment tail.Text
+                        if tail.Text.Trim().Length > 0 && remark.IsNone then refused <- Some CommentWithDelimiters
+                        code.Add { Number = line.Number; Indent = indent; Lexemes = lexemes; Remark = remark; Leading = List.ofSeq pending }
+                        pending.Clear ()
+                    | Remark text ->
+                        match inlineComment text.Text with
+                        | Some comment -> pending.Add comment
+                        | None -> refused <- Some CommentWithDelimiters
+                    | Blank -> if code.Count > 0 && (pending.Count = 0 || pending.[pending.Count - 1] <> blankMarker) then pending.Add blankMarker
+                    | Opaque _ -> ()
+
+                match refused with
+                | Some reason -> Refused (reason, (List.head lines).Number, lines |> List.map render)
+                | None ->
+                    let typeLevel =
+                        match code.[0].Lexemes.[0].Token with
+                        | TokKeyword (SpecType | SpecNominal | SpecUnion | SpecPrototype) -> true
+                        | TokKeyword SpecAnd when code.[0].Lexemes.Length > 1 && code.[0].Lexemes.[1].Token = TokKeyword SpecUnion -> true
+                        | _ -> false
+                    let startsArm (line : CodeLine) = match line.Lexemes.[0].Token with TokOperator ("|", _) -> true | _ -> false
+                    let endsWithArrow (line : CodeLine) = match line.Lexemes.[line.Lexemes.Length - 1].Token with TokOperator ("=>", _) -> true | _ -> false
+                    let guardOnOwnLine (previous : CodeLine) (line : CodeLine) =
+                        line.Lexemes.[0].Token = TokKeyword SpecWhen && line.Leading.IsEmpty && previous.Remark.IsNone
+                        && startsArm previous && not (endsWithArrow previous) && line.Indent > previous.Indent
+                    let armsWithGuards =
+                        code
+                        |> Seq.fold (fun (merged : CodeLine list) line ->
+                            match merged with
+                            | previous :: earlier when guardOnOwnLine previous line ->
+                                let glued = Array.append [| { line.Lexemes.[0] with Before = Whitespace 1 } |] line.Lexemes.[1..]
+                                { previous with Lexemes = Array.append previous.Lexemes glued; Remark = line.Remark } :: earlier
+                            | _ -> line :: merged) []
+                        |> List.rev
+                    let text = flattenRegion typeLevel NoOpening armsWithGuards
+                    Flattened (leadingText @ [ Joined text ] @ trailingText, rest |> List.map render)
+
+        let blocksOf (source : Source<'phase>) =
+            let lines = List.ofArray source.SourceLines
+            let rec split (rest : Line<'phase> list) (current : Line<'phase> list) (seenCode : bool) =
+                match rest with
+                | [] -> if current.IsEmpty then [] else [ List.rev current ]
+                | line :: tail ->
+                    let startsBlock = match line.Shape with Code (0, _, _) -> true | _ -> false
+                    let isLead = match line.Shape with Remark _ | Blank -> true | _ -> false
+                    if startsBlock && seenCode then List.rev current :: split tail [ line ] true
+                    elif isLead && seenCode && (match tail |> List.tryFind (fun l -> match l.Shape with Remark _ | Blank -> false | _ -> true) with Some next -> (match next.Shape with Code (0, _, _) -> true | _ -> false) | None -> false) && (match line.Shape with Remark text -> not (text.Text.StartsWith " ") | _ -> true) then
+                        List.rev current :: split tail [ line ] false
+                    else split tail (line :: current) (seenCode || startsBlock)
+            split lines [] false
+
+        let flatten (source : Source<'phase>) =
+            let blocks = blocksOf source |> List.map flattenBlock
+            let lines =
+                blocks
+                |> List.collect (function
+                    | Flattened (flat, _) -> flat |> List.map (function Kept text | Joined text -> text)
+                    | Refused (_, _, original) -> original)
+            lines, blocks
+
+    module FormatterLayout =
+
+        open System.Text
+        open FormatterLexed
+        open FormatterFlatten
+        open FormatterParsed
+
+        type Node =
+            | Leaf of Lexeme
+            | Group of opening : Lexeme * inner : Node list * closing : Lexeme
+
+        type LaidLine = { Indent : int; Text : string }
+
+        let rec firstLexeme (node : Node) =
+            match node with
+            | Leaf lexeme -> lexeme
+            | Group (opening, _, _) -> opening
+
+        let isStringGroup (node : Node) =
+            match node with
+            | Group (opening, _, _) -> opening.Token = TokStringOpen
+            | _ -> false
+
+        let isConcatOperator (node : Node) =
+            match node with
+            | Leaf lexeme -> not lexeme.InsideMacro && (match lexeme.Token with TokOperator ("^^", _) -> true | _ -> false)
+            | _ -> false
+
+        let rec mergeConcatenations (nodes : Node list) : Node list =
+            match nodes with
+            | (Group (opening, inner, _) as first) :: op :: (Group (_, nextInner, nextClosing) as second) :: rest when isStringGroup first && isConcatOperator op && isStringGroup second ->
+                let glued =
+                    match nextInner with
+                    | Leaf lexeme :: tail -> Leaf { lexeme with Before = Whitespace 0 } :: tail
+                    | other -> other
+                mergeConcatenations (Group (opening, inner @ glued, nextClosing) :: rest)
+            | node :: rest -> node :: mergeConcatenations rest
+            | [] -> []
+
+        let rec nodesOf (lexemes : Lexeme list) : Node list * Lexeme list =
+            match lexemes with
+            | [] -> [], []
+            | lexeme :: rest ->
+                match lexeme.Token with
+                | TokParenthesis (_, Open) when not lexeme.InsideMacro ->
+                    let inner, afterInner = nodesOf rest
+                    match afterInner with
+                    | closing :: afterClosing ->
+                        let siblings, remaining = nodesOf afterClosing
+                        Group (lexeme, inner, closing) :: siblings, remaining
+                    | [] -> [ Leaf lexeme ], []
+                | TokParenthesis (_, Close) when not lexeme.InsideMacro -> [], lexemes
+                | TokStringOpen | TokMacroOpen ->
+                    let closing = match lexeme.Token with TokStringOpen -> TokStringClose | _ -> TokMacroClose
+                    let rec collect (rest : Lexeme list) (depth : int) (taken : Lexeme list) =
+                        match rest with
+                        | next :: tail when next.Token = lexeme.Token -> collect tail (depth + 1) (next :: taken)
+                        | next :: tail when next.Token = closing && depth = 0 -> List.rev taken, Some next, tail
+                        | next :: tail when next.Token = closing -> collect tail (depth - 1) (next :: taken)
+                        | next :: tail -> collect tail depth (next :: taken)
+                        | [] -> List.rev taken, None, []
+                    match collect rest 0 [] with
+                    | inside, Some closingLexeme, after ->
+                        let siblings, remaining = nodesOf after
+                        Group (lexeme, inside |> List.map Leaf, closingLexeme) :: siblings, remaining
+                    | _ ->
+                        let siblings, remaining = nodesOf rest
+                        Leaf lexeme :: siblings, remaining
+                | _ ->
+                    let siblings, remaining = nodesOf rest
+                    Leaf lexeme :: siblings, remaining
+
+        let gapBefore (lexeme : Lexeme) =
+            match lexeme.Before with
+            | Whitespace 0 -> ""
+            | Whitespace _ -> " "
+            | Embedded text when text.Text.Replace("(* *)", "").Trim().Length = 0 -> " "
+            | Embedded text -> text.Text
+
+        let commaBeforeKeyword (nodes : Node list) =
+            nodes
+            |> List.takeWhile (fun node -> match node with Leaf l -> not (not l.InsideMacro && (match l.Token with TokKeyword _ -> true | _ -> false)) | Group _ -> true)
+            |> List.exists (fun node -> match node with Leaf l -> not l.InsideMacro && (match l.Token with TokOperator (",", _) -> true | _ -> false) | Group _ -> false)
+
+        let rec simplify (nodes : Node list) : Node list =
+            let isRound (opening : Lexeme) = opening.Token = TokParenthesis (Round, Open)
+            let mapped =
+                nodes
+                |> List.map (fun node ->
+                    match node with
+                    | Group (opening, [ Group (innerOpening, inner, innerClosing) ], _) when isRound opening && isRound innerOpening && not inner.IsEmpty ->
+                        Group (opening, simplify inner, innerClosing)
+                    | Group (opening, inner, closing) -> Group (opening, simplify inner, closing)
+                    | Leaf _ -> node)
+            let rec afterArrow (rest : Node list) =
+                match rest with
+                | arrow :: [ Group (opening, inner, _) ] when (match arrow with Leaf l -> (match l.Token with TokOperator ("=>", _) | TokKeyword (SpecThen | SpecElse | SpecIn) -> not l.InsideMacro | _ -> false) | Group _ -> false)
+                                                             && isRound opening && not inner.IsEmpty && not (match inner with Leaf l :: _ -> (match l.Token with TokKeyword (SpecInl | SpecLet | SpecOpen) -> true | _ -> false) | _ -> false) && not (List.exists (function Leaf l -> not l.InsideMacro && (l.Token = TokKeyword SpecIn || (match l.Token with TokOperator (".", _) -> true | _ -> false)) | Group _ -> false) inner) && ((match arrow with Leaf l -> (match l.Token with TokOperator ("=>", _) -> true | _ -> false) | Group _ -> false) || not (commaBeforeKeyword inner) || (match inner with Leaf l :: _ -> (match l.Token with TokKeyword _ -> true | _ -> false) | _ -> false)) ->
+                    [ arrow ] @ withGap arrow inner
+                | node :: tail -> node :: afterArrow tail
+                | [] -> []
+            and withGap (arrow : Node) (inner : Node list) =
+                match inner with
+                | Leaf first :: tail -> Leaf { first with Before = Whitespace 1 } :: tail
+                | Group (opening, i, c) :: tail -> Group ({ opening with Before = Whitespace 1 }, i, c) :: tail
+                | [] -> []
+
+            afterArrow mapped
+
+        let rec inlineText (raw : Node list) =
+            let nodes = simplify raw
+            let builder = StringBuilder ()
+            let rec emit (first : bool) (node : Node) =
+                match node with
+                | Leaf lexeme ->
+                    if not first then builder.Append (gapBefore lexeme) |> ignore
+                    builder.Append lexeme.Text.Text |> ignore
+                | Group (opening, inner, closing) ->
+                    if not first then builder.Append (gapBefore opening) |> ignore
+                    builder.Append opening.Text.Text |> ignore
+                    let padded =
+                        not inner.IsEmpty
+                        && not opening.InsideMacro
+                        && (match opening.Token with
+                            | TokParenthesis (Square, Open) -> true
+                            | TokParenthesis (Curly, Open) -> (match (firstLexeme (List.head inner)).Before with Whitespace 0 -> false | _ -> true)
+                            | _ -> false)
+                    if padded then builder.Append ' ' |> ignore
+                    inner |> List.iteri (fun index child -> emit (index = 0) child)
+                    if padded then builder.Append ' ' |> ignore
+                    builder.Append closing.Text.Text |> ignore
+            nodes |> List.iteri (fun index node -> emit (index = 0) node)
+            builder.ToString ()
+
+        let bareTrailingLambda (list : Node list) =
+            let isRound (opening : Lexeme) = opening.Token = TokParenthesis (Round, Open)
+            let rec strip (node : Node) =
+                match node with
+                | Group (opening, [ (Group (innerOpening, _, _) as inner) ], _) when isRound opening && isRound innerOpening -> strip inner
+                | _ -> node
+            match List.rev list with
+            | last :: before ->
+                match strip last with
+                | Group (opening, (first :: _ as inner), _) when isRound opening && (match first with Leaf l -> not l.InsideMacro && (l.Token = TokKeyword SpecFun || l.Token = TokKeyword SpecFunction) | Group _ -> false) ->
+                    List.rev before @ (match inner with Leaf l :: tail -> Leaf { l with Before = Whitespace 1 } :: tail | other -> other)
+                | _ -> list
+            | _ -> list
+
+        let inlineComplete (nodes : Node list) = inlineText (bareTrailingLambda (simplify nodes))
+
+        let isKeyword (keyword : TokenKeyword) (node : Node) =
+            match node with
+            | Leaf lexeme -> not lexeme.InsideMacro && lexeme.Token = TokKeyword keyword
+            | Group _ -> false
+
+        let isOperator (name : string) (node : Node) =
+            match node with
+            | Leaf lexeme -> not lexeme.InsideMacro && (match lexeme.Token with TokOperator (found, _) -> found = name | _ -> false)
+            | Group _ -> false
+
+        let splitOn (separator : Node -> bool) (nodes : Node list) =
+            let segments = ResizeArray<Node list> ()
+            let current = ResizeArray<Node> ()
+            let mutable quantified = false
+            for node in nodes do
+                if isKeyword SpecForall node || isKeyword SpecExists node then quantified <- true
+                if quantified && isOperator "." node then
+                    quantified <- false
+                    current.Add node
+                elif separator node then
+                    segments.Add (List.ofSeq current)
+                    current.Clear ()
+                else current.Add node
+            segments.Add (List.ofSeq current)
+            List.ofSeq segments
+
+        let isStatement (nodes : Node list) =
+            match nodes with
+            | first :: _ -> isKeyword SpecInl first || isKeyword SpecLet first || isKeyword SpecOpen first
+            | [] -> false
+
+        let commentsIn (gap : string) =
+            let parts = ResizeArray<string> ()
+            let mutable rest = gap
+            while rest.Contains "(*" && rest.Contains "*)" do
+                let start = rest.IndexOf "(*"
+                let stop = rest.IndexOf ("*)", start)
+                parts.Add (rest.Substring(start + 2, stop - start - 2).Trim ())
+                rest <- rest.Substring (stop + 2)
+            List.ofSeq parts
+        let trailingRemark (node : Node) =
+            match node with
+            | Leaf lexeme ->
+                match lexeme.Before with
+                | Embedded gap -> (commentsIn gap.Text |> List.filter (fun comment -> comment <> "")).Length = 1
+                | Whitespace _ -> false
+            | Group _ -> false
+
+        let statements (nodes : Node list) =
+            let segments = ResizeArray<Node list> ()
+            let current = ResizeArray<Node> ()
+            let mutable openStatements = 0
+            let mutable quantified = false
+            let mutable inArms = false
+            for node in nodes do
+                if isKeyword SpecForall node || isKeyword SpecExists node then quantified <- true
+                if openStatements = 0 && (isKeyword SpecWith node || isKeyword SpecFunction node) then inArms <- true
+                if quantified && isOperator "." node then
+                    quantified <- false
+                    current.Add node
+                elif isKeyword SpecIn node then
+                    openStatements <- openStatements - 1
+                    if openStatements = 0 then
+                        if trailingRemark node then current.Add node
+                        segments.Add (List.ofSeq current)
+                        current.Clear ()
+                    else current.Add node
+                elif isOperator "." node && openStatements = 0 && not inArms then
+                    if trailingRemark node then current.Add node
+                    segments.Add (List.ofSeq current)
+                    current.Clear ()
+                else
+                    if (isKeyword SpecInl node || isKeyword SpecLet node || isKeyword SpecOpen node) && not (current.Count > 0 && isKeyword SpecAnd (current.[current.Count - 1])) then openStatements <- openStatements + 1
+                    current.Add node
+            segments.Add (List.ofSeq current)
+            segments |> List.ofSeq |> List.filter (fun segment -> not segment.IsEmpty)
+
+        let hasTopComma (nodes : Node list) = commaBeforeKeyword nodes
+
+        let startsWithKeyword (nodes : Node list) =
+            match nodes with
+            | Leaf lexeme :: _ -> not lexeme.InsideMacro && (match lexeme.Token with TokKeyword _ -> true | _ -> false)
+            | _ -> false
+
+        let rec unwrapBody (nodes : Node list) =
+            match nodes with
+            | [ Group (opening, inner, _) ] when opening.Token = TokParenthesis (Round, Open) && not inner.IsEmpty ->
+                let plain (gap : Gap) = match gap with Whitespace _ -> true | Embedded _ -> false
+                let carried =
+                    match inner with
+                    | Leaf first :: tail when not (plain opening.Before) && plain first.Before -> Leaf { first with Before = opening.Before } :: tail
+                    | Group (innerOpening, innerNodes, innerClosing) :: tail when not (plain opening.Before) && plain innerOpening.Before ->
+                        Group ({ innerOpening with Before = opening.Before }, innerNodes, innerClosing) :: tail
+                    | _ -> inner
+                unwrapBody carried
+            | _ -> nodes
+
+        let fits (indent : int) (text : string) = indent + displayWidth text <= 120
+
+        let indexOfTop (predicate : Node -> bool) (nodes : Node list) =
+            let mutable quantified = false
+            let mutable found = None
+            nodes
+            |> List.iteri (fun index node ->
+                if found.IsNone then
+                    if isKeyword SpecForall node || isKeyword SpecExists node then quantified <- true
+                    if quantified && isOperator "." node then quantified <- false
+                    elif not quantified && predicate node then found <- Some index)
+            found
+
+
+        let rec withoutLeadingGap (nodes : Node list) : Node list * string list =
+            match nodes with
+            | Leaf lexeme :: tail ->
+                match lexeme.Before with
+                | Embedded gap -> Leaf { lexeme with Before = Whitespace 1 } :: tail, commentsIn gap.Text
+                | Whitespace _ -> nodes, []
+            | Group (opening, inner, closing) :: tail ->
+                match opening.Before with
+                | Embedded gap -> Group ({ opening with Before = Whitespace 1 }, inner, closing) :: tail, commentsIn gap.Text
+                | Whitespace _ -> nodes, []
+            | [] -> [], []
+
+        let splitArms (nodes : Node list) : (string list * Node list) list =
+            let arms = ResizeArray<string list * Node list> ()
+            let current = ResizeArray<Node> ()
+            let mutable carried : string list = []
+            let mutable quantified = false
+            let flush () =
+                if current.Count > 0 then
+                    let stripped, leading = withoutLeadingGap (List.ofSeq current)
+                    arms.Add (carried @ leading, stripped)
+                    carried <- []
+                current.Clear ()
+            for node in nodes do
+                if isKeyword SpecForall node || isKeyword SpecExists node then quantified <- true
+                if quantified && isOperator "." node then
+                    quantified <- false
+                    current.Add node
+                elif isOperator "|" node then
+                    flush ()
+                    match node with
+                    | Leaf lexeme ->
+                        match lexeme.Before with
+                        | Embedded gap -> carried <- carried @ commentsIn gap.Text
+                        | Whitespace _ -> ()
+                    | Group _ -> ()
+                else current.Add node
+            flush ()
+            List.ofSeq arms
+        type LiteralSplitting() =
+            member val Enabled = false with get, set
+
+        let literalSplitting = LiteralSplitting ()
+
+        let literalChain (indent : int) (node : Node) : LaidLine list option =
+            match node with
+            | Group (opening, inner, closing) when literalSplitting.Enabled && opening.Token = TokStringOpen && not (fits indent (inlineText [ node ])) ->
+                let units =
+                    inner
+                    |> List.collect (fun child ->
+                        match child with
+                        | Leaf lexeme ->
+                            match lexeme.Token with
+                            | TokText text -> lexeme.Text.Text |> Seq.map string |> List.ofSeq
+                            | _ -> [ lexeme.Text.Text ]
+                        | _ -> [ inlineText [ child ] ])
+                let room = 120 - indent - 3 - 3
+                let pieces = ResizeArray<string> ()
+                let current = StringBuilder ()
+                let mutable lastSpace = -1
+                let mutable width = 0
+                for unit in units do
+                    current.Append unit |> ignore
+                    width <- width + displayWidth unit
+                    if unit = " " then lastSpace <- current.Length
+                    if width >= room then
+                        let cut = if lastSpace > room / 2 then lastSpace else current.Length
+                        let text = current.ToString ()
+                        pieces.Add (text.Substring (0, cut))
+                        current.Clear().Append (text.Substring cut) |> ignore
+                        width <- displayWidth (current.ToString ())
+                        lastSpace <- -1
+                if current.Length > 0 then pieces.Add (current.ToString ())
+                Some (pieces |> List.ofSeq |> List.mapi (fun index piece -> { Indent = indent; Text = (if index = 0 then "" else "^^ ") + "\"" + piece + "\"" }))
+            | _ -> None
+
+        let gluedWords (nodes : Node list) : Node list list =
+            nodes
+            |> List.fold (fun (words : Node list list) node ->
+                match words, (firstLexeme node).Before with
+                | word :: earlier, Whitespace 0 -> (word @ [ node ]) :: earlier
+                | _ -> [ node ] :: words) []
+            |> List.rev
+
+        let rec layoutBlock (indent : int) (nodes : Node list) : LaidLine list =
+            let parts = statements nodes
+            if parts.Length > 1 then parts |> List.collect (layoutRecursiveGroup indent)
+            else layoutRecursiveGroup indent nodes
+
+        and layoutRecursiveGroup (indent : int) (nodes : Node list) : LaidLine list =
+            let andAt =
+                nodes
+                |> List.indexed
+                |> List.filter (fun (index, node) -> index > 0 && isKeyword SpecAnd node && (match List.tryItem (index + 1) nodes with Some next -> isKeyword SpecInl next || isKeyword SpecLet next | None -> false))
+                |> List.map fst
+            if andAt.IsEmpty || not (isStatement nodes) then layoutStatement indent nodes
+            else
+                let bounds = (0 :: andAt) @ [ nodes.Length ]
+                List.pairwise bounds
+                |> List.collect (fun (a, b) ->
+                    let part = nodes.[a .. b - 1]
+                    if a = 0 then layoutStatement indent part
+                    else
+                        match layoutStatement indent (List.tail part) with
+                        | first :: rest -> { first with Text = "and " + first.Text } :: rest
+                        | [] -> [])
+
+        and attachRemark (indent : int) (remark : string) (lines : LaidLine list) : LaidLine list =
+            match List.rev lines with
+            | last :: before when fits last.Indent (last.Text + " " + remark) -> List.rev ({ last with Text = last.Text + " " + remark } :: before)
+            | _ :: _ -> { Indent = indent; Text = remark } :: lines
+            | [] -> [ { Indent = indent; Text = remark } ]
+
+        and layoutStatement (indent : int) (wrapped : Node list) : LaidLine list =
+            let closingRemark =
+                match wrapped with
+                | [ Group (opening, inner, closing) ] when opening.Token = TokParenthesis (Round, Open) && not opening.InsideMacro && not inner.IsEmpty ->
+                    match closing.Before with
+                    | Embedded gap when (commentsIn gap.Text |> List.filter (fun comment -> comment <> "")).Length = 1 && (commentsIn gap.Text |> List.filter (fun comment -> comment <> "") |> List.head).StartsWith "//" ->
+                        Some (commentsIn gap.Text |> List.filter (fun comment -> comment <> "") |> List.head, Group (opening, inner, { closing with Before = Whitespace 0 }))
+                    | _ -> None
+                | _ -> None
+            match closingRemark with
+            | Some (remark, bare) ->
+                attachRemark indent remark (layoutStatement indent [ bare ])
+            | None ->
+            let stripped, comments = withoutLeadingGap (unwrapBody wrapped)
+            if not comments.IsEmpty then
+                (comments |> List.map (fun comment -> if comment = "" then { Indent = 0; Text = "" } else { Indent = indent; Text = comment })) @ layoutStatement indent stripped
+            else
+            match List.tryLast stripped with
+            | Some (Leaf last as node) when (isKeyword SpecIn node || isOperator "." node) && trailingRemark node ->
+                let remark = match last.Before with Embedded gap -> commentsIn gap.Text |> List.filter (fun comment -> comment <> "") |> String.concat " " | Whitespace _ -> ""
+                attachRemark indent remark (layoutStatement indent (List.take (stripped.Length - 1) stripped))
+            | _ ->
+            let nodes = stripped
+            match nodes with
+            | first :: second :: _ when isKeyword SpecAnd first && (isKeyword SpecInl second || isKeyword SpecLet second) ->
+                match layoutStatement indent (List.tail nodes) with
+                | head :: rest -> { head with Text = inlineText [ first ] + " " + head.Text } :: rest
+                | [] -> []
+            | _ ->
+            if (statements nodes).Length > 1 then layoutBlock indent nodes else
+            let whole = inlineComplete nodes
+            let unionAt = nodes |> List.tryFindIndex (fun node -> isKeyword SpecUnion node)
+            match nodes with
+            | first :: _ when (isKeyword SpecUnion first || (isKeyword SpecAnd first && unionAt = Some 1)) && (indexOfTop (isOperator "=") nodes).IsSome ->
+                let at = (indexOfTop (isOperator "=") nodes).Value
+                let cases = splitOn (isOperator "|") (List.skip (at + 1) nodes) |> List.filter (fun case -> not case.IsEmpty)
+                let headText = inlineText (List.take (at + 1) nodes)
+                let headLines = if fits indent headText then [ { Indent = indent; Text = headText } ] else packNodes indent "" "" (List.take (at + 1) nodes)
+                headLines @ (cases |> List.collect (layoutUnionCase (indent + 4)))
+            | first :: _ when (isKeyword SpecType first || isKeyword SpecNominal first) && (indexOfTop (isOperator "=") nodes).IsSome
+                              && (match List.skip ((indexOfTop (isOperator "=") nodes).Value + 1) nodes with
+                                  | [ Leaf quote; Group (opening, inner, _) ] -> quote.Token = TokUnaryOperator ("`", SemanticTokenLegend.unary_operator) && opening.Token = TokParenthesis (Round, Open) && ((statements inner).Length > 1 || not (fits indent whole))
+                                  | _ -> false) ->
+                let at = (indexOfTop (isOperator "=") nodes).Value
+                match List.skip (at + 1) nodes with
+                | [ Leaf quote; Group (opening, inner, closing) ] ->
+                    { Indent = indent; Text = inlineText (List.take (at + 1) nodes) }
+                    :: { Indent = indent + 4; Text = quote.Text.Text + opening.Text.Text }
+                    :: layoutBlock (indent + 8) inner
+                    @ [ { Indent = indent + 4; Text = closing.Text.Text } ]
+                | _ -> [ { Indent = indent; Text = whole } ]
+            | first :: _ when (isKeyword SpecType first || isKeyword SpecNominal first) && (indexOfTop (isOperator "=") nodes).IsSome && (not (fits indent whole) || (isKeyword SpecType first && (match List.skip ((indexOfTop (isOperator "=") nodes).Value + 1) nodes with [ record ] -> (match fieldRecord record with Some _ -> true | None -> false) | _ -> false))) ->
+                let at = (indexOfTop (isOperator "=") nodes).Value
+                match List.skip (at + 1) nodes with
+                | [ Group (opening, inner, closing) ] when opening.Token = TokParenthesis (Curly, Open) ->
+                    { Indent = indent; Text = inlineText (List.take (at + 1) nodes) }
+                    :: { Indent = indent + 4; Text = opening.Text.Text }
+                    :: (splitOn (isOperator ";") inner |> List.filter (fun field -> not field.IsEmpty) |> List.map (fun field -> { Indent = indent + 8; Text = inlineText field }))
+                    @ [ { Indent = indent + 4; Text = closing.Text.Text } ]
+                | prefix when (match List.tryLast prefix with Some (Group (opening, _, _)) -> opening.Token = TokParenthesis (Curly, Open) | _ -> false) ->
+                    match List.last prefix with
+                    | Group (opening, inner, closing) ->
+                        { Indent = indent; Text = inlineText (List.take (at + 1) nodes) }
+                        :: { Indent = indent + 4; Text = inlineText (List.take (prefix.Length - 1) prefix) + " " + opening.Text.Text }
+                        :: (splitOn (isOperator ";") inner |> List.filter (fun field -> not field.IsEmpty) |> List.map (fun field -> { Indent = indent + 8; Text = inlineText field }))
+                        @ [ { Indent = indent + 4; Text = closing.Text.Text } ]
+                    | _ -> [ { Indent = indent; Text = whole } ]
+                | body when not (fits indent whole) ->
+                    let head = List.take (at + 1) nodes
+                    let headLines = if fits indent (inlineText head) then [ { Indent = indent; Text = inlineText head } ] else packNodes indent "" "" head
+                    headLines @ layoutType (indent + 4) "" body
+                | _ -> [ { Indent = indent; Text = whole } ]
+            | Leaf head :: _ when indent = 0 && head.Token = TokVar ("test", SemanticTokenLegend.variable) && (List.tryFindIndex (isOperator "=") nodes).IsSome ->
+                let at = (List.tryFindIndex (isOperator "=") nodes).Value
+                { Indent = indent; Text = inlineText (List.take (at + 1) nodes) } :: layoutBlock (indent + 4) (unwrapBody (List.skip (at + 1) nodes))
+            | first :: _ when isKeyword SpecInl first || isKeyword SpecLet first || (isKeyword SpecInstance first && indent = 0) ->
+                match indexOfTop (isOperator "=") nodes with
+                | Some at ->
+                    let head = List.take (at + 1) nodes
+                    let body = unwrapBody (List.skip (at + 1) nodes)
+                    let headText = inlineText head
+                    let bodyParts = statements body
+                    let functionBody = match body with first :: (next :: _) when isKeyword SpecFunction first && isOperator "|" next -> true | _ -> false
+                    if functionBody then
+                        let arms = splitArms (List.tail body)
+                        { Indent = indent; Text = headText + " function" } :: layoutArms (indent + 4) arms
+                    elif bodyParts.Length = 1 && fits indent (headText + " " + inlineComplete body) && (indent > 0 || isKeyword SpecInstance first) && not (opensLayout body) then [ { Indent = indent; Text = headText + " " + inlineComplete body } ]
+                    elif indent > 0 && not (List.exists isPipe body) && fits indent headText && bodyParts.Length = 1 && (lastArgumentLambda indent headText body).IsSome && (trailingLambdaNeedsBlock body || not (fits indent whole)) then
+                        (lastArgumentLambda indent headText body).Value
+                    elif fits indent headText then { Indent = indent; Text = headText } :: layoutBlock (indent + 4) body
+                    else layoutHead indent (List.take at nodes) @ [ { Indent = indent + 4; Text = "=" } ] @ layoutBlock (indent + 4) body
+                | None -> [ { Indent = indent; Text = whole } ]
+            | _ -> layoutExpression indent nodes
+
+        and packNodes (indent : int) (prefix : string) (suffix : string) (nodes : Node list) : LaidLine list =
+            let lines = ResizeArray<LaidLine> ()
+            let current = ResizeArray<Node> ()
+            let mutable lineIndent = indent
+            let mutable linePrefix = prefix
+            for word in gluedWords nodes do
+                let candidate = linePrefix + inlineText (List.ofSeq current @ word)
+                if current.Count > 0 && not (fits lineIndent (candidate + suffix)) then
+                    lines.Add { Indent = lineIndent; Text = linePrefix + inlineText (List.ofSeq current) }
+                    current.Clear ()
+                    lineIndent <- indent + 4
+                    linePrefix <- ""
+                current.AddRange word
+            if current.Count > 0 then lines.Add { Indent = lineIndent; Text = linePrefix + inlineText (List.ofSeq current) + suffix }
+            List.ofSeq lines
+
+        and layoutUnionCase (indent : int) (case : Node list) : LaidLine list =
+            let whole = "| " + inlineText case
+            if fits indent whole then [ { Indent = indent; Text = whole } ]
+            else
+                let afterForall =
+                    match case |> List.tryFindIndex (fun node -> isKeyword SpecForall node) with
+                    | Some forallAt ->
+                        match case |> List.skip forallAt |> List.tryFindIndex (isOperator ".") with
+                        | Some dot -> forallAt + dot + 1
+                        | None -> 0
+                    | None -> 0
+                let headEnd =
+                    if afterForall > 0 then afterForall
+                    else
+                        match indexOfTop (isOperator "::") case with
+                        | Some at -> at + 1
+                        | None -> match indexOfTop (isOperator ":") case with Some at -> at + 1 | None -> 0
+                if headEnd = 0 then packNodes indent "| " "" case
+                else
+                    let headLines = packNodes indent "| " "" (List.take headEnd case)
+                    let body = List.skip headEnd case
+                    let segments = splitOn (isOperator "->") body |> List.filter (fun segment -> not segment.IsEmpty)
+                    let segmentLines =
+                        segments
+                        |> List.mapi (fun index segment ->
+                            let arrow = if index < segments.Length - 1 then " ->" else ""
+                            if fits (indent + 4) (inlineText segment + arrow) then [ { Indent = indent + 4; Text = inlineText segment + arrow } ]
+                            else
+                            match segment with
+                            | [ Group (opening, inner, closing) ] when opening.Token = TokParenthesis (Curly, Open) && not opening.InsideMacro && not inner.IsEmpty ->
+                                { Indent = indent + 4; Text = opening.Text.Text }
+                                :: (splitOn (isOperator ";") inner |> List.filter (fun field -> not field.IsEmpty) |> List.map (fun field -> { Indent = indent + 8; Text = inlineText field }))
+                                @ [ { Indent = indent + 4; Text = closing.Text.Text + arrow } ]
+                            | _ -> layoutType (indent + 4) arrow segment)
+                        |> List.concat
+                    headLines @ segmentLines
+
+        and quantifierPrefix (nodes : Node list) =
+            match nodes with
+            | first :: _ when isKeyword SpecExists first || isKeyword SpecForall first ->
+                nodes |> List.tryFindIndex (isOperator ".") |> Option.filter (fun dot -> dot + 1 < nodes.Length) |> Option.map (fun dot -> List.take (dot + 1) nodes, List.skip (dot + 1) nodes)
+            | _ -> None
+
+        and layoutTypeSeparated (at : int) (suffix : string) (separator : string) (parts : Node list list) : LaidLine list =
+            parts
+            |> List.mapi (fun position part -> layoutType at (if position < parts.Length - 1 then " " + separator else suffix) part)
+            |> List.concat
+
+        and layoutType (at : int) (suffix : string) (nodes : Node list) : LaidLine list =
+            let whole = inlineText nodes
+            let topLevel (separator : string) = splitOn (isOperator separator) nodes |> List.filter (fun part -> not part.IsEmpty)
+            if fits at (whole + suffix) then [ { Indent = at; Text = whole + suffix } ]
+            else
+            match quantifierPrefix nodes with
+            | Some (prefix, body) ->
+                let prefixLines = if fits at (inlineText prefix) then [ { Indent = at; Text = inlineText prefix } ] else packNodes at "" "" prefix
+                prefixLines @ layoutType (at + 4) suffix body
+            | None ->
+            if (topLevel "->").Length > 1 then layoutTypeSeparated at suffix "->" (topLevel "->")
+            elif (topLevel "*").Length > 1 then layoutTypeSeparated at suffix "*" (topLevel "*")
+            else
+            match nodes with
+            | [ Group (opening, inner, closing) ] when opening.Token = TokParenthesis (Round, Open) && not opening.InsideMacro && not inner.IsEmpty ->
+                match quantifierPrefix inner with
+                | Some (prefix, body) when fits at (opening.Text.Text + inlineText prefix) ->
+                    { Indent = at; Text = opening.Text.Text + inlineText prefix } :: layoutType (at + 4) (closing.Text.Text + suffix) body
+                | _ -> { Indent = at; Text = opening.Text.Text } :: layoutType (at + 4) "" inner @ [ { Indent = at; Text = closing.Text.Text + suffix } ]
+            | [ Group (opening, inner, closing) ] when opening.Token = TokParenthesis (Curly, Open) && not opening.InsideMacro && not inner.IsEmpty ->
+                let fields = splitOn (isOperator ";") inner |> List.filter (fun field -> not field.IsEmpty)
+                let fieldLines (field : Node list) =
+                    match indexOfTop (isOperator ":") field with
+                    | Some colon when colon > 0 && not (fits (at + 4) (inlineText field)) ->
+                        { Indent = at + 4; Text = inlineText (List.take (colon + 1) field) } :: layoutType (at + 8) "" (List.skip (colon + 1) field)
+                    | _ -> [ { Indent = at + 4; Text = inlineText field } ]
+                { Indent = at; Text = opening.Text.Text } :: (fields |> List.collect fieldLines) @ [ { Indent = at; Text = closing.Text.Text + suffix } ]
+            | _ ->
+                let plainWord (word : Node list) = word |> List.forall (fun node -> match node with Leaf lexeme -> not lexeme.InsideMacro | Group _ -> false)
+                match gluedWords nodes with
+                | callee :: arguments when not arguments.IsEmpty && fits at (inlineText callee) && List.forall plainWord arguments ->
+                    let lines = ResizeArray<LaidLine> [ { Indent = at; Text = inlineText callee } ]
+                    let current = ResizeArray<Node> ()
+                    for word in arguments do
+                        if current.Count > 0 && not (fits (at + 4) (inlineText (List.ofSeq current @ word) + suffix)) then
+                            lines.Add { Indent = at + 4; Text = inlineText (List.ofSeq current) }
+                            current.Clear ()
+                        current.AddRange word
+                    lines.Add { Indent = at + 4; Text = inlineText (List.ofSeq current) + suffix }
+                    List.ofSeq lines
+                | callee :: arguments when not arguments.IsEmpty && fits at (inlineText callee) ->
+                    let lines = ResizeArray<LaidLine> [ { Indent = at; Text = inlineText callee } ]
+                    let run = ResizeArray<Node> ()
+                    let flush (last : bool) =
+                        if run.Count > 0 then
+                            lines.Add { Indent = at + 4; Text = inlineText (List.ofSeq run) + (if last then suffix else "") }
+                            run.Clear ()
+                    arguments
+                    |> List.iteri (fun position argument ->
+                        let last = position = arguments.Length - 1
+                        if plainWord argument then
+                            if run.Count > 0 && not (fits (at + 4) (inlineText (List.ofSeq run @ argument) + suffix)) then flush false
+                            run.AddRange argument
+                            if last then flush true
+                        else
+                            flush false
+                            lines.AddRange (layoutType (at + 4) (if last then suffix else "") argument))
+                    List.ofSeq lines
+                | _ -> [ { Indent = at; Text = whole + suffix } ]
+
+        and layoutHead (indent : int) (head : Node list) : LaidLine list =
+            let afterForall =
+                match head |> List.tryFindIndex (fun node -> isKeyword SpecForall node) with
+                | Some forallAt ->
+                    match head |> List.skip forallAt |> List.tryFindIndex (isOperator ".") with
+                    | Some dot -> forallAt + dot + 1
+                    | None -> 0
+                | None -> 0
+            let nameEnd =
+                if afterForall > 0 then afterForall
+                else
+                    let leading = head |> List.takeWhile (fun node -> isKeyword SpecInl node || isKeyword SpecLet node || isKeyword SpecRec node)
+                    min head.Length (leading.Length + 1)
+            let first = List.take nameEnd head
+            let rest = List.skip nameEnd head
+            let annotationAt = indexOfTop (isOperator ":") rest
+            let parameters, annotation =
+                match annotationAt with
+                | Some at -> List.take at rest, List.skip at rest
+                | None -> rest, []
+            let packed = ResizeArray<LaidLine> ()
+            let current = ResizeArray<Node> ()
+            let wideParameter (parameter : Node) =
+                match parameter with
+                | Group (opening, inner, closing) when opening.Token = TokParenthesis (Round, Open) && not (fits (indent + 4) (inlineText [ parameter ])) ->
+                    match List.rev inner with
+                    | Group (tupleOpening, tupleInner, tupleClosing) :: before when tupleOpening.Token = TokParenthesis (Round, Open) && hasTopComma tupleInner ->
+                        let items = splitOn (isOperator ",") tupleInner |> List.filter (fun item -> not item.IsEmpty)
+                        let head = opening.Text.Text + (if before.IsEmpty then "" else inlineText (List.rev before) + " ") + tupleOpening.Text.Text
+                        Some (
+                            { Indent = indent + 4; Text = head }
+                            :: (items |> List.mapi (fun index item -> { Indent = indent + 8; Text = inlineText item + (if index < items.Length - 1 then "," else "") }))
+                            @ [ { Indent = indent + 4; Text = tupleClosing.Text.Text + closing.Text.Text } ])
+                    | _ ->
+                        match indexOfTop (isOperator ":") inner with
+                        | Some colon when colon > 0 && colon < inner.Length - 1 && fits (indent + 4) (opening.Text.Text + inlineText (List.take (colon + 1) inner)) ->
+                            Some ({ Indent = indent + 4; Text = opening.Text.Text + inlineText (List.take (colon + 1) inner) } :: layoutType (indent + 8) closing.Text.Text (List.skip (colon + 1) inner))
+                        | _ -> None
+                | _ -> None
+            for parameter in parameters do
+                let candidate = inlineText (List.ofSeq current @ [ parameter ])
+                match wideParameter parameter with
+                | Some lines ->
+                    if current.Count > 0 then packed.Add { Indent = indent + 4; Text = inlineText (List.ofSeq current) }
+                    current.Clear ()
+                    packed.AddRange lines
+                | None ->
+                    if current.Count > 0 && not (fits (indent + 4) candidate) then
+                        packed.Add { Indent = indent + 4; Text = inlineText (List.ofSeq current) }
+                        current.Clear ()
+                    current.Add parameter
+            if current.Count > 0 then packed.Add { Indent = indent + 4; Text = inlineText (List.ofSeq current) }
+            let annotationLines =
+                if annotation.IsEmpty then []
+                elif fits (indent + 4) (inlineText annotation) then [ { Indent = indent + 4; Text = inlineText annotation } ]
+                else
+                    let rec typeLines (at : int) (nodes : Node list) : LaidLine list =
+                        let packedNodes = packNodes at "" "" nodes
+                        match List.rev nodes with
+                        | Group (opening, inner, closing) :: before when packedNodes |> List.exists (fun line -> not (fits line.Indent line.Text)) && opening.Token = TokParenthesis (Round, Open) && not inner.IsEmpty && fits at ((if before.IsEmpty then "" else inlineText (List.rev before) + " ") + opening.Text.Text) ->
+                            { Indent = at; Text = (if before.IsEmpty then "" else inlineText (List.rev before) + " ") + opening.Text.Text }
+                            :: typeLines (at + 4) inner
+                            @ [ { Indent = at; Text = closing.Text.Text } ]
+                        | _ -> packedNodes
+                    let packedAnnotation = typeLines (indent + 4) annotation
+                    let typeNodes = List.tail annotation
+                    let arrowsOrPairs = (splitOn (isOperator "->") typeNodes |> List.filter (fun part -> not part.IsEmpty)).Length > 1 || (splitOn (isOperator "*") typeNodes |> List.filter (fun part -> not part.IsEmpty)).Length > 1
+                    let packedFits = packedAnnotation |> List.forall (fun line -> fits line.Indent line.Text)
+                    if packedFits && (packedAnnotation.Length = 1 || not arrowsOrPairs) then packedAnnotation
+                    else
+                        let colon = inlineText [ List.head annotation ] + " "
+                        match layoutType (indent + 4 + colon.Length) "" typeNodes with
+                        | first :: rest -> { Indent = indent + 4; Text = colon + first.Text } :: (rest |> List.map (fun line -> { line with Indent = max (indent + 4) (line.Indent - colon.Length) }))
+                        | [] -> packedAnnotation
+            let firstLines = if fits indent (inlineText first) then [ { Indent = indent; Text = inlineText first } ] else packNodes indent "" "" first
+            firstLines @ List.ofSeq packed @ annotationLines
+
+        and longPipeline (nodes : Node list) =
+            let firstKeyword = nodes |> List.tryFindIndex (fun node -> match node with Leaf lexeme -> not lexeme.InsideMacro && (match lexeme.Token with TokKeyword _ -> true | _ -> false) | Group _ -> false)
+            let limit = defaultArg firstKeyword nodes.Length
+            (nodes |> List.indexed |> List.filter (fun (index, node) -> index < limit && isPipe node) |> List.length) >= 3
+
+        and carriesComment (nodes : Node list) =
+            let commented (gap : Gap) = match gap with Embedded text -> commentsIn text.Text |> List.exists (fun comment -> comment <> "") | Whitespace _ -> false
+            nodes |> List.exists (fun node -> match node with Leaf lexeme -> commented lexeme.Before | Group (opening, inner, closing) -> commented opening.Before || commented closing.Before || carriesComment inner)
+
+        and fieldRecord (node : Node) =
+            match node with
+            | Group (opening, inner, _) when opening.Token = TokParenthesis (Curly, Open) && not opening.InsideMacro ->
+                let fields = splitOn (isOperator ";") inner |> List.filter (fun field -> not field.IsEmpty)
+                if fields.Length >= 2 then Some fields else None
+            | _ -> None
+
+        and functionRecord (node : Node) =
+            match node with
+            | Group (opening, inner, _) when opening.Token = TokParenthesis (Curly, Open) && not opening.InsideMacro ->
+                splitOn (isOperator ";") inner |> List.exists (fun field -> (indexOfTop (isOperator "=") field).IsSome && field |> List.exists (fun part -> isKeyword SpecFun part || (match unwrapLambda [ part ] with first :: _ -> isKeyword SpecFun first | [] -> false)))
+            | _ -> false
+
+        and splitListLambda (nodes : Node list) : (Node list * Node * Node list) option =
+            let isList (node : Node) = match node with Group (opening, inner, _) -> opening.Token = TokParenthesis (Square, Open) && not opening.InsideMacro && not inner.IsEmpty | Leaf _ -> false
+            let withArrow (lambda : Node list) = match lambda with first :: _ when isKeyword SpecFun first && (indexOfTop (isOperator "=>") lambda).IsSome -> Some lambda | _ -> None
+            match List.rev nodes with
+            | (Group _ as lambdaGroup) :: list :: before when not before.IsEmpty && isList list ->
+                withArrow (unwrapLambda [ lambdaGroup ]) |> Option.map (fun lambda -> List.rev before, list, lambda)
+            | _ ->
+                match nodes |> List.tryFindIndex (fun node -> isKeyword SpecFun node) with
+                | Some at when at >= 2 && isList nodes.[at - 1] ->
+                    withArrow (List.skip at nodes) |> Option.map (fun lambda -> List.take (at - 1) nodes, nodes.[at - 1], lambda)
+                | _ -> None
+
+        and listThenLambda (nodes : Node list) = (splitListLambda nodes).IsSome
+
+        and opensLayout (nodes : Node list) =
+            match nodes with
+            | _ when listThenLambda nodes -> true
+            | _ when nodes |> List.exists functionRecord -> true
+            | _ when nodes.Length > 1 && trailingLambdaNeedsBlock nodes -> true
+            | _ when longPipeline nodes -> true
+            | _ when carriesComment nodes -> true
+            | _ when (match List.tryFindIndex (fun node -> isKeyword SpecFunction node) nodes with Some at -> (match List.tryItem (at + 1) nodes with Some next -> isOperator "|" next | None -> false) | None -> false) -> true
+            | first :: _ when isKeyword SpecMatch first || isKeyword SpecIf first || isKeyword SpecTypecase first -> true
+            | first :: _ when isKeyword SpecFun first ->
+                match indexOfTop (isOperator "=>") nodes with
+                | Some arrow ->
+                    let body = unwrapBody (List.skip (arrow + 1) nodes)
+                    (statements body).Length > 1 || isStatement body || opensLayout body
+                | None -> false
+            | _ -> false
+
+        and layoutArms (indent : int) (arms : (string list * Node list) list) =
+            let rec walk (pending : string list) (rest : (string list * Node list) list) =
+                match rest with
+                | [] -> pending |> List.rev |> List.map (fun pattern -> { Indent = indent; Text = "| " + pattern })
+                | (comments, armNodes) :: tail ->
+                    let commentLines = comments |> List.map (fun comment -> if comment = "" then { Indent = 0; Text = "" } else { Indent = indent; Text = comment })
+                    let flushed = if comments.IsEmpty then [] else pending |> List.rev |> List.map (fun pattern -> { Indent = indent; Text = "| " + pattern })
+                    let pending = if comments.IsEmpty then pending else []
+                    if (indexOfTop (isOperator "=>") armNodes).IsNone && not (carriesComment armNodes) then
+                        flushed @ commentLines @ walk (inlineText armNodes :: pending) tail
+                    else
+                        let laid = layoutArm indent armNodes
+                        let merged =
+                            match pending, laid with
+                            | [], _ -> laid
+                            | _, first :: others when first.Text.StartsWith "| " && fits indent ("| " + String.concat " | " (List.rev pending) + " " + first.Text) ->
+                                { first with Text = "| " + String.concat " | " (List.rev pending) + " " + first.Text } :: others
+                            | _, _ -> (pending |> List.rev |> List.map (fun pattern -> { Indent = indent; Text = "| " + pattern })) @ laid
+                        flushed @ commentLines @ merged @ walk [] tail
+            walk [] arms
+
+        and layoutArm (indent : int) (armNodes : Node list) : LaidLine list =
+                match indexOfTop (isOperator "=>") armNodes with
+                | Some at ->
+                    let pattern = List.take (at + 1) armNodes
+                    let body = unwrapBody (List.skip (at + 1) armNodes)
+                    let line = "| " + inlineComplete armNodes
+                    let whenAt = indexOfTop (isKeyword SpecWhen) pattern
+                    if (statements body).Length = 1 && fits indent line && not (opensLayout body) then [ { Indent = indent; Text = line } ]
+                    elif whenAt.IsSome && not (fits indent ("| " + inlineText pattern)) then
+                        let at = whenAt.Value
+                        let guard = pattern.[at + 1 .. pattern.Length - 2]
+                        let guardLines = breakLong (indent + 4) guard
+                        let bodyText = "=> " + inlineComplete body
+                        let tail =
+                            if (statements body).Length = 1 && fits (indent + 4) bodyText && not (opensLayout body) then [ { Indent = indent + 4; Text = bodyText } ]
+                            else { Indent = indent + 4; Text = "=>" } :: layoutBlock (indent + 8) body
+                        { Indent = indent; Text = "| " + inlineText (List.take (at + 1) pattern) } :: guardLines @ tail
+                    elif whenAt.IsNone && not (fits indent ("| " + inlineText pattern)) && List.take at pattern |> List.exists (isOperator ",") then
+                        let components = splitOn (isOperator ",") (List.take at pattern) |> List.filter (fun part -> not part.IsEmpty)
+                        let bodyText = "=> " + inlineComplete body
+                        let tail =
+                            if (statements body).Length = 1 && fits (indent + 4) bodyText && not (opensLayout body) then [ { Indent = indent + 4; Text = bodyText } ]
+                            else { Indent = indent + 4; Text = "=>" } :: layoutBlock (indent + 8) body
+                        let componentLines =
+                            components
+                            |> List.mapi (fun index part ->
+                                let comma = if index < components.Length - 1 then "," else ""
+                                let prefix = if index = 0 then "| " else ""
+                                let partIndent = if index = 0 then indent else indent + 4
+                                match List.rev part with
+                                | Group (opening, inner, closing) :: before when not (fits partIndent (prefix + inlineText part + comma)) && opening.Token = TokParenthesis (Round, Open) && List.exists (isOperator ",") inner ->
+                                    let items = splitOn (isOperator ",") inner |> List.filter (fun item -> not item.IsEmpty)
+                                    { Indent = partIndent; Text = prefix + (if before.IsEmpty then "" else inlineText (List.rev before) + " ") + opening.Text.Text }
+                                    :: (items |> List.mapi (fun position item -> layoutPatternItem (indent + 8) (if position < items.Length - 1 then "," else "") item) |> List.concat)
+                                    @ [ { Indent = indent + 4; Text = closing.Text.Text + comma } ]
+                                | _ when prefix = "" -> layoutPatternItem partIndent comma part
+                                | _ -> [ { Indent = partIndent; Text = prefix + inlineText part + comma } ])
+                            |> List.concat
+                        componentLines @ tail
+                    elif whenAt.IsNone && not (fits indent ("| " + inlineText pattern))
+                         && (match List.rev (List.take at pattern) with
+                             | Group (opening, inner, _) :: before -> not before.IsEmpty && opening.Token = TokParenthesis (Round, Open) && not opening.InsideMacro && List.exists (isOperator ",") inner && not (carriesComment inner)
+                             | _ -> false) then
+                        match List.rev (List.take at pattern) with
+                        | Group (opening, inner, closing) :: before ->
+                            let items = splitOn (isOperator ",") inner |> List.filter (fun item -> not item.IsEmpty)
+                            let bodyText = "=> " + inlineComplete body
+                            let tail =
+                                if (statements body).Length = 1 && fits (indent + 4) bodyText && not (opensLayout body) then [ { Indent = indent + 4; Text = bodyText } ]
+                                else { Indent = indent + 4; Text = "=>" } :: layoutBlock (indent + 8) body
+                            { Indent = indent; Text = "| " + inlineText (List.rev before) + " " + opening.Text.Text }
+                            :: (items |> List.mapi (fun position item -> layoutPatternItem (indent + 8) (if position < items.Length - 1 then "," else "") item) |> List.concat)
+                            @ [ { Indent = indent + 4; Text = closing.Text.Text } ]
+                            @ tail
+                        | _ -> [ { Indent = indent; Text = line } ]
+                    else
+                        match body with
+                        | first :: _ when isKeyword SpecFun first ->
+                            match layoutExpression indent body with
+                            | lambdaHead :: lambdaBody when fits indent ("| " + inlineText pattern + " " + lambdaHead.Text) && lambdaHead.Text.EndsWith "=>" ->
+                                { Indent = indent; Text = "| " + inlineText pattern + " " + lambdaHead.Text } :: lambdaBody
+                            | _ -> { Indent = indent; Text = "| " + inlineText pattern } :: layoutExpression (indent + 4) body
+                        | _ -> { Indent = indent; Text = "| " + inlineText pattern } :: layoutBlock (indent + 4) body
+                | None -> [ { Indent = indent; Text = "| " + inlineText armNodes } ]
+
+        and layoutPatternItem (at : int) (suffix : string) (item : Node list) : LaidLine list =
+            if fits at (inlineText item + suffix) then [ { Indent = at; Text = inlineText item + suffix } ]
+            else
+                match List.rev item with
+                | Group (opening, inner, closing) :: before when opening.Token = TokParenthesis (Round, Open) && not opening.InsideMacro && List.exists (isOperator ",") inner && not (carriesComment inner) ->
+                    let items = splitOn (isOperator ",") inner |> List.filter (fun part -> not part.IsEmpty)
+                    { Indent = at; Text = (if before.IsEmpty then "" else inlineText (List.rev before) + " ") + opening.Text.Text }
+                    :: (items |> List.mapi (fun position part -> layoutPatternItem (at + 4) (if position < items.Length - 1 then "," else "") part) |> List.concat)
+                    @ [ { Indent = at; Text = closing.Text.Text + suffix } ]
+                | Group (opening, inner, closing) :: before when opening.Token = TokParenthesis (Round, Open) && not opening.InsideMacro && not inner.IsEmpty && not (carriesComment inner) && fits at ((if before.IsEmpty then "" else inlineText (List.rev before) + " ") + opening.Text.Text) ->
+                    { Indent = at; Text = (if before.IsEmpty then "" else inlineText (List.rev before) + " ") + opening.Text.Text }
+                    :: layoutPatternItem (at + 4) "" inner
+                    @ [ { Indent = at; Text = closing.Text.Text + suffix } ]
+                | _ -> [ { Indent = at; Text = inlineText item + suffix } ]
+
+        and layoutExpression (indent : int) (nodes : Node list) : LaidLine list =
+            let whole = inlineComplete nodes
+            let hasTopKeyword = nodes |> List.exists (fun node -> match node with Leaf lexeme -> not lexeme.InsideMacro && (match lexeme.Token with TokKeyword _ -> true | TokOperator ("=>", _) -> true | _ -> false) | _ -> false)
+            let annotationAt =
+                if hasTopKeyword then None
+                elif not (fits indent whole) then indexOfTop (isOperator ":") nodes
+                else
+                    match indexOfTop (isOperator ":") nodes with
+                    | Some at when at > 0 && opensLayout (unwrapBody (List.take at nodes)) -> Some at
+                    | _ -> None
+            let arrowAt =
+                if fits indent whole then None
+                else
+                    match nodes with
+                    | first :: _ when isOperator "|" first || isKeyword SpecMatch first || isKeyword SpecFunction first || isKeyword SpecTypecase first || isKeyword SpecIf first -> None
+                    | _ when nodes |> List.exists (fun node -> isPipe node || (match node with Leaf lexeme -> not lexeme.InsideMacro && (match lexeme.Token with TokKeyword keyword -> keyword <> SpecForall | _ -> false) | _ -> false)) -> None
+                    | _ -> indexOfTop (isOperator "=>") nodes
+            match nodes with
+            | [ single ] when (literalChain indent single).IsSome -> (literalChain indent single).Value
+            | _ when annotationAt.IsSome && annotationAt.Value > 0 ->
+                let at = annotationAt.Value
+                let left = List.take at nodes
+                let annotation = inlineText (List.skip at nodes)
+                match layoutExpression indent left with
+                | [ single ] when fits single.Indent (single.Text + " " + annotation) -> [ { single with Text = single.Text + " " + annotation } ]
+                | laid -> laid @ [ { Indent = indent; Text = annotation } ]
+            | _ when arrowAt.IsSome && fits indent (inlineText (List.take (arrowAt.Value + 1) nodes)) ->
+                let at = arrowAt.Value
+                { Indent = indent; Text = inlineText (List.take (at + 1) nodes) } :: layoutBlock (indent + 4) (unwrapBody (List.skip (at + 1) nodes))
+            | [ (Leaf tick); (Group (opening, inner, closing)) ] when not tick.InsideMacro && (match tick.Token with TokUnaryOperator ("`", _) -> true | _ -> false) && opening.Token = TokParenthesis (Round, Open) && not (fits indent whole) && not inner.IsEmpty && not (carriesComment inner) ->
+                { Indent = indent; Text = tick.Text.Text + opening.Text.Text } :: layoutType (indent + 4) "" inner @ [ { Indent = indent; Text = closing.Text.Text } ]
+            | [ (Leaf unary); (Group (opening, inner, closing)) ] when (match unary.Token with TokUnaryOperator _ -> true | _ -> false) && opening.Token = TokParenthesis (Square, Open) && not (fits indent whole) && not inner.IsEmpty ->
+                let items = splitOn (isOperator ";") inner |> List.filter (fun item -> not item.IsEmpty)
+                { Indent = indent; Text = unary.Text.Text + opening.Text.Text } :: (items |> List.collect (layoutExpression (indent + 4))) @ [ { Indent = indent; Text = closing.Text.Text } ]
+            | [ Group (opening, inner, closing) as record ] when opening.Token = TokParenthesis (Curly, Open) && functionRecord record ->
+                let openText, fields = recordOpening opening inner
+                { Indent = indent; Text = openText } :: layoutFields (indent + 4) fields @ [ { Indent = indent; Text = closing.Text.Text } ]
+            | [ Group (opening, _, _) as record ] when (opening.Token = TokParenthesis (Curly, Open) || opening.Token = TokParenthesis (Square, Open)) && not (fits indent whole) -> layoutArgument indent record
+            | [ first; (Group (opening, inner, _)) ] when (isKeyword SpecReal first || isKeyword SpecJoin first) && opening.Token = TokParenthesis (Round, Open) && (not (fits indent whole) || (statements (unwrapBody inner)).Length > 1 || isStatement (unwrapBody inner) || opensLayout (unwrapBody inner)) ->
+                { Indent = indent; Text = inlineText [ first ] } :: layoutBlock (indent + 4) (unwrapBody inner)
+            | first :: (_ :: _ :: _ as rest) when isKeyword SpecJoin first && not (fits indent whole) && not (carriesComment nodes) ->
+                { Indent = indent; Text = inlineText [ first ] } :: layoutBlock (indent + 4) rest
+            | first :: (second :: _ as rest) when isKeyword SpecReal first && not (fits indent whole) && (match second with Group (opening, _, _) -> opening.Token <> TokParenthesis (Round, Open) | Leaf _ -> true) ->
+                { Indent = indent; Text = inlineText [ first ] } :: layoutBlock (indent + 4) rest
+            | [ Group (opening, _, _) ] when opening.Token = TokParenthesis (Round, Open) && (not (fits indent whole) || opensLayout (unwrapLambda nodes)) && (match unwrapLambda nodes with first :: _ -> isKeyword SpecFun first || isKeyword SpecFunction first | [] -> false) ->
+                layoutExpression indent (unwrapLambda nodes)
+            | [ Group (opening, _, _) ] when opening.Token = TokParenthesis (Round, Open) && (not (fits indent whole) || opensLayout (unwrapBody nodes)) && (match unwrapBody nodes with first :: _ -> isKeyword SpecIf first || isKeyword SpecMatch first || isKeyword SpecTypecase first || isKeyword SpecReal first || (List.tryFindIndex (fun node -> isKeyword SpecFunction node) (unwrapBody nodes)).IsSome | [] -> false) ->
+                layoutExpression indent (unwrapBody nodes)
+            | [ Group (opening, inner, _) as group ] when opening.Token = TokParenthesis (Round, Open) && not inner.IsEmpty && not (fits indent whole) && (match unwrapLambda nodes with first :: _ -> not (isKeyword SpecFun first) | [] -> true) ->
+                layoutArgument indent group
+            | first :: _ when isKeyword SpecMatch first || isKeyword SpecTypecase first ->
+                match indexOfTop (isKeyword SpecWith) nodes with
+                | Some at ->
+                    let head = List.take (at + 1) nodes
+                    let arms = splitArms (List.skip (at + 1) nodes)
+                    let headLines =
+                        if fits indent (inlineText head) || at < 2 then [ { Indent = indent; Text = inlineText head } ]
+                        else
+                            { Indent = indent; Text = inlineText [ List.head head ] }
+                            :: layoutExpression (indent + 4) (head.[1 .. head.Length - 2])
+                            @ [ { Indent = indent; Text = inlineText [ List.last head ] } ]
+                    headLines @ layoutArms indent arms
+                | None -> [ { Indent = indent; Text = whole } ]
+            | first :: _ when isKeyword SpecIf first ->
+                let branches = ResizeArray<Node * Node list> ()
+                let mutable keyword = first
+                let current = ResizeArray<Node> ()
+                let mutable depth = 0
+                for node in List.tail nodes do
+                    if isKeyword SpecIf node then depth <- depth + 1
+                    if depth = 0 && (isKeyword SpecThen node || isKeyword SpecElif node || isKeyword SpecElse node) then
+                        branches.Add (keyword, List.ofSeq current)
+                        current.Clear ()
+                        keyword <- node
+                    else
+                        if isKeyword SpecElse node && depth > 0 then depth <- depth - 1
+                        current.Add node
+                branches.Add (keyword, List.ofSeq current)
+                branches
+                |> List.ofSeq
+                |> List.collect (fun (keywordNode, branch) ->
+                    let keywordComments =
+                        match keywordNode with
+                        | Leaf lexeme ->
+                            match lexeme.Before with
+                            | Embedded gap -> commentsIn gap.Text |> List.filter (fun comment -> comment <> "") |> List.map (fun comment -> { Indent = indent; Text = comment })
+                            | Whitespace _ -> []
+                        | Group _ -> []
+                    let word = inlineText [ keywordNode ]
+                    let body = if isKeyword SpecIf keywordNode || isKeyword SpecElif keywordNode then branch else unwrapBody branch
+                    let line = word + " " + inlineComplete (if isKeyword SpecIf keywordNode || isKeyword SpecElif keywordNode then branch else body)
+                    let laid =
+                        if (statements body).Length = 1 && fits indent line && not (opensLayout body) then [ { Indent = indent; Text = line } ]
+                        else { Indent = indent; Text = word } :: layoutBlock (indent + 4) body
+                    keywordComments @ laid)
+            | _ ->
+                match List.tryFindIndexBack (isKeyword SpecFunction) nodes with
+                | Some at when at = nodes.Length - 1 || (match List.tryItem (at + 1) nodes with Some next -> isOperator "|" next | None -> false) ->
+                    let head = List.take (at + 1) nodes
+                    let arms = splitArms (List.skip (at + 1) nodes)
+                    if arms.IsEmpty then [ { Indent = indent; Text = whole } ]
+                    else
+                        let headLines = if fits indent (inlineText head) then [ { Indent = indent; Text = inlineText head } ] else breakLong indent head
+                        headLines @ layoutArms (indent + 4) arms
+                | _ when fits indent whole && trailingLambdaNeedsBlock nodes -> (if List.exists isPipe nodes then breakLong indent nodes else match lastArgumentLambda indent "" nodes with Some lines -> lines | None -> breakLong indent nodes)
+                | _ ->
+                    let pipeBeforeLambda =
+                        match nodes |> List.tryFindIndex (fun node -> isKeyword SpecFun node) with
+                        | Some at -> nodes |> List.take at |> List.exists (fun node -> isPipe node || (match node with Leaf l -> not l.InsideMacro && (match l.Token with TokOperator (name, _) -> not (List.contains name [ ","; ":"; "="; "=>"; "|"; "."; ";"; "<-" ]) | _ -> false) | _ -> false))
+                        | None -> false
+                    match nodes |> List.tryFindIndexBack (fun node -> isKeyword SpecFun node) with
+                    | _ when pipeBeforeLambda && (not (fits indent whole) || opensLayout (List.skip (List.findIndex (fun node -> isKeyword SpecFun node) nodes) nodes)) -> breakLong indent nodes
+                    | Some at when (indexOfTop (isOperator "=>") (List.skip at nodes)).IsSome && (let arrow = (indexOfTop (isOperator "=>") (List.skip at nodes)).Value in let body = unwrapBody (List.skip (at + arrow + 1) nodes) in (statements body).Length > 1 || opensLayout body || not (fits indent whole)) ->
+                        let arrow = (indexOfTop (isOperator "=>") (List.skip at nodes)).Value
+                        let head = List.take (at + arrow + 1) nodes
+                        let body = unwrapBody (List.skip (at + arrow + 1) nodes)
+                        if listThenLambda nodes then breakLong indent nodes else
+                        match body with
+                        | [ Group (opening, inner, closing) as record ] when opening.Token = TokParenthesis (Curly, Open) && not opening.InsideMacro && (fieldRecord record).IsSome && fits indent (inlineText head + " " + fst (recordOpening opening inner)) ->
+                            let openText, fields = recordOpening opening inner
+                            { Indent = indent; Text = inlineText head + " " + openText } :: layoutFields (indent + 4) fields @ [ { Indent = indent; Text = closing.Text.Text } ]
+                        | _ ->
+                        if fits indent (inlineText head) || at = 0 then { Indent = indent; Text = inlineText head } :: layoutBlock (indent + 4) body
+                        else breakLong indent nodes
+                    | _ -> if fits indent whole && not (longPipeline nodes) && not (carriesComment nodes) && not (nodes |> List.exists functionRecord) && not (listThenLambda nodes) then [ { Indent = indent; Text = whole } ] else breakLong indent nodes
+
+        and isPipe (node : Node) = isOperator "|>" node || isOperator "||>" node || isOperator "|||>" node
+
+        and breakLong (indent : int) (nodes : Node list) : LaidLine list =
+            let whole = inlineText nodes
+            let firstKeyword = nodes |> List.tryFindIndex (fun node -> match node with Leaf lexeme -> not lexeme.InsideMacro && (match lexeme.Token with TokKeyword _ -> true | _ -> false) | Group _ -> false)
+            let limit = defaultArg firstKeyword nodes.Length
+            let pipes = nodes |> List.indexed |> List.filter (fun (index, node) -> index < limit && isPipe node) |> List.map fst
+            let precedenceOf (node : Node) =
+                match node with
+                | Leaf lexeme when not lexeme.InsideMacro ->
+                    match lexeme.Token with
+                    | TokOperator (name, _) ->
+                        match name with
+                        | "," | ":" | "=>" | "|" | "." | ";" | "<-" -> None
+                        | "||" -> Some 20
+                        | "&&" -> Some 30
+                        | "=" | "=." | "<>." | "<" | "<=" | ">" | ">=" | "<>" -> Some 40
+                        | "::" -> Some 50
+                        | _ when name.StartsWith "+" || name.StartsWith "-" -> Some 60
+                        | _ when name.StartsWith "*" || name.StartsWith "/" || name.StartsWith "%" -> Some 70
+                        | _ -> Some 45
+                    | _ -> None
+                | _ -> None
+            let operators = nodes |> List.indexed |> List.filter (fun (index, node) -> index > 0 && index < limit && (precedenceOf node).IsSome)
+            let commaItems =
+                if not (hasTopComma nodes) then []
+                elif firstKeyword.IsNone then splitOn (isOperator ",") nodes |> List.filter (fun item -> not item.IsEmpty)
+                else
+                    let lastCommaBeforeKeyword = nodes |> List.take firstKeyword.Value |> List.findIndexBack (isOperator ",")
+                    (splitOn (isOperator ",") (List.take lastCommaBeforeKeyword nodes) |> List.filter (fun item -> not item.IsEmpty))
+                    @ [ List.skip (lastCommaBeforeKeyword + 1) nodes ]
+            if commaItems.Length > 1 then
+                commaItems
+                |> List.mapi (fun index item ->
+                    let lines =
+                        match layoutExpression indent item with
+                        | [ single ] when index < commaItems.Length - 1 && not (fits single.Indent (single.Text + ",")) ->
+                            layoutExpression (indent + 1) item |> List.map (fun line -> { line with Indent = max 0 (line.Indent - 1) })
+                        | laid -> laid
+                    let lines = if index < commaItems.Length - 1 then keepLambdaParentheses item lines else lines
+                    if index = commaItems.Length - 1 then lines
+                    else
+                        match List.rev lines with
+                        | last :: before -> List.rev ({ last with Text = last.Text + "," } :: before)
+                        | [] -> [])
+                |> List.concat
+            elif pipes.IsEmpty && not operators.IsEmpty then
+                let lowest = operators |> List.map (fun (_, node) -> (precedenceOf node).Value) |> List.min
+                let cuts = operators |> List.filter (fun (_, node) -> (precedenceOf node).Value = lowest) |> List.map fst
+                let bounds = (0 :: cuts) @ [ nodes.Length ]
+                let pureApplication (inner : Node list) =
+                    not inner.IsEmpty
+                    && inner |> List.forall (fun node ->
+                        match node with
+                        | Leaf lexeme -> not lexeme.InsideMacro && (match lexeme.Token with TokVar _ | TokSymbol _ | TokValue _ | TokValueSuffix | TokDefaultValue _ -> true | _ -> false)
+                        | Group (opening, _, _) -> opening.Token = TokParenthesis (Round, Open) && not opening.InsideMacro)
+                let unwrapApplication (operand : Node list) =
+                    match operand with
+                    | [ Group (opening, inner, _) ] when opening.Token = TokParenthesis (Round, Open) && not opening.InsideMacro && pureApplication inner && not (carriesComment operand) -> inner
+                    | [ op; Group (opening, inner, _) ] when (precedenceOf op).IsSome && opening.Token = TokParenthesis (Round, Open) && not opening.InsideMacro && pureApplication inner && not (carriesComment operand) ->
+                        op :: (match inner with Leaf first :: tail -> Leaf { first with Before = Whitespace 1 } :: tail | other -> other)
+                    | _ -> operand
+                List.pairwise bounds
+                |> List.mapi (fun index (a, b) ->
+                    let withGap = unwrapApplication nodes.[a .. b - 1]
+                    if index = 0 then
+                        match withGap with
+                        | [ single ] when lowest >= 45 && (literalChain (indent + 4) single).IsSome ->
+                            { Indent = indent; Text = "(" } :: (literalChain (indent + 4) single).Value @ [ { Indent = indent; Text = ")" } ]
+                        | _ -> layoutExpression indent withGap
+                    else
+                        let segment, comments = withoutLeadingGap withGap
+                        let commentLines = comments |> List.map (fun comment -> if comment = "" then { Indent = 0; Text = "" } else { Indent = indent; Text = comment })
+                        let op = inlineText [ List.head segment ]
+                        let operand = List.tail segment
+                        let text = op + " " + inlineComplete operand
+                        let lambdaOperand =
+                            match operand with
+                            | first :: _ when isKeyword SpecFun first -> Some operand
+                            | [ Group _ ] when index = bounds.Length - 2 && (match unwrapLambda operand with first :: _ -> isKeyword SpecFun first | [] -> false) -> Some (unwrapLambda operand)
+                            | _ -> None
+                        let laidOperand =
+                            if fits indent text && not (carriesComment operand) then [ { Indent = indent; Text = text } ]
+                            elif lambdaOperand.IsSome && not (carriesComment operand) then
+                                match layoutExpression indent lambdaOperand.Value with
+                                | first :: rest -> { Indent = indent; Text = op + " " + first.Text } :: rest
+                                | [] -> [ { Indent = indent; Text = text } ]
+                            elif (match operand with [ single ] -> (literalChain (indent + 4) single).IsSome | _ -> false) then
+                                { Indent = indent; Text = op + " (" } :: (literalChain (indent + 4) (List.head operand)).Value @ [ { Indent = indent; Text = ")" } ]
+                            elif (match operand with [ Group (opening, inner, _) ] -> opening.Token = TokParenthesis (Round, Open) && not inner.IsEmpty && not (hasTopComma inner) && not (fits indent text) | _ -> false) then
+                                match operand with
+                                | [ Group (_, inner, _) ] -> { Indent = indent; Text = op + " (" } :: layoutBlock (indent + 4) (unwrapBody inner) @ [ { Indent = indent; Text = ")" } ]
+                                | _ -> [ { Indent = indent; Text = text } ]
+                            else
+                                match layoutExpression (indent + op.Length + 1) operand with
+                                | first :: rest -> { Indent = indent; Text = op + " " + first.Text } :: rest
+                                | [] -> [ { Indent = indent; Text = op } ]
+                        commentLines @ laidOperand)
+                |> List.concat
+            elif not pipes.IsEmpty then
+                let bounds = (0 :: pipes) @ [ nodes.Length ]
+                let segments = List.pairwise bounds |> List.map (fun (a, b) -> nodes.[a .. b - 1])
+                segments
+                |> List.mapi (fun index withGap ->
+                    if index = 0 then
+                        let endsWithLambda =
+                            match List.tryLast withGap with
+                            | Some (Group _ as last) -> (match unwrapLambda [ last ] with first :: _ -> isKeyword SpecFun first | [] -> false)
+                            | _ -> false
+                        if not endsWithLambda then layoutExpression indent withGap
+                        elif fits indent (inlineText withGap) && not (carriesComment withGap) && not (listThenLambda withGap) && not (opensLayout (unwrapLambda [ List.last withGap ])) then [ { Indent = indent; Text = inlineText withGap } ]
+                        elif withGap.Length = 1 then layoutExpression indent withGap
+                        else breakLong indent withGap
+                    else
+                        let segment, comments = withoutLeadingGap withGap
+                        let commentLines = comments |> List.map (fun comment -> if comment = "" then { Indent = 0; Text = "" } else { Indent = indent; Text = comment })
+                        let op = inlineText [ List.head segment ]
+                        let stage = List.tail segment
+                        let stageText = op + " " + (if index < segments.Length - 1 then inlineText stage else inlineComplete stage)
+                        let laidStage =
+                            if fits indent stageText && not (opensLayout stage) && not (trailingLambdaNeedsBlock stage) && not (stage |> List.exists (fun node -> isKeyword SpecFun node) && opensLayout (List.skip (List.findIndex (fun node -> isKeyword SpecFun node) stage) stage)) then [ { Indent = indent; Text = stageText } ]
+                            else
+                                match lastArgumentLambda indent op stage with
+                                | Some lines -> lines
+                                | None ->
+                                    let wrappedLambda = index = segments.Length - 1 && (match stage with [ Group _ ] -> (match unwrapLambda stage with first :: _ -> isKeyword SpecFun first | [] -> false) | _ -> false)
+                                    let bareLambda = wrappedLambda || stage |> List.exists (fun node -> isKeyword SpecFun node)
+                                    match layoutExpression (if bareLambda then indent else indent + op.Length + 1) (if wrappedLambda && index = segments.Length - 1 then unwrapLambda stage else stage) with
+                                    | first :: rest -> { Indent = indent; Text = op + " " + first.Text } :: rest
+                                    | [] -> [ { Indent = indent; Text = op } ]
+                        commentLines @ laidStage)
+                |> List.concat
+            else
+                let isSimple (node : Node) =
+                    match node with
+                    | Leaf lexeme ->
+                        not lexeme.InsideMacro
+                        && (match lexeme.Token with
+                            | TokVar _ | TokSymbol _ | TokValue _ | TokDefaultValue _ | TokValueSuffix | TokUnaryOperator _ | TokKeyword SpecExists -> true
+                            | _ -> false)
+                    | Group (opening, [ Leaf section ], _) ->
+                        opening.Token = TokParenthesis (Round, Open) && (match section.Token with TokOperator _ | TokUnaryOperator _ -> true | _ -> false)
+                    | Group _ -> false
+                let isUnary (node : Node) = match node with Leaf lexeme -> not lexeme.InsideMacro && (match lexeme.Token with TokUnaryOperator _ -> true | _ -> false) | _ -> false
+                let rec countHead (index : int) =
+                    if index >= nodes.Length then index
+                    elif isUnary nodes.[index] && index + 2 < nodes.Length && (match nodes.[index + 2] with Group (opening, [ Group (innerOpening, _, _) ], _) when innerOpening.Token = TokParenthesis (Curly, Open) -> false | Group (opening, _, _) -> opening.Token = TokParenthesis (Round, Open) && (match nodes.[index] with Leaf l -> l.Text.Text.StartsWith "!!!!" | _ -> false) | _ -> false) then countHead (index + 3)
+                    elif isUnary nodes.[index] then countHead (index + 2)
+                    elif isSimple nodes.[index] then countHead (index + 1)
+                    else index
+                let adjacent (node : Node) = match (firstLexeme node).Before with Whitespace 0 -> true | _ -> false
+                let rec extendHead (count : int) = if count < nodes.Length && count > 0 && adjacent nodes.[count] && (match nodes.[count] with Group _ -> false | _ -> true) then extendHead (count + 1) else count
+                let plainCallee = match nodes with Leaf callee :: _ -> not callee.InsideMacro && (match callee.Token with TokVar _ | TokSymbol _ -> true | _ -> false) | _ -> false
+                let headCount =
+                    let counted = extendHead (min nodes.Length (countHead 0))
+                    if counted > 1 && plainCallee && extendHead 1 = 1 && not (fits indent (inlineText (List.take counted nodes))) then 1 else counted
+                let rest = List.skip headCount nodes
+                let rec bindUnary (items : Node list) : Node list list =
+                    match items with
+                    | unary :: operand :: tail when isUnary unary -> [ unary; operand ] :: bindUnary tail
+                    | node :: tail -> [ node ] :: bindUnary tail
+                    | [] -> []
+                let arguments =
+                    bindUnary rest
+                    |> List.fold (fun (groups : Node list list) group ->
+                        match groups, group with
+                        | previous :: earlier, first :: _ when adjacent first -> (previous @ group) :: earlier
+                        | _ -> group :: groups) []
+                    |> List.rev
+                let restIsArguments =
+                    headCount > 0 && not rest.IsEmpty && not (List.take headCount nodes |> List.forall isUnary)
+                    && rest |> List.forall (fun node -> match node with Group _ -> true | Leaf lexeme -> not lexeme.InsideMacro && (match lexeme.Token with TokVar _ | TokSymbol _ | TokValue _ | TokValueSuffix | TokDefaultValue _ | TokUnaryOperator _ -> true | _ -> false))
+                let isCurly (node : Node) = match node with Group (opening, _, _) -> opening.Token = TokParenthesis (Curly, Open) | Leaf _ -> false
+                let intrinsicHead = nodes.Length - 1
+                let intrinsicTuple =
+                    match nodes with
+                    | Leaf bang :: _ when not bang.InsideMacro && (match bang.Token with TokUnaryOperator _ -> true | _ -> false) && (intrinsicHead = 1 || intrinsicHead = 2) ->
+                        match List.last nodes with
+                        | Group (opening, inner, _) -> opening.Token = TokParenthesis (Round, Open) && hasTopComma inner && not (fits indent whole) && (List.take intrinsicHead nodes |> List.forall (fun node -> match node with Leaf _ -> true | Group _ -> false))
+                        | Leaf _ -> false
+                    | _ -> false
+                let bracketThenLambda =
+                    match splitListLambda nodes with
+                    | Some (before, Group (opening, inner, closing), lambda) ->
+                            let arrow = (indexOfTop (isOperator "=>") lambda).Value
+                            let headText = inlineText before
+                            let lambdaHead = inlineText (List.take (arrow + 1) lambda)
+                            let simpleHead = before |> List.forall (fun node -> match node with Leaf l -> not l.InsideMacro && (match l.Token with TokVar _ | TokSymbol _ | TokValue _ | TokUnaryOperator _ -> true | _ -> false) | Group _ -> true)
+                            if simpleHead && fits indent (headText + " " + opening.Text.Text) then
+                                let items = splitOn (isOperator ";") inner |> List.filter (fun item -> not item.IsEmpty)
+                                Some (
+                                    { Indent = indent; Text = headText + " " + opening.Text.Text }
+                                    :: (items |> List.collect (layoutExpression (indent + 4)))
+                                    @ [ { Indent = indent; Text = closing.Text.Text + " " + lambdaHead } ]
+                                    @ layoutBlock (indent + 4) (unwrapBody (List.skip (arrow + 1) lambda)))
+                            else None
+                    | _ -> None
+                let rec soleLiteral (inner : Node list) =
+                    match inner with
+                    | [ literal ] when isStringGroup literal -> Some literal
+                    | [ Group (opening, nested, _) ] when opening.Token = TokParenthesis (Round, Open) -> soleLiteral nested
+                    | _ -> None
+                let intrinsicLiteral =
+                    match nodes with
+                    | [ Leaf bang; Leaf name; Group (opening, inner, closing) ]
+                        when not bang.InsideMacro && bang.Text.Text.StartsWith "!!!!" && opening.Token = TokParenthesis (Round, Open) && (soleLiteral inner).IsSome && not (fits indent whole) ->
+                        let literal = (soleLiteral inner).Value
+                        literalChain (indent + 4) literal
+                        |> Option.map (fun pieces ->
+                            let gap = match opening.Before with Whitespace 0 -> "" | _ -> " "
+                            { Indent = indent; Text = inlineText [ Leaf bang; Leaf name ] + gap + opening.Text.Text }
+                            :: pieces
+                            @ [ { Indent = indent; Text = closing.Text.Text } ])
+                    | _ -> None
+                match (if intrinsicTuple then None elif intrinsicLiteral.IsSome then intrinsicLiteral elif bracketThenLambda.IsSome then bracketThenLambda else lastArgumentLambda indent "" nodes) with
+                | Some lines -> lines
+                | None when (match List.rev nodes with
+                             | Group (opening, inner, _) :: Leaf unary :: before ->
+                                 not before.IsEmpty && not unary.InsideMacro && (match unary.Token with TokUnaryOperator _ -> true | _ -> false)
+                                 && opening.Token = TokParenthesis (Square, Open) && not inner.IsEmpty && not (fits indent whole)
+                                 && (match opening.Before with Whitespace 0 -> true | _ -> false)
+                                 && fits indent (inlineText (List.rev before) + " " + unary.Text.Text + opening.Text.Text)
+                             | _ -> false) ->
+                    match List.rev nodes with
+                    | Group (opening, inner, closing) :: Leaf unary :: before ->
+                        let items = splitOn (isOperator ";") inner |> List.filter (fun item -> not item.IsEmpty)
+                        { Indent = indent; Text = inlineText (List.rev before) + " " + unary.Text.Text + opening.Text.Text }
+                        :: (items |> List.collect (layoutExpression (indent + 4)))
+                        @ [ { Indent = indent; Text = closing.Text.Text } ]
+                    | _ -> [ { Indent = indent; Text = whole } ]
+                | None when (match List.rev nodes with
+                             | (Group (opening, _, _) as record) :: before ->
+                                 not before.IsEmpty && opening.Token = TokParenthesis (Curly, Open) && not opening.InsideMacro
+                                 && (functionRecord record || not (fits indent whole))
+                                 && fits indent (inlineText (List.rev before) + " " + opening.Text.Text)
+                                 && not (List.rev before |> List.exists (fun node -> isPipe node || (match node with Leaf l -> not l.InsideMacro && (match l.Token with TokKeyword _ | TokOperator _ -> true | _ -> false) | Group _ -> false)))
+                             | _ -> false) ->
+                    match List.rev nodes with
+                    | Group (opening, inner, closing) :: before ->
+                        let openText, fields = recordOpening opening inner
+                        { Indent = indent; Text = inlineText (List.rev before) + " " + openText }
+                        :: layoutFields (indent + 4) fields
+                        @ [ { Indent = indent; Text = closing.Text.Text } ]
+                    | _ -> [ { Indent = indent; Text = whole } ]
+                | None when (match List.rev nodes with
+                             | Group (opening, inner, _) :: before ->
+                                 not before.IsEmpty && opening.Token = TokParenthesis (Square, Open) && not opening.InsideMacro && not inner.IsEmpty
+                                 && not (fits indent whole)
+                                 && (match opening.Before with Whitespace 0 -> false | _ -> true)
+                                 && fits indent (inlineText (List.rev before) + " " + opening.Text.Text)
+                                 && List.rev before |> List.forall (fun node -> match node with Leaf l -> not l.InsideMacro && (match l.Token with TokVar _ | TokSymbol _ | TokValue _ -> true | _ -> false) | Group _ -> true)
+                             | _ -> false) ->
+                    match List.rev nodes with
+                    | Group (opening, inner, closing) :: before ->
+                        let items = splitOn (isOperator ";") inner |> List.filter (fun item -> not item.IsEmpty)
+                        { Indent = indent; Text = inlineText (List.rev before) + " " + opening.Text.Text }
+                        :: (items |> List.collect (layoutExpression (indent + 4)))
+                        @ [ { Indent = indent; Text = closing.Text.Text } ]
+                    | _ -> [ { Indent = indent; Text = whole } ]
+                | None when intrinsicTuple ->
+                    match layoutTuple indent (List.last nodes) with
+                    | opening :: inner -> { Indent = indent; Text = inlineText (List.take intrinsicHead nodes) + (match (firstLexeme (List.last nodes)).Before with Whitespace 0 -> "" | _ -> " ") + opening.Text } :: inner
+                    | [] -> [ { Indent = indent; Text = whole } ]
+                | None ->
+                let intrinsicRecord =
+                    match rest with
+                    | [ Group (opening, [ Group (innerOpening, _, _) ], _) ] -> opening.Token = TokParenthesis (Round, Open) && innerOpening.Token = TokParenthesis (Curly, Open)
+                    | _ -> false
+                let tupleArgument =
+                    match rest with
+                    | [ Group (opening, inner, _) ] -> opening.Token = TokParenthesis (Round, Open) && hasTopComma inner && not (fits indent whole) && fits indent (inlineText (List.take headCount nodes) + " " + opening.Text.Text)
+                    | _ -> false
+                if restIsArguments && tupleArgument then
+                    match layoutTuple indent (List.head rest) with
+                    | opening :: inner -> { Indent = indent; Text = inlineText (List.take headCount nodes) + " " + opening.Text } :: inner
+                    | [] -> [ { Indent = indent; Text = whole } ]
+                elif restIsArguments && rest.Length = 1 && not intrinsicRecord && not (fits indent whole) && fits indent (inlineText (List.take headCount nodes) + " (")
+                     && (match List.head rest with Group (opening, inner, _) -> opening.Token = TokParenthesis (Round, Open) && not opening.InsideMacro && not inner.IsEmpty && not (carriesComment [ List.head rest ]) | Leaf _ -> false)
+                     && (match unwrapLambda [ List.head rest ] with first :: _ -> not (isKeyword SpecFun first || isKeyword SpecFunction first) | [] -> false) then
+                    let opened =
+                        match List.head rest with
+                        | Group (_, inner, closing) when not (hasTopComma inner) -> layoutBlock (indent + 4) (unwrapBody inner) @ [ { Indent = indent; Text = closing.Text.Text } ]
+                        | group -> List.tail (layoutTuple indent group)
+                    { Indent = indent; Text = inlineText (List.take headCount nodes) + " (" } :: opened
+                elif restIsArguments && intrinsicRecord then
+                    match List.head rest with
+                    | Group (opening, [ Group (innerOpening, fields, innerClosing) ], closing) ->
+                        { Indent = indent; Text = inlineText (List.take headCount nodes) + " " + opening.Text.Text + innerOpening.Text.Text }
+                        :: layoutFields (indent + 4) fields
+                        @ [ { Indent = indent; Text = innerClosing.Text.Text + closing.Text.Text } ]
+                    | _ -> [ { Indent = indent; Text = whole } ]
+                elif restIsArguments && rest.Length = 1 && isCurly (List.head rest) then
+                    match List.head rest with
+                    | Group (opening, inner, closing) ->
+                        let openText, fields = recordOpening opening inner
+                        { Indent = indent; Text = inlineText (List.take headCount nodes) + " " + openText }
+                        :: layoutFields (indent + 4) fields
+                        @ [ { Indent = indent; Text = closing.Text.Text } ]
+                    | Leaf _ -> [ { Indent = indent; Text = whole } ]
+                elif restIsArguments && rest.Length = 1 && (literalChain (indent + 4) (match List.head rest with Group (opening, [ single ], _) when opening.Token = TokParenthesis (Round, Open) && isStringGroup single -> single | other -> other)).IsSome then
+                    let literal = match List.head rest with Group (opening, [ single ], _) when opening.Token = TokParenthesis (Round, Open) && isStringGroup single -> single | other -> other
+                    { Indent = indent; Text = inlineText (List.take headCount nodes) + " (" } :: (literalChain (indent + 4) literal).Value @ [ { Indent = indent; Text = ")" } ]
+                elif restIsArguments && rest.Length = 1 && (match List.head rest with Group (opening, _, _) -> (match opening.Token with TokStringOpen | TokMacroOpen -> true | _ -> false) | _ -> false) && not (fits (indent + 4) (inlineText rest)) then
+                    [ { Indent = indent; Text = whole } ]
+                elif restIsArguments then
+                    { Indent = indent; Text = inlineText (List.take headCount nodes) }
+                    :: (arguments |> List.collect (fun withGap -> let argument, comments = withoutLeadingGap withGap in (comments |> List.map (fun comment -> if comment = "" then { Indent = 0; Text = "" } else { Indent = indent + 4; Text = comment })) @ match argument with [ single ] when not (fits (indent + 4) (inlineText [ single ])) && (literalChain (indent + 8) single).IsSome -> { Indent = indent + 4; Text = "(" } :: (literalChain (indent + 8) single).Value @ [ { Indent = indent + 4; Text = ")" } ] | [ single ] -> layoutArgument (indent + 4) single | [ unary; (Group (opening, _, _) as array) ] when opening.Token = TokParenthesis (Square, Open) && not (fits (indent + 4) (inlineComplete argument)) -> (match layoutArgument (indent + 4) array with first :: rest -> { first with Text = inlineText [ unary ] + first.Text } :: rest | [] -> []) | bound -> [ { Indent = indent + 4; Text = inlineComplete bound } ]))
+                elif headCount = nodes.Length && not (fits indent whole) && nodes |> List.forall (fun node -> match node with Leaf l -> not l.InsideMacro && (match l.Token with TokVar _ | TokSymbol _ | TokValue _ | TokValueSuffix | TokDefaultValue _ | TokUnaryOperator _ | TokOperator (".", _) -> true | _ -> false) | Group _ -> false) && (gluedWords nodes).Length >= 2 then
+                    match gluedWords nodes with
+                    | callee :: words -> { Indent = indent; Text = inlineText callee } :: (words |> List.map (fun word -> { Indent = indent + 4; Text = inlineText word }))
+                    | [] -> [ { Indent = indent; Text = whole } ]
+                elif nodes.Length > 1 && not (fits indent whole)
+                     && (match List.last nodes with Group (opening, inner, _) -> opening.Token = TokParenthesis (Round, Open) && not opening.InsideMacro && hasTopComma inner && not (carriesComment inner) | Leaf _ -> false)
+                     && List.take (nodes.Length - 1) nodes |> List.forall (fun node -> match node with Leaf l -> not l.InsideMacro && (match l.Token with TokVar _ | TokSymbol _ | TokUnaryOperator _ -> true | _ -> false) | Group _ -> false)
+                     && fits indent (inlineText (List.take (nodes.Length - 1) nodes) + " (") then
+                    match layoutTuple indent (List.last nodes) with
+                    | opening :: inner -> { Indent = indent; Text = inlineText (List.take (nodes.Length - 1) nodes) + (match (firstLexeme (List.last nodes)).Before with Whitespace 0 -> "" | _ -> " ") + opening.Text } :: inner
+                    | [] -> [ { Indent = indent; Text = whole } ]
+                else [ { Indent = indent; Text = whole } ]
+
+        and trailingLambdaNeedsBlock (nodes : Node list) =
+            match List.tryLast nodes with
+            | Some last ->
+                match unwrapLambda [ last ] with
+                | (first :: _) as lambda when isKeyword SpecFun first -> opensLayout lambda
+                | first :: next :: _ when isKeyword SpecFunction first && isOperator "|" next -> true
+                | _ -> false
+            | _ -> false
+
+        and lastArgumentLambda (indent : int) (prefix : string) (nodes : Node list) : LaidLine list option =
+            let isLambdaGroup (node : Node) =
+                match node with
+                | Group _ -> (match unwrapLambda [ node ] with first :: _ -> isKeyword SpecFun first | [] -> false)
+                | Leaf _ -> false
+            let otherLambdas = nodes |> List.take (max 0 (nodes.Length - 1)) |> List.exists isLambdaGroup
+            match List.tryLast nodes with
+            | Some _ when otherLambdas -> None
+            | Some last when nodes.Length > 1 ->
+                match unwrapLambda [ last ] with
+                | first :: arms when isKeyword SpecFunction first && (match arms with next :: _ -> isOperator "|" next | [] -> false) ->
+                    let headText = (if prefix = "" then "" else prefix + " ") + inlineText (List.take (nodes.Length - 1) nodes) + " " + inlineText [ first ]
+                    if fits indent headText then Some ({ Indent = indent; Text = headText } :: layoutArms (indent + 4) (splitArms arms)) else None
+                | (first :: _) as lambda when isKeyword SpecFun first ->
+                    match indexOfTop (isOperator "=>") lambda with
+                    | Some arrow ->
+                        let lambdaHead = List.take (arrow + 1) lambda
+                        let body = unwrapBody (List.skip (arrow + 1) lambda)
+                        let headText = (if prefix = "" then "" else prefix + " ") + inlineText (List.take (nodes.Length - 1) nodes) + " " + inlineText lambdaHead
+                        if fits indent headText then Some ({ Indent = indent; Text = headText } :: layoutBlock (indent + 4) body)
+                        else None
+                    | None -> None
+                | _ -> None
+            | _ -> None
+
+        and layoutArgument (indent : int) (argument : Node) : LaidLine list =
+            match argument with
+            | Group (opening, inner, closing) when opening.Token = TokParenthesis (Square, Open) && not inner.IsEmpty && not (fits indent (inlineText [ argument ])) ->
+                let items = splitOn (isOperator ";") inner |> List.filter (fun item -> not item.IsEmpty)
+                { Indent = indent; Text = opening.Text.Text } :: (items |> List.collect (layoutExpression (indent + 4))) @ [ { Indent = indent; Text = closing.Text.Text } ]
+            | Group (opening, inner, closing) when opening.Token = TokParenthesis (Round, Open) && not inner.IsEmpty && not (hasTopComma inner) && (not (fits indent (inlineText [ argument ])) || carriesComment [ argument ]) && (match unwrapLambda [ argument ] with first :: _ -> not (isKeyword SpecFun first) | [] -> true) ->
+                let closingComments =
+                    match closing.Before with
+                    | Embedded gap -> commentsIn gap.Text |> List.filter (fun comment -> comment <> "") |> List.map (fun comment -> { Indent = indent + 4; Text = comment })
+                    | Whitespace _ -> []
+                { Indent = indent; Text = opening.Text.Text } :: layoutBlock (indent + 4) (unwrapBody inner) @ closingComments @ [ { Indent = indent; Text = closing.Text.Text } ]
+            | Group (opening, inner, _) when opening.Token = TokParenthesis (Round, Open) && hasTopComma inner && not (fits indent (inlineText [ argument ])) -> layoutTuple indent argument
+            | Group (opening, inner, closing) when opening.Token = TokParenthesis (Curly, Open) && not (fits indent (inlineText [ argument ])) ->
+                let openText, fields = recordOpening opening inner
+                { Indent = indent; Text = openText } :: layoutFields (indent + 4) fields @ [ { Indent = indent; Text = closing.Text.Text } ]
+            | _ -> layoutExpression indent (unwrapLambda [ argument ])
+
+        and keepLambdaParentheses (item : Node list) (lines : LaidLine list) =
+            let opensScope =
+                match unwrapBody item with
+                | first :: _ -> isKeyword SpecFun first || isKeyword SpecFunction first || isKeyword SpecMatch first || isKeyword SpecTypecase first || isKeyword SpecIf first
+                | [] -> false
+            let scopeWords = [ "fun "; "function"; "match "; "typecase "; "if " ]
+            match lines with
+            | first :: _ when opensScope && scopeWords |> List.exists (fun word -> first.Text.StartsWith word || first.Text = word.Trim ()) ->
+                let wrapped = { first with Text = "(" + first.Text } :: List.tail lines
+                match List.rev wrapped with
+                | last :: before -> List.rev ({ last with Text = last.Text + ")" } :: before)
+                | [] -> wrapped
+            | _ -> lines
+
+        and layoutTuple (indent : int) (argument : Node) : LaidLine list =
+            match argument with
+            | Group (opening, inner, closing) ->
+                let items = splitOn (isOperator ",") inner |> List.filter (fun item -> not item.IsEmpty)
+                let laid =
+                    items
+                    |> List.mapi (fun index item ->
+                        let lines =
+                            match layoutExpression (indent + 4) item with
+                            | [ single ] when index < items.Length - 1 && not (fits single.Indent (single.Text + ",")) ->
+                                layoutExpression (indent + 5) item |> List.map (fun line -> { line with Indent = max 0 (line.Indent - 1) })
+                            | laid -> laid
+                        let lines = if index < items.Length - 1 then keepLambdaParentheses item lines else lines
+                        if index = items.Length - 1 then lines
+                        else
+                            match List.rev lines with
+                            | last :: before -> List.rev ({ last with Text = last.Text + "," } :: before)
+                            | [] -> [])
+                    |> List.concat
+                { Indent = indent; Text = opening.Text.Text } :: laid @ [ { Indent = indent; Text = closing.Text.Text } ]
+            | Leaf _ -> layoutExpression indent [ argument ]
+
+        and recordOpening (opening : Lexeme) (inner : Node list) =
+            match indexOfTop (isKeyword SpecWith) inner with
+            | Some at when at > 0 -> opening.Text.Text + " " + inlineText (List.take (at + 1) inner), List.skip (at + 1) inner
+            | _ -> opening.Text.Text, inner
+
+        and layoutFields (indent : int) (inner : Node list) : LaidLine list =
+            splitOn (isOperator ";") inner
+            |> List.filter (fun field -> not field.IsEmpty)
+            |> List.collect (fun field ->
+                let text = inlineComplete field
+                match indexOfTop (isOperator "=") field with
+                | Some at when not (fits indent text) || opensLayout (unwrapBody (List.skip (at + 1) field)) || (statements (unwrapBody (List.skip (at + 1) field))).Length > 1 ->
+                    let body = unwrapBody (List.skip (at + 1) field)
+                    let headText = inlineText (List.take (at + 1) field)
+                    match body with
+                    | first :: _ when isKeyword SpecFun first && (indexOfTop (isOperator "=>") body).IsSome ->
+                        let arrow = (indexOfTop (isOperator "=>") body).Value
+                        let lambdaHead = inlineText (List.take (arrow + 1) body)
+                        { Indent = indent; Text = headText + " " + lambdaHead } :: layoutBlock (indent + 4) (unwrapBody (List.skip (arrow + 1) body))
+                    | _ -> { Indent = indent; Text = headText } :: layoutBlock (indent + 4) body
+                | _ -> [ { Indent = indent; Text = text } ])
+
+        and unwrapLambda (nodes : Node list) =
+            match nodes with
+            | [ Group (opening, (first :: _ as inner), _) ] when opening.Token = TokParenthesis (Round, Open) && (isKeyword SpecFun first || isKeyword SpecFunction first) -> inner
+            | [ Group (opening, ([ Group _ ] as inner), _) ] when opening.Token = TokParenthesis (Round, Open) ->
+                match unwrapLambda inner with
+                | first :: _ as unwrapped when isKeyword SpecFun first || isKeyword SpecFunction first -> unwrapped
+                | _ -> nodes
+            | _ -> nodes
+
+        let rec mergeAll (nodes : Node list) : Node list =
+            nodes
+            |> List.map (fun node ->
+                match node with
+                | Group (opening, inner, closing) when opening.Token <> TokStringOpen && opening.Token <> TokMacroOpen -> Group (opening, mergeAll inner, closing)
+                | _ -> node)
+            |> fun merged -> if literalSplitting.Enabled then mergeConcatenations merged else merged
+
+        type FlatLayout =
+            | LaidOut of string list
+            | CommentsMisplaced of expected : int * placed : int
+            | CommentsInline of count : int
+            | NotOneCodeLine
+
+        let layoutFlatLine (text : string) : FlatLayout =
+            match lexLine lex_state_init text with
+            | Code (0, lexemes, tail), _ when tail.Text.Trim().Length = 0 ->
+                let expected = lexemes |> Array.sumBy (fun lexeme -> match lexeme.Before with Embedded gap -> (commentsIn gap.Text |> List.filter (fun comment -> comment <> "")).Length | Whitespace _ -> 0)
+                let nodes = mergeAll (fst (nodesOf (List.ofArray lexemes)))
+                let laid = layoutBlock 0 nodes |> List.map (fun line -> System.String (' ', line.Indent) + line.Text)
+                let mutable state = lex_state_init
+                let mutable placed = 0
+                let mutable inlined = 0
+                for line in laid do
+                    let shape, next = lexLine state line
+                    state <- next
+                    match shape with
+                    | Remark _ -> placed <- placed + 1
+                    | Code (_, lexemes, tail) ->
+                        let embedded = lexemes |> Array.sumBy (fun lexeme -> match lexeme.Before with Embedded gap -> (commentsIn gap.Text |> List.filter (fun comment -> comment <> "")).Length | Whitespace _ -> 0)
+                        inlined <- inlined + embedded + (if tail.Text.Contains "(*" then 1 else 0)
+                        if tail.Text.TrimStart().StartsWith "//" then placed <- placed + 1
+                    | Opaque _ | Blank -> ()
+                if inlined > 0 then CommentsInline inlined
+                elif placed <> expected then CommentsMisplaced (expected, placed)
+                else LaidOut laid
+            | _ -> NotOneCodeLine
+
+        let isOpenLine (text : string) = text.StartsWith "open "
+
+        let joinMacroContinuations (text : string) =
+            if not literalSplitting.Enabled then text
+            else
+                let output = ResizeArray<string> ()
+                let mutable state = lex_state_init
+                let mutable pending : string option = None
+                for line in splitLines text do
+                    let shape, next = lexLine state line
+                    let joined = match pending with Some head -> head + line.TrimStart () | None -> line
+                    match shape with
+                    | Opaque (_, InMacro) when line.EndsWith "\\" && next <> lex_state_init -> pending <- Some (joined.Substring (0, joined.Length - 1))
+                    | _ ->
+                        output.Add joined
+                        pending <- None
+                    state <- next
+                pending |> Option.iter output.Add
+                String.concat "\n" output + (if text.EndsWith "\n" then "\n" else "")
+
+        let splitMacroLine (line : string) : string list =
+            if not literalSplitting.Enabled || line.Length <= 120 then [ line ]
+            else
+                match lexLine lex_state_init line with
+                | Code (indent, lexemes, tail), _ when tail.Text.Trim().Length = 0 ->
+                    let opens = lexemes |> Array.indexed |> Array.filter (fun (_, lexeme) -> lexeme.Token = TokMacroOpen) |> Array.map fst
+                    let spans =
+                        opens
+                        |> Array.choose (fun start ->
+                            let rec find index depth =
+                                if index >= lexemes.Length then None
+                                else
+                                    match lexemes.[index].Token with
+                                    | TokMacroOpen when index <> start -> find (index + 1) (depth + 1)
+                                    | TokMacroClose when depth = 0 -> Some index
+                                    | TokMacroClose -> find (index + 1) (depth - 1)
+                                    | _ -> find (index + 1) depth
+                            find (start + 1) 0 |> Option.map (fun stop -> start, stop))
+                    match spans |> Array.filter (fun (start, stop) -> lexemes.[stop].Span.NearTo - lexemes.[start].Span.From >= 24) |> Array.sortByDescending (fun (start, stop) -> lexemes.[stop].Span.NearTo - lexemes.[start].Span.From) |> Array.tryHead with
+                    | Some (start, stop) ->
+                        let openText = lexemes.[start].Text.Text
+                        let closeText = lexemes.[stop].Text.Text
+                        let units =
+                            let rec collect index (acc : string list) =
+                                if index >= stop then List.rev acc
+                                else
+                                    let lexeme = lexemes.[index]
+                                    let gapBefore at = line.Substring (lexemes.[at - 1].Span.NearTo, lexemes.[at].Span.From - lexemes.[at - 1].Span.NearTo)
+                                    match lexeme.Token with
+                                    | TokMacroExpression (_, Open) ->
+                                        let rec closing at depth =
+                                            if at >= stop then stop - 1
+                                            else
+                                                match lexemes.[at].Token with
+                                                | TokMacroExpression (_, Close) when depth = 0 -> at
+                                                | TokMacroExpression (_, Close) -> closing (at + 1) (depth - 1)
+                                                | TokMacroExpression (_, Open) -> closing (at + 1) (depth + 1)
+                                                | _ -> closing (at + 1) depth
+                                        let last = closing (index + 1) 0
+                                        let whole = gapBefore index + line.Substring (lexeme.Span.From, lexemes.[last].Span.NearTo - lexeme.Span.From)
+                                        collect (last + 1) (whole :: acc)
+                                    | TokText _ when (gapBefore index).Length = 0 -> collect (index + 1) (List.rev (lexeme.Text.Text |> Seq.map string |> List.ofSeq) @ acc)
+                                    | _ -> collect (index + 1) ((gapBefore index + lexeme.Text.Text) :: acc)
+                            collect (start + 1) []
+                        let prefix = line.Substring (0, lexemes.[start].Span.From)
+                        let suffix = line.Substring lexemes.[stop].Span.NearTo
+                        let roomFor (index : int) = if index = 0 then 120 - prefix.Length - openText.Length - 2 else 120 - indent - 4 - 2
+                        let pieces = ResizeArray<string> ()
+                        let current = StringBuilder ()
+                        let mutable lastSpace = -1
+                        for unit in units do
+                            current.Append unit |> ignore
+                            let leadingSpaces = unit.Length - unit.TrimStart(' ').Length
+                            if unit = " " then lastSpace <- current.Length
+                            elif leadingSpaces > 0 && leadingSpaces < unit.Length then lastSpace <- current.Length - unit.Length + leadingSpaces
+                            let room = roomFor pieces.Count
+                            if current.Length >= room then
+                                let cut = if lastSpace > room / 2 then lastSpace else current.Length
+                                let text = current.ToString ()
+                                pieces.Add (text.Substring (0, cut))
+                                current.Clear().Append (text.Substring cut) |> ignore
+                                lastSpace <- -1
+                        if current.Length > 0 then pieces.Add (current.ToString ())
+                        let pieces =
+                            pieces
+                            |> List.ofSeq
+                            |> List.fold (fun (kept : string list) piece ->
+                                let leadingSpaces = piece.Length - piece.TrimStart(' ').Length
+                                match kept with
+                                | previous :: earlier when leadingSpaces > 0 -> piece.Substring leadingSpaces :: (previous + piece.Substring (0, leadingSpaces)) :: earlier
+                                | _ -> piece :: kept) []
+                            |> List.rev
+                            |> List.filter (fun piece -> piece.Length > 0)
+                        if pieces.Length < 2 || roomFor 0 < 12 || pieces |> List.exists (fun piece -> piece.StartsWith " ") then [ line ]
+                        else
+                            let continuation = System.String (' ', indent + 4)
+                            pieces
+                            |> List.mapi (fun index piece ->
+                                let lead = if index = 0 then prefix + openText else continuation
+                                let trail = if index = pieces.Length - 1 then closeText + suffix else "\\"
+                                lead + piece + trail)
+                    | None -> [ line ]
+                | _ -> [ line ]
+
+        type LayoutTally() =
+            member val VerbatimBlocks = 0 with get, set
+            member val VerbatimLines = 0 with get, set
+            member val GuardedBlocks = 0 with get, set
+            member val Kept = ResizeArray<string * string> ()
+
+        let layoutTally = LayoutTally ()
+
+        let rewrapComments (lines : string list) =
+            let mutable fenced = false
+            lines
+            |> List.collect (fun line ->
+                let trimmed = line.TrimStart ()
+                if not (trimmed.StartsWith "//") then [ line ]
+                else
+                    let indent = line.Length - trimmed.Length
+                    let slashes = trimmed |> Seq.takeWhile (fun c -> c = '/') |> Seq.length
+                    let marker = trimmed.Substring (0, slashes)
+                    let body = trimmed.Substring(slashes).TrimStart ()
+                    if body.StartsWith "```" then
+                        fenced <- not fenced
+                        [ line ]
+                    elif fenced || line.Length <= 120 || body.StartsWith "#" || body.StartsWith ">" then [ line ]
+                    else
+                        let prefix = System.String (' ', indent) + marker + " "
+                        let words = body.Split ' ' |> Array.filter (fun word -> word.Length > 0)
+                        let output = ResizeArray<string> ()
+                        let current = StringBuilder (prefix)
+                        for word in words do
+                            if current.Length > prefix.Length && current.Length + 1 + word.Length > 120 then
+                                output.Add (current.ToString ())
+                                current.Clear().Append(prefix) |> ignore
+                            if current.Length > prefix.Length then current.Append ' ' |> ignore
+                            current.Append word |> ignore
+                        if current.Length > prefix.Length then output.Add (current.ToString ())
+                        List.ofSeq output)
+
+        let layout (source : Source<'phase>) =
+            let _, blocks = flatten source
+            let output = ResizeArray<string> ()
+            let mutable previousCode : string option = None
+            let mutable previousSingleInstance = false
+            for block in blocks do
+                let lines =
+                    match block with
+                    | Flattened (flat, original) ->
+                        flat |> List.collect (function
+                            | Kept text -> [ text ]
+                            | Joined text ->
+                                let shapes (lines : string list) =
+                                    blockShapes source.FileEdition source.FileUnit (String.concat "\n" lines + "\n")
+                                    |> List.map (fun block -> block.Shape)
+                                    |> List.filter (fun shape -> shape <> "error")
+                                let kept () = original |> List.rev |> List.skipWhile (fun line -> line.Trim().Length = 0) |> List.rev
+                                let head () = original |> List.tryFind (fun line -> line.Trim().Length > 0 && not (line.TrimStart().StartsWith "//")) |> Option.defaultValue ""
+                                let expected = shapes original
+                                let sameParse (lines : string list) = shapes lines = expected && not (expected |> List.exists (fun shape -> shape.StartsWith "error ("))
+                                match layoutFlatLine text with
+                                | LaidOut laid when sameParse laid ->
+                                    let split = laid |> List.collect splitMacroLine
+                                    if split = laid || sameParse split then split else laid
+                                | LaidOut _ ->
+                                    layoutTally.GuardedBlocks <- layoutTally.GuardedBlocks + 1
+                                    layoutTally.Kept.Add ("parse-guard", head ())
+                                    kept ()
+                                | refusal ->
+                                    let lines = kept ()
+                                    layoutTally.VerbatimBlocks <- layoutTally.VerbatimBlocks + 1
+                                    layoutTally.VerbatimLines <- layoutTally.VerbatimLines + lines.Length
+                                    let reason =
+                                        match refusal with
+                                        | CommentsInline count -> sprintf "comments-inline %d" count
+                                        | CommentsMisplaced (expected, placed) -> sprintf "comments-misplaced %d/%d" placed expected
+                                        | NotOneCodeLine | LaidOut _ -> "not-one-code-line"
+                                    layoutTally.Kept.Add (reason, head ())
+                                    lines)
+                    | Refused (_, _, original) -> original
+                let lines = lines |> List.skipWhile (fun line -> line.Trim().Length = 0) |> List.rev |> List.skipWhile (fun line -> line.Trim().Length = 0) |> List.rev
+                match lines with
+                | [] -> ()
+                | first :: _ ->
+                    let codeStart = lines |> List.tryFind (fun line -> not (line.TrimStart().StartsWith "//") && line.Trim().Length > 0)
+                    let codeLines = lines |> List.filter (fun line -> not (line.TrimStart().StartsWith "//") && line.Trim().Length > 0)
+                    let oneLineInstance = codeLines.Length = 1 && codeLines.Head.StartsWith "instance "
+                    let singleInstance = oneLineInstance && first = codeLines.Head
+                    match previousCode with
+                    | Some previous when not (isOpenLine previous && (match codeStart with Some c -> isOpenLine c && first = c | None -> false)) && not (singleInstance && previousSingleInstance) -> output.Add ""
+                    | _ -> ()
+                    match block with
+                    | Refused _ -> output.AddRange lines
+                    | Flattened _ ->
+                        for line in rewrapComments lines do
+                            if not (line.Trim().Length = 0 && output.Count > 0 && output.[output.Count - 1].Trim().Length = 0) then output.Add line
+                    previousCode <- match codeStart with Some c -> Some c | None -> previousCode
+                    previousSingleInstance <- oneLineInstance
+            List.ofSeq output
+
+    module FormatterFormat =
+
+        open System
+        open System.IO
+        open FormatterLexed
+        open FormatterParsed
+        open FormatterSpacing
+        open FormatterCheck
+        open FormatterConvert
+        open FormatterFlatten
+        open FormatterLayout
+
+        type Entry =
+            { Corpus : string
+              Edition : Edition
+              Path : string
+              Rel : string }
+
+        let readEntries (inputs : string list) =
+            inputs
+            |> List.collect (fun input ->
+                if input.EndsWith ".tsv" then
+                    File.ReadAllLines input
+                    |> Array.filter (fun row -> row.Length > 0)
+                    |> Array.map (fun row ->
+                        let cells = row.Split '\t'
+                        { Corpus = cells.[0]
+                          Edition = (if cells.[1] = "2" then Edition2 else Edition3)
+                          Path = cells.[2]
+                          Rel = cells.[3] })
+                    |> List.ofArray
+                else [ { Corpus = "files"; Edition = Edition3; Path = input; Rel = Path.GetFileName input } ])
+
+        let readText (entry : Entry) = File.ReadAllText(entry.Path).Replace ("\r\n", "\n")
+
+        type Tally() =
+            let counts = Collections.Generic.SortedDictionary<string, int> (StringComparer.Ordinal)
+            member _.Add (key : string) (amount : int) =
+                counts.[key] <- (match counts.TryGetValue key with | true, current -> current + amount | _ -> amount)
+            member _.Get (key : string) = match counts.TryGetValue key with | true, current -> current | _ -> 0
+            member _.Rows = counts |> Seq.map (fun pair -> pair.Key, pair.Value) |> List.ofSeq
+
+        let printTally (title : string) (tally : Tally) =
+            printfn "%s" title
+            for key, value in tally.Rows do
+                printfn "  %s\t%d" key value
+
+        let corpora (entries : Entry list) = entries |> List.map (fun entry -> entry.Corpus) |> List.distinct
+
+        let runCheck (entries : Entry list) (listing : TextWriter) =
+            let tally = Tally ()
+            for entry in entries do
+                let source = lexText entry.Path entry.Edition (readText entry)
+                tally.Add (entry.Corpus + "\tlines") source.SourceLines.Length
+                for overflow in overflows source do
+                    let name = constructName overflow.Construct
+                    tally.Add (entry.Corpus + "\tover120") 1
+                    tally.Add (entry.Corpus + "\tover120\t" + name) 1
+                    listing.WriteLine (sprintf "%s:%d\t%d\t%s" entry.Rel overflow.Line overflow.Width name)
+            printTally "check" tally
+            tally
+
+        let changeName change =
+            match change with
+            | TrailingWhitespace -> "trailing-whitespace"
+            | GuardKept -> "guard-kept"
+            | Respaced reason -> sprintf "%A" reason
+
+        let tokenStream (source : Source<'phase>) =
+            source.SourceLines
+            |> Array.collect (fun line ->
+                match line.Shape with
+                | Code (_, lexemes, _) -> tokenKinds lexemes |> Array.map (fun (kind, text) -> kind + " " + text)
+                | Opaque (text, _) -> [| "opaque " + text.Text.TrimEnd () |]
+                | Remark _ | Blank -> [||])
+
+        let runSpace (entries : Entry list) (outDir : string option) (listing : TextWriter) (verifyParse : bool) =
+            let tally = Tally ()
+            for entry in entries do
+                let text = readText entry
+                let source = lexText entry.Path entry.Edition text
+                let spaced, changes = respace source
+                let output = joinLines (renderAll spaced)
+                let changedLines = changes |> Array.filter (fun (_, lineChanges, _) -> not (List.isEmpty lineChanges))
+                tally.Add (entry.Corpus + "\tfiles") 1
+                tally.Add (entry.Corpus + "\tlines") source.SourceLines.Length
+                tally.Add (entry.Corpus + "\tlines-changed") (changedLines |> Array.filter (fun (_, c, _) -> c <> [ GuardKept ]) |> Array.length)
+                if output <> text then tally.Add (entry.Corpus + "\tfiles-changed") 1
+                for number, lineChanges, guard in changedLines do
+                    for change in List.distinct lineChanges do
+                        tally.Add (entry.Corpus + "\trule\t" + changeName change) 1
+                    let names = lineChanges |> List.map changeName |> List.distinct |> String.concat ","
+                    listing.WriteLine (sprintf "%s:%d\t%s%s" entry.Rel number names (match guard with Some rejected -> "\t" + rejected | None -> ""))
+                let again, _ = respace (lexText entry.Path entry.Edition output)
+                if joinLines (renderAll again) <> output then
+                    tally.Add (entry.Corpus + "\tG1-not-idempotent") 1
+                    listing.WriteLine (sprintf "%s\tG1-not-idempotent" entry.Rel)
+                if tokenStream source <> tokenStream spaced then
+                    tally.Add (entry.Corpus + "\tF6-token-drift") 1
+                    listing.WriteLine (sprintf "%s\tF6-token-drift" entry.Rel)
+                if verifyParse && output <> text then
+                    match compareParses entry.Edition spaced.FileUnit text output with
+                    | SameParse -> tally.Add (entry.Corpus + "\tparse-same") 1
+                    | OriginalHasErrors -> tally.Add (entry.Corpus + "\tparse-original-has-errors") 1
+                    | ParseDiffers line ->
+                        tally.Add (entry.Corpus + "\tparse-differs") 1
+                        listing.WriteLine (sprintf "%s:%d\tparse-differs" entry.Rel line)
+                match outDir with
+                | Some dir ->
+                    let target = Path.Combine (dir, entry.Corpus, entry.Rel.Replace ('/', Path.DirectorySeparatorChar))
+                    Directory.CreateDirectory (Path.GetDirectoryName target) |> ignore
+                    File.WriteAllText (target, output)
+                | None -> ()
+            printTally "space" tally
+            tally
+
+        let runConvert (entries : Entry list) (outDir : string option) (listing : TextWriter) (verifyParse : bool) =
+            let tally = Tally ()
+            for entry in entries do
+                let text = readText entry
+                let source = lexText entry.Path entry.Edition text
+                let original = joinLines (renderAll source)
+                let symbols, converted, rejected = convert Symbols source
+                let symbolText = joinLines symbols
+                let words, _, rejectedBack = convert Words (lexText entry.Path Edition3 symbolText)
+                let roundTrip = joinLines words
+                tally.Add (entry.Corpus + "\tfiles") 1
+                tally.Add (entry.Corpus + "\tlines-converted") converted
+                tally.Add (entry.Corpus + "\tlines-rejected") rejected.Length
+                tally.Add (entry.Corpus + "\tlines-rejected-back") rejectedBack.Length
+                for number, attempted in rejected do
+                    listing.WriteLine (sprintf "%s:%d\trejected\t%s" entry.Rel number attempted)
+                if roundTrip = original then tally.Add (entry.Corpus + "\tround-trip-identical") 1
+                else
+                    tally.Add (entry.Corpus + "\tround-trip-differs") 1
+                    listing.WriteLine (sprintf "%s\tround-trip-differs" entry.Rel)
+                if verifyParse && converted > 0 then
+                    match compareParses entry.Edition source.FileUnit original symbolText with
+                    | SameParse -> tally.Add (entry.Corpus + "\tparse-same") 1
+                    | OriginalHasErrors -> tally.Add (entry.Corpus + "\tparse-original-has-errors") 1
+                    | ParseDiffers line ->
+                        tally.Add (entry.Corpus + "\tparse-differs") 1
+                        listing.WriteLine (sprintf "%s:%d\tparse-differs" entry.Rel line)
+                match outDir with
+                | Some dir ->
+                    let target = Path.Combine (dir, entry.Corpus, entry.Rel.Replace ('/', Path.DirectorySeparatorChar))
+                    Directory.CreateDirectory (Path.GetDirectoryName target) |> ignore
+                    File.WriteAllText (target, symbolText)
+                | None -> ()
+            printTally "convert" tally
+            tally
+
+        let runFlatten (entries : Entry list) (outDir : string option) (listing : TextWriter) =
+            let tally = Tally ()
+            for entry in entries do
+                let text = readText entry
+                let source = lexText entry.Path entry.Edition text
+                let lines, blocks = flatten source
+                let flatText = joinLines (Array.ofList lines)
+                tally.Add (entry.Corpus + "\tfiles") 1
+                tally.Add (entry.Corpus + "\tlines-in") source.SourceLines.Length
+                tally.Add (entry.Corpus + "\tlines-out") lines.Length
+                for block in blocks do
+                    match block with
+                    | Flattened _ -> tally.Add (entry.Corpus + "\tblocks-flattened") 1
+                    | Refused (reason, line, _) ->
+                        tally.Add (entry.Corpus + "\tblocks-refused\t" + (sprintf "%A" reason)) 1
+                        listing.WriteLine (sprintf "%s:%d\trefused\t%A" entry.Rel line reason)
+                let relexed = lexText entry.Path entry.Edition flatText
+                let opaque = relexed.SourceLines |> Array.filter (fun line -> match line.Shape with Opaque _ -> true | _ -> false) |> Array.length
+                let opaqueBefore = source.SourceLines |> Array.filter (fun line -> match line.Shape with Opaque _ -> true | _ -> false) |> Array.length
+                if opaque > opaqueBefore then
+                    tally.Add (entry.Corpus + "\tG7-1-lex-errors") 1
+                    listing.WriteLine (sprintf "%s\tG7-1-lex-errors\t%d" entry.Rel (opaque - opaqueBefore))
+                match compareParses entry.Edition source.FileUnit text flatText with
+                | SameParse -> tally.Add (entry.Corpus + "\tG7-parse-same") 1
+                | OriginalHasErrors -> tally.Add (entry.Corpus + "\tG7-original-has-errors") 1
+                | ParseDiffers line ->
+                    tally.Add (entry.Corpus + "\tG7-parse-differs") 1
+                    listing.WriteLine (sprintf "%s:%d\tG7-parse-differs" entry.Rel line)
+                match outDir with
+                | Some dir ->
+                    let target = Path.Combine (dir, entry.Corpus, entry.Rel.Replace ('/', Path.DirectorySeparatorChar))
+                    Directory.CreateDirectory (Path.GetDirectoryName target) |> ignore
+                    File.WriteAllText (target, flatText)
+                | None -> ()
+            printTally "flatten" tally
+            tally
+
+        let formatText (path : string) (edition : Edition) (text : string) =
+            let prespaced = let spaced, _ = respace (lexText path edition (joinMacroContinuations text)) in joinLines (renderAll spaced)
+            let laid = joinLines (Array.ofList (layout (lexText path edition prespaced)))
+            let spaced, _ = respace (lexText path edition laid)
+            joinLines (renderAll spaced)
+
+        let commentWords (source : Source<'phase>) =
+            let words (text : string) =
+                text.Replace("(*", " ").Replace("*)", " ").Split ([| ' '; '\t' |], StringSplitOptions.RemoveEmptyEntries)
+                |> Array.map (fun word -> word.TrimStart '/')
+                |> Array.filter (fun word -> word.Length > 0 && word <> "!" && word <> "-" && word <> ">")
+            source.SourceLines
+            |> Array.collect (fun line ->
+                match line.Shape with
+                | Remark text -> words text.Text
+                | Opaque (text, (InComment | Unlexable)) -> words text.Text
+                | Opaque (_, (InString | InMacro)) -> [||]
+                | Code (_, lexemes, tail) ->
+                    let embedded = lexemes |> Array.collect (fun lexeme -> match lexeme.Before with Embedded gap -> words gap.Text | Whitespace _ -> [||])
+                    Array.append embedded (words tail.Text)
+                | Blank -> [||])
+
+        let runFormat (entries : Entry list) (outDir : string option) (listing : TextWriter) =
+            let tally = Tally ()
+            for entry in entries do
+                let text = readText entry
+                let original = joinLines (renderAll (lexText entry.Path entry.Edition text))
+                let guardedBefore = layoutTally.GuardedBlocks
+                let blocksBefore = layoutTally.VerbatimBlocks
+                let linesBefore = layoutTally.VerbatimLines
+                let keptBefore = layoutTally.Kept.Count
+                let formatted = formatText entry.Path entry.Edition text
+                for index in keptBefore .. layoutTally.Kept.Count - 1 do
+                    let reason, head = layoutTally.Kept.[index]
+                    listing.WriteLine (sprintf "%s\tkept-verbatim\t%s\t%s" entry.Rel reason (head.Trim ()))
+                tally.Add (entry.Corpus + "\tverbatim-comment-blocks") (layoutTally.VerbatimBlocks - blocksBefore)
+                tally.Add (entry.Corpus + "\tverbatim-parse-guard-blocks") (layoutTally.GuardedBlocks - guardedBefore)
+                tally.Add (entry.Corpus + "\tverbatim-comment-block-lines") (layoutTally.VerbatimLines - linesBefore)
+                let originalLines = splitLines original |> Array.filter (fun line -> line.Trim().Length > 0)
+                let formattedLines = splitLines formatted |> Array.filter (fun line -> line.Trim().Length > 0)
+                let originalSet = System.Collections.Generic.HashSet<string> (originalLines |> Array.map (fun l -> l.TrimEnd ()))
+                let kept = formattedLines |> Array.filter (fun line -> originalSet.Contains line) |> Array.length
+                tally.Add (entry.Corpus + "\tfiles") 1
+                tally.Add (entry.Corpus + "\tlines-in-nonblank") originalLines.Length
+                tally.Add (entry.Corpus + "\tlines-out-nonblank") formattedLines.Length
+                tally.Add (entry.Corpus + "\tlines-out-found-in-input") kept
+                tally.Add (entry.Corpus + "\tover120-out") (formattedLines |> Array.filter (fun l -> displayWidth l > 120) |> Array.length)
+                let insideFences =
+                    formattedLines
+                    |> Array.fold (fun (fenced : bool, marks : bool list) line ->
+                        let body = line.TrimStart().TrimStart('/').TrimStart ()
+                        let isComment = line.TrimStart().StartsWith "//"
+                        if isComment && body.StartsWith "```" then (not fenced, true :: marks)
+                        else (fenced, (fenced && isComment) :: marks)) (false, [])
+                    |> snd
+                    |> List.rev
+                    |> Array.ofList
+                let outsideFences = Array.zip formattedLines insideFences |> Array.filter (fun (line, fenced) -> displayWidth line > 120 && not fenced) |> Array.map fst
+                tally.Add (entry.Corpus + "\tover120-out-outside-fences") outsideFences.Length
+                for line in outsideFences do listing.WriteLine (sprintf "%s\tover120-left\t%d\t%s" entry.Rel (displayWidth line) (line.Trim().Substring (0, min 60 (line.Trim().Length))))
+                let formattedSource = lexText entry.Path entry.Edition formatted
+                let inputSource = lexText entry.Path entry.Edition text
+                let layoutOverflows (source : Source<'p>) =
+                    overflows source |> Array.filter (fun overflow -> match overflow.Construct with LiteralTooWide _ | CommentTail | OpaqueText -> false | _ -> true)
+                tally.Add (entry.Corpus + "\tover120-layout-in") (layoutOverflows inputSource).Length
+                tally.Add (entry.Corpus + "\tover120-layout-out") (layoutOverflows formattedSource).Length
+                let inputTrimmed = System.Collections.Generic.HashSet<string> (originalLines |> Array.map (fun l -> l.Trim ()))
+                let created = layoutOverflows formattedSource |> Array.filter (fun overflow -> not (inputTrimmed.Contains ((splitLines formatted).[overflow.Line - 1].Trim ())))
+                let fencedLineNumbers =
+                    let all = splitLines formatted
+                    let mutable fenced = false
+                    all
+                    |> Array.mapi (fun index line ->
+                        let isComment = line.TrimStart().StartsWith "//"
+                        let body = line.TrimStart().TrimStart('/').TrimStart ()
+                        if isComment && body.StartsWith "```" then
+                            fenced <- not fenced
+                            None
+                        elif fenced && isComment then Some (index + 1)
+                        else None)
+                    |> Array.choose id
+                    |> Set.ofArray
+                let sha256 (text : string) = Security.Cryptography.SHA256.HashData(Text.Encoding.UTF8.GetBytes text) |> Convert.ToHexString |> fun hex -> hex.ToLowerInvariant ()
+                let unparsableLines =
+                    let shapes = blockShapes entry.Edition formattedSource.FileUnit formatted
+                    let total = (splitLines formatted).Length
+                    shapes
+                    |> List.mapi (fun index block ->
+                        let stop = match List.tryItem (index + 1) shapes with Some next -> next.Offset | None -> total
+                        if block.Shape.StartsWith "error (" || block.Shape.StartsWith "test error (" then [ block.Offset + 1 .. stop ] else [])
+                    |> List.concat
+                    |> Set.ofList
+                for overflow in overflows formattedSource do
+                    let sourceLine = formattedSource.SourceLines |> Array.find (fun line -> line.Number = overflow.Line)
+                    let longIdentifier =
+                        match sourceLine.Shape with
+                        | Code (_, lexemes, _) ->
+                            let leading =
+                                match lexemes |> Array.tryHead with
+                                | Some first when (match first.Token with TokOperator ("|", _) | TokParenthesis (_, Open) -> true | _ -> false) -> Array.truncate 2 lexemes |> Array.skip 1
+                                | _ -> Array.truncate 1 lexemes
+                            leading
+                            |> Array.tryFind (fun lexeme ->
+                                not lexeme.InsideMacro
+                                && (match lexeme.Token with TokVar _ | TokSymbol _ -> true | _ -> false)
+                                && lexeme.Span.NearTo - lexeme.Span.From >= 40
+                                && lexeme.Span.NearTo > 118)
+                        | _ -> None
+                    let unparsable = unparsableLines.Contains overflow.Line
+                    let allowable = match overflow.Construct with LiteralTooWide _ | CommentTail | OpaqueText -> true | _ -> longIdentifier.IsSome || unparsable
+                    if allowable && not (fencedLineNumbers.Contains overflow.Line) then
+                        let lineText = (render sourceLine).Trim ()
+                        let key =
+                            match overflow.Construct, sourceLine.Shape with
+                            | LiteralTooWide (_, width), Code (_, lexemes, _) ->
+                                let rendered = render sourceLine
+                                literalSpans lexemes
+                                |> List.indexed
+                                |> List.tryFind (fun (_, (_, spanWidth)) -> spanWidth = width)
+                                |> Option.bind (fun (position, _) ->
+                                    let opens = lexemes |> Array.filter (fun lexeme -> match lexeme.Token with TokMacroOpen -> true | TokStringOpen -> true | TokValue value -> (match value with LitString _ -> true | LitChar _ -> true | _ -> false) | _ -> false)
+                                    Array.tryItem position opens |> Option.map (fun opening -> rendered.Substring (opening.Span.From, min width (rendered.Length - opening.Span.From))))
+                                |> Option.defaultValue lineText
+                            | _ -> match longIdentifier with Some lexeme -> lexeme.Text.Text | None -> lineText
+                        let kind =
+                            match overflow.Construct, longIdentifier with
+                            | (LiteralTooWide _ | CommentTail | OpaqueText), _ -> constructName overflow.Construct
+                            | _, Some _ -> "identifier"
+                            | _, None when unparsable -> "unparsable"
+                            | _, None -> constructName overflow.Construct
+                        listing.WriteLine (sprintf "%s\tallow\t%s\t%s\t%d" entry.Rel kind (sha256 key) overflow.Width)
+                tally.Add (entry.Corpus + "\tover120-layout-created") created.Length
+                for overflow in created do listing.WriteLine (sprintf "%s:%d\tover120-created\t%s" entry.Rel overflow.Line (constructName overflow.Construct))
+                let before = commentWords inputSource |> Array.sort
+                let after = commentWords formattedSource |> Array.sort
+                if before <> after then
+                    tally.Add (entry.Corpus + "\tcomments-differ") 1
+                    listing.WriteLine (sprintf "%s\tcomments-differ\t%d\t%d" entry.Rel before.Length after.Length)
+                else tally.Add (entry.Corpus + "\tcomments-same") 1
+                if formatted = original then tally.Add (entry.Corpus + "\tfiles-unchanged") 1
+                let again = formatText entry.Path entry.Edition formatted
+                if again <> formatted then
+                    tally.Add (entry.Corpus + "\tG1-not-idempotent") 1
+                    listing.WriteLine (sprintf "%s\tG1-not-idempotent" entry.Rel)
+                let flatText = let lines, _ = flatten (lexText entry.Path entry.Edition (joinMacroContinuations text)) in joinLines (Array.ofList lines)
+                if formatText entry.Path entry.Edition flatText <> formatted then
+                    tally.Add (entry.Corpus + "\tG7-2-format-of-flat-differs") 1
+                    listing.WriteLine (sprintf "%s\tG7-2-format-of-flat-differs" entry.Rel)
+                else tally.Add (entry.Corpus + "\tG7-2-same") 1
+                match compareParses entry.Edition (lexText entry.Path entry.Edition text).FileUnit text formatted with
+                | SameParse -> tally.Add (entry.Corpus + "\tparse-same") 1
+                | OriginalHasErrors -> tally.Add (entry.Corpus + "\tparse-original-has-errors") 1
+                | ParseDiffers line ->
+                    tally.Add (entry.Corpus + "\tparse-differs") 1
+                    listing.WriteLine (sprintf "%s:%d\tparse-differs" entry.Rel line)
+                match outDir with
+                | Some dir ->
+                    let target = Path.Combine (dir, entry.Corpus, entry.Rel.Replace ('/', Path.DirectorySeparatorChar))
+                    Directory.CreateDirectory (Path.GetDirectoryName target) |> ignore
+                    File.WriteAllText (target, formatted)
+                | None -> ()
+            printTally "format" tally
+            tally
+
+    module FormatterCli =
+        open System
+        open System.IO
+        open FormatterLexed
+        open FormatterLayout
+        open FormatterFormat
+
+        let option name (args : string list) =
+            let rec find rest =
+                match rest with
+                | key :: value :: _ when key = name -> Some value
+                | _ :: tail -> find tail
+                | [] -> None
+            find args
+
+        let positional (args : string list) =
+            let rec collect (rest : string list) =
+                match rest with
+                | key :: _ :: tail when key.StartsWith "--" && key <> "--no-parse" && key <> "--split-literals" && key <> "--no-split-literals" && key <> "--check" && key <> "--stdin" -> collect tail
+                | key :: tail when key = "--no-parse" || key = "--split-literals" || key = "--no-split-literals" || key = "--check" || key = "--stdin" -> collect tail
+                | value :: tail -> value :: collect tail
+                | [] -> []
+            collect args
+
+        let withListing (path : string option) (action : TextWriter -> 'result) =
+            match path with
+            | Some file ->
+                use writer = new StreamWriter (file, false, Text.UTF8Encoding false)
+                writer.NewLine <- "\n"
+                action writer
+            | None -> action TextWriter.Null
+
+        let onLargeStack (action : unit -> int) =
+            let result = ref 0
+            let worker = Threading.Thread ((fun () -> result.Value <- action ()), 1 <<< 30)
+            worker.Start ()
+            worker.Join ()
+            result.Value
+
+        let corpusOnThisStack (arguments : string list) : int =
+            match arguments with
+            | "check" :: rest ->
+                let tally = withListing (option "--list" rest) (runCheck (readEntries (positional rest)))
+                if corpora (readEntries (positional rest)) |> List.exists (fun name -> tally.Get (name + "\tover120") > 0) then 1 else 0
+            | "space" :: rest ->
+                withListing (option "--list" rest) (fun writer -> runSpace (readEntries (positional rest)) (option "--out" rest) writer (not (List.contains "--no-parse" rest))) |> ignore
+                0
+            | "convert" :: rest ->
+                withListing (option "--list" rest) (fun writer -> runConvert (readEntries (positional rest)) (option "--out" rest) writer (not (List.contains "--no-parse" rest))) |> ignore
+                0
+            | "flatten" :: rest ->
+                withListing (option "--list" rest) (fun writer -> runFlatten (readEntries (positional rest)) (option "--out" rest) writer) |> ignore
+                0
+            | "format" :: rest ->
+                literalSplitting.Enabled <- List.contains "--split-literals" rest
+                withListing (option "--list" rest) (fun writer -> runFormat (readEntries (positional rest)) (option "--out" rest) writer) |> ignore
+                0
+            | _ ->
+                eprintfn "usage: format-corpus check|space|convert|flatten|format [--list file] [--out dir] [--no-parse] [--split-literals] <corpus.tsv|file.spi>..."
+                2
+
+        let corpus (arguments : string list) : int = onLargeStack (fun () -> corpusOnThisStack arguments)
+
+        let editionOf (path : string) =
+            let rec search (dir : DirectoryInfo) =
+                if isNull dir then Edition3
+                else
+                    let project = Path.Combine (dir.FullName, "package.spiproj")
+                    if File.Exists project then
+                        let declares2 = File.ReadAllLines project |> Array.exists (fun line -> line.Trim().Replace(" ", "") = "edition:2")
+                        if declares2 then Edition2 else Edition3
+                    else search dir.Parent
+            search (DirectoryInfo (Path.GetDirectoryName (Path.GetFullPath path)))
+
+        let generatedDirectories = set [ "target"; "node_modules"; "deps"; "bin"; "obj"; "_build"; ".git" ]
+
+        let insideGeneratedDirectory (root : string) (file : string) =
+            Path.GetRelativePath(root, Path.GetDirectoryName file).Split ([| '\\'; '/' |]) |> Array.exists generatedDirectories.Contains
+
+        let sourceFiles (input : string) =
+            if Directory.Exists input then
+                Directory.EnumerateFiles (input, "*.*", SearchOption.AllDirectories)
+                |> Seq.filter (fun file -> file.EndsWith ".spi" || file.EndsWith ".spir")
+                |> Seq.filter (fun file -> not (insideGeneratedDirectory input file))
+                |> Seq.sort
+                |> List.ofSeq
+            else [ input ]
+
+        let runOnThisStack (arguments : string list) : int =
+            literalSplitting.Enabled <- not (List.contains "--no-split-literals" arguments)
+            if List.contains "--stdin" arguments then
+                let path = defaultArg (option "--path" arguments) "stdin.spi"
+                use input = new StreamReader (Console.OpenStandardInput (), Text.UTF8Encoding false)
+                let text = input.ReadToEnd().Replace ("\r\n", "\n")
+                let bytes = (Text.UTF8Encoding false).GetBytes (formatText path (editionOf path) text)
+                use output = Console.OpenStandardOutput ()
+                output.Write (bytes, 0, bytes.Length)
+                0
+            else
+                let check = List.contains "--check" arguments
+                let changed = ResizeArray<string> ()
+                for file in positional arguments |> List.collect sourceFiles do
+                    let text = File.ReadAllText(file).Replace ("\r\n", "\n")
+                    let formatted = formatText file (editionOf file) text
+                    if formatted <> text then
+                        changed.Add file
+                        if not check then File.WriteAllText (file, formatted)
+                    if check then
+                        formatted.Split '\n' |> Array.iteri (fun index line -> let width = displayWidth line in if width > 120 then printfn "%s:%d:121: over-120 (%d columns)" file (index + 1) width)
+                for file in changed do printfn "%s %s" (if check then "would change:" else "formatted:") file
+                if check && changed.Count > 0 then 1 else 0
+
+        let run (arguments : string list) : int = onLargeStack (fun () -> runOnThisStack arguments)
 
 #if SPIRAL_CORE_GPT5PARALLEL
     /// ## GraphIdentity

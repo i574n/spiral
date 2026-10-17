@@ -23,6 +23,11 @@ def spiralStringSlice (s : String) (a b : Int) : IO String := do
   if a < 0 || a > length || b < a - 1 || b >= length then spiralAbort
   else if b >= a && (spiralIsContinuation (bytes.get! a.toNat) || (b + 1 < length && spiralIsContinuation (bytes.get! (b + 1).toNat))) then spiralAbort
   else pure (String.Pos.Raw.extract s ⟨a.toNat⟩ ⟨(b + 1).toNat⟩)
+private unsafe def spiralRefDefaultUnsafe {α : Type} : IO.Ref α := unsafeCast ()
+axiom spiralRefNonempty {α : Type} : Nonempty (IO.Ref α)
+attribute [instance] spiralRefNonempty
+@[implemented_by spiralRefDefaultUnsafe] opaque spiralRefDefault {α : Type} : IO.Ref α
+instance {α : Type} : Inhabited (IO.Ref α) := ⟨spiralRefDefault⟩
 mutual
 inductive U0 where
   | Missing : U0

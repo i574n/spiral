@@ -666,16 +666,55 @@ Phase 1 detail (`tmp/formatter`, an .fsx over the compiled `SpiralCompilerCore.d
   literal's own text for literals, the trimmed line otherwise); `allowlist.tsv` is built from those rows only.
   Layout constructs are never allowlisted.
 
-## How to run (lane A tooling, 2026-10-14)
+## How to run (Phase 4, 2026-10-16)
 
-- Code: `apps/compiler/tmp/formatter/` (`Lexed`, `Parsed`, `Spacing`, `Check`, `Convert`, `Flatten`, `Layout`,
-  `Format` .fsx over the compiled core in `dll/`, refreshed by `sync-core.ps1` from the installed compiler).
-- `dotnet fsi --quiet Format.fsx format [--split-literals] [--list out.txt] [--out dir] corpus.tsv` (also `check`,
-  `space`, `convert`, `flatten`); a corpus TSV row is `corpus<TAB>edition<TAB>path<TAB>relative path`. The listing
-  names every kept-verbatim block with its reason, every created overflow, and G1/G7.2/parse/comment failures.
-- `lint.ps1` is G6. G3 (compile before/after, compare residual hashes) is a lane script in the job scratch
-  (`lane-a/g3.ps1`); it runs single-module samples next to a copy of the samples' `core` package.
+- Code: the `/// ## Formatter` section of `apps/compiler/spiral_compiler.fs`, shared by both cores, just before the
+  `GraphIdentity` pair: modules `FormatterLexed`, `FormatterParsed`, `FormatterSpacing`, `FormatterCheck`,
+  `FormatterConvert`, `FormatterFlatten`, `FormatterLayout`, `FormatterFormat` (the eight lane A `.fsx` files, moved
+  by the same anchored-patch method as the other packs) and `FormatterCli`.
+- Files: `SpiralCompiler format <file|dir>... [--check] [--no-split-literals]` formats in place, splitting long
+  literals by default (the configuration every scoreboard row above was measured with). `--check` changes nothing,
+  prints `would change: <file>` and `<file>:<line>:121: over-120 (<n> columns)` (display width), and exits 1 when a
+  file would change. `--stdin --path <p>` formats the buffer on stdin to stdout as UTF-8, with the edition taken from
+  the `package.spiproj` nearest to `<p>`. A directory is searched for `.spi`/`.spir`, skipping `target`,
+  `node_modules`, `deps`, `bin`, `obj`, `_build` and `.git`. Both modes run on a 1 GB-stack thread: a flattened
+  block can be one line of tens of thousands of lexemes (`samples/typecheck_long_let_body`), and layout recurses per
+  sibling.
+- Corpus: `pwsh tmp/formatter/format.ps1 format [--split-literals] [--list out.txt] [--out dir] corpus.tsv` runs the
+  installed host's `format-corpus` (also `check`, `space`, `convert`, `flatten`); `corpus.ps1 -Out corpus.tsv` builds
+  the corpus TSV (`corpus<TAB>edition<TAB>path<TAB>relative path`). The listing names every kept-verbatim block with
+  its reason, every created overflow, and G1/G7.2/parse/comment failures.
+- Zed: `spiral-zed` answers `textDocument/formatting` with one whole-document edit from `format --stdin`;
+  `spiral-zed --dotnet <dotnet> --compiler <dll> --format <file>` prints the file with that edit applied.
+- `lint.ps1` is G6 over the section (exceptions by module). `report.ps1` is the CI lint: the nightly compiler job runs
+  `format --check` over `lib` and `apps` (not `apps/tibia`) and writes `runs/format-check.txt`; it never fails the
+  build. G3 is still the job-scratch lane script.
 
+## Open threads (main thread, 2026-10-16 18:35)
+
+- Phase 4 landed as pack-1z (installed in both modes 2026-10-16 17:22/17:29): the core section, the host `format`
+  and `format-corpus` subcommands, the Zed `textDocument/formatting` answer, `lint.ps1` over the section, and
+  `report.ps1` in the nightly compiler job. The eight `.fsx` files and `sync-core.ps1` are now redundant
+  (`format.ps1` calls the installed host); they stay in the tree until the user removes them.
+- Gate 4, front ends: the `.fsx` corpus run and the installed host's `format-corpus format` over the same corpus
+  (apps 15, eoie 492, lib 77, samples 1,226) wrote byte-identical files (1,810/1,810 sha256), identical listings and
+  identical tallies (68 lines): parse-same and comments-same 1,810/1,810, no G1 failure, G7.2 1,801/1,810, created
+  overflows 12 (samples). The host's `--stdin` output, its in-place write and the Zed helper's edit applied to the
+  file were byte-identical on 4 files (lib `convert`, `sm'`, `frontier_fib`, a non-ASCII buffer), and over the
+  whole corpus the Zed helper's edit applied to each file equals the host's `--stdin` output on 1,810/1,810 files
+  (2026-10-16 20:43, 3,912 s). Not met yet: the `eoie format` verb (eoie's CLI layer is `rust_global` text, so the verb is
+  a granular-Spiral eoie task), Zed verified inside Zed, and a first CI run of the report.
+- `report.ps1` run locally on the installed host (2026-10-16 19:12, default `--split-literals`): 726 s,
+  1,222 files would change, 44 lines over 120 after formatting (lib 12, the same fenced lines as v10; apps 32).
+- `format.ps1` and `report.ps1` set `DOTNET_GCgen0size=0x10000000` (256 MB gen0, as `test.ps1`) unless it is set:
+  the lib corpus (`format-corpus format`, 77 files, machine otherwise idle) took 451 s with the default budget and 408 s
+  with 256 MB, outputs byte-identical. The first round (574 / 445 s) overlapped another job and is not counted.
+- Found by Gate 4: `samples/typecheck_long_let_body` (2,000 chained lets) crashed every earlier corpus run.
+  `shapeOf` threw at its 4,000 depth guard, and behind it `Layout.nodesOf` overflowed the stack on the 16k-lexeme
+  flattened line. `shapeOf` is now an explicit work stack with no limit (old and new shape hashes identical on the
+  1,302 lib and samples files the old code handled), and both entry points run on a 1 GB-stack thread. Layout's two
+  core feature probes were removed: inside the core they were eager top-level values, run at every compile's module
+  initialization, and constant true since packs 1e and 1g.
 ## Open threads (lane A, 2026-10-15 18:10, updated 20:00)
 
 - Final code is 18:49 (v16: samples, lib, apps). eoie and user were last run on the 15:33 code (eoie output

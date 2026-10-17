@@ -27,18 +27,24 @@ mutual
 structure H0 where
   l0 : Int32
   l1 : String
+end
+deriving instance Inhabited for H0
+mutual
 structure H1 where
   l0 : H0
   l1 : Int32
+end
+deriving instance Inhabited for H1
+mutual
 structure H2 where
   l0 : H1
   l1 : Int32
+end
+deriving instance Inhabited for H2
+mutual
 structure M3 where
   l0 : H2
 end
-deriving instance Inhabited for H0
-deriving instance Inhabited for H1
-deriving instance Inhabited for H2
 deriving instance Inhabited for M3
 mutual
 partial def spiralMain : IO Int32 := do

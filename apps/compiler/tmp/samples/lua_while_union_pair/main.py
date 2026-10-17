@@ -14,11 +14,18 @@ except Exception:
 from dataclasses import dataclass
 from typing import NamedTuple, Union, Callable, Tuple
 i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 = int; f32 = float; f64 = float; char = str; string = str
+import sys
+sys.setrecursionlimit(1 << 30)
 
+def spiral_wrap(x, bits, signed):
+    x &= (1 << bits) - 1
+    return x - (1 << bits) if signed and x >> (bits - 1) else x
+def spiral_mod_trunc(a, b):
+    r = abs(a) % abs(b)
+    return -r if a < 0 else r
 def spiral_array_index(array, index):
     value = array[index]
     return value.item() if isinstance(array, cp.ndarray) and array.dtype.kind != 'O' else value
-import sys
 UH0 = Union["UH0_Nil", "UH0_Cons"]
 @dataclass
 class Mut0:
@@ -48,14 +55,14 @@ def method1(v0 : Mut1) -> bool:
     del v1
     return v2
 def main():
-    v0 = cp.empty(3,dtype=cp.int32)
+    v0 = cp.zeros(3,dtype=cp.int32)
     v1 = Mut0(0)
     while method0(v1):
         v3 = v1.v0
-        v4 = v3 * 5
+        v4 = spiral_wrap(v3 * 5, 32, True)
         v0[v3] = v4
         del v4
-        v5 = v3 + 1
+        v5 = spiral_wrap(v3 + 1, 32, True)
         del v3
         v1.v0 = v5
         del v5
@@ -67,12 +74,12 @@ def main():
     del v8
     while method1(v6):
         v11 = v6.v0
-        v12 = v11 % 2
+        v12 = spiral_mod_trunc(v11, 2)
         v13 = v12 == 1
         del v12
         if v13:
             v14 = v7.v0
-            v15 = v14 + 1
+            v15 = spiral_wrap(v14 + 1, 32, True)
             del v14
             v7.v0 = v15
             del v15
@@ -84,7 +91,7 @@ def main():
         del v16
         v9.v0 = v17
         del v17
-        v18 = v11 + 1
+        v18 = spiral_wrap(v11 + 1, 32, True)
         del v11
         v6.v0 = v18
         del v18
@@ -105,17 +112,17 @@ def main():
                                     match v27:
                                         case UH0_Nil(): # Nil
                                             del v27
-                                            v28 = v20 * 64
+                                            v28 = spiral_wrap(v20 * 64, 32, True)
                                             del v20
-                                            v29 = v22 * 16
+                                            v29 = spiral_wrap(v22 * 16, 32, True)
                                             del v22
-                                            v30 = v28 + v29
+                                            v30 = spiral_wrap(v28 + v29, 32, True)
                                             del v28, v29
-                                            v31 = v24 * 4
+                                            v31 = spiral_wrap(v24 * 4, 32, True)
                                             del v24
-                                            v32 = v30 + v31
+                                            v32 = spiral_wrap(v30 + v31, 32, True)
                                             del v30, v31
-                                            v33 = v32 + v26
+                                            v33 = spiral_wrap(v32 + v26, 32, True)
                                             del v26, v32
                                             v38 = v33
                                         case t:
@@ -135,14 +142,14 @@ def main():
     del v19
     v39 = v7.v0
     del v7
-    v40 = v38 + v39
+    v40 = spiral_wrap(v38 + v39, 32, True)
     del v38, v39
     v41 = spiral_array_index(v0, 2)
-    v42 = v40 + v41
+    v42 = spiral_wrap(v40 + v41, 32, True)
     del v40, v41
     v43 = spiral_array_index(v0, 1)
     del v0
-    v44 = v42 - v43
+    v44 = spiral_wrap(v42 - v43, 32, True)
     del v42, v43
     return v44
 

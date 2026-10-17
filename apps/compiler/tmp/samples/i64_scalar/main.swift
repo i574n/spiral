@@ -22,7 +22,7 @@ func spiral_main() -> Int32 {
     var v9: Int64 = (0 as Int64)
     v9 = (9 as Int64)
     var v10: Int32 = 0
-    v10 = Int32(v9)
+    v10 = Int32(truncatingIfNeeded: v9)
     var v11: UInt64 = (0 as UInt64)
     v11 = (4294967296 as UInt64)
     var v12: UInt64 = (0 as UInt64)
@@ -30,7 +30,7 @@ func spiral_main() -> Int32 {
     var v13: UInt64 = (0 as UInt64)
     v13 = (v11 >> 1)
     var v14: UInt64 = (0 as UInt64)
-    v14 = UInt64(v7)
+    v14 = UInt64(truncatingIfNeeded: v7)
     var v15: Bool = false
     v15 = (v2 == (-1250000000 as Int64))
     var v17: Bool = false

@@ -14,8 +14,12 @@ except Exception:
 from dataclasses import dataclass
 from typing import NamedTuple, Union, Callable, Tuple
 i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 = int; f32 = float; f64 = float; char = str; string = str
-
 import sys
+sys.setrecursionlimit(1 << 30)
+
+def spiral_wrap(x, bits, signed):
+    x &= (1 << bits) - 1
+    return x - (1 << bits) if signed and x >> (bits - 1) else x
 class US0_Circle(NamedTuple): # Circle
     v0 : i32
     tag = 0
@@ -66,14 +70,14 @@ def main():
     del v18
     match v1:
         case US0_Circle(v20): # Circle
-            v21 = 3 * v20
-            v22 = v21 * v20
+            v21 = spiral_wrap(3 * v20, 32, True)
+            v22 = spiral_wrap(v21 * v20, 32, True)
             del v20, v21
             v28 = v22
         case US0_Empty(): # Empty
             v28 = 0
         case US0_Rect(v23, v24): # Rect
-            v25 = v23 * v24
+            v25 = spiral_wrap(v23 * v24, 32, True)
             del v23, v24
             v28 = v25
         case t:
@@ -81,39 +85,39 @@ def main():
     del v1
     match v4:
         case US0_Circle(v29): # Circle
-            v30 = 3 * v29
-            v31 = v30 * v29
+            v30 = spiral_wrap(3 * v29, 32, True)
+            v31 = spiral_wrap(v30 * v29, 32, True)
             del v29, v30
             v37 = v31
         case US0_Empty(): # Empty
             v37 = 0
         case US0_Rect(v32, v33): # Rect
-            v34 = v32 * v33
+            v34 = spiral_wrap(v32 * v33, 32, True)
             del v32, v33
             v37 = v34
         case t:
             raise Exception(f'Pattern matching miss. Got: {t}')
     del v4
-    v38 = v28 + v37
+    v38 = spiral_wrap(v28 + v37, 32, True)
     del v28, v37
     match v5:
         case US0_Circle(v39): # Circle
-            v40 = 3 * v39
-            v41 = v40 * v39
+            v40 = spiral_wrap(3 * v39, 32, True)
+            v41 = spiral_wrap(v40 * v39, 32, True)
             del v39, v40
             v47 = v41
         case US0_Empty(): # Empty
             v47 = 0
         case US0_Rect(v42, v43): # Rect
-            v44 = v42 * v43
+            v44 = spiral_wrap(v42 * v43, 32, True)
             del v42, v43
             v47 = v44
         case t:
             raise Exception(f'Pattern matching miss. Got: {t}')
     del v5
-    v48 = v38 + v47
+    v48 = spiral_wrap(v38 + v47, 32, True)
     del v38, v47
-    v49 = v48 + v19
+    v49 = spiral_wrap(v48 + v19, 32, True)
     del v19, v48
     return v49
 

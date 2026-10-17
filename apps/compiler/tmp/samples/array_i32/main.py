@@ -14,26 +14,30 @@ except Exception:
 from dataclasses import dataclass
 from typing import NamedTuple, Union, Callable, Tuple
 i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 = int; f32 = float; f64 = float; char = str; string = str
+import sys
+sys.setrecursionlimit(1 << 30)
 
 def spiral_array_index(array, index):
     value = array[index]
     return value.item() if isinstance(array, cp.ndarray) and array.dtype.kind != 'O' else value
-import sys
+def spiral_wrap(x, bits, signed):
+    x &= (1 << bits) - 1
+    return x - (1 << bits) if signed and x >> (bits - 1) else x
 def main():
     v0 = 4
-    v1 = cp.empty(v0,dtype=cp.int32)
+    v1 = cp.zeros(v0,dtype=cp.int32)
     v1[0] = 10
     v1[1] = 20
     v1[2] = 30
     v2 = spiral_array_index(v1, 0)
     v3 = spiral_array_index(v1, 1)
-    v4 = v2 + v3
+    v4 = spiral_wrap(v2 + v3, 32, True)
     del v2, v3
     v1[3] = v4
     del v4
     v5 = spiral_array_index(v1, 2)
     v6 = spiral_array_index(v1, 3)
-    v7 = v5 + v6
+    v7 = spiral_wrap(v5 + v6, 32, True)
     del v5, v6
     v8 = v1.size
     del v1

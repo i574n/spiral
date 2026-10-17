@@ -57,9 +57,13 @@ inl byte_to_i32 (value : char) : i32 =
         Lean = fun () => $"(Int32.ofNat (!value).toNat)" : i32
         Bend = fun () => $"!value" : i32
         Lua = fun () => $"string.byte(!value)" : i32
-        Gleam = fun () => $"case string.to_utf_codepoints(!value) {{ [spiral_byte_codepoint] -> string.utf_codepoint_to_int(spiral_byte_codepoint) _ -> 0 }}" : i32
+        Gleam = fun () => $"case string.to_utf_codepoints(!value) { [spiral_byte_codepoint] -> string.utf_codepoint_to_int(spiral_byte_codepoint) _ -> 0 }" : i32
         TypeScript = fun () => $"!value" : i32
         Delphi = fun () => $"Ord(!value)" : i32
+        Kotlin = fun () => $"(!value and 255)" : i32
+        Swift = fun () => $"(!value & 255)" : i32
+        Python = fun () => $"ord(!value)" : i32
+        Wasm = fun () => $"(i32.and !value (i32.const 255))" : i32
     })
 
 inl valid_continuation_i32 (value : i32) : bool =

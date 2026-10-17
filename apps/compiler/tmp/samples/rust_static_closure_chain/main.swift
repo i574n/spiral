@@ -593,7 +593,7 @@ func spiral_main() -> Int32 {
     var v5: UInt64 = (0 as UInt64)
     v5 = (v4 % (200 as UInt64))
     var v6: Int32 = 0
-    v6 = Int32(v5)
+    v6 = Int32(truncatingIfNeeded: v5)
     return v6
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

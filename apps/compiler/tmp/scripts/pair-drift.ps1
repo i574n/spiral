@@ -24,7 +24,7 @@ for ($i = 0; $i -lt $lines.Count; $i++) {
 $root = git -C (Split-Path $Source) rev-parse --show-toplevel
 if ($LASTEXITCODE -ne 0) { throw "pair-drift: $Source is not inside a git work tree" }
 $relative = git -C $root ls-files --full-name -- $Source
-$diff = git -C $root --no-optional-locks diff -U0 $Base -- $relative
+$diff = git -C $root --no-optional-locks diff -w -U0 $Base -- $relative
 if ($LASTEXITCODE -ne 0) { throw "pair-drift: git diff $Base failed for $relative" }
 $changed = [Collections.Generic.List[object]]::new()
 $header = $null
@@ -41,7 +41,7 @@ foreach ($row in @($diff) + '@@ end') {
         $body = $row.Substring(1).Trim()
         if ($body -and -not $body.StartsWith('//')) {
             $codeChanged = $true
-            if ($row.StartsWith('+') -and -not $body.Contains('PartEvalSeams.')) { $seamOnly = $false }
+            if ($row.StartsWith('+') -and -not $body.Contains('PartEvalSeams.') -and $body -notmatch '^\)+$') { $seamOnly = $false }
         }
     }
 }

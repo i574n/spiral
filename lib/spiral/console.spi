@@ -79,6 +79,8 @@ inl write_line forall t. (obj : t) : () =
         Lean = fun () => $'IO.println (toString !obj)' : ()
         C = fun () => write_line_c obj
         Delphi = fun () => $'Writeln(!obj)' : ()
+        Kotlin = fun () => $'run { System.out.write((!obj.toString() + "\\n").toByteArray(Charsets.UTF_8)); System.out.flush() }' : ()
+        Swift = fun () => $'print(!obj)' : ()
         Bend = fun () => write_line_bend obj
         Wasm = fun () =>
             write_wasm obj
@@ -122,6 +124,8 @@ inl write forall t. (x : t) : () =
         Lean = fun () => $'IO.print (toString !x)' : ()
         C = fun () => write_c x
         Delphi = fun () => $'Write(!x)' : ()
+        Kotlin = fun () => $'run { System.out.write(!x.toString().toByteArray(Charsets.UTF_8)); System.out.flush() }' : ()
+        Swift = fun () => $'print(!x, terminator: "")' : ()
         Wasm = fun () => write_wasm x
     }
 
