@@ -189,7 +189,7 @@ inl try_convert forall t u. (x : t) : option u =
     x |> to' fun x =>
         backend_switch {
             Gleam = fun () =>
-                if (real typecase u with int => true | _ => false) then
+                if is_string_type x && (real typecase u with i8 => true | i16 => true | i32 => true | i64 => true | u8 => true | u16 => true | u32 => true | u64 => true | _ => false) then
                     global "import gleam/int"
                     global "import gleam/string"
                     inl (n : int), (err : int) =
@@ -293,6 +293,10 @@ test try_convert_2 =
     "3"
     |> try_convert
     |> _assert_eq (3i32 |> Some)
+
+    "999999999999999"
+    |> try_convert
+    |> _assert_eq (999999999999999i64 |> Some)
 
     "a"
     |> try_convert

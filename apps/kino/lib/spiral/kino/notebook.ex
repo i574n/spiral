@@ -578,10 +578,13 @@ defmodule Spiral.Kino.Notebook do
       end
       |> Enum.map(& &1.raw)
 
-    Memo.key(memo, step, lines)
+    Memo.key(memo, step, lines ++ expectation_key(expectation(step.cell_source)))
   rescue
     _ -> nil
   end
+
+  defp expectation_key(nil), do: []
+  defp expectation_key(%{code: code, substring: substring}), do: ["--fails #{code} #{inspect(substring)}"]
 
   defp remember(%{memo: {memo, key}}, {:ok, _outputs, _unavailable} = result, targets), do: Memo.store(memo, key, %{result: result, targets: targets})
   defp remember(%{memo: {memo, key}}, {:ok, _outputs} = result, targets), do: Memo.store(memo, key, %{result: result, targets: targets})
@@ -920,8 +923,10 @@ defmodule Spiral.Kino.Notebook do
 
   @diagnostic_code ~r/(?<![\w-])E[A-Z]{2,4}(?:\d{4}|-[A-Za-z]+)(?![\w-])/
 
+  defp collapse_spaces(text), do: String.replace(text, ~r/[ \t]+/, " ")
+
   defp expected_compile_error(expected, {:error, %SpiralError{message: message}}) do
-    has_text = String.contains?(message, expected.substring)
+    has_text = String.contains?(collapse_spaces(message), collapse_spaces(expected.substring))
     has_code = expected.code == nil or Regex.match?(~r/(?<![\w-])#{Regex.escape(expected.code)}(?![\w-])/, message)
 
     cond do

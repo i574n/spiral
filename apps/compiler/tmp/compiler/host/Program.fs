@@ -1189,6 +1189,7 @@ module Program =
         elif argv.Length >= 2 && argv.[0] = "--x-compat" then
             runXCompatReport argv.[1..]
         elif argv.Length = 2 && argv.[0] = "--check" then
+            Polyglot.spiral_compiler.xCompatWarnEntry argv.[1]
             exit (runAttestationBounded 30000 (fun () -> runCheck argv.[1]))
         elif (argv.Length = 3 || (argv.Length = 5 && argv.[1] = "--timeout-ms")) && argv.[0] = "--plan-ir" then
             let inputIndex = if argv.Length = 5 then 3 else 1

@@ -691,6 +691,27 @@ Every gate is a command plus a number. "Looks fine" is not a gate.
   `HashConsTable`s (`hc_table.Add` is check-then-act), the outer `Utils.memoize` (two bodies can create two inner
   tables), `backend_strings.Add`, `backend_switch_validated_hc` and the `RustGapTrace.validating` counter. Proof
   for grain 1: G3 on every policy at 1 worker (0 cells vs the single-flight run), apps/spiral byte-identical, G1/G2.
+- Grain 1 result (2026-10-17 00:15, staged as the job's tmp/night/pack-b/claim-seam.ps1, not in the tree):
+  `PartEvalSeams.claim` (`Found of 'v | Owner`) on both seam sides, used at the type, closure and method sites;
+  the method site keeps its `(None, annot, jp_name)` write before the body, because annotated recursion resolves
+  through that pending entry. Both cores and the hopacsota mode build; G6: 11 added single-flight lines, all seam
+  calls; G3 on `-Suite all` compile-only (6,906 rows): single-flight with the claim equals the pack-1y bless and
+  hopacsota inline and random:23 equal it, except one F# error row whose diagnostic blocks come in a different
+  order from run to run (host diagnostics, not partial evaluation). `backend_switch_validated` keeps a plain lookup.
+- Grain 2 design (2026-10-17 02:42, read from single-flight's PartEval with grain 1 applied). The three claim sites have
+  three final writes and one early write (`backend_switch_validated` has no pending state): closure `dict.[key] <- Some(domain_data, seq)`, type
+  `dict.[key] <- Some ret_ty`, method `dict.[key] <- (Some seq, Some ty, jp_name)`, and the method's
+  `(None, annot, jp_name)` before its body, which is how annotated recursion reads its own type (D4: an
+  annotated method is not pending). Grain 2 turns those writes into seams and gives `Claim` its waiting case,
+  still at one worker: `Claim<'v> = Found of 'v | Owner | Waiting of Pending<'v>` on both seam sides
+  (single-flight never builds `Waiting`); `PartEvalSeams.fill hopacsota dict key value` replaces the three
+  final writes and `PartEvalSeams.announce` the method's annotation write; each claim site gains
+  `| PartEvalSeams.Waiting pending -> PartEvalSeams.await hopacsota pending s` with D4's ancestor rule inside
+  `await` (a key on the waiter's own chain keeps today's per-kind result: the method error, the type error, a
+  closure's key hit). Single-flight's projection changes only by seam calls (G6). On hopacsota the table stays
+  the per-body `Dictionary` under the single-thread policies and becomes the D3 shard server under
+  `parallel`; the proof is G3 with `parallel` at `SPIRAL_HOPACSOTA_WORKERS=1` equal to `inline`, then
+  Gate 2's 2, 4 and 8 workers once the bodies that reach `await` run as jobs.
 - The Parallel policy: a local scheduler (D5), owner jobs per specialization, D3 servers with sharded
   tables, the D4 wait-for server, and the D13 event stream (off by default).
 - **Gate 2:**

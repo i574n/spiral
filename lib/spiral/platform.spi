@@ -69,7 +69,6 @@ inl get_executable_suffix () =
     then ".exe"
     else ""
 
-///> rust
 test get_executable_suffix =
     get_executable_suffix ()
 

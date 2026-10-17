@@ -438,7 +438,8 @@ impl Server {
             Duration::from_secs(90),
         );
         self.note_output(uri, &output);
-        let diagnostics = diagnostics_from(&output.stderr, &output.stdout, output.status);
+        let mut diagnostics = diagnostics_from(&output.stderr, &output.stdout, output.status);
+        diagnostics.extend(warning_diagnostics(&output.stderr, &path));
         self.log(
             if diagnostics.is_empty() { 3 } else { 1 },
             &format!(
@@ -835,13 +836,50 @@ fn is_module(path: &Path) -> bool {
     )
 }
 
+const SEVERITY_ERROR: u8 = 1;
+const SEVERITY_WARNING: u8 = 2;
+
+fn warning_location(rest: &str) -> Option<(&str, usize, usize, &str)> {
+    for (index, _) in rest.match_indices(':') {
+        let tail = &rest[index + 1..];
+        let Some((line, after_line)) = leading_usize(tail) else { continue };
+        let Some(after_colon) = after_line.strip_prefix(':') else { continue };
+        let Some((column, after_column)) = leading_usize(after_colon) else { continue };
+        let Some(message) = after_column.strip_prefix(": ") else { continue };
+        return Some((&rest[..index], line, column, message));
+    }
+    None
+}
+
+fn same_file(reported: &str, path: &Path) -> bool {
+    let normalize = |text: &str| text.replace('\\', "/").to_ascii_lowercase();
+    normalize(reported) == normalize(&path.to_string_lossy())
+}
+
+fn warning_diagnostics(stderr: &str, path: &Path) -> Vec<Value> {
+    stderr
+        .lines()
+        .filter_map(|line| line.trim_start().strip_prefix("warning: "))
+        .filter_map(warning_location)
+        .filter(|(reported, ..)| same_file(reported, path))
+        .map(|(_, line, column, message)| {
+            let character = column.saturating_sub(1);
+            diagnostic_with(SEVERITY_WARNING, line.saturating_sub(1), character, character + 1, message)
+        })
+        .collect()
+}
+
 fn diagnostic(line: usize, start: usize, end: usize, message: &str) -> Value {
+    diagnostic_with(SEVERITY_ERROR, line, start, end, message)
+}
+
+fn diagnostic_with(severity: u8, line: usize, start: usize, end: usize, message: &str) -> Value {
     json!({
         "range": {
             "start": { "line": line, "character": start },
             "end": { "line": line, "character": end }
         },
-        "severity": 1,
+        "severity": severity,
         "source": "spiral",
         "message": message
     })
@@ -1704,6 +1742,18 @@ mod tests {
         assert_eq!(edit.pointer("/range/end/line").and_then(Value::as_u64), Some(1));
         assert_eq!(edit.pointer("/range/end/character").and_then(Value::as_u64), Some(6));
         assert_eq!(byte_offset_of("a\n😀 b", 1, 2), 6);
+    }
+
+    #[test]
+    fn compiler_warnings_for_the_open_file_are_warnings() {
+        let stderr = "warning: C:\\repo\\main.spi:3:7: XC004 autolink: listm.map (wrap code)\nwarning: C:\\repo\\other.spi:1:1: XC001 hashtag: #x (escape)\nerror text\n";
+        let found = warning_diagnostics(stderr, Path::new("c:/repo/main.spi"));
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].get("severity").and_then(Value::as_u64), Some(2));
+        assert_eq!(found[0].pointer("/range/start/line").and_then(Value::as_u64), Some(2));
+        assert_eq!(found[0].pointer("/range/start/character").and_then(Value::as_u64), Some(6));
+        assert_eq!(found[0].get("message").and_then(Value::as_str), Some("XC004 autolink: listm.map (wrap code)"));
+        assert!(warning_diagnostics("warning: no location here\n", Path::new("main.spi")).is_empty());
     }
 
     #[test]

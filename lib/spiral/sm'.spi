@@ -195,6 +195,14 @@ test format_debug no_agree "tests each backend's native rendering" =
         }
     )
 
+///> lua
+test format_debug_lua_record_fields =
+    inl ~a = 5i64
+    { a } |> format_debug |> _assert_eq "5"
+    inl ~w = -9223372036854775807i64
+    inl ~u = 18446744073709551615u64
+    { w; u } |> format_debug |> _assert_eq "-9223372036854775807, 18446744073709551615"
+
 ///> gleam
 ///> lua
 ///> fsharp

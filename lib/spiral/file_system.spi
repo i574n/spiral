@@ -419,7 +419,18 @@ let (</>) (a : string) (b : string) : string =
             a |> ts_path_join b
         | Fsharp => fun a, b =>
             $'System.IO.Path.Combine (!a, !b)'
-        | target => fun a, b => failwith $'$"file_system.(</>) / target: {!target} / a: {!a} / b: {!b}"'
+        | _ => fun a, b =>
+            if a = "" then b
+            elif (a |> sm'.ends_with "/") || (a |> sm'.ends_with "\\") then a ++# b
+            else a ++# "/" ++# b
+
+///> gleam
+///> zig
+///> lua
+test path_join_without_a_native_arm =
+    "dir" </> "file" |> _assert_eq "dir/file"
+    "dir/" </> "file" |> _assert_eq "dir/file"
+    "" </> "file" |> _assert_eq "file"
 
 /// ### get_temp_path
 let get_temp_path () : string =
@@ -431,7 +442,7 @@ let get_temp_path () : string =
             |> sm'.from_std_string
         | Fsharp => fun () =>
             $'System.IO.Path.GetTempPath' ()
-        | target => fun () => failwith $'$"file_system.get_temp_path / target: {!target}"'
+        | target => fun () => join "file_system.get_temp_path / target: " ++#? target |> failwith
 
 /// ### get_file_name
 let get_file_name (path : string) : string =
@@ -449,7 +460,7 @@ let get_file_name (path : string) : string =
         | TypeScript => fun path =>
             global "import * as spiral_node_path from 'node:path';"
             $'spiral_node_path.basename(!path)' : string
-        | target => fun path => failwith $'$"file_system.get_file_name / target: {!target} / path: {!path}"'
+        | target => fun path => join "file_system.get_file_name / target: " ++#? target ++# " / path: " ++# path |> failwith
 
 /// ### get_file_name_without_extension
 let get_file_name_without_extension (path : string) : string =
@@ -494,6 +505,7 @@ let directory_separator_char () : char =
     run_target function
         | Rust => fun () => $'(std::path::MAIN_SEPARATOR as u8)' : char
         | TypeScript _ => fun () => '/'
+        | Zig => fun () => $'std.fs.path.sep' : char
         | _ => fun () => $'System.IO.Path.DirectorySeparatorChar'
 
 /// ### get_current_directory
@@ -511,9 +523,11 @@ let get_current_directory () : string =
         | TypeScript _ => fun () =>
             global "import * as spiral_node_fs from 'node:fs';"
             $'spiral_node_fs.realpathSync(".")' : string
+        | Zig => fun () =>
+            global "var spiral_io_threaded: std.Io.Threaded = .init_single_threaded;"
+            $'(std.process.currentPathAlloc(spiral_io_threaded.io(), spiral_gpa) catch \@panic("file_system.get_current_directory failed"))' : string
         | _ => fun () => null ()
 
-///> rust
 test get_current_directory =
     get_current_directory ()
     |> _assert_contains (directory_separator_char ())
@@ -613,7 +627,15 @@ let file_exists (path : string) : bool =
         | TypeScript => fun path =>
             global "import * as spiral_node_fs from 'node:fs';"
             $'(spiral_node_fs.existsSync(!path) && spiral_node_fs.statSync(!path).isFile())' : bool
+        | Gleam _ => fun path =>
+            global "@external(erlang, \"filelib\", \"is_regular\")\nfn spiral_filelib_is_regular(path: String) -> Bool"
+            $'spiral_filelib_is_regular(!path)' : bool
         | _ => fun _ => null ()
+
+///> gleam
+test file_exists_on_gleam_tells_files_from_missing_paths =
+    file_exists "gleam.toml" |> _assert_eq true
+    file_exists "spiral-no-such-file.txt" |> _assert_eq false
 
 /// ### directory_delete
 let directory_delete recursive (path : string) : () =

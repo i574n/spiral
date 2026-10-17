@@ -13,8 +13,15 @@ pwsh init.ps1
 . ./core.ps1
 
 if ($Compiler) {
-    $dotnet = pwsh -NoProfile -Command ". ../apps/compiler/tmp/scripts/env.ps1; try { Resolve-SpiralDotnet | Out-Null; 'found' } catch { 'missing' }"
-    if ($dotnet -ne 'found') { { pwsh ../apps/compiler/tmp/scripts/install-dotnet.ps1 } | Invoke-Block }
+    $resolveDotnet = ". ../apps/compiler/tmp/scripts/env.ps1; try { Resolve-SpiralDotnet } catch { '' }"
+    $dotnet = pwsh -NoProfile -Command $resolveDotnet | Select-Object -Last 1
+    if (-not $dotnet) {
+        { pwsh ../apps/compiler/tmp/scripts/install-dotnet.ps1 } | Invoke-Block
+        $dotnet = pwsh -NoProfile -Command $resolveDotnet | Select-Object -Last 1
+    }
+    if (-not $dotnet) { throw 'no .NET 11 SDK after install-dotnet.ps1' }
+    $env:SPIRAL_DOTNET = $dotnet
+    "dotnet: $dotnet"
 
     { pwsh ../apps/compiler/tmp/scripts/build.ps1 -Mode single-flight } | Invoke-Block
 

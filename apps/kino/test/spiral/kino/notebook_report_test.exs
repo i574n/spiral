@@ -282,6 +282,48 @@ defmodule Spiral.Kino.NotebookReportTest do
     {_, report} = Notebook.run_report(path, compile: named, rustc: fn _ -> :ok end, execute: exit_when("never", 0), tests: ["rejects_mixed"])
     assert [%{"status" => "failed"}] = Enum.filter(report["tests"], &(&1["status"] != "filtered"))
   end
+  test "a `fails` text matches across the compiler's column padding and belongs to the memo key", %{dir: dir} do
+    spi = """
+    inl one () = 1i32
+
+    test padded fails EJP0040 "Got: f64" =
+        one () + 1f64
+    """
+
+    path = Path.join(dir, "padded.spi")
+    File.write!(path, spi)
+    {:ok, agent} = Agent.start_link(fn -> 0 end)
+
+    compile = fn %{source: source} ->
+      Agent.update(agent, &(&1 + 1))
+
+      if source =~ "f64",
+        do: {:error, "EJP0040 main.spi:3:5: Unification failure.\nGot:      f64\nExpected: i32"},
+        else: {:ok, "fn main() {}\n"}
+    end
+
+    run = fn ->
+      Agent.update(agent, fn _ -> 0 end)
+
+      {_, report} =
+        Notebook.run_report(path,
+          compile: compile,
+          rustc: fn _ -> :ok end,
+          execute: exit_when("never", 0),
+          memo: true,
+          memo_dir: Path.join(dir, "memo")
+        )
+
+      {Enum.map(report["tests"], &{&1["name"], &1["status"], &1["memo"]}), Agent.get(agent, & &1)}
+    end
+
+    assert {[{"padded", "passed", "miss"}], compiles} = run.()
+    assert compiles > 0
+    assert {[{"padded", "passed", "hit"}], 0} = run.()
+
+    File.write!(path, String.replace(spi, "Got: f64", "Got: i64"))
+    assert {[{"padded", "failed", "miss"}], 1} = run.()
+  end
   test "every target of a test must agree with the first one unless the test says no_agree", %{dir: dir} do
     spi = """
     inl one () = 1i32
