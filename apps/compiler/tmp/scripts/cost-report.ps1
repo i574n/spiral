@@ -47,7 +47,7 @@ if ($Notebooks) {
             }
         }
     }
-    "== Kino target cost in $(@($Notebooks).Count) notebook path(s): $(@($cells).Count) test x target runs"
+    "== Cells target cost in $(@($Notebooks).Count) notebook path(s): $(@($cells).Count) test x target runs"
     $cells | Group-Object target | ForEach-Object {
         $ms = @($_.Group | ForEach-Object { $_.ms })
         [pscustomobject]@{ target = $_.Name; runs = $_.Count; total_min = [Math]::Round(($ms | Measure-Object -Sum).Sum / 60000, 1); median_s = [Math]::Round((Get-Median $ms) / 1000, 1); max_s = [Math]::Round(($ms | Measure-Object -Maximum).Maximum / 1000, 1) }

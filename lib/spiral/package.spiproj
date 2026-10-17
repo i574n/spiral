@@ -36,6 +36,13 @@ modules:
     common-
     threading
     async
+    reactors
+    json_scan
+    json_real*
+    json
+    conversation
+    routes_real*
+    routes
     rust/
         near_workspaces
     stream

@@ -303,7 +303,7 @@ function Invoke-Notebook {
         [int] $Retries = 1
     )
     $fullPath = (Resolve-Path $Path).Path
-    $runNotebook = Join-Path $PSScriptRoot "../apps/kino/spi/run_notebook.ps1"
+    $runNotebook = Join-Path $PSScriptRoot "../apps/cells/spi/run_notebook.ps1"
     { pwsh -NoProfile -File $runNotebook --path $fullPath @Arguments } | Invoke-Block -Retries $Retries
 }
 

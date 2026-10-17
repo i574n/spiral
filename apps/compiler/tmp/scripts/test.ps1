@@ -221,6 +221,11 @@ $workerScript = {
     $results
 }
 
+foreach ($memoStore in @(@('compile-memo', 2), @('native-memo', 14))) {
+    $memoStorePath = Join-Path $cache $memoStore[0]
+    $memoUnusedBefore = (Get-Date).AddDays(-$memoStore[1])
+    if (Test-Path $memoStorePath) { foreach ($entry in [IO.Directory]::EnumerateFiles($memoStorePath)) { if ([IO.File]::GetLastWriteTime($entry) -lt $memoUnusedBefore) { try { [IO.File]::Delete($entry) } catch { } } } }
+}
 $compiled = @{}
 $compileMemoDir = Join-Path $cache 'compile-memo'
 New-Item -ItemType Directory -Force $compileMemoDir | Out-Null
@@ -230,7 +235,7 @@ foreach ($root in @($BundleRoot, (Join-Path $BundleRoot '../../../lib'), $env:SP
     $sources = Get-ChildItem $root -Recurse -File -Include '*.spi', '*.spir', '*.spiproj' -ErrorAction SilentlyContinue | Where-Object FullName -notmatch '[\\/](target|_build|node_modules|\.git)[\\/]' | Sort-Object FullName
     foreach ($source in $sources) { $compileSignatureLines.Add("$([IO.Path]::GetRelativePath($root, $source.FullName))=$([Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([IO.File]::ReadAllBytes($source.FullName))))") }
 }
-Get-ChildItem Env: | Where-Object { $_.Name -like 'SPIRAL_*' -and $_.Name -notin 'SPIRAL_NATIVE_PARALLEL', 'SPIRAL_BIN_CACHE_DIR' -and $_.Name -notlike 'SPIRAL_KINO_*' } | Sort-Object Name | ForEach-Object { $compileSignatureLines.Add("env $($_.Name)=$($_.Value)") }
+Get-ChildItem Env: | Where-Object { $_.Name -like 'SPIRAL_*' -and $_.Name -notin 'SPIRAL_NATIVE_PARALLEL', 'SPIRAL_BIN_CACHE_DIR' -and $_.Name -notlike 'SPIRAL_CELLS_*' } | Sort-Object Name | ForEach-Object { $compileSignatureLines.Add("env $($_.Name)=$($_.Value)") }
 $compileSignature = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes(($compileSignatureLines -join "`n") + "`n$mode`n$compiler"))).ToLowerInvariant()
 $compileMemoKeys = @{}
 $compileReused = 0
@@ -247,6 +252,7 @@ $jobsToCompile = @(foreach ($job in $jobs) {
             $current = if (Test-Path -LiteralPath $job.Output) { [IO.File]::ReadAllBytes($job.Output) } else { $null }
             if ($null -eq $current -or -not [Linq.Enumerable]::SequenceEqual([byte[]]$current, [byte[]]$bytes)) { New-Item -ItemType Directory -Force (Split-Path $job.Output) | Out-Null; [IO.File]::WriteAllBytes($job.Output, $bytes) }
         }
+        foreach ($used in $memoPath, $outputPath) { if (Test-Path -LiteralPath $used) { [IO.File]::SetLastWriteTime($used, (Get-Date)) } }
         $compiled[$job.Key] = [pscustomobject]@{ Status = $stored.Status; Ms = [int64]$stored.Ms; Detail = ("$($stored.Detail) compile-reused").Trim(); Log = '' }
         $compileReused++
         continue
@@ -830,6 +836,13 @@ public static extern uint SetErrorMode(uint mode);
     Write-Host ("== native tier in {0:N1}s" -f $sw.Elapsed.TotalSeconds)
 }
 
+if ($Native -and $ReuseNative) {
+    foreach ($k in @($nativeResults.Keys)) {
+        if ("$($nativeResults[$k].Detail)" -notmatch 'native-reused' -or -not $nativeMemoKeys[$k]) { continue }
+        $usedEntry = Join-Path $nativeMemoDir "$($nativeMemoKeys[$k]).json"
+        if (Test-Path -LiteralPath $usedEntry) { [IO.File]::SetLastWriteTime($usedEntry, (Get-Date)) }
+    }
+}
 $expectedPath = Get-SpiralBaselinePath
 $expected = @{}
 if (Test-Path $expectedPath) { Import-Csv $expectedPath -Delimiter "`t" | ForEach-Object { $expected["$($_.id)|$($_.backend)"] = $_ } }

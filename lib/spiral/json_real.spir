@@ -1,0 +1,94 @@
+open real_core
+
+inl (++) a b = !!!!StaticStringConcat(a, b)
+
+inl in_quotes (x : string) : string = "\"" ++ x ++ "\""
+
+inl with_item (acc : string) (item : string) : string = if acc = "" then item else acc ++ "," ++ item
+
+inl rec schema_of forall t. () : string =
+    typecase t with
+    | i32 => "{\"type\":\"integer\"}"
+    | i64 => "{\"type\":\"integer\"}"
+    | f64 => "{\"type\":\"number\"}"
+    | bool => "{\"type\":\"boolean\"}"
+    | string => "{\"type\":\"string\"}"
+    | option ~el => schema_of `el ()
+    | ~a * ~b => "{\"type\":\"array\",\"prefixItems\":[" ++ (schema_of `a ()) ++ "," ++ (schema_of `b ()) ++ "]}"
+    | array_base ~el => "{\"type\":\"array\",\"items\":" ++ (schema_of `el ()) ++ "}"
+    | {} => object_schema `t ()
+    | _ =>
+        if union_type_is `t then union_schema `t ()
+        else "{}"
+
+and inl object_schema forall t. () : string =
+    inl props, required =
+        record_type_fold
+            fun (props, required) key =>
+                forall value. =>
+                    inl name = !!!!SymbolToString(key)
+                    inl props = with_item props ((in_quotes name) ++ ":" ++ (schema_of `value ()))
+                    inl optional = typecase value with | option ~inner => true | _ => false
+                    props, if optional then required else with_item required (in_quotes name)
+            ("", "")
+            `t
+    "{\"type\":\"object\",\"properties\":{" ++ props ++ "},\"required\":[" ++ required ++ "]}"
+
+and inl union_schema forall t. () : string =
+    union_to_record `t forall cases. =>
+        inl all_nullary, alternatives =
+            record_type_fold
+                fun (all_nullary, alternatives) key =>
+                    forall value. =>
+                        inl name = !!!!SymbolToString(key)
+                        typecase value with
+                        | () => all_nullary, with_item alternatives ("{\"const\":" ++ (in_quotes name) ++ "}")
+                        | _ => false, with_item alternatives ("{\"type\":\"object\",\"properties\":{" ++ (in_quotes name) ++ ":" ++ (schema_of `value ()) ++ "},\"required\":[" ++ (in_quotes name) ++ "]}")
+                (true, "")
+                `cases
+        if all_nullary then "{\"type\":\"string\",\"oneOf\":[" ++ alternatives ++ "]}"
+        else "{\"oneOf\":[" ++ alternatives ++ "]}"
+
+inl tool_schema name = forall params. =>
+    "{\"name\":" ++ (in_quotes name) ++ ",\"parameters\":" ++ (schema_of `params ()) ++ "}"
+
+inl rec decode_at forall value. (s : string) (at : i32) : value =
+    typecase value with
+    | i32 => json_scan.parse_i32 s at
+    | string => json_scan.parse_string s at
+    | bool => json_scan.parse_bool s at
+    | {} => decode (json_scan.object_at s at) `value
+    | array_base ~el =>
+        typecase el with
+        | i32 => json_scan.parse_i32_array s at
+        | string => json_scan.parse_string_array s at
+        | {} => json_scan.fill_array `el (json_scan.item_count s at) (fun i => decode (json_scan.object_at s (json_scan.item_start s at i)) `el)
+    | ~a * ~b => decode_at `a s (json_scan.item_start s at 0i32), decode_at `b s (json_scan.item_start s at 1i32)
+    | option ~inner => if at < 0i32 then None `inner else Some `inner (decode_at `inner s at)
+    | _ =>
+        if union_type_is `value then
+            inl name = json_scan.union_case_name s at
+            inl payload_at = json_scan.union_payload_at s at
+            inl pick =
+                union_to_record `value forall cases. =>
+                    record_type_fold
+                        fun otherwise key =>
+                            forall payload. =>
+                                inl case_name = !!!!SymbolToString(key)
+                                fun () =>
+                                    if name = case_name then
+                                        typecase payload with
+                                        | () => nominal_create `value (key, ())
+                                        | _ => nominal_create `value (key, decode_at `payload s payload_at)
+                                    else otherwise ()
+                        (fun () => failwith `value "unknown union case")
+                        `cases
+            pick ()
+        else error_type "unsupported field type"
+
+and inl decode s = forall t. =>
+    record_type_map
+        fun key =>
+            forall value. =>
+                decode_at `value s (json_scan.value_at s !!!!SymbolToString(key))
+        `t

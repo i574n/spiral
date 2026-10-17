@@ -1,0 +1,8 @@
+inl main () : i32 =
+    inl ~tokens_out = 7i32
+    inl t : conversation.transcript conversation.no_pending =
+        conversation.System ("short answers",
+        conversation.User ("weather for the day?",
+        conversation.Call ("getLocation", "{}",
+        conversation.Assistant ("Sunny.", {model = "local"; tokens_out = tokens_out}, conversation.Done))))
+    conversation.weigh t

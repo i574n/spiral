@@ -213,6 +213,12 @@
     )
 
     ExpectedErrors = @(
+        @{ Id = 'samples/routes_negative_missing_param'; Contains = 'the route /articles/:slug/comments does not name exactly' }
+        @{ Id = 'samples/routes_negative_extra_param'; Contains = 'the route /articles/:slug/comments/:id/:extra does not name exactly' }
+        @{ Id = 'samples/routes_negative_wrong_name'; Contains = 'the route /articles/:slugx/comments/:id does not name exactly' }
+        @{ Id = 'samples/conversation_negative_orphan_result'; Contains = 'Expected: transcript no_pending' }
+        @{ Id = 'samples/conversation_negative_unanswered_call'; Contains = 'Expected: transcript no_pending' }
+        @{ Id = 'samples/reactors_negative_port_type'; Contains = 'Expected: {init : f64; react : f64 -> {time : i64; micro : i32} -> signal i64' }
         @{ Id = 'samples/frontier_hopacsota_two_errors'; Contains = 'first body fails' }
         @{ Id = 'samples/mega_brzozowski_derivatives/negative_alphabet_mix'; Contains = 'Got: (tri_alphabet : *) Expected: (bit_alphabet : *)' }
         @{ Id = 'samples/mega_brzozowski_derivatives/negative_antimirov_support_assignment_count'; Contains = 'Unification failure. Got: antimirov_support_slot_assignment' }

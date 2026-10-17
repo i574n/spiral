@@ -23,6 +23,10 @@ $bannedPatterns = [ordered]@{
     'Alt.random' = '\bAlt\.random\b'
     'Job.Random' = '\bJob\.Random\b'
     'Stream.mapPipelined' = '\bStream\.mapPipelined\w*'
+    'Scheduler.run' = '\bScheduler\.run\b'
+    'ThreadStatic' = '\bThreadStatic\b'
+    'blocking primitives' = '\b(ManualResetEvent\w*|SemaphoreSlim|SpinLock|Mutex)\b'
+    'new Thread' = '\bnew\s+(System\.Threading\.)?Thread\s*\('
     'replay/record identifiers' = '(?i)\w*(replay|record|resume|snapshot|ledger)\w*'
 }
 $allowlist = @()

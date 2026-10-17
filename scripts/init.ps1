@@ -62,7 +62,7 @@ if (!(Test-Command "trunk")) {
 }
 
 foreach ($tool in "elixir", "gleam") {
-    if (!(Test-Command $tool)) { Write-Output "init.ps1 / $tool is not on PATH: notebooks (apps/kino) need it" }
+    if (!(Test-Command $tool)) { Write-Output "init.ps1 / $tool is not on PATH: notebooks (apps/cells) need it" }
 }
 
 if (Test-Command "cargo") {

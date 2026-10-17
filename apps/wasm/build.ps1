@@ -11,7 +11,7 @@ $ErrorActionPreference = "Stop"
 
 $projectName = "spiral_wasm"
 
-$livebook = Join-Path $ScriptDir "../kino/spi/run_notebook.ps1"
+$livebook = Join-Path $ScriptDir "../cells/spi/run_notebook.ps1"
 $notebook = @("--path", "$ScriptDir/$projectName.livemd", "--spi-path", "$ScriptDir/$projectName.spi")
 if (!$fast -and !$SkipNotebook) {
     { pwsh -NoProfile -File $livebook @notebook --output-path "$ScriptDir/$projectName.livemd.ipynb" } | Invoke-Block -Retries 3

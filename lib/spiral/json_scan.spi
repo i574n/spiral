@@ -1,0 +1,176 @@
+/// # json_scan
+
+let rec matches_at (s : string) (needle : string) (at : i32) (i : i32) (m : i32) : bool =
+    if i >= m then true
+    elif sm.index s (at + i) = sm.index needle i then matches_at s needle at (i + 1i32) m
+    else false
+
+let rec find_from (s : string) (needle : string) (at : i32) (n : i32) (m : i32) : i32 =
+    if at + m > n then -1i32
+    elif matches_at s needle at 0i32 m then at + m
+    else find_from s needle (at + 1i32) n m
+
+let rec find_top (s : string) (needle : string) (at : i32) (n : i32) (m : i32) (depth : i32) (in_text : bool) : i32 =
+    if at + m > n then -1i32
+    else
+        inl c = sm.index s at
+        if in_text then
+            if c = '"' then find_top s needle (at + 1i32) n m depth false
+            elif c = '\\' then find_top s needle (at + 2i32) n m depth true
+            else find_top s needle (at + 1i32) n m depth true
+        elif c = '"' then
+            if depth = 1i32 && matches_at s needle at 0i32 m then at + m
+            else find_top s needle (at + 1i32) n m depth true
+        elif c = '{' || c = '[' then find_top s needle (at + 1i32) n m (depth + 1i32) false
+        elif c = '}' || c = ']' then find_top s needle (at + 1i32) n m (depth - 1i32) false
+        else find_top s needle (at + 1i32) n m depth false
+
+let value_at (s : string) (key : string) : i32 =
+    inl needle = !!!!StaticStringConcat(!!!!StaticStringConcat("\"", key), "\":")
+    find_top s needle 0i32 (sm.length s) (sm.length needle) 0i32 false
+
+let digit_of (c : char) : i32 =
+    if c = '0' then 0i32 elif c = '1' then 1i32 elif c = '2' then 2i32 elif c = '3' then 3i32 elif c = '4' then 4i32
+    elif c = '5' then 5i32 elif c = '6' then 6i32 elif c = '7' then 7i32 elif c = '8' then 8i32 elif c = '9' then 9i32 else -1i32
+
+let rec digits (s : string) (at : i32) (n : i32) (acc : i32) : i32 =
+    if at >= n then acc
+    else
+        inl d = digit_of (sm.index s at)
+        if d >= 0i32 then digits s (at + 1i32) n (acc * 10i32 + d)
+        else acc
+
+let parse_i32 (s : string) (at : i32) : i32 =
+    if at < 0i32 then 0i32
+    elif sm.index s at = '-' then 0i32 - digits s (at + 1i32) (sm.length s) 0i32
+    else digits s at (sm.length s) 0i32
+
+let rec closing_quote (s : string) (at : i32) (n : i32) : i32 =
+    if at >= n then n
+    elif sm.index s at = '"' then at
+    else closing_quote s (at + 1i32) n
+
+let parse_string (s : string) (at : i32) : string =
+    if at < 0i32 then ""
+    else
+        inl close = closing_quote s (at + 1i32) (sm.length s)
+        if close <= at + 1i32 then "" else sm.slice s {from = at + 1i32; to = close - 1i32}
+
+let parse_bool (s : string) (at : i32) : bool = at >= 0i32 && sm.index s at = 't'
+
+let rec object_end (s : string) (at : i32) (n : i32) (depth : i32) (in_text : bool) : i32 =
+    if at >= n then n - 1i32
+    else
+        inl c = sm.index s at
+        if in_text then
+            if c = '"' then object_end s (at + 1i32) n depth false
+            elif c = '\\' then object_end s (at + 2i32) n depth true
+            else object_end s (at + 1i32) n depth true
+        elif c = '"' then object_end s (at + 1i32) n depth true
+        elif c = '{' then object_end s (at + 1i32) n (depth + 1i32) false
+        elif c = '}' then (if depth = 1i32 then at else object_end s (at + 1i32) n (depth - 1i32) false)
+        else object_end s (at + 1i32) n depth false
+
+let object_at (s : string) (at : i32) : string =
+    if at < 0i32 then "{}"
+    else sm.slice s {from = at; to = object_end s at (sm.length s) 0i32 false}
+
+let record_start (starts : array_base i32) (count : i32) (position : i32) : () =
+    inl capacity = !!!!ArrayLength(`i32, starts)
+    if count < capacity then !!!!ArrayIndexSet(starts, count, position)
+
+let rec item_starts (s : string) (at : i32) (n : i32) (depth : i32) (in_text : bool) (count : i32) (starts : array_base i32) : i32 =
+    if at >= n then count
+    else
+        inl c = sm.index s at
+        inl next = at + 1i32
+        if in_text then
+            if c = '"' then item_starts s next n depth false count starts
+            elif c = '\\' then item_starts s (at + 2i32) n depth true count starts
+            else item_starts s next n depth true count starts
+        elif c = '"' then item_starts s next n depth true count starts
+        elif c = '[' || c = '{' then
+            if depth = 0i32 && c = '[' then
+                record_start starts count next
+                item_starts s next n (depth + 1i32) false (count + 1i32) starts
+            else item_starts s next n (depth + 1i32) false count starts
+        elif c = ']' || c = '}' then
+            if depth = 1i32 then count else item_starts s next n (depth - 1i32) false count starts
+        elif c = ',' && depth = 1i32 then
+            record_start starts count next
+            item_starts s next n depth false (count + 1i32) starts
+        else item_starts s next n depth false count starts
+
+let rec skip_spaces (s : string) (at : i32) : i32 = if sm.index s at = ' ' then skip_spaces s (at + 1i32) else at
+
+let item_positions (s : string) (at : i32) : array_base i32 =
+    inl n = sm.length s
+    if at < 0i32 then !!!!ArrayCreate(`i32, 0i32)
+    elif sm.index s at <> '[' then !!!!ArrayCreate(`i32, 0i32)
+    elif sm.index s (skip_spaces s (at + 1i32)) = ']' then !!!!ArrayCreate(`i32, 0i32)
+    else
+        inl probe : array_base i32 = !!!!ArrayCreate(`i32, 0i32)
+        inl count = item_starts s at n 0i32 false 0i32 probe
+        inl starts : array_base i32 = !!!!ArrayCreate(`i32, count)
+        inl _ = item_starts s at n 0i32 false 0i32 starts
+        starts
+
+let parse_i32_array (s : string) (at : i32) : array_base i32 =
+    inl starts = item_positions s at
+    inl count = !!!!ArrayLength(`i32, starts)
+    inl out : array_base i32 = !!!!ArrayCreate(`i32, count)
+    let rec fill (i : i32) : () =
+        if i < count then
+            inl start = !!!!ArrayIndex(starts, i)
+            inl value = parse_i32 s (skip_spaces s start)
+            !!!!ArrayIndexSet(out, i, value)
+            fill (i + 1i32)
+    fill 0i32
+    out
+
+let parse_string_array (s : string) (at : i32) : array_base string =
+    inl starts = item_positions s at
+    inl count = !!!!ArrayLength(`i32, starts)
+    inl out : array_base string = !!!!ArrayCreate(`string, count)
+    let rec fill (i : i32) : () =
+        if i < count then
+            inl start = !!!!ArrayIndex(starts, i)
+            inl value = parse_string s (skip_spaces s start)
+            !!!!ArrayIndexSet(out, i, value)
+            fill (i + 1i32)
+    fill 0i32
+    out
+
+let item_count (s : string) (at : i32) : i32 =
+    inl starts = item_positions s at
+    !!!!ArrayLength(`i32, starts)
+
+let item_start (s : string) (at : i32) (i : i32) : i32 =
+    inl starts = item_positions s at
+    inl start = !!!!ArrayIndex(starts, i)
+    skip_spaces s start
+
+inl fill_array forall el. (count : i32) (item : i32 -> el) : array_base el =
+    inl out : array_base el = !!!!ArrayCreate(`el, count)
+    let rec fill (i : i32) : () =
+        if i < count then
+            inl value = item i
+            !!!!ArrayIndexSet(out, i, value)
+            fill (i + 1i32)
+    fill 0i32
+    out
+
+let union_case_name (s : string) (at : i32) : string =
+    if at < 0i32 then ""
+    elif sm.index s at = '"' then parse_string s at
+    else
+        inl key_at = skip_spaces s (at + 1i32)
+        parse_string s key_at
+
+let union_payload_at (s : string) (at : i32) : i32 =
+    if at < 0i32 then -1i32
+    elif sm.index s at = '"' then -1i32
+    else
+        inl key_at = skip_spaces s (at + 1i32)
+        inl close = closing_quote s (key_at + 1i32) (sm.length s)
+        skip_spaces s (close + 2i32)
