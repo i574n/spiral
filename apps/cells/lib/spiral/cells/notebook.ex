@@ -512,7 +512,7 @@ defmodule Spiral.Cells.Notebook do
       |> Enum.map(&attach_source(&1, cells))
       |> only_selected(selected)
       |> Enum.reject(&static_prelude?(&1.cell_source))
-      |> with_builders(default_builders(cells, opts))
+      |> with_builders(default_builders(cells, opts), implicit_default?(cells, opts))
       |> keyed_on_the_whole_source()
 
     memo = Memo.context(opts, spiral)
@@ -623,13 +623,41 @@ defmodule Spiral.Cells.Notebook do
   defp nonempty([]), do: nil
   defp nonempty(list), do: list
 
-  defp with_builders(steps, defaults) do
+  defp with_builders(steps, defaults, implicit?) do
     Enum.map(steps, fn step ->
       case Builders.commands(step.cell_source) do
-        [] -> Map.put(step, :builders, defaults)
-        own -> Map.put(step, :builders, own)
+        [] ->
+          if implicit?, do: warn_untargeted(step.cell_source)
+          Map.put(step, :builders, defaults)
+
+        own ->
+          Map.put(step, :builders, own)
       end
     end)
+  end
+
+  @doc false
+  def implicit_default?(cells, opts) do
+    prelude? =
+      Enum.any?(cells, fn
+        %{kind: :spiral, source: source} -> static_prelude?(source)
+        _ -> false
+      end)
+
+    explicit =
+      case Access.fetch(opts, :default_target) do
+        {:ok, target} -> target
+        :error -> System.get_env("SPIRAL_CELLS_DEFAULT_TARGET")
+      end
+
+    not prelude? and explicit == nil
+  end
+
+  defp warn_untargeted(source) do
+    case Regex.run(~r/^test\s+(\S+)/m, source) do
+      [_, name] -> IO.puts(:stderr, "warning: test #{name} has no ///> target and runs on the default backend (zig); name its targets")
+      _ -> :ok
+    end
   end
 
   defp only_selected(steps, nil), do: steps

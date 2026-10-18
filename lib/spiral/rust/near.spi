@@ -25,22 +25,7 @@ nominal vector t =
     `(
         fsharp_global "type near_sdk_store_vec_Vector<'T> = class end"
         backend_switch `(()) `({}) {
-            Rust = (fun () => global """
-                #[cfg(target_arch = "wasm32")]
-                type SpiralNearVec<T> = near_sdk::store::vec::Vector<T>;
-                #[cfg(not(target_arch = "wasm32"))]
-                struct SpiralNearVec<T>(std::vec::Vec<T>);
-                #[cfg(not(target_arch = "wasm32"))]
-                impl<T> SpiralNearVec<T> {
-                    fn len(&self) -> usize { self.0.len() }
-                    fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) { self.0.extend(iter); }
-                    fn drain(&mut self, range: std::ops::Range<u32>) -> std::vec::Drain<'_, T> {
-                        self.0.drain((range.start as usize)..(range.end as usize))
-                    }
-                    fn iter(&self) -> std::slice::Iter<'_, T> { self.0.iter() }
-                }
-
-                """) : () -> ()
+            Rust = (fun () => global "#[cfg(target_arch = \"wasm32\")]\ntype SpiralNearVec<T> = near_sdk::store::vec::Vector<T>;\n#[cfg(not(target_arch = \"wasm32\"))]\nstruct SpiralNearVec<T>(std::vec::Vec<T>);\n#[cfg(not(target_arch = \"wasm32\"))]\nimpl<T> SpiralNearVec<T> {\n    fn len(&self) -> usize { self.0.len() }\n    fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) { self.0.extend(iter); }\n    fn drain(&mut self, range: std::ops::Range<u32>) -> std::vec::Drain<'_, T> {\n        self.0.drain((range.start as usize)..(range.end as usize))\n    }\n    fn iter(&self) -> std::slice::Iter<'_, T> { self.0.iter() }\n}\n") : () -> ()
             Gleam = (fun () => ()) : () -> ()
             Lua = (fun () => ()) : () -> ()
             Fsharp = (fun () => ()) : () -> ()
