@@ -8,7 +8,7 @@ runaway fixture's rows report in 14.5-16.5 s under suite load (deadline 17 s).
 **Status 2026-10-01 17:53 (fixes 55-57):** `runs/hopac-20261001-171327` (`-Suite all -Native`, 3 workers,
 fresh processes): frontier 20 + 4 `missing`, contracts 606 + 1 no-oracle, examples 453/453, mega 5/5,
 DISAGREE 0, no `emitted` row; every residual hash equal to the 05:12 run's. The 4 `missing` are
-`frontier_runaway_inline_recursion` (new, blessed `error`): gpt5parallel needs ~20 s to reach its `EJP0040` report,
+`frontier_runaway_inline_recursion` (new, baseline `error`): gpt5parallel needs ~20 s to reach its `EJP0040` report,
 past the frontier deadline, and the matrix now scores a core's `BuildFile stalled` as a timeout. That is the
 only gap left to the AGENTS.md promotion criterion. **apps/spiral compiles in the default async mode** (fix 55;
 attempt 20 on this DLL: 576 s, 2,687,696 bytes, the same as attempts 17-19). Warm processes (fix 57) are an
@@ -21,13 +21,13 @@ attempt 14 then ground in the declared-body resume-snapshot pruning (NEXT.md); a
 `SPIRAL_HOPAC_INLINE_JP=1` (`$CLAUDE_JOB_DIR/tmp/apps_spiral_hopac15_inline.txt`).
 
 **Status 2026-10-01 04:00 (fixes 21-53):** `runs/hopac-20261001-025722` (`-Suite all -Native`, 2 workers)
-against the oracle re-blessed on 2026-09-30 (three identical single-flight runs; the 5 mega brzozowski rows
+against the oracle re-accepted on 2026-09-30 (three identical single-flight runs; the 5 mega brzozowski rows
 are now `error`, fix 49):
 
 | Suite | Jobs | Parity | Not parity |
 |---|---:|---:|---|
 | frontier | 16 | 16 | 0 |
-| contracts | 607 | 606 | 1 no-oracle (a row that times out in both lanes; `-Bless` never records timeouts) |
+| contracts | 607 | 606 | 1 no-oracle (a row that times out in both lanes; `-Accept` never records timeouts) |
 | examples | 453 | 453 | 0 |
 | mega | 5 | 5 | 0 |
 
@@ -37,7 +37,7 @@ Native: 359 ran, DISAGREE 0. Every oracle row is reproduced. The single-flight r
 **apps/spiral.** Single-flight builds it again (exit 0, 738 s, 2.79 MB of F#; the committed `spiral.fsx`
 from 2025-12-30 is 2.79 MB too): the wall was a library bug, not either core (`sm'.span_from`, NEXT.md).
 gpt5parallel still fails on it (attempt 12: `EJP0011` at `listm'.try_item`, 1,025 re-entries). Reduced to
-`samples/frontier_static_list_eq` (blessed from single-flight, 4 backends): gpt5parallel does not fold `=` between
+`samples/frontier_static_list_eq` (accepted from single-flight, 4 backends): gpt5parallel does not fold `=` between
 two static lists. `if [ ' '; '/' ] = [] then 1 else 0` is `0` in single-flight; gpt5parallel emits a join point
 for the failure continuation of `real_core.spir:208`'s `!!!!Unbox2(..., (fun () => false))` (method key
 `<anon> @jp@real_core.spir:208:66-208:72`) and branches on its runtime result. A static `chars` list then
@@ -64,7 +64,7 @@ Fixes 45-47 (`runs/hopac-20260930-193524`, 21:10): 61 rows `missing` with `Build
 (`runs/hopac-20260930-212855`): 113/113 ok, 0 verdict changes against 17:16. So 44-47 change no verdict;
 suite timings are only meaningful on a quiet machine.
 Compile phase 2,053 s, median job 4.1 s. Native: 359 ran, DISAGREE 0. The 21 UNEXPECTED-OUTPUT rows
-are single-flight-identical "(expression)" outputs awaiting the re-bless (NEXT.md). `apps/spiral`: see
+are single-flight-identical "(expression)" outputs awaiting the next accept run (NEXT.md). `apps/spiral`: see
 fix 44 (2 pending join points left, then a codegen wait on an unfilled cell; NEXT.md).
 
 **Status 2026-09-30 (fixes 21-37):** `pwsh scripts/test.ps1 -Mode gpt5parallel -Suite all -Native`
@@ -78,7 +78,7 @@ fix 44 (2 pending join points left, then a codegen wait on an unfilled cell; NEX
 | mega | 5 | 5 (brzozowski 5 s, zeta 15 s, omniledger 38 s, lean_cic 64 s, spiral_proves 106 s) | 0 |
 
 No `missing` row. The 21 UNEXPECTED-OUTPUT rows are F# outputs that end in an expression, which the host
-now accepts. They need single-flight rebuilt with the same host and the oracle re-blessed. Native: 359
+now accepts. They need single-flight rebuilt with the same host and the oracle re-accepted. Native: 359
 ran, 1 DISAGREE (Rust `managed_string_invalid_utf8_slice`, a shared `codegenRust` issue, fixed right after
 this run: both lanes now DISAGREE 0). The NATIVE-DIFF rows are translator-era oracle values (NEXT.md). Compile phase 2,390 s, median job 4.2 s (`frontier_hello`
 ~3 s). Two known races can still flip a row: 34 (replay values per AST node) and 38 (multi-package
@@ -502,7 +502,7 @@ against 28 KB) and `native_cube_direct`, which used to stall, finishing with sta
     -> 15 s (200 levels: 5 s); its profile no longer shows the fuse path at all. **apps/spiral: 555-576 s ->
     359 s**, the same 2,687,696 bytes (it went sequential the same way). Full suite
     `runs/hopac-20261001-185336`: no row changed except `frontier_static_list_eq`, now exact parity on four
-    backends (its oracle was re-blessed: single-flight unrolls the static list since the `listm'.exists'`
+    backends (its oracle was re-accepted: single-flight unrolls the static list since the `listm'.exists'`
     change). What remains in the runaway fixture is ordinary evaluation plus the runtime scanning a deep stack
     on every gen0 collection: a 256 MB gen0 budget (`DOTNET_GCgen0size=0x10000000`, environment only; the
     matrix sets it now) takes the fixture from 13-15 s to 9.5 s.
@@ -974,7 +974,7 @@ receives `ok`. Also `native_managed_array_tail_recursion` on C (stack overflow) 
   (`UNEXPECTED-OUTPUT`). The oracle was wrong: the shared host inserted Delphi target globals after
   `{$mode objfpc}{$H+}\n`, but some Delphi lowerings end that line with `AppendLine`, which writes CRLF on
   Windows, so single-flight's output never matched. The insertion normalizes to LF now, single-flight
-  emits the Delphi that the fixture's README describes, the row is re-blessed, and gpt5parallel has parity.
+  emits the Delphi that the fixture's README describes, the row is re-accepted, and gpt5parallel has parity.
 
 The 96 rows without parity, by cause:
 
@@ -1008,7 +1008,7 @@ The 96 rows without parity, by cause:
   sub-package's file and reports the genuine error; it only "passes" on the runs where it also resolves
   `main` to the dependency. Decision needed (not gpt5parallel work): fix the five fixtures (bottom-up `.spir`, or
   no backtick application), and make a failed entry module an error instead of a silent fallback to a
-  same-named dependency module, then re-bless those rows.
+  same-named dependency module, then re-accept those rows.
 - 9 closure failures inside branches (`native_closure_*branch*`) were a bare `NullReferenceException`.
   They now report `EJP0035: join point body cell (JpClosureBodyCellPayload) was never filled`. The
   producer's partial-step control exception takes the

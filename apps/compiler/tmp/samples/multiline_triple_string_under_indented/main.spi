@@ -1,0 +1,6 @@
+inl main () : i32 =
+    inl s = """
+        kept
+      under
+        """
+    0i32

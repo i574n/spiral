@@ -27,7 +27,7 @@ if ($Compiler) {
 
     { pwsh ../apps/compiler/tmp/formatter/report.ps1 } | Invoke-Block
 
-    { pwsh ../apps/compiler/tmp/scripts/test.ps1 -Mode single-flight -Suite $Suite -Native -Parallel 2 -Bless } | Invoke-Block
+    { pwsh ../apps/compiler/tmp/scripts/test.ps1 -Mode single-flight -Suite $Suite -Native -Parallel 2 -Accept } | Invoke-Block
 
     return
 }

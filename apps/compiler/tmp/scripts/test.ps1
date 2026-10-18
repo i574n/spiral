@@ -6,7 +6,7 @@ param(
     [int]$TimeoutSec = 0,
     [int]$Parallel = 0,
     [switch]$Native,
-    [switch]$Bless,
+    [switch]$Accept,
     [switch]$Record,
     [switch]$FreshProcess,
     [switch]$WarmRecycle,
@@ -24,7 +24,7 @@ $Backend = @($Backend | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.T
 foreach ($s in $Suite) { if ($s -notin 'frontier', 'smoke', 'examples', 'contracts', 'mega', 'all', 'fast') { throw "unknown suite '$s'" } }
 $fastSuite = $Suite -contains 'fast'
 if ($fastSuite -and $Suite.Count -gt 1) { throw "-Suite fast picks its rows from every suite and does not combine with '$($Suite -join ',')'" }
-if ($fastSuite -and ($Bless -or $Record)) { throw '-Suite fast runs a subset picked from run history: -Bless and -Record need the full suite' }
+if ($fastSuite -and ($Accept -or $Record)) { throw '-Suite fast runs a subset picked from run history: -Accept and -Record need the full suite' }
 foreach ($b in $Backend) { if ($b -notin 'Fsharp', 'C', 'Rust', 'Delphi', 'Zig', 'Wasm', 'Wgsl', 'Calyx', 'Kotlin', 'Swift', 'OpenQasm', 'Ebpf', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python') { throw "unknown backend '$b'" } }
 $mode = ConvertTo-SpiralMode $Mode
 $suiteTimeoutSec = @{ frontier = 20; smoke = 20; examples = 20; contracts = 30; mega = 180 }
@@ -37,10 +37,10 @@ if ($Parallel -le 0) {
     $freeGb = try { (Get-CimInstance Win32_OperatingSystem -ErrorAction Stop).FreePhysicalMemory / 1MB } catch { 3 }
     $Parallel = [int][Math]::Max(1, [Math]::Min($byCpu, [Math]::Floor($freeGb / 1.5)))
 }
-if ($Bless -and $Probe) { throw '-Probe runs are never blessed: they only measure a backend against the C rows' }
-if ($ReuseCompile -and ($Bless -or $Record)) { throw '-ReuseCompile replays stored compile results: -Bless and -Record compile every row' }
-if ($ReuseNative -and ($Bless -or $Record)) { throw '-ReuseNative replays stored native outcomes: -Bless and -Record run every native row' }
-if ($Bless -and $mode -ne 'single-flight') { throw '-Bless records the oracle baseline and is only valid in single-flight mode' }
+if ($Accept -and $Probe) { throw '-Probe runs are never accepted: they only measure a backend against the C rows' }
+if ($ReuseCompile -and ($Accept -or $Record)) { throw '-ReuseCompile replays stored compile results: -Accept and -Record compile every row' }
+if ($ReuseNative -and ($Accept -or $Record)) { throw '-ReuseNative replays stored native outcomes: -Accept and -Record run every native row' }
+if ($Accept -and $mode -ne 'single-flight') { throw '-Accept records the oracle baseline and is only valid in single-flight mode' }
 
 $dotnet = Resolve-SpiralDotnet
 $cache = Get-SpiralCacheDir
@@ -1006,13 +1006,13 @@ Write-Host "results: $resultPath"
 Write-Host "outputs: written next to their sources; git diff samples shows what changed"
 if ($Probe) { Write-Host "probe outputs ($Probe): $(Join-Path $scratch 'probe')" }
 
-if ($Bless) {
+if ($Accept) {
     $existing = if (Test-Path $expectedPath) { @(Import-Csv $expectedPath -Delimiter "`t") } else { @() }
-    $blessable = @($rows | Where-Object { $_.compile -ne 'timeout' })
-    $skipped = $rows.Count - $blessable.Count
-    if ($skipped) { Write-Host "not blessed: $skipped timeout row(s), they keep their previous oracle entry" -ForegroundColor Yellow }
+    $acceptRows = @($rows | Where-Object { $_.compile -ne 'timeout' })
+    $skipped = $rows.Count - $acceptRows.Count
+    if ($skipped) { Write-Host "not accepted: $skipped timeout row(s), they keep their previous oracle entry" -ForegroundColor Yellow }
     $fresh = @{}
-    foreach ($row in $blessable) { $fresh["$($row.id)|$($row.backend)"] = $row }
+    foreach ($row in $acceptRows) { $fresh["$($row.id)|$($row.backend)"] = $row }
     $scheduled = @{}
     if ($Suite -contains 'all' -and -not $Filter) { foreach ($sample in $samples) { $scheduled[$sample.Id] = @($scheduled[$sample.Id]) + @($sample.Backends) | Where-Object { $_ } | Select-Object -Unique } }
     $unscheduled = @($existing | Where-Object { $scheduled.ContainsKey($_.id) -and $scheduled[$_.id] -notcontains $_.backend })
@@ -1021,11 +1021,11 @@ if ($Bless) {
         $unscheduled | ForEach-Object { Write-Host "  $($_.id) [$($_.backend)]" }
     }
     $kept = @($existing | Where-Object { -not $fresh.ContainsKey("$($_.id)|$($_.backend)") -and -not ($scheduled.ContainsKey($_.id) -and $scheduled[$_.id] -notcontains $_.backend) })
-    $merged = $kept + @($blessable | ForEach-Object {
+    $merged = $kept + @($acceptRows | ForEach-Object {
         [pscustomobject]@{ id = $_.id; backend = $_.backend; compile = $_.compile; residual = $_.residual; native = $_.native; exit = $_.exit; stdout = $_.stdout } })
     New-Item -ItemType Directory -Force (Split-Path $expectedPath) | Out-Null
     $merged | Sort-Object id, backend | Export-Csv $expectedPath -Delimiter "`t" -NoTypeInformation -UseQuotes Never
-    Write-Host "blessed $($blessable.Count) rows into $expectedPath"
+    Write-Host "accepted $($acceptRows.Count) rows into $expectedPath"
 }
 if ($Record) {
     $board = Get-SpiralScoreboardPath $mode
