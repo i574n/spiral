@@ -2,6 +2,7 @@ param(
     [Parameter(Mandatory)] [string] $Root,
     [string] $Tool,
     [string[]] $Include = @(),
+    [string[]] $Exclude = @(),
     $ScriptDir = $PSScriptRoot
 )
 $ErrorActionPreference = "Stop"
@@ -12,7 +13,7 @@ if ($Tool) { $Tool = (Resolve-Path $Tool).Path } else { $Tool = pwsh (Join-Path 
 $renderer = Join-Path ([IO.Path]::GetTempPath()) "publish-tree-$PID-$(Split-Path $Tool -Leaf)"
 Copy-Item $Tool $renderer -Force
 
-$excluded = '.elixir_ls', '.git', '.history', '.vscode', 'bin', 'build', 'deps', 'node_modules', 'obj', 'pkg', 'target'
+$excluded = @('.elixir_ls', '.git', '.history', '.vscode', 'bin', 'build', 'deps', 'node_modules', 'obj', 'pkg', 'target') + $Exclude
 $included = @(
     'LICENSE', 'Dockerfile', '*.ans', '*.cs', '*.css', '*.csproj', '*.dependencies', '*.livemd', '*.editorconfig', '*.exs',
     '*.fs', '*.fsproj', '*.fsx', '*.gleam', '*.gitattributes', '*.gitignore', '*.html', '*.ico', '*.ipynb', '*.js', '*.json',

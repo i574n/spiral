@@ -8023,6 +8023,7 @@ __assert_approx_eq { expected = 12.345 }</pre>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span> <span class="o">--</span><span class="nb">print</span><span class="o">-</span><span class="n">code</span>
+<span class="o">///&gt;</span> <span class="n">zig</span>
 
 <span class="mi">1</span><span class="n">f64</span>
 <span class="o">|&gt;</span> <span class="n">__assert_approx_eq</span> <span class="n">Console</span> <span class="p">(</span><span class="n">Some</span> <span class="mi">3</span><span class="p">)</span> <span class="mi">2</span>
@@ -8052,6 +8053,7 @@ __assert_approx_eq { expected = 12.345 }</pre>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span> <span class="o">--</span><span class="nb">print</span><span class="o">-</span><span class="n">code</span>
+<span class="o">///&gt;</span> <span class="n">zig</span>
 
 <span class="p">(</span><span class="n">dyn</span> <span class="mi">1</span><span class="n">f64</span><span class="p">)</span>
 <span class="o">|&gt;</span> <span class="n">_assert_approx_eq</span> <span class="p">(</span><span class="n">Some</span> <span class="mi">3</span><span class="p">)</span> <span class="mi">2</span>
@@ -8463,32 +8465,32 @@ __assert_approx_eq { expected = 12.345 }</pre>
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.gleam (gleam)
-15:44:36 1v _assert_fn / { input = 3 }
+18:10:24 1v _assert_fn / { input = 3 }
 __assert_eq { expected = 2 }
-15:44:36 1v _assert_fn / { input = 2 }
+18:10:24 1v _assert_fn / { input = 2 }
 __assert_eq { expected = 1 }
 .fsx (fsharp)
-15:44:38 1v _assert_fn / { input = 3 }
+18:10:27 1v _assert_fn / { input = 3 }
 __assert_eq { expected = 2 }
-15:44:38 2v _assert_fn / { input = 2 }
+18:10:27 2v _assert_fn / { input = 2 }
 __assert_eq { expected = 1 }
 .py (cuda)
-15:44:39 1<span class="ansi-black-intense-fg">v</span> _assert_fn / { input = 3 }
+18:10:28 1<span class="ansi-black-intense-fg">v</span> _assert_fn / { input = 3 }
 __assert_eq { expected = 2 }
 
-15:44:39 2<span class="ansi-black-intense-fg">v</span> _assert_fn / { input = 2 }
+18:10:28 2<span class="ansi-black-intense-fg">v</span> _assert_fn / { input = 2 }
 __assert_eq { expected = 1 }
 .rs (rust)
 
-15:44:40 1<span class="ansi-black-intense-fg">v</span> _assert_fn / { input = 3 }
+18:10:31 1<span class="ansi-black-intense-fg">v</span> _assert_fn / { input = 3 }
 __assert_eq { expected = 2 }
 
-15:44:40 2<span class="ansi-black-intense-fg">v</span> _assert_fn / { input = 2 }
+18:10:31 2<span class="ansi-black-intense-fg">v</span> _assert_fn / { input = 2 }
 __assert_eq { expected = 1 }
 .ts (typescript)
-15:44:41 1v _assert_fn / { input = 3 }
+18:10:32 1v _assert_fn / { input = 3 }
 __assert_eq { expected = 2 }
-15:44:41 2v _assert_fn / { input = 2 }
+18:10:32 2v _assert_fn / { input = 2 }
 __assert_eq { expected = 1 }</pre>
 </div>
 </div>
@@ -8625,6 +8627,7 @@ __assert_eq { expected = 1 }</pre>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
+<span class="o">///&gt;</span> <span class="n">zig</span>
 
 <span class="p">;[</span> <span class="s2">"a"</span><span class="p">;</span> <span class="s2">"b"</span><span class="p">;</span> <span class="s2">"c"</span> <span class="p">]</span>
 <span class="o">|&gt;</span> <span class="n">_assert_contains</span> <span class="s2">"b"</span>
@@ -8654,6 +8657,7 @@ __assert_eq { expected = 1 }</pre>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
+<span class="o">///&gt;</span> <span class="n">zig</span>
 
 <span class="s2">"abcd"</span>
 <span class="o">|&gt;</span> <span class="n">_assert_contains</span> <span class="s1">'b'</span>

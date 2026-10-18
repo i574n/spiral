@@ -255,7 +255,10 @@ before, 40 after).
 `--path` may be repeated; with several,
 `--output-dir <dir>` writes each notebook's `<name>.ipynb` there (`--output-path` takes a single `--path`). With several
 `--path`, each `--test` name runs in the files that have it, files with none of them are skipped, and only a name no
-file has is an error.
+file has is an error. `--gate` runs the files memo-off without html, writes their notebooks to a scratch directory it
+deletes afterwards (unless `--output-dir`/`--output-path` is given) and retires the compilers at the end. `--metrics <dir>`
+writes `<dir>/tests.tsv` with one row per target of every test-mode block (`File`, `Test`, `Target`, `Status`, `Ms`,
+`Memo`; `File` is the source's stem), the columns tibia's `scripts/build.ps1` writes to `target/ci-metrics`.
 
 A `.spi` run plans one compile per test block plus one for the whole file (all definitions and real cells, its
 output on the last definition cell), not one per definition cell: a `.spi` top level holds only definitions, so the

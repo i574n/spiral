@@ -65,10 +65,12 @@ test assert_approx_eq =
     12.345f64
     |> _assert_approx_eq (Some 0.0001f64) 12.345f64
 
+///> zig
 test assert_approx_eq_2 print_code =
     1f64
     |> __assert_approx_eq Console (Some 3) 2
 
+///> zig
 test assert_approx_eq_3 print_code =
     (dyn 1f64)
     |> _assert_approx_eq (Some 3) 2
@@ -264,10 +266,12 @@ inl rec __assert_contains forall t u. (trace : testing_trace) (b : t) (a : u) : 
 inl _assert_contains b a =
     __assert_contains Console b a
 
+///> zig
 test assert_contains =
     ;[ "a"; "b"; "c" ]
     |> _assert_contains "b"
 
+///> zig
 test assert_contains_2 =
     "abcd"
     |> _assert_contains 'b'

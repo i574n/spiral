@@ -8004,29 +8004,29 @@ a.anchor-link {
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.gleam (gleam)
-15:44:55 1v _assert_fn / { input = a b c }
+18:10:55 1v _assert_fn / { input = a b c }
 __assert_eq { expected = [a, b, c] }
-15:44:55 1v _assert_fn / { input = e f "g h" i }
+18:10:55 1v _assert_fn / { input = e f "g h" i }
 __assert_eq { expected = [e, f, g h, i] }
-15:44:55 1v _assert_fn / { input = "j k" "l" "m" }
+18:10:55 1v _assert_fn / { input = "j k" "l" "m" }
 __assert_eq { expected = [j k, l, m] }
-15:44:55 1v _assert_fn / { input = s -t "u `"v`" w" }
+18:10:55 1v _assert_fn / { input = s -t "u `"v`" w" }
 __assert_eq { expected = [s, -t, u `"v`" w] }
-15:44:55 1v _assert_fn / { input = n -o "p \"q\" r" }
+18:10:55 1v _assert_fn / { input = n -o "p \"q\" r" }
 __assert_eq { expected = [n, -o, p \"q\" r] }
-15:44:55 1v _assert_fn / { input = r -s "t \"u\"" }
+18:10:55 1v _assert_fn / { input = r -s "t \"u\"" }
 __assert_eq { expected = [r, -s, t \"u\"] }
-15:44:55 1v _assert_fn / { input = x -y "$z -a '(b=\"c-id=)[a-fA-F0-9]{8}', { `$_[1] + `$d++ }" }
+18:10:55 1v _assert_fn / { input = x -y "$z -a '(b=\"c-id=)[a-fA-F0-9]{8}', { `$_[1] + `$d++ }" }
 __assert_eq { expected = [x, -y, $z -a '(b=\"c-id=)[a-fA-F0-9]{8}', { `$_[1] + `$d++ }] }
-15:44:55 1v _assert_fn / { input = e -f "$g -h '(i=`"j-id=)[a-fA-F0-9]{8}', { `$_[1] + `$k++ }" }
+18:10:55 1v _assert_fn / { input = e -f "$g -h '(i=`"j-id=)[a-fA-F0-9]{8}', { `$_[1] + `$k++ }" }
 __assert_eq { expected = [e, -f, $g -h '(i=`"j-id=)[a-fA-F0-9]{8}', { `$_[1] + `$k++ }] }
-15:44:55 1v _assert_fn / { input = --l \"''' m '''\"  }
+18:10:55 1v _assert_fn / { input = --l \"''' m '''\"  }
 __assert_eq { expected = [--l, ''' m '''] }
-15:44:55 1v _assert_fn / { input = n --o --p q --r "s:/t u/v.w" --x "y:/z.a" --b c.d "\e{f-g}" h.i "j (k)" }
+18:10:55 1v _assert_fn / { input = n --o --p q --r "s:/t u/v.w" --x "y:/z.a" --b c.d "\e{f-g}" h.i "j (k)" }
 __assert_eq { expected = [n, --o, --p, q, --r, s:/t u/v.w, --x, y:/z.a, --b, c.d, \e{f-g}, h.i, j (k)] }
-15:44:55 1v _assert_fn / { input = l "m n:\o.p" }
+18:10:55 1v _assert_fn / { input = l "m n:\o.p" }
 __assert_eq { expected = [l, m n:\o.p] }
-15:44:55 1v _assert_fn / { input = --r s \"' t '\" u v w \"x y\" }
+18:10:55 1v _assert_fn / { input = --r s \"' t '\" u v w \"x y\" }
 __assert_eq { expected = [--r, s, ' t ', u, v, w, x y] }
 .fsx (fsharp)
 /home/runner/work/spiral/spiral/lib/spiral/main.fsx(1906,23): warning FS0025: Incomplete pattern matches on this expression. For example, the value 'UH0_Cons (_, _)' may indicate a case not covered by the pattern(s).
@@ -8207,21 +8207,21 @@ __assert_eq { expected = [--r, s, ' t ', u, v, w, x y] }</pre>
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.gleam (gleam)
-15:44:54 1v _assert_fn / { input =  }
+18:10:53 1v _assert_fn / { input =  }
 __assert_eq { expected = (, None) }
-15:44:54 1v _assert_fn / { input = /a/b/c }
+18:10:53 1v _assert_fn / { input = /a/b/c }
 __assert_eq { expected = (/a/b/c, None) }
-15:44:54 1v _assert_fn / { input = d e.f }
+18:10:53 1v _assert_fn / { input = d e.f }
 __assert_eq { expected = (d, Some(e.f)) }
-15:44:54 1v _assert_fn / { input = ..\..\g.h i.j k.l }
+18:10:53 1v _assert_fn / { input = ..\..\g.h i.j k.l }
 __assert_eq { expected = (../../g.h, Some(i.j k.l)) }
-15:44:54 1v _assert_fn / { input = m:\n\o.p "q.r s.t" }
+18:10:53 1v _assert_fn / { input = m:\n\o.p "q.r s.t" }
 __assert_eq { expected = (m:/n/o.p, Some("q.r s.t")) }
-15:44:54 1v _assert_fn / { input = "..\..\u v\w.x" "y z.a" b.c }
+18:10:53 1v _assert_fn / { input = "..\..\u v\w.x" "y z.a" b.c }
 __assert_eq { expected = (../../u v/w.x, Some("y z.a" b.c)) }
-15:44:54 1v _assert_fn / { input = "..\..\d e.f" -g \\"h i\\" }
+18:10:53 1v _assert_fn / { input = "..\..\d e.f" -g \\"h i\\" }
 __assert_eq { expected = (../../d e.f, Some(-g \\"h i\\")) }
-15:44:54 1v _assert_fn / { input = ..\..\j k.l -m \\"n o\\" }
+18:10:53 1v _assert_fn / { input = ..\..\j k.l -m \\"n o\\" }
 __assert_eq { expected = (../../j, Some(k.l -m \\"n o\\")) }
 .fsx (fsharp)
 __assert_eq { expected = (, None) }
@@ -11559,15 +11559,15 @@ __assert_eq { expected = (../../j, Some(k.l -m \\"n o\\")) }</pre>
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>15:45:05 1<span class="ansi-black-intense-fg">v</span> file_system.create_dir / { dir = /tmp/!create_temp_path_/spiral_cf21d07b0367630844927a5d87bc9f7d42c89948b85f5fe169ffca165033aee9/664346c7-6234-0aa5-c6c9-79ffbb32476f }
-15:45:05 2<span class="ansi-blue-intense-fg">d</span> runtime.execute_with_options / { file_name = pwsh; arguments = ["-c", "[IO.File]::ReadAllText('/tmp/!create_temp_path_/spiral_cf21d07b0367630844927a5d87bc9f7d42c89948b85f5fe169ffca165033aee9/664346c7-6234-0aa5-c6c9-79ffbb32476f/test.txt')"] }
-15:45:05 3<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-red-intense-fg ansi-bold">MethodInvocationException: </span><span class="ansi-red-intense-fg ansi-bold">Exception calling "ReadAllText" with "1" argument(s): "Could not find file '/tmp/!create_temp_path_/spiral_cf21d07b0367630844927a5d87bc9f7d42c89948b85f5fe169ffca165033aee9/664346c7-6234-0aa5-c6c9-79ffbb32476f/test.txt'."</span>
-15:45:05 4<span class="ansi-black-intense-fg">v</span> runtime.execute_with_options / result / { file_name = pwsh; exit_code = 1; std_trace_len = 275 }
+<pre>18:11:11 1<span class="ansi-black-intense-fg">v</span> file_system.create_dir / { dir = /tmp/!create_temp_path_/spiral_cf21d07b0367630844927a5d87bc9f7d42c89948b85f5fe169ffca165033aee9/664346c7-6234-0aa5-c6c9-79ffbb32476f }
+18:11:11 2<span class="ansi-blue-intense-fg">d</span> runtime.execute_with_options / { file_name = pwsh; arguments = ["-c", "[IO.File]::ReadAllText('/tmp/!create_temp_path_/spiral_cf21d07b0367630844927a5d87bc9f7d42c89948b85f5fe169ffca165033aee9/664346c7-6234-0aa5-c6c9-79ffbb32476f/test.txt')"] }
+18:11:11 3<span class="ansi-black-intense-fg">v</span> ! <span class="ansi-red-intense-fg ansi-bold">MethodInvocationException: </span><span class="ansi-red-intense-fg ansi-bold">Exception calling "ReadAllText" with "1" argument(s): "Could not find file '/tmp/!create_temp_path_/spiral_cf21d07b0367630844927a5d87bc9f7d42c89948b85f5fe169ffca165033aee9/664346c7-6234-0aa5-c6c9-79ffbb32476f/test.txt'."</span>
+18:11:11 4<span class="ansi-black-intense-fg">v</span> runtime.execute_with_options / result / { file_name = pwsh; exit_code = 1; std_trace_len = 275 }
 __assert_eq { expected = 1 }
 __assert { expected = <span class="ansi-default-inverse-fg ansi-red-intense-bg ansi-bold ansi-underline">MethodInvocationException: </span><span class="ansi-default-inverse-fg ansi-red-intense-bg ansi-bold ansi-underline">Exception calling "ReadAllText" with "1" argument(s): "Could not find file '/tmp/!create_temp_path_/spiral_cf21d07b0367630844927a5d87bc9f7d42c89948b85f5fe169ffca165033aee9/664346c7-6234-0aa5-c6c9-79ffbb32476f/test.txt'."</span> }
-15:45:05 5<span class="ansi-blue-intense-fg">d</span> runtime.execute_with_options / { file_name = pwsh; arguments = ["-c", "[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8; [IO.File]::ReadAllText('test.txt')"] }
-15:45:05 6<span class="ansi-black-intense-fg">v</span> &gt; ╭─[ 你好，世界！こんにちは世界！ ]─╮
-15:45:05 7<span class="ansi-black-intense-fg">v</span> runtime.execute_with_options / result / { file_name = pwsh; exit_code = 0; std_trace_len = 58 }
+18:11:11 5<span class="ansi-blue-intense-fg">d</span> runtime.execute_with_options / { file_name = pwsh; arguments = ["-c", "[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8; [IO.File]::ReadAllText('test.txt')"] }
+18:11:12 6<span class="ansi-black-intense-fg">v</span> &gt; ╭─[ 你好，世界！こんにちは世界！ ]─╮
+18:11:12 7<span class="ansi-black-intense-fg">v</span> runtime.execute_with_options / result / { file_name = pwsh; exit_code = 0; std_trace_len = 58 }
 __assert_eq { expected = 0 }
 __assert_eq { expected = ╭─[ 你好，世界！こんにちは世界！ ]─╮ }</pre>
 </div>
@@ -11604,13 +11604,13 @@ __assert_eq { expected = ╭─[ 你好，世界！こんにちは世界！ ]─
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>15:45:09 1<span class="ansi-blue-intense-fg">d</span> runtime.execute_with_options / { file_name = pwsh; arguments = ["-c", "[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8; for ($i = 0; $i -lt 5; $i++) { Write-Output `\"Line$i`\"; Start-Sleep -Milliseconds 200 }"] }
-15:45:09 2<span class="ansi-black-intense-fg">v</span> &gt; "Line0"
-15:45:09 3<span class="ansi-black-intense-fg">v</span> &gt; "Line1"
-15:45:09 4<span class="ansi-black-intense-fg">v</span> &gt; "Line2"
-15:45:09 5<span class="ansi-black-intense-fg">v</span> &gt; "Line3"
-15:45:10 6<span class="ansi-black-intense-fg">v</span> &gt; "Line4"
-15:45:10 7<span class="ansi-black-intense-fg">v</span> runtime.execute_with_options / result / { file_name = pwsh; exit_code = 0; std_trace_len = 39 }
+<pre>18:11:18 1<span class="ansi-blue-intense-fg">d</span> runtime.execute_with_options / { file_name = pwsh; arguments = ["-c", "[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8; for ($i = 0; $i -lt 5; $i++) { Write-Output `\"Line$i`\"; Start-Sleep -Milliseconds 200 }"] }
+18:11:18 2<span class="ansi-black-intense-fg">v</span> &gt; "Line0"
+18:11:18 3<span class="ansi-black-intense-fg">v</span> &gt; "Line1"
+18:11:19 4<span class="ansi-black-intense-fg">v</span> &gt; "Line2"
+18:11:19 5<span class="ansi-black-intense-fg">v</span> &gt; "Line3"
+18:11:19 6<span class="ansi-black-intense-fg">v</span> &gt; "Line4"
+18:11:19 7<span class="ansi-black-intense-fg">v</span> runtime.execute_with_options / result / { file_name = pwsh; exit_code = 0; std_trace_len = 39 }
 __assert_eq { expected = 0 }
 __assert { expected = "Line0"
 "Line1"

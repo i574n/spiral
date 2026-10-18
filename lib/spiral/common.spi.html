@@ -8301,24 +8301,24 @@ __assert_eq' { expected = Some(1) }</pre>
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx (fsharp)
-15:45:52 1w common.retry_fn / { retry = 0; ex = System.Exception: test
+18:12:34 1w common.retry_fn / { retry = 0; ex = System.Exception: test
    at FSI_0001.closure1(Mut0 v0, Int32 v1, Unit unitVar2) in /home/runner/work/spiral/spiral/lib/spiral/main.fsx:line 56
    at FSI_0001.method0(Mut0 v0, Int32 v1) in /home/runner/work/spiral/spiral/lib/spiral/main.fsx:line 436 }
-15:45:52 2w common.retry_fn / { retry = 1; ex = System.Exception: test
+18:12:34 2w common.retry_fn / { retry = 1; ex = System.Exception: test
    at FSI_0001.closure1(Mut0 v0, Int32 v1, Unit unitVar2) in /home/runner/work/spiral/spiral/lib/spiral/main.fsx:line 56
    at FSI_0001.method0(Mut0 v0, Int32 v1) in /home/runner/work/spiral/spiral/lib/spiral/main.fsx:line 436 }
 __assert_eq' { expected = Some(2) }
 .rs (rust)
-15:45:54 1<span class="ansi-yellow-intense-fg">w</span> common.retry_fn / { retry = 0; ex = "test" }
-15:45:54 2<span class="ansi-yellow-intense-fg">w</span> common.retry_fn / { retry = 1; ex = "test" }
+18:12:37 1<span class="ansi-yellow-intense-fg">w</span> common.retry_fn / { retry = 0; ex = "test" }
+18:12:37 2<span class="ansi-yellow-intense-fg">w</span> common.retry_fn / { retry = 1; ex = "test" }
 __assert_eq' { expected = Some(2) }
 .ts (typescript)
-15:45:55 1w common.retry_fn / { retry = 0; ex = Error: test }
-15:45:55 2w common.retry_fn / { retry = 1; ex = Error: test }
+18:12:38 1w common.retry_fn / { retry = 0; ex = Error: test }
+18:12:38 2w common.retry_fn / { retry = 1; ex = Error: test }
 __assert_eq' { expected = Some(2) }
 .py (cuda)
-15:45:55 1<span class="ansi-yellow-intense-fg">w</span> common.retry_fn / { retry = 0; ex = test }
-15:45:55 2<span class="ansi-yellow-intense-fg">w</span> common.retry_fn / { retry = 1; ex = test }
+18:12:40 1<span class="ansi-yellow-intense-fg">w</span> common.retry_fn / { retry = 0; ex = test }
+18:12:40 2<span class="ansi-yellow-intense-fg">w</span> common.retry_fn / { retry = 1; ex = test }
 __assert_eq' { expected = Some(2) }</pre>
 </div>
 </div>
