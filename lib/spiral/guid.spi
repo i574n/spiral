@@ -51,28 +51,30 @@ inl to_string (x : guid) : string =
 /// ### zig_random_u64
 inl zig_random_u64 () : u64 =
     global """extern "kernel32" fn QueryPerformanceCounter(count: *i64) callconv(.winapi) c_int;"""
-    global """var spiral_random_state: u64 = 0;
-fn spiralRandomU64() u64 {
-    if (spiral_random_state == 0) {
-        var seed: u64 = 0;
-        if (builtin.os.tag == .windows) {
-            var count: i64 = 0;
-            _ = QueryPerformanceCounter(&count);
-            seed = @bitCast(count);
-        } else if (builtin.os.tag == .linux) {
-            var ts: std.os.linux.timespec = undefined;
-            _ = std.os.linux.clock_gettime(.MONOTONIC, &ts);
-            seed = @as(u64, @bitCast(@as(i64, ts.sec))) *% 1000000007 +% @as(u64, @bitCast(@as(i64, ts.nsec)));
+    global """
+        var spiral_random_state: u64 = 0;
+        fn spiralRandomU64() u64 {
+            if (spiral_random_state == 0) {
+                var seed: u64 = 0;
+                if (builtin.os.tag == .windows) {
+                    var count: i64 = 0;
+                    _ = QueryPerformanceCounter(&count);
+                    seed = @bitCast(count);
+                } else if (builtin.os.tag == .linux) {
+                    var ts: std.os.linux.timespec = undefined;
+                    _ = std.os.linux.clock_gettime(.MONOTONIC, &ts);
+                    seed = @as(u64, @bitCast(@as(i64, ts.sec))) *% 1000000007 +% @as(u64, @bitCast(@as(i64, ts.nsec)));
+                }
+                spiral_random_state = (seed ^ @intFromPtr(&spiral_random_state)) | 1;
+            }
+            var x = spiral_random_state;
+            x ^= x << 13;
+            x ^= x >> 7;
+            x ^= x << 17;
+            spiral_random_state = x;
+            return x;
         }
-        spiral_random_state = (seed ^ @intFromPtr(&spiral_random_state)) | 1;
-    }
-    var x = spiral_random_state;
-    x ^= x << 13;
-    x ^= x >> 7;
-    x ^= x << 17;
-    spiral_random_state = x;
-    return x;
-}"""
+        """
     $'spiralRandomU64()' : u64
 
 /// ### new_raw_guid

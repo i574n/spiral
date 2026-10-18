@@ -53208,11 +53208,11 @@ module spiral_compiler =
                 let rec loop name = function
                     | EModule a' & a, EPair(_,ESymbol(_, b'),b'') & b ->
                         match module_member name a' b' with
-                        | Ok a -> loop (Some b') (a,b'')
+                        | Ok a -> PrepassReferences.used path r b' a; loop (Some b') (a,b'')
                         | Error msg -> error msg
                     | EModule a' & a, ESymbol(_,b') & b ->
                         match module_member name a' b' with
-                        | Ok a -> a
+                        | Ok a -> PrepassReferences.used path r b' a; a
                         | Error msg -> error msg
                     | a,EType(_,b) -> ETypeApply(p r,a,b)
                     | a,b -> EApply(p r,a,b)

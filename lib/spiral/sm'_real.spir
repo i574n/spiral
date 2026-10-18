@@ -711,40 +711,44 @@ let format_real forall t. (x : t) : string =
                         (fun () =>
                             match b with
                             | (_ : f64) =>
-                                global """fun spiralShortestText(v: Double, single: Boolean): String {
-    if (v.isNaN()) return "NaN"
-    if (v.isInfinite()) return if (v > 0) "Infinity" else "-Infinity"
-    if (v == 0.0) return if (1.0 / v < 0) "-0.0" else "0.0"
-    val shortest = java.math.BigDecimal(if (single) v.toFloat().toString() else v.toString()).stripTrailingZeros()
-    val digits = shortest.unscaledValue().abs().toString()
-    val exponent = digits.length - 1 - shortest.scale()
-    val body = if (exponent < -4 || exponent >= digits.length) {
-        val magnitude = kotlin.math.abs(exponent)
-        (if (digits.length == 1) digits else digits.substring(0, 1) + "." + digits.substring(1)) + "e" + (if (exponent < 0) "-" else "+") + (if (magnitude < 10) "0" else "") + magnitude
-    } else if (exponent >= 0) {
-        if (digits.length > exponent + 1) digits.substring(0, exponent + 1) + "." + digits.substring(exponent + 1) else digits + "0".repeat(exponent + 1 - digits.length)
-    } else "0." + "0".repeat(-exponent - 1) + digits
-    val result = (if (shortest.signum() < 0) "-" else "") + body
-    return if (result.contains('.') || result.contains('e')) result else result + ".0"
-}"""
+                                global """
+                                    fun spiralShortestText(v: Double, single: Boolean): String {
+                                        if (v.isNaN()) return "NaN"
+                                        if (v.isInfinite()) return if (v > 0) "Infinity" else "-Infinity"
+                                        if (v == 0.0) return if (1.0 / v < 0) "-0.0" else "0.0"
+                                        val shortest = java.math.BigDecimal(if (single) v.toFloat().toString() else v.toString()).stripTrailingZeros()
+                                        val digits = shortest.unscaledValue().abs().toString()
+                                        val exponent = digits.length - 1 - shortest.scale()
+                                        val body = if (exponent < -4 || exponent >= digits.length) {
+                                            val magnitude = kotlin.math.abs(exponent)
+                                            (if (digits.length == 1) digits else digits.substring(0, 1) + "." + digits.substring(1)) + "e" + (if (exponent < 0) "-" else "+") + (if (magnitude < 10) "0" else "") + magnitude
+                                        } else if (exponent >= 0) {
+                                            if (digits.length > exponent + 1) digits.substring(0, exponent + 1) + "." + digits.substring(exponent + 1) else digits + "0".repeat(exponent + 1 - digits.length)
+                                        } else "0." + "0".repeat(-exponent - 1) + digits
+                                        val result = (if (shortest.signum() < 0) "-" else "") + body
+                                        return if (result.contains('.') || result.contains('e')) result else result + ".0"
+                                    }
+                                    """
                                 $'spiralShortestText(!b, false)' : string
                             | (_ : f32) =>
-                                global """fun spiralShortestText(v: Double, single: Boolean): String {
-    if (v.isNaN()) return "NaN"
-    if (v.isInfinite()) return if (v > 0) "Infinity" else "-Infinity"
-    if (v == 0.0) return if (1.0 / v < 0) "-0.0" else "0.0"
-    val shortest = java.math.BigDecimal(if (single) v.toFloat().toString() else v.toString()).stripTrailingZeros()
-    val digits = shortest.unscaledValue().abs().toString()
-    val exponent = digits.length - 1 - shortest.scale()
-    val body = if (exponent < -4 || exponent >= digits.length) {
-        val magnitude = kotlin.math.abs(exponent)
-        (if (digits.length == 1) digits else digits.substring(0, 1) + "." + digits.substring(1)) + "e" + (if (exponent < 0) "-" else "+") + (if (magnitude < 10) "0" else "") + magnitude
-    } else if (exponent >= 0) {
-        if (digits.length > exponent + 1) digits.substring(0, exponent + 1) + "." + digits.substring(exponent + 1) else digits + "0".repeat(exponent + 1 - digits.length)
-    } else "0." + "0".repeat(-exponent - 1) + digits
-    val result = (if (shortest.signum() < 0) "-" else "") + body
-    return if (result.contains('.') || result.contains('e')) result else result + ".0"
-}"""
+                                global """
+                                    fun spiralShortestText(v: Double, single: Boolean): String {
+                                        if (v.isNaN()) return "NaN"
+                                        if (v.isInfinite()) return if (v > 0) "Infinity" else "-Infinity"
+                                        if (v == 0.0) return if (1.0 / v < 0) "-0.0" else "0.0"
+                                        val shortest = java.math.BigDecimal(if (single) v.toFloat().toString() else v.toString()).stripTrailingZeros()
+                                        val digits = shortest.unscaledValue().abs().toString()
+                                        val exponent = digits.length - 1 - shortest.scale()
+                                        val body = if (exponent < -4 || exponent >= digits.length) {
+                                            val magnitude = kotlin.math.abs(exponent)
+                                            (if (digits.length == 1) digits else digits.substring(0, 1) + "." + digits.substring(1)) + "e" + (if (exponent < 0) "-" else "+") + (if (magnitude < 10) "0" else "") + magnitude
+                                        } else if (exponent >= 0) {
+                                            if (digits.length > exponent + 1) digits.substring(0, exponent + 1) + "." + digits.substring(exponent + 1) else digits + "0".repeat(exponent + 1 - digits.length)
+                                        } else "0." + "0".repeat(-exponent - 1) + digits
+                                        val result = (if (shortest.signum() < 0) "-" else "") + body
+                                        return if (result.contains('.') || result.contains('e')) result else result + ".0"
+                                    }
+                                    """
                                 $'spiralShortestText((!b).toDouble(), true)' : string
                             | (_ : string) => b : string
                             | (_ : char) => $'Char(!b).toString()' : string
@@ -754,62 +758,66 @@ let format_real forall t. (x : t) : string =
                         (fun () =>
                             match b with
                             | (_ : f64) =>
-                                global """func spiralShortestText(_ v: Double, _ text: String) -> String {
-    if v.isNaN { return "NaN" }
-    if v.isInfinite { return v > 0 ? "Infinity" : "-Infinity" }
-    if v == 0 { return v.sign == .minus ? "-0.0" : "0.0" }
-    let negative = text.hasPrefix("-")
-    let unsigned = negative ? String(text.dropFirst()) : text
-    let parts = unsigned.split(separator: "e", maxSplits: 1).map(String.init)
-    let mantissa = parts[0].split(separator: ".", maxSplits: 1, omittingEmptySubsequences: false).map(String.init)
-    let whole = mantissa[0]
-    let fraction = mantissa.count > 1 ? mantissa[1] : ""
-    var digits = Array(whole + fraction)
-    var exponent = whole.count - 1 + (parts.count > 1 ? (Int(parts[1]) ?? 0) : 0)
-    while digits.count > 1 && digits.first == "0" { digits.removeFirst(); exponent -= 1 }
-    while digits.count > 1 && digits.last == "0" { digits.removeLast() }
-    let all = String(digits)
-    var body: String
-    if exponent < -4 || exponent >= digits.count {
-        let magnitude = abs(exponent)
-        body = String(all.prefix(1)) + (digits.count > 1 ? "." + String(all.dropFirst()) : "") + "e" + (exponent < 0 ? "-" : "+") + (magnitude < 10 ? "0" : "") + String(magnitude)
-    } else if exponent >= 0 {
-        body = all.count > exponent + 1 ? String(all.prefix(exponent + 1)) + "." + String(all.dropFirst(exponent + 1)) : all + String(repeating: "0", count: exponent + 1 - all.count)
-    } else {
-        body = "0." + String(repeating: "0", count: -exponent - 1) + all
-    }
-    let result = (negative ? "-" : "") + body
-    return result.contains(".") || result.contains("e") ? result : result + ".0"
-}"""
+                                global """
+                                    func spiralShortestText(_ v: Double, _ text: String) -> String {
+                                        if v.isNaN { return "NaN" }
+                                        if v.isInfinite { return v > 0 ? "Infinity" : "-Infinity" }
+                                        if v == 0 { return v.sign == .minus ? "-0.0" : "0.0" }
+                                        let negative = text.hasPrefix("-")
+                                        let unsigned = negative ? String(text.dropFirst()) : text
+                                        let parts = unsigned.split(separator: "e", maxSplits: 1).map(String.init)
+                                        let mantissa = parts[0].split(separator: ".", maxSplits: 1, omittingEmptySubsequences: false).map(String.init)
+                                        let whole = mantissa[0]
+                                        let fraction = mantissa.count > 1 ? mantissa[1] : ""
+                                        var digits = Array(whole + fraction)
+                                        var exponent = whole.count - 1 + (parts.count > 1 ? (Int(parts[1]) ?? 0) : 0)
+                                        while digits.count > 1 && digits.first == "0" { digits.removeFirst(); exponent -= 1 }
+                                        while digits.count > 1 && digits.last == "0" { digits.removeLast() }
+                                        let all = String(digits)
+                                        var body: String
+                                        if exponent < -4 || exponent >= digits.count {
+                                            let magnitude = abs(exponent)
+                                            body = String(all.prefix(1)) + (digits.count > 1 ? "." + String(all.dropFirst()) : "") + "e" + (exponent < 0 ? "-" : "+") + (magnitude < 10 ? "0" : "") + String(magnitude)
+                                        } else if exponent >= 0 {
+                                            body = all.count > exponent + 1 ? String(all.prefix(exponent + 1)) + "." + String(all.dropFirst(exponent + 1)) : all + String(repeating: "0", count: exponent + 1 - all.count)
+                                        } else {
+                                            body = "0." + String(repeating: "0", count: -exponent - 1) + all
+                                        }
+                                        let result = (negative ? "-" : "") + body
+                                        return result.contains(".") || result.contains("e") ? result : result + ".0"
+                                    }
+                                    """
                                 $'spiralShortestText(!b, (!b).description)' : string
                             | (_ : f32) =>
-                                global """func spiralShortestText(_ v: Double, _ text: String) -> String {
-    if v.isNaN { return "NaN" }
-    if v.isInfinite { return v > 0 ? "Infinity" : "-Infinity" }
-    if v == 0 { return v.sign == .minus ? "-0.0" : "0.0" }
-    let negative = text.hasPrefix("-")
-    let unsigned = negative ? String(text.dropFirst()) : text
-    let parts = unsigned.split(separator: "e", maxSplits: 1).map(String.init)
-    let mantissa = parts[0].split(separator: ".", maxSplits: 1, omittingEmptySubsequences: false).map(String.init)
-    let whole = mantissa[0]
-    let fraction = mantissa.count > 1 ? mantissa[1] : ""
-    var digits = Array(whole + fraction)
-    var exponent = whole.count - 1 + (parts.count > 1 ? (Int(parts[1]) ?? 0) : 0)
-    while digits.count > 1 && digits.first == "0" { digits.removeFirst(); exponent -= 1 }
-    while digits.count > 1 && digits.last == "0" { digits.removeLast() }
-    let all = String(digits)
-    var body: String
-    if exponent < -4 || exponent >= digits.count {
-        let magnitude = abs(exponent)
-        body = String(all.prefix(1)) + (digits.count > 1 ? "." + String(all.dropFirst()) : "") + "e" + (exponent < 0 ? "-" : "+") + (magnitude < 10 ? "0" : "") + String(magnitude)
-    } else if exponent >= 0 {
-        body = all.count > exponent + 1 ? String(all.prefix(exponent + 1)) + "." + String(all.dropFirst(exponent + 1)) : all + String(repeating: "0", count: exponent + 1 - all.count)
-    } else {
-        body = "0." + String(repeating: "0", count: -exponent - 1) + all
-    }
-    let result = (negative ? "-" : "") + body
-    return result.contains(".") || result.contains("e") ? result : result + ".0"
-}"""
+                                global """
+                                    func spiralShortestText(_ v: Double, _ text: String) -> String {
+                                        if v.isNaN { return "NaN" }
+                                        if v.isInfinite { return v > 0 ? "Infinity" : "-Infinity" }
+                                        if v == 0 { return v.sign == .minus ? "-0.0" : "0.0" }
+                                        let negative = text.hasPrefix("-")
+                                        let unsigned = negative ? String(text.dropFirst()) : text
+                                        let parts = unsigned.split(separator: "e", maxSplits: 1).map(String.init)
+                                        let mantissa = parts[0].split(separator: ".", maxSplits: 1, omittingEmptySubsequences: false).map(String.init)
+                                        let whole = mantissa[0]
+                                        let fraction = mantissa.count > 1 ? mantissa[1] : ""
+                                        var digits = Array(whole + fraction)
+                                        var exponent = whole.count - 1 + (parts.count > 1 ? (Int(parts[1]) ?? 0) : 0)
+                                        while digits.count > 1 && digits.first == "0" { digits.removeFirst(); exponent -= 1 }
+                                        while digits.count > 1 && digits.last == "0" { digits.removeLast() }
+                                        let all = String(digits)
+                                        var body: String
+                                        if exponent < -4 || exponent >= digits.count {
+                                            let magnitude = abs(exponent)
+                                            body = String(all.prefix(1)) + (digits.count > 1 ? "." + String(all.dropFirst()) : "") + "e" + (exponent < 0 ? "-" : "+") + (magnitude < 10 ? "0" : "") + String(magnitude)
+                                        } else if exponent >= 0 {
+                                            body = all.count > exponent + 1 ? String(all.prefix(exponent + 1)) + "." + String(all.dropFirst(exponent + 1)) : all + String(repeating: "0", count: exponent + 1 - all.count)
+                                        } else {
+                                            body = "0." + String(repeating: "0", count: -exponent - 1) + all
+                                        }
+                                        let result = (negative ? "-" : "") + body
+                                        return result.contains(".") || result.contains("e") ? result : result + ".0"
+                                    }
+                                    """
                                 $'spiralShortestText(Double(!b), (!b).description)' : string
                             | (_ : string) => b : string
                             | (_ : char) => $'String(UnicodeScalar(UInt32(!b)) ?? " ")' : string
@@ -851,38 +859,42 @@ let format_real forall t. (x : t) : string =
                         (fun () =>
                             match b with
                             | (_ : f64) =>
-                                global """function SpiralFormatFloat(x: Double; single: Boolean): AnsiString;
-var p: Integer; s: string; fs: TFormatSettings; d: Double; f: Single;
-begin
-  if IsNan(x) then Exit('NaN');
-  if IsInfinite(x) then begin if x > 0 then Exit('Infinity') else Exit('-Infinity'); end;
-  fs := FormatSettings; fs.DecimalSeparator := '.';
-  s := '';
-  for p := 1 to 17 do begin
-    s := FloatToStrF(x, ffGeneral, p, 0, fs);
-    if single then begin f := StrToFloat(s, fs); if f = x then Break; end
-    else begin d := StrToFloat(s, fs); if d = x then Break; end;
-  end;
-  if (Pos('.', s) = 0) and (Pos('E', s) = 0) and (Pos('e', s) = 0) then s := s + '.0';
-  Result := StringReplace(s, 'E', 'e', []);
-end;"""
+                                global """
+                                    function SpiralFormatFloat(x: Double; single: Boolean): AnsiString;
+                                    var p: Integer; s: string; fs: TFormatSettings; d: Double; f: Single;
+                                    begin
+                                      if IsNan(x) then Exit('NaN');
+                                      if IsInfinite(x) then begin if x > 0 then Exit('Infinity') else Exit('-Infinity'); end;
+                                      fs := FormatSettings; fs.DecimalSeparator := '.';
+                                      s := '';
+                                      for p := 1 to 17 do begin
+                                        s := FloatToStrF(x, ffGeneral, p, 0, fs);
+                                        if single then begin f := StrToFloat(s, fs); if f = x then Break; end
+                                        else begin d := StrToFloat(s, fs); if d = x then Break; end;
+                                      end;
+                                      if (Pos('.', s) = 0) and (Pos('E', s) = 0) and (Pos('e', s) = 0) then s := s + '.0';
+                                      Result := StringReplace(s, 'E', 'e', []);
+                                    end;
+                                    """
                                 $'SpiralFormatFloat(!b, False)' : string
                             | (_ : f32) =>
-                                global """function SpiralFormatFloat(x: Double; single: Boolean): AnsiString;
-var p: Integer; s: string; fs: TFormatSettings; d: Double; f: Single;
-begin
-  if IsNan(x) then Exit('NaN');
-  if IsInfinite(x) then begin if x > 0 then Exit('Infinity') else Exit('-Infinity'); end;
-  fs := FormatSettings; fs.DecimalSeparator := '.';
-  s := '';
-  for p := 1 to 17 do begin
-    s := FloatToStrF(x, ffGeneral, p, 0, fs);
-    if single then begin f := StrToFloat(s, fs); if f = x then Break; end
-    else begin d := StrToFloat(s, fs); if d = x then Break; end;
-  end;
-  if (Pos('.', s) = 0) and (Pos('E', s) = 0) and (Pos('e', s) = 0) then s := s + '.0';
-  Result := StringReplace(s, 'E', 'e', []);
-end;"""
+                                global """
+                                    function SpiralFormatFloat(x: Double; single: Boolean): AnsiString;
+                                    var p: Integer; s: string; fs: TFormatSettings; d: Double; f: Single;
+                                    begin
+                                      if IsNan(x) then Exit('NaN');
+                                      if IsInfinite(x) then begin if x > 0 then Exit('Infinity') else Exit('-Infinity'); end;
+                                      fs := FormatSettings; fs.DecimalSeparator := '.';
+                                      s := '';
+                                      for p := 1 to 17 do begin
+                                        s := FloatToStrF(x, ffGeneral, p, 0, fs);
+                                        if single then begin f := StrToFloat(s, fs); if f = x then Break; end
+                                        else begin d := StrToFloat(s, fs); if d = x then Break; end;
+                                      end;
+                                      if (Pos('.', s) = 0) and (Pos('E', s) = 0) and (Pos('e', s) = 0) then s := s + '.0';
+                                      Result := StringReplace(s, 'E', 'e', []);
+                                    end;
+                                    """
                                 $'SpiralFormatFloat(!b, True)' : string
                             | (_ : string) => b : string
                             | (_ : char) => $'string(!b)' : string

@@ -120,12 +120,14 @@ inl string_builder (initial : string) : string_builder =
         Fsharp = fun () => initial |> $'`string_builder ' : string_builder
         Python = fun () =>
             global "import io"
-            global """class CustomStringIO(io.StringIO):
-    def __init__(self, init=''):
-        super().__init__()
-        if init != '': self.write(init)
-    def __str__(self): return self.getvalue()
-    def __repr__(self): return self.getvalue()"""
+            global """
+                class CustomStringIO(io.StringIO):
+                    def __init__(self, init=''):
+                        super().__init__()
+                        if init != '': self.write(init)
+                    def __str__(self): return self.getvalue()
+                    def __repr__(self): return self.getvalue()
+                """
             $'CustomStringIO(!initial)' : string_builder
         Rust = fun () => $'String::from(&*!initial)' : string_builder
         TypeScript = fun () => $'!initial ' : string_builder
@@ -277,7 +279,11 @@ test concat_list print_code =
     |> fun x =>
         inl code = (x : _) |> concat_list "\n"
         code
-        |> _assert_eq "1\n2\n3"
+        |> _assert_eq """
+            1
+            2
+            3
+            """
 
 /// ### slice
 inl slice forall t {number; int}. (from : t) (to : t) s : string =
@@ -465,7 +471,11 @@ test concat_array print_code =
     |> fun x =>
         inl code = (a x : _ int _) |> concat_array "\n"
         code
-        |> _assert_eq "1\n2\n3"
+        |> _assert_eq """
+            1
+            2
+            3
+            """
 
 /// ### ellipsis
 inl ellipsis (max : i32) (s : string) =
@@ -1834,9 +1844,18 @@ test replace_regex =
 
 ///> rust -d regex
 test replace_regex_2 =
-    "    let main args =\n        ()\n"
+    """
+            let main args =
+                ()
+
+        """
     |> replace_regex "(?P<a> *)(?P<b>let\\s+main\\s+.*?\\s*=)" "$a[<EntryPoint>]\n$a$b"
-    |> _assert_eq "    [<EntryPoint>]\n    let main args =\n        ()\n"
+    |> _assert_eq """
+            [<EntryPoint>]
+            let main args =
+                ()
+
+        """
 
 /// ## main
 ///> fsharp

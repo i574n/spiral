@@ -1,4 +1,3 @@
-let spiralStringIndex (s : string) (i : int) : char = char (System.Text.Encoding.UTF8.GetBytes(s).[i])
 let spiralStringSlice (s : string) (from : int) (upto : int) : string =
     let bytes = System.Text.Encoding.UTF8.GetBytes(s)
     let length = bytes.Length

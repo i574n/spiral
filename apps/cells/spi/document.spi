@@ -470,7 +470,11 @@ inl header_of (line : string) : test_header =
     else NoHeader
 
 inl real_marker (real_mode : bool) (src : string) : string =
-    if real_mode && text.starts_with src "///- --real" = false then "///- --real\n\n" ++ src else src
+    if real_mode && text.starts_with src "///- --real" = false then """
+        ///- --real
+
+
+        """ ++ src else src
 
 inl test_options (real_mode : bool) (modes : string) : string =
     inl padded = cut_before modes " fails " ++ " "

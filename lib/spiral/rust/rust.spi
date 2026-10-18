@@ -525,11 +525,13 @@ inl new_partial_eq_wrapper forall t.
     (x : t)
     : partial_eq_wrapper t
     =
-    global """#[derive(Debug, Clone)]
-pub struct PartialEqWrapper<T>(pub T);
-impl<T: ?Sized> PartialEq for PartialEqWrapper<std::sync::Arc<T>> {
-    fn eq(&self, other: &Self) -> bool { std::sync::Arc::ptr_eq(&self.0, &other.0) }
-}"""
+    global """
+        #[derive(Debug, Clone)]
+        pub struct PartialEqWrapper<T>(pub T);
+        impl<T: ?Sized> PartialEq for PartialEqWrapper<std::sync::Arc<T>> {
+            fn eq(&self, other: &Self) -> bool { std::sync::Arc::ptr_eq(&self.0, &other.0) }
+        }
+        """
     $'PartialEqWrapper(!x.clone())' : partial_eq_wrapper t
 
 /// ### concat

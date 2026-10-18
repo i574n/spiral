@@ -69,23 +69,25 @@ inl numeric_conv forall t u. (x : t) : u =
     else $'!x ' : u
 
 inl lean_parse_helpers () : () =
-    global """def spiralParseInt? (s : String) : Option Int :=
-  let u := s.trimAscii.toString
-  let v := if u.startsWith "+" then (u.drop 1).toString else u
-  v.toInt?
+    global """
+        def spiralParseInt? (s : String) : Option Int :=
+          let u := s.trimAscii.toString
+          let v := if u.startsWith "+" then (u.drop 1).toString else u
+          v.toInt?
 
-def spiralDigit (c : Char) : Int :=
-  if c.isDigit then (c.toNat : Int) - 48
-  else if 'a' ≤ c && c ≤ 'z' then (c.toNat : Int) - 87
-  else if 'A' ≤ c && c ≤ 'Z' then (c.toNat : Int) - 55
-  else 0
+        def spiralDigit (c : Char) : Int :=
+          if c.isDigit then (c.toNat : Int) - 48
+          else if 'a' ≤ c && c ≤ 'z' then (c.toNat : Int) - 87
+          else if 'A' ≤ c && c ≤ 'Z' then (c.toNat : Int) - 55
+          else 0
 
-def spiralParseIntBase (s : String) (base : Int32) : Int32 :=
-  let u := s.trimAscii.toString
-  let neg := u.startsWith "-"
-  let body := if neg || u.startsWith "+" then (u.drop 1).toString else u
-  let v := body.foldl (fun acc c => acc * base.toInt + spiralDigit c) 0
-  Int32.ofInt (if neg then -v else v)"""
+        def spiralParseIntBase (s : String) (base : Int32) : Int32 :=
+          let u := s.trimAscii.toString
+          let neg := u.startsWith "-"
+          let body := if neg || u.startsWith "+" then (u.drop 1).toString else u
+          let v := body.foldl (fun acc c => acc * base.toInt + spiralDigit c) 0
+          Int32.ofInt (if neg then -v else v)
+        """
 
 /// ### convert_i32_base
 inl convert_i32_base forall t. (base : i32) (x : t) : i32 =

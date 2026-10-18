@@ -102,8 +102,25 @@ inl wrap (code : string) : string * i32 =
         else text.ensure_nl (join_lines (map_main xs 0i32 at)), 1i32
 
 inl package_project (includes : string) : string =
-    if includes = "" then "packages:\n    |core-\nmodules:\n    console\n    main\n"
-    else "packageDir: .\npackages:\n    |core-\n" ++ text.indent_names includes 0i32 "" ++ "modules:\n    console\n    main\n"
+    if includes = "" then """
+        packages:
+            |core-
+        modules:
+            console
+            main
+
+        """
+    else """
+        packageDir: .
+        packages:
+            |core-
+
+        """ ++ text.indent_names includes 0i32 "" ++ """
+        modules:
+            console
+            main
+
+        """
 
 let rec skip_spaces (line : string) (i : i32) : i32 =
     if i < text.length line && text.index line i = ' ' then skip_spaces line (i + 1i32) else i
@@ -251,13 +268,25 @@ let rec rewrite_lines (xs : lines) (known : pairs) : lines =
             else line
         Line (out, rewrite_lines rest known)
 
-inl show_exit () : string = "let spiral_cells_value = main.join().unwrap();\n    println!(\"SPIRAL_CELLS_VALUE:{}\", spiral_cells_value);\n    std::process::exit(0);"
+inl show_exit () : string = """
+    let spiral_cells_value = main.join().unwrap();
+        println!("SPIRAL_CELLS_VALUE:{}", spiral_cells_value);
+        std::process::exit(0);
+    """
 
 inl unit_exit () : string = "let _ = main.join().unwrap();\n    std::process::exit(0);"
 
-inl show_join (panic_code : string) : string = "match main.join() {\n        Ok(spiral_cells_value) => { println!(\"SPIRAL_CELLS_VALUE:{}\", spiral_cells_value); std::process::exit(0) }\n        Err(_) => std::process::exit(" ++ panic_code ++ "),\n    }"
+inl show_join (panic_code : string) : string = """
+    match main.join() {
+            Ok(spiral_cells_value) => { println!("SPIRAL_CELLS_VALUE:{}", spiral_cells_value); std::process::exit(0) }
+            Err(_) => std::process::exit(
+    """ ++ panic_code ++ "),\n    }"
 
-inl unit_join (panic_code : string) : string = "match main.join() {\n        Ok(_) => std::process::exit(0),\n        Err(_) => std::process::exit(" ++ panic_code ++ "),\n    }"
+inl unit_join (panic_code : string) : string = """
+    match main.join() {
+            Ok(_) => std::process::exit(0),
+            Err(_) => std::process::exit(
+    """ ++ panic_code ++ "),\n    }"
 
 inl join_exit_open () : string = "std::process::exit(match main.join() { Ok(code) => code, Err(_) => "
 
