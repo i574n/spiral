@@ -37,16 +37,12 @@ typedef struct {
 } US0;
 typedef struct Closure1 Closure1;
 struct Closure1 {
-    int refc;
-    void (*decref_fptr)(Closure1 *);
-    int32_t (*fptr)(Closure1 *, int32_t);
+    Fun1 base;
     US0 v0;
 };
 typedef struct Closure0 Closure0;
 struct Closure0 {
-    int refc;
-    void (*decref_fptr)(Closure0 *);
-    Fun1 * (*fptr)(Closure0 *, int32_t);
+    Fun0 base;
 };
 static inline void ArrayDecrefBody0(Array0 * x){
     (void)x;
@@ -129,13 +125,15 @@ US0 US0_Item(String * v0, Array0 * v1) { // Item
 static inline void ClosureDecrefBody1(Closure1 * x){
     USDecref0(&(x->v0));
 }
-void ClosureDecref1(Closure1 * x){
-    if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody1(x); free(x); }
+void ClosureDecref1(Fun1 * self){
+    Closure1 * x = (Closure1 *) self;
+    if (x != NULL && --(x->base.refc) == 0) { ClosureDecrefBody1(x); free(x); }
 }
-int32_t closure1(Closure1 * x, int32_t v1){
+int32_t closure1(Fun1 * self, int32_t v1){
+    Closure1 * x = (Closure1 *) self;
     US0 v0 = x->v0;
     USIncref0(&(v0));
-    ClosureDecref1(x);
+    ClosureDecref1(self);
     
     
     int32_t v12;
@@ -193,22 +191,23 @@ int32_t closure1(Closure1 * x, int32_t v1){
 }
 Fun1 * ClosureCreate1(US0 v0){
     Closure1 * x = malloc(sizeof(Closure1));
-    x->refc = 1;
-    x->decref_fptr = ClosureDecref1;
-    x->fptr = closure1;
+    x->base.refc = 1;
+    x->base.decref_fptr = ClosureDecref1;
+    x->base.fptr = closure1;
     x->v0 = v0;
-    return (Fun1 *) x;
+    return &x->base;
 }
 static inline void ClosureDecrefBody0(Closure0 * x){
     (void)x;
 }
-void ClosureDecref0(Closure0 * x){
-    if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody0(x); free(x); }
+void ClosureDecref0(Fun0 * self){
+    Closure0 * x = (Closure0 *) self;
+    if (x != NULL && --(x->base.refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
-Fun1 * closure0(Closure0 * x, int32_t v0){
+Fun1 * closure0(Fun0 * self, int32_t v0){
     
     
-    ClosureDecref0(x);
+    ClosureDecref0(self);
     
     
     Array0 * v1;
@@ -251,11 +250,11 @@ Fun1 * closure0(Closure0 * x, int32_t v0){
 }
 Fun0 * ClosureCreate0(){
     Closure0 * x = malloc(sizeof(Closure0));
-    x->refc = 1;
-    x->decref_fptr = ClosureDecref0;
-    x->fptr = closure0;
+    x->base.refc = 1;
+    x->base.decref_fptr = ClosureDecref0;
+    x->base.fptr = closure0;
     
-    return (Fun0 *) x;
+    return &x->base;
 }
 Fun1 * method0(Fun0 * v0){
     

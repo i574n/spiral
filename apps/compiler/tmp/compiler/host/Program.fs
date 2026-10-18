@@ -1205,6 +1205,8 @@ module Program =
             exit (runBatch argv.[1] argv.[2] timeoutMs)
         elif argv.Length >= 1 && argv.[0] = "format" then
             Spiral.spiral_compiler.FormatterCli.run (List.ofArray argv.[1..])
+        elif argv.Length >= 1 && argv.[0] = "tokens" then
+            Spiral.spiral_compiler.TokensCli.run (List.ofArray argv.[1..])
         elif argv.Length >= 1 && argv.[0] = "format-corpus" then
             Spiral.spiral_compiler.FormatterCli.corpus (List.ofArray argv.[1..])
         elif argv.Length >= 1 && (argv.[0] = "build-file" || argv.[0] = "--build-file" || argv.[0] = "fsharp") then

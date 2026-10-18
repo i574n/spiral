@@ -109,8 +109,15 @@ inl parse_dib (src : string) : string =
 
 inl spir_cell (source : string) : bool = text.contains source "///- " && text.contains source " --real"
 
+let rec directive_line_has (source : string) (flag : string) (i : i32) : bool =
+    match text.next_line source i with
+    | LineDone => false
+    | LineGot (line, next) =>
+        if text.starts_with line "///- " && text.contains line flag then true
+        else directive_line_has source flag next
+
 inl test_cell (source : string) : bool =
-    text.contains source "///- " && (text.contains source " --test" || text.contains source " --ignore")
+    directive_line_has source " --test" 0i32 || directive_line_has source " --ignore" 0i32
 
 union export_kind =
     | SpiExport

@@ -7,6 +7,7 @@ param(
     [int]$Parallel = 0,
     [switch]$Native,
     [switch]$Accept,
+    [switch]$AcceptToolchain,
     [switch]$Record,
     [switch]$FreshProcess,
     [switch]$WarmRecycle,
@@ -348,6 +349,21 @@ function Get-ToolStamp([string]$path) {
     $size = if ($item -is [IO.FileInfo]) { $item.Length } else { 'dir' }
     "$real|$size|$($item.LastWriteTimeUtc.Ticks)"
 }
+
+$toolchain = @($tools.PSObject.Properties | Sort-Object Name | ForEach-Object { [pscustomobject]@{ tool = $_.Name; stamp = Get-ToolStamp $_.Value } })
+$baselineToolchainPath = Join-Path (Split-Path (Get-SpiralBaselinePath)) 'toolchain.tsv'
+$toolchainChanges = @()
+if ($Native -and (Test-Path -LiteralPath $baselineToolchainPath)) {
+    $baselineStamps = @{}
+    Import-Csv $baselineToolchainPath -Delimiter "`t" | ForEach-Object { $baselineStamps[$_.tool] = $_.stamp }
+    $toolchainChanges = @($toolchain | Where-Object { $baselineStamps.ContainsKey($_.tool) -and $baselineStamps[$_.tool] -ne $_.stamp } | ForEach-Object { "$($_.tool): $($baselineStamps[$_.tool]) -> $($_.stamp)" })
+}
+if ($toolchainChanges) {
+    Write-Host "toolchain differs from the baseline's:" -ForegroundColor Yellow
+    $toolchainChanges | ForEach-Object { Write-Host "  $_" -ForegroundColor Yellow }
+    if ($Accept -and -not $AcceptToolchain) { throw "-Accept refuses a run whose native toolchain differs from the baseline's: pin the baseline's tools (SPIRAL_CC and the others) or pass -AcceptToolchain to move the baseline to this toolchain" }
+}
+if ($Native) { $toolchain | Export-Csv (Join-Path $runDir 'toolchain.tsv') -Delimiter "`t" -NoTypeInformation -UseQuotes Never }
 function Get-NativeSignature {
     $lines = [Collections.Generic.List[string]]::new()
     $script = [System.Management.Automation.Language.Parser]::ParseFile($PSCommandPath, [ref]$null, [ref]$null)
@@ -1026,6 +1042,7 @@ if ($Accept) {
     New-Item -ItemType Directory -Force (Split-Path $expectedPath) | Out-Null
     $merged | Sort-Object id, backend | Export-Csv $expectedPath -Delimiter "`t" -NoTypeInformation -UseQuotes Never
     Write-Host "accepted $($acceptRows.Count) rows into $expectedPath"
+    if ($Native) { Copy-Item -LiteralPath (Join-Path $runDir 'toolchain.tsv') $baselineToolchainPath -Force; Write-Host "baseline toolchain recorded in $baselineToolchainPath" }
 }
 if ($Record) {
     $board = Get-SpiralScoreboardPath $mode

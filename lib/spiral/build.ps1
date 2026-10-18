@@ -20,7 +20,7 @@ $notebooks = @(
     "threading", "benchmark", "seq", "env", "file_system", "networking"
 )
 function Get-NotebookArgs([string] $Notebook) {
-    @("--path", (Join-Path $ResolvedScriptDir "$Notebook.spi"))
+    @("--path", (Join-Path $ResolvedScriptDir "$Notebook.spi"), "--livemd")
 }
 
 if (!$fast) {

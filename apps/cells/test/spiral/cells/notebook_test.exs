@@ -539,14 +539,6 @@ defmodule Spiral.Cells.NotebookTest do
     end
   end
 
-  test "html like the old route: LF endings and nbconvert's random cell ids renumbered 1..n" do
-    html =
-      ~s(<div id="cell-id=a1b2c3d4" class="x">\r\n<div id="cell-id=DEADBEEF">\r\n<p id="cell-id=zz">)
-
-    assert Notebook.normalize_html(html) ==
-             ~s(<div id="cell-id=1" class="x">\n<div id="cell-id=2">\n<p id="cell-id=zz">)
-  end
-
   defp rustc_ok(_ctx), do: :ok
 
   defp run_value(output),

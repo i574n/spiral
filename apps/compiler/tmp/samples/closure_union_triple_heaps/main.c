@@ -32,9 +32,7 @@ struct Fun0{
 };
 typedef struct Closure0 Closure0;
 struct Closure0 {
-    int refc;
-    void (*decref_fptr)(Closure0 *);
-    US0 (*fptr)(Closure0 *, int32_t);
+    Fun0 base;
     Heap0 * v0;
     Heap0 * v1;
     Heap0 * v2;
@@ -108,13 +106,15 @@ US0 US0_Held(Heap0 * v0, Heap0 * v1, Heap0 * v2) { // Held
 static inline void ClosureDecrefBody0(Closure0 * x){
     HeapDecref0(x->v0); HeapDecref0(x->v1); HeapDecref0(x->v2);
 }
-void ClosureDecref0(Closure0 * x){
-    if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody0(x); free(x); }
+void ClosureDecref0(Fun0 * self){
+    Closure0 * x = (Closure0 *) self;
+    if (x != NULL && --(x->base.refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
-US0 f_c0(Closure0 * x, int32_t v3){
+US0 f_c0(Fun0 * self, int32_t v3){
+    Closure0 * x = (Closure0 *) self;
     Heap0 * v0 = x->v0; Heap0 * v1 = x->v1; Heap0 * v2 = x->v2;
     (v0)->refc++; (v1)->refc++; (v2)->refc++;
-    ClosureDecref0(x);
+    ClosureDecref0(self);
     
     
     bool v4;
@@ -133,11 +133,11 @@ US0 f_c0(Closure0 * x, int32_t v3){
 }
 Fun0 * ClosureCreate0(Heap0 * v0, Heap0 * v1, Heap0 * v2){
     Closure0 * x = malloc(sizeof(Closure0));
-    x->refc = 1;
-    x->decref_fptr = ClosureDecref0;
-    x->fptr = f_c0;
+    x->base.refc = 1;
+    x->base.decref_fptr = ClosureDecref0;
+    x->base.fptr = f_c0;
     x->v0 = v0; x->v1 = v1; x->v2 = v2;
-    return (Fun0 *) x;
+    return &x->base;
 }
 int32_t score0(US0 v0){
     

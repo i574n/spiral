@@ -437,37 +437,7 @@ defmodule Spiral.Cells.Notebook do
   end
 
   @spec write_html(String.t()) :: :ok | {:error, String.t()}
-  def write_html(ipynb) do
-    case System.find_executable("jupyter") do
-      nil ->
-        IO.puts(:stderr, "spiral.notebook: jupyter is not on PATH; skipping the html for #{ipynb}")
-        :ok
-
-      jupyter ->
-        args = ["nbconvert", ipynb, "--to", "html", "--HTMLExporter.theme=dark"]
-
-        case System.cmd(jupyter, args, stderr_to_stdout: true) do
-          {_, 0} ->
-            html = Path.rootname(ipynb) <> ".html"
-            File.write!(html, html |> File.read!() |> normalize_html())
-            :ok
-
-          {out, status} ->
-            {:error, "jupyter nbconvert failed (exit #{status})\n#{out}"}
-        end
-    end
-  end
-
-  @doc false
-  def normalize_html(text) do
-    [first | rest] =
-      Regex.split(~r/(?<=id="cell-id=)[a-fA-F0-9]{8}/, String.replace(text, "\r\n", "\n"))
-
-    rest
-    |> Enum.with_index(1)
-    |> Enum.reduce([first], fn {part, n}, acc -> [acc, Integer.to_string(n), part] end)
-    |> IO.iodata_to_binary()
-  end
+  def write_html(ipynb), do: Spiral.Cells.Html.write(ipynb)
 
   @doc false
   def untargeted_tests(path) do
@@ -662,10 +632,10 @@ defmodule Spiral.Cells.Notebook do
       case Builders.commands(step.cell_source) do
         [] ->
           if implicit? and Map.has_key?(test_names, step.index), do: warn_untargeted(test_names[step.index])
-          Map.put(step, :builders, defaults)
+          step |> Map.put(:builders, defaults) |> put_test_name(test_names)
 
         own ->
-          Map.put(step, :builders, own)
+          step |> Map.put(:builders, own) |> put_test_name(test_names)
       end
     end)
   end
@@ -685,6 +655,13 @@ defmodule Spiral.Cells.Notebook do
       end
 
     not prelude? and explicit == nil
+  end
+
+  defp put_test_name(step, test_names) do
+    case Map.fetch(test_names, step.index) do
+      {:ok, name} -> Map.put(step, :test_name, name)
+      :error -> step
+    end
   end
 
   defp warn_untargeted(name) do
@@ -909,6 +886,7 @@ defmodule Spiral.Cells.Notebook do
         |> Keyword.put(:agree, agreement?(step.cell_source))
         |> Keyword.put(:test_cell, Regex.match?(~r/^\/\/\/- [^\n]*--test\b/m, step.cell_source))
         |> Keyword.put(:build_only, build_only?(step.cell_source))
+        |> Keyword.put(:test_name, Map.get(step, :test_name))
 
       ran = if Regex.match?(@bare_no_agree, step.cell_source), do: :bare_no_agree, else: step.program |> Spiral.Cells.run(opts) |> in_source(source_path)
 

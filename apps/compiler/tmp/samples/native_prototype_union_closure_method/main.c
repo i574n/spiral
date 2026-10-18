@@ -22,9 +22,7 @@ struct Fun0{
 };
 typedef struct Closure0 Closure0;
 struct Closure0 {
-    int refc;
-    void (*decref_fptr)(Closure0 *);
-    int32_t (*fptr)(Closure0 *, int32_t);
+    Fun0 base;
     US0 v0;
 };
 static inline void USIncrefBody0(US0 * x){
@@ -57,13 +55,15 @@ US0 US0_Flag(bool v0) { // Flag
 static inline void ClosureDecrefBody0(Closure0 * x){
     (void)x;
 }
-void ClosureDecref0(Closure0 * x){
-    if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody0(x); free(x); }
+void ClosureDecref0(Fun0 * self){
+    Closure0 * x = (Closure0 *) self;
+    if (x != NULL && --(x->base.refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
-int32_t closure0(Closure0 * x, int32_t v1){
+int32_t closure0(Fun0 * self, int32_t v1){
+    Closure0 * x = (Closure0 *) self;
     US0 v0 = x->v0;
     
-    ClosureDecref0(x);
+    ClosureDecref0(self);
     
     
     int32_t v7;
@@ -108,11 +108,11 @@ int32_t closure0(Closure0 * x, int32_t v1){
 }
 Fun0 * ClosureCreate0(US0 v0){
     Closure0 * x = malloc(sizeof(Closure0));
-    x->refc = 1;
-    x->decref_fptr = ClosureDecref0;
-    x->fptr = closure0;
+    x->base.refc = 1;
+    x->base.decref_fptr = ClosureDecref0;
+    x->base.fptr = closure0;
     x->v0 = v0;
-    return (Fun0 *) x;
+    return &x->base;
 }
 int32_t method0(Fun0 * v0){
     

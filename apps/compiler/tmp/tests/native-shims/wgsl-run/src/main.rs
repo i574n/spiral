@@ -226,7 +226,7 @@ async fn execute(source: &str, lanes: u32, chunk: u32) -> Result<Vec<i32>, Fail>
     }
     if let Some(log) = timing_log {
         use std::io::Write;
-        let shader = std::env::args().nth(1).unwrap_or_default();
+        let shader = std::env::var("SPIRAL_CELLS_TEST").ok().filter(|name| !name.is_empty()).unwrap_or_else(|| std::env::args().nth(1).unwrap_or_default());
         if let Ok(mut file) = std::fs::OpenOptions::new().create(true).append(true).open(log) {
             let _ = writeln!(file, "{shader}\t{}\t{compile_ms}\t{run_ms}\t{adapter_text}", source.len());
         }

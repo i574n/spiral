@@ -715,14 +715,23 @@ defmodule Spiral.Cells.Targets do
 
   @cupy_missing_cuda_path_warning "ignore:CUDA path could not be detected:UserWarning"
 
-  defp tool_env(_opts, false), do: System.get_env() |> Enum.to_list() |> without_cupy_cuda_path_warning()
+  defp tool_env(opts, false), do: System.get_env() |> Enum.to_list() |> with_test_name(opts) |> without_cupy_cuda_path_warning()
 
-  defp tool_env(_opts, true) do
+  defp tool_env(opts, true) do
     System.get_env()
     |> Enum.to_list()
+    |> with_test_name(opts)
     |> List.keystore("SPIRAL_JSON", 0, {"SPIRAL_JSON", "1"})
     |> List.keystore("TRACE_LEVEL", 0, {"TRACE_LEVEL", "Info"})
     |> without_cupy_cuda_path_warning()
+  end
+
+  @doc false
+  def with_test_name(env, opts) do
+    case opts[:test_name] do
+      name when is_binary(name) and name != "" -> List.keystore(env, "SPIRAL_CELLS_TEST", 0, {"SPIRAL_CELLS_TEST", name})
+      _ -> env
+    end
   end
 
   @doc false

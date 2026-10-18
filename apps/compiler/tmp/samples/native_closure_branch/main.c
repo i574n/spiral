@@ -11,26 +11,23 @@ struct Fun0{
 };
 typedef struct Closure0 Closure0;
 struct Closure0 {
-    int refc;
-    void (*decref_fptr)(Closure0 *);
-    int32_t (*fptr)(Closure0 *, int32_t);
+    Fun0 base;
 };
 typedef struct Closure1 Closure1;
 struct Closure1 {
-    int refc;
-    void (*decref_fptr)(Closure1 *);
-    int32_t (*fptr)(Closure1 *, int32_t);
+    Fun0 base;
 };
 static inline void ClosureDecrefBody0(Closure0 * x){
     (void)x;
 }
-void ClosureDecref0(Closure0 * x){
-    if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody0(x); free(x); }
+void ClosureDecref0(Fun0 * self){
+    Closure0 * x = (Closure0 *) self;
+    if (x != NULL && --(x->base.refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
-int32_t a_c0(Closure0 * x, int32_t v0){
+int32_t a_c0(Fun0 * self, int32_t v0){
     
     
-    ClosureDecref0(x);
+    ClosureDecref0(self);
     
     
     int32_t v1;
@@ -41,22 +38,23 @@ int32_t a_c0(Closure0 * x, int32_t v0){
 }
 Fun0 * ClosureCreate0(){
     Closure0 * x = malloc(sizeof(Closure0));
-    x->refc = 1;
-    x->decref_fptr = ClosureDecref0;
-    x->fptr = a_c0;
+    x->base.refc = 1;
+    x->base.decref_fptr = ClosureDecref0;
+    x->base.fptr = a_c0;
     
-    return (Fun0 *) x;
+    return &x->base;
 }
 static inline void ClosureDecrefBody1(Closure1 * x){
     (void)x;
 }
-void ClosureDecref1(Closure1 * x){
-    if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody1(x); free(x); }
+void ClosureDecref1(Fun0 * self){
+    Closure1 * x = (Closure1 *) self;
+    if (x != NULL && --(x->base.refc) == 0) { ClosureDecrefBody1(x); free(x); }
 }
-int32_t b_c1(Closure1 * x, int32_t v0){
+int32_t b_c1(Fun0 * self, int32_t v0){
     
     
-    ClosureDecref1(x);
+    ClosureDecref1(self);
     
     
     int32_t v1;
@@ -67,11 +65,11 @@ int32_t b_c1(Closure1 * x, int32_t v0){
 }
 Fun0 * ClosureCreate1(){
     Closure1 * x = malloc(sizeof(Closure1));
-    x->refc = 1;
-    x->decref_fptr = ClosureDecref1;
-    x->fptr = b_c1;
+    x->base.refc = 1;
+    x->base.decref_fptr = ClosureDecref1;
+    x->base.fptr = b_c1;
     
-    return (Fun0 *) x;
+    return &x->base;
 }
 int32_t method0(Fun0 * v0){
     

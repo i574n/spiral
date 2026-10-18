@@ -1,7 +1,7 @@
 let rec method0 () : bool =
     true
-let v0 : int32 = 0
-let v1 : int32 = 0
+let mutable v0 : int32 = 0
+let mutable v1 : int32 = 0
 while method0() do
     let v3 : int32 = v0 + 1
     v0 <- v3

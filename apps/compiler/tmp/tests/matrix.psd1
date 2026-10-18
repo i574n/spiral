@@ -39,6 +39,8 @@
         @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'Kotlin'; Oracle = 'Zig'; Reason = 'Kotlin indexes unchecked like C (reads 0); the Zig oracle traps the index with exit 3 as the fixture intends' }
         @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'Lua'; Oracle = 'Zig'; Reason = 'the Lua array index is unchecked (reads 0); the Zig oracle traps the index with exit 3 as the fixture intends' }
         @{ Id = 'samples/native_float_infinity'; Backend = 'Gleam'; Reason = 'BEAM floats are never infinite or NaN: a 0x7FF0000000000000 float bit-pattern match fails and binary_to_term raises badarg, so !!!!Infinity has no Gleam residual that compiles' }
+        @{ Id = 'samples/while_control'; Backend = 'Fsharp'; Reason = 'F# has no break or continue statements, and the sample''s break''/continue'' are raw break/continue macros' }
+        @{ Id = 'samples/mega_omniledger_erp_kernel/all_terminals'; Backend = 'Fsharp'; Reason = 'the F# residual starts /usr/bin/sync (POSIX-only), so it exits 1 on Windows, and its run sits near the 60 s fsi budget' }
     )
 
     Mega = @(
@@ -270,6 +272,8 @@
             'samples/mega_omniledger_erp_kernel/runtime_native'
             'samples/mega_spiral_proves_spiral_relative_consistency/runtime_native'
             'samples/mega_zeta_structural_laboratory/runtime_native'
+            'samples/managed_string_invalid_utf8_slice'
+            'samples/managed_string_utf8_boundaries'
         )
         'C,Rust,Delphi' = @(
             'samples/native_main_return_type'
@@ -285,7 +289,6 @@
             'samples/managed_string_concat'
             'samples/managed_string_empty_slice'
             'samples/managed_string_index'
-            'samples/managed_string_invalid_utf8_slice'
             'samples/managed_string_record'
             'samples/managed_string_recursive'
             'samples/managed_string_runtime'
@@ -293,7 +296,6 @@
             'samples/managed_string_shared_calls'
             'samples/managed_string_slice'
             'samples/managed_string_union'
-            'samples/managed_string_utf8_boundaries'
             'samples/native_bitwise_scalar'
             'samples/native_closure_array_capture'
             'samples/native_closure_branch'

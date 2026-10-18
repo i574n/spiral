@@ -17,29 +17,27 @@ struct Fun0{
 };
 typedef struct Closure1 Closure1;
 struct Closure1 {
-    int refc;
-    void (*decref_fptr)(Closure1 *);
-    int32_t (*fptr)(Closure1 *, int32_t);
+    Fun1 base;
     int32_t v0;
     int32_t v1;
 };
 typedef struct Closure0 Closure0;
 struct Closure0 {
-    int refc;
-    void (*decref_fptr)(Closure0 *);
-    Fun1 * (*fptr)(Closure0 *, int32_t);
+    Fun0 base;
     int32_t v0;
 };
 static inline void ClosureDecrefBody1(Closure1 * x){
     (void)x;
 }
-void ClosureDecref1(Closure1 * x){
-    if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody1(x); free(x); }
+void ClosureDecref1(Fun1 * self){
+    Closure1 * x = (Closure1 *) self;
+    if (x != NULL && --(x->base.refc) == 0) { ClosureDecrefBody1(x); free(x); }
 }
-int32_t g_c1(Closure1 * x, int32_t v2){
+int32_t g_c1(Fun1 * self, int32_t v2){
+    Closure1 * x = (Closure1 *) self;
     int32_t v0 = x->v0; int32_t v1 = x->v1;
     
-    ClosureDecref1(x);
+    ClosureDecref1(self);
     
     
     bool v3;
@@ -62,33 +60,35 @@ int32_t g_c1(Closure1 * x, int32_t v2){
 }
 Fun1 * ClosureCreate1(int32_t v0, int32_t v1){
     Closure1 * x = malloc(sizeof(Closure1));
-    x->refc = 1;
-    x->decref_fptr = ClosureDecref1;
-    x->fptr = g_c1;
+    x->base.refc = 1;
+    x->base.decref_fptr = ClosureDecref1;
+    x->base.fptr = g_c1;
     x->v0 = v0; x->v1 = v1;
-    return (Fun1 *) x;
+    return &x->base;
 }
 static inline void ClosureDecrefBody0(Closure0 * x){
     (void)x;
 }
-void ClosureDecref0(Closure0 * x){
-    if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody0(x); free(x); }
+void ClosureDecref0(Fun0 * self){
+    Closure0 * x = (Closure0 *) self;
+    if (x != NULL && --(x->base.refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
-Fun1 * f_c0(Closure0 * x, int32_t v1){
+Fun1 * f_c0(Fun0 * self, int32_t v1){
+    Closure0 * x = (Closure0 *) self;
     int32_t v0 = x->v0;
     
-    ClosureDecref0(x);
+    ClosureDecref0(self);
     
     
     return ClosureCreate1(v0, v1);
 }
 Fun0 * ClosureCreate0(int32_t v0){
     Closure0 * x = malloc(sizeof(Closure0));
-    x->refc = 1;
-    x->decref_fptr = ClosureDecref0;
-    x->fptr = f_c0;
+    x->base.refc = 1;
+    x->base.decref_fptr = ClosureDecref0;
+    x->base.fptr = f_c0;
     x->v0 = v0;
-    return (Fun0 *) x;
+    return &x->base;
 }
 int32_t main(){
     

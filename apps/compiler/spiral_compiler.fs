@@ -50476,7 +50476,7 @@ module spiral_compiler =
 
         /// Fills in the type applies and annotations, and generalizes statements. Also strips annotations from terms and patterns.
         /// Dealing with recursive statement type applies requires some special consideration.
-        let fill r rec_term expr =
+        let fill r top_rec_term expr =
             assert (0 = errors.Count)
             let t_to_rawtexpr r vars_to_metavars expr =
                 let rec f x =
@@ -50584,7 +50584,7 @@ module spiral_compiler =
                     RawAnnot(r,RawMacro(r,l),annot r x)
                 | RawArray(r,a) -> RawAnnot(r,RawArray(r,List.map f a),annot r x)
                 | RawLayoutIndex(r,a) -> RawLayoutIndex(r,f a)
-            and pattern recbterm x' =
+            and pattern rec_term x' =
                 let mutable rec_term = rec_term
                 let rec f = function
                     | PatFilledDefaultValue _ -> failwith "Compiler error: PatDefaultValueFilled should not appear in fill."
@@ -50613,7 +50613,7 @@ module spiral_compiler =
                 rec_term, f x'
     
 
-            let x = fill_foralls r rec_term expr
+            let x = fill_foralls r top_rec_term expr
             assert (0 = errors.Count)
             x
     
@@ -165246,18 +165246,22 @@ fn spiralCreate(comptime T: type, v: T) *T {
             | TyLocalReturnOp(_, (TyDo b | TyIndent b), _) -> self_tail tag b
             | _ -> false
 
-        let unitMain =
+        let mainResult =
             match Array.tryLast x with
             | Some (TyLocalReturnOp(_,_,d)) | Some (TyLocalReturnData(d,_)) ->
                 match data_term_vars d |> Array.map (function WV(L(_,t)) -> t | WLit l -> YPrim (lit_to_primitive_type l)) with
-                | [||] -> true
-                | [|YPrim Int32T|] -> false
-                | _ -> raise_codegen_error "The return type of main in the Zig backend should be a 32-bit int (or unit)."
-            | _ -> true
-        if unitMain then
+                | [||] -> YB
+                | [|t|] -> t
+                | _ -> raise_codegen_error "The main of a Zig program returns a single value (an i32 exit code, unit, or one value that is discarded), not a tuple."
+            | _ -> YB
+        match mainResult with
+        | YPrim Int32T -> emit_function "spiralMain" None [||] "" (YPrim Int32T) x ""
+        | YB ->
             emit_function "spiralMainUnit" None [||] "" YB x ""
             bodies.Add("fn spiralMain() i32 {\n    spiralMainUnit();\n    return 0;\n}\n")
-        else emit_function "spiralMain" None [||] "" (YPrim Int32T) x ""
+        | value ->
+            emit_function "spiralMainValue" None [||] "" value x ""
+            bodies.Add("fn spiralMain() i32 {\n    _ = spiralMainValue();\n    return 0;\n}\n")
         let program = StringBuilder()
         ()
         program.Append(zigPrelude) |> ignore
@@ -180757,6 +180761,23 @@ end
                 | None -> ()
             printTally "format" tally
             tally
+
+    module TokensCli =
+        let render (text : string) =
+            let out = System.Text.StringBuilder()
+            let mutable lex = lex_state_init
+            text.Replace("\r\n", "\n").Split('\n') |> Array.iteri (fun line lineText ->
+                let tokens, _, next = tokenize_line lex lineText
+                lex <- next
+                for (range, token) in tokens do
+                    out.Append(line).Append('\t').Append(range.from).Append('\t').Append(range.nearTo).Append('\t').Append(token_groups token).Append('\n') |> ignore)
+            out.ToString()
+
+        let run (args : string list) =
+            match args with
+            | [ "--stdin" ] -> System.Console.Out.Write(render (System.Console.In.ReadToEnd())); 0
+            | [ file ] when System.IO.File.Exists file -> System.Console.Out.Write(render (System.IO.File.ReadAllText file)); 0
+            | _ -> eprintfn "usage: SpiralCompiler tokens <file> | tokens --stdin   (one row per token: line, from, nearTo, semantic class)"; 2
 
     module FormatterCli =
         open System

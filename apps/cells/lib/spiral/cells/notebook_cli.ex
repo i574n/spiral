@@ -17,7 +17,8 @@ defmodule Spiral.Cells.NotebookCli do
     memo: :boolean,
     accept: :boolean,
     x_compat: :boolean,
-    metrics: :string
+    metrics: :string,
+    livemd: :boolean
   ]
 
   @single_path_options [:output_path, :spi_path, :spir_path, :fs_path, :livemd_path]
@@ -70,7 +71,7 @@ defmodule Spiral.Cells.NotebookCli do
             spi_path: opts[:spi_path],
             spir_path: opts[:spir_path],
             fs_path: opts[:fs_path],
-            livemd_path: opts[:livemd_path],
+            livemd_path: opts[:livemd_path] || livemd_target(path, opts),
             export_only: opts[:export_only] == true,
             with_tests: opts[:with_tests] == true,
             html: opts[:html] != false,
@@ -111,6 +112,16 @@ defmodule Spiral.Cells.NotebookCli do
     case Enum.reject(tests, fn test -> Enum.any?(known, fn {_path, in_file} -> test in in_file end) end) do
       [] -> {:ok, Map.new(known, fn {path, in_file} -> {path, Enum.filter(tests, &(&1 in in_file))} end)}
       unknown -> {:error, "unknown test #{Enum.join(unknown, ", ")}: no --path has it"}
+    end
+  end
+
+  @doc false
+  def livemd_target(path, opts) do
+    cond do
+      opts[:livemd] != true -> nil
+      opts[:output_path] -> Path.rootname(opts[:output_path]) <> ".livemd"
+      opts[:output_dir] -> Path.join(opts[:output_dir], Path.basename(path) <> ".livemd")
+      true -> path <> ".livemd"
     end
   end
 
