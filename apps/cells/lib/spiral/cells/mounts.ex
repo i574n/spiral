@@ -274,6 +274,12 @@ defmodule Spiral.Cells.Mounts do
     end
   end
 
+  @spec mount_name(String.t()) :: String.t()
+  def mount_name(target) do
+    name = target |> Path.basename() |> String.replace(~r/[^A-Za-z0-9_]/, "_")
+    if name =~ ~r/^[0-9]/, do: "_" <> name, else: name
+  end
+
   @spec dependency_closure([{String.t(), String.t()}]) :: [{String.t(), String.t()}]
   def dependency_closure(targets) do
     named = MapSet.new(targets, &elem(&1, 1))

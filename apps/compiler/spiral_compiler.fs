@@ -181211,7 +181211,7 @@ end
             | FileHierarchy.File(_,(r,path),_) ->
                 let path' = path |> SpiralFileSystem.standardize_path
                 trace Verbose (fun () -> $"ss_validate_module / file / path: {path} / path': {path'}") _locals
-                if ModuleEnv.containsText path' modules = false then errors.Add(r,"Module not loaded.")
+                if ModuleEnv.containsText path' modules = false then errors.Add(r,$"Module {path'} is not loaded.")
         and list l = List.iter loop l
         list x.schema.modules
         Seq.toList errors
@@ -181280,9 +181280,11 @@ end
                         elif path = p then (r,"Self referential links are not allowed.") :: ers
                         else
                             match SchemaEnv.tryFindText p s with
-                            | Some s' when ss_has_error s' -> (r,"Package has an error.") :: ers
+                            | Some s' when ss_has_error s' ->
+                                let firstError = s'.errors_parse @ s'.errors_modules @ s'.errors_packages |> List.tryHead |> Option.map (snd >> sprintf " First error: %s") |> Option.defaultValue ""
+                                (r,$"Package {p} has an error.{firstError}") :: ers
                             | Some _ -> ers
-                            | None -> (r,"Package not loaded.") :: ers
+                            | None -> (r,$"Package {p} is not loaded.") :: ers
                         )
                 SchemaEnv.addText path {x with errors_packages=ers} s
             | _ -> s

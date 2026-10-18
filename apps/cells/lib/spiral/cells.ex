@@ -1060,7 +1060,7 @@ defmodule Spiral.Cells do
     targets =
       Enum.map(paths, fn path ->
         target = resolve_package(path, root, workspace)
-        {target, Path.basename(target)}
+        {target, Mounts.mount_name(target)}
       end)
 
     dependencies = Mounts.dependency_closure(targets)

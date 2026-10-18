@@ -369,10 +369,15 @@ function Invoke-PwshNotebook {
             nbformat = 4; nbformat_minor = 5
         }
         [IO.File]::WriteAllText($ipynb, ($notebook | ConvertTo-Json -Depth 10).Replace("`r`n", "`n") + "`n")
-        if (Search-Command "jupyter") {
-            { jupyter nbconvert $ipynb --to html --HTMLExporter.theme=dark } | Invoke-Block -OnError Continue
+        $homeDir = if ($env:USERPROFILE) { $env:USERPROFILE } else { $env:HOME }
+        foreach ($bin in "scoop/apps/erlang/current/bin", "scoop/apps/elixir/current/bin") {
+            $dir = Join-Path $homeDir $bin
+            if (Test-Path $dir) { $env:PATH = "$dir$([IO.Path]::PathSeparator)$env:PATH" }
+        }
+        if (Search-Command "mix") {
+            { mix spiral.html $ipynb } | Invoke-Block -Location (Join-Path $PSScriptRoot "../apps/cells") -OnError Continue
         } else {
-            Write-Output "spiral/scripts/core.ps1/Invoke-PwshNotebook / no jupyter: $ipynb written, no html"
+            Write-Output "spiral/scripts/core.ps1/Invoke-PwshNotebook / no mix: $ipynb written, no html"
         }
     } finally {
         Remove-Item $script, $log -Force -ErrorAction Ignore

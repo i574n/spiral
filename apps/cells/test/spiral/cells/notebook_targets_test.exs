@@ -19,6 +19,23 @@ defmodule Spiral.Cells.NotebookTargetsTest do
     end
   end
 
+  test "an untargeted test step under the implicit default is marked to fail, a targeted one and a plain cell are not" do
+    steps = [
+      %{index: 0, cell_source: "///- --test\ntest one =\n    1i32 |> _assert_eq 1i32"},
+      %{index: 1, cell_source: "///- --test\n///> c\ntest two =\n    1i32 |> _assert_eq 1i32"},
+      %{index: 2, cell_source: "inl f () = 1i32"}
+    ]
+
+    [one, two, plain] = Notebook.with_builders(steps, [], true, %{0 => "one", 1 => "two"})
+    assert one.untargeted == "one"
+    refute Map.has_key?(two, :untargeted)
+    refute Map.has_key?(plain, :untargeted)
+    assert Notebook.untargeted_message("one") =~ "test one has no ///> target"
+
+    [declared] = Notebook.with_builders(Enum.take(steps, 1), [], false, %{0 => "one"})
+    refute Map.has_key?(declared, :untargeted)
+  end
+
   @tag :tmp_dir
   test "untargeted test blocks of a .spi are found by name, and a static prelude covers them", %{tmp_dir: dir} do
     bare = Path.join(dir, "bare.spi")

@@ -182,9 +182,13 @@ The runner tests use real process trees.
 
 `pwsh spi/run_notebook.ps1 --path <nb.livemd> [--output-path <ipynb>] [--spi-path <spi>] [--export-only] [--no-html] [--no-spi] [--test <name>[,<name>]] [--output-dir <dir>]`
 (`mix spiral.notebook` behind it) runs every cell. It writes `<nb>.livemd.ipynb` (or `--output-path`); on success it also writes
-the `.spi` export (`--no-spi`: none, for a notebook whose export is F#) and `<ipynb stem>.html` through
-`jupyter nbconvert --to html --HTMLExporter.theme=dark` with LF endings and cell ids renumbered 1..n (`<nb>.livemd.html`).
-Without `jupyter` on `PATH` the html is skipped with a note.
+the `.spi` export (`--no-spi`: none, for a notebook whose export is F#) and `<ipynb stem>.html` (`<nb>.livemd.html`),
+which `Spiral.Cells.Html` renders from the ipynb itself: markdown cells, code cells colored by the compiler's semantic
+token classes (`SpiralCompiler tokens <file>`, the classes the editor gets; plain text when the installed compiler lacks the
+verb), outputs and a test badge per test cell, with a mobile viewport. No Python or jupyter is involved.
+`mix spiral.html <ipynb>...` renders any ipynb the same way (`scripts/core.ps1`'s PowerShell notebooks use it); only a notebook
+whose kernelspec language is `spiral` is colored. `--livemd`
+also writes a Livebook copy next to the ipynb (`<ipynb stem>.livemd`), so a gh-pages clone can open the notebooks.
 
 `run_notebook.ps1` first tries the warm daemon (`SPIRAL_CELLS_COMPILER_PORT`, else 13905): it sends its arguments as a
 `notebook` request and prints the daemon's `spiral-tests` lines and exit code, so no `mix` or BEAM starts. The daemon
@@ -222,7 +226,9 @@ the way the matrix builds its Delphi rows: `fpc -O2 -Mdelphi` (`SPIRAL_FPC`, `fp
 `~/.elan` or scoop's elan, else `lean` on PATH with `+leanprover/lean4:v4.35.0-rc4`.
 A cell's `///>` lines are its whole target list (no Rust run beside them).
 A test without `///>` lines runs on its file's default targets: the `///>` lines of the file's `static` prelude test
-(`///> c` above `test prelude static =`), else `SPIRAL_CELLS_DEFAULT_TARGET` (or `default_target:`, e.g. `fsharp`), else Zig.
+(`///> c` above `test prelude static =`), else `SPIRAL_CELLS_DEFAULT_TARGET` (or `default_target:`, e.g. `fsharp`).
+With none of those, a test without `///>` lines fails with `test <name> has no ///> target` instead of running on Zig,
+the default every other cell still gets; `mix spiral.targets <paths> [--check]` lists such tests without running anything.
 `SPIRAL_CELLS_DEFAULT_TARGET=rust` keeps the Rust host (an empty variable is unset on Windows); `default_target: ""` does too.
 The `static` prelude itself is never compiled or run: its `open`s and types reach every later test, which compiles them,
 and its row says `static` (counted in `static`, not in `executed`). A static block whose body is only `open` lines
@@ -407,8 +413,6 @@ the F# notebooks dice_fsharp and hangul). What a runner needs:
 - `rustc` for Spiral cells; the `spiral` CLI (`workspace/target/release/spiral`, which the repos' init builds) for
   `///> rust -c/-d` cells, plus what those cells' programs need (NEAR sandbox for contract cells, pandoc/xelatex/
   hangulize for alphabet documents' app test); `dotnet` for F# cells (the cache's .NET 11 `fsi`).
-- `jupyter` (nbconvert) for the html: polyglot's init installs it (`pip install -r requirements.txt`). Without it the
-  ipynb is still written and the html is skipped with a note.
 - The compiler daemon starts on 127.0.0.1:13905 (detached: on Unix in its own session via `setsid`); a runner ends it
   with the job. Two checkouts that share one loopback (WSL with mirrored networking next to a Windows dev daemon) need
   different `SPIRAL_CELLS_COMPILER_PORT`s.

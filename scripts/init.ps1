@@ -51,7 +51,7 @@ if (Test-Command "pip") {
     pip install @pipArgs -r ../requirements.txt
     if ($LASTEXITCODE -ne 0) { Write-Output "init.ps1 / pip install -r requirements.txt failed (exit code $LASTEXITCODE)" }
 } else {
-    Write-Output "init.ps1 / no pip: the notebooks' html outputs need jupyter (pip install -r requirements.txt)"
+    Write-Output "init.ps1 / no pip: the Python backend rows need mpmath and cupy (pip install -r requirements.txt)"
 }
 
 if (!(Test-Command "cargo")) { Write-Output "init.ps1 / no cargo on PATH: trunk not installed" }

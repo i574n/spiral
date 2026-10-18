@@ -30,7 +30,8 @@ defmodule Spiral.Cells.Notebook do
     "deps/polyglot/deps/spiral/lib/spiral",
     "deps/spiral/lib/spiral",
     "lib/spiral",
-    "polyglot/deps/spiral/lib/spiral"
+    "polyglot/deps/spiral/lib/spiral",
+    "spiral/lib/spiral"
   ]
 
   @type status :: :ok | {:error, String.t()}
@@ -572,6 +573,8 @@ defmodule Spiral.Cells.Notebook do
     end)
   end
 
+  defp memo_key(_memo, %{untargeted: _}), do: nil
+
   defp memo_key(memo, step) do
     lines =
       case Map.fetch(step, :builders) do
@@ -627,12 +630,12 @@ defmodule Spiral.Cells.Notebook do
 
   defp test_cell_names(doc), do: for(%{mode: "test"} = test <- Document.tests(doc), into: %{}, do: {test.index, test.name})
 
-  defp with_builders(steps, defaults, implicit?, test_names) do
+  @doc false
+  def with_builders(steps, defaults, implicit?, test_names) do
     Enum.map(steps, fn step ->
       case Builders.commands(step.cell_source) do
         [] ->
-          if implicit? and Map.has_key?(test_names, step.index), do: warn_untargeted(test_names[step.index])
-          step |> Map.put(:builders, defaults) |> put_test_name(test_names)
+          step |> Map.put(:builders, defaults) |> put_test_name(test_names) |> mark_untargeted(implicit?)
 
         own ->
           step |> Map.put(:builders, own) |> put_test_name(test_names)
@@ -664,9 +667,11 @@ defmodule Spiral.Cells.Notebook do
     end
   end
 
-  defp warn_untargeted(name) do
-    IO.puts(:stderr, "warning: test #{name} has no ///> target and runs on the default backend (zig); name its targets")
-  end
+  defp mark_untargeted(%{test_name: name} = step, true), do: Map.put(step, :untargeted, name)
+  defp mark_untargeted(step, _implicit?), do: step
+
+  @doc false
+  def untargeted_message(name), do: "test #{name} has no ///> target: name its backends (for example ///> zig) or declare a default with a static prelude or SPIRAL_CELLS_DEFAULT_TARGET"
 
   defp only_selected(steps, nil), do: steps
   defp only_selected(steps, selected), do: Enum.filter(steps, &MapSet.member?(selected, &1.index))
@@ -791,6 +796,11 @@ defmodule Spiral.Cells.Notebook do
       {index, {:error, text}, ms} ->
         {index, {:error, error_output(text), text}, {ms, %{}}}
     end)
+  end
+
+  defp run_step(%{untargeted: name} = step, _opts, _root) do
+    message = untargeted_message(name)
+    [{step.index, {:error, error_output(message), message}, nil}]
   end
 
   defp run_step(step, opts, root) do
@@ -1090,7 +1100,8 @@ defmodule Spiral.Cells.Notebook do
     end
   end
 
-  defp find_spiral_lib(path) do
+  @doc false
+  def find_spiral_lib(path) do
     path
     |> Path.dirname()
     |> ancestors()

@@ -80,9 +80,13 @@ defmodule Spiral.Cells.Html do
   def write(ipynb_path, opts \\ []) do
     ipynb = ipynb_path |> File.read!() |> JSON.decode!()
     title = ipynb_path |> Path.basename(".ipynb")
-    File.write!(Path.rootname(ipynb_path) <> ".html", render(ipynb, compiler_tokenizer(opts), title))
+    tokenize = if spiral_kernel?(ipynb), do: compiler_tokenizer(opts), else: fn _ -> [] end
+    File.write!(Path.rootname(ipynb_path) <> ".html", render(ipynb, tokenize, title))
     :ok
   end
+
+  @doc false
+  def spiral_kernel?(ipynb), do: get_in(ipynb, ["metadata", "kernelspec", "language"]) in [nil, "spiral"]
 
   @doc false
   def compiler_tokenizer(opts) do
@@ -129,20 +133,30 @@ defmodule Spiral.Cells.Html do
   end
 
   defp highlight_line(line, tokens) do
+    units = :unicode.characters_to_binary(line, :utf8, :utf16)
+    length = div(byte_size(units), 2)
+
     {parts, at} =
       tokens
       |> Enum.sort_by(&elem(&1, 1))
       |> Enum.reduce({[], 0}, fn {_line, from, near_to, class}, {parts, at} ->
-        if from < at or near_to > byte_size(line) do
+        if from < at or near_to > length or near_to < from do
           {parts, at}
         else
-          gap = binary_part(line, at, from - at)
-          token = binary_part(line, from, near_to - from)
+          gap = utf16_slice(units, at, from)
+          token = utf16_slice(units, from, near_to)
           {[parts, escape(gap), "<span class=\"tok-", class, "\">", escape(token), "</span>"], near_to}
         end
       end)
 
-    IO.iodata_to_binary([parts, escape(binary_part(line, at, byte_size(line) - at))])
+    IO.iodata_to_binary([parts, escape(utf16_slice(units, at, length))])
+  end
+
+  defp utf16_slice(units, from, near_to) do
+    case :unicode.characters_to_binary(binary_part(units, from * 2, (near_to - from) * 2), :utf16, :utf8) do
+      text when is_binary(text) -> text
+      _ -> ""
+    end
   end
 
   @doc false

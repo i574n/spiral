@@ -6,6 +6,9 @@
     python upstream.py export <fork> <base-ref> <out-dir> --since <ref>
                                                              only the edits made since <ref> of this repo
                                                              (a pull request's worth), not the compaction's
+    python upstream.py export <fork> <base-ref> <out-dir> --since <ref> --until <ref>
+                                                             only the edits between two refs of this repo
+                                                             (one fix's commit range)
 
 <fork> is a clone of the fork (polyglot/deps/The-Spiral-Language); refs are git refs in it. A section
 `/// ## Name` maps to `The Spiral Language 2/Name.fs` (`SignalRSupervisor` to `Supervisor.fs`); sections
@@ -202,8 +205,8 @@ def indent_shift(section, fork_lines):
     return max(0, max(counts, key=counts.get)) if counts else 0
 
 
-def export(fork, base_ref, out_dir, since=None):
-    lines = load_core()
+def export(fork, base_ref, out_dir, since=None, until=None):
+    lines = core_at(until) if until else load_core()
     old_spans, old_lines = (sections(core_at(since)), core_at(since)) if since else (None, None)
     for name, (start, end) in sections(lines).items():
         base = fork_file(fork, base_ref, name)
@@ -239,10 +242,11 @@ def main():
         status(args[1], args[2] if len(args) == 3 else "HEAD")
     elif len(args) == 4 and args[0] == "import":
         import_(args[1], args[2], args[3])
-    elif len(args) == 4 and args[0] == "export":
-        export(args[1], args[2], args[3])
-    elif len(args) == 6 and args[0] == "export" and args[4] == "--since":
-        export(args[1], args[2], args[3], args[5])
+    elif len(args) >= 4 and args[0] == "export" and len(args) % 2 == 0:
+        options = dict(zip(args[4::2], args[5::2]))
+        if set(options) - {"--since", "--until"}:
+            raise SystemExit(__doc__)
+        export(args[1], args[2], args[3], options.get("--since"), options.get("--until"))
     else:
         raise SystemExit(__doc__)
 
