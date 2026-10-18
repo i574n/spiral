@@ -74,8 +74,14 @@ fn wait_for<T>(device: &wgpu::Device, lost: &AtomicBool, receiver: &std::sync::m
 }
 
 async fn execute(source: &str, lanes: u32, chunk: u32) -> Result<Vec<i32>, Fail> {
-    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
-    let adapter = request_adapter(&instance).await.ok_or(Fail::NoAdapter)?;
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::from_env_or_default());
+    let adapter = match wgpu::util::initialize_adapter_from_env(&instance, None) { Some(adapter) => adapter, None => request_adapter(&instance).await.ok_or(Fail::NoAdapter)? };
+    let timing = std::env::var_os("SPIRAL_WGSL_TIMING").is_some();
+    if timing {
+        let info = adapter.get_info();
+        eprintln!("wgsl timing adapter {} backend {:?} type {:?} driver {} {}", info.name, info.backend, info.device_type, info.driver, info.driver_info);
+    }
+    let compile_started = Instant::now();
     let (device, queue) = adapter
         .request_device(&wgpu::DeviceDescriptor::default(), None)
         .await
@@ -120,6 +126,10 @@ async fn execute(source: &str, lanes: u32, chunk: u32) -> Result<Vec<i32>, Fail>
     if let Some(error) = device.pop_error_scope().await {
         return Err(Fail::Compile(error.to_string()));
     }
+    if timing {
+        eprintln!("wgsl timing compile_ms {}", compile_started.elapsed().as_millis());
+    }
+    let run_started = Instant::now();
 
     let size = 256u64;
     let storage = device.create_buffer(&wgpu::BufferDescriptor {
@@ -207,6 +217,9 @@ async fn execute(source: &str, lanes: u32, chunk: u32) -> Result<Vec<i32>, Fail>
         let _ = sender.send(result);
     });
     wait_for(&device, &lost, &receiver, limit, "reading the exit code")?.map_err(|error| Fail::Runtime(error.to_string()))?;
+    if timing {
+        eprintln!("wgsl timing run_ms {}", run_started.elapsed().as_millis());
+    }
     let bytes = slice.get_mapped_range();
     let code = i32::from_le_bytes(bytes[0..4].try_into().unwrap());
     drop(bytes);

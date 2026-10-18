@@ -109,6 +109,7 @@ function Get-SpiralNativeTools {
         # `lua` is Scoop lua51 5.1.5 for WoW. lua54 is a side command and must not take this slot.
         Lua = Resolve-SpiralTool 'lua' @($env:SPIRAL_LUA, 'lua', 'luajit')
         Bun = Resolve-SpiralTool 'bun' @($env:SPIRAL_BUN, 'bun')
+        Dotnet = $(try { Resolve-SpiralDotnet } catch { $null })
         BendMain = @($env:SPIRAL_BEND_MAIN, (Join-Path (Get-SpiralCacheDir) 'toolchains/bend/bend2/main.ts'), $(if ($env:LOCALAPPDATA) { Join-Path $env:LOCALAPPDATA 'spiral-bin/toolchains/bend/bend2/main.ts' })) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
         Python = Resolve-SpiralTool 'python' @($env:SPIRAL_PYTHON, (Join-Path $HOME 'scoop/apps/python/current/python.exe'), 'python', 'python3')
     }

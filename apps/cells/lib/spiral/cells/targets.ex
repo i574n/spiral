@@ -388,7 +388,7 @@ defmodule Spiral.Cells.Targets do
   defp in_warm_gleam_package(package, manifest, opts, fun) do
     Enum.reduce_while(0..(@gleam_warm_slots - 1), :all_slots_busy, fn slot, busy ->
       warm = gleam_warm_dir(manifest, slot, opts)
-      claimed = Spiral.Cells.FileLock.with_lock(warm <> ".lock", fn -> {:claimed, fun.(with_cell_sources(warm, package))} end, 0)
+      claimed = Spiral.Cells.FileLock.with_lock(warm <> ".lock", fn -> {:claimed, fun.(with_cell_sources(warm, package, manifest))} end, 0)
 
       case claimed do
         {:claimed, result} -> {:halt, result}
@@ -397,11 +397,21 @@ defmodule Spiral.Cells.Targets do
     end)
   end
 
-  defp with_cell_sources(warm, package) do
+  defp listed(dir) do
+    case File.ls(dir) do
+      {:ok, entries} -> entries
+      {:error, _} -> []
+    end
+  end
+
+  defp with_cell_sources(warm, package, manifest) do
     src = Path.join(warm, "src")
     File.rm_rf!(src)
     File.mkdir_p!(src)
     File.cp_r!(Path.join(package, "src"), src)
+    [_, name] = Regex.run(~r/^name = "([^"]+)"/m, manifest)
+    build = Path.join(warm, "build")
+    for mode <- listed(build), target <- listed(Path.join(build, mode)), do: File.rm_rf!(Path.join([build, mode, target, name]))
     warm
   end
 

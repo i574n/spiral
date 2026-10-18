@@ -4,7 +4,8 @@ nominal lookup_map k v = $'near_sdk::store::LookupMap<`k, `v>'
 type state = { version : u32; seeds : vector u8; owners : lookup_map u32 u8 }
 
 inl new_state (k : u32) : state =
-    global "struct SpiralNearVec<T>(std::vec::Vec<T>);\nmod near_sdk { pub mod store { pub struct LookupMap<K, V>(pub std::collections::BTreeMap<K, V>); } }"
+    global """struct SpiralNearVec<T>(std::vec::Vec<T>);
+mod near_sdk { pub mod store { pub struct LookupMap<K, V>(pub std::collections::BTreeMap<K, V>); } }"""
     {
         version = k
         seeds = $'SpiralNearVec(vec\![1u8, 2, 3])'

@@ -74,7 +74,8 @@ nominal file_info =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () =>
-                global "type System_IO_FileInfo = System.IO.FileInfo\n"
+                global """type System_IO_FileInfo = System.IO.FileInfo
+"""
                         ) : () -> ()
         }
         $'' : $'System_IO_FileInfo'
@@ -90,7 +91,8 @@ nominal directory_info =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () =>
-                global "type System_IO_DirectoryInfo = System.IO.DirectoryInfo\n"
+                global """type System_IO_DirectoryInfo = System.IO.DirectoryInfo
+"""
                         ) : () -> ()
         }
         $'' : $'System_IO_DirectoryInfo'
@@ -318,7 +320,12 @@ inl new_walk_dir (dir : string) : walk_dir =
 /// ### walk_dir_filter
 inl walk_dir_filter (fn : dir_entry -> async.future_pin_send filtering) (walk_dir : walk_dir) : walk_dir =
     if is_rust () then
-        global "struct SpiralAssertSend<T>(T);\nunsafe impl<T> Send for SpiralAssertSend<T> {}\nimpl<T: std::future::Future + Unpin> std::future::Future for SpiralAssertSend<T> {\n    type Output = T::Output;\n    fn poll(mut self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<T::Output> { std::pin::Pin::new(&mut self.0).poll(cx) }\n}"
+        global """struct SpiralAssertSend<T>(T);
+unsafe impl<T> Send for SpiralAssertSend<T> {}
+impl<T: std::future::Future + Unpin> std::future::Future for SpiralAssertSend<T> {
+    type Output = T::Output;
+    fn poll(mut self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<T::Output> { std::pin::Pin::new(&mut self.0).poll(cx) }
+}"""
         inl fn entry =
             inl future = fn entry
             async.new_future_move_send fun () =>
@@ -628,7 +635,8 @@ let file_exists (path : string) : bool =
             global "import * as spiral_node_fs from 'node:fs';"
             $'(spiral_node_fs.existsSync(!path) && spiral_node_fs.statSync(!path).isFile())' : bool
         | Gleam _ => fun path =>
-            global "@external(erlang, \"filelib\", \"is_regular\")\nfn spiral_filelib_is_regular(path: String) -> Bool"
+            global """@external(erlang, "filelib", "is_regular")
+fn spiral_filelib_is_regular(path: String) -> Bool"""
             $'spiral_filelib_is_regular(!path)' : bool
         | _ => fun _ => null ()
 

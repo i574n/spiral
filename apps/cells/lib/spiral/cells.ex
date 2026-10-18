@@ -224,7 +224,7 @@ defmodule Spiral.Cells do
     end
   end
 
-  @number ~r/(?<![\w.])[+-]?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?(?:un|uy|us|ul|UL|L|l|y|s|u|n|f|m)?(?![\w])/
+  @number ~r/(?<![\w.])[+-]?\d+(?:\.\d*(?!\.))?(?:[eE][+-]?\d+)?(?:un|uy|us|ul|UL|L|l|y|s|u|n|f|m)?(?![\w])/
   @union_name "U[SsHh]\\d+_?([A-Z]\\w*)"
 
   @doc false

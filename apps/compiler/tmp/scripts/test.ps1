@@ -410,6 +410,17 @@ function Build-And-Run($job) {
         $sha = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($stdout))).ToLowerInvariant().Substring(0, 16)
         return [pscustomobject]@{ Status = 'ran'; Exit = [string]$run.Exit; Stdout = $sha; Detail = '' }
     }
+    if ($job.Backend -eq 'Fsharp') {
+        if (-not $tools.Dotnet) { return 'no-toolchain' }
+        $script = Join-Path $binDir 'main.fsx'
+        [IO.File]::WriteAllText($script, [IO.File]::ReadAllText($job.Output).TrimEnd() + "`n|> fun x -> match box x with :? int32 as code -> exit code | _ -> exit 0`n")
+        $run = Invoke-Native $tools.Dotnet @('fsi', '--quiet', '--exec', $script) $binDir 60
+        $fsiError = [regex]::Match("$($run.Err)`n$($run.Out)", 'error FS\d+:[^\r\n]{0,240}')
+        if ($fsiError.Success) { return [pscustomobject]@{ Status = 'build-fail'; Exit = ''; Stdout = ''; Detail = $fsiError.Value } }
+        $stdout = ($run.Out -replace "`r`n", "`n").TrimEnd()
+        $sha = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($stdout))).ToLowerInvariant().Substring(0, 16)
+        return [pscustomobject]@{ Status = 'ran'; Exit = [string]$run.Exit; Stdout = $sha; Detail = '' }
+    }
     if ($job.Backend -eq 'Calyx') {
         if (-not $tools.Cider -or -not $tools.Auxin -or -not $tools.CalyxRoot) { return 'no-toolchain' }
         $dump = Join-Path $binDir 'spiral-calyx.dat'
@@ -652,7 +663,7 @@ function Build-And-Run($job) {
 $nativeResults = @{}
 if ($Native) {
     $sw.Restart()
-    $nativeJobs = @($jobs | Where-Object { $_.Backend -ne 'Fsharp' -and $compiled[$_.Key] -and $compiled[$_.Key].Status -in 'ok', 'emitted' })
+    $nativeJobs = @($jobs | Where-Object { $compiled[$_.Key] -and $compiled[$_.Key].Status -in 'ok', 'emitted' })
     $nativeMemoDir = Join-Path $cache 'native-memo'
     New-Item -ItemType Directory -Force $nativeMemoDir | Out-Null
     $nativeSignature = Get-NativeSignature
@@ -725,12 +736,13 @@ if ($Native) {
             $swiftMainLines = 'import CRT', 'import WinSDK', 'exit(spiral_main())', 'nonisolated(unsafe) var spiral_exit_code: Int32 = 0', 'WaitForSingleObject(spiral_thread, INFINITE)', 'exit(spiral_exit_code)'
             $cases = for ($slot = 0; $slot -lt $members.Count; $slot++) {
                 $source = [IO.File]::ReadAllLines($members[$slot].Output)
+                $imports = @($source | Where-Object { $_ -match '^import ' -and $_ -notin $swiftMainLines })
                 $wrapped = foreach ($line in $source) {
-                    if ($line -in $swiftMainLines -or $line.StartsWith('let spiral_thread = CreateThread(')) { continue }
+                    if ($line -in $swiftMainLines -or $line -in $imports -or $line.StartsWith('let spiral_thread = CreateThread(')) { continue }
                     if ($line -match '^(func|var|let) ') { "    static $line"; continue }
                     "    $line"
                 }
-                [IO.File]::WriteAllText((Join-Path $chunkDir "s$slot.swift"), "import CRT`nenum SpiralBatch$slot {`n" + ($wrapped -join "`n") + "`n}`n")
+                [IO.File]::WriteAllText((Join-Path $chunkDir "s$slot.swift"), ((@('import CRT') + $imports) -join "`n") + "`nenum SpiralBatch$slot {`n" + ($wrapped -join "`n") + "`n}`n")
                 if ($source -match '\{ _ in spiral_main\(\); return 0 \}') { "case `"$slot`": SpiralBatch$slot.spiral_main(); exit(0)" }
                 else { "case `"$slot`": exit(SpiralBatch$slot.spiral_main())" }
             }
@@ -794,14 +806,16 @@ if ($Native) {
         Write-Host ("== gleam batch: {0} of {1} built in {2:N1}s{3}" -f ($gleamJobs.Count - $(if ($gleamFailures) { $gleamFailures.Count } else { 0 })), $gleamJobs.Count, $gleamWatch.Elapsed.TotalSeconds, $(if ($null -eq $gleamFailures) { '; unattributed build error, rows build one by one' } else { '' }))
     }
     $laneFunctions = @{ 'Build-And-Run' = ${function:Build-And-Run}.ToString(); 'Invoke-Native' = ${function:Invoke-Native}.ToString(); 'Get-CFlags' = ${function:Get-CFlags}.ToString() }
-    if (-not ('Spiral.NativeErrorMode' -as [type])) {
-        Add-Type -Namespace Spiral -Name NativeErrorMode -MemberDefinition @'
+    if ($IsWindows) {
+        if (-not ('Spiral.NativeErrorMode' -as [type])) {
+            Add-Type -Namespace Spiral -Name NativeErrorMode -MemberDefinition @'
 [System.Runtime.InteropServices.DllImport("kernel32.dll")]
 public static extern uint SetErrorMode(uint mode);
 '@
+        }
+        # abort() otherwise waits on WerFault. A 30s native timeout then looks like a missed exit 3.
+        [Spiral.NativeErrorMode]::SetErrorMode(0x8003) | Out-Null
     }
-    # abort() otherwise waits on WerFault. A 30s native timeout then looks like a missed exit 3.
-    [Spiral.NativeErrorMode]::SetErrorMode(0x8003) | Out-Null
     $laneResults = $lanes | ForEach-Object -ThrottleLimit ([Math]::Max(1, $lanes.Count)) -Parallel {
         foreach ($f in ($using:laneFunctions).GetEnumerator()) { Set-Item "function:$($f.Key)" -Value ([scriptblock]::Create($f.Value)) }
         $nativeLane = $_.Lane

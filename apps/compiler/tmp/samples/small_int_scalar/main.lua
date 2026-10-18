@@ -48,7 +48,7 @@ local v9 = spiral_wrap_signed((v8 + v8), 16)
 local v10 = 40000
 local v11 = spiral_wrap_unsigned((v10 + v10), 16)
 local v12 = 7
-local v13 = v12
+local v13 = spiral_wrap_signed(v12, 8)
 local v14 = 9
 local v15 = v14
 local v16 = v1 == -56

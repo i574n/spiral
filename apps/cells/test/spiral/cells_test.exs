@@ -520,6 +520,9 @@ defmodule Spiral.CellsTest do
     assert Spiral.Cells.shown(traced) == "value"
     assert Spiral.Cells.shown(chunk.("c:\\x\\main.fsx(436,54): warning FS3884: This expression is a function value.\nvalue")) == "value"
     assert Spiral.Cells.shown(chunk.(~s(__assert_eq' { expected = "0.0-1.0" }))) == Spiral.Cells.shown(chunk.("__assert_eq' { expected = 0.0-1.0 }"))
+    assert Spiral.Cells.shown(chunk.("__assert_eq { expected = 12...67 }")) =~ "...67"
+    refute Spiral.Cells.shown(chunk.("__assert_eq { expected = 12...67 }")) == Spiral.Cells.shown(chunk.("__assert_eq { expected = 12..67 }"))
+    assert Spiral.Cells.shown(chunk.("1.")) == Spiral.Cells.shown(chunk.("1.0"))
   end
   test "union constructors compare in one canonical form, payload values still count" do
     canonical = &Spiral.Cells.canonical_unions/1

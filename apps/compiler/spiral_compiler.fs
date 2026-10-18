@@ -43095,29 +43095,31 @@ module spiral_compiler =
         else error_char from "symbol"
 
     /// ### LexState
-    /// The lexical state a line starts in: inside a `"""` string, or inside `comment_depth` nested `(* *)`
-    /// comments. Both go on across lines. Callers thread it from line to line (`tokenize_line`; WDiff keeps the
-    /// state every line ends in), never through a global, so files tokenized at the same time (the language
-    /// server, hopac, parallel module loads), a file that ends inside a string or comment, and a re-tokenized
-    /// edit can't leak it into each other.
+    /// The lexical state a line starts in: inside a raw string closed by `triple_quotes` quotes, or inside
+    /// `comment_depth` nested `(* *)` comments. Both go on across lines. Callers thread it from line to line
+    /// (`tokenize_line`; WDiff keeps the state every line ends in), never through a global, so files tokenized at
+    /// the same time (the language server, hopac, parallel module loads), a file that ends inside a string or
+    /// comment, and a re-tokenized edit can't leak it into each other.
     [<Struct>]
-    type LexState = { in_triple : bool; comment_depth : int; macro_close : char }
+    type LexState =
+        { triple_quotes : int; comment_depth : int; macro_close : char }
+        member x.in_triple = 0 < x.triple_quotes
 
     /// ### lex_state_init
-    let lex_state_init = { in_triple = false; comment_depth = 0; macro_close = '\000' }
+    let lex_state_init = { triple_quotes = 0; comment_depth = 0; macro_close = '\000' }
 
     /// ### LexCell
     /// The lexical state while one line is being tokenized.
     type LexCell(state : LexState) =
-        member val InTriple = state.in_triple with get, set
+        member val TripleQuotes = state.triple_quotes with get, set
         member val CommentDepth = state.comment_depth with get, set
         member val MacroClose = state.macro_close with get, set
-        member x.State = { in_triple = x.InTriple; comment_depth = x.CommentDepth; macro_close = x.MacroClose }
+        member x.State = { triple_quotes = x.TripleQuotes; comment_depth = x.CommentDepth; macro_close = x.MacroClose }
 
     /// ### lex_state_error
     /// The error for text that ends in `state`: inside a string or comment that never closes.
     let lex_state_error (state : LexState) =
-        if state.in_triple then Some "Unterminated triple-quoted string. Expected '\"\"\"'."
+        if state.in_triple then Some ("Unterminated triple-quoted string. Expected '" + System.String('"', state.triple_quotes) + "'.")
         elif 0 < state.comment_depth then Some "Unterminated multiline comment. Expected '*)'."
         elif state.macro_close <> '\000' then Some "Unterminated macro: a line ending in '\\' continues the macro on the next line, which must close it."
         else None
@@ -43241,30 +43243,41 @@ module spiral_compiler =
         | x -> unesc x
 
     /// ### string_triple_body
-    /// The text of a `"""` string from `s.from` to its closing `"""`, or to the end of the line, whose newline it
-    /// keeps; the string then goes on in the next line. The text is raw: no escapes, no interpolation.
+    /// The text of a raw string from `s.from` to its closing run of `lx.TripleQuotes` quotes, or to the end of the
+    /// line, whose newline it keeps; the string then goes on in the next line. The text is raw: no escapes, no
+    /// interpolation. A longer run of quotes closes it too: the quotes before the last `lx.TripleQuotes` are text,
+    /// so the text can end in `"`.
     let string_triple_body (lx : LexCell) (s : Tokenizer) =
         let text = s.text
         let len = text.Length
         let body_from = s.from
-        let idx = text.IndexOf("\"\"\"", body_from, StringComparison.Ordinal)
+        let quotes = lx.TripleQuotes
+        let idx = text.IndexOf(System.String('"', quotes), body_from, StringComparison.Ordinal)
         if 0 <= idx then
-            s.from <- idx + 3
-            lx.InTriple <- false
-            let close = {from=idx; nearTo=idx+3}, TokStringClose
-            if body_from < idx then [({from=body_from; nearTo=idx}, TokText (text.Substring(body_from, idx - body_from))); close]
+            let mutable run_end = idx + quotes
+            while run_end < len && text.[run_end] = '"' do run_end <- run_end + 1
+            let close_from = run_end - quotes
+            s.from <- run_end
+            lx.TripleQuotes <- 0
+            let close = {from=close_from; nearTo=run_end}, TokStringClose
+            if body_from < close_from then [({from=body_from; nearTo=close_from}, TokText (text.Substring(body_from, close_from - body_from))); close]
             else [close]
         else
             s.from <- len
-            lx.InTriple <- true
             [({from=body_from; nearTo=len}, TokText (text.Substring(body_from) + "\n"))]
 
     /// ### string_triple_line
+    /// A raw string opens with a run of three or more quotes and closes with a run of as many, so a string opened
+    /// with `""""` can hold `"""`. Six quotes are the empty `"""` string.
     let string_triple_line (lx : LexCell) (s : Tokenizer) =
         if peek s = '"' && peek' s 1 = '"' && peek' s 2 = '"' then
             let from = s.from
-            inc' 3 s
-            Ok (({from=from; nearTo=from+3}, TokStringOpen) :: string_triple_body lx s)
+            let mutable run = 3
+            while peek' s run = '"' do run <- run + 1
+            let quotes = if run = 6 then 3 else run
+            inc' quotes s
+            lx.TripleQuotes <- quotes
+            Ok (({from=from; nearTo=from+quotes}, TokStringOpen) :: string_triple_body lx s)
         else
             Error [{from=s.from; nearTo=s.from}, "triple-string: not a triple opener nor continuation"]
 
@@ -43360,7 +43373,7 @@ module spiral_compiler =
             let struct (i, depth) = comment_scan text 0 lx.CommentDepth
             s.from <- i
             lx.CommentDepth <- depth
-        elif lx.InTriple then
+        elif 0 < lx.TripleQuotes then
             add (string_triple_body lx s, [])
         elif lx.MacroClose <> '\000' then
             let closing_char = lx.MacroClose
@@ -43838,6 +43851,7 @@ module spiral_compiler =
         | UnknownOperator
         | UnexpectedEob
         | MalformedTestHeader
+        | RawStringLineUnderIndented
         | UnexpectedAndInlRec
         | ForallNotAllowed
         | TypecaseNotAllowed
@@ -44102,6 +44116,7 @@ module spiral_compiler =
         semantic_updates : (VectorCord * SemanticTokenLegend) ResizeArray
         tokens_cords : VectorCord []
         tokens : (VSCRange * SpiralToken) []
+        layout_columns : int []
         comments : LineComment option []
         i : int ref
         is_top_down : bool
@@ -44127,7 +44142,7 @@ module spiral_compiler =
     let inline line_template d f = try_current_template d (fst >> f) (fun _ -> -1)
 
     /// ### col
-    let col d = line_template d (fun (r,_) -> r.character)
+    let col (d : BlockParsingEnv) = let i = d.Index in if i < d.tokens.Length then d.layout_columns.[i] else -1
 
     /// ### lineBlockParsing
     let lineBlockParsing d = line_template d (fun (r,_) -> r.line)
@@ -45005,7 +45020,7 @@ module spiral_compiler =
                     let row = (fst (fst d.tokens.[i])).line
                     let mutable first = i
                     while first > 0 && (fst (fst d.tokens.[first - 1])).line = row do first <- first - 1
-                    min (col d) (fst (fst d.tokens.[first])).character
+                    min (col d) d.layout_columns.[first]
             pipe2 apply_tight (many (blockParsingIndent line_start_column (<) apply_tight)) fold_applies d
 
         let pairs = sepBy1 apply (skip_op "*") |>> List.reduceBack (fun a b -> RawTPair(range_of_texpr a +. range_of_texpr b,a,b))
@@ -45590,6 +45605,7 @@ module spiral_compiler =
         | ExpectedEob -> "Failed to parse this token."
         | UnexpectedEob -> "Unexpected end of block past this token."
         | MalformedTestHeader -> "Malformed test header: expected `test <name> [static] [print_code] [ignore] [no_agree \"reason\"] [build_only] [fails \"expected\"] =` with the body indented below it."
+        | RawStringLineUnderIndented -> "This line of the raw string is indented less than its closing quotes, whose indentation every line drops."
         | UnknownError -> "Compiler error: Parsing failed at this position with no error message and without consuming all the tokens in a block."
         | DuplicateRecordTypeVar -> "Duplicate record type variable."
         | DuplicateForallVar -> "Duplicate forall variable."
@@ -52879,6 +52895,28 @@ module spiral_compiler =
         }
     
 
+    /// ### PrepassReferences
+    module PrepassReferences =
+        let output = System.Environment.GetEnvironmentVariable "SPIRAL_REFERENCES_OUT"
+        let enabled = not (System.String.IsNullOrEmpty output)
+        let definitions = System.Runtime.CompilerServices.ConditionalWeakTable<E, string>()
+        let rows = System.Collections.Concurrent.ConcurrentQueue<string>()
+        let flushAtExit =
+            lazy (System.AppDomain.CurrentDomain.ProcessExit.Add(fun _ ->
+                System.IO.File.AppendAllLines(output, rows |> Seq.distinct |> Seq.toArray)))
+        let location (path : string) ((from, _) : VSCRange) = $"{path}\t{from.line + 1}"
+        let define (path : string) (range : VSCRange) (name : string) (e : E) =
+            if enabled then
+                flushAtExit.Force()
+                let site = location path range
+                definitions.AddOrUpdate(e, $"{site}\t{name}")
+                rows.Enqueue $"def\t{site}\t{name}\t\t\t"
+        let used (path : string) (range : VSCRange) (name : string) (e : E) =
+            if enabled then
+                flushAtExit.Force()
+                let target = match definitions.TryGetValue e with | true, d -> d | _ -> "\t\t"
+                rows.Enqueue $"use\t{location path range}\t{name}\t{target}"
+
     /// ### prepassPrepass
     let prepassPrepass package_id module_id path (top_env : PrepassTopEnv) =
         let p r = {path=path; range=r}
@@ -53105,7 +53143,10 @@ module spiral_compiler =
             | RawAnnot(_,RawDefaultLit(r,a),b) -> EDefaultLit(p r,a,ty env b)
             | RawAnnot(_,RawLit(r,a),b) -> EDefaultLit(p r,a.LitToString(),ty env b)
             | RawB r -> EB(p r)
-            | RawV(r,a,_) -> v_term env a
+            | RawV(r,a,_) ->
+                let e = v_term env a
+                if PrepassReferences.enabled && not (Map.containsKey (TermNameIdOps.create a) env.term.env) then PrepassReferences.used path r a e
+                e
             | RawLit(r,a) -> ELit(p r,a)
             | RawSymbol(r,a) -> ESymbol(p r,a)
             | RawType(r,a) -> EType(p r,ty env a)
@@ -53276,7 +53317,10 @@ module spiral_compiler =
             | FNominalRec l ->
                 let term,ty,nominals,i = nominal_rec l
                 AInclude {prepassTop_env_empty with term = term; ty = ty; nominals = nominals; nominals_next_tag=i}
-            | FInl(_,(_,name),body) -> AInclude {prepassTop_env_empty with term = Map.add (TermNameIdOps.create name) (term env body |> process_term) Map.empty}
+            | FInl(_,(name_range,name),body) ->
+                let e = term env body |> process_term
+                PrepassReferences.define path name_range name e
+                AInclude {prepassTop_env_empty with term = Map.add (TermNameIdOps.create name) e Map.empty}
             | FRecInl l ->
                 let l, env =
                     List.mapFold (fun env (_,(_,name),_ as x) ->
@@ -53284,8 +53328,9 @@ module spiral_compiler =
                         (x,r), add_term_rec env name (ERecursive r)
                         ) env l
                 let term =
-                    List.fold (fun top_env_term ((_,(_,name),body),(r : ref<E>)) ->
+                    List.fold (fun top_env_term ((_,(name_range,name),body),(r : ref<E>)) ->
                         r.Value <- term env body |> process_term
+                        PrepassReferences.define path name_range name r.Value
                         Map.add (TermNameIdOps.create name) r.Value top_env_term
                         ) Map.empty l
                 AInclude {prepassTop_env_empty with term = term}
@@ -161520,6 +161565,42 @@ module spiral_compiler =
         | Some name when uses.[name] = 1 -> prefix_tag + name
         | _ -> $"{prefix_tag}i{position}"
 
+    /// ### UnusedGlobals
+    module UnusedGlobals =
+        let private declaration =
+            System.Text.RegularExpressions.Regex(@"^(?:(?:private|inline|local|static|async)\s+|extern\s+""[^""]*""\s+)*(?:fn|func|fun|function|def|const|let|var|type|struct|class|enum|interface|module)\s+([A-Za-z_][A-Za-z0-9_]*)")
+        let private isFragment (text : string) = System.String.IsNullOrEmpty text || System.Char.IsWhiteSpace text.[0] || text.[0] = '}'
+        let private exported = System.Text.RegularExpressions.Regex(@"(?<![A-Za-z0-9_])(?:pub|export)(?![A-Za-z0-9_])")
+        let private singleItem (text : string) =
+            let topLevel =
+                text.Split('\n')
+                |> Array.map (fun line -> line.TrimEnd('\r'))
+                |> Array.filter (fun line -> line.Length > 0 && not (System.Char.IsWhiteSpace line.[0]) && line.TrimEnd(';', ')', ']') <> "}")
+            topLevel.Length = 1 && not (exported.IsMatch text)
+        let private mentions (name : string) (text : string) =
+            System.Text.RegularExpressions.Regex.Matches(text, $@"(?<![A-Za-z0-9_]){System.Text.RegularExpressions.Regex.Escape name}(?![A-Za-z0-9_])").Count
+        let private removeOnce (code : string) (text : string) =
+            let at = code.IndexOf(text + "\n", System.StringComparison.Ordinal)
+            if at >= 0 then code.Remove(at, text.Length + 1)
+            else
+                let atCrlf = code.IndexOf(text + "\r\n", System.StringComparison.Ordinal)
+                if atCrlf >= 0 then code.Remove(atCrlf, text.Length + 2) else code
+        let prune (globals : ResizeArray<string>) (code : string) =
+            let entries = globals |> Seq.toArray
+            let candidates =
+                entries |> Array.mapi (fun i text ->
+                    let m = declaration.Match text
+                    let headsFragments = i + 1 < entries.Length && isFragment entries.[i + 1]
+                    if m.Success && not (isFragment text) && not headsFragments && singleItem text && code.Contains(text, System.StringComparison.Ordinal) then Some (text, m.Groups.[1].Value) else None)
+                |> Array.choose id
+            let rec settle (code : string) (left : (string * string) []) =
+                let unused = left |> Array.filter (fun (text, name) -> mentions name code <= mentions name text)
+                if unused.Length = 0 then code
+                else
+                    let code = unused |> Array.fold (fun code (text, _) -> removeOnce code text) code
+                    settle code (left |> Array.filter (fun entry -> not (Array.contains entry unused)))
+            if candidates.Length = 0 then code else settle code candidates
+
     /// ### DeadPureLetElision
     module DeadPureLetElision =
         let pureOp op =
@@ -167776,11 +167857,12 @@ end
                 | [||] -> "nil"
                 | [|x|] -> f x
                 | x -> Array.map f x |> String.concat ", " |> sprintf "%s"
-            let simple x =
+            let simple (x : string) =
                 match d with
                 | None -> $"return {x}"
                 | Some d ->
                     match data_free_vars d with
+                    | [||] when x.TrimStart().StartsWith "(" -> $"do {x} end"
                     | [||] -> $"{x}"
                     | [|_|] ->
                         let names = free_vars false d |> SpiralSm.trim
@@ -168014,6 +168096,9 @@ end
                 | Some (64, false), Some (_, true) -> luaW64Use (); simple $"spiral_w64.cast({d}, false)"
                 | Some (bits, _), Some (64, _) when bits < 64 -> luaW64Use (); simple (luaWrap target $"spiral_w64.low({d})")
                 | None, Some (64, source_signed) when (match a with YPrim (Float32T | Float64T) -> true | _ -> false) -> luaW64Use (); simple $"spiral_w64.to_float({d}, {luaBoolText source_signed})"
+                | Some (bits, signed), Some (source_bits, source_signed) when bits < 64 ->
+                    let source_fits = (signed = source_signed && bits >= source_bits) || (signed && not source_signed && bits > source_bits)
+                    if source_fits then simple d else simple (luaWrap target d)
                 | _ ->
                     match a with
                     | YPrim (Int8T | Int16T | Int32T | Int64T | UInt8T | UInt16T | UInt32T | UInt64T) when from_float -> simple $"(math.modf({d}))"
@@ -168219,7 +168304,7 @@ end
                     line (indent s) (sprintf "return function(v%i)" i)
                 | many ->
                     line (indent s) "return function(dom)"
-                    line (indent (indent s)) "local _ = (table.unpack or unpack)(dom)"
+                    line (indent (indent s)) (sprintf "local %s = (table.unpack or unpack)(dom)" (many |> Array.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "))
                 binds (indent (indent s)) x.body
                 line (indent s) "end"
                 line s "end"
@@ -170144,6 +170229,8 @@ end
 
     /// ### codegenKotlin
     let codegenKotlin (env : PartEvalResult) (x : TypedBind []) =
+        let globals = ResizeArray<string>()
+        let globals_seen = HashSet<string>()
         let functions = ResizeArray<string>()
         let tuple_bodies = ResizeArray<string>()
         let tuple_names = Dictionary<string, string>()
@@ -170616,6 +170703,9 @@ end
                     | CMType x -> tyv x
                     | CMTypeLit _ -> unsupported "a macro type literal"
                 return' (parts |> List.map piece |> String.concat "")
+            | TyOp(Global, [DLit (LitString text)]) ->
+                if globals_seen.Add text then globals.Add text
+                return' ""
             | TyOp(Global, _) -> unsupported "globals"
             | TyOp(operation, l) ->
                 let binary symbol a b = $"({tup a} {symbol} {tup b})"
@@ -170874,6 +170964,7 @@ end
             | _ -> true
         emit_function "spiral_main" None [||] (if unit_main then YB else YPrim Int32T) x
         let program = StringBuilder()
+        globals |> Seq.iter (fun text -> program.AppendLine(text) |> ignore)
         layout_types |> Seq.iter (fun text -> program.Append(text) |> ignore)
         union_types |> Seq.iter (fun text -> program.Append(text) |> ignore)
         helpers |> Seq.iter (fun text -> program.Append(text) |> ignore)
@@ -170900,6 +170991,8 @@ end
 
     /// ### codegenSwift
     let codegenSwift (env : PartEvalResult) (x : TypedBind []) =
+        let globals = ResizeArray<string>()
+        let globals_seen = HashSet<string>()
         let functions = ResizeArray<string>()
         let method_names = Dictionary<int, string>()
         let closure_names = Dictionary<int, string>()
@@ -171385,6 +171478,9 @@ end
                     | CMType x -> tyv x
                     | CMTypeLit _ -> unsupported "a macro type literal"
                 return' (parts |> List.map piece |> String.concat "")
+            | TyOp(Global, [DLit (LitString text)]) ->
+                if globals_seen.Add text then globals.Add text
+                return' ""
             | TyOp(Global, _) -> unsupported "globals"
             | TyOp(operation, l) ->
                 let binary symbol a b = $"({tup a} {symbol} {tup b})"
@@ -171620,6 +171716,7 @@ end
         emit_function "spiral_main" None [||] (if unit_main then YB else YPrim Int32T) x
         let program = StringBuilder()
         program.AppendLine("import CRT").AppendLine("import WinSDK") |> ignore
+        globals |> Seq.iter (fun text -> program.AppendLine(text) |> ignore)
         layout_types |> Seq.iter (fun text -> program.Append(text) |> ignore)
         union_types |> Seq.iter (fun text -> program.Append(text) |> ignore)
         helpers |> Seq.iter (fun text -> program.Append(text) |> ignore)
@@ -176362,6 +176459,74 @@ end
                     .Append("|payload=").Append(stableTokenTextField (spiralTokenStableText token)) |> ignore
         sb.ToString()
 
+    /// ### raw_string_layout
+    /// The column each token lays out at, and the text of raw strings without their indentation. A string or macro
+    /// that closes on a later line than it opens carries its opening column: what follows the close on that line
+    /// lays out past the opener, so `f """...\n""" x` applies `f` to `x` like a one-line string would. A raw string
+    /// whose closing quotes start their line after `w` spaces is a block: each line after the opener's drops `w`
+    /// spaces, the newline before the closing line is dropped, and so is the opener's when nothing follows it.
+    let raw_string_layout (tokens : (VSCRange * SpiralToken) []) =
+        let layout = Array.zeroCreate tokens.Length
+        let opens = System.Collections.Generic.Stack<int>()
+        let mutable errors = []
+        let mutable row = -1
+        let mutable shift = 0
+        let dedent opener closer =
+            let open_row = (fst (fst tokens.[opener])).line
+            let close_row = (fst (fst tokens.[closer])).line
+            let indent =
+                if (fst (fst tokens.[closer])).character = 0 then Some 0
+                else
+                    match tokens.[closer - 1] with
+                    | (a, _), TokText x when a.line = close_row && a.character = 0 && x.Trim(' ') = "" -> Some x.Length
+                    | _ -> None
+            match indent with
+            | Some w when 0 < w ->
+                let prefix = System.String(' ', w)
+                let mutable last_line = -1
+                for j in opener + 1 .. closer - 1 do
+                    match tokens.[j] with
+                    | (a, _ as r), TokText x when a.line = open_row ->
+                        if x = "\n" then tokens.[j] <- r, TokText ""
+                        last_line <- j
+                    | (a, _ as r), TokText _ when a.line = close_row -> tokens.[j] <- r, TokText ""
+                    | r, TokText x ->
+                        let line = x.TrimEnd('\n')
+                        if line.StartsWith(prefix, StringComparison.Ordinal) then tokens.[j] <- r, TokText (x.Substring w)
+                        elif line.Trim(' ') = "" then tokens.[j] <- r, TokText "\n"
+                        else errors <- (r, RawStringLineUnderIndented) :: errors
+                        last_line <- j
+                    | _ -> ()
+                if 0 <= last_line then
+                    match tokens.[last_line] with
+                    | r, TokText x when x.EndsWith '\n' -> tokens.[last_line] <- r, TokText (x.Substring(0, x.Length - 1))
+                    | _ -> ()
+            | _ -> ()
+        for i in 0 .. tokens.Length - 1 do
+            let (a, _), t = tokens.[i]
+            if a.line <> row then
+                row <- a.line
+                shift <- 0
+            let close_spanning_lines () =
+                let opener = opens.Pop()
+                let (open_from, open_to), _ = tokens.[opener]
+                if open_from.line <> a.line then
+                    shift <- layout.[opener] + 1
+                    Some (opener, 3 <= open_to.character - open_from.character)
+                else None
+            match t with
+            | TokStringClose when 0 < opens.Count ->
+                match close_spanning_lines () with
+                | Some (opener, true) -> dedent opener i
+                | _ -> ()
+            | TokMacroClose when 0 < opens.Count -> close_spanning_lines () |> ignore
+            | _ -> ()
+            layout.[i] <- a.character + shift
+            match t with
+            | TokStringOpen | TokMacroOpen -> opens.Push i
+            | _ -> ()
+        layout, List.rev errors
+
     /// ### parse_block
     let parse_block default_env is_top_down (block : LineTokens) =
         let comments, cords_tokens =
@@ -176379,17 +176544,17 @@ end
                 )
             |> Array.unzip
         let cords, tokens = Array.unzip (Array.concat cords_tokens)
-    
+        let layout_columns, raw_string_errors = raw_string_layout tokens
 
         let semantic_updates = ResizeArray()
         let env = {
             tokens_cords = cords; semantic_updates = semantic_updates
-            comments = comments; tokens = tokens; i = ref 0; is_top_down = is_top_down
+            comments = comments; tokens = tokens; layout_columns = layout_columns; i = ref 0; is_top_down = is_top_down
             default_env = default_env
             continuation_column = None
             }
         assert (env.tokens_cords.Length = env.tokens.Length)
-        let result = blockParsingParse env
+        let result = if List.isEmpty raw_string_errors then blockParsingParse env else Error raw_string_errors
         match result with
         | Ok statement ->
             observeParsedStatement (lineTokensStableIdentity block) statement
@@ -183332,7 +183497,7 @@ end
                                         emitBuildFileInitializationStage BuildFileCodegenCompleted
                                         BuildDraft.Provisional generated
                                     let build codegen backend file_extension =
-                                        build_many (fun file b a -> [{|code = codegen b (DeadPureLetElision.block a); file_extension = file_extension|}]) backend
+                                        build_many (fun file b a -> [{|code = codegen b (DeadPureLetElision.block a) |> UnusedGlobals.prune b.globals; file_extension = file_extension|}]) backend
     
 
                                     let do_build () =
@@ -186040,7 +186205,7 @@ end
                                         trace Verbose (fun () -> $"Supervisor.supervisor_server.BuildFile.file_build.codegen_ready / backend: {backend} / files: {List.length generated}") _locals
                                         BuildOk generated
                                     let build codegen backend file_extension =
-                                        build_many (fun file b a -> [generated_file (codegen b (DeadPureLetElision.block a)) file_extension]) backend
+                                        build_many (fun file b a -> [generated_file (codegen b (DeadPureLetElision.block a) |> UnusedGlobals.prune b.globals) file_extension]) backend
                                     match backend with
                                     | "Gleam" -> build codegenGleam "Gleam" ".gleam"
                                     | "Lua" -> build codegenLua "Lua" ".lua"

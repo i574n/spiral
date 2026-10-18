@@ -1,11 +1,24 @@
 inl (++) (left : string) (right : string) : string = !!!!StaticStringConcat(left,right)
 
 inl ffi () : () =
-    global "@external(erlang, \"erlang\", \"byte_size\")\nfn kino_text_size(text: String) -> Int"
-    global "@external(erlang, \"binary\", \"part\")\nfn kino_text_part(text: String, at: Int, len: Int) -> String"
-    global "fn kino_text_at(text: String, at: Int, len: Int) -> String {\n  let size = kino_text_size(text)\n  case at >= 0 && len > 0 && at < size {\n    True -> case at + len > size {\n      True -> kino_text_part(text, at, size - at)\n      False -> kino_text_part(text, at, len)\n    }\n    False -> \"\"\n  }\n}"
-    global "@external(erlang, \"binary\", \"at\")\nfn kino_text_byte(text: String, at: Int) -> Int"
-    global "@external(erlang, \"string\", \"lowercase\")\nfn kino_text_lower(text: String) -> String"
+    global """@external(erlang, "erlang", "byte_size")
+fn kino_text_size(text: String) -> Int"""
+    global """@external(erlang, "binary", "part")
+fn kino_text_part(text: String, at: Int, len: Int) -> String"""
+    global """fn kino_text_at(text: String, at: Int, len: Int) -> String {
+  let size = kino_text_size(text)
+  case at >= 0 && len > 0 && at < size {
+    True -> case at + len > size {
+      True -> kino_text_part(text, at, size - at)
+      False -> kino_text_part(text, at, len)
+    }
+    False -> ""
+  }
+}"""
+    global """@external(erlang, "binary", "at")
+fn kino_text_byte(text: String, at: Int) -> Int"""
+    global """@external(erlang, "string", "lowercase")
+fn kino_text_lower(text: String) -> String"""
 
 inl length (text : string) : i32 =
     ffi ()

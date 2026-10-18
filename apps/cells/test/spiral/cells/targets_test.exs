@@ -277,6 +277,12 @@ defmodule Spiral.Cells.TargetsTest do
       assert second =~ "warm two"
       refute second =~ "warm one"
       refute File.dir?(Path.join([dir, "second", "gleam", "build"]))
+      stale = Path.join([warm, "build", "dev", "erlang", "main", "stale.marker"])
+      File.write!(stale, "")
+      assert {{:ok, %{stdout: third}}, _} = run.("third", "warm three")
+      assert third =~ "warm three"
+      refute third =~ "warm two"
+      refute File.exists?(stale)
     end
   end
   test "gleam compile warnings are not program output" do

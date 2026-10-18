@@ -120,7 +120,12 @@ inl string_builder (initial : string) : string_builder =
         Fsharp = fun () => initial |> $'`string_builder ' : string_builder
         Python = fun () =>
             global "import io"
-            global "class CustomStringIO(io.StringIO):\n    def __init__(self, init=''):\n        super().__init__()\n        if init != '': self.write(init)\n    def __str__(self): return self.getvalue()\n    def __repr__(self): return self.getvalue()"
+            global """class CustomStringIO(io.StringIO):
+    def __init__(self, init=''):
+        super().__init__()
+        if init != '': self.write(init)
+    def __str__(self): return self.getvalue()
+    def __repr__(self): return self.getvalue()"""
             $'CustomStringIO(!initial)' : string_builder
         Rust = fun () => $'String::from(&*!initial)' : string_builder
         TypeScript = fun () => $'!initial ' : string_builder
