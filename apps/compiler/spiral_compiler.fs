@@ -43403,7 +43403,15 @@ module spiral_compiler =
                 Ok(UnescapedChar(r, c))
             | _ -> error_char s.from "\\"
 
-        let p_var s = (many1Satisfy2L is_var_char_starting (fun c -> is_var_char c && c <> closing_char) "variable") s
+        let p_var s =
+            match (many1Satisfy2L is_var_char_starting is_var_char "variable") s with
+            | Ok (name : string) when is_var_char closing_char && name.Length > 1 && name.EndsWith (string closing_char) ->
+                let rest = s.text.Substring s.from
+                if rest.IndexOf closing_char >= 0 || rest.TrimEnd().EndsWith "\\" then Ok name
+                else
+                    s.from <- s.from - 1
+                    Ok (name.Substring (0, name.Length - 1))
+            | result -> result
         let p_text closing_char s = (range (many1SatisfyL (fun c -> c <> closing_char && c <> '`' && c <> '!' && c <> '@' && c <> '#' && c <> '\\') "macro text") |>> TokenizerText) s
         let p_expr s =
             let start = anyOf ['`'; '!'; '@'; '#']
@@ -177721,6 +177729,7 @@ end
             | SeparatorTight
             | SeparatorSpace
             | ApplicationSpace
+            | MacroOpTight
             | BracketInnerSpace
             | EmptyBracketTight
             | ConstraintBraceTight
@@ -177805,6 +177814,7 @@ end
             | _, Embedded _ -> AsWritten
             | _ when macroInterior -> AsWritten
             | _ when isUnary left.Token -> AsWritten
+            | _ when isOpening Round right.Token && (match at -2 with Some (TokUnaryOperator ("!!!!", _)) -> true | _ -> false) -> Fixed (MacroOpTight, 0)
             | _ ->
                 let sectionOpen = isOpening Round left.Token && (binaryOperator right.Token).IsSome && (at 1 |> Option.exists (isClosing Round))
                 let sectionClose = isClosing Round right.Token && (binaryOperator left.Token).IsSome && (at -2 |> Option.exists (isOpening Round))

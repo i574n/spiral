@@ -4,7 +4,11 @@ $script:RunLedger = Join-Path $script:HeavyState 'ledger/runs.tsv'
 $script:HeavySecondSlotMinFreeMB = 3072
 $script:WslTicketMaxWaitMinutes = 45
 
-function Get-HeavyFreeMB { [int]((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory / 1KB) }
+function Get-HeavyFreeMB {
+    if ($IsWindows) { return [int]((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory / 1KB) }
+    $available = Select-String -Path /proc/meminfo -Pattern '^MemAvailable:\s+(\d+) kB' -ErrorAction Ignore | Select-Object -First 1
+    if ($available) { [int]([long]$available.Matches[0].Groups[1].Value / 1KB) } else { [int]::MaxValue }
+}
 
 function Test-HeavyFirstInLine([string] $ticket) {
     $live = foreach ($f in Get-ChildItem $script:HeavyQueue -Filter '*.t' -ErrorAction Ignore) {
