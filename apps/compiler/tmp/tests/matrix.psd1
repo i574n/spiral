@@ -25,7 +25,7 @@
     }
 
     Known = @(
-        @{ Id = 'samples/mega_brzozowski_derivatives/runtime_bench'; Backend = 'Lua'; Reason = 'exact 64-bit integers (spiral_w64 helpers) make it agree with C, but its Lua run takes about 17.4 s against the 20 s row timeout, so under suite load it would time out and break bless reproduction' }
+        @{ Id = 'samples/mega_brzozowski_derivatives/runtime_bench'; Backend = 'Lua'; Reason = 'exact 64-bit integers (spiral_w64 helpers) make it agree with C, but its Lua run takes about 17.4 s against the 20 s row timeout, so under suite load it would time out and break baseline reproduction' }
         @{ Id = 'samples/native_cube_flush_delay_direct'; Backend = 'C'; Reason = 'POSIX-only residual (poll.h); native C runs only on Linux' }
         @{ Id = 'samples/native_cube_monotonic_delay_direct'; Backend = 'C'; Reason = 'POSIX-only residual (poll.h/clock_gettime); native C runs only on Linux' }
         @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'Rust'; Oracle = 'C'; Reason = 'C residual has no bounds check (exits 0); Rust panics as the fixture intends' }
@@ -253,6 +253,7 @@
         @{ Id = 'samples/missing_core_negative'; Contains = 'Unbound term variable: +.' }
         @{ Id = 'samples/multiline_comment_unterminated'; Contains = 'Unterminated multiline comment' }
         @{ Id = 'samples/multiline_triple_string_unterminated'; Contains = 'Unterminated triple-quoted string' }
+        @{ Id = 'samples/multiline_triple_string_under_indented'; Contains = 'indented less than its closing quotes' }
         @{ Id = 'samples/native_fptr_capture_negative'; Contains = 'Function pointers shouldn''t have any runtime free variables' }
         @{ Id = 'samples/native_layout_stack_mutable_string_negative'; Contains = 'support stack mutable layout types' }
         @{ Id = 'samples/native_prototype_union_closure_method_missing_instance'; Contains = 'does not have the prototype score' }

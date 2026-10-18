@@ -662,7 +662,7 @@ Every gate is a command plus a number. "Looks fine" is not a gate.
 - `scripts/hopacsota-lint.ps1` (G2) and the size budget (G1), run by `build.ps1 -Mode hopacsota`.
 - The deferred policy: type-known specializations go to a single-threaded worklist; D3 tables, D6 merge,
   D8 types.
-- New frontier fixtures, each written before its code with its oracle row blessed from single-flight:
+- New frontier fixtures, each written before its code with its oracle row accepted from single-flight:
   - `frontier_hopacsota_recursion_inferred`, a self-recursive `let rec` without a written annotation whose
     pending recursive call returns the inferred type without waiting (single-flight: exit 0; it replaces the
     `recursion_unannotated` draft, whose error D4 shows is unreachable);
@@ -696,7 +696,7 @@ Every gate is a command plus a number. "Looks fine" is not a gate.
   `PartEvalSeams.claim` (`Found of 'v | Owner`) on both seam sides, used at the type, closure and method sites;
   the method site keeps its `(None, annot, jp_name)` write before the body, because annotated recursion resolves
   through that pending entry. Both cores and the hopacsota mode build; G6: 11 added single-flight lines, all seam
-  calls; G3 on `-Suite all` compile-only (6,906 rows): single-flight with the claim equals the pack-1y bless and
+  calls; G3 on `-Suite all` compile-only (6,906 rows): single-flight with the claim equals the pack-1y baseline and
   hopacsota inline and random:23 equal it, except one F# error row whose diagnostic blocks come in a different
   order from run to run (host diagnostics, not partial evaluation). `backend_switch_validated` keeps a plain lookup.
 - Grain 2 design (2026-10-17 02:42, read from single-flight's PartEval with grain 1 applied). The three claim sites have
@@ -882,7 +882,7 @@ Scoreboard notes:
     - Body identity comes from one allowlisted `ThreadLocal<BodyContext>` in the engine.
   - **Size:** about 8-10 single-flight seam lines and a 350-500-line `PartEvalEngineHopacsota` section (~650 against the 5,934 budget). The first number to measure is claims per body, since a claim miss is a cross-thread round trip.
   - **G2** now also bans `Scheduler.run`, `ThreadStatic`, `ManualResetEvent*`, `SemaphoreSlim`, `SpinLock`, `Mutex` and `new Thread` (lint updated; 0 hits today). Each engine use gets one allowlist line.
-  - **First grain 2b-1:** the full engine at `SPIRAL_HOPACSOTA_WORKERS=1`. Proof: G1/G2, G6 `-Seams`, and G3 compile-only with `parallel@1`, `inline` and `random:23`, each 0 cells against the bless; apps/spiral F#/Rust byte-identical; and G5 within 1.05x, printing claims, bridge calls and cache hits. **2b-2:** Gate 2 at 2/4/8 workers, plus probe `-Repeat 5` at 8 workers, with conflict counts per run.
+  - **First grain 2b-1:** the full engine at `SPIRAL_HOPACSOTA_WORKERS=1`. Proof: G1/G2, G6 `-Seams`, and G3 compile-only with `parallel@1`, `inline` and `random:23`, each 0 cells against the baseline; apps/spiral F#/Rust byte-identical; and G5 within 1.05x, printing claims, bridge calls and cache hits. **2b-2:** Gate 2 at 2/4/8 workers, plus probe `-Repeat 5` at 8 workers, with conflict counts per run.
 
 - **2026-10-17, study lane measurements absorbed by main (lab/hopacsota-hopac-depth, lab/hopacsota-lf-scheduling).**
   These were measured under build load and should be rerun on an idle machine before Gate 3 cites them; none

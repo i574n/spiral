@@ -143,7 +143,7 @@ What the numbers say, and what they do not:
 ## Results (spiral compiler, single-flight)
 
 `test.ps1 -Suite contracts,mega -Filter mega_brzozowski_derivatives -Native -Parallel 2` (2026-10-06 14:38, then a
-`-Bless` run at 14:40 that reproduced it row for row: verdicts, residual hashes, native results; again at 16:37/16:40
+`-Accept` run at 14:40 that reproduced it row for row: verdicts, residual hashes, native results; again at 16:37/16:40
 after the interned engine got its nominals, which changed only `runtime_bench`'s C residual): 78 rows.
 
 - The root and all 26 positive sub-packages with a `main` compile (to F#; the suite compiles F# rows, it does not run
