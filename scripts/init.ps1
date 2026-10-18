@@ -54,12 +54,7 @@ if (Test-Command "pip") {
     Write-Output "init.ps1 / no pip: the notebooks' html outputs need jupyter (pip install -r requirements.txt)"
 }
 
-if (!(Test-Command "trunk")) {
-    if (Test-Command "cargo") {
-        cargo +nightly-2025-11-01 install trunk --version 0.21.14 --locked
-        if ($LASTEXITCODE -ne 0) { Write-Output "init.ps1 / cargo install trunk failed (exit code $LASTEXITCODE)" }
-    } else { Write-Output "init.ps1 / no cargo on PATH: trunk not installed" }
-}
+if (!(Test-Command "cargo")) { Write-Output "init.ps1 / no cargo on PATH: trunk not installed" }
 
 foreach ($tool in "elixir", "gleam") {
     if (!(Test-Command $tool)) { Write-Output "init.ps1 / $tool is not on PATH: notebooks (apps/cells) need it" }
@@ -71,6 +66,13 @@ if (Test-Command "cargo") {
             Invoke-Expression (Invoke-WebRequest "https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.ps1").Content
         } else {
             curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+        }
+    }
+    if (!(Test-Command "trunk")) {
+        cargo binstall -y --locked trunk@0.21.14
+        if ($LASTEXITCODE -ne 0) {
+            cargo +nightly-2025-11-01 install trunk --version 0.21.14 --locked
+            if ($LASTEXITCODE -ne 0) { Write-Output "init.ps1 / cargo install trunk failed (exit code $LASTEXITCODE)" }
         }
     }
     if (!(Test-Command "sccache")) {

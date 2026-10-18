@@ -352,23 +352,43 @@ function Get-NativeSignature {
     $lines = [Collections.Generic.List[string]]::new()
     $script = [System.Management.Automation.Language.Parser]::ParseFile($PSCommandPath, [ref]$null, [ref]$null)
     $nativeCode = $script.FindAll({ param($node)
-            ($node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -in 'Build-And-Run', 'Invoke-Native', 'Get-CFlags') -or
+            ($node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -in 'Build-And-Run', 'Invoke-Native', 'Get-CFlags', 'Get-ShimKey') -or
             ($node -is [System.Management.Automation.Language.IfStatementAst] -and $node.Clauses[0].Item1.Extent.Text -eq '$Native' -and $node.Extent.Text.Contains('$nativeJobs')) }, $true) |
         ForEach-Object { $_.Extent.Text }
     $lines.Add('native code=' + (Get-TextKey ($nativeCode -join "`n")))
     foreach ($tool in @($tools.PSObject.Properties | Sort-Object Name)) { $lines.Add("$($tool.Name)=" + (Get-ToolStamp "$($tool.Value)")) }
     $lines.Add('zig=' + (Get-ToolStamp $zigExe))
     $lines.Add("SPIRAL_CXX=$env:SPIRAL_CXX")
-    foreach ($file in @(Get-ChildItem $shimDir -Recurse -File | Where-Object FullName -notmatch '[\\/](target|build|node_modules)[\\/]' | Sort-Object FullName)) {
-        $lines.Add("shim $([IO.Path]::GetRelativePath($shimDir, $file.FullName))=" + (Get-FileSha256 $file.FullName))
-    }
     Get-TextKey ($lines -join "`n")
+}$shimsByBackend = @{
+    TypeScript = @('run_main.mjs'); Lua = @('run_main.lua'); Python = @('run_main.py'); Cpp = @('cpp_native.py')
+    Gleam = @('gleam'); Kotlin = @('kotlin-server'); OpenQasm = @('openqasm-run'); Wgsl = @('wgsl-run')
+    C = @('*.h'); Ebpf = @('*.h')
+    Rust = @(); Delphi = @(); Zig = @(); Lean = @(); Bend = @(); Wasm = @(); Swift = @(); Calyx = @(); Fsharp = @()
 }
+$shimKeys = @{}
+function Get-ShimKey([string]$backend) {
+    if ($shimKeys.ContainsKey($backend)) { return $shimKeys[$backend] }
+    $selectors = if ($shimsByBackend.ContainsKey($backend)) { $shimsByBackend[$backend] } else { @('**') }
+    $files = foreach ($selector in $selectors) {
+        $path = Join-Path $shimDir $selector
+        if ($selector -eq '**') { Get-ChildItem $shimDir -Recurse -File }
+        elseif ($selector.Contains('*')) { Get-ChildItem $shimDir -File -Filter $selector }
+        elseif (Test-Path -LiteralPath $path -PathType Container) { Get-ChildItem $path -Recurse -File }
+        elseif (Test-Path -LiteralPath $path) { Get-Item -LiteralPath $path }
+    }
+    $lines = @($files | Where-Object FullName -notmatch '[\\/](target|build|node_modules)[\\/]' | Sort-Object FullName -Unique | ForEach-Object {
+        "shim $([IO.Path]::GetRelativePath($shimDir, $_.FullName))=" + (Get-FileSha256 $_.FullName)
+    })
+    $shimKeys[$backend] = Get-TextKey ($lines -join "`n")
+    $shimKeys[$backend]
+}
+
 function Get-NativeMemoKey($job, [string]$signature) {
     $flags = if ($job.Backend -eq 'C') { (Get-CFlags $job) -join ' ' } else { '' }
     $ownShim = Join-Path (Split-Path $job.Input) 'c-shim.h'
     $ownShimHash = if ($job.Backend -eq 'C' -and (Test-Path -LiteralPath $ownShim)) { Get-FileSha256 $ownShim } else { '' }
-    Get-TextKey "$signature`n$($job.Backend)`n$(Get-FileSha256 $job.Output)`n$flags`n$ownShimHash"
+    Get-TextKey "$signature`n$($job.Backend)`n$(Get-ShimKey $job.Backend)`n$(Get-FileSha256 $job.Output)`n$flags`n$ownShimHash"
 }
 function Invoke-Native([string]$exe, [string[]]$arguments, [string]$workDir, [int]$timeoutSec, [string]$PathPrefix) {
     $info = [Diagnostics.ProcessStartInfo]::new($exe)
@@ -901,7 +921,7 @@ function Get-ScopedKnown([string]$OracleName) {
 }
 $known = Get-ScopedKnown $Oracle
 $noOracle = if ($Oracle -eq 'C') { 'no-c' } else { "no-$($Oracle.ToLowerInvariant())" }
-foreach ($row in $rows | Where-Object { $_.backend -in 'C', 'Rust', 'Delphi', 'Zig', 'Wasm', 'Wgsl', 'Calyx', 'Kotlin', 'Swift', 'OpenQasm', 'Ebpf', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python' -and $_.backend -ne $Oracle -and $_.native -eq 'ran' }) {
+foreach ($row in $rows | Where-Object { $_.backend -in 'Fsharp', 'C', 'Rust', 'Delphi', 'Zig', 'Wasm', 'Wgsl', 'Calyx', 'Kotlin', 'Swift', 'OpenQasm', 'Ebpf', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python' -and $_.backend -ne $Oracle -and $_.native -eq 'ran' }) {
     $c = $byId[$row.id] | Where-Object { $_.backend -eq $Oracle -and $_.native -eq 'ran' } | Select-Object -First 1
     if (-not $c -and $Oracle -ne 'C' -and $row.backend -ne 'C') {
         $c = $byId[$row.id] | Where-Object { $_.backend -eq 'C' -and $_.native -eq 'ran' } | Select-Object -First 1

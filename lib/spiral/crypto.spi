@@ -199,12 +199,26 @@ let hash_text (~input : string) =
             hashlib_sha256 ()
             |> sha256_update (input |> sm'.encode_utf8)
             |> sha256_hexdigest
+        | Gleam _ => fun () =>
+            global "import gleam/bit_array"
+            global "import gleam/string"
+            global """
+                type SpiralHashKind {
+                  Sha256
+                }
+                """
+            global """
+                @external(erlang, "crypto", "hash")
+                fn spiral_crypto_hash(kind: SpiralHashKind, data: String) -> BitArray
+                """
+            $'string.lowercase(bit_array.base16_encode(spiral_crypto_hash(Sha256, !input)))' : string
         | _ => fun () => null ()
 
 ///> fsharp
 ///> cuda
 ///> rust -d sha2
 ///> typescript
+///> gleam
 test hash_text =
     "\n"
     |> hash_text

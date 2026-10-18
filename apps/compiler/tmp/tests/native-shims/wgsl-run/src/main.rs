@@ -77,9 +77,11 @@ async fn execute(source: &str, lanes: u32, chunk: u32) -> Result<Vec<i32>, Fail>
     let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::from_env_or_default());
     let adapter = match wgpu::util::initialize_adapter_from_env(&instance, None) { Some(adapter) => adapter, None => request_adapter(&instance).await.ok_or(Fail::NoAdapter)? };
     let timing = std::env::var_os("SPIRAL_WGSL_TIMING").is_some();
+    let timing_log = std::env::var_os("SPIRAL_WGSL_TIMING_LOG");
+    let info = adapter.get_info();
+    let adapter_text = format!("{} backend {:?} type {:?} driver {} {}", info.name, info.backend, info.device_type, info.driver, info.driver_info);
     if timing {
-        let info = adapter.get_info();
-        eprintln!("wgsl timing adapter {} backend {:?} type {:?} driver {} {}", info.name, info.backend, info.device_type, info.driver, info.driver_info);
+        eprintln!("wgsl timing adapter {adapter_text}");
     }
     let compile_started = Instant::now();
     let (device, queue) = adapter
@@ -126,8 +128,9 @@ async fn execute(source: &str, lanes: u32, chunk: u32) -> Result<Vec<i32>, Fail>
     if let Some(error) = device.pop_error_scope().await {
         return Err(Fail::Compile(error.to_string()));
     }
+    let compile_ms = compile_started.elapsed().as_millis();
     if timing {
-        eprintln!("wgsl timing compile_ms {}", compile_started.elapsed().as_millis());
+        eprintln!("wgsl timing compile_ms {compile_ms}");
     }
     let run_started = Instant::now();
 
@@ -217,8 +220,16 @@ async fn execute(source: &str, lanes: u32, chunk: u32) -> Result<Vec<i32>, Fail>
         let _ = sender.send(result);
     });
     wait_for(&device, &lost, &receiver, limit, "reading the exit code")?.map_err(|error| Fail::Runtime(error.to_string()))?;
+    let run_ms = run_started.elapsed().as_millis();
     if timing {
-        eprintln!("wgsl timing run_ms {}", run_started.elapsed().as_millis());
+        eprintln!("wgsl timing run_ms {run_ms}");
+    }
+    if let Some(log) = timing_log {
+        use std::io::Write;
+        let shader = std::env::args().nth(1).unwrap_or_default();
+        if let Ok(mut file) = std::fs::OpenOptions::new().create(true).append(true).open(log) {
+            let _ = writeln!(file, "{shader}\t{}\t{compile_ms}\t{run_ms}\t{adapter_text}", source.len());
+        }
     }
     let bytes = slice.get_mapped_range();
     let code = i32::from_le_bytes(bytes[0..4].try_into().unwrap());

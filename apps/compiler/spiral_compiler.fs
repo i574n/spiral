@@ -52916,6 +52916,10 @@ module spiral_compiler =
                 flushAtExit.Force()
                 let target = match definitions.TryGetValue e with | true, d -> d | _ -> "\t\t"
                 rows.Enqueue $"use\t{location path range}\t{name}\t{target}"
+        let used_unless_local (path : string) (range : VSCRange) (name : string) (e : E) (bound_in_env : bool) =
+            match e with
+            | EModule _ -> ()
+            | _ -> if enabled && (not bound_in_env || fst (definitions.TryGetValue e)) then used path range name e
 
     /// ### prepassPrepass
     let prepassPrepass package_id module_id path (top_env : PrepassTopEnv) =
@@ -53145,7 +53149,7 @@ module spiral_compiler =
             | RawB r -> EB(p r)
             | RawV(r,a,_) ->
                 let e = v_term env a
-                if PrepassReferences.enabled && not (Map.containsKey (TermNameIdOps.create a) env.term.env) then PrepassReferences.used path r a e
+                if PrepassReferences.enabled then PrepassReferences.used_unless_local path r a e (Map.containsKey (TermNameIdOps.create a) env.term.env)
                 e
             | RawLit(r,a) -> ELit(p r,a)
             | RawSymbol(r,a) -> ESymbol(p r,a)
@@ -53262,7 +53266,7 @@ module spiral_compiler =
                     List.fold (fun (env,i) (r,(_,name),l,body) ->
                         add_ty env name (TNominal (at_tag i)), i+1
                         ) (env, top_env.nominals_next_tag) l
-                List.fold (fun (term,ty',nominals,i) (r, (_,name),l,body) ->
+                List.fold (fun (term,ty',nominals,i) (r, (name_range,name),l,body) ->
                     let r = p r
                     let at_tag_i = at_tag i
                     let nom = TNominal at_tag_i
@@ -53283,7 +53287,9 @@ module spiral_compiler =
                                             let t = l |> Map.pick (fun (_, k) v -> if k = name then Some v else None) |> fst
                                             loop [] t
                                         | _ -> failwith "error[EJPX002]: internal compiler error\n  |\n  = expected: join point with GADT union\n  help: this is a compiler invariant failure; capture the stack trace and the surrounding IR/AST snippet to reproduce.\n"
-                                    Map.add (TermNameIdOps.create name) (loop_outer bodyUnlowered |> process_term) term
+                                    let constructor_term = loop_outer bodyUnlowered |> process_term
+                                    PrepassReferences.define path name_range name constructor_term
+                                    Map.add (TermNameIdOps.create name) constructor_term term
                                 else
                                     let rec loop vars = function
                                         | TArrow(id,t) -> EForall(r,id,loop (id :: vars) t)
@@ -53294,7 +53300,9 @@ module spiral_compiler =
                                             | TB _ -> ENominal(r,EPair(r,ESymbol(r,name),EB r),t')
                                             | _ -> EFun(r,0,ENominal(r,EPair(r,ESymbol(r,name),EV 0),t'),Some(TFun(t,t',FT_Vanilla)))
                                         | _ -> failwith "error[EJPX001]: internal compiler error\n  |\n  = expected: join point with union\n  help: this is a compiler invariant failure; capture the stack trace and the surrounding IR/AST snippet to reproduce.\n"
-                                    Map.add (TermNameIdOps.create name) (loop [] bodyUnlowered |> process_term) term
+                                    let constructor_term = loop [] bodyUnlowered |> process_term
+                                    PrepassReferences.define path name_range name constructor_term
+                                    Map.add (TermNameIdOps.create name) constructor_term term
                                 ) term l
                         | _ ->
                             let rec loop vars = function
@@ -53305,7 +53313,9 @@ module spiral_compiler =
                                     | TB _ -> ENominal(r,EB r,t')
                                     | _ -> EFun(r,0,ENominal(r,EV 0,t'),Some(TFun(t,t',FT_Vanilla)))
                                 | _ -> failwith "error[EJPX000]: internal compiler error\n  |\n  = expected: join point\n  help: this is a compiler invariant failure; capture the stack trace and the surrounding IR/AST snippet to reproduce.\n"
-                            Map.add (TermNameIdOps.create name) (loop [] bodyUnlowered |> process_term) term
+                            let constructor_term = loop [] bodyUnlowered |> process_term
+                            PrepassReferences.define path name_range name constructor_term
+                            Map.add (TermNameIdOps.create name) constructor_term term
                     term,Map.add (TypeNameIdOps.create name) nom ty', Map.add at_tag_i {|body=bodyt; name=name|} nominals, i+1
                     ) (Map.empty, Map.empty, Map.empty, top_env.nominals_next_tag) l
             match x with
@@ -53334,10 +53344,11 @@ module spiral_compiler =
                         Map.add (TermNameIdOps.create name) r.Value top_env_term
                         ) Map.empty l
                 AInclude {prepassTop_env_empty with term = term}
-            | FPrototype(r,(_,name),_,_,_) ->
+            | FPrototype(r,(name_range,name),_,_,_) ->
                 let i = at_tag top_env.prototypes_next_tag
                 let r = p r
                 let x = EForall(r,0,EPrototypeApply(r,i,TV 0)) |> process_term
+                PrepassReferences.define path name_range name x
                 AInclude {prepassTop_env_empty with term = Map.add (TermNameIdOps.create name) x Map.empty; prototypes_next_tag = i.tag+1}
             | FInstance(_,(_,prot_id),(_,ins_id),body) ->
                 AInclude {prepassTop_env_empty with prototypes_instances = Map.add (prot_id,ins_id) (term env body |> process_term) Map.empty}
@@ -176502,16 +176513,19 @@ end
                     | r, TokText x when x.EndsWith '\n' -> tokens.[last_line] <- r, TokText (x.Substring(0, x.Length - 1))
                     | _ -> ()
             | _ -> ()
+        let mutable row_start = 0
         for i in 0 .. tokens.Length - 1 do
             let (a, _), t = tokens.[i]
             if a.line <> row then
                 row <- a.line
+                row_start <- i
                 shift <- 0
             let close_spanning_lines () =
                 let opener = opens.Pop()
                 let (open_from, open_to), _ = tokens.[opener]
                 if open_from.line <> a.line then
                     shift <- layout.[opener] + 1
+                    for j in row_start .. i - 1 do layout.[j] <- (fst (fst tokens.[j])).character + shift
                     Some (opener, 3 <= open_to.character - open_from.character)
                 else None
             match t with
