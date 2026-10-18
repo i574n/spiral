@@ -1,0 +1,3 @@
+union signal =
+    | Hit : i32
+    | Hold

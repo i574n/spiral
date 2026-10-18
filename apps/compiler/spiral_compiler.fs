@@ -44904,10 +44904,18 @@ module spiral_compiler =
                                 PatVar(r,a)
                             ) s
                     | _ ->
-                        (root_pattern_var |>> fun b ->
-                            re SemanticTokenLegend.type_variable
-                            PatNominal(r +. range_of_pattern b,(r,a),syms,b)
-                            ) s
+                        let case_range, case = List.last syms
+                        if Char.IsUpper(case, 0) then
+                            (opt root_pattern_var |>> fun b ->
+                                re SemanticTokenLegend.type_variable
+                                let b = match b with Some b -> b | None -> PatE case_range
+                                PatNominal(r +. range_of_pattern b,(r,a),syms,b)
+                                ) s
+                        else
+                            (root_pattern_var |>> fun b ->
+                                re SemanticTokenLegend.type_variable
+                                PatNominal(r +. range_of_pattern b,(r,a),syms,b)
+                                ) s
                     ) s
             ) s
     and root_pattern_wildcard d = (skip_keyword' SpecWildcard |>> PatE) d
@@ -52903,7 +52911,13 @@ module spiral_compiler =
         let rows = System.Collections.Concurrent.ConcurrentQueue<string>()
         let flushAtExit =
             lazy (System.AppDomain.CurrentDomain.ProcessExit.Add(fun _ ->
-                System.IO.File.AppendAllLines(output, rows |> Seq.distinct |> Seq.toArray)))
+                let lines = rows |> Seq.distinct |> Seq.toArray
+                let rec append attempt =
+                    try System.IO.File.AppendAllLines(output, lines)
+                    with :? System.IO.IOException when attempt < 100 ->
+                        System.Threading.Thread.Sleep 20
+                        append (attempt + 1)
+                append 0))
         let location (path : string) ((from, _) : VSCRange) = $"{path}\t{from.line + 1}"
         let define (path : string) (range : VSCRange) (name : string) (e : E) =
             if enabled then
@@ -162587,6 +162601,30 @@ module spiral_compiler =
                 || x.[0] = '}'
             fun x -> if preserves_duplicate_fragment x || has_added.Add(x) then env.globals.Add x
 
+        let rec macro_assigned_binds (x : TypedBind []) : Set<int> =
+            x |> Array.fold (fun s -> function TyLet(_,_,o) | TyLocalReturnOp(_,o,_) -> s + macro_assigned_op o | TyLocalReturnData _ -> s) Set.empty
+        and macro_assigned_op (x : TypedOp) : Set<int> =
+            match x with
+            | TyMacro parts ->
+                let rec targets acc = function
+                    | CMTerm (d,_) :: (CMText text :: _ as rest) when text.TrimStart().StartsWith "<-" ->
+                        targets (data_free_vars d |> Array.fold (fun s (L(i,_)) -> Set.add i s) acc) rest
+                    | _ :: rest -> targets acc rest
+                    | [] -> acc
+                targets Set.empty parts
+            | TyWhile(_,body) | TyDo body | TyIndent body -> macro_assigned_binds body
+            | TyIf(_,tr,fl) -> macro_assigned_binds tr + macro_assigned_binds fl
+            | TyUnionUnbox(_,_,on_succs,on_fail) ->
+                Map.fold (fun s _ (_,body) -> s + macro_assigned_binds body) (match on_fail with Some x -> macro_assigned_binds x | None -> Set.empty) on_succs
+            | TyIntSwitch(_,on_succs,on_fail) -> Array.fold (fun s body -> s + macro_assigned_binds body) (macro_assigned_binds on_fail) on_succs
+            | _ -> Set.empty
+        let mutable macro_assigned : Set<int> = Set.empty
+        let with_macro_assigned (body : TypedBind []) (emit : unit -> unit) =
+            let outer = macro_assigned
+            macro_assigned <- macro_assigned_binds body
+            emit ()
+            macro_assigned <- outer
+
         let rec tyv x =
             match x with
             | YUnion a ->
@@ -162640,15 +162678,19 @@ module spiral_compiler =
                 | [||] -> "()"
                 | [|x|] -> f x
                 | x -> Array.map f x |> String.concat ", " |> sprintf "struct (%s)"
+            let declared d =
+                match data_free_vars d with
+                | [|L(i,_)|] when macro_assigned.Contains i -> "mutable " + free_vars true d
+                | _ -> free_vars true d
             let simple x =
                 match d with
                 | None -> x
-                | Some d -> match free_vars true d with "()" -> x | d -> sprintf "let %s = %s" d x
+                | Some d -> match declared d with "()" -> x | d -> sprintf "let %s = %s" d x
                 |> line s
             let complex f =
                 match d with
                 | None -> f s : unit
-                | Some d -> match free_vars true d with "()" -> f s | d -> line s (sprintf "let %s =" d); f (indent s)
+                | Some d -> match declared d with "()" -> f s | d -> line s (sprintf "let %s =" d); f (indent s)
             let layout_vars a =
                 let f i x =
                     match x with
@@ -162924,7 +162966,7 @@ module spiral_compiler =
                 {tag=i; free_vars=rdata_free_vars (codegenMethodKeyArgs key); range=range; body=a}
                 ) (fun s x ->
                 line s (sprintf "%s (%s) : %s =" method_names.[x.tag] (args_tys x.free_vars) (tup_ty x.range))
-                binds (indent s) x.body
+                with_macro_assigned x.body (fun () -> binds (indent s) x.body)
                 )
         and closure : _ -> ClosureRecFsharp =
             jp (fun ((jp_body,key & (C(args,_,fun_ty))),i) ->
@@ -162942,11 +162984,11 @@ module spiral_compiler =
                     | [|x|] -> sprintf "(%s)" x
                     | x -> String.concat ", " x |> sprintf "struct (%s)"
                 line s (sprintf "%s (%s) %s : %s =" closure_names.[x.tag] (args_tys x.free_vars) domain (tup_ty x.range))
-                binds (indent s) x.body
+                with_macro_assigned x.body (fun () -> binds (indent s) x.body)
                 )
 
         let main = StringBuilder()
-        binds {text=main; indent=0} x
+        with_macro_assigned x (fun () -> binds {text=main; indent=0} x)
 
         let program = StringBuilder()
         env.globals |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
@@ -173983,17 +174025,13 @@ end
                     | _ -> raise_codegen_error "Compiler error: Unexpected type in the closure join point."
                     ) (fun _ s_typ s_fun x ->
                     let i, range, cname = x.tag, tup_ty x.range, generatedClosureName x.name x.tag
+                    let fun_tag = (cfun (x.domain,x.range)).tag
                     fns_printing.Add $"ClosureCreate{i}"
                     line s_typ (sprintf "typedef struct Closure%i Closure%i;" i i)
                     line s_typ (sprintf "struct Closure%i {" i)
                     let _ =
                         let s_typ = indent s_typ
-                        line s_typ $"int refc;"
-                        line s_typ $"void (*decref_fptr)(Closure{i} *);"
-                        match x.domain_args |> Array.map (fun (L(_,t)) -> tyv t) |> String.concat ", " with
-                        | "" -> $"{range} (*fptr)(Closure{i} *);"
-                        | domain_args_ty -> $"{range} (*fptr)(Closure{i} *, {domain_args_ty});"
-                        |> line s_typ
+                        line s_typ $"Fun{fun_tag} base;"
                         print_ordered_args s_typ x.free_vars
                     line s_typ "};"
 
@@ -174005,21 +174043,27 @@ end
                         | decrefs -> decrefs |> line' s_fun
                     line s_fun "}"
 
-                    print_decref s_fun $"ClosureDecref{i}" $"Closure{i}" $"ClosureDecrefBody{i}"
+                    line s_fun $"void ClosureDecref{i}(Fun{fun_tag} * self){{"
+                    let _ =
+                        let s_fun = indent s_fun
+                        line s_fun $"Closure{i} * x = (Closure{i} *) self;"
+                        line s_fun $"if (x != NULL && --(x->base.refc) == 0) {{ ClosureDecrefBody{i}(x); {free}(x); }}"
+                    line s_fun "}"
 
                     match x.domain_args |> Array.map (fun (L(i,t)) -> $"{tyv t} v{i}") |> String.concat ", " with
-                    | "" -> sprintf "%s %s(Closure%i * x){" range cname i
-                    | domain_args -> sprintf "%s %s(Closure%i * x, %s){" range cname i domain_args
+                    | "" -> sprintf "%s %s(Fun%i * self){" range cname fun_tag
+                    | domain_args -> sprintf "%s %s(Fun%i * self, %s){" range cname fun_tag domain_args
                     |> line s_fun
                     let _ =
                         let s_fun = indent s_fun
+                        if x.free_vars.Length > 0 then line s_fun $"Closure{i} * x = (Closure{i} *) self;"
                         x.free_vars |> Array.map (fun (L(i,t)) -> $"{tyv t} v{i} = x->v{i};") |> line' s_fun
                         // A call consumes a reference to the closure, so ClosureDecref can free it here, and with
                         // it the captured values: take a reference to each first and let the body own them
                         // (released at their last use). Without it, `f` capturing an array and called through
                         // its last reference read the freed array (native_closure_array_capture: 40, not 42).
                         x.free_vars |> refc_change (fun i -> $"v{i}") 1 |> line' s_fun
-                        line s_fun $"ClosureDecref{i}(x);"
+                        line s_fun $"ClosureDecref{i}(self);"
                         // -Wunused-parameter: a domain argument the body never reads still has to be in the
                         // signature, so void-cast exactly those arguments
                         let used = refc_used_vars x.body |> Seq.map (fun kv -> kv.Value) |> Set.unionMany |> Set.map (fun (L(tag,_)) -> tag)
@@ -174027,16 +174071,15 @@ end
                         binds_start (Array.append x.free_vars x.domain_args) s_fun x.body
                     line s_fun "}"
 
-                    let fun_tag = (cfun (x.domain,x.range)).tag
                     line s_fun (closure_create_sig x + "{")
                     let _ =
                         let s_fun = indent s_fun
                         line s_fun $"Closure{i} * x = {malloc}(sizeof(Closure{i}));"
-                        line s_fun "x->refc = 1;"
-                        line s_fun $"x->decref_fptr = ClosureDecref{i};"
-                        line s_fun $"x->fptr = {cname};"
+                        line s_fun "x->base.refc = 1;"
+                        line s_fun $"x->base.decref_fptr = ClosureDecref{i};"
+                        line s_fun $"x->base.fptr = {cname};"
                         x.free_vars |> Array.map (fun (L(i,_)) -> $"x->v{i} = v{i};")  |> line' s_fun
-                        line s_fun $"return (Fun{fun_tag} *) x;"
+                        line s_fun "return &x->base;"
                     line s_fun "}"
                     fns_printing.RemoveAt(fns_printing.Count - 1)
                     )

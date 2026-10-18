@@ -18,4 +18,21 @@ defmodule Spiral.Cells.NotebookTargetsTest do
       if saved, do: System.put_env("SPIRAL_CELLS_DEFAULT_TARGET", saved)
     end
   end
+
+  @tag :tmp_dir
+  test "untargeted test blocks of a .spi are found by name, and a static prelude covers them", %{tmp_dir: dir} do
+    bare = Path.join(dir, "bare.spi")
+    File.write!(bare, "inl f () = 1i32\n\ntest one =\n    f () |> _assert_eq 1i32\n\n///> rust\ntest two =\n    f () |> _assert_eq 1i32\n")
+    covered = Path.join(dir, "covered.spi")
+    File.write!(covered, "test covered static =\n    open testing\n\ntest three =\n    1i32 |> _assert_eq 1i32\n")
+    saved = System.get_env("SPIRAL_CELLS_DEFAULT_TARGET")
+    System.delete_env("SPIRAL_CELLS_DEFAULT_TARGET")
+
+    try do
+      assert Notebook.untargeted_tests(bare) == ["one"]
+      assert Notebook.untargeted_tests(covered) == []
+    after
+      if saved, do: System.put_env("SPIRAL_CELLS_DEFAULT_TARGET", saved)
+    end
+  end
 end

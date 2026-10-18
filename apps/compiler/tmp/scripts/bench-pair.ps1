@@ -3,10 +3,14 @@ param(
     [Parameter(Mandatory)] [string] $B,
     [Parameter(Mandatory)] [string] $Sample,
     [string] $Backend = 'C',
-    [int] $Rounds = 5
+    [int] $Rounds = 5,
+    [switch] $Native
 )
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'env.ps1')
+. (Join-Path $PSScriptRoot 'heavy.ps1')
+$benchStarted = Get-Date
+$benchFreeMB = Get-HeavyFreeMB
 $dotnet = Resolve-SpiralDotnet
 $env:SPIRAL_COMPILER_PACKAGE_DIR = Get-SpiralPackageDir
 $env:SPIRAL_DIAG_QUIET = '1'
@@ -15,6 +19,17 @@ $entry = Get-ChildItem $dir -Filter 'main.spi*' | Select-Object -First 1 -Expand
 if (-not $entry) { throw "no main.spi or main.spir in $dir" }
 $extension = @{ Fsharp = 'fsx'; C = 'c'; Rust = 'rs'; Delphi = 'pas'; Zig = 'zig'; Lua = 'lua'; Gleam = 'gleam'; TypeScript = 'ts'; Python = 'py' }[$Backend]
 if (-not $extension) { throw "bench-pair supports Fsharp, C, Rust, Delphi, Zig, Lua, Gleam, TypeScript and Python" }
+if ($Native -and $Backend -ne 'C') { throw '-Native builds and times the program for the C backend only' }
+$cc = if ($Native) { (Get-SpiralNativeTools).CC }
+if ($Native -and -not $cc) { throw '-Native needs a C compiler (SPIRAL_CC, gcc, clang or cc)' }
+$ownShim = Join-Path $dir 'c-shim.h'
+$ruleFlags = @()
+if ($Native) {
+    $matrix = Import-PowerShellDataFile (Join-Path $BundleRoot 'tests/matrix.psd1') -SkipLimitCheck
+    $shimDir = (Join-Path $BundleRoot 'tests/native-shims').Replace('\', '/')
+    $rule = @($matrix.CFlags) | Where-Object { (Split-Path $dir -Leaf) -like $_.Pattern } | Select-Object -First 1
+    if ($rule) { $ruleFlags = $rule.Flags.Replace('{shims}', $shimDir) -split ' ' }
+}
 $scratch = Join-Path ([IO.Path]::GetTempPath()) "spiral-bench-pair-$PID"
 New-Item -ItemType Directory -Force $scratch | Out-Null
 function Measure-Compile([string] $dll, [string] $label, [int] $round) {
@@ -22,8 +37,21 @@ function Measure-Compile([string] $dll, [string] $label, [int] $round) {
     $watch = [Diagnostics.Stopwatch]::StartNew()
     & $dotnet $dll --backend $Backend $entry $output *> $null
     $ms = $watch.ElapsedMilliseconds
+    $compileExit = $LASTEXITCODE
     $bytes = if (Test-Path -LiteralPath $output) { (Get-Item -LiteralPath $output).Length } else { -1 }
-    [pscustomobject]@{ Label = $label; Round = $round; Ms = $ms; Exit = $LASTEXITCODE; Bytes = $bytes }
+    $runMs = $null; $runExit = $null
+    if ($Native -and $bytes -gt 0) {
+        $exe = [IO.Path]::ChangeExtension($output, '.exe')
+        $shim = if (Test-Path -LiteralPath $ownShim) { @('-include', $ownShim) } else { @() }
+        & $cc -std=c11 -O2 -fwrapv -w @ruleFlags @shim -o $exe $output -lm *> $null
+        if ($LASTEXITCODE -eq 0) {
+            $runWatch = [Diagnostics.Stopwatch]::StartNew()
+            & $exe *> $null
+            $runExit = $LASTEXITCODE
+            $runMs = $runWatch.ElapsedMilliseconds
+        } else { $runExit = 'build-fail' }
+    }
+    [pscustomobject]@{ Label = $label; Round = $round; Ms = $ms; Exit = $compileExit; Bytes = $bytes; RunMs = $runMs; RunExit = $runExit }
 }
 try {
     $rows = for ($round = 1; $round -le $Rounds; $round++) {
@@ -37,6 +65,17 @@ try {
     "median A $a ms, B $b ms, B/A $([Math]::Round($b / [Math]::Max(1, $a), 3)) ($Rounds rounds, alternating order, fresh process per compile, $Backend, $(Split-Path $dir -Leaf))"
     $sizes = $rows | Group-Object Label | ForEach-Object { "$($_.Name) $((@($_.Group.Bytes) | Sort-Object -Unique) -join '/') bytes" }
     "outputs: $($sizes -join ', ')"
+    $runText = ''
+    if ($Native) {
+        $runA = & $median ($rows | Where-Object { $_.Label -eq 'A' -and $null -ne $_.RunMs } | ForEach-Object RunMs)
+        $runB = & $median ($rows | Where-Object { $_.Label -eq 'B' -and $null -ne $_.RunMs } | ForEach-Object RunMs)
+        $exits = $rows | Group-Object Label | ForEach-Object { "$($_.Name) exit $((@($_.Group.RunExit) | Sort-Object -Unique) -join '/')" }
+        $runText = "; run A $runA ms B $runB ms ($($exits -join ', '))"
+        "native run: median A $runA ms, B $runB ms; $($exits -join ', ')"
+    }
+    $ratio = [Math]::Round($b / [Math]::Max(1, $a), 3)
+    $benchCommand = [scriptblock]::Create("bench-pair.ps1 -A '$A' -B '$B' -Sample '$Sample' -Backend $Backend -Rounds $Rounds$(if ($Native) { ' -Native' })")
+    Write-RunLedger 'bench' "bench-pair $(Split-Path $dir -Leaf) $Backend A $a ms B $b ms B/A $ratio$runText" $benchCommand $benchStarted $benchStarted '-' "B/A $ratio; sizes $($sizes -join ', ')$runText" $benchFreeMB
 } finally {
     Remove-Item -LiteralPath $scratch -Recurse -Force -ErrorAction SilentlyContinue
 }

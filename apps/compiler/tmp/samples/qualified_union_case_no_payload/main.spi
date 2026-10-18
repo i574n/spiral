@@ -1,0 +1,9 @@
+inl score (s : signal.signal) : i32 =
+    match s with
+    | signal.Hit damage => damage
+    | signal.Hold => 40i32
+
+inl main () : i32 =
+    inl ~hit = signal.Hit 3i32
+    inl ~hold = signal.Hold
+    score hit +. score hold

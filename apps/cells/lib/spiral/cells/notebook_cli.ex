@@ -16,7 +16,8 @@ defmodule Spiral.Cells.NotebookCli do
     test: :keep,
     memo: :boolean,
     accept: :boolean,
-    x_compat: :boolean
+    x_compat: :boolean,
+    metrics: :string
   ]
 
   @single_path_options [:output_path, :spi_path, :spir_path, :fs_path, :livemd_path]
@@ -83,6 +84,7 @@ defmodule Spiral.Cells.NotebookCli do
       end)
 
     reports = for {path, _status, report} <- results, report != nil, do: {path, report}
+    if opts[:metrics], do: Notebook.write_metrics(opts[:metrics], reports)
     lines = x_compat_lines(paths, opts) ++ if(reports == [], do: [], else: Notebook.summary_lines(reports))
 
     case for({path, {:error, message}, _report} <- results, do: "#{path}: #{message}") do

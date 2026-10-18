@@ -238,6 +238,23 @@ defmodule Spiral.Cells.Notebook do
 
   defp first_line(text), do: text |> String.split("\n", parts: 2) |> hd()
 
+  @doc false
+  def metrics_rows(reports) do
+    for {path, report} <- reports,
+        test <- report["tests"],
+        test["mode"] == "test",
+        target <- test["targets"] do
+      [Path.basename(path, Path.extname(path)), test["name"], target["target"], target["status"], target["ms"], test["memo"] || ""]
+    end
+  end
+
+  @doc false
+  def write_metrics(dir, reports) do
+    File.mkdir_p!(dir)
+    rows = for row <- metrics_rows(reports), do: Enum.map_join(row, "\t", &to_string/1)
+    File.write!(Path.join(dir, "tests.tsv"), Enum.join(["File\tTest\tTarget\tStatus\tMs\tMemo" | rows], "\n") <> "\n")
+  end
+
   @spec summary_lines([{String.t(), map()}]) :: [String.t()]
   def summary_lines(reports) do
     files =
@@ -452,6 +469,21 @@ defmodule Spiral.Cells.Notebook do
     |> IO.iodata_to_binary()
   end
 
+  @doc false
+  def untargeted_tests(path) do
+    path = Path.expand(path)
+    doc = parse(path, File.read!(path))
+
+    if implicit_default?(doc.cells, []) do
+      for {index, name} <- Enum.sort(test_cell_names(doc)),
+          %{source: source} = Enum.at(doc.cells, index),
+          Builders.commands(source) == [],
+          do: name
+    else
+      []
+    end
+  end
+
   defp parse(path, text, bounded \\ false) do
     case Path.extname(path) do
       ".livemd" -> Document.parse_livemd(text)
@@ -512,7 +544,7 @@ defmodule Spiral.Cells.Notebook do
       |> Enum.map(&attach_source(&1, cells))
       |> only_selected(selected)
       |> Enum.reject(&static_prelude?(&1.cell_source))
-      |> with_builders(default_builders(cells, opts), implicit_default?(cells, opts))
+      |> with_builders(default_builders(cells, opts), implicit_default?(cells, opts), test_cell_names(doc))
       |> keyed_on_the_whole_source()
 
     memo = Memo.context(opts, spiral)
@@ -623,11 +655,13 @@ defmodule Spiral.Cells.Notebook do
   defp nonempty([]), do: nil
   defp nonempty(list), do: list
 
-  defp with_builders(steps, defaults, implicit?) do
+  defp test_cell_names(doc), do: for(%{mode: "test"} = test <- Document.tests(doc), into: %{}, do: {test.index, test.name})
+
+  defp with_builders(steps, defaults, implicit?, test_names) do
     Enum.map(steps, fn step ->
       case Builders.commands(step.cell_source) do
         [] ->
-          if implicit?, do: warn_untargeted(step.cell_source)
+          if implicit? and Map.has_key?(test_names, step.index), do: warn_untargeted(test_names[step.index])
           Map.put(step, :builders, defaults)
 
         own ->
@@ -653,11 +687,8 @@ defmodule Spiral.Cells.Notebook do
     not prelude? and explicit == nil
   end
 
-  defp warn_untargeted(source) do
-    case Regex.run(~r/^test\s+(\S+)/m, source) do
-      [_, name] -> IO.puts(:stderr, "warning: test #{name} has no ///> target and runs on the default backend (zig); name its targets")
-      _ -> :ok
-    end
+  defp warn_untargeted(name) do
+    IO.puts(:stderr, "warning: test #{name} has no ///> target and runs on the default backend (zig); name its targets")
   end
 
   defp only_selected(steps, nil), do: steps
