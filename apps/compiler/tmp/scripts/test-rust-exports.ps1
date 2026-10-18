@@ -68,11 +68,18 @@ Test-Consumer 'exports' 'spiral_exports' (Join-Path $exports 'consumer.rs')
 
 $policy = Join-Path $fixtures 'library'
 $source = [IO.File]::ReadAllText((Join-Path $policy 'main.spi'))
+$forall = @(
+    'inl same forall t. (x : t) : t = x'
+    'inl main () : i32 ='
+    '    !!!!Export("same_export", ((fun (value : i32) => same value) : i32 -> i32))'
+    '    0i32'
+) -join "`n"
 Invoke-Cases $policy ([ordered]@{
     library = @($source, '')
+    forall_in_export = @($forall, '')
     library_duplicate = @($source.Replace('    0i32', '    !!!!Export("export_admitted", ((fun (value, reserved) => admitted value reserved) : i32 * i32 -> i32))' + "`n" + '    0i32'), 'Duplicate export: export_admitted')
 })
-$harness = Join-Path $work 'library/harness.rs'
+$consumer = Join-Path $work 'library/consumer.rs'
 @'
 extern crate spiral_library;
 #[test]
@@ -82,7 +89,7 @@ fn exported_spiral_policy() {
     }
     assert_eq!(spiral_library::export_admitted(493, 1), 0);
 }
-'@ | Set-Content -LiteralPath $harness -Encoding utf8NoBOM
-Test-Consumer 'library' 'spiral_library' $harness
+'@ | Set-Content -LiteralPath $consumer -Encoding utf8NoBOM
+Test-Consumer 'library' 'spiral_library' $consumer
 
 Write-Host "Rust export contracts passed: six signatures and one policy library, six negative cases; $work"

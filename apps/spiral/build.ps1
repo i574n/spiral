@@ -23,7 +23,7 @@ function MoveExeAside {
 }
 
 if (!$SkipPreBuild) {
-    $livebook = Join-Path $ResolvedScriptDir "../kino/spi/run_notebook.ps1"
+    $livebook = Join-Path $ResolvedScriptDir "../cells/spi/run_notebook.ps1"
     { pwsh -NoProfile -File $livebook --path "$ResolvedScriptDir/$projectName.livemd" --spi-path "$ResolvedScriptDir/$projectName.spi" --export-only } | Invoke-Block
 }
 
@@ -63,7 +63,7 @@ try {
         $homeDir = $env:USERPROFILE ?? $env:HOME
         $mixPath = (@("scoop/apps/erlang/current/bin", "scoop/apps/elixir/current/bin") | ForEach-Object { Join-Path $homeDir $_ } | Where-Object { Test-Path $_ }) -join $sep
         $env:PATH, $pathBefore = "$mixPath$sep$env:PATH", $env:PATH
-        Push-Location (GetFullPath "../kino")
+        Push-Location (GetFullPath "../cells")
         [IO.File]::WriteAllText("$checkDir/livemd.txt", (($livemds.FullName -join "`n") + "`n"))
         try { $renderOutput = mix spiral.render_cells --out-dir $rendered --list "$checkDir/livemd.txt" 2>&1 | ForEach-Object { "$_" }; $renderExit = $LASTEXITCODE }
         finally { Pop-Location; $env:PATH = $pathBefore }

@@ -3,7 +3,7 @@
 open System
 open System.Text
 open Microsoft.FSharp.Reflection
-open Polyglot.spiral_compiler
+open Spiral.spiral_compiler
 open Lexed
 
 let environmentOf edition : DefaultEnv =

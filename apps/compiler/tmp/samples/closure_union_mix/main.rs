@@ -6,19 +6,6 @@ enum US0 {
     US0_One(i32),
     US0_Both(i32, Rc<str>),
 }
-impl US0 {
-    fn tag(&self) -> i32 {
-        match self {
-            US0::US0_One(..) => 0,
-            US0::US0_Both(..) => 1,
-        }
-    }
-}
-impl Default for US0 {
-    fn default() -> Self {
-        US0::US0_One(<i32>::default())
-    }
-}
 fn f_c0(mut v0: i32, mut v1: Rc<str>) -> Rc<dyn Fn(i32) -> US0> {
     Rc::new(move |mut v2: i32| -> US0 {
         let mut v3: bool = v2 == 0i32;
@@ -59,5 +46,5 @@ fn spiral_main() -> i32 {
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 1 });
 }

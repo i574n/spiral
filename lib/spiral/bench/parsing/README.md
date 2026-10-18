@@ -15,7 +15,7 @@ Implementations (one Spiral program per backend):
 `pure` and `fparsec` are the same grammar and must give identical results (the script lists any case where they
 don't). `runtime` adds an escaped-quote delimiter branch (`\"...\"`), so some of its results differ by design.
 
-Inputs (`harness.spi`, a runtime array so nothing is constant-folded): runtime.livemd's split_args test cases (`t01`..`t12`),
+Inputs (`bench_kit.spi`, a runtime array so nothing is constant-folded): runtime.livemd's split_args test cases (`t01`..`t12`),
 real CLI command lines (`cli_*`), and generated scaling inputs: `cli_x1/x4/x16` (a CLI line repeated 1/4/16 times:
 many arguments) and `quoted_64/256/1024` (one quoted argument of N chars: per-character string building). ns/call that
 grows faster than the length ratio between x1/x4/x16 or 64/256/1024 means quadratic behaviour.
@@ -45,5 +45,5 @@ FParsec), `results.tsv` (parsed arguments), `compile.tsv` (compile seconds and g
 `cells/`, and `compare_<other>.tsv` with `-Compare`.
 
 Native Rust caveat: a unit-returning `let rec` loop written `if i < n then (...; loop (i + 1))` (implicit `else ()`)
-compiles to `loop { if c { ...; continue; } }` with no exit, i.e. it spins forever after the last iteration. The harness
+compiles to `loop { if c { ...; continue; } }` with no exit, i.e. it spins forever after the last iteration. The bench kit
 writes the exit branch explicitly (`if i >= n then () else ...`).

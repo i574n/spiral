@@ -3,7 +3,7 @@ packages:
     |core-
     spiral-
 modules:
-    harness
+    bench_kit
     fparsec
     pure_split
     main

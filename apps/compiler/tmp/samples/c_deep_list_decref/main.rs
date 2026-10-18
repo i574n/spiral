@@ -6,14 +6,6 @@ enum UH0 {
     UH0_Link(i32, Rc<UH0>),
     UH0_End,
 }
-impl UH0 {
-    fn tag(&self) -> i32 {
-        match self {
-            UH0::UH0_Link(..) => 0,
-            UH0::UH0_End => 1,
-        }
-    }
-}
 fn build_0(mut v0: i32, mut v1: Rc<UH0>) -> Rc<UH0> {
     loop {
         let mut v2: bool = v0 == 0i32;
@@ -56,5 +48,5 @@ fn spiral_main() -> i32 {
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 1 });
 }

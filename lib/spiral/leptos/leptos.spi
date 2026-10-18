@@ -496,7 +496,11 @@ inl new_memo forall t. (fn : () -> t) : memo t =
 
 /// ### new_arc_memo
 inl new_arc_memo forall t. (fn : () -> t) : arc_memo t =
-    global "pub struct SpiralMemoChanged<'a, T>(pub Option<&'a T>, pub Option<&'a T>);\npub trait SpiralMemoChangedEq { fn spiral_memo_changed(&self) -> bool; }\nimpl<'a, T: PartialEq> SpiralMemoChangedEq for SpiralMemoChanged<'a, T> { fn spiral_memo_changed(&self) -> bool { self.0 != self.1 } }\npub trait SpiralMemoChangedAny { fn spiral_memo_changed(&self) -> bool; }\nimpl<'a, T> SpiralMemoChangedAny for &SpiralMemoChanged<'a, T> { fn spiral_memo_changed(&self) -> bool { true } }"
+    global """pub struct SpiralMemoChanged<'a, T>(pub Option<&'a T>, pub Option<&'a T>);
+pub trait SpiralMemoChangedEq { fn spiral_memo_changed(&self) -> bool; }
+impl<'a, T: PartialEq> SpiralMemoChangedEq for SpiralMemoChanged<'a, T> { fn spiral_memo_changed(&self) -> bool { self.0 != self.1 } }
+pub trait SpiralMemoChangedAny { fn spiral_memo_changed(&self) -> bool; }
+impl<'a, T> SpiralMemoChangedAny for &SpiralMemoChanged<'a, T> { fn spiral_memo_changed(&self) -> bool { true } }"""
     inl fn = join fn
     inl fn = (fun () => fn () |> send_wrapper_new) |> send_wrapper_new
     $'leptos::prelude::ArcMemo::new_with_compare(move |_| (*!fn)(), |a: Option<&leptos::__reexports::send_wrapper::SendWrapper<`t>>, b: Option<&leptos::__reexports::send_wrapper::SendWrapper<`t>>| (&SpiralMemoChanged(a.map(|x| &**x), b.map(|x| &**x))).spiral_memo_changed())'

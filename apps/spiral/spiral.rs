@@ -46,29 +46,9 @@ fn string_slice(value: &str, from: i64, to: i64) -> Rc<str> {
     match std::str::from_utf8(slice) { Ok(text) => Rc::<str>::from(text), Err(error) => Rc::<str>::from(std::str::from_utf8(&slice[..error.valid_up_to()]).unwrap_or("")) }
 }
 struct Mut0 { l0: i64 }
-impl Default for Mut0 {
-    fn default() -> Self {
-        Mut0 { l0: <i64>::default() }
-    }
-}
 struct Mut1 { l0: Rc<dyn Fn(Rc<str>) -> ()> }
-impl Default for Mut1 {
-    fn default() -> Self {
-        Mut1 { l0: { let f: Rc<dyn Fn(Rc<str>) -> ()> = Rc::new(|mut v0: Rc<str>| -> () { () }); f } }
-    }
-}
 struct Mut2 { l0: bool }
-impl Default for Mut2 {
-    fn default() -> Self {
-        Mut2 { l0: <bool>::default() }
-    }
-}
 struct Mut3 { l0: Rc<str> }
-impl Default for Mut3 {
-    fn default() -> Self {
-        Mut3 { l0: { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) } }
-    }
-}
 #[derive(Clone)]
 enum US0 {
     US0_Verbose,
@@ -77,647 +57,184 @@ enum US0 {
     US0_Warning,
     US0_Critical,
 }
-impl US0 {
-    fn tag(&self) -> i32 {
-        match self {
-            US0::US0_Verbose => 0,
-            US0::US0_Debug => 1,
-            US0::US0_Info => 2,
-            US0::US0_Warning => 3,
-            US0::US0_Critical => 4,
-        }
-    }
-}
-impl Default for US0 {
-    fn default() -> Self {
-        US0::US0_Verbose
-    }
-}
 struct Mut4 { l0: US0 }
-impl Default for Mut4 {
-    fn default() -> Self {
-        Mut4 { l0: <US0>::default() }
-    }
-}
 #[derive(Clone)]
 enum US1 {
     US1_Some(US0),
     US1_None,
 }
-impl US1 {
-    fn tag(&self) -> i32 {
-        match self {
-            US1::US1_Some(..) => 0,
-            US1::US1_None => 1,
-        }
-    }
-}
-impl Default for US1 {
-    fn default() -> Self {
-        US1::US1_Some(<US0>::default())
-    }
-}
 struct Mut5 { l0: i32, l1: US1 }
-impl Default for Mut5 {
-    fn default() -> Self {
-        Mut5 { l0: <i32>::default(), l1: <US1>::default() }
-    }
-}
 #[derive(Clone)]
 enum US2 {
     US2_Some(Rc<RefCell<Mut0>>, Rc<RefCell<Mut1>>, Rc<RefCell<Mut2>>, Rc<RefCell<Mut3>>, Rc<RefCell<Mut4>>, Option<i64>),
     US2_None,
 }
-impl US2 {
-    fn tag(&self) -> i32 {
-        match self {
-            US2::US2_Some(..) => 0,
-            US2::US2_None => 1,
-        }
-    }
-}
 struct Mut6 { l0: u64 }
-impl Default for Mut6 {
-    fn default() -> Self {
-        Mut6 { l0: <u64>::default() }
-    }
-}
 #[derive(Clone)]
 enum US3 {
     US3_Some(std::string::String, clap::ArgMatches),
     US3_None,
-}
-impl US3 {
-    fn tag(&self) -> i32 {
-        match self {
-            US3::US3_Some(..) => 0,
-            US3::US3_None => 1,
-        }
-    }
 }
 #[derive(Clone)]
 enum US4 {
     US4_Some(std::string::String),
     US4_None,
 }
-impl US4 {
-    fn tag(&self) -> i32 {
-        match self {
-            US4::US4_Some(..) => 0,
-            US4::US4_None => 1,
-        }
-    }
-}
 #[derive(Clone)]
 enum US7 {
     US7_Erlang,
     US7_JavaScript,
-}
-impl US7 {
-    fn tag(&self) -> i32 {
-        match self {
-            US7::US7_Erlang => 0,
-            US7::US7_JavaScript => 1,
-        }
-    }
-}
-impl Default for US7 {
-    fn default() -> Self {
-        US7::US7_Erlang
-    }
 }
 #[derive(Clone)]
 enum US6 {
     US6_Some(US7),
     US6_None,
 }
-impl US6 {
-    fn tag(&self) -> i32 {
-        match self {
-            US6::US6_Some(..) => 0,
-            US6::US6_None => 1,
-        }
-    }
-}
-impl Default for US6 {
-    fn default() -> Self {
-        US6::US6_Some(<US7>::default())
-    }
-}
 #[derive(Clone)]
 enum US5 {
     US5_Some(US6),
     US5_None,
 }
-impl US5 {
-    fn tag(&self) -> i32 {
-        match self {
-            US5::US5_Some(..) => 0,
-            US5::US5_None => 1,
-        }
-    }
-}
-impl Default for US5 {
-    fn default() -> Self {
-        US5::US5_Some(<US6>::default())
-    }
-}
 struct Mut7 { l0: i32, l1: US6 }
-impl Default for Mut7 {
-    fn default() -> Self {
-        Mut7 { l0: <i32>::default(), l1: <US6>::default() }
-    }
-}
 #[derive(Clone)]
 enum US8 {
     US8_Some(Vec<std::string::String>),
     US8_None,
-}
-impl US8 {
-    fn tag(&self) -> i32 {
-        match self {
-            US8::US8_Some(..) => 0,
-            US8::US8_None => 1,
-        }
-    }
 }
 #[derive(Clone)]
 enum UH0 {
     UH0_Nil,
     UH0_Cons(Rc<str>, Rc<UH0>),
 }
-impl UH0 {
-    fn tag(&self) -> i32 {
-        match self {
-            UH0::UH0_Nil => 0,
-            UH0::UH0_Cons(..) => 1,
-        }
-    }
-}
-impl Default for UH0 {
-    fn default() -> Self {
-        UH0::UH0_Nil
-    }
-}
 #[derive(Clone)]
 enum US9 {
     US9_Some(Rc<str>),
     US9_None,
-}
-impl US9 {
-    fn tag(&self) -> i32 {
-        match self {
-            US9::US9_Some(..) => 0,
-            US9::US9_None => 1,
-        }
-    }
-}
-impl Default for US9 {
-    fn default() -> Self {
-        US9::US9_Some({ thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) })
-    }
 }
 #[derive(Clone)]
 enum US10 {
     US10_Ok(std::path::PathBuf),
     US10_Error(Rc<str>),
 }
-impl US10 {
-    fn tag(&self) -> i32 {
-        match self {
-            US10::US10_Ok(..) => 0,
-            US10::US10_Error(..) => 1,
-        }
-    }
-}
 #[derive(Clone)]
 enum US11 {
     US11_Some(std::path::PathBuf),
     US11_None,
-}
-impl US11 {
-    fn tag(&self) -> i32 {
-        match self {
-            US11::US11_Some(..) => 0,
-            US11::US11_None => 1,
-        }
-    }
 }
 #[derive(Clone)]
 enum US12 {
     US12_File,
     US12_Directory,
 }
-impl US12 {
-    fn tag(&self) -> i32 {
-        match self {
-            US12::US12_File => 0,
-            US12::US12_Directory => 1,
-        }
-    }
-}
-impl Default for US12 {
-    fn default() -> Self {
-        US12::US12_File
-    }
-}
 #[derive(Clone)]
 enum US13 {
     US13_Ok(Rc<str>),
     US13_Error(Rc<str>),
 }
-impl US13 {
-    fn tag(&self) -> i32 {
-        match self {
-            US13::US13_Ok(..) => 0,
-            US13::US13_Error(..) => 1,
-        }
-    }
-}
-impl Default for US13 {
-    fn default() -> Self {
-        US13::US13_Ok({ thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) })
-    }
-}
 struct Mut8 { l0: i32, l1: i32, l2: Rc<RefCell<Vec<Rc<str>>>> }
-impl Default for Mut8 {
-    fn default() -> Self {
-        Mut8 { l0: <i32>::default(), l1: <i32>::default(), l2: <Rc<RefCell<Vec<Rc<str>>>>>::default() }
-    }
-}
 struct Mut9 { l0: i32 }
-impl Default for Mut9 {
-    fn default() -> Self {
-        Mut9 { l0: <i32>::default() }
-    }
-}
 #[derive(Clone)]
 enum US14 {
     US14_Ok,
     US14_Error(std::string::String),
-}
-impl US14 {
-    fn tag(&self) -> i32 {
-        match self {
-            US14::US14_Ok => 0,
-            US14::US14_Error(..) => 1,
-        }
-    }
-}
-impl Default for US14 {
-    fn default() -> Self {
-        US14::US14_Ok
-    }
 }
 #[derive(Clone)]
 enum US15 {
     US15_Ok(Rc<str>, US9),
     US15_Error(Rc<str>),
 }
-impl US15 {
-    fn tag(&self) -> i32 {
-        match self {
-            US15::US15_Ok(..) => 0,
-            US15::US15_Error(..) => 1,
-        }
-    }
-}
-impl Default for US15 {
-    fn default() -> Self {
-        US15::US15_Ok({ thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) }, <US9>::default())
-    }
-}
 #[derive(Clone)]
 enum US16 {
     US16_Ok(u8, i32, i32, i32, i32, i32),
     US16_Error(Rc<dyn Fn(Rc<str>, i32, i32, i32, i32, i32) -> Rc<str>>, i32, i32, i32, i32, i32),
-}
-impl US16 {
-    fn tag(&self) -> i32 {
-        match self {
-            US16::US16_Ok(..) => 0,
-            US16::US16_Error(..) => 1,
-        }
-    }
-}
-impl Default for US16 {
-    fn default() -> Self {
-        US16::US16_Ok(<u8>::default(), <i32>::default(), <i32>::default(), <i32>::default(), <i32>::default(), <i32>::default())
-    }
 }
 #[derive(Clone)]
 enum US17 {
     US17_Ok(Rc<str>, i32, i32, i32, i32, i32),
     US17_Error(Rc<dyn Fn(Rc<str>, i32, i32, i32, i32, i32) -> Rc<str>>, i32, i32, i32, i32, i32),
 }
-impl US17 {
-    fn tag(&self) -> i32 {
-        match self {
-            US17::US17_Ok(..) => 0,
-            US17::US17_Error(..) => 1,
-        }
-    }
-}
-impl Default for US17 {
-    fn default() -> Self {
-        US17::US17_Ok({ thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) }, <i32>::default(), <i32>::default(), <i32>::default(), <i32>::default(), <i32>::default())
-    }
-}
 #[derive(Clone)]
 enum US18 {
     US18_Ok(i32, i32, i32, i32, i32),
     US18_Error(Rc<dyn Fn(Rc<str>, i32, i32, i32, i32, i32) -> Rc<str>>, i32, i32, i32, i32, i32),
-}
-impl US18 {
-    fn tag(&self) -> i32 {
-        match self {
-            US18::US18_Ok(..) => 0,
-            US18::US18_Error(..) => 1,
-        }
-    }
-}
-impl Default for US18 {
-    fn default() -> Self {
-        US18::US18_Ok(<i32>::default(), <i32>::default(), <i32>::default(), <i32>::default(), <i32>::default())
-    }
 }
 #[derive(Clone)]
 enum US20 {
     US20_Some(Rc<dyn Fn() -> Rc<str>>),
     US20_None,
 }
-impl US20 {
-    fn tag(&self) -> i32 {
-        match self {
-            US20::US20_Some(..) => 0,
-            US20::US20_None => 1,
-        }
-    }
-}
-impl Default for US20 {
-    fn default() -> Self {
-        US20::US20_Some({ let f: Rc<dyn Fn() -> Rc<str>> = Rc::new(|| -> Rc<str> { { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) } }); f })
-    }
-}
 #[derive(Clone)]
 enum US19 {
     US19_Ok(Rc<dyn Fn() -> Rc<str>>, Rc<dyn Fn() -> US20>, i32, i32, i32, i32, i32),
     US19_Error(Rc<dyn Fn(Rc<str>, i32, i32, i32, i32, i32) -> Rc<str>>, i32, i32, i32, i32, i32),
-}
-impl US19 {
-    fn tag(&self) -> i32 {
-        match self {
-            US19::US19_Ok(..) => 0,
-            US19::US19_Error(..) => 1,
-        }
-    }
-}
-impl Default for US19 {
-    fn default() -> Self {
-        US19::US19_Ok({ let f: Rc<dyn Fn() -> Rc<str>> = Rc::new(|| -> Rc<str> { { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) } }); f }, { let f: Rc<dyn Fn() -> US20> = Rc::new(|| -> US20 { <US20>::default() }); f }, <i32>::default(), <i32>::default(), <i32>::default(), <i32>::default(), <i32>::default())
-    }
 }
 #[derive(Clone)]
 enum US21 {
     US21_Ok(US20, i32, i32, i32, i32, i32),
     US21_Error(Rc<dyn Fn(Rc<str>, i32, i32, i32, i32, i32) -> Rc<str>>, i32, i32, i32, i32, i32),
 }
-impl US21 {
-    fn tag(&self) -> i32 {
-        match self {
-            US21::US21_Ok(..) => 0,
-            US21::US21_Error(..) => 1,
-        }
-    }
-}
-impl Default for US21 {
-    fn default() -> Self {
-        US21::US21_Ok(<US20>::default(), <i32>::default(), <i32>::default(), <i32>::default(), <i32>::default(), <i32>::default())
-    }
-}
 #[derive(Clone)]
 enum US22 {
     US22_Ok(Rc<dyn Fn() -> Rc<str>>, Rc<dyn Fn() -> US20>, Rc<str>, i32, i32, i32, i32),
     US22_Error(Rc<dyn Fn() -> Rc<str>>),
-}
-impl US22 {
-    fn tag(&self) -> i32 {
-        match self {
-            US22::US22_Ok(..) => 0,
-            US22::US22_Error(..) => 1,
-        }
-    }
-}
-impl Default for US22 {
-    fn default() -> Self {
-        US22::US22_Ok({ let f: Rc<dyn Fn() -> Rc<str>> = Rc::new(|| -> Rc<str> { { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) } }); f }, { let f: Rc<dyn Fn() -> US20> = Rc::new(|| -> US20 { <US20>::default() }); f }, { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) }, <i32>::default(), <i32>::default(), <i32>::default(), <i32>::default())
-    }
 }
 #[derive(Clone)]
 enum US23 {
     US23_Ok(Rc<str>, US9),
     US23_Error(Rc<dyn Fn() -> Rc<str>>),
 }
-impl US23 {
-    fn tag(&self) -> i32 {
-        match self {
-            US23::US23_Ok(..) => 0,
-            US23::US23_Error(..) => 1,
-        }
-    }
-}
-impl Default for US23 {
-    fn default() -> Self {
-        US23::US23_Ok({ thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) }, <US9>::default())
-    }
-}
 #[derive(Clone)]
 enum US24 {
     US24_Ok(Rc<RefCell<Vec<Rc<str>>>>),
     US24_Error(Rc<str>),
-}
-impl US24 {
-    fn tag(&self) -> i32 {
-        match self {
-            US24::US24_Ok(..) => 0,
-            US24::US24_Error(..) => 1,
-        }
-    }
-}
-impl Default for US24 {
-    fn default() -> Self {
-        US24::US24_Ok(<Rc<RefCell<Vec<Rc<str>>>>>::default())
-    }
 }
 #[derive(Clone)]
 enum US25 {
     US25_Ok(Rc<UH0>, i32, i32, i32, i32, i32),
     US25_Error(Rc<dyn Fn(Rc<str>, i32, i32, i32, i32, i32) -> Rc<str>>, i32, i32, i32, i32, i32),
 }
-impl US25 {
-    fn tag(&self) -> i32 {
-        match self {
-            US25::US25_Ok(..) => 0,
-            US25::US25_Error(..) => 1,
-        }
-    }
-}
-impl Default for US25 {
-    fn default() -> Self {
-        US25::US25_Ok(<Rc<UH0>>::default(), <i32>::default(), <i32>::default(), <i32>::default(), <i32>::default(), <i32>::default())
-    }
-}
 #[derive(Clone)]
 enum US26 {
     US26_Ok(Rc<UH0>, Rc<str>, i32, i32, i32, i32),
     US26_Error(Rc<dyn Fn() -> Rc<str>>),
-}
-impl US26 {
-    fn tag(&self) -> i32 {
-        match self {
-            US26::US26_Ok(..) => 0,
-            US26::US26_Error(..) => 1,
-        }
-    }
-}
-impl Default for US26 {
-    fn default() -> Self {
-        US26::US26_Ok(<Rc<UH0>>::default(), { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) }, <i32>::default(), <i32>::default(), <i32>::default(), <i32>::default())
-    }
 }
 #[derive(Clone)]
 enum US27 {
     US27_Ok(Rc<RefCell<Vec<Rc<str>>>>),
     US27_Error(Rc<dyn Fn() -> Rc<str>>),
 }
-impl US27 {
-    fn tag(&self) -> i32 {
-        match self {
-            US27::US27_Ok(..) => 0,
-            US27::US27_Error(..) => 1,
-        }
-    }
-}
-impl Default for US27 {
-    fn default() -> Self {
-        US27::US27_Ok(<Rc<RefCell<Vec<Rc<str>>>>>::default())
-    }
-}
 #[derive(Clone)]
 enum US28 {
     US28_Ok(std::string::String),
     US28_Error(std::string::String),
-}
-impl US28 {
-    fn tag(&self) -> i32 {
-        match self {
-            US28::US28_Ok(..) => 0,
-            US28::US28_Error(..) => 1,
-        }
-    }
 }
 #[derive(Clone)]
 enum US29 {
     US29_Some(i32),
     US29_None,
 }
-impl US29 {
-    fn tag(&self) -> i32 {
-        match self {
-            US29::US29_Some(..) => 0,
-            US29::US29_None => 1,
-        }
-    }
-}
-impl Default for US29 {
-    fn default() -> Self {
-        US29::US29_Some(<i32>::default())
-    }
-}
 struct Mut10 { l0: Rc<UH0> }
-impl Default for Mut10 {
-    fn default() -> Self {
-        Mut10 { l0: <Rc<UH0>>::default() }
-    }
-}
 struct Mut11 { l0: i32, l1: Rc<str>, l2: Rc<str> }
-impl Default for Mut11 {
-    fn default() -> Self {
-        Mut11 { l0: <i32>::default(), l1: { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) }, l2: { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) } }
-    }
-}
 #[derive(Clone)]
 enum US32 {
     US32_Pip,
     US32_Poetry,
-}
-impl US32 {
-    fn tag(&self) -> i32 {
-        match self {
-            US32::US32_Pip => 0,
-            US32::US32_Poetry => 1,
-        }
-    }
-}
-impl Default for US32 {
-    fn default() -> Self {
-        US32::US32_Pip
-    }
 }
 #[derive(Clone)]
 enum US31 {
     US31_Some(US32),
     US31_None,
 }
-impl US31 {
-    fn tag(&self) -> i32 {
-        match self {
-            US31::US31_Some(..) => 0,
-            US31::US31_None => 1,
-        }
-    }
-}
-impl Default for US31 {
-    fn default() -> Self {
-        US31::US31_Some(<US32>::default())
-    }
-}
 #[derive(Clone)]
 enum US30 {
     US30_Some(US31),
     US30_None,
 }
-impl US30 {
-    fn tag(&self) -> i32 {
-        match self {
-            US30::US30_Some(..) => 0,
-            US30::US30_None => 1,
-        }
-    }
-}
-impl Default for US30 {
-    fn default() -> Self {
-        US30::US30_Some(<US31>::default())
-    }
-}
 struct Mut12 { l0: i32, l1: US31 }
-impl Default for Mut12 {
-    fn default() -> Self {
-        Mut12 { l0: <i32>::default(), l1: <US31>::default() }
-    }
-}
 #[derive(Clone)]
 enum US33 {
     US33_Some(Vec<(std::string::String, std::string::String)>),
     US33_None,
-}
-impl US33 {
-    fn tag(&self) -> i32 {
-        match self {
-            US33::US33_Some(..) => 0,
-            US33::US33_None => 1,
-        }
-    }
 }
 #[derive(Clone)]
 enum US35 {
@@ -726,117 +243,32 @@ enum US35 {
     US35_Spi,
     US35_Spir,
 }
-impl US35 {
-    fn tag(&self) -> i32 {
-        match self {
-            US35::US35_Fs => 0,
-            US35::US35_Md => 1,
-            US35::US35_Spi => 2,
-            US35::US35_Spir => 3,
-        }
-    }
-}
-impl Default for US35 {
-    fn default() -> Self {
-        US35::US35_Fs
-    }
-}
 #[derive(Clone)]
 enum UH1 {
     UH1_Nil,
     UH1_Cons(Rc<str>, US35, Rc<UH1>),
-}
-impl UH1 {
-    fn tag(&self) -> i32 {
-        match self {
-            UH1::UH1_Nil => 0,
-            UH1::UH1_Cons(..) => 1,
-        }
-    }
-}
-impl Default for UH1 {
-    fn default() -> Self {
-        UH1::UH1_Nil
-    }
 }
 #[derive(Clone)]
 enum US34 {
     US34_Some(Rc<UH1>),
     US34_None,
 }
-impl US34 {
-    fn tag(&self) -> i32 {
-        match self {
-            US34::US34_Some(..) => 0,
-            US34::US34_None => 1,
-        }
-    }
-}
-impl Default for US34 {
-    fn default() -> Self {
-        US34::US34_Some(<Rc<UH1>>::default())
-    }
-}
 #[derive(Clone)]
 enum UH2 {
     UH2_Nil,
     UH2_Cons(std::string::String, Rc<UH2>),
-}
-impl UH2 {
-    fn tag(&self) -> i32 {
-        match self {
-            UH2::UH2_Nil => 0,
-            UH2::UH2_Cons(..) => 1,
-        }
-    }
-}
-impl Default for UH2 {
-    fn default() -> Self {
-        UH2::UH2_Nil
-    }
 }
 #[derive(Clone)]
 enum US36 {
     US36_Ok(Rc<str>, US35),
     US36_Error(Rc<str>),
 }
-impl US36 {
-    fn tag(&self) -> i32 {
-        match self {
-            US36::US36_Ok(..) => 0,
-            US36::US36_Error(..) => 1,
-        }
-    }
-}
-impl Default for US36 {
-    fn default() -> Self {
-        US36::US36_Ok({ thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) }, <US35>::default())
-    }
-}
 #[derive(Clone)]
 enum US37 {
     US37_Some(US35),
     US37_None,
 }
-impl US37 {
-    fn tag(&self) -> i32 {
-        match self {
-            US37::US37_Some(..) => 0,
-            US37::US37_None => 1,
-        }
-    }
-}
-impl Default for US37 {
-    fn default() -> Self {
-        US37::US37_Some(<US35>::default())
-    }
-}
 struct Mut13 { l0: i32, l1: US37 }
-impl Default for Mut13 {
-    fn default() -> Self {
-        Mut13 { l0: <i32>::default(), l1: <US37>::default() }
-    }
-}
 #[derive(Clone)]
 enum US38 {
     US38_Fsharp,
@@ -844,409 +276,114 @@ enum US38 {
     US38_Spiral(US35),
     US38_Magic(Rc<str>),
 }
-impl US38 {
-    fn tag(&self) -> i32 {
-        match self {
-            US38::US38_Fsharp => 0,
-            US38::US38_Markdown => 1,
-            US38::US38_Spiral(..) => 2,
-            US38::US38_Magic(..) => 3,
-        }
-    }
-}
-impl Default for US38 {
-    fn default() -> Self {
-        US38::US38_Fsharp
-    }
-}
 #[derive(Clone)]
 enum UH3 {
     UH3_Nil,
     UH3_Cons(US38, Rc<dyn Fn() -> Rc<str>>, Rc<UH3>),
-}
-impl UH3 {
-    fn tag(&self) -> i32 {
-        match self {
-            UH3::UH3_Nil => 0,
-            UH3::UH3_Cons(..) => 1,
-        }
-    }
-}
-impl Default for UH3 {
-    fn default() -> Self {
-        UH3::UH3_Nil
-    }
 }
 #[derive(Clone)]
 enum US39 {
     US39_Ok(Rc<UH3>, i32, i32, i32, i32, i32),
     US39_Error(Rc<dyn Fn(Rc<str>, i32, i32, i32, i32, i32) -> Rc<str>>, i32, i32, i32, i32, i32),
 }
-impl US39 {
-    fn tag(&self) -> i32 {
-        match self {
-            US39::US39_Ok(..) => 0,
-            US39::US39_Error(..) => 1,
-        }
-    }
-}
-impl Default for US39 {
-    fn default() -> Self {
-        US39::US39_Ok(<Rc<UH3>>::default(), <i32>::default(), <i32>::default(), <i32>::default(), <i32>::default(), <i32>::default())
-    }
-}
 #[derive(Clone)]
 enum US40 {
     US40_Ok(US38, Rc<dyn Fn() -> Rc<str>>, i32, i32, i32, i32, i32),
     US40_Error(Rc<dyn Fn(Rc<str>, i32, i32, i32, i32, i32) -> Rc<str>>, i32, i32, i32, i32, i32),
-}
-impl US40 {
-    fn tag(&self) -> i32 {
-        match self {
-            US40::US40_Ok(..) => 0,
-            US40::US40_Error(..) => 1,
-        }
-    }
-}
-impl Default for US40 {
-    fn default() -> Self {
-        US40::US40_Ok(<US38>::default(), { let f: Rc<dyn Fn() -> Rc<str>> = Rc::new(|| -> Rc<str> { { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) } }); f }, <i32>::default(), <i32>::default(), <i32>::default(), <i32>::default(), <i32>::default())
-    }
 }
 #[derive(Clone)]
 enum US41 {
     US41_Ok(Rc<UH3>, Rc<str>, i32, i32, i32, i32),
     US41_Error(Rc<dyn Fn() -> Rc<str>>),
 }
-impl US41 {
-    fn tag(&self) -> i32 {
-        match self {
-            US41::US41_Ok(..) => 0,
-            US41::US41_Error(..) => 1,
-        }
-    }
-}
-impl Default for US41 {
-    fn default() -> Self {
-        US41::US41_Ok(<Rc<UH3>>::default(), { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) }, <i32>::default(), <i32>::default(), <i32>::default(), <i32>::default())
-    }
-}
 #[derive(Clone)]
 enum US42 {
     US42_Ok(Rc<UH3>),
     US42_Error(Rc<dyn Fn() -> Rc<str>>),
-}
-impl US42 {
-    fn tag(&self) -> i32 {
-        match self {
-            US42::US42_Ok(..) => 0,
-            US42::US42_Error(..) => 1,
-        }
-    }
-}
-impl Default for US42 {
-    fn default() -> Self {
-        US42::US42_Ok(<Rc<UH3>>::default())
-    }
 }
 #[derive(Clone)]
 enum UH4 {
     UH4_Nil,
     UH4_Cons(US35, Rc<UH4>),
 }
-impl UH4 {
-    fn tag(&self) -> i32 {
-        match self {
-            UH4::UH4_Nil => 0,
-            UH4::UH4_Cons(..) => 1,
-        }
-    }
-}
-impl Default for UH4 {
-    fn default() -> Self {
-        UH4::UH4_Nil
-    }
-}
 #[derive(Clone)]
 enum US43 {
     US43_Some(US38, Rc<dyn Fn() -> Rc<str>>),
     US43_None,
-}
-impl US43 {
-    fn tag(&self) -> i32 {
-        match self {
-            US43::US43_Some(..) => 0,
-            US43::US43_None => 1,
-        }
-    }
-}
-impl Default for US43 {
-    fn default() -> Self {
-        US43::US43_Some(<US38>::default(), { let f: Rc<dyn Fn() -> Rc<str>> = Rc::new(|| -> Rc<str> { { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) } }); f })
-    }
 }
 #[derive(Clone)]
 enum UH5 {
     UH5_Nil,
     UH5_Cons(US43, Rc<UH5>),
 }
-impl UH5 {
-    fn tag(&self) -> i32 {
-        match self {
-            UH5::UH5_Nil => 0,
-            UH5::UH5_Cons(..) => 1,
-        }
-    }
-}
-impl Default for UH5 {
-    fn default() -> Self {
-        UH5::UH5_Nil
-    }
-}
 #[derive(Clone)]
 enum UH6 {
     UH6_Nil,
     UH6_Cons(US43, US43, Rc<UH6>),
-}
-impl UH6 {
-    fn tag(&self) -> i32 {
-        match self {
-            UH6::UH6_Nil => 0,
-            UH6::UH6_Cons(..) => 1,
-        }
-    }
-}
-impl Default for UH6 {
-    fn default() -> Self {
-        UH6::UH6_Nil
-    }
 }
 #[derive(Clone)]
 enum UH7 {
     UH7_Nil,
     UH7_Cons(US38, Rc<dyn Fn() -> Rc<str>>, Rc<str>, Rc<UH7>),
 }
-impl UH7 {
-    fn tag(&self) -> i32 {
-        match self {
-            UH7::UH7_Nil => 0,
-            UH7::UH7_Cons(..) => 1,
-        }
-    }
-}
-impl Default for UH7 {
-    fn default() -> Self {
-        UH7::UH7_Nil
-    }
-}
 #[derive(Clone)]
 enum UH8 {
     UH8_Nil,
     UH8_Cons(u8, Rc<UH8>),
-}
-impl UH8 {
-    fn tag(&self) -> i32 {
-        match self {
-            UH8::UH8_Nil => 0,
-            UH8::UH8_Cons(..) => 1,
-        }
-    }
-}
-impl Default for UH8 {
-    fn default() -> Self {
-        UH8::UH8_Nil
-    }
 }
 #[derive(Clone)]
 enum UH9 {
     UH9_Nil,
     UH9_Cons(i32, Rc<UH9>),
 }
-impl UH9 {
-    fn tag(&self) -> i32 {
-        match self {
-            UH9::UH9_Nil => 0,
-            UH9::UH9_Cons(..) => 1,
-        }
-    }
-}
-impl Default for UH9 {
-    fn default() -> Self {
-        UH9::UH9_Nil
-    }
-}
 #[derive(Clone)]
 enum US44 {
     US44_Some(US38),
     US44_None,
-}
-impl US44 {
-    fn tag(&self) -> i32 {
-        match self {
-            US44::US44_Some(..) => 0,
-            US44::US44_None => 1,
-        }
-    }
-}
-impl Default for US44 {
-    fn default() -> Self {
-        US44::US44_Some(<US38>::default())
-    }
 }
 #[derive(Clone)]
 enum US46 {
     US46_Wasm(Rc<str>),
     US46_Contract(Rc<str>),
 }
-impl US46 {
-    fn tag(&self) -> i32 {
-        match self {
-            US46::US46_Wasm(..) => 0,
-            US46::US46_Contract(..) => 1,
-        }
-    }
-}
-impl Default for US46 {
-    fn default() -> Self {
-        US46::US46_Wasm({ thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) })
-    }
-}
 #[derive(Clone)]
 enum US45 {
     US45_Some(US46),
     US45_None,
 }
-impl US45 {
-    fn tag(&self) -> i32 {
-        match self {
-            US45::US45_Some(..) => 0,
-            US45::US45_None => 1,
-        }
-    }
-}
-impl Default for US45 {
-    fn default() -> Self {
-        US45::US45_Some(<US46>::default())
-    }
-}
 #[derive(Clone)]
 enum US47 {
     US47_Rust,
-}
-impl US47 {
-    fn tag(&self) -> i32 {
-        match self {
-            US47::US47_Rust => 0,
-        }
-    }
-}
-impl Default for US47 {
-    fn default() -> Self {
-        US47::US47_Rust
-    }
 }
 #[derive(Clone)]
 enum US48 {
     US48_Some(US47),
     US48_None,
 }
-impl US48 {
-    fn tag(&self) -> i32 {
-        match self {
-            US48::US48_Some(..) => 0,
-            US48::US48_None => 1,
-        }
-    }
-}
-impl Default for US48 {
-    fn default() -> Self {
-        US48::US48_Some(<US47>::default())
-    }
-}
 #[derive(Clone)]
 enum US49 {
     US49_Ok(i32, Rc<str>),
     US49_Error(i32, Rc<str>),
-}
-impl US49 {
-    fn tag(&self) -> i32 {
-        match self {
-            US49::US49_Ok(..) => 0,
-            US49::US49_Error(..) => 1,
-        }
-    }
-}
-impl Default for US49 {
-    fn default() -> Self {
-        US49::US49_Ok(<i32>::default(), { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) })
-    }
 }
 #[derive(Clone)]
 enum US50 {
     US50_Some(std::collections::HashMap<Rc<str>, Rc<str>>),
     US50_None,
 }
-impl US50 {
-    fn tag(&self) -> i32 {
-        match self {
-            US50::US50_Some(..) => 0,
-            US50::US50_None => 1,
-        }
-    }
-}
 #[derive(Clone)]
 enum US51 {
     US51_Some(US9),
     US51_None,
-}
-impl US51 {
-    fn tag(&self) -> i32 {
-        match self {
-            US51::US51_Some(..) => 0,
-            US51::US51_None => 1,
-        }
-    }
-}
-impl Default for US51 {
-    fn default() -> Self {
-        US51::US51_Some(<US9>::default())
-    }
 }
 #[derive(Clone)]
 enum UH10 {
     UH10_Nil,
     UH10_Cons(Rc<str>, bool, Rc<UH10>),
 }
-impl UH10 {
-    fn tag(&self) -> i32 {
-        match self {
-            UH10::UH10_Nil => 0,
-            UH10::UH10_Cons(..) => 1,
-        }
-    }
-}
-impl Default for UH10 {
-    fn default() -> Self {
-        UH10::UH10_Nil
-    }
-}
 #[derive(Clone)]
 enum US52 {
     US52_Ok,
     US52_Error(Rc<str>),
-}
-impl US52 {
-    fn tag(&self) -> i32 {
-        match self {
-            US52::US52_Ok => 0,
-            US52::US52_Error(..) => 1,
-        }
-    }
-}
-impl Default for US52 {
-    fn default() -> Self {
-        US52::US52_Ok
-    }
 }
 fn get_environment_variable_1(mut v0: Rc<str>) -> Rc<str> {
     let mut v1: Rc<str> = Rc::<str>::from(std::env::var(&*v0).unwrap_or_default());
@@ -24274,7 +23411,7 @@ fn spiral_main() -> i32 {
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 1 });
 }
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;

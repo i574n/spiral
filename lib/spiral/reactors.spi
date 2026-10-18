@@ -1,0 +1,168 @@
+/// # reactors
+///> c
+///> rust
+test reactors static =
+    open testing
+
+/// ### signal
+union signal t =
+    | Present : t
+    | Absent
+
+/// ### tag
+type tag = {time : i64; micro : i32}
+
+/// ### reactor
+type reactor s i o = {init : s; react : s -> tag -> i -> s * o}
+
+/// ### chain
+inl chain forall sa sb i m o. (a : reactor sa i m) (b : reactor sb m o) : reactor (sa * sb) i o =
+    {
+        init = a.init, b.init
+        react = fun (sa, sb) now x =>
+            inl sa, mid = a.react sa now x
+            inl sb, y = b.react sb now mid
+            (sa, sb), y
+    }
+
+/// ### both
+inl both forall sa sb i oa ob. (a : reactor sa i oa) (b : reactor sb i ob) : reactor (sa * sb) i (oa * ob) =
+    {
+        init = a.init, b.init
+        react = fun (sa, sb) now x =>
+            inl sa, ya = a.react sa now x
+            inl sb, yb = b.react sb now x
+            (sa, sb), (ya, yb)
+    }
+
+/// ### with_deadline
+inl with_deadline forall s o. (deadline : i64) (body : reactor s i64 o) (on_violation : s -> tag -> s * o) : reactor s i64 o =
+    {
+        init = body.init
+        react = fun state now lag =>
+            if lag > deadline then on_violation state now else body.react state now lag
+    }
+
+/// ### run_ticks
+inl run_ticks forall s i o. (program : reactor s i o) (input : tag -> i) (ticks : i64) : s =
+    let rec loop (state : s) (time : i64) : s =
+        if time >= ticks then state
+        else
+            inl now = {time = time; micro = 0i32}
+            inl state, _ = program.react state now (input now)
+            loop state (time + 1i64)
+    loop program.init 0i64
+
+/// ### run_micro
+inl run_micro forall s i o acc. (program : reactor s i (signal o)) (input : tag -> i) (ticks : i64) (cap : i32) (step : acc -> o -> acc) (initial : acc) : acc * i64 =
+    let rec loop (state : s) (time : i64) (micro : i32) (total : acc) (microsteps : i64) : acc * i64 =
+        if time >= ticks then total, microsteps
+        elif micro >= cap then loop state (time + 1i64) 0i32 total microsteps
+        else
+            inl now = {time = time; micro = micro}
+            inl state, out = program.react state now (input now)
+            match out with
+            | Present v => loop state time (micro + 1i32) (step total v) (microsteps + 1i64)
+            | Absent => loop state (time + 1i64) 0i32 total microsteps
+    loop program.init 0i64 0i32 initial 0i64
+
+inl timer (period : i64) : reactor i64 () (signal i64) =
+    {
+        init = 0i64
+        react = fun count now () =>
+            if now.time % period = 0i64 then count + 1i64, Present (count + 1i64) else count, Absent
+    }
+
+inl scale (k : i64) : reactor () (signal i64) (signal i64) =
+    {
+        init = ()
+        react = fun () _ x =>
+            match x with
+            | Present v => (), Present (v * k)
+            | Absent => (), Absent
+    }
+
+inl sink () : reactor (i64 * i64) (signal i64) (signal i64) =
+    {
+        init = 0i64, 0i64
+        react = fun (sum, seen) _ x =>
+            match x with
+            | Present v => (sum + v, seen + 1i64), Present (sum + v)
+            | Absent => (sum, seen), Absent
+    }
+
+test chain_delays_one_tick =
+    inl after : reactor (signal i64) (signal i64) (signal i64) = {init = Absent; react = fun held _ x => x, held}
+    inl program = chain (chain (chain (timer 4i64) (scale 3i64)) after) (sink ())
+    inl _, total = run_ticks program (fun _ => ()) 20i64
+    total |> _assert_eq (45i64, 5i64)
+
+test both_fans_out_and_joins =
+    inl add (a : signal i64) (b : signal i64) : signal i64 =
+        match a, b with
+        | Present x, Present y => Present (x + y)
+        | Present x, Absent => Present x
+        | Absent, Present y => Present y
+        | Absent, Absent => Absent
+    inl merge4 : reactor () ((signal i64 * signal i64) * (signal i64 * signal i64)) (signal i64) =
+        {init = (); react = fun () _ ((a, b), (c, d)) => (), add (add a b) (add c d)}
+    inl bank = both (both (scale 1i64) (scale 2i64)) (both (scale 3i64) (scale 4i64))
+    inl _, total = run_ticks (chain (chain (chain (timer 3i64) bank) merge4) (sink ())) (fun _ => ()) 12i64
+    total |> _assert_eq (100i64, 4i64)
+
+inl countdown (period : i64) (burst : i32) : reactor i32 () (signal i32) =
+    {
+        init = 0i32
+        react = fun left now () =>
+            if now.micro = 0i32 then
+                if now.time % period = 0i64 then burst - 1i32, Present burst else 0i32, Absent
+            elif left > 0i32 then left - 1i32, Present left
+            else 0i32, Absent
+    }
+
+test microsteps_run_until_absent =
+    run_micro (countdown 5i64 3i32) (fun _ => ()) 10i64 100i32 (fun (sum : i64) (v : i32) => sum + conv v) 0i64
+    |> _assert_eq (12i64, 6i64)
+
+test microsteps_share_the_tag_through_a_chain =
+    inl stamp : reactor () (signal i32) (signal i64) =
+        {
+            init = ()
+            react = fun () now x =>
+                match x with
+                | Present v => (), Present (now.time * 1000i64 + conv now.micro * 10i64 + conv v)
+                | Absent => (), Absent
+        }
+    inl program = chain (chain (countdown 5i64 3i32) stamp) (sink ())
+    run_micro program (fun _ => ()) 10i64 100i32 (fun _ (v : i64) => v) 0i64
+    |> _assert_eq (15072i64, 6i64)
+
+test deadlines_run_the_violation_handler =
+    inl sampler : reactor i64 i64 (signal i64) = {init = 0i64; react = fun count now _ => count + 1i64, Present (now.time * 10i64)}
+    inl guarded = with_deadline 5i64 sampler (fun count _ => count, Present -1i64)
+    inl tally : reactor (i64 * i64) (signal i64) (signal i64) =
+        {
+            init = 0i64, 0i64
+            react = fun (sum, violations) _ x =>
+                match x with
+                | Present v => if v < 0i64 then (sum, violations + 1i64), x else (sum + v, violations), x
+                | Absent => (sum, violations), x
+        }
+    inl lag (now : tag) : i64 = if now.time % 4i64 = 3i64 then 9i64 else now.time % 3i64
+    inl _, result = run_ticks (chain guarded tally) lag 12i64
+    result |> _assert_eq (450i64, 3i64)
+
+test array_bank_keeps_member_state =
+    inl members = 4i32
+    inl states : a i32 i64 = am.init members (fun _ => 0i64)
+    inl step (input : i64) : i64 =
+        let rec go (i : i32) (acc : i64) : i64 =
+            if i >= members then acc
+            else
+                inl next = index states i + input * conv (i + 1i32)
+                set states i next
+                go (i + 1i32) (acc + next)
+        go 0i32 0i64
+    let rec run (time : i64) (total : i64) : i64 =
+        if time >= 5i64 then total else run (time + 1i64) (total + step (time + 1i64))
+    run 0i64 0i64 |> _assert_eq 350i64

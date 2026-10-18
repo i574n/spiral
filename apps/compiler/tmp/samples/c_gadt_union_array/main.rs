@@ -5,13 +5,6 @@ use std::rc::Rc;
 enum US0 {
     US0_Living(i32, i32),
 }
-impl US0 {
-    fn tag(&self) -> i32 {
-        match self {
-            US0::US0_Living(..) => 0,
-        }
-    }
-}
 impl Default for US0 {
     fn default() -> Self {
         US0::US0_Living(<i32>::default(), <i32>::default())
@@ -24,5 +17,5 @@ fn spiral_main() -> i32 {
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 1 });
 }

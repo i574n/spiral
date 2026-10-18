@@ -5,18 +5,6 @@ use std::rc::Rc;
 enum US0 {
     US0_Step(i32, i32, i32),
 }
-impl US0 {
-    fn tag(&self) -> i32 {
-        match self {
-            US0::US0_Step(..) => 0,
-        }
-    }
-}
-impl Default for US0 {
-    fn default() -> Self {
-        US0::US0_Step(<i32>::default(), <i32>::default(), <i32>::default())
-    }
-}
 fn walk_0(mut v0: i32) -> i32 {
     let mut v1: bool = v0 > 2i32;
     let mut v6: US0 = if v1 {
@@ -47,5 +35,5 @@ fn spiral_main() -> i32 {
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 1 });
 }

@@ -2,11 +2,6 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 struct Mut0 { l0: i32, l1: i32 }
-impl Default for Mut0 {
-    fn default() -> Self {
-        Mut0 { l0: <i32>::default(), l1: <i32>::default() }
-    }
-}
 fn spiral_main() -> i32 {
     let mut v0: Rc<RefCell<Mut0>> = Rc::new(RefCell::new(Mut0 { l0: 1i32, l1: 2i32 }));
     v0.borrow_mut().l0 = 3i32;
@@ -17,5 +12,5 @@ fn spiral_main() -> i32 {
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 1 });
 }

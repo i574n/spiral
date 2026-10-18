@@ -2,17 +2,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 struct Heap0 { l0: i32, l1: Rc<str> }
-impl Default for Heap0 {
-    fn default() -> Self {
-        Heap0 { l0: <i32>::default(), l1: { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) } }
-    }
-}
 struct Mut0 { l0: Rc<Heap0>, l1: Rc<Heap0>, l2: Rc<Heap0> }
-impl Default for Mut0 {
-    fn default() -> Self {
-        Mut0 { l0: <Rc<Heap0>>::default(), l1: <Rc<Heap0>>::default(), l2: <Rc<Heap0>>::default() }
-    }
-}
 fn spiral_main() -> i32 {
     let mut v0: i32 = 1i32;
     let mut v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("no"); } LIT.with(|lit| lit.clone()) };
@@ -79,5 +69,5 @@ fn spiral_main() -> i32 {
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 1 });
 }

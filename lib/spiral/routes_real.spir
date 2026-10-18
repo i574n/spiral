@@ -1,0 +1,29 @@
+open real_core
+
+inl (++) a b = !!!!StaticStringConcat(a, b)
+
+inl rec colon_count (s : string) (i : i32) (n : i32) (acc : i32) : i32 =
+    if i >= n then acc
+    elif !!!!StringIndex(s, i) = ':' then colon_count s (i + 1i32) n (acc + 1i32)
+    else colon_count s (i + 1i32) n acc
+
+inl rec has_param (s : string) (needle : string) (i : i32) (n : i32) (m : i32) : bool =
+    if i + m > n then false
+    elif !!!!StringSlice(s, i, i + m - 1i32) = needle then
+        if i + m = n then true
+        elif !!!!StringIndex(s, i + m) = '/' then true
+        else has_param s needle (i + 1i32) n m
+    else has_param s needle (i + 1i32) n m
+
+inl route path = forall params. =>
+    inl n = !!!!StringLength(`i32, path)
+    inl fields, all_present =
+        record_type_fold
+            fun (fields, all_present) key =>
+                forall value. =>
+                    inl needle = ":" ++ !!!!SymbolToString(key)
+                    fields + 1i32, all_present && has_param path needle 0i32 n !!!!StringLength(`i32, needle)
+            (0i32, true)
+            `params
+    if all_present && fields = colon_count path 0i32 n 0i32 then path
+    else error_type ("the route " ++ path ++ " does not name exactly the handler's parameter fields")

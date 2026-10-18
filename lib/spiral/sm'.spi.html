@@ -8551,7 +8551,12 @@ __assert_eq { expected = Cons(a, Cons(b, Cons(c, Nil))) }</pre>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">initial</span> <span class="o">|&gt;</span> <span class="err">$</span><span class="s1">'`string_builder '</span> <span class="p">:</span> <span class="n">string_builder</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="k">global</span> <span class="s2">"import io"</span>
-            <span class="k">global</span> <span class="s2">"class CustomStringIO(io.StringIO):</span><span class="se">\n</span><span class="s2">    def __init__(self, init=''):</span><span class="se">\n</span><span class="s2">        super().__init__()</span><span class="se">\n</span><span class="s2">        if init != '': self.write(init)</span><span class="se">\n</span><span class="s2">    def __str__(self): return self.getvalue()</span><span class="se">\n</span><span class="s2">    def __repr__(self): return self.getvalue()"</span>
+            <span class="k">global</span> <span class="s2">"""class CustomStringIO(io.StringIO):</span>
+<span class="s2">    def __init__(self, init=''):</span>
+<span class="s2">        super().__init__()</span>
+<span class="s2">        if init != '': self.write(init)</span>
+<span class="s2">    def __str__(self): return self.getvalue()</span>
+<span class="s2">    def __repr__(self): return self.getvalue()"""</span>
             <span class="err">$</span><span class="s1">'CustomStringIO(!initial)'</span> <span class="p">:</span> <span class="n">string_builder</span>
         <span class="n">Rust</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'String::from(&amp;*!initial)'</span> <span class="p">:</span> <span class="n">string_builder</span>
         <span class="n">TypeScript</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!initial '</span> <span class="p">:</span> <span class="n">string_builder</span>
@@ -8965,6 +8970,58 @@ __assert_eq { expected = Cons(a, Cons(b, Cons(c, Nil))) }</pre>
                             <span class="n">format_debug_real</span> <span class="err">`</span><span class="p">(</span><span class="err">`</span><span class="n">y</span><span class="p">)</span> <span class="n">y</span>
                         <span class="k">else</span> <span class="err">$</span><span class="s1">'toString !x '</span> <span class="p">:</span> <span class="n">string</span>
                 <span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">string</span>
+            <span class="n">Kotlin</span> <span class="o">=</span>
+                <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                    <span class="n">typecase</span> <span class="n">t</span> <span class="k">with</span>
+                    <span class="o">|</span> <span class="n">char</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'("</span><span class="se">\'</span><span class="s1">" + Char(!x) + "</span><span class="se">\'</span><span class="s1">")'</span> <span class="p">:</span> <span class="n">string</span>
+                    <span class="o">|</span> <span class="p">()</span> <span class="o">*</span> <span class="o">~</span><span class="n">b</span> <span class="o">=&gt;</span>
+                        <span class="n">inl</span> <span class="n">_</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">x</span>
+                        <span class="n">format_debug_real</span> <span class="err">`</span><span class="n">b</span> <span class="n">b</span>
+                    <span class="o">|</span> <span class="o">~</span><span class="n">a</span> <span class="o">*</span> <span class="o">~</span><span class="n">b</span> <span class="o">=&gt;</span>
+                        <span class="n">inl</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">x</span>
+                        <span class="p">(</span><span class="o">++</span><span class="c1">#*) (format_debug_real `a a) ((++#*) ", " (format_debug_real `b b))</span>
+                    <span class="o">|</span> <span class="p">{}</span> <span class="o">=&gt;</span>
+                        <span class="n">inl</span> <span class="n">_</span><span class="p">,</span> <span class="n">fields</span> <span class="o">=</span>
+                            <span class="n">real_core</span><span class="o">.</span><span class="n">record_fold</span>
+                                <span class="n">fun</span> <span class="p">{</span> <span class="n">state</span> <span class="o">=</span> <span class="n">separator</span><span class="p">,</span> <span class="n">acc</span> <span class="n">key</span> <span class="n">value</span> <span class="p">}</span> <span class="o">=&gt;</span>
+                                    <span class="s2">"; "</span><span class="p">,</span> <span class="n">acc</span> <span class="o">++</span><span class="c1">#* separator ++#* symbol_to_string_real `(`key) ++#* " = " ++#* format_debug_real `(`value) value</span>
+                                <span class="p">(</span><span class="s2">""</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span> <span class="n">x</span>
+                        <span class="s2">"{ "</span> <span class="o">++</span><span class="c1">#* fields ++#* " }"</span>
+                    <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span>
+                        <span class="k">if</span> <span class="n">real_core</span><span class="o">.</span><span class="n">union_type_is</span> <span class="err">`</span><span class="n">t</span>
+                        <span class="n">then</span> <span class="n">serialize_union_rust</span> <span class="err">`</span><span class="n">t</span> <span class="n">x</span>
+                        <span class="k">elif</span> <span class="n">real_core</span><span class="o">.</span><span class="n">nominal_type_is</span> <span class="err">`</span><span class="n">t</span>
+                        <span class="n">then</span>
+                            <span class="n">inl</span> <span class="n">y</span> <span class="o">=</span> <span class="n">real_core</span><span class="o">.</span><span class="n">nominal_strip</span> <span class="n">x</span>
+                            <span class="n">format_debug_real</span> <span class="err">`</span><span class="p">(</span><span class="err">`</span><span class="n">y</span><span class="p">)</span> <span class="n">y</span>
+                        <span class="k">else</span> <span class="err">$</span><span class="s1">'(!x).toString()'</span> <span class="p">:</span> <span class="n">string</span>
+                <span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">string</span>
+            <span class="n">Swift</span> <span class="o">=</span>
+                <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                    <span class="n">typecase</span> <span class="n">t</span> <span class="k">with</span>
+                    <span class="o">|</span> <span class="n">char</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'("</span><span class="se">\'</span><span class="s1">" + String(UnicodeScalar(UInt32(!x)) ?? " ") + "</span><span class="se">\'</span><span class="s1">")'</span> <span class="p">:</span> <span class="n">string</span>
+                    <span class="o">|</span> <span class="p">()</span> <span class="o">*</span> <span class="o">~</span><span class="n">b</span> <span class="o">=&gt;</span>
+                        <span class="n">inl</span> <span class="n">_</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">x</span>
+                        <span class="n">format_debug_real</span> <span class="err">`</span><span class="n">b</span> <span class="n">b</span>
+                    <span class="o">|</span> <span class="o">~</span><span class="n">a</span> <span class="o">*</span> <span class="o">~</span><span class="n">b</span> <span class="o">=&gt;</span>
+                        <span class="n">inl</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">x</span>
+                        <span class="p">(</span><span class="o">++</span><span class="c1">#*) (format_debug_real `a a) ((++#*) ", " (format_debug_real `b b))</span>
+                    <span class="o">|</span> <span class="p">{}</span> <span class="o">=&gt;</span>
+                        <span class="n">inl</span> <span class="n">_</span><span class="p">,</span> <span class="n">fields</span> <span class="o">=</span>
+                            <span class="n">real_core</span><span class="o">.</span><span class="n">record_fold</span>
+                                <span class="n">fun</span> <span class="p">{</span> <span class="n">state</span> <span class="o">=</span> <span class="n">separator</span><span class="p">,</span> <span class="n">acc</span> <span class="n">key</span> <span class="n">value</span> <span class="p">}</span> <span class="o">=&gt;</span>
+                                    <span class="s2">"; "</span><span class="p">,</span> <span class="n">acc</span> <span class="o">++</span><span class="c1">#* separator ++#* symbol_to_string_real `(`key) ++#* " = " ++#* format_debug_real `(`value) value</span>
+                                <span class="p">(</span><span class="s2">""</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span> <span class="n">x</span>
+                        <span class="s2">"{ "</span> <span class="o">++</span><span class="c1">#* fields ++#* " }"</span>
+                    <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span>
+                        <span class="k">if</span> <span class="n">real_core</span><span class="o">.</span><span class="n">union_type_is</span> <span class="err">`</span><span class="n">t</span>
+                        <span class="n">then</span> <span class="n">serialize_union_rust</span> <span class="err">`</span><span class="n">t</span> <span class="n">x</span>
+                        <span class="k">elif</span> <span class="n">real_core</span><span class="o">.</span><span class="n">nominal_type_is</span> <span class="err">`</span><span class="n">t</span>
+                        <span class="n">then</span>
+                            <span class="n">inl</span> <span class="n">y</span> <span class="o">=</span> <span class="n">real_core</span><span class="o">.</span><span class="n">nominal_strip</span> <span class="n">x</span>
+                            <span class="n">format_debug_real</span> <span class="err">`</span><span class="p">(</span><span class="err">`</span><span class="n">y</span><span class="p">)</span> <span class="n">y</span>
+                        <span class="k">else</span> <span class="err">$</span><span class="s1">'String(describing: !x)'</span> <span class="p">:</span> <span class="n">string</span>
+                <span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">string</span>
             <span class="n">C</span> <span class="o">=</span>
                 <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
                     <span class="n">inl</span> <span class="n">buffer</span> <span class="p">()</span> <span class="o">=</span>
@@ -8975,28 +9032,28 @@ __assert_eq { expected = Cons(a, Cons(b, Cons(c, Nil))) }</pre>
                         <span class="k">global</span> <span class="s2">"static char spiral_format_buffer[64];"</span>
                     <span class="n">inl</span> <span class="n">signed</span> <span class="n">x</span> <span class="p">:</span> <span class="n">string</span> <span class="o">=</span>
                         <span class="n">buffer</span> <span class="p">()</span>
-                        <span class="k">global</span> <span class="s2">"static inline uint32_t spiral_format_i64(long long x) { return (uint32_t)snprintf(spiral_format_buffer, sizeof spiral_format_buffer, </span><span class="se">\"</span><span class="s2">%lld</span><span class="se">\"</span><span class="s2">, x) + 1u; }"</span>
+                        <span class="k">global</span> <span class="s2">"""static inline uint32_t spiral_format_i64(long long x) { return (uint32_t)snprintf(spiral_format_buffer, sizeof spiral_format_buffer, "%lld", x) + 1u; }"""</span>
                         <span class="err">$</span><span class="s1">'StringLit(spiral_format_i64((long long)(!x)), spiral_format_buffer)'</span> <span class="p">:</span> <span class="n">string</span>
                     <span class="n">inl</span> <span class="n">unsigned</span> <span class="n">x</span> <span class="p">:</span> <span class="n">string</span> <span class="o">=</span>
                         <span class="n">buffer</span> <span class="p">()</span>
-                        <span class="k">global</span> <span class="s2">"static inline uint32_t spiral_format_u64(unsigned long long x) { return (uint32_t)snprintf(spiral_format_buffer, sizeof spiral_format_buffer, </span><span class="se">\"</span><span class="s2">%llu</span><span class="se">\"</span><span class="s2">, x) + 1u; }"</span>
+                        <span class="k">global</span> <span class="s2">"""static inline uint32_t spiral_format_u64(unsigned long long x) { return (uint32_t)snprintf(spiral_format_buffer, sizeof spiral_format_buffer, "%llu", x) + 1u; }"""</span>
                         <span class="err">$</span><span class="s1">'StringLit(spiral_format_u64((unsigned long long)(!x)), spiral_format_buffer)'</span> <span class="p">:</span> <span class="n">string</span>
                     <span class="n">inl</span> <span class="n">decimal_point</span> <span class="p">()</span> <span class="o">=</span>
-                        <span class="k">global</span> <span class="s2">"static inline uint32_t spiral_format_decimal_point(int n) { if (!strpbrk(spiral_format_buffer, </span><span class="se">\"</span><span class="s2">.eni</span><span class="se">\"</span><span class="s2">)) { spiral_format_buffer[n++] = '.'; spiral_format_buffer[n++] = '0'; spiral_format_buffer[n] = 0; } return (uint32_t)n + 1u; }"</span>
+                        <span class="k">global</span> <span class="s2">"""static inline uint32_t spiral_format_decimal_point(int n) { if (!strpbrk(spiral_format_buffer, ".eni")) { spiral_format_buffer[n++] = '.'; spiral_format_buffer[n++] = '0'; spiral_format_buffer[n] = 0; } return (uint32_t)n + 1u; }"""</span>
                     <span class="n">inl</span> <span class="n">float64</span> <span class="p">(</span><span class="n">x</span> <span class="p">:</span> <span class="n">f64</span><span class="p">)</span> <span class="p">:</span> <span class="n">string</span> <span class="o">=</span>
                         <span class="n">buffer</span> <span class="p">()</span>
                         <span class="n">decimal_point</span> <span class="p">()</span>
-                        <span class="k">global</span> <span class="s2">"static inline uint32_t spiral_format_f64(double x) { int n = 0; for (int p = 1; p &lt;= 17; p++) { n = snprintf(spiral_format_buffer, sizeof spiral_format_buffer, </span><span class="se">\"</span><span class="si">%.*g</span><span class="se">\"</span><span class="s2">, p, x); if (strtod(spiral_format_buffer, NULL) == x) break; } return spiral_format_decimal_point(n); }"</span>
+                        <span class="k">global</span> <span class="s2">"""static inline uint32_t spiral_format_f64(double x) { int n = 0; for (int p = 1; p &lt;= 17; p++) { n = snprintf(spiral_format_buffer, sizeof spiral_format_buffer, "</span><span class="si">%.*g</span><span class="s2">", p, x); if (strtod(spiral_format_buffer, NULL) == x) break; } return spiral_format_decimal_point(n); }"""</span>
                         <span class="err">$</span><span class="s1">'StringLit(spiral_format_f64(!x), spiral_format_buffer)'</span> <span class="p">:</span> <span class="n">string</span>
                     <span class="n">inl</span> <span class="n">float32</span> <span class="p">(</span><span class="n">x</span> <span class="p">:</span> <span class="n">f32</span><span class="p">)</span> <span class="p">:</span> <span class="n">string</span> <span class="o">=</span>
                         <span class="n">buffer</span> <span class="p">()</span>
                         <span class="n">decimal_point</span> <span class="p">()</span>
-                        <span class="k">global</span> <span class="s2">"static inline uint32_t spiral_format_f32(float x) { int n = 0; for (int p = 1; p &lt;= 9; p++) { n = snprintf(spiral_format_buffer, sizeof spiral_format_buffer, </span><span class="se">\"</span><span class="si">%.*g</span><span class="se">\"</span><span class="s2">, p, (double)x); if (strtof(spiral_format_buffer, NULL) == x) break; } return spiral_format_decimal_point(n); }"</span>
+                        <span class="k">global</span> <span class="s2">"""static inline uint32_t spiral_format_f32(float x) { int n = 0; for (int p = 1; p &lt;= 9; p++) { n = snprintf(spiral_format_buffer, sizeof spiral_format_buffer, "</span><span class="si">%.*g</span><span class="s2">", p, (double)x); if (strtof(spiral_format_buffer, NULL) == x) break; } return spiral_format_decimal_point(n); }"""</span>
                         <span class="err">$</span><span class="s1">'StringLit(spiral_format_f32(!x), spiral_format_buffer)'</span> <span class="p">:</span> <span class="n">string</span>
                     <span class="n">typecase</span> <span class="n">t</span> <span class="k">with</span>
                     <span class="o">|</span> <span class="n">char</span> <span class="o">=&gt;</span>
                         <span class="n">buffer</span> <span class="p">()</span>
-                        <span class="k">global</span> <span class="s2">"static inline uint32_t spiral_format_char(int32_t x) { return (uint32_t)snprintf(spiral_format_buffer, sizeof spiral_format_buffer, </span><span class="se">\"</span><span class="s2">'</span><span class="si">%c</span><span class="s2">'</span><span class="se">\"</span><span class="s2">, (int)x) + 1u; }"</span>
+                        <span class="k">global</span> <span class="s2">"""static inline uint32_t spiral_format_char(int32_t x) { return (uint32_t)snprintf(spiral_format_buffer, sizeof spiral_format_buffer, "'</span><span class="si">%c</span><span class="s2">'", (int)x) + 1u; }"""</span>
                         <span class="err">$</span><span class="s1">'StringLit(spiral_format_char(!x), spiral_format_buffer)'</span> <span class="p">:</span> <span class="n">string</span>
                     <span class="o">|</span> <span class="nb">bool</span> <span class="o">=&gt;</span> <span class="k">if</span> <span class="n">x</span> <span class="n">then</span> <span class="s2">"true"</span> <span class="k">else</span> <span class="s2">"false"</span>
                     <span class="o">|</span> <span class="n">f64</span> <span class="o">=&gt;</span> <span class="n">float64</span> <span class="n">x</span>
@@ -9898,6 +9955,8 @@ __assert_eq { expected = b }</pre>
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">real</span>
 
+<span class="o">//</span> <span class="n">TODO</span><span class="p">:</span> <span class="n">FLOAT</span><span class="o">-</span><span class="n">TEXT</span><span class="o">-</span><span class="n">CANONICAL</span> <span class="n">one</span> <span class="nb">float</span> <span class="n">layout</span> <span class="k">for</span> <span class="n">every</span> <span class="n">backend</span> <span class="n">arm</span> <span class="n">below</span><span class="p">:</span> <span class="n">C</span><span class="p">,</span> <span class="n">Lua</span><span class="p">,</span> <span class="n">Kotlin</span> <span class="ow">and</span> <span class="n">Swift</span> <span class="nb">print</span> <span class="mf">100.0</span> <span class="k">as</span> <span class="mf">1e+02</span> <span class="ow">and</span> <span class="mf">1e10</span> <span class="k">as</span> <span class="mf">1e+10</span><span class="p">,</span>
+<span class="o">//</span>     <span class="n">Rust</span><span class="p">,</span> <span class="n">TypeScript</span><span class="p">,</span> <span class="n">Python</span><span class="p">,</span> <span class="n">Lean</span> <span class="ow">and</span> <span class="n">Zig</span> <span class="nb">print</span> <span class="mf">100.0</span> <span class="ow">and</span> <span class="n">switch</span> <span class="n">to</span> <span class="n">exponents</span> <span class="n">at</span> <span class="n">their</span> <span class="n">own</span> <span class="n">thresholds</span>
 <span class="n">let</span> <span class="n">format_real</span> <span class="n">forall</span> <span class="n">t</span><span class="o">.</span> <span class="p">(</span><span class="n">x</span> <span class="p">:</span> <span class="n">t</span><span class="p">)</span> <span class="p">:</span> <span class="n">string</span> <span class="o">=</span>
     <span class="n">inl</span> <span class="n">empty</span> <span class="p">:</span> <span class="n">string</span> <span class="o">=</span>
         <span class="n">backend_switch</span> <span class="err">`</span><span class="n">string</span> <span class="err">`</span><span class="p">({})</span> <span class="p">{</span>
@@ -9933,6 +9992,14 @@ __assert_eq { expected = b }</pre>
                 <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
                     <span class="s2">""</span>
                 <span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">string</span>
+            <span class="n">Kotlin</span> <span class="o">=</span>
+                <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                    <span class="s2">""</span>
+                <span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">string</span>
+            <span class="n">Swift</span> <span class="o">=</span>
+                <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                    <span class="s2">""</span>
+                <span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">string</span>
             <span class="n">C</span> <span class="o">=</span>
                 <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
                     <span class="s2">""</span>
@@ -9956,7 +10023,7 @@ __assert_eq { expected = b }</pre>
                     <span class="n">Lua</span> <span class="o">=</span>
                         <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
                             <span class="k">match</span> <span class="n">b</span> <span class="k">with</span>
-                            <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">f32</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">f64</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'(function(v) if v ~= v then return "NaN" end if v == math.huge then return "Infinity" end if v == -math.huge then return "-Infinity" end for p = 1, 17 do local s = string.format("%." .. p .. "g", v) if tonumber(s) == v then if string.find(s, "[%.e]") then return s end return s .. ".0" end end return tostring(v) end)(!b)'</span> <span class="p">:</span> <span class="n">string</span>
+                            <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">f32</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">f64</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'(function(v) if v ~= v then return "NaN" end if v == math.huge then return "Infinity" end if v == -math.huge then return "-Infinity" end for p = 1, 17 do local s = (string.gsub(string.format("%." .. p .. "g", v), "e([</span><span class="si">%+%</span><span class="s1">-])0(</span><span class="si">%d%d</span><span class="s1">)$", "e</span><span class="si">%1%</span><span class="s1">2")) if tonumber(s) == v then if string.find(s, "[%.e]") then return s end return s .. ".0" end end return tostring(v) end)(!b)'</span> <span class="p">:</span> <span class="n">string</span>
                             <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">b</span> <span class="p">:</span> <span class="n">string</span>
                             <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">format_debug_real</span> <span class="err">`</span><span class="p">(</span><span class="err">`</span><span class="n">b</span><span class="p">)</span> <span class="n">b</span>
                         <span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">string</span>
@@ -9993,7 +10060,7 @@ __assert_eq { expected = b }</pre>
                     <span class="n">Zig</span> <span class="o">=</span>
                         <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
                             <span class="k">match</span> <span class="n">b</span> <span class="k">with</span>
-                            <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">f32</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">f64</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'(if (std.math.isNan(!b)) "NaN" else if (std.math.isInf(!b)) (if (!b &gt; 0) "Infinity" else "-Infinity") else spiral_shortest: { const s = std.fmt.allocPrint(spiral_gpa, "</span><span class="si">{d}</span><span class="s1">", .{ !b }) catch \@panic("out of memory"); break :spiral_shortest if (std.mem.indexOfAny(u8, s, ".e") == null) (std.fmt.allocPrint(spiral_gpa, "</span><span class="si">{s}</span><span class="s1">.0", .{ s }) catch \@panic("out of memory")) else s; })'</span> <span class="p">:</span> <span class="n">string</span>
+                            <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">f32</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">f64</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'(if (std.math.isNan(!b)) "NaN" else if (std.math.isInf(!b)) (if (!b &gt; 0) "Infinity" else "-Infinity") else spiral_shortest: { const s = spiralFloatText(!b); break :spiral_shortest if (std.mem.indexOfAny(u8, s, ".e") == null) (std.fmt.allocPrint(spiral_gpa, "</span><span class="si">{s}</span><span class="s1">.0", .{ s }) catch \@panic("out of memory")) else s; })'</span> <span class="p">:</span> <span class="n">string</span>
                             <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">b</span> <span class="p">:</span> <span class="n">string</span>
                             <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">char</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'(std.fmt.allocPrint(spiral_gpa, "</span><span class="si">{c}</span><span class="s1">", .{ !b }) catch \@panic("out of memory"))'</span> <span class="p">:</span> <span class="n">string</span>
                             <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'(if (!b) "true" else "false")'</span> <span class="p">:</span> <span class="n">string</span>
@@ -10007,6 +10074,114 @@ __assert_eq { expected = b }</pre>
                             <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">b</span> <span class="p">:</span> <span class="n">string</span>
                             <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'toString !b '</span> <span class="p">:</span> <span class="n">string</span>
                         <span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">string</span>
+                    <span class="n">Kotlin</span> <span class="o">=</span>
+                        <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                            <span class="k">match</span> <span class="n">b</span> <span class="k">with</span>
+                            <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">f64</span><span class="p">)</span> <span class="o">=&gt;</span>
+                                <span class="k">global</span> <span class="s2">"""fun spiralShortestText(v: Double, single: Boolean): String {</span>
+<span class="s2">    if (v.isNaN()) return "NaN"</span>
+<span class="s2">    if (v.isInfinite()) return if (v &gt; 0) "Infinity" else "-Infinity"</span>
+<span class="s2">    if (v == 0.0) return if (1.0 / v &lt; 0) "-0.0" else "0.0"</span>
+<span class="s2">    val shortest = java.math.BigDecimal(if (single) v.toFloat().toString() else v.toString()).stripTrailingZeros()</span>
+<span class="s2">    val digits = shortest.unscaledValue().abs().toString()</span>
+<span class="s2">    val exponent = digits.length - 1 - shortest.scale()</span>
+<span class="s2">    val body = if (exponent &lt; -4 || exponent &gt;= digits.length) {</span>
+<span class="s2">        val magnitude = kotlin.math.abs(exponent)</span>
+<span class="s2">        (if (digits.length == 1) digits else digits.substring(0, 1) + "." + digits.substring(1)) + "e" + (if (exponent &lt; 0) "-" else "+") + (if (magnitude &lt; 10) "0" else "") + magnitude</span>
+<span class="s2">    } else if (exponent &gt;= 0) {</span>
+<span class="s2">        if (digits.length &gt; exponent + 1) digits.substring(0, exponent + 1) + "." + digits.substring(exponent + 1) else digits + "0".repeat(exponent + 1 - digits.length)</span>
+<span class="s2">    } else "0." + "0".repeat(-exponent - 1) + digits</span>
+<span class="s2">    val result = (if (shortest.signum() &lt; 0) "-" else "") + body</span>
+<span class="s2">    return if (result.contains('.') || result.contains('e')) result else result + ".0"</span>
+<span class="s2">}"""</span>
+                                <span class="err">$</span><span class="s1">'spiralShortestText(!b, false)'</span> <span class="p">:</span> <span class="n">string</span>
+                            <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">f32</span><span class="p">)</span> <span class="o">=&gt;</span>
+                                <span class="k">global</span> <span class="s2">"""fun spiralShortestText(v: Double, single: Boolean): String {</span>
+<span class="s2">    if (v.isNaN()) return "NaN"</span>
+<span class="s2">    if (v.isInfinite()) return if (v &gt; 0) "Infinity" else "-Infinity"</span>
+<span class="s2">    if (v == 0.0) return if (1.0 / v &lt; 0) "-0.0" else "0.0"</span>
+<span class="s2">    val shortest = java.math.BigDecimal(if (single) v.toFloat().toString() else v.toString()).stripTrailingZeros()</span>
+<span class="s2">    val digits = shortest.unscaledValue().abs().toString()</span>
+<span class="s2">    val exponent = digits.length - 1 - shortest.scale()</span>
+<span class="s2">    val body = if (exponent &lt; -4 || exponent &gt;= digits.length) {</span>
+<span class="s2">        val magnitude = kotlin.math.abs(exponent)</span>
+<span class="s2">        (if (digits.length == 1) digits else digits.substring(0, 1) + "." + digits.substring(1)) + "e" + (if (exponent &lt; 0) "-" else "+") + (if (magnitude &lt; 10) "0" else "") + magnitude</span>
+<span class="s2">    } else if (exponent &gt;= 0) {</span>
+<span class="s2">        if (digits.length &gt; exponent + 1) digits.substring(0, exponent + 1) + "." + digits.substring(exponent + 1) else digits + "0".repeat(exponent + 1 - digits.length)</span>
+<span class="s2">    } else "0." + "0".repeat(-exponent - 1) + digits</span>
+<span class="s2">    val result = (if (shortest.signum() &lt; 0) "-" else "") + body</span>
+<span class="s2">    return if (result.contains('.') || result.contains('e')) result else result + ".0"</span>
+<span class="s2">}"""</span>
+                                <span class="err">$</span><span class="s1">'spiralShortestText((!b).toDouble(), true)'</span> <span class="p">:</span> <span class="n">string</span>
+                            <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">b</span> <span class="p">:</span> <span class="n">string</span>
+                            <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">char</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Char(!b).toString()'</span> <span class="p">:</span> <span class="n">string</span>
+                            <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'(!b).toString()'</span> <span class="p">:</span> <span class="n">string</span>
+                        <span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">string</span>
+                    <span class="n">Swift</span> <span class="o">=</span>
+                        <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                            <span class="k">match</span> <span class="n">b</span> <span class="k">with</span>
+                            <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">f64</span><span class="p">)</span> <span class="o">=&gt;</span>
+                                <span class="k">global</span> <span class="s2">"""func spiralShortestText(_ v: Double, _ text: String) -&gt; String {</span>
+<span class="s2">    if v.isNaN { return "NaN" }</span>
+<span class="s2">    if v.isInfinite { return v &gt; 0 ? "Infinity" : "-Infinity" }</span>
+<span class="s2">    if v == 0 { return v.sign == .minus ? "-0.0" : "0.0" }</span>
+<span class="s2">    let negative = text.hasPrefix("-")</span>
+<span class="s2">    let unsigned = negative ? String(text.dropFirst()) : text</span>
+<span class="s2">    let parts = unsigned.split(separator: "e", maxSplits: 1).map(String.init)</span>
+<span class="s2">    let mantissa = parts[0].split(separator: ".", maxSplits: 1, omittingEmptySubsequences: false).map(String.init)</span>
+<span class="s2">    let whole = mantissa[0]</span>
+<span class="s2">    let fraction = mantissa.count &gt; 1 ? mantissa[1] : ""</span>
+<span class="s2">    var digits = Array(whole + fraction)</span>
+<span class="s2">    var exponent = whole.count - 1 + (parts.count &gt; 1 ? (Int(parts[1]) ?? 0) : 0)</span>
+<span class="s2">    while digits.count &gt; 1 &amp;&amp; digits.first == "0" { digits.removeFirst(); exponent -= 1 }</span>
+<span class="s2">    while digits.count &gt; 1 &amp;&amp; digits.last == "0" { digits.removeLast() }</span>
+<span class="s2">    let all = String(digits)</span>
+<span class="s2">    var body: String</span>
+<span class="s2">    if exponent &lt; -4 || exponent &gt;= digits.count {</span>
+<span class="s2">        let magnitude = abs(exponent)</span>
+<span class="s2">        body = String(all.prefix(1)) + (digits.count &gt; 1 ? "." + String(all.dropFirst()) : "") + "e" + (exponent &lt; 0 ? "-" : "+") + (magnitude &lt; 10 ? "0" : "") + String(magnitude)</span>
+<span class="s2">    } else if exponent &gt;= 0 {</span>
+<span class="s2">        body = all.count &gt; exponent + 1 ? String(all.prefix(exponent + 1)) + "." + String(all.dropFirst(exponent + 1)) : all + String(repeating: "0", count: exponent + 1 - all.count)</span>
+<span class="s2">    } else {</span>
+<span class="s2">        body = "0." + String(repeating: "0", count: -exponent - 1) + all</span>
+<span class="s2">    }</span>
+<span class="s2">    let result = (negative ? "-" : "") + body</span>
+<span class="s2">    return result.contains(".") || result.contains("e") ? result : result + ".0"</span>
+<span class="s2">}"""</span>
+                                <span class="err">$</span><span class="s1">'spiralShortestText(!b, (!b).description)'</span> <span class="p">:</span> <span class="n">string</span>
+                            <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">f32</span><span class="p">)</span> <span class="o">=&gt;</span>
+                                <span class="k">global</span> <span class="s2">"""func spiralShortestText(_ v: Double, _ text: String) -&gt; String {</span>
+<span class="s2">    if v.isNaN { return "NaN" }</span>
+<span class="s2">    if v.isInfinite { return v &gt; 0 ? "Infinity" : "-Infinity" }</span>
+<span class="s2">    if v == 0 { return v.sign == .minus ? "-0.0" : "0.0" }</span>
+<span class="s2">    let negative = text.hasPrefix("-")</span>
+<span class="s2">    let unsigned = negative ? String(text.dropFirst()) : text</span>
+<span class="s2">    let parts = unsigned.split(separator: "e", maxSplits: 1).map(String.init)</span>
+<span class="s2">    let mantissa = parts[0].split(separator: ".", maxSplits: 1, omittingEmptySubsequences: false).map(String.init)</span>
+<span class="s2">    let whole = mantissa[0]</span>
+<span class="s2">    let fraction = mantissa.count &gt; 1 ? mantissa[1] : ""</span>
+<span class="s2">    var digits = Array(whole + fraction)</span>
+<span class="s2">    var exponent = whole.count - 1 + (parts.count &gt; 1 ? (Int(parts[1]) ?? 0) : 0)</span>
+<span class="s2">    while digits.count &gt; 1 &amp;&amp; digits.first == "0" { digits.removeFirst(); exponent -= 1 }</span>
+<span class="s2">    while digits.count &gt; 1 &amp;&amp; digits.last == "0" { digits.removeLast() }</span>
+<span class="s2">    let all = String(digits)</span>
+<span class="s2">    var body: String</span>
+<span class="s2">    if exponent &lt; -4 || exponent &gt;= digits.count {</span>
+<span class="s2">        let magnitude = abs(exponent)</span>
+<span class="s2">        body = String(all.prefix(1)) + (digits.count &gt; 1 ? "." + String(all.dropFirst()) : "") + "e" + (exponent &lt; 0 ? "-" : "+") + (magnitude &lt; 10 ? "0" : "") + String(magnitude)</span>
+<span class="s2">    } else if exponent &gt;= 0 {</span>
+<span class="s2">        body = all.count &gt; exponent + 1 ? String(all.prefix(exponent + 1)) + "." + String(all.dropFirst(exponent + 1)) : all + String(repeating: "0", count: exponent + 1 - all.count)</span>
+<span class="s2">    } else {</span>
+<span class="s2">        body = "0." + String(repeating: "0", count: -exponent - 1) + all</span>
+<span class="s2">    }</span>
+<span class="s2">    let result = (negative ? "-" : "") + body</span>
+<span class="s2">    return result.contains(".") || result.contains("e") ? result : result + ".0"</span>
+<span class="s2">}"""</span>
+                                <span class="err">$</span><span class="s1">'spiralShortestText(Double(!b), (!b).description)'</span> <span class="p">:</span> <span class="n">string</span>
+                            <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">b</span> <span class="p">:</span> <span class="n">string</span>
+                            <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">char</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'String(UnicodeScalar(UInt32(!b)) ?? " ")'</span> <span class="p">:</span> <span class="n">string</span>
+                            <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'String(describing: !b)'</span> <span class="p">:</span> <span class="n">string</span>
+                        <span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">string</span>
                     <span class="n">C</span> <span class="o">=</span>
                         <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
                             <span class="k">match</span> <span class="n">b</span> <span class="k">with</span>
@@ -10017,7 +10192,7 @@ __assert_eq { expected = b }</pre>
                                 <span class="k">global</span> <span class="s2">"#include &lt;string.h&gt;"</span>
                                 <span class="k">global</span> <span class="s2">"#include &lt;math.h&gt;"</span>
                                 <span class="k">global</span> <span class="s2">"static char spiral_format_buffer[64];"</span>
-                                <span class="k">global</span> <span class="s2">"static inline uint32_t spiral_format_shortest(double x, int single) { int n = 0; if (isnan(x)) n = snprintf(spiral_format_buffer, sizeof spiral_format_buffer, </span><span class="se">\"</span><span class="s2">NaN</span><span class="se">\"</span><span class="s2">); else if (isinf(x)) n = snprintf(spiral_format_buffer, sizeof spiral_format_buffer, x &gt; 0 ? </span><span class="se">\"</span><span class="s2">Infinity</span><span class="se">\"</span><span class="s2"> : </span><span class="se">\"</span><span class="s2">-Infinity</span><span class="se">\"</span><span class="s2">); else { for (int p = 1; p &lt;= 17; p++) { n = snprintf(spiral_format_buffer, sizeof spiral_format_buffer, </span><span class="se">\"</span><span class="si">%.*g</span><span class="se">\"</span><span class="s2">, p, x); if (single ? strtof(spiral_format_buffer, NULL) == (float)x : strtod(spiral_format_buffer, NULL) == x) break; } if (!strpbrk(spiral_format_buffer, </span><span class="se">\"</span><span class="s2">.e</span><span class="se">\"</span><span class="s2">)) { spiral_format_buffer[n++] = '.'; spiral_format_buffer[n++] = '0'; spiral_format_buffer[n] = 0; } } return (uint32_t)n + 1u; }"</span>
+                                <span class="k">global</span> <span class="s2">"""static inline uint32_t spiral_format_shortest(double x, int single) { int n = 0; if (isnan(x)) n = snprintf(spiral_format_buffer, sizeof spiral_format_buffer, "NaN"); else if (isinf(x)) n = snprintf(spiral_format_buffer, sizeof spiral_format_buffer, x &gt; 0 ? "Infinity" : "-Infinity"); else { for (int p = 1; p &lt;= 17; p++) { n = snprintf(spiral_format_buffer, sizeof spiral_format_buffer, "</span><span class="si">%.*g</span><span class="s2">", p, x); if (single ? strtof(spiral_format_buffer, NULL) == (float)x : strtod(spiral_format_buffer, NULL) == x) break; } if (!strpbrk(spiral_format_buffer, ".e")) { spiral_format_buffer[n++] = '.'; spiral_format_buffer[n++] = '0'; spiral_format_buffer[n] = 0; } } return (uint32_t)n + 1u; }"""</span>
                                 <span class="err">$</span><span class="s1">'StringLit(spiral_format_shortest((double)(!b), 0), spiral_format_buffer)'</span> <span class="p">:</span> <span class="n">string</span>
                             <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">f32</span><span class="p">)</span> <span class="o">=&gt;</span>
                                 <span class="k">global</span> <span class="s2">"#include &lt;stdio.h&gt;"</span>
@@ -10026,7 +10201,7 @@ __assert_eq { expected = b }</pre>
                                 <span class="k">global</span> <span class="s2">"#include &lt;string.h&gt;"</span>
                                 <span class="k">global</span> <span class="s2">"#include &lt;math.h&gt;"</span>
                                 <span class="k">global</span> <span class="s2">"static char spiral_format_buffer[64];"</span>
-                                <span class="k">global</span> <span class="s2">"static inline uint32_t spiral_format_shortest(double x, int single) { int n = 0; if (isnan(x)) n = snprintf(spiral_format_buffer, sizeof spiral_format_buffer, </span><span class="se">\"</span><span class="s2">NaN</span><span class="se">\"</span><span class="s2">); else if (isinf(x)) n = snprintf(spiral_format_buffer, sizeof spiral_format_buffer, x &gt; 0 ? </span><span class="se">\"</span><span class="s2">Infinity</span><span class="se">\"</span><span class="s2"> : </span><span class="se">\"</span><span class="s2">-Infinity</span><span class="se">\"</span><span class="s2">); else { for (int p = 1; p &lt;= 17; p++) { n = snprintf(spiral_format_buffer, sizeof spiral_format_buffer, </span><span class="se">\"</span><span class="si">%.*g</span><span class="se">\"</span><span class="s2">, p, x); if (single ? strtof(spiral_format_buffer, NULL) == (float)x : strtod(spiral_format_buffer, NULL) == x) break; } if (!strpbrk(spiral_format_buffer, </span><span class="se">\"</span><span class="s2">.e</span><span class="se">\"</span><span class="s2">)) { spiral_format_buffer[n++] = '.'; spiral_format_buffer[n++] = '0'; spiral_format_buffer[n] = 0; } } return (uint32_t)n + 1u; }"</span>
+                                <span class="k">global</span> <span class="s2">"""static inline uint32_t spiral_format_shortest(double x, int single) { int n = 0; if (isnan(x)) n = snprintf(spiral_format_buffer, sizeof spiral_format_buffer, "NaN"); else if (isinf(x)) n = snprintf(spiral_format_buffer, sizeof spiral_format_buffer, x &gt; 0 ? "Infinity" : "-Infinity"); else { for (int p = 1; p &lt;= 17; p++) { n = snprintf(spiral_format_buffer, sizeof spiral_format_buffer, "</span><span class="si">%.*g</span><span class="s2">", p, x); if (single ? strtof(spiral_format_buffer, NULL) == (float)x : strtod(spiral_format_buffer, NULL) == x) break; } if (!strpbrk(spiral_format_buffer, ".e")) { spiral_format_buffer[n++] = '.'; spiral_format_buffer[n++] = '0'; spiral_format_buffer[n] = 0; } } return (uint32_t)n + 1u; }"""</span>
                                 <span class="err">$</span><span class="s1">'StringLit(spiral_format_shortest((double)(!b), 1), spiral_format_buffer)'</span> <span class="p">:</span> <span class="n">string</span>
                             <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">b</span> <span class="p">:</span> <span class="n">string</span>
                             <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">char</span><span class="p">)</span> <span class="o">=&gt;</span>
@@ -10035,7 +10210,7 @@ __assert_eq { expected = b }</pre>
                                 <span class="k">global</span> <span class="s2">"#include &lt;stdlib.h&gt;"</span>
                                 <span class="k">global</span> <span class="s2">"#include &lt;string.h&gt;"</span>
                                 <span class="k">global</span> <span class="s2">"static char spiral_format_buffer[64];"</span>
-                                <span class="k">global</span> <span class="s2">"static inline uint32_t spiral_format_plain_char(int32_t x) { return (uint32_t)snprintf(spiral_format_buffer, sizeof spiral_format_buffer, </span><span class="se">\"</span><span class="si">%c</span><span class="se">\"</span><span class="s2">, (int)x) + 1u; }"</span>
+                                <span class="k">global</span> <span class="s2">"""static inline uint32_t spiral_format_plain_char(int32_t x) { return (uint32_t)snprintf(spiral_format_buffer, sizeof spiral_format_buffer, "</span><span class="si">%c</span><span class="s2">", (int)x) + 1u; }"""</span>
                                 <span class="err">$</span><span class="s1">'StringLit(spiral_format_plain_char(!b), spiral_format_buffer)'</span> <span class="p">:</span> <span class="n">string</span>
                             <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">format_debug_real</span> <span class="err">`</span><span class="p">(</span><span class="err">`</span><span class="n">b</span><span class="p">)</span> <span class="n">b</span>
                         <span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">string</span>
@@ -10043,10 +10218,38 @@ __assert_eq { expected = b }</pre>
                         <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
                             <span class="k">match</span> <span class="n">b</span> <span class="k">with</span>
                             <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">f64</span><span class="p">)</span> <span class="o">=&gt;</span>
-                                <span class="k">global</span> <span class="s2">"function SpiralFormatFloat(x: Double; single: Boolean): AnsiString;</span><span class="se">\n</span><span class="s2">var p: Integer; s: string; fs: TFormatSettings; d: Double; f: Single;</span><span class="se">\n</span><span class="s2">begin</span><span class="se">\n</span><span class="s2">  if IsNan(x) then Exit('NaN');</span><span class="se">\n</span><span class="s2">  if IsInfinite(x) then begin if x &gt; 0 then Exit('Infinity') else Exit('-Infinity'); end;</span><span class="se">\n</span><span class="s2">  fs := FormatSettings; fs.DecimalSeparator := '.';</span><span class="se">\n</span><span class="s2">  s := '';</span><span class="se">\n</span><span class="s2">  for p := 1 to 17 do begin</span><span class="se">\n</span><span class="s2">    s := FloatToStrF(x, ffGeneral, p, 0, fs);</span><span class="se">\n</span><span class="s2">    if single then begin f := StrToFloat(s, fs); if f = x then Break; end</span><span class="se">\n</span><span class="s2">    else begin d := StrToFloat(s, fs); if d = x then Break; end;</span><span class="se">\n</span><span class="s2">  end;</span><span class="se">\n</span><span class="s2">  if (Pos('.', s) = 0) and (Pos('E', s) = 0) and (Pos('e', s) = 0) then s := s + '.0';</span><span class="se">\n</span><span class="s2">  Result := StringReplace(s, 'E', 'e', []);</span><span class="se">\n</span><span class="s2">end;"</span>
+                                <span class="k">global</span> <span class="s2">"""function SpiralFormatFloat(x: Double; single: Boolean): AnsiString;</span>
+<span class="s2">var p: Integer; s: string; fs: TFormatSettings; d: Double; f: Single;</span>
+<span class="s2">begin</span>
+<span class="s2">  if IsNan(x) then Exit('NaN');</span>
+<span class="s2">  if IsInfinite(x) then begin if x &gt; 0 then Exit('Infinity') else Exit('-Infinity'); end;</span>
+<span class="s2">  fs := FormatSettings; fs.DecimalSeparator := '.';</span>
+<span class="s2">  s := '';</span>
+<span class="s2">  for p := 1 to 17 do begin</span>
+<span class="s2">    s := FloatToStrF(x, ffGeneral, p, 0, fs);</span>
+<span class="s2">    if single then begin f := StrToFloat(s, fs); if f = x then Break; end</span>
+<span class="s2">    else begin d := StrToFloat(s, fs); if d = x then Break; end;</span>
+<span class="s2">  end;</span>
+<span class="s2">  if (Pos('.', s) = 0) and (Pos('E', s) = 0) and (Pos('e', s) = 0) then s := s + '.0';</span>
+<span class="s2">  Result := StringReplace(s, 'E', 'e', []);</span>
+<span class="s2">end;"""</span>
                                 <span class="err">$</span><span class="s1">'SpiralFormatFloat(!b, False)'</span> <span class="p">:</span> <span class="n">string</span>
                             <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">f32</span><span class="p">)</span> <span class="o">=&gt;</span>
-                                <span class="k">global</span> <span class="s2">"function SpiralFormatFloat(x: Double; single: Boolean): AnsiString;</span><span class="se">\n</span><span class="s2">var p: Integer; s: string; fs: TFormatSettings; d: Double; f: Single;</span><span class="se">\n</span><span class="s2">begin</span><span class="se">\n</span><span class="s2">  if IsNan(x) then Exit('NaN');</span><span class="se">\n</span><span class="s2">  if IsInfinite(x) then begin if x &gt; 0 then Exit('Infinity') else Exit('-Infinity'); end;</span><span class="se">\n</span><span class="s2">  fs := FormatSettings; fs.DecimalSeparator := '.';</span><span class="se">\n</span><span class="s2">  s := '';</span><span class="se">\n</span><span class="s2">  for p := 1 to 17 do begin</span><span class="se">\n</span><span class="s2">    s := FloatToStrF(x, ffGeneral, p, 0, fs);</span><span class="se">\n</span><span class="s2">    if single then begin f := StrToFloat(s, fs); if f = x then Break; end</span><span class="se">\n</span><span class="s2">    else begin d := StrToFloat(s, fs); if d = x then Break; end;</span><span class="se">\n</span><span class="s2">  end;</span><span class="se">\n</span><span class="s2">  if (Pos('.', s) = 0) and (Pos('E', s) = 0) and (Pos('e', s) = 0) then s := s + '.0';</span><span class="se">\n</span><span class="s2">  Result := StringReplace(s, 'E', 'e', []);</span><span class="se">\n</span><span class="s2">end;"</span>
+                                <span class="k">global</span> <span class="s2">"""function SpiralFormatFloat(x: Double; single: Boolean): AnsiString;</span>
+<span class="s2">var p: Integer; s: string; fs: TFormatSettings; d: Double; f: Single;</span>
+<span class="s2">begin</span>
+<span class="s2">  if IsNan(x) then Exit('NaN');</span>
+<span class="s2">  if IsInfinite(x) then begin if x &gt; 0 then Exit('Infinity') else Exit('-Infinity'); end;</span>
+<span class="s2">  fs := FormatSettings; fs.DecimalSeparator := '.';</span>
+<span class="s2">  s := '';</span>
+<span class="s2">  for p := 1 to 17 do begin</span>
+<span class="s2">    s := FloatToStrF(x, ffGeneral, p, 0, fs);</span>
+<span class="s2">    if single then begin f := StrToFloat(s, fs); if f = x then Break; end</span>
+<span class="s2">    else begin d := StrToFloat(s, fs); if d = x then Break; end;</span>
+<span class="s2">  end;</span>
+<span class="s2">  if (Pos('.', s) = 0) and (Pos('E', s) = 0) and (Pos('e', s) = 0) then s := s + '.0';</span>
+<span class="s2">  Result := StringReplace(s, 'E', 'e', []);</span>
+<span class="s2">end;"""</span>
                                 <span class="err">$</span><span class="s1">'SpiralFormatFloat(!b, True)'</span> <span class="p">:</span> <span class="n">string</span>
                             <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">b</span> <span class="p">:</span> <span class="n">string</span>
                             <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">char</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'string(!b)'</span> <span class="p">:</span> <span class="n">string</span>
@@ -10093,6 +10296,16 @@ __assert_eq { expected = b }</pre>
                             <span class="n">result</span> <span class="o">&lt;-</span> <span class="n">append_real</span> <span class="n">s</span> <span class="p">((</span><span class="o">~*</span><span class="p">)</span> <span class="err">`</span><span class="n">string</span> <span class="n">result</span><span class="p">)</span>
                     <span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="p">()</span>
 
+                <span class="n">Kotlin</span> <span class="o">=</span>
+                    <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                        <span class="n">join</span>
+                            <span class="n">result</span> <span class="o">&lt;-</span> <span class="n">append_real</span> <span class="n">s</span> <span class="p">((</span><span class="o">~*</span><span class="p">)</span> <span class="err">`</span><span class="n">string</span> <span class="n">result</span><span class="p">)</span>
+                    <span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="p">()</span>
+                <span class="n">Swift</span> <span class="o">=</span>
+                    <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+                        <span class="n">join</span>
+                            <span class="n">result</span> <span class="o">&lt;-</span> <span class="n">append_real</span> <span class="n">s</span> <span class="p">((</span><span class="o">~*</span><span class="p">)</span> <span class="err">`</span><span class="n">string</span> <span class="n">result</span><span class="p">)</span>
+                    <span class="p">)</span> <span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="p">()</span>
                 <span class="n">C</span> <span class="o">=</span>
                     <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
                         <span class="n">join</span>

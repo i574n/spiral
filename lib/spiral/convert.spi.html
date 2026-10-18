@@ -7975,7 +7975,23 @@ a.anchor-link {
     <span class="k">else</span> <span class="err">$</span><span class="s1">'!x '</span> <span class="p">:</span> <span class="n">u</span>
 
 <span class="n">inl</span> <span class="n">lean_parse_helpers</span> <span class="p">()</span> <span class="p">:</span> <span class="p">()</span> <span class="o">=</span>
-    <span class="k">global</span> <span class="s2">"def spiralParseInt? (s : String) : Option Int :=</span><span class="se">\n</span><span class="s2">  let u := s.trimAscii.toString</span><span class="se">\n</span><span class="s2">  let v := if u.startsWith </span><span class="se">\"</span><span class="s2">+</span><span class="se">\"</span><span class="s2"> then (u.drop 1).toString else u</span><span class="se">\n</span><span class="s2">  v.toInt?</span><span class="se">\n\n</span><span class="s2">def spiralDigit (c : Char) : Int :=</span><span class="se">\n</span><span class="s2">  if c.isDigit then (c.toNat : Int) - 48</span><span class="se">\n</span><span class="s2">  else if 'a' ≤ c &amp;&amp; c ≤ 'z' then (c.toNat : Int) - 87</span><span class="se">\n</span><span class="s2">  else if 'A' ≤ c &amp;&amp; c ≤ 'Z' then (c.toNat : Int) - 55</span><span class="se">\n</span><span class="s2">  else 0</span><span class="se">\n\n</span><span class="s2">def spiralParseIntBase (s : String) (base : Int32) : Int32 :=</span><span class="se">\n</span><span class="s2">  let u := s.trimAscii.toString</span><span class="se">\n</span><span class="s2">  let neg := u.startsWith </span><span class="se">\"</span><span class="s2">-</span><span class="se">\"\n</span><span class="s2">  let body := if neg || u.startsWith </span><span class="se">\"</span><span class="s2">+</span><span class="se">\"</span><span class="s2"> then (u.drop 1).toString else u</span><span class="se">\n</span><span class="s2">  let v := body.foldl (fun acc c =&gt; acc * base.toInt + spiralDigit c) 0</span><span class="se">\n</span><span class="s2">  Int32.ofInt (if neg then -v else v)"</span>
+    <span class="k">global</span> <span class="s2">"""def spiralParseInt? (s : String) : Option Int :=</span>
+<span class="s2">  let u := s.trimAscii.toString</span>
+<span class="s2">  let v := if u.startsWith "+" then (u.drop 1).toString else u</span>
+<span class="s2">  v.toInt?</span>
+
+<span class="s2">def spiralDigit (c : Char) : Int :=</span>
+<span class="s2">  if c.isDigit then (c.toNat : Int) - 48</span>
+<span class="s2">  else if 'a' ≤ c &amp;&amp; c ≤ 'z' then (c.toNat : Int) - 87</span>
+<span class="s2">  else if 'A' ≤ c &amp;&amp; c ≤ 'Z' then (c.toNat : Int) - 55</span>
+<span class="s2">  else 0</span>
+
+<span class="s2">def spiralParseIntBase (s : String) (base : Int32) : Int32 :=</span>
+<span class="s2">  let u := s.trimAscii.toString</span>
+<span class="s2">  let neg := u.startsWith "-"</span>
+<span class="s2">  let body := if neg || u.startsWith "+" then (u.drop 1).toString else u</span>
+<span class="s2">  let v := body.foldl (fun acc c =&gt; acc * base.toInt + spiralDigit c) 0</span>
+<span class="s2">  Int32.ofInt (if neg then -v else v)"""</span>
 </pre></div>
 </div>
 </div>

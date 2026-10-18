@@ -2,77 +2,21 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 struct Heap0 { l0: i32, l1: Rc<str> }
-impl Default for Heap0 {
-    fn default() -> Self {
-        Heap0 { l0: <i32>::default(), l1: { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) } }
-    }
-}
 struct Heap1 { l0: Rc<Heap0>, l1: Rc<Heap0> }
-impl Default for Heap1 {
-    fn default() -> Self {
-        Heap1 { l0: <Rc<Heap0>>::default(), l1: <Rc<Heap0>>::default() }
-    }
-}
 struct Heap2 { l0: Rc<Heap1>, l1: i32 }
-impl Default for Heap2 {
-    fn default() -> Self {
-        Heap2 { l0: <Rc<Heap1>>::default(), l1: <i32>::default() }
-    }
-}
 #[derive(Clone)]
 enum US0 {
     US0_None,
     US0_Held(Rc<Heap2>),
 }
-impl US0 {
-    fn tag(&self) -> i32 {
-        match self {
-            US0::US0_None => 0,
-            US0::US0_Held(..) => 1,
-        }
-    }
-}
-impl Default for US0 {
-    fn default() -> Self {
-        US0::US0_None
-    }
-}
 struct Heap3 { l0: US0 }
-impl Default for Heap3 {
-    fn default() -> Self {
-        Heap3 { l0: <US0>::default() }
-    }
-}
 #[derive(Clone)]
 enum US1 {
     US1_Absent,
     US1_Box(Rc<Heap3>),
 }
-impl US1 {
-    fn tag(&self) -> i32 {
-        match self {
-            US1::US1_Absent => 0,
-            US1::US1_Box(..) => 1,
-        }
-    }
-}
-impl Default for US1 {
-    fn default() -> Self {
-        US1::US1_Absent
-    }
-}
 struct Heap4 { l0: US1 }
-impl Default for Heap4 {
-    fn default() -> Self {
-        Heap4 { l0: <US1>::default() }
-    }
-}
 struct Mut0 { l0: Rc<Heap4> }
-impl Default for Mut0 {
-    fn default() -> Self {
-        Mut0 { l0: <Rc<Heap4>>::default() }
-    }
-}
 fn score_0(mut v0: US1) -> i32 {
     match &v0 {
         US1::US1_Absent => {
@@ -181,5 +125,5 @@ fn spiral_main() -> i32 {
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 1 });
 }

@@ -50,11 +50,16 @@ fn spiralPrint(s: []const u8) void {
     @memcpy(spiral_out_buffer[spiral_out_len..][0..s.len], s);
     spiral_out_len += s.len;
 }
+fn spiralFloatText(x: anytype) []u8 {
+    var buffer: [std.fmt.float.bufferSize(.decimal, @TypeOf(x))]u8 = undefined;
+    const text = std.fmt.float.render(&buffer, x, .{ .mode = .decimal }) catch unreachable;
+    return spiral_gpa.dupe(u8, text) catch @panic("out of memory");
+}
 fn spiralPrintAny(x: anytype) void {
     const T = @TypeOf(x);
     if (T == []const u8) return spiralPrint(x);
+    if (@typeInfo(T) == .float) return spiralPrint(spiralFloatText(x));
     const s = switch (@typeInfo(T)) {
-        .float => std.fmt.allocPrint(spiral_gpa, "{d}", .{x}),
         .bool => std.fmt.allocPrint(spiral_gpa, "{}", .{x}),
         else => std.fmt.allocPrint(spiral_gpa, "{d}", .{x}),
     } catch @panic("out of memory");
@@ -130,11 +135,23 @@ var spiral_exit_code: i32 = 0;
 fn spiralMainThread() void {
     spiral_exit_code = spiralMain();
 }
+extern "kernel32" fn CreateThread(attributes: ?*anyopaque, stack_size: usize, start: *const fn (?*anyopaque) callconv(.winapi) u32, parameter: ?*anyopaque, flags: u32, id: ?*u32) callconv(.winapi) ?std.os.windows.HANDLE;
+extern "kernel32" fn WaitForSingleObject(handle: std.os.windows.HANDLE, milliseconds: u32) callconv(.winapi) u32;
+extern "kernel32" fn ExitProcess(code: u32) callconv(.winapi) noreturn;
+fn spiralMainThreadReserved(_: ?*anyopaque) callconv(.winapi) u32 {
+    spiralMainThread();
+    return 0;
+}
 pub fn main(init: std.process.Init.Minimal) void {
     spiral_gpa = spiral_arena.allocator();
     spiral_environ = init.environ;
-    const thread = std.Thread.spawn(.{ .stack_size = 1 << 30 }, spiralMainThread, .{}) catch @panic("spiral: could not start the main thread");
-    thread.join();
+    if (@import("builtin").os.tag == .windows) {
+        const handle = CreateThread(null, 1 << 30, spiralMainThreadReserved, null, 0x00010000, null) orelse @panic("spiral: could not start the main thread");
+        _ = WaitForSingleObject(handle, 0xFFFFFFFF);
+    } else {
+        const thread = std.Thread.spawn(.{ .stack_size = 1 << 30 }, spiralMainThread, .{}) catch @panic("spiral: could not start the main thread");
+        thread.join();
+    }
     spiralFlush();
-    std.process.exit(@truncate(@as(u32, @bitCast(spiral_exit_code))));
+    if (@import("builtin").os.tag == .windows) ExitProcess(@bitCast(spiral_exit_code)) else std.process.exit(@truncate(@as(u32, @bitCast(spiral_exit_code))));
 }

@@ -7937,91 +7937,11 @@ a.anchor-link {
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h3 id="get_file_hash'">get_file_hash'<a class="anchor-link" href="#get_file_hash'">¶</a></h3>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=11">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">get_file_hash</span><span class="s1">' (path : string) : result string string =</span>
-    <span class="n">inl</span> <span class="n">path</span> <span class="o">=</span> <span class="n">path</span> <span class="o">|&gt;</span> <span class="n">file_system</span><span class="o">.</span><span class="n">normalize_path</span>
-    <span class="n">inl</span> <span class="n">exit_code</span><span class="p">,</span> <span class="n">result</span> <span class="o">=</span>
-        <span class="n">runtime</span><span class="o">.</span><span class="n">execution_options</span> <span class="n">fun</span> <span class="n">x</span> <span class="o">=&gt;</span> <span class="p">{</span> <span class="n">x</span> <span class="k">with</span>
-            <span class="n">command</span> <span class="o">=</span> <span class="err">$</span><span class="s1">'$"pwsh -c </span><span class="se">\\\"</span><span class="s1">(Get-FileHash </span><span class="se">\'</span><span class="s1">{!path}</span><span class="se">\'</span><span class="s1"> -Algorithm SHA256).Hash</span><span class="se">\\\"</span><span class="s1">"'</span>
-        <span class="p">}</span>
-        <span class="o">|&gt;</span> <span class="n">runtime</span><span class="o">.</span><span class="n">execute_with_options</span>
-    <span class="k">if</span> <span class="n">exit_code</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="n">then</span> <span class="n">result</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.to_lower |&gt; Ok</span>
-    <span class="k">else</span> <span class="n">result</span> <span class="o">|&gt;</span> <span class="n">Error</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=12">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [1]:</div>
-<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
-<div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
-<span class="o">///&gt;</span> <span class="n">rust</span> <span class="o">-</span><span class="n">d</span> <span class="n">chrono</span> <span class="n">encoding_rs</span> <span class="n">encoding_rs_io</span> <span class="n">regex</span> <span class="n">sha2</span>
-
-<span class="n">inl</span> <span class="n">file_name</span> <span class="o">=</span> <span class="s2">"test.txt"</span>
-<span class="n">inl</span> <span class="n">text</span> <span class="o">=</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span>
-
-<span class="n">inl</span> <span class="n">temp_dir</span><span class="p">,</span> <span class="n">disposable</span> <span class="o">=</span>
-    <span class="c1">#?*(file_name, text)</span>
-    <span class="o">|&gt;</span> <span class="n">crypto</span><span class="o">.</span><span class="n">hash_text</span>
-    <span class="o">|&gt;</span> <span class="n">file_system</span><span class="o">.</span><span class="n">create_temp_dir</span><span class="s1">'</span>
-<span class="n">disposable</span> <span class="o">|&gt;</span> <span class="n">use</span> <span class="o">|&gt;</span> <span class="n">ignore</span>
-<span class="n">inl</span> <span class="n">path</span> <span class="o">=</span> <span class="n">temp_dir</span> <span class="o">&lt;/&gt;</span> <span class="n">file_name</span>
-<span class="n">text</span> <span class="o">|&gt;</span> <span class="n">file_system</span><span class="o">.</span><span class="n">write_all_text</span> <span class="n">path</span>
-<span class="n">path</span>
-<span class="o">|&gt;</span> <span class="n">get_file_hash</span><span class="s1">'</span>
-<span class="o">|&gt;</span> <span class="n">resultm</span><span class="o">.</span><span class="n">get</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="s2">"01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"</span>
-</pre></div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell-outputWrapper">
-<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
-</div>
-<div class="jp-OutputArea jp-Cell-outputArea">
-<div class="jp-OutputArea-child">
-<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
-<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>11:23:41 1<span class="ansi-black-intense-fg">v</span> file_system.create_dir / { dir = /tmp/!create_temp_path_/spiral_b2719437395e07afb3bae0dc829ac65a5fdc79a40048a1b898f371d89c2e71b8/11673ef1-3afd-b48c-b456-054dcc9be5a8 }
-11:23:41 2<span class="ansi-blue-intense-fg">d</span> runtime.execute_with_options / { file_name = pwsh; arguments = ["-c", "(Get-FileHash '/tmp/!create_temp_path_/spiral_b2719437395e07afb3bae0dc829ac65a5fdc79a40048a1b898f371d89c2e71b8/11673ef1-3afd-b48c-b456-054dcc9be5a8/test.txt' -Algorithm SHA256).Hash"] }
-11:23:41 3<span class="ansi-black-intense-fg">v</span> &gt; 01BA4719C80B6FE911B091A7C05124B64EEECE964E09C058EF8F9805DACA546B
-11:23:42 4<span class="ansi-black-intense-fg">v</span> runtime.execute_with_options / result / { file_name = pwsh; exit_code = 0; std_trace_len = 64 }
-__assert_eq { expected = 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b }</pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=13">
-<div class="jp-Cell-inputWrapper" tabindex="0">
-<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
-</div>
-<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <h3 id="sha256'">sha256'<a class="anchor-link" href="#sha256'">¶</a></h3>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=14">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=11">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8042,7 +7962,7 @@ __assert_eq { expected = 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f980
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=15">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=12">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8052,7 +7972,7 @@ __assert_eq { expected = 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f980
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=16">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=13">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8069,7 +7989,7 @@ __assert_eq { expected = 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f980
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=17">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=14">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8079,7 +7999,7 @@ __assert_eq { expected = 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f980
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=18">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=15">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8095,7 +8015,7 @@ __assert_eq { expected = 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f980
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=19">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=16">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8105,7 +8025,7 @@ __assert_eq { expected = 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f980
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=20">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=17">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8121,7 +8041,7 @@ __assert_eq { expected = 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f980
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=21">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=18">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8131,7 +8051,7 @@ __assert_eq { expected = 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f980
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=22">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=19">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8181,7 +8101,7 @@ __assert_eq { expected = 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f980
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=23">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=20">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8191,7 +8111,7 @@ __assert_eq { expected = 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f980
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=24">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=21">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8210,12 +8130,23 @@ __assert_eq { expected = 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f980
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=25">
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=22">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="get_file_hash_2-(test)">get_file_hash_2 (test)<a class="anchor-link" href="#get_file_hash_2-(test)">¶</a></h4>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=23">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [2]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [1]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -8249,18 +8180,29 @@ __assert_eq { expected = 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f980
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>11:23:31 1<span class="ansi-black-intense-fg">v</span> file_system.create_dir / { dir = /tmp/!create_temp_path_/spiral_fc756a1ac4a64a4532d7144c9f0a771d224928c7774d6bbe8a3b2464da734610/11673ef1-3afd-b48c-b456-054dcc9be5a8 }
+<pre>13:03:01 1<span class="ansi-black-intense-fg">v</span> file_system.create_dir / { dir = /tmp/!create_temp_path_/spiral_17f9b54ce972204b9dfb66c1a6a1d4d7d94846041f21658571dae9fab3fb2057/11673ef1-3afd-b48c-b456-054dcc9be5a8 }
 __assert_eq { expected = 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b }</pre>
 </div>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=26">
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=24">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h4 id="get_file_hash_3-(test)">get_file_hash_3 (test)<a class="anchor-link" href="#get_file_hash_3-(test)">¶</a></h4>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=25">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [3]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [2]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -8293,14 +8235,14 @@ __assert_eq { expected = 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f980
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>11:23:32 1<span class="ansi-black-intense-fg">v</span> file_system.create_dir / { dir = /tmp/!create_temp_path_/spiral_03b9c50d60e7f7d0c20f6475e0e907ea2fb0dbe6aedf2098169a3c603b7e891b/536878b7-182d-4692-f1ac-23e55345bf6d }
+<pre>13:03:00 1<span class="ansi-black-intense-fg">v</span> file_system.create_dir / { dir = /tmp/!create_temp_path_/spiral_21777849fbc01bbfcd564e7d84d2a41995ecefbcd855c6e5cae3f521127e562a/536878b7-182d-4692-f1ac-23e55345bf6d }
 __assert_eq { expected = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 }</pre>
 </div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=27">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=26">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8311,7 +8253,7 @@ __assert_eq { expected = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=28">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=27">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8321,7 +8263,7 @@ __assert_eq { expected = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=29">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=28">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8338,7 +8280,7 @@ __assert_eq { expected = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=30">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=29">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8348,7 +8290,7 @@ __assert_eq { expected = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=31">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=30">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8364,7 +8306,7 @@ __assert_eq { expected = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=32">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=31">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8374,7 +8316,7 @@ __assert_eq { expected = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=33">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=32">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8390,7 +8332,7 @@ __assert_eq { expected = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=34">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=33">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8401,7 +8343,7 @@ __assert_eq { expected = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=35">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=34">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8411,7 +8353,7 @@ __assert_eq { expected = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=36">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=35">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8426,7 +8368,7 @@ __assert_eq { expected = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=37">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=36">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8436,7 +8378,7 @@ __assert_eq { expected = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=38">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=37">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8456,7 +8398,7 @@ __assert_eq { expected = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=39">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=38">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8466,7 +8408,7 @@ __assert_eq { expected = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=40">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=39">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8486,7 +8428,7 @@ __assert_eq { expected = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=41">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=40">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8496,7 +8438,7 @@ __assert_eq { expected = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=42">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=41">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8515,7 +8457,7 @@ __assert_eq { expected = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=43">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=42">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8526,7 +8468,7 @@ __assert_eq { expected = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=44">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=43">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8536,7 +8478,7 @@ __assert_eq { expected = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=45">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=44">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8577,12 +8519,12 @@ __assert_eq { expected = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=46">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=45">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [4]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [3]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -8627,7 +8569,7 @@ __assert_eq { expected = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=47">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=46">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8637,7 +8579,7 @@ __assert_eq { expected = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=48">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=47">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8658,12 +8600,12 @@ __assert_eq { expected = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=49">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=48">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [5]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [4]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -8689,23 +8631,23 @@ __assert_eq { expected = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx (fsharp)
-11:23:36 1v crypto.hash_to_port / { first_letter_code = 48; hash_part = 01ba4719; combined_value = 18249 }
+13:03:03 1v crypto.hash_to_port / { first_letter_code = 48; hash_part = 01ba4719; combined_value = 18249 }
 __assert_eq { expected = 19273 }
 .py (cuda)
-11:23:42 1<span class="ansi-black-intense-fg">v</span> crypto.hash_to_port / { first_letter_code = 48; hash_part = 01ba4719; combined_value = 18249 }
+13:03:05 1<span class="ansi-black-intense-fg">v</span> crypto.hash_to_port / { first_letter_code = 48; hash_part = 01ba4719; combined_value = 18249 }
 __assert_eq { expected = 19273 }
 .rs (rust)
-11:23:44 1<span class="ansi-black-intense-fg">v</span> crypto.hash_to_port / { first_letter_code = 48; hash_part = 01ba4719; combined_value = 18249 }
+13:03:06 1<span class="ansi-black-intense-fg">v</span> crypto.hash_to_port / { first_letter_code = 48; hash_part = 01ba4719; combined_value = 18249 }
 __assert_eq { expected = 19273 }
 .ts (typescript)
-11:23:45 1v crypto.hash_to_port / { first_letter_code = 48; hash_part = 01ba4719; combined_value = 18249 }
+13:03:07 1v crypto.hash_to_port / { first_letter_code = 48; hash_part = 01ba4719; combined_value = 18249 }
 __assert_eq { expected = 19273 }</pre>
 </div>
 </div>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=50">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=49">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8715,12 +8657,12 @@ __assert_eq { expected = 19273 }</pre>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=51">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=50">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [6]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [5]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///&gt;</span> <span class="n">fsharp</span>

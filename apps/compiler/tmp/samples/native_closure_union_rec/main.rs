@@ -6,14 +6,6 @@ enum UH0 {
     UH0_Cons(u64, Rc<dyn Fn() -> Rc<UH0>>),
     UH0_Nil,
 }
-impl UH0 {
-    fn tag(&self) -> i32 {
-        match self {
-            UH0::UH0_Cons(..) => 0,
-            UH0::UH0_Nil => 1,
-        }
-    }
-}
 fn closure0(mut v0: u64) -> Rc<dyn Fn() -> Rc<UH0>> {
     Rc::new(move || -> Rc<UH0> {
         let mut v1: u64 = v0.wrapping_sub(1u64);
@@ -60,5 +52,5 @@ fn spiral_main() -> i32 {
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 1 });
 }

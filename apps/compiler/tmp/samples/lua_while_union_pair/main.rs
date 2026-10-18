@@ -2,41 +2,13 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 struct Mut0 { l0: i32 }
-impl Default for Mut0 {
-    fn default() -> Self {
-        Mut0 { l0: <i32>::default() }
-    }
-}
 struct Mut1 { l0: i32 }
-impl Default for Mut1 {
-    fn default() -> Self {
-        Mut1 { l0: <i32>::default() }
-    }
-}
 #[derive(Clone)]
 enum UH0 {
     UH0_Nil,
     UH0_Cons(i32, Rc<UH0>),
 }
-impl UH0 {
-    fn tag(&self) -> i32 {
-        match self {
-            UH0::UH0_Nil => 0,
-            UH0::UH0_Cons(..) => 1,
-        }
-    }
-}
-impl Default for UH0 {
-    fn default() -> Self {
-        UH0::UH0_Nil
-    }
-}
 struct Mut2 { l0: Rc<UH0> }
-impl Default for Mut2 {
-    fn default() -> Self {
-        Mut2 { l0: <Rc<UH0>>::default() }
-    }
-}
 fn method0(mut v0: Rc<RefCell<Mut0>>) -> bool {
     let mut v1: i32 = v0.borrow().l0.clone();
     let mut v2: bool = v1 < 3i32;
@@ -140,5 +112,5 @@ fn spiral_main() -> i32 {
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 1 });
 }

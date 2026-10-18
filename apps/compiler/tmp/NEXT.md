@@ -68,8 +68,8 @@ State at hand-off, and the open work in priority order. Details live in the lane
   single-flight projection is unchanged by it. `apps/spiral` on gpt5parallel (fresh process, ReadyToRun): 85 s with the split,
   93 s without, byte-identical `spiral.fsx` (1,932,564 B; 359-888 s on 10-01).
 - TypeScript coverage: a sweep compiled every sample with a C oracle to TypeScript; 97 agree with C and now carry a
-  TypeScript row (`tests/harness.psd1` `AlsoTypeScript`, appended in `test.ps1`'s New-Sample; frontier samples
-  excluded). The others are C-only by design (libc ABI fixtures, the C dynamic-array shims' macros, the harness core's
+  TypeScript row (`tests/matrix.psd1` `AlsoTypeScript`, appended in `test.ps1`'s New-Sample; frontier samples
+  excluded). The others are C-only by design (libc ABI fixtures, the C dynamic-array shims' macros, the matrix core's
   C-only `((uint8_t)!value)` byte macro, BackendSwitch fixtures without a TypeScript key). One real gap fixed: a string
   slice that fails (bounds, or inside a code point) exited 1 on TypeScript (a thrown RangeError) where C/Rust/Delphi
   exit 3 (abort / exit(3) / Halt(3)); the helper now exits 3 (`managed_string_invalid_utf8_slice`).
@@ -170,7 +170,7 @@ State at hand-off, and the open work in priority order. Details live in the lane
   `git diff samples` shows what changed. `scripts/test.ps1` holds a named mutex per cache dir (a dead run abandons it).
 - C-isms removed from the fixtures: `samples/core/operators.spi` uses built-in ops; per-backend code goes
   through `!!!!BackendSwitch`; C-runtime fixtures (`dynamic_array_*`, `abi_external_*`) are C-only in
-  `tests/harness.psd1`; the 16 translator-only fixtures are deleted; stale `Known` entries pruned.
+  `tests/matrix.psd1`; the 16 translator-only fixtures are deleted; stale `Known` entries pruned.
 - Split compiler (`scripts/gear-dev.ps1`): plans stay stable across body edits (planning weights), the host
   links against surface copies of the gears, module-level `do`s run through `GearRoot.initialize`.
   See `lanes/splitter/README.md`.
@@ -281,7 +281,7 @@ State at hand-off, and the open work in priority order. Details live in the lane
   `native_fptr_basic`/`native_fptr_reuse` need function pointers (`YFun .. FT_Pointer`), which upstream's C
   backend never had (only the C++/Cuda one: `typedef` + `FunPointerMethod{tag}`); `native_layout_stack_mutable`
   needs stack-mutable layouts, which the C and Rust backends reject by design. Like the 16 translator-only
-  fixtures before, they are dropped (harness entries removed; delete the three directories once the running
+  fixtures before, they are dropped (matrix entries removed; delete the three directories once the running
   wide gpt5parallel run has finished). Porting function pointers to C/Rust/Delphi from the C++ backend is an
   option if native callbacks are wanted.
 - IR plan (the codegen pairs): the IR types differ only systematically: union tags (`UnionTagId` vs
@@ -341,7 +341,7 @@ State at hand-off, and the open work in priority order. Details live in the lane
   digest performance work, host accepts F# scripts ending in an expression; then one `-Suite all -Native`
   gpt5parallel run (results in FRONTIER.md when it lands). The `native_source_package_prototype_*` rows are parity:
   the oracle expects the rejection, and single-flight rejects them too (their nested packages use `+.`, which
-  only the harness core defines).
+  only the matrix core defines).
 - **Evening 2026-09-29**: fix 25 (closures in runtime `if` branches, the `EJP0035` wall: two closures shared
   one promise identity) and fix 26 (performance: lazy path/lineage digests, incremental work-ledger counts,
   `Environment.ProcessId`; profile and numbers in FRONTIER.md). A `frontier,smoke,examples,contracts -Native`
@@ -605,7 +605,7 @@ Details: `lanes/gpt5parallel/FRONTIER.md` fix 55.
       `EJP0040` in 14.5-16.5 s under suite load against the 17 s core deadline. Repeat
       `pwsh scripts/test.ps1 -Mode gpt5parallel -Suite all -Native` two or three times; if they hold, switch the
       default lane per AGENTS.md "Promotion criterion". If they flap: the remaining per-level cost is replay
-      registration (item 3), CSE lookups through the scope chain, and GC scans of the deep stack (the harness
+      registration (item 3), CSE lookups through the scope chain, and GC scans of the deep stack (the matrix
       already sets `DOTNET_GCgen0size=0x10000000`).
       2026-10-02: held twice with margin (`-Parallel 2`): `runs/hopac-20261002-111457` 11.3-11.7 s, and
       `runs/hopac-20261002-153006` 8.7-10.0 s (after the registration and union-tag changes; full parity, 0 missing,
@@ -732,7 +732,7 @@ Details: `lanes/gpt5parallel/FRONTIER.md` fix 55.
         11, 4, 1 definitions per round; functions only, since a module-level value may run for its side effect);
         two modules left empty were dropped. Single-flight's projection unchanged.
       - TypeScript backend: shared section `/// ## CodegenTypescript` (after CodegenLua), `.ts` in the host, a
-        `C,TypeScript,Cpp,Python` harness set (`tests/harness.psd1`) with 14 `ts_*` fixtures; TypeScript runs on node
+        `C,TypeScript,Cpp,Python` matrix set (`tests/matrix.psd1`) with 14 `ts_*` fixtures; TypeScript runs on node
         through `tests/native-shims/run_main.mjs` (worker with a 1 GB stack); all 14 agree with the C oracle. Chars are
         UTF-8 bytes as in C.
       - C++/CUDA/Python synced to upstream `host_cpp_and_cuda_backend` 0cb0fda0: CodegenCpp and CodegenPython are
@@ -795,11 +795,11 @@ Details: `lanes/gpt5parallel/FRONTIER.md` fix 55.
    - **Diagnosed (2026-09-29, late):** with the fatal message now listing every package's errors, these
      "stalls" report instead: gpt5parallel rejects `+.`/`=.` inside the nested package
      (`packages/shared/advance.spi:12:31: Unbound term variable: +.`, `consume.spi:16:43: ... =.`). Those
-     operators come from the harness core `samples/core` (`operators-`); The-Spiral-Language's core
+     operators come from the matrix core `samples/core` (`operators-`); The-Spiral-Language's core
      (`SPIRAL_COMPILER_PACKAGE_DIR`, `deps/polyglot/.../VS Code Plugin/core`) has neither, and every
      package in these fixtures uses `|core-` (the real core). Single-flight rejects them the same way (a
      fresh compile: `Unbound variable: +.` in `shared`), and the oracle expects the rejection, so gpt5parallel is at
-     parity; whether the fixtures should use the harness core (`core-`) is a fixture question. (Earlier
+     parity; whether the fixtures should use the matrix core (`core-`) is a fixture question. (Earlier
      builds hung at `typecheck_await_scheduled` instead of reporting; which change ended that is not pinned
      down.) The notes below are the earlier analysis.
    - Type checking never finishes (`last_stage=typecheck_await_scheduled`) for multi-package programs:

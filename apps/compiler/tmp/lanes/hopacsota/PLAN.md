@@ -347,8 +347,9 @@ counter per use with its reason), `Promise.Now.`, `IVar.Now.`, `Hopac.run` (exce
 `ThreadLocal` (Hopac jobs move between threads; single-flight's `DynamicIfNesting.depth` and
 `RustGapTrace.validating` become per-body values passed in the environment), `Thread.Sleep`, `Stopwatch` or
 `DateTime` in a decision (a timeout may only produce a report, never change a result), `SHA256`/hashing for
-telemetry, `<~>`, `Alt.chooser`, `Alt.random`, `Job.Random` (choice must be left-biased and deterministic), and
-the D2 identifiers. The allowlist lives in `scripts/hopacsota-lint.ps1`, one line per exception with its
+telemetry, `<~>`, `Alt.chooser`, `Alt.random`, `Job.Random` (choice must be left-biased and deterministic),
+`Stream.mapPipelined*` (it hung in 25-45% of runs at any parallelism above 1 in Hopac 0.5.1, 2026-10-17; use
+`conCollect`), and the D2 identifiers. The allowlist lives in `scripts/hopacsota-lint.ps1`, one line per exception with its
 reason.
 
 ## Shared state inventory (Phase 0 output, R2)
@@ -712,6 +713,16 @@ Every gate is a command plus a number. "Looks fine" is not a gate.
   the per-body `Dictionary` under the single-thread policies and becomes the D3 shard server under
   `parallel`; the proof is G3 with `parallel` at `SPIRAL_HOPACSOTA_WORKERS=1` equal to `inline`, then
   Gate 2's 2, 4 and 8 workers once the bodies that reach `await` run as jobs.
+- Grain 2 split (2026-10-17 12:10, main). **2a** (in the tree, G3 below): `PartEvalSeams.fill` replaces the three final
+  writes and `PartEvalSeams.announce` the method's `(None, annot, jp_name)` write, plain writes on every policy today
+  (G6: 4 added single-flight lines, all seam calls; G1 142, G2 0). Measured before choosing 2b's shape: under every
+  single-thread policy a pending entry is only ever read by its owner's own chain (unannotated methods and type
+  join points are never deferred, and a deferred closure's pending entry is a hit), so `Waiting` cannot arise there.
+  **2b** therefore puts the wait inside `claim` instead of adding `Waiting` arms at the three sites:
+  under `parallel`, `claim` on a key owned by a non-ancestor blocks on that key's fill and returns `Found`.
+  `announce` publishes the annotation so annotated recursion and concurrent callers read it without waiting (D4).
+  D4's ancestor rule stays in `claim`: a key on the caller's own chain returns its pending entry as today.
+  The sites keep their shape, so 2b adds no PartEval lines.
 - The Parallel policy: a local scheduler (D5), owner jobs per specialization, D3 servers with sharded
   tables, the D4 wait-for server, and the D13 event stream (off by default).
 - **Gate 2:**
@@ -857,6 +868,45 @@ Scoreboard notes:
 - R3 (mega roots, 2026-10-14 07:50): the five mega roots compiled to F# with the R3 build, outputs byte-identical to the committed ones; W/S = 1.00 on all five (0-491 type join points, 2 method join points, root body 86-98% of peval), peval 28-672 ms of 2.5-8.2 s compiles: the mega roots inline almost everything, so join-point forking finds nothing there and parse/type check/codegen dominate (D16.4); apps/spiral running next.
 
 ## Decision changes
+
+- **2026-10-17 14:1x, grain 2b design (lane hopacsota-2b-design, notes 8-13 on HOPACSOTA-P2), adopted as the plan for 2b, not yet coded.**
+  - **D5 (engine shape):** bodies run direct-style on dedicated 1.5 GB-stack threads; the root stays on peval's thread. A per-build control scheduler (`Scheduler.create`, 1 worker, killed at the end) runs only the servers (D3 shard table, worklist, D4 wait-for graph). Bodies reach it through one blocking bridge, `Scheduler.run control job`, from non-worker threads only; it is the single allowlisted G2 exception. Rejected: job-shaped claim sites (every caller up the `ty`/`term` recursion would turn into a Job, against D1/G1), and blocking the server workers (deadlocks once all of them wait). Restart-on-wait stays only as the rare conflict fallback.
+  - **D3 (ready-based claim):** claim waits until an entry is usable, not until it is filled. A closure never waits, a method waits for its announced annotation, and a type join point and `backend_switch_validated` wait for the fill. So claim takes a ready predicate per site, and at 1 thread no wait can happen. An owner that unwinds without filling (an error swallowed in `ty_is_uninhabited` or the bsv `try`) publishes `Abandoned`.
+  - **D4:** a deferred body inherits an immutable snapshot of its parent's ancestor chain at the defer point. A wait-for cycle, or a foreign claimant seeing an abandoned key, triggers a deterministic restart of the whole peval under `inline`, counted by cause; nonzero counts on apps/spiral move the next grain to arbitration by canonical position.
+  - **Shared state:**
+    - The Session's `.Count`-based markers and shared Dictionaries move into the D3 cell and per-body registries, merged at Finish.
+    - The three outer `Utils.memoize` tables need a `PartEvalSeams.family` seam.
+    - `uninhabited_nesting` needs one seam line.
+    - `DynamicIfNesting`/`RustGapTrace.validating` need nothing, because a direct-style body never changes thread and Defer resets both.
+    - RUST-GAP runs with 1 body thread until it becomes a D13 event.
+    - Body identity comes from one allowlisted `ThreadLocal<BodyContext>` in the engine.
+  - **Size:** about 8-10 single-flight seam lines and a 350-500-line `PartEvalEngineHopacsota` section (~650 against the 5,934 budget). The first number to measure is claims per body, since a claim miss is a cross-thread round trip.
+  - **G2** now also bans `Scheduler.run`, `ThreadStatic`, `ManualResetEvent*`, `SemaphoreSlim`, `SpinLock`, `Mutex` and `new Thread` (lint updated; 0 hits today). Each engine use gets one allowlist line.
+  - **First grain 2b-1:** the full engine at `SPIRAL_HOPACSOTA_WORKERS=1`. Proof: G1/G2, G6 `-Seams`, and G3 compile-only with `parallel@1`, `inline` and `random:23`, each 0 cells against the bless; apps/spiral F#/Rust byte-identical; and G5 within 1.05x, printing claims, bridge calls and cache hits. **2b-2:** Gate 2 at 2/4/8 workers, plus probe `-Repeat 5` at 8 workers, with conflict counts per run.
+
+- **2026-10-17, study lane measurements absorbed by main (lab/hopacsota-hopac-depth, lab/hopacsota-lf-scheduling).**
+  These were measured under build load and should be rerun on an idle machine before Gate 3 cites them; none
+  of them reverses a decision.
+  - **D5:** a per-build scheduler costs 2.2 ms (`Scheduler.create`, one fork-join, `Scheduler.kill`), so every
+    build gets its own scheduler and kills it at the end. That rules out the cross-build leak class of
+    gpt5parallel fix 57.
+  - **D3:** a key lookup costs 447 ns through `ConcurrentDictionary`, 931 ns through `MVar` and 1,221 ns
+    through an owner server job, small next to a join-point body, so D3 keeps the server-owned table (and the
+    G2 ban).
+  - **Fork-join:** `Latch` (272 µs) and `conCollect` (275 µs) are about twice as fast as counting with
+    `IVar` plus `Interlocked` (540 µs), so fork-join uses `Latch`. The D6 merge's order-preserving parallel
+    map uses `conCollect` (2.5x sequential on per-method codegen).
+  - **D16.2 speculation:** `withNackJob` delivered the loser's cancellation in 2,000 of 2,000 races, but only
+    when the loser is the left alternative; otherwise the loser is never started.
+  - **Phase 3 worklist order:** in an LF-style simulation, longest-remaining-chain first lands within 4% of
+    the optimum and leaves first is up to 33% slower. A shape-only cost estimate is enough for a first build,
+    and the level breadth caps useful workers. Measured on generated method call graphs (a stand-in for the key
+    graph): typical sample 2 levels, breadth 2; mega brzozowski 7-9 levels, breadth 4-17, size-weighted bound
+    3.6-4.9x; omniledger inlines into one `main`, so method grain finds nothing there (R3, D16.4).
+  - **Shared state inventory:** the GADT hang fix (2026-10-17) added `uninhabited_nesting`, a per-compile
+    budget for nested `ty_is_uninhabited` calls (a ref cell in single-flight, `ThreadLocal` in gpt5parallel).
+    Under the parallel policy it becomes a per-body value passed in the environment, like
+    `DynamicIfNesting.depth`, and a deferred body starts it at 0.
 
 - **2026-10-16 08:51, main: G6 compares projections modulo whitespace.** The R4 edit list (job scratch `hopacsota-p0/r4_deferred.ps1`) has twelve seam sites; ten are one-line hooks (memo hit markers, key lists, depth notes, session start, root drain), but the two deferred bodies (closure, annotated method) are 20-40 line blocks that must become an `evaluate` closure handed to the seam, which re-indents them. `projection-hash.ps1 -Seams` therefore diffs with whitespace ignored (`git diff -w`) and also accepts added lines that are only closing punctuation (`)`); every other added line must still call `PartEvalSeams.`. The `/// ## PartEvalSeams` section itself (the single-flight side of the seam pair: inline no-ops) is stripped from both projections before the diff, and `Get-SpiralCoreProjection` resolves `SPIRAL_CORE_HOPACSOTA` blocks like gpt5parallel ones (single-flight and gpt5parallel keep their `#else` side). The single-flight oracle staying identical (full-suite review, no row differs) remains the semantic half of G6.
 - **2026-10-13 23:2x, user: "why you're even considering dropping parallel evaluation? we need that for the

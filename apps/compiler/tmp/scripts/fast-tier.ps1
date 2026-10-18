@@ -36,13 +36,45 @@ class SpiralRowHistory {
 
 function Get-SpiralColumnIndex([string[]]$Header, [string]$Name) { [Array]::IndexOf($Header, $Name) }
 
+function Get-SpiralRunStamp($run) {
+    $results = Get-Item -LiteralPath (Join-Path $run.FullName 'results.tsv')
+    "$($run.Name)|$($results.Length)|$($results.LastWriteTimeUtc.Ticks)|$(Test-Path (Join-Path $run.FullName 'fast-tier.tsv'))"
+}
+
 function Get-SpiralRowHistory([string]$Mode, [double]$MaxTimeoutShare, [int]$RecentCostRuns) {
     $rows = [Collections.Generic.Dictionary[string, SpiralRowHistory]]::new()
     $minedRuns = 0
     $timeoutHeavyRuns = 0
     $largestRun = 0
     $reference = $null
-    foreach ($run in Get-SpiralRunHistoryDirs $Mode) {
+    $runDirs = @(Get-SpiralRunHistoryDirs $Mode)
+    $stamps = @($runDirs | ForEach-Object { Get-SpiralRunStamp $_ })
+    $foldCacheDir = Join-Path (Get-SpiralCacheDir) 'fast-tier-fold'
+    New-Item -ItemType Directory -Force $foldCacheDir | Out-Null
+    $foldCache = Join-Path $foldCacheDir "$(ConvertTo-SpiralMode $Mode)-$MaxTimeoutShare-$RecentCostRuns.json"
+    $resumeAt = 0
+    if (Test-Path -LiteralPath $foldCache) {
+        try {
+            $saved = [IO.File]::ReadAllText($foldCache) | ConvertFrom-Json
+            $savedStamps = @($saved.Stamps)
+            $prefix = $savedStamps.Count -le $stamps.Count
+            for ($s = 0; $prefix -and $s -lt $savedStamps.Count; $s++) { if ($savedStamps[$s] -ne $stamps[$s]) { $prefix = $false } }
+            if ($prefix) {
+                foreach ($property in $saved.Rows.PSObject.Properties) {
+                    $value = $property.Value
+                    $row = [SpiralRowHistory]@{ Id = $value.Id; Backend = $value.Backend; Runs = $value.Runs; Changes = $value.Changes; Flips = $value.Flips; Compile = $value.Compile; Residual = $value.Residual; NativeOutcome = $value.NativeOutcome; FlipHistory = $value.FlipHistory }
+                    foreach ($cost in @($value.Costs)) { $row.Costs.Add([double]$cost) }
+                    $rows[$property.Name] = $row
+                }
+                $minedRuns = [int]$saved.MinedRuns
+                $timeoutHeavyRuns = [int]$saved.TimeoutHeavyRuns
+                $largestRun = [int]$saved.LargestRun
+                if ($saved.Reference) { $reference = [pscustomobject]@{ Name = $saved.Reference.Name; Keys = [Collections.Generic.List[string]]::new([string[]]@($saved.Reference.Keys)) } }
+                $resumeAt = $savedStamps.Count
+            }
+        } catch { $rows.Clear(); $minedRuns = 0; $timeoutHeavyRuns = 0; $largestRun = 0; $reference = $null; $resumeAt = 0 }
+    }
+    foreach ($run in @($runDirs | Select-Object -Skip $resumeAt)) {
         $lines = [IO.File]::ReadAllLines((Join-Path $run.FullName 'results.tsv'))
         if ($lines.Count -lt 2) { continue }
         $header = $lines[0].Split("`t")
@@ -100,6 +132,15 @@ function Get-SpiralRowHistory([string]$Mode, [double]$MaxTimeoutShare, [int]$Rec
         }
         $largestRun = [Math]::Max($largestRun, $runKeys.Count)
         if ($runKeys.Count -ge 0.95 * $largestRun) { $reference = [pscustomobject]@{ Name = $run.Name; Keys = $runKeys } }
+    }
+    if ($resumeAt -lt $runDirs.Count) {
+        $savedRows = [ordered]@{}
+        foreach ($entry in $rows.GetEnumerator()) {
+            $r = $entry.Value
+            $savedRows[$entry.Key] = [ordered]@{ Id = $r.Id; Backend = $r.Backend; Runs = $r.Runs; Changes = $r.Changes; Flips = $r.Flips; Compile = $r.Compile; Residual = $r.Residual; NativeOutcome = $r.NativeOutcome; FlipHistory = $r.FlipHistory; Costs = @($r.Costs) }
+        }
+        $state = [ordered]@{ Stamps = $stamps; MinedRuns = $minedRuns; TimeoutHeavyRuns = $timeoutHeavyRuns; LargestRun = $largestRun; Reference = $(if ($reference) { [ordered]@{ Name = $reference.Name; Keys = @($reference.Keys) } } else { $null }); Rows = $savedRows }
+        try { [IO.File]::WriteAllText("$foldCache.tmp", ($state | ConvertTo-Json -Depth 5 -Compress)); [IO.File]::Move("$foldCache.tmp", $foldCache, $true) } catch { }
     }
     [pscustomobject]@{ Rows = $rows; MinedRuns = $minedRuns; Reference = $reference; TimeoutHeavyRuns = $timeoutHeavyRuns }
 }
@@ -188,7 +229,7 @@ function Format-SpiralFastTier($Tier) {
     ($Tier.CostSeconds / [Math]::Max($Tier.AllCostSeconds, 1)), $Tier.Signal, $Tier.AllSignal, ($Tier.Signal / [Math]::Max($Tier.AllSignal, 1)), $Tier.Young, $Tier.FlipHistoriesCovered, $Tier.FlipHistories
 }
 
-$policy = (Import-PowerShellDataFile (Join-Path $BundleRoot 'tests/harness.psd1') -SkipLimitCheck).Fast
+$policy = (Import-PowerShellDataFile (Join-Path $BundleRoot 'tests/matrix.psd1') -SkipLimitCheck).Fast
 if ($BudgetSeconds -gt 0) { $policy = $policy.Clone(); $policy.BudgetSeconds = $BudgetSeconds }
 $tier = Get-SpiralFastTier $Mode $policy
 Format-SpiralFastTier $tier

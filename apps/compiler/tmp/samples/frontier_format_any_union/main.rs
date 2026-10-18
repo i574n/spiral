@@ -2,11 +2,6 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 struct Mut0 { l0: Rc<str> }
-impl Default for Mut0 {
-    fn default() -> Self {
-        Mut0 { l0: { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) } }
-    }
-}
 fn method2(mut v0: Rc<RefCell<Mut0>>, mut v1: Rc<str>) -> () {
     let mut v2: Rc<str> = v0.borrow().l0.clone();
     let mut v3: Rc<str> = Rc::<str>::from(format!("{}{}", v2, v1));
@@ -45,5 +40,5 @@ fn spiral_main() -> i32 {
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 1 });
 }

@@ -7928,7 +7928,10 @@ a.anchor-link {
         <span class="n">Cpp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'use !x = !x '</span> <span class="p">:</span> <span class="p">()</span>
         <span class="n">TypeScript</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'use !x = !x '</span> <span class="p">:</span> <span class="p">()</span>
         <span class="n">Rust</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-            <span class="k">global</span> <span class="s2">"struct SpiralUse(std::rc::Rc&lt;dyn Fn()&gt;);</span><span class="se">\n</span><span class="s2">impl Drop for SpiralUse {</span><span class="se">\n</span><span class="s2">    fn drop(&amp;mut self) { (self.0)() }</span><span class="se">\n</span><span class="s2">}"</span>
+            <span class="k">global</span> <span class="s2">"""struct SpiralUse(std::rc::Rc&lt;dyn Fn()&gt;);</span>
+<span class="s2">impl Drop for SpiralUse {</span>
+<span class="s2">    fn drop(&amp;mut self) { (self.0)() }</span>
+<span class="s2">}"""</span>
             <span class="err">$</span><span class="s1">'let _spiral_use = SpiralUse((!x).clone())'</span> <span class="p">:</span> <span class="p">()</span>
     <span class="p">}</span>
     <span class="err">$</span><span class="s1">'!x '</span>
@@ -10136,7 +10139,11 @@ __assert_eq { expected = None }</pre>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="err">$</span><span class="s1">'(try !fn () |&gt; !some with ex -&gt; !ex_fn ex)'</span> <span class="p">:</span> <span class="n">option</span> <span class="n">t</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-            <span class="k">global</span> <span class="s2">"def spiral_try(fn, some, ex_fn):</span><span class="se">\n</span><span class="s2">    try:</span><span class="se">\n</span><span class="s2">        return some(fn())</span><span class="se">\n</span><span class="s2">    except Exception as e:</span><span class="se">\n</span><span class="s2">        return ex_fn(e)"</span>
+            <span class="k">global</span> <span class="s2">"""def spiral_try(fn, some, ex_fn):</span>
+<span class="s2">    try:</span>
+<span class="s2">        return some(fn())</span>
+<span class="s2">    except Exception as e:</span>
+<span class="s2">        return ex_fn(e)"""</span>
             <span class="err">$</span><span class="s1">'spiral_try(!fn, !some, !ex_fn)'</span> <span class="p">:</span> <span class="n">option</span> <span class="n">t</span>
         <span class="n">Rust</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="n">catch_unwind_rust</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">some</span> <span class="p">(</span><span class="n">fn</span> <span class="p">()))</span> <span class="n">ex_fn</span>
@@ -10311,7 +10318,9 @@ __assert_eq { expected = 0 }</pre>
                         <span class="err">$</span><span class="s1">'try !fn () with ex -&gt; !ex_fn (fun () -&gt; ex)'</span> <span class="p">:</span> <span class="p">()</span>
                         <span class="err">$</span><span class="s1">'()'</span> <span class="p">:</span> <span class="n">t</span>
                     <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-                        <span class="k">global</span> <span class="s2">"def _spiral_try_unit(fn, ex_fn):</span><span class="se">\n</span><span class="s2">    try: fn()</span><span class="se">\n</span><span class="s2">    except Exception as ex: ex_fn(lambda: ex)"</span>
+                        <span class="k">global</span> <span class="s2">"""def _spiral_try_unit(fn, ex_fn):</span>
+<span class="s2">    try: fn()</span>
+<span class="s2">    except Exception as ex: ex_fn(lambda: ex)"""</span>
                         <span class="err">$</span><span class="s1">'_spiral_try_unit(!fn, !ex_fn)'</span> <span class="p">:</span> <span class="p">()</span>
                         <span class="err">$</span><span class="s1">'None'</span> <span class="p">:</span> <span class="n">t</span>
                 <span class="p">}</span>
@@ -10418,7 +10427,9 @@ __assert_eq { expected = 0 }</pre>
                         <span class="err">$</span><span class="s1">'try !fn () finally !finally ()'</span> <span class="p">:</span> <span class="p">()</span>
                         <span class="err">$</span><span class="s1">'()'</span> <span class="p">:</span> <span class="n">t</span>
                     <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-                        <span class="k">global</span> <span class="s2">"def _spiral_try_finally(fn, finally_fn):</span><span class="se">\n</span><span class="s2">    try: fn()</span><span class="se">\n</span><span class="s2">    finally: finally_fn()"</span>
+                        <span class="k">global</span> <span class="s2">"""def _spiral_try_finally(fn, finally_fn):</span>
+<span class="s2">    try: fn()</span>
+<span class="s2">    finally: finally_fn()"""</span>
                         <span class="err">$</span><span class="s1">'_spiral_try_finally(!fn, !finally)'</span> <span class="p">:</span> <span class="p">()</span>
                         <span class="err">$</span><span class="s1">'None'</span> <span class="p">:</span> <span class="n">t</span>
                 <span class="p">}</span>

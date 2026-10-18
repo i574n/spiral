@@ -249,6 +249,28 @@ test union_try_pick_2 =
     |> union_try_pick'
     |> _assert_eq (Some Wasm)
 
+/// ### union_cases_fold
+inl union_cases_fold forall union_type state. (step : state -> union_type -> state) (initial : state) : state =
+    real
+        real_core.union_to_record `union_type forall union_record_type. =>
+            real_core.record_type_fold
+                fun acc key => forall value. => step acc (real_core.nominal_create `union_type (key, ()))
+                initial
+                `union_record_type
+
+///> gleam
+///> lua
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test union_cases_fold =
+    union_cases_fold (fun count (_ : reflection_test_target) => count + 1i32) 0i32
+    |> _assert_eq 2i32
+
+    union_cases_fold (fun found (target : reflection_test_target) => if target = Contract then true else found) false
+    |> _assert_eq true
+
 /// ### union_to_string
 inl union_to_string forall t. (x : t) : string =
     real get_union_fields_untag `t ()

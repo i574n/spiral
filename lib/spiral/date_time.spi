@@ -104,6 +104,8 @@ nominal date_time_python =
         }
         $'' : $'datetime.datetime'
     )
+// TODO: DATE-TIME-PORTABLE a Zig date_time: i64 micros since the Unix epoch, now from the platform clock, calendar fields and format
+//     in plain Spiral through civil_of_days; the guid pair then needs no backend chain (micros, not 100 ns ticks)
 type date_time_switch =
     {
         Gleam : date_gleam * time_of_day_gleam * duration_gleam

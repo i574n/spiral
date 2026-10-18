@@ -6,19 +6,6 @@ enum US0 {
     US0_Missing,
     US0_Held(i8),
 }
-impl US0 {
-    fn tag(&self) -> i32 {
-        match self {
-            US0::US0_Missing => 0,
-            US0::US0_Held(..) => 1,
-        }
-    }
-}
-impl Default for US0 {
-    fn default() -> Self {
-        US0::US0_Missing
-    }
-}
 fn spiral_main() -> i32 {
     let mut v0: i8 = 100i8;
     let mut v1: bool = true;
@@ -44,5 +31,5 @@ fn spiral_main() -> i32 {
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 1 });
 }

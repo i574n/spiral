@@ -2,28 +2,10 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 struct Heap0 { l0: i32 }
-impl Default for Heap0 {
-    fn default() -> Self {
-        Heap0 { l0: <i32>::default() }
-    }
-}
 #[derive(Clone)]
 enum US0 {
     US0_None,
     US0_Some(i32),
-}
-impl US0 {
-    fn tag(&self) -> i32 {
-        match self {
-            US0::US0_None => 0,
-            US0::US0_Some(..) => 1,
-        }
-    }
-}
-impl Default for US0 {
-    fn default() -> Self {
-        US0::US0_None
-    }
 }
 fn f_c0(mut v0: i32, mut v1: Rc<Heap0>) -> Rc<dyn Fn(i32) -> (US0, Rc<Heap0>)> {
     Rc::new(move |mut v2: i32| -> (US0, Rc<Heap0>) {
@@ -62,5 +44,5 @@ fn spiral_main() -> i32 {
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 1 });
 }

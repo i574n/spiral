@@ -10,6 +10,9 @@
     <SpiralCacheDir Condition="'$(SpiralCacheDir)' == '' and '$(SPIRAL_BIN_CACHE_DIR)' != ''">$(SPIRAL_BIN_CACHE_DIR)</SpiralCacheDir>
     <SpiralCacheDir Condition="'$(SpiralCacheDir)' == '' and '$(LOCALAPPDATA)' != ''">$(LOCALAPPDATA)/spiral-bin</SpiralCacheDir>
     <SpiralCacheDir Condition="'$(SpiralCacheDir)' == ''">$(HOME)/.cache/spiral-bin</SpiralCacheDir>
+    <SpiralSharedCacheDir Condition="'$(LOCALAPPDATA)' != ''">$(LOCALAPPDATA)/spiral-bin</SpiralSharedCacheDir>
+    <SpiralSharedCacheDir Condition="'$(SpiralSharedCacheDir)' == ''">$(HOME)/.cache/spiral-bin</SpiralSharedCacheDir>
+    <TargetFrameworkMonikerAssemblyAttributesPath>$(SpiralSharedCacheDir)/obj-shared/$(MSBuildProjectName)/$(TargetFramework).AssemblyAttributes.fs</TargetFrameworkMonikerAssemblyAttributesPath>
     <BaseIntermediateOutputPath>$(SpiralCacheDir)/obj/$(SpiralCore)/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
     <MSBuildProjectExtensionsPath>$(BaseIntermediateOutputPath)</MSBuildProjectExtensionsPath>
     <BaseOutputPath>$(SpiralCacheDir)/bin/$(SpiralCore)/$(MSBuildProjectName)/</BaseOutputPath>

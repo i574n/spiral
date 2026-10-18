@@ -58,8 +58,9 @@ test square_9 =
 inl atan2 (y : f64) (x : f64) : f64 =
     backend_switch {
         Gleam = fun () =>
-            global "import gleam_community/maths"
-            $'maths.atan2(!y, !x)' : float
+            global """@external(erlang, "math", "atan2")
+fn spiral_math_atan2(y: Float, x: Float) -> Float"""
+            $'spiral_math_atan2(!y, !x)' : float
         Lua = fun () => $'math.atan2(!y, !x)' : float
         Fsharp = fun () => $'System.Math.Atan2 (!y, !x)' : float
         Python = fun () => 
@@ -81,7 +82,7 @@ inl atan2 (y : f64) (x : f64) : f64 =
         Swift = fun () => $'atan2(!y, !x)' : float
     }
 
-///> gleam -d gleam_community_maths=\">=2.0.0\"
+///> gleam
 ///> lua
 ///> fsharp
 ///> cuda

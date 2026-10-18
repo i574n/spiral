@@ -1,0 +1,41 @@
+/// # conversation
+///> c
+///> rust
+test conversation static =
+    open testing
+
+/// ### pending
+nominal no_pending = ()
+nominal pending_call n = ()
+
+/// ### usage
+type usage = {model : string; tokens_out : i32}
+
+/// ### transcript
+union rec transcript pending =
+    | Done :: transcript no_pending
+    | System :: forall n. string * transcript n -> transcript n
+    | User :: forall n. string * transcript n -> transcript n
+    | Assistant :: forall n. string * usage * transcript n -> transcript n
+    | Call :: forall n. string * string * transcript (pending_call n) -> transcript n
+    | Result :: forall n. string * string * transcript n -> transcript (pending_call n)
+
+/// ### weigh
+inl rec weigh forall n. (t : transcript n) : i32 =
+    match t with
+    | Done => 0i32
+    | System (_, rest) => 1i32 + weigh rest
+    | User (_, rest) => 10i32 + weigh rest
+    | Assistant (_, spent, rest) => 100i32 + spent.tokens_out + weigh rest
+    | Call (_, _, rest) => 1000i32 + weigh rest
+    | Result (_, _, rest) => 10000i32 + weigh rest
+
+test an_answered_call_closes_the_transcript =
+    inl ~tokens_out = 7i32
+    inl t : transcript no_pending =
+        System ("short answers",
+        User ("weather for the day?",
+        Call ("getLocation", "{}",
+        Result ("getLocation", "{\"location\":\"Cincinnati\"}",
+        Assistant ("Sunny, open the windows.", {model = "local"; tokens_out = tokens_out}, Done)))))
+    weigh t |> _assert_eq 11118i32

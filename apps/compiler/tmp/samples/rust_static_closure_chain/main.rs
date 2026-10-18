@@ -6,14 +6,6 @@ enum UH0 {
     UH0_Cons(u64, Rc<dyn Fn() -> Rc<UH0>>),
     UH0_Nil,
 }
-impl UH0 {
-    fn tag(&self) -> i32 {
-        match self {
-            UH0::UH0_Cons(..) => 0,
-            UH0::UH0_Nil => 1,
-        }
-    }
-}
 fn closure79() -> Rc<dyn Fn() -> Rc<UH0>> {
     thread_local!{ static CLOSURE: Rc<dyn Fn() -> Rc<UH0>> = Rc::new(move || -> Rc<UH0> {
         { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_Nil); } CASE.with(|case| case.clone()) }
@@ -522,5 +514,5 @@ fn spiral_main() -> i32 {
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 1 });
 }

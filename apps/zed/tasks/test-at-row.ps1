@@ -1,7 +1,7 @@
 param([Parameter(Mandatory)] [string] $File, [int] $Row = 0, [switch] $DryRun, [switch] $ImpactTable)
 $ErrorActionPreference = 'Stop'
 $lines = [IO.File]::ReadAllLines($File)
-$runner = Join-Path $PSScriptRoot '../../kino/spi/run_notebook.ps1'
+$runner = Join-Path $PSScriptRoot '../../cells/spi/run_notebook.ps1'
 $output = Join-Path ([IO.Path]::GetTempPath()) ("spiral-zed-" + [IO.Path]::GetFileNameWithoutExtension($File) + ".ipynb")
 
 . (Join-Path $PSScriptRoot '../../compiler/tmp/scripts/env.ps1')

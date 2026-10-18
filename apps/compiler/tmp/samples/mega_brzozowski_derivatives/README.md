@@ -138,7 +138,7 @@ What the numbers say, and what they do not:
 - 31 `negative_*` sub-packages: programs the type checker must reject, one per forgery or misuse.
 - 8 `compiler_probe_*` sub-packages: compiler boundaries (GADT runtime ranks, existential helpers, recursive indexed
   definitions) kept as regression fixtures.
-- `bench.ps1` and `regex_crate_bench.rs`: the timing harness below.
+- `bench.ps1` and `regex_crate_bench.rs`: the timing scripts below.
 
 ## Results (spiral compiler, single-flight)
 
@@ -166,7 +166,7 @@ after the interned engine got its nominals, which changed only `runtime_bench`'s
   recursion: FOR-D `python_self_tail_call_depth`) and `runtime_native` at a NameError (D31's GADT case naming, still in
   the Python backend: FOR-D).
 - The Hopac core reproduced F's 68 rows at 13:10 (it needs 37-52 s for `runtime_bench` and `bench_staged`, over the
-  contracts suite's 30 s, so `tests/harness.psd1` `Timeouts` gives the runtime programs 180 s; the new ones get the
+  contracts suite's 30 s, so `tests/matrix.psd1` `Timeouts` gives the runtime programs 180 s; the new ones get the
   same). In hopac mode every row changed or added on 2026-10-06 afternoon reproduces the oracle too: `hopac-20261006-153721`
   (the new programs, 16 rows) and `hopac-20261006-165156` (`runtime_bench` x4, 59-67 s each).
 `runtime_native` exposed a compiler bug on the way: a GADT-indexed union keeps only its inhabited cases

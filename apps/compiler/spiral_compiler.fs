@@ -3,7 +3,7 @@
 #nowarn 51
 
 #if !INTERACTIVE
-namespace Polyglot
+namespace Spiral
 #endif
 
 module spiral_compiler =
@@ -5067,7 +5067,7 @@ module spiral_compiler =
             | TerminalFlowIngressSurfaceRawLegacyJson
             | TerminalFlowIngressSurfaceHudCacheProjection
             | TerminalFlowIngressSurfaceReducerReceipt
-            | TerminalFlowIngressSurfaceSyntheticHarness
+            | TerminalFlowIngressSurfaceSyntheticDriver
 
         type TerminalFlowIngressDecisionReasonId =
             | TerminalFlowIngressNoSemanticIngressPayload
@@ -5171,7 +5171,7 @@ module spiral_compiler =
             | TerminalFlowIngressSurfaceRawLegacyJson -> "raw_legacy_json"
             | TerminalFlowIngressSurfaceHudCacheProjection -> "hud_cache_projection"
             | TerminalFlowIngressSurfaceReducerReceipt -> "reducer_receipt"
-            | TerminalFlowIngressSurfaceSyntheticHarness -> "synthetic_harness"
+            | TerminalFlowIngressSurfaceSyntheticDriver -> "synthetic_driver"
 
 
         type TerminalFlowLegacySemanticProjection = private {
@@ -8676,16 +8676,16 @@ module spiral_compiler =
             let violationsText = receipt.violations |> List.map invariantViolationText |> String.concat ","
             FastRuntimeFormat.format "breakthrough_transition|ref=%u|prior=%s|next=%s|command=%s|violations=%s|authority_ref=%u|revision=%d" [| box receipt.transitionRef; box (breakthroughPhaseText receipt.priorPhase); box (breakthroughPhaseText receipt.nextPhase); box (commandText receipt.command); box violationsText; box receipt.authorityRef; box receipt.revision |]
 
-        type HarnessOwnerKind = class end
+        type ContractVectorOwnerKind = class end
 
-        type HarnessVector = private {
+        type ContractVector = private {
             name : string
             commands : Command list
             expectedPhase : BreakthroughPhaseId
             expectedViolation : InvariantViolation option
         }
 
-        let harnessVectors = [
+        let contractVectors = [
             {
                 name = "deadlock_failclosed_total_order"
                 commands = [
@@ -12123,7 +12123,7 @@ module spiral_compiler =
             let tryChoice resourceId state = Map.tryFind resourceId state.choices
 
         // Round : laws are discharged by executable traces. The adapter
-        // harness is deliberately small and deterministic so each backend can
+        // driver is deliberately small and deterministic so each backend can
         // be compared against the same reference transition stream before the
         // real host-specific drivers are connected when host-specific drivers are connected.
         type PortableRuntimeTraceCommand =
@@ -18040,7 +18040,7 @@ module spiral_compiler =
             violationWhenEmpty : string option
             }
 
-        type TerminalFlowPureClosureHarnessInput = private {
+        type TerminalFlowPureClosureCheckInput = private {
             matureOutcomeRef : uint32
             ownerAuthorityRef : uint32
             recoveryRef : uint32
@@ -18049,14 +18049,14 @@ module spiral_compiler =
             terminalPetitionRef : uint32
             }
 
-        type TerminalFlowPureClosureHarnessVerdict =
-            | TerminalFlowPureHarnessRunEndExpected of runEndRef:uint32 * doneRef:uint32 * commitRef:uint32
-            | TerminalFlowPureHarnessRejected of missing:string list
+        type TerminalFlowPureClosureCheckVerdict =
+            | TerminalFlowPureCheckRunEndExpected of runEndRef:uint32 * doneRef:uint32 * commitRef:uint32
+            | TerminalFlowPureCheckRejected of missing:string list
 
-        type TerminalFlowPureClosureHarnessReceipt = {
-            harnessRef : uint32
-            input : TerminalFlowPureClosureHarnessInput
-            verdict : TerminalFlowPureClosureHarnessVerdict
+        type TerminalFlowPureClosureCheckReceipt = {
+            checkRef : uint32
+            input : TerminalFlowPureClosureCheckInput
+            verdict : TerminalFlowPureClosureCheckVerdict
             expectedJsonKind : string
             reducerOwned : bool
             observerOwned : bool
@@ -18071,7 +18071,7 @@ module spiral_compiler =
 
         type TerminalFlowBreakthroughTxn<'Stage> = private {
             transactionRef : uint32
-            input : TerminalFlowPureClosureHarnessInput
+            input : TerminalFlowPureClosureCheckInput
             missing : string list
             commitRef : uint32 option
             doneRef : uint32 option
@@ -18142,19 +18142,19 @@ module spiral_compiler =
                doneRef = Some doneRef
                runEndRef = Some runEndRef } : TerminalFlowBreakthroughTxn<TerminalFlowBreakthroughTxnRunEndedStage>)
 
-        let private terminalFlowPureClosureHarnessRun input =
+        let private terminalFlowPureClosureCheckRun input =
             let opened = terminalFlowBreakthroughTxnOpen input
             let verdict =
                 match terminalFlowBreakthroughTxnSeal opened with
-                | Error missing -> TerminalFlowPureHarnessRejected missing
+                | Error missing -> TerminalFlowPureCheckRejected missing
                 | Ok sealedTxn ->
                     let ended = sealedTxn |> terminalFlowBreakthroughTxnCommit |> terminalFlowBreakthroughTxnRunEnd
-                    TerminalFlowPureHarnessRunEndExpected(
+                    TerminalFlowPureCheckRunEndExpected(
                         ended.runEndRef |> Option.defaultValue 0u,
                         ended.doneRef |> Option.defaultValue 0u,
                         ended.commitRef |> Option.defaultValue 0u)
             {
-            harnessRef = opened.transactionRef
+            checkRef = opened.transactionRef
             input = input
             verdict = verdict
             expectedJsonKind = "run_end"
@@ -18162,14 +18162,14 @@ module spiral_compiler =
             observerOwned = false
             }
 
-        type TerminalFlowPureClosureHarnessVector = {
+        type TerminalFlowPureClosureCheckVector = {
             name : string
-            input : TerminalFlowPureClosureHarnessInput
+            input : TerminalFlowPureClosureCheckInput
             expectRunEnd : bool
             expectedMissing : string list
         }
 
-        let private terminalFlowPureClosureHarnessVectors =
+        let private terminalFlowPureClosureCheckVectors =
             let complete =
                 { matureOutcomeRef = 11u
                   ownerAuthorityRef = 12u
@@ -18185,9 +18185,9 @@ module spiral_compiler =
               { name = "missing_actor_arming"; input = { complete with actorArmedRef = 0u }; expectRunEnd = false; expectedMissing = ["actor_armed_ref"] }
               { name = "missing_terminal_petition"; input = { complete with terminalPetitionRef = 0u }; expectRunEnd = false; expectedMissing = ["terminal_petition_ref"] } ]
 
-        let private terminalFlowPureClosureHarnessContractReceipts =
-            terminalFlowPureClosureHarnessVectors
-            |> List.map (fun vector -> vector.name, terminalFlowPureClosureHarnessRun vector.input)
+        let private terminalFlowPureClosureCheckContractReceipts =
+            terminalFlowPureClosureCheckVectors
+            |> List.map (fun vector -> vector.name, terminalFlowPureClosureCheckRun vector.input)
 
         type TelemetryContentKind =
             | TelemetrySchemaVersion
@@ -43095,29 +43095,31 @@ module spiral_compiler =
         else error_char from "symbol"
 
     /// ### LexState
-    /// The lexical state a line starts in: inside a `"""` string, or inside `comment_depth` nested `(* *)`
-    /// comments. Both go on across lines. Callers thread it from line to line (`tokenize_line`; WDiff keeps the
-    /// state every line ends in), never through a global, so files tokenized at the same time (the language
-    /// server, hopac, parallel module loads), a file that ends inside a string or comment, and a re-tokenized
-    /// edit can't leak it into each other.
+    /// The lexical state a line starts in: inside a raw string closed by `triple_quotes` quotes, or inside
+    /// `comment_depth` nested `(* *)` comments. Both go on across lines. Callers thread it from line to line
+    /// (`tokenize_line`; WDiff keeps the state every line ends in), never through a global, so files tokenized at
+    /// the same time (the language server, hopac, parallel module loads), a file that ends inside a string or
+    /// comment, and a re-tokenized edit can't leak it into each other.
     [<Struct>]
-    type LexState = { in_triple : bool; comment_depth : int; macro_close : char }
+    type LexState =
+        { triple_quotes : int; comment_depth : int; macro_close : char }
+        member x.in_triple = 0 < x.triple_quotes
 
     /// ### lex_state_init
-    let lex_state_init = { in_triple = false; comment_depth = 0; macro_close = '\000' }
+    let lex_state_init = { triple_quotes = 0; comment_depth = 0; macro_close = '\000' }
 
     /// ### LexCell
     /// The lexical state while one line is being tokenized.
     type LexCell(state : LexState) =
-        member val InTriple = state.in_triple with get, set
+        member val TripleQuotes = state.triple_quotes with get, set
         member val CommentDepth = state.comment_depth with get, set
         member val MacroClose = state.macro_close with get, set
-        member x.State = { in_triple = x.InTriple; comment_depth = x.CommentDepth; macro_close = x.MacroClose }
+        member x.State = { triple_quotes = x.TripleQuotes; comment_depth = x.CommentDepth; macro_close = x.MacroClose }
 
     /// ### lex_state_error
     /// The error for text that ends in `state`: inside a string or comment that never closes.
     let lex_state_error (state : LexState) =
-        if state.in_triple then Some "Unterminated triple-quoted string. Expected '\"\"\"'."
+        if state.in_triple then Some ("Unterminated triple-quoted string. Expected '" + System.String('"', state.triple_quotes) + "'.")
         elif 0 < state.comment_depth then Some "Unterminated multiline comment. Expected '*)'."
         elif state.macro_close <> '\000' then Some "Unterminated macro: a line ending in '\\' continues the macro on the next line, which must close it."
         else None
@@ -43241,30 +43243,41 @@ module spiral_compiler =
         | x -> unesc x
 
     /// ### string_triple_body
-    /// The text of a `"""` string from `s.from` to its closing `"""`, or to the end of the line, whose newline it
-    /// keeps; the string then goes on in the next line. The text is raw: no escapes, no interpolation.
+    /// The text of a raw string from `s.from` to its closing run of `lx.TripleQuotes` quotes, or to the end of the
+    /// line, whose newline it keeps; the string then goes on in the next line. The text is raw: no escapes, no
+    /// interpolation. A longer run of quotes closes it too: the quotes before the last `lx.TripleQuotes` are text,
+    /// so the text can end in `"`.
     let string_triple_body (lx : LexCell) (s : Tokenizer) =
         let text = s.text
         let len = text.Length
         let body_from = s.from
-        let idx = text.IndexOf("\"\"\"", body_from, StringComparison.Ordinal)
+        let quotes = lx.TripleQuotes
+        let idx = text.IndexOf(System.String('"', quotes), body_from, StringComparison.Ordinal)
         if 0 <= idx then
-            s.from <- idx + 3
-            lx.InTriple <- false
-            let close = {from=idx; nearTo=idx+3}, TokStringClose
-            if body_from < idx then [({from=body_from; nearTo=idx}, TokText (text.Substring(body_from, idx - body_from))); close]
+            let mutable run_end = idx + quotes
+            while run_end < len && text.[run_end] = '"' do run_end <- run_end + 1
+            let close_from = run_end - quotes
+            s.from <- run_end
+            lx.TripleQuotes <- 0
+            let close = {from=close_from; nearTo=run_end}, TokStringClose
+            if body_from < close_from then [({from=body_from; nearTo=close_from}, TokText (text.Substring(body_from, close_from - body_from))); close]
             else [close]
         else
             s.from <- len
-            lx.InTriple <- true
             [({from=body_from; nearTo=len}, TokText (text.Substring(body_from) + "\n"))]
 
     /// ### string_triple_line
+    /// A raw string opens with a run of three or more quotes and closes with a run of as many, so a string opened
+    /// with `""""` can hold `"""`. Six quotes are the empty `"""` string.
     let string_triple_line (lx : LexCell) (s : Tokenizer) =
         if peek s = '"' && peek' s 1 = '"' && peek' s 2 = '"' then
             let from = s.from
-            inc' 3 s
-            Ok (({from=from; nearTo=from+3}, TokStringOpen) :: string_triple_body lx s)
+            let mutable run = 3
+            while peek' s run = '"' do run <- run + 1
+            let quotes = if run = 6 then 3 else run
+            inc' quotes s
+            lx.TripleQuotes <- quotes
+            Ok (({from=from; nearTo=from+quotes}, TokStringOpen) :: string_triple_body lx s)
         else
             Error [{from=s.from; nearTo=s.from}, "triple-string: not a triple opener nor continuation"]
 
@@ -43360,7 +43373,7 @@ module spiral_compiler =
             let struct (i, depth) = comment_scan text 0 lx.CommentDepth
             s.from <- i
             lx.CommentDepth <- depth
-        elif lx.InTriple then
+        elif 0 < lx.TripleQuotes then
             add (string_triple_body lx s, [])
         elif lx.MacroClose <> '\000' then
             let closing_char = lx.MacroClose
@@ -43403,7 +43416,15 @@ module spiral_compiler =
                 Ok(UnescapedChar(r, c))
             | _ -> error_char s.from "\\"
 
-        let p_var s = (many1Satisfy2L is_var_char_starting is_var_char "variable") s
+        let p_var s =
+            match (many1Satisfy2L is_var_char_starting is_var_char "variable") s with
+            | Ok (name : string) when is_var_char closing_char && name.Length > 1 && name.EndsWith (string closing_char) ->
+                let rest = s.text.Substring s.from
+                if rest.IndexOf closing_char >= 0 || rest.TrimEnd().EndsWith "\\" then Ok name
+                else
+                    s.from <- s.from - 1
+                    Ok (name.Substring (0, name.Length - 1))
+            | result -> result
         let p_text closing_char s = (range (many1SatisfyL (fun c -> c <> closing_char && c <> '`' && c <> '!' && c <> '@' && c <> '#' && c <> '\\') "macro text") |>> TokenizerText) s
         let p_expr s =
             let start = anyOf ['`'; '!'; '@'; '#']
@@ -43830,6 +43851,7 @@ module spiral_compiler =
         | UnknownOperator
         | UnexpectedEob
         | MalformedTestHeader
+        | RawStringLineUnderIndented
         | UnexpectedAndInlRec
         | ForallNotAllowed
         | TypecaseNotAllowed
@@ -44094,6 +44116,7 @@ module spiral_compiler =
         semantic_updates : (VectorCord * SemanticTokenLegend) ResizeArray
         tokens_cords : VectorCord []
         tokens : (VSCRange * SpiralToken) []
+        layout_columns : int []
         comments : LineComment option []
         i : int ref
         is_top_down : bool
@@ -44119,7 +44142,7 @@ module spiral_compiler =
     let inline line_template d f = try_current_template d (fst >> f) (fun _ -> -1)
 
     /// ### col
-    let col d = line_template d (fun (r,_) -> r.character)
+    let col (d : BlockParsingEnv) = let i = d.Index in if i < d.tokens.Length then d.layout_columns.[i] else -1
 
     /// ### lineBlockParsing
     let lineBlockParsing d = line_template d (fun (r,_) -> r.line)
@@ -44997,7 +45020,7 @@ module spiral_compiler =
                     let row = (fst (fst d.tokens.[i])).line
                     let mutable first = i
                     while first > 0 && (fst (fst d.tokens.[first - 1])).line = row do first <- first - 1
-                    min (col d) (fst (fst d.tokens.[first])).character
+                    min (col d) d.layout_columns.[first]
             pipe2 apply_tight (many (blockParsingIndent line_start_column (<) apply_tight)) fold_applies d
 
         let pairs = sepBy1 apply (skip_op "*") |>> List.reduceBack (fun a b -> RawTPair(range_of_texpr a +. range_of_texpr b,a,b))
@@ -45582,6 +45605,7 @@ module spiral_compiler =
         | ExpectedEob -> "Failed to parse this token."
         | UnexpectedEob -> "Unexpected end of block past this token."
         | MalformedTestHeader -> "Malformed test header: expected `test <name> [static] [print_code] [ignore] [no_agree \"reason\"] [build_only] [fails \"expected\"] =` with the body indented below it."
+        | RawStringLineUnderIndented -> "This line of the raw string is indented less than its closing quotes, whose indentation every line drops."
         | UnknownError -> "Compiler error: Parsing failed at this position with no error message and without consuming all the tokens in a block."
         | DuplicateRecordTypeVar -> "Duplicate record type variable."
         | DuplicateForallVar -> "Duplicate forall variable."
@@ -49324,7 +49348,7 @@ module spiral_compiler =
         | Printf | Add | Sub | Mult | Div | Mod | Pow | LT | LTE | EQ | NEQ | GT | GTE
         | BitwiseAnd | BitwiseOr | BitwiseXor | BitwiseComplement | ShiftLeft | ShiftRight
         | Neg | Log | Exp | Tanh | Sqrt | Sin | Cos | NanIs | Conv
-        | StringLength | StringIndex | StringSlice | ArrayIndex | ArrayIndexSet | ArrayLength | MonotonicDelayMs -> true
+        | StringLength | StringIndex | StringSlice | ArrayIndex | ArrayIndexSet | ArrayLength | MonotonicDelayMs | Export -> true
         | _ -> false
 
     /// ### semantic_tokens
@@ -52871,6 +52895,28 @@ module spiral_compiler =
         }
     
 
+    /// ### PrepassReferences
+    module PrepassReferences =
+        let output = System.Environment.GetEnvironmentVariable "SPIRAL_REFERENCES_OUT"
+        let enabled = not (System.String.IsNullOrEmpty output)
+        let definitions = System.Runtime.CompilerServices.ConditionalWeakTable<E, string>()
+        let rows = System.Collections.Concurrent.ConcurrentQueue<string>()
+        let flushAtExit =
+            lazy (System.AppDomain.CurrentDomain.ProcessExit.Add(fun _ ->
+                System.IO.File.AppendAllLines(output, rows |> Seq.distinct |> Seq.toArray)))
+        let location (path : string) ((from, _) : VSCRange) = $"{path}\t{from.line + 1}"
+        let define (path : string) (range : VSCRange) (name : string) (e : E) =
+            if enabled then
+                flushAtExit.Force()
+                let site = location path range
+                definitions.AddOrUpdate(e, $"{site}\t{name}")
+                rows.Enqueue $"def\t{site}\t{name}\t\t\t"
+        let used (path : string) (range : VSCRange) (name : string) (e : E) =
+            if enabled then
+                flushAtExit.Force()
+                let target = match definitions.TryGetValue e with | true, d -> d | _ -> "\t\t"
+                rows.Enqueue $"use\t{location path range}\t{name}\t{target}"
+
     /// ### prepassPrepass
     let prepassPrepass package_id module_id path (top_env : PrepassTopEnv) =
         let p r = {path=path; range=r}
@@ -53097,7 +53143,10 @@ module spiral_compiler =
             | RawAnnot(_,RawDefaultLit(r,a),b) -> EDefaultLit(p r,a,ty env b)
             | RawAnnot(_,RawLit(r,a),b) -> EDefaultLit(p r,a.LitToString(),ty env b)
             | RawB r -> EB(p r)
-            | RawV(r,a,_) -> v_term env a
+            | RawV(r,a,_) ->
+                let e = v_term env a
+                if PrepassReferences.enabled && not (Map.containsKey (TermNameIdOps.create a) env.term.env) then PrepassReferences.used path r a e
+                e
             | RawLit(r,a) -> ELit(p r,a)
             | RawSymbol(r,a) -> ESymbol(p r,a)
             | RawType(r,a) -> EType(p r,ty env a)
@@ -53268,7 +53317,10 @@ module spiral_compiler =
             | FNominalRec l ->
                 let term,ty,nominals,i = nominal_rec l
                 AInclude {prepassTop_env_empty with term = term; ty = ty; nominals = nominals; nominals_next_tag=i}
-            | FInl(_,(_,name),body) -> AInclude {prepassTop_env_empty with term = Map.add (TermNameIdOps.create name) (term env body |> process_term) Map.empty}
+            | FInl(_,(name_range,name),body) ->
+                let e = term env body |> process_term
+                PrepassReferences.define path name_range name e
+                AInclude {prepassTop_env_empty with term = Map.add (TermNameIdOps.create name) e Map.empty}
             | FRecInl l ->
                 let l, env =
                     List.mapFold (fun env (_,(_,name),_ as x) ->
@@ -53276,8 +53328,9 @@ module spiral_compiler =
                         (x,r), add_term_rec env name (ERecursive r)
                         ) env l
                 let term =
-                    List.fold (fun top_env_term ((_,(_,name),body),(r : ref<E>)) ->
+                    List.fold (fun top_env_term ((_,(name_range,name),body),(r : ref<E>)) ->
                         r.Value <- term env body |> process_term
+                        PrepassReferences.define path name_range name r.Value
                         Map.add (TermNameIdOps.create name) r.Value top_env_term
                         ) Map.empty l
                 AInclude {prepassTop_env_empty with term = term}
@@ -53447,6 +53500,17 @@ module spiral_compiler =
         let key_hit (session : Session<'env>) (key : obj) (s : 'env) = if not (isNull session) then session.KeyHit(key, s)
         let key_body (session : Session<'env>) (key : obj) (label : string) (s : 'env) : 'env = if isNull session then s else session.KeyBody(key, label, s)
         let print (session : Session<'env>) (s : 'env) (text : string) = if isNull session then printfn "%s" text else session.Print(s, text)
+        type Claim<'v> =
+            | Found of 'v
+            | Owner
+        let claim (_ : Session<'env>) (table : Dictionary<'k, 'v>) (key : 'k) (pending : 'v) : Claim<'v> =
+            match table.TryGetValue key with
+            | true, value -> Found value
+            | false, _ ->
+                table.[key] <- pending
+                Owner
+        let fill (_ : Session<'env>) (table : Dictionary<'k, 'v>) (key : 'k) (value : 'v) = table.[key] <- value
+        let announce (_ : Session<'env>) (table : Dictionary<'k, 'v>) (key : 'k) (value : 'v) = table.[key] <- value
 #else
     /// ## PartEvalSeams
     module PartEvalSeams =
@@ -53467,6 +53531,17 @@ module spiral_compiler =
         let inline key_hit (_ : Session<'env>) (_ : obj) (_ : 'env) = ()
         let inline key_body (_ : Session<'env>) (_ : obj) (_ : string) (s : 'env) : 'env = s
         let inline print (_ : Session<'env>) (_ : 'env) (text : string) = printfn "%s" text
+        type Claim<'v> =
+            | Found of 'v
+            | Owner
+        let inline claim (_ : Session<'env>) (table : System.Collections.Generic.Dictionary<'k, 'v>) (key : 'k) (pending : 'v) : Claim<'v> =
+            match table.TryGetValue key with
+            | true, value -> Found value
+            | false, _ ->
+                table.[key] <- pending
+                Owner
+        let inline fill (_ : Session<'env>) (table : System.Collections.Generic.Dictionary<'k, 'v>) (key : 'k) (value : 'v) = table.[key] <- value
+        let inline announce (_ : Session<'env>) (table : System.Collections.Generic.Dictionary<'k, 'v>) (key : 'k) (value : 'v) = table.[key] <- value
 #endif
 #if SPIRAL_CORE_GPT5PARALLEL
     /// ## PartEval
@@ -105969,7 +106044,7 @@ module spiral_compiler =
             HopacExtensions.start
                 (CompilerKernelV2.CompilerRuntimeKernel.toJob rejectionEffect)
 
-        type TerminalFlowSyntheticBuildOkHarnessReceipt = private {
+        type TerminalFlowSyntheticBuildOkDriverReceipt = private {
             manifestLifecycle : TerminalFlowArtifactManifestLifecycle
             writerCompletionRoute : TerminalFlowWriterCompletionRoute
             cicCorridor : TerminalFlowCicKernelCorridor
@@ -137170,6 +137245,7 @@ module spiral_compiler =
             System.Collections.Concurrent.ConcurrentDictionary<JpClosureMemoCellIdentity,JpClosureMemoPendingEntry>()
         let join_point_closure = System.Collections.Concurrent.ConcurrentDictionary<_,_>(jp_body_key_comparer)
         let join_point_type = System.Collections.Concurrent.ConcurrentDictionary<_,_>(jp_type_body_comparer)
+        let uninhabited_nesting = new System.Threading.ThreadLocal<int>(fun () -> 0)
         /// Inline recompute for each owned JP body cell, keyed by the cell (its IVar object). A cell still pending once
         /// the JP graph is quiescent has no producer left (its work unit was retired, e.g. as a control-only replay
         /// sentinel); peval's root recomputes exactly those cells in place (FRONTIER.md fix 50).
@@ -147203,7 +147279,11 @@ module spiral_compiler =
                         // A nominal still being defined (a type join point) can't be inspected: count it inhabited.
                         try loop (depth-1) (nominal_type_apply s nominal) with PartEvalTypeError _ -> false
                     | _ -> false
-            loop 32 x
+            if uninhabited_nesting.Value >= 32 then false
+            else
+                uninhabited_nesting.Value <- uninhabited_nesting.Value + 1
+                try loop 32 x
+                finally uninhabited_nesting.Value <- uninhabited_nesting.Value - 1
         and nominal_type_apply s x =
             // Flatten the left-associated application spine explicitly so deeply nested
             // type-level application does not recurse through nominal_type_apply itself.
@@ -158976,6 +159056,7 @@ module spiral_compiler =
         let join_point_method = Dictionary(HashIdentity.Structural)
         let join_point_closure = Dictionary(HashIdentity.Structural)
         let join_point_type = Dictionary(HashIdentity.Structural)
+        let uninhabited_nesting = ref 0
         let backend_strings = HashConsTable()
         // BackendSwitch: the type of each non-current arm already validated, by (backend, arm closure as a join point key).
         let backend_switch_validated = Dictionary<string * RData [], Ty>(HashIdentity.Structural)
@@ -159049,17 +159130,16 @@ module spiral_compiler =
                 | YFun(_,_,FT_Pointer) when call_args.Length <> 0 -> raise_type_error s "Function pointers shouldn't have any runtime free variables in their environment."
                 | _ -> ()
 
-                match dict.TryGetValue(join_point_key) with
-                | true, _ -> PartEvalSeams.key_hit hopacsota (box (dict, join_point_key)) s
-                | false, _ ->
+                match PartEvalSeams.claim hopacsota dict join_point_key None with
+                | PartEvalSeams.Found _ -> PartEvalSeams.key_hit hopacsota (box (dict, join_point_key)) s
+                | PartEvalSeams.Owner ->
                     let s = rename_global_term s
                     let domain_data = ty_to_data s domain
                     s.env_stack_term.[0] <- domain_data
-                    dict.[join_point_key] <- None
                     let s = PartEvalSeams.key_body hopacsota (box (dict, join_point_key)) "closure" s
                     PartEvalSeams.defer hopacsota s { s with trace = []; inline_depth = InlineDepthOps.root } (Some ()) (fun (s : LangEnv) ->
                         let seq,ty = term_scope'' s body (Some fun_ty)
-                        dict.[join_point_key] <- Some(domain_data, seq)
+                        PartEvalSeams.fill hopacsota dict join_point_key (Some(domain_data, seq))
                         let ty =
                             match ty with
                             | YRecord a ->
@@ -159184,7 +159264,11 @@ module spiral_compiler =
                     | YNominal _ | YApply _ as nominal ->
                         try loop (depth-1) (nominal_type_apply s nominal) with PartEvalTypeError _ -> false
                     | _ -> false
-            loop 32 x
+            if uninhabited_nesting.Value >= 32 then false
+            else
+                uninhabited_nesting.Value <- uninhabited_nesting.Value + 1
+                try loop 32 x
+                finally uninhabited_nesting.Value <- uninhabited_nesting.Value - 1
         and ty s x =
             match x with
             | TPatternRef _ -> failwith "Compiler error: TPatternRef should have been eliminated during the prepass."
@@ -159201,10 +159285,10 @@ module spiral_compiler =
 
                 let dict, hc_table = Utils.memoize join_point_type (fun _ -> Dictionary(HashIdentity.Structural), HashConsTable()) body
                 let join_point_key = hc_table.Add(env_global_type)
-                match dict.TryGetValue(join_point_key) with
-                | true, Some ret_ty -> PartEvalSeams.key_hit hopacsota (box (dict, join_point_key)) s; ret_ty
-                | true, None -> raise_type_error (add_trace s r) "Type join points must not be unboxed during their definition."
-                | false, _ ->
+                match PartEvalSeams.claim hopacsota dict join_point_key None with
+                | PartEvalSeams.Found (Some ret_ty) -> PartEvalSeams.key_hit hopacsota (box (dict, join_point_key)) s; ret_ty
+                | PartEvalSeams.Found None -> raise_type_error (add_trace s r) "Type join points must not be unboxed during their definition."
+                | PartEvalSeams.Owner ->
                     assert (0 = scope.term.free_vars.Length)
                     let s : LangEnv = {
                         trace = r :: s.trace
@@ -159222,9 +159306,8 @@ module spiral_compiler =
                         }
                     let s = rename_global_term s
                     let s = PartEvalSeams.key_body hopacsota (box (dict, join_point_key)) "type" s
-                    dict.[join_point_key] <- None
                     let ret_ty = ty s body
-                    dict.[join_point_key] <- Some ret_ty
+                    PartEvalSeams.fill hopacsota dict join_point_key (Some ret_ty)
                     ret_ty
             | TB _ -> YB
             | TLit(_,x) -> YLit x
@@ -159626,10 +159709,10 @@ module spiral_compiler =
                 let join_point_key = hc_table.Add(env_global_value, env_global_type)
 
                 let ret_ty =
-                    match dict.TryGetValue(join_point_key) with
-                    | true, (_, Some ret_ty, _) -> PartEvalSeams.key_hit hopacsota (box (dict, join_point_key)) s; ret_ty
-                    | true, (_, None, _) -> raise_type_error (add_trace s r) "Recursive join points must be annotated."
-                    | false, _ ->
+                    match PartEvalSeams.claim hopacsota dict join_point_key (None, None, jp_name) with
+                    | PartEvalSeams.Found (_, Some ret_ty, _) -> PartEvalSeams.key_hit hopacsota (box (dict, join_point_key)) s; ret_ty
+                    | PartEvalSeams.Found (_, None, _) -> raise_type_error (add_trace s r) "Recursive join points must be annotated."
+                    | PartEvalSeams.Owner ->
                         let s : LangEnv = {
                             trace = r :: s.trace
                             inline_depth = s.inline_depth
@@ -159646,11 +159729,11 @@ module spiral_compiler =
                             }
                         let s = rename_global_term s
                         let annot = Option.map (ty s) annot
-                        dict.[join_point_key] <- (None, annot, jp_name)
+                        PartEvalSeams.announce hopacsota dict join_point_key (None, annot, jp_name)
                         let s = PartEvalSeams.key_body hopacsota (box (dict, join_point_key)) "method" s
                         PartEvalSeams.defer hopacsota s { s with trace = [r]; inline_depth = InlineDepthOps.root } annot (fun (s : LangEnv) ->
                             let seq,ty = term_scope'' s body annot
-                            dict.[join_point_key] <- (Some seq, Some ty, jp_name)
+                            PartEvalSeams.fill hopacsota dict join_point_key (Some seq, Some ty, jp_name)
                             annot |> Option.iter (fun annot -> if annot <> ty then raise_type_error s <| sprintf "The annotation of the join point does not match its body's type.Got: %s\nExpected: %s" (show_ty ty) (show_ty annot))
                             ty
                         )
@@ -161482,6 +161565,42 @@ module spiral_compiler =
         | Some name when uses.[name] = 1 -> prefix_tag + name
         | _ -> $"{prefix_tag}i{position}"
 
+    /// ### UnusedGlobals
+    module UnusedGlobals =
+        let private declaration =
+            System.Text.RegularExpressions.Regex(@"^(?:(?:private|inline|local|static|async)\s+|extern\s+""[^""]*""\s+)*(?:fn|func|fun|function|def|const|let|var|type|struct|class|enum|interface|module)\s+([A-Za-z_][A-Za-z0-9_]*)")
+        let private isFragment (text : string) = System.String.IsNullOrEmpty text || System.Char.IsWhiteSpace text.[0] || text.[0] = '}'
+        let private exported = System.Text.RegularExpressions.Regex(@"(?<![A-Za-z0-9_])(?:pub|export)(?![A-Za-z0-9_])")
+        let private singleItem (text : string) =
+            let topLevel =
+                text.Split('\n')
+                |> Array.map (fun line -> line.TrimEnd('\r'))
+                |> Array.filter (fun line -> line.Length > 0 && not (System.Char.IsWhiteSpace line.[0]) && line.TrimEnd(';', ')', ']') <> "}")
+            topLevel.Length = 1 && not (exported.IsMatch text)
+        let private mentions (name : string) (text : string) =
+            System.Text.RegularExpressions.Regex.Matches(text, $@"(?<![A-Za-z0-9_]){System.Text.RegularExpressions.Regex.Escape name}(?![A-Za-z0-9_])").Count
+        let private removeOnce (code : string) (text : string) =
+            let at = code.IndexOf(text + "\n", System.StringComparison.Ordinal)
+            if at >= 0 then code.Remove(at, text.Length + 1)
+            else
+                let atCrlf = code.IndexOf(text + "\r\n", System.StringComparison.Ordinal)
+                if atCrlf >= 0 then code.Remove(atCrlf, text.Length + 2) else code
+        let prune (globals : ResizeArray<string>) (code : string) =
+            let entries = globals |> Seq.toArray
+            let candidates =
+                entries |> Array.mapi (fun i text ->
+                    let m = declaration.Match text
+                    let headsFragments = i + 1 < entries.Length && isFragment entries.[i + 1]
+                    if m.Success && not (isFragment text) && not headsFragments && singleItem text && code.Contains(text, System.StringComparison.Ordinal) then Some (text, m.Groups.[1].Value) else None)
+                |> Array.choose id
+            let rec settle (code : string) (left : (string * string) []) =
+                let unused = left |> Array.filter (fun (text, name) -> mentions name code <= mentions name text)
+                if unused.Length = 0 then code
+                else
+                    let code = unused |> Array.fold (fun code (text, _) -> removeOnce code text) code
+                    settle code (left |> Array.filter (fun entry -> not (Array.contains entry unused)))
+            if candidates.Length = 0 then code else settle code candidates
+
     /// ### DeadPureLetElision
     module DeadPureLetElision =
         let pureOp op =
@@ -163211,6 +163330,9 @@ module spiral_compiler =
         let exports = ResizeArray()
         let closure_of_var = Dictionary<int, int>()
         let export_names = HashSet<string>()
+        let union_tag_impls = Dictionary<string, string>()
+        let union_tags_used = HashSet<string>()
+        let default_impls = Dictionary<string, string>()
 
         let print is_type show r =
             let s = {text=StringBuilder(); indent=0}
@@ -163691,17 +163813,20 @@ module spiral_compiler =
                     let quoted = litRust (LitString (rfmt.ToString()))
                     let quoted = quoted.Substring(quoted.IndexOf '"', quoted.LastIndexOf '"' - quoted.IndexOf '"' + 1)
                     String.concat ", " (quoted :: List.ofSeq args) |> sprintf "print!(%s)"
-                | UnionTag, [DV(L(i,YUnion _))] ->
+                | UnionTag, [DV(L(i,YUnion u))] ->
                     let ty = match d with Some (DV(L(_,t))) -> tyv t | _ -> "i32"
+                    union_tags_used.Add(union_name u.Item) |> ignore
                     $"(v{i}.tag() as {ty})"
                 | _ -> raise_codegen_error <| sprintf "Compiler error: %A with %i args not supported in the Rust backend" op l.Length
                 |> simple
         and rust_emit_default (s : CodegenEnv) (name : string) (body : string) =
-            line s $"impl Default for {name} {{"
-            line (indent s) "fn default() -> Self {"
-            line (indent (indent s)) body
-            line (indent s) "}"
-            line s "}"
+            let impl = {text=StringBuilder(); indent=s.indent}
+            line impl $"impl Default for {name} {{"
+            line (indent impl) "fn default() -> Self {"
+            line (indent (indent impl)) body
+            line (indent impl) "}"
+            line impl "}"
+            default_impls.[name] <- impl.text.ToString()
         // Rc<str> has no Default, and dyn Fn cannot. A derive on every heap would reject samples that never call default().
         and rust_layout_default (kind : string) (x : LayoutRecFsharp) =
             let key = $"{kind}{x.tag}"
@@ -163812,19 +163937,25 @@ module spiral_compiler =
                 | a -> line (indent s) $"""{name}_{unionCaseSuffix x i}({a |> Array.map (fun (L(_,t)) -> tyv t) |> String.concat ", "}),"""
                 )
             line s "}"
-            line s $"impl {name} {{"
-            line (indent s) "fn tag(&self) -> i32 {"
-            line (indent (indent s)) "match self {"
+            let impl = {text=StringBuilder(); indent=s.indent}
+            line impl $"impl {name} {{"
+            line (indent impl) "fn tag(&self) -> i32 {"
+            line (indent (indent impl)) "match self {"
             x.free_vars |> Map.iter (fun (i,_) a ->
                 let pattern = match a with [||] -> $"{name}::{name}_{unionCaseSuffix x i}" | _ -> $"{name}::{name}_{unionCaseSuffix x i}(..)"
-                line (indent (indent (indent s))) $"{pattern} => {i},"
+                line (indent (indent (indent impl))) $"{pattern} => {i},"
                 )
-            line (indent (indent s)) "}"
-            line (indent s) "}"
-            line s "}"
+            line (indent (indent impl)) "}"
+            line (indent impl) "}"
+            line impl "}"
+            union_tag_impls.[name] <- impl.text.ToString()
             match rust_union_default prefix x with
             | Some body -> rust_emit_default s name body
             | None -> ()
+        and union_name (a : _) =
+            match a.layout with
+            | UHeap -> $"UH{(uheap a.cases).tag}"
+            | UStack -> $"US{(ustack a.cases).tag}"
         and union_has_moving_field (x : UnionRecFsharp) = x.free_vars |> Map.exists (fun _ a -> a |> Array.exists (fun (L(_,t)) -> moves t))
         and uheap : _ -> UnionRecFsharp = union (union_type "UH")
         and ustack : _ -> UnionRecFsharp = union (union_type "US")
@@ -163903,6 +164034,18 @@ module spiral_compiler =
         program.AppendLine("use std::cell::RefCell;").AppendLine("use std::rc::Rc;") |> ignore
         globals |> Array.iter (fun x -> program.AppendLine(x) |> ignore)
         types |> Seq.iter (fun x -> program.Append(x) |> ignore)
+        union_tag_impls |> Seq.iter (fun kv -> if union_tags_used.Contains kv.Key then program.Append(kv.Value) |> ignore)
+        let default_uses = System.Text.RegularExpressions.Regex(@"(\w+)>+::default\(\)")
+        let defaults_reached = HashSet<string>()
+        let rec reach_defaults (text : string) =
+            for found in default_uses.Matches text do
+                let name = found.Groups.[1].Value
+                if default_impls.ContainsKey name && defaults_reached.Add name then reach_defaults default_impls.[name]
+        functions |> Seq.iter reach_defaults
+        exports |> Seq.iter reach_defaults
+        types |> Seq.iter reach_defaults
+        reach_defaults (main.ToString())
+        default_impls |> Seq.iter (fun kv -> if defaults_reached.Contains kv.Key then program.Append(kv.Value) |> ignore)
         functions |> Seq.iter (fun x -> program.Append(x) |> ignore)
         if exports.Count > 0 then
             exports |> Seq.iter (fun x -> program.Append(x) |> ignore)
@@ -163924,7 +164067,7 @@ module spiral_compiler =
                 elif text.EndsWith "}" || text.EndsWith ";" || text = "" then text + "\n    0\n"
                 else text + ";\n    0\n"
             program.AppendLine("fn spiral_main() -> i32 {").Append(main).AppendLine("}") |> ignore
-            program.AppendLine("fn main() { #[cfg(target_arch = \"wasm32\")] { spiral_main(); return; }").AppendLine("    let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();").AppendLine("    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });").AppendLine("}") |> ignore
+            program.AppendLine("fn main() { #[cfg(target_arch = \"wasm32\")] { spiral_main(); return; }").AppendLine("    let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();").AppendLine("    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 1 });").AppendLine("}") |> ignore
         program.ToString() |> translateFsharpInterpolations |> foldStringBindings |> inlineRustEmits
         |> cacheRustStringLiterals
 
@@ -164558,11 +164701,16 @@ fn spiralPrint(s: []const u8) void {
     @memcpy(spiral_out_buffer[spiral_out_len..][0..s.len], s);
     spiral_out_len += s.len;
 }
+fn spiralFloatText(x: anytype) []u8 {
+    var buffer: [std.fmt.float.bufferSize(.decimal, @TypeOf(x))]u8 = undefined;
+    const text = std.fmt.float.render(&buffer, x, .{ .mode = .decimal }) catch unreachable;
+    return spiral_gpa.dupe(u8, text) catch @panic("out of memory");
+}
 fn spiralPrintAny(x: anytype) void {
     const T = @TypeOf(x);
     if (T == []const u8) return spiralPrint(x);
+    if (@typeInfo(T) == .float) return spiralPrint(spiralFloatText(x));
     const s = switch (@typeInfo(T)) {
-        .float => std.fmt.allocPrint(spiral_gpa, "{d}", .{x}),
         .bool => std.fmt.allocPrint(spiral_gpa, "{}", .{x}),
         else => std.fmt.allocPrint(spiral_gpa, "{d}", .{x}),
     } catch @panic("out of memory");
@@ -165065,10 +165213,14 @@ fn spiralCreate(comptime T: type, v: T) *T {
         types |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
         bodies |> Seq.iter (fun x -> program.Append(x) |> ignore)
         program.AppendLine("var spiral_exit_code: i32 = 0;").AppendLine("fn spiralMainThread() void {").AppendLine("    spiral_exit_code = spiralMain();").AppendLine("}") |> ignore
+        program.AppendLine("extern \"kernel32\" fn CreateThread(attributes: ?*anyopaque, stack_size: usize, start: *const fn (?*anyopaque) callconv(.winapi) u32, parameter: ?*anyopaque, flags: u32, id: ?*u32) callconv(.winapi) ?std.os.windows.HANDLE;") |> ignore
+        program.AppendLine("extern \"kernel32\" fn WaitForSingleObject(handle: std.os.windows.HANDLE, milliseconds: u32) callconv(.winapi) u32;") |> ignore
+        program.AppendLine("extern \"kernel32\" fn ExitProcess(code: u32) callconv(.winapi) noreturn;") |> ignore
+        program.AppendLine("fn spiralMainThreadReserved(_: ?*anyopaque) callconv(.winapi) u32 {").AppendLine("    spiralMainThread();").AppendLine("    return 0;").AppendLine("}") |> ignore
         program.AppendLine("pub fn main(init: std.process.Init.Minimal) void {") |> ignore
         program.AppendLine("    spiral_gpa = spiral_arena.allocator();").AppendLine("    spiral_environ = init.environ;") |> ignore
-        program.AppendLine("    const thread = std.Thread.spawn(.{ .stack_size = 1 << 30 }, spiralMainThread, .{}) catch @panic(\"spiral: could not start the main thread\");").AppendLine("    thread.join();").AppendLine("    spiralFlush();") |> ignore
-        program.AppendLine("    std.process.exit(@truncate(@as(u32, @bitCast(spiral_exit_code))));").AppendLine("}") |> ignore
+        program.AppendLine("    if (@import(\"builtin\").os.tag == .windows) {").AppendLine("        const handle = CreateThread(null, 1 << 30, spiralMainThreadReserved, null, 0x00010000, null) orelse @panic(\"spiral: could not start the main thread\");").AppendLine("        _ = WaitForSingleObject(handle, 0xFFFFFFFF);").AppendLine("    } else {").AppendLine("        const thread = std.Thread.spawn(.{ .stack_size = 1 << 30 }, spiralMainThread, .{}) catch @panic(\"spiral: could not start the main thread\");").AppendLine("        thread.join();").AppendLine("    }").AppendLine("    spiralFlush();") |> ignore
+        program.AppendLine("    if (@import(\"builtin\").os.tag == .windows) ExitProcess(@bitCast(spiral_exit_code)) else std.process.exit(@truncate(@as(u32, @bitCast(spiral_exit_code))));").AppendLine("}") |> ignore
         program.ToString()
 
     /// ## CodegenLean
@@ -167705,11 +167857,12 @@ end
                 | [||] -> "nil"
                 | [|x|] -> f x
                 | x -> Array.map f x |> String.concat ", " |> sprintf "%s"
-            let simple x =
+            let simple (x : string) =
                 match d with
                 | None -> $"return {x}"
                 | Some d ->
                     match data_free_vars d with
+                    | [||] when x.TrimStart().StartsWith "(" -> $"do {x} end"
                     | [||] -> $"{x}"
                     | [|_|] ->
                         let names = free_vars false d |> SpiralSm.trim
@@ -167943,6 +168096,9 @@ end
                 | Some (64, false), Some (_, true) -> luaW64Use (); simple $"spiral_w64.cast({d}, false)"
                 | Some (bits, _), Some (64, _) when bits < 64 -> luaW64Use (); simple (luaWrap target $"spiral_w64.low({d})")
                 | None, Some (64, source_signed) when (match a with YPrim (Float32T | Float64T) -> true | _ -> false) -> luaW64Use (); simple $"spiral_w64.to_float({d}, {luaBoolText source_signed})"
+                | Some (bits, signed), Some (source_bits, source_signed) when bits < 64 ->
+                    let source_fits = (signed = source_signed && bits >= source_bits) || (signed && not source_signed && bits > source_bits)
+                    if source_fits then simple d else simple (luaWrap target d)
                 | _ ->
                     match a with
                     | YPrim (Int8T | Int16T | Int32T | Int64T | UInt8T | UInt16T | UInt32T | UInt64T) when from_float -> simple $"(math.modf({d}))"
@@ -168148,7 +168304,7 @@ end
                     line (indent s) (sprintf "return function(v%i)" i)
                 | many ->
                     line (indent s) "return function(dom)"
-                    line (indent (indent s)) "local _ = (table.unpack or unpack)(dom)"
+                    line (indent (indent s)) (sprintf "local %s = (table.unpack or unpack)(dom)" (many |> Array.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "))
                 binds (indent (indent s)) x.body
                 line (indent s) "end"
                 line s "end"
@@ -170073,6 +170229,8 @@ end
 
     /// ### codegenKotlin
     let codegenKotlin (env : PartEvalResult) (x : TypedBind []) =
+        let globals = ResizeArray<string>()
+        let globals_seen = HashSet<string>()
         let functions = ResizeArray<string>()
         let tuple_bodies = ResizeArray<string>()
         let tuple_names = Dictionary<string, string>()
@@ -170545,6 +170703,9 @@ end
                     | CMType x -> tyv x
                     | CMTypeLit _ -> unsupported "a macro type literal"
                 return' (parts |> List.map piece |> String.concat "")
+            | TyOp(Global, [DLit (LitString text)]) ->
+                if globals_seen.Add text then globals.Add text
+                return' ""
             | TyOp(Global, _) -> unsupported "globals"
             | TyOp(operation, l) ->
                 let binary symbol a b = $"({tup a} {symbol} {tup b})"
@@ -170803,6 +170964,7 @@ end
             | _ -> true
         emit_function "spiral_main" None [||] (if unit_main then YB else YPrim Int32T) x
         let program = StringBuilder()
+        globals |> Seq.iter (fun text -> program.AppendLine(text) |> ignore)
         layout_types |> Seq.iter (fun text -> program.Append(text) |> ignore)
         union_types |> Seq.iter (fun text -> program.Append(text) |> ignore)
         helpers |> Seq.iter (fun text -> program.Append(text) |> ignore)
@@ -170829,6 +170991,8 @@ end
 
     /// ### codegenSwift
     let codegenSwift (env : PartEvalResult) (x : TypedBind []) =
+        let globals = ResizeArray<string>()
+        let globals_seen = HashSet<string>()
         let functions = ResizeArray<string>()
         let method_names = Dictionary<int, string>()
         let closure_names = Dictionary<int, string>()
@@ -171314,6 +171478,9 @@ end
                     | CMType x -> tyv x
                     | CMTypeLit _ -> unsupported "a macro type literal"
                 return' (parts |> List.map piece |> String.concat "")
+            | TyOp(Global, [DLit (LitString text)]) ->
+                if globals_seen.Add text then globals.Add text
+                return' ""
             | TyOp(Global, _) -> unsupported "globals"
             | TyOp(operation, l) ->
                 let binary symbol a b = $"({tup a} {symbol} {tup b})"
@@ -171549,6 +171716,7 @@ end
         emit_function "spiral_main" None [||] (if unit_main then YB else YPrim Int32T) x
         let program = StringBuilder()
         program.AppendLine("import CRT").AppendLine("import WinSDK") |> ignore
+        globals |> Seq.iter (fun text -> program.AppendLine(text) |> ignore)
         layout_types |> Seq.iter (fun text -> program.Append(text) |> ignore)
         union_types |> Seq.iter (fun text -> program.Append(text) |> ignore)
         helpers |> Seq.iter (fun text -> program.Append(text) |> ignore)
@@ -176291,6 +176459,74 @@ end
                     .Append("|payload=").Append(stableTokenTextField (spiralTokenStableText token)) |> ignore
         sb.ToString()
 
+    /// ### raw_string_layout
+    /// The column each token lays out at, and the text of raw strings without their indentation. A string or macro
+    /// that closes on a later line than it opens carries its opening column: what follows the close on that line
+    /// lays out past the opener, so `f """...\n""" x` applies `f` to `x` like a one-line string would. A raw string
+    /// whose closing quotes start their line after `w` spaces is a block: each line after the opener's drops `w`
+    /// spaces, the newline before the closing line is dropped, and so is the opener's when nothing follows it.
+    let raw_string_layout (tokens : (VSCRange * SpiralToken) []) =
+        let layout = Array.zeroCreate tokens.Length
+        let opens = System.Collections.Generic.Stack<int>()
+        let mutable errors = []
+        let mutable row = -1
+        let mutable shift = 0
+        let dedent opener closer =
+            let open_row = (fst (fst tokens.[opener])).line
+            let close_row = (fst (fst tokens.[closer])).line
+            let indent =
+                if (fst (fst tokens.[closer])).character = 0 then Some 0
+                else
+                    match tokens.[closer - 1] with
+                    | (a, _), TokText x when a.line = close_row && a.character = 0 && x.Trim(' ') = "" -> Some x.Length
+                    | _ -> None
+            match indent with
+            | Some w when 0 < w ->
+                let prefix = System.String(' ', w)
+                let mutable last_line = -1
+                for j in opener + 1 .. closer - 1 do
+                    match tokens.[j] with
+                    | (a, _ as r), TokText x when a.line = open_row ->
+                        if x = "\n" then tokens.[j] <- r, TokText ""
+                        last_line <- j
+                    | (a, _ as r), TokText _ when a.line = close_row -> tokens.[j] <- r, TokText ""
+                    | r, TokText x ->
+                        let line = x.TrimEnd('\n')
+                        if line.StartsWith(prefix, StringComparison.Ordinal) then tokens.[j] <- r, TokText (x.Substring w)
+                        elif line.Trim(' ') = "" then tokens.[j] <- r, TokText "\n"
+                        else errors <- (r, RawStringLineUnderIndented) :: errors
+                        last_line <- j
+                    | _ -> ()
+                if 0 <= last_line then
+                    match tokens.[last_line] with
+                    | r, TokText x when x.EndsWith '\n' -> tokens.[last_line] <- r, TokText (x.Substring(0, x.Length - 1))
+                    | _ -> ()
+            | _ -> ()
+        for i in 0 .. tokens.Length - 1 do
+            let (a, _), t = tokens.[i]
+            if a.line <> row then
+                row <- a.line
+                shift <- 0
+            let close_spanning_lines () =
+                let opener = opens.Pop()
+                let (open_from, open_to), _ = tokens.[opener]
+                if open_from.line <> a.line then
+                    shift <- layout.[opener] + 1
+                    Some (opener, 3 <= open_to.character - open_from.character)
+                else None
+            match t with
+            | TokStringClose when 0 < opens.Count ->
+                match close_spanning_lines () with
+                | Some (opener, true) -> dedent opener i
+                | _ -> ()
+            | TokMacroClose when 0 < opens.Count -> close_spanning_lines () |> ignore
+            | _ -> ()
+            layout.[i] <- a.character + shift
+            match t with
+            | TokStringOpen | TokMacroOpen -> opens.Push i
+            | _ -> ()
+        layout, List.rev errors
+
     /// ### parse_block
     let parse_block default_env is_top_down (block : LineTokens) =
         let comments, cords_tokens =
@@ -176308,17 +176544,17 @@ end
                 )
             |> Array.unzip
         let cords, tokens = Array.unzip (Array.concat cords_tokens)
-    
+        let layout_columns, raw_string_errors = raw_string_layout tokens
 
         let semantic_updates = ResizeArray()
         let env = {
             tokens_cords = cords; semantic_updates = semantic_updates
-            comments = comments; tokens = tokens; i = ref 0; is_top_down = is_top_down
+            comments = comments; tokens = tokens; layout_columns = layout_columns; i = ref 0; is_top_down = is_top_down
             default_env = default_env
             continuation_column = None
             }
         assert (env.tokens_cords.Length = env.tokens.Length)
-        let result = blockParsingParse env
+        let result = if List.isEmpty raw_string_errors then blockParsingParse env else Error raw_string_errors
         match result with
         | Ok statement ->
             observeParsedStatement (lineTokensStableIdentity block) statement
@@ -177658,6 +177894,7 @@ end
             | SeparatorTight
             | SeparatorSpace
             | ApplicationSpace
+            | MacroOpTight
             | BracketInnerSpace
             | EmptyBracketTight
             | ConstraintBraceTight
@@ -177742,6 +177979,7 @@ end
             | _, Embedded _ -> AsWritten
             | _ when macroInterior -> AsWritten
             | _ when isUnary left.Token -> AsWritten
+            | _ when isOpening Round right.Token && (match at -2 with Some (TokUnaryOperator ("!!!!", _)) -> true | _ -> false) -> Fixed (MacroOpTight, 0)
             | _ ->
                 let sectionOpen = isOpening Round left.Token && (binaryOperator right.Token).IsSome && (at 1 |> Option.exists (isClosing Round))
                 let sectionClose = isClosing Round right.Token && (binaryOperator left.Token).IsSome && (at -2 |> Option.exists (isOpening Round))
@@ -180537,7 +180775,7 @@ end
                     else search dir.Parent
             search (DirectoryInfo (Path.GetDirectoryName (Path.GetFullPath path)))
 
-        let generatedDirectories = set [ "target"; "node_modules"; "deps"; "bin"; "obj"; "_build"; ".git" ]
+        let generatedDirectories = set [ "target"; "node_modules"; "deps"; "bin"; "obj"; "_build"; ".git"; ".history" ]
 
         let insideGeneratedDirectory (root : string) (file : string) =
             Path.GetRelativePath(root, Path.GetDirectoryName file).Split ([| '\\'; '/' |]) |> Array.exists generatedDirectories.Contains
@@ -180550,6 +180788,30 @@ end
                 |> Seq.sort
                 |> List.ofSeq
             else [ input ]
+
+        let formatDegree () =
+            match Int32.TryParse (Environment.GetEnvironmentVariable "SPIRAL_FORMAT_PARALLEL") with
+            | true, degree when degree > 0 -> degree
+            | _ -> max 1 (Environment.ProcessorCount / 2)
+
+        let formatInParallel (files : string[]) (examine : string -> 'outcome) (report : string * 'outcome -> unit) =
+            let degree = formatDegree ()
+            let chunkSize = max 1 (degree * 4)
+            let mutable start = 0
+            while start < files.Length do
+                let chunk = files.[start .. min files.Length (start + chunkSize) - 1]
+                let outcomes : 'outcome[] = Array.zeroCreate chunk.Length
+                let next = [| -1 |]
+                let work () =
+                    let mutable index = Threading.Interlocked.Increment &next.[0]
+                    while index < chunk.Length do
+                        outcomes.[index] <- examine chunk.[index]
+                        index <- Threading.Interlocked.Increment &next.[0]
+                let workers = Array.init (min degree chunk.Length) (fun _ -> Threading.Thread ((fun () -> work ()), 256 <<< 20))
+                for worker in workers do worker.Start ()
+                for worker in workers do worker.Join ()
+                Array.iteri (fun index outcome -> report (chunk.[index], outcome)) outcomes
+                start <- start + chunkSize
 
         let runOnThisStack (arguments : string list) : int =
             literalSplitting.Enabled <- not (List.contains "--no-split-literals" arguments)
@@ -180564,16 +180826,29 @@ end
             else
                 let check = List.contains "--check" arguments
                 let changed = ResizeArray<string> ()
-                for file in positional arguments |> List.collect sourceFiles do
-                    let text = File.ReadAllText(file).Replace ("\r\n", "\n")
-                    let formatted = formatText file (editionOf file) text
-                    if formatted <> text then
-                        changed.Add file
-                        if not check then File.WriteAllText (file, formatted)
-                    if check then
-                        formatted.Split '\n' |> Array.iteri (fun index line -> let width = displayWidth line in if width > 120 then printfn "%s:%d:121: over-120 (%d columns)" file (index + 1) width)
-                for file in changed do printfn "%s %s" (if check then "would change:" else "formatted:") file
-                if check && changed.Count > 0 then 1 else 0
+                let failed = ref 0
+                let examine (file : string) =
+                    try
+                        if File.Exists file then
+                            let text = File.ReadAllText(file).Replace ("\r\n", "\n")
+                            Ok (Some (text, formatText file (editionOf file) text))
+                        else Ok None
+                    with error -> Error error.Message
+                let report (file : string, outcome : Result<(string * string) option, string>) =
+                    match outcome with
+                    | Ok None -> printfn "vanished: %s" file
+                    | Ok (Some (text, formatted)) ->
+                        if formatted <> text then
+                            changed.Add file
+                            if not check then File.WriteAllText (file, formatted)
+                            printfn "%s %s" (if check then "would change:" else "formatted:") file
+                        if check then
+                            formatted.Split '\n' |> Array.iteri (fun index line -> let width = displayWidth line in if width > 120 then printfn "%s:%d:121: over-120 (%d columns)" file (index + 1) width)
+                    | Error message ->
+                        failed.Value <- failed.Value + 1
+                        eprintfn "format error: %s: %s" file message
+                formatInParallel (positional arguments |> List.collect sourceFiles |> Array.ofList) examine report
+                if failed.Value > 0 then 2 elif check && changed.Count > 0 then 1 else 0
 
         let run (arguments : string list) : int = onLargeStack (fun () -> runOnThisStack arguments)
 
@@ -181276,6 +181551,7 @@ end
         | XCompatMention
         | XCompatCashtag
         | XCompatAutolink
+        | XCompatOverweight
 
     /// ### XCompatFinding
     type XCompatFinding = { kind : XCompatKind; line : int; column : int; text : string }
@@ -181287,6 +181563,7 @@ end
         | XCompatMention -> "mention"
         | XCompatCashtag -> "cashtag"
         | XCompatAutolink -> "autolink"
+        | XCompatOverweight -> "overweight"
 
     /// ### xCompatCode
     let xCompatCode kind =
@@ -181295,6 +181572,7 @@ end
         | XCompatMention -> "XC002"
         | XCompatCashtag -> "XC003"
         | XCompatAutolink -> "XC004"
+        | XCompatOverweight -> "XC005"
 
     /// ### xCompatHint
     let xCompatHint kind =
@@ -181303,6 +181581,7 @@ end
         | XCompatMention -> "X turns '@' before a name into a mention"
         | XCompatCashtag -> "X turns '$' before letters into a cashtag link"
         | XCompatAutolink -> "X shortens what looks like a domain to a 23-character t.co link"
+        | XCompatOverweight -> "one post holds 280 weighted characters (CJK and emoji weigh 2, links 23); split this definition"
 
     /// ### xCompatTopLevelDomains
     let xCompatTopLevelDomains =
@@ -181407,6 +181686,43 @@ end
             labels.[labels.Length - 2].Length > 2
         else true
 
+    /// ### xCompatPostWeightLimit
+    let xCompatPostWeightLimit = 280
+
+    /// ### xCompatCodePointWeight
+    let xCompatCodePointWeight (codePoint : int) =
+        if codePoint <= 0x10FF
+           || (codePoint >= 0x2000 && codePoint <= 0x200D)
+           || (codePoint >= 0x2010 && codePoint <= 0x201F)
+           || (codePoint >= 0x2032 && codePoint <= 0x2037) then 1
+        else 2
+
+    /// ### xCompatLinkWeight
+    let xCompatLinkWeight = 23
+
+    /// ### xCompatPostWeight
+    let xCompatPostWeight (post : string) =
+        let links = [ for found in xCompatDomainPattern.Matches post do if xCompatLinks found.Value (found.Groups.[1].Value.ToLowerInvariant ()) then yield found ]
+        let unlinked = links |> List.rev |> List.fold (fun (rest : string) found -> rest.Remove (found.Index, found.Length)) post
+        let characters = unlinked.EnumerateRunes () |> Seq.sumBy (fun rune -> xCompatCodePointWeight rune.Value)
+        characters + xCompatLinkWeight * links.Length
+
+    /// ### xCompatTopLevelBlocks
+    let xCompatTopLevelBlocks (lines : string []) =
+        let starts = [ for index in 0 .. lines.Length - 1 do if lines.[index].Length > 0 && not (Char.IsWhiteSpace lines.[index].[0]) then yield index ]
+        starts
+        |> List.mapi (fun position start ->
+            let stop = if position + 1 < starts.Length then starts.[position + 1] else lines.Length
+            let body = lines.[start .. stop - 1] |> Array.toList |> List.rev |> List.skipWhile String.IsNullOrWhiteSpace |> List.rev
+            start + 1, String.Join ("\n", body))
+
+    /// ### xCompatOverweightFindings
+    let xCompatOverweightFindings (lines : string []) =
+        [ for row, block in xCompatTopLevelBlocks lines do
+            let weight = xCompatPostWeight block
+            if weight > xCompatPostWeightLimit then
+                yield { kind = XCompatOverweight; line = row; column = 1; text = $"weight {weight} > {xCompatPostWeightLimit}" } ]
+
     /// ### xCompatLineFindings
     let xCompatLineFindings (line : string) (row : int) =
         let marks =
@@ -181422,10 +181738,9 @@ end
 
     /// ### xCompatFindings
     let xCompatFindings (source : string) =
-        source.Replace("\r\n", "\n").Split '\n'
-        |> List.ofArray
-        |> List.mapi (fun index line -> xCompatLineFindings line (index + 1))
-        |> List.concat
+        let lines = source.Replace("\r\n", "\n").Split '\n'
+        let marks = lines |> List.ofArray |> List.mapi (fun index line -> xCompatLineFindings line (index + 1)) |> List.concat
+        marks @ xCompatOverweightFindings lines |> List.sortBy (fun finding -> finding.line, finding.column)
 
     /// ### xCompatReportLine
     let xCompatReportLine (path : string) (finding : XCompatFinding) =
@@ -183182,7 +183497,7 @@ end
                                         emitBuildFileInitializationStage BuildFileCodegenCompleted
                                         BuildDraft.Provisional generated
                                     let build codegen backend file_extension =
-                                        build_many (fun file b a -> [{|code = codegen b (DeadPureLetElision.block a); file_extension = file_extension|}]) backend
+                                        build_many (fun file b a -> [{|code = codegen b (DeadPureLetElision.block a) |> UnusedGlobals.prune b.globals; file_extension = file_extension|}]) backend
     
 
                                     let do_build () =
@@ -185890,7 +186205,7 @@ end
                                         trace Verbose (fun () -> $"Supervisor.supervisor_server.BuildFile.file_build.codegen_ready / backend: {backend} / files: {List.length generated}") _locals
                                         BuildOk generated
                                     let build codegen backend file_extension =
-                                        build_many (fun file b a -> [generated_file (codegen b (DeadPureLetElision.block a)) file_extension]) backend
+                                        build_many (fun file b a -> [generated_file (codegen b (DeadPureLetElision.block a) |> UnusedGlobals.prune b.globals) file_extension]) backend
                                     match backend with
                                     | "Gleam" -> build codegenGleam "Gleam" ".gleam"
                                     | "Lua" -> build codegenLua "Lua" ".lua"

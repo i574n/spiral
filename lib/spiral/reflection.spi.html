@@ -8386,11 +8386,103 @@ __assert_eq { expected = Some(Wasm) }</pre>
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<h3 id="union_to_string">union_to_string<a class="anchor-link" href="#union_to_string">¶</a></h3>
+<h3 id="union_cases_fold">union_cases_fold<a class="anchor-link" href="#union_cases_fold">¶</a></h3>
 </div>
 </div>
 </div>
 </div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=18">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [ ]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">union_cases_fold</span> <span class="n">forall</span> <span class="n">union_type</span> <span class="n">state</span><span class="o">.</span> <span class="p">(</span><span class="n">step</span> <span class="p">:</span> <span class="n">state</span> <span class="o">-&gt;</span> <span class="n">union_type</span> <span class="o">-&gt;</span> <span class="n">state</span><span class="p">)</span> <span class="p">(</span><span class="n">initial</span> <span class="p">:</span> <span class="n">state</span><span class="p">)</span> <span class="p">:</span> <span class="n">state</span> <span class="o">=</span>
+    <span class="n">real</span>
+        <span class="n">real_core</span><span class="o">.</span><span class="n">union_to_record</span> <span class="err">`</span><span class="n">union_type</span> <span class="n">forall</span> <span class="n">union_record_type</span><span class="o">.</span> <span class="o">=&gt;</span>
+            <span class="n">real_core</span><span class="o">.</span><span class="n">record_type_fold</span>
+                <span class="n">fun</span> <span class="n">acc</span> <span class="n">key</span> <span class="o">=&gt;</span> <span class="n">forall</span> <span class="n">value</span><span class="o">.</span> <span class="o">=&gt;</span> <span class="n">step</span> <span class="n">acc</span> <span class="p">(</span><span class="n">real_core</span><span class="o">.</span><span class="n">nominal_create</span> <span class="err">`</span><span class="n">union_type</span> <span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">()))</span>
+                <span class="n">initial</span>
+                <span class="err">`</span><span class="n">union_record_type</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=19">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea">
+<div class="jp-InputPrompt jp-InputArea-prompt">In [5]:</div>
+<div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
+<div class="cm-editor cm-s-jupyter">
+<div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
+<span class="o">///&gt;</span> <span class="n">gleam</span>
+<span class="o">///&gt;</span> <span class="n">lua</span>
+<span class="o">///&gt;</span> <span class="n">fsharp</span>
+<span class="o">///&gt;</span> <span class="n">cuda</span>
+<span class="o">///&gt;</span> <span class="n">rust</span>
+<span class="o">///&gt;</span> <span class="n">typescript</span>
+
+<span class="n">union_cases_fold</span> <span class="p">(</span><span class="n">fun</span> <span class="n">count</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">reflection_test_target</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">count</span> <span class="o">+</span> <span class="mi">1</span><span class="n">i32</span><span class="p">)</span> <span class="mi">0</span><span class="n">i32</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="mi">2</span><span class="n">i32</span>
+
+<span class="n">union_cases_fold</span> <span class="p">(</span><span class="n">fun</span> <span class="n">found</span> <span class="p">(</span><span class="n">target</span> <span class="p">:</span> <span class="n">reflection_test_target</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="k">if</span> <span class="n">target</span> <span class="o">=</span> <span class="n">Contract</span> <span class="n">then</span> <span class="n">true</span> <span class="k">else</span> <span class="n">found</span><span class="p">)</span> <span class="n">false</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="n">true</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell-outputWrapper">
+<div class="jp-Collapser jp-OutputCollapser jp-Cell-outputCollapser">
+</div>
+<div class="jp-OutputArea jp-Cell-outputArea">
+<div class="jp-OutputArea-child">
+<div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
+<div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
+<pre>.gleam (gleam)
+__assert_eq { expected = 2 }
+__assert_eq { expected = true }
+.lua (lua)
+__assert_eq { expected = 2 }
+__assert_eq { expected = true }
+.fsx (fsharp)
+__assert_eq { expected = 2 }
+__assert_eq { expected = true }
+.py (cuda)
+__assert_eq { expected = 2 }
+__assert_eq { expected = true }
+.rs (rust)
+__assert_eq { expected = 2 }
+__assert_eq { expected = true }
+.ts (typescript)
+__assert_eq { expected = 2 }
+__assert_eq { expected = true }</pre>
+</div>
+</div>
+<div class="jp-OutputArea-child jp-OutputArea-executeResult">
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[5]:</div>
+<div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
+<pre>0</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=20">
+<div class="jp-Cell-inputWrapper" tabindex="0">
+<div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
+</div>
+<div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
+</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
+<h3 id="union_to_string">union_to_string<a class="anchor-link" href="#union_to_string">¶</a></h3>
+</div>
+</div>
+</div>
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=21">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8434,12 +8526,12 @@ __assert_eq { expected = Some(Wasm) }</pre>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=19">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=22">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [5]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [6]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -8474,7 +8566,7 @@ __assert_eq' { expected = Some }</pre>
 </div>
 </div>
 <div class="jp-OutputArea-child jp-OutputArea-executeResult">
-<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[5]:</div>
+<div class="jp-OutputPrompt jp-OutputArea-prompt">Out[6]:</div>
 <div class="jp-RenderedText jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/plain" tabindex="0">
 <pre>0</pre>
 </div>
@@ -8482,7 +8574,7 @@ __assert_eq' { expected = Some }</pre>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=20">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=23">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8492,7 +8584,7 @@ __assert_eq' { expected = Some }</pre>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=21">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=24">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8513,12 +8605,12 @@ __assert_eq' { expected = Some }</pre>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=22">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=25">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [6]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [7]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -8544,7 +8636,7 @@ __assert_eq' { expected = Some }</pre>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=23">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=26">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8554,7 +8646,7 @@ __assert_eq' { expected = Some }</pre>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=24">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=27">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8577,12 +8669,12 @@ __assert_eq' { expected = Some }</pre>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=25">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=28">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [7]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [8]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
@@ -8608,7 +8700,7 @@ __assert_eq' { expected = Some }</pre>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=26">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=29">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8618,12 +8710,12 @@ __assert_eq' { expected = Some }</pre>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=27">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=30">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [8]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [9]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">get_functions_types</span> <span class="n">forall</span> <span class="n">t</span> <span class="p">{</span><span class="n">record</span><span class="p">}</span><span class="o">.</span> <span class="p">(</span><span class="n">fns</span> <span class="p">:</span> <span class="n">t</span><span class="p">)</span> <span class="o">=</span>
@@ -8656,12 +8748,12 @@ __assert_eq' { expected = Some }</pre>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=28">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=31">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea">
-<div class="jp-InputPrompt jp-InputArea-prompt">In [9]:</div>
+<div class="jp-InputPrompt jp-InputArea-prompt">In [10]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>

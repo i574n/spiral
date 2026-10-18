@@ -4,7 +4,7 @@
 #r "dll/Hopac.dll"
 #r "dll/SpiralCompilerCore.dll"
 
-open Polyglot.spiral_compiler
+open Spiral.spiral_compiler
 
 [<AbstractClass; Sealed>]
 type AsRead = class end

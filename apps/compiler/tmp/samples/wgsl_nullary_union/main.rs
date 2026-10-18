@@ -8,21 +8,6 @@ enum US0 {
     US0_South,
     US0_West,
 }
-impl US0 {
-    fn tag(&self) -> i32 {
-        match self {
-            US0::US0_North => 0,
-            US0::US0_East => 1,
-            US0::US0_South => 2,
-            US0::US0_West => 3,
-        }
-    }
-}
-impl Default for US0 {
-    fn default() -> Self {
-        US0::US0_North
-    }
-}
 fn spiral_main() -> i32 {
     let mut v0: US0 = US0::US0_North;
     let mut v8: US0 = match &v0 {
@@ -118,5 +103,5 @@ fn spiral_main() -> i32 {
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 1 });
 }

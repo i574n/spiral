@@ -1,0 +1,3 @@
+inl main () : i32 =
+    inl ~code = 305i32
+    code

@@ -17,16 +17,38 @@ if ($Mode -in 'hopacsota', 'hs') {
 
 $dotnet = Resolve-SpiralDotnet
 $cache = Get-SpiralCacheDir
+$sharedCache = if ($IsWindows) { Join-Path $env:LOCALAPPDATA 'spiral-bin' } else { Join-Path $HOME '.cache/spiral-bin' }
 $project = Join-Path $BundleRoot 'compiler/host/SpiralCompiler.fsproj'
 $modes = if ($Mode -eq 'both') { 'single-flight', 'gpt5parallel' } else { ConvertTo-SpiralMode $Mode }
 $receipts = Join-Path $cache 'results/builds.tsv'
 New-Item -ItemType Directory -Force (Split-Path $receipts) | Out-Null
 if (-not (Test-Path $receipts)) { "timestamp`tmode`tconfiguration`tseconds`texit`tcore_sha256`tcore" | Set-Content $receipts }
+$script:SpiralBuildRuntime = $null
 
+function Get-SpiralBuildDirectory([string]$Dotnet) {
+    $systemDotnet = if ($IsWindows) { Join-Path $env:ProgramFiles 'dotnet/dotnet.exe' } else { '/usr/share/dotnet/dotnet' }
+    $systemRuntimes = if (Test-Path $systemDotnet) { @(& $systemDotnet --list-runtimes | Select-String '^Microsoft\.NETCore\.App (\S+)' | ForEach-Object { $_.Matches[0].Groups[1].Value }) } else { @() }
+    $sdks = foreach ($sdk in Get-ChildItem (Join-Path (Split-Path $Dotnet) 'sdk') -Directory -ErrorAction SilentlyContinue) {
+        $bundled = Join-Path $sdk.FullName 'Microsoft.NETCoreSdk.BundledVersions.props'
+        if (-not (Test-Path $bundled)) { continue }
+        $runtime = ([regex]::Match([IO.File]::ReadAllText($bundled), '<BundledNETCoreAppPackageVersion>([^<]+)<')).Groups[1].Value
+        $semantic = $null
+        if ([Management.Automation.SemanticVersion]::TryParse($sdk.Name, [ref]$semantic)) { [pscustomobject]@{ Sdk = $sdk.Name; Runtime = $runtime; Order = $semantic } }
+    }
+    $chosen = @($sdks | Sort-Object Order -Descending | Where-Object { -not $systemRuntimes.Count -or $systemRuntimes -contains $_.Runtime }) | Select-Object -First 1
+    if (-not $chosen) { return $null }
+    $directory = Join-Path $cache "build-cwd/$($chosen.Sdk)"
+    New-Item -ItemType Directory -Force $directory | Out-Null
+    [IO.File]::WriteAllText((Join-Path $directory 'global.json'), "{`n  `"sdk`": { `"version`": `"$($chosen.Sdk)`", `"rollForward`": `"disable`" }`n}`n")
+    Write-Host "== SDK $($chosen.Sdk) (runtime $($chosen.Runtime), the newest one the system dotnet can run)"
+    $script:SpiralBuildRuntime = $chosen.Runtime
+    $directory
+}
 function Get-SpiralCrossgen2([string]$Dotnet) {
     $rid = [System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier -replace '^win\d*-', 'win-' -replace '^(ubuntu|debian|fedora|rhel|alpine)[^-]*-', 'linux-'
-    $runtime = & $Dotnet --list-runtimes | Select-String '^Microsoft\.NETCore\.App (\S+) \[(.+)\]' | ForEach-Object { $_.Matches[0] } |
-        Sort-Object { [version]($_.Groups[1].Value -replace '-.*$', '') } | Select-Object -Last 1
+    $runtimes = @(& $Dotnet --list-runtimes | Select-String '^Microsoft\.NETCore\.App (\S+) \[(.+)\]' | ForEach-Object { $_.Matches[0] })
+    $runtime = $runtimes | Where-Object { $script:SpiralBuildRuntime -and $_.Groups[1].Value -eq $script:SpiralBuildRuntime } | Select-Object -First 1
+    if (-not $runtime) { $runtime = $runtimes | Sort-Object { [version]($_.Groups[1].Value -replace '-.*$', '') } | Select-Object -Last 1 }
     if (-not $runtime) { return $null }
     $version = $runtime.Groups[1].Value
     $nuget = if ($env:NUGET_PACKAGES) { $env:NUGET_PACKAGES } else { Join-Path $HOME '.nuget/packages' }
@@ -87,20 +109,29 @@ function Unlock-SpiralOutputs([string]$OutDir) {
 $failed = $false
 foreach ($m in $modes) {
     $core = if ($CoreSource) { (Resolve-Path $CoreSource).Path } else { Get-SpiralCoreSource $m }
-    $staged = Join-Path $cache "core-src/$m/spiral_compiler.fs"
+    $coreSha = Get-FileSha256 $core
+    $staged = Join-Path $sharedCache "core-src/$m/$($coreSha.Substring(0, 16))/spiral_compiler.fs"
     New-Item -ItemType Directory -Force (Split-Path $staged) | Out-Null
-    if (-not (Test-Path $staged) -or (Get-FileSha256 $staged) -ne (Get-FileSha256 $core)) {
-        Copy-Item -LiteralPath $core -Destination $staged -Force
+    if (-not (Test-Path $staged) -or (Get-FileSha256 $staged) -ne $coreSha) { Copy-Item -LiteralPath $core -Destination $staged -Force }
+    (Get-Item -LiteralPath (Split-Path $staged)).LastWriteTime = Get-Date
+    $lastStaged = Join-Path $cache "obj/$m/last-staged-core.txt"
+    New-Item -ItemType Directory -Force (Split-Path $lastStaged) | Out-Null
+    if (-not (Test-Path $lastStaged) -or (Get-Content -LiteralPath $lastStaged -Raw).Trim() -ne $staged) {
         (Get-Item -LiteralPath $staged).LastWriteTime = Get-Date
+        [IO.File]::WriteAllText($lastStaged, $staged)
     }
-    $args = @('build', $project, '-c', $Configuration, "-p:SpiralCore=$m", "-p:SpiralCacheDir=$cache", "-p:SpiralCoreSource=$staged", '-nologo', '-v:m')
+    Get-ChildItem (Join-Path $sharedCache "core-src/$m") -Directory -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -Skip 8 |
+        ForEach-Object { try { [IO.Directory]::Delete($_.FullName, $true) } catch { } }
+    $args = @('build', $project, '-c', $Configuration, "-p:SpiralCore=$m", "-p:SpiralCacheDir=$cache", "-p:SpiralCoreSource=$staged", "-p:PathMap=$cache=$sharedCache", '-nologo', '-v:m')
     Write-Host "== building $m ($Configuration) from $core"
     $sw = [Diagnostics.Stopwatch]::StartNew()
     $gcSaved = $env:DOTNET_gcServer, $env:DOTNET_GCConserveMemory, $env:MSBUILDDISABLENODEREUSE
     $env:DOTNET_gcServer = '0'; $env:DOTNET_GCConserveMemory = '9'; $env:MSBUILDDISABLENODEREUSE = '1'
     if ($Configuration -eq 'Release') { Unlock-SpiralOutputs (Join-Path $cache "bin/$m/SpiralCompiler/$Configuration/net11.0") }
+    $buildDirectory = Get-SpiralBuildDirectory $dotnet
+    Push-Location $(if ($buildDirectory) { $buildDirectory } else { Join-Path $BundleRoot 'compiler' })
     try { & $dotnet @args }
-    finally { $env:DOTNET_gcServer, $env:DOTNET_GCConserveMemory, $env:MSBUILDDISABLENODEREUSE = $gcSaved }
+    finally { $env:DOTNET_gcServer, $env:DOTNET_GCConserveMemory, $env:MSBUILDDISABLENODEREUSE = $gcSaved; Pop-Location }
     $exit = $LASTEXITCODE
     if ($exit -eq 0 -and $Configuration -eq 'Release') { Invoke-SpiralReadyToRun $dotnet (Join-Path $cache "bin/$m/SpiralCompiler/$Configuration/net11.0") }
     $seconds = [math]::Round($sw.Elapsed.TotalSeconds, 1)

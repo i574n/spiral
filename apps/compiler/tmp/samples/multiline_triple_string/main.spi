@@ -3,7 +3,26 @@ top
 
 level"""
 
+inl plus_length (s : string) (n : i32) : i32 = sm.length s + n
+
 inl main () : i32 =
+    inl ~applied = plus_length """ab
+cd
+""" 10i32
+    inl ~annotated =
+        """x
+y""" : string
+    inl ~quote_last = """say "hi""""
+    inl ~long_quotes = """"a """ b""""
+    inl ~dedented = """
+        first
+            second
+
+        third
+        """
+    inl ~opener_line = """ab
+        cd
+        """
     inl ~quoted = """a "b" c"""
     inl ~empty = """"""
     inl ~raw = """a\nb"""
@@ -31,6 +50,19 @@ inl fake () = 1
     elif len top <> 11i32 then 13i32
     elif sm.index top 0i32 <> '\n' then 14i32
     elif sm.index top 5i32 <> '\n' then 15i32
+    elif applied <> 16i32 then 16i32
+    elif len annotated <> 3i32 then 17i32
+    elif len quote_last <> 8i32 then 18i32
+    elif sm.index quote_last 7i32 <> '"' then 19i32
+    elif len long_quotes <> 7i32 then 20i32
+    elif sm.index long_quotes 4i32 <> '"' then 21i32
+    elif len dedented <> 23i32 then 22i32
+    elif sm.index dedented 6i32 <> ' ' then 23i32
+    elif sm.index dedented 10i32 <> 's' then 24i32
+    elif sm.index dedented 17i32 <> '\n' then 25i32
+    elif sm.index dedented 22i32 <> 'd' then 26i32
+    elif len opener_line <> 5i32 then 27i32
+    elif sm.index opener_line 3i32 <> 'c' then 28i32
     else 0i32
 
 inl unused () = """unused

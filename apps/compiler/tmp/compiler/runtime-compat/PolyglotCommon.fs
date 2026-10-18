@@ -1,4 +1,4 @@
-namespace Polyglot
+namespace Spiral
 
 module Common =
     type TraceLevel =

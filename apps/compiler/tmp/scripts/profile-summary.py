@@ -9,7 +9,7 @@ WAIT = re.compile(r"Wait|Sleep|Monitor\.Enter|SpinWait|Poll|UNMANAGED_CODE_TIME|
 
 def short(n):
     n = re.sub(r"\(.*$", "", n)
-    n = n.replace("SpiralCompilerCore!Polyglot.spiral_compiler+", "").replace("SpiralCompilerCore!Polyglot.spiral_compiler.", "")
+    n = n.replace("SpiralCompilerCore!Spiral.spiral_compiler+", "").replace("SpiralCompilerCore!Spiral.spiral_compiler.", "")
     n = re.sub(r"@\d+[-\d]*", "", n)
     return n[:150]
 

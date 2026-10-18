@@ -1,0 +1,195 @@
+defmodule Spiral.Cells.Document do
+  alias Spiral.Cells.SmartCell
+
+  @break_markdown ~s|<!-- livebook:{"break_markdown":true} -->|
+
+  @spec parse_dib(String.t()) :: %{cells: [map()]}
+  def parse_dib(text) when is_binary(text) do
+    %{cells: Spiral.Cells.Domain.decode_cells(Spiral.Cells.Domain.parse_dib(text))}
+  end
+
+  @spec parse_spi(String.t(), String.t()) :: %{cells: [map()]}
+  def parse_spi(spi, spir) when is_binary(spi) and is_binary(spir) do
+    %{cells: Spiral.Cells.Domain.decode_cells(Spiral.Cells.Domain.from_spi(spi, spir))}
+  end
+
+  @spec parse_spi(String.t(), String.t(), {String.t(), String.t()}) :: %{cells: [map()]}
+  def parse_spi(spi, spir, {spi_bounds, spir_bounds}) when is_binary(spi) and is_binary(spir) do
+    %{cells: Spiral.Cells.Domain.decode_cells(Spiral.Cells.Domain.from_spi_bounded(spi, spir, spi_bounds, spir_bounds))}
+  end
+
+  @spec parse_livemd(String.t()) :: %{cells: [map()]}
+  def parse_livemd(text) when is_binary(text) do
+    text = String.replace(text, "\r\n", "\n")
+
+    cells =
+      Regex.split(~r/(^<!-- livebook:\{"spiral_code":"[^"]+"\} -->\n\n```[^\n]*\n.*?^```[ \t]*(?:\n|\z)|^```(?:elixir|fsharp|spiral)\n.*?^```[ \t]*(?:\n|\z))/sm, text, include_captures: true)
+      |> Enum.flat_map(&livemd_part/1)
+
+    %{cells: cells}
+  end
+
+  @spec to_livemd(%{cells: [map()]}) :: String.t()
+  def to_livemd(%{cells: cells}) do
+    {parts, _} =
+      cells
+      |> Enum.map(&canonical/1)
+      |> Enum.map_reduce(nil, fn cell, prev ->
+        part =
+          if text_cell?(prev) and text_cell?(cell),
+            do: @break_markdown <> "\n\n" <> render_cell(cell),
+            else: render_cell(cell)
+
+        {part, cell}
+      end)
+
+    parts
+    |> Enum.join("\n\n")
+    |> newline()
+  end
+
+  defp canonical(%{kind: :markdown, source: source} = cell), do: %{cell | source: String.trim(source)}
+  defp canonical(%{kind: :import} = cell), do: cell
+  defp canonical(%{source: source} = cell), do: %{cell | source: String.trim_trailing(source, "\n")}
+
+  defp text_cell?(%{kind: kind}) when kind in [:markdown, :import], do: true
+  defp text_cell?(_), do: false
+
+  @spec to_cell_text(%{cells: [map()]}) :: String.t()
+  def to_cell_text(%{cells: cells}) do
+    cells |> Enum.map_join("\n\n", &text_cell/1) |> newline()
+  end
+
+  defp text_cell(%{kind: :import, source: source}), do: "#!import #{source}"
+  defp text_cell(%{kind: :code, language: language, source: source}), do: "#!#{language}\n\n#{source}"
+  defp text_cell(%{kind: kind, source: source}), do: "#!#{kind}\n\n#{source}"
+
+  @spec to_spir(%{cells: [map()]}) :: String.t()
+  def to_spir(%{cells: cells}) do
+    Spiral.Cells.Domain.to_spir(Spiral.Cells.Domain.encode_cells(cells))
+  end
+
+  @spec to_spi(%{cells: [map()]}) :: String.t()
+  def to_spi(%{cells: cells}) do
+    Spiral.Cells.Domain.to_spi(Spiral.Cells.Domain.encode_cells(cells))
+  end
+
+  @spec to_spi_tested(%{cells: [map()]}) :: String.t()
+  def to_spi_tested(%{cells: cells}) do
+    Spiral.Cells.Domain.to_spi_tested(Spiral.Cells.Domain.encode_cells(cells))
+  end
+
+  @spec to_spir_tested(%{cells: [map()]}) :: String.t()
+  def to_spir_tested(%{cells: cells}) do
+    Spiral.Cells.Domain.to_spir_tested(Spiral.Cells.Domain.encode_cells(cells))
+  end
+
+  @spec tests(%{cells: [map()]}) :: [
+          %{index: non_neg_integer(), name: String.t(), mode: String.t(), realm: String.t(), symbol: String.t(), title: String.t()}
+        ]
+  def tests(%{cells: cells}) do
+    cells
+    |> Spiral.Cells.Domain.encode_cells()
+    |> Spiral.Cells.Domain.test_index()
+    |> String.split("\n", trim: true)
+    |> Enum.map(fn row ->
+      [index, name, mode, realm, symbol, title] = String.split(row, "\t", parts: 6)
+      %{index: String.to_integer(index), name: name, mode: mode, realm: realm, symbol: symbol, title: title}
+    end)
+    |> Enum.sort_by(& &1.index)
+  end
+
+  defp livemd_part(part) do
+    cond do
+      match?([_, _], Regex.run(~r/\A<!-- livebook:\{"spiral_code":"([^"]+)"\} -->/, part)) ->
+        [_, language] = Regex.run(~r/\A<!-- livebook:\{"spiral_code":"([^"]+)"\} -->/, part)
+        body = part |> String.replace(~r/\A<!-- livebook:[^\n]*\n\n/, "") |> fence_body()
+        [%{kind: :code, language: language, source: body}]
+
+      String.starts_with?(part, "```elixir") ->
+        case eval_source(part) do
+          nil -> markdown_part(part)
+          source -> [%{kind: :spiral, source: source}]
+        end
+
+      String.starts_with?(part, "```fsharp") ->
+        [%{kind: :fsharp, source: fence_body(part)}]
+
+      String.starts_with?(part, "```spiral") ->
+        [%{kind: :spiral, source: fence_body(part)}]
+
+      true ->
+        markdown_part(part)
+    end
+  end
+
+  defp markdown_part(part) do
+    part
+    |> String.split(@break_markdown)
+    |> Enum.flat_map(fn chunk ->
+      source =
+        chunk
+        |> String.replace(~r/<!-- livebook:.*?-->\n?/s, "")
+        |> String.trim()
+
+      case Regex.run(~r/\A`#!import ([^`\n]+)`\z/, source) do
+        [_, path] -> [%{kind: :import, source: path}]
+        nil when source == "" -> []
+        nil -> [%{kind: :markdown, source: source}]
+      end
+    end)
+  end
+
+  defp fence_body(part) do
+    part
+    |> String.replace(~r/\A```[a-z]+\n/, "")
+    |> String.replace(~r/```\n?\z/, "")
+    |> String.trim_trailing("\n")
+  end
+
+  defp eval_source(part) do
+    code = fence_body(part)
+
+    with {:ok, ast} <- Code.string_to_quoted(code),
+         {{:., _, [{:__aliases__, _, [:Spiral, :Cells]}, :eval!]}, _, [sigil | _]} <- ast,
+         {source, _} when is_binary(source) <- Code.eval_quoted(sigil) do
+      String.trim_trailing(source, "\n")
+    else
+      _ -> nil
+    end
+  end
+
+  defp render_cell(%{kind: :markdown, source: source}), do: source
+
+  defp render_cell(%{kind: :spiral, source: source}) do
+    print_code = String.contains?(source, "--print-code")
+
+    elixir =
+      SmartCell.to_source(%{
+        "source" => source,
+        "timeout" => 300,
+        "print_code" => print_code
+      })
+
+    attrs =
+      JSON.encode!(%{
+        attrs: %{print_code: print_code, source: source, timeout: 300},
+        chunks: nil,
+        kind: "Elixir.Spiral.Cells.SmartCell",
+        livebook_object: "smart_cell"
+      })
+
+    "<!-- livebook:#{attrs} -->\n\n```elixir\n#{elixir}\n```"
+  end
+
+  defp render_cell(%{kind: :fsharp, source: source}), do: "```fsharp\n#{source}\n```"
+  defp render_cell(%{kind: :import, source: source}), do: "`#!import #{source}`"
+
+  defp render_cell(%{kind: :code, language: language, source: source}) do
+    "<!-- livebook:{\"spiral_code\":\"#{language}\"} -->\n\n```#{language}\n#{source}\n```"
+  end
+
+  defp newline(text) do
+    if String.ends_with?(text, "\n"), do: text, else: text <> "\n"
+  end
+end

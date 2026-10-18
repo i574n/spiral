@@ -286,12 +286,12 @@ let runFormat (entries : Entry list) (outDir : string option) (listing : TextWri
                 | Code (_, lexemes, _) ->
                     let leading =
                         match lexemes |> Array.tryHead with
-                        | Some first when (match first.Token with Polyglot.spiral_compiler.TokOperator ("|", _) | Polyglot.spiral_compiler.TokParenthesis (_, Polyglot.spiral_compiler.Open) -> true | _ -> false) -> Array.truncate 2 lexemes |> Array.skip 1
+                        | Some first when (match first.Token with Spiral.spiral_compiler.TokOperator ("|", _) | Spiral.spiral_compiler.TokParenthesis (_, Spiral.spiral_compiler.Open) -> true | _ -> false) -> Array.truncate 2 lexemes |> Array.skip 1
                         | _ -> Array.truncate 1 lexemes
                     leading
                     |> Array.tryFind (fun lexeme ->
                         not lexeme.InsideMacro
-                        && (match lexeme.Token with Polyglot.spiral_compiler.TokVar _ | Polyglot.spiral_compiler.TokSymbol _ -> true | _ -> false)
+                        && (match lexeme.Token with Spiral.spiral_compiler.TokVar _ | Spiral.spiral_compiler.TokSymbol _ -> true | _ -> false)
                         && lexeme.Span.NearTo - lexeme.Span.From >= 40
                         && lexeme.Span.NearTo > 118)
                 | _ -> None
@@ -307,7 +307,7 @@ let runFormat (entries : Entry list) (outDir : string option) (listing : TextWri
                         |> List.indexed
                         |> List.tryFind (fun (_, (_, spanWidth)) -> spanWidth = width)
                         |> Option.bind (fun (position, _) ->
-                            let opens = lexemes |> Array.filter (fun lexeme -> match lexeme.Token with Polyglot.spiral_compiler.TokMacroOpen -> true | Polyglot.spiral_compiler.TokStringOpen -> true | Polyglot.spiral_compiler.TokValue value -> (match value with Polyglot.spiral_compiler.LitString _ -> true | Polyglot.spiral_compiler.LitChar _ -> true | _ -> false) | _ -> false)
+                            let opens = lexemes |> Array.filter (fun lexeme -> match lexeme.Token with Spiral.spiral_compiler.TokMacroOpen -> true | Spiral.spiral_compiler.TokStringOpen -> true | Spiral.spiral_compiler.TokValue value -> (match value with Spiral.spiral_compiler.LitString _ -> true | Spiral.spiral_compiler.LitChar _ -> true | _ -> false) | _ -> false)
                             Array.tryItem position opens |> Option.map (fun opening -> rendered.Substring (opening.Span.From, min width (rendered.Length - opening.Span.From))))
                         |> Option.defaultValue lineText
                     | _ -> match longIdentifier with Some lexeme -> lexeme.Text.Text | None -> lineText

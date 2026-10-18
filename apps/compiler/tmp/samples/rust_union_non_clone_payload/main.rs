@@ -5,25 +5,9 @@ enum US0 {
     US0_SBoxed(Box<dyn Fn() -> i32>),
     US0_SEmpty,
 }
-impl US0 {
-    fn tag(&self) -> i32 {
-        match self {
-            US0::US0_SBoxed(..) => 0,
-            US0::US0_SEmpty => 1,
-        }
-    }
-}
 enum UH0 {
     UH0_HBoxed(Box<dyn Fn() -> i32>),
     UH0_HEmpty,
-}
-impl UH0 {
-    fn tag(&self) -> i32 {
-        match self {
-            UH0::UH0_HBoxed(..) => 0,
-            UH0::UH0_HEmpty => 1,
-        }
-    }
 }
 fn spiral_main() -> i32 {
     let mut v0: i32 = 7i32;
@@ -65,5 +49,5 @@ fn spiral_main() -> i32 {
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 1 });
 }
