@@ -57,7 +57,7 @@ if ($Notebooks) {
 
 $runRoot = Join-Path (Get-SpiralCacheDir) 'runs'
 $recent = @(Get-ChildItem $runRoot -Directory | Where-Object { Test-Path (Join-Path $_.FullName 'results.tsv') } | Sort-Object LastWriteTime -Descending | Select-Object -First $Runs)
-"== last $($recent.Count) harness runs ($runRoot)"
+"== last $($recent.Count) matrix runs ($runRoot)"
 $recent | ForEach-Object {
     $results = Join-Path $_.FullName 'results.tsv'
     $first = Get-ChildItem $_.FullName -Filter 'worker*.jobs.tsv' | Sort-Object CreationTime | Select-Object -First 1

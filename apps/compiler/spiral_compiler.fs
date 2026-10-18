@@ -5067,7 +5067,7 @@ module spiral_compiler =
             | TerminalFlowIngressSurfaceRawLegacyJson
             | TerminalFlowIngressSurfaceHudCacheProjection
             | TerminalFlowIngressSurfaceReducerReceipt
-            | TerminalFlowIngressSurfaceSyntheticHarness
+            | TerminalFlowIngressSurfaceSyntheticDriver
 
         type TerminalFlowIngressDecisionReasonId =
             | TerminalFlowIngressNoSemanticIngressPayload
@@ -5171,7 +5171,7 @@ module spiral_compiler =
             | TerminalFlowIngressSurfaceRawLegacyJson -> "raw_legacy_json"
             | TerminalFlowIngressSurfaceHudCacheProjection -> "hud_cache_projection"
             | TerminalFlowIngressSurfaceReducerReceipt -> "reducer_receipt"
-            | TerminalFlowIngressSurfaceSyntheticHarness -> "synthetic_harness"
+            | TerminalFlowIngressSurfaceSyntheticDriver -> "synthetic_driver"
 
 
         type TerminalFlowLegacySemanticProjection = private {
@@ -8676,16 +8676,16 @@ module spiral_compiler =
             let violationsText = receipt.violations |> List.map invariantViolationText |> String.concat ","
             FastRuntimeFormat.format "breakthrough_transition|ref=%u|prior=%s|next=%s|command=%s|violations=%s|authority_ref=%u|revision=%d" [| box receipt.transitionRef; box (breakthroughPhaseText receipt.priorPhase); box (breakthroughPhaseText receipt.nextPhase); box (commandText receipt.command); box violationsText; box receipt.authorityRef; box receipt.revision |]
 
-        type HarnessOwnerKind = class end
+        type ContractVectorOwnerKind = class end
 
-        type HarnessVector = private {
+        type ContractVector = private {
             name : string
             commands : Command list
             expectedPhase : BreakthroughPhaseId
             expectedViolation : InvariantViolation option
         }
 
-        let harnessVectors = [
+        let contractVectors = [
             {
                 name = "deadlock_failclosed_total_order"
                 commands = [
@@ -12123,7 +12123,7 @@ module spiral_compiler =
             let tryChoice resourceId state = Map.tryFind resourceId state.choices
 
         // Round : laws are discharged by executable traces. The adapter
-        // harness is deliberately small and deterministic so each backend can
+        // driver is deliberately small and deterministic so each backend can
         // be compared against the same reference transition stream before the
         // real host-specific drivers are connected when host-specific drivers are connected.
         type PortableRuntimeTraceCommand =
@@ -18040,7 +18040,7 @@ module spiral_compiler =
             violationWhenEmpty : string option
             }
 
-        type TerminalFlowPureClosureHarnessInput = private {
+        type TerminalFlowPureClosureCheckInput = private {
             matureOutcomeRef : uint32
             ownerAuthorityRef : uint32
             recoveryRef : uint32
@@ -18049,14 +18049,14 @@ module spiral_compiler =
             terminalPetitionRef : uint32
             }
 
-        type TerminalFlowPureClosureHarnessVerdict =
-            | TerminalFlowPureHarnessRunEndExpected of runEndRef:uint32 * doneRef:uint32 * commitRef:uint32
-            | TerminalFlowPureHarnessRejected of missing:string list
+        type TerminalFlowPureClosureCheckVerdict =
+            | TerminalFlowPureCheckRunEndExpected of runEndRef:uint32 * doneRef:uint32 * commitRef:uint32
+            | TerminalFlowPureCheckRejected of missing:string list
 
-        type TerminalFlowPureClosureHarnessReceipt = {
-            harnessRef : uint32
-            input : TerminalFlowPureClosureHarnessInput
-            verdict : TerminalFlowPureClosureHarnessVerdict
+        type TerminalFlowPureClosureCheckReceipt = {
+            checkRef : uint32
+            input : TerminalFlowPureClosureCheckInput
+            verdict : TerminalFlowPureClosureCheckVerdict
             expectedJsonKind : string
             reducerOwned : bool
             observerOwned : bool
@@ -18071,7 +18071,7 @@ module spiral_compiler =
 
         type TerminalFlowBreakthroughTxn<'Stage> = private {
             transactionRef : uint32
-            input : TerminalFlowPureClosureHarnessInput
+            input : TerminalFlowPureClosureCheckInput
             missing : string list
             commitRef : uint32 option
             doneRef : uint32 option
@@ -18142,19 +18142,19 @@ module spiral_compiler =
                doneRef = Some doneRef
                runEndRef = Some runEndRef } : TerminalFlowBreakthroughTxn<TerminalFlowBreakthroughTxnRunEndedStage>)
 
-        let private terminalFlowPureClosureHarnessRun input =
+        let private terminalFlowPureClosureCheckRun input =
             let opened = terminalFlowBreakthroughTxnOpen input
             let verdict =
                 match terminalFlowBreakthroughTxnSeal opened with
-                | Error missing -> TerminalFlowPureHarnessRejected missing
+                | Error missing -> TerminalFlowPureCheckRejected missing
                 | Ok sealedTxn ->
                     let ended = sealedTxn |> terminalFlowBreakthroughTxnCommit |> terminalFlowBreakthroughTxnRunEnd
-                    TerminalFlowPureHarnessRunEndExpected(
+                    TerminalFlowPureCheckRunEndExpected(
                         ended.runEndRef |> Option.defaultValue 0u,
                         ended.doneRef |> Option.defaultValue 0u,
                         ended.commitRef |> Option.defaultValue 0u)
             {
-            harnessRef = opened.transactionRef
+            checkRef = opened.transactionRef
             input = input
             verdict = verdict
             expectedJsonKind = "run_end"
@@ -18162,14 +18162,14 @@ module spiral_compiler =
             observerOwned = false
             }
 
-        type TerminalFlowPureClosureHarnessVector = {
+        type TerminalFlowPureClosureCheckVector = {
             name : string
-            input : TerminalFlowPureClosureHarnessInput
+            input : TerminalFlowPureClosureCheckInput
             expectRunEnd : bool
             expectedMissing : string list
         }
 
-        let private terminalFlowPureClosureHarnessVectors =
+        let private terminalFlowPureClosureCheckVectors =
             let complete =
                 { matureOutcomeRef = 11u
                   ownerAuthorityRef = 12u
@@ -18185,9 +18185,9 @@ module spiral_compiler =
               { name = "missing_actor_arming"; input = { complete with actorArmedRef = 0u }; expectRunEnd = false; expectedMissing = ["actor_armed_ref"] }
               { name = "missing_terminal_petition"; input = { complete with terminalPetitionRef = 0u }; expectRunEnd = false; expectedMissing = ["terminal_petition_ref"] } ]
 
-        let private terminalFlowPureClosureHarnessContractReceipts =
-            terminalFlowPureClosureHarnessVectors
-            |> List.map (fun vector -> vector.name, terminalFlowPureClosureHarnessRun vector.input)
+        let private terminalFlowPureClosureCheckContractReceipts =
+            terminalFlowPureClosureCheckVectors
+            |> List.map (fun vector -> vector.name, terminalFlowPureClosureCheckRun vector.input)
 
         type TelemetryContentKind =
             | TelemetrySchemaVersion
@@ -43403,7 +43403,7 @@ module spiral_compiler =
                 Ok(UnescapedChar(r, c))
             | _ -> error_char s.from "\\"
 
-        let p_var s = (many1Satisfy2L is_var_char_starting is_var_char "variable") s
+        let p_var s = (many1Satisfy2L is_var_char_starting (fun c -> is_var_char c && c <> closing_char) "variable") s
         let p_text closing_char s = (range (many1SatisfyL (fun c -> c <> closing_char && c <> '`' && c <> '!' && c <> '@' && c <> '#' && c <> '\\') "macro text") |>> TokenizerText) s
         let p_expr s =
             let start = anyOf ['`'; '!'; '@'; '#']
@@ -105991,7 +105991,7 @@ module spiral_compiler =
             HopacExtensions.start
                 (CompilerKernelV2.CompilerRuntimeKernel.toJob rejectionEffect)
 
-        type TerminalFlowSyntheticBuildOkHarnessReceipt = private {
+        type TerminalFlowSyntheticBuildOkDriverReceipt = private {
             manifestLifecycle : TerminalFlowArtifactManifestLifecycle
             writerCompletionRoute : TerminalFlowWriterCompletionRoute
             cicCorridor : TerminalFlowCicKernelCorridor

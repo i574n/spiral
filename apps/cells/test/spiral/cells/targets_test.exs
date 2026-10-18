@@ -30,12 +30,12 @@ defmodule Spiral.Cells.TargetsTest do
     end
   end
 
-  test "gcc builds C with the compiler harness flags and links libm last" do
+  test "gcc builds C with the compiler matrix flags and links libm last" do
     assert Targets.c_args("C:/mingw/bin/gcc.exe", "main.c", "cell.exe", nil) ==
              ["-std=c11", "-O2", "-w", "-fwrapv", "-o", "cell.exe", "main.c", "-lm"]
   end
 
-  test "Delphi cells build with dcc32 when present, else with fpc in Delphi mode like the compiler harness" do
+  test "Delphi cells build with dcc32 when present, else with fpc in Delphi mode like the compiler matrix" do
     dir = Spiral.Cells.TestHelpers.tmp_dir!("delphi-compiler")
     dcc = Path.join(dir, "dcc32.exe")
     fpc = Path.join(dir, "fpc.exe")
@@ -45,7 +45,7 @@ defmodule Spiral.Cells.TargetsTest do
     assert {^dcc, "dcc32", []} = Targets.delphi_compiler(dcc: dcc, fpc: fpc)
   end
 
-  test "a c-shim.h next to the notebook is force-included like the harness's own shim" do
+  test "a c-shim.h next to the notebook is force-included like the matrix's own shim" do
     dir = Path.join(System.tmp_dir!(), "kino_c_shim_#{System.unique_integer([:positive])}")
     File.mkdir_p!(dir)
     shim = Path.join(dir, "c-shim.h")

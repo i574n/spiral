@@ -213,11 +213,11 @@ A test's verdict is its cell's own evaluation result: it passed when every targe
 failed on a compile error, a non-zero exit or a timeout, and is unsupported when none of its `///>` targets has its tool on
 this machine (`` `lua` was not found``, `gleam`, `gcc`, ...; a missing compiler, `dotnet` or core package is a failure).
 A native target (`///> c`, `cpp`, `delphi`) passes only when its program exits 0: the exit code is no value channel,
-so an assertion that exits 1 fails the test. `///> c` is built like the compiler harness builds its C rows:
-`gcc -std=c11 -O2 -w -fwrapv [-include <notebook dir>/c-shim.h] -o cell main.c -lm` (`cl /O2` with MSVC). The Rust host is built like the harness's Rust rows too: `rustc +1.99.0 -C opt-level=2 -A warnings --edition 2024`
+so an assertion that exits 1 fails the test. `///> c` is built like the compiler matrix builds its C rows:
+`gcc -std=c11 -O2 -w -fwrapv [-include <notebook dir>/c-shim.h] -o cell main.c -lm` (`cl /O2` with MSVC). The Rust host is built like the matrix's Rust rows too: `rustc +1.99.0 -C opt-level=2 -A warnings --edition 2024`
 (`+1.99.0` only when `rustc` is rustup's proxy). `///> delphi` uses `dcc32` (`SPIRAL_DCC`) when present, else Free Pascal
-the way the harness builds its Delphi rows: `fpc -O2 -Mdelphi` (`SPIRAL_FPC`, `fpc` on PATH, or scoop's freepascal).
-`///> lean` runs the `--backend Lean` output with `lean --run` on the harness's toolchain `leanprover/lean4:v4.35.0-rc4`:
+the way the matrix builds its Delphi rows: `fpc -O2 -Mdelphi` (`SPIRAL_FPC`, `fpc` on PATH, or scoop's freepascal).
+`///> lean` runs the `--backend Lean` output with `lean --run` on the matrix's toolchain `leanprover/lean4:v4.35.0-rc4`:
 `SPIRAL_LEAN` (an elan proxy, given `+leanprover/lean4:v4.35.0-rc4`), else that toolchain's own `lean` under `ELAN_HOME`,
 `~/.elan` or scoop's elan, else `lean` on PATH with `+leanprover/lean4:v4.35.0-rc4`.
 A cell's `///>` lines are its whole target list (no Rust run beside them).

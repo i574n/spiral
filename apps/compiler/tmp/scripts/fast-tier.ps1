@@ -229,7 +229,7 @@ function Format-SpiralFastTier($Tier) {
     ($Tier.CostSeconds / [Math]::Max($Tier.AllCostSeconds, 1)), $Tier.Signal, $Tier.AllSignal, ($Tier.Signal / [Math]::Max($Tier.AllSignal, 1)), $Tier.Young, $Tier.FlipHistoriesCovered, $Tier.FlipHistories
 }
 
-$policy = (Import-PowerShellDataFile (Join-Path $BundleRoot 'tests/harness.psd1') -SkipLimitCheck).Fast
+$policy = (Import-PowerShellDataFile (Join-Path $BundleRoot 'tests/matrix.psd1') -SkipLimitCheck).Fast
 if ($BudgetSeconds -gt 0) { $policy = $policy.Clone(); $policy.BudgetSeconds = $BudgetSeconds }
 $tier = Get-SpiralFastTier $Mode $policy
 Format-SpiralFastTier $tier

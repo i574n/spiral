@@ -507,7 +507,7 @@ defmodule Spiral.CellsTest do
              )
   end
 
-  test "target outputs compare after harness wrappers and number formatting are normalized" do
+  test "target outputs compare after matrix wrappers and number formatting are normalized" do
     chunk = fn stdout -> %{stdout: stdout, value: nil} end
     lua = chunk.("String(\"__assert_eq { expected = 1.5707963267949 }\")\n")
     fsharp = chunk.("__assert_eq { expected = +1.570796 }\n")
@@ -686,7 +686,7 @@ defmodule Spiral.CellsTest do
     assert String.ends_with?(dir, "deps/The-Spiral-Language/VS Code Plugin"), dir
   end
 
-  test "the Rust host builds like the compiler harness: rustup's 1.99.0, opt-level 2, edition 2024, warnings off" do
+  test "the Rust host builds like the compiler matrix: rustup's 1.99.0, opt-level 2, edition 2024, warnings off" do
     assert Spiral.Cells.rustc_args("C:/Users/x/scoop/apps/rustup/current/.cargo/bin/rustc.exe", "main.rs", "main.exe") ==
              ["+1.99.0", "-C", "opt-level=2", "-A", "warnings", "--edition", "2024", "-o", "main.exe", "main.rs"]
 

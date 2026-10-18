@@ -1,6 +1,6 @@
 # Spiral compiler workbench
 
-The build, test harness and fixtures around the Spiral compiler, plus its two development lanes.
+The build, test matrix and fixtures around the Spiral compiler, plus its two development lanes.
 
 | Mode | Core | State | Use it for |
 |---|---|---|---|
@@ -49,7 +49,7 @@ samples/                 every fixture, one flat directory each:
   contract_<name>/         type-system contract cases (F#)
   mega_<name>/             the five megaprojects and their sub-packages
   core/                    the portable `core-` package the fixtures share
-tests/                   harness.psd1 (smoke list, known failures, megaproject roots, C flags),
+tests/                   matrix.psd1 (smoke list, known failures, megaproject roots, C flags),
                          native-shims/ (C shims; run_main.mjs/run_main.py/cpp_native.py: the TypeScript/Python/C++
                          native tiers), rust-exports/
 lanes/                   per-lane docs: single-flight (backends), gpt5parallel (frontier), hopacsota (PLAN.md: the successor's contract)

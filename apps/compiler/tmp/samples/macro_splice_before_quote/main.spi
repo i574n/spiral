@@ -1,0 +1,3 @@
+inl main () : i32 =
+    inl ~b = 7i32
+    $'!b' : i32

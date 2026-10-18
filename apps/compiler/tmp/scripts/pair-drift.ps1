@@ -30,21 +30,43 @@ $changed = [Collections.Generic.List[object]]::new()
 $header = $null
 $codeChanged = $false
 $seamOnly = $true
+$minus = [Collections.Generic.List[string]]::new()
+$plus = [Collections.Generic.List[string]]::new()
+function Get-RenamedNames($removed, $added) {
+    if ($removed.Count -eq 0 -or $removed.Count -ne $added.Count) { return $null }
+    $names = [Collections.Generic.HashSet[string]]::new()
+    for ($k = 0; $k -lt $removed.Count; $k++) {
+        $a = [regex]::Split($removed[$k], '(\W)') | Where-Object { $_ -ne '' }
+        $b = [regex]::Split($added[$k], '(\W)') | Where-Object { $_ -ne '' }
+        if (@($a).Count -ne @($b).Count) { return $null }
+        for ($m = 0; $m -lt @($a).Count; $m++) {
+            if ($a[$m] -ceq $b[$m]) { continue }
+            if ($a[$m] -notmatch '^[A-Za-z_]\w*$' -or $b[$m] -notmatch '^[A-Za-z_]\w*$') { return $null }
+            [void]$names.Add($a[$m])
+        }
+    }
+    if ($names.Count -eq 0) { return $null }
+    ,@($names)
+}
 foreach ($row in @($diff) + '@@ end') {
     if ($row -match '^@@ ') {
-        if ($header -and $codeChanged) { $changed.Add([pscustomobject]@{ Header = $header; SeamOnly = $seamOnly }) }
+        if ($header -and $codeChanged) { $changed.Add([pscustomobject]@{ Header = $header; SeamOnly = $seamOnly; Renamed = (Get-RenamedNames $minus $plus) }) }
         $header = $row
         $codeChanged = $false
         $seamOnly = $true
+        $minus.Clear()
+        $plus.Clear()
     }
     elseif ($row -match '^[+-](?![+-]{2} )') {
         $body = $row.Substring(1).Trim()
+        if ($row.StartsWith('-')) { $minus.Add($body) } else { $plus.Add($body) }
         if ($body -and -not $body.StartsWith('//')) {
             $codeChanged = $true
             if ($row.StartsWith('+') -and -not $body.Contains('PartEvalSeams.') -and $body -notmatch '^\)+$') { $seamOnly = $false }
         }
     }
 }
+$sideLocalRenames = [Collections.Generic.List[string]]::new()
 foreach ($hunk in $changed) {
     $match = [regex]::Match($hunk.Header, '^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@')
     $first = [int]$match.Groups[1].Value
@@ -52,6 +74,11 @@ foreach ($hunk in $changed) {
     $last = $first + [Math]::Max($count, 1) - 1
     foreach ($pair in $pairs) {
         if ($last -le $pair.Start -or $first -ge $pair.End) { continue }
+        if ($hunk.Renamed) {
+            $otherSide = if ($first -lt $pair.Middle) { $lines[$pair.Middle..($pair.End - 1)] -join "`n" } else { $lines[$pair.Start..($pair.Middle - 1)] -join "`n" }
+            $sideLocal = @($hunk.Renamed | Where-Object { [regex]::IsMatch($otherSide, "\b$([regex]::Escape($_))\b") }).Count -eq 0
+            if ($sideLocal) { $sideLocalRenames.Add("pair-drift: $($pair.Name) renamed $($hunk.Renamed -join ', ') on one side only; the names do not occur on the other side, as a side-local rename may"); continue }
+        }
         if ($first -lt $pair.Middle) { $pair.Gpt5parallelTouched = $true }
         if ($last -gt $pair.Middle) { $pair.SingleTouched = $true; if (-not $hunk.SeamOnly) { $pair.SingleSeamOnly = $false } }
     }
@@ -70,6 +97,7 @@ foreach ($pair in $gpt5parallelLayerGrowth) {
 foreach ($pair in $seamMoves) {
     "pair-drift: $($pair.Name) (lines $($pair.Start)-$($pair.End)) changed on its single-flight side only by hopacsota seam calls (every added line calls PartEvalSeams), as D10 allows"
 }
+$sideLocalRenames | Select-Object -Unique
 foreach ($pair in $oneSided) {
     $side = if ($pair.Gpt5parallelTouched) { 'gpt5parallel' } else { 'single-flight' }
     "pair-drift: $($pair.Name) (lines $($pair.Start)-$($pair.End)) changed only on the $side side: change both sides or unify the pair"

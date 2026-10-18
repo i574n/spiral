@@ -24,7 +24,7 @@ The stable compiler: the sequential evaluator with its F#, C, Rust and Delphi ba
 A sample that needs target code per backend uses `!!!!BackendSwitch({C = ...; Rust = ...; Delphi = ...;
 Fsharp = ...})` (e.g. `set'` in `while_control`, NaN in `native_float_nan_is`). Samples that exercise the C
 runtime itself (`dynamic_array_*` through C shims, `abi_external_*` through the C ABI) are C-only in
-`tests/harness.psd1` (`Backends`).
+`tests/matrix.psd1` (`Backends`).
 
 ## Known gap: rejected programs report no diagnostic
 

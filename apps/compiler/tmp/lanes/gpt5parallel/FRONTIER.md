@@ -9,7 +9,7 @@ runaway fixture's rows report in 14.5-16.5 s under suite load (deadline 17 s).
 fresh processes): frontier 20 + 4 `missing`, contracts 606 + 1 no-oracle, examples 453/453, mega 5/5,
 DISAGREE 0, no `emitted` row; every residual hash equal to the 05:12 run's. The 4 `missing` are
 `frontier_runaway_inline_recursion` (new, blessed `error`): gpt5parallel needs ~20 s to reach its `EJP0040` report,
-past the frontier deadline, and the harness now scores a core's `BuildFile stalled` as a timeout. That is the
+past the frontier deadline, and the matrix now scores a core's `BuildFile stalled` as a timeout. That is the
 only gap left to the AGENTS.md promotion criterion. **apps/spiral compiles in the default async mode** (fix 55;
 attempt 20 on this DLL: 576 s, 2,687,696 bytes, the same as attempts 17-19). Warm processes (fix 57) are an
 experiment.
@@ -68,7 +68,7 @@ are single-flight-identical "(expression)" outputs awaiting the re-bless (NEXT.m
 fix 44 (2 pending join points left, then a codegen wait on an unfilled cell; NEXT.md).
 
 **Status 2026-09-30 (fixes 21-37):** `pwsh scripts/test.ps1 -Mode gpt5parallel -Suite all -Native`
-(`<cache>/runs/hopac-20260930-050954`, 3 workers, `SPIRAL_DIAG_QUIET=1` from the harness):
+(`<cache>/runs/hopac-20260930-050954`, 3 workers, `SPIRAL_DIAG_QUIET=1` from the matrix):
 
 | Suite | Jobs | Parity | Not parity |
 |---|---:|---:|---|
@@ -505,7 +505,7 @@ against 28 KB) and `native_cube_direct`, which used to stall, finishing with sta
     backends (its oracle was re-blessed: single-flight unrolls the static list since the `listm'.exists'`
     change). What remains in the runaway fixture is ordinary evaluation plus the runtime scanning a deep stack
     on every gen0 collection: a 256 MB gen0 budget (`DOTNET_GCgen0size=0x10000000`, environment only; the
-    harness sets it now) takes the fixture from 13-15 s to 9.5 s.
+    matrix sets it now) takes the fixture from 13-15 s to 9.5 s.
 57. **Warm processes (one gpt5parallel process, many BuildFiles) — experiment, not the default yet.** AGENTS.md said
     the core serves one BuildFile per process; it serves several. The host's `--batch` already runs jobs one
     after another: four frontier fixtures in one process were byte-identical to single-flight, 2.7 s for the
@@ -916,7 +916,7 @@ Next: attempt 8 on the Release monolith with a stack dump shortly after root com
     single-flight dyns the nominal's contents, closure-converting the annotated function. The special case
     is gone, and the fixture compiles (`"brzozowski-antimirov-typed-slot-bound-green"`).
 
-    Same batch (one build): more of fix 26's profile, taken with stderr redirected as the harness runs it (no
+    Same batch (one build): more of fix 26's profile, taken with stderr redirected as the matrix runs it (no
     HUD): the ledger keeps running cost sums (`project`), a global open set (`openKeys`) and an unclassified
     counter (`unclassifiedOpenCount`, 7.6%); replay-tick proof fields are memoized per (event, reason) (their
     text classification was ~4%); `ContentDigest.ofText` uses the static `SHA256.HashData` and memoizes texts

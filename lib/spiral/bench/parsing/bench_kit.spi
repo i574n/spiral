@@ -1,4 +1,4 @@
-/// # harness
+/// # bench_kit
 open sm'_operators
 
 /// ### now_s

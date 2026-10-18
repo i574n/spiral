@@ -18,7 +18,7 @@ param(
     [string[]]$Oracle = @('C', 'Zig')
 )
 . $PSScriptRoot/env.ps1
-$harness = Import-PowerShellDataFile (Join-Path $BundleRoot 'tests/harness.psd1') -SkipLimitCheck
+$matrix = Import-PowerShellDataFile (Join-Path $BundleRoot 'tests/matrix.psd1') -SkipLimitCheck
 $Suite = @($Suite | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 $Backend = @($Backend | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 foreach ($s in $Suite) { if ($s -notin 'frontier', 'smoke', 'examples', 'contracts', 'mega', 'all', 'fast') { throw "unknown suite '$s'" } }
@@ -72,7 +72,7 @@ function Get-Rel([string]$path) { [IO.Path]::GetRelativePath($BundleRoot, $path)
 
 function New-Sample([string]$suite, [string]$sourcePath, [string[]]$backends) {
     $id = Get-Rel (Split-Path $sourcePath)
-    if ($harness.AlsoTypeScript -and $id -in $harness.AlsoTypeScript -and $backends -notcontains 'TypeScript') { $backends = @($backends) + 'TypeScript' }
+    if ($matrix.AlsoTypeScript -and $id -in $matrix.AlsoTypeScript -and $backends -notcontains 'TypeScript') { $backends = @($backends) + 'TypeScript' }
     [pscustomobject]@{ Suite = $suite; Id = $id; Input = $sourcePath; Backends = $backends }
 }
 
@@ -87,9 +87,9 @@ function Get-Entry([string]$dir) {
 function Test-ContractSample([string]$relative) { $relative -like 'samples/contract_*' -or $relative -like 'samples/mega_*' }
 
 $sampleBackends = @{}
-foreach ($set in $harness.Backends.Keys) { foreach ($sample in $harness.Backends[$set]) { $sampleBackends[$sample] = @($set -split ',') } }
+foreach ($set in $matrix.Backends.Keys) { foreach ($sample in $matrix.Backends[$set]) { $sampleBackends[$sample] = @($set -split ',') } }
 $listedSamples = @{}
-foreach ($listed in 'Zig', 'Wasm', 'Wgsl', 'Calyx', 'Kotlin', 'Swift', 'OpenQasm', 'Ebpf', 'Lean', 'Bend', 'Gleam', 'Lua', 'Python') { $listedSamples[$listed] = @{}; foreach ($sample in @($harness[$listed])) { if ($sample) { $listedSamples[$listed][$sample] = $true } } }
+foreach ($listed in 'Zig', 'Wasm', 'Wgsl', 'Calyx', 'Kotlin', 'Swift', 'OpenQasm', 'Ebpf', 'Lean', 'Bend', 'Gleam', 'Lua', 'Python') { $listedSamples[$listed] = @{}; foreach ($sample in @($matrix[$listed])) { if ($sample) { $listedSamples[$listed][$sample] = $true } } }
 function Add-ListedBackends([string]$relative, [string[]]$backends) {
     $result = @($backends)
     foreach ($listed in 'Zig', 'Wasm', 'Wgsl', 'Calyx', 'Kotlin', 'Swift', 'OpenQasm', 'Ebpf', 'Lean', 'Bend', 'Gleam', 'Lua', 'Python') { if ($listedSamples[$listed].ContainsKey($relative) -and $result -notcontains $listed) { $result += $listed } }
@@ -109,7 +109,7 @@ function Get-Samples([string]$suite) {
                 New-Sample 'frontier' (Get-Entry $_.FullName) (Add-ListedBackends "samples/$($_.Name)" @('Fsharp', 'C', 'Rust', 'Delphi')) }
         }
         'smoke' {
-            $harness.Smoke | ForEach-Object {
+            $matrix.Smoke | ForEach-Object {
                 $dir = Join-Path $BundleRoot $_.Trim()
                 $backends = if (Test-ContractSample $_.Trim()) { @('Fsharp') } else { Get-ExampleBackends $dir }
                 New-Sample 'smoke' (Get-Entry $dir) $backends }
@@ -129,7 +129,7 @@ function Get-Samples([string]$suite) {
                     New-Sample 'contracts' (Get-Entry $_.FullName) (Add-ListedBackends $relative $backends) } }
         }
         'mega' {
-            $harness.Mega | ForEach-Object {
+            $matrix.Mega | ForEach-Object {
                 New-Sample 'mega' (Join-Path $BundleRoot $_.Source) @('Fsharp') }
         }
     }
@@ -151,7 +151,7 @@ $samples = $suites | ForEach-Object { Get-Samples $_ } | Sort-Object Id -Unique
 if ($Filter) { $samples = $samples | Where-Object { $_.Id -match $Filter } }
 
 $jobs = foreach ($sample in $samples) {
-    $timeout = if ($TimeoutSec -gt 0) { $TimeoutSec } elseif ($harness.Timeouts -and $harness.Timeouts.ContainsKey($sample.Id)) { $harness.Timeouts[$sample.Id] } else { $suiteTimeoutSec[$sample.Suite] }
+    $timeout = if ($TimeoutSec -gt 0) { $TimeoutSec } elseif ($matrix.Timeouts -and $matrix.Timeouts.ContainsKey($sample.Id)) { $matrix.Timeouts[$sample.Id] } else { $suiteTimeoutSec[$sample.Suite] }
     foreach ($b in $sample.Backends) {
         if ($Backend -and $Backend -notcontains $b) { continue }
         if ($fastSuite -and $restKeys.Contains("$($sample.Id)|$b")) { continue }
@@ -318,7 +318,7 @@ if ($zigExe -and $zigExe -match '[\\/]scoop[\\/]shims[\\/]') {
 $zigCacheGen = 0
 $zigCache = Join-Path $scratch 'zig-cache-shared'
 $shimDir = Join-Path $BundleRoot 'tests/native-shims'
-$cFlagRules = @($harness.CFlags | ForEach-Object { [pscustomobject]$_ })
+$cFlagRules = @($matrix.CFlags | ForEach-Object { [pscustomobject]$_ })
 function Get-CFlags($job) {
     $name = Split-Path (Split-Path $job.Input) -Leaf
     $flags = @()
@@ -882,7 +882,7 @@ foreach ($name in $oracles) { if ($name -notin 'C', 'Zig', 'Rust', 'Delphi', 'Wa
 $Oracle = $oracles[0]
 function Get-ScopedKnown([string]$OracleName) {
     $scoped = @{}
-    $harness.Known | Where-Object { -not $_.ContainsKey('Oracle') -or $_['Oracle'] -eq $OracleName } | ForEach-Object { $scoped["$($_.Id)|$($_.Backend)"] = $_.Reason }
+    $matrix.Known | Where-Object { -not $_.ContainsKey('Oracle') -or $_['Oracle'] -eq $OracleName } | ForEach-Object { $scoped["$($_.Id)|$($_.Backend)"] = $_.Reason }
     $scoped
 }
 $known = Get-ScopedKnown $Oracle
@@ -915,7 +915,7 @@ foreach ($second in @($oracles | Select-Object -Skip 1)) {
 }$jobOutput = @{}
 foreach ($job in $jobs) { $jobOutput[$job.Key] = $job.Output }
 $expectedErrors = @{}
-foreach ($entry in @($harness.ExpectedErrors)) { if ($entry) { $expectedErrors[$entry.Id] = $entry.Contains } }
+foreach ($entry in @($matrix.ExpectedErrors)) { if ($entry) { $expectedErrors[$entry.Id] = $entry.Contains } }
 foreach ($row in $rows | Where-Object { $_.compile -eq 'error' -and $expectedErrors.ContainsKey($_.id) }) {
     if (-not "$($row.detail)".Contains($expectedErrors[$row.id])) { $row.oracle = 'WRONG-ERROR'; $row.detail = "wrong error: expected text '$($expectedErrors[$row.id])'; $($row.detail)" }
 }
@@ -983,7 +983,7 @@ if ($Bless) {
     if ($Suite -contains 'all' -and -not $Filter) { foreach ($sample in $samples) { $scheduled[$sample.Id] = @($scheduled[$sample.Id]) + @($sample.Backends) | Where-Object { $_ } | Select-Object -Unique } }
     $unscheduled = @($existing | Where-Object { $scheduled.ContainsKey($_.id) -and $scheduled[$_.id] -notcontains $_.backend })
     if ($unscheduled) {
-        Write-Host "dropped $($unscheduled.Count) oracle row(s) whose backend the harness no longer schedules for the sample:" -ForegroundColor Yellow
+        Write-Host "dropped $($unscheduled.Count) oracle row(s) whose backend the matrix no longer schedules for the sample:" -ForegroundColor Yellow
         $unscheduled | ForEach-Object { Write-Host "  $($_.id) [$($_.backend)]" }
     }
     $kept = @($existing | Where-Object { -not $fresh.ContainsKey("$($_.id)|$($_.backend)") -and -not ($scheduled.ContainsKey($_.id) -and $scheduled[$_.id] -notcontains $_.backend) })
