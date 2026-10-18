@@ -23,6 +23,7 @@ $modes = if ($Mode -eq 'both') { 'single-flight', 'gpt5parallel' } else { Conver
 $receipts = Join-Path $cache 'results/builds.tsv'
 New-Item -ItemType Directory -Force (Split-Path $receipts) | Out-Null
 if (-not (Test-Path $receipts)) { "timestamp`tmode`tconfiguration`tseconds`texit`tcore_sha256`tcore" | Set-Content $receipts }
+$script:SpiralBuildRuntime = $null
 
 function Get-SpiralBuildDirectory([string]$Dotnet) {
     $systemDotnet = if ($IsWindows) { Join-Path $env:ProgramFiles 'dotnet/dotnet.exe' } else { '/usr/share/dotnet/dotnet' }

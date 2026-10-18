@@ -180600,7 +180600,7 @@ end
                     else search dir.Parent
             search (DirectoryInfo (Path.GetDirectoryName (Path.GetFullPath path)))
 
-        let generatedDirectories = set [ "target"; "node_modules"; "deps"; "bin"; "obj"; "_build"; ".git" ]
+        let generatedDirectories = set [ "target"; "node_modules"; "deps"; "bin"; "obj"; "_build"; ".git"; ".history" ]
 
         let insideGeneratedDirectory (root : string) (file : string) =
             Path.GetRelativePath(root, Path.GetDirectoryName file).Split ([| '\\'; '/' |]) |> Array.exists generatedDirectories.Contains
@@ -180613,6 +180613,30 @@ end
                 |> Seq.sort
                 |> List.ofSeq
             else [ input ]
+
+        let formatDegree () =
+            match Int32.TryParse (Environment.GetEnvironmentVariable "SPIRAL_FORMAT_PARALLEL") with
+            | true, degree when degree > 0 -> degree
+            | _ -> max 1 (Environment.ProcessorCount / 2)
+
+        let formatInParallel (files : string[]) (examine : string -> 'outcome) (report : string * 'outcome -> unit) =
+            let degree = formatDegree ()
+            let chunkSize = max 1 (degree * 4)
+            let mutable start = 0
+            while start < files.Length do
+                let chunk = files.[start .. min files.Length (start + chunkSize) - 1]
+                let outcomes : 'outcome[] = Array.zeroCreate chunk.Length
+                let next = [| -1 |]
+                let work () =
+                    let mutable index = Threading.Interlocked.Increment &next.[0]
+                    while index < chunk.Length do
+                        outcomes.[index] <- examine chunk.[index]
+                        index <- Threading.Interlocked.Increment &next.[0]
+                let workers = Array.init (min degree chunk.Length) (fun _ -> Threading.Thread ((fun () -> work ()), 256 <<< 20))
+                for worker in workers do worker.Start ()
+                for worker in workers do worker.Join ()
+                Array.iteri (fun index outcome -> report (chunk.[index], outcome)) outcomes
+                start <- start + chunkSize
 
         let runOnThisStack (arguments : string list) : int =
             literalSplitting.Enabled <- not (List.contains "--no-split-literals" arguments)
@@ -180627,16 +180651,29 @@ end
             else
                 let check = List.contains "--check" arguments
                 let changed = ResizeArray<string> ()
-                for file in positional arguments |> List.collect sourceFiles do
-                    let text = File.ReadAllText(file).Replace ("\r\n", "\n")
-                    let formatted = formatText file (editionOf file) text
-                    if formatted <> text then
-                        changed.Add file
-                        if not check then File.WriteAllText (file, formatted)
-                    if check then
-                        formatted.Split '\n' |> Array.iteri (fun index line -> let width = displayWidth line in if width > 120 then printfn "%s:%d:121: over-120 (%d columns)" file (index + 1) width)
-                for file in changed do printfn "%s %s" (if check then "would change:" else "formatted:") file
-                if check && changed.Count > 0 then 1 else 0
+                let failed = ref 0
+                let examine (file : string) =
+                    try
+                        if File.Exists file then
+                            let text = File.ReadAllText(file).Replace ("\r\n", "\n")
+                            Ok (Some (text, formatText file (editionOf file) text))
+                        else Ok None
+                    with error -> Error error.Message
+                let report (file : string, outcome : Result<(string * string) option, string>) =
+                    match outcome with
+                    | Ok None -> printfn "vanished: %s" file
+                    | Ok (Some (text, formatted)) ->
+                        if formatted <> text then
+                            changed.Add file
+                            if not check then File.WriteAllText (file, formatted)
+                            printfn "%s %s" (if check then "would change:" else "formatted:") file
+                        if check then
+                            formatted.Split '\n' |> Array.iteri (fun index line -> let width = displayWidth line in if width > 120 then printfn "%s:%d:121: over-120 (%d columns)" file (index + 1) width)
+                    | Error message ->
+                        failed.Value <- failed.Value + 1
+                        eprintfn "format error: %s: %s" file message
+                formatInParallel (positional arguments |> List.collect sourceFiles |> Array.ofList) examine report
+                if failed.Value > 0 then 2 elif check && changed.Count > 0 then 1 else 0
 
         let run (arguments : string list) : int = onLargeStack (fun () -> runOnThisStack arguments)
 

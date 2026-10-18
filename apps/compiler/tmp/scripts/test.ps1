@@ -15,7 +15,7 @@ param(
     [ValidateSet('Release', 'Debug')][string]$Configuration = 'Release',
     [string]$WorkspaceRoot,
     [ValidateSet('Zig', 'Wasm', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Python', 'Rust', 'Delphi', 'Cpp', 'Kotlin', 'Swift', 'Wgsl', 'Calyx', 'OpenQasm', 'Ebpf')][string]$Probe,
-    [ValidateSet('C', 'Zig', 'Rust', 'Delphi', 'Wasm', 'Lean', 'Gleam', 'Lua', 'TypeScript', 'Python', 'Kotlin', 'Swift')][string]$Oracle = 'C'
+    [string[]]$Oracle = @('C', 'Zig')
 )
 . $PSScriptRoot/env.ps1
 $harness = Import-PowerShellDataFile (Join-Path $BundleRoot 'tests/harness.psd1') -SkipLimitCheck
@@ -877,7 +877,15 @@ function Test-SharedFailure($c, $row) {
 }
 $byId = $rows | Group-Object id -AsHashTable
 $known = @{}
-$harness.Known | Where-Object { -not $_.ContainsKey('Oracle') -or $_['Oracle'] -eq $Oracle } | ForEach-Object { $known["$($_.Id)|$($_.Backend)"] = $_.Reason }
+$oracles = @($Oracle | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+foreach ($name in $oracles) { if ($name -notin 'C', 'Zig', 'Rust', 'Delphi', 'Wasm', 'Lean', 'Gleam', 'Lua', 'TypeScript', 'Python', 'Kotlin', 'Swift') { throw "unknown oracle '$name'" } }
+$Oracle = $oracles[0]
+function Get-ScopedKnown([string]$OracleName) {
+    $scoped = @{}
+    $harness.Known | Where-Object { -not $_.ContainsKey('Oracle') -or $_['Oracle'] -eq $OracleName } | ForEach-Object { $scoped["$($_.Id)|$($_.Backend)"] = $_.Reason }
+    $scoped
+}
+$known = Get-ScopedKnown $Oracle
 $noOracle = if ($Oracle -eq 'C') { 'no-c' } else { "no-$($Oracle.ToLowerInvariant())" }
 foreach ($row in $rows | Where-Object { $_.backend -in 'C', 'Rust', 'Delphi', 'Zig', 'Wasm', 'Wgsl', 'Calyx', 'Kotlin', 'Swift', 'OpenQasm', 'Ebpf', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python' -and $_.backend -ne $Oracle -and $_.native -eq 'ran' }) {
     $c = $byId[$row.id] | Where-Object { $_.backend -eq $Oracle -and $_.native -eq 'ran' } | Select-Object -First 1
@@ -892,7 +900,16 @@ foreach ($row in $rows | Where-Object { $_.backend -in 'C', 'Rust', 'Delphi', 'Z
         elseif ($bothFailed) { 'agree-fail' }
         else { 'DISAGREE' }
 }
-foreach ($row in $rows) {
+foreach ($second in @($oracles | Select-Object -Skip 1)) {
+    $secondKnown = Get-ScopedKnown $second
+    foreach ($row in $rows | Where-Object { $_.backend -ne $second -and $_.native -eq 'ran' -and $_.oracle -in 'agree', 'agree-fail' }) {
+        $z = $byId[$row.id] | Where-Object { $_.backend -eq $second -and $_.native -eq 'ran' } | Select-Object -First 1
+        if (-not $z -or ($z.exit -eq $row.exit -and $z.stdout -eq $row.stdout) -or (Test-SharedFailure $z $row)) { continue }
+        $reason = $secondKnown["$($row.id)|$($row.backend)"]
+        if ($reason) { $row.detail = ("known vs $second oracle: $reason; $($row.detail)").Trim() }
+        else { $row.oracle = 'DISAGREE'; $row.detail = ("vs $second oracle: exit $($z.exit) here $($row.exit); $($row.detail)").Trim() }
+    }
+}foreach ($row in $rows) {
     $reason = $known["$($row.id)|$($row.backend)"]
     if ($reason -and ($row.oracle -eq 'DISAGREE' -or $row.native -eq 'build-fail')) { $row.oracle = 'known'; $row.detail = "known: $reason; $($row.detail)" }
 }$jobOutput = @{}
