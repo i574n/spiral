@@ -1,24 +1,34 @@
 inl (++) (left : string) (right : string) : string = !!!!StaticStringConcat(left,right)
 
 inl ffi () : () =
-    global """@external(erlang, "erlang", "byte_size")
-fn kino_text_size(text: String) -> Int"""
-    global """@external(erlang, "binary", "part")
-fn kino_text_part(text: String, at: Int, len: Int) -> String"""
-    global """fn kino_text_at(text: String, at: Int, len: Int) -> String {
-  let size = kino_text_size(text)
-  case at >= 0 && len > 0 && at < size {
-    True -> case at + len > size {
-      True -> kino_text_part(text, at, size - at)
-      False -> kino_text_part(text, at, len)
-    }
-    False -> ""
-  }
-}"""
-    global """@external(erlang, "binary", "at")
-fn kino_text_byte(text: String, at: Int) -> Int"""
-    global """@external(erlang, "string", "lowercase")
-fn kino_text_lower(text: String) -> String"""
+    global """
+        @external(erlang, "erlang", "byte_size")
+        fn kino_text_size(text: String) -> Int
+        """
+    global """
+        @external(erlang, "binary", "part")
+        fn kino_text_part(text: String, at: Int, len: Int) -> String
+        """
+    global """
+        fn kino_text_at(text: String, at: Int, len: Int) -> String {
+          let size = kino_text_size(text)
+          case at >= 0 && len > 0 && at < size {
+            True -> case at + len > size {
+              True -> kino_text_part(text, at, size - at)
+              False -> kino_text_part(text, at, len)
+            }
+            False -> ""
+          }
+        }
+        """
+    global """
+        @external(erlang, "binary", "at")
+        fn kino_text_byte(text: String, at: Int) -> Int
+        """
+    global """
+        @external(erlang, "string", "lowercase")
+        fn kino_text_lower(text: String) -> String
+        """
 
 inl length (text : string) : i32 =
     ffi ()
@@ -337,11 +347,19 @@ let rec newlines (n : i32) : string =
 
 let rec collapse_at (text : string) (i : i32) (run : i32) (acc : string) : string =
     if i >= length text then
-        if run >= 3i32 then acc ++ "\n\n"
+        if run >= 3i32 then acc ++ """
+
+
+
+            """
         else acc ++ newlines run
     elif index text i = '\n' then collapse_at text (i + 1i32) (run + 1i32) acc
     else
-        inl acc2 = if run >= 3i32 then acc ++ "\n\n" else acc ++ newlines run
+        inl acc2 = if run >= 3i32 then acc ++ """
+
+
+
+            """ else acc ++ newlines run
         inl nl = find_char text i '\n'
         inl stop = if nl < 0i32 then length text else nl
         collapse_at text stop 0i32 (acc2 ++ slice text {from=i; to=stop - 1i32})

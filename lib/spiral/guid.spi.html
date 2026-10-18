@@ -7991,28 +7991,30 @@ a.anchor-link {
 <div class="cm-editor cm-s-jupyter">
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">inl</span> <span class="n">zig_random_u64</span> <span class="p">()</span> <span class="p">:</span> <span class="n">u64</span> <span class="o">=</span>
     <span class="k">global</span> <span class="s2">"""extern "kernel32" fn QueryPerformanceCounter(count: *i64) callconv(.winapi) c_int;"""</span>
-    <span class="k">global</span> <span class="s2">"""var spiral_random_state: u64 = 0;</span>
-<span class="s2">fn spiralRandomU64() u64 {</span>
-<span class="s2">    if (spiral_random_state == 0) {</span>
-<span class="s2">        var seed: u64 = 0;</span>
-<span class="s2">        if (builtin.os.tag == .windows) {</span>
-<span class="s2">            var count: i64 = 0;</span>
-<span class="s2">            _ = QueryPerformanceCounter(&amp;count);</span>
-<span class="s2">            seed = @bitCast(count);</span>
-<span class="s2">        } else if (builtin.os.tag == .linux) {</span>
-<span class="s2">            var ts: std.os.linux.timespec = undefined;</span>
-<span class="s2">            _ = std.os.linux.clock_gettime(.MONOTONIC, &amp;ts);</span>
-<span class="s2">            seed = @as(u64, @bitCast(@as(i64, ts.sec))) *% 1000000007 +% @as(u64, @bitCast(@as(i64, ts.nsec)));</span>
+    <span class="k">global</span> <span class="s2">"""</span>
+<span class="s2">        var spiral_random_state: u64 = 0;</span>
+<span class="s2">        fn spiralRandomU64() u64 {</span>
+<span class="s2">            if (spiral_random_state == 0) {</span>
+<span class="s2">                var seed: u64 = 0;</span>
+<span class="s2">                if (builtin.os.tag == .windows) {</span>
+<span class="s2">                    var count: i64 = 0;</span>
+<span class="s2">                    _ = QueryPerformanceCounter(&amp;count);</span>
+<span class="s2">                    seed = @bitCast(count);</span>
+<span class="s2">                } else if (builtin.os.tag == .linux) {</span>
+<span class="s2">                    var ts: std.os.linux.timespec = undefined;</span>
+<span class="s2">                    _ = std.os.linux.clock_gettime(.MONOTONIC, &amp;ts);</span>
+<span class="s2">                    seed = @as(u64, @bitCast(@as(i64, ts.sec))) *% 1000000007 +% @as(u64, @bitCast(@as(i64, ts.nsec)));</span>
+<span class="s2">                }</span>
+<span class="s2">                spiral_random_state = (seed ^ @intFromPtr(&amp;spiral_random_state)) | 1;</span>
+<span class="s2">            }</span>
+<span class="s2">            var x = spiral_random_state;</span>
+<span class="s2">            x ^= x &lt;&lt; 13;</span>
+<span class="s2">            x ^= x &gt;&gt; 7;</span>
+<span class="s2">            x ^= x &lt;&lt; 17;</span>
+<span class="s2">            spiral_random_state = x;</span>
+<span class="s2">            return x;</span>
 <span class="s2">        }</span>
-<span class="s2">        spiral_random_state = (seed ^ @intFromPtr(&amp;spiral_random_state)) | 1;</span>
-<span class="s2">    }</span>
-<span class="s2">    var x = spiral_random_state;</span>
-<span class="s2">    x ^= x &lt;&lt; 13;</span>
-<span class="s2">    x ^= x &gt;&gt; 7;</span>
-<span class="s2">    x ^= x &lt;&lt; 17;</span>
-<span class="s2">    spiral_random_state = x;</span>
-<span class="s2">    return x;</span>
-<span class="s2">}"""</span>
+<span class="s2">        """</span>
     <span class="err">$</span><span class="s1">'spiralRandomU64()'</span> <span class="p">:</span> <span class="n">u64</span>
 </pre></div>
 </div>

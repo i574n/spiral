@@ -53,7 +53,7 @@ compiles `samples/<sample>` directly and prints exit code, time and the first re
   evaluator's own thread, `python scripts/profile-thread.py <run.speedscope.json> [threads] [rows]` prints
   inclusive time per frame on the busiest thread(s).
 
-Logs go to `<cache>/probes/<sample>/`. A stalled gpt5parallel build now reports, in its `BuildFile stalled`
+Logs go to `<cache>/probes/<sample>/`. Two DLLs on one sample: `pwsh scripts/bench-pair.ps1 -A <dll> -B <dll> -Sample <name> [-Backend C] [-Rounds 5]` compiles in a fresh process per run (no warm server, no compile memo) with the order alternating per round, and prints medians, B/A and each side's output size; a B/A inside about 4% is noise under suite load. The CI compiler job's results: `pwsh scripts/ci-runs.ps1 [-RunId N]` downloads its `compiler-oracle` artifact into `<cache>/runs/ci-<id>`, where `compare-runs.ps1` can diff it against a local run. A stalled gpt5parallel build now reports, in its `BuildFile stalled`
 message, the diagnostics sent and delivered during the build (`diagnostics={fatal_sent=..,delivered_..}`)
 and the entry's type-check promises (`typecheck={entry_input=.. entry_output=..}`). A stall after
 `fatal_sent`, or with type checking done, is a lost result, not slow evaluation.

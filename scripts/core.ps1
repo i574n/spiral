@@ -229,6 +229,15 @@ function GetFullPath([string] $Path) {
     return ResolveLink $Path
 }
 
+function Write-FileAtomic([Parameter(Mandatory)] [string] $Path, [Parameter(Mandatory)] [AllowEmptyString()] [string] $Text) {
+    $full = [IO.Path]::GetFullPath($Path)
+    if ([IO.File]::Exists($full) -and [IO.File]::ReadAllText($full) -ceq $Text) { return $false }
+    $temp = Join-Path ([IO.Path]::GetDirectoryName($full)) ".$([IO.Path]::GetFileName($full)).$PID.tmp"
+    [IO.File]::WriteAllText($temp, $Text)
+    [IO.File]::Move($temp, $full, $true)
+    $true
+}
+
 function EnsureSymbolicLink([string] $Path, [string] $Target) {
     $Path = GetFullPath $Path
 
@@ -262,11 +271,12 @@ function EnsureSymbolicLink([string] $Path, [string] $Target) {
         "FullPath: $Path / Target: $Target / ResolvedTarget: $ResolvedTarget")
 
     if (-Not ($Path | Test-Path)) {
-        Write-Output "spiral/scripts/core.ps1/EnsureSymbolicLink / Creating symlink: $Path -> $Target"
-        $result = New-Item -ItemType SymbolicLink -Path $Path -Target $Target -ErrorAction SilentlyContinue
+        $linkType = if ($IsWindows -and (Test-Path -LiteralPath $Target -PathType Container)) { 'Junction' } else { 'SymbolicLink' }
+        Write-Output "spiral/scripts/core.ps1/EnsureSymbolicLink / Creating $linkType`: $Path -> $Target"
+        $result = New-Item -ItemType $linkType -Path $Path -Target $Target -ErrorAction SilentlyContinue
         if ($null -eq $result) {
             Write-Error ("spiral/scripts/core.ps1/EnsureSymbolicLink / " + `
-                "Failed to create symlink: $Path -> $Target ($Error)")
+                "Failed to create ${linkType}: $Path -> $Target ($Error)")
         }
     }
     else {

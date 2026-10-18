@@ -36,7 +36,7 @@
                         'Elixir.Spiral.Cells.Toolchain',
                         'Elixir.Spiral.Cells.XCompat']},
               {optional_applications,[]},
-              {applications,[kernel,stdlib,elixir,logger,kino]},
+              {applications,[kernel,stdlib,elixir,logger,os_mon,kino]},
               {description,"Spiral language smart cell for Livebook"},
               {registered,[]},
               {vsn,"0.1.0"},

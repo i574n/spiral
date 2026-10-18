@@ -18,6 +18,42 @@ defmodule Spiral.Cells.CompilerClient do
     end
   end
 
+  @doc """
+  The compiler daemons answering on the first 16 ports from the base port, each with its OS pid, code stamp, idle
+  minutes, queued compiles and whether it is retiring. A daemon too old to answer `status` reports nil for those.
+  """
+  @spec live_daemons() :: [map()]
+  def live_daemons do
+    Enum.flat_map(0..15, fn offset ->
+      port = base_port() + offset
+
+      case :gen_tcp.connect({127, 0, 0, 1}, port, socket_opts(), 300) do
+        {:ok, sock} ->
+          :gen_tcp.send(sock, "status\n")
+          row =
+            case recv_line(sock, 1_000) do
+              {:ok, "status\t" <> rest} ->
+                case String.split(String.trim(rest), "\t") do
+                  [pid, stamp, idle, queued, retiring] ->
+                    %{port: port, pid: pid, stamp: stamp, idle_min: idle, queued: queued, retiring: retiring}
+
+                  _ ->
+                    %{port: port, pid: nil, stamp: nil, idle_min: nil, queued: nil, retiring: nil}
+                end
+
+              _ ->
+                %{port: port, pid: nil, stamp: nil, idle_min: nil, queued: nil, retiring: nil}
+            end
+
+          :gen_tcp.close(sock)
+          [row]
+
+        {:error, _} ->
+          []
+      end
+    end)
+  end
+
   @spec pool_ports() :: [non_neg_integer()]
   def pool_ports do
     size =

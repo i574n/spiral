@@ -106,8 +106,10 @@ nominal tcp_client =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () =>
-                global """type System_Net_Sockets_TcpClient = System.Net.Sockets.TcpClient
-"""
+                global """
+                    type System_Net_Sockets_TcpClient = System.Net.Sockets.TcpClient
+
+                    """
                         ) : () -> ()
         }
         $'' : $'System_Net_Sockets_TcpClient'

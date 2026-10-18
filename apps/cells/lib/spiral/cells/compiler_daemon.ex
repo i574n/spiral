@@ -8,11 +8,39 @@ defmodule Spiral.Cells.CompilerDaemon do
   @idle_check_ms 60_000
   @default_idle_min 30
 
+  @default_retire_free_mb 4096
+
   defp idle_ms do
     case Integer.parse(System.get_env("SPIRAL_CELLS_COMPILER_IDLE_MIN") || "") do
       {0, ""} -> nil
       {min, ""} when min > 0 -> min * 60_000
       _ -> @default_idle_min * 60_000
+    end
+  end
+
+  defp retire_free_mb do
+    case Integer.parse(System.get_env("SPIRAL_CELLS_COMPILER_RETIRE_FREE_MB") || "") do
+      {mb, ""} when mb >= 0 -> mb
+      _ -> @default_retire_free_mb
+    end
+  end
+
+  defp free_memory_mb do
+    with {:ok, _} <- Application.ensure_all_started(:os_mon),
+         data when is_list(data) <- :memsup.get_system_memory_data(),
+         bytes when is_integer(bytes) <- Keyword.get(data, :available_memory) || Keyword.get(data, :free_memory) do
+      div(bytes, 1_048_576)
+    else
+      _ -> nil
+    end
+  catch
+    _, _ -> nil
+  end
+
+  defp memory_pressed? do
+    case free_memory_mb() do
+      nil -> false
+      mb -> mb < retire_free_mb()
     end
   end
 
@@ -151,6 +179,11 @@ defmodule Spiral.Cells.CompilerDaemon do
   @impl true
   def handle_call(:port, _from, state), do: {:reply, state.listen_port, state}
 
+  def handle_call(:status, _from, state) do
+    idle_min = div(System.monotonic_time(:millisecond) - state.last_used, 60_000)
+    {:reply, %{idle_min: idle_min, queued: queued(), retiring: state.retiring}, state}
+  end
+
   def handle_call({:compile, req}, _from, state) do
     started = System.monotonic_time(:millisecond)
     IO.puts("#{clock()} started #{Map.get(req, :client, "anonymous")} #{Path.basename(req.input)} #{req.input}")
@@ -180,9 +213,12 @@ defmodule Spiral.Cells.CompilerDaemon do
   @impl true
   def handle_info(:idle_check, %{retiring: false, idle_ms: idle_ms} = state) when is_integer(idle_ms) do
     idle = System.monotonic_time(:millisecond) - state.last_used
+    expired = idle >= idle_ms
+    pressed = not expired and idle >= state.idle_check_ms and memory_pressed?()
 
-    if idle >= idle_ms and queued() == 0 do
-      IO.puts("#{clock()} idle for #{div(idle, 60_000)} min; retiring")
+    if (expired or pressed) and queued() == 0 do
+      reason = if expired, do: "idle for #{div(idle, 60_000)} min", else: "idle and free memory under #{retire_free_mb()} MB"
+      IO.puts("#{clock()} #{reason}; retiring")
       handle_info(:retire, state)
     else
       Process.send_after(self(), :idle_check, state.idle_check_ms)
@@ -806,6 +842,11 @@ defmodule Spiral.Cells.CompilerDaemon do
         case String.trim(line) do
           "hello" ->
             :gen_tcp.send(sock, banner() <> "\n")
+            handle(sock, server, listen)
+
+          "status" ->
+            %{idle_min: idle_min, queued: queued, retiring: retiring} = GenServer.call(server, :status, 5_000)
+            :gen_tcp.send(sock, "status\t#{System.pid()}\t#{boot_stamp()}\t#{idle_min}\t#{queued}\t#{retiring}\n")
             handle(sock, server, listen)
 
           "notebook\t" <> request ->

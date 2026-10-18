@@ -1,3 +1,5 @@
+# TODO: KINO-WITHOUT-ELIXIR first strangler slice: runner.spi (watcher, caller monitor, deadline, drain, tail, tree kill) on lib
+#     process/port Gleam arms, this module becomes a delegate, runner_test.exs stays the oracle until its cases move to ///> gleam blocks
 defmodule Spiral.Cells.Runner do
   require Logger
 

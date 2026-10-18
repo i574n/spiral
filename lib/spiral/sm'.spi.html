@@ -8551,12 +8551,14 @@ __assert_eq { expected = Cons(a, Cons(b, Cons(c, Nil))) }</pre>
         <span class="n">Fsharp</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">initial</span> <span class="o">|&gt;</span> <span class="err">$</span><span class="s1">'`string_builder '</span> <span class="p">:</span> <span class="n">string_builder</span>
         <span class="n">Python</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="k">global</span> <span class="s2">"import io"</span>
-            <span class="k">global</span> <span class="s2">"""class CustomStringIO(io.StringIO):</span>
-<span class="s2">    def __init__(self, init=''):</span>
-<span class="s2">        super().__init__()</span>
-<span class="s2">        if init != '': self.write(init)</span>
-<span class="s2">    def __str__(self): return self.getvalue()</span>
-<span class="s2">    def __repr__(self): return self.getvalue()"""</span>
+            <span class="k">global</span> <span class="s2">"""</span>
+<span class="s2">                class CustomStringIO(io.StringIO):</span>
+<span class="s2">                    def __init__(self, init=''):</span>
+<span class="s2">                        super().__init__()</span>
+<span class="s2">                        if init != '': self.write(init)</span>
+<span class="s2">                    def __str__(self): return self.getvalue()</span>
+<span class="s2">                    def __repr__(self): return self.getvalue()</span>
+<span class="s2">                """</span>
             <span class="err">$</span><span class="s1">'CustomStringIO(!initial)'</span> <span class="p">:</span> <span class="n">string_builder</span>
         <span class="n">Rust</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'String::from(&amp;*!initial)'</span> <span class="p">:</span> <span class="n">string_builder</span>
         <span class="n">TypeScript</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'!initial '</span> <span class="p">:</span> <span class="n">string_builder</span>
@@ -9561,7 +9563,11 @@ __assert_eq { expected = ('1', '2', '3') }</pre>
 <span class="o">|&gt;</span> <span class="n">fun</span> <span class="n">x</span> <span class="o">=&gt;</span>
     <span class="n">inl</span> <span class="n">code</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="p">:</span> <span class="n">_</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">concat_list</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span>
     <span class="n">code</span>
-    <span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="s2">"1</span><span class="se">\n</span><span class="s2">2</span><span class="se">\n</span><span class="s2">3"</span>
+    <span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="s2">"""</span>
+<span class="s2">        1</span>
+<span class="s2">        2</span>
+<span class="s2">        3</span>
+<span class="s2">        """</span>
 </pre></div>
 </div>
 </div>
@@ -10078,40 +10084,44 @@ __assert_eq { expected = b }</pre>
                         <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
                             <span class="k">match</span> <span class="n">b</span> <span class="k">with</span>
                             <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">f64</span><span class="p">)</span> <span class="o">=&gt;</span>
-                                <span class="k">global</span> <span class="s2">"""fun spiralShortestText(v: Double, single: Boolean): String {</span>
-<span class="s2">    if (v.isNaN()) return "NaN"</span>
-<span class="s2">    if (v.isInfinite()) return if (v &gt; 0) "Infinity" else "-Infinity"</span>
-<span class="s2">    if (v == 0.0) return if (1.0 / v &lt; 0) "-0.0" else "0.0"</span>
-<span class="s2">    val shortest = java.math.BigDecimal(if (single) v.toFloat().toString() else v.toString()).stripTrailingZeros()</span>
-<span class="s2">    val digits = shortest.unscaledValue().abs().toString()</span>
-<span class="s2">    val exponent = digits.length - 1 - shortest.scale()</span>
-<span class="s2">    val body = if (exponent &lt; -4 || exponent &gt;= digits.length) {</span>
-<span class="s2">        val magnitude = kotlin.math.abs(exponent)</span>
-<span class="s2">        (if (digits.length == 1) digits else digits.substring(0, 1) + "." + digits.substring(1)) + "e" + (if (exponent &lt; 0) "-" else "+") + (if (magnitude &lt; 10) "0" else "") + magnitude</span>
-<span class="s2">    } else if (exponent &gt;= 0) {</span>
-<span class="s2">        if (digits.length &gt; exponent + 1) digits.substring(0, exponent + 1) + "." + digits.substring(exponent + 1) else digits + "0".repeat(exponent + 1 - digits.length)</span>
-<span class="s2">    } else "0." + "0".repeat(-exponent - 1) + digits</span>
-<span class="s2">    val result = (if (shortest.signum() &lt; 0) "-" else "") + body</span>
-<span class="s2">    return if (result.contains('.') || result.contains('e')) result else result + ".0"</span>
-<span class="s2">}"""</span>
+                                <span class="k">global</span> <span class="s2">"""</span>
+<span class="s2">                                    fun spiralShortestText(v: Double, single: Boolean): String {</span>
+<span class="s2">                                        if (v.isNaN()) return "NaN"</span>
+<span class="s2">                                        if (v.isInfinite()) return if (v &gt; 0) "Infinity" else "-Infinity"</span>
+<span class="s2">                                        if (v == 0.0) return if (1.0 / v &lt; 0) "-0.0" else "0.0"</span>
+<span class="s2">                                        val shortest = java.math.BigDecimal(if (single) v.toFloat().toString() else v.toString()).stripTrailingZeros()</span>
+<span class="s2">                                        val digits = shortest.unscaledValue().abs().toString()</span>
+<span class="s2">                                        val exponent = digits.length - 1 - shortest.scale()</span>
+<span class="s2">                                        val body = if (exponent &lt; -4 || exponent &gt;= digits.length) {</span>
+<span class="s2">                                            val magnitude = kotlin.math.abs(exponent)</span>
+<span class="s2">                                            (if (digits.length == 1) digits else digits.substring(0, 1) + "." + digits.substring(1)) + "e" + (if (exponent &lt; 0) "-" else "+") + (if (magnitude &lt; 10) "0" else "") + magnitude</span>
+<span class="s2">                                        } else if (exponent &gt;= 0) {</span>
+<span class="s2">                                            if (digits.length &gt; exponent + 1) digits.substring(0, exponent + 1) + "." + digits.substring(exponent + 1) else digits + "0".repeat(exponent + 1 - digits.length)</span>
+<span class="s2">                                        } else "0." + "0".repeat(-exponent - 1) + digits</span>
+<span class="s2">                                        val result = (if (shortest.signum() &lt; 0) "-" else "") + body</span>
+<span class="s2">                                        return if (result.contains('.') || result.contains('e')) result else result + ".0"</span>
+<span class="s2">                                    }</span>
+<span class="s2">                                    """</span>
                                 <span class="err">$</span><span class="s1">'spiralShortestText(!b, false)'</span> <span class="p">:</span> <span class="n">string</span>
                             <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">f32</span><span class="p">)</span> <span class="o">=&gt;</span>
-                                <span class="k">global</span> <span class="s2">"""fun spiralShortestText(v: Double, single: Boolean): String {</span>
-<span class="s2">    if (v.isNaN()) return "NaN"</span>
-<span class="s2">    if (v.isInfinite()) return if (v &gt; 0) "Infinity" else "-Infinity"</span>
-<span class="s2">    if (v == 0.0) return if (1.0 / v &lt; 0) "-0.0" else "0.0"</span>
-<span class="s2">    val shortest = java.math.BigDecimal(if (single) v.toFloat().toString() else v.toString()).stripTrailingZeros()</span>
-<span class="s2">    val digits = shortest.unscaledValue().abs().toString()</span>
-<span class="s2">    val exponent = digits.length - 1 - shortest.scale()</span>
-<span class="s2">    val body = if (exponent &lt; -4 || exponent &gt;= digits.length) {</span>
-<span class="s2">        val magnitude = kotlin.math.abs(exponent)</span>
-<span class="s2">        (if (digits.length == 1) digits else digits.substring(0, 1) + "." + digits.substring(1)) + "e" + (if (exponent &lt; 0) "-" else "+") + (if (magnitude &lt; 10) "0" else "") + magnitude</span>
-<span class="s2">    } else if (exponent &gt;= 0) {</span>
-<span class="s2">        if (digits.length &gt; exponent + 1) digits.substring(0, exponent + 1) + "." + digits.substring(exponent + 1) else digits + "0".repeat(exponent + 1 - digits.length)</span>
-<span class="s2">    } else "0." + "0".repeat(-exponent - 1) + digits</span>
-<span class="s2">    val result = (if (shortest.signum() &lt; 0) "-" else "") + body</span>
-<span class="s2">    return if (result.contains('.') || result.contains('e')) result else result + ".0"</span>
-<span class="s2">}"""</span>
+                                <span class="k">global</span> <span class="s2">"""</span>
+<span class="s2">                                    fun spiralShortestText(v: Double, single: Boolean): String {</span>
+<span class="s2">                                        if (v.isNaN()) return "NaN"</span>
+<span class="s2">                                        if (v.isInfinite()) return if (v &gt; 0) "Infinity" else "-Infinity"</span>
+<span class="s2">                                        if (v == 0.0) return if (1.0 / v &lt; 0) "-0.0" else "0.0"</span>
+<span class="s2">                                        val shortest = java.math.BigDecimal(if (single) v.toFloat().toString() else v.toString()).stripTrailingZeros()</span>
+<span class="s2">                                        val digits = shortest.unscaledValue().abs().toString()</span>
+<span class="s2">                                        val exponent = digits.length - 1 - shortest.scale()</span>
+<span class="s2">                                        val body = if (exponent &lt; -4 || exponent &gt;= digits.length) {</span>
+<span class="s2">                                            val magnitude = kotlin.math.abs(exponent)</span>
+<span class="s2">                                            (if (digits.length == 1) digits else digits.substring(0, 1) + "." + digits.substring(1)) + "e" + (if (exponent &lt; 0) "-" else "+") + (if (magnitude &lt; 10) "0" else "") + magnitude</span>
+<span class="s2">                                        } else if (exponent &gt;= 0) {</span>
+<span class="s2">                                            if (digits.length &gt; exponent + 1) digits.substring(0, exponent + 1) + "." + digits.substring(exponent + 1) else digits + "0".repeat(exponent + 1 - digits.length)</span>
+<span class="s2">                                        } else "0." + "0".repeat(-exponent - 1) + digits</span>
+<span class="s2">                                        val result = (if (shortest.signum() &lt; 0) "-" else "") + body</span>
+<span class="s2">                                        return if (result.contains('.') || result.contains('e')) result else result + ".0"</span>
+<span class="s2">                                    }</span>
+<span class="s2">                                    """</span>
                                 <span class="err">$</span><span class="s1">'spiralShortestText((!b).toDouble(), true)'</span> <span class="p">:</span> <span class="n">string</span>
                             <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">b</span> <span class="p">:</span> <span class="n">string</span>
                             <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">char</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'Char(!b).toString()'</span> <span class="p">:</span> <span class="n">string</span>
@@ -10121,62 +10131,66 @@ __assert_eq { expected = b }</pre>
                         <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
                             <span class="k">match</span> <span class="n">b</span> <span class="k">with</span>
                             <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">f64</span><span class="p">)</span> <span class="o">=&gt;</span>
-                                <span class="k">global</span> <span class="s2">"""func spiralShortestText(_ v: Double, _ text: String) -&gt; String {</span>
-<span class="s2">    if v.isNaN { return "NaN" }</span>
-<span class="s2">    if v.isInfinite { return v &gt; 0 ? "Infinity" : "-Infinity" }</span>
-<span class="s2">    if v == 0 { return v.sign == .minus ? "-0.0" : "0.0" }</span>
-<span class="s2">    let negative = text.hasPrefix("-")</span>
-<span class="s2">    let unsigned = negative ? String(text.dropFirst()) : text</span>
-<span class="s2">    let parts = unsigned.split(separator: "e", maxSplits: 1).map(String.init)</span>
-<span class="s2">    let mantissa = parts[0].split(separator: ".", maxSplits: 1, omittingEmptySubsequences: false).map(String.init)</span>
-<span class="s2">    let whole = mantissa[0]</span>
-<span class="s2">    let fraction = mantissa.count &gt; 1 ? mantissa[1] : ""</span>
-<span class="s2">    var digits = Array(whole + fraction)</span>
-<span class="s2">    var exponent = whole.count - 1 + (parts.count &gt; 1 ? (Int(parts[1]) ?? 0) : 0)</span>
-<span class="s2">    while digits.count &gt; 1 &amp;&amp; digits.first == "0" { digits.removeFirst(); exponent -= 1 }</span>
-<span class="s2">    while digits.count &gt; 1 &amp;&amp; digits.last == "0" { digits.removeLast() }</span>
-<span class="s2">    let all = String(digits)</span>
-<span class="s2">    var body: String</span>
-<span class="s2">    if exponent &lt; -4 || exponent &gt;= digits.count {</span>
-<span class="s2">        let magnitude = abs(exponent)</span>
-<span class="s2">        body = String(all.prefix(1)) + (digits.count &gt; 1 ? "." + String(all.dropFirst()) : "") + "e" + (exponent &lt; 0 ? "-" : "+") + (magnitude &lt; 10 ? "0" : "") + String(magnitude)</span>
-<span class="s2">    } else if exponent &gt;= 0 {</span>
-<span class="s2">        body = all.count &gt; exponent + 1 ? String(all.prefix(exponent + 1)) + "." + String(all.dropFirst(exponent + 1)) : all + String(repeating: "0", count: exponent + 1 - all.count)</span>
-<span class="s2">    } else {</span>
-<span class="s2">        body = "0." + String(repeating: "0", count: -exponent - 1) + all</span>
-<span class="s2">    }</span>
-<span class="s2">    let result = (negative ? "-" : "") + body</span>
-<span class="s2">    return result.contains(".") || result.contains("e") ? result : result + ".0"</span>
-<span class="s2">}"""</span>
+                                <span class="k">global</span> <span class="s2">"""</span>
+<span class="s2">                                    func spiralShortestText(_ v: Double, _ text: String) -&gt; String {</span>
+<span class="s2">                                        if v.isNaN { return "NaN" }</span>
+<span class="s2">                                        if v.isInfinite { return v &gt; 0 ? "Infinity" : "-Infinity" }</span>
+<span class="s2">                                        if v == 0 { return v.sign == .minus ? "-0.0" : "0.0" }</span>
+<span class="s2">                                        let negative = text.hasPrefix("-")</span>
+<span class="s2">                                        let unsigned = negative ? String(text.dropFirst()) : text</span>
+<span class="s2">                                        let parts = unsigned.split(separator: "e", maxSplits: 1).map(String.init)</span>
+<span class="s2">                                        let mantissa = parts[0].split(separator: ".", maxSplits: 1, omittingEmptySubsequences: false).map(String.init)</span>
+<span class="s2">                                        let whole = mantissa[0]</span>
+<span class="s2">                                        let fraction = mantissa.count &gt; 1 ? mantissa[1] : ""</span>
+<span class="s2">                                        var digits = Array(whole + fraction)</span>
+<span class="s2">                                        var exponent = whole.count - 1 + (parts.count &gt; 1 ? (Int(parts[1]) ?? 0) : 0)</span>
+<span class="s2">                                        while digits.count &gt; 1 &amp;&amp; digits.first == "0" { digits.removeFirst(); exponent -= 1 }</span>
+<span class="s2">                                        while digits.count &gt; 1 &amp;&amp; digits.last == "0" { digits.removeLast() }</span>
+<span class="s2">                                        let all = String(digits)</span>
+<span class="s2">                                        var body: String</span>
+<span class="s2">                                        if exponent &lt; -4 || exponent &gt;= digits.count {</span>
+<span class="s2">                                            let magnitude = abs(exponent)</span>
+<span class="s2">                                            body = String(all.prefix(1)) + (digits.count &gt; 1 ? "." + String(all.dropFirst()) : "") + "e" + (exponent &lt; 0 ? "-" : "+") + (magnitude &lt; 10 ? "0" : "") + String(magnitude)</span>
+<span class="s2">                                        } else if exponent &gt;= 0 {</span>
+<span class="s2">                                            body = all.count &gt; exponent + 1 ? String(all.prefix(exponent + 1)) + "." + String(all.dropFirst(exponent + 1)) : all + String(repeating: "0", count: exponent + 1 - all.count)</span>
+<span class="s2">                                        } else {</span>
+<span class="s2">                                            body = "0." + String(repeating: "0", count: -exponent - 1) + all</span>
+<span class="s2">                                        }</span>
+<span class="s2">                                        let result = (negative ? "-" : "") + body</span>
+<span class="s2">                                        return result.contains(".") || result.contains("e") ? result : result + ".0"</span>
+<span class="s2">                                    }</span>
+<span class="s2">                                    """</span>
                                 <span class="err">$</span><span class="s1">'spiralShortestText(!b, (!b).description)'</span> <span class="p">:</span> <span class="n">string</span>
                             <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">f32</span><span class="p">)</span> <span class="o">=&gt;</span>
-                                <span class="k">global</span> <span class="s2">"""func spiralShortestText(_ v: Double, _ text: String) -&gt; String {</span>
-<span class="s2">    if v.isNaN { return "NaN" }</span>
-<span class="s2">    if v.isInfinite { return v &gt; 0 ? "Infinity" : "-Infinity" }</span>
-<span class="s2">    if v == 0 { return v.sign == .minus ? "-0.0" : "0.0" }</span>
-<span class="s2">    let negative = text.hasPrefix("-")</span>
-<span class="s2">    let unsigned = negative ? String(text.dropFirst()) : text</span>
-<span class="s2">    let parts = unsigned.split(separator: "e", maxSplits: 1).map(String.init)</span>
-<span class="s2">    let mantissa = parts[0].split(separator: ".", maxSplits: 1, omittingEmptySubsequences: false).map(String.init)</span>
-<span class="s2">    let whole = mantissa[0]</span>
-<span class="s2">    let fraction = mantissa.count &gt; 1 ? mantissa[1] : ""</span>
-<span class="s2">    var digits = Array(whole + fraction)</span>
-<span class="s2">    var exponent = whole.count - 1 + (parts.count &gt; 1 ? (Int(parts[1]) ?? 0) : 0)</span>
-<span class="s2">    while digits.count &gt; 1 &amp;&amp; digits.first == "0" { digits.removeFirst(); exponent -= 1 }</span>
-<span class="s2">    while digits.count &gt; 1 &amp;&amp; digits.last == "0" { digits.removeLast() }</span>
-<span class="s2">    let all = String(digits)</span>
-<span class="s2">    var body: String</span>
-<span class="s2">    if exponent &lt; -4 || exponent &gt;= digits.count {</span>
-<span class="s2">        let magnitude = abs(exponent)</span>
-<span class="s2">        body = String(all.prefix(1)) + (digits.count &gt; 1 ? "." + String(all.dropFirst()) : "") + "e" + (exponent &lt; 0 ? "-" : "+") + (magnitude &lt; 10 ? "0" : "") + String(magnitude)</span>
-<span class="s2">    } else if exponent &gt;= 0 {</span>
-<span class="s2">        body = all.count &gt; exponent + 1 ? String(all.prefix(exponent + 1)) + "." + String(all.dropFirst(exponent + 1)) : all + String(repeating: "0", count: exponent + 1 - all.count)</span>
-<span class="s2">    } else {</span>
-<span class="s2">        body = "0." + String(repeating: "0", count: -exponent - 1) + all</span>
-<span class="s2">    }</span>
-<span class="s2">    let result = (negative ? "-" : "") + body</span>
-<span class="s2">    return result.contains(".") || result.contains("e") ? result : result + ".0"</span>
-<span class="s2">}"""</span>
+                                <span class="k">global</span> <span class="s2">"""</span>
+<span class="s2">                                    func spiralShortestText(_ v: Double, _ text: String) -&gt; String {</span>
+<span class="s2">                                        if v.isNaN { return "NaN" }</span>
+<span class="s2">                                        if v.isInfinite { return v &gt; 0 ? "Infinity" : "-Infinity" }</span>
+<span class="s2">                                        if v == 0 { return v.sign == .minus ? "-0.0" : "0.0" }</span>
+<span class="s2">                                        let negative = text.hasPrefix("-")</span>
+<span class="s2">                                        let unsigned = negative ? String(text.dropFirst()) : text</span>
+<span class="s2">                                        let parts = unsigned.split(separator: "e", maxSplits: 1).map(String.init)</span>
+<span class="s2">                                        let mantissa = parts[0].split(separator: ".", maxSplits: 1, omittingEmptySubsequences: false).map(String.init)</span>
+<span class="s2">                                        let whole = mantissa[0]</span>
+<span class="s2">                                        let fraction = mantissa.count &gt; 1 ? mantissa[1] : ""</span>
+<span class="s2">                                        var digits = Array(whole + fraction)</span>
+<span class="s2">                                        var exponent = whole.count - 1 + (parts.count &gt; 1 ? (Int(parts[1]) ?? 0) : 0)</span>
+<span class="s2">                                        while digits.count &gt; 1 &amp;&amp; digits.first == "0" { digits.removeFirst(); exponent -= 1 }</span>
+<span class="s2">                                        while digits.count &gt; 1 &amp;&amp; digits.last == "0" { digits.removeLast() }</span>
+<span class="s2">                                        let all = String(digits)</span>
+<span class="s2">                                        var body: String</span>
+<span class="s2">                                        if exponent &lt; -4 || exponent &gt;= digits.count {</span>
+<span class="s2">                                            let magnitude = abs(exponent)</span>
+<span class="s2">                                            body = String(all.prefix(1)) + (digits.count &gt; 1 ? "." + String(all.dropFirst()) : "") + "e" + (exponent &lt; 0 ? "-" : "+") + (magnitude &lt; 10 ? "0" : "") + String(magnitude)</span>
+<span class="s2">                                        } else if exponent &gt;= 0 {</span>
+<span class="s2">                                            body = all.count &gt; exponent + 1 ? String(all.prefix(exponent + 1)) + "." + String(all.dropFirst(exponent + 1)) : all + String(repeating: "0", count: exponent + 1 - all.count)</span>
+<span class="s2">                                        } else {</span>
+<span class="s2">                                            body = "0." + String(repeating: "0", count: -exponent - 1) + all</span>
+<span class="s2">                                        }</span>
+<span class="s2">                                        let result = (negative ? "-" : "") + body</span>
+<span class="s2">                                        return result.contains(".") || result.contains("e") ? result : result + ".0"</span>
+<span class="s2">                                    }</span>
+<span class="s2">                                    """</span>
                                 <span class="err">$</span><span class="s1">'spiralShortestText(Double(!b), (!b).description)'</span> <span class="p">:</span> <span class="n">string</span>
                             <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">b</span> <span class="p">:</span> <span class="n">string</span>
                             <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">char</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'String(UnicodeScalar(UInt32(!b)) ?? " ")'</span> <span class="p">:</span> <span class="n">string</span>
@@ -10218,38 +10232,42 @@ __assert_eq { expected = b }</pre>
                         <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
                             <span class="k">match</span> <span class="n">b</span> <span class="k">with</span>
                             <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">f64</span><span class="p">)</span> <span class="o">=&gt;</span>
-                                <span class="k">global</span> <span class="s2">"""function SpiralFormatFloat(x: Double; single: Boolean): AnsiString;</span>
-<span class="s2">var p: Integer; s: string; fs: TFormatSettings; d: Double; f: Single;</span>
-<span class="s2">begin</span>
-<span class="s2">  if IsNan(x) then Exit('NaN');</span>
-<span class="s2">  if IsInfinite(x) then begin if x &gt; 0 then Exit('Infinity') else Exit('-Infinity'); end;</span>
-<span class="s2">  fs := FormatSettings; fs.DecimalSeparator := '.';</span>
-<span class="s2">  s := '';</span>
-<span class="s2">  for p := 1 to 17 do begin</span>
-<span class="s2">    s := FloatToStrF(x, ffGeneral, p, 0, fs);</span>
-<span class="s2">    if single then begin f := StrToFloat(s, fs); if f = x then Break; end</span>
-<span class="s2">    else begin d := StrToFloat(s, fs); if d = x then Break; end;</span>
-<span class="s2">  end;</span>
-<span class="s2">  if (Pos('.', s) = 0) and (Pos('E', s) = 0) and (Pos('e', s) = 0) then s := s + '.0';</span>
-<span class="s2">  Result := StringReplace(s, 'E', 'e', []);</span>
-<span class="s2">end;"""</span>
+                                <span class="k">global</span> <span class="s2">"""</span>
+<span class="s2">                                    function SpiralFormatFloat(x: Double; single: Boolean): AnsiString;</span>
+<span class="s2">                                    var p: Integer; s: string; fs: TFormatSettings; d: Double; f: Single;</span>
+<span class="s2">                                    begin</span>
+<span class="s2">                                      if IsNan(x) then Exit('NaN');</span>
+<span class="s2">                                      if IsInfinite(x) then begin if x &gt; 0 then Exit('Infinity') else Exit('-Infinity'); end;</span>
+<span class="s2">                                      fs := FormatSettings; fs.DecimalSeparator := '.';</span>
+<span class="s2">                                      s := '';</span>
+<span class="s2">                                      for p := 1 to 17 do begin</span>
+<span class="s2">                                        s := FloatToStrF(x, ffGeneral, p, 0, fs);</span>
+<span class="s2">                                        if single then begin f := StrToFloat(s, fs); if f = x then Break; end</span>
+<span class="s2">                                        else begin d := StrToFloat(s, fs); if d = x then Break; end;</span>
+<span class="s2">                                      end;</span>
+<span class="s2">                                      if (Pos('.', s) = 0) and (Pos('E', s) = 0) and (Pos('e', s) = 0) then s := s + '.0';</span>
+<span class="s2">                                      Result := StringReplace(s, 'E', 'e', []);</span>
+<span class="s2">                                    end;</span>
+<span class="s2">                                    """</span>
                                 <span class="err">$</span><span class="s1">'SpiralFormatFloat(!b, False)'</span> <span class="p">:</span> <span class="n">string</span>
                             <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">f32</span><span class="p">)</span> <span class="o">=&gt;</span>
-                                <span class="k">global</span> <span class="s2">"""function SpiralFormatFloat(x: Double; single: Boolean): AnsiString;</span>
-<span class="s2">var p: Integer; s: string; fs: TFormatSettings; d: Double; f: Single;</span>
-<span class="s2">begin</span>
-<span class="s2">  if IsNan(x) then Exit('NaN');</span>
-<span class="s2">  if IsInfinite(x) then begin if x &gt; 0 then Exit('Infinity') else Exit('-Infinity'); end;</span>
-<span class="s2">  fs := FormatSettings; fs.DecimalSeparator := '.';</span>
-<span class="s2">  s := '';</span>
-<span class="s2">  for p := 1 to 17 do begin</span>
-<span class="s2">    s := FloatToStrF(x, ffGeneral, p, 0, fs);</span>
-<span class="s2">    if single then begin f := StrToFloat(s, fs); if f = x then Break; end</span>
-<span class="s2">    else begin d := StrToFloat(s, fs); if d = x then Break; end;</span>
-<span class="s2">  end;</span>
-<span class="s2">  if (Pos('.', s) = 0) and (Pos('E', s) = 0) and (Pos('e', s) = 0) then s := s + '.0';</span>
-<span class="s2">  Result := StringReplace(s, 'E', 'e', []);</span>
-<span class="s2">end;"""</span>
+                                <span class="k">global</span> <span class="s2">"""</span>
+<span class="s2">                                    function SpiralFormatFloat(x: Double; single: Boolean): AnsiString;</span>
+<span class="s2">                                    var p: Integer; s: string; fs: TFormatSettings; d: Double; f: Single;</span>
+<span class="s2">                                    begin</span>
+<span class="s2">                                      if IsNan(x) then Exit('NaN');</span>
+<span class="s2">                                      if IsInfinite(x) then begin if x &gt; 0 then Exit('Infinity') else Exit('-Infinity'); end;</span>
+<span class="s2">                                      fs := FormatSettings; fs.DecimalSeparator := '.';</span>
+<span class="s2">                                      s := '';</span>
+<span class="s2">                                      for p := 1 to 17 do begin</span>
+<span class="s2">                                        s := FloatToStrF(x, ffGeneral, p, 0, fs);</span>
+<span class="s2">                                        if single then begin f := StrToFloat(s, fs); if f = x then Break; end</span>
+<span class="s2">                                        else begin d := StrToFloat(s, fs); if d = x then Break; end;</span>
+<span class="s2">                                      end;</span>
+<span class="s2">                                      if (Pos('.', s) = 0) and (Pos('E', s) = 0) and (Pos('e', s) = 0) then s := s + '.0';</span>
+<span class="s2">                                      Result := StringReplace(s, 'E', 'e', []);</span>
+<span class="s2">                                    end;</span>
+<span class="s2">                                    """</span>
                                 <span class="err">$</span><span class="s1">'SpiralFormatFloat(!b, True)'</span> <span class="p">:</span> <span class="n">string</span>
                             <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">string</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="n">b</span> <span class="p">:</span> <span class="n">string</span>
                             <span class="o">|</span> <span class="p">(</span><span class="n">_</span> <span class="p">:</span> <span class="n">char</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="err">$</span><span class="s1">'string(!b)'</span> <span class="p">:</span> <span class="n">string</span>
@@ -10857,7 +10875,11 @@ __assert_eq { expected = [a, b, c] }</pre>
 <span class="o">|&gt;</span> <span class="n">fun</span> <span class="n">x</span> <span class="o">=&gt;</span>
     <span class="n">inl</span> <span class="n">code</span> <span class="o">=</span> <span class="p">(</span><span class="n">a</span> <span class="n">x</span> <span class="p">:</span> <span class="n">_</span> <span class="nb">int</span> <span class="n">_</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="n">concat_array</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span>
     <span class="n">code</span>
-    <span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="s2">"1</span><span class="se">\n</span><span class="s2">2</span><span class="se">\n</span><span class="s2">3"</span>
+    <span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="s2">"""</span>
+<span class="s2">        1</span>
+<span class="s2">        2</span>
+<span class="s2">        3</span>
+<span class="s2">        """</span>
 </pre></div>
 </div>
 </div>
@@ -15640,9 +15662,18 @@ __assert_eq { expected = 3 }</pre>
 <div class="highlight hl-ipython3"><pre><span></span><span class="o">///-</span> <span class="o">--</span><span class="n">test</span>
 <span class="o">///&gt;</span> <span class="n">rust</span> <span class="o">-</span><span class="n">d</span> <span class="n">regex</span>
 
-<span class="s2">"    let main args =</span><span class="se">\n</span><span class="s2">        ()</span><span class="se">\n</span><span class="s2">"</span>
+<span class="sd">"""</span>
+<span class="sd">        let main args =</span>
+<span class="sd">            ()</span>
+
+<span class="sd">    """</span>
 <span class="o">|&gt;</span> <span class="n">replace_regex</span> <span class="s2">"(?P&lt;a&gt; *)(?P&lt;b&gt;let</span><span class="se">\\</span><span class="s2">s+main</span><span class="se">\\</span><span class="s2">s+.*?</span><span class="se">\\</span><span class="s2">s*=)"</span> <span class="s2">"$a[&lt;EntryPoint&gt;]</span><span class="se">\n</span><span class="s2">$a$b"</span>
-<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="s2">"    [&lt;EntryPoint&gt;]</span><span class="se">\n</span><span class="s2">    let main args =</span><span class="se">\n</span><span class="s2">        ()</span><span class="se">\n</span><span class="s2">"</span>
+<span class="o">|&gt;</span> <span class="n">_assert_eq</span> <span class="s2">"""</span>
+<span class="s2">        [&lt;EntryPoint&gt;]</span>
+<span class="s2">        let main args =</span>
+<span class="s2">            ()</span>
+
+<span class="s2">    """</span>
 </pre></div>
 </div>
 </div>

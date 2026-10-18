@@ -185,7 +185,15 @@ inl scoped_test_body (body : string) : string =
     if text.trim rest = "" then body
     else
         inl ends_in_assertion = text.contains (last_top_block rest 0i32 "") "_assert"
-        inl call = if ends_in_assertion then "\nspiral_cells_test ()\n0i32" else "\ninl _ = spiral_cells_test ()\n0i32"
+        inl call = if ends_in_assertion then """
+
+            spiral_cells_test ()
+            0i32
+            """ else """
+
+            inl _ = spiral_cells_test ()
+            0i32
+            """
         text.trim declarations ++ "\ninl spiral_cells_test () =" ++ indent_body rest 0i32 "" ++ call
 
 inl real_entry () : string = "spiral_cells_real"

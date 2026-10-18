@@ -22,10 +22,12 @@ inl use forall t. (x : t) : t =
         Cpp = fun () => $'use !x = !x ' : ()
         TypeScript = fun () => $'use !x = !x ' : ()
         Rust = fun () =>
-            global """struct SpiralUse(std::rc::Rc<dyn Fn()>);
-impl Drop for SpiralUse {
-    fn drop(&mut self) { (self.0)() }
-}"""
+            global """
+                struct SpiralUse(std::rc::Rc<dyn Fn()>);
+                impl Drop for SpiralUse {
+                    fn drop(&mut self) { (self.0)() }
+                }
+                """
             $'let _spiral_use = SpiralUse((!x).clone())' : ()
     }
     $'!x '
@@ -614,11 +616,13 @@ inl try forall t. (fn : () -> t) (ex_fn : exn -> option t) : option t =
         Fsharp = fun () =>
             $'(try !fn () |> !some with ex -> !ex_fn ex)' : option t
         Python = fun () =>
-            global """def spiral_try(fn, some, ex_fn):
-    try:
-        return some(fn())
-    except Exception as e:
-        return ex_fn(e)"""
+            global """
+                def spiral_try(fn, some, ex_fn):
+                    try:
+                        return some(fn())
+                    except Exception as e:
+                        return ex_fn(e)
+                """
             $'spiral_try(!fn, !some, !ex_fn)' : option t
         Rust = fun () =>
             catch_unwind_rust (fun () => some (fn ())) ex_fn
@@ -693,9 +697,11 @@ inl try_unit forall t. (fn : () -> ()) (ex_fn : (() -> exn) -> ()) : t =
                         $'try !fn () with ex -> !ex_fn (fun () -> ex)' : ()
                         $'()' : t
                     Python = fun () =>
-                        global """def _spiral_try_unit(fn, ex_fn):
-    try: fn()
-    except Exception as ex: ex_fn(lambda: ex)"""
+                        global """
+                            def _spiral_try_unit(fn, ex_fn):
+                                try: fn()
+                                except Exception as ex: ex_fn(lambda: ex)
+                            """
                         $'_spiral_try_unit(!fn, !ex_fn)' : ()
                         $'None' : t
                 }
@@ -758,9 +764,11 @@ inl try_finally forall t. (fn : () -> ()) (finally : () -> ()) : t =
                         $'try !fn () finally !finally ()' : ()
                         $'()' : t
                     Python = fun () =>
-                        global """def _spiral_try_finally(fn, finally_fn):
-    try: fn()
-    finally: finally_fn()"""
+                        global """
+                            def _spiral_try_finally(fn, finally_fn):
+                                try: fn()
+                                finally: finally_fn()
+                            """
                         $'_spiral_try_finally(!fn, !finally)' : ()
                         $'None' : t
                 }

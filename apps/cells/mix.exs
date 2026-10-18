@@ -21,7 +21,7 @@ defmodule Spiral.Cells.MixProject do
   def application do
     [
       mod: {Spiral.Cells.Application, []},
-      extra_applications: [:logger]
+      extra_applications: [:logger, :os_mon]
     ]
   end
 

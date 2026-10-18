@@ -8106,12 +8106,14 @@ a.anchor-link {
             <span class="k">global</span> <span class="s2">"let spiral_trace_state: any = undefined;"</span>
             <span class="err">$</span><span class="s1">'if (spiral_trace_state === undefined) spiral_trace_state = !new_trace_state(!trace_level)'</span> <span class="p">:</span> <span class="p">()</span>
         <span class="n">Rust</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-            <span class="k">global</span> <span class="s2">"""fn spiral_trace_hold&lt;T: Clone&gt;(fresh: &amp;std::rc::Rc&lt;dyn Fn() -&gt; T&gt;) -&gt; T {</span>
-<span class="s2">    use std::sync::OnceLock;</span>
-<span class="s2">    static SLOT: OnceLock&lt;usize&gt; = OnceLock::new();</span>
-<span class="s2">    let raw = *SLOT.get_or_init(|| Box::into_raw(Box::new((*fresh)())) as usize);</span>
-<span class="s2">    unsafe { (*(raw as *const T)).clone() }</span>
-<span class="s2">}"""</span>
+            <span class="k">global</span> <span class="s2">"""</span>
+<span class="s2">                fn spiral_trace_hold&lt;T: Clone&gt;(fresh: &amp;std::rc::Rc&lt;dyn Fn() -&gt; T&gt;) -&gt; T {</span>
+<span class="s2">                    use std::sync::OnceLock;</span>
+<span class="s2">                    static SLOT: OnceLock&lt;usize&gt; = OnceLock::new();</span>
+<span class="s2">                    let raw = *SLOT.get_or_init(|| Box::into_raw(Box::new((*fresh)())) as usize);</span>
+<span class="s2">                    unsafe { (*(raw as *const T)).clone() }</span>
+<span class="s2">                }</span>
+<span class="s2">                """</span>
             <span class="n">inl</span> <span class="n">fresh</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">new_trace_state</span> <span class="n">trace_level</span>
             <span class="nb">open</span> <span class="n">rust</span><span class="o">.</span><span class="n">rust_operators</span>
             <span class="err">!</span>\\<span class="p">(</span><span class="n">fresh</span><span class="p">,</span> <span class="err">$</span><span class="s1">'"{ let _ = spiral_trace_hold(&amp;$0); }"'</span><span class="p">)</span> <span class="p">:</span> <span class="p">()</span>
@@ -8156,24 +8158,28 @@ a.anchor-link {
         <span class="n">TypeScript</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
             <span class="err">$</span><span class="s1">'spiral_trace_state'</span> <span class="p">:</span> <span class="n">trace_state</span>
         <span class="n">Rust</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-            <span class="k">global</span> <span class="s2">"""fn spiral_trace_hold&lt;T: Clone&gt;(fresh: &amp;std::rc::Rc&lt;dyn Fn() -&gt; T&gt;) -&gt; T {</span>
-<span class="s2">    use std::sync::OnceLock;</span>
-<span class="s2">    static SLOT: OnceLock&lt;usize&gt; = OnceLock::new();</span>
-<span class="s2">    let raw = *SLOT.get_or_init(|| Box::into_raw(Box::new((*fresh)())) as usize);</span>
-<span class="s2">    unsafe { (*(raw as *const T)).clone() }</span>
-<span class="s2">}"""</span>
+            <span class="k">global</span> <span class="s2">"""</span>
+<span class="s2">                fn spiral_trace_hold&lt;T: Clone&gt;(fresh: &amp;std::rc::Rc&lt;dyn Fn() -&gt; T&gt;) -&gt; T {</span>
+<span class="s2">                    use std::sync::OnceLock;</span>
+<span class="s2">                    static SLOT: OnceLock&lt;usize&gt; = OnceLock::new();</span>
+<span class="s2">                    let raw = *SLOT.get_or_init(|| Box::into_raw(Box::new((*fresh)())) as usize);</span>
+<span class="s2">                    unsafe { (*(raw as *const T)).clone() }</span>
+<span class="s2">                }</span>
+<span class="s2">                """</span>
             <span class="n">inl</span> <span class="n">level</span><span class="s1">' = trace_level |&gt; optionm'</span><span class="o">.</span><span class="n">default_value</span> <span class="n">Verbose</span>
             <span class="n">inl</span> <span class="n">fresh</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">new_trace_state</span> <span class="n">level</span><span class="s1">'</span>
             <span class="nb">open</span> <span class="n">rust</span><span class="o">.</span><span class="n">rust_operators</span>
             <span class="err">!</span>\\<span class="p">(</span><span class="n">fresh</span><span class="p">,</span> <span class="err">$</span><span class="s1">'"{ spiral_trace_hold(&amp;$0) }"'</span><span class="p">)</span> <span class="p">:</span> <span class="n">trace_state</span>
         <span class="n">Zig</span> <span class="o">=</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
-            <span class="k">global</span> <span class="s2">"""fn spiralHold(comptime T: type, fresh: anytype) T {</span>
-<span class="s2">    const S = struct {</span>
-<span class="s2">        var slot: ?T = null;</span>
-<span class="s2">    };</span>
-<span class="s2">    if (S.slot == null) S.slot = fresh.call(fresh.ctx);</span>
-<span class="s2">    return S.slot.?;</span>
-<span class="s2">}"""</span>
+            <span class="k">global</span> <span class="s2">"""</span>
+<span class="s2">                fn spiralHold(comptime T: type, fresh: anytype) T {</span>
+<span class="s2">                    const S = struct {</span>
+<span class="s2">                        var slot: ?T = null;</span>
+<span class="s2">                    };</span>
+<span class="s2">                    if (S.slot == null) S.slot = fresh.call(fresh.ctx);</span>
+<span class="s2">                    return S.slot.?;</span>
+<span class="s2">                }</span>
+<span class="s2">                """</span>
             <span class="n">inl</span> <span class="n">level</span><span class="s1">' = trace_level |&gt; optionm'</span><span class="o">.</span><span class="n">default_value</span> <span class="n">Verbose</span>
             <span class="n">inl</span> <span class="n">fresh</span> <span class="o">=</span> <span class="n">dyn</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">new_trace_state</span> <span class="n">level</span><span class="s1">')</span>
             <span class="err">$</span><span class="s1">'spiralHold(`trace_state, !fresh)'</span> <span class="p">:</span> <span class="n">trace_state</span>
@@ -8360,31 +8366,33 @@ __assert_eq { expected = true }</pre>
                 <span class="n">run_target_args</span> <span class="p">(</span><span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">text</span><span class="p">,</span> <span class="n">console</span><span class="o">.</span><span class="n">write_line</span><span class="p">)</span> <span class="n">function</span>
                     <span class="o">|</span> <span class="n">Zig</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">text</span> <span class="o">|&gt;</span> <span class="n">console</span><span class="o">.</span><span class="n">write_line</span>
                     <span class="o">|</span> <span class="n">Rust</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="n">text</span><span class="p">,</span> <span class="n">_</span> <span class="o">=&gt;</span>
-                        <span class="k">global</span> <span class="s2">"""#[cfg(target_arch = "wasm32")]</span>
-<span class="s2">fn spiral_trace_near_log(text: &amp;str) {</span>
-<span class="s2">    use std::sync::atomic::{AtomicUsize, Ordering};</span>
-<span class="s2">    static LOGGED: AtomicUsize = AtomicUsize::new(0);</span>
-<span class="s2">    let cs: Vec&lt;char&gt; = text.chars().collect();</span>
-<span class="s2">    for c in cs.chunks(15000) {</span>
-<span class="s2">        let s: String = c.iter().collect();</span>
-<span class="s2">        let used = LOGGED.load(Ordering::Relaxed);</span>
-<span class="s2">        let budget = 16000usize.saturating_sub(used);</span>
-<span class="s2">        if budget &lt; 13 {</span>
-<span class="s2">            break;</span>
-<span class="s2">        }</span>
-<span class="s2">        let s = if s.len() &lt;= budget {</span>
-<span class="s2">            s</span>
-<span class="s2">        } else {</span>
-<span class="s2">            let mut end = budget - 12;</span>
-<span class="s2">            while !s.is_char_boundary(end) {</span>
-<span class="s2">                end -= 1;</span>
-<span class="s2">            }</span>
-<span class="s2">            format!("</span><span class="si">{}</span><span class="s2"> [truncated]", &amp;s[..end])</span>
-<span class="s2">        };</span>
-<span class="s2">        LOGGED.store(used + s.len(), Ordering::Relaxed);</span>
-<span class="s2">        near_sdk::env::log_str(&amp;s);</span>
-<span class="s2">    }</span>
-<span class="s2">}"""</span>
+                        <span class="k">global</span> <span class="s2">"""</span>
+<span class="s2">                            #[cfg(target_arch = "wasm32")]</span>
+<span class="s2">                            fn spiral_trace_near_log(text: &amp;str) {</span>
+<span class="s2">                                use std::sync::atomic::{AtomicUsize, Ordering};</span>
+<span class="s2">                                static LOGGED: AtomicUsize = AtomicUsize::new(0);</span>
+<span class="s2">                                let cs: Vec&lt;char&gt; = text.chars().collect();</span>
+<span class="s2">                                for c in cs.chunks(15000) {</span>
+<span class="s2">                                    let s: String = c.iter().collect();</span>
+<span class="s2">                                    let used = LOGGED.load(Ordering::Relaxed);</span>
+<span class="s2">                                    let budget = 16000usize.saturating_sub(used);</span>
+<span class="s2">                                    if budget &lt; 13 {</span>
+<span class="s2">                                        break;</span>
+<span class="s2">                                    }</span>
+<span class="s2">                                    let s = if s.len() &lt;= budget {</span>
+<span class="s2">                                        s</span>
+<span class="s2">                                    } else {</span>
+<span class="s2">                                        let mut end = budget - 12;</span>
+<span class="s2">                                        while !s.is_char_boundary(end) {</span>
+<span class="s2">                                            end -= 1;</span>
+<span class="s2">                                        }</span>
+<span class="s2">                                        format!("</span><span class="si">{}</span><span class="s2"> [truncated]", &amp;s[..end])</span>
+<span class="s2">                                    };</span>
+<span class="s2">                                    LOGGED.store(used + s.len(), Ordering::Relaxed);</span>
+<span class="s2">                                    near_sdk::env::log_str(&amp;s);</span>
+<span class="s2">                                }</span>
+<span class="s2">                            }</span>
+<span class="s2">                            """</span>
                         <span class="k">if</span> <span class="err">$</span><span class="s1">'cfg\!(target_arch = "wasm32")'</span> <span class="p">:</span> <span class="nb">bool</span>
                         <span class="n">then</span>
                             <span class="n">inl</span> <span class="n">new_acc</span> <span class="o">=</span>
@@ -8566,28 +8574,28 @@ __assert_eq { expected = true }</pre>
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.gleam (gleam)
-13:02:22 1d test1
-13:02:22 2d test2
+13:59:44 1d test1
+13:59:44 2d test2
 __assert_eq { expected = 3 }
 .lua (lua)
-13:02:23 1d test1
-13:02:23 2d test2
+13:59:44 1d test1
+13:59:44 2d test2
 __assert_eq { expected = 3 }
 .fsx (fsharp)
-13:02:26 1d test1
-13:02:26 2d test2
+13:59:46 1d test1
+13:59:46 2d test2
 __assert_eq { expected = 3 }
 .py (cuda)
-13:02:27 1<span class="ansi-blue-intense-fg">d</span> test1
-13:02:27 2<span class="ansi-blue-intense-fg">d</span> test2
+13:59:48 1<span class="ansi-blue-intense-fg">d</span> test1
+13:59:48 2<span class="ansi-blue-intense-fg">d</span> test2
 __assert_eq { expected = 3 }
 .rs (rust)
-13:02:29 1<span class="ansi-blue-intense-fg">d</span> test1
-13:02:29 2<span class="ansi-blue-intense-fg">d</span> test2
+13:59:50 1<span class="ansi-blue-intense-fg">d</span> test1
+13:59:50 2<span class="ansi-blue-intense-fg">d</span> test2
 __assert_eq { expected = 3 }
 .ts (typescript)
-13:02:29 1d test1
-13:02:29 2d test2
+13:59:51 1d test1
+13:59:51 2d test2
 __assert_eq { expected = 3 }</pre>
 </div>
 </div>

@@ -112,24 +112,24 @@ fn spiralCreate(comptime T: type, v: T) *T {
     return p;
 }
 fn spiralMain() i32 {
-    var v0: []const u8 = undefined; _ = &v0;
+    var v0: i32 = undefined; _ = &v0;
     var v1: []const u8 = undefined; _ = &v1;
     var v2: []const u8 = undefined; _ = &v2;
     var v3: []const u8 = undefined; _ = &v3;
     var v4: []const u8 = undefined; _ = &v4;
-    var v5: i32 = undefined; _ = &v5;
-    var v6: bool = undefined; _ = &v6;
-    var v7: bool = undefined; _ = &v7;
-    var v8: u8 = undefined; _ = &v8;
-    var v9: bool = undefined; _ = &v9;
-    var v10: bool = undefined; _ = &v10;
+    var v5: []const u8 = undefined; _ = &v5;
+    var v6: []const u8 = undefined; _ = &v6;
+    var v7: []const u8 = undefined; _ = &v7;
+    var v8: []const u8 = undefined; _ = &v8;
+    var v9: []const u8 = undefined; _ = &v9;
+    var v10: []const u8 = undefined; _ = &v10;
     var v11: i32 = undefined; _ = &v11;
     var v12: bool = undefined; _ = &v12;
     var v13: bool = undefined; _ = &v13;
-    var v14: i32 = undefined; _ = &v14;
+    var v14: u8 = undefined; _ = &v14;
     var v15: bool = undefined; _ = &v15;
     var v16: bool = undefined; _ = &v16;
-    var v17: u8 = undefined; _ = &v17;
+    var v17: i32 = undefined; _ = &v17;
     var v18: bool = undefined; _ = &v18;
     var v19: bool = undefined; _ = &v19;
     var v20: i32 = undefined; _ = &v20;
@@ -138,7 +138,7 @@ fn spiralMain() i32 {
     var v23: u8 = undefined; _ = &v23;
     var v24: bool = undefined; _ = &v24;
     var v25: bool = undefined; _ = &v25;
-    var v26: u8 = undefined; _ = &v26;
+    var v26: i32 = undefined; _ = &v26;
     var v27: bool = undefined; _ = &v27;
     var v28: bool = undefined; _ = &v28;
     var v29: u8 = undefined; _ = &v29;
@@ -153,111 +153,251 @@ fn spiralMain() i32 {
     var v38: u8 = undefined; _ = &v38;
     var v39: bool = undefined; _ = &v39;
     var v40: bool = undefined; _ = &v40;
-    var v41: i32 = undefined; _ = &v41;
+    var v41: u8 = undefined; _ = &v41;
     var v42: bool = undefined; _ = &v42;
     var v43: bool = undefined; _ = &v43;
     var v44: u8 = undefined; _ = &v44;
     var v45: bool = undefined; _ = &v45;
     var v46: bool = undefined; _ = &v46;
-    var v47: u8 = undefined; _ = &v47;
+    var v47: i32 = undefined; _ = &v47;
     var v48: bool = undefined; _ = &v48;
     var v49: bool = undefined; _ = &v49;
-    v0 = "a \"b\" c";
-    v1 = "";
-    v2 = "a\\nb";
-    v3 = "first\n(* not a comment *)\n// nor this\n\n$\"not a macro\" !x\ninl fake () = 1\n  indented";
-    v4 = "\ntop\n\nlevel";
-    v5 = @as(i32, @intCast(v0.len));
-    v6 = v5 == @as(i32, 7);
-    v7 = v6 != true;
-    if (v7) {
+    var v50: u8 = undefined; _ = &v50;
+    var v51: bool = undefined; _ = &v51;
+    var v52: bool = undefined; _ = &v52;
+    var v53: u8 = undefined; _ = &v53;
+    var v54: bool = undefined; _ = &v54;
+    var v55: bool = undefined; _ = &v55;
+    var v56: bool = undefined; _ = &v56;
+    var v57: bool = undefined; _ = &v57;
+    var v58: i32 = undefined; _ = &v58;
+    var v59: bool = undefined; _ = &v59;
+    var v60: bool = undefined; _ = &v60;
+    var v61: i32 = undefined; _ = &v61;
+    var v62: bool = undefined; _ = &v62;
+    var v63: bool = undefined; _ = &v63;
+    var v64: u8 = undefined; _ = &v64;
+    var v65: bool = undefined; _ = &v65;
+    var v66: bool = undefined; _ = &v66;
+    var v67: i32 = undefined; _ = &v67;
+    var v68: bool = undefined; _ = &v68;
+    var v69: bool = undefined; _ = &v69;
+    var v70: u8 = undefined; _ = &v70;
+    var v71: bool = undefined; _ = &v71;
+    var v72: bool = undefined; _ = &v72;
+    var v73: i32 = undefined; _ = &v73;
+    var v74: bool = undefined; _ = &v74;
+    var v75: bool = undefined; _ = &v75;
+    var v76: u8 = undefined; _ = &v76;
+    var v77: bool = undefined; _ = &v77;
+    var v78: bool = undefined; _ = &v78;
+    var v79: u8 = undefined; _ = &v79;
+    var v80: bool = undefined; _ = &v80;
+    var v81: bool = undefined; _ = &v81;
+    var v82: u8 = undefined; _ = &v82;
+    var v83: bool = undefined; _ = &v83;
+    var v84: bool = undefined; _ = &v84;
+    var v85: u8 = undefined; _ = &v85;
+    var v86: bool = undefined; _ = &v86;
+    var v87: bool = undefined; _ = &v87;
+    var v88: i32 = undefined; _ = &v88;
+    var v89: bool = undefined; _ = &v89;
+    var v90: bool = undefined; _ = &v90;
+    var v91: u8 = undefined; _ = &v91;
+    var v92: bool = undefined; _ = &v92;
+    var v93: bool = undefined; _ = &v93;
+    v0 = @as(i32, 16);
+    v1 = "x\ny";
+    v2 = "say \"hi\"";
+    v3 = "a \"\"\" b";
+    v4 = "first\n    second\n\nthird";
+    v5 = "ab\ncd";
+    v6 = "a \"b\" c";
+    v7 = "";
+    v8 = "a\\nb";
+    v9 = "first\n(* not a comment *)\n// nor this\n\n$\"not a macro\" !x\ninl fake () = 1\n  indented";
+    v10 = "\ntop\n\nlevel";
+    v11 = @as(i32, @intCast(v6.len));
+    v12 = v11 == @as(i32, 7);
+    v13 = v12 != true;
+    if (v13) {
         return @as(i32, 1);
     } else {
-        v8 = v0[spiralIndex(v0.len, @as(i32, 2))];
-        v9 = v8 == @as(u8, 34);
-        v10 = v9 != true;
-        if (v10) {
+        v14 = v6[spiralIndex(v6.len, @as(i32, 2))];
+        v15 = v14 == @as(u8, 34);
+        v16 = v15 != true;
+        if (v16) {
             return @as(i32, 2);
         } else {
-            v11 = @as(i32, @intCast(v1.len));
-            v12 = v11 == @as(i32, 0);
-            v13 = v12 != true;
-            if (v13) {
+            v17 = @as(i32, @intCast(v7.len));
+            v18 = v17 == @as(i32, 0);
+            v19 = v18 != true;
+            if (v19) {
                 return @as(i32, 3);
             } else {
-                v14 = @as(i32, @intCast(v2.len));
-                v15 = v14 == @as(i32, 4);
-                v16 = v15 != true;
-                if (v16) {
+                v20 = @as(i32, @intCast(v8.len));
+                v21 = v20 == @as(i32, 4);
+                v22 = v21 != true;
+                if (v22) {
                     return @as(i32, 4);
                 } else {
-                    v17 = v2[spiralIndex(v2.len, @as(i32, 1))];
-                    v18 = v17 == @as(u8, 92);
-                    v19 = v18 != true;
-                    if (v19) {
+                    v23 = v8[spiralIndex(v8.len, @as(i32, 1))];
+                    v24 = v23 == @as(u8, 92);
+                    v25 = v24 != true;
+                    if (v25) {
                         return @as(i32, 5);
                     } else {
-                        v20 = @as(i32, @intCast(v3.len));
-                        v21 = v20 == @as(i32, 83);
-                        v22 = v21 != true;
-                        if (v22) {
+                        v26 = @as(i32, @intCast(v9.len));
+                        v27 = v26 == @as(i32, 83);
+                        v28 = v27 != true;
+                        if (v28) {
                             return @as(i32, 6);
                         } else {
-                            v23 = v3[spiralIndex(v3.len, @as(i32, 5))];
-                            v24 = v23 == @as(u8, 10);
-                            v25 = v24 != true;
-                            if (v25) {
+                            v29 = v9[spiralIndex(v9.len, @as(i32, 5))];
+                            v30 = v29 == @as(u8, 10);
+                            v31 = v30 != true;
+                            if (v31) {
                                 return @as(i32, 7);
                             } else {
-                                v26 = v3[spiralIndex(v3.len, @as(i32, 37))];
-                                v27 = v26 == @as(u8, 10);
-                                v28 = v27 != true;
-                                if (v28) {
+                                v32 = v9[spiralIndex(v9.len, @as(i32, 37))];
+                                v33 = v32 == @as(u8, 10);
+                                v34 = v33 != true;
+                                if (v34) {
                                     return @as(i32, 8);
                                 } else {
-                                    v29 = v3[spiralIndex(v3.len, @as(i32, 38))];
-                                    v30 = v29 == @as(u8, 10);
-                                    v31 = v30 != true;
-                                    if (v31) {
+                                    v35 = v9[spiralIndex(v9.len, @as(i32, 38))];
+                                    v36 = v35 == @as(u8, 10);
+                                    v37 = v36 != true;
+                                    if (v37) {
                                         return @as(i32, 9);
                                     } else {
-                                        v32 = v3[spiralIndex(v3.len, @as(i32, 39))];
-                                        v33 = v32 == @as(u8, 36);
-                                        v34 = v33 != true;
-                                        if (v34) {
+                                        v38 = v9[spiralIndex(v9.len, @as(i32, 39))];
+                                        v39 = v38 == @as(u8, 36);
+                                        v40 = v39 != true;
+                                        if (v40) {
                                             return @as(i32, 10);
                                         } else {
-                                            v35 = v3[spiralIndex(v3.len, @as(i32, 57))];
-                                            v36 = v35 == @as(u8, 105);
-                                            v37 = v36 != true;
-                                            if (v37) {
+                                            v41 = v9[spiralIndex(v9.len, @as(i32, 57))];
+                                            v42 = v41 == @as(u8, 105);
+                                            v43 = v42 != true;
+                                            if (v43) {
                                                 return @as(i32, 11);
                                             } else {
-                                                v38 = v3[spiralIndex(v3.len, @as(i32, 82))];
-                                                v39 = v38 == @as(u8, 100);
-                                                v40 = v39 != true;
-                                                if (v40) {
+                                                v44 = v9[spiralIndex(v9.len, @as(i32, 82))];
+                                                v45 = v44 == @as(u8, 100);
+                                                v46 = v45 != true;
+                                                if (v46) {
                                                     return @as(i32, 12);
                                                 } else {
-                                                    v41 = @as(i32, @intCast(v4.len));
-                                                    v42 = v41 == @as(i32, 11);
-                                                    v43 = v42 != true;
-                                                    if (v43) {
+                                                    v47 = @as(i32, @intCast(v10.len));
+                                                    v48 = v47 == @as(i32, 11);
+                                                    v49 = v48 != true;
+                                                    if (v49) {
                                                         return @as(i32, 13);
                                                     } else {
-                                                        v44 = v4[spiralIndex(v4.len, @as(i32, 0))];
-                                                        v45 = v44 == @as(u8, 10);
-                                                        v46 = v45 != true;
-                                                        if (v46) {
+                                                        v50 = v10[spiralIndex(v10.len, @as(i32, 0))];
+                                                        v51 = v50 == @as(u8, 10);
+                                                        v52 = v51 != true;
+                                                        if (v52) {
                                                             return @as(i32, 14);
                                                         } else {
-                                                            v47 = v4[spiralIndex(v4.len, @as(i32, 5))];
-                                                            v48 = v47 == @as(u8, 10);
-                                                            v49 = v48 != true;
-                                                            if (v49) {
+                                                            v53 = v10[spiralIndex(v10.len, @as(i32, 5))];
+                                                            v54 = v53 == @as(u8, 10);
+                                                            v55 = v54 != true;
+                                                            if (v55) {
                                                                 return @as(i32, 15);
                                                             } else {
-                                                                return @as(i32, 0);
+                                                                v56 = v0 == @as(i32, 16);
+                                                                v57 = v56 != true;
+                                                                if (v57) {
+                                                                    return @as(i32, 16);
+                                                                } else {
+                                                                    v58 = @as(i32, @intCast(v1.len));
+                                                                    v59 = v58 == @as(i32, 3);
+                                                                    v60 = v59 != true;
+                                                                    if (v60) {
+                                                                        return @as(i32, 17);
+                                                                    } else {
+                                                                        v61 = @as(i32, @intCast(v2.len));
+                                                                        v62 = v61 == @as(i32, 8);
+                                                                        v63 = v62 != true;
+                                                                        if (v63) {
+                                                                            return @as(i32, 18);
+                                                                        } else {
+                                                                            v64 = v2[spiralIndex(v2.len, @as(i32, 7))];
+                                                                            v65 = v64 == @as(u8, 34);
+                                                                            v66 = v65 != true;
+                                                                            if (v66) {
+                                                                                return @as(i32, 19);
+                                                                            } else {
+                                                                                v67 = @as(i32, @intCast(v3.len));
+                                                                                v68 = v67 == @as(i32, 7);
+                                                                                v69 = v68 != true;
+                                                                                if (v69) {
+                                                                                    return @as(i32, 20);
+                                                                                } else {
+                                                                                    v70 = v3[spiralIndex(v3.len, @as(i32, 4))];
+                                                                                    v71 = v70 == @as(u8, 34);
+                                                                                    v72 = v71 != true;
+                                                                                    if (v72) {
+                                                                                        return @as(i32, 21);
+                                                                                    } else {
+                                                                                        v73 = @as(i32, @intCast(v4.len));
+                                                                                        v74 = v73 == @as(i32, 23);
+                                                                                        v75 = v74 != true;
+                                                                                        if (v75) {
+                                                                                            return @as(i32, 22);
+                                                                                        } else {
+                                                                                            v76 = v4[spiralIndex(v4.len, @as(i32, 6))];
+                                                                                            v77 = v76 == @as(u8, 32);
+                                                                                            v78 = v77 != true;
+                                                                                            if (v78) {
+                                                                                                return @as(i32, 23);
+                                                                                            } else {
+                                                                                                v79 = v4[spiralIndex(v4.len, @as(i32, 10))];
+                                                                                                v80 = v79 == @as(u8, 115);
+                                                                                                v81 = v80 != true;
+                                                                                                if (v81) {
+                                                                                                    return @as(i32, 24);
+                                                                                                } else {
+                                                                                                    v82 = v4[spiralIndex(v4.len, @as(i32, 17))];
+                                                                                                    v83 = v82 == @as(u8, 10);
+                                                                                                    v84 = v83 != true;
+                                                                                                    if (v84) {
+                                                                                                        return @as(i32, 25);
+                                                                                                    } else {
+                                                                                                        v85 = v4[spiralIndex(v4.len, @as(i32, 22))];
+                                                                                                        v86 = v85 == @as(u8, 100);
+                                                                                                        v87 = v86 != true;
+                                                                                                        if (v87) {
+                                                                                                            return @as(i32, 26);
+                                                                                                        } else {
+                                                                                                            v88 = @as(i32, @intCast(v5.len));
+                                                                                                            v89 = v88 == @as(i32, 5);
+                                                                                                            v90 = v89 != true;
+                                                                                                            if (v90) {
+                                                                                                                return @as(i32, 27);
+                                                                                                            } else {
+                                                                                                                v91 = v5[spiralIndex(v5.len, @as(i32, 3))];
+                                                                                                                v92 = v91 == @as(u8, 99);
+                                                                                                                v93 = v92 != true;
+                                                                                                                if (v93) {
+                                                                                                                    return @as(i32, 28);
+                                                                                                                } else {
+                                                                                                                    return @as(i32, 0);
+                                                                                                                }
+                                                                                                            }
+                                                                                                        }
+                                                                                                    }
+                                                                                                }
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
                                                             }
                                                         }
                                                     }
