@@ -23,6 +23,12 @@ y""" : string
     inl ~opener_line = """ab
         cd
         """
+    inl fields = {
+        text = (fun () => """
+            ab
+            """) : () -> string
+        next = 1i32
+        }
     inl ~quoted = """a "b" c"""
     inl ~empty = """"""
     inl ~raw = """a\nb"""
@@ -63,6 +69,8 @@ inl fake () = 1
     elif sm.index dedented 22i32 <> 'd' then 26i32
     elif len opener_line <> 5i32 then 27i32
     elif sm.index opener_line 3i32 <> 'c' then 28i32
+    elif len (fields.text ()) <> 2i32 then 29i32
+    elif fields.next <> 1i32 then 30i32
     else 0i32
 
 inl unused () = """unused

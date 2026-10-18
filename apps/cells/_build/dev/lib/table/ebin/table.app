@@ -1,12 +1,1 @@
-{application,table,
-             [{modules,['Elixir.Enumerable.Table.Mapper',
-                        'Elixir.Enumerable.Table.Zipper','Elixir.Table',
-                        'Elixir.Table.Mapper','Elixir.Table.Reader',
-                        'Elixir.Table.Reader.Enumerable',
-                        'Elixir.Table.Reader.List','Elixir.Table.Reader.Map',
-                        'Elixir.Table.Zipper']},
-              {optional_applications,[]},
-              {applications,[kernel,stdlib,elixir]},
-              {description,"Unified access to tabular data"},
-              {registered,[]},
-              {vsn,"0.1.2"}]}.
+{application,table,[{modules,['Elixir.Enumerable.Table.Mapper','Elixir.Enumerable.Table.Zipper','Elixir.Table','Elixir.Table.Mapper','Elixir.Table.Reader','Elixir.Table.Reader.Enumerable','Elixir.Table.Reader.List','Elixir.Table.Reader.Map','Elixir.Table.Zipper']},{optional_applications,[]},{applications,[kernel,stdlib,elixir]},{description,"Unified access to tabular data"},{registered,[]},{vsn,"0.1.2"}]}.

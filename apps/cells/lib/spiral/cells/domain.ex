@@ -111,10 +111,10 @@ defmodule Spiral.Cells.Domain do
   defp decode_steps(n, rest, acc) do
     [index_text, timeout, len_text, after_len] = String.split(rest, "\n", parts: 4)
     len = String.to_integer(len_text)
-    <<program::binary-size(len), rest::binary>> = after_len
+    <<program::binary-size(^len), rest::binary>> = after_len
     [real_len_text, after_real_len] = String.split(rest, "\n", parts: 2)
     real_len = String.to_integer(real_len_text)
-    <<real::binary-size(real_len), rest::binary>> = after_real_len
+    <<real::binary-size(^real_len), rest::binary>> = after_real_len
 
     decode_steps(n - 1, rest, [
       %{index: String.to_integer(index_text), timeout: timeout, program: program, real: real}
@@ -149,7 +149,7 @@ defmodule Spiral.Cells.Domain do
   defp decode_n(n, rest, acc) do
     [kind, len_text, after_len] = String.split(rest, "\n", parts: 3)
     len = String.to_integer(len_text)
-    <<source::binary-size(len), rest::binary>> = after_len
+    <<source::binary-size(^len), rest::binary>> = after_len
 
     decode_n(n - 1, rest, [
       cell(kind, source) | acc

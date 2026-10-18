@@ -490,7 +490,6 @@ defmodule Spiral.Cells.CompilerDaemon do
   defp warm(%{compiler: %{} = compiler} = state) do
     %{state | compiler: compiler |> Map.put(:warm, true) |> Map.update(:compiles, 1, &(&1 + 1))}
   end
-  defp warm(state), do: state
 
   defp prepare_compiler(state, mtime) do
     case state.compiler do

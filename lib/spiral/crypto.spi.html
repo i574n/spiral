@@ -8180,7 +8180,7 @@ a.anchor-link {
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>14:00:08 1<span class="ansi-black-intense-fg">v</span> file_system.create_dir / { dir = /tmp/!create_temp_path_/spiral_17f9b54ce972204b9dfb66c1a6a1d4d7d94846041f21658571dae9fab3fb2057/11673ef1-3afd-b48c-b456-054dcc9be5a8 }
+<pre>15:09:28 1<span class="ansi-black-intense-fg">v</span> file_system.create_dir / { dir = /tmp/!create_temp_path_/spiral_17f9b54ce972204b9dfb66c1a6a1d4d7d94846041f21658571dae9fab3fb2057/11673ef1-3afd-b48c-b456-054dcc9be5a8 }
 __assert_eq { expected = 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b }</pre>
 </div>
 </div>
@@ -8235,7 +8235,7 @@ __assert_eq { expected = 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f980
 <div class="jp-OutputArea-child">
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
-<pre>14:00:10 1<span class="ansi-black-intense-fg">v</span> file_system.create_dir / { dir = /tmp/!create_temp_path_/spiral_21777849fbc01bbfcd564e7d84d2a41995ecefbcd855c6e5cae3f521127e562a/536878b7-182d-4692-f1ac-23e55345bf6d }
+<pre>15:09:30 1<span class="ansi-black-intense-fg">v</span> file_system.create_dir / { dir = /tmp/!create_temp_path_/spiral_21777849fbc01bbfcd564e7d84d2a41995ecefbcd855c6e5cae3f521127e562a/536878b7-182d-4692-f1ac-23e55345bf6d }
 __assert_eq { expected = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 }</pre>
 </div>
 </div>
@@ -8513,6 +8513,19 @@ __assert_eq { expected = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991
             <span class="n">hashlib_sha256</span> <span class="p">()</span>
             <span class="o">|&gt;</span> <span class="n">sha256_update</span> <span class="p">(</span><span class="nb">input</span> <span class="o">|&gt;</span> <span class="n">sm</span><span class="s1">'.encode_utf8)</span>
             <span class="o">|&gt;</span> <span class="n">sha256_hexdigest</span>
+        <span class="o">|</span> <span class="n">Gleam</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span>
+            <span class="k">global</span> <span class="s2">"import gleam/bit_array"</span>
+            <span class="k">global</span> <span class="s2">"import gleam/string"</span>
+            <span class="k">global</span> <span class="s2">"""</span>
+<span class="s2">                type SpiralHashKind {</span>
+<span class="s2">                  Sha256</span>
+<span class="s2">                }</span>
+<span class="s2">                """</span>
+            <span class="k">global</span> <span class="s2">"""</span>
+<span class="s2">                @external(erlang, "crypto", "hash")</span>
+<span class="s2">                fn spiral_crypto_hash(kind: SpiralHashKind, data: String) -&gt; BitArray</span>
+<span class="s2">                """</span>
+            <span class="err">$</span><span class="s1">'string.lowercase(bit_array.base16_encode(spiral_crypto_hash(Sha256, !input)))'</span> <span class="p">:</span> <span class="n">string</span>
         <span class="o">|</span> <span class="n">_</span> <span class="o">=&gt;</span> <span class="n">fun</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="n">null</span> <span class="p">()</span>
 </pre></div>
 </div>
@@ -8532,6 +8545,7 @@ __assert_eq { expected = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991
 <span class="o">///&gt;</span> <span class="n">cuda</span>
 <span class="o">///&gt;</span> <span class="n">rust</span> <span class="o">-</span><span class="n">d</span> <span class="n">sha2</span>
 <span class="o">///&gt;</span> <span class="n">typescript</span>
+<span class="o">///&gt;</span> <span class="n">gleam</span>
 
 <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span>
 <span class="o">|&gt;</span> <span class="n">hash_text</span>
@@ -8562,6 +8576,9 @@ __assert_eq { expected = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991
 __assert_eq { expected = 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b }
 __assert_eq { expected = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 }
 .ts (typescript)
+__assert_eq { expected = 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b }
+__assert_eq { expected = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 }
+.gleam (gleam)
 __assert_eq { expected = 01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b }
 __assert_eq { expected = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 }</pre>
 </div>
@@ -8631,16 +8648,16 @@ __assert_eq { expected = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991
 <div class="jp-OutputPrompt jp-OutputArea-prompt"></div>
 <div class="jp-RenderedText jp-OutputArea-output" data-mime-type="text/plain" tabindex="0">
 <pre>.fsx (fsharp)
-14:00:12 1v crypto.hash_to_port / { first_letter_code = 48; hash_part = 01ba4719; combined_value = 18249 }
+15:09:28 1v crypto.hash_to_port / { first_letter_code = 48; hash_part = 01ba4719; combined_value = 18249 }
 __assert_eq { expected = 19273 }
 .py (cuda)
-14:00:13 1<span class="ansi-black-intense-fg">v</span> crypto.hash_to_port / { first_letter_code = 48; hash_part = 01ba4719; combined_value = 18249 }
+15:09:31 1<span class="ansi-black-intense-fg">v</span> crypto.hash_to_port / { first_letter_code = 48; hash_part = 01ba4719; combined_value = 18249 }
 __assert_eq { expected = 19273 }
 .rs (rust)
-14:00:14 1<span class="ansi-black-intense-fg">v</span> crypto.hash_to_port / { first_letter_code = 48; hash_part = 01ba4719; combined_value = 18249 }
+15:09:33 1<span class="ansi-black-intense-fg">v</span> crypto.hash_to_port / { first_letter_code = 48; hash_part = 01ba4719; combined_value = 18249 }
 __assert_eq { expected = 19273 }
 .ts (typescript)
-14:00:14 1v crypto.hash_to_port / { first_letter_code = 48; hash_part = 01ba4719; combined_value = 18249 }
+15:09:34 1v crypto.hash_to_port / { first_letter_code = 48; hash_part = 01ba4719; combined_value = 18249 }
 __assert_eq { expected = 19273 }</pre>
 </div>
 </div>
