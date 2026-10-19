@@ -376,11 +376,13 @@ function Get-NativeSignature {
     $lines.Add('zig=' + (Get-ToolStamp $zigExe))
     $lines.Add("SPIRAL_CXX=$env:SPIRAL_CXX")
     Get-TextKey ($lines -join "`n")
-}$shimsByBackend = @{
+}
+$shimsByBackend = @{
     TypeScript = @('run_main.mjs'); Lua = @('run_main.lua'); Python = @('run_main.py'); Cpp = @('cpp_native.py')
     Gleam = @('gleam'); Kotlin = @('kotlin-server'); OpenQasm = @('openqasm-run'); Wgsl = @('wgsl-run')
     C = @('*.h'); Ebpf = @('*.h')
-    Rust = @(); Delphi = @(); Zig = @(); Lean = @(); Bend = @(); Wasm = @(); Swift = @(); Calyx = @(); Fsharp = @()
+    Rust = @(); Delphi = @(); Zig = @(); Lean = @(); Bend = @(); Wasm = @(); Swift = @(); Calyx = @()
+    Fsharp = @('fsharp-warm')
 }
 $shimKeys = @{}
 function Get-ShimKey([string]$backend) {
@@ -722,6 +724,35 @@ if ($Native) {
         $job
     })
     if ($ReuseNative) { Write-Host ("== native memo: {0} rows replayed (they took {1:N1} min summed), {2} to run" -f $nativeReused, ($nativeReusedMs / 60000), $nativeJobs.Count) }
+    $fsharpWarmJobs = @()
+    if ($tools.Dotnet) { $fsharpWarmJobs = @($nativeJobs | Where-Object Backend -eq 'Fsharp') }
+    if ($fsharpWarmJobs.Count) {
+        $fsharpWatch = [Diagnostics.Stopwatch]::StartNew()
+        $fsharpRunner = Join-Path $shimDir 'fsharp-warm/warm.ps1'
+        $fsharpSessions = [Math]::Max(1, [Math]::Min(2, $fsharpWarmJobs.Count))
+        $fsharpChunks = for ($i = 0; $i -lt $fsharpSessions; $i++) { , @(for ($k = $i; $k -lt $fsharpWarmJobs.Count; $k += $fsharpSessions) { $fsharpWarmJobs[$k] }) }
+        $fsharpResults = $fsharpChunks | ForEach-Object -ThrottleLimit $fsharpSessions -Parallel {
+            $chunk = @($_)
+            $work = Join-Path $using:scratch ("fsharp-warm-{0}-{1}" -f $using:stamp, [guid]::NewGuid().ToString('N').Substring(0, 8))
+            $warm = @(& $using:fsharpRunner -Dotnet ($using:tools).Dotnet -Scripts @($chunk | ForEach-Object Output) -TimeoutSec 60 -Work $work)
+            for ($i = 0; $i -lt $chunk.Count; $i++) { [pscustomobject]@{ Job = $chunk[$i]; Result = $warm[$i] } }
+        }
+        $fsharpColdKeys = [Collections.Generic.HashSet[string]]::new()
+        foreach ($entry in $fsharpResults) {
+            $w = $entry.Result
+            if ($w.Status -eq 'timeout') {
+                [void]$fsharpColdKeys.Add($entry.Job.Key)
+                Write-Host ("native {0} Fsharp: warm timeout after {1:N1}s, rerun cold" -f $entry.Job.Id, ($w.Ms / 1000))
+                continue
+            }
+            $sha = if ($w.Status -eq 'ran') { [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($w.Stdout))).ToLowerInvariant().Substring(0, 16) } else { '' }
+            $nativeResults[$entry.Job.Key] = [pscustomobject]@{ Status = $w.Status; Exit = $w.Exit; Stdout = $sha; Detail = $w.Detail; Ms = $w.Ms; RunMs = $w.Ms }
+            Write-Host ("native {0} Fsharp: {1} exit {2} ({3:N1}s, warm)" -f $entry.Job.Id, $w.Status, $w.Exit, ($w.Ms / 1000))
+        }
+        $nativeJobs = @($nativeJobs | Where-Object { $_.Backend -ne 'Fsharp' -or $fsharpColdKeys.Contains($_.Key) })
+        $fsharpWarmJobs = @($fsharpWarmJobs | Where-Object { -not $fsharpColdKeys.Contains($_.Key) })
+        Write-Host ("== fsharp warm: {0} rows in {1} session(s), {2:N1}s" -f $fsharpWarmJobs.Count, $fsharpSessions, $fsharpWatch.Elapsed.TotalSeconds)
+    }
     $laneCount = if ($env:SPIRAL_NATIVE_PARALLEL) { [int]$env:SPIRAL_NATIVE_PARALLEL } else { [Math]::Max(1, [Math]::Min(6, [Environment]::ProcessorCount - 2)) }
     $lanes = [Collections.Generic.List[object]]::new()
     for ($i = 0; $i -lt $laneCount; $i++) {
@@ -873,7 +904,7 @@ public static extern uint SetErrorMode(uint mode);
         $laneResult
     }
     foreach ($laneResult in $laneResults) { foreach ($k in $laneResult.Keys) { $nativeResults[$k] = $laneResult[$k] } }
-    foreach ($job in $nativeJobs) {
+    foreach ($job in @($nativeJobs) + @($fsharpWarmJobs)) {
         $result = $nativeResults[$job.Key]
         $memoKey = $nativeMemoKeys[$job.Key]
         if (-not $memoKey -or -not $result -or $result.Status -notin 'ran', 'build-fail' -or "$($result.Exit)" -eq 'timeout') { continue }

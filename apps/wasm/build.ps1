@@ -25,7 +25,7 @@ $targetDir = GetTargetDir $projectName
 if (!(BuildSpiral "$projectName.spi" "$projectName.rs" "apps/wasm")) {
     throw "RUST-FAILED apps/wasm / compile"
 }
-{ cargo +nightly-2025-11-01 build --profile release-unwind --package $projectName } | Invoke-Block -Location ../../workspace
+{ cargo +nightly-2026-10-18 build --profile release-unwind --package $projectName } | Invoke-Block -Location ../../workspace
 $cargoTarget = (cargo metadata --format-version 1 --no-deps --manifest-path ../../workspace/Cargo.toml | ConvertFrom-Json).target_directory
 $built = "$cargoTarget/release-unwind/$projectName$(_exe)"
 $rustOutput = & $built --help 2>&1 | ForEach-Object { "$_" }

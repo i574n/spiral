@@ -32,7 +32,7 @@ if (!(BuildSpiral "$projectName.spi" "$projectName.rs" "apps/spiral")) {
     throw "RUST-FAILED apps/spiral / compile"
 }
 [IO.File]::AppendAllText((Join-Path $ResolvedScriptDir "$projectName.rs"), "#[global_allocator]`nstatic GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;`n")
-{ cargo +nightly-2025-11-01 build --profile release-unwind --package $projectName } | Invoke-Block -Location ../../workspace
+{ cargo +nightly-2026-10-18 build --profile release-unwind --package $projectName } | Invoke-Block -Location ../../workspace
 $cargoTarget = (cargo metadata --format-version 1 --no-deps --manifest-path ../../workspace/Cargo.toml | ConvertFrom-Json).target_directory
 $newExe = "$cargoTarget/release-unwind/$projectName$(_exe)"
 $checkDir = "$targetDir/check"

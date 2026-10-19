@@ -2,7 +2,7 @@ inl while' (cond : () -> bool) (body : () -> ()) : () =
     !!!!While((join cond()),(body()))
 
 inl set' forall t. (a : t) ~(b : t) : () =
-    !!!!BackendSwitch({ C = fun () => $"!a = !b" : (); Ebpf = fun () => $"!a = !b" : () })
+    !!!!BackendSwitch({ C = fun () => $"!a = !b" : (); Ebpf = fun () => $"!a = !b" : (); Zig = fun () => $"!a = !b" : () })
 
 inl rec walk ~n ~acc =
     if n =. 0i32 then acc else

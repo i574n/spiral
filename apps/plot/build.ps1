@@ -7,7 +7,7 @@ $ErrorActionPreference = "Stop"
 . ../../scripts/core.ps1
 . ../../lib/spiral/lib.ps1
 
-{ cargo +nightly-2025-11-01 build --release --package plot } | Invoke-Block -Location ../../workspace
+{ cargo +nightly-2026-10-18 build --release --package plot } | Invoke-Block -Location ../../workspace
 $cargoTarget = (cargo metadata --format-version 1 --no-deps --manifest-path ../../workspace/Cargo.toml | ConvertFrom-Json).target_directory
 $plotExe = "$cargoTarget/release/plot$(_exe)"
 

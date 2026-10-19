@@ -355,6 +355,7 @@ defmodule Spiral.Cells.Notebook do
           outputs
       end
 
+    File.mkdir_p!(Path.dirname(output_path))
     File.write!(output_path, JSON.encode!(ipynb(doc, outputs, durations, report)))
 
     result =

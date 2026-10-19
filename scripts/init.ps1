@@ -30,9 +30,9 @@ $cargoBin = Join-Path $HOME '.cargo/bin'
 if ((Test-Path $cargoBin) -and -not (($env:PATH -split [IO.Path]::PathSeparator) -contains $cargoBin)) {
     $env:PATH = "$cargoBin$([IO.Path]::PathSeparator)$env:PATH"
 }
-$defaultKinoWasmToolchain = "nightly-2025-05-09"
+$defaultKinoWasmToolchain = "nightly-2026-10-18"
 $nearContractToolchain = "nightly-2024-07-14"
-$appBuildToolchain = "nightly-2025-11-01"
+$appBuildToolchain = "nightly-2026-10-18"
 rustup install $defaultKinoWasmToolchain
 rustup default $defaultKinoWasmToolchain
 rustup +$defaultKinoWasmToolchain target add wasm32-unknown-unknown
@@ -71,7 +71,7 @@ if (Test-Command "cargo") {
     if (!(Test-Command "trunk")) {
         cargo binstall -y --locked trunk@0.21.14
         if ($LASTEXITCODE -ne 0) {
-            cargo +nightly-2025-11-01 install trunk --version 0.21.14 --locked
+            cargo +nightly-2026-10-18 install trunk --version 0.21.14 --locked
             if ($LASTEXITCODE -ne 0) { Write-Output "init.ps1 / cargo install trunk failed (exit code $LASTEXITCODE)" }
         }
     }

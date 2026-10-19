@@ -3004,6 +3004,13 @@
         'samples/i64_scalar'
     )
     Zig = @(
+        'samples/ebpf_key'
+        'samples/ebpf_map'
+        'samples/ebpf_minkey'
+        'samples/ebpf_unit'
+        'samples/ebpf_map_full'
+        'samples/ebpf_nested'
+        'samples/lua_paren_statement'
         'samples/frontier_gadt_growing_index'
         'samples/macro_splice_before_quote'
         'samples/gleam_match_narrowed'

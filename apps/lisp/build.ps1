@@ -26,7 +26,7 @@ foreach ($sample in 'membership', 'membership_short') {
         throw "RUST-FAILED apps/lisp / $sample.spl / compile"
     }
     $dir = "$targetDir/$sample"
-    { rustc +nightly-2025-11-01 -O --edition 2021 "$dir/main.rs" -o "$dir/main$(_exe)" } | Invoke-Block
+    { rustc +nightly-2026-10-18 -O --edition 2021 "$dir/main.rs" -o "$dir/main$(_exe)" } | Invoke-Block
     & "$dir/main$(_exe)"
     if ($LASTEXITCODE -ne 0) {
         throw "RUST-FAILED apps/lisp / $sample.spl / run exit code $LASTEXITCODE, expected 0"

@@ -24,7 +24,7 @@ test run_tests static =
             if is_rust () then test () else ()
         else
             runtime.execution_options fun x => { x with
-                command = "cargo +nightly-2025-11-01 test --timings -- --show-output"
+                command = "cargo +nightly-2026-10-18 test --timings -- --show-output"
                 working_directory = file_system.get_source_directory () |> Some |> optionm'.box
                 environment_variables = ;[ "TEST", "1" ]
             }
