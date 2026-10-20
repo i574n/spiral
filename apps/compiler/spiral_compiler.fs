@@ -165552,6 +165552,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
         let union_names = ResizeArray<string>()
         let structure_names = ResizeArray<string>()
         let union_tags = ResizeArray<string>()
+        let boxed_fields = HashSet<int * int * int>()
         let memo_ref (f : 'k -> int -> unit) =
             let dict = Dictionary<'k, int>(HashIdentity.Reference)
             fun (k : 'k) ->
@@ -165626,7 +165627,15 @@ fn spiralCreate(comptime T: type, v: T) *T {
         and union_memo = lazy (memo_ref (fun (cases : Map<int * string, Ty>) tag ->
             let ctors =
                 cases |> Map.toArray |> Array.mapi (fun c (_, t) ->
-                    let fields = env.ty_to_data t |> data_free_vars |> Array.map (fun (L(_,t)) -> $"{tyv t} → ") |> String.concat ""
+                    let fields =
+                        env.ty_to_data t |> data_free_vars |> Array.mapi (fun j (L(_,t)) ->
+                            let field = tyv t
+                            match t with
+                            | YFun _ when System.Text.RegularExpressions.Regex.IsMatch(field, $@"\bU{tag}\b") ->
+                                boxed_fields.Add((tag, c, j)) |> ignore
+                                "NonScalar → "
+                            | _ -> $"{field} → ")
+                        |> String.concat ""
                     $"  | {leanCaseName cases c} : {fields}U{tag}")
             let tags = Array.init ctors.Length (fun c -> $"  | .{leanCaseName cases c} .. => {c}")
             types.Add($"""inductive U{tag} where{"\n"}{String.concat "\n" ctors}{"\n"}""")
@@ -165822,7 +165831,8 @@ fn spiralCreate(comptime T: type, v: T) *T {
                     fields |> List.iter (Array.iter (declare locals))
                     let pats = fields |> List.map (fun fs -> $"U{tag}.{leanCaseName x'.cases c}" + (fs |> Array.map (fun (L(i,_)) -> $" f{i}") |> String.concat ""))
                     line s ("| " + String.concat ", " pats + " =>")
-                    fields |> List.iter (Array.iter (fun (L(i,_)) -> line (indent s) $"v{i} := f{i}"))
+                    fields |> List.iter (Array.iteri (fun j (L(i,_)) ->
+                        line (indent s) (if boxed_fields.Contains((tag, c, j)) then $"v{i} := spiralUnbox f{i}" else $"v{i} := f{i}")))
                     binds (indent s) ret b)
                 let wildcard = "| " + (is |> List.map (fun _ -> "_") |> String.concat ", ") + " =>"
                 match on_fail with
@@ -165835,7 +165845,9 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 let i = union_case_index c.cases a
                 match data_term_vars b |> Array.map show_w with
                 | [||] -> return' $"U{tag}.{leanCaseName c.cases i}"
-                | args -> return' $"""(U{tag}.{leanCaseName c.cases i} {String.concat " " args})"""
+                | args ->
+                    let args = args |> Array.mapi (fun j w -> if boxed_fields.Contains((tag, i, j)) then $"(spiralBox {w})" else w)
+                    return' $"""(U{tag}.{leanCaseName c.cases i} {String.concat " " args})"""
             | TyToLayout(a,b) ->
                 let r = layout b
                 let values = data_term_vars a |> Array.map show_w |> Array.map ((+) " ") |> String.concat ""
@@ -165920,6 +165932,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
         env.globals |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
         globals |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
         if types.Count > 0 then
+            if boxed_fields.Count > 0 then program.Append("private unsafe def spiralBoxUnsafe {α : Type} (x : α) : NonScalar := unsafeCast x\n@[implemented_by spiralBoxUnsafe] opaque spiralBox {α : Type} (x : α) : NonScalar\nprivate unsafe def spiralUnboxUnsafe {α : Type} [Inhabited α] (x : NonScalar) : α := unsafeCast x\n@[implemented_by spiralUnboxUnsafe] opaque spiralUnbox {α : Type} [Inhabited α] (x : NonScalar) : α\n") |> ignore
             if types |> Seq.exists (fun (x : string) -> x.Contains "IO.Ref") then program.Append("private unsafe def spiralRefDefaultUnsafe {α : Type} : IO.Ref α := unsafeCast ()\naxiom spiralRefNonempty {α : Type} : Nonempty (IO.Ref α)\nattribute [instance] spiralRefNonempty\n@[implemented_by spiralRefDefaultUnsafe] opaque spiralRefDefault {α : Type} : IO.Ref α\ninstance {α : Type} : Inhabited (IO.Ref α) := ⟨spiralRefDefault⟩\n") |> ignore
             let type_names = types |> Seq.map (fun (x : string) -> x.Split([|' '; '\n'|], System.StringSplitOptions.RemoveEmptyEntries).[1]) |> Seq.toArray
             let type_index = type_names |> Array.mapi (fun i name -> name, i) |> dict
@@ -170017,7 +170030,7 @@ end
             | YPrim BoolT -> 1
             | YPrim Float32T -> unsupported "f32"
             | YPrim Float64T -> unsupported "f64 (Calyx integer subset)"
-            | YPrim (Int64T | UInt64T) -> unsupported "64-bit integers"
+            | YPrim (Int64T | UInt64T) -> 64
             | YPrim t -> unsupported $"the primitive {t}"
             | t -> unsupported $"the type {show_ty t}"
         let rec flatten_ty t =
@@ -170035,6 +170048,8 @@ end
             | LitUInt16 x -> sprintf "16'd%u" x
             | LitInt8 x -> sprintf "8'd%u" (uint8 x)
             | LitUInt8 x -> sprintf "8'd%u" x
+            | LitInt64 x -> sprintf "64'd%u" (uint64 x)
+            | LitUInt64 x -> sprintf "64'd%u" x
             | LitBool true -> "1'd1"
             | LitBool false -> "1'd0"
             | LitChar x -> sprintf "32'd%d" (int x)
@@ -170050,7 +170065,13 @@ end
             | None -> unsupported "an operation on a non-primitive"
         let signed_of d =
             match prim_of d with
-            | Some (Int32T | Int16T | Int8T | CharT) -> true
+            | Some (Int64T | Int32T | Int16T | Int8T | CharT) -> true
+            | _ -> false
+        let is_int_prim = function
+            | Int64T | UInt64T | Int32T | UInt32T | Int16T | UInt16T | Int8T | UInt8T | CharT -> true
+            | _ -> false
+        let is_signed_prim = function
+            | Int64T | Int32T | Int16T | Int8T | CharT -> true
             | _ -> false
         let one_port d =
             match data_term_vars d with
@@ -170197,10 +170218,11 @@ end
                         add_cell part (guard + " = std_reg(1);")
                         match prim_of cond with
                         | Some BoolT -> write_group part control [] [(guard, one_port cond)] "1'd1"
-                        | Some (Int32T | UInt32T | CharT) ->
+                        | Some t when is_int_prim t ->
+                            let w = width (YPrim t)
                             let cell = sprintf "op%d" (fresh part)
-                            add_cell part (cell + " = std_neq(32);")
-                            write_group part control [sprintf "%s.left = %s;" cell (one_port cond); sprintf "%s.right = 32'd0;" cell] [(guard, cell + ".out")] "1'd1"
+                            add_cell part (sprintf "%s = std_neq(%d);" cell w)
+                            write_group part control [sprintf "%s.left = %s;" cell (one_port cond); sprintf "%s.right = %d'd0;" cell w] [(guard, cell + ".out")] "1'd1"
                         | _ -> unsupported "a condition that is not a bool or an int"
                         let tr_c, fl_c = ResizeArray<string>(), ResizeArray<string>()
                         binds tr_c ret tr
@@ -170263,10 +170285,10 @@ end
                                 let cell, out_widths = invoke (a, c) args
                                 match out_widths with
                                 | [|1|] -> write_group part buf [] [(guard, cell + ".out")] "1'd1"
-                                | [|_|] ->
+                                | [|w|] ->
                                     let cell_ne = sprintf "op%d" (fresh part)
-                                    add_cell part (cell_ne + " = std_neq(32);")
-                                    write_group part buf [sprintf "%s.left = %s.out;" cell_ne cell; sprintf "%s.right = 32'd0;" cell_ne] [(guard, cell_ne + ".out")] "1'd1"
+                                    add_cell part (sprintf "%s = std_neq(%d);" cell_ne w)
+                                    write_group part buf [sprintf "%s.left = %s.out;" cell_ne cell; sprintf "%s.right = %d'd0;" cell_ne w] [(guard, cell_ne + ".out")] "1'd1"
                                 | _ -> unsupported "a while condition that is not one value"
                             | JPClosure _ -> unsupported "closures"
                         refresh control
@@ -170293,16 +170315,44 @@ end
                         if same then place control ret (fun dest -> if text <> dest + ".out" then write_group part control [] [(dest, text)] "1'd1")
                         else
                             match source, target with
-                            | Some BoolT, (Int32T | CharT | UInt32T) ->
+                            | Some BoolT, t when is_int_prim t ->
                                 place control ret (fun dest ->
                                     let cell = sprintf "op%d" (fresh part)
-                                    add_cell part (cell + " = std_pad(1, 32);")
+                                    add_cell part (sprintf "%s = std_pad(1, %d);" cell (width (YPrim t)))
                                     write_group part control [sprintf "%s.in = %s;" cell text] [(dest, cell + ".out")] "1'd1")
-                            | Some (Int32T | UInt32T | CharT), BoolT ->
+                            | Some s, BoolT when is_int_prim s ->
                                 place control ret (fun dest ->
+                                    let w = width (YPrim s)
                                     let cell = sprintf "op%d" (fresh part)
-                                    add_cell part (cell + " = std_neq(32);")
-                                    write_group part control [sprintf "%s.left = %s;" cell text; sprintf "%s.right = 32'd0;" cell] [(dest, cell + ".out")] "1'd1")
+                                    add_cell part (sprintf "%s = std_neq(%d);" cell w)
+                                    write_group part control [sprintf "%s.left = %s;" cell text; sprintf "%s.right = %d'd0;" cell w] [(dest, cell + ".out")] "1'd1")
+                            | Some s, t when is_int_prim s && is_int_prim t ->
+                                let source_width, target_width = width (YPrim s), width (YPrim t)
+                                place control ret (fun dest ->
+                                    if source_width = target_width then
+                                        if text <> dest + ".out" then write_group part control [] [(dest, text)] "1'd1"
+                                    elif target_width < source_width then
+                                        let slice = sprintf "op%d" (fresh part)
+                                        add_cell part (sprintf "%s = std_slice(%d, %d);" slice source_width target_width)
+                                        write_group part control [sprintf "%s.in = %s;" slice text] [(dest, slice + ".out")] "1'd1"
+                                    else
+                                        let pad = sprintf "op%d" (fresh part)
+                                        add_cell part (sprintf "%s = std_pad(%d, %d);" pad source_width target_width)
+                                        if is_signed_prim s then
+                                            let raise_sign = sprintf "op%d" (fresh part)
+                                            let extend_sign = sprintf "op%d" (fresh part)
+                                            add_cell part (sprintf "%s = std_lsh(%d);" raise_sign target_width)
+                                            add_cell part (sprintf "%s = std_srsh(%d);" extend_sign target_width)
+                                            let distance = sprintf "%d'd%d" target_width (target_width - source_width)
+                                            write_group part control [
+                                                sprintf "%s.in = %s;" pad text
+                                                sprintf "%s.left = %s.out;" raise_sign pad
+                                                sprintf "%s.right = %s;" raise_sign distance
+                                                sprintf "%s.left = %s.out;" extend_sign raise_sign
+                                                sprintf "%s.right = %s;" extend_sign distance
+                                            ] [(dest, extend_sign + ".out")] "1'd1"
+                                        else
+                                            write_group part control [sprintf "%s.in = %s;" pad text] [(dest, pad + ".out")] "1'd1")
                             | _ -> unsupported "this conversion"
                     | TyFailwith _ -> unsupported "failwith"
                     | TyMacro _ -> unsupported "macros"
@@ -170310,8 +170360,20 @@ end
                     | TyOp(operation, l) ->
                         let binary symbol a b dest =
                             // symbol selects the primitive. Add and subtract are two's complement.
-                            let w = pair_width a b
-                            let left, right = one_port a, one_port b
+                            let is_shift = symbol = "lsh" || symbol = "rsh"
+                            let w = if is_shift then width_of a else pair_width a b
+                            let left = one_port a
+                            let right =
+                                let amount_width = width_of b
+                                if not is_shift || amount_width = w then one_port b
+                                else
+                                    let resize = sprintf "op%d" (fresh part)
+                                    let amount = sprintf "t%d" (fresh part)
+                                    if amount_width < w then add_cell part (sprintf "%s = std_pad(%d, %d);" resize amount_width w)
+                                    else add_cell part (sprintf "%s = std_slice(%d, %d);" resize amount_width w)
+                                    add_cell part (sprintf "%s = std_reg(%d);" amount w)
+                                    write_group part control [sprintf "%s.in = %s;" resize (one_port b)] [(amount, resize + ".out")] "1'd1"
+                                    amount + ".out"
                             match symbol with
                             | "add" -> comb dest "std_add" w left right
                             | "sub" -> comb dest "std_sub" w left right
@@ -172013,6 +172075,10 @@ end
             | YPrim Float64T -> "float[64]"
             | YPrim Int64T -> "int[64]"
             | YPrim UInt64T -> "uint[64]"
+            | YPrim Int8T -> "int[8]"
+            | YPrim UInt8T -> "uint[8]"
+            | YPrim Int16T -> "int[16]"
+            | YPrim UInt16T -> "uint[16]"
             | YPrim t -> unsupported $"the primitive {t}"
             | t -> unsupported $"the type {show_ty t}"
         let zero = function
@@ -172020,6 +172086,7 @@ end
             | "uint[32]" -> "0"
             | "int[64]" -> "0"
             | "uint[64]" -> "0"
+            | "int[8]" | "uint[8]" | "int[16]" | "uint[16]" -> "0"
             | "bool" -> "false"
             | "float[32]" -> "0.0"
             | "float[64]" -> "0.0"
@@ -172031,6 +172098,12 @@ end
             | LitInt64 x when x = Int64.MinValue -> "(-9223372036854775808)"
             | LitInt64 x -> string x
             | LitUInt64 x -> string x
+            | LitInt8 x when x = SByte.MinValue -> "(-128)"
+            | LitInt8 x -> string x
+            | LitUInt8 x -> string x
+            | LitInt16 x when x = Int16.MinValue -> "(-32768)"
+            | LitInt16 x -> string x
+            | LitUInt16 x -> string x
             | LitBool x -> if x then "true" else "false"
             | LitChar x -> string (int x)
             | LitFloat32 x when Single.IsNaN x -> "((1e308 * 10.0) - (1e308 * 10.0))"
@@ -172200,7 +172273,7 @@ end
                 let converted =
                     if same then text
                     else
-                        let integral = function Int32T | UInt32T | CharT | Int64T | UInt64T -> true | _ -> false
+                        let integral = function Int8T | UInt8T | Int16T | UInt16T | Int32T | UInt32T | CharT | Int64T | UInt64T -> true | _ -> false
                         match source, target with
                         | Some s, t when integral s && integral t -> text
                         | Some s, (Float32T | Float64T) when integral s -> $"{tyv (YPrim target)}({text})"
@@ -172316,6 +172389,10 @@ end
             | YPrim Float64T -> unsupported "f64"
             | YPrim Int64T -> "int64_t"
             | YPrim UInt64T -> "uint64_t"
+            | YPrim Int8T -> "int8_t"
+            | YPrim UInt8T -> "uint8_t"
+            | YPrim Int16T -> "int16_t"
+            | YPrim UInt16T -> "uint16_t"
             | YPrim t -> unsupported $"the primitive {t}"
             | t -> unsupported $"the type {show_ty t}"
         let zero = function
@@ -172323,6 +172400,7 @@ end
             | "uint32_t" -> "0u"
             | "int64_t" -> "0ll"
             | "uint64_t" -> "0ull"
+            | "int8_t" | "uint8_t" | "int16_t" | "uint16_t" -> "0"
             | "bool" -> "false"
             | "float" -> "0.0f"
             | other -> unsupported $"a zero value of {other}"
@@ -172333,6 +172411,10 @@ end
             | LitInt64 x when x = Int64.MinValue -> "INT64_MIN"
             | LitInt64 x -> $"{x}ll"
             | LitUInt64 x -> $"{x}ull"
+            | LitInt8 x -> string x
+            | LitUInt8 x -> string x
+            | LitInt16 x -> string x
+            | LitUInt16 x -> string x
             | LitBool x -> if x then "true" else "false"
             | LitChar x -> string (int x)
             | LitFloat32 x when Single.IsNaN x -> unsupported "NaN"
@@ -172512,7 +172594,7 @@ end
                 let converted =
                     if same then text
                     else
-                        let integral = function Int32T | UInt32T | CharT | Int64T | UInt64T -> true | _ -> false
+                        let integral = function Int8T | UInt8T | Int16T | UInt16T | Int32T | UInt32T | CharT | Int64T | UInt64T -> true | _ -> false
                         match source, target with
                         | Some s, t when integral s && integral t -> $"({tyv (YPrim t)})({text})"
                         | Some s, Float32T when integral s -> $"(float)({text})"

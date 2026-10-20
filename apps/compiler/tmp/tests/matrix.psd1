@@ -1937,6 +1937,8 @@
         'samples/ts_while_loop'
         'samples/typecheck_long_let_body'
         'samples/wgsl_parallel_lanes'
+        'samples/native_closure_union_rec'
+        'samples/rust_static_closure_chain'
     )
     Wasm = @(
         'samples/frontier_gadt_growing_index'
@@ -2593,6 +2595,11 @@
         'samples/union_case_record_field_order'
         'samples/upstream_type_if'
         'samples/zig_exit_wide'
+        'samples/i64_scalar'
+        'samples/ts_int_wrap'
+        'samples/small_int_ops'
+        'samples/small_int_scalar'
+        'samples/package_default_int_i64'
     )
     Kotlin = @(
         'samples/frontier_format_any_union'
@@ -3364,6 +3371,10 @@
         'samples/union_case_record_field_order'
         'samples/upstream_type_if'
         'samples/zig_exit_wide'
+        'samples/method_i8'
+        'samples/small_int_ops'
+        'samples/small_int_scalar'
+        'samples/ts_int_wrap'
     )
     Ebpf = @(
         'samples/backend_smoke'
@@ -3418,6 +3429,9 @@
         'samples/ebpf_t3'
         'samples/ebpf_snot'
         'samples/i64_scalar'
+        'samples/method_i8'
+        'samples/small_int_ops'
+        'samples/small_int_scalar'
     )
     Zig = @(
         'samples/ebpf_key'

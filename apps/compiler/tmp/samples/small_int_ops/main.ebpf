@@ -1,0 +1,220 @@
+#include <stdint.h>
+#include <stdbool.h>
+#define SPIRAL_MAP_CAP 64
+#ifdef __bpf__
+#define SPIRAL_LOOP_CAP 8192
+int32_t spiral_loop_capped;
+#define SPIRAL_LOOP_CAPPED() (spiral_loop_capped = 1)
+#else
+#define SPIRAL_LOOP_CAP 16777216
+#define SPIRAL_LOOP_CAPPED() ((void)0)
+#endif
+static int32_t spiral_map_key[SPIRAL_MAP_CAP];
+static int32_t spiral_map_val[SPIRAL_MAP_CAP];
+static int32_t spiral_map_used[SPIRAL_MAP_CAP];
+static int32_t spiral_map_lookup(int32_t key) {
+    int32_t i;
+    for (i = 0; i < SPIRAL_MAP_CAP; i++) {
+        if (spiral_map_used[i] && spiral_map_key[i] == key) return spiral_map_val[i];
+    }
+    return 0;
+}
+static int32_t spiral_map_update(int32_t key, int32_t val) {
+    int32_t i;
+    int32_t free_slot = -1;
+    for (i = 0; i < SPIRAL_MAP_CAP; i++) {
+        if (spiral_map_used[i] && spiral_map_key[i] == key) { spiral_map_val[i] = val; return 0; }
+        if (!spiral_map_used[i] && free_slot < 0) free_slot = i;
+    }
+    if (free_slot < 0) return 1;
+    spiral_map_used[free_slot] = 1;
+    spiral_map_key[free_slot] = key;
+    spiral_map_val[free_slot] = val;
+    return 0;
+}
+static int32_t spiral_main(void) {
+    int8_t v0 = 0;
+    v0 = 100;
+    int8_t v1 = 0;
+    v1 = 3;
+    int8_t v2 = 0;
+    v2 = (v0 * v1);
+    int8_t v3 = 0;
+    v3 = -8;
+    int8_t v4 = 0;
+    v4 = 2;
+    int8_t v5 = 0;
+    v5 = (v3 / v4);
+    int8_t v6 = 0;
+    v6 = (v3 % v1);
+    int8_t v7 = 0;
+    v7 = (-(v1));
+    int8_t v8 = 0;
+    v8 = (v0 << 1);
+    uint8_t v9 = 0;
+    v9 = 200;
+    uint8_t v10 = 0;
+    v10 = 3;
+    uint8_t v11 = 0;
+    v11 = (v9 / v10);
+    uint8_t v12 = 0;
+    v12 = (v9 % v10);
+    uint8_t v13 = 0;
+    v13 = 15;
+    uint8_t v14 = 0;
+    v14 = (v9 & v13);
+    uint8_t v15 = 0;
+    v15 = (v9 | v13);
+    uint8_t v16 = 0;
+    v16 = (v9 ^ v13);
+    uint8_t v17 = 0;
+    v17 = (~(v13));
+    int16_t v18 = 0;
+    v18 = 20000;
+    int16_t v19 = 0;
+    v19 = 7;
+    int16_t v20 = 0;
+    v20 = (v18 / v19);
+    int16_t v21 = 0;
+    v21 = (v18 % v19);
+    int16_t v22 = 0;
+    v22 = (-(v18));
+    uint16_t v23 = 0;
+    v23 = 40000;
+    uint16_t v24 = 0;
+    v24 = (v23 << 1);
+    bool v25 = false;
+    v25 = (v2 == 44);
+    bool v27 = false;
+    if (v25) {
+        bool v26 = false;
+        v26 = (v5 == -4);
+        v27 = v26;
+    } else {
+        v27 = false;
+    }
+    bool v29 = false;
+    if (v27) {
+        bool v28 = false;
+        v28 = (v6 == -2);
+        v29 = v28;
+    } else {
+        v29 = false;
+    }
+    bool v31 = false;
+    if (v29) {
+        bool v30 = false;
+        v30 = (v7 == -3);
+        v31 = v30;
+    } else {
+        v31 = false;
+    }
+    bool v33 = false;
+    if (v31) {
+        bool v32 = false;
+        v32 = (v8 == -56);
+        v33 = v32;
+    } else {
+        v33 = false;
+    }
+    bool v35 = false;
+    if (v33) {
+        bool v34 = false;
+        v34 = (v11 == 66);
+        v35 = v34;
+    } else {
+        v35 = false;
+    }
+    bool v37 = false;
+    if (v35) {
+        bool v36 = false;
+        v36 = (v12 == 2);
+        v37 = v36;
+    } else {
+        v37 = false;
+    }
+    bool v39 = false;
+    if (v37) {
+        bool v38 = false;
+        v38 = (v14 == 8);
+        v39 = v38;
+    } else {
+        v39 = false;
+    }
+    bool v41 = false;
+    if (v39) {
+        bool v40 = false;
+        v40 = (v15 == 207);
+        v41 = v40;
+    } else {
+        v41 = false;
+    }
+    bool v43 = false;
+    if (v41) {
+        bool v42 = false;
+        v42 = (v16 == 199);
+        v43 = v42;
+    } else {
+        v43 = false;
+    }
+    bool v45 = false;
+    if (v43) {
+        bool v44 = false;
+        v44 = (v17 == 240);
+        v45 = v44;
+    } else {
+        v45 = false;
+    }
+    bool v47 = false;
+    if (v45) {
+        bool v46 = false;
+        v46 = (v20 == 2857);
+        v47 = v46;
+    } else {
+        v47 = false;
+    }
+    bool v49 = false;
+    if (v47) {
+        bool v48 = false;
+        v48 = (v21 == 1);
+        v49 = v48;
+    } else {
+        v49 = false;
+    }
+    bool v51 = false;
+    if (v49) {
+        bool v50 = false;
+        v50 = (v22 == -20000);
+        v51 = v50;
+    } else {
+        v51 = false;
+    }
+    bool v53 = false;
+    if (v51) {
+        bool v52 = false;
+        v52 = (v24 == 14464);
+        v53 = v52;
+    } else {
+        v53 = false;
+    }
+    if (v53) {
+        return 0;
+    } else {
+        return 1;
+    }
+}
+#ifdef __bpf__
+#define SEC(name) __attribute__((section(name), used))
+int32_t spiral_exit_code;
+SEC("socket")
+int spiral_socket(void *context) {
+    int32_t spiral_result = spiral_main();
+    spiral_exit_code = spiral_loop_capped ? -2147483647 : spiral_result;
+    return 0;
+}
+char LICENSE[] SEC("license") = "GPL";
+#else
+int main(void) {
+    return spiral_main();
+}
+#endif

@@ -1,0 +1,653 @@
+import "primitives/core.futil";
+import "primitives/binary_operators.futil";
+import "primitives/memories/comb.futil";
+component spiral_main() -> (out: 32) {
+  cells {
+    spiral_tick = std_reg(1);
+    spiral_ret = std_reg(32);
+    v0 = std_reg(8);
+    v1 = std_reg(8);
+    v2 = std_reg(32);
+    v3 = std_reg(64);
+    v4 = std_reg(8);
+    v5 = std_reg(8);
+    v6 = std_reg(32);
+    v7 = std_reg(32);
+    v8 = std_reg(64);
+    v9 = std_reg(32);
+    op10 = std_sub(32);
+    v10 = std_reg(64);
+    op12 = std_sub(64);
+    v11 = std_reg(8);
+    op14 = std_add(8);
+    v12 = std_reg(1);
+    op16 = std_eq(8);
+    b18 = std_reg(1);
+    v13 = std_reg(32);
+    op20 = std_add(32);
+    v14 = std_reg(1);
+    op22 = std_eq(32);
+    b24 = std_reg(1);
+    v15 = std_reg(32);
+    op26 = std_mult_pipe(32);
+    v16 = std_reg(1);
+    op28 = std_eq(32);
+    b30 = std_reg(1);
+    v17 = std_reg(64);
+    op32 = std_add(64);
+    v18 = std_reg(1);
+    op34 = std_eq(64);
+    b36 = std_reg(1);
+    v19 = std_reg(64);
+    op38 = std_mult_pipe(64);
+    v20 = std_reg(1);
+    op40 = std_eq(64);
+    b42 = std_reg(1);
+    v21 = std_reg(64);
+    op44 = std_div_pipe(64);
+    v22 = std_reg(1);
+    op46 = std_eq(64);
+    b48 = std_reg(1);
+    v23 = std_reg(8);
+    op50 = std_add(8);
+    v24 = std_reg(1);
+    op52 = std_slt(8);
+    b54 = std_reg(1);
+    v25 = std_reg(32);
+    op56 = std_sdiv_pipe(32);
+    v26 = std_reg(1);
+    op58 = std_eq(32);
+    b60 = std_reg(1);
+    v27 = std_reg(32);
+    t62 = std_reg(32);
+    op63 = std_sdiv_pipe(32);
+    t65 = std_reg(32);
+    op66 = std_mult_pipe(32);
+    op68 = std_sub(32);
+    v28 = std_reg(1);
+    op70 = std_eq(32);
+    b72 = std_reg(1);
+    v29 = std_reg(64);
+    t74 = std_reg(64);
+    op75 = std_sdiv_pipe(64);
+    t77 = std_reg(64);
+    op78 = std_mult_pipe(64);
+    op80 = std_sub(64);
+    v30 = std_reg(1);
+    op82 = std_eq(64);
+    b84 = std_reg(1);
+    v31 = std_reg(32);
+    op86 = std_rsh(32);
+    v32 = std_reg(1);
+    op88 = std_eq(32);
+    b90 = std_reg(1);
+    v33 = std_reg(32);
+    op92 = std_srsh(32);
+    v34 = std_reg(1);
+    op94 = std_eq(32);
+    b96 = std_reg(1);
+  }
+  wires {
+    group g1 {
+      v0.in = 8'd250;
+      v0.write_en = 1'd1;
+      g1[done] = v0.done;
+    }
+    group g2 {
+      v1.in = 8'd10;
+      v1.write_en = 1'd1;
+      g2[done] = v1.done;
+    }
+    group g3 {
+      v2.in = 32'd4294967295;
+      v2.write_en = 1'd1;
+      g3[done] = v2.done;
+    }
+    group g4 {
+      v3.in = 64'd18446744073709551615;
+      v3.write_en = 1'd1;
+      g4[done] = v3.done;
+    }
+    group g5 {
+      v4.in = 8'd127;
+      v4.write_en = 1'd1;
+      g5[done] = v4.done;
+    }
+    group g6 {
+      v5.in = 8'd1;
+      v5.write_en = 1'd1;
+      g6[done] = v5.done;
+    }
+    group g7 {
+      v6.in = 32'd7;
+      v6.write_en = 1'd1;
+      g7[done] = v6.done;
+    }
+    group g8 {
+      v7.in = 32'd2;
+      v7.write_en = 1'd1;
+      g8[done] = v7.done;
+    }
+    group g9 {
+      v8.in = 64'd9223372036854775807;
+      v8.write_en = 1'd1;
+      g9[done] = v8.done;
+    }
+    group g11 {
+      op10.left = 32'd0;
+      op10.right = v6.out;
+      v9.in = op10.out;
+      v9.write_en = 1'd1;
+      g11[done] = v9.done;
+    }
+    group g13 {
+      op12.left = 64'd0;
+      op12.right = v8.out;
+      v10.in = op12.out;
+      v10.write_en = 1'd1;
+      g13[done] = v10.done;
+    }
+    group g15 {
+      op14.left = v0.out;
+      op14.right = v1.out;
+      v11.in = op14.out;
+      v11.write_en = 1'd1;
+      g15[done] = v11.done;
+    }
+    group g17 {
+      op16.left = v11.out;
+      op16.right = 8'd4;
+      v12.in = op16.out;
+      v12.write_en = 1'd1;
+      g17[done] = v12.done;
+    }
+    group g19 {
+      b18.in = v12.out;
+      b18.write_en = 1'd1;
+      g19[done] = b18.done;
+    }
+    group g21 {
+      op20.left = v2.out;
+      op20.right = 32'd1;
+      v13.in = op20.out;
+      v13.write_en = 1'd1;
+      g21[done] = v13.done;
+    }
+    group g23 {
+      op22.left = v13.out;
+      op22.right = 32'd0;
+      v14.in = op22.out;
+      v14.write_en = 1'd1;
+      g23[done] = v14.done;
+    }
+    group g25 {
+      b24.in = v14.out;
+      b24.write_en = 1'd1;
+      g25[done] = b24.done;
+    }
+    group g27 {
+      op26.left = v2.out;
+      op26.right = v2.out;
+      op26.go = !op26.done ? 1'd1;
+      v15.in = op26.out;
+      v15.write_en = op26.done;
+      g27[done] = v15.done;
+    }
+    group g29 {
+      op28.left = v15.out;
+      op28.right = 32'd1;
+      v16.in = op28.out;
+      v16.write_en = 1'd1;
+      g29[done] = v16.done;
+    }
+    group g31 {
+      b30.in = v16.out;
+      b30.write_en = 1'd1;
+      g31[done] = b30.done;
+    }
+    group g33 {
+      op32.left = v3.out;
+      op32.right = 64'd1;
+      v17.in = op32.out;
+      v17.write_en = 1'd1;
+      g33[done] = v17.done;
+    }
+    group g35 {
+      op34.left = v17.out;
+      op34.right = 64'd0;
+      v18.in = op34.out;
+      v18.write_en = 1'd1;
+      g35[done] = v18.done;
+    }
+    group g37 {
+      b36.in = v18.out;
+      b36.write_en = 1'd1;
+      g37[done] = b36.done;
+    }
+    group g39 {
+      op38.left = v3.out;
+      op38.right = v3.out;
+      op38.go = !op38.done ? 1'd1;
+      v19.in = op38.out;
+      v19.write_en = op38.done;
+      g39[done] = v19.done;
+    }
+    group g41 {
+      op40.left = v19.out;
+      op40.right = 64'd1;
+      v20.in = op40.out;
+      v20.write_en = 1'd1;
+      g41[done] = v20.done;
+    }
+    group g43 {
+      b42.in = v20.out;
+      b42.write_en = 1'd1;
+      g43[done] = b42.done;
+    }
+    group g45 {
+      op44.left = v3.out;
+      op44.right = 64'd3;
+      op44.go = !op44.done ? 1'd1;
+      v21.in = op44.out_quotient;
+      v21.write_en = op44.done;
+      g45[done] = v21.done;
+    }
+    group g47 {
+      op46.left = v21.out;
+      op46.right = 64'd6148914691236517205;
+      v22.in = op46.out;
+      v22.write_en = 1'd1;
+      g47[done] = v22.done;
+    }
+    group g49 {
+      b48.in = v22.out;
+      b48.write_en = 1'd1;
+      g49[done] = b48.done;
+    }
+    group g51 {
+      op50.left = v4.out;
+      op50.right = v5.out;
+      v23.in = op50.out;
+      v23.write_en = 1'd1;
+      g51[done] = v23.done;
+    }
+    group g53 {
+      op52.left = v23.out;
+      op52.right = 8'd0;
+      v24.in = op52.out;
+      v24.write_en = 1'd1;
+      g53[done] = v24.done;
+    }
+    group g55 {
+      b54.in = v24.out;
+      b54.write_en = 1'd1;
+      g55[done] = b54.done;
+    }
+    group g57 {
+      op56.left = v9.out;
+      op56.right = v7.out;
+      op56.go = !op56.done ? 1'd1;
+      v25.in = op56.out_quotient;
+      v25.write_en = op56.done;
+      g57[done] = v25.done;
+    }
+    group g59 {
+      op58.left = v25.out;
+      op58.right = 32'd4294967293;
+      v26.in = op58.out;
+      v26.write_en = 1'd1;
+      g59[done] = v26.done;
+    }
+    group g61 {
+      b60.in = v26.out;
+      b60.write_en = 1'd1;
+      g61[done] = b60.done;
+    }
+    group g64 {
+      op63.left = v9.out;
+      op63.right = v7.out;
+      op63.go = !op63.done ? 1'd1;
+      t62.in = op63.out_quotient;
+      t62.write_en = op63.done;
+      g64[done] = t62.done;
+    }
+    group g67 {
+      op66.left = t62.out;
+      op66.right = v7.out;
+      op66.go = !op66.done ? 1'd1;
+      t65.in = op66.out;
+      t65.write_en = op66.done;
+      g67[done] = t65.done;
+    }
+    group g69 {
+      op68.left = v9.out;
+      op68.right = t65.out;
+      v27.in = op68.out;
+      v27.write_en = 1'd1;
+      g69[done] = v27.done;
+    }
+    group g71 {
+      op70.left = v27.out;
+      op70.right = 32'd4294967295;
+      v28.in = op70.out;
+      v28.write_en = 1'd1;
+      g71[done] = v28.done;
+    }
+    group g73 {
+      b72.in = v28.out;
+      b72.write_en = 1'd1;
+      g73[done] = b72.done;
+    }
+    group g76 {
+      op75.left = v10.out;
+      op75.right = 64'd10;
+      op75.go = !op75.done ? 1'd1;
+      t74.in = op75.out_quotient;
+      t74.write_en = op75.done;
+      g76[done] = t74.done;
+    }
+    group g79 {
+      op78.left = t74.out;
+      op78.right = 64'd10;
+      op78.go = !op78.done ? 1'd1;
+      t77.in = op78.out;
+      t77.write_en = op78.done;
+      g79[done] = t77.done;
+    }
+    group g81 {
+      op80.left = v10.out;
+      op80.right = t77.out;
+      v29.in = op80.out;
+      v29.write_en = 1'd1;
+      g81[done] = v29.done;
+    }
+    group g83 {
+      op82.left = v29.out;
+      op82.right = 64'd18446744073709551609;
+      v30.in = op82.out;
+      v30.write_en = 1'd1;
+      g83[done] = v30.done;
+    }
+    group g85 {
+      b84.in = v30.out;
+      b84.write_en = 1'd1;
+      g85[done] = b84.done;
+    }
+    group g87 {
+      op86.left = v2.out;
+      op86.right = 32'd28;
+      v31.in = op86.out;
+      v31.write_en = 1'd1;
+      g87[done] = v31.done;
+    }
+    group g89 {
+      op88.left = v31.out;
+      op88.right = 32'd15;
+      v32.in = op88.out;
+      v32.write_en = 1'd1;
+      g89[done] = v32.done;
+    }
+    group g91 {
+      b90.in = v32.out;
+      b90.write_en = 1'd1;
+      g91[done] = b90.done;
+    }
+    group g93 {
+      op92.left = v9.out;
+      op92.right = 32'd1;
+      v33.in = op92.out;
+      v33.write_en = 1'd1;
+      g93[done] = v33.done;
+    }
+    group g95 {
+      op94.left = v33.out;
+      op94.right = 32'd4294967292;
+      v34.in = op94.out;
+      v34.write_en = 1'd1;
+      g95[done] = v34.done;
+    }
+    group g97 {
+      b96.in = v34.out;
+      b96.write_en = 1'd1;
+      g97[done] = b96.done;
+    }
+    group g98 {
+      spiral_ret.in = 32'd0;
+      spiral_ret.write_en = 1'd1;
+      g98[done] = spiral_ret.done;
+    }
+    group g99 {
+      spiral_ret.in = 32'd12;
+      spiral_ret.write_en = 1'd1;
+      g99[done] = spiral_ret.done;
+    }
+    group g100 {
+      spiral_ret.in = 32'd11;
+      spiral_ret.write_en = 1'd1;
+      g100[done] = spiral_ret.done;
+    }
+    group g101 {
+      spiral_ret.in = 32'd10;
+      spiral_ret.write_en = 1'd1;
+      g101[done] = spiral_ret.done;
+    }
+    group g102 {
+      spiral_ret.in = 32'd9;
+      spiral_ret.write_en = 1'd1;
+      g102[done] = spiral_ret.done;
+    }
+    group g103 {
+      spiral_ret.in = 32'd8;
+      spiral_ret.write_en = 1'd1;
+      g103[done] = spiral_ret.done;
+    }
+    group g104 {
+      spiral_ret.in = 32'd7;
+      spiral_ret.write_en = 1'd1;
+      g104[done] = spiral_ret.done;
+    }
+    group g105 {
+      spiral_ret.in = 32'd6;
+      spiral_ret.write_en = 1'd1;
+      g105[done] = spiral_ret.done;
+    }
+    group g106 {
+      spiral_ret.in = 32'd5;
+      spiral_ret.write_en = 1'd1;
+      g106[done] = spiral_ret.done;
+    }
+    group g107 {
+      spiral_ret.in = 32'd4;
+      spiral_ret.write_en = 1'd1;
+      g107[done] = spiral_ret.done;
+    }
+    group g108 {
+      spiral_ret.in = 32'd3;
+      spiral_ret.write_en = 1'd1;
+      g108[done] = spiral_ret.done;
+    }
+    group g109 {
+      spiral_ret.in = 32'd2;
+      spiral_ret.write_en = 1'd1;
+      g109[done] = spiral_ret.done;
+    }
+    group g110 {
+      spiral_ret.in = 32'd1;
+      spiral_ret.write_en = 1'd1;
+      g110[done] = spiral_ret.done;
+    }
+    out = spiral_ret.out;
+  }
+  control {
+    seq {
+      g1;
+      g2;
+      g3;
+      g4;
+      g5;
+      g6;
+      g7;
+      g8;
+      g9;
+      g11;
+      g13;
+      g15;
+      g17;
+      g19;
+      if b18.out {
+        seq {
+          g21;
+          g23;
+          g25;
+          if b24.out {
+            seq {
+              g27;
+              g29;
+              g31;
+              if b30.out {
+                seq {
+                  g33;
+                  g35;
+                  g37;
+                  if b36.out {
+                    seq {
+                      g39;
+                      g41;
+                      g43;
+                      if b42.out {
+                        seq {
+                          g45;
+                          g47;
+                          g49;
+                          if b48.out {
+                            seq {
+                              g51;
+                              g53;
+                              g55;
+                              if b54.out {
+                                seq {
+                                  g57;
+                                  g59;
+                                  g61;
+                                  if b60.out {
+                                    seq {
+                                      g64;
+                                      g67;
+                                      g69;
+                                      g71;
+                                      g73;
+                                      if b72.out {
+                                        seq {
+                                          g76;
+                                          g79;
+                                          g81;
+                                          g83;
+                                          g85;
+                                          if b84.out {
+                                            seq {
+                                              g87;
+                                              g89;
+                                              g91;
+                                              if b90.out {
+                                                seq {
+                                                  g93;
+                                                  g95;
+                                                  g97;
+                                                  if b96.out {
+                                                    seq {
+                                                      g98;
+                                                    }
+                                                  } else {
+                                                    seq {
+                                                      g99;
+                                                    }
+                                                  };
+                                                }
+                                              } else {
+                                                seq {
+                                                  g100;
+                                                }
+                                              };
+                                            }
+                                          } else {
+                                            seq {
+                                              g101;
+                                            }
+                                          };
+                                        }
+                                      } else {
+                                        seq {
+                                          g102;
+                                        }
+                                      };
+                                    }
+                                  } else {
+                                    seq {
+                                      g103;
+                                    }
+                                  };
+                                }
+                              } else {
+                                seq {
+                                  g104;
+                                }
+                              };
+                            }
+                          } else {
+                            seq {
+                              g105;
+                            }
+                          };
+                        }
+                      } else {
+                        seq {
+                          g106;
+                        }
+                      };
+                    }
+                  } else {
+                    seq {
+                      g107;
+                    }
+                  };
+                }
+              } else {
+                seq {
+                  g108;
+                }
+              };
+            }
+          } else {
+            seq {
+              g109;
+            }
+          };
+        }
+      } else {
+        seq {
+          g110;
+        }
+      };
+    }
+  }
+}
+component main() -> () {
+  cells {
+    @external spiral_io = comb_mem_d1(32, 1, 1);
+    entry = spiral_main();
+  }
+  wires {
+    group spiral_store {
+      spiral_io.addr0 = 1'd0;
+      spiral_io.write_en = 1'd1;
+      spiral_io.write_data = entry.out;
+      spiral_store[done] = spiral_io.done;
+    }
+  }
+  control {
+    seq {
+      invoke entry()();
+      spiral_store;
+    }
+  }
+}
