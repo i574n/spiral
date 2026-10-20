@@ -14,6 +14,15 @@ defmodule Spiral.Cells.AcceptTest do
       one () |> _assert_eq 2i32
   """
 
+  test "accept_sites names the line it rewrote, before and after" do
+    dir = Spiral.Cells.TestHelpers.tmp_dir!("accept_sites")
+    path = Path.join(dir, "sites.spi")
+    File.write!(path, @spi)
+    assert [{"one", {:ok, "|> _assert_eq 2i32", "|> _assert_eq 1i32"}}] =
+             Accept.accept_sites(path, [{"one", "__assert_eq { actual = 1; expected = 2 }"}])
+    assert File.read!(path) == String.replace(@spi, "    |> _assert_eq 2i32", "    |> _assert_eq 1i32")
+  end
+
   test "a printed mismatch rewrites only its own test's literal, keeping the suffix" do
     assert {:ok, "1", "2"} = Accept.mismatch("cell exited 101\n__assert_eq { actual = 1; expected = 2 }\n")
     assert Accept.mismatch("cell exited 1") == :none
@@ -82,6 +91,24 @@ defmodule Spiral.Cells.AcceptTest do
     assert {:ok, %{"accepted" => 1, "failed" => 0}} = Notebook.run_report(path, [accept: true] ++ stubs)
     assert File.read!(path) =~ "    5i32 |> _assert_eq 5i32\n    3i32 |> _assert_eq 3i32\n    8i32 |> _assert_eq 8i32\n"
     assert {:ok, %{"passed" => 1}} = Notebook.run_report(path, stubs)
+  end
+
+  test "a flat tuple of plain literals is rewritten element by element, keeping each suffix" do
+    spi = """
+    test claims =
+        (a, b, c, d) |> _assert_eq (0i32, 0u32, "x, y", false)
+    """
+
+    message = "__assert_eq { actual = (3, 4, \"x, z\", true); expected = (0, 0, \"x, y\", false) }\n"
+    assert {:ok, actual, expected} = Accept.mismatch(message)
+    assert {:ok, text} = Accept.rewrite(spi, "claims", expected, actual)
+    assert text == String.replace(spi, "(0i32, 0u32, \"x, y\", false)", "(3i32, 4u32, \"x, z\", true)")
+
+    assert {:error, "the failing _assert_eq (number 1 in the test body) is not the tuple (0, 1, \"x, y\", false)"} =
+             Accept.rewrite(spi, "claims", "(0, 1, \"x, y\", false)", actual)
+
+    assert {:error, "the actual value ((1, 2), 3) is not a flat tuple of plain literals" <> _} =
+             Accept.rewrite(spi, "claims", expected, "((1, 2), 3)")
   end
 
   test "a literal that a loop asserts several times is refused, never guessed" do

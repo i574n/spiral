@@ -66,15 +66,18 @@ partial def method3 (p0 : Int32) : IO Int32 := do
         return (← method4 v0)
     else
         return (1 : Int32)
-partial def method7 (p0 : String) : IO Bool := do
+partial def method7 (p0 : String) (p1 : String) : IO Bool := do
     let mut v0 : String := p0
-    return true
+    let mut v1 : String := p1
+    let mut v2 : Bool := default
+    v2 := (v0 == v1)
+    return v2
 partial def method2 (p0 : Int32) : IO Int32 := do
     let mut v0 : Int32 := p0
     let mut v1 : String := default
     let mut v2 : Bool := default
     v1 := "spiral"
-    v2 := (← method7 v1)
+    v2 := (← method7 v1 v1)
     if v2 then
         return (← method3 v0)
     else

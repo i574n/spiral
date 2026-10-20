@@ -50,8 +50,9 @@ function method5(v0, v1, v2)
     end
 end
 
-function method7(v0)
-    return true
+function method7(v0, v1)
+    local v2 = v0 == v1
+    return v2
 end
 
 function method9(v0)
@@ -89,7 +90,7 @@ end
 
 function method6(v0)
     local v1 = "spiral"
-    local v2 = method7(v1)
+    local v2 = method7(v1, v1)
     if v2 then
         return method8(v0)
     else

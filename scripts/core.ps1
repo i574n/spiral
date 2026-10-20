@@ -375,7 +375,13 @@ function Invoke-PwshNotebook {
             if (Test-Path $dir) { $env:PATH = "$dir$([IO.Path]::PathSeparator)$env:PATH" }
         }
         if (Search-Command "mix") {
-            { mix spiral.html $ipynb } | Invoke-Block -Location (Join-Path $PSScriptRoot "../apps/cells") -OnError Continue
+            $cellsDir = ResolveLink (Join-Path $PSScriptRoot "../apps/cells")
+            if (-not (Test-Path (Join-Path $cellsDir "deps/kino/mix.exs"))) {
+                { mix local.hex --force --if-missing } | Invoke-Block -Location $cellsDir -OnError Continue
+                { mix local.rebar --force --if-missing } | Invoke-Block -Location $cellsDir -OnError Continue
+                { mix deps.get } | Invoke-Block -Location $cellsDir -OnError Continue
+            }
+            { mix spiral.html $ipynb } | Invoke-Block -Location $cellsDir -OnError Continue
         } else {
             Write-Output "spiral/scripts/core.ps1/Invoke-PwshNotebook / no mix: $ipynb written, no html"
         }

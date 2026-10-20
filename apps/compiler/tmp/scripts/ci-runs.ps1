@@ -15,3 +15,9 @@ if (-not (Test-Path $target)) {
 }
 "ci run $RunId -> $target"
 Get-ChildItem $target -Recurse -Filter results.tsv | ForEach-Object { "  $($_.Directory.FullName) ($(@(Get-Content $_.FullName).Count - 1) rows)" }
+$outputDiff = Get-ChildItem $target -Recurse -Filter samples-output.diff | Select-Object -First 1
+if ($outputDiff) {
+    $changed = @(Select-String -LiteralPath $outputDiff.FullName -Pattern '^diff --git a/(\S+)' | ForEach-Object { $_.Matches[0].Groups[1].Value })
+    "  $($outputDiff.FullName): $($changed.Count) committed outputs differ on the runner"
+    $changed | Group-Object { [IO.Path]::GetExtension($_) } | Sort-Object Count -Descending | ForEach-Object { "    $($_.Name) $($_.Count)" }
+}

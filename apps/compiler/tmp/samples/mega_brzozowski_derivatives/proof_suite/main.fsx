@@ -2149,86 +2149,69 @@ and regex_position_count_102 (v0 : UH2) : UH8 =
         UH8_StateBudgetZero
     | UH2_RegexStar(v16) -> (* RegexStar *)
         regex_position_count_102(v16)
-and state_budget_add_105 (v0 : UH8) : UH8 =
-    match v0 with
-    | UH8_StateBudgetSucc(v1) -> (* StateBudgetSucc *)
-        let v2 : UH8 = state_budget_add_103(v1, v0)
-        UH8_StateBudgetSucc(v2)
-    | UH8_StateBudgetZero -> (* StateBudgetZero *)
-        v0
 and state_budget_pow2_104 (v0 : UH8) : UH8 =
     match v0 with
     | UH8_StateBudgetSucc(v3) -> (* StateBudgetSucc *)
         let v4 : UH8 = state_budget_pow2_104(v3)
-        state_budget_add_105(v4)
+        state_budget_add_103(v4, v4)
     | UH8_StateBudgetZero -> (* StateBudgetZero *)
         let v1 : UH8 = UH8_StateBudgetZero
         UH8_StateBudgetSucc(v1)
-and dfa_transitions_from_state_107 (v0 : UH2, v1 : UH4) : UH13 =
+and dfa_transitions_from_state_106 (v0 : UH2, v1 : UH4) : UH13 =
     match v1 with
     | UH4_SymbolListCons(v3, v4) -> (* SymbolListCons *)
         let v5 : UH2 = canonical_derivative_3(v0, v3)
-        let v6 : UH13 = dfa_transitions_from_state_107(v0, v4)
+        let v6 : UH13 = dfa_transitions_from_state_106(v0, v4)
         UH13_DfaTransitionCons(v0, v3, v5, v6)
     | UH4_SymbolListNil -> (* SymbolListNil *)
         UH13_DfaTransitionNil
-and dfa_transition_append_108 (v0 : UH13, v1 : UH13) : UH13 =
+and dfa_transition_append_107 (v0 : UH13, v1 : UH13) : UH13 =
     match v0 with
     | UH13_DfaTransitionCons(v2, v3, v4, v5) -> (* DfaTransitionCons *)
-        let v6 : UH13 = dfa_transition_append_108(v5, v1)
+        let v6 : UH13 = dfa_transition_append_107(v5, v1)
         UH13_DfaTransitionCons(v2, v3, v4, v6)
     | UH13_DfaTransitionNil -> (* DfaTransitionNil *)
         v1
-and dfa_transition_table_106 (v0 : UH9, v1 : UH4) : UH13 =
+and dfa_transition_table_105 (v0 : UH9, v1 : UH4) : UH13 =
     match v0 with
     | UH9_RegexListCons(v3, v4) -> (* RegexListCons *)
-        let v5 : UH13 = dfa_transitions_from_state_107(v3, v1)
-        let v6 : UH13 = dfa_transition_table_106(v4, v1)
-        dfa_transition_append_108(v5, v6)
+        let v5 : UH13 = dfa_transitions_from_state_106(v3, v1)
+        let v6 : UH13 = dfa_transition_table_105(v4, v1)
+        dfa_transition_append_107(v5, v6)
     | UH9_RegexListNil -> (* RegexListNil *)
         UH13_DfaTransitionNil
-and dfa_state_closed_110 (v0 : UH2, v1 : UH4, v2 : UH9) : bool =
+and dfa_state_closed_109 (v0 : UH2, v1 : UH4, v2 : UH9) : bool =
     match v1 with
     | UH4_SymbolListCons(v3, v4) -> (* SymbolListCons *)
         let v5 : UH2 = canonical_derivative_3(v0, v3)
         let v6 : bool = regex_list_contains_56(v5, v2)
         if v6 then
-            dfa_state_closed_110(v0, v4, v2)
+            dfa_state_closed_109(v0, v4, v2)
         else
             false
     | UH4_SymbolListNil -> (* SymbolListNil *)
         true
-and dfa_closure_closed_111 (v0 : UH9, v1 : UH4, v2 : UH9) : bool =
+and dfa_closure_closed_108 (v0 : UH9, v1 : UH4, v2 : UH9) : bool =
     match v0 with
     | UH9_RegexListCons(v3, v4) -> (* RegexListCons *)
-        let v5 : bool = dfa_state_closed_110(v3, v1, v2)
+        let v5 : bool = dfa_state_closed_109(v3, v1, v2)
         if v5 then
-            dfa_closure_closed_111(v4, v1, v2)
+            dfa_closure_closed_108(v4, v1, v2)
         else
             false
     | UH9_RegexListNil -> (* RegexListNil *)
         true
-and dfa_closure_closed_109 (v0 : UH9, v1 : UH4) : bool =
-    match v0 with
-    | UH9_RegexListCons(v2, v3) -> (* RegexListCons *)
-        let v4 : bool = dfa_state_closed_110(v2, v1, v0)
-        if v4 then
-            dfa_closure_closed_111(v3, v1, v0)
-        else
-            false
-    | UH9_RegexListNil -> (* RegexListNil *)
-        true
-and regex_list_distinct_112 (v0 : UH9) : bool =
+and regex_list_distinct_110 (v0 : UH9) : bool =
     match v0 with
     | UH9_RegexListCons(v1, v2) -> (* RegexListCons *)
         let v3 : bool = regex_list_contains_56(v1, v2)
         if v3 then
             false
         else
-            regex_list_distinct_112(v2)
+            regex_list_distinct_110(v2)
     | UH9_RegexListNil -> (* RegexListNil *)
         true
-and dfa_transition_lookup_value_115 (v0 : UH2, v1 : US0, v2 : UH13) : US7 =
+and dfa_transition_lookup_value_113 (v0 : UH2, v1 : US0, v2 : UH13) : US7 =
     match v2 with
     | UH13_DfaTransitionCons(v4, v5, v6, v7) -> (* DfaTransitionCons *)
         let v8 : bool = regex_equal_9(v0, v4)
@@ -2256,38 +2239,38 @@ and dfa_transition_lookup_value_115 (v0 : UH2, v1 : US0, v2 : UH13) : US7 =
             if v19 then
                 US7_DfaTransitionFound(v6)
             else
-                dfa_transition_lookup_value_115(v0, v1, v7)
+                dfa_transition_lookup_value_113(v0, v1, v7)
         else
-            dfa_transition_lookup_value_115(v0, v1, v7)
+            dfa_transition_lookup_value_113(v0, v1, v7)
     | UH13_DfaTransitionNil -> (* DfaTransitionNil *)
         US7_DfaTransitionMissing
-and dfa_state_transition_total_114 (v0 : UH2, v1 : UH4, v2 : UH13) : bool =
+and dfa_state_transition_total_112 (v0 : UH2, v1 : UH4, v2 : UH13) : bool =
     match v1 with
     | UH4_SymbolListCons(v3, v4) -> (* SymbolListCons *)
-        let v5 : US7 = dfa_transition_lookup_value_115(v0, v3, v2)
+        let v5 : US7 = dfa_transition_lookup_value_113(v0, v3, v2)
         match v5 with
         | US7_DfaTransitionFound(v6) -> (* DfaTransitionFound *)
             let v7 : UH2 = canonical_derivative_3(v0, v3)
             let v8 : bool = regex_equal_9(v6, v7)
             if v8 then
-                dfa_state_transition_total_114(v0, v4, v2)
+                dfa_state_transition_total_112(v0, v4, v2)
             else
                 false
         | US7_DfaTransitionMissing -> (* DfaTransitionMissing *)
             false
     | UH4_SymbolListNil -> (* SymbolListNil *)
         true
-and dfa_transition_table_total_113 (v0 : UH9, v1 : UH4, v2 : UH13) : bool =
+and dfa_transition_table_total_111 (v0 : UH9, v1 : UH4, v2 : UH13) : bool =
     match v0 with
     | UH9_RegexListCons(v3, v4) -> (* RegexListCons *)
-        let v5 : bool = dfa_state_transition_total_114(v3, v1, v2)
+        let v5 : bool = dfa_state_transition_total_112(v3, v1, v2)
         if v5 then
-            dfa_transition_table_total_113(v4, v1, v2)
+            dfa_transition_table_total_111(v4, v1, v2)
         else
             false
     | UH9_RegexListNil -> (* RegexListNil *)
         true
-and dfa_transition_key_present_117 (v0 : UH2, v1 : US0, v2 : UH13) : bool =
+and dfa_transition_key_present_115 (v0 : UH2, v1 : US0, v2 : UH13) : bool =
     match v2 with
     | UH13_DfaTransitionCons(v3, v4, v5, v6) -> (* DfaTransitionCons *)
         let v7 : bool = regex_equal_9(v0, v3)
@@ -2315,71 +2298,43 @@ and dfa_transition_key_present_117 (v0 : UH2, v1 : US0, v2 : UH13) : bool =
             if v18 then
                 true
             else
-                dfa_transition_key_present_117(v0, v1, v6)
+                dfa_transition_key_present_115(v0, v1, v6)
         else
-            dfa_transition_key_present_117(v0, v1, v6)
+            dfa_transition_key_present_115(v0, v1, v6)
     | UH13_DfaTransitionNil -> (* DfaTransitionNil *)
         false
-and dfa_transition_keys_distinct_116 (v0 : UH13) : bool =
+and dfa_transition_keys_distinct_114 (v0 : UH13) : bool =
     match v0 with
     | UH13_DfaTransitionCons(v1, v2, v3, v4) -> (* DfaTransitionCons *)
-        let v5 : bool = dfa_transition_key_present_117(v1, v2, v4)
+        let v5 : bool = dfa_transition_key_present_115(v1, v2, v4)
         if v5 then
             false
         else
-            dfa_transition_keys_distinct_116(v4)
+            dfa_transition_keys_distinct_114(v4)
     | UH13_DfaTransitionNil -> (* DfaTransitionNil *)
         true
-and regex_list_within_budget_118 (v0 : UH9, v1 : UH8) : bool =
+and regex_list_within_budget_116 (v0 : UH9, v1 : UH8) : bool =
     match v0 with
     | UH9_RegexListCons(v2, v3) -> (* RegexListCons *)
         match v1 with
         | UH8_StateBudgetSucc(v4) -> (* StateBudgetSucc *)
-            regex_list_within_budget_118(v3, v4)
+            regex_list_within_budget_116(v3, v4)
         | UH8_StateBudgetZero -> (* StateBudgetZero *)
             false
     | UH9_RegexListNil -> (* RegexListNil *)
         true
-and dfa_states_normalized_119 (v0 : UH9) : bool =
+and dfa_states_normalized_117 (v0 : UH9) : bool =
     match v0 with
     | UH9_RegexListCons(v1, v2) -> (* RegexListCons *)
         let v3 : UH2 = normalize_4(v1)
         let v4 : bool = regex_equal_9(v1, v3)
         if v4 then
-            dfa_states_normalized_119(v2)
+            dfa_states_normalized_117(v2)
         else
             false
     | UH9_RegexListNil -> (* RegexListNil *)
         true
-and regex_compare_121 (v0 : UH2) : US3 =
-    match v0 with
-    | UH2_RegexAlt(v15, v16) -> (* RegexAlt *)
-        let v17 : US3 = regex_compare_121(v15)
-        match v17 with
-        | US3_SymbolSame -> (* SymbolSame *)
-            regex_compare_121(v16)
-        | _ ->
-            v17
-    | UH2_RegexCat(v8, v9) -> (* RegexCat *)
-        let v10 : US3 = regex_compare_121(v8)
-        match v10 with
-        | US3_SymbolSame -> (* SymbolSame *)
-            regex_compare_121(v9)
-        | _ ->
-            v10
-    | UH2_RegexChar(v3) -> (* RegexChar *)
-        match v3 with
-        | US0_BitOne -> (* BitOne *)
-            US3_SymbolSame
-        | US0_BitZero -> (* BitZero *)
-            US3_SymbolSame
-    | UH2_RegexEmpty -> (* RegexEmpty *)
-        US3_SymbolSame
-    | UH2_RegexEpsilon -> (* RegexEpsilon *)
-        US3_SymbolSame
-    | UH2_RegexStar(v13) -> (* RegexStar *)
-        regex_compare_121(v13)
-and regex_compare_against_122 (v0 : UH2, v1 : UH9) : bool =
+and regex_compare_against_119 (v0 : UH2, v1 : UH9) : bool =
     match v1 with
     | UH9_RegexListCons(v2, v3) -> (* RegexListCons *)
         let v4 : US3 = regex_compare_7(v0, v2)
@@ -2405,35 +2360,35 @@ and regex_compare_against_122 (v0 : UH2, v1 : UH9) : bool =
                 | _ ->
                     false
         if v12 then
-            regex_compare_against_122(v0, v3)
+            regex_compare_against_119(v0, v3)
         else
             false
     | UH9_RegexListNil -> (* RegexListNil *)
         true
-and regex_order_laws_120 (v0 : UH9) : bool =
+and regex_order_laws_118 (v0 : UH9) : bool =
     match v0 with
     | UH9_RegexListCons(v1, v2) -> (* RegexListCons *)
-        let v3 : US3 = regex_compare_121(v1)
+        let v3 : US3 = regex_compare_7(v1, v1)
         match v3 with
         | US3_SymbolSame -> (* SymbolSame *)
-            let v4 : bool = regex_compare_against_122(v1, v2)
+            let v4 : bool = regex_compare_against_119(v1, v2)
             if v4 then
-                regex_order_laws_120(v2)
+                regex_order_laws_118(v2)
             else
                 false
         | _ ->
             false
     | UH9_RegexListNil -> (* RegexListNil *)
         true
-and regex_position_count_123 (v0 : UH3) : UH8 =
+and regex_position_count_120 (v0 : UH3) : UH8 =
     match v0 with
     | UH3_RegexAlt(v6, v7) -> (* RegexAlt *)
-        let v8 : UH8 = regex_position_count_123(v6)
-        let v9 : UH8 = regex_position_count_123(v7)
+        let v8 : UH8 = regex_position_count_120(v6)
+        let v9 : UH8 = regex_position_count_120(v7)
         state_budget_add_103(v8, v9)
     | UH3_RegexCat(v11, v12) -> (* RegexCat *)
-        let v13 : UH8 = regex_position_count_123(v11)
-        let v14 : UH8 = regex_position_count_123(v12)
+        let v13 : UH8 = regex_position_count_120(v11)
+        let v14 : UH8 = regex_position_count_120(v12)
         state_budget_add_103(v13, v14)
     | UH3_RegexChar(v3) -> (* RegexChar *)
         let v4 : UH8 = UH8_StateBudgetZero
@@ -2443,124 +2398,114 @@ and regex_position_count_123 (v0 : UH3) : UH8 =
     | UH3_RegexEpsilon -> (* RegexEpsilon *)
         UH8_StateBudgetZero
     | UH3_RegexStar(v16) -> (* RegexStar *)
-        regex_position_count_123(v16)
-and dfa_closure_loop_bounded_124 (v0 : UH6, v1 : UH8, v2 : UH10, v3 : UH10) : US8 =
+        regex_position_count_120(v16)
+and dfa_closure_loop_bounded_121 (v0 : UH6, v1 : UH8, v2 : UH10, v3 : UH10) : US8 =
     match v3 with
     | UH10_RegexListCons(v5, v6) -> (* RegexListCons *)
         match v1 with
         | UH8_StateBudgetSucc(v8) -> (* StateBudgetSucc *)
             let struct (v9 : UH10, v10 : UH10) = dfa_enqueue_symbols_85(v5, v0, v2, v6)
-            dfa_closure_loop_bounded_124(v0, v8, v9, v10)
+            dfa_closure_loop_bounded_121(v0, v8, v9, v10)
         | UH8_StateBudgetZero -> (* StateBudgetZero *)
             US8_DfaClosureBudgetExceeded(v2)
     | UH10_RegexListNil -> (* RegexListNil *)
         US8_DfaClosureComplete(v2)
-and dfa_transitions_from_state_126 (v0 : UH3, v1 : UH6) : UH14 =
+and dfa_transitions_from_state_123 (v0 : UH3, v1 : UH6) : UH14 =
     match v1 with
     | UH6_SymbolListCons(v3, v4) -> (* SymbolListCons *)
         let v5 : UH3 = canonical_derivative_13(v0, v3)
-        let v6 : UH14 = dfa_transitions_from_state_126(v0, v4)
+        let v6 : UH14 = dfa_transitions_from_state_123(v0, v4)
         UH14_DfaTransitionCons(v0, v3, v5, v6)
     | UH6_SymbolListNil -> (* SymbolListNil *)
         UH14_DfaTransitionNil
-and dfa_transition_append_127 (v0 : UH14, v1 : UH14) : UH14 =
+and dfa_transition_append_124 (v0 : UH14, v1 : UH14) : UH14 =
     match v0 with
     | UH14_DfaTransitionCons(v2, v3, v4, v5) -> (* DfaTransitionCons *)
-        let v6 : UH14 = dfa_transition_append_127(v5, v1)
+        let v6 : UH14 = dfa_transition_append_124(v5, v1)
         UH14_DfaTransitionCons(v2, v3, v4, v6)
     | UH14_DfaTransitionNil -> (* DfaTransitionNil *)
         v1
-and dfa_transition_table_125 (v0 : UH10, v1 : UH6) : UH14 =
+and dfa_transition_table_122 (v0 : UH10, v1 : UH6) : UH14 =
     match v0 with
     | UH10_RegexListCons(v3, v4) -> (* RegexListCons *)
-        let v5 : UH14 = dfa_transitions_from_state_126(v3, v1)
-        let v6 : UH14 = dfa_transition_table_125(v4, v1)
-        dfa_transition_append_127(v5, v6)
+        let v5 : UH14 = dfa_transitions_from_state_123(v3, v1)
+        let v6 : UH14 = dfa_transition_table_122(v4, v1)
+        dfa_transition_append_124(v5, v6)
     | UH10_RegexListNil -> (* RegexListNil *)
         UH14_DfaTransitionNil
-and dfa_state_closed_129 (v0 : UH3, v1 : UH6, v2 : UH10) : bool =
+and dfa_state_closed_126 (v0 : UH3, v1 : UH6, v2 : UH10) : bool =
     match v1 with
     | UH6_SymbolListCons(v3, v4) -> (* SymbolListCons *)
         let v5 : UH3 = canonical_derivative_13(v0, v3)
         let v6 : bool = regex_list_contains_86(v5, v2)
         if v6 then
-            dfa_state_closed_129(v0, v4, v2)
+            dfa_state_closed_126(v0, v4, v2)
         else
             false
     | UH6_SymbolListNil -> (* SymbolListNil *)
         true
-and dfa_closure_closed_130 (v0 : UH10, v1 : UH6, v2 : UH10) : bool =
+and dfa_closure_closed_125 (v0 : UH10, v1 : UH6, v2 : UH10) : bool =
     match v0 with
     | UH10_RegexListCons(v3, v4) -> (* RegexListCons *)
-        let v5 : bool = dfa_state_closed_129(v3, v1, v2)
+        let v5 : bool = dfa_state_closed_126(v3, v1, v2)
         if v5 then
-            dfa_closure_closed_130(v4, v1, v2)
+            dfa_closure_closed_125(v4, v1, v2)
         else
             false
     | UH10_RegexListNil -> (* RegexListNil *)
         true
-and dfa_closure_closed_128 (v0 : UH10, v1 : UH6) : bool =
-    match v0 with
-    | UH10_RegexListCons(v2, v3) -> (* RegexListCons *)
-        let v4 : bool = dfa_state_closed_129(v2, v1, v0)
-        if v4 then
-            dfa_closure_closed_130(v3, v1, v0)
-        else
-            false
-    | UH10_RegexListNil -> (* RegexListNil *)
-        true
-and regex_list_distinct_131 (v0 : UH10) : bool =
+and regex_list_distinct_127 (v0 : UH10) : bool =
     match v0 with
     | UH10_RegexListCons(v1, v2) -> (* RegexListCons *)
         let v3 : bool = regex_list_contains_86(v1, v2)
         if v3 then
             false
         else
-            regex_list_distinct_131(v2)
+            regex_list_distinct_127(v2)
     | UH10_RegexListNil -> (* RegexListNil *)
         true
-and input_singletons_from_symbols_133 (v0 : UH6) : UH7 =
+and input_singletons_from_symbols_129 (v0 : UH6) : UH7 =
     match v0 with
     | UH6_SymbolListCons(v2, v3) -> (* SymbolListCons *)
-        let v4 : UH7 = input_singletons_from_symbols_133(v3)
+        let v4 : UH7 = input_singletons_from_symbols_129(v3)
         let v5 : UH1 = UH1_InputEmpty
         let v6 : UH1 = UH1_InputCons(v2, v5)
         UH7_InputListCons(v6, v4)
     | UH6_SymbolListNil -> (* SymbolListNil *)
         UH7_InputListNil
-and input_prepend_symbol_to_corpus_135 (v0 : US1, v1 : UH7) : UH7 =
+and input_prepend_symbol_to_corpus_131 (v0 : US1, v1 : UH7) : UH7 =
     match v1 with
     | UH7_InputListCons(v3, v4) -> (* InputListCons *)
-        let v5 : UH7 = input_prepend_symbol_to_corpus_135(v0, v4)
+        let v5 : UH7 = input_prepend_symbol_to_corpus_131(v0, v4)
         let v6 : UH1 = UH1_InputCons(v0, v3)
         UH7_InputListCons(v6, v5)
     | UH7_InputListNil -> (* InputListNil *)
         UH7_InputListNil
-and input_prepend_symbols_to_corpus_134 (v0 : UH6, v1 : UH7) : UH7 =
+and input_prepend_symbols_to_corpus_130 (v0 : UH6, v1 : UH7) : UH7 =
     match v0 with
     | UH6_SymbolListCons(v3, v4) -> (* SymbolListCons *)
-        let v5 : UH7 = input_prepend_symbol_to_corpus_135(v3, v1)
-        let v6 : UH7 = input_prepend_symbols_to_corpus_134(v4, v1)
+        let v5 : UH7 = input_prepend_symbol_to_corpus_131(v3, v1)
+        let v6 : UH7 = input_prepend_symbols_to_corpus_130(v4, v1)
         input_list_append_42(v5, v6)
     | UH6_SymbolListNil -> (* SymbolListNil *)
         UH7_InputListNil
-and dfa_formula_consistent_132 (v0 : UH10, v1 : UH6) : bool =
+and dfa_formula_consistent_128 (v0 : UH10, v1 : UH6) : bool =
     match v0 with
     | UH10_RegexListCons(v2, v3) -> (* RegexListCons *)
-        let v4 : UH7 = input_singletons_from_symbols_133(v1)
+        let v4 : UH7 = input_singletons_from_symbols_129(v1)
         let v5 : UH1 = UH1_InputEmpty
         let v6 : UH7 = UH7_InputListCons(v5, v4)
-        let v7 : UH7 = input_singletons_from_symbols_133(v1)
-        let v8 : UH7 = input_prepend_symbols_to_corpus_134(v1, v7)
+        let v7 : UH7 = input_singletons_from_symbols_129(v1)
+        let v8 : UH7 = input_prepend_symbols_to_corpus_130(v1, v7)
         let v9 : UH7 = input_list_append_42(v6, v8)
         let v10 : bool = derivative_semantic_triangle_symbols_37(v2, v1, v9)
         if v10 then
-            dfa_formula_consistent_132(v3, v1)
+            dfa_formula_consistent_128(v3, v1)
         else
             false
     | UH10_RegexListNil -> (* RegexListNil *)
         true
-and dfa_transition_lookup_value_138 (v0 : UH3, v1 : US1, v2 : UH14) : US9 =
+and dfa_transition_lookup_value_134 (v0 : UH3, v1 : US1, v2 : UH14) : US9 =
     match v2 with
     | UH14_DfaTransitionCons(v4, v5, v6, v7) -> (* DfaTransitionCons *)
         let v8 : bool = regex_equal_19(v0, v4)
@@ -2600,38 +2545,38 @@ and dfa_transition_lookup_value_138 (v0 : UH3, v1 : US1, v2 : UH14) : US9 =
             if v25 then
                 US9_DfaTransitionFound(v6)
             else
-                dfa_transition_lookup_value_138(v0, v1, v7)
+                dfa_transition_lookup_value_134(v0, v1, v7)
         else
-            dfa_transition_lookup_value_138(v0, v1, v7)
+            dfa_transition_lookup_value_134(v0, v1, v7)
     | UH14_DfaTransitionNil -> (* DfaTransitionNil *)
         US9_DfaTransitionMissing
-and dfa_state_transition_total_137 (v0 : UH3, v1 : UH6, v2 : UH14) : bool =
+and dfa_state_transition_total_133 (v0 : UH3, v1 : UH6, v2 : UH14) : bool =
     match v1 with
     | UH6_SymbolListCons(v3, v4) -> (* SymbolListCons *)
-        let v5 : US9 = dfa_transition_lookup_value_138(v0, v3, v2)
+        let v5 : US9 = dfa_transition_lookup_value_134(v0, v3, v2)
         match v5 with
         | US9_DfaTransitionFound(v6) -> (* DfaTransitionFound *)
             let v7 : UH3 = canonical_derivative_13(v0, v3)
             let v8 : bool = regex_equal_19(v6, v7)
             if v8 then
-                dfa_state_transition_total_137(v0, v4, v2)
+                dfa_state_transition_total_133(v0, v4, v2)
             else
                 false
         | US9_DfaTransitionMissing -> (* DfaTransitionMissing *)
             false
     | UH6_SymbolListNil -> (* SymbolListNil *)
         true
-and dfa_transition_table_total_136 (v0 : UH10, v1 : UH6, v2 : UH14) : bool =
+and dfa_transition_table_total_132 (v0 : UH10, v1 : UH6, v2 : UH14) : bool =
     match v0 with
     | UH10_RegexListCons(v3, v4) -> (* RegexListCons *)
-        let v5 : bool = dfa_state_transition_total_137(v3, v1, v2)
+        let v5 : bool = dfa_state_transition_total_133(v3, v1, v2)
         if v5 then
-            dfa_transition_table_total_136(v4, v1, v2)
+            dfa_transition_table_total_132(v4, v1, v2)
         else
             false
     | UH10_RegexListNil -> (* RegexListNil *)
         true
-and dfa_transition_key_present_140 (v0 : UH3, v1 : US1, v2 : UH14) : bool =
+and dfa_transition_key_present_136 (v0 : UH3, v1 : US1, v2 : UH14) : bool =
     match v2 with
     | UH14_DfaTransitionCons(v3, v4, v5, v6) -> (* DfaTransitionCons *)
         let v7 : bool = regex_equal_19(v0, v3)
@@ -2671,43 +2616,43 @@ and dfa_transition_key_present_140 (v0 : UH3, v1 : US1, v2 : UH14) : bool =
             if v24 then
                 true
             else
-                dfa_transition_key_present_140(v0, v1, v6)
+                dfa_transition_key_present_136(v0, v1, v6)
         else
-            dfa_transition_key_present_140(v0, v1, v6)
+            dfa_transition_key_present_136(v0, v1, v6)
     | UH14_DfaTransitionNil -> (* DfaTransitionNil *)
         false
-and dfa_transition_keys_distinct_139 (v0 : UH14) : bool =
+and dfa_transition_keys_distinct_135 (v0 : UH14) : bool =
     match v0 with
     | UH14_DfaTransitionCons(v1, v2, v3, v4) -> (* DfaTransitionCons *)
-        let v5 : bool = dfa_transition_key_present_140(v1, v2, v4)
+        let v5 : bool = dfa_transition_key_present_136(v1, v2, v4)
         if v5 then
             false
         else
-            dfa_transition_keys_distinct_139(v4)
+            dfa_transition_keys_distinct_135(v4)
     | UH14_DfaTransitionNil -> (* DfaTransitionNil *)
         true
-and regex_list_within_budget_141 (v0 : UH10, v1 : UH8) : bool =
+and regex_list_within_budget_137 (v0 : UH10, v1 : UH8) : bool =
     match v0 with
     | UH10_RegexListCons(v2, v3) -> (* RegexListCons *)
         match v1 with
         | UH8_StateBudgetSucc(v4) -> (* StateBudgetSucc *)
-            regex_list_within_budget_141(v3, v4)
+            regex_list_within_budget_137(v3, v4)
         | UH8_StateBudgetZero -> (* StateBudgetZero *)
             false
     | UH10_RegexListNil -> (* RegexListNil *)
         true
-and dfa_states_normalized_142 (v0 : UH10) : bool =
+and dfa_states_normalized_138 (v0 : UH10) : bool =
     match v0 with
     | UH10_RegexListCons(v1, v2) -> (* RegexListCons *)
         let v3 : UH3 = normalize_14(v1)
         let v4 : bool = regex_equal_19(v1, v3)
         if v4 then
-            dfa_states_normalized_142(v2)
+            dfa_states_normalized_138(v2)
         else
             false
     | UH10_RegexListNil -> (* RegexListNil *)
         true
-and dfa_states_nullable_preserved_143 (v0 : UH10) : bool =
+and dfa_states_nullable_preserved_139 (v0 : UH10) : bool =
     match v0 with
     | UH10_RegexListCons(v1, v2) -> (* RegexListCons *)
         let v3 : US2 = nullable_1(v1)
@@ -2728,42 +2673,12 @@ and dfa_states_nullable_preserved_143 (v0 : UH10) : bool =
                 | _ ->
                     false
         if v9 then
-            dfa_states_nullable_preserved_143(v2)
+            dfa_states_nullable_preserved_139(v2)
         else
             false
     | UH10_RegexListNil -> (* RegexListNil *)
         true
-and regex_compare_145 (v0 : UH3) : US3 =
-    match v0 with
-    | UH3_RegexAlt(v17, v18) -> (* RegexAlt *)
-        let v19 : US3 = regex_compare_145(v17)
-        match v19 with
-        | US3_SymbolSame -> (* SymbolSame *)
-            regex_compare_145(v18)
-        | _ ->
-            v19
-    | UH3_RegexCat(v10, v11) -> (* RegexCat *)
-        let v12 : US3 = regex_compare_145(v10)
-        match v12 with
-        | US3_SymbolSame -> (* SymbolSame *)
-            regex_compare_145(v11)
-        | _ ->
-            v12
-    | UH3_RegexChar(v3) -> (* RegexChar *)
-        match v3 with
-        | US1_TriA -> (* TriA *)
-            US3_SymbolSame
-        | US1_TriB -> (* TriB *)
-            US3_SymbolSame
-        | US1_TriC -> (* TriC *)
-            US3_SymbolSame
-    | UH3_RegexEmpty -> (* RegexEmpty *)
-        US3_SymbolSame
-    | UH3_RegexEpsilon -> (* RegexEpsilon *)
-        US3_SymbolSame
-    | UH3_RegexStar(v15) -> (* RegexStar *)
-        regex_compare_145(v15)
-and regex_compare_against_146 (v0 : UH3, v1 : UH10) : bool =
+and regex_compare_against_141 (v0 : UH3, v1 : UH10) : bool =
     match v1 with
     | UH10_RegexListCons(v2, v3) -> (* RegexListCons *)
         let v4 : US3 = regex_compare_17(v0, v2)
@@ -2789,27 +2704,27 @@ and regex_compare_against_146 (v0 : UH3, v1 : UH10) : bool =
                 | _ ->
                     false
         if v12 then
-            regex_compare_against_146(v0, v3)
+            regex_compare_against_141(v0, v3)
         else
             false
     | UH10_RegexListNil -> (* RegexListNil *)
         true
-and regex_order_laws_144 (v0 : UH10) : bool =
+and regex_order_laws_140 (v0 : UH10) : bool =
     match v0 with
     | UH10_RegexListCons(v1, v2) -> (* RegexListCons *)
-        let v3 : US3 = regex_compare_145(v1)
+        let v3 : US3 = regex_compare_17(v1, v1)
         match v3 with
         | US3_SymbolSame -> (* SymbolSame *)
-            let v4 : bool = regex_compare_against_146(v1, v2)
+            let v4 : bool = regex_compare_against_141(v1, v2)
             if v4 then
-                regex_order_laws_144(v2)
+                regex_order_laws_140(v2)
             else
                 false
         | _ ->
             false
     | UH10_RegexListNil -> (* RegexListNil *)
         true
-and dfa_find_bisimilar_representative_148 (v0 : UH2, v1 : UH9, v2 : UH4) : US10 =
+and dfa_find_bisimilar_representative_143 (v0 : UH2, v1 : UH9, v2 : UH4) : US10 =
     match v1 with
     | UH9_RegexListCons(v4, v5) -> (* RegexListCons *)
         let v6 : UH2 = normalize_4(v0)
@@ -2821,65 +2736,55 @@ and dfa_find_bisimilar_representative_148 (v0 : UH2, v1 : UH9, v2 : UH4) : US10 
         if v11 then
             US10_DfaRepresentativeFound(v4)
         else
-            dfa_find_bisimilar_representative_148(v0, v5, v2)
+            dfa_find_bisimilar_representative_143(v0, v5, v2)
     | UH9_RegexListNil -> (* RegexListNil *)
         US10_DfaRepresentativeMissing
-and dfa_minimize_states_loop_147 (v0 : UH9, v1 : UH4, v2 : UH9) : UH9 =
+and dfa_minimize_states_loop_142 (v0 : UH9, v1 : UH4, v2 : UH9) : UH9 =
     match v0 with
     | UH9_RegexListCons(v3, v4) -> (* RegexListCons *)
-        let v5 : US10 = dfa_find_bisimilar_representative_148(v3, v2, v1)
+        let v5 : US10 = dfa_find_bisimilar_representative_143(v3, v2, v1)
         match v5 with
         | US10_DfaRepresentativeFound(v6) -> (* DfaRepresentativeFound *)
-            dfa_minimize_states_loop_147(v4, v1, v2)
+            dfa_minimize_states_loop_142(v4, v1, v2)
         | US10_DfaRepresentativeMissing -> (* DfaRepresentativeMissing *)
             let v8 : UH9 = UH9_RegexListCons(v3, v2)
-            dfa_minimize_states_loop_147(v4, v1, v8)
+            dfa_minimize_states_loop_142(v4, v1, v8)
     | UH9_RegexListNil -> (* RegexListNil *)
         v2
-and dfa_states_have_representative_149 (v0 : UH9, v1 : UH9, v2 : UH4) : bool =
+and dfa_states_have_representative_144 (v0 : UH9, v1 : UH9, v2 : UH4) : bool =
     match v0 with
     | UH9_RegexListCons(v3, v4) -> (* RegexListCons *)
-        let v5 : US10 = dfa_find_bisimilar_representative_148(v3, v1, v2)
+        let v5 : US10 = dfa_find_bisimilar_representative_143(v3, v1, v2)
         match v5 with
         | US10_DfaRepresentativeFound(v6) -> (* DfaRepresentativeFound *)
-            dfa_states_have_representative_149(v4, v1, v2)
+            dfa_states_have_representative_144(v4, v1, v2)
         | US10_DfaRepresentativeMissing -> (* DfaRepresentativeMissing *)
             false
     | UH9_RegexListNil -> (* RegexListNil *)
         true
-and dfa_quotient_state_closed_151 (v0 : UH2, v1 : UH4, v2 : UH9) : bool =
+and dfa_quotient_state_closed_146 (v0 : UH2, v1 : UH4, v2 : UH9) : bool =
     match v1 with
     | UH4_SymbolListCons(v3, v4) -> (* SymbolListCons *)
         let v5 : UH2 = canonical_derivative_3(v0, v3)
-        let v6 : US10 = dfa_find_bisimilar_representative_148(v5, v2, v1)
+        let v6 : US10 = dfa_find_bisimilar_representative_143(v5, v2, v1)
         match v6 with
         | US10_DfaRepresentativeFound(v7) -> (* DfaRepresentativeFound *)
-            dfa_quotient_state_closed_151(v0, v4, v2)
+            dfa_quotient_state_closed_146(v0, v4, v2)
         | US10_DfaRepresentativeMissing -> (* DfaRepresentativeMissing *)
             false
     | UH4_SymbolListNil -> (* SymbolListNil *)
         true
-and dfa_quotient_closed_152 (v0 : UH9, v1 : UH4, v2 : UH9) : bool =
+and dfa_quotient_closed_145 (v0 : UH9, v1 : UH4, v2 : UH9) : bool =
     match v0 with
     | UH9_RegexListCons(v3, v4) -> (* RegexListCons *)
-        let v5 : bool = dfa_quotient_state_closed_151(v3, v1, v2)
+        let v5 : bool = dfa_quotient_state_closed_146(v3, v1, v2)
         if v5 then
-            dfa_quotient_closed_152(v4, v1, v2)
+            dfa_quotient_closed_145(v4, v1, v2)
         else
             false
     | UH9_RegexListNil -> (* RegexListNil *)
         true
-and dfa_quotient_closed_150 (v0 : UH9, v1 : UH4) : bool =
-    match v0 with
-    | UH9_RegexListCons(v2, v3) -> (* RegexListCons *)
-        let v4 : bool = dfa_quotient_state_closed_151(v2, v1, v0)
-        if v4 then
-            dfa_quotient_closed_152(v3, v1, v0)
-        else
-            false
-    | UH9_RegexListNil -> (* RegexListNil *)
-        true
-and dfa_find_bisimilar_representative_154 (v0 : UH3, v1 : UH10, v2 : UH6) : US11 =
+and dfa_find_bisimilar_representative_148 (v0 : UH3, v1 : UH10, v2 : UH6) : US11 =
     match v1 with
     | UH10_RegexListCons(v4, v5) -> (* RegexListCons *)
         let v6 : UH3 = normalize_14(v0)
@@ -2891,71 +2796,61 @@ and dfa_find_bisimilar_representative_154 (v0 : UH3, v1 : UH10, v2 : UH6) : US11
         if v11 then
             US11_DfaRepresentativeFound(v4)
         else
-            dfa_find_bisimilar_representative_154(v0, v5, v2)
+            dfa_find_bisimilar_representative_148(v0, v5, v2)
     | UH10_RegexListNil -> (* RegexListNil *)
         US11_DfaRepresentativeMissing
-and dfa_minimize_states_loop_153 (v0 : UH10, v1 : UH6, v2 : UH10) : UH10 =
+and dfa_minimize_states_loop_147 (v0 : UH10, v1 : UH6, v2 : UH10) : UH10 =
     match v0 with
     | UH10_RegexListCons(v3, v4) -> (* RegexListCons *)
-        let v5 : US11 = dfa_find_bisimilar_representative_154(v3, v2, v1)
+        let v5 : US11 = dfa_find_bisimilar_representative_148(v3, v2, v1)
         match v5 with
         | US11_DfaRepresentativeFound(v6) -> (* DfaRepresentativeFound *)
-            dfa_minimize_states_loop_153(v4, v1, v2)
+            dfa_minimize_states_loop_147(v4, v1, v2)
         | US11_DfaRepresentativeMissing -> (* DfaRepresentativeMissing *)
             let v8 : UH10 = UH10_RegexListCons(v3, v2)
-            dfa_minimize_states_loop_153(v4, v1, v8)
+            dfa_minimize_states_loop_147(v4, v1, v8)
     | UH10_RegexListNil -> (* RegexListNil *)
         v2
-and dfa_states_have_representative_155 (v0 : UH10, v1 : UH10, v2 : UH6) : bool =
+and dfa_states_have_representative_149 (v0 : UH10, v1 : UH10, v2 : UH6) : bool =
     match v0 with
     | UH10_RegexListCons(v3, v4) -> (* RegexListCons *)
-        let v5 : US11 = dfa_find_bisimilar_representative_154(v3, v1, v2)
+        let v5 : US11 = dfa_find_bisimilar_representative_148(v3, v1, v2)
         match v5 with
         | US11_DfaRepresentativeFound(v6) -> (* DfaRepresentativeFound *)
-            dfa_states_have_representative_155(v4, v1, v2)
+            dfa_states_have_representative_149(v4, v1, v2)
         | US11_DfaRepresentativeMissing -> (* DfaRepresentativeMissing *)
             false
     | UH10_RegexListNil -> (* RegexListNil *)
         true
-and dfa_quotient_state_closed_157 (v0 : UH3, v1 : UH6, v2 : UH10) : bool =
+and dfa_quotient_state_closed_151 (v0 : UH3, v1 : UH6, v2 : UH10) : bool =
     match v1 with
     | UH6_SymbolListCons(v3, v4) -> (* SymbolListCons *)
         let v5 : UH3 = canonical_derivative_13(v0, v3)
-        let v6 : US11 = dfa_find_bisimilar_representative_154(v5, v2, v1)
+        let v6 : US11 = dfa_find_bisimilar_representative_148(v5, v2, v1)
         match v6 with
         | US11_DfaRepresentativeFound(v7) -> (* DfaRepresentativeFound *)
-            dfa_quotient_state_closed_157(v0, v4, v2)
+            dfa_quotient_state_closed_151(v0, v4, v2)
         | US11_DfaRepresentativeMissing -> (* DfaRepresentativeMissing *)
             false
     | UH6_SymbolListNil -> (* SymbolListNil *)
         true
-and dfa_quotient_closed_158 (v0 : UH10, v1 : UH6, v2 : UH10) : bool =
+and dfa_quotient_closed_150 (v0 : UH10, v1 : UH6, v2 : UH10) : bool =
     match v0 with
     | UH10_RegexListCons(v3, v4) -> (* RegexListCons *)
-        let v5 : bool = dfa_quotient_state_closed_157(v3, v1, v2)
+        let v5 : bool = dfa_quotient_state_closed_151(v3, v1, v2)
         if v5 then
-            dfa_quotient_closed_158(v4, v1, v2)
+            dfa_quotient_closed_150(v4, v1, v2)
         else
             false
     | UH10_RegexListNil -> (* RegexListNil *)
         true
-and dfa_quotient_closed_156 (v0 : UH10, v1 : UH6) : bool =
-    match v0 with
-    | UH10_RegexListCons(v2, v3) -> (* RegexListCons *)
-        let v4 : bool = dfa_quotient_state_closed_157(v2, v1, v0)
-        if v4 then
-            dfa_quotient_closed_158(v3, v1, v0)
-        else
-            false
-    | UH10_RegexListNil -> (* RegexListNil *)
-        true
-and dfa_run_in_closure_159 (v0 : UH2, v1 : UH9, v2 : UH0) : US12 =
+and dfa_run_in_closure_152 (v0 : UH2, v1 : UH9, v2 : UH0) : US12 =
     match v2 with
     | UH0_InputCons(v8, v9) -> (* InputCons *)
         let v10 : UH2 = canonical_derivative_3(v0, v8)
         let v11 : bool = regex_list_contains_56(v10, v1)
         if v11 then
-            dfa_run_in_closure_159(v10, v1, v9)
+            dfa_run_in_closure_152(v10, v1, v9)
         else
             US12_DfaEscapedClosure
     | UH0_InputEmpty -> (* InputEmpty *)
@@ -2965,7 +2860,7 @@ and dfa_run_in_closure_159 (v0 : UH2, v1 : UH9, v2 : UH0) : US12 =
             US12_DfaRejected
         | US2_Nullable -> (* Nullable *)
             US12_DfaAccepted
-and contains_161 (v0 : US1, v1 : UH6) : bool =
+and contains_154 (v0 : US1, v1 : UH6) : bool =
     match v1 with
     | UH6_SymbolListCons(v2, v3) -> (* SymbolListCons *)
         let v19 : US3 =
@@ -3003,26 +2898,26 @@ and contains_161 (v0 : US1, v1 : UH6) : bool =
         if v20 then
             true
         else
-            contains_161(v0, v3)
+            contains_154(v0, v3)
     | UH6_SymbolListNil -> (* SymbolListNil *)
         false
-and input_symbols_covered_160 (v0 : UH1, v1 : UH6) : bool =
+and input_symbols_covered_153 (v0 : UH1, v1 : UH6) : bool =
     match v0 with
     | UH1_InputCons(v2, v3) -> (* InputCons *)
-        let v4 : bool = contains_161(v2, v1)
+        let v4 : bool = contains_154(v2, v1)
         if v4 then
-            input_symbols_covered_160(v3, v1)
+            input_symbols_covered_153(v3, v1)
         else
             false
     | UH1_InputEmpty -> (* InputEmpty *)
         true
-and dfa_run_in_closure_162 (v0 : UH3, v1 : UH10, v2 : UH1) : US12 =
+and dfa_run_in_closure_155 (v0 : UH3, v1 : UH10, v2 : UH1) : US12 =
     match v2 with
     | UH1_InputCons(v8, v9) -> (* InputCons *)
         let v10 : UH3 = canonical_derivative_13(v0, v8)
         let v11 : bool = regex_list_contains_86(v10, v1)
         if v11 then
-            dfa_run_in_closure_162(v10, v1, v9)
+            dfa_run_in_closure_155(v10, v1, v9)
         else
             US12_DfaEscapedClosure
     | UH1_InputEmpty -> (* InputEmpty *)
@@ -3032,14 +2927,14 @@ and dfa_run_in_closure_162 (v0 : UH3, v1 : UH10, v2 : UH1) : US12 =
             US12_DfaRejected
         | US2_Nullable -> (* Nullable *)
             US12_DfaAccepted
-and dfa_run_minimized_in_representatives_163 (v0 : UH2, v1 : UH9, v2 : UH4, v3 : UH0) : US12 =
+and dfa_run_minimized_in_representatives_156 (v0 : UH2, v1 : UH9, v2 : UH4, v3 : UH0) : US12 =
     match v3 with
     | UH0_InputCons(v9, v10) -> (* InputCons *)
         let v11 : UH2 = canonical_derivative_3(v0, v9)
-        let v12 : US10 = dfa_find_bisimilar_representative_148(v11, v1, v2)
+        let v12 : US10 = dfa_find_bisimilar_representative_143(v11, v1, v2)
         match v12 with
         | US10_DfaRepresentativeFound(v13) -> (* DfaRepresentativeFound *)
-            dfa_run_minimized_in_representatives_163(v13, v1, v2, v10)
+            dfa_run_minimized_in_representatives_156(v13, v1, v2, v10)
         | US10_DfaRepresentativeMissing -> (* DfaRepresentativeMissing *)
             US12_DfaEscapedClosure
     | UH0_InputEmpty -> (* InputEmpty *)
@@ -3049,14 +2944,14 @@ and dfa_run_minimized_in_representatives_163 (v0 : UH2, v1 : UH9, v2 : UH4, v3 :
             US12_DfaRejected
         | US2_Nullable -> (* Nullable *)
             US12_DfaAccepted
-and dfa_run_minimized_in_representatives_164 (v0 : UH3, v1 : UH10, v2 : UH6, v3 : UH1) : US12 =
+and dfa_run_minimized_in_representatives_157 (v0 : UH3, v1 : UH10, v2 : UH6, v3 : UH1) : US12 =
     match v3 with
     | UH1_InputCons(v9, v10) -> (* InputCons *)
         let v11 : UH3 = canonical_derivative_13(v0, v9)
-        let v12 : US11 = dfa_find_bisimilar_representative_154(v11, v1, v2)
+        let v12 : US11 = dfa_find_bisimilar_representative_148(v11, v1, v2)
         match v12 with
         | US11_DfaRepresentativeFound(v13) -> (* DfaRepresentativeFound *)
-            dfa_run_minimized_in_representatives_164(v13, v1, v2, v10)
+            dfa_run_minimized_in_representatives_157(v13, v1, v2, v10)
         | US11_DfaRepresentativeMissing -> (* DfaRepresentativeMissing *)
             US12_DfaEscapedClosure
     | UH1_InputEmpty -> (* InputEmpty *)
@@ -3066,11 +2961,11 @@ and dfa_run_minimized_in_representatives_164 (v0 : UH3, v1 : UH10, v2 : UH6, v3 
             US12_DfaRejected
         | US2_Nullable -> (* Nullable *)
             US12_DfaAccepted
-and reference_accepts_165 (v0 : UH2, v1 : UH0) : bool =
+and reference_accepts_158 (v0 : UH2, v1 : UH0) : bool =
     match v1 with
     | UH0_InputCons(v5, v6) -> (* InputCons *)
         let v7 : UH2 = reference_derivative_26(v0, v5)
-        reference_accepts_165(v7, v6)
+        reference_accepts_158(v7, v6)
     | UH0_InputEmpty -> (* InputEmpty *)
         let v2 : US2 = nullable_0(v0)
         match v2 with
@@ -3078,11 +2973,11 @@ and reference_accepts_165 (v0 : UH2, v1 : UH0) : bool =
             false
         | US2_Nullable -> (* Nullable *)
             true
-and reference_accepts_166 (v0 : UH3, v1 : UH1) : bool =
+and reference_accepts_159 (v0 : UH3, v1 : UH1) : bool =
     match v1 with
     | UH1_InputCons(v5, v6) -> (* InputCons *)
         let v7 : UH3 = reference_derivative_40(v0, v5)
-        reference_accepts_166(v7, v6)
+        reference_accepts_159(v7, v6)
     | UH1_InputEmpty -> (* InputEmpty *)
         let v2 : US2 = nullable_1(v0)
         match v2 with
@@ -4074,7 +3969,7 @@ let v809 : US0 = US0_BitOne
 let v810 : UH4 = UH4_SymbolListNil
 let v811 : UH4 = UH4_SymbolListCons(v809, v810)
 let v812 : UH4 = UH4_SymbolListCons(v808, v811)
-let v813 : UH13 = dfa_transition_table_106(v803, v812)
+let v813 : UH13 = dfa_transition_table_105(v803, v812)
 let v820 : bool =
     if v807 then
         let v814 : US0 = US0_BitZero
@@ -4082,10 +3977,10 @@ let v820 : bool =
         let v816 : UH4 = UH4_SymbolListNil
         let v817 : UH4 = UH4_SymbolListCons(v815, v816)
         let v818 : UH4 = UH4_SymbolListCons(v814, v817)
-        dfa_closure_closed_109(v803, v818)
+        dfa_closure_closed_108(v803, v818, v803)
     else
         false
-let v821 : bool = regex_list_distinct_112(v803)
+let v821 : bool = regex_list_distinct_110(v803)
 let v828 : bool =
     if v807 then
         let v822 : US0 = US0_BitZero
@@ -4103,27 +3998,27 @@ let v835 : bool =
         let v831 : UH4 = UH4_SymbolListNil
         let v832 : UH4 = UH4_SymbolListCons(v830, v831)
         let v833 : UH4 = UH4_SymbolListCons(v829, v832)
-        dfa_transition_table_total_113(v803, v833, v813)
+        dfa_transition_table_total_111(v803, v833, v813)
     else
         false
-let v836 : bool = dfa_transition_keys_distinct_116(v813)
+let v836 : bool = dfa_transition_keys_distinct_114(v813)
 let v841 : bool =
     if v807 then
         let v837 : UH8 = regex_position_count_102(v784)
         let v838 : UH8 = UH8_StateBudgetSucc(v837)
         let v839 : UH8 = state_budget_pow2_104(v838)
-        regex_list_within_budget_118(v803, v839)
+        regex_list_within_budget_116(v803, v839)
     else
         false
-let v842 : bool = dfa_states_normalized_119(v803)
+let v842 : bool = dfa_states_normalized_117(v803)
 let v843 : bool = dfa_states_nullable_preserved_74(v803)
-let v844 : bool = regex_order_laws_120(v803)
+let v844 : bool = regex_order_laws_118(v803)
 let v845 : US1 = US1_TriA
 let v846 : UH3 = UH3_RegexChar(v845)
 let v847 : UH3 = UH3_RegexStar(v846)
 let v848 : UH3 = normalize_14(v847)
 let v849 : UH3 = normalize_14(v848)
-let v850 : UH8 = regex_position_count_123(v849)
+let v850 : UH8 = regex_position_count_120(v849)
 let v851 : UH8 = UH8_StateBudgetSucc(v850)
 let v852 : UH8 = state_budget_pow2_104(v851)
 let v853 : UH3 = normalize_14(v849)
@@ -4138,7 +4033,7 @@ let v861 : UH10 = UH10_RegexListNil
 let v862 : UH10 = UH10_RegexListCons(v853, v861)
 let v863 : UH10 = UH10_RegexListNil
 let v864 : UH10 = UH10_RegexListCons(v853, v863)
-let v865 : US8 = dfa_closure_loop_bounded_124(v860, v852, v862, v864)
+let v865 : US8 = dfa_closure_loop_bounded_121(v860, v852, v862, v864)
 let v869 : UH10 =
     match v865 with
     | US8_DfaClosureBudgetExceeded(v867) -> (* DfaClosureBudgetExceeded *)
@@ -4158,7 +4053,7 @@ let v877 : UH6 = UH6_SymbolListNil
 let v878 : UH6 = UH6_SymbolListCons(v876, v877)
 let v879 : UH6 = UH6_SymbolListCons(v875, v878)
 let v880 : UH6 = UH6_SymbolListCons(v874, v879)
-let v881 : UH14 = dfa_transition_table_125(v869, v880)
+let v881 : UH14 = dfa_transition_table_122(v869, v880)
 let v890 : bool =
     if v873 then
         let v882 : US1 = US1_TriA
@@ -4168,10 +4063,10 @@ let v890 : bool =
         let v886 : UH6 = UH6_SymbolListCons(v884, v885)
         let v887 : UH6 = UH6_SymbolListCons(v883, v886)
         let v888 : UH6 = UH6_SymbolListCons(v882, v887)
-        dfa_closure_closed_128(v869, v888)
+        dfa_closure_closed_125(v869, v888, v869)
     else
         false
-let v891 : bool = regex_list_distinct_131(v869)
+let v891 : bool = regex_list_distinct_127(v869)
 let v900 : bool =
     if v873 then
         let v892 : US1 = US1_TriA
@@ -4181,7 +4076,7 @@ let v900 : bool =
         let v896 : UH6 = UH6_SymbolListCons(v894, v895)
         let v897 : UH6 = UH6_SymbolListCons(v893, v896)
         let v898 : UH6 = UH6_SymbolListCons(v892, v897)
-        dfa_formula_consistent_132(v869, v898)
+        dfa_formula_consistent_128(v869, v898)
     else
         false
 let v909 : bool =
@@ -4193,21 +4088,21 @@ let v909 : bool =
         let v905 : UH6 = UH6_SymbolListCons(v903, v904)
         let v906 : UH6 = UH6_SymbolListCons(v902, v905)
         let v907 : UH6 = UH6_SymbolListCons(v901, v906)
-        dfa_transition_table_total_136(v869, v907, v881)
+        dfa_transition_table_total_132(v869, v907, v881)
     else
         false
-let v910 : bool = dfa_transition_keys_distinct_139(v881)
+let v910 : bool = dfa_transition_keys_distinct_135(v881)
 let v915 : bool =
     if v873 then
-        let v911 : UH8 = regex_position_count_123(v848)
+        let v911 : UH8 = regex_position_count_120(v848)
         let v912 : UH8 = UH8_StateBudgetSucc(v911)
         let v913 : UH8 = state_budget_pow2_104(v912)
-        regex_list_within_budget_141(v869, v913)
+        regex_list_within_budget_137(v869, v913)
     else
         false
-let v916 : bool = dfa_states_normalized_142(v869)
-let v917 : bool = dfa_states_nullable_preserved_143(v869)
-let v918 : bool = regex_order_laws_144(v869)
+let v916 : bool = dfa_states_normalized_138(v869)
+let v917 : bool = dfa_states_nullable_preserved_139(v869)
+let v918 : bool = regex_order_laws_140(v869)
 let v919 : US1 = US1_TriA
 let v920 : UH3 = UH3_RegexChar(v919)
 let v921 : US1 = US1_TriB
@@ -4219,7 +4114,7 @@ let v926 : UH3 = UH3_RegexChar(v925)
 let v927 : UH3 = UH3_RegexCat(v924, v926)
 let v928 : UH3 = normalize_14(v927)
 let v929 : UH3 = normalize_14(v928)
-let v930 : UH8 = regex_position_count_123(v929)
+let v930 : UH8 = regex_position_count_120(v929)
 let v931 : UH8 = UH8_StateBudgetSucc(v930)
 let v932 : UH8 = state_budget_pow2_104(v931)
 let v933 : UH3 = normalize_14(v929)
@@ -4234,7 +4129,7 @@ let v941 : UH10 = UH10_RegexListNil
 let v942 : UH10 = UH10_RegexListCons(v933, v941)
 let v943 : UH10 = UH10_RegexListNil
 let v944 : UH10 = UH10_RegexListCons(v933, v943)
-let v945 : US8 = dfa_closure_loop_bounded_124(v940, v932, v942, v944)
+let v945 : US8 = dfa_closure_loop_bounded_121(v940, v932, v942, v944)
 let v949 : UH10 =
     match v945 with
     | US8_DfaClosureBudgetExceeded(v947) -> (* DfaClosureBudgetExceeded *)
@@ -4254,7 +4149,7 @@ let v957 : UH6 = UH6_SymbolListNil
 let v958 : UH6 = UH6_SymbolListCons(v956, v957)
 let v959 : UH6 = UH6_SymbolListCons(v955, v958)
 let v960 : UH6 = UH6_SymbolListCons(v954, v959)
-let v961 : UH14 = dfa_transition_table_125(v949, v960)
+let v961 : UH14 = dfa_transition_table_122(v949, v960)
 let v970 : bool =
     if v953 then
         let v962 : US1 = US1_TriA
@@ -4264,10 +4159,10 @@ let v970 : bool =
         let v966 : UH6 = UH6_SymbolListCons(v964, v965)
         let v967 : UH6 = UH6_SymbolListCons(v963, v966)
         let v968 : UH6 = UH6_SymbolListCons(v962, v967)
-        dfa_closure_closed_128(v949, v968)
+        dfa_closure_closed_125(v949, v968, v949)
     else
         false
-let v971 : bool = regex_list_distinct_131(v949)
+let v971 : bool = regex_list_distinct_127(v949)
 let v980 : bool =
     if v953 then
         let v972 : US1 = US1_TriA
@@ -4277,7 +4172,7 @@ let v980 : bool =
         let v976 : UH6 = UH6_SymbolListCons(v974, v975)
         let v977 : UH6 = UH6_SymbolListCons(v973, v976)
         let v978 : UH6 = UH6_SymbolListCons(v972, v977)
-        dfa_formula_consistent_132(v949, v978)
+        dfa_formula_consistent_128(v949, v978)
     else
         false
 let v989 : bool =
@@ -4289,21 +4184,21 @@ let v989 : bool =
         let v985 : UH6 = UH6_SymbolListCons(v983, v984)
         let v986 : UH6 = UH6_SymbolListCons(v982, v985)
         let v987 : UH6 = UH6_SymbolListCons(v981, v986)
-        dfa_transition_table_total_136(v949, v987, v961)
+        dfa_transition_table_total_132(v949, v987, v961)
     else
         false
-let v990 : bool = dfa_transition_keys_distinct_139(v961)
+let v990 : bool = dfa_transition_keys_distinct_135(v961)
 let v995 : bool =
     if v953 then
-        let v991 : UH8 = regex_position_count_123(v928)
+        let v991 : UH8 = regex_position_count_120(v928)
         let v992 : UH8 = UH8_StateBudgetSucc(v991)
         let v993 : UH8 = state_budget_pow2_104(v992)
-        regex_list_within_budget_141(v949, v993)
+        regex_list_within_budget_137(v949, v993)
     else
         false
-let v996 : bool = dfa_states_normalized_142(v949)
-let v997 : bool = dfa_states_nullable_preserved_143(v949)
-let v998 : bool = regex_order_laws_144(v949)
+let v996 : bool = dfa_states_normalized_138(v949)
+let v997 : bool = dfa_states_nullable_preserved_139(v949)
+let v998 : bool = regex_order_laws_140(v949)
 let v999 : US0 = US0_BitZero
 let v1000 : UH2 = UH2_RegexChar(v999)
 let v1001 : US0 = US0_BitOne
@@ -4347,7 +4242,7 @@ let v1034 : UH4 = UH4_SymbolListNil
 let v1035 : UH4 = UH4_SymbolListCons(v1033, v1034)
 let v1036 : UH4 = UH4_SymbolListCons(v1032, v1035)
 let v1037 : UH9 = UH9_RegexListNil
-let v1038 : UH9 = dfa_minimize_states_loop_147(v1027, v1036, v1037)
+let v1038 : UH9 = dfa_minimize_states_loop_142(v1027, v1036, v1037)
 let v1045 : bool =
     if v1031 then
         let v1039 : US0 = US0_BitZero
@@ -4355,7 +4250,7 @@ let v1045 : bool =
         let v1041 : UH4 = UH4_SymbolListNil
         let v1042 : UH4 = UH4_SymbolListCons(v1040, v1041)
         let v1043 : UH4 = UH4_SymbolListCons(v1039, v1042)
-        dfa_states_have_representative_149(v1027, v1038, v1043)
+        dfa_states_have_representative_144(v1027, v1038, v1043)
     else
         false
 let v1052 : bool =
@@ -4375,7 +4270,7 @@ let v1059 : bool =
         let v1055 : UH4 = UH4_SymbolListNil
         let v1056 : UH4 = UH4_SymbolListCons(v1054, v1055)
         let v1057 : UH4 = UH4_SymbolListCons(v1053, v1056)
-        dfa_quotient_closed_150(v1038, v1057)
+        dfa_quotient_closed_145(v1038, v1057, v1038)
     else
         false
 let v1060 : US1 = US1_TriA
@@ -4383,7 +4278,7 @@ let v1061 : UH3 = UH3_RegexChar(v1060)
 let v1062 : UH3 = UH3_RegexStar(v1061)
 let v1063 : UH3 = normalize_14(v1062)
 let v1064 : UH3 = normalize_14(v1063)
-let v1065 : UH8 = regex_position_count_123(v1064)
+let v1065 : UH8 = regex_position_count_120(v1064)
 let v1066 : UH8 = UH8_StateBudgetSucc(v1065)
 let v1067 : UH8 = state_budget_pow2_104(v1066)
 let v1068 : UH3 = normalize_14(v1064)
@@ -4398,7 +4293,7 @@ let v1076 : UH10 = UH10_RegexListNil
 let v1077 : UH10 = UH10_RegexListCons(v1068, v1076)
 let v1078 : UH10 = UH10_RegexListNil
 let v1079 : UH10 = UH10_RegexListCons(v1068, v1078)
-let v1080 : US8 = dfa_closure_loop_bounded_124(v1075, v1067, v1077, v1079)
+let v1080 : US8 = dfa_closure_loop_bounded_121(v1075, v1067, v1077, v1079)
 let v1084 : UH10 =
     match v1080 with
     | US8_DfaClosureBudgetExceeded(v1082) -> (* DfaClosureBudgetExceeded *)
@@ -4419,7 +4314,7 @@ let v1093 : UH6 = UH6_SymbolListCons(v1091, v1092)
 let v1094 : UH6 = UH6_SymbolListCons(v1090, v1093)
 let v1095 : UH6 = UH6_SymbolListCons(v1089, v1094)
 let v1096 : UH10 = UH10_RegexListNil
-let v1097 : UH10 = dfa_minimize_states_loop_153(v1084, v1095, v1096)
+let v1097 : UH10 = dfa_minimize_states_loop_147(v1084, v1095, v1096)
 let v1106 : bool =
     if v1088 then
         let v1098 : US1 = US1_TriA
@@ -4429,7 +4324,7 @@ let v1106 : bool =
         let v1102 : UH6 = UH6_SymbolListCons(v1100, v1101)
         let v1103 : UH6 = UH6_SymbolListCons(v1099, v1102)
         let v1104 : UH6 = UH6_SymbolListCons(v1098, v1103)
-        dfa_states_have_representative_155(v1084, v1097, v1104)
+        dfa_states_have_representative_149(v1084, v1097, v1104)
     else
         false
 let v1115 : bool =
@@ -4453,7 +4348,7 @@ let v1124 : bool =
         let v1120 : UH6 = UH6_SymbolListCons(v1118, v1119)
         let v1121 : UH6 = UH6_SymbolListCons(v1117, v1120)
         let v1122 : UH6 = UH6_SymbolListCons(v1116, v1121)
-        dfa_quotient_closed_156(v1097, v1122)
+        dfa_quotient_closed_150(v1097, v1122, v1097)
     else
         false
 let v1125 : US1 = US1_TriA
@@ -4467,7 +4362,7 @@ let v1132 : UH3 = UH3_RegexChar(v1131)
 let v1133 : UH3 = UH3_RegexCat(v1130, v1132)
 let v1134 : UH3 = normalize_14(v1133)
 let v1135 : UH3 = normalize_14(v1134)
-let v1136 : UH8 = regex_position_count_123(v1135)
+let v1136 : UH8 = regex_position_count_120(v1135)
 let v1137 : UH8 = UH8_StateBudgetSucc(v1136)
 let v1138 : UH8 = state_budget_pow2_104(v1137)
 let v1139 : UH3 = normalize_14(v1135)
@@ -4482,7 +4377,7 @@ let v1147 : UH10 = UH10_RegexListNil
 let v1148 : UH10 = UH10_RegexListCons(v1139, v1147)
 let v1149 : UH10 = UH10_RegexListNil
 let v1150 : UH10 = UH10_RegexListCons(v1139, v1149)
-let v1151 : US8 = dfa_closure_loop_bounded_124(v1146, v1138, v1148, v1150)
+let v1151 : US8 = dfa_closure_loop_bounded_121(v1146, v1138, v1148, v1150)
 let v1155 : UH10 =
     match v1151 with
     | US8_DfaClosureBudgetExceeded(v1153) -> (* DfaClosureBudgetExceeded *)
@@ -4503,7 +4398,7 @@ let v1164 : UH6 = UH6_SymbolListCons(v1162, v1163)
 let v1165 : UH6 = UH6_SymbolListCons(v1161, v1164)
 let v1166 : UH6 = UH6_SymbolListCons(v1160, v1165)
 let v1167 : UH10 = UH10_RegexListNil
-let v1168 : UH10 = dfa_minimize_states_loop_153(v1155, v1166, v1167)
+let v1168 : UH10 = dfa_minimize_states_loop_147(v1155, v1166, v1167)
 let v1177 : bool =
     if v1159 then
         let v1169 : US1 = US1_TriA
@@ -4513,7 +4408,7 @@ let v1177 : bool =
         let v1173 : UH6 = UH6_SymbolListCons(v1171, v1172)
         let v1174 : UH6 = UH6_SymbolListCons(v1170, v1173)
         let v1175 : UH6 = UH6_SymbolListCons(v1169, v1174)
-        dfa_states_have_representative_155(v1155, v1168, v1175)
+        dfa_states_have_representative_149(v1155, v1168, v1175)
     else
         false
 let v1186 : bool =
@@ -4537,7 +4432,7 @@ let v1195 : bool =
         let v1191 : UH6 = UH6_SymbolListCons(v1189, v1190)
         let v1192 : UH6 = UH6_SymbolListCons(v1188, v1191)
         let v1193 : UH6 = UH6_SymbolListCons(v1187, v1192)
-        dfa_quotient_closed_156(v1168, v1193)
+        dfa_quotient_closed_150(v1168, v1193, v1168)
     else
         false
 let v1196 : US1 = US1_TriA
@@ -4562,7 +4457,7 @@ let v1214 : UH3 = UH3_RegexCat(v1203, v1213)
 let v1215 : UH3 = UH3_RegexAlt(v1201, v1214)
 let v1216 : UH3 = normalize_14(v1215)
 let v1217 : UH3 = normalize_14(v1216)
-let v1218 : UH8 = regex_position_count_123(v1217)
+let v1218 : UH8 = regex_position_count_120(v1217)
 let v1219 : UH8 = UH8_StateBudgetSucc(v1218)
 let v1220 : UH8 = state_budget_pow2_104(v1219)
 let v1221 : UH3 = normalize_14(v1217)
@@ -4577,7 +4472,7 @@ let v1229 : UH10 = UH10_RegexListNil
 let v1230 : UH10 = UH10_RegexListCons(v1221, v1229)
 let v1231 : UH10 = UH10_RegexListNil
 let v1232 : UH10 = UH10_RegexListCons(v1221, v1231)
-let v1233 : US8 = dfa_closure_loop_bounded_124(v1228, v1220, v1230, v1232)
+let v1233 : US8 = dfa_closure_loop_bounded_121(v1228, v1220, v1230, v1232)
 let v1237 : UH10 =
     match v1233 with
     | US8_DfaClosureBudgetExceeded(v1235) -> (* DfaClosureBudgetExceeded *)
@@ -4598,7 +4493,7 @@ let v1246 : UH6 = UH6_SymbolListCons(v1244, v1245)
 let v1247 : UH6 = UH6_SymbolListCons(v1243, v1246)
 let v1248 : UH6 = UH6_SymbolListCons(v1242, v1247)
 let v1249 : UH10 = UH10_RegexListNil
-let v1250 : UH10 = dfa_minimize_states_loop_153(v1237, v1248, v1249)
+let v1250 : UH10 = dfa_minimize_states_loop_147(v1237, v1248, v1249)
 let v1259 : bool =
     if v1241 then
         let v1251 : US1 = US1_TriA
@@ -4608,7 +4503,7 @@ let v1259 : bool =
         let v1255 : UH6 = UH6_SymbolListCons(v1253, v1254)
         let v1256 : UH6 = UH6_SymbolListCons(v1252, v1255)
         let v1257 : UH6 = UH6_SymbolListCons(v1251, v1256)
-        dfa_states_have_representative_155(v1237, v1250, v1257)
+        dfa_states_have_representative_149(v1237, v1250, v1257)
     else
         false
 let v1268 : bool =
@@ -4632,7 +4527,7 @@ let v1277 : bool =
         let v1273 : UH6 = UH6_SymbolListCons(v1271, v1272)
         let v1274 : UH6 = UH6_SymbolListCons(v1270, v1273)
         let v1275 : UH6 = UH6_SymbolListCons(v1269, v1274)
-        dfa_quotient_closed_156(v1250, v1275)
+        dfa_quotient_closed_150(v1250, v1275, v1250)
     else
         false
 let v1279 : bool =
@@ -4893,7 +4788,7 @@ let v1332 : UH8 = UH8_StateBudgetSucc(v1331)
 let v1333 : UH8 = UH8_StateBudgetSucc(v1332)
 let v1334 : UH8 = UH8_StateBudgetSucc(v1333)
 let v1335 : UH8 = UH8_StateBudgetSucc(v1334)
-let v1336 : bool = regex_list_within_budget_141(v1330, v1335)
+let v1336 : bool = regex_list_within_budget_137(v1330, v1335)
 let v1337 : bool = v1336 = false
 if v1337 then
     ()
@@ -4908,7 +4803,7 @@ let v1343 : UH8 = UH8_StateBudgetSucc(v1342)
 let v1344 : UH8 = UH8_StateBudgetSucc(v1343)
 let v1345 : UH8 = UH8_StateBudgetSucc(v1344)
 let v1346 : UH8 = UH8_StateBudgetSucc(v1345)
-let v1347 : bool = regex_list_within_budget_141(v1330, v1346)
+let v1347 : bool = regex_list_within_budget_137(v1330, v1346)
 if v1347 then
     ()
 else
@@ -4946,7 +4841,7 @@ let v1380 : bool =
         let v1374 : UH8 = regex_position_count_102(v1357)
         let v1375 : UH8 = UH8_StateBudgetSucc(v1374)
         let v1376 : UH8 = state_budget_pow2_104(v1375)
-        regex_list_within_budget_118(v1373, v1376)
+        regex_list_within_budget_116(v1373, v1376)
 if v1380 then
     ()
 else
@@ -4962,7 +4857,7 @@ let v1388 : UH3 = UH3_RegexChar(v1387)
 let v1389 : UH3 = UH3_RegexCat(v1386, v1388)
 let v1390 : UH3 = normalize_14(v1389)
 let v1391 : UH3 = normalize_14(v1390)
-let v1392 : UH8 = regex_position_count_123(v1391)
+let v1392 : UH8 = regex_position_count_120(v1391)
 let v1393 : UH8 = UH8_StateBudgetSucc(v1392)
 let v1394 : UH8 = state_budget_pow2_104(v1393)
 let v1395 : UH3 = normalize_14(v1391)
@@ -4977,16 +4872,16 @@ let v1403 : UH10 = UH10_RegexListNil
 let v1404 : UH10 = UH10_RegexListCons(v1395, v1403)
 let v1405 : UH10 = UH10_RegexListNil
 let v1406 : UH10 = UH10_RegexListCons(v1395, v1405)
-let v1407 : US8 = dfa_closure_loop_bounded_124(v1402, v1394, v1404, v1406)
+let v1407 : US8 = dfa_closure_loop_bounded_121(v1402, v1394, v1404, v1406)
 let v1415 : bool =
     match v1407 with
     | US8_DfaClosureBudgetExceeded(v1413) -> (* DfaClosureBudgetExceeded *)
         false
     | US8_DfaClosureComplete(v1408) -> (* DfaClosureComplete *)
-        let v1409 : UH8 = regex_position_count_123(v1390)
+        let v1409 : UH8 = regex_position_count_120(v1390)
         let v1410 : UH8 = UH8_StateBudgetSucc(v1409)
         let v1411 : UH8 = state_budget_pow2_104(v1410)
-        regex_list_within_budget_141(v1408, v1411)
+        regex_list_within_budget_137(v1408, v1411)
 if v1415 then
     ()
 else
@@ -5027,11 +4922,11 @@ let v1455 : bool =
         let v1445 : UH4 = UH4_SymbolListCons(v1443, v1444)
         let v1446 : UH4 = UH4_SymbolListCons(v1442, v1445)
         let v1447 : UH9 = UH9_RegexListNil
-        let v1448 : UH9 = dfa_minimize_states_loop_147(v1441, v1446, v1447)
+        let v1448 : UH9 = dfa_minimize_states_loop_142(v1441, v1446, v1447)
         let v1449 : UH8 = regex_position_count_102(v1425)
         let v1450 : UH8 = UH8_StateBudgetSucc(v1449)
         let v1451 : UH8 = state_budget_pow2_104(v1450)
-        regex_list_within_budget_118(v1448, v1451)
+        regex_list_within_budget_116(v1448, v1451)
 if v1455 then
     ()
 else
@@ -5058,7 +4953,7 @@ let v1474 : UH3 = UH3_RegexCat(v1463, v1473)
 let v1475 : UH3 = UH3_RegexAlt(v1461, v1474)
 let v1476 : UH3 = normalize_14(v1475)
 let v1477 : UH3 = normalize_14(v1476)
-let v1478 : UH8 = regex_position_count_123(v1477)
+let v1478 : UH8 = regex_position_count_120(v1477)
 let v1479 : UH8 = UH8_StateBudgetSucc(v1478)
 let v1480 : UH8 = state_budget_pow2_104(v1479)
 let v1481 : UH3 = normalize_14(v1477)
@@ -5073,7 +4968,7 @@ let v1489 : UH10 = UH10_RegexListNil
 let v1490 : UH10 = UH10_RegexListCons(v1481, v1489)
 let v1491 : UH10 = UH10_RegexListNil
 let v1492 : UH10 = UH10_RegexListCons(v1481, v1491)
-let v1493 : US8 = dfa_closure_loop_bounded_124(v1488, v1480, v1490, v1492)
+let v1493 : US8 = dfa_closure_loop_bounded_121(v1488, v1480, v1490, v1492)
 let v1510 : bool =
     match v1493 with
     | US8_DfaClosureBudgetExceeded(v1508) -> (* DfaClosureBudgetExceeded *)
@@ -5087,11 +4982,11 @@ let v1510 : bool =
         let v1500 : UH6 = UH6_SymbolListCons(v1496, v1499)
         let v1501 : UH6 = UH6_SymbolListCons(v1495, v1500)
         let v1502 : UH10 = UH10_RegexListNil
-        let v1503 : UH10 = dfa_minimize_states_loop_153(v1494, v1501, v1502)
-        let v1504 : UH8 = regex_position_count_123(v1476)
+        let v1503 : UH10 = dfa_minimize_states_loop_147(v1494, v1501, v1502)
+        let v1504 : UH8 = regex_position_count_120(v1476)
         let v1505 : UH8 = UH8_StateBudgetSucc(v1504)
         let v1506 : UH8 = state_budget_pow2_104(v1505)
-        regex_list_within_budget_141(v1503, v1506)
+        regex_list_within_budget_137(v1503, v1506)
 if v1510 then
     ()
 else
@@ -5147,7 +5042,7 @@ let v1563 : US12 =
             let v1554 : UH0 = UH0_InputCons(v1552, v1553)
             let v1555 : UH0 = UH0_InputCons(v1551, v1554)
             let v1556 : UH0 = UH0_InputCons(v1550, v1555)
-            dfa_run_in_closure_159(v1533, v1549, v1556)
+            dfa_run_in_closure_152(v1533, v1549, v1556)
     else
         US12_DfaEscapedClosure
 let v1564 : US0 = US0_BitZero
@@ -5231,7 +5126,7 @@ let v1636 : US12 =
             let v1627 : UH0 = UH0_InputCons(v1625, v1626)
             let v1628 : UH0 = UH0_InputCons(v1624, v1627)
             let v1629 : UH0 = UH0_InputCons(v1623, v1628)
-            dfa_run_in_closure_159(v1606, v1622, v1629)
+            dfa_run_in_closure_152(v1606, v1622, v1629)
     else
         US12_DfaEscapedClosure
 let v1637 : US0 = US0_BitZero
@@ -5278,7 +5173,7 @@ let v1667 : UH6 = UH6_SymbolListNil
 let v1668 : UH6 = UH6_SymbolListCons(v1666, v1667)
 let v1669 : UH6 = UH6_SymbolListCons(v1665, v1668)
 let v1670 : UH6 = UH6_SymbolListCons(v1664, v1669)
-let v1671 : bool = input_symbols_covered_160(v1663, v1670)
+let v1671 : bool = input_symbols_covered_153(v1663, v1670)
 let v1707 : US12 =
     if v1671 then
         let v1672 : US1 = US1_TriA
@@ -5286,7 +5181,7 @@ let v1707 : US12 =
         let v1674 : UH3 = UH3_RegexStar(v1673)
         let v1675 : UH3 = normalize_14(v1674)
         let v1676 : UH3 = normalize_14(v1675)
-        let v1677 : UH8 = regex_position_count_123(v1676)
+        let v1677 : UH8 = regex_position_count_120(v1676)
         let v1678 : UH8 = UH8_StateBudgetSucc(v1677)
         let v1679 : UH8 = state_budget_pow2_104(v1678)
         let v1680 : UH3 = normalize_14(v1676)
@@ -5301,7 +5196,7 @@ let v1707 : US12 =
         let v1689 : UH10 = UH10_RegexListCons(v1680, v1688)
         let v1690 : UH10 = UH10_RegexListNil
         let v1691 : UH10 = UH10_RegexListCons(v1680, v1690)
-        let v1692 : US8 = dfa_closure_loop_bounded_124(v1687, v1679, v1689, v1691)
+        let v1692 : US8 = dfa_closure_loop_bounded_121(v1687, v1679, v1689, v1691)
         match v1692 with
         | US8_DfaClosureBudgetExceeded(v1702) -> (* DfaClosureBudgetExceeded *)
             US12_DfaEscapedClosure
@@ -5313,7 +5208,7 @@ let v1707 : US12 =
             let v1698 : UH1 = UH1_InputCons(v1696, v1697)
             let v1699 : UH1 = UH1_InputCons(v1695, v1698)
             let v1700 : UH1 = UH1_InputCons(v1694, v1699)
-            dfa_run_in_closure_162(v1675, v1693, v1700)
+            dfa_run_in_closure_155(v1675, v1693, v1700)
     else
         US12_DfaEscapedClosure
 let v1708 : US1 = US1_TriA
@@ -5354,7 +5249,7 @@ let v1732 : UH6 = UH6_SymbolListNil
 let v1733 : UH6 = UH6_SymbolListCons(v1731, v1732)
 let v1734 : UH6 = UH6_SymbolListCons(v1730, v1733)
 let v1735 : UH6 = UH6_SymbolListCons(v1729, v1734)
-let v1736 : bool = input_symbols_covered_160(v1728, v1735)
+let v1736 : bool = input_symbols_covered_153(v1728, v1735)
 let v1772 : US12 =
     if v1736 then
         let v1737 : US1 = US1_TriA
@@ -5362,7 +5257,7 @@ let v1772 : US12 =
         let v1739 : UH3 = UH3_RegexStar(v1738)
         let v1740 : UH3 = normalize_14(v1739)
         let v1741 : UH3 = normalize_14(v1740)
-        let v1742 : UH8 = regex_position_count_123(v1741)
+        let v1742 : UH8 = regex_position_count_120(v1741)
         let v1743 : UH8 = UH8_StateBudgetSucc(v1742)
         let v1744 : UH8 = state_budget_pow2_104(v1743)
         let v1745 : UH3 = normalize_14(v1741)
@@ -5377,7 +5272,7 @@ let v1772 : US12 =
         let v1754 : UH10 = UH10_RegexListCons(v1745, v1753)
         let v1755 : UH10 = UH10_RegexListNil
         let v1756 : UH10 = UH10_RegexListCons(v1745, v1755)
-        let v1757 : US8 = dfa_closure_loop_bounded_124(v1752, v1744, v1754, v1756)
+        let v1757 : US8 = dfa_closure_loop_bounded_121(v1752, v1744, v1754, v1756)
         match v1757 with
         | US8_DfaClosureBudgetExceeded(v1767) -> (* DfaClosureBudgetExceeded *)
             US12_DfaEscapedClosure
@@ -5389,7 +5284,7 @@ let v1772 : US12 =
             let v1763 : UH1 = UH1_InputCons(v1761, v1762)
             let v1764 : UH1 = UH1_InputCons(v1760, v1763)
             let v1765 : UH1 = UH1_InputCons(v1759, v1764)
-            dfa_run_in_closure_162(v1740, v1758, v1765)
+            dfa_run_in_closure_155(v1740, v1758, v1765)
     else
         US12_DfaEscapedClosure
 let v1773 : US1 = US1_TriA
@@ -5432,7 +5327,7 @@ let v1799 : UH6 = UH6_SymbolListNil
 let v1800 : UH6 = UH6_SymbolListCons(v1798, v1799)
 let v1801 : UH6 = UH6_SymbolListCons(v1797, v1800)
 let v1802 : UH6 = UH6_SymbolListCons(v1796, v1801)
-let v1803 : bool = input_symbols_covered_160(v1795, v1802)
+let v1803 : bool = input_symbols_covered_153(v1795, v1802)
 let v1847 : US12 =
     if v1803 then
         let v1804 : US1 = US1_TriA
@@ -5446,7 +5341,7 @@ let v1847 : US12 =
         let v1812 : UH3 = UH3_RegexCat(v1809, v1811)
         let v1813 : UH3 = normalize_14(v1812)
         let v1814 : UH3 = normalize_14(v1813)
-        let v1815 : UH8 = regex_position_count_123(v1814)
+        let v1815 : UH8 = regex_position_count_120(v1814)
         let v1816 : UH8 = UH8_StateBudgetSucc(v1815)
         let v1817 : UH8 = state_budget_pow2_104(v1816)
         let v1818 : UH3 = normalize_14(v1814)
@@ -5461,7 +5356,7 @@ let v1847 : US12 =
         let v1827 : UH10 = UH10_RegexListCons(v1818, v1826)
         let v1828 : UH10 = UH10_RegexListNil
         let v1829 : UH10 = UH10_RegexListCons(v1818, v1828)
-        let v1830 : US8 = dfa_closure_loop_bounded_124(v1825, v1817, v1827, v1829)
+        let v1830 : US8 = dfa_closure_loop_bounded_121(v1825, v1817, v1827, v1829)
         match v1830 with
         | US8_DfaClosureBudgetExceeded(v1842) -> (* DfaClosureBudgetExceeded *)
             US12_DfaEscapedClosure
@@ -5475,7 +5370,7 @@ let v1847 : US12 =
             let v1838 : UH1 = UH1_InputCons(v1834, v1837)
             let v1839 : UH1 = UH1_InputCons(v1833, v1838)
             let v1840 : UH1 = UH1_InputCons(v1832, v1839)
-            dfa_run_in_closure_162(v1813, v1831, v1840)
+            dfa_run_in_closure_155(v1813, v1831, v1840)
     else
         US12_DfaEscapedClosure
 let v1848 : US1 = US1_TriA
@@ -5526,7 +5421,7 @@ let v1882 : UH6 = UH6_SymbolListNil
 let v1883 : UH6 = UH6_SymbolListCons(v1881, v1882)
 let v1884 : UH6 = UH6_SymbolListCons(v1880, v1883)
 let v1885 : UH6 = UH6_SymbolListCons(v1879, v1884)
-let v1886 : bool = input_symbols_covered_160(v1878, v1885)
+let v1886 : bool = input_symbols_covered_153(v1878, v1885)
 let v1930 : US12 =
     if v1886 then
         let v1887 : US1 = US1_TriA
@@ -5540,7 +5435,7 @@ let v1930 : US12 =
         let v1895 : UH3 = UH3_RegexCat(v1892, v1894)
         let v1896 : UH3 = normalize_14(v1895)
         let v1897 : UH3 = normalize_14(v1896)
-        let v1898 : UH8 = regex_position_count_123(v1897)
+        let v1898 : UH8 = regex_position_count_120(v1897)
         let v1899 : UH8 = UH8_StateBudgetSucc(v1898)
         let v1900 : UH8 = state_budget_pow2_104(v1899)
         let v1901 : UH3 = normalize_14(v1897)
@@ -5555,7 +5450,7 @@ let v1930 : US12 =
         let v1910 : UH10 = UH10_RegexListCons(v1901, v1909)
         let v1911 : UH10 = UH10_RegexListNil
         let v1912 : UH10 = UH10_RegexListCons(v1901, v1911)
-        let v1913 : US8 = dfa_closure_loop_bounded_124(v1908, v1900, v1910, v1912)
+        let v1913 : US8 = dfa_closure_loop_bounded_121(v1908, v1900, v1910, v1912)
         match v1913 with
         | US8_DfaClosureBudgetExceeded(v1925) -> (* DfaClosureBudgetExceeded *)
             US12_DfaEscapedClosure
@@ -5569,7 +5464,7 @@ let v1930 : US12 =
             let v1921 : UH1 = UH1_InputCons(v1917, v1920)
             let v1922 : UH1 = UH1_InputCons(v1916, v1921)
             let v1923 : UH1 = UH1_InputCons(v1915, v1922)
-            dfa_run_in_closure_162(v1896, v1914, v1923)
+            dfa_run_in_closure_155(v1896, v1914, v1923)
     else
         US12_DfaEscapedClosure
 let v1931 : US1 = US1_TriA
@@ -5654,13 +5549,13 @@ let v2027 : US12 =
             let v1995 : UH4 = UH4_SymbolListCons(v1993, v1994)
             let v1996 : UH4 = UH4_SymbolListCons(v1992, v1995)
             let v1997 : UH9 = UH9_RegexListNil
-            let v1998 : UH9 = dfa_minimize_states_loop_147(v1991, v1996, v1997)
+            let v1998 : UH9 = dfa_minimize_states_loop_142(v1991, v1996, v1997)
             let v1999 : US0 = US0_BitZero
             let v2000 : US0 = US0_BitOne
             let v2001 : UH4 = UH4_SymbolListNil
             let v2002 : UH4 = UH4_SymbolListCons(v2000, v2001)
             let v2003 : UH4 = UH4_SymbolListCons(v1999, v2002)
-            let v2004 : US10 = dfa_find_bisimilar_representative_148(v1975, v1998, v2003)
+            let v2004 : US10 = dfa_find_bisimilar_representative_143(v1975, v1998, v2003)
             match v2004 with
             | US10_DfaRepresentativeFound(v2005) -> (* DfaRepresentativeFound *)
                 let v2006 : US0 = US0_BitZero
@@ -5675,7 +5570,7 @@ let v2027 : US12 =
                 let v2015 : UH0 = UH0_InputCons(v2013, v2014)
                 let v2016 : UH0 = UH0_InputCons(v2012, v2015)
                 let v2017 : UH0 = UH0_InputCons(v2011, v2016)
-                dfa_run_minimized_in_representatives_163(v2005, v1998, v2010, v2017)
+                dfa_run_minimized_in_representatives_156(v2005, v1998, v2010, v2017)
             | US10_DfaRepresentativeMissing -> (* DfaRepresentativeMissing *)
                 US12_DfaEscapedClosure
     else
@@ -5724,7 +5619,7 @@ let v2058 : UH6 = UH6_SymbolListNil
 let v2059 : UH6 = UH6_SymbolListCons(v2057, v2058)
 let v2060 : UH6 = UH6_SymbolListCons(v2056, v2059)
 let v2061 : UH6 = UH6_SymbolListCons(v2055, v2060)
-let v2062 : bool = input_symbols_covered_160(v2054, v2061)
+let v2062 : bool = input_symbols_covered_153(v2054, v2061)
 let v2126 : US12 =
     if v2062 then
         let v2063 : US1 = US1_TriA
@@ -5732,7 +5627,7 @@ let v2126 : US12 =
         let v2065 : UH3 = UH3_RegexStar(v2064)
         let v2066 : UH3 = normalize_14(v2065)
         let v2067 : UH3 = normalize_14(v2066)
-        let v2068 : UH8 = regex_position_count_123(v2067)
+        let v2068 : UH8 = regex_position_count_120(v2067)
         let v2069 : UH8 = UH8_StateBudgetSucc(v2068)
         let v2070 : UH8 = state_budget_pow2_104(v2069)
         let v2071 : UH3 = normalize_14(v2067)
@@ -5747,7 +5642,7 @@ let v2126 : US12 =
         let v2080 : UH10 = UH10_RegexListCons(v2071, v2079)
         let v2081 : UH10 = UH10_RegexListNil
         let v2082 : UH10 = UH10_RegexListCons(v2071, v2081)
-        let v2083 : US8 = dfa_closure_loop_bounded_124(v2078, v2070, v2080, v2082)
+        let v2083 : US8 = dfa_closure_loop_bounded_121(v2078, v2070, v2080, v2082)
         match v2083 with
         | US8_DfaClosureBudgetExceeded(v2121) -> (* DfaClosureBudgetExceeded *)
             US12_DfaEscapedClosure
@@ -5760,7 +5655,7 @@ let v2126 : US12 =
             let v2090 : UH6 = UH6_SymbolListCons(v2086, v2089)
             let v2091 : UH6 = UH6_SymbolListCons(v2085, v2090)
             let v2092 : UH10 = UH10_RegexListNil
-            let v2093 : UH10 = dfa_minimize_states_loop_153(v2084, v2091, v2092)
+            let v2093 : UH10 = dfa_minimize_states_loop_147(v2084, v2091, v2092)
             let v2094 : US1 = US1_TriA
             let v2095 : US1 = US1_TriB
             let v2096 : US1 = US1_TriC
@@ -5768,7 +5663,7 @@ let v2126 : US12 =
             let v2098 : UH6 = UH6_SymbolListCons(v2096, v2097)
             let v2099 : UH6 = UH6_SymbolListCons(v2095, v2098)
             let v2100 : UH6 = UH6_SymbolListCons(v2094, v2099)
-            let v2101 : US11 = dfa_find_bisimilar_representative_154(v2066, v2093, v2100)
+            let v2101 : US11 = dfa_find_bisimilar_representative_148(v2066, v2093, v2100)
             match v2101 with
             | US11_DfaRepresentativeFound(v2102) -> (* DfaRepresentativeFound *)
                 let v2103 : US1 = US1_TriA
@@ -5785,7 +5680,7 @@ let v2126 : US12 =
                 let v2114 : UH1 = UH1_InputCons(v2112, v2113)
                 let v2115 : UH1 = UH1_InputCons(v2111, v2114)
                 let v2116 : UH1 = UH1_InputCons(v2110, v2115)
-                dfa_run_minimized_in_representatives_164(v2102, v2093, v2109, v2116)
+                dfa_run_minimized_in_representatives_157(v2102, v2093, v2109, v2116)
             | US11_DfaRepresentativeMissing -> (* DfaRepresentativeMissing *)
                 US12_DfaEscapedClosure
     else
@@ -5828,7 +5723,7 @@ let v2151 : UH6 = UH6_SymbolListNil
 let v2152 : UH6 = UH6_SymbolListCons(v2150, v2151)
 let v2153 : UH6 = UH6_SymbolListCons(v2149, v2152)
 let v2154 : UH6 = UH6_SymbolListCons(v2148, v2153)
-let v2155 : bool = input_symbols_covered_160(v2147, v2154)
+let v2155 : bool = input_symbols_covered_153(v2147, v2154)
 let v2236 : US12 =
     if v2155 then
         let v2156 : US1 = US1_TriA
@@ -5853,7 +5748,7 @@ let v2236 : US12 =
         let v2175 : UH3 = UH3_RegexAlt(v2161, v2174)
         let v2176 : UH3 = normalize_14(v2175)
         let v2177 : UH3 = normalize_14(v2176)
-        let v2178 : UH8 = regex_position_count_123(v2177)
+        let v2178 : UH8 = regex_position_count_120(v2177)
         let v2179 : UH8 = UH8_StateBudgetSucc(v2178)
         let v2180 : UH8 = state_budget_pow2_104(v2179)
         let v2181 : UH3 = normalize_14(v2177)
@@ -5868,7 +5763,7 @@ let v2236 : US12 =
         let v2190 : UH10 = UH10_RegexListCons(v2181, v2189)
         let v2191 : UH10 = UH10_RegexListNil
         let v2192 : UH10 = UH10_RegexListCons(v2181, v2191)
-        let v2193 : US8 = dfa_closure_loop_bounded_124(v2188, v2180, v2190, v2192)
+        let v2193 : US8 = dfa_closure_loop_bounded_121(v2188, v2180, v2190, v2192)
         match v2193 with
         | US8_DfaClosureBudgetExceeded(v2231) -> (* DfaClosureBudgetExceeded *)
             US12_DfaEscapedClosure
@@ -5881,7 +5776,7 @@ let v2236 : US12 =
             let v2200 : UH6 = UH6_SymbolListCons(v2196, v2199)
             let v2201 : UH6 = UH6_SymbolListCons(v2195, v2200)
             let v2202 : UH10 = UH10_RegexListNil
-            let v2203 : UH10 = dfa_minimize_states_loop_153(v2194, v2201, v2202)
+            let v2203 : UH10 = dfa_minimize_states_loop_147(v2194, v2201, v2202)
             let v2204 : US1 = US1_TriA
             let v2205 : US1 = US1_TriB
             let v2206 : US1 = US1_TriC
@@ -5889,7 +5784,7 @@ let v2236 : US12 =
             let v2208 : UH6 = UH6_SymbolListCons(v2206, v2207)
             let v2209 : UH6 = UH6_SymbolListCons(v2205, v2208)
             let v2210 : UH6 = UH6_SymbolListCons(v2204, v2209)
-            let v2211 : US11 = dfa_find_bisimilar_representative_154(v2176, v2203, v2210)
+            let v2211 : US11 = dfa_find_bisimilar_representative_148(v2176, v2203, v2210)
             match v2211 with
             | US11_DfaRepresentativeFound(v2212) -> (* DfaRepresentativeFound *)
                 let v2213 : US1 = US1_TriA
@@ -5906,7 +5801,7 @@ let v2236 : US12 =
                 let v2224 : UH1 = UH1_InputCons(v2222, v2223)
                 let v2225 : UH1 = UH1_InputCons(v2221, v2224)
                 let v2226 : UH1 = UH1_InputCons(v2220, v2225)
-                dfa_run_minimized_in_representatives_164(v2212, v2203, v2219, v2226)
+                dfa_run_minimized_in_representatives_157(v2212, v2203, v2219, v2226)
             | US11_DfaRepresentativeMissing -> (* DfaRepresentativeMissing *)
                 US12_DfaEscapedClosure
     else
@@ -5966,7 +5861,7 @@ let v2278 : UH6 = UH6_SymbolListNil
 let v2279 : UH6 = UH6_SymbolListCons(v2277, v2278)
 let v2280 : UH6 = UH6_SymbolListCons(v2276, v2279)
 let v2281 : UH6 = UH6_SymbolListCons(v2275, v2280)
-let v2282 : bool = input_symbols_covered_160(v2274, v2281)
+let v2282 : bool = input_symbols_covered_153(v2274, v2281)
 let v2363 : US12 =
     if v2282 then
         let v2283 : US1 = US1_TriA
@@ -5991,7 +5886,7 @@ let v2363 : US12 =
         let v2302 : UH3 = UH3_RegexAlt(v2288, v2301)
         let v2303 : UH3 = normalize_14(v2302)
         let v2304 : UH3 = normalize_14(v2303)
-        let v2305 : UH8 = regex_position_count_123(v2304)
+        let v2305 : UH8 = regex_position_count_120(v2304)
         let v2306 : UH8 = UH8_StateBudgetSucc(v2305)
         let v2307 : UH8 = state_budget_pow2_104(v2306)
         let v2308 : UH3 = normalize_14(v2304)
@@ -6006,7 +5901,7 @@ let v2363 : US12 =
         let v2317 : UH10 = UH10_RegexListCons(v2308, v2316)
         let v2318 : UH10 = UH10_RegexListNil
         let v2319 : UH10 = UH10_RegexListCons(v2308, v2318)
-        let v2320 : US8 = dfa_closure_loop_bounded_124(v2315, v2307, v2317, v2319)
+        let v2320 : US8 = dfa_closure_loop_bounded_121(v2315, v2307, v2317, v2319)
         match v2320 with
         | US8_DfaClosureBudgetExceeded(v2358) -> (* DfaClosureBudgetExceeded *)
             US12_DfaEscapedClosure
@@ -6019,7 +5914,7 @@ let v2363 : US12 =
             let v2327 : UH6 = UH6_SymbolListCons(v2323, v2326)
             let v2328 : UH6 = UH6_SymbolListCons(v2322, v2327)
             let v2329 : UH10 = UH10_RegexListNil
-            let v2330 : UH10 = dfa_minimize_states_loop_153(v2321, v2328, v2329)
+            let v2330 : UH10 = dfa_minimize_states_loop_147(v2321, v2328, v2329)
             let v2331 : US1 = US1_TriA
             let v2332 : US1 = US1_TriB
             let v2333 : US1 = US1_TriC
@@ -6027,7 +5922,7 @@ let v2363 : US12 =
             let v2335 : UH6 = UH6_SymbolListCons(v2333, v2334)
             let v2336 : UH6 = UH6_SymbolListCons(v2332, v2335)
             let v2337 : UH6 = UH6_SymbolListCons(v2331, v2336)
-            let v2338 : US11 = dfa_find_bisimilar_representative_154(v2303, v2330, v2337)
+            let v2338 : US11 = dfa_find_bisimilar_representative_148(v2303, v2330, v2337)
             match v2338 with
             | US11_DfaRepresentativeFound(v2339) -> (* DfaRepresentativeFound *)
                 let v2340 : US1 = US1_TriA
@@ -6044,7 +5939,7 @@ let v2363 : US12 =
                 let v2351 : UH1 = UH1_InputCons(v2349, v2350)
                 let v2352 : UH1 = UH1_InputCons(v2348, v2351)
                 let v2353 : UH1 = UH1_InputCons(v2347, v2352)
-                dfa_run_minimized_in_representatives_164(v2339, v2330, v2346, v2353)
+                dfa_run_minimized_in_representatives_157(v2339, v2330, v2346, v2353)
             | US11_DfaRepresentativeMissing -> (* DfaRepresentativeMissing *)
                 US12_DfaEscapedClosure
     else
@@ -6371,7 +6266,7 @@ let v2610 : UH0 = UH0_InputEmpty
 let v2611 : UH0 = UH0_InputCons(v2609, v2610)
 let v2612 : UH0 = UH0_InputCons(v2608, v2611)
 let v2613 : UH0 = UH0_InputCons(v2607, v2612)
-let v2614 : bool = reference_accepts_165(v2606, v2613)
+let v2614 : bool = reference_accepts_158(v2606, v2613)
 let v2615 : US0 = US0_BitZero
 let v2616 : UH2 = UH2_RegexChar(v2615)
 let v2617 : US0 = US0_BitOne
@@ -6415,7 +6310,7 @@ let v2646 : UH0 = UH0_InputEmpty
 let v2647 : UH0 = UH0_InputCons(v2645, v2646)
 let v2648 : UH0 = UH0_InputCons(v2644, v2647)
 let v2649 : UH0 = UH0_InputCons(v2643, v2648)
-let v2650 : bool = reference_accepts_165(v2642, v2649)
+let v2650 : bool = reference_accepts_158(v2642, v2649)
 let v2651 : US0 = US0_BitZero
 let v2652 : UH2 = UH2_RegexChar(v2651)
 let v2653 : US0 = US0_BitOne
@@ -6453,7 +6348,7 @@ let v2676 : UH1 = UH1_InputEmpty
 let v2677 : UH1 = UH1_InputCons(v2675, v2676)
 let v2678 : UH1 = UH1_InputCons(v2674, v2677)
 let v2679 : UH1 = UH1_InputCons(v2673, v2678)
-let v2680 : bool = reference_accepts_166(v2672, v2679)
+let v2680 : bool = reference_accepts_159(v2672, v2679)
 let v2681 : US1 = US1_TriA
 let v2682 : UH3 = UH3_RegexChar(v2681)
 let v2683 : UH3 = UH3_RegexStar(v2682)
@@ -6485,7 +6380,7 @@ let v2700 : UH1 = UH1_InputEmpty
 let v2701 : UH1 = UH1_InputCons(v2699, v2700)
 let v2702 : UH1 = UH1_InputCons(v2698, v2701)
 let v2703 : UH1 = UH1_InputCons(v2697, v2702)
-let v2704 : bool = reference_accepts_166(v2696, v2703)
+let v2704 : bool = reference_accepts_159(v2696, v2703)
 let v2705 : US1 = US1_TriA
 let v2706 : UH3 = UH3_RegexChar(v2705)
 let v2707 : UH3 = UH3_RegexStar(v2706)
@@ -6525,7 +6420,7 @@ let v2732 : UH1 = UH1_InputCons(v2730, v2731)
 let v2733 : UH1 = UH1_InputCons(v2729, v2732)
 let v2734 : UH1 = UH1_InputCons(v2728, v2733)
 let v2735 : UH1 = UH1_InputCons(v2727, v2734)
-let v2736 : bool = reference_accepts_166(v2726, v2735)
+let v2736 : bool = reference_accepts_159(v2726, v2735)
 let v2737 : US1 = US1_TriA
 let v2738 : UH3 = UH3_RegexChar(v2737)
 let v2739 : US1 = US1_TriB
@@ -6573,7 +6468,7 @@ let v2772 : UH1 = UH1_InputCons(v2770, v2771)
 let v2773 : UH1 = UH1_InputCons(v2769, v2772)
 let v2774 : UH1 = UH1_InputCons(v2768, v2773)
 let v2775 : UH1 = UH1_InputCons(v2767, v2774)
-let v2776 : bool = reference_accepts_166(v2766, v2775)
+let v2776 : bool = reference_accepts_159(v2766, v2775)
 let v2777 : US1 = US1_TriA
 let v2778 : UH3 = UH3_RegexChar(v2777)
 let v2779 : US1 = US1_TriB
@@ -6948,7 +6843,7 @@ let v3076 : UH6 = UH6_SymbolListNil
 let v3077 : UH6 = UH6_SymbolListCons(v3075, v3076)
 let v3078 : UH6 = UH6_SymbolListCons(v3074, v3077)
 let v3079 : UH6 = UH6_SymbolListCons(v3073, v3078)
-let v3080 : UH7 = input_singletons_from_symbols_133(v3079)
+let v3080 : UH7 = input_singletons_from_symbols_129(v3079)
 let v3081 : UH1 = UH1_InputEmpty
 let v3082 : UH7 = UH7_InputListCons(v3081, v3080)
 let v3083 : US1 = US1_TriA
@@ -6965,8 +6860,8 @@ let v3093 : UH6 = UH6_SymbolListNil
 let v3094 : UH6 = UH6_SymbolListCons(v3092, v3093)
 let v3095 : UH6 = UH6_SymbolListCons(v3091, v3094)
 let v3096 : UH6 = UH6_SymbolListCons(v3090, v3095)
-let v3097 : UH7 = input_singletons_from_symbols_133(v3096)
-let v3098 : UH7 = input_prepend_symbols_to_corpus_134(v3089, v3097)
+let v3097 : UH7 = input_singletons_from_symbols_129(v3096)
+let v3098 : UH7 = input_prepend_symbols_to_corpus_130(v3089, v3097)
 let v3099 : UH7 = input_list_append_42(v3082, v3098)
 let v3100 : UH2 = UH2_RegexEmpty
 let v3101 : UH2 = UH2_RegexEpsilon

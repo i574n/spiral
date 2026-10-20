@@ -283,302 +283,7 @@ def utf8_scalar_at_byte_offset_1(v0 : string, v1 : i32) -> i32:
                             else:
                                 del v0, v1, v2, v8, v63
                                 raise Exception("UTF-8 scalar starts with an invalid lead byte.")
-def utf8_canonical_equal_bounded_loop_0(v0 : string, v1 : i32, v2 : i32, v3 : i32, v4 : i32, v5 : i32, v6 : i32) -> bool:
-    while True:
-        v7 = v3 >= 0
-        if v7:
-            v75, v76, v77 = v3, v1, -1
-        else:
-            v8 = v1 == v5
-            if v8:
-                del v8
-                v75, v76, v77 = -1, v1, -1
-            else:
-                del v8
-                v9 = v1 > v5
-                if v9:
-                    del v9
-                    raise Exception("UTF-8 canonical stream offset exceeds the string.")
-                else:
-                    del v9
-                    v13 = utf8_scalar_at_byte_offset_1(v0, v1)
-                    v14 = v13 < 128
-                    if v14:
-                        v19 = 1
-                    else:
-                        v15 = v13 < 2048
-                        if v15:
-                            del v15
-                            v19 = 2
-                        else:
-                            del v15
-                            v16 = v13 < 65536
-                            if v16:
-                                del v16
-                                v19 = 3
-                            else:
-                                del v16
-                                v19 = 4
-                    del v14
-                    v20 = v13 == 192
-                    if v20:
-                        v66, v67 = 65, 768
-                    else:
-                        v21 = v13 == 193
-                        if v21:
-                            del v21
-                            v66, v67 = 65, 769
-                        else:
-                            del v21
-                            v22 = v13 == 195
-                            if v22:
-                                del v22
-                                v66, v67 = 65, 771
-                            else:
-                                del v22
-                                v23 = v13 == 196
-                                if v23:
-                                    del v23
-                                    v66, v67 = 65, 776
-                                else:
-                                    del v23
-                                    v24 = v13 == 199
-                                    if v24:
-                                        del v24
-                                        v66, v67 = 67, 807
-                                    else:
-                                        del v24
-                                        v25 = v13 == 201
-                                        if v25:
-                                            del v25
-                                            v66, v67 = 69, 769
-                                        else:
-                                            del v25
-                                            v26 = v13 == 211
-                                            if v26:
-                                                del v26
-                                                v66, v67 = 79, 769
-                                            else:
-                                                del v26
-                                                v27 = v13 == 213
-                                                if v27:
-                                                    del v27
-                                                    v66, v67 = 79, 771
-                                                else:
-                                                    del v27
-                                                    v28 = v13 == 224
-                                                    if v28:
-                                                        del v28
-                                                        v66, v67 = 97, 768
-                                                    else:
-                                                        del v28
-                                                        v29 = v13 == 225
-                                                        if v29:
-                                                            del v29
-                                                            v66, v67 = 97, 769
-                                                        else:
-                                                            del v29
-                                                            v30 = v13 == 227
-                                                            if v30:
-                                                                del v30
-                                                                v66, v67 = 97, 771
-                                                            else:
-                                                                del v30
-                                                                v31 = v13 == 228
-                                                                if v31:
-                                                                    del v31
-                                                                    v66, v67 = 97, 776
-                                                                else:
-                                                                    del v31
-                                                                    v32 = v13 == 231
-                                                                    if v32:
-                                                                        del v32
-                                                                        v66, v67 = 99, 807
-                                                                    else:
-                                                                        del v32
-                                                                        v33 = v13 == 233
-                                                                        if v33:
-                                                                            del v33
-                                                                            v66, v67 = 101, 769
-                                                                        else:
-                                                                            del v33
-                                                                            v34 = v13 == 243
-                                                                            if v34:
-                                                                                del v34
-                                                                                v66, v67 = 111, 769
-                                                                            else:
-                                                                                del v34
-                                                                                v35 = v13 == 245
-                                                                                if v35:
-                                                                                    del v35
-                                                                                    v66, v67 = 111, 771
-                                                                                else:
-                                                                                    del v35
-                                                                                    v66, v67 = v13, -1
-                    del v13, v20
-                    v68 = spiral_wrap(v1 + v19, 32, True)
-                    del v19
-                    v75, v76, v77 = v66, v68, v67
-        del v1, v3, v7
-        v78 = v4 >= 0
-        if v78:
-            v146, v147, v148 = v4, v2, -1
-        else:
-            v79 = v2 == v6
-            if v79:
-                del v79
-                v146, v147, v148 = -1, v2, -1
-            else:
-                del v79
-                v80 = v2 > v6
-                if v80:
-                    del v80
-                    raise Exception("UTF-8 canonical stream offset exceeds the string.")
-                else:
-                    del v80
-                    v84 = utf8_scalar_at_byte_offset_1(v0, v2)
-                    v85 = v84 < 128
-                    if v85:
-                        v90 = 1
-                    else:
-                        v86 = v84 < 2048
-                        if v86:
-                            del v86
-                            v90 = 2
-                        else:
-                            del v86
-                            v87 = v84 < 65536
-                            if v87:
-                                del v87
-                                v90 = 3
-                            else:
-                                del v87
-                                v90 = 4
-                    del v85
-                    v91 = v84 == 192
-                    if v91:
-                        v137, v138 = 65, 768
-                    else:
-                        v92 = v84 == 193
-                        if v92:
-                            del v92
-                            v137, v138 = 65, 769
-                        else:
-                            del v92
-                            v93 = v84 == 195
-                            if v93:
-                                del v93
-                                v137, v138 = 65, 771
-                            else:
-                                del v93
-                                v94 = v84 == 196
-                                if v94:
-                                    del v94
-                                    v137, v138 = 65, 776
-                                else:
-                                    del v94
-                                    v95 = v84 == 199
-                                    if v95:
-                                        del v95
-                                        v137, v138 = 67, 807
-                                    else:
-                                        del v95
-                                        v96 = v84 == 201
-                                        if v96:
-                                            del v96
-                                            v137, v138 = 69, 769
-                                        else:
-                                            del v96
-                                            v97 = v84 == 211
-                                            if v97:
-                                                del v97
-                                                v137, v138 = 79, 769
-                                            else:
-                                                del v97
-                                                v98 = v84 == 213
-                                                if v98:
-                                                    del v98
-                                                    v137, v138 = 79, 771
-                                                else:
-                                                    del v98
-                                                    v99 = v84 == 224
-                                                    if v99:
-                                                        del v99
-                                                        v137, v138 = 97, 768
-                                                    else:
-                                                        del v99
-                                                        v100 = v84 == 225
-                                                        if v100:
-                                                            del v100
-                                                            v137, v138 = 97, 769
-                                                        else:
-                                                            del v100
-                                                            v101 = v84 == 227
-                                                            if v101:
-                                                                del v101
-                                                                v137, v138 = 97, 771
-                                                            else:
-                                                                del v101
-                                                                v102 = v84 == 228
-                                                                if v102:
-                                                                    del v102
-                                                                    v137, v138 = 97, 776
-                                                                else:
-                                                                    del v102
-                                                                    v103 = v84 == 231
-                                                                    if v103:
-                                                                        del v103
-                                                                        v137, v138 = 99, 807
-                                                                    else:
-                                                                        del v103
-                                                                        v104 = v84 == 233
-                                                                        if v104:
-                                                                            del v104
-                                                                            v137, v138 = 101, 769
-                                                                        else:
-                                                                            del v104
-                                                                            v105 = v84 == 243
-                                                                            if v105:
-                                                                                del v105
-                                                                                v137, v138 = 111, 769
-                                                                            else:
-                                                                                del v105
-                                                                                v106 = v84 == 245
-                                                                                if v106:
-                                                                                    del v106
-                                                                                    v137, v138 = 111, 771
-                                                                                else:
-                                                                                    del v106
-                                                                                    v137, v138 = v84, -1
-                    del v84, v91
-                    v139 = spiral_wrap(v2 + v90, 32, True)
-                    del v90
-                    v146, v147, v148 = v137, v139, v138
-        del v2, v4, v78
-        v149 = v75 < 0
-        if v149:
-            del v0, v5, v6, v75, v76, v77, v147, v148, v149
-            v150 = v146 == -1
-            del v146
-            return v150
-        else:
-            del v149
-            v151 = v146 < 0
-            if v151:
-                del v0, v5, v6, v75, v76, v77, v146, v147, v148, v151
-                return False
-            else:
-                del v151
-                v152 = v75 == v146
-                del v75, v146
-                if v152:
-                    del v152
-                    v0, v1, v2, v3, v4, v5, v6 = v0, v76, v147, v77, v148, v5, v6
-                    continue
-                else:
-                    del v0, v5, v6, v76, v77, v147, v148, v152
-                    return False
-def utf8_canonical_equal_bounded_loop_3(v0 : string, v1 : string, v2 : i32, v3 : i32, v4 : i32, v5 : i32, v6 : i32, v7 : i32) -> bool:
+def utf8_canonical_equal_bounded_loop_0(v0 : string, v1 : string, v2 : i32, v3 : i32, v4 : i32, v5 : i32, v6 : i32, v7 : i32) -> bool:
     while True:
         v8 = v4 >= 0
         if v8:
@@ -881,7 +586,7 @@ def main():
     v4 = -1
     v5 = 5
     v6 = 5
-    v7 = utf8_canonical_equal_bounded_loop_0(v0, v1, v2, v3, v4, v5, v6)
+    v7 = utf8_canonical_equal_bounded_loop_0(v0, v0, v1, v2, v3, v4, v5, v6)
     del v0, v1, v2, v3, v4, v5, v6
     v8 = ""
     v9 = 0
@@ -890,7 +595,7 @@ def main():
     v12 = -1
     v13 = 0
     v14 = 0
-    v15 = utf8_canonical_equal_bounded_loop_0(v8, v9, v10, v11, v12, v13, v14)
+    v15 = utf8_canonical_equal_bounded_loop_0(v8, v8, v9, v10, v11, v12, v13, v14)
     del v8, v9, v10, v11, v12, v13, v14
     v16 = "éõç"
     v17 = "éõç"
@@ -900,7 +605,7 @@ def main():
     v21 = -1
     v22 = 6
     v23 = 9
-    v24 = utf8_canonical_equal_bounded_loop_3(v16, v17, v18, v19, v20, v21, v22, v23)
+    v24 = utf8_canonical_equal_bounded_loop_0(v16, v17, v18, v19, v20, v21, v22, v23)
     del v16, v17, v18, v19, v20, v21, v22, v23
     v25 = "é̃"
     v26 = "é̃"
@@ -910,7 +615,7 @@ def main():
     v30 = -1
     v31 = 4
     v32 = 5
-    v33 = utf8_canonical_equal_bounded_loop_3(v25, v26, v27, v28, v29, v30, v31, v32)
+    v33 = utf8_canonical_equal_bounded_loop_0(v25, v26, v27, v28, v29, v30, v31, v32)
     del v25, v27, v28, v29, v30, v31, v32
     v34 = "À"
     v35 = "À"
@@ -920,7 +625,7 @@ def main():
     v39 = -1
     v40 = 2
     v41 = 3
-    v42 = utf8_canonical_equal_bounded_loop_3(v34, v35, v36, v37, v38, v39, v40, v41)
+    v42 = utf8_canonical_equal_bounded_loop_0(v34, v35, v36, v37, v38, v39, v40, v41)
     del v34, v35, v36, v37, v38, v39, v40, v41
     v43 = "Ω"
     v44 = 0
@@ -929,7 +634,7 @@ def main():
     v47 = -1
     v48 = 2
     v49 = 2
-    v50 = utf8_canonical_equal_bounded_loop_0(v43, v44, v45, v46, v47, v48, v49)
+    v50 = utf8_canonical_equal_bounded_loop_0(v43, v43, v44, v45, v46, v47, v48, v49)
     del v44, v45, v46, v47, v48, v49
     v51 = "ẽ́"
     v52 = 0
@@ -938,7 +643,7 @@ def main():
     v55 = -1
     v56 = 5
     v57 = 5
-    v58 = utf8_canonical_equal_bounded_loop_3(v26, v51, v52, v53, v54, v55, v56, v57)
+    v58 = utf8_canonical_equal_bounded_loop_0(v26, v51, v52, v53, v54, v55, v56, v57)
     del v26, v51, v52, v53, v54, v55, v56, v57
     v59 = "é"
     v60 = "á"
@@ -948,7 +653,7 @@ def main():
     v64 = -1
     v65 = 2
     v66 = 2
-    v67 = utf8_canonical_equal_bounded_loop_3(v59, v60, v61, v62, v63, v64, v65, v66)
+    v67 = utf8_canonical_equal_bounded_loop_0(v59, v60, v61, v62, v63, v64, v65, v66)
     del v60, v61, v62, v63, v64, v65, v66
     v68 = "ω"
     v69 = 0
@@ -957,7 +662,7 @@ def main():
     v72 = -1
     v73 = 2
     v74 = 2
-    v75 = utf8_canonical_equal_bounded_loop_3(v43, v68, v69, v70, v71, v72, v73, v74)
+    v75 = utf8_canonical_equal_bounded_loop_0(v43, v68, v69, v70, v71, v72, v73, v74)
     del v43, v68, v69, v70, v71, v72, v73, v74
     v76 = "e"
     v77 = 0
@@ -966,7 +671,7 @@ def main():
     v80 = -1
     v81 = 2
     v82 = 1
-    v83 = utf8_canonical_equal_bounded_loop_3(v59, v76, v77, v78, v79, v80, v81, v82)
+    v83 = utf8_canonical_equal_bounded_loop_0(v59, v76, v77, v78, v79, v80, v81, v82)
     del v59, v76, v77, v78, v79, v80, v81, v82
     if v7:
         del v7

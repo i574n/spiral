@@ -47,14 +47,36 @@ let parse_i32 (s : string) (at : i32) : i32 =
 
 let rec closing_quote (s : string) (at : i32) (n : i32) : i32 =
     if at >= n then n
-    elif sm.index s at = '"' then at
-    else closing_quote s (at + 1i32) n
+    else
+        inl c = sm.index s at
+        if c = '"' then at
+        elif c = '\\' then closing_quote s (at + 2i32) n
+        else closing_quote s (at + 1i32) n
+
+let text_between (s : string) (from : i32) (until : i32) : string =
+    if until <= from then "" else sm.slice s {from = from; to = until - 1i32}
+
+let unescaped (s : string) (at : i32) : string =
+    inl c = sm.index s at
+    if c = 'n' then "\n"
+    elif c = 't' then "\t"
+    elif c = 'r' then "\r"
+    elif c = '"' then "\""
+    elif c = '\\' then "\\"
+    elif c = '/' then "/"
+    else text_between s (at - 1i32) (at + 1i32)
+
+let rec unescape_from (s : string) (start : i32) (at : i32) (close : i32) (prefix : string) : string =
+    if at >= close then !!!!StaticStringConcat(prefix, text_between s start close)
+    elif sm.index s at = '\\' then
+        inl kept = !!!!StaticStringConcat(prefix, text_between s start at)
+        inl piece = unescaped s (at + 1i32)
+        unescape_from s (at + 2i32) (at + 2i32) close (!!!!StaticStringConcat(kept, piece))
+    else unescape_from s start (at + 1i32) close prefix
 
 let parse_string (s : string) (at : i32) : string =
     if at < 0i32 then ""
-    else
-        inl close = closing_quote s (at + 1i32) (sm.length s)
-        if close <= at + 1i32 then "" else sm.slice s {from = at + 1i32; to = close - 1i32}
+    else unescape_from s (at + 1i32) (at + 1i32) (closing_quote s (at + 1i32) (sm.length s)) ""
 
 let parse_bool (s : string) (at : i32) : bool = at >= 0i32 && sm.index s at = 't'
 

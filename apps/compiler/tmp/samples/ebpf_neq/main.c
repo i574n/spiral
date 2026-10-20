@@ -31,36 +31,28 @@ int32_t main(){
     
     
     bool v6;
-    v6 = v0 == v1;
+    v6 = v0 != v1;
     
     
-    bool v7;
-    v7 = v6 != true;
-    
-    
-    if (v7){
+    if (v6){
         
         
-        bool v8;
-        v8 = v2 == v3;
+        bool v7;
+        v7 = v2 != v3;
         
         
-        bool v9;
-        v9 = v8 != true;
-        
-        
-        if (v9){
+        if (v7){
             
             
             return 2l;
         } else {
             
             
-            bool v10;
-            v10 = v5 == -1.5f;
+            bool v8;
+            v8 = v5 == -1.5f;
             
             
-            if (v10){
+            if (v8){
                 
                 
                 return 0l;

@@ -48,8 +48,9 @@ pub fn method5(v0: Bool, v1: Float, v2: Int) -> Int {
         }
     }
 }
-pub fn method7(_v0: String) -> Bool {
-    True
+pub fn method7(v0: String, v1: String) -> Bool {
+    let v2 = v0 == v1
+    v2
 }
 pub fn method9(v0: Int) -> Bool {
     let v1 = spiral_wrap_unsigned(v0 + 5, 32)
@@ -85,7 +86,7 @@ pub fn method8(v0: Int) -> Int {
 }
 pub fn method6(v0: Int) -> Int {
     let v1 = "spiral"
-    let v2 = method7(v1)
+    let v2 = method7(v1, v1)
     case v2 {
         True -> {
             method8(v0)

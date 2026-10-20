@@ -52,7 +52,7 @@ inl print (s : string) : () =
 
 /// ### join_args
 let join_args (arr : array_base string) : string =
-    inl n : i32 = arr |> a |> am'.length
+    inl n : i32 = arr |> array |> am'.length
     let rec 루프 (i : i32) (acc : string) : string =
         if i >= n
         then acc
@@ -107,7 +107,7 @@ inl run_case (impl_name : string) split (case_name : string) (input : string) : 
     print ("RESULT\t" ++# impl_name ++# "\t" ++# case_name ++# "\t" ++# show_i32 len ++# "\t" ++# joined)
     inl count x : i32 =
         match split x with
-        | Ok arr => arr |> a |> am'.length
+        | Ok arr => arr |> array |> am'.length
         | Error _ => -1
     inl ns, iters, sink = measure count input
     print (
@@ -145,7 +145,7 @@ let cases () : array_base (string * string) =
 /// ### run_all
 inl run_all impls =
     inl cases = cases ()
-    inl n : i32 = cases |> a |> am'.length
+    inl n : i32 = cases |> array |> am'.length
     impls
     |> listm.iter fun impl_name, split =>
         let rec 루프 (i : i32) : () =

@@ -8,6 +8,10 @@ defmodule Spiral.Cells.MountsNameTest do
     assert Mounts.mount_name("/repo/lab/dota-lua-bindings") == "dota_lua_bindings"
   end
 
+  test "an uppercase backlog-id lab directory mounts under a lowercase name" do
+    assert Mounts.mount_name("C:/home/git/spiral/lab/KINO-WITHOUT-ELIXIR") == "kino_without_elixir"
+  end
+
   test "valid names stay as they are and a leading digit gets a prefix" do
     assert Mounts.mount_name("/repo/src") == "src"
     assert Mounts.mount_name("/repo/lab/2d.grid") == "_2d_grid"

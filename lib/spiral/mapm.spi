@@ -66,7 +66,7 @@ inl from_array forall k v. (array : array_base (k * v)) : hash_map k v =
 
 /// ### from_list
 inl from_list forall k v. (list : list (k * v)) : hash_map k v =
-    inl (a list) : _ i32 _ = list |> listm.toArray
+    inl (array list) : array _ = list |> arraym.fromList
     list |> am'.to_vec |> from_vec
 
 /// ### to_vec
@@ -83,5 +83,5 @@ inl item forall k v. (k : k) (map : map k v) : v =
     $'!map.[!k]'
 
 /// ### of_array
-inl of_array forall k v. (array : a _ (k * v)) : map k v =
+inl of_array forall k v. (array : array (k * v)) : map k v =
     $'!array |> Array.map (fun (struct (a, b)) -> a, b) |> Map.ofArray'

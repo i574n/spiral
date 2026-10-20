@@ -1,7 +1,14 @@
 #include <stdint.h>
 #include <stdbool.h>
 #define SPIRAL_MAP_CAP 64
+#ifdef __bpf__
+#define SPIRAL_LOOP_CAP 8192
+int32_t spiral_loop_capped;
+#define SPIRAL_LOOP_CAPPED() (spiral_loop_capped = 1)
+#else
 #define SPIRAL_LOOP_CAP 16777216
+#define SPIRAL_LOOP_CAPPED() ((void)0)
+#endif
 static int32_t spiral_map_key[SPIRAL_MAP_CAP];
 static int32_t spiral_map_val[SPIRAL_MAP_CAP];
 static int32_t spiral_map_used[SPIRAL_MAP_CAP];
@@ -54,6 +61,18 @@ static int32_t spiral_main(void) {
         return 1;
     }
 }
+#ifdef __bpf__
+#define SEC(name) __attribute__((section(name), used))
+int32_t spiral_exit_code;
+SEC("socket")
+int spiral_socket(void *context) {
+    int32_t spiral_result = spiral_main();
+    spiral_exit_code = spiral_loop_capped ? -2147483647 : spiral_result;
+    return 0;
+}
+char LICENSE[] SEC("license") = "GPL";
+#else
 int main(void) {
     return spiral_main();
 }
+#endif

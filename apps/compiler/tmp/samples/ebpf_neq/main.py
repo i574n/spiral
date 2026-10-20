@@ -25,31 +25,27 @@ def main():
     v4 = 1.5
     v5 = -v4
     del v4
-    v6 = v0 == v1
+    v6 = v0 != v1
     del v0, v1
-    v7 = v6 != True
-    del v6
-    if v7:
-        del v7
-        v8 = v2 == v3
+    if v6:
+        del v6
+        v7 = v2 != v3
         del v2, v3
-        v9 = v8 != True
-        del v8
-        if v9:
-            del v5, v9
+        if v7:
+            del v5, v7
             return 2
         else:
-            del v9
-            v10 = v5 == -1.5
+            del v7
+            v8 = v5 == -1.5
             del v5
-            if v10:
-                del v10
+            if v8:
+                del v8
                 return 0
             else:
-                del v10
+                del v8
                 return 3
     else:
-        del v2, v3, v5, v7
+        del v2, v3, v5, v6
         return 1
 
 if __name__ == '__main__': sys.exit(main())

@@ -1,0 +1,77 @@
+import "primitives/core.futil";
+import "primitives/binary_operators.futil";
+import "primitives/memories/comb.futil";
+component spiral_main() -> (out: 32) {
+  cells {
+    spiral_tick = std_reg(1);
+    spiral_ret = std_reg(32);
+    v0 = std_reg(32);
+    v1 = std_reg(32);
+    v2 = std_reg(32);
+    op3 = std_mult_pipe(32);
+    v3 = std_reg(32);
+    op5 = std_add(32);
+  }
+  wires {
+    group g1 {
+      v0.in = 32'd20;
+      v0.write_en = 1'd1;
+      g1[done] = v0.done;
+    }
+    group g2 {
+      v1.in = 32'd2;
+      v1.write_en = 1'd1;
+      g2[done] = v1.done;
+    }
+    group g4 {
+      op3.left = v0.out;
+      op3.right = v1.out;
+      op3.go = !op3.done ? 1'd1;
+      v2.in = op3.out;
+      v2.write_en = op3.done;
+      g4[done] = v2.done;
+    }
+    group g6 {
+      op5.left = v2.out;
+      op5.right = 32'd3;
+      v3.in = op5.out;
+      v3.write_en = 1'd1;
+      g6[done] = v3.done;
+    }
+    group g7 {
+      spiral_ret.in = v3.out;
+      spiral_ret.write_en = 1'd1;
+      g7[done] = spiral_ret.done;
+    }
+    out = spiral_ret.out;
+  }
+  control {
+    seq {
+      g1;
+      g2;
+      g4;
+      g6;
+      g7;
+    }
+  }
+}
+component main() -> () {
+  cells {
+    @external spiral_io = comb_mem_d1(32, 1, 1);
+    entry = spiral_main();
+  }
+  wires {
+    group spiral_store {
+      spiral_io.addr0 = 1'd0;
+      spiral_io.write_en = 1'd1;
+      spiral_io.write_data = entry.out;
+      spiral_store[done] = spiral_io.done;
+    }
+  }
+  control {
+    seq {
+      invoke entry()();
+      spiral_store;
+    }
+  }
+}

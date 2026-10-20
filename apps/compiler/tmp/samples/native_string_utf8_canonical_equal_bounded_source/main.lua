@@ -14,7 +14,7 @@ local function spiral_mul_mod32(a, b)
     local a_high = (a - a_low) / 65536
     return (a_low * b + ((a_high * b) % 65536) * 65536) % 4294967296
 end
-local runtime_byte_2, utf8_scalar_at_byte_offset_1, utf8_canonical_equal_bounded_loop_0, utf8_canonical_equal_bounded_loop_3
+local runtime_byte_2, utf8_scalar_at_byte_offset_1, utf8_canonical_equal_bounded_loop_0
 function runtime_byte_2(v0, v1)
     local v2 = string.sub(v0, (v1)+1, (v1)+1)
     return v2
@@ -225,275 +225,7 @@ function utf8_scalar_at_byte_offset_1(v0, v1)
     end
 end
 
-function utf8_canonical_equal_bounded_loop_0(v0, v1, v2, v3, v4, v5, v6)
-    local v7 = v3 >= 0
-    local getv75 = function()
-        if v7 then
-            return { [1]=v3, [2]=v1, [3]=-1 }
-        else
-            local v8 = v1 == v5
-            if v8 then
-                return { [1]=-1, [2]=v1, [3]=-1 }
-            else
-                local v9 = v1 > v5
-                if v9 then
-                    return _G.error("UTF-8 canonical stream offset exceeds the string.")
-                else
-                    local v13 = utf8_scalar_at_byte_offset_1(v0, v1)
-                    local v14 = v13 < 128
-                    local getv19 = function()
-                        if v14 then
-                            return 1
-                        else
-                            local v15 = v13 < 2048
-                            if v15 then
-                                return 2
-                            else
-                                local v16 = v13 < 65536
-                                if v16 then
-                                    return 3
-                                else
-                                    return 4
-                                end
-                            end
-                        end
-                    end
-                    local v19 = getv19()
-                    local v20 = v13 == 192
-                    local getv66 = function()
-                        if v20 then
-                            return { [1]=65, [2]=768 }
-                        else
-                            local v21 = v13 == 193
-                            if v21 then
-                                return { [1]=65, [2]=769 }
-                            else
-                                local v22 = v13 == 195
-                                if v22 then
-                                    return { [1]=65, [2]=771 }
-                                else
-                                    local v23 = v13 == 196
-                                    if v23 then
-                                        return { [1]=65, [2]=776 }
-                                    else
-                                        local v24 = v13 == 199
-                                        if v24 then
-                                            return { [1]=67, [2]=807 }
-                                        else
-                                            local v25 = v13 == 201
-                                            if v25 then
-                                                return { [1]=69, [2]=769 }
-                                            else
-                                                local v26 = v13 == 211
-                                                if v26 then
-                                                    return { [1]=79, [2]=769 }
-                                                else
-                                                    local v27 = v13 == 213
-                                                    if v27 then
-                                                        return { [1]=79, [2]=771 }
-                                                    else
-                                                        local v28 = v13 == 224
-                                                        if v28 then
-                                                            return { [1]=97, [2]=768 }
-                                                        else
-                                                            local v29 = v13 == 225
-                                                            if v29 then
-                                                                return { [1]=97, [2]=769 }
-                                                            else
-                                                                local v30 = v13 == 227
-                                                                if v30 then
-                                                                    return { [1]=97, [2]=771 }
-                                                                else
-                                                                    local v31 = v13 == 228
-                                                                    if v31 then
-                                                                        return { [1]=97, [2]=776 }
-                                                                    else
-                                                                        local v32 = v13 == 231
-                                                                        if v32 then
-                                                                            return { [1]=99, [2]=807 }
-                                                                        else
-                                                                            local v33 = v13 == 233
-                                                                            if v33 then
-                                                                                return { [1]=101, [2]=769 }
-                                                                            else
-                                                                                local v34 = v13 == 243
-                                                                                if v34 then
-                                                                                    return { [1]=111, [2]=769 }
-                                                                                else
-                                                                                    local v35 = v13 == 245
-                                                                                    if v35 then
-                                                                                        return { [1]=111, [2]=771 }
-                                                                                    else
-                                                                                        return { [1]=v13, [2]=-1 }
-                                                                                    end
-                                                                                end
-                                                                            end
-                                                                        end
-                                                                    end
-                                                                end
-                                                            end
-                                                        end
-                                                    end
-                                                end
-                                            end
-                                        end
-                                    end
-                                end
-                            end
-                        end
-                    end
-                    local v66, v67 = (table.unpack or unpack)(getv66())
-                    local v68 = spiral_wrap_signed((v1 + v19), 32)
-                    return { [1]=v66, [2]=v68, [3]=v67 }
-                end
-            end
-        end
-    end
-    local v75, v76, v77 = (table.unpack or unpack)(getv75())
-    local v78 = v4 >= 0
-    local getv146 = function()
-        if v78 then
-            return { [1]=v4, [2]=v2, [3]=-1 }
-        else
-            local v79 = v2 == v6
-            if v79 then
-                return { [1]=-1, [2]=v2, [3]=-1 }
-            else
-                local v80 = v2 > v6
-                if v80 then
-                    return _G.error("UTF-8 canonical stream offset exceeds the string.")
-                else
-                    local v84 = utf8_scalar_at_byte_offset_1(v0, v2)
-                    local v85 = v84 < 128
-                    local getv90 = function()
-                        if v85 then
-                            return 1
-                        else
-                            local v86 = v84 < 2048
-                            if v86 then
-                                return 2
-                            else
-                                local v87 = v84 < 65536
-                                if v87 then
-                                    return 3
-                                else
-                                    return 4
-                                end
-                            end
-                        end
-                    end
-                    local v90 = getv90()
-                    local v91 = v84 == 192
-                    local getv137 = function()
-                        if v91 then
-                            return { [1]=65, [2]=768 }
-                        else
-                            local v92 = v84 == 193
-                            if v92 then
-                                return { [1]=65, [2]=769 }
-                            else
-                                local v93 = v84 == 195
-                                if v93 then
-                                    return { [1]=65, [2]=771 }
-                                else
-                                    local v94 = v84 == 196
-                                    if v94 then
-                                        return { [1]=65, [2]=776 }
-                                    else
-                                        local v95 = v84 == 199
-                                        if v95 then
-                                            return { [1]=67, [2]=807 }
-                                        else
-                                            local v96 = v84 == 201
-                                            if v96 then
-                                                return { [1]=69, [2]=769 }
-                                            else
-                                                local v97 = v84 == 211
-                                                if v97 then
-                                                    return { [1]=79, [2]=769 }
-                                                else
-                                                    local v98 = v84 == 213
-                                                    if v98 then
-                                                        return { [1]=79, [2]=771 }
-                                                    else
-                                                        local v99 = v84 == 224
-                                                        if v99 then
-                                                            return { [1]=97, [2]=768 }
-                                                        else
-                                                            local v100 = v84 == 225
-                                                            if v100 then
-                                                                return { [1]=97, [2]=769 }
-                                                            else
-                                                                local v101 = v84 == 227
-                                                                if v101 then
-                                                                    return { [1]=97, [2]=771 }
-                                                                else
-                                                                    local v102 = v84 == 228
-                                                                    if v102 then
-                                                                        return { [1]=97, [2]=776 }
-                                                                    else
-                                                                        local v103 = v84 == 231
-                                                                        if v103 then
-                                                                            return { [1]=99, [2]=807 }
-                                                                        else
-                                                                            local v104 = v84 == 233
-                                                                            if v104 then
-                                                                                return { [1]=101, [2]=769 }
-                                                                            else
-                                                                                local v105 = v84 == 243
-                                                                                if v105 then
-                                                                                    return { [1]=111, [2]=769 }
-                                                                                else
-                                                                                    local v106 = v84 == 245
-                                                                                    if v106 then
-                                                                                        return { [1]=111, [2]=771 }
-                                                                                    else
-                                                                                        return { [1]=v84, [2]=-1 }
-                                                                                    end
-                                                                                end
-                                                                            end
-                                                                        end
-                                                                    end
-                                                                end
-                                                            end
-                                                        end
-                                                    end
-                                                end
-                                            end
-                                        end
-                                    end
-                                end
-                            end
-                        end
-                    end
-                    local v137, v138 = (table.unpack or unpack)(getv137())
-                    local v139 = spiral_wrap_signed((v2 + v90), 32)
-                    return { [1]=v137, [2]=v139, [3]=v138 }
-                end
-            end
-        end
-    end
-    local v146, v147, v148 = (table.unpack or unpack)(getv146())
-    local v149 = v75 < 0
-    if v149 then
-        local v150 = v146 == -1
-        return v150
-    else
-        local v151 = v146 < 0
-        if v151 then
-            return false
-        else
-            local v152 = v75 == v146
-            if v152 then
-                return utf8_canonical_equal_bounded_loop_0(v0, v76, v147, v77, v148, v5, v6)
-            else
-                return false
-            end
-        end
-    end
-end
-
-function utf8_canonical_equal_bounded_loop_3(v0, v1, v2, v3, v4, v5, v6, v7)
+function utf8_canonical_equal_bounded_loop_0(v0, v1, v2, v3, v4, v5, v6, v7)
     local v8 = v4 >= 0
     local getv76 = function()
         if v8 then
@@ -753,7 +485,7 @@ function utf8_canonical_equal_bounded_loop_3(v0, v1, v2, v3, v4, v5, v6, v7)
         else
             local v153 = v76 == v147
             if v153 then
-                return utf8_canonical_equal_bounded_loop_3(v0, v1, v77, v148, v78, v149, v6, v7)
+                return utf8_canonical_equal_bounded_loop_0(v0, v1, v77, v148, v78, v149, v6, v7)
             else
                 return false
             end
@@ -768,7 +500,7 @@ local v3 = -1
 local v4 = -1
 local v5 = 5
 local v6 = 5
-local v7 = utf8_canonical_equal_bounded_loop_0(v0, v1, v2, v3, v4, v5, v6)
+local v7 = utf8_canonical_equal_bounded_loop_0(v0, v0, v1, v2, v3, v4, v5, v6)
 local v8 = ""
 local v9 = 0
 local v10 = 0
@@ -776,7 +508,7 @@ local v11 = -1
 local v12 = -1
 local v13 = 0
 local v14 = 0
-local v15 = utf8_canonical_equal_bounded_loop_0(v8, v9, v10, v11, v12, v13, v14)
+local v15 = utf8_canonical_equal_bounded_loop_0(v8, v8, v9, v10, v11, v12, v13, v14)
 local v16 = "éõç"
 local v17 = "éõç"
 local v18 = 0
@@ -785,7 +517,7 @@ local v20 = -1
 local v21 = -1
 local v22 = 6
 local v23 = 9
-local v24 = utf8_canonical_equal_bounded_loop_3(v16, v17, v18, v19, v20, v21, v22, v23)
+local v24 = utf8_canonical_equal_bounded_loop_0(v16, v17, v18, v19, v20, v21, v22, v23)
 local v25 = "é̃"
 local v26 = "é̃"
 local v27 = 0
@@ -794,7 +526,7 @@ local v29 = -1
 local v30 = -1
 local v31 = 4
 local v32 = 5
-local v33 = utf8_canonical_equal_bounded_loop_3(v25, v26, v27, v28, v29, v30, v31, v32)
+local v33 = utf8_canonical_equal_bounded_loop_0(v25, v26, v27, v28, v29, v30, v31, v32)
 local v34 = "À"
 local v35 = "À"
 local v36 = 0
@@ -803,7 +535,7 @@ local v38 = -1
 local v39 = -1
 local v40 = 2
 local v41 = 3
-local v42 = utf8_canonical_equal_bounded_loop_3(v34, v35, v36, v37, v38, v39, v40, v41)
+local v42 = utf8_canonical_equal_bounded_loop_0(v34, v35, v36, v37, v38, v39, v40, v41)
 local v43 = "Ω"
 local v44 = 0
 local v45 = 0
@@ -811,7 +543,7 @@ local v46 = -1
 local v47 = -1
 local v48 = 2
 local v49 = 2
-local v50 = utf8_canonical_equal_bounded_loop_0(v43, v44, v45, v46, v47, v48, v49)
+local v50 = utf8_canonical_equal_bounded_loop_0(v43, v43, v44, v45, v46, v47, v48, v49)
 local v51 = "ẽ́"
 local v52 = 0
 local v53 = 0
@@ -819,7 +551,7 @@ local v54 = -1
 local v55 = -1
 local v56 = 5
 local v57 = 5
-local v58 = utf8_canonical_equal_bounded_loop_3(v26, v51, v52, v53, v54, v55, v56, v57)
+local v58 = utf8_canonical_equal_bounded_loop_0(v26, v51, v52, v53, v54, v55, v56, v57)
 local v59 = "é"
 local v60 = "á"
 local v61 = 0
@@ -828,7 +560,7 @@ local v63 = -1
 local v64 = -1
 local v65 = 2
 local v66 = 2
-local v67 = utf8_canonical_equal_bounded_loop_3(v59, v60, v61, v62, v63, v64, v65, v66)
+local v67 = utf8_canonical_equal_bounded_loop_0(v59, v60, v61, v62, v63, v64, v65, v66)
 local v68 = "ω"
 local v69 = 0
 local v70 = 0
@@ -836,7 +568,7 @@ local v71 = -1
 local v72 = -1
 local v73 = 2
 local v74 = 2
-local v75 = utf8_canonical_equal_bounded_loop_3(v43, v68, v69, v70, v71, v72, v73, v74)
+local v75 = utf8_canonical_equal_bounded_loop_0(v43, v68, v69, v70, v71, v72, v73, v74)
 local v76 = "e"
 local v77 = 0
 local v78 = 0
@@ -844,7 +576,7 @@ local v79 = -1
 local v80 = -1
 local v81 = 2
 local v82 = 1
-local v83 = utf8_canonical_equal_bounded_loop_3(v59, v76, v77, v78, v79, v80, v81, v82)
+local v83 = utf8_canonical_equal_bounded_loop_0(v59, v76, v77, v78, v79, v80, v81, v82)
 if v7 then
     if v15 then
         if v24 then

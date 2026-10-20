@@ -142,15 +142,39 @@ defmodule Spiral.Cells.Memo do
     end
   end
 
+  # TODO: KINO-HOT-PATHS move memo keys to Spiral once the per-notebook costs left after the binaries cache are profiled
   @doc false
   def compiler_binaries_print(dll) do
     dir = Path.dirname(dll)
 
-    [Path.basename(dll) | dir |> Path.join("SpiralCompiler*.dll") |> Path.wildcard() |> Enum.map(&Path.basename/1)]
-    |> Enum.map(&String.downcase/1)
-    |> Enum.uniq()
-    |> Enum.sort()
-    |> Enum.map(&{&1, content_hash(Path.join(dir, &1))})
+    names =
+      [Path.basename(dll) | dir |> Path.join("SpiralCompiler*.dll") |> Path.wildcard() |> Enum.map(&Path.basename/1)]
+      |> Enum.map(&String.downcase/1)
+      |> Enum.uniq()
+      |> Enum.sort()
+
+    cache_key = {__MODULE__, :compiler_binaries, dir, Enum.map(names, &{&1, file_stamp(Path.join(dir, &1))})}
+
+    case :persistent_term.get(cache_key, nil) do
+      nil ->
+        print = Enum.map(names, &{&1, content_hash(Path.join(dir, &1))})
+        :persistent_term.put(cache_key, print)
+        print
+
+      print ->
+        print
+    end
+  end
+
+  @stamp_head_bytes 65_536
+
+  defp file_stamp(path) do
+    with {:ok, %{size: size, mtime: mtime}} <- File.stat(path, time: :posix),
+         {:ok, head} when is_binary(head) <- File.open(path, [:read, :binary], &IO.binread(&1, @stamp_head_bytes)) do
+      {size, mtime, :crypto.hash(:sha256, head)}
+    else
+      _ -> :missing
+    end
   end
 
   defp content_hash(path) do
@@ -172,7 +196,7 @@ defmodule Spiral.Cells.Memo do
 
     {known, unknown} =
       Enum.reduce(keyed, {%{}, []}, fn {text, key}, {known, unknown} ->
-        case fetch(store_context, key) do
+        case remembered_bounds(store_context, key) do
           {:ok, {:source_blocks, spans}} -> {Map.put(known, text, spans), unknown}
           _ -> {known, [{text, key} | unknown]}
         end
@@ -183,12 +207,50 @@ defmodule Spiral.Cells.Memo do
     else
       case SourceBlocks.of_texts(opts, Enum.map(unknown, &elem(&1, 0))) do
         {:ok, spans} ->
-          Enum.each(unknown, fn {text, key} -> store(store_context, key, {:source_blocks, Map.get(spans, text, [])}) end)
+          Enum.each(unknown, fn {text, key} ->
+            store(store_context, key, {:source_blocks, Map.get(spans, text, [])})
+            :ets.insert(bounds_table(), {key, Map.get(spans, text, [])})
+          end)
           Map.merge(known, spans)
 
         :unavailable ->
           :unavailable
       end
+    end
+  end
+
+  @bounds_table :spiral_cells_memo_bounds
+
+  defp remembered_bounds(store_context, key) do
+    table = bounds_table()
+
+    case :ets.lookup(table, key) do
+      [{^key, spans}] ->
+        {:ok, {:source_blocks, spans}}
+
+      [] ->
+        case fetch(store_context, key) do
+          {:ok, {:source_blocks, spans}} = hit ->
+            :ets.insert(table, {key, spans})
+            hit
+
+          other ->
+            other
+        end
+    end
+  end
+
+  defp bounds_table do
+    case :ets.whereis(@bounds_table) do
+      :undefined ->
+        try do
+          :ets.new(@bounds_table, [:named_table, :public, :set])
+        rescue
+          ArgumentError -> @bounds_table
+        end
+
+      _ ->
+        @bounds_table
     end
   end
 

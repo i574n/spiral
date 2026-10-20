@@ -43,6 +43,30 @@ inl with_deadline forall s o. (deadline : i64) (body : reactor s i64 o) (on_viol
             if lag > deadline then on_violation state now else body.react state now lag
     }
 
+/// ### modal
+union mode_entry =
+    | Reset
+    | History
+
+union reactor_mode =
+    | FirstMode
+    | SecondMode
+
+inl modal forall sa sb i o. (entry : mode_entry) (first : reactor sa i o) (second : reactor sb i o) (leave : o -> bool) : reactor (reactor_mode * sa * sb) i o =
+    inl entered_second sb = match entry with | Reset => second.init | History => sb
+    inl entered_first sa = match entry with | Reset => first.init | History => sa
+    {
+        init = FirstMode, first.init, second.init
+        react = fun (mode, sa, sb) now x =>
+            match mode with
+            | FirstMode =>
+                inl sa, y = first.react sa now x
+                if leave y then (SecondMode, sa, entered_second sb), y else (FirstMode, sa, sb), y
+            | SecondMode =>
+                inl sb, y = second.react sb now x
+                if leave y then (FirstMode, entered_first sa, sb), y else (SecondMode, sa, sb), y
+    }
+
 /// ### run_ticks
 inl run_ticks forall s i o. (program : reactor s i o) (input : tag -> i) (ticks : i64) : s =
     let rec loop (state : s) (time : i64) : s =
@@ -154,7 +178,7 @@ test deadlines_run_the_violation_handler =
 
 test array_bank_keeps_member_state =
     inl members = 4i32
-    inl states : a i32 i64 = am.init members (fun _ => 0i64)
+    inl states : array i64 = arraym.init members (fun _ => 0i64)
     inl step (input : i64) : i64 =
         let rec go (i : i32) (acc : i64) : i64 =
             if i >= members then acc
@@ -166,3 +190,33 @@ test array_bank_keeps_member_state =
     let rec run (time : i64) (total : i64) : i64 =
         if time >= 5i64 then total else run (time + 1i64) (total + step (time + 1i64))
     run 0i64 0i64 |> _assert_eq 350i64
+
+test modal_reset_restarts_history_resumes =
+    inl every_third (y : signal i64) : bool =
+        match y with
+        | Present v => v % 3i64 = 0i64
+        | Absent => false
+    inl total entry =
+        inl _, totals = run_ticks (chain (modal entry (timer 1i64) (chain (timer 1i64) (scale 10i64)) every_third) (sink ())) (fun _ => ()) 9i64
+        inl sum, _ = totals
+        sum
+    (total Reset, total History) |> _assert_eq (72i64, 81i64)
+
+/// ### physical_micros
+inl physical_micros () : i64 =
+    backend_switch {
+        C = fun () =>
+            global "#include <stdint.h>"
+            global "#ifdef _WIN32\n__declspec(dllimport) void __stdcall GetSystemTimePreciseAsFileTime(unsigned long long *);\nstatic int64_t spiral_physical_micros(void) { unsigned long long t; GetSystemTimePreciseAsFileTime(&t); return (int64_t)(t / 10ULL) - 11644473600000000LL; }\n#else\n#include <time.h>\nstatic int64_t spiral_physical_micros(void) { struct timespec ts; clock_gettime(CLOCK_REALTIME, &ts); return (int64_t)ts.tv_sec * 1000000 + ts.tv_nsec / 1000; }\n#endif"
+            $'spiral_physical_micros()' : i64
+        Rust = fun () => $'(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_micros() as i64)' : i64
+        Zig = fun () => date_time.zig_micros_now ()
+    }
+
+///> c
+///> rust
+///> zig
+test physical_micros_reads_a_real_clock_that_moves_forward =
+    inl first = physical_micros ()
+    inl second = physical_micros ()
+    (first > 1700000000000000i64 && second >= first) |> _assert_eq true

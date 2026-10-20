@@ -187,6 +187,7 @@ defmodule Spiral.Cells.Notebook do
         |> then(&if(memo[test.index], do: Map.put(&1, "memo", Atom.to_string(memo[test.index])), else: &1))
         |> then(&if(state == "not_run", do: Map.put(&1, "reason", not_run_reason(ran.status)), else: &1))
         |> then(&if(message, do: Map.put(&1, "message", message), else: &1))
+        |> with_mismatch(Map.get(verdicts, test.index))
       end)
 
     counts(rows) |> Map.put("tests", rows)
@@ -215,6 +216,15 @@ defmodule Spiral.Cells.Notebook do
     }
   end
 
+  defp with_mismatch(row, {:failed, message}) when is_binary(message) do
+    case Spiral.Cells.Accept.mismatch(message) do
+      {:ok, actual, expected} -> row |> Map.put("actual", actual) |> Map.put("expected", expected)
+      :none -> row
+    end
+  end
+
+  defp with_mismatch(row, _verdict), do: row
+
   defp not_run_reason({:error, message}), do: "the run stopped before this test: " <> first_line(message)
   defp not_run_reason(_status), do: "no step ran for this cell"
 
@@ -238,6 +248,14 @@ defmodule Spiral.Cells.Notebook do
   end
 
   defp first_line(text), do: text |> String.split("\n", parts: 2) |> hd()
+
+  defp failed_targets(rows) do
+    for row <- rows,
+        failing = for(target <- row["targets"] || [], target["status"] == "failed", do: target["target"]),
+        failing != [],
+        into: %{},
+        do: {row["name"], failing}
+  end
 
   @doc false
   def metrics_rows(reports) do
@@ -267,9 +285,13 @@ defmodule Spiral.Cells.Notebook do
           counts(rows)
           |> Map.put("file", file)
           |> Map.put("failed_tests", for(row <- rows, row["status"] == "failed", do: row["name"]))
+          |> Map.put("accept_refused", for(row <- rows, row["accept_refused"], into: %{}, do: {row["name"], row["accept_refused"]}))
+          |> Map.put("failed_targets", failed_targets(rows))
+          |> Map.put("mismatches", for(row <- rows, row["status"] == "failed", row["actual"], into: %{}, do: {row["name"], %{"actual" => row["actual"], "expected" => row["expected"]}}))
+          |> Map.put("accepted_sites", for(row <- rows, row["accepted_site"], into: %{}, do: {row["name"], row["accepted_site"]}))
         end)
         |> case do
-          [] -> [counts([]) |> Map.put("file", path) |> Map.put("failed_tests", [])]
+          [] -> [counts([]) |> Map.put("file", path) |> Map.put("failed_tests", []) |> Map.put("accept_refused", %{}) |> Map.put("failed_targets", %{}) |> Map.put("mismatches", %{}) |> Map.put("accepted_sites", %{})]
           lines -> lines
         end
       end)
@@ -391,15 +413,15 @@ defmodule Spiral.Cells.Notebook do
   end
 
   defp settle_accepts(path, opts, failures, round, outcome) do
-    results = Spiral.Cells.Accept.accept(path, failures)
+    results = Spiral.Cells.Accept.accept_sites(path, failures)
 
     outcome =
       Enum.reduce(results, outcome, fn
-        {name, :ok}, acc -> Map.put(acc, name, :accepted)
+        {name, {:ok, before_line, after_line}}, acc -> Map.put(acc, name, {:accepted, before_line, after_line})
         {name, {:error, reason}}, acc -> Map.put(acc, name, {:refused, reason})
       end)
 
-    accepted_now = for {name, :ok} <- results, do: name
+    accepted_now = for {name, {:ok, _, _}} <- results, do: name
 
     cond do
       accepted_now == [] ->
@@ -420,13 +442,14 @@ defmodule Spiral.Cells.Notebook do
   end
 
   defp mark_accepted(evaluation, outcome) do
-    accepted = for {name, :accepted} <- outcome, do: name
+    accepted = for {name, {:accepted, _, _}} <- outcome, do: name
+    sites = Map.new(for {name, {:accepted, before_line, after_line}} <- outcome, do: {name, %{"before" => before_line, "after" => after_line}})
     refused = Map.new(for {name, {:refused, reason}} <- outcome, do: {name, reason})
 
     rows =
       Enum.map(evaluation.report["tests"], fn row ->
         cond do
-          row["name"] in accepted and row["status"] == "failed" -> Map.put(row, "status", "accepted")
+          row["name"] in accepted and row["status"] == "failed" -> row |> Map.put("status", "accepted") |> Map.put("accepted_site", sites[row["name"]])
           Map.has_key?(refused, row["name"]) -> row |> Map.put("status", "failed") |> Map.put("accept_refused", refused[row["name"]])
           true -> row
         end
@@ -639,7 +662,21 @@ defmodule Spiral.Cells.Notebook do
           step |> Map.put(:builders, defaults) |> put_test_name(test_names) |> mark_untargeted(implicit?)
 
         own ->
-          step |> Map.put(:builders, own) |> put_test_name(test_names)
+          step |> Map.put(:builders, inherit_deps(own, defaults)) |> put_test_name(test_names)
+      end
+    end)
+  end
+
+  @doc false
+  def inherit_deps(own, defaults) do
+    Enum.map(own, fn builder ->
+      case Enum.find(defaults, &(&1.tool == builder.tool)) do
+        nil ->
+          builder
+
+        default ->
+          named = MapSet.new(builder.deps, & &1.name)
+          %{builder | deps: builder.deps ++ Enum.reject(default.deps, &MapSet.member?(named, &1.name))}
       end
     end)
   end
@@ -907,7 +944,7 @@ defmodule Spiral.Cells.Notebook do
           {:error, error_output(text), text}
 
         build_only?(step.cell_source) -> built(ran)
-        expected = expectation(step.cell_source) -> expected_compile_error(expected, ran)
+        expected = expectation(step.cell_source) -> expected_compile_error(Map.put(expected, :body_head, body_head(step.cell_source)), ran)
         true -> verdict(ran)
       end
     rescue
@@ -973,11 +1010,16 @@ defmodule Spiral.Cells.Notebook do
 
   defp collapse_spaces(text), do: String.replace(text, ~r/[ \t]+/, " ")
 
-  defp expected_compile_error(expected, {:error, %SpiralError{message: message}}) do
+  defp expected_compile_error(expected, {:error, %SpiralError{message: message} = error}) do
     has_text = String.contains?(collapse_spaces(message), collapse_spaces(expected.substring))
     has_code = expected.code == nil or Regex.match?(~r/(?<![\w-])#{Regex.escape(expected.code)}(?![\w-])/, message)
+    floor = body_floor(error.details, Map.get(expected, :body_head))
 
     cond do
+      has_text and has_code and not in_body?(message, expected.substring, floor) ->
+        text = "the expected error #{expected_label(expected)} is reported only before the test body (which starts at program line #{floor + 1}), so it does not prove this test:\n#{message}"
+        {:error, error_output(text), text}
+
       has_text and has_code ->
         text = "failed to compile as expected (#{expected_label(expected)}): #{first_line(message)}\n"
         {:ok, [stream("stdout", text)], []}
@@ -1002,6 +1044,52 @@ defmodule Spiral.Cells.Notebook do
   defp expected_compile_error(expected, {:error, error}) do
     text = "expected a compile error #{expected_label(expected)}, but it failed past compiling:\n#{error_text(error)}"
     {:error, error_output(text), text}
+  end
+
+  @program_location ~r/main\.spi:(\d+):\d+/
+
+  @doc false
+  def body_head(cell_source) do
+    cell_source
+    |> String.split("\n")
+    |> Enum.drop_while(&String.starts_with?(&1, "///"))
+    |> Enum.map(&String.trim/1)
+    |> Enum.find(&(&1 != ""))
+  end
+
+  @doc false
+  def body_floor(program, head) when is_binary(program) and is_binary(head) do
+    program
+    |> String.split("\n")
+    |> Enum.with_index()
+    |> Enum.filter(fn {line, _} -> String.trim(line) == head end)
+    |> List.last()
+    |> case do
+      nil -> nil
+      {_, index} -> index
+    end
+  end
+
+  def body_floor(_program, _head), do: nil
+
+  @doc false
+  def in_body?(_message, _substring, nil), do: true
+
+  def in_body?(message, substring, floor) do
+    case Regex.scan(@program_location, message, return: :index) do
+      [] ->
+        true
+
+      found ->
+        starts = Enum.map(found, fn [{at, _} | _] -> at end)
+        lines = Enum.map(found, fn [_, {at, len}] -> message |> binary_part(at, len) |> String.to_integer() end)
+        wanted = collapse_spaces(substring)
+
+        (starts ++ [byte_size(message)])
+        |> Enum.chunk_every(2, 1, :discard)
+        |> Enum.zip(lines)
+        |> Enum.any?(fn {[from, to], line} -> line > floor and String.contains?(collapse_spaces(binary_part(message, from, to - from)), wanted) end)
+    end
   end
 
   defp unsupported(error) do    text = "unsupported on this machine: " <> error_text(error)
@@ -1111,7 +1199,18 @@ defmodule Spiral.Cells.Notebook do
         candidate = Path.join(dir, rel)
         if File.regular?(Path.join(candidate, "package.spiproj")), do: Path.expand(candidate)
       end)
-    end)
+    end) || spiral_lib_from_env(System.get_env("SPIRAL_LIB"))
+  end
+
+  @doc false
+  def spiral_lib_from_env(value) do
+    case value do
+      dir when is_binary(dir) and dir != "" ->
+        if File.regular?(Path.join(dir, "package.spiproj")), do: Path.expand(dir)
+
+      _ ->
+        nil
+    end
   end
 
   defp ancestors(dir) do

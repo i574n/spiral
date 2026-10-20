@@ -331,394 +331,7 @@ fun sp_utf8_scalar_at_byte_offset_1(p0: String, p1: Int): Int {
         }
     }
 }
-fun sp_utf8_canonical_equal_bounded_loop_0(p0: String, p1: Int, p2: Int, p3: Int, p4: Int, p5: Int, p6: Int): Boolean {
-    var v0: String = p0
-    var v1: Int = p1
-    var v2: Int = p2
-    var v3: Int = p3
-    var v4: Int = p4
-    var v5: Int = p5
-    var v6: Int = p6
-    while (true) {
-        var v7: Boolean = false
-        v7 = (v3 >= 0)
-        var v75: Int = 0
-        var v76: Int = 0
-        var v77: Int = 0
-        if (v7) {
-            v75 = v3
-            v76 = v1
-            v77 = -1
-        } else {
-            var v8: Boolean = false
-            v8 = (v1 == v5)
-            if (v8) {
-                v75 = -1
-                v76 = v1
-                v77 = -1
-            } else {
-                var v9: Boolean = false
-                v9 = (v1 > v5)
-                if (v9) {
-                    System.err.println("UTF-8 canonical stream offset exceeds the string.")
-                    System.exit(1)
-                    throw RuntimeException()
-                } else {
-                    var v13: Int = 0
-                    v13 = sp_utf8_scalar_at_byte_offset_1(v0, v1)
-                    var v14: Boolean = false
-                    v14 = (v13 < 128)
-                    var v19: Int = 0
-                    if (v14) {
-                        v19 = 1
-                    } else {
-                        var v15: Boolean = false
-                        v15 = (v13 < 2048)
-                        if (v15) {
-                            v19 = 2
-                        } else {
-                            var v16: Boolean = false
-                            v16 = (v13 < 65536)
-                            if (v16) {
-                                v19 = 3
-                            } else {
-                                v19 = 4
-                            }
-                        }
-                    }
-                    var v20: Boolean = false
-                    v20 = (v13 == 192)
-                    var v66: Int = 0
-                    var v67: Int = 0
-                    if (v20) {
-                        v66 = 65
-                        v67 = 768
-                    } else {
-                        var v21: Boolean = false
-                        v21 = (v13 == 193)
-                        if (v21) {
-                            v66 = 65
-                            v67 = 769
-                        } else {
-                            var v22: Boolean = false
-                            v22 = (v13 == 195)
-                            if (v22) {
-                                v66 = 65
-                                v67 = 771
-                            } else {
-                                var v23: Boolean = false
-                                v23 = (v13 == 196)
-                                if (v23) {
-                                    v66 = 65
-                                    v67 = 776
-                                } else {
-                                    var v24: Boolean = false
-                                    v24 = (v13 == 199)
-                                    if (v24) {
-                                        v66 = 67
-                                        v67 = 807
-                                    } else {
-                                        var v25: Boolean = false
-                                        v25 = (v13 == 201)
-                                        if (v25) {
-                                            v66 = 69
-                                            v67 = 769
-                                        } else {
-                                            var v26: Boolean = false
-                                            v26 = (v13 == 211)
-                                            if (v26) {
-                                                v66 = 79
-                                                v67 = 769
-                                            } else {
-                                                var v27: Boolean = false
-                                                v27 = (v13 == 213)
-                                                if (v27) {
-                                                    v66 = 79
-                                                    v67 = 771
-                                                } else {
-                                                    var v28: Boolean = false
-                                                    v28 = (v13 == 224)
-                                                    if (v28) {
-                                                        v66 = 97
-                                                        v67 = 768
-                                                    } else {
-                                                        var v29: Boolean = false
-                                                        v29 = (v13 == 225)
-                                                        if (v29) {
-                                                            v66 = 97
-                                                            v67 = 769
-                                                        } else {
-                                                            var v30: Boolean = false
-                                                            v30 = (v13 == 227)
-                                                            if (v30) {
-                                                                v66 = 97
-                                                                v67 = 771
-                                                            } else {
-                                                                var v31: Boolean = false
-                                                                v31 = (v13 == 228)
-                                                                if (v31) {
-                                                                    v66 = 97
-                                                                    v67 = 776
-                                                                } else {
-                                                                    var v32: Boolean = false
-                                                                    v32 = (v13 == 231)
-                                                                    if (v32) {
-                                                                        v66 = 99
-                                                                        v67 = 807
-                                                                    } else {
-                                                                        var v33: Boolean = false
-                                                                        v33 = (v13 == 233)
-                                                                        if (v33) {
-                                                                            v66 = 101
-                                                                            v67 = 769
-                                                                        } else {
-                                                                            var v34: Boolean = false
-                                                                            v34 = (v13 == 243)
-                                                                            if (v34) {
-                                                                                v66 = 111
-                                                                                v67 = 769
-                                                                            } else {
-                                                                                var v35: Boolean = false
-                                                                                v35 = (v13 == 245)
-                                                                                if (v35) {
-                                                                                    v66 = 111
-                                                                                    v67 = 771
-                                                                                } else {
-                                                                                    v66 = v13
-                                                                                    v67 = -1
-                                                                                }
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    var v68: Int = 0
-                    v68 = (v1 + v19)
-                    v75 = v66
-                    v76 = v68
-                    v77 = v67
-                }
-            }
-        }
-        var v78: Boolean = false
-        v78 = (v4 >= 0)
-        var v146: Int = 0
-        var v147: Int = 0
-        var v148: Int = 0
-        if (v78) {
-            v146 = v4
-            v147 = v2
-            v148 = -1
-        } else {
-            var v79: Boolean = false
-            v79 = (v2 == v6)
-            if (v79) {
-                v146 = -1
-                v147 = v2
-                v148 = -1
-            } else {
-                var v80: Boolean = false
-                v80 = (v2 > v6)
-                if (v80) {
-                    System.err.println("UTF-8 canonical stream offset exceeds the string.")
-                    System.exit(1)
-                    throw RuntimeException()
-                } else {
-                    var v84: Int = 0
-                    v84 = sp_utf8_scalar_at_byte_offset_1(v0, v2)
-                    var v85: Boolean = false
-                    v85 = (v84 < 128)
-                    var v90: Int = 0
-                    if (v85) {
-                        v90 = 1
-                    } else {
-                        var v86: Boolean = false
-                        v86 = (v84 < 2048)
-                        if (v86) {
-                            v90 = 2
-                        } else {
-                            var v87: Boolean = false
-                            v87 = (v84 < 65536)
-                            if (v87) {
-                                v90 = 3
-                            } else {
-                                v90 = 4
-                            }
-                        }
-                    }
-                    var v91: Boolean = false
-                    v91 = (v84 == 192)
-                    var v137: Int = 0
-                    var v138: Int = 0
-                    if (v91) {
-                        v137 = 65
-                        v138 = 768
-                    } else {
-                        var v92: Boolean = false
-                        v92 = (v84 == 193)
-                        if (v92) {
-                            v137 = 65
-                            v138 = 769
-                        } else {
-                            var v93: Boolean = false
-                            v93 = (v84 == 195)
-                            if (v93) {
-                                v137 = 65
-                                v138 = 771
-                            } else {
-                                var v94: Boolean = false
-                                v94 = (v84 == 196)
-                                if (v94) {
-                                    v137 = 65
-                                    v138 = 776
-                                } else {
-                                    var v95: Boolean = false
-                                    v95 = (v84 == 199)
-                                    if (v95) {
-                                        v137 = 67
-                                        v138 = 807
-                                    } else {
-                                        var v96: Boolean = false
-                                        v96 = (v84 == 201)
-                                        if (v96) {
-                                            v137 = 69
-                                            v138 = 769
-                                        } else {
-                                            var v97: Boolean = false
-                                            v97 = (v84 == 211)
-                                            if (v97) {
-                                                v137 = 79
-                                                v138 = 769
-                                            } else {
-                                                var v98: Boolean = false
-                                                v98 = (v84 == 213)
-                                                if (v98) {
-                                                    v137 = 79
-                                                    v138 = 771
-                                                } else {
-                                                    var v99: Boolean = false
-                                                    v99 = (v84 == 224)
-                                                    if (v99) {
-                                                        v137 = 97
-                                                        v138 = 768
-                                                    } else {
-                                                        var v100: Boolean = false
-                                                        v100 = (v84 == 225)
-                                                        if (v100) {
-                                                            v137 = 97
-                                                            v138 = 769
-                                                        } else {
-                                                            var v101: Boolean = false
-                                                            v101 = (v84 == 227)
-                                                            if (v101) {
-                                                                v137 = 97
-                                                                v138 = 771
-                                                            } else {
-                                                                var v102: Boolean = false
-                                                                v102 = (v84 == 228)
-                                                                if (v102) {
-                                                                    v137 = 97
-                                                                    v138 = 776
-                                                                } else {
-                                                                    var v103: Boolean = false
-                                                                    v103 = (v84 == 231)
-                                                                    if (v103) {
-                                                                        v137 = 99
-                                                                        v138 = 807
-                                                                    } else {
-                                                                        var v104: Boolean = false
-                                                                        v104 = (v84 == 233)
-                                                                        if (v104) {
-                                                                            v137 = 101
-                                                                            v138 = 769
-                                                                        } else {
-                                                                            var v105: Boolean = false
-                                                                            v105 = (v84 == 243)
-                                                                            if (v105) {
-                                                                                v137 = 111
-                                                                                v138 = 769
-                                                                            } else {
-                                                                                var v106: Boolean = false
-                                                                                v106 = (v84 == 245)
-                                                                                if (v106) {
-                                                                                    v137 = 111
-                                                                                    v138 = 771
-                                                                                } else {
-                                                                                    v137 = v84
-                                                                                    v138 = -1
-                                                                                }
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    var v139: Int = 0
-                    v139 = (v2 + v90)
-                    v146 = v137
-                    v147 = v139
-                    v148 = v138
-                }
-            }
-        }
-        var v149: Boolean = false
-        v149 = (v75 < 0)
-        if (v149) {
-            var v150: Boolean = false
-            v150 = (v146 == -1)
-            return v150
-        } else {
-            var v151: Boolean = false
-            v151 = (v146 < 0)
-            if (v151) {
-                return false
-            } else {
-                var v152: Boolean = false
-                v152 = (v75 == v146)
-                if (v152) {
-                    val t19391_0: String = v0
-                    val t19438_76: Int = v76
-                    val t19484_147: Int = v147
-                    val t19532_77: Int = v77
-                    val t19578_148: Int = v148
-                    val t19626_5: Int = v5
-                    val t19670_6: Int = v6
-                    v0 = t19391_0
-                    v1 = t19438_76
-                    v2 = t19484_147
-                    v3 = t19532_77
-                    v4 = t19578_148
-                    v5 = t19626_5
-                    v6 = t19670_6
-                    continue
-                } else {
-                    return false
-                }
-            }
-        }
-    }
-    return false
-}
-fun sp_utf8_canonical_equal_bounded_loop_3(p0: String, p1: String, p2: Int, p3: Int, p4: Int, p5: Int, p6: Int, p7: Int): Boolean {
+fun sp_utf8_canonical_equal_bounded_loop_0(p0: String, p1: String, p2: Int, p3: Int, p4: Int, p5: Int, p6: Int, p7: Int): Boolean {
     var v0: String = p0
     var v1: String = p1
     var v2: Int = p2
@@ -1124,7 +737,7 @@ fun spiral_main(): Int {
     var v6: Int = 0
     v6 = 5
     var v7: Boolean = false
-    v7 = sp_utf8_canonical_equal_bounded_loop_0(v0, v1, v2, v3, v4, v5, v6)
+    v7 = sp_utf8_canonical_equal_bounded_loop_0(v0, v0, v1, v2, v3, v4, v5, v6)
     var v8: String = ""
     v8 = ""
     var v9: Int = 0
@@ -1140,7 +753,7 @@ fun spiral_main(): Int {
     var v14: Int = 0
     v14 = 0
     var v15: Boolean = false
-    v15 = sp_utf8_canonical_equal_bounded_loop_0(v8, v9, v10, v11, v12, v13, v14)
+    v15 = sp_utf8_canonical_equal_bounded_loop_0(v8, v8, v9, v10, v11, v12, v13, v14)
     var v16: String = ""
     v16 = "éõç"
     var v17: String = ""
@@ -1158,7 +771,7 @@ fun spiral_main(): Int {
     var v23: Int = 0
     v23 = 9
     var v24: Boolean = false
-    v24 = sp_utf8_canonical_equal_bounded_loop_3(v16, v17, v18, v19, v20, v21, v22, v23)
+    v24 = sp_utf8_canonical_equal_bounded_loop_0(v16, v17, v18, v19, v20, v21, v22, v23)
     var v25: String = ""
     v25 = "é̃"
     var v26: String = ""
@@ -1176,7 +789,7 @@ fun spiral_main(): Int {
     var v32: Int = 0
     v32 = 5
     var v33: Boolean = false
-    v33 = sp_utf8_canonical_equal_bounded_loop_3(v25, v26, v27, v28, v29, v30, v31, v32)
+    v33 = sp_utf8_canonical_equal_bounded_loop_0(v25, v26, v27, v28, v29, v30, v31, v32)
     var v34: String = ""
     v34 = "À"
     var v35: String = ""
@@ -1194,7 +807,7 @@ fun spiral_main(): Int {
     var v41: Int = 0
     v41 = 3
     var v42: Boolean = false
-    v42 = sp_utf8_canonical_equal_bounded_loop_3(v34, v35, v36, v37, v38, v39, v40, v41)
+    v42 = sp_utf8_canonical_equal_bounded_loop_0(v34, v35, v36, v37, v38, v39, v40, v41)
     var v43: String = ""
     v43 = "Ω"
     var v44: Int = 0
@@ -1210,7 +823,7 @@ fun spiral_main(): Int {
     var v49: Int = 0
     v49 = 2
     var v50: Boolean = false
-    v50 = sp_utf8_canonical_equal_bounded_loop_0(v43, v44, v45, v46, v47, v48, v49)
+    v50 = sp_utf8_canonical_equal_bounded_loop_0(v43, v43, v44, v45, v46, v47, v48, v49)
     var v51: String = ""
     v51 = "ẽ́"
     var v52: Int = 0
@@ -1226,7 +839,7 @@ fun spiral_main(): Int {
     var v57: Int = 0
     v57 = 5
     var v58: Boolean = false
-    v58 = sp_utf8_canonical_equal_bounded_loop_3(v26, v51, v52, v53, v54, v55, v56, v57)
+    v58 = sp_utf8_canonical_equal_bounded_loop_0(v26, v51, v52, v53, v54, v55, v56, v57)
     var v59: String = ""
     v59 = "é"
     var v60: String = ""
@@ -1244,7 +857,7 @@ fun spiral_main(): Int {
     var v66: Int = 0
     v66 = 2
     var v67: Boolean = false
-    v67 = sp_utf8_canonical_equal_bounded_loop_3(v59, v60, v61, v62, v63, v64, v65, v66)
+    v67 = sp_utf8_canonical_equal_bounded_loop_0(v59, v60, v61, v62, v63, v64, v65, v66)
     var v68: String = ""
     v68 = "ω"
     var v69: Int = 0
@@ -1260,7 +873,7 @@ fun spiral_main(): Int {
     var v74: Int = 0
     v74 = 2
     var v75: Boolean = false
-    v75 = sp_utf8_canonical_equal_bounded_loop_3(v43, v68, v69, v70, v71, v72, v73, v74)
+    v75 = sp_utf8_canonical_equal_bounded_loop_0(v43, v68, v69, v70, v71, v72, v73, v74)
     var v76: String = ""
     v76 = "e"
     var v77: Int = 0
@@ -1276,7 +889,7 @@ fun spiral_main(): Int {
     var v82: Int = 0
     v82 = 1
     var v83: Boolean = false
-    v83 = sp_utf8_canonical_equal_bounded_loop_3(v59, v76, v77, v78, v79, v80, v81, v82)
+    v83 = sp_utf8_canonical_equal_bounded_loop_0(v59, v76, v77, v78, v79, v80, v81, v82)
     if (v7) {
         if (v15) {
             if (v24) {

@@ -7,13 +7,11 @@ var
   v0: LongInt;
   v1: LongInt;
   v2: Boolean;
-  v3: Boolean;
 begin
   v0 := 7;
   v1 := v0 * 2;
-  v2 := v1 = 14;
-  v3 := v2 <> True;
-  if v3 then begin
+  v2 := v1 <> 14;
+  if v2 then begin
       Result := 1;
   end else begin
       Result := 0;

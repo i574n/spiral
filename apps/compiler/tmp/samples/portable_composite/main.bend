@@ -239,9 +239,10 @@ def method5(+v0: Bool, +v1: F32, +v2: U32) -> IO(U32):
     method5_if4(v0, v0, v1, v2)
 
 @unsafe
-def method7(+v0: String) -> IO(Bool):
+def method7(+v0: String, +v1: String) -> IO(Bool):
   do IO<Bool>:
-    return True{}
+    +v2 : Bool <- IO.pure(Bool, String.eq(v0, v1))
+    return v2
 
 @unsafe
 def method9(+v0: U32) -> IO(Bool):
@@ -300,7 +301,7 @@ def method6_if6(+c: Bool, +v0: U32, +v1: String, +v2: Bool) -> IO(U32):
 def method6(+v0: U32) -> IO(U32):
   do IO<U32>:
     +v1 : String <- IO.pure(String, "spiral")
-    +v2 : Bool <- method7(v1)
+    +v2 : Bool <- method7(v1, v1)
     method6_if6(v2, v0, v1, v2)
 
 @unsafe

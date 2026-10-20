@@ -13,8 +13,6 @@ var
   v6: Boolean;
   v7: Boolean;
   v8: Boolean;
-  v9: Boolean;
-  v10: Boolean;
 begin
   v0 := 3;
   v1 := 4;
@@ -22,16 +20,14 @@ begin
   v3 := 1;
   v4 := 1.5;
   v5 := -v4;
-  v6 := v0 = v1;
-  v7 := v6 <> True;
-  if v7 then begin
-      v8 := v2 = v3;
-      v9 := v8 <> True;
-      if v9 then begin
+  v6 := v0 <> v1;
+  if v6 then begin
+      v7 := v2 <> v3;
+      if v7 then begin
           Result := 2;
       end else begin
-          v10 := v5 = (-1.5);
-          if v10 then begin
+          v8 := v5 = (-1.5);
+          if v8 then begin
               Result := 0;
           end else begin
               Result := 3;

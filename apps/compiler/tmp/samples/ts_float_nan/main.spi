@@ -10,6 +10,8 @@ inl make_nan32 () : f32 =
         CppHost = fun () => $"nanf(\"\")" : f32
         Python = fun () => $"float('nan')" : f32
         Zig = fun () => $"std.math.nan(f32)" : f32
+        Lean = fun () => $"(0.0 / 0.0 : Float32)" : f32
+        OpenQasm = fun () => $"((1e308 * 10.0) - (1e308 * 10.0))" : f32
         })
 inl make_nan64 () : f64 =
     !!!!BackendSwitch({
@@ -21,6 +23,8 @@ inl make_nan64 () : f64 =
         CppHost = fun () => $"nan(\"\")" : f64
         Python = fun () => $"float('nan')" : f64
         Zig = fun () => $"std.math.nan(f64)" : f64
+        Lean = fun () => $"(0.0 / 0.0 : Float)" : f64
+        OpenQasm = fun () => $"((1e308 * 10.0) - (1e308 * 10.0))" : f64
         })
 
 inl main () : i32 =

@@ -419,8 +419,8 @@ inl cons' forall t. (head : t) (tail : list' t) : list' t =
         TypeScript = fun () => $'[!head, ...!tail]' : list' t
         Zig = fun () =>
             inl len : i32 = $'\@as(i32, \@intCast(!tail.len))'
-            inl r : a i32 t = am.init (len + 1i32) fun i => if i = 0i32 then head else $'!tail[\@intCast(!i - 1)]' : t
-            inl (a r) = r
+            inl r : array t = arraym.init (len + 1i32) fun i => if i = 0i32 then head else $'!tail[\@intCast(!i - 1)]' : t
+            inl (array r) = r
             $'!r ' : list' t
     }
 
@@ -707,10 +707,10 @@ inl to_array' forall t. (items : list' t) : array_base t =
         Lua = fun () =>
             inl len = $'##(!items)' : i32
             inl d = real defaultof `t ()
-            inl result : a _ t = am.init len (fun _ => d)
+            inl result : array t = arraym.init len (fun _ => d)
             let rec 루프 i =
                 if i >= len then
-                    inl (a result) = result
+                    inl (array result) = result
                     result
                 else
                     set result i $'!items[!i + 1]'
@@ -719,10 +719,10 @@ inl to_array' forall t. (items : list' t) : array_base t =
         Fsharp = fun () => items |> $'List.toArray' : array_base t
         Python = fun () =>
             inl len = $'len(!items)' : i32
-            inl result : a _ t = a ($'__import__("numpy").empty(!len, dtype=object)' : array_base t)
+            inl result : array t = array ($'__import__("numpy").empty(!len, dtype=object)' : array_base t)
             let rec 루프 i =
                 if i >= len then
-                    inl (a result) = result
+                    inl (array result) = result
                     result
                 else
                     set result i $'!items[!i]'

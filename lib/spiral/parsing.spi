@@ -208,9 +208,9 @@ test fparsec_3 =
                 (
                     a'
                     |> listm'.to_array'
-                    |> a
-                    |> am.map fun x => x, b'
-                    |> fun (a x : _ int _) => x
+                    |> array
+                    |> arraym.map fun x => x, b'
+                    |> fun (array x : array _) => x
                 )
             )
 
@@ -260,7 +260,7 @@ test fparsec_3 =
                     x
                     |> resultm.get
                     |> am'.map_base fst
-                    |> _assert_eq' expected
+                    |> _assert_eq' (am'.base expected)
                     false
                 fun ex =>
                     ($'$"error / expected: %A{!expected} / ex: %A{!ex}"' : string)
@@ -1340,7 +1340,7 @@ inl pipe2 forall a b c. (p1 : parser a) (p2 : parser b) (f : ((() -> a) * (() ->
 
 test pipe2 =
     "pipe2"
-    |> run_parser (pipe2 (p_string "pipe") (spaces () >>. p_string "2") (fun a, b => a () ++# b ()))
+    |> run_parser (pipe2 (p_string "pipe") (spaces () >>. p_string "2") (fun a, b => array () ++# b ()))
     |> resultm.get
     |> sm'.show
     |> _assert_eq (sm'.show ("pipe2", "", new_parser_state 0 1 6 5))

@@ -53,8 +53,8 @@ type tagged_order = {customer : string; quantities : array_base i32; tags : arra
 test decode_reads_arrays_of_scalars =
     inl ~reply = "{\"customer\":\"ana\",\"quantities\":[3, 40, 200],\"tags\":[\"a,b\", \"]x\"]}"
     inl o : tagged_order = decode reply
-    inl q : a i32 i32 = a o.quantities
-    inl t : a i32 string = a o.tags
+    inl q : array i32 = array o.quantities
+    inl t : array string = array o.tags
     length q * 1000i32 + index q 0i32 + index q 1i32 + index q 2i32 + sm.length (index t 0i32) * 10000i32 + sm.length (index t 1i32) * 100000i32
     |> _assert_eq 233243i32
 
@@ -64,7 +64,7 @@ type line_order = {customer : string; lines : array_base order_line}
 test decode_reads_arrays_of_records =
     inl ~reply = "{\"customer\":\"ana\",\"lines\":[{\"sku\":\"p1\",\"qty\":2}, {\"sku\":\"p22\",\"qty\":30}]}"
     inl o : line_order = decode reply
-    inl lines : a i32 order_line = a o.lines
+    inl lines : array order_line = array o.lines
     inl first : order_line = index lines 0i32
     inl second : order_line = index lines 1i32
     length lines * 1000i32 + first.qty + second.qty + sm.length first.sku * 100i32 + sm.length second.sku * 10000i32
@@ -101,3 +101,19 @@ test tool_schema_describes_records_unions_options_and_arrays =
     inl args : forecast_args = {where = RegionHere; days = None; units = Metric; hours = am'.init_base 3i32 (fun _ => 0i32)}
     tool_schema "getForecast" args
     |> _assert_eq "{\"name\":\"getForecast\",\"parameters\":{\"type\":\"object\",\"properties\":{\"where\":{\"oneOf\":[{\"type\":\"object\",\"properties\":{\"RegionCity\":{\"type\":\"string\"}},\"required\":[\"RegionCity\"]},{\"type\":\"object\",\"properties\":{\"RegionPoint\":{\"type\":\"array\",\"prefixItems\":[{\"type\":\"number\"},{\"type\":\"number\"}]}},\"required\":[\"RegionPoint\"]},{\"const\":\"RegionHere\"}]},\"days\":{\"type\":\"integer\"},\"units\":{\"type\":\"string\",\"oneOf\":[{\"const\":\"Metric\"},{\"const\":\"Imperial\"}]},\"hours\":{\"type\":\"array\",\"items\":{\"type\":\"integer\"}}},\"required\":[\"where\",\"units\",\"hours\"]}}"
+
+type quote_query = {said : string; path : string; days : i32}
+
+test decode_unescapes_strings =
+    inl ~reply = "{\"said\":\"say \\\"hi\\\"\\n\",\"path\":\"a\\\\b\",\"days\":7}"
+    inl q : quote_query = decode reply
+    inl exact = if q.said = "say \"hi\"\n" && q.path = "a\\b" then 10000i32 else 0i32
+    exact + q.days + sm.length q.said * 10i32 + sm.length q.path * 1000i32
+    |> _assert_eq 13097i32
+type stamp = {span : i32 * string * i32; flag : bool}
+
+test decode_reads_tuples_longer_than_two =
+    inl ~reply = "{\"span\":[12,\"days\",7],\"flag\":true}"
+    inl q : stamp = decode reply
+    inl a, b, c = q.span
+    (a, b, c, q.flag) |> _assert_eq (12i32, "days", 7i32, true)

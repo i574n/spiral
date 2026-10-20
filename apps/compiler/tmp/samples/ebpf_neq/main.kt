@@ -12,20 +12,16 @@ fun spiral_main(): Int {
     var v5: Float = 0.0f
     v5 = (-(v4))
     var v6: Boolean = false
-    v6 = (v0 == v1)
-    var v7: Boolean = false
-    v7 = (v6 != true)
-    if (v7) {
-        var v8: Boolean = false
-        v8 = (v2 == v3)
-        var v9: Boolean = false
-        v9 = (v8 != true)
-        if (v9) {
+    v6 = (v0 != v1)
+    if (v6) {
+        var v7: Boolean = false
+        v7 = (v2 != v3)
+        if (v7) {
             return 2
         } else {
-            var v10: Boolean = false
-            v10 = (v5 == -1.5f)
-            if (v10) {
+            var v8: Boolean = false
+            v8 = (v5 == -1.5f)
+            if (v8) {
                 return 0
             } else {
                 return 3

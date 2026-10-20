@@ -750,21 +750,20 @@ let find_parent file_type name root_dir =
 
 ///> fsharp
 test find_parent =
-    a ;[ Directory, "workspace"; File, "README.md" ]
-    |> am.map fun file_type, file =>
+    ;[ Directory, "workspace"; File, "README.md" ]
+    |> arraym.map fun file_type, file =>
         get_source_directory ()
         |> find_parent file_type file
         |> resultm.get
         |> directory_info
         |> directory_info_name
     |> am'.distinct
-    |> fun (a x : _ int _) => x
     |> _assert_in [ ;[ "spiral" ]; ;[ "polyglot" ] ]
 
 ///> rust
 test find_parent_2 =
-    a ;[ Directory, "workspace"; File, "README.md" ]
-    |> am.map fun file_type, file =>
+    ;[ Directory, "workspace"; File, "README.md" ]
+    |> arraym.map fun file_type, file =>
         fun () =>
             join
                 get_current_directory ()
@@ -966,13 +965,13 @@ let get_full_path (path : string) : string =
                 |> normalize_path
                 |> sm'.split "/"
                 |> fun x =>
-                    ((a x : _ i32 _), (0i32, (a ;[] : _ i32 _)))
-                    ||> am.foldBack fun x level, acc =>
+                    ((array x : array _), (0i32, (;[] : array _)))
+                    ||> arraym.foldBack fun x level, acc =>
                         match x, level with
                         | "..", _ => level + 1, acc
                         | ".", _ => level, acc
-                        | _, 0 when x |> sm'.ends_with ":" => 0, a ;[ sm'.(++#) (current_dir |> sm'.slice 0i32 0i32) ":" ] ++ acc
-                        | _, 0 => 0, a ;[ x ] ++ acc
+                        | _, 0 when x |> sm'.ends_with ":" => 0, ;[ sm'.(++#) (current_dir |> sm'.slice 0i32 0i32) ":" ] ++ acc
+                        | _, 0 => 0, ;[ x ] ++ acc
                         | _ => level - 1, acc
                 |> snd
                 |> seq.of_array'
@@ -1080,7 +1079,7 @@ let rec trace_file text : () =
 test trace_file =
     inl get_count dir : i64 =
         inl files = dir |> directory_get_files
-        a files |> am'.length
+        array files |> am'.length |> conv
 
     inl trace_dir = get_workspace_root () </> "target/trace"
     trace_dir |> create_directory |> ignore
@@ -1284,3 +1283,42 @@ inl main () =
     $'let link_directory x = !link_directory x' : ()
     inl combine x = (</>) x
     $'let (</>) x = !combine x' : ()
+
+
+/// ### remove_dir_all
+inl remove_dir_all (path : string) : resultm.result' () stream.io_error =
+    !\\(path, $'"std::fs::remove_dir_all(&*$0)"')
+
+/// ### copy_file
+inl copy_file (to : string) (path : string) : resultm.result' u64 stream.io_error =
+    !\($'"std::fs::copy(&*!path, &*!to)"')
+
+/// ### canonicalize
+inl canonicalize (path : string) : resultm.result' path_buf stream.io_error =
+    !\\(path, $'"std::fs::canonicalize(&*$0)"')
+
+/// ### set_current_dir
+inl set_current_dir (path : string) : resultm.result' () stream.io_error =
+    !\\(path, $'"std::env::set_current_dir(&*$0)"')
+
+/// ### get_current_dir
+inl get_current_dir () : resultm.result' path_buf stream.io_error =
+    !\($'"std::env::current_dir()"')
+
+/// ### read_dir_names
+inl read_dir_names (path : string) : resultm.result' (am'.vec sm'.std_string) stream.io_error =
+    !\\(path, $'"std::fs::read_dir(&*$0).map(|entries| entries.filter_map(|entry| entry.ok().map(|entry| entry.file_name().to_string_lossy().into_owned())).collect::<Vec<std::string::String>>())"')
+
+///> rust -d chrono
+test copy_list_canonicalize_and_remove_a_tree =
+    inl root, disposable = create_temp_dir ()
+    join
+        inl tree = root </> "tree"
+        tree |> create_dir_all |> resultm.unwrap'
+        "x" |> write_all_text (tree </> "a.txt")
+        inl copied = tree </> "a.txt" |> copy_file (tree </> "b.txt") |> resultm.unwrap'
+        inl names = tree |> read_dir_names |> resultm.unwrap' |> am'.vec_len |> convert.i32
+        inl canonical_ok = match tree |> canonicalize |> resultm.unbox with Ok _ => true | Error _ => false
+        tree |> remove_dir_all |> resultm.unwrap'
+        (copied, names, canonical_ok, tree |> directory_exists) |> _assert_eq (1u64, 2i32, true, false)
+        disposable |> use |> ignore

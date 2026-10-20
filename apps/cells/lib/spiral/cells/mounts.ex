@@ -274,9 +274,30 @@ defmodule Spiral.Cells.Mounts do
     end
   end
 
+  @spec declared_crates(String.t()) :: [String.t()]
+  def declared_crates(dir) do
+    case File.read(Path.join(dir, "package.spiproj")) do
+      {:ok, text} ->
+        {crates, _mode} =
+          Enum.reduce(String.split(text, ~r/\r?\n/), {[], :out}, fn line, {crates, mode} ->
+            cond do
+              String.starts_with?(line, "crates:") -> {crates, :in}
+              line != "" and not String.starts_with?(line, [" ", "\t"]) -> {crates, :out}
+              mode == :in and String.trim(line) != "" -> {[String.trim(line) | crates], :in}
+              true -> {crates, mode}
+            end
+          end)
+
+        Enum.reverse(crates)
+
+      _ ->
+        []
+    end
+  end
+
   @spec mount_name(String.t()) :: String.t()
   def mount_name(target) do
-    name = target |> Path.basename() |> String.replace(~r/[^A-Za-z0-9_]/, "_")
+    name = target |> Path.basename() |> String.downcase() |> String.replace(~r/[^a-z0-9_]/, "_")
     if name =~ ~r/^[0-9]/, do: "_" <> name, else: name
   end
 
@@ -329,6 +350,9 @@ defmodule Spiral.Cells.Mounts do
             {entries, :in}
 
           String.starts_with?(line, "modules:") ->
+            {entries, :out}
+
+          line != "" and not String.starts_with?(line, [" ", "\t"]) ->
             {entries, :out}
 
           mode == :in and package_entry(line) != nil ->

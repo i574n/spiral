@@ -298,8 +298,8 @@ inl process_rust { rs_path deps trace_level runtime cleanup } =
                     |> fun (n : int) => n > 0
                 if has_near_sdk
                 then deps
-                else deps |> am'.vec_extend (;[ "near-sdk=\"=5.11.0\"" |> sm'.to_std_string ] |> am'.to_vec)
-                |> am'.vec_extend (;[ "indexmap=\"=2.11.4\"" |> sm'.to_std_string ] |> am'.to_vec)
+                else deps |> am'.vec_extend (;[ "near-sdk=\"=5.11.0\"" |> sm'.to_std_string ] |> am'.base |> am'.to_vec)
+                |> am'.vec_extend (;[ "indexmap=\"=2.11.4\"" |> sm'.to_std_string ] |> am'.base |> am'.to_vec)
         deps
         |> am'.vec_map fun dep =>
             inl dep = dep |> sm'.from_std_string
@@ -309,7 +309,7 @@ inl process_rust { rs_path deps trace_level runtime cleanup } =
             then dep |> sm'.replace "[" $'$"={{version=\'*\',features=["' |> fun x => $'$"{!x}}}"'
             else $'$"{!dep}=\'*\'"'
         |> am'.from_vec
-        |> fun x => x : _ i32 _
+        |> fun x => x : array _
         |> seq.of_array'
         |> sm'.concat "\n"
 
@@ -367,7 +367,7 @@ inl process_rust { rs_path deps trace_level runtime cleanup } =
                     |> resultm.unwrap'
                     |> sm'.regex_captures result
                     |> am'.from_vec
-                    |> fun x => x : _ i32 _
+                    |> fun x => x : array _
                     |> am'.try_item 0
                     |> optionm.map (mapm.get "a" >> optionm'.unbox)
                     |> optionm'.flatten
@@ -413,7 +413,7 @@ inl process_rust { rs_path deps trace_level runtime cleanup } =
     inl exit_code, cargo_result =
         execution_options fun x => { x with
             command
-            environment_variables
+            environment_variables = am'.base environment_variables
             working_directory = workspace_root_external |> resultm.box |> resultm.ok'
         }
         |> execute_with_options
@@ -422,17 +422,17 @@ inl process_rust { rs_path deps trace_level runtime cleanup } =
         if runtime = None then
             inl external_command =
                 inl vars =
-                    a environment_variables
-                    |> am.map fun k, v => $'$"$env:{!k}=\'\'{!v}\'\'"' : string
-                    |> fun x => x : _ i32 _
+                    environment_variables
+                    |> arraym.map fun k, v => $'$"$env:{!k}=\'\'{!v}\'\'"' : string
+                    |> fun x => x : array _
                     |> seq.of_array
                     |> sm'.concat ";"
                 inl command =
-                    a ;[
+                    ;[
                         vars
                         command
                     ]
-                    |> fun x => x : _ i32 _
+                    |> fun x => x : array _
                     |> seq.of_array
                     |> sm'.concat ";"
                 $'$"pwsh -c \'{!command}\'"' : string
@@ -447,7 +447,7 @@ inl process_rust { rs_path deps trace_level runtime cleanup } =
                         fun () =>
                             cargo_result
                             |> sm'.split "\n"
-                            |> fun x => a x : _ i32 _
+                            |> fun x => array x : array _
                             |> am'.skip_while fun line =>
                                 (line |> sm'.contains "profile [optimized] target" |> not)
                                     && (line |> sm'.contains "profile [unoptimized] target" |> not)
@@ -487,7 +487,7 @@ inl process_rust { rs_path deps trace_level runtime cleanup } =
                 inl exit_code, spiral_wasm_result =
                     execution_options fun x => { x with
                         command
-                        environment_variables = ;[ "SPIRAL_WASM_COMMAND", spiral_wasm_command ]
+                        environment_variables = am'.base ;[ "SPIRAL_WASM_COMMAND", spiral_wasm_command ]
                         working_directory = workspace_root |> optionm'.some'
                     }
                     |> execute_with_options
@@ -725,7 +725,7 @@ inl indent_block (block : block) =
                         && trimmed_line |> sm'.starts_with "}" |> not
                         && trimmed_line |> sm'.starts_with "|}" |> not
 
-                    match is_multiline, trimmed_line |> sm'.split_string ;[ "\"\"\"" ] with
+                    match is_multiline, trimmed_line |> sm'.split_string (am'.base ;[ "\"\"\"" ]) with
                     | false, ;[ _; _ ] =>
                         "    " ++# line :: lines, true
 
@@ -893,7 +893,7 @@ inl process_gleam { gleam_path target deps } =
     inl manifest_path = package_dir </> "gleam.toml"
 
     inl deps =
-        ;[
+        am'.base ;[
             "gleam_stdlib=\"0.57.0\""
             "gleam_time=\">=1.0.0 and <2.0.0\""
             "gleam_erlang=\">=0.34.0 and <1.0.0\""
@@ -912,7 +912,7 @@ inl process_gleam { gleam_path target deps } =
             then dep |> sm'.replace "[" $'$"={{version=\'*\',features=["' |> fun x => $'$"{!x}}}"'
             else $'$"{!dep}=\'*\'"'
         |> am'.from_vec
-        |> fun x => x : _ i32 _
+        |> fun x => x : array _
         |> seq.of_array'
         |> sm'.concat "\n"
 
@@ -957,7 +957,7 @@ inl process_gleam { gleam_path target deps } =
         if target = Erlang then
             runtime.execution_options fun x => { x with
                 command = "gleam build --no-print-progress"
-                environment_variables
+                environment_variables = am'.base environment_variables
                 working_directory = package_dir |> optionm'.some'
                 stderr = false
             }
@@ -966,7 +966,7 @@ inl process_gleam { gleam_path target deps } =
         inl exit_code, run_result =
             runtime.execution_options fun x => { x with
                 command
-                environment_variables
+                environment_variables = am'.base environment_variables
                 working_directory = package_dir |> optionm'.some'
                 stderr = false
             }
@@ -974,9 +974,9 @@ inl process_gleam { gleam_path target deps } =
 
         inl external_command =
             inl vars =
-                a environment_variables
-                |> am.map fun k, v => $'$"$env:{!k}=\'\'{!v}\'\'"' : string
-                |> fun x => x : _ i32 _
+                environment_variables
+                |> arraym.map fun k, v => $'$"$env:{!k}=\'\'{!v}\'\'"' : string
+                |> fun x => x : array _
                 |> seq.of_array
                 |> sm'.concat ";"
             $'$"pwsh -c \'{!vars}; {!command}\'"' : string
@@ -1003,8 +1003,8 @@ inl process_gleam { gleam_path target deps } =
                                 $'$"bunx --bun esbuild --bundle --minify --loader:.wasm=file --outdir={!src_dir} {!js_path}"'
                             environment_variables =
                                 match "~/.bun/bin" |> env.append_path with
-                                | Some path => ;[ "PATH", path ]
-                                | None => ;[]
+                                | Some path => am'.base ;[ "PATH", path ]
+                                | None => am'.base ;[]
                             working_directory = package_dir |> optionm'.some'
                         }
                         |> runtime.execute_with_options
@@ -1061,7 +1061,7 @@ inl process_gleam { gleam_path target deps } =
                             runtime.execution_options fun x => { x with
                                 command = $'$"trunk build --release --minify --dist={!src_dir} --public-url=./ --no-sri"'
                                 environment_variables =
-                                    ;[
+                                    am'.base ;[
                                         "TRUNK_TOOLS_WASM_BINDGEN", "0.2.93"
                                     ]
                                 working_directory = src_dir |> optionm'.some'
@@ -1094,7 +1094,7 @@ inl process_gleam { gleam_path target deps } =
                             && (x |> sm'.starts_with "src/main_real.gleam:" |> not)
                             && (x |> sm'.starts_with "% " |> not)
                         |> am'.from_vec
-                        |> fun x => x : _ int _
+                        |> fun x => x : array _
                         |> seq.of_array
                         |> sm'.concat "\n"
                         |> sm'.trim_start [ '\n' ]
@@ -1302,7 +1302,7 @@ inl process_cuda { py_path env deps } =
             then dep |> sm'.replace "[" $'$"={{version=\'*\',features=["' |> fun x => $'$"{!x}}}"'
             else $'$"{!dep}=\'*\'"'
         |> am'.from_vec
-        |> fun x => x : _ i32 _
+        |> fun x => x : array _
         |> seq.of_array'
         |> sm'.concat "\n"
 
@@ -1354,16 +1354,16 @@ inl process_cuda { py_path env deps } =
         inl exit_code, run_result =
             runtime.execution_options fun x => { x with
                 command
-                environment_variables
+                environment_variables = am'.base environment_variables
                 working_directory = package_dir |> optionm'.some'
             }
             |> runtime.execute_with_options
 
         inl external_command =
             inl vars =
-                a environment_variables
-                |> am.map fun k, v => $'$"$env:{!k}=\'\'{!v}\'\'"' : string
-                |> fun x => x : _ i32 _
+                environment_variables
+                |> arraym.map fun k, v => $'$"$env:{!k}=\'\'{!v}\'\'"' : string
+                |> fun x => x : array _
                 |> seq.of_array
                 |> sm'.concat ";"
             $'$"pwsh -c \'{!vars}; {!command}\'"' : string
@@ -1373,7 +1373,7 @@ inl process_cuda { py_path env deps } =
                     fun () =>
                         run_result
                         |> sm'.split "\n"
-                        |> fun x => a x : _ i32 _
+                        |> fun x => array x : array _
                         |> seq.of_array
                         |> sm'.concat "\n"
                     fun ex =>
@@ -1490,7 +1490,7 @@ let get_command () =
             real runtime.arg_union `gleam_target ignore
         )
         |> runtime.command_init_arg ((get_args () .gleam |> snd).deps) (
-            runtime.arg_value_names ;[ ###"NAME"; ###"VERSION" ]
+            runtime.arg_value_names (am'.base ;[ ###"NAME"; ###"VERSION" ])
             >> runtime.arg_num_args_range (
                 runtime.new_value_range
                     false
@@ -1510,7 +1510,7 @@ let get_command () =
             real runtime.arg_union `cuda_env ignore
         )
         |> runtime.command_init_arg ((get_args () .cuda |> snd).deps) (
-            runtime.arg_value_names ;[ ###"NAME"; ###"VERSION" ]
+            runtime.arg_value_names (am'.base ;[ ###"NAME"; ###"VERSION" ])
             >> runtime.arg_num_args_range (
                 runtime.new_value_range
                     false
@@ -1527,7 +1527,7 @@ let get_command () =
             runtime.arg_required true
         )
         |> runtime.command_init_arg ((get_args () .rust |> snd).deps) (
-            runtime.arg_value_names ;[ ###"NAME"; ###"VERSION" ]
+            runtime.arg_value_names (am'.base ;[ ###"NAME"; ###"VERSION" ])
             >> runtime.arg_num_args_range (
                 runtime.new_value_range
                     false
@@ -1574,7 +1574,7 @@ let get_command () =
         |> runtime.command_init_arg ((get_args () .notebook_export |> snd).entries) (
             runtime.arg_required true
             >> runtime.arg_index 1
-            >> runtime.arg_value_names ;[ ###"PATH"; ###"EXT" ]
+            >> runtime.arg_value_names (am'.base ;[ ###"PATH"; ###"EXT" ])
             >> runtime.arg_num_args_range (
                 runtime.new_value_range
                     false
@@ -1628,7 +1628,7 @@ let rec run trace_level (matches : runtime.arg_matches) : async.future_pin (resu
                 arg_matches
                 |> runtime.matches_get_many ((get_args () .gleam |> snd).deps |> fst)
                 |> optionm'.unbox
-                |> optionm'.default_value (;[] |> am'.to_vec)
+                |> optionm'.default_value (;[] |> am'.base |> am'.to_vec)
 
             inl command_result =
                 process_gleam { gleam_path target deps }
@@ -1642,6 +1642,7 @@ let rec run trace_level (matches : runtime.arg_matches) : async.future_pin (resu
             ;[
                 "command_result",
                 command_result
+                |> am'.base
                 |> am'.to_vec
                 |> am'.vec_map' fun k, v =>
                     new_pair (sm'.to_std_string k) (sm'.to_std_string v)
@@ -1673,6 +1674,7 @@ let rec run trace_level (matches : runtime.arg_matches) : async.future_pin (resu
             ;[
                 "command_result",
                 command_result
+                |> am'.base
                 |> am'.to_vec
                 |> am'.vec_map' fun k, v =>
                     new_pair (sm'.to_std_string k) (sm'.to_std_string v)
@@ -1707,7 +1709,7 @@ let rec run trace_level (matches : runtime.arg_matches) : async.future_pin (resu
                 arg_matches
                 |> runtime.matches_get_many ((get_args () .cuda |> snd).deps |> fst)
                 |> optionm'.unbox
-                |> optionm'.default_value (;[] |> am'.to_vec)
+                |> optionm'.default_value (;[] |> am'.base |> am'.to_vec)
 
             inl command_result =
                 process_cuda { py_path env deps }
@@ -1721,6 +1723,7 @@ let rec run trace_level (matches : runtime.arg_matches) : async.future_pin (resu
             ;[
                 "command_result",
                 command_result
+                |> am'.base
                 |> am'.to_vec
                 |> am'.vec_map' fun k, v =>
                     new_pair (sm'.to_std_string k) (sm'.to_std_string v)
@@ -1752,6 +1755,7 @@ let rec run trace_level (matches : runtime.arg_matches) : async.future_pin (resu
             ;[
                 "command_result",
                 command_result
+                |> am'.base
                 |> am'.to_vec
                 |> am'.vec_map' fun k, v =>
                     new_pair (sm'.to_std_string k) (sm'.to_std_string v)
@@ -1768,7 +1772,7 @@ let rec run trace_level (matches : runtime.arg_matches) : async.future_pin (resu
                 arg_matches
                 |> runtime.matches_get_many ((get_args () .cuda |> snd).deps |> fst)
                 |> optionm'.unbox
-                |> optionm'.default_value (;[] |> am'.to_vec)
+                |> optionm'.default_value (;[] |> am'.base |> am'.to_vec)
 
             inl entries =
                 arg_matches
@@ -1822,7 +1826,7 @@ let rec run trace_level (matches : runtime.arg_matches) : async.future_pin (resu
                     arg_matches
                     |> runtime.matches_get_many ((get_args () .rust |> snd).deps |> fst)
                     |> optionm'.unbox
-                    |> optionm'.default_value (;[] |> am'.to_vec)
+                    |> optionm'.default_value (;[] |> am'.base |> am'.to_vec)
 
                 inl cleanup =
                     arg_matches
@@ -1863,6 +1867,7 @@ let rec run trace_level (matches : runtime.arg_matches) : async.future_pin (resu
                     "code_path", code_path |> optionm'.default_value ""
                     "output", output |> optionm'.default_value ""
                 ]
+        |> am'.base
         |> am'.to_vec
         |> am'.vec_map' fun k, v =>
             new_pair (sm'.to_std_string k) (sm'.to_std_string v)

@@ -33,7 +33,8 @@ defmodule Spiral.Cells.CompilerDaemonStatusTest do
     :gen_tcp.close(sock)
     GenServer.stop(pid)
 
-    assert ["status", os_pid, _stamp, "0", "0", "false"] = line |> String.trim() |> String.split("\t")
+    assert ["status", os_pid, _stamp, "0", "0", "false", owner] = line |> String.trim() |> String.split("\t")
+    assert owner != ""
     assert os_pid == System.pid()
   end
 end

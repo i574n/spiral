@@ -4,10 +4,8 @@ fun spiral_main(): Int {
     var v1: Int = 0
     v1 = (v0 * 2)
     var v2: Boolean = false
-    v2 = (v1 == 14)
-    var v3: Boolean = false
-    v3 = (v2 != true)
-    if (v3) {
+    v2 = (v1 != 14)
+    if (v2) {
         return 1
     } else {
         return 0

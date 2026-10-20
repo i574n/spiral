@@ -34,24 +34,20 @@ partial def spiralMain : IO Int32 := do
     let mut v6 : Bool := default
     let mut v7 : Bool := default
     let mut v8 : Bool := default
-    let mut v9 : Bool := default
-    let mut v10 : Bool := default
     v0 := (3 : Int32)
     v1 := (4 : Int32)
     v2 := (1 : UInt32)
     v3 := (1 : UInt32)
     v4 := (1.5 : Float32)
     v5 := (-v4)
-    v6 := (v0 == v1)
-    v7 := (v6 != true)
-    if v7 then
-        v8 := (v2 == v3)
-        v9 := (v8 != true)
-        if v9 then
+    v6 := (v0 != v1)
+    if v6 then
+        v7 := (v2 != v3)
+        if v7 then
             return (2 : Int32)
         else
-            v10 := (v5 == (-1.5 : Float32))
-            if v10 then
+            v8 := (v5 == (-1.5 : Float32))
+            if v8 then
                 return (0 : Int32)
             else
                 return (3 : Int32)

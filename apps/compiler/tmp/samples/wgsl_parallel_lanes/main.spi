@@ -5,6 +5,7 @@ inl gpu_lane () : u32 =
         Fsharp = fun () => 0u32
         Rust = fun () => 0u32
         Delphi = fun () => 0u32
+        Lean = fun () => 0u32
     })
 
 inl main () : i32 =

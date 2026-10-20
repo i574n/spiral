@@ -66,6 +66,47 @@ defmodule Spiral.Cells.NotebookReportTest do
     assert %{"files" => 1, "discovered" => 4, "passed" => 2} = JSON.decode!(json)
   end
 
+  test "the summary names why --accept refused a test" do
+    refused = "the actual value (1, 2) is not a plain literal"
+
+    report = %{
+      "tests" => [
+        %{"name" => "pinned", "status" => "failed", "accept_refused" => refused},
+        %{"name" => "plain", "status" => "accepted"}
+      ]
+    }
+
+    assert ["spiral-tests file " <> json, _total] = Notebook.summary_lines([{"pins.spi", report}])
+    assert %{"accepted" => 1, "failed_tests" => ["pinned"], "accept_refused" => %{"pinned" => ^refused}} = JSON.decode!(json)
+  end
+
+  test "the summary names the failing targets of each failed test" do
+    report = %{
+      "tests" => [
+        %{"name" => "split", "status" => "failed", "targets" => [%{"target" => "rust", "status" => "passed"}, %{"target" => "gleam", "status" => "failed"}]},
+        %{"name" => "green", "status" => "passed", "targets" => [%{"target" => "rust", "status" => "passed"}]}
+      ]
+    }
+
+    assert ["spiral-tests file " <> json, _total] = Notebook.summary_lines([{"split.spi", report}])
+    assert %{"failed_targets" => %{"split" => ["gleam"]}} = JSON.decode!(json)
+    refute Map.has_key?(JSON.decode!(json)["failed_targets"], "green")
+  end
+
+  test "the summary carries actual and expected of each failed _assert_eq" do
+    report = %{
+      "tests" => [
+        %{"name" => "drift", "status" => "failed", "actual" => "(1, 2)", "expected" => "(1, 3)"},
+        %{"name" => "crash", "status" => "failed"},
+        %{"name" => "green", "status" => "passed"}
+      ]
+    }
+
+    assert ["spiral-tests file " <> json, _total] = Notebook.summary_lines([{"drift.spi", report}])
+    assert %{"mismatches" => %{"drift" => %{"actual" => "(1, 2)", "expected" => "(1, 3)"}} = mismatches} = JSON.decode!(json)
+    assert map_size(mismatches) == 1
+  end
+
   test "a .spi compiles once per test block plus once for the whole file", %{dir: dir} do
     path = Path.join(dir, "demo.spi")
     File.write!(path, @spi)
@@ -224,6 +265,20 @@ defmodule Spiral.Cells.NotebookReportTest do
     assert message =~ "unknown test nope"
     assert NotebookTask.tests_by_path(["a.spi"], ["nope"], names) == {:ok, %{"a.spi" => ["nope"]}}
   end
+
+  test "a --test with * selects every matching name, in one file or across several" do
+    alias Spiral.Cells.NotebookCli, as: NotebookTask
+    names = fn
+      "a.spi" -> ["show_floats", "show", "format"]
+      "b.spi" -> ["show_ints", "parse"]
+    end
+
+    assert NotebookTask.tests_by_path(["a.spi"], ["show*"], names) == {:ok, %{"a.spi" => ["show_floats", "show"]}}
+    assert NotebookTask.tests_by_path(["a.spi", "b.spi"], ["show_*", "parse"], names) ==
+             {:ok, %{"a.spi" => ["show_floats"], "b.spi" => ["show_ints", "parse"]}}
+    assert {:error, message} = NotebookTask.tests_by_path(["a.spi", "b.spi"], ["zz*"], names)
+    assert message =~ "unknown test zz*"
+  end
   test "a `fails` test passes only when the compile fails with its code and message", %{dir: dir} do
     spi = """
     inl one () = 1i32
@@ -247,7 +302,7 @@ defmodule Spiral.Cells.NotebookReportTest do
 
     compile = fn %{source: source} ->
       if source =~ "f64",
-        do: {:error, "EJP0040 main.spi:3:5: Unification failure. Got: f64 Expected: i32"},
+        do: {:error, "EJP0040 main.spi:4:5: Unification failure. Got: f64 Expected: i32"},
         else: {:ok, "fn main() {}\n"}
     end
 
@@ -261,7 +316,7 @@ defmodule Spiral.Cells.NotebookReportTest do
            ]
 
     codeless = fn %{source: source} ->
-      if source =~ "f64", do: {:error, "main.spi:3:5: Unification failure."}, else: {:ok, "fn main() {}\n"}
+      if source =~ "f64", do: {:error, "main.spi:4:5: Unification failure."}, else: {:ok, "fn main() {}\n"}
     end
 
     {_, report} = Notebook.run_report(path, compile: codeless, rustc: fn _ -> :ok end, execute: exit_when("never", 0), tests: ["rejects_mixed", "rejects_any"])
@@ -270,7 +325,7 @@ defmodule Spiral.Cells.NotebookReportTest do
 
     named = fn %{source: source} ->
       if source =~ "f64",
-        do: {:error, "main.spi:3:5: ETY-TermError: Unification failure. Got: f64 Expected: i32"},
+        do: {:error, "main.spi:4:5: ETY-TermError: Unification failure. Got: f64 Expected: i32"},
         else: {:ok, "fn main() {}\n"}
     end
 
@@ -281,6 +336,25 @@ defmodule Spiral.Cells.NotebookReportTest do
     File.write!(path, String.replace(spi, "EJP0040", "ETY-Term"))
     {_, report} = Notebook.run_report(path, compile: named, rustc: fn _ -> :ok end, execute: exit_when("never", 0), tests: ["rejects_mixed"])
     assert [%{"status" => "failed"}] = Enum.filter(report["tests"], &(&1["status"] != "filtered"))
+  end
+  test "a `fails` test passes only when its error is reported inside its own body", %{dir: dir} do
+    path = Path.join(dir, "outside.spi")
+    File.write!(path, "inl broken () : i32 = 1f64\n\ntest uses_broken fails \"Unification failure\" =\n    broken ()\n")
+
+    outside = fn %{source: source} ->
+      if source =~ "broken ()", do: {:error, "main.spi:1:23: ETY-TermError: Unification failure."}, else: {:ok, "fn main() {}\n"}
+    end
+
+    {_, report} = Notebook.run_report(path, compile: outside, rustc: fn _ -> :ok end, execute: exit_when("never", 0))
+    assert [%{"status" => "failed", "message" => message}] = report["tests"]
+    assert message =~ "before the test body"
+
+    inside = fn %{source: source} ->
+      if source =~ "broken ()", do: {:error, "main.spi:4:5: ETY-TermError: Unification failure."}, else: {:ok, "fn main() {}\n"}
+    end
+
+    {_, report} = Notebook.run_report(path, compile: inside, rustc: fn _ -> :ok end, execute: exit_when("never", 0))
+    assert [%{"status" => "passed"}] = report["tests"]
   end
   test "a `fails` text matches across the compiler's column padding and belongs to the memo key", %{dir: dir} do
     spi = """
@@ -298,7 +372,7 @@ defmodule Spiral.Cells.NotebookReportTest do
       Agent.update(agent, &(&1 + 1))
 
       if source =~ "f64",
-        do: {:error, "EJP0040 main.spi:3:5: Unification failure.\nGot:      f64\nExpected: i32"},
+        do: {:error, "EJP0040 main.spi:4:5: Unification failure.\nGot:      f64\nExpected: i32"},
         else: {:ok, "fn main() {}\n"}
     end
 

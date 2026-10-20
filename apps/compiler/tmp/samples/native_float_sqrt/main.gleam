@@ -1,5 +1,10 @@
-@external(erlang, "math", "sqrt")
-pub fn spiral_math_sqrt(x: Float) -> Float
+import gleam/float
+pub fn spiral_math_sqrt(x: Float) -> Float {
+  case float.square_root(x) {
+    Ok(value) -> value
+    Error(_) -> panic as "spiral math: sqrt outside the real domain"
+  }
+}
 
 pub fn main() {
 let v0 = 144.0

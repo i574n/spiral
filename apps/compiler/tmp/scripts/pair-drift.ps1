@@ -1,6 +1,7 @@
 param(
     [string]$Source = (Join-Path $PSScriptRoot '../../spiral_compiler.fs'),
     [string]$Base = 'HEAD',
+    [string]$Tracked,
     [switch]$Table
 )
 $Source = (Resolve-Path $Source).Path
@@ -21,11 +22,31 @@ for ($i = 0; $i -lt $lines.Count; $i++) {
     }
 }
 
-$root = git -C (Split-Path $Source) rev-parse --show-toplevel
-if ($LASTEXITCODE -ne 0) { throw "pair-drift: $Source is not inside a git work tree" }
-$relative = git -C $root ls-files --full-name -- $Source
-$diff = git -C $root --no-optional-locks diff -w -U0 $Base -- $relative
-if ($LASTEXITCODE -ne 0) { throw "pair-drift: git diff $Base failed for $relative" }
+if ($Tracked) {
+    $trackedPath = (Resolve-Path $Tracked).Path
+    $root = git -C (Split-Path $trackedPath) rev-parse --show-toplevel
+    if ($LASTEXITCODE -ne 0) { throw "pair-drift: $trackedPath is not inside a git work tree" }
+    $relative = git -C $root ls-files --full-name -- $trackedPath
+    $baseCopy = Join-Path ([IO.Path]::GetTempPath()) "pair-drift-base-$PID.fs"
+    $previousEncoding = [Console]::OutputEncoding
+    [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
+    $baseText = (git -C $root show "${Base}:$relative") -join "`n"
+    $showExit = $LASTEXITCODE
+    [Console]::OutputEncoding = $previousEncoding
+    if ($showExit -ne 0) { throw "pair-drift: git show ${Base}:$relative failed" }
+    [IO.File]::WriteAllText($baseCopy, $baseText + "`n")
+    $diff = git --no-optional-locks diff --no-index -w -U0 -- $baseCopy $Source
+    $diffExit = $LASTEXITCODE
+    Remove-Item -LiteralPath $baseCopy -Force
+    if ($diffExit -gt 1) { throw "pair-drift: git diff --no-index failed for $Source against ${Base}:$relative" }
+}
+else {
+    $root = git -C (Split-Path $Source) rev-parse --show-toplevel
+    if ($LASTEXITCODE -ne 0) { throw "pair-drift: $Source is not inside a git work tree" }
+    $relative = git -C $root ls-files --full-name -- $Source
+    $diff = git -C $root --no-optional-locks diff -w -U0 $Base -- $relative
+    if ($LASTEXITCODE -ne 0) { throw "pair-drift: git diff $Base failed for $relative" }
+}
 $changed = [Collections.Generic.List[object]]::new()
 $header = $null
 $codeChanged = $false

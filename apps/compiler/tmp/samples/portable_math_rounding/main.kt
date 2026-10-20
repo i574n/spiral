@@ -16,86 +16,68 @@ fun spiral_main(): Int {
     var v7: Double = 0.0
     v7 = kotlin.math.floor(v0)
     var v8: Boolean = false
-    v8 = (v7 == 2.0)
-    var v9: Boolean = false
-    v9 = (v8 != true)
-    if (v9) {
+    v8 = (v7 != 2.0)
+    if (v8) {
         return 1
     } else {
-        var v10: Double = 0.0
-        v10 = kotlin.math.ceil(v0)
-        var v11: Boolean = false
-        v11 = (v10 == 3.0)
-        var v12: Boolean = false
-        v12 = (v11 != true)
-        if (v12) {
+        var v9: Double = 0.0
+        v9 = kotlin.math.ceil(v0)
+        var v10: Boolean = false
+        v10 = (v9 != 3.0)
+        if (v10) {
             return 2
         } else {
-            var v13: Double = 0.0
-            v13 = kotlin.math.round(v0)
-            var v14: Boolean = false
-            v14 = (v13 == 3.0)
-            var v15: Boolean = false
-            v15 = (v14 != true)
-            if (v15) {
+            var v11: Double = 0.0
+            v11 = kotlin.math.round(v0)
+            var v12: Boolean = false
+            v12 = (v11 != 3.0)
+            if (v12) {
                 return 3
             } else {
-                var v16: Double = 0.0
-                v16 = kotlin.math.round(v1)
-                var v17: Boolean = false
-                v17 = (v16 == 3.0)
-                var v18: Boolean = false
-                v18 = (v17 != true)
-                if (v18) {
+                var v13: Double = 0.0
+                v13 = kotlin.math.round(v1)
+                var v14: Boolean = false
+                v14 = (v13 != 3.0)
+                if (v14) {
                     return 4
                 } else {
-                    var v19: Double = 0.0
-                    v19 = kotlin.math.round(v2)
-                    var v20: Boolean = false
-                    v20 = (v19 == -2.0)
-                    var v21: Boolean = false
-                    v21 = (v20 != true)
-                    if (v21) {
+                    var v15: Double = 0.0
+                    v15 = kotlin.math.round(v2)
+                    var v16: Boolean = false
+                    v16 = (v15 != -2.0)
+                    if (v16) {
                         return 5
                     } else {
-                        var v22: Double = 0.0
-                        v22 = kotlin.math.round(v3)
-                        var v23: Boolean = false
-                        v23 = (v22 == 4.0)
-                        var v24: Boolean = false
-                        v24 = (v23 != true)
-                        if (v24) {
+                        var v17: Double = 0.0
+                        v17 = kotlin.math.round(v3)
+                        var v18: Boolean = false
+                        v18 = (v17 != 4.0)
+                        if (v18) {
                             return 6
                         } else {
-                            var v25: Double = 0.0
-                            v25 = kotlin.math.round(v4)
-                            var v26: Boolean = false
-                            v26 = (v25 == 0.0)
-                            var v27: Boolean = false
-                            v27 = (v26 != true)
-                            if (v27) {
+                            var v19: Double = 0.0
+                            v19 = kotlin.math.round(v4)
+                            var v20: Boolean = false
+                            v20 = (v19 != 0.0)
+                            if (v20) {
                                 return 7
                             } else {
-                                var v28: Double = 0.0
-                                v28 = kotlin.math.atan2(v5, v5)
-                                var v29: Double = 0.0
-                                v29 = (v28 * 1000.0)
-                                var v30: Double = 0.0
-                                v30 = kotlin.math.floor(v29)
-                                var v31: Boolean = false
-                                v31 = (v30 == 785.0)
-                                var v32: Boolean = false
-                                v32 = (v31 != true)
-                                if (v32) {
+                                var v21: Double = 0.0
+                                v21 = kotlin.math.atan2(v5, v5)
+                                var v22: Double = 0.0
+                                v22 = (v21 * 1000.0)
+                                var v23: Double = 0.0
+                                v23 = kotlin.math.floor(v22)
+                                var v24: Boolean = false
+                                v24 = (v23 != 785.0)
+                                if (v24) {
                                     return 8
                                 } else {
-                                    var v33: Float = 0.0f
-                                    v33 = kotlin.math.floor(v6)
-                                    var v34: Boolean = false
-                                    v34 = (v33 == 2.0f)
-                                    var v35: Boolean = false
-                                    v35 = (v34 != true)
-                                    if (v35) {
+                                    var v25: Float = 0.0f
+                                    v25 = kotlin.math.floor(v6)
+                                    var v26: Boolean = false
+                                    v26 = (v25 != 2.0f)
+                                    if (v26) {
                                         return 9
                                     } else {
                                         return 0

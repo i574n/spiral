@@ -104,14 +104,29 @@ defmodule Spiral.Cells.NotebookCli do
 
   @doc false
   def tests_by_path(paths, [], _names), do: {:ok, Map.new(paths, &{&1, []})}
-  def tests_by_path([path], tests, _names), do: {:ok, %{path => tests}}
+  def tests_by_path([path], tests, names) do
+    if Enum.any?(tests, &pattern?/1), do: tests_by_known_names([path], tests, names), else: {:ok, %{path => tests}}
+  end
 
-  def tests_by_path(paths, tests, names) do
+  def tests_by_path(paths, tests, names), do: tests_by_known_names(paths, tests, names)
+
+  defp tests_by_known_names(paths, tests, names) do
     known = Map.new(paths, &{&1, names.(&1)})
 
-    case Enum.reject(tests, fn test -> Enum.any?(known, fn {_path, in_file} -> test in in_file end) end) do
-      [] -> {:ok, Map.new(known, fn {path, in_file} -> {path, Enum.filter(tests, &(&1 in in_file))} end)}
+    case Enum.reject(tests, fn test -> Enum.any?(known, fn {_path, in_file} -> Enum.any?(in_file, &test_matches?(test, &1)) end) end) do
+      [] -> {:ok, Map.new(known, fn {path, in_file} -> {path, Enum.filter(in_file, fn name -> Enum.any?(tests, &test_matches?(&1, name)) end)} end)}
       unknown -> {:error, "unknown test #{Enum.join(unknown, ", ")}: no --path has it"}
+    end
+  end
+
+  defp pattern?(test), do: String.contains?(test, "*")
+
+  defp test_matches?(test, name) do
+    if pattern?(test) do
+      body = test |> String.split("*") |> Enum.map_join(".*", &Regex.escape/1)
+      Regex.match?(Regex.compile!("\\A" <> body <> "\\z"), name)
+    else
+      test == name
     end
   end
 

@@ -16,7 +16,7 @@ inl sha256 () : sha256 =
     $'`sha256.Create' ()
 
 /// ### sha256_compute_hash
-inl sha256_compute_hash (x : sha256) (data : a i32 u8) : a i32 u8 =
+inl sha256_compute_hash (x : sha256) (data : array u8) : array u8 =
     data |> $'!x.ComputeHash'
 
 /// ## rust
@@ -180,7 +180,7 @@ let hash_text (~input : string) =
             input
             |> sm'.utf8_get_bytes
             |> sha256_compute_hash sha256
-            |> am.map (sm'.byte_to_string "x2")
+            |> arraym.map (sm'.byte_to_string "x2")
             |> seq.of_array'
             |> sm'.concat (join "")
         | TypeScript => fun () =>
@@ -190,7 +190,7 @@ let hash_text (~input : string) =
         | Rust => fun () =>
             input
             |> sm'.utf8_get_bytes
-            |> fun (a x) => x
+            |> fun (array x) => x
             |> am'.to_vec
             |> stream.new_cursor
             |> hash_read

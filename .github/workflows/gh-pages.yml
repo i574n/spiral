@@ -26,7 +26,7 @@ jobs:
 
       - uses: moonrepo/setup-rust@v1.3.0
         with:
-          channel: "nightly-2025-05-09"
+          channel: "nightly-2026-10-18"
           components: "clippy,rust-src,rustfmt"
           targets: "wasm32-unknown-unknown"
 
@@ -88,6 +88,9 @@ jobs:
 
       - run: pwsh scripts/workflow.ps1 -Compiler -Suite ${{ github.event.inputs.suite || 'all' }}
 
+      - if: always()
+        run: git diff --no-color -- apps/compiler/tmp/samples > "$SPIRAL_BIN_CACHE_DIR/samples-output.diff"
+
       - uses: actions/upload-artifact@v5.0.0
         if: always()
         with:
@@ -95,6 +98,7 @@ jobs:
           path: |
             ${{ env.SPIRAL_BIN_CACHE_DIR }}/baseline/EXPECTED.tsv
             ${{ env.SPIRAL_BIN_CACHE_DIR }}/runs
+            ${{ env.SPIRAL_BIN_CACHE_DIR }}/samples-output.diff
           retention-days: 14
 
   push:

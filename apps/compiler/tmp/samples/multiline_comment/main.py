@@ -24,15 +24,13 @@ def main():
     v0 = 7
     v1 = spiral_wrap(v0 * 2, 32, True)
     del v0
-    v2 = v1 == 14
+    v2 = v1 != 14
     del v1
-    v3 = v2 != True
-    del v2
-    if v3:
-        del v3
+    if v2:
+        del v2
         return 1
     else:
-        del v3
+        del v2
         return 0
 
 if __name__ == '__main__': sys.exit(main())

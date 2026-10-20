@@ -113,7 +113,7 @@ function PublishFsharp {
     $fsproj = @"
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
+        <TargetFramework>net11.0</TargetFramework>
         <LangVersion>preview</LangVersion>
         <RollForward>Major</RollForward>
         <ServerGarbageCollection>true</ServerGarbageCollection>
@@ -138,9 +138,10 @@ $($references -join "`n")
 "@
     $fsprojPath = Join-Path $projectDir "$Name.fsproj"
     [IO.File]::WriteAllText($fsprojPath, $fsproj.Replace("`r`n", "`n"))
+    $dotnet = (Ensure-SpiralCompiler).Dotnet
     $ok = $true
     foreach ($rid in ($Runtime ? @($Runtime) : @("linux-x64", "win-x64"))) {
-        dotnet publish $fsprojPath --configuration Release --output $outDir --runtime $rid | Out-Host
+        & $dotnet publish $fsprojPath --configuration Release --output $outDir --runtime $rid | Out-Host
         if ($LASTEXITCODE -ne 0) { $ok = $false }
     }
     $ok

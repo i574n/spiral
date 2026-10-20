@@ -15,14 +15,10 @@ int32_t main(){
     
     
     bool v2;
-    v2 = v1 == 14l;
+    v2 = v1 != 14l;
     
     
-    bool v3;
-    v3 = v2 != true;
-    
-    
-    if (v3){
+    if (v2){
         
         
         return 1l;

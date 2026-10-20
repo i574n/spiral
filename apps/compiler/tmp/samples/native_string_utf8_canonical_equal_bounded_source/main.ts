@@ -225,332 +225,7 @@ function utf8_scalar_at_byte_offset_1(v0: string, v1: number): number {
         }
     }
 }
-function utf8_canonical_equal_bounded_loop_0(v0: string, v1: number, v2: number, v3: number, v4: number, v5: number, v6: number): boolean {
-    tail: while (true) {
-        let v7: boolean = v3 >= 0;
-        let v75: number;
-        let v76: number;
-        let v77: number;
-        if (v7) {
-            v75 = v3;
-            v76 = v1;
-            v77 = (-1);
-        } else {
-            let v8: boolean = v1 === v5;
-            if (v8) {
-                v75 = (-1);
-                v76 = v1;
-                v77 = (-1);
-            } else {
-                let v9: boolean = v1 > v5;
-                if (v9) {
-                    throw new Error("UTF-8 canonical stream offset exceeds the string.");
-                } else {
-                    let v13: number = utf8_scalar_at_byte_offset_1(v0, v1);
-                    let v14: boolean = v13 < 128;
-                    let v19: number;
-                    if (v14) {
-                        v19 = 1;
-                    } else {
-                        let v15: boolean = v13 < 2048;
-                        if (v15) {
-                            v19 = 2;
-                        } else {
-                            let v16: boolean = v13 < 65536;
-                            if (v16) {
-                                v19 = 3;
-                            } else {
-                                v19 = 4;
-                            }
-                        }
-                    }
-                    let v20: boolean = v13 === 192;
-                    let v66: number;
-                    let v67: number;
-                    if (v20) {
-                        v66 = 65;
-                        v67 = 768;
-                    } else {
-                        let v21: boolean = v13 === 193;
-                        if (v21) {
-                            v66 = 65;
-                            v67 = 769;
-                        } else {
-                            let v22: boolean = v13 === 195;
-                            if (v22) {
-                                v66 = 65;
-                                v67 = 771;
-                            } else {
-                                let v23: boolean = v13 === 196;
-                                if (v23) {
-                                    v66 = 65;
-                                    v67 = 776;
-                                } else {
-                                    let v24: boolean = v13 === 199;
-                                    if (v24) {
-                                        v66 = 67;
-                                        v67 = 807;
-                                    } else {
-                                        let v25: boolean = v13 === 201;
-                                        if (v25) {
-                                            v66 = 69;
-                                            v67 = 769;
-                                        } else {
-                                            let v26: boolean = v13 === 211;
-                                            if (v26) {
-                                                v66 = 79;
-                                                v67 = 769;
-                                            } else {
-                                                let v27: boolean = v13 === 213;
-                                                if (v27) {
-                                                    v66 = 79;
-                                                    v67 = 771;
-                                                } else {
-                                                    let v28: boolean = v13 === 224;
-                                                    if (v28) {
-                                                        v66 = 97;
-                                                        v67 = 768;
-                                                    } else {
-                                                        let v29: boolean = v13 === 225;
-                                                        if (v29) {
-                                                            v66 = 97;
-                                                            v67 = 769;
-                                                        } else {
-                                                            let v30: boolean = v13 === 227;
-                                                            if (v30) {
-                                                                v66 = 97;
-                                                                v67 = 771;
-                                                            } else {
-                                                                let v31: boolean = v13 === 228;
-                                                                if (v31) {
-                                                                    v66 = 97;
-                                                                    v67 = 776;
-                                                                } else {
-                                                                    let v32: boolean = v13 === 231;
-                                                                    if (v32) {
-                                                                        v66 = 99;
-                                                                        v67 = 807;
-                                                                    } else {
-                                                                        let v33: boolean = v13 === 233;
-                                                                        if (v33) {
-                                                                            v66 = 101;
-                                                                            v67 = 769;
-                                                                        } else {
-                                                                            let v34: boolean = v13 === 243;
-                                                                            if (v34) {
-                                                                                v66 = 111;
-                                                                                v67 = 769;
-                                                                            } else {
-                                                                                let v35: boolean = v13 === 245;
-                                                                                if (v35) {
-                                                                                    v66 = 111;
-                                                                                    v67 = 771;
-                                                                                } else {
-                                                                                    v66 = v13;
-                                                                                    v67 = (-1);
-                                                                                }
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    let v68: number = (v1 + v19) | 0;
-                    v75 = v66;
-                    v76 = v68;
-                    v77 = v67;
-                }
-            }
-        }
-        let v78: boolean = v4 >= 0;
-        let v146: number;
-        let v147: number;
-        let v148: number;
-        if (v78) {
-            v146 = v4;
-            v147 = v2;
-            v148 = (-1);
-        } else {
-            let v79: boolean = v2 === v6;
-            if (v79) {
-                v146 = (-1);
-                v147 = v2;
-                v148 = (-1);
-            } else {
-                let v80: boolean = v2 > v6;
-                if (v80) {
-                    throw new Error("UTF-8 canonical stream offset exceeds the string.");
-                } else {
-                    let v84: number = utf8_scalar_at_byte_offset_1(v0, v2);
-                    let v85: boolean = v84 < 128;
-                    let v90: number;
-                    if (v85) {
-                        v90 = 1;
-                    } else {
-                        let v86: boolean = v84 < 2048;
-                        if (v86) {
-                            v90 = 2;
-                        } else {
-                            let v87: boolean = v84 < 65536;
-                            if (v87) {
-                                v90 = 3;
-                            } else {
-                                v90 = 4;
-                            }
-                        }
-                    }
-                    let v91: boolean = v84 === 192;
-                    let v137: number;
-                    let v138: number;
-                    if (v91) {
-                        v137 = 65;
-                        v138 = 768;
-                    } else {
-                        let v92: boolean = v84 === 193;
-                        if (v92) {
-                            v137 = 65;
-                            v138 = 769;
-                        } else {
-                            let v93: boolean = v84 === 195;
-                            if (v93) {
-                                v137 = 65;
-                                v138 = 771;
-                            } else {
-                                let v94: boolean = v84 === 196;
-                                if (v94) {
-                                    v137 = 65;
-                                    v138 = 776;
-                                } else {
-                                    let v95: boolean = v84 === 199;
-                                    if (v95) {
-                                        v137 = 67;
-                                        v138 = 807;
-                                    } else {
-                                        let v96: boolean = v84 === 201;
-                                        if (v96) {
-                                            v137 = 69;
-                                            v138 = 769;
-                                        } else {
-                                            let v97: boolean = v84 === 211;
-                                            if (v97) {
-                                                v137 = 79;
-                                                v138 = 769;
-                                            } else {
-                                                let v98: boolean = v84 === 213;
-                                                if (v98) {
-                                                    v137 = 79;
-                                                    v138 = 771;
-                                                } else {
-                                                    let v99: boolean = v84 === 224;
-                                                    if (v99) {
-                                                        v137 = 97;
-                                                        v138 = 768;
-                                                    } else {
-                                                        let v100: boolean = v84 === 225;
-                                                        if (v100) {
-                                                            v137 = 97;
-                                                            v138 = 769;
-                                                        } else {
-                                                            let v101: boolean = v84 === 227;
-                                                            if (v101) {
-                                                                v137 = 97;
-                                                                v138 = 771;
-                                                            } else {
-                                                                let v102: boolean = v84 === 228;
-                                                                if (v102) {
-                                                                    v137 = 97;
-                                                                    v138 = 776;
-                                                                } else {
-                                                                    let v103: boolean = v84 === 231;
-                                                                    if (v103) {
-                                                                        v137 = 99;
-                                                                        v138 = 807;
-                                                                    } else {
-                                                                        let v104: boolean = v84 === 233;
-                                                                        if (v104) {
-                                                                            v137 = 101;
-                                                                            v138 = 769;
-                                                                        } else {
-                                                                            let v105: boolean = v84 === 243;
-                                                                            if (v105) {
-                                                                                v137 = 111;
-                                                                                v138 = 769;
-                                                                            } else {
-                                                                                let v106: boolean = v84 === 245;
-                                                                                if (v106) {
-                                                                                    v137 = 111;
-                                                                                    v138 = 771;
-                                                                                } else {
-                                                                                    v137 = v84;
-                                                                                    v138 = (-1);
-                                                                                }
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    let v139: number = (v2 + v90) | 0;
-                    v146 = v137;
-                    v147 = v139;
-                    v148 = v138;
-                }
-            }
-        }
-        let v149: boolean = v75 < 0;
-        if (v149) {
-            let v150: boolean = v146 === (-1);
-            return v150;
-        } else {
-            let v151: boolean = v146 < 0;
-            if (v151) {
-                return false;
-            } else {
-                let v152: boolean = v75 === v146;
-                if (v152) {
-                    {
-                        let t0 = v0;
-                        let t1 = v76;
-                        let t2 = v147;
-                        let t3 = v77;
-                        let t4 = v148;
-                        let t5 = v5;
-                        let t6 = v6;
-                        v0 = t0;
-                        v1 = t1;
-                        v2 = t2;
-                        v3 = t3;
-                        v4 = t4;
-                        v5 = t5;
-                        v6 = t6;
-                    }
-                    continue tail;
-                } else {
-                    return false;
-                }
-            }
-        }
-    }
-}
-function utf8_canonical_equal_bounded_loop_3(v0: string, v1: string, v2: number, v3: number, v4: number, v5: number, v6: number, v7: number): boolean {
+function utf8_canonical_equal_bounded_loop_0(v0: string, v1: string, v2: number, v3: number, v4: number, v5: number, v6: number, v7: number): boolean {
     tail: while (true) {
         let v8: boolean = v4 >= 0;
         let v76: number;
@@ -885,7 +560,7 @@ export function main(): number {
     let v4: number = (-1);
     let v5: number = 5;
     let v6: number = 5;
-    let v7: boolean = utf8_canonical_equal_bounded_loop_0(v0, v1, v2, v3, v4, v5, v6);
+    let v7: boolean = utf8_canonical_equal_bounded_loop_0(v0, v0, v1, v2, v3, v4, v5, v6);
     let v8: string = "";
     let v9: number = 0;
     let v10: number = 0;
@@ -893,7 +568,7 @@ export function main(): number {
     let v12: number = (-1);
     let v13: number = 0;
     let v14: number = 0;
-    let v15: boolean = utf8_canonical_equal_bounded_loop_0(v8, v9, v10, v11, v12, v13, v14);
+    let v15: boolean = utf8_canonical_equal_bounded_loop_0(v8, v8, v9, v10, v11, v12, v13, v14);
     let v16: string = "éõç";
     let v17: string = "éõç";
     let v18: number = 0;
@@ -902,7 +577,7 @@ export function main(): number {
     let v21: number = (-1);
     let v22: number = 6;
     let v23: number = 9;
-    let v24: boolean = utf8_canonical_equal_bounded_loop_3(v16, v17, v18, v19, v20, v21, v22, v23);
+    let v24: boolean = utf8_canonical_equal_bounded_loop_0(v16, v17, v18, v19, v20, v21, v22, v23);
     let v25: string = "é̃";
     let v26: string = "é̃";
     let v27: number = 0;
@@ -911,7 +586,7 @@ export function main(): number {
     let v30: number = (-1);
     let v31: number = 4;
     let v32: number = 5;
-    let v33: boolean = utf8_canonical_equal_bounded_loop_3(v25, v26, v27, v28, v29, v30, v31, v32);
+    let v33: boolean = utf8_canonical_equal_bounded_loop_0(v25, v26, v27, v28, v29, v30, v31, v32);
     let v34: string = "À";
     let v35: string = "À";
     let v36: number = 0;
@@ -920,7 +595,7 @@ export function main(): number {
     let v39: number = (-1);
     let v40: number = 2;
     let v41: number = 3;
-    let v42: boolean = utf8_canonical_equal_bounded_loop_3(v34, v35, v36, v37, v38, v39, v40, v41);
+    let v42: boolean = utf8_canonical_equal_bounded_loop_0(v34, v35, v36, v37, v38, v39, v40, v41);
     let v43: string = "Ω";
     let v44: number = 0;
     let v45: number = 0;
@@ -928,7 +603,7 @@ export function main(): number {
     let v47: number = (-1);
     let v48: number = 2;
     let v49: number = 2;
-    let v50: boolean = utf8_canonical_equal_bounded_loop_0(v43, v44, v45, v46, v47, v48, v49);
+    let v50: boolean = utf8_canonical_equal_bounded_loop_0(v43, v43, v44, v45, v46, v47, v48, v49);
     let v51: string = "ẽ́";
     let v52: number = 0;
     let v53: number = 0;
@@ -936,7 +611,7 @@ export function main(): number {
     let v55: number = (-1);
     let v56: number = 5;
     let v57: number = 5;
-    let v58: boolean = utf8_canonical_equal_bounded_loop_3(v26, v51, v52, v53, v54, v55, v56, v57);
+    let v58: boolean = utf8_canonical_equal_bounded_loop_0(v26, v51, v52, v53, v54, v55, v56, v57);
     let v59: string = "é";
     let v60: string = "á";
     let v61: number = 0;
@@ -945,7 +620,7 @@ export function main(): number {
     let v64: number = (-1);
     let v65: number = 2;
     let v66: number = 2;
-    let v67: boolean = utf8_canonical_equal_bounded_loop_3(v59, v60, v61, v62, v63, v64, v65, v66);
+    let v67: boolean = utf8_canonical_equal_bounded_loop_0(v59, v60, v61, v62, v63, v64, v65, v66);
     let v68: string = "ω";
     let v69: number = 0;
     let v70: number = 0;
@@ -953,7 +628,7 @@ export function main(): number {
     let v72: number = (-1);
     let v73: number = 2;
     let v74: number = 2;
-    let v75: boolean = utf8_canonical_equal_bounded_loop_3(v43, v68, v69, v70, v71, v72, v73, v74);
+    let v75: boolean = utf8_canonical_equal_bounded_loop_0(v43, v68, v69, v70, v71, v72, v73, v74);
     let v76: string = "e";
     let v77: number = 0;
     let v78: number = 0;
@@ -961,7 +636,7 @@ export function main(): number {
     let v80: number = (-1);
     let v81: number = 2;
     let v82: number = 1;
-    let v83: boolean = utf8_canonical_equal_bounded_loop_3(v59, v76, v77, v78, v79, v80, v81, v82);
+    let v83: boolean = utf8_canonical_equal_bounded_loop_0(v59, v76, v77, v78, v79, v80, v81, v82);
     if (v7) {
         if (v15) {
             if (v24) {

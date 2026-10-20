@@ -260,7 +260,7 @@ let rec walk (scope : plan_scope) (xs : sources) (index : i32) (last_def : i32) 
                 if is_real = 1i32 then
                     walk scope rest (index + 1i32) last_def2 packages2 opens defs (if kept then snoc reals body else reals) budget2 step
                 elif test = 1i32 then
-                    walk scope rest (index + 1i32) last_def2 packages2 (merge opens cell_opens) defs reals budget2 step
+                    walk scope rest (index + 1i32) last_def2 packages2 opens defs reals budget2 step
                 elif kept then
                     walk scope rest (index + 1i32) last_def2 packages2 opens (snoc defs body) reals budget2 step
                 else

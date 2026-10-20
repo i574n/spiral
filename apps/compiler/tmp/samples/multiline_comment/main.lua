@@ -16,9 +16,8 @@ local function spiral_mul_mod32(a, b)
 end
 local v0 = 7
 local v1 = spiral_wrap_signed(spiral_mul_mod32(v0, 2), 32)
-local v2 = v1 == 14
-local v3 = v2 ~= true
-if v3 then
+local v2 = v1 ~= 14
+if v2 then
     return 1
 else
     return 0

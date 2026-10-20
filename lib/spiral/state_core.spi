@@ -22,7 +22,7 @@ inl get_data forall t (u : * -> *). (id : string) (rexie : u wasm.rexie) : async
     inl rexie = join rexie
     fun () =>
         inl store_name = "store"
-        inl store_names = ;[ store_name ]
+        inl store_names = am'.base ;[ store_name ]
         inl transaction =
             rexie
             |> store.transaction_read_only store_names
@@ -54,7 +54,7 @@ inl get_data forall t (u : * -> *). (id : string) (rexie : u wasm.rexie) : async
                 inl data_len = length data
                 leptos.log ("state_core.get_data () / data_len: " ++# sm'.obj_to_string data_len)
                 data
-                |> fun (a x : _ i32 _) => x |> sm'.borsh_deserialize : resultm.result' t sm'.std_string
+                |> fun (array x : array _) => x |> sm'.borsh_deserialize : resultm.result' t sm'.std_string
                 |> resultm.try'
                 |> Some
             | None => None
@@ -403,7 +403,7 @@ let use_requests forall t u.
                             state_data
                             |> optionm.map (resultm.map (
                                 am'.from_vec
-                                >> fun x => x : _ int _
+                                >> fun x => x : array _
                                 >> am'.try_item i
                                 >> optionm'.flatten
                                 >> optionm.map fun x =>
@@ -480,7 +480,7 @@ let use_requests forall t u.
             |> async.new_future_move
         |> leptos.new_arc_local_resource
 
-    inl result_func : leptos.arc_memo (a int (resultm.result' (optionm'.option' u) sm'.std_string)) =
+    inl result_func : leptos.arc_memo (array (resultm.result' (optionm'.option' u) sm'.std_string)) =
         fun () =>
             inl requests = requests |> leptos.signal_get
             inl requests_log = #?*requests
@@ -495,7 +495,7 @@ let use_requests forall t u.
                     >> resultm.map (
                         am'.vec_map optionm'.unbox
                         >> am'.from_vec
-                        >> fun x => x : _ int _
+                        >> fun x => x : array _
                     )
                 )
 
@@ -508,7 +508,7 @@ let use_requests forall t u.
                 |> optionm'.unbox
                 |> optionm.map resultm.unbox
                 |> optionm.map (resultm.map (am'.vec_map optionm'.unbox))
-                |> optionm'.default_value (;[] |> am'.to_vec |> Ok)
+                |> optionm'.default_value (;[] |> am'.base |> am'.to_vec |> Ok)
 
             requests
             |> am'.vec_mapi fun i request =>
@@ -533,7 +533,7 @@ let use_requests forall t u.
                     | Ok json =>
                         json
                         |> am'.from_vec
-                        |> fun x => x : _ int _
+                        |> fun x => x : array _
                         |> am'.try_item i
                         |> optionm'.flatten
                     | Error error =>
@@ -563,7 +563,7 @@ let use_requests forall t u.
                 |> leptos.arc_local_resource_get
                 |> optionm'.unbox
 
-            inl state_data : option (result (_ i32 _) _) =
+            inl state_data : option (result (array _) _) =
                 state_data_resource
                 |> leptos.arc_local_resource_get
                 |> optionm'.unbox
@@ -582,7 +582,7 @@ let use_requests forall t u.
 
             result_func
             |> leptos.signal_get
-            |> fun (a x) => x
+            |> fun (array x) => x
             |> am'.to_vec
             |> am'.vec_map' (resultm.map'' (optionm'.map map))
             |> leptos.log_format fun log => "state_core.use_requests (20) / result func0 / result: " ++# log

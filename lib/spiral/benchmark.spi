@@ -23,7 +23,7 @@ inl run' forall t. count (fn : () -> t) =
     inl time1 = stopwatch |> date_time.stopwatch_elapsed_milliseconds
     inl result : t =
         am'.init_series 0 count 1i32
-        |> fun x => a x : _ int _
+        |> fun x => array x : array _
         |> am'.parallel_map fun _n => fn ()
         |> am'.last
     inl time2 = (stopwatch |> date_time.stopwatch_elapsed_milliseconds) - time1
@@ -58,14 +58,14 @@ inl run forall input expected.
             result, time
 
     match results_with_time |> am'.map_base fst with
-    | array when (array |> (fun x => a x : _ int _) |> am'.length) <= 1 => ()
-    | array when array |> (fun x => a x : _ int _) |> am.forall' ((=) (array |> (fun x => a x : _ int _) |> am'.index 0)) => ()
+    | items when (items |> (fun x => array x : array _) |> am'.length) <= 1 => ()
+    | items when items |> (fun x => array x : array _) |> arraym.forall' ((=) (items |> (fun x => array x : array _) |> am'.index 0)) => ()
     | results => failwith ($'$"benchmark.run / error / results: {!results}"' : string)
 
     {
         input = input_str
         expected = #?*expected
-        result = results_with_time |> am'.map_base fst |> (fun x => a x : _ int _) |> am'.index 0 |> sm'.format_debug
+        result = results_with_time |> am'.map_base fst |> (fun x => array x : array _) |> am'.index 0 |> sm'.format_debug
         time_list = results_with_time |> am'.map_base snd
     }
 
@@ -97,7 +97,7 @@ inl sort_result_list results =
                     |> am'.indexed
                     |> am'.map_base fun (i, time) =>
                         i + 1i32, time
-                    |> fun x => a x : _ int _
+                    |> fun x => array x : array _
                     |> am'.sort_by snd
                     |> am'.index 0i32
                     |> sm'.format
@@ -133,10 +133,10 @@ inl sort_result_list results =
             |> listm.map fun row => row, None
             |> listm'.box
             |> listm'.to_array'
-            |> fun x => a x : _ int _
-        a rows
-        |> am.append header
-        |> fun (a x) => x
+            |> fun x => array x : array _
+        array rows
+        |> arraym.append header
+        |> fun (array x) => x
 
     inl formatted_table =
         inl length_map : mapm.map i32 i64 =
@@ -146,12 +146,12 @@ inl sort_result_list results =
             |> am'.map_base fun column =>
                 column
                 |> am'.map_base sm.length
-                |> fun x => a x : _ int _
+                |> fun x => array x : array _
                 |> am'.sort_descending
                 |> am'.try_item 0i32
                 |> optionm'.default_value 0i64
             |> am'.indexed
-            |> fun x => a x : _ int _
+            |> fun x => array x : array _
             |> mapm.of_array
         table
         |> am'.map_base fun (row, color) =>
@@ -166,7 +166,7 @@ inl sort_result_list results =
 
     console.write_line "```"
     formatted_table
-    |> fun x => a x : _ int _
+    |> fun x => array x : array _
     |> am'.to_list'
     |> listm'.unbox
     |> listm.iter fun (row, color) =>
@@ -174,7 +174,7 @@ inl sort_result_list results =
         | Some color => color |> console.set_foreground_color
         | None => console.reset_color ()
 
-        a row |> sm'.join' "\t| " |> console.write_line
+        array row |> sm'.join' "\t| " |> console.write_line
 
         console.reset_color ()
 
@@ -184,10 +184,10 @@ inl sort_result_list results =
             result.time_list
             |> am'.map_base ($'float' : i64 -> f64)
         |> am'.transpose
-        |> am'.map_base ((fun x => a x : _ int _) >> am'.average)
+        |> am'.map_base ((fun x => array x : array _) >> am'.average)
         |> am'.map_base ($'int64' : f64 -> i64)
         |> am'.indexed
-        |> fun x => a x : _ u64 _
+        |> fun x => array x : array _
 
     console.write_line "```"
     averages

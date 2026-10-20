@@ -126,10 +126,14 @@ static inline void StringDecref(String * x){
 static inline String * StringLit(uint32_t len, char * ptr){
     return ArrayLit0(len, ptr);
 }
-bool method7(String * v0){
+bool method7(String * v0, String * v1){
     
-    StringDecref(v0);
-    return true;
+    
+    bool v2;
+    v2 = strcmp(v0->ptr, v1->ptr) == 0;
+    
+    StringDecref(v0); StringDecref(v1);
+    return v2;
 }
 bool method9(uint32_t v0){
     
@@ -216,10 +220,10 @@ int32_t method6(int32_t v0){
     
     String * v1;
     v1 = StringLit(7, "spiral");
-    (v1)->refc++;
+    (v1)->refc += 2;
     
     bool v2;
-    v2 = method7(v1);
+    v2 = method7(v1, v1);
     
     StringDecref(v1);
     if (v2){

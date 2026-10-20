@@ -359,6 +359,22 @@ defmodule Spiral.Cells.Builders do
     raise ArgumentError, "expected true or false for #{flag}, got: #{inspect(other)}"
   end
 
+  @doc false
+  def with_crates(builders, []), do: builders
+
+  def with_crates(builders, crates) do
+    declared = Enum.map(crates, &parse_dep/1)
+
+    Enum.map(builders, fn
+      %{tool: :rust} = builder ->
+        named = MapSet.new(builder.deps, & &1.name)
+        %{builder | deps: builder.deps ++ Enum.reject(declared, &MapSet.member?(named, &1.name))}
+
+      builder ->
+        builder
+    end)
+  end
+
   defp parse_dep(token) do
     cond do
       String.contains?(token, "=") ->

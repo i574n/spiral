@@ -59,7 +59,7 @@ fn env_u32(name: &str, default: u32) -> u32 {
 fn wait_for<T>(device: &wgpu::Device, lost: &AtomicBool, receiver: &std::sync::mpsc::Receiver<T>, limit: Duration, what: &str) -> Result<T, Fail> {
     let started = Instant::now();
     loop {
-        device.poll(wgpu::Maintain::Poll);
+        device.poll(wgpu::PollType::Poll).map_err(|error| Fail::Runtime(format!("{error} while {what}")))?;
         if let Ok(value) = receiver.try_recv() {
             return Ok(value);
         }
@@ -74,8 +74,8 @@ fn wait_for<T>(device: &wgpu::Device, lost: &AtomicBool, receiver: &std::sync::m
 }
 
 async fn execute(source: &str, lanes: u32, chunk: u32) -> Result<Vec<i32>, Fail> {
-    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::from_env_or_default());
-    let adapter = match wgpu::util::initialize_adapter_from_env(&instance, None) { Some(adapter) => adapter, None => request_adapter(&instance).await.ok_or(Fail::NoAdapter)? };
+    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::new_without_display_handle_from_env());
+    let adapter = match wgpu::util::initialize_adapter_from_env(&instance, None).await { Ok(adapter) => adapter, Err(_) => request_adapter(&instance).await.ok_or(Fail::NoAdapter)? };
     let timing = std::env::var_os("SPIRAL_WGSL_TIMING").is_some();
     let timing_log = std::env::var_os("SPIRAL_WGSL_TIMING_LOG");
     let info = adapter.get_info();
@@ -85,7 +85,7 @@ async fn execute(source: &str, lanes: u32, chunk: u32) -> Result<Vec<i32>, Fail>
     }
     let compile_started = Instant::now();
     let (device, queue) = adapter
-        .request_device(&wgpu::DeviceDescriptor::default(), None)
+        .request_device(&wgpu::DeviceDescriptor::default())
         .await
         .map_err(|error| Fail::Runtime(error.to_string()))?;
     let lost = Arc::new(AtomicBool::new(false));
@@ -93,7 +93,7 @@ async fn execute(source: &str, lanes: u32, chunk: u32) -> Result<Vec<i32>, Fail>
     device.set_device_lost_callback(move |_, _| lost_flag.store(true, Ordering::SeqCst));
     let limit = Duration::from_secs(env_u32("SPIRAL_WGSL_TIMEOUT_SECONDS", 120) as u64);
 
-    device.push_error_scope(wgpu::ErrorFilter::Validation);
+    let compile_scope = device.push_error_scope(wgpu::ErrorFilter::Validation);
     let module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: Some("spiral.wgsl"),
         source: wgpu::ShaderSource::Wgsl(source.into()),
@@ -114,8 +114,8 @@ async fn execute(source: &str, lanes: u32, chunk: u32) -> Result<Vec<i32>, Fail>
     });
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: Some("spiral"),
-        bind_group_layouts: &[&bind_layout],
-        push_constant_ranges: &[],
+        bind_group_layouts: &[Some(&bind_layout)],
+        immediate_size: 0,
     });
     let pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
         label: Some("spiral"),
@@ -125,7 +125,7 @@ async fn execute(source: &str, lanes: u32, chunk: u32) -> Result<Vec<i32>, Fail>
         compilation_options: Default::default(),
         cache: None,
     });
-    if let Some(error) = device.pop_error_scope().await {
+    if let Some(error) = compile_scope.pop().await {
         return Err(Fail::Compile(error.to_string()));
     }
     let compile_ms = compile_started.elapsed().as_millis();
@@ -149,7 +149,7 @@ async fn execute(source: &str, lanes: u32, chunk: u32) -> Result<Vec<i32>, Fail>
     });
     let chunk_lanes = lanes.min(chunk);
     let heap_megabytes = env_u32("SPIRAL_WGSL_HEAP_MB", 64) as u64;
-    let heap_bytes = (heap_megabytes * 1024 * 1024).min(device.limits().max_storage_buffer_binding_size as u64);
+    let heap_bytes = (heap_megabytes * 1024 * 1024).min(device.limits().max_storage_buffer_binding_size);
     let heap_words_per_lane = (heap_bytes / 4 / chunk_lanes as u64) as u32;
     queue.write_buffer(&storage, 0, &vec![0u8; size as usize]);
     let heap = device.create_buffer(&wgpu::BufferDescriptor {
@@ -196,9 +196,9 @@ async fn execute(source: &str, lanes: u32, chunk: u32) -> Result<Vec<i32>, Fail>
             pass.set_bind_group(0, &bind_group, &[]);
             pass.dispatch_workgroups(this_chunk.div_ceil(64), 1, 1);
         }
-        device.push_error_scope(wgpu::ErrorFilter::Validation);
+        let submit_scope = device.push_error_scope(wgpu::ErrorFilter::Validation);
         queue.submit(Some(encoder.finish()));
-        if let Some(error) = device.pop_error_scope().await {
+        if let Some(error) = submit_scope.pop().await {
             return Err(Fail::Runtime(error.to_string()));
         }
         let (sender, receiver) = std::sync::mpsc::channel();
@@ -231,7 +231,7 @@ async fn execute(source: &str, lanes: u32, chunk: u32) -> Result<Vec<i32>, Fail>
             let _ = writeln!(file, "{shader}\t{}\t{compile_ms}\t{run_ms}\t{adapter_text}", source.len());
         }
     }
-    let bytes = slice.get_mapped_range();
+    let bytes = slice.get_mapped_range().map_err(|error| Fail::Runtime(error.to_string()))?;
     let code = i32::from_le_bytes(bytes[0..4].try_into().unwrap());
     drop(bytes);
     readback.unmap();
@@ -244,7 +244,7 @@ async fn execute(source: &str, lanes: u32, chunk: u32) -> Result<Vec<i32>, Fail>
         let _ = lane_sender.send(result);
     });
     wait_for(&device, &lost, &lane_receiver, limit, "reading lane results")?.map_err(|error| Fail::Runtime(error.to_string()))?;
-    let lane_bytes = lane_slice.get_mapped_range();
+    let lane_bytes = lane_slice.get_mapped_range().map_err(|error| Fail::Runtime(error.to_string()))?;
     let values = lane_bytes
         .chunks_exact(4)
         .take(lanes as usize)
@@ -257,9 +257,9 @@ async fn execute(source: &str, lanes: u32, chunk: u32) -> Result<Vec<i32>, Fail>
 
 async fn request_adapter(instance: &wgpu::Instance) -> Option<wgpu::Adapter> {
     let mut options = wgpu::RequestAdapterOptions::default();
-    if let Some(adapter) = instance.request_adapter(&options).await {
+    if let Ok(adapter) = instance.request_adapter(&options).await {
         return Some(adapter);
     }
     options.force_fallback_adapter = true;
-    instance.request_adapter(&options).await
+    instance.request_adapter(&options).await.ok()
 }

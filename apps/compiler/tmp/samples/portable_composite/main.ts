@@ -27,12 +27,13 @@ function method3(v0: number): number {
         return 1;
     }
 }
-function method7(v0: string): boolean {
-    return true;
+function method7(v0: string, v1: string): boolean {
+    let v2: boolean = v0 === v1;
+    return v2;
 }
 function method2(v0: number): number {
     let v1: string = "spiral";
-    let v2: boolean = method7(v1);
+    let v2: boolean = method7(v1, v1);
     if (v2) {
         return method3(v0);
     } else {

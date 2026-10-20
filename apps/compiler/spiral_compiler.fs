@@ -43702,6 +43702,7 @@ module spiral_compiler =
         | Printf // Cuda specific
         | StdoutFlush // Portable explicit stdout flush
         | MonotonicDelayMs // Portable bounded monotonic delay in milliseconds
+        | Assign
 
         // Array
         | ArrayCreate
@@ -45686,6 +45687,7 @@ module spiral_compiler =
         | Printf -> "Printf"
         | StdoutFlush -> "StdoutFlush"
         | MonotonicDelayMs -> "MonotonicDelayMs"
+        | Assign -> "Assign"
         | ArrayCreate -> "ArrayCreate"
         | ArrayLength -> "ArrayLength"
         | ArrayIndex -> "ArrayIndex"
@@ -49107,6 +49109,14 @@ module spiral_compiler =
         | BundleNominalRec l -> List.head l |> fun (r,_,_,_) -> r
         | BundleRecInl(l,_) -> List.head l |> fun (_,r,_,_) -> r
 
+    /// ### bundle_binding_names
+    let bundle_binding_names = function
+        | BundleType(_,(_,name),_,_) | BundleNominal(_,(_,name),_,_) | BundleInl(_,_,(_,name),_,_) | BundlePrototype(_,_,(_,name),_,_,_) -> name
+        | BundleInstance(_,(_,prototype),(_,instance),_,_) -> $"{prototype} {instance}"
+        | BundleOpen(_,(_,name),_) -> $"open {name}"
+        | BundleNominalRec l -> l |> List.map (fun (_,(_,name),_,_) -> name) |> String.concat ", "
+        | BundleRecInl(l,_) -> l |> List.map (fun (_,_,(_,name),_) -> name) |> String.concat ", "
+
     /// ### add_offset
     let add_offset offset (range : VSCRange) : VSCRange =
         let a,b = range
@@ -49356,7 +49366,7 @@ module spiral_compiler =
         | Printf | Add | Sub | Mult | Div | Mod | Pow | LT | LTE | EQ | NEQ | GT | GTE
         | BitwiseAnd | BitwiseOr | BitwiseXor | BitwiseComplement | ShiftLeft | ShiftRight
         | Neg | Log | Exp | Tanh | Sqrt | Sin | Cos | NanIs | Conv
-        | StringLength | StringIndex | StringSlice | ArrayIndex | ArrayIndexSet | ArrayLength | MonotonicDelayMs | Export -> true
+        | StringLength | StringIndex | StringSlice | ArrayIndex | ArrayIndexSet | ArrayLength | MonotonicDelayMs | Export | Assign -> true
         | _ -> false
 
     /// ### semantic_tokens
@@ -49504,6 +49514,7 @@ module spiral_compiler =
     type UnboundNameId =
         | UnboundTermName of TermNameId
         | UnboundTypeName of TypeNameId
+        | UnboundMacroTypeSplice of splice_char : char * name : TypeNameId
         | UnboundConstraintName of ConstraintNameId
 
     /// ### TypeError
@@ -49573,6 +49584,7 @@ module spiral_compiler =
         | InstanceVarShouldNotMatchAnyOfPrototypes
         | MissingBody
         | MacroIsMissingAnnotation
+        | MacroSplicedFieldAccess
         | ArrayIsMissingAnnotation
         | ExistsIsMissingAnnotation
         | ShadowedForall
@@ -49900,6 +49912,7 @@ module spiral_compiler =
         let errors = ResizeArray()
         let check_term term (a,b) = if Set.contains b term = false && Map.containsKey (TermNameIdOps.create b) top_env.term = false then errors.Add(a,UnboundVariable (UnboundTermName (TermNameIdOps.create b)))
         let check_ty ty (a,b) = if Set.contains b ty = false && Map.containsKey (TypeNameIdOps.create b) top_env.ty = false then errors.Add(a,UnboundVariable (UnboundTypeName (TypeNameIdOps.create b)))
+        let check_macro_ty splice_char ty (a,b) = if Set.contains b ty = false && Map.containsKey (TypeNameIdOps.create b) top_env.ty = false then errors.Add(a,UnboundVariable (UnboundMacroTypeSplice (splice_char, TypeNameIdOps.create b)))
         let check_cons constraints (a,b) =
             let key = ConstraintNameIdOps.create b
             match Map.tryFind key constraints |> Option.orElseWith (fun () -> Map.tryFind key top_env.constraints) with
@@ -49958,6 +49971,8 @@ module spiral_compiler =
             List.iter (function
                 | RawMacroText _ -> ()
                 | RawMacroTerm(r,a,_) -> cterm constraints (term, ty) a
+                | RawMacroType(_,RawTVar(r,b)) -> check_macro_ty '`' ty (r,b)
+                | RawMacroTypeLit(_,RawTVar(r,b)) -> check_macro_ty '@' ty (r,b)
                 | RawMacroType(r,a) | RawMacroTypeLit(r,a) -> ctype constraints term ty a
                 ) a
         and ctype constraints term ty x =
@@ -50206,6 +50221,7 @@ module spiral_compiler =
         | ExpectedSymbolAsModuleKey a -> sprintf "Expected symbol as a module key.\nGot: %s" (f a)
         | UnboundVariable (UnboundTermName x) -> sprintf "Unbound term variable: %s." (TermNameIdOps.text x)
         | UnboundVariable (UnboundTypeName x) -> sprintf "Unbound type variable: %s." (TypeNameIdOps.text x)
+        | UnboundVariable (UnboundMacroTypeSplice (c, x)) -> sprintf "Unbound type variable: %s. Macro text reads %c%s as a type splice; write %c%c for a literal %c." (TypeNameIdOps.text x) c (TypeNameIdOps.text x) c c c
         | UnboundVariable (UnboundConstraintName x) -> sprintf "Unbound constraint: %s." (ConstraintNameIdOps.text x)
         | UnboundModule -> sprintf "Unbound module."
         | ModuleIndexFailedInOpen -> sprintf "Module does not have a submodule with that key."
@@ -50213,7 +50229,7 @@ module spiral_compiler =
         | ModuleIndexWouldShadowLocalVars vars -> let v = vars |> Array.map TypeNameIdOps.text |> String.concat ", " in $"The module open would shadow the local type variables: {v}."
         | TypeVarScopeError(a,_,_) -> sprintf "Tried to unify the type variable %s with a metavar outside its scope." (TypeNameIdOps.text a)
         | ForallVarConstraintError(n,a,b) -> sprintf "Metavariable's constraints must be a subset of the forall var %s's.\nGot: %s\nExpected: %s" (TypeNameIdOps.text n) (show_constraints env a) (show_constraints env b)
-        | MetavarsNotAllowedInRecordWith -> sprintf "In the top-down segment the record keys need to be fully known. Please add an annotation."
+        | MetavarsNotAllowedInRecordWith -> sprintf "The base of this record update has no known record type yet: the top-down segment has no row polymorphism, so an unannotated function parameter cannot be updated with {r with ...}. Annotate the base with its record type, e.g. (r : point)."
         | LayoutSetMustBeAnnotated -> sprintf "The layout type being set must be annotated."
         | ExpectedMutableLayout a -> sprintf "Expected a mutable layout type.\nGot: %s" (f a)
         | ExpectedLayout a -> sprintf "Expected a layout type.\nGot: %s" (f a)
@@ -50255,6 +50271,7 @@ module spiral_compiler =
         | InstanceVarShouldNotMatchAnyOfPrototypes -> "Instance forall must not have the same name as any of the prototype foralls."
         | MissingBody -> "The function body is missing."
         | MacroIsMissingAnnotation -> "The macro needs an annotation."
+        | MacroSplicedFieldAccess -> "A macro splices the variable only, so the field access after it is emitted as text. Bind the field first (inl field = x.field) and splice that."
         | ArrayIsMissingAnnotation -> "The array needs an annotation."
         | ExistsIsMissingAnnotation -> "The existential type needs an annotation."
         | ShadowedForall -> "Shadowing of foralls is not allowed in the top-down segment."
@@ -51154,17 +51171,43 @@ module spiral_compiler =
                     | [] -> bind s; eval m
     
 
-                match l with
-                | [] ->
-                    match visit_t s with TyRecord s -> bind s | _ -> ()
-                    eval Map.empty
-                | m :: l ->
-                    match f' m, visit_t s with
-                    | TyRecord m, TyRecord s -> tail (m,s) l
-                    | TyRecord m, _ -> tail' m l
-                    | TyMetavar _, _ -> errors.Add(range_of_expr x, MetavarsNotAllowedInRecordWith); eval Map.empty
-                    | a,_ -> errors.Add(range_of_expr x, ExpectedRecord a); eval Map.empty
-                |> fun v -> if errors.Count = i then unify r (TyRecord v) s
+                let with_base = match l with m :: _ -> Some (f' m) | [] -> None
+                let nominal_record_fields base_ty =
+                    match visit_t base_ty with
+                    | TyNominal _ | TyApply _ as nominal ->
+                        match type_apply_split nominal with
+                        | TyNominal id, args ->
+                            match Utils.list_try_zip top_env.nominals.[id].vars args with
+                            | Some pairs ->
+                                match visit_t (subst pairs top_env.nominals.[id].body) with
+                                | TyRecord fields -> Some fields
+                                | _ -> None
+                            | None -> None
+                        | _ -> None
+                    | _ -> None
+                match with_base |> Option.bind nominal_record_fields with
+                | Some fields when List.length l = 1 && List.isEmpty withouts ->
+                    withs |> List.iter (fun x ->
+                        if x.is_blocked = false then
+                            match fields |> Map.tryPick (fun (_, k) v -> if k = x.symbol then Some v else None) with
+                            | Some field ->
+                                if x.is_modify then unify x.range x.var (TyFun(field,field,FT_Vanilla)) else unify x.range x.var field
+                                f x.var x.body
+                            | None -> errors.Add(x.range,RecordIndexFailed (RecordFieldNameIdOps.create x.symbol)); f x.var x.body
+                        )
+                    if errors.Count = i then unify r with_base.Value s
+                | _ ->
+                    match l with
+                    | [] ->
+                        match visit_t s with TyRecord s -> bind s | _ -> ()
+                        eval Map.empty
+                    | _ :: l ->
+                        match with_base.Value, visit_t s with
+                        | TyRecord m, TyRecord s -> tail (m,s) l
+                        | TyRecord m, _ -> tail' m l
+                        | TyMetavar _, _ -> errors.Add(range_of_expr x, MetavarsNotAllowedInRecordWith); eval Map.empty
+                        | a,_ -> errors.Add(range_of_expr x, ExpectedRecord a); eval Map.empty
+                    |> fun v -> if errors.Count = i then unify r (TyRecord v) s
             | RawExists(r,(r',l),body) ->
                 match visit_t s with
                 | TyExists(type_vars,type_body) ->
@@ -51193,11 +51236,22 @@ module spiral_compiler =
             | RawMissingBody r -> errors.Add(r,MissingBody)
             | RawMacro(r,a) ->
                 annotations.Add(x,(r,s))
-                List.iter (function
-                    | RawMacroText _ -> ()
-                    | RawMacroTerm(_,a,_) -> term scope env (fresh_var scope) a
-                    | RawMacroType(_,a) | RawMacroTypeLit(_,a) -> ty_init scope env (fresh_var scope) a
-                    ) a
+                let starts_field_access (text : string) = text.Length >= 2 && text.[0] = '.' && (System.Char.IsLetter text.[1] || text.[1] = '_')
+                let rec infer_parts = function
+                    | RawMacroTerm(term_range,body,_) :: (RawMacroText(_,text) :: _ as rest) when starts_field_access text ->
+                        let spliced = fresh_var scope
+                        term scope env spliced body
+                        match visit_t spliced with
+                        | TyRecord _ | TyPair _ -> errors.Add(term_range,MacroSplicedFieldAccess)
+                        | _ -> ()
+                        infer_parts rest
+                    | RawMacroText _ :: rest -> infer_parts rest
+                    | RawMacroTerm(_,body,_) :: rest -> term scope env (fresh_var scope) body; infer_parts rest
+                    | RawMacroTypeLit(_,RawTVar(r,x)) :: rest when Option.isNone (v_ty env x) -> errors.Add(r, UnboundVariable (UnboundMacroTypeSplice ('@', TypeNameIdOps.create x))); infer_parts rest
+                    | RawMacroType(_,RawTVar(r,x)) :: rest when Option.isNone (v_ty env x) -> errors.Add(r, UnboundVariable (UnboundMacroTypeSplice ('`', TypeNameIdOps.create x))); infer_parts rest
+                    | (RawMacroType(_,body) | RawMacroTypeLit(_,body)) :: rest -> ty_init scope env (fresh_var scope) body; infer_parts rest
+                    | [] -> ()
+                infer_parts a
             | RawHeapMutableSet(r,a,b,c) ->
                 unify r s TyB
                 try let v = fresh_var scope
@@ -51817,6 +51871,13 @@ module spiral_compiler =
             | Error er -> errors.Add(er); pfail, AOpen inferTop_env_empty
         |> fun (filled_top, top_env_additions) ->
             if 0 = errors.Count then
+                let default_numeric name = match Map.tryFind (TypeNameIdOps.create name) top_env'.ty with Some (TyPrim _ as t) -> Some t | _ -> None
+                annotations |> Seq.iter (fun (KeyValue(_,(_,x))) ->
+                    match visit_t x with
+                    | TyMetavar(m, link) when Option.isNone link.Value ->
+                        if m.constraints = Set.singleton CNumber then default_numeric "int" |> Option.iter (fun t -> link.Value <- Some t)
+                        elif m.constraints = Set.singleton CFloat then default_numeric "float" |> Option.iter (fun t -> link.Value <- Some t)
+                    | _ -> ())
                 annotations |> Seq.iter (fun (KeyValue(_,(r,x))) -> if has_metavars x then errors.Add(r, ValueRestriction x))
             {
             filled_top = filled_top
@@ -51824,7 +51885,7 @@ module spiral_compiler =
             offset = bundle_range expr |> fst |> fun x -> x.line
             // ws: SPIRAL_HOVERS=0 (set by the CLI host, which never serves hovers) skips rendering every hover type to text.
             hovers = if System.Environment.GetEnvironmentVariable "SPIRAL_HOVERS" = "0" then [||] else hover_types.ToArray() |> HopacExtensions.A.map (fun ((a:VSCRange),(b,(com : string))) -> a, let b = show_t top_env b in if com <> "" then sprintf "%s\n---\n%s" b com else b)
-            errors = errors |> Seq.toList |> List.map (fun (a,b) -> a, type_error_report (show_type_error top_env b) (box b))
+            errors = errors |> Seq.toList |> List.map (fun (a,b) -> a, $"{type_error_report (show_type_error top_env b) (box b)} In the definition: {bundle_binding_names expr}.")
             }
     
 
@@ -52567,6 +52628,8 @@ module spiral_compiler =
     // Source names for `inl f = <function>`, keyed by the function node and then by the
     // lowered body that closure conversion stores. Filled during prepass, read at codegen.
     let closureBindingNames = System.Runtime.CompilerServices.ConditionalWeakTable<E, string>()
+    let unionSourceNames = System.Runtime.CompilerServices.ConditionalWeakTable<obj, string>()
+    let noteUnionSourceName (node : obj) (name : string) = unionSourceNames.TryAdd(node, name) |> ignore
     let noteClosureName (node : E) (name : string) =
         match closureBindingNames.TryGetValue node with
         | true, _ -> ()
@@ -156264,6 +156327,11 @@ module spiral_compiler =
 
                 | EOp(_,StdoutFlush,[]) ->
                     push_op_no_rewrite' s StdoutFlush [] YB
+                | EOp(_,Assign,[target;value]) ->
+                    match term s target, term s value with
+                    | DV(L(_,target_ty)) as target, value when target_ty = data_to_ty s value -> push_op_no_rewrite' s Assign [target; value] YB
+                    | DV(L(_,target_ty)), value -> raise_type_error s $"!!!!Assign needs a value of the target's type.\nTarget: {show_ty target_ty}\nValue: {show_ty (data_to_ty s value)}"
+                    | target, _ -> raise_type_error s $"!!!!Assign needs a dynamic local as its target (bind it with inl ~name or dyn first).\nGot: {show_data target}"
                 | EOp(_,MonotonicDelayMs,[duration]) ->
                     match term s duration with
                     | DLit(LitInt32 milliseconds) as duration when milliseconds >= 0 -> push_op_no_rewrite s MonotonicDelayMs duration YB
@@ -158548,13 +158616,32 @@ module spiral_compiler =
     /// ### raise_type_error
     let raise_type_error (d: LangEnv) x = raise (PartEvalTypeError(d.trace,x))
 
+    let data_has_var (m : Dictionary<Data, bool>) =
+        let rec f x =
+            Utils.memoize m (function
+                | DV _ -> true
+                | DPair(a,b) -> f a || f b
+                | DFunction(_,_,a,_,_,_) | DForall(_,a,_,_,_) -> Array.exists f a
+                | DExists(_,a) | DUnion(a,_) | DNominal(a,_) -> f a
+                | DRecord l -> Map.exists (fun _ v -> f v) l
+                | DHashMap(x,_) -> x |> Seq.exists (fun kv -> f kv.Key || f kv.Value)
+                | DSymbol _ | DLit _ | DTLit _ | DB | DHashSet _ -> false
+                ) x
+        f
+
     /// ### data_to_rdata
     let data_to_rdata (d: LangEnv) (hc : HashConsTable) call_data =
         let hc x = hc.Add x
         let m = Dictionary(HashIdentity.Reference)
+        let has_var = data_has_var (Dictionary(HashIdentity.Reference))
         let call_args = ResizeArray()
         let rec f x =
-            Utils.memoize m (function
+            match x with
+            | DV(L(_,ty) as t) -> call_args.Add t; ReV(hc (call_args.Count-1,ty))
+            | _ when has_var x -> node x
+            | _ -> Utils.memoize m node x
+        and node x =
+            (function
                 | DPair(a,b) -> RePair(hc(f a, f b))
                 | DSymbol a -> ReSymbol a
                 | DFunction(a,_,b,c,_,_) -> ReFunction(hc(a,Array.map f b,c))
@@ -158580,8 +158667,14 @@ module spiral_compiler =
     // references to unused nodes to end up in anywhere other than join point keys (which will be weak).
     let rename_global_term (s : LangEnv) =
         let m = Dictionary(HashIdentity.Reference)
+        let has_var = data_has_var (Dictionary(HashIdentity.Reference))
         let rec f x =
-            Utils.memoize m (function
+            match x with
+            | DV(L(_,ty)) -> let x = DV(L(s.i.Value,ty)) in s.i.Value <- s.i.Value + 1; x
+            | _ when has_var x -> node x
+            | _ -> Utils.memoize m node x
+        and node x =
+            (function
                 | DPair(a,b) -> DPair(f a, f b)
                 | DForall(body,a,b,c,d) -> DForall(body,Array.map f a,b,c,d)
                 | DFunction(body,annot,a,b,c,d) -> DFunction(body,annot,Array.map f a,b,c,d)
@@ -159274,7 +159367,12 @@ module spiral_compiler =
                     s.env_stack_type.[0] <- b
                     ty s body
                 | a -> raise_type_error s <| sprintf "Expected a type level function in nominal application.\nGot: %s" (show_ty a)
-            | YNominal a -> ty s a.node.body
+            | YNominal a ->
+                let body = ty s a.node.body
+                match body with
+                | YUnion u -> noteUnionSourceName (box u) a.node.name
+                | _ -> ()
+                body
             | _ -> raise_type_error s <| sprintf "Expected a nominal or a deferred type apply.\nGot: %s" (show_ty x)
         and ty_is_uninhabited s x =
             let rec loop depth x =
@@ -159827,10 +159925,10 @@ module spiral_compiler =
                 match vars with
                 | (r,x) :: xs ->
                     match term s x with
-                    | DRecord l -> dive l xs
+                    | DRecord l -> dive l xs |> DRecord
+                    | DNominal(DRecord l, nominal_ty) when List.isEmpty xs -> DNominal(DRecord (dive l xs), nominal_ty)
                     | a -> raise_type_error s <| sprintf "Expected a record.\nGot: %s" (show_data a)
-                | [] -> map Map.empty
-                |> DRecord
+                | [] -> map Map.empty |> DRecord
             | EPatternMemo _ | EReal _ -> failwith "Compiler error: Should have been eliminated during the prepass."
             | EModule a -> DRecord(a |> Seq.map (fun (KeyValue (k, v)) -> (a.Count, k), (v |> term s)) |> Map.ofSeq)
             | EPair(r,a,b) -> DPair(term s a, term s b)
@@ -161292,6 +161390,11 @@ module spiral_compiler =
                     DLit(LitString(strb.ToString()))
             | EOp(_,StdoutFlush,[]) ->
                 push_op_no_rewrite' s StdoutFlush [] YB
+            | EOp(_,Assign,[target;value]) ->
+                match term s target, term s value with
+                | DV(L(_,target_ty)) as target, value when target_ty = data_to_ty s value -> push_op_no_rewrite' s Assign [target; value] YB
+                | DV(L(_,target_ty)), value -> raise_type_error s $"!!!!Assign needs a value of the target's type.\nTarget: {show_ty target_ty}\nValue: {show_ty (data_to_ty s value)}"
+                | target, _ -> raise_type_error s $"!!!!Assign needs a dynamic local as its target (bind it with inl ~name or dyn first).\nGot: {show_data target}"
             | EOp(_,MonotonicDelayMs,[duration]) ->
                 match term s duration with
                 | DLit(LitInt32 milliseconds) as duration when milliseconds >= 0 -> push_op_no_rewrite s MonotonicDelayMs duration YB
@@ -162545,6 +162648,9 @@ module spiral_compiler =
         let closure_names = Dictionary<int, string>()
         let types = ResizeArray()
         let functions = ResizeArray()
+        let exports = ResizeArray<string>()
+        let export_names = HashSet<string>()
+        let closure_of_var = Dictionary<int, int>()
 
         let print is_type show r =
             let s = {text=StringBuilder(); indent=0}
@@ -162617,6 +162723,7 @@ module spiral_compiler =
             | TyUnionUnbox(_,_,on_succs,on_fail) ->
                 Map.fold (fun s _ (_,body) -> s + macro_assigned_binds body) (match on_fail with Some x -> macro_assigned_binds x | None -> Set.empty) on_succs
             | TyIntSwitch(_,on_succs,on_fail) -> Array.fold (fun s body -> s + macro_assigned_binds body) (macro_assigned_binds on_fail) on_succs
+            | TyOp(Assign, [DV(L(i,_)); _]) -> Set.singleton i
             | _ -> Set.empty
         let mutable macro_assigned : Set<int> = Set.empty
         let with_macro_assigned (body : TypedBind []) (emit : unit -> unit) =
@@ -162645,7 +162752,7 @@ module spiral_compiler =
             | YMacro a -> a |> List.map (function Text a -> a | Type a -> tup_ty a | TypeLit a -> type_litFsharp a) |> String.concat ""
             | YPrim a -> primFsharp a
             | YArray a -> sprintf "(%s [])" (tup_ty a)
-            | YFun(a,b,FT_Vanilla) -> sprintf "(%s -> %s)" (tup_ty a) (tup_ty b)
+            | YFun(a,b,(FT_Vanilla | FT_Pointer)) -> sprintf "(%s -> %s)" (tup_ty a) (tup_ty b)
             | YExists -> raise_codegen_error "Existentials are not supported at runtime. They are a compile time feature only."
             | YForall -> raise_codegen_error "Foralls are not supported at runtime. They are a compile time feature only."
             | a -> raise_codegen_error $"Type not supported in the codegen.\nGot: %A{a}"
@@ -162729,6 +162836,11 @@ module spiral_compiler =
                 | _ ->
                     line s "else"
                     binds (indent s) fl
+            | TyJoinPoint(JPClosure(a,c) as a',args) ->
+                match d with
+                | Some (DV(L(i,_))) when args.Length = 0 -> closure_of_var.[i] <- (closure (a,c)).tag
+                | _ -> ()
+                simple (jp (a', args))
             | TyJoinPoint(a,args) -> simple (jp (a, args))
             | TyBackend(_,_,r) -> raise_codegen_error_backend r "The F# backend does not support nesting other backends."
             | TyWhile(a,b) ->
@@ -162859,10 +162971,32 @@ module spiral_compiler =
                 |> simple
             | TyApply(L(i,_),b) -> sprintf "v%i %s" i (tup b) |> simple
             | TyOp(Global, [DLit (LitString x)]) -> global' x
+            | TyOp(Export, [DLit (LitString name); DV(L(i,YFun(domain,range,_)))]) ->
+                if not (export_names.Add name) then raise_codegen_error $"Duplicate export: {name}."
+                let tag =
+                    match closure_of_var.TryGetValue i with
+                    | true, tag -> tag
+                    | _ -> raise_codegen_error $"Compiler error: the exported function {name} is not a closure without captures."
+                let parameters = env.ty_to_data domain |> data_free_vars
+                let decl =
+                    match parameters |> Array.map (fun (L(k,t)) -> $"v{k} : {tyv t}") with
+                    | [||] -> "()"
+                    | [|x|] -> $"({x})"
+                    | x -> String.concat ", " x |> sprintf "(%s)"
+                let call =
+                    match parameters |> Array.map (fun (L(k,_)) -> $"v{k}") with
+                    | [||] -> "()"
+                    | [|x|] -> x
+                    | x -> String.concat ", " x |> sprintf "(struct (%s))"
+                let closure_name = closure_names.[tag]
+                let range_type = tup_ty range
+                exports.Add($"let {name} {decl} : {range_type} =\n    {closure_name} () {call}\n")
+                if d.IsNone then line s "()"
             | TyOp(op,l) ->
                 match op, l with
                 | Dyn,[a] -> tup a
                 | TypeToVar, _ -> raise_codegen_error "The use of `` should never appear in generated code."
+                | Assign,[a;b] -> sprintf "%s <- %s" (tup a) (tup b)
                 | StringIndex, [a;b] -> utf8_string_helpers (); sprintf "(spiralStringIndex %s (int %s))" (tup a) (tup b)
                 | StringSlice, [a;b;c] -> utf8_string_helpers (); sprintf "(spiralStringSlice %s (int %s) (int %s))" (tup a) (tup b) (tup c)
                 | StaticStringConcat, [a;b] -> sprintf "(%s + %s)" (tup a) (tup b)
@@ -162971,7 +163105,7 @@ module spiral_compiler =
         and closure : _ -> ClosureRecFsharp =
             jp (fun ((jp_body,key & (C(args,_,fun_ty))),i) ->
                 match fun_ty with
-                | YFun(domain,range,FT_Vanilla) ->
+                | YFun(domain,range,(FT_Vanilla | FT_Pointer)) ->
                     let domain_args, body, sourceName = codegenFsharpClosureBody env jp_body key i
                     closure_names.[i] <- generatedClosureName sourceName i
                     {tag=i; free_vars=rdata_free_vars args; domain_args=data_free_vars domain_args; range=range; body=body}
@@ -162998,6 +163132,7 @@ module spiral_compiler =
             program.AppendLine("let __spiral_emit_rust (_ : 'a) (_ : 'b) : 'c = failwith \"lib/spiral: Rust-only code reached in an F# build\"") |> ignore
         types |> Seq.iteri (fun i x -> program.Append(if i = 0 then "type " else "and ").Append(x) |> ignore)
         functions |> Seq.iteri (fun i x -> program.Append(if i = 0 then "let rec " else "and ").Append(x) |> ignore)
+        exports |> Seq.iter (fun x -> program.Append(x) |> ignore)
         program.Append(main).ToString()
 
     /// ## CodegenRust
@@ -163383,8 +163518,32 @@ module spiral_compiler =
         let exports = ResizeArray()
         let closure_of_var = Dictionary<int, int>()
         let export_names = HashSet<string>()
+        let exported_record_names = HashSet<string>()
         let union_tag_impls = Dictionary<string, string>()
         let union_tags_used = HashSet<string>()
+        let exported_union_names = Dictionary<obj, string>(HashIdentity.Reference)
+        let () =
+            let taken = HashSet<string>()
+            let visited = HashSet<obj>(HashIdentity.Reference)
+            let rec walk (t : Ty) =
+                match t with
+                | YUnion u when visited.Add(box u) ->
+                    match unionSourceNames.TryGetValue(box u) with
+                    | true, source ->
+                        let clean = source |> String.map (fun c -> if System.Char.IsLetterOrDigit c || c = '_' then c else '_')
+                        let name = if taken.Add clean then clean else $"{clean}_{taken.Count}"
+                        taken.Add name |> ignore
+                        exported_union_names.[box u] <- name
+                    | _ -> ()
+                    u.Item.cases |> Map.iter (fun _ v -> walk v)
+                | YNominal _ | YApply _ -> walk (env.nominal_apply t)
+                | YPair(a,b) | YFun(a,b,_) -> walk a; walk b
+                | YRecord m -> m |> Map.iter (fun _ v -> walk v)
+                | YArray a | YLayout(a,_) -> walk a
+                | _ -> ()
+            x |> Array.iter (function
+                | TyLet(_,_,TyOp(Export, [_; DV(L(_,YFun(domain,range,_)))])) | TyLocalReturnOp(_,TyOp(Export, [_; DV(L(_,YFun(domain,range,_)))]),_) -> walk domain; walk range
+                | _ -> ())
         let default_impls = Dictionary<string, string>()
 
         let print is_type show r =
@@ -163805,8 +163964,24 @@ module spiral_compiler =
                     | true, tag -> tag
                     | _ -> raise_codegen_error $"Compiler error: the exported function {name} is not a closure without captures."
                 let parameters = env.ty_to_data domain |> data_free_vars
-                let decl = parameters |> Array.map (fun (L(k,t)) -> match t with YPrim StringT -> $"v{k}: &str" | t -> $"v{k}: {tyv t}") |> String.concat ", "
-                let call = parameters |> Array.map (fun (L(k,t)) -> match t with YPrim StringT -> $"Rc::<str>::from(v{k})" | _ -> $"v{k}") |> String.concat ", "
+                let exported_record =
+                    match domain with
+                    | YNominal n ->
+                        match env.nominal_apply domain with
+                        | YRecord fields when not fields.IsEmpty && fields |> Map.forall (fun _ t -> match t with YPrim _ -> true | _ -> false) -> Some (n.node.name, fields)
+                        | _ -> None
+                    | _ -> None
+                let decl, call =
+                    match exported_record with
+                    | Some (record_name, fields) ->
+                        let record_name = record_name |> String.map (fun c -> if System.Char.IsLetterOrDigit c || c = '_' then c else '_')
+                        if exported_record_names.Add record_name then
+                            let members = fields |> Map.toArray |> Array.map (fun ((_,k),t) -> $"    pub {k}: {tyv t},") |> String.concat "\n"
+                            exports.Insert(0, $"pub struct {record_name} {{\n{members}\n}}\n")
+                        $"v: {record_name}", (fields |> Map.toArray |> Array.map (fun ((_,k),_) -> $"v.{k}") |> String.concat ", ")
+                    | None ->
+                        parameters |> Array.map (fun (L(k,t)) -> match t with YPrim StringT -> $"v{k}: &str" | t -> $"v{k}: {tyv t}") |> String.concat ", ",
+                        parameters |> Array.map (fun (L(k,t)) -> match t with YPrim StringT -> $"Rc::<str>::from(v{k})" | _ -> $"v{k}") |> String.concat ", "
                 exports.Add($"pub fn {name}({decl}) -> {tup_ty range} {{\n    {closure_names.[tag]}()({call})\n}}\n")
                 if d.IsNone then line s "()"
             | TyOp(op,l) ->
@@ -163855,6 +164030,7 @@ module spiral_compiler =
                 | Cos, _ -> unary (sprintf "%s.cos()")
                 | NanIs, _ -> unary (sprintf "%s.is_nan()")
                 | StdoutFlush, [] -> "{ use std::io::Write; std::io::stdout().flush().unwrap(); }"
+                | Assign, [a;b] -> $"{tup a} = {tup b}"
                 | MonotonicDelayMs, [a] -> $"std::thread::sleep(std::time::Duration::from_millis({tup a} as u64))"
                 | Printf, [DLit (LitString fmt); b] ->
                     let rfmt = StringBuilder()
@@ -164121,7 +164297,15 @@ module spiral_compiler =
                 else text + ";\n    0\n"
             program.AppendLine("fn spiral_main() -> i32 {").Append(main).AppendLine("}") |> ignore
             program.AppendLine("fn main() { #[cfg(target_arch = \"wasm32\")] { spiral_main(); return; }").AppendLine("    let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();").AppendLine("    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 1 });").AppendLine("}") |> ignore
+        let rename_exported_unions (code : string) =
+            exported_union_names |> Seq.fold (fun (code : string) (KeyValue(node, name)) ->
+                let u = (unbox<Union> node).Item
+                let generated = match u.layout with UHeap -> $"UH{(uheap u.cases).tag}" | UStack -> $"US{(ustack u.cases).tag}"
+                let renamed = System.Text.RegularExpressions.Regex.Replace(code, $@"\b{generated}(?=\b|_)", name)
+                renamed.Replace($"\nenum {name} ", $"\npub enum {name} ")
+                ) code
         program.ToString() |> translateFsharpInterpolations |> foldStringBindings |> inlineRustEmits
+        |> rename_exported_unions
         |> cacheRustStringLiterals
 
     /// ## CodegenDelphi
@@ -164466,6 +164650,7 @@ module spiral_compiler =
             | TyOp(Global, [DLit (LitString x)]) -> global' x
             | TyOp(ArrayIndexSet, [DV(L(_,YArray element)) as a;b;c]) -> line s $"{tup a}[{tup b}] := {tup_as element c};"
             | TyOp(ArrayIndexSet, [a;b;c]) -> line s $"{tup a}[{tup b}] := {tup c};"
+            | TyOp(Assign, [a;b]) -> line s $"{tup a} := {tup b};"
             | TyOp(op,l) ->
                 let bin f = match l with [a;b] -> f (tup a) (tup b) | _ -> raise_codegen_error "Compiler error: Expected two arguments."
                 match op, l with
@@ -165099,6 +165284,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
             | TyOp(ArrayIndexSet, [a;b;c]) ->
                 let value = match a with DV(L(_,YArray el)) -> tup_as el c | _ -> tup c
                 line s $"{tup a}[spiralIndex({tup a}.len, {tup b})] = {value};"
+            | TyOp(Assign, [a;b]) -> line s $"{tup a} = {tup b};"
             | TyOp(op,l) ->
                 let bin f = match l with [a;b] -> f (tup a) (tup b) | _ -> raise_codegen_error "Compiler error: Expected two arguments."
                 let cmp o = match l with [a;_] when is_string a -> bin (fun a b -> match o with "<" -> $"std.mem.lessThan(u8, {a}, {b})" | "<=" -> $"!std.mem.lessThan(u8, {b}, {a})" | ">" -> $"std.mem.lessThan(u8, {b}, {a})" | _ -> $"!std.mem.lessThan(u8, {a}, {b})") | _ -> bin (fun a b -> $"{a} {o} {b}")
@@ -166771,6 +166957,14 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             let decl = $"@external(erlang, \"math\", \"{name}\")\npub fn spiral_math_{name}(x: Float) -> Float"
             if not (externals.Contains decl) then externals.Add decl
             $"spiral_math_{name}({arg})"
+        let floatResultMath (name : string) (stdlib : string) (arg : string) =
+            global' "import gleam/float"
+            let decl = $"pub fn spiral_math_{name}(x: Float) -> Float {{\n  case float.{stdlib}(x) {{\n    Ok(value) -> value\n    Error(_) -> panic as \"spiral math: {name} outside the real domain\"\n  }}\n}}"
+            if not (externals.Contains decl) then externals.Add decl
+            $"spiral_math_{name}({arg})"
+        let floatExponential (arg : string) =
+            global' "import gleam/float"
+            $"float.exponential({arg})"
 
         let mutable while_id = 0
 
@@ -166817,7 +167011,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             if not (externals.Contains decl) then externals.Add decl
         let spiralStringSlicing () =
             spiralStrings ()
-            let decl = "@external(erlang, \"erlang\", \"halt\")\npub fn spiral_halt(code: Int) -> a\n\npub fn spiral_string_index(text: String, index: Int) -> String {\n  case bit_array.slice(bit_array.from_string(text), index, 1) {\n    Ok(<<byte>>) ->\n      case string.utf_codepoint(byte) {\n        Ok(codepoint) -> string.from_utf_codepoints([codepoint])\n        Error(_) -> panic as \"spiral string index: not a single-byte character\"\n      }\n    _ -> panic as \"spiral string index: out of range\"\n  }\n}\n\npub fn spiral_string_slice(text: String, from: Int, to: Int) -> String {\n  let bytes = bit_array.from_string(text)\n  let length = bit_array.byte_size(bytes)\n  case from < 0 || from > length || to < from - 1 || to >= length {\n    True -> panic as \"spiral string slice: out of range\"\n    False ->\n      case to < from {\n        True -> \"\"\n        False ->\n          case bit_array.slice(bytes, from, to - from + 1) {\n            Ok(part) ->\n              case bit_array.to_string(part) {\n                Ok(slice) -> slice\n                Error(_) -> panic as \"spiral string slice: splits a character\"\n              }\n            Error(_) -> panic as \"spiral string slice: out of range\"\n          }\n      }\n  }\n}"
+            let decl = "@external(erlang, \"erlang\", \"halt\")\n@external(javascript, \"node:process\", \"exit\")\npub fn spiral_halt(code: Int) -> a\n\npub fn spiral_string_index(text: String, index: Int) -> String {\n  case bit_array.slice(bit_array.from_string(text), index, 1) {\n    Ok(<<byte>>) ->\n      case string.utf_codepoint(byte) {\n        Ok(codepoint) -> string.from_utf_codepoints([codepoint])\n        Error(_) -> panic as \"spiral string index: not a single-byte character\"\n      }\n    _ -> panic as \"spiral string index: out of range\"\n  }\n}\n\npub fn spiral_string_slice(text: String, from: Int, to: Int) -> String {\n  let bytes = bit_array.from_string(text)\n  let length = bit_array.byte_size(bytes)\n  case from < 0 || from > length || to < from - 1 || to >= length {\n    True -> panic as \"spiral string slice: out of range\"\n    False ->\n      case to < from {\n        True -> \"\"\n        False ->\n          case bit_array.slice(bytes, from, to - from + 1) {\n            Ok(part) ->\n              case bit_array.to_string(part) {\n                Ok(slice) -> slice\n                Error(_) -> panic as \"spiral string slice: splits a character\"\n              }\n            Error(_) -> panic as \"spiral string slice: out of range\"\n          }\n      }\n  }\n}"
             if not (externals.Contains decl) then externals.Add decl
         let rec tyv x =
             match x with
@@ -167251,10 +167445,10 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 | ShiftRight, [a;b] -> spiralIntegers (); $"int.bitwise_shift_right({tup a}, {tup b})"
 
                 | Neg, [x] -> if dot x = "." then $"0.0 -. {tup x}" else wrapInteger x $"0 - {tup x}"
-                | Log, [x] -> erlangMath "log" (tup x)
-                | Exp, [x] -> erlangMath "exp" (tup x)
+                | Log, [x] -> floatResultMath "log" "logarithm" (tup x)
+                | Exp, [x] -> floatExponential (tup x)
                 | Tanh, [x] -> erlangMath "tanh" (tup x)
-                | Sqrt, [x] -> erlangMath "sqrt" (tup x)
+                | Sqrt, [x] -> floatResultMath "sqrt" "square_root" (tup x)
                 | Sin, [x] -> erlangMath "sin" (tup x)
                 | Cos, [x] -> erlangMath "cos" (tup x)
                 | NanIs, [x] -> "False"
@@ -168178,6 +168372,7 @@ end
             | TyOp(op,l) ->
                 match op, l with
                 | Dyn,[a] -> tup a
+                | Assign,[a;b] -> sprintf "%s = %s" (tup a) (tup b)
                 | TypeToVar, _ -> raise_codegen_error "The use of `` should never appear in generated code."
                 | StaticStringConcat, [a;b] -> sprintf "(%s .. %s)" (tup a) (tup b)
                 | StringIndex, [a;b] ->
@@ -169309,6 +169504,7 @@ end
         let tuple_bodies = ResizeArray<string>()
         let tuple_names = Dictionary<string, string>()
         let method_names = Dictionary<int, string>()
+        let methods_being_emitted = HashSet<int>()
         let unsupported what = raise_codegen_error $"The WGSL backend doesn't support {what} yet."
         let next_id = ref 0
         let fresh_id () = next_id.Value <- next_id.Value + 1; next_id.Value
@@ -169557,7 +169753,9 @@ end
             let jp_text (jp, args) =
                 match jp with
                 | JPMethod(a,c) ->
-                    let name = method_names.[(method (a,c)).tag]
+                    let tag = (method (a,c)).tag
+                    if methods_being_emitted.Contains tag then unsupported "recursion that is not a self-tail call (WGSL has no call stack)"
+                    let name = method_names.[tag]
                     let arguments = args |> Array.map (fun (L(i,_)) -> $"v{i}") |> String.concat ", "
                     $"{name}({arguments})"
                 | JPClosure _ -> unsupported "closures (WGSL has no function pointers)"
@@ -169732,7 +169930,9 @@ end
                     match codegenMethodBody env "Wgsl" jp_body key with
                     | body, range, name ->
                         method_names.[tag] <- "sp_" + generatedMethodName name tag
+                        methods_being_emitted.Add tag |> ignore
                         emit_function method_names.[tag] (Some tag) (rdata_free_vars args) range body
+                        methods_being_emitted.Remove tag |> ignore
                     tag)
         and method (a, b) : {| tag : int |} = {| tag = method_memo.Force() (a, b) |}
 
@@ -169812,6 +170012,8 @@ end
         let is_unit_ty = function YB -> true | _ -> false
         let width = function
             | YPrim (Int32T | UInt32T | CharT) -> 32
+            | YPrim (Int16T | UInt16T) -> 16
+            | YPrim (Int8T | UInt8T) -> 8
             | YPrim BoolT -> 1
             | YPrim Float32T -> unsupported "f32"
             | YPrim Float64T -> unsupported "f64 (Calyx integer subset)"
@@ -169829,6 +170031,10 @@ end
         let lit = function
             | LitInt32 x -> sprintf "32'd%u" (uint32 x)
             | LitUInt32 x -> sprintf "32'd%u" x
+            | LitInt16 x -> sprintf "16'd%u" (uint16 x)
+            | LitUInt16 x -> sprintf "16'd%u" x
+            | LitInt8 x -> sprintf "8'd%u" (uint8 x)
+            | LitUInt8 x -> sprintf "8'd%u" x
             | LitBool true -> "1'd1"
             | LitBool false -> "1'd0"
             | LitChar x -> sprintf "32'd%d" (int x)
@@ -169844,7 +170050,7 @@ end
             | None -> unsupported "an operation on a non-primitive"
         let signed_of d =
             match prim_of d with
-            | Some (Int32T | CharT) -> true
+            | Some (Int32T | Int16T | Int8T | CharT) -> true
             | _ -> false
         let one_port d =
             match data_term_vars d with
@@ -171827,14 +172033,15 @@ end
             | LitUInt64 x -> string x
             | LitBool x -> if x then "true" else "false"
             | LitChar x -> string (int x)
-            | LitFloat32 x when Single.IsNaN x -> unsupported "NaN"
-            | LitFloat32 x when Single.IsPositiveInfinity x -> unsupported "infinity"
-            | LitFloat32 x when Single.IsNegativeInfinity x -> unsupported "infinity"
+            | LitFloat32 x when Single.IsNaN x -> "((1e308 * 10.0) - (1e308 * 10.0))"
+            | LitFloat32 x when Single.IsPositiveInfinity x -> "(1e308 * 10.0)"
+            | LitFloat32 x when Single.IsNegativeInfinity x -> "(-(1e308 * 10.0))"
             | LitFloat32 x ->
                 let text = x.ToString("R", Globalization.CultureInfo.InvariantCulture)
                 if text.Contains('.') || text.Contains('e') || text.Contains('E') then text else text + ".0"
-            | LitFloat64 x when Double.IsNaN x -> unsupported "NaN"
-            | LitFloat64 x when Double.IsInfinity x -> unsupported "infinity"
+            | LitFloat64 x when Double.IsNaN x -> "((1e308 * 10.0) - (1e308 * 10.0))"
+            | LitFloat64 x when Double.IsPositiveInfinity x -> "(1e308 * 10.0)"
+            | LitFloat64 x when Double.IsNegativeInfinity x -> "(-(1e308 * 10.0))"
             | LitFloat64 x ->
                 let text = x.ToString("R", Globalization.CultureInfo.InvariantCulture)
                 if text.Contains('.') || text.Contains('e') || text.Contains('E') then text else text + ".0"
@@ -172039,7 +172246,7 @@ end
                     | ShiftLeft, [a;b] -> binary "<<" a b
                     | ShiftRight, [a;b] -> binary ">>" a b
                     | Neg, [a] -> $"(-({tup a}))"
-                    | NanIs, [a] -> unsupported "NaN"
+                    | NanIs, [a] -> $"({tup a} != {tup a})"
                     | StdoutFlush, [] -> ""
                     | Sqrt, [a] -> $"sqrt({tup a})"
                     | Exp, [a] -> $"exp({tup a})"
@@ -172195,6 +172402,7 @@ end
                     binds (indent s0) (EbpfTail range) body
                     line s0 "}"
                     if result <> "" then
+                        statement s0 "SPIRAL_LOOP_CAPPED()"
                         let dead =
                             match result with
                             | "int32_t" | "uint32_t" | "bool" | "float" -> zero result
@@ -172386,7 +172594,14 @@ end
         program.AppendLine("#include <stdint.h>") |> ignore
         program.AppendLine("#include <stdbool.h>") |> ignore
         program.AppendLine("#define SPIRAL_MAP_CAP 64") |> ignore
+        program.AppendLine("#ifdef __bpf__") |> ignore
+        program.AppendLine("#define SPIRAL_LOOP_CAP 8192") |> ignore
+        program.AppendLine("int32_t spiral_loop_capped;") |> ignore
+        program.AppendLine("#define SPIRAL_LOOP_CAPPED() (spiral_loop_capped = 1)") |> ignore
+        program.AppendLine("#else") |> ignore
         program.AppendLine("#define SPIRAL_LOOP_CAP 16777216") |> ignore
+        program.AppendLine("#define SPIRAL_LOOP_CAPPED() ((void)0)") |> ignore
+        program.AppendLine("#endif") |> ignore
         program.AppendLine("static int32_t spiral_map_key[SPIRAL_MAP_CAP];") |> ignore
         program.AppendLine("static int32_t spiral_map_val[SPIRAL_MAP_CAP];") |> ignore
         program.AppendLine("static int32_t spiral_map_used[SPIRAL_MAP_CAP];") |> ignore
@@ -172412,12 +172627,28 @@ end
         program.AppendLine("}") |> ignore
         tuple_structs |> Seq.iter (fun row -> program.AppendLine(row) |> ignore)
         functions |> Seq.iter (fun fn -> program.Append(fn) |> ignore)
+        program.AppendLine("#ifdef __bpf__") |> ignore
+        program.AppendLine("#define SEC(name) __attribute__((section(name), used))") |> ignore
+        program.AppendLine("int32_t spiral_exit_code;") |> ignore
+        program.AppendLine("SEC(\"socket\")") |> ignore
+        program.AppendLine("int spiral_socket(void *context) {") |> ignore
+        if unit_main then
+            program.AppendLine("    spiral_main();") |> ignore
+            program.AppendLine("    spiral_exit_code = spiral_loop_capped ? -2147483647 : 0;") |> ignore
+        else
+            program.AppendLine("    int32_t spiral_result = spiral_main();") |> ignore
+            program.AppendLine("    spiral_exit_code = spiral_loop_capped ? -2147483647 : spiral_result;") |> ignore
+        program.AppendLine("    return 0;") |> ignore
+        program.AppendLine("}") |> ignore
+        program.AppendLine("char LICENSE[] SEC(\"license\") = \"GPL\";") |> ignore
+        program.AppendLine("#else") |> ignore
         program.AppendLine("int main(void) {") |> ignore
         if unit_main then
             program.AppendLine("    spiral_main();") |> ignore
             program.AppendLine("    return 0;") |> ignore
         else program.AppendLine("    return spiral_main();") |> ignore
         program.AppendLine("}") |> ignore
+        program.AppendLine("#endif") |> ignore
         program.ToString()
 
     /// ## CodegenTypescript
@@ -173924,6 +174155,7 @@ end
                     | Cos, [x] -> import "math.h"; sprintf "cos%s(%s)" (float_suffix x) (tup_data x)
                     | NanIs, [x] -> import "math.h"; sprintf "isnan(%s)" (tup_data x)
                     | StdoutFlush, [] -> import "stdio.h"; "fflush(stdout)"
+                    | Assign, [a; b] -> sprintf "%s = %s" (tup_data a) (tup_data b)
                     | MonotonicDelayMs, [duration] -> import "poll.h"; sprintf "poll(0, 0, %s)" (tup_data duration)
                     | Printf, [DLit (LitString fmt); str] ->
                         // The portable format (printf_pieces) becomes a C format with one specifier per argument type.
@@ -177336,6 +177568,12 @@ end
         let file p = if i <= column p then file p else Reply(ReplyStatus.Error,expected "directory on the same or greater indentation as the first one")
         many file p
 
+    /// ### crate_lines
+    let crate_lines p =
+        let i = column p
+        let crate p = if i <= column p then (many1Satisfy (fun c -> c <> '\n' && c <> '\r' && c <> ' ') .>> spacesSpiProj) p else Reply(ReplyStatus.Error,expected "crate on the same or greater indentation as the first one")
+        many crate p
+
     /// ### tab_positions
     let tab_positions (str : string): VSCRange [] =
         let mutable line = -1
@@ -177425,6 +177663,7 @@ end
                 "default-int", directory |>> fun x s -> {s with defaultInt=x}
                 "default-float", directory |>> fun x s -> {s with defaultFloat=x}
                 "edition", directory |>> fun x s -> {s with edition=x}
+                "crates", crate_lines |>> fun _ s -> s
                 ]
             let necessary = []
 

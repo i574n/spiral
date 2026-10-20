@@ -104,8 +104,9 @@ nominal date_time_python =
         }
         $'' : $'datetime.datetime'
     )
-// TODO: DATE-TIME-PORTABLE a Zig date_time: i64 micros since the Unix epoch, now from the platform clock, calendar fields and format
-//     in plain Spiral through civil_of_days; the guid pair then needs no backend chain (micros, not 100 ns ticks)
+// TODO: DATE-TIME-PORTABLE a Zig date_time: i64 micros since the Unix epoch, now from the platform clock, calendar
+//     fields and format in plain Spiral through civil_of_days; the guid pair then needs no backend chain (micros, not
+//     100 ns ticks)
 type date_time_switch =
     {
         Gleam : date_gleam * time_of_day_gleam * duration_gleam
@@ -114,6 +115,7 @@ type date_time_switch =
         Python : date_time_python
         Rust : $'chrono::NaiveDateTime'
         TypeScript : $'Date'
+        Zig : i64
     }
 nominal date_time = $'backend_switch `(date_time_switch)'
 
@@ -140,6 +142,63 @@ nominal tempo_date_time =
     )
 
 /// ### year
+/// ### zig_civil
+inl zig_micros_of (date_time : date_time) : i64 = $'!date_time' : i64
+
+inl zig_date_time_of (micros : i64) : date_time = $'!micros' : date_time
+
+inl zig_micros_now () : i64 =
+    global """
+        fn spiralMicrosNow() i64 {
+            if (@import("builtin").os.tag == .windows) return @divFloor(std.os.windows.ntdll.RtlGetSystemTimePrecise() - 116444736000000000, 10);
+            var ts: std.os.linux.timespec = undefined;
+            _ = std.os.linux.clock_gettime(.REALTIME, &ts);
+            return @as(i64, ts.sec) * 1000000 + @divFloor(@as(i64, ts.nsec), 1000);
+        }
+        """
+    $'spiralMicrosNow()' : i64
+
+inl zig_floor_div (a : i64) (b : i64) : i64 =
+    inl q = a / b
+    if a % b <> 0 && (a < 0) <> (b < 0) then q - 1 else q
+
+inl zig_civil_of_micros (micros : i64) : i64 * i64 * i64 * i64 * i64 * i64 * i64 =
+    inl micros_per_day = 86400000000i64
+    inl days = zig_floor_div micros micros_per_day
+    inl of_day = micros - days * micros_per_day
+    inl z = days + 719468
+    inl era = zig_floor_div z 146097
+    inl day_of_era = z - era * 146097
+    inl year_of_era = (day_of_era - day_of_era / 1460 + day_of_era / 36524 - day_of_era / 146096) / 365
+    inl day_of_year = day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100)
+    inl month_from_march = (5 * day_of_year + 2) / 153
+    inl day = day_of_year - (153 * month_from_march + 2) / 5 + 1
+    inl month = if month_from_march < 10 then month_from_march + 3 else month_from_march - 9
+    inl year = year_of_era + era * 400 + (if month <= 2 then 1 else 0)
+    inl seconds = of_day / 1000000
+    year, month, day, seconds / 3600, seconds % 3600 / 60, seconds % 60, of_day % 1000000
+
+inl zig_pad (width : i32) (n : i64) : string = n |> sm'.obj_to_string |> sm'.pad_left width '0'
+
+let rec zig_format_from (pattern : string) (i : i32) (fields : i64 * i64 * i64 * i64 * i64 * i64 * i64) : string =
+    inl year, month, day, hour, minute, second, micros = fields
+    if i >= sm'.length pattern then ""
+    else
+        inl c = sm'.index i pattern
+        let rec run (j : i32) : i32 = if j < sm'.length pattern && sm'.index j pattern = c then run (j + 1) else j
+        inl stop = run i
+        inl width = stop - i
+        inl piece =
+            if c = 'y' then zig_pad width year
+            elif c = 'M' then zig_pad width month
+            elif c = 'd' then zig_pad width day
+            elif c = 'H' then zig_pad width hour
+            elif c = 'm' then zig_pad width minute
+            elif c = 's' then zig_pad width second
+            elif c = 'f' then zig_pad 7i32 (micros * 10) |> sm'.slice 0i32 (width - 1)
+            else sm'.slice i (stop - 1) pattern
+        piece ++# zig_format_from pattern stop fields
+
 inl get_year (date_time : date_time) : i32 =
     backend_switch {
         Gleam = fun () => $'0' : i32
@@ -147,6 +206,7 @@ inl get_year (date_time : date_time) : i32 =
         Fsharp = fun () => date_time |> $'_.Year' : i32
         Python = fun () => $'!date_time.year' : i32
         Rust = fun () => $'chrono::Datelike::year(&!date_time)' : i32
+        Zig = fun () => date_time |> zig_micros_of |> zig_civil_of_micros |> fun (year, _, _, _, _, _, _) => (conv year : i32)
     }
 
 /// ### split_date_time
@@ -210,6 +270,7 @@ inl format (format : string) (date_time : date_time) : string =
                 then "%-m-%-d-%-y %I:%M:%S %p"
                 else format
             $'Rc::<str>::from(!date_time.format(&*!format).to_string())' : string
+        Zig = fun () => date_time |> zig_micros_of |> zig_civil_of_micros |> zig_format_from (if format = "" then "MM-dd-yyyy HH:mm:ss" else format) 0i32
     }
 
 /// ### format_iso8601
@@ -220,6 +281,7 @@ inl format_iso8601 (date_time : date_time) : string =
         Fsharp = fun () => date_time |> format "yyyy-MM-ddTHH-mm-ss.fff" : string
         Python = fun () => date_time |> format "%Y-%m-%dT%H-%M-%S.%f" : string
         Rust = fun () => date_time |> format "%Y-%m-%dT%H-%M-%S.%3f" : string
+        Zig = fun () => date_time |> format "yyyy-MM-ddTHH-mm-ss.fff" : string
     }
 
 /// ### min_value
@@ -238,6 +300,7 @@ inl min_value () : date_time =
             global "import datetime"
             $'datetime.datetime.min' : date_time
         Rust = fun () => $'chrono::NaiveDate::from_ymd_opt(1, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap()' : date_time
+        Zig = fun () => -62135596800000000i64 |> zig_date_time_of
     }
 
 ///> fsharp
@@ -263,6 +326,7 @@ inl max_value () : date_time =
             global "import datetime"
             $'datetime.datetime.max' : date_time
         Rust = fun () => $'chrono::NaiveDate::from_ymd_opt(9999, 12, 31).unwrap().and_hms_nano_opt(23, 59, 59, 999999900).unwrap()' : date_time
+        Zig = fun () => 253402300799999999i64 |> zig_date_time_of
     }
 
 ///> fsharp
@@ -292,6 +356,7 @@ inl to_calendar_utc ((timestamp micros) as timestamp : timestamp) : date_time =
             global "import datetime"
             $'datetime.datetime(1970, 1, 1) + datetime.timedelta(microseconds=!micros)' : date_time
         Rust = fun () => $'chrono::DateTime::from_timestamp_micros(!micros).unwrap().naive_utc()' : date_time
+        Zig = fun () => micros |> zig_date_time_of
     }
 
 /// ### tempo_date_time
@@ -318,6 +383,7 @@ inl unix_epoch () : date_time =
             global "import datetime"
             $'datetime.datetime(1970, 1, 1)' : date_time
         Rust = fun () => $'chrono::NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap()' : date_time
+        Zig = fun () => 0i64 |> zig_date_time_of
     }
 
 ///> lua
@@ -430,6 +496,7 @@ inl specify_date_kind (kind : date_time_kind) (date_time : date_time) : date_tim
             $'System.DateTime.SpecifyKind (!date_time, !kind)' : date_time
         Python = fun () => $'!date_time.replace(tzinfo=None)' : date_time
         Rust = fun () => date_time
+        Zig = fun () => date_time
     }
 
 /// ### to_universal_time
@@ -442,6 +509,7 @@ inl to_universal_time (date_time : date_time) : date_time =
             global "import datetime"
             $'!date_time.replace(tzinfo=datetime.timezone.utc)' : date_time
         Rust = fun () => date_time
+        Zig = fun () => date_time
     }
 
 ///> lua
@@ -580,6 +648,7 @@ inl to_timestamp (date_time : date_time) : timestamp =
             global "import datetime"
             ($'(!date_time.replace(tzinfo=None) - datetime.datetime(1970, 1, 1)) // datetime.timedelta(microseconds=1)' : i64) |> timestamp
         Rust = fun () => ($'!date_time.and_utc().timestamp_micros()' : i64) |> timestamp
+        Zig = fun () => date_time |> zig_micros_of |> timestamp
     }
 
 ///> gleam
@@ -854,6 +923,7 @@ inl add_days (days : i32) (date_time : date_time) : date_time =
             global "import datetime"
             $'!date_time + datetime.timedelta(days=!days)' : date_time
         Rust = fun () => $'!date_time + chrono::TimeDelta::days(!days as i64)' : date_time
+        Zig = fun () => (date_time |> zig_micros_of) + (days |> convert.convert : i64) * 86400000000i64 |> zig_date_time_of
     }
 
 /// ### to_calendar
@@ -887,6 +957,7 @@ inl now () : date_time =
             global "import datetime"
             $'datetime.datetime.now()' : date_time
         Rust = fun () => $'chrono::Local::now().naive_local()' : date_time
+        Zig = fun () => zig_micros_now () |> zig_date_time_of
     }
 
 /// ### utc_now
@@ -903,6 +974,7 @@ inl utc_now () : date_time =
             global "import datetime"
             $'datetime.datetime.utcnow()' : date_time
         Rust = fun () => $'chrono::Utc::now().naive_utc()' : date_time
+        Zig = fun () => zig_micros_now () |> zig_date_time_of
     }
 
 /// ### stopwatch
@@ -1069,6 +1141,14 @@ let date_time_guid_from_date_time (guid' : guid.guid) (date_time : date_time) =
                 (am'.End eval)
         prefix ++# time_zone ++# guid_range |> guid.new_guid
     run_target function
+        | Zig => fun () =>
+            inl year, month, day, hour, minute, second, micros = date_time |> zig_micros_of |> zig_civil_of_micros
+            inl fraction = zig_pad 7i32 (micros * 10)
+            inl prefix =
+                zig_pad 4i32 year ++# zig_pad 2i32 month ++# zig_pad 2i32 day ++# "-" ++# zig_pad 2i32 hour ++# zig_pad 2i32 minute
+                ++# "-" ++# zig_pad 2i32 second ++# (fraction |> sm'.slice 0i32 1i32) ++# "-" ++# (fraction |> sm'.slice 2i32 5i32)
+                ++# "-" ++# (fraction |> sm'.slice 6i32 6i32)
+            create prefix "00000"
         | Rust => fun () =>
             inl prefix : string =
                 $'{ let s = !date_time.format("%Y%m%d-%H%M-%S%f").to_string(); Rc::<str>::from(format\!("{}-{}-{}", &s[0..18], &s[18..22], &s[22..23])) }'
@@ -1078,7 +1158,11 @@ let date_time_guid_from_date_time (guid' : guid.guid) (date_time : date_time) =
             inl time_zone = #?time_zone_signal ++# time_zone_value
             create prefix time_zone
         | target => fun () =>
-            inl prefix = date_time |> format (join "yyyyMMdd-HHmm-ssff-ffff-f")
+            inl seconds = date_time |> format (join "yyyyMMdd-HHmm-ss")
+            inl fraction = date_time |> format (join "fffffff")
+            inl prefix =
+                seconds ++# (fraction |> sm'.slice 0i32 1i32) ++# "-" ++# (fraction |> sm'.slice 2i32 5i32)
+                ++# "-" ++# (fraction |> sm'.slice 6i32 6i32)
             inl time_zone = date_time |> get_utc_offset (time_zone_local ())
             inl time_zone_signal = if hours time_zone > 0 then 1u8 else 0
             inl time_zone_value = time_zone |> time_span_format (join "hhmm")
@@ -1127,6 +1211,20 @@ test date_time_guid_from_date_time_4 =
     |> date_time_guid_from_date_time (test_guid ())
     |> sm'.obj_to_string
     |> fun s => s |> _assert_eq ("19700102-0000-0000-0000-0" ++# (s |> sm'.slice 25i32 29) ++# suffix)
+
+///> zig
+test zig_date_time_guid_writes_seven_contiguous_fraction_digits =
+    unix_epoch () |> add_days 1i32 |> date_time_guid_from_date_time (test_guid ()) |> guid.to_string |> sm'.slice 0i32 29i32 |> _assert_eq "19700102-0000-0000-0000-000000"
+    1234567i64 |> zig_date_time_of |> date_time_guid_from_date_time (test_guid ()) |> guid.to_string |> sm'.slice 0i32 29i32 |> _assert_eq "19700101-0000-0123-4567-000000"
+
+///> fsharp
+///> rust -d chrono
+test date_time_guid_fraction_digits_are_contiguous =
+    date_time_milliseconds 1970 1 1 0 0 1 123
+    |> date_time_guid_from_date_time (test_guid ())
+    |> sm'.obj_to_string
+    |> sm'.slice 0i32 24i32
+    |> _assert_eq "19700101-0000-0112-3000-0"
 
 /// ### date_time_from_guid
 inl date_time_from_guid (date_time_guid : date_time_guid) =
@@ -1243,3 +1341,12 @@ inl main () =
     $'let new_guid_from_timestamp x = !new_guid_from_timestamp x' : ()
     $'let format x = !format x' : ()
     $'let format_iso8601 x = !format_iso8601 x' : ()
+
+///> zig
+test zig_date_time_is_micros_since_the_unix_epoch =
+    unix_epoch () |> format "yyyy-MM-dd HH:mm:ss" |> _assert_eq "1970-01-01 00:00:00"
+    min_value () |> get_year |> _assert_eq 1i32
+    max_value () |> get_year |> _assert_eq 9999i32
+    unix_epoch () |> add_days 1i32 |> format "yyyy-MM-dd" |> _assert_eq "1970-01-02"
+    max_value () |> format "HH:mm:ss.ffffff" |> _assert_eq "23:59:59.999999"
+    unix_epoch () |> add_days -1i32 |> format_iso8601 |> _assert_eq "1969-12-31T00-00-00.000"

@@ -59,8 +59,8 @@ inl all forall t. (fn : t -> bool) (x : rust.mut' (into_iterator t)) : bool =
     !\\(fn, $'$"!x.all(|x| $0(x))"')
 
 /// ### enumerate
-inl enumerate forall dim {int; number} t. (ar : a dim t) : a dim (convert.unativeint * t) =
-    inl (a ar) = ar
+inl enumerate forall t. (ar : array t) : array (convert.unativeint * t) =
+    inl (array ar) = ar
     ar
     |> am'.to_vec
     |> into_iter
@@ -72,7 +72,7 @@ inl enumerate forall dim {int; number} t. (ar : a dim t) : a dim (convert.unativ
 ///> rust
 test enumerate =
     am'.init_series 0i32 2 1
-    |> fun x => a x : _ int _
+    |> fun x => array x : array _
     |> enumerate
-    |> fun (a x : _ int _) => x
-    |> _assert_eq' ;[ convert.convert 0i32, 0; convert.convert 1i32, 1; convert.convert 2i32, 2 ]
+    |> fun (array x : array _) => x
+    |> _assert_eq' (am'.base ;[ convert.convert 0i32, 0; convert.convert 1i32, 1; convert.convert 2i32, 2 ])

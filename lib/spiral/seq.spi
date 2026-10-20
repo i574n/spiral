@@ -159,31 +159,31 @@ test to_list =
     |> _assert_eq (listm.init 10i32 id)
 
 /// ### from_array
-inl from_array forall dim {number; int} el. (array : a dim el) : seq dim el =
+inl from_array forall el. (array : array el) : seq int el =
     fun n =>
         if n >= length array
         then None
         else index array n |> Some
 
 test from_array =
-    a ;[ 1; 2; 3 ]
+    ;[ 1; 2; 3 ]
     |> from_array
     |> try_item 1i32
     |> _assert_eq (Some 2i32)
 
 /// ### to_array
 inl to_array seq =
-    inl ar = a ;[] |> mut
+    inl ar = ;[] |> mut
     ((), seq)
     ||> fold fun _ x =>
-        ar <- *ar ++ a ;[x]
+        ar <- *ar ++ ;[x]
     *ar
 
 inl to_array_ seq =
-    inl ar = a ;[] |> mut
+    inl ar = ;[] |> mut
     ((), seq)
     ||> fold_ fun _ x =>
-        ar <- *ar ++ a ;[x]
+        ar <- *ar ++ ;[x]
     *ar
 
 test to_array =
@@ -191,7 +191,7 @@ test to_array =
     |> from_list
     |> fun (x : i32 -> _) => x
     |> to_array
-    |> _assert_eq (a ;[ 0; 1; 2; 3; 4; 5; 6; 7; 8; 9 ] : _ i32 _)
+    |> _assert_eq (;[ 0; 1; 2; 3; 4; 5; 6; 7; 8; 9 ] : array _)
 
 /// ### take_while
 inl take_while cond seq =
@@ -328,8 +328,8 @@ inl find_last forall item result. fold_fn fn target : option result =
         | result => result
     ) target (None : option result)
 
-inl array_find_last forall item result. (fn : item -> option result) (target : a i32 item) : option result =
-    find_last am.foldBack fn target
+inl array_find_last forall item result. (fn : item -> option result) (target : array item) : option result =
+    find_last arraym.foldBack fn target
 
 inl list_find_last forall item result. (fn : item -> option result) (target : list item) : option result =
     find_last listm.foldBack fn target
@@ -400,7 +400,7 @@ test new_seq =
     |> _assert_eq [ "a"; "b" ]
 
 /// ### of_array'
-inl of_array' forall dim t. (items : a dim t) : seq' t =
+inl of_array' forall t. (items : array t) : seq' t =
     backend_switch {
         Gleam = fun () => $'!items |> spiral_array_to_list' : seq' t
         Fsharp = fun () =>
@@ -419,14 +419,14 @@ inl of_array' forall dim t. (items : a dim t) : seq' t =
 ///> rust
 ///> typescript
 test of_array =
-    (a ;[ "a"; "b" ] : _ int _)
+    (;[ "a"; "b" ] : array _)
     |> of_array'
     |> to_list'
     |> listm'.unbox
     |> _assert_eq [ "a"; "b" ]
 
 /// ### of_array
-inl of_array forall dim t. (items : a dim t) : seq' t =
+inl of_array forall t. (items : array t) : seq' t =
     backend_switch {
         Gleam = fun () => $'!items |> spiral_array_to_list' : seq' t
         Fsharp = fun () => $'!items |> Seq.ofArray' : seq' t
@@ -441,7 +441,7 @@ inl of_array forall dim t. (items : a dim t) : seq' t =
 ///> rust
 ///> typescript
 test of_array_2 =
-    (a ;[ "a"; "b" ] : _ int _)
+    (;[ "a"; "b" ] : array _)
     |> of_array
     |> to_list'
     |> listm'.unbox
@@ -449,8 +449,8 @@ test of_array_2 =
 
 /// ### of_array_base
 inl of_array_base forall t. (items : array_base t) : seq' t =
-    a items
-    |> fun x => x : _ int _
+    array items
+    |> fun x => x : array _
     |> of_array
 
 ///> fsharp
@@ -458,23 +458,23 @@ inl of_array_base forall t. (items : array_base t) : seq' t =
 ///> rust
 ///> typescript
 test of_array_base =
-    ;[ "a"; "b" ]
+    am'.base ;[ "a"; "b" ]
     |> of_array_base
     |> to_list'
     |> listm'.unbox
     |> _assert_eq [ "a"; "b" ]
 
 /// ### to_array'
-inl to_array' forall dim t. (items : seq' t) : a dim t =
+inl to_array' forall t. (items : seq' t) : array t =
     backend_switch {
-        Gleam = fun () => $'!items |> spiral_array_from_list' : a dim t
-        Fsharp = fun () => items |> $'Seq.toArray' : a dim t
+        Gleam = fun () => $'!items |> spiral_array_from_list' : array t
+        Fsharp = fun () => items |> $'Seq.toArray' : array t
         Python = fun () =>
             inl x = ($'!items ' : listm'.list' t) |> listm'.to_array'
-            $'!x ' : a dim t
-        Rust = fun () => $'Rc::new(RefCell::new((*!items).clone()))' : a dim t
-        TypeScript = fun () => $'[...!items]' : a dim t
-        Zig = fun () => $'(spiral_gpa.dupe(`t, !items) catch \@panic("out of memory"))' : a dim t
+            $'!x ' : array t
+        Rust = fun () => $'Rc::new(RefCell::new((*!items).clone()))' : array t
+        TypeScript = fun () => $'[...!items]' : array t
+        Zig = fun () => $'(spiral_gpa.dupe(`t, !items) catch \@panic("out of memory"))' : array t
     }
 
 ///> fsharp
@@ -482,10 +482,10 @@ inl to_array' forall dim t. (items : seq' t) : a dim t =
 ///> rust
 ///> typescript
 test to_array_2 =
-    ;[ "a"; "b" ]
+    am'.base ;[ "a"; "b" ]
     |> of_array_base
     |> to_array'
-    |> fun x => x : _ int _
+    |> fun x => x : array _
     |> am'.to_list'
     |> listm'.unbox
     |> _assert_eq [ "a"; "b" ]
@@ -518,7 +518,7 @@ inl cast' forall t u. (items : u) : seq' t =
                     | seq' ~x => $'(!items).clone()' : seq' t
                     | listm'.list' ~x => $'(!items).clone()' : seq' t
                     | array_base ~x => $'Rc::new(!items.borrow().clone())' : seq' t
-                    | a ~d ~x => $'Rc::new(!items.borrow().clone())' : seq' t
+                    | array ~x => $'Rc::new(!items.borrow().clone())' : seq' t
                     | _ => $'Rc::new(IntoIterator::into_iter(!items).collect::<Vec<`t>>())' : seq' t
             x
         TypeScript = fun () => $'Array.from(!items)' : seq' t

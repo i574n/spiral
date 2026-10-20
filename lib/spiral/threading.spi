@@ -361,7 +361,7 @@ inl cancellation_source_cancel (x : cancellation_token_source) : () =
         | _ => fun () => null ()
 
 /// ### create_linked_token_source
-inl create_linked_token_source (x : array_base cancellation_token) : cancellation_token_source =
+inl create_linked_token_source ((array x) : array cancellation_token) : cancellation_token_source =
     x |> $'System.Threading.CancellationTokenSource.CreateLinkedTokenSource'
 
 /// ### concurrent_stack

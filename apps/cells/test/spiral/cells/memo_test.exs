@@ -100,6 +100,29 @@ defmodule Spiral.Cells.MemoTest do
     File.write!(core, "core two")
     refute key.() == before
   end
+  test "a core change re-keys when the compiler path is spelled with backslashes (run_notebook.ps1 on Windows)", %{package: package} do
+    dll = Path.join(package, "SpiralCompiler.dll")
+    core = Path.join(package, "SpiralCompilerCore.dll")
+    File.write!(dll, "host")
+    File.write!(core, "core one")
+    spelled = if match?({:win32, _}, :os.type()), do: String.replace(dll, "/", "\\"), else: dll
+    step = %{program: "inl main () = 0i32\n", real: ""}
+    key = fn -> Memo.key(Memo.context([memo: true, compiler_dll: spelled], [step]), step, []) end
+    before = key.()
+    File.write!(core, "core two")
+    refute key.() == before
+  end
+  test "the compiler print is reused while the binaries' stamps hold, and recomputed when a same-size core changes", %{package: package} do
+    dll = Path.join(package, "SpiralCompiler.dll")
+    core = Path.join(package, "SpiralCompilerCore.dll")
+    File.write!(dll, "host")
+    File.write!(core, "core one")
+    first = Memo.compiler_binaries_print(dll)
+    assert Memo.compiler_binaries_print(dll) == first
+    File.write!(core, "core two")
+    refute Memo.compiler_binaries_print(dll) == first
+  end
+
   test "the same compiler binaries key the same from another folder and with other timestamps", %{package: package} do
     step = %{program: "inl main () = 0i32\n", real: ""}
     key = fn dir -> Memo.key(Memo.context([memo: true, compiler_dll: Path.join(dir, "SpiralCompiler.dll")], [step]), step, []) end
@@ -260,6 +283,21 @@ defmodule Spiral.Cells.MemoTest do
     assert reused.bounds == answered.bounds
     assert Memo.key(reused, step, []) == Memo.key(answered, step, [])
   end
+  test "bounds read once in this BEAM survive a cleared memo dir, so later notebooks skip the per-text memo reads" do
+    dir = Spiral.Cells.TestHelpers.tmp_dir!("bounds_in_memory")
+    memo = Path.join(dir, "memo")
+    step = %{program: "inl kept () = 3i32\ninl dropped () = 4i32\ninl spiral_cells_test () = kept ()\nspiral_cells_test ()\n", real: ""}
+    real_dll = Spiral.Cells.Toolchain.compiler_dll([])
+    answered = Memo.context([memo: true, memo_dir: memo, compiler_dll: real_dll], [step])
+    refute answered.bounds == :unavailable
+    File.rm_rf!(memo)
+    silent = Path.join(dir, "silent")
+    File.mkdir_p!(silent)
+    for name <- ["SpiralCompiler.dll", "SpiralCompilerCore.dll"], do: File.cp!(Path.join(Path.dirname(real_dll), name), Path.join(silent, name))
+    reused = Memo.context([memo: true, memo_dir: memo, compiler_dll: Path.join(silent, "SpiralCompiler.dll")], [step])
+    assert reused.bounds == answered.bounds
+  end
+
   test "source-blocks rows group by input and skip headerless blocks" do
     rows = "1\t1\t2\t3\t4\tinl a () =\n1\t5\t0\t0\t6\t\n2\t1\t1\t1\t1\ttest x =\n"
     assert SourceBlocks.parse_rows(rows) == %{

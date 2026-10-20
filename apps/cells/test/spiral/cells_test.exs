@@ -7,9 +7,8 @@ defmodule Spiral.CellsTest do
 
   @rust """
   fn spiral_main() -> i32 {
-      let mut v0: Rc<str> = "{ let mut out = std::io::stdout(); let _ = <std::io::Stdout as std::io::Write>::write_all(&mut out, $0.as_ref().as_bytes()); let _ = <std::io::Stdout as std::io::Write>::write_all(&mut out, &[10u8]); let _ = <std::io::Stdout as std::io::Write>::flush(&mut out); }";
       let mut v1: Rc<str> = Rc::<str>::from("Hello from Spiral!");
-      __spiral_emit_rust v1.clone() v0 ;
+      { let mut out = std::io::stdout(); let _ = <std::io::Stdout as std::io::Write>::write_all(&mut out, v1.as_ref().as_bytes()); let _ = <std::io::Stdout as std::io::Write>::write_all(&mut out, &[10u8]); let _ = <std::io::Stdout as std::io::Write>::flush(&mut out); };
       49i32
   }
   fn main() {
@@ -689,9 +688,9 @@ defmodule Spiral.CellsTest do
     assert String.ends_with?(dir, "deps/The-Spiral-Language/VS Code Plugin"), dir
   end
 
-  test "the Rust host builds like the compiler matrix: rustup's 1.99.0, opt-level 2, edition 2024, warnings off" do
+  test "the Rust host builds like the compiler matrix: rustup's nightly-2026-10-18, opt-level 2, edition 2024, warnings off" do
     assert Spiral.Cells.rustc_args("C:/Users/x/scoop/apps/rustup/current/.cargo/bin/rustc.exe", "main.rs", "main.exe") ==
-             ["+1.99.0", "-C", "opt-level=2", "-A", "warnings", "--edition", "2024", "-o", "main.exe", "main.rs"]
+             ["+nightly-2026-10-18", "-C", "opt-level=2", "-A", "warnings", "--edition", "2024", "-o", "main.exe", "main.rs"]
 
     assert Spiral.Cells.rustc_args("/opt/rust/bin/rustc", "main.rs", "main") ==
              ["-C", "opt-level=2", "-A", "warnings", "--edition", "2024", "-o", "main", "main.rs"]
@@ -711,13 +710,13 @@ defmodule Spiral.CellsTest do
 
     escript = Spiral.Cells.TestHelpers.escript()
 
-    assert :ok = Spiral.Cells.prepare_rust_toolchain({escript, [fake.("listed", "1.99.0-x86_64-pc-windows-msvc", 1)]}, 60_000)
+    assert :ok = Spiral.Cells.prepare_rust_toolchain({escript, [fake.("listed", "nightly-2026-10-18-x86_64-pc-windows-msvc", 1)]}, 60_000)
     assert :ok = Spiral.Cells.prepare_rust_toolchain({escript, [fake.("installs", "stable-x86_64-pc-windows-msvc", 0)]}, 60_000)
 
     assert {:error, %ProcessError{message: message}} =
              Spiral.Cells.prepare_rust_toolchain({escript, [fake.("offline", "stable-x86_64-pc-windows-msvc", 1)]}, 60_000)
 
-    assert message =~ "rustup toolchain install 1.99.0 failed (exit 1)"
+    assert message =~ "rustup toolchain install nightly-2026-10-18 failed (exit 1)"
     assert message =~ "offline"
   end
 end

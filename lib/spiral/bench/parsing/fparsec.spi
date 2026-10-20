@@ -194,8 +194,8 @@ let split_args (args : string) : result (array_base (string * position_)) (strin
             (
                 a'
                 |> listm'.to_array'
-                |> a
-                |> am.map fun x => x, b'
-                |> fun (a x : _ int _) => x
+                |> array
+                |> arraym.map fun x => x, b'
+                |> fun (array x : array _) => x
             )
         )

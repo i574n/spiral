@@ -9,7 +9,7 @@ function method5(v0: LongInt; v1: LongInt): LongInt; forward;
 function method4(v0: LongInt): LongInt; forward;
 function method6(v0: LongWord): Boolean; forward;
 function method3(v0: LongInt): LongInt; forward;
-function method7(v0: AnsiString): Boolean; forward;
+function method7(v0: AnsiString; v1: AnsiString): Boolean; forward;
 function method2(v0: LongInt): LongInt; forward;
 function method8(v0: Single): TTuple0; forward;
 function method9(v0: Boolean; v1: Single; v2: LongInt): LongInt; forward;
@@ -67,9 +67,12 @@ begin
       Result := 1;
   end;
 end;
-function method7(v0: AnsiString): Boolean;
+function method7(v0: AnsiString; v1: AnsiString): Boolean;
+var
+  v2: Boolean;
 begin
-  Result := True;
+  v2 := v0 = v1;
+  Result := v2;
 end;
 function method2(v0: LongInt): LongInt;
 var
@@ -77,7 +80,7 @@ var
   v2: Boolean;
 begin
   v1 := 'spiral';
-  v2 := method7(v1);
+  v2 := method7(v1, v1);
   if v2 then begin
       Result := method3(v0);
   end else begin

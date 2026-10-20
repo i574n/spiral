@@ -62,12 +62,13 @@ def method3(v0 : i32) -> i32:
     else:
         del v0, v2
         return 1
-def method7(v0 : string) -> bool:
-    del v0
-    return True
+def method7(v0 : string, v1 : string) -> bool:
+    v2 = v0 == v1
+    del v0, v1
+    return v2
 def method2(v0 : i32) -> i32:
     v1 = "spiral"
-    v2 = method7(v1)
+    v2 = method7(v1, v1)
     del v1
     if v2:
         del v2

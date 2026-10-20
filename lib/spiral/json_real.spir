@@ -14,12 +14,17 @@ inl rec schema_of forall t. () : string =
     | bool => "{\"type\":\"boolean\"}"
     | string => "{\"type\":\"string\"}"
     | option ~el => schema_of `el ()
-    | ~a * ~b => "{\"type\":\"array\",\"prefixItems\":[" ++ (schema_of `a ()) ++ "," ++ (schema_of `b ()) ++ "]}"
+    | ~a * ~b => "{\"type\":\"array\",\"prefixItems\":[" ++ (schema_of `a ()) ++ "," ++ (schema_items `b ()) ++ "]}"
     | array_base ~el => "{\"type\":\"array\",\"items\":" ++ (schema_of `el ()) ++ "}"
     | {} => object_schema `t ()
     | _ =>
         if union_type_is `t then union_schema `t ()
         else "{}"
+
+and inl schema_items forall t. () : string =
+    typecase t with
+    | ~a * ~b => (schema_of `a ()) ++ "," ++ (schema_items `b ())
+    | _ => schema_of `t ()
 
 and inl object_schema forall t. () : string =
     inl props, required =
@@ -35,7 +40,7 @@ and inl object_schema forall t. () : string =
     "{\"type\":\"object\",\"properties\":{" ++ props ++ "},\"required\":[" ++ required ++ "]}"
 
 and inl union_schema forall t. () : string =
-    union_to_record `t forall cases. =>
+    union_type_to_record `t forall cases. =>
         inl all_nullary, alternatives =
             record_type_fold
                 fun (all_nullary, alternatives) key =>
@@ -63,14 +68,14 @@ inl rec decode_at forall value. (s : string) (at : i32) : value =
         | i32 => json_scan.parse_i32_array s at
         | string => json_scan.parse_string_array s at
         | {} => json_scan.fill_array `el (json_scan.item_count s at) (fun i => decode (json_scan.object_at s (json_scan.item_start s at i)) `el)
-    | ~a * ~b => decode_at `a s (json_scan.item_start s at 0i32), decode_at `b s (json_scan.item_start s at 1i32)
+    | ~a * ~b => decode_at `a s (json_scan.item_start s at 0i32), decode_items `b s at 1i32
     | option ~inner => if at < 0i32 then None `inner else Some `inner (decode_at `inner s at)
     | _ =>
         if union_type_is `value then
             inl name = json_scan.union_case_name s at
             inl payload_at = json_scan.union_payload_at s at
             inl pick =
-                union_to_record `value forall cases. =>
+                union_type_to_record `value forall cases. =>
                     record_type_fold
                         fun otherwise key =>
                             forall payload. =>
@@ -85,6 +90,11 @@ inl rec decode_at forall value. (s : string) (at : i32) : value =
                         `cases
             pick ()
         else error_type "unsupported field type"
+
+and inl decode_items forall value. (s : string) (at : i32) (i : i32) : value =
+    typecase value with
+    | ~a * ~b => decode_at `a s (json_scan.item_start s at i), decode_items `b s at (i + 1i32)
+    | _ => decode_at `value s (json_scan.item_start s at i)
 
 and inl decode s = forall t. =>
     record_type_map

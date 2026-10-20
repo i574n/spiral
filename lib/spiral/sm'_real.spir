@@ -473,7 +473,7 @@ and inl format_debug_elements_rust forall el. (x : array_base el) : string =
         inl n = !!!!ArrayLength(`u64, x)
         inl i = mut `u64 (real_core.dyn 0u64)
         inl s = mut `string (real_core.dyn "")
-        loopw.while (fun () => !!!!LT(!!!!LayoutIndex(i), n)) fun () =>
+        loop.while' (fun () => !!!!LT(!!!!LayoutIndex(i), n)) fun () =>
             inl j = !!!!LayoutIndex(i)
             inl e = format_debug_element_rust `el !!!!ArrayIndex(x, j)
             s <- (if !!!!EQ(j, 0u64) then e else !!!!LayoutIndex(s) ++#* ", " ++#* e)
@@ -588,8 +588,9 @@ prototype printable t : t -> ()
 /// ### format_real
 ///- --real
 
-// TODO: FLOAT-TEXT-CANONICAL one float layout for every backend arm below: C, Lua, Kotlin and Swift print 100.0 as 1e+02 and 1e10 as 1e+10,
-//     Rust, TypeScript, Python, Lean and Zig print 100.0 and switch to exponents at their own thresholds
+// TODO: FLOAT-TEXT-CANONICAL one float layout for every backend arm below: C, Lua, Kotlin and Swift print 100.0 as
+//     1e+02 and 1e10 as 1e+10, Rust, TypeScript, Python, Lean and Zig print 100.0 and switch to exponents at their own
+//     thresholds
 let format_real forall t. (x : t) : string =
     inl empty : string =
         backend_switch `string `({}) {
@@ -1067,7 +1068,7 @@ and inl show_elements_real forall el. (x : array_base el) : string =
         inl n = !!!!ArrayLength(`u64, x)
         inl i = mut `u64 (real_core.dyn 0u64)
         inl s = mut `string (real_core.dyn "")
-        loopw.while (fun () => !!!!LT(!!!!LayoutIndex(i), n)) fun () =>
+        loop.while' (fun () => !!!!LT(!!!!LayoutIndex(i), n)) fun () =>
             inl j = !!!!LayoutIndex(i)
             inl e = show_real `el !!!!ArrayIndex(x, j)
             s <- (if !!!!EQ(j, 0u64) then e else !!!!LayoutIndex(s) ++#* ", " ++#* e)

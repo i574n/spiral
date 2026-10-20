@@ -47,16 +47,19 @@ fun sp_method3(p0: Int): Int {
         return 1
     }
 }
-fun sp_method7(p0: String): Boolean {
+fun sp_method7(p0: String, p1: String): Boolean {
     var v0: String = p0
-    return true
+    var v1: String = p1
+    var v2: Boolean = false
+    v2 = (v0 == v1)
+    return v2
 }
 fun sp_method2(p0: Int): Int {
     var v0: Int = p0
     var v1: String = ""
     v1 = "spiral"
     var v2: Boolean = false
-    v2 = sp_method7(v1)
+    v2 = sp_method7(v1, v1)
     if (v2) {
         return sp_method3(v0)
     } else {

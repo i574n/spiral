@@ -30,12 +30,13 @@ fn method3(mut v0: i32) -> i32 {
         1i32
     }
 }
-fn method7(mut v0: Rc<str>) -> bool {
-    true
+fn method7(mut v0: Rc<str>, mut v1: Rc<str>) -> bool {
+    let mut v2: bool = v0.clone() == v1.clone();
+    v2
 }
 fn method2(mut v0: i32) -> i32 {
     let mut v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("spiral"); } LIT.with(|lit| lit.clone()) };
-    let mut v2: bool = method7(v1.clone());
+    let mut v2: bool = method7(v1.clone(), v1.clone());
     if v2 {
         method3(v0)
     } else {

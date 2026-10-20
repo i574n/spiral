@@ -47,16 +47,19 @@ func sp_method3(_ p0: Int32) -> Int32 {
         return 1
     }
 }
-func sp_method7(_ p0: String) -> Bool {
+func sp_method7(_ p0: String, _ p1: String) -> Bool {
     var v0: String = p0
-    return true
+    var v1: String = p1
+    var v2: Bool = false
+    v2 = (v0 == v1)
+    return v2
 }
 func sp_method2(_ p0: Int32) -> Int32 {
     var v0: Int32 = p0
     var v1: String = ""
     v1 = "spiral"
     var v2: Bool = false
-    v2 = sp_method7(v1)
+    v2 = sp_method7(v1, v1)
     if (v2) {
         return sp_method3(v0)
     } else {

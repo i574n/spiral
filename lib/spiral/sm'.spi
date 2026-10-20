@@ -88,7 +88,7 @@ inl to_char_array (str : string) : array_base char =
 test to_char_array =
     "abc"
     |> to_char_array
-    |> fun x => a x : _ int _
+    |> fun x => array x : array _
     |> am'.to_list'
     |> listm'.unbox
     |> _assert_eq [ 'a'; 'b'; 'c' ]
@@ -162,6 +162,14 @@ inl format_debug forall t. (x : t) : string =
 
 inl obj_to_string_rust forall t. (x : t) : string =
     real obj_to_string_rust_real `t x
+inl obj_to_string_fsharp forall t. (x : t) : string =
+    if (real typecase t with bool => true | _ => false)
+    then $'(if !x then "true" else "false")' : string
+    else $'!x |> _.ToString()' : string
+inl obj_to_string_python forall t. (x : t) : string =
+    if (real typecase t with bool => true | _ => false)
+    then $'("true" if !x else "false")' : string
+    else $'str(!x)' : string
 inl obj_to_string_typescript forall t. (x : t) : string =
     if (real typecase t with char => true | _ => false)
     then $'String.fromCharCode(!x)' : string
@@ -243,14 +251,21 @@ inl obj_to_string forall t. (x : t) : string =
         backend_switch {
             Gleam = fun () => #?*x : string
             Lua = fun () => #?*x : string
-            Fsharp = fun () => $'!x |> _.ToString()' : string
-            Python = fun () => $'str(!x)' : string
+            Fsharp = fun () => obj_to_string_fsharp x
+            Python = fun () => obj_to_string_python x
             Rust = fun () => obj_to_string_rust x
             TypeScript = fun () => obj_to_string_typescript x
             Zig = fun () => obj_to_string_zig x
             Lean = fun () => $'toString !x ' : string
             Wasm = fun () => obj_to_string_wasm x
         }
+
+///> fsharp
+///> cuda
+///> rust
+///> zig
+test obj_to_string_prints_bools_lowercase =
+    (obj_to_string (dyn true), obj_to_string (dyn false)) |> _assert_eq ("true", "false")
 
 /// ### (~#?**)
 inl (~#?**) s =
@@ -440,8 +455,8 @@ test show_floats =
 
 /// ### to_char_array
 inl to_char_array (str : string) : array_base char =
-    am.init (str |> length) (fun i => str |> index i)
-    |> fun (a x : _ int _) => x
+    arraym.init (str |> length) (fun i => str |> index i)
+    |> fun (array x : array _) => x
 
 ///> fsharp
 ///> cuda
@@ -452,9 +467,9 @@ test to_char_array_2 =
     |> _assert_eq #?(;[ 'a'; 'b'; 'c' ])
 
 /// ### concat_array
-inl concat_array (separator : string) (input : a int string) =
+inl concat_array (separator : string) (input : array string) =
     (input, { acc = ""; sep = "" })
-    ||> am.foldBack fun (x : string) { acc sep } =>
+    ||> arraym.foldBack fun (x : string) { acc sep } =>
             { acc = x ++# sep ++# acc; sep = separator }
     |> fun { acc } => acc
 
@@ -469,7 +484,7 @@ test concat_array print_code =
         "3"
     ]
     |> fun x =>
-        inl code = (a x : _ int _) |> concat_array "\n"
+        inl code = x |> concat_array "\n"
         code
         |> _assert_eq """
             1
@@ -532,21 +547,11 @@ test index_of_char_from =
 inl index_of (search : string) (s : string) : int =
     backend_switch {
         Gleam = fun () =>
-            global "import gleam/list"
-            global "import gleam/option"
+            global "import gleam/bit_array"
             global "import gleam/string"
-            inl g : list string =
-                $'!s |> string.to_graphemes'
-            $'let search = !search ' : ()
-            $'let x = !g |> list.index_fold (option.None, fn(acc, item, index) {' : ()
-            $'  case acc {' : ()
-            $'    option.None if item == search -> option.Some(index)' : ()
-            $'    _ -> acc' : ()
-            $'  }' : ()
-            $'})' : ()
-            $'x |> option.unwrap(-1)' : int
-        Lua = fun () => $'string.find(!s, !search) - 1' : int
-        Fsharp = fun () => $'!s.IndexOf !search ' : int
+            $'case string.split_once(!s, !search) { Ok(spiral_split) -> bit_array.byte_size(bit_array.from_string(spiral_split.0)) Error(_) -> -1 }' : int
+        Lua = fun () => $'((string.find(!s, !search, 1, true) or 0) - 1)' : int
+        Fsharp = fun () => $'(!s).IndexOf(!search, System.StringComparison.Ordinal)' : int
         Python = fun () => $'(lambda spiral_found: -1 if spiral_found < 0 else len((!s)[:spiral_found].encode("utf-8", "surrogateescape")))((!s).find(!search))' : int
         Rust = fun () => $'!s.find(&*!search).map(|i| i as `int).unwrap_or(-1)' : int
         TypeScript = fun () => $'!s.indexOf(!search)' : int
@@ -563,6 +568,14 @@ test index_of =
     "123"
     |> index_of "2"
     |> _assert_eq 1
+
+///> gleam
+///> rust
+///> cuda
+///> lua
+test index_of_counts_utf8_bytes_and_whole_needles =
+    ("é/x" |> index_of "/", "abcabc" |> index_of "ca", "abc" |> index_of "z")
+    |> _assert_eq (2, 2, -1)
 
 /// ### replicate
 inl replicate (n : int) (s : string) : string =
@@ -654,7 +667,7 @@ inl starts_with (value : string) (s : string) : bool =
             global "import gleam/string"
             $'!s |> string.starts_with(!value)' : bool
         Lua = fun () => $'!value == "" or !s:sub(1, ##!value) == !value ' : bool
-        Fsharp = fun () => $'!s.StartsWith (!value, false, null)' : bool
+        Fsharp = fun () => $'(!s).StartsWith(!value, System.StringComparison.Ordinal)' : bool
         Python = fun () => $'!s.startswith(!value)' : bool
         Rust = fun () => $'!s.starts_with(&*!value)' : bool
         TypeScript = fun () => $'!s.startsWith(!value)' : bool
@@ -673,7 +686,16 @@ inl substring (start : i32) (len : i32) (str : string) : string =
     run_target function
         | Rust => fun () => $'Rc::<str>::from(&(!str)[((!start) as usize)..(((!start) + (!len)) as usize)])' : string
         | Zig => fun () => $'(!str)[\@intCast(!start)..\@intCast(!start + !len)]' : string
+        | Gleam => fun () => sm.slice str {from=start; to=start + len - 1}
         | _ => fun () => $'!str.Substring (!start, !len)'
+
+///> gleam
+///> rust
+///> fsharp
+test substring_cuts_by_start_and_length =
+    inl before_slash (s : string) = s |> substring 0 (s |> index_of "/")
+    ("spiral" |> substring 1 3, "spiral" |> substring 0 0, "spiral" |> substring 6 0, before_slash "é/x", before_slash "a’😀/b")
+    |> _assert_eq ("pir", "", "", "é", "a’😀")
 
 /// ### to_lower
 inl to_lower (input : string) : string =
@@ -1007,8 +1029,8 @@ inl concat (a : string) (b : seq.seq' string) : string =
 inl length' forall dim. (input : string) : dim =
     backend_switch {
         Gleam = fun () =>
-            global "import gleam/string"
-            $'string.length(!input)' : dim
+            global "import gleam/bit_array"
+            $'bit_array.byte_size(bit_array.from_string(!input))' : dim
         Lua = fun () => $'##!input ' : dim
         Fsharp = fun () => input |> $'String.length' : dim
         Python = fun () => $'len((!input).encode("utf-8", "surrogateescape"))' : dim
@@ -1024,6 +1046,14 @@ test length_2 =
     |> length'
     |> _assert_eq 3i32
 
+///> gleam
+///> rust
+///> cuda
+test length_counts_utf8_bytes =
+    "é😀"
+    |> length'
+    |> _assert_eq 6i32
+
 /// ### to_string any
 instance to_string any =
     obj_to_string
@@ -1035,9 +1065,9 @@ inl replace (old : string) (new : string) (s : string) : string =
             global "import gleam/string"
             $'!s |> string.replace(!old, !new)' : string
         Lua = fun () =>
-            $'string.gsub(!s, !old, !new)' : string
+            $'((!s):gsub(((!old):gsub("%p", "%%%0")), ((!new):gsub("%%", "%%%%"))))' : string
         Fsharp = fun () =>
-            $'!s.Replace (!old, !new)' : string
+            $'(!s).Replace(!old, !new, System.StringComparison.Ordinal)' : string
         Python = fun () =>
             $'!s.replace(!old, !new)' : string
         Rust = fun () =>
@@ -1049,6 +1079,14 @@ inl replace (old : string) (new : string) (s : string) : string =
         Lean = fun () =>
             $'(!s).replace !old !new ' : string
     }
+
+///> lua
+///> fsharp
+///> rust
+///> gleam
+test search_and_replace_treat_text_literally =
+    ("a.b%c" |> index_of ".", "a.b%c" |> index_of "%", "x" |> index_of "y", "a.b.c" |> replace "." "%", "a.b" |> starts_with "a.")
+    |> _assert_eq (1, 3, -1, "a%b%c", true)
 
 /// ### split
 inl split (separator : string) (str : string) : array_base string =
@@ -1070,10 +1108,10 @@ inl split (separator : string) (str : string) : array_base string =
 inl split_string (separator : array_base string) (str : string) : array_base string =
     run_target_args (fun () => str, separator) function
         | Fsharp => fun str, separator => $'!str.Split (!separator, System.StringSplitOptions.None)'
-        | _ => fun str, separator => str |> split ((a separator : _ int _) |> seq.of_array |> concat (join ""))
+        | _ => fun str, separator => str |> split ((array separator : array _) |> seq.of_array |> concat (join ""))
 
 /// ### join'
-inl join' (concat : string) (s : a int string) : string =
+inl join' (concat : string) (s : array string) : string =
     $'System.String.Join (!concat, !s)'
 
 /// ### encoding
@@ -1084,10 +1122,10 @@ inl encoding_utf8 () : encoding =
     $'`encoding.UTF8'
 
 /// ### utf8_get_bytes
-inl utf8_get_bytes (s : string) : a i32 u8 =
+inl utf8_get_bytes (s : string) : array u8 =
     run_target function
-        | Rust => fun () => $'Rc::new(RefCell::new(!s.as_bytes().to_vec()))' : a i32 u8
-        | _ => fun () => s |> (encoding_utf8 () |> $'_.GetBytes') : a i32 u8
+        | Rust => fun () => $'Rc::new(RefCell::new(!s.as_bytes().to_vec()))' : array u8
+        | _ => fun () => s |> (encoding_utf8 () |> $'_.GetBytes') : array u8
 
 /// ### byte_to_string
 inl byte_to_string (format : string) (x : u8) : string =
@@ -1459,8 +1497,8 @@ test regex_captures =
     |> am'.vec_map (mapm.to_vec >> am'.vec_sort_by_key id)
     |> format_debug
     |> _assert_eq (
-        ;[
-            ;[ "", ""; "a", "4.17.0" ]
+        am'.base ;[
+            am'.base ;[ "", ""; "a", "4.17.0" ]
             |> am'.to_vec
         ]
         |> am'.to_vec

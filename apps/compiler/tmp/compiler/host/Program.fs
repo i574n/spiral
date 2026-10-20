@@ -981,7 +981,14 @@ module Program =
     let private runTcpServer socketPath (stallSeconds : int) =
         let socketPath, pidPath = sessionPaths socketPath
         let portPath = socketPath + ".bridge"
-        let listener = TcpListener(Net.IPAddress.Loopback, 0)
+        let address, requestedPort =
+            match Environment.GetEnvironmentVariable "SPIRAL_SERVER_BIND" with
+            | null | "" -> Net.IPAddress.Loopback, 0
+            | bind ->
+                match (if bind.Contains "]:" || (bind.IndexOf ':' > 0 && bind.IndexOf ':' = bind.LastIndexOf ':') then Net.IPEndPoint.TryParse bind else (false, null)) with
+                | true, endpoint -> endpoint.Address, endpoint.Port
+                | _ -> failwithf "SPIRAL_SERVER_BIND must be address:port (e.g. 0.0.0.0:7470), got %s" bind
+        let listener = TcpListener(address, requestedPort)
         listener.Start()
         let port = (listener.LocalEndpoint :?> Net.IPEndPoint).Port
         File.WriteAllText(pidPath, Environment.ProcessId.ToString())

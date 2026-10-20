@@ -6,7 +6,7 @@ let v3 : (string -> unit) = System.Console.WriteLine
 let v4 : string = "hi"
 v3 v4
 let v5 : bool = true
-let v6 : string = v5 |> _.ToString()
+let v6 : string = (if v5 then "true" else "false")
 let v7 : (string -> unit) = System.Console.WriteLine
 v7 v6
 let v8 : int32 = v0 + 1

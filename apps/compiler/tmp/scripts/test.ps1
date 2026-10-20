@@ -16,7 +16,7 @@ param(
     [ValidateSet('Release', 'Debug')][string]$Configuration = 'Release',
     [string]$WorkspaceRoot,
     [ValidateSet('Zig', 'Wasm', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Python', 'Rust', 'Delphi', 'Cpp', 'Kotlin', 'Swift', 'Wgsl', 'Calyx', 'OpenQasm', 'Ebpf')][string]$Probe,
-    [string[]]$Oracle = @('C', 'Zig')
+    [string[]]$Oracle = @('Zig', 'C')
 )
 . $PSScriptRoot/env.ps1
 $matrix = Import-PowerShellDataFile (Join-Path $BundleRoot 'tests/matrix.psd1') -SkipLimitCheck
@@ -364,18 +364,55 @@ if ($toolchainChanges) {
     if ($Accept -and -not $AcceptToolchain) { throw "-Accept refuses a run whose native toolchain differs from the baseline's: pin the baseline's tools (SPIRAL_CC and the others) or pass -AcceptToolchain to move the baseline to this toolchain" }
 }
 if ($Native) { $toolchain | Export-Csv (Join-Path $runDir 'toolchain.tsv') -Delimiter "`t" -NoTypeInformation -UseQuotes Never }
-function Get-NativeSignature {
-    $lines = [Collections.Generic.List[string]]::new()
-    $script = [System.Management.Automation.Language.Parser]::ParseFile($PSCommandPath, [ref]$null, [ref]$null)
-    $nativeCode = $script.FindAll({ param($node)
-            ($node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -in 'Build-And-Run', 'Invoke-Native', 'Get-CFlags', 'Get-ShimKey') -or
+function Get-NativeSignature([string]$ScriptPath = $PSCommandPath) {
+    $language = [System.Management.Automation.Language.Parser]
+    $script = $language::ParseFile($ScriptPath, [ref]$null, [ref]$null)
+    $buildAndRun = $script.Find({ param($node) $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Build-And-Run' }, $true)
+    $otherNativeCode = $script.FindAll({ param($node)
+            ($node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -in 'Invoke-Native', 'Get-CFlags', 'Get-ShimKey') -or
             ($node -is [System.Management.Automation.Language.IfStatementAst] -and $node.Clauses[0].Item1.Extent.Text -eq '$Native' -and $node.Extent.Text.Contains('$nativeJobs')) }, $true) |
         ForEach-Object { $_.Extent.Text }
-    $lines.Add('native code=' + (Get-TextKey ($nativeCode -join "`n")))
-    foreach ($tool in @($tools.PSObject.Properties | Sort-Object Name)) { $lines.Add("$($tool.Name)=" + (Get-ToolStamp "$($tool.Value)")) }
-    $lines.Add('zig=' + (Get-ToolStamp $zigExe))
-    $lines.Add("SPIRAL_CXX=$env:SPIRAL_CXX")
-    Get-TextKey ($lines -join "`n")
+    $backendPieces = [Collections.Generic.List[object]]::new()
+    foreach ($node in $buildAndRun.FindAll({ param($n) $n -is [System.Management.Automation.Language.IfStatementAst] -and $n.Clauses.Count -eq 1 -and $n.Clauses[0].Item1.Extent.Text -match "^\`$job\.Backend -eq '(\w+)'$" }, $true)) {
+        $null = $node.Clauses[0].Item1.Extent.Text -match "'(\w+)'"
+        $backendPieces.Add([pscustomobject]@{ Backend = $Matches[1]; Start = $node.Extent.StartOffset; End = $node.Extent.EndOffset; Text = $node.Extent.Text })
+    }
+    foreach ($switch in $buildAndRun.FindAll({ param($n) $n -is [System.Management.Automation.Language.SwitchStatementAst] -and $n.Condition.Extent.Text -eq '$job.Backend' }, $true)) {
+        foreach ($clause in $switch.Clauses) {
+            $backendPieces.Add([pscustomobject]@{ Backend = $clause.Item1.Extent.Text.Trim("'", '"'); Start = $clause.Item1.Extent.StartOffset; End = $clause.Item2.Extent.EndOffset; Text = $clause.Item1.Extent.Text + ' ' + $clause.Item2.Extent.Text })
+        }
+    }
+    $outermost = [Collections.Generic.List[object]]::new()
+    foreach ($piece in @($backendPieces | Sort-Object Start, @{ Expression = 'End'; Descending = $true })) {
+        if ($outermost.Count -and $piece.Start -lt $outermost[$outermost.Count - 1].End) { continue }
+        $outermost.Add($piece)
+    }
+    $sharedText = $buildAndRun.Extent.Text
+    $functionStart = $buildAndRun.Extent.StartOffset
+    foreach ($piece in @($outermost | Sort-Object Start -Descending)) {
+        $sharedText = $sharedText.Remove($piece.Start - $functionStart, $piece.End - $piece.Start)
+    }
+    $commonCode = $sharedText + "`n" + ($otherNativeCode -join "`n")
+    $toolNamesIn = { param([string]$text)
+        $names = @([regex]::Matches($text, '\$tools\.(\w+)') | ForEach-Object { $_.Groups[1].Value })
+        if ($text.Contains('$zigExe')) { $names += 'Zig' }
+        $names | Where-Object { $_ -ne 'PSObject' } | Sort-Object -Unique
+    }
+    $commonTools = @(& $toolNamesIn $commonCode)
+    $stampOf = { param([string]$name) if ($name -eq 'Zig') { Get-ToolStamp $zigExe } else { Get-ToolStamp "$($tools.$name)" } }
+    $keyFor = { param([string]$ownCode)
+        $lines = [Collections.Generic.List[string]]::new()
+        $lines.Add('native code=' + (Get-TextKey ($commonCode + "`n" + $ownCode)))
+        foreach ($name in @(@($commonTools) + @(& $toolNamesIn $ownCode) | Sort-Object -Unique)) { $lines.Add("$name=" + (& $stampOf $name)) }
+        $lines.Add("SPIRAL_CXX=$env:SPIRAL_CXX")
+        Get-TextKey ($lines -join "`n")
+    }
+    $signature = @{}
+    foreach ($group in @($outermost | Group-Object Backend)) {
+        $signature[$group.Name] = & $keyFor (($group.Group | Sort-Object Start | ForEach-Object Text) -join "`n")
+    }
+    $signature['*'] = & $keyFor (($outermost | Sort-Object Start | ForEach-Object Text) -join "`n")
+    $signature
 }
 $shimsByBackend = @{
     TypeScript = @('run_main.mjs'); Lua = @('run_main.lua'); Python = @('run_main.py'); Cpp = @('cpp_native.py')
@@ -406,7 +443,8 @@ function Get-NativeMemoKey($job, [string]$signature) {
     $flags = if ($job.Backend -eq 'C') { (Get-CFlags $job) -join ' ' } else { '' }
     $ownShim = Join-Path (Split-Path $job.Input) 'c-shim.h'
     $ownShimHash = if ($job.Backend -eq 'C' -and (Test-Path -LiteralPath $ownShim)) { Get-FileSha256 $ownShim } else { '' }
-    Get-TextKey "$signature`n$($job.Backend)`n$(Get-ShimKey $job.Backend)`n$(Get-FileSha256 $job.Output)`n$flags`n$ownShimHash"
+    $backendSignature = if ($signature -is [hashtable]) { if ($signature.ContainsKey($job.Backend)) { $signature[$job.Backend] } else { $signature['*'] } } else { $signature }
+    Get-TextKey "$backendSignature`n$($job.Backend)`n$(Get-ShimKey $job.Backend)`n$(Get-FileSha256 $job.Output)`n$flags`n$ownShimHash"
 }
 function Invoke-Native([string]$exe, [string[]]$arguments, [string]$workDir, [int]$timeoutSec, [string]$PathPrefix) {
     $info = [Diagnostics.ProcessStartInfo]::new($exe)
@@ -669,7 +707,7 @@ function Build-And-Run($job) {
     $build = switch ($job.Backend) {
         'C' { if (-not $tools.CC) { return 'no-toolchain' }; Invoke-Native $tools.CC (@('-std=c11', '-O2', '-fwrapv', '-w') + (Get-CFlags $job) + @('-o', $exe, $job.Output, '-lm')) $dir 120 }
         'Ebpf' { if (-not $tools.CC) { return 'no-toolchain' }; Invoke-Native $tools.CC (@('-std=c11', '-O2', '-fwrapv', '-w', '-x', 'c') + @('-o', $exe, $job.Output, '-lm')) $dir 120 }
-        'Rust' { if (-not $tools.Rustc) { return 'no-toolchain' }; Invoke-Native $tools.Rustc @('+1.99.0', '-C', 'opt-level=2', '-A', 'warnings', '--edition', '2024', '-o', $exe, $job.Output) $dir 180 }
+        'Rust' { if (-not $tools.Rustc) { return 'no-toolchain' }; Invoke-Native $tools.Rustc @('+nightly-2026-10-18', '-C', 'opt-level=2', '-A', 'warnings', '--edition', '2024', '-o', $exe, $job.Output) $dir 180 }
         'Delphi' { if (-not $tools.Fpc) { return 'no-toolchain' }; Invoke-Native $tools.Fpc @('-O2', '-Mdelphi', "-FE$binDir", "-FU$binDir", "-o$exe", $job.Output) $dir 180 }
         'Zig' {
             if (-not $zigExe) { return 'no-toolchain' }
@@ -746,8 +784,9 @@ if ($Native) {
                 continue
             }
             $sha = if ($w.Status -eq 'ran') { [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($w.Stdout))).ToLowerInvariant().Substring(0, 16) } else { '' }
-            $nativeResults[$entry.Job.Key] = [pscustomobject]@{ Status = $w.Status; Exit = $w.Exit; Stdout = $sha; Detail = $w.Detail; Ms = $w.Ms; RunMs = $w.Ms }
-            Write-Host ("native {0} Fsharp: {1} exit {2} ({3:N1}s, warm)" -f $entry.Job.Id, $w.Status, $w.Exit, ($w.Ms / 1000))
+            $processExit = if ($IsWindows -or $w.Exit -isnot [int]) { $w.Exit } else { $w.Exit -band 255 }
+            $nativeResults[$entry.Job.Key] = [pscustomobject]@{ Status = $w.Status; Exit = $processExit; Stdout = $sha; Detail = $w.Detail; Ms = $w.Ms; RunMs = $w.Ms }
+            Write-Host ("native {0} Fsharp: {1} exit {2} ({3:N1}s, warm)" -f $entry.Job.Id, $w.Status, $processExit, ($w.Ms / 1000))
         }
         $nativeJobs = @($nativeJobs | Where-Object { $_.Backend -ne 'Fsharp' -or $fsharpColdKeys.Contains($_.Key) })
         $fsharpWarmJobs = @($fsharpWarmJobs | Where-Object { -not $fsharpColdKeys.Contains($_.Key) })
@@ -963,7 +1002,8 @@ foreach ($name in $oracles) { if ($name -notin 'C', 'Zig', 'Rust', 'Delphi', 'Wa
 $Oracle = $oracles[0]
 function Get-ScopedKnown([string]$OracleName) {
     $scoped = @{}
-    $matrix.Known | Where-Object { -not $_.ContainsKey('Oracle') -or $_['Oracle'] -eq $OracleName } | ForEach-Object { $scoped["$($_.Id)|$($_.Backend)"] = $_.Reason }
+    $platform = if ($IsWindows) { 'Windows' } else { 'Linux' }
+    $matrix.Known | Where-Object { (-not $_.ContainsKey('Oracle') -or $_['Oracle'] -eq $OracleName) -and (-not $_.ContainsKey('Platform') -or $_['Platform'] -eq $platform) } | ForEach-Object { $scoped["$($_.Id)|$($_.Backend)"] = $_.Reason }
     $scoped
 }
 $known = Get-ScopedKnown $Oracle
@@ -1062,12 +1102,15 @@ if ($Accept) {
     foreach ($row in $acceptRows) { $fresh["$($row.id)|$($row.backend)"] = $row }
     $scheduled = @{}
     if ($Suite -contains 'all' -and -not $Filter) { foreach ($sample in $samples) { $scheduled[$sample.Id] = @($scheduled[$sample.Id]) + @($sample.Backends) | Where-Object { $_ } | Select-Object -Unique } }
-    $unscheduled = @($existing | Where-Object { $scheduled.ContainsKey($_.id) -and $scheduled[$_.id] -notcontains $_.backend })
+    $fullSchedule = $Suite -contains 'all' -and -not $Filter
+    $unscheduled = @($existing | Where-Object { ($scheduled.ContainsKey($_.id) -and $scheduled[$_.id] -notcontains $_.backend) -or ($fullSchedule -and -not $scheduled.ContainsKey($_.id)) })
     if ($unscheduled) {
-        Write-Host "dropped $($unscheduled.Count) oracle row(s) whose backend the matrix no longer schedules for the sample:" -ForegroundColor Yellow
+        Write-Host "dropped $($unscheduled.Count) oracle row(s) whose sample or backend the matrix no longer schedules:" -ForegroundColor Yellow
         $unscheduled | ForEach-Object { Write-Host "  $($_.id) [$($_.backend)]" }
     }
-    $kept = @($existing | Where-Object { -not $fresh.ContainsKey("$($_.id)|$($_.backend)") -and -not ($scheduled.ContainsKey($_.id) -and $scheduled[$_.id] -notcontains $_.backend) })
+    $dropped = @{}
+    foreach ($row in $unscheduled) { $dropped["$($row.id)|$($row.backend)"] = $true }
+    $kept = @($existing | Where-Object { -not $fresh.ContainsKey("$($_.id)|$($_.backend)") -and -not $dropped.ContainsKey("$($_.id)|$($_.backend)") })
     $merged = $kept + @($acceptRows | ForEach-Object {
         [pscustomobject]@{ id = $_.id; backend = $_.backend; compile = $_.compile; residual = $_.residual; native = $_.native; exit = $_.exit; stdout = $_.stdout } })
     New-Item -ItemType Directory -Force (Split-Path $expectedPath) | Out-Null

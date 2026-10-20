@@ -107,8 +107,8 @@ test integration_2 =
 inl integral'' dt : integration =
     fun f x y =>
         am'.init_series (x + dt / 2) (y - dt / 2) dt
-        |> fun x => a x : _ int _
-        |> am.map (f >> (*) dt)
+        |> fun x => array x : array _
+        |> arraym.map (f >> (*) dt)
         |> am'.sum
 
 test integration_3 =
@@ -1031,7 +1031,7 @@ test wave_1 =
 
         inl n = 0i32
 
-        inl x, y = a frames |> am'.index n
+        inl x, y = array frames |> am'.index n
 
         "wave",
         "position (m)",

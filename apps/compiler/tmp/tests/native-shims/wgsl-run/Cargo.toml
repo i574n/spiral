@@ -6,4 +6,4 @@ publish = false
 
 [dependencies]
 pollster = "0.4"
-wgpu = "24"
+wgpu = "30"

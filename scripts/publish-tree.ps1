@@ -33,5 +33,10 @@ Get-ChildItem -Path dist -Recurse -Force | Where-Object { $_.Name.StartsWith("."
     Rename-Item -Path $_.FullName -NewName "_$($_.Name.Substring(1))"
 }
 
-{ & $renderer --dir dist --html dist/index.html } | Invoke-Block
+& $renderer --dir dist --html dist/index.html
+$rendererExitCode = $LASTEXITCODE
 Remove-Item $renderer -Force -ErrorAction Ignore
+if ($rendererExitCode -ne 0) {
+    Remove-Item dist -Recurse -Force -ErrorAction Ignore
+    throw "publish-tree.ps1 / dir-tree-html failed (exit code $rendererExitCode); dist removed so the push job keeps the last good page"
+}

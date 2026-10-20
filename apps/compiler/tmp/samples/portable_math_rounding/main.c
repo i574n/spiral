@@ -43,14 +43,10 @@ int32_t main(){
     
     
     bool v8;
-    v8 = v7 == 2.0;
+    v8 = v7 != 2.0;
     
     
-    bool v9;
-    v9 = v8 != true;
-    
-    
-    if (v9){
+    if (v8){
         
         
         return 1l;
@@ -60,19 +56,15 @@ int32_t main(){
         
         
         
-        double v10;
-        v10 = ceil(v0);
+        double v9;
+        v9 = ceil(v0);
         
         
-        bool v11;
-        v11 = v10 == 3.0;
+        bool v10;
+        v10 = v9 != 3.0;
         
         
-        bool v12;
-        v12 = v11 != true;
-        
-        
-        if (v12){
+        if (v10){
             
             
             return 2l;
@@ -82,86 +74,82 @@ int32_t main(){
             
             
             
-            double v13;
-            v13 = floor(v0);
+            double v11;
+            v11 = floor(v0);
             
             
-            double v14;
-            v14 = v0 - v13;
+            double v12;
+            v12 = v0 - v11;
             
             
-            bool v15;
-            v15 = v14 > 0.5;
+            bool v13;
+            v13 = v12 > 0.5;
             
             
-            double v25;
-            if (v15){
+            double v23;
+            if (v13){
                 
                 
-                double v16;
-                v16 = v13 + 1.0;
+                double v14;
+                v14 = v11 + 1.0;
                 
                 
-                v25 = v16;
+                v23 = v14;
             } else {
                 
                 
-                bool v17;
-                v17 = v14 < 0.5;
+                bool v15;
+                v15 = v12 < 0.5;
                 
                 
-                if (v17){
+                if (v15){
                     
                     
-                    v25 = v13;
+                    v23 = v11;
                 } else {
                     
                     
+                    double v16;
+                    v16 = v11 / 2.0;
+                    
+                    
+                    
+                    
+                    
+                    double v17;
+                    v17 = floor(v16);
+                    
+                    
                     double v18;
-                    v18 = v13 / 2.0;
+                    v18 = v17 * 2.0;
                     
                     
+                    bool v19;
+                    v19 = v18 == v11;
                     
                     
-                    
-                    double v19;
-                    v19 = floor(v18);
-                    
-                    
-                    double v20;
-                    v20 = v19 * 2.0;
-                    
-                    
-                    bool v21;
-                    v21 = v20 == v13;
-                    
-                    
-                    if (v21){
+                    if (v19){
                         
                         
-                        v25 = v13;
+                        v23 = v11;
                     } else {
                         
                         
-                        double v22;
-                        v22 = v13 + 1.0;
+                        double v20;
+                        v20 = v11 + 1.0;
                         
                         
-                        v25 = v22;
+                        v23 = v20;
                     }
                 }
             }
             
             
-            bool v26;
-            v26 = v25 == 3.0;
+            bool v24;
+            v24 = v23 != 3.0;
             
             
-            bool v27;
-            v27 = v26 != true;
-            
-            
-            if (v27){
+            if (v24){
                 
                 
                 return 3l;
@@ -171,86 +159,82 @@ int32_t main(){
                 
                 
                 
-                double v28;
-                v28 = floor(v1);
+                double v25;
+                v25 = floor(v1);
                 
                 
-                double v29;
-                v29 = v1 - v28;
+                double v26;
+                v26 = v1 - v25;
                 
                 
-                bool v30;
-                v30 = v29 > 0.5;
+                bool v27;
+                v27 = v26 > 0.5;
                 
                 
-                double v40;
-                if (v30){
+                double v37;
+                if (v27){
                     
                     
-                    double v31;
-                    v31 = v28 + 1.0;
+                    double v28;
+                    v28 = v25 + 1.0;
                     
                     
-                    v40 = v31;
+                    v37 = v28;
                 } else {
                     
                     
-                    bool v32;
-                    v32 = v29 < 0.5;
+                    bool v29;
+                    v29 = v26 < 0.5;
                     
                     
-                    if (v32){
+                    if (v29){
                         
                         
-                        v40 = v28;
+                        v37 = v25;
                     } else {
                         
                         
-                        double v33;
-                        v33 = v28 / 2.0;
+                        double v30;
+                        v30 = v25 / 2.0;
                         
                         
                         
                         
                         
-                        double v34;
-                        v34 = floor(v33);
+                        double v31;
+                        v31 = floor(v30);
                         
                         
-                        double v35;
-                        v35 = v34 * 2.0;
+                        double v32;
+                        v32 = v31 * 2.0;
                         
                         
-                        bool v36;
-                        v36 = v35 == v28;
+                        bool v33;
+                        v33 = v32 == v25;
                         
                         
-                        if (v36){
+                        if (v33){
                             
                             
-                            v40 = v28;
+                            v37 = v25;
                         } else {
                             
                             
-                            double v37;
-                            v37 = v28 + 1.0;
+                            double v34;
+                            v34 = v25 + 1.0;
                             
                             
-                            v40 = v37;
+                            v37 = v34;
                         }
                     }
                 }
                 
                 
-                bool v41;
-                v41 = v40 == 3.0;
+                bool v38;
+                v38 = v37 != 3.0;
                 
                 
-                bool v42;
-                v42 = v41 != true;
-                
-                
-                if (v42){
+                if (v38){
                     
                     
                     return 4l;
@@ -260,86 +244,82 @@ int32_t main(){
                     
                     
                     
-                    double v43;
-                    v43 = floor(v2);
+                    double v39;
+                    v39 = floor(v2);
                     
                     
-                    double v44;
-                    v44 = v2 - v43;
+                    double v40;
+                    v40 = v2 - v39;
                     
                     
-                    bool v45;
-                    v45 = v44 > 0.5;
+                    bool v41;
+                    v41 = v40 > 0.5;
                     
                     
-                    double v55;
-                    if (v45){
+                    double v51;
+                    if (v41){
                         
                         
-                        double v46;
-                        v46 = v43 + 1.0;
+                        double v42;
+                        v42 = v39 + 1.0;
                         
                         
-                        v55 = v46;
+                        v51 = v42;
                     } else {
                         
                         
-                        bool v47;
-                        v47 = v44 < 0.5;
+                        bool v43;
+                        v43 = v40 < 0.5;
                         
                         
-                        if (v47){
+                        if (v43){
                             
                             
-                            v55 = v43;
+                            v51 = v39;
                         } else {
                             
                             
-                            double v48;
-                            v48 = v43 / 2.0;
+                            double v44;
+                            v44 = v39 / 2.0;
                             
                             
                             
                             
                             
-                            double v49;
-                            v49 = floor(v48);
+                            double v45;
+                            v45 = floor(v44);
                             
                             
-                            double v50;
-                            v50 = v49 * 2.0;
+                            double v46;
+                            v46 = v45 * 2.0;
                             
                             
-                            bool v51;
-                            v51 = v50 == v43;
+                            bool v47;
+                            v47 = v46 == v39;
                             
                             
-                            if (v51){
+                            if (v47){
                                 
                                 
-                                v55 = v43;
+                                v51 = v39;
                             } else {
                                 
                                 
-                                double v52;
-                                v52 = v43 + 1.0;
+                                double v48;
+                                v48 = v39 + 1.0;
                                 
                                 
-                                v55 = v52;
+                                v51 = v48;
                             }
                         }
                     }
                     
                     
-                    bool v56;
-                    v56 = v55 == -2.0;
+                    bool v52;
+                    v52 = v51 != -2.0;
                     
                     
-                    bool v57;
-                    v57 = v56 != true;
-                    
-                    
-                    if (v57){
+                    if (v52){
                         
                         
                         return 5l;
@@ -349,86 +329,82 @@ int32_t main(){
                         
                         
                         
-                        double v58;
-                        v58 = floor(v3);
+                        double v53;
+                        v53 = floor(v3);
                         
                         
-                        double v59;
-                        v59 = v3 - v58;
+                        double v54;
+                        v54 = v3 - v53;
                         
                         
-                        bool v60;
-                        v60 = v59 > 0.5;
+                        bool v55;
+                        v55 = v54 > 0.5;
                         
                         
-                        double v70;
-                        if (v60){
+                        double v65;
+                        if (v55){
                             
                             
-                            double v61;
-                            v61 = v58 + 1.0;
+                            double v56;
+                            v56 = v53 + 1.0;
                             
                             
-                            v70 = v61;
+                            v65 = v56;
                         } else {
                             
                             
-                            bool v62;
-                            v62 = v59 < 0.5;
+                            bool v57;
+                            v57 = v54 < 0.5;
                             
                             
-                            if (v62){
+                            if (v57){
                                 
                                 
-                                v70 = v58;
+                                v65 = v53;
                             } else {
                                 
                                 
-                                double v63;
-                                v63 = v58 / 2.0;
+                                double v58;
+                                v58 = v53 / 2.0;
                                 
                                 
                                 
                                 
                                 
-                                double v64;
-                                v64 = floor(v63);
+                                double v59;
+                                v59 = floor(v58);
                                 
                                 
-                                double v65;
-                                v65 = v64 * 2.0;
+                                double v60;
+                                v60 = v59 * 2.0;
                                 
                                 
-                                bool v66;
-                                v66 = v65 == v58;
+                                bool v61;
+                                v61 = v60 == v53;
                                 
                                 
-                                if (v66){
+                                if (v61){
                                     
                                     
-                                    v70 = v58;
+                                    v65 = v53;
                                 } else {
                                     
                                     
-                                    double v67;
-                                    v67 = v58 + 1.0;
+                                    double v62;
+                                    v62 = v53 + 1.0;
                                     
                                     
-                                    v70 = v67;
+                                    v65 = v62;
                                 }
                             }
                         }
                         
                         
-                        bool v71;
-                        v71 = v70 == 4.0;
+                        bool v66;
+                        v66 = v65 != 4.0;
                         
                         
-                        bool v72;
-                        v72 = v71 != true;
-                        
-                        
-                        if (v72){
+                        if (v66){
                             
                             
                             return 6l;
@@ -438,86 +414,82 @@ int32_t main(){
                             
                             
                             
-                            double v73;
-                            v73 = floor(v4);
+                            double v67;
+                            v67 = floor(v4);
                             
                             
-                            double v74;
-                            v74 = v4 - v73;
+                            double v68;
+                            v68 = v4 - v67;
                             
                             
-                            bool v75;
-                            v75 = v74 > 0.5;
+                            bool v69;
+                            v69 = v68 > 0.5;
                             
                             
-                            double v85;
-                            if (v75){
+                            double v79;
+                            if (v69){
                                 
                                 
-                                double v76;
-                                v76 = v73 + 1.0;
+                                double v70;
+                                v70 = v67 + 1.0;
                                 
                                 
-                                v85 = v76;
+                                v79 = v70;
                             } else {
                                 
                                 
-                                bool v77;
-                                v77 = v74 < 0.5;
+                                bool v71;
+                                v71 = v68 < 0.5;
                                 
                                 
-                                if (v77){
+                                if (v71){
                                     
                                     
-                                    v85 = v73;
+                                    v79 = v67;
                                 } else {
                                     
                                     
-                                    double v78;
-                                    v78 = v73 / 2.0;
+                                    double v72;
+                                    v72 = v67 / 2.0;
                                     
                                     
                                     
                                     
                                     
-                                    double v79;
-                                    v79 = floor(v78);
+                                    double v73;
+                                    v73 = floor(v72);
                                     
                                     
-                                    double v80;
-                                    v80 = v79 * 2.0;
+                                    double v74;
+                                    v74 = v73 * 2.0;
                                     
                                     
-                                    bool v81;
-                                    v81 = v80 == v73;
+                                    bool v75;
+                                    v75 = v74 == v67;
                                     
                                     
-                                    if (v81){
+                                    if (v75){
                                         
                                         
-                                        v85 = v73;
+                                        v79 = v67;
                                     } else {
                                         
                                         
-                                        double v82;
-                                        v82 = v73 + 1.0;
+                                        double v76;
+                                        v76 = v67 + 1.0;
                                         
                                         
-                                        v85 = v82;
+                                        v79 = v76;
                                     }
                                 }
                             }
                             
                             
-                            bool v86;
-                            v86 = v85 == 0.0;
+                            bool v80;
+                            v80 = v79 != 0.0;
                             
                             
-                            bool v87;
-                            v87 = v86 != true;
-                            
-                            
-                            if (v87){
+                            if (v80){
                                 
                                 
                                 return 7l;
@@ -527,30 +499,26 @@ int32_t main(){
                                 
                                 
                                 
-                                double v88;
-                                v88 = atan2(v5, v5);
+                                double v81;
+                                v81 = atan2(v5, v5);
                                 
                                 
-                                double v89;
-                                v89 = v88 * 1000.0;
+                                double v82;
+                                v82 = v81 * 1000.0;
                                 
                                 
                                 
                                 
                                 
-                                double v90;
-                                v90 = floor(v89);
+                                double v83;
+                                v83 = floor(v82);
                                 
                                 
-                                bool v91;
-                                v91 = v90 == 785.0;
+                                bool v84;
+                                v84 = v83 != 785.0;
                                 
                                 
-                                bool v92;
-                                v92 = v91 != true;
-                                
-                                
-                                if (v92){
+                                if (v84){
                                     
                                     
                                     return 8l;
@@ -560,19 +528,15 @@ int32_t main(){
                                     
                                     
                                     
-                                    float v93;
-                                    v93 = floor(v6);
+                                    float v85;
+                                    v85 = floor(v6);
                                     
                                     
-                                    bool v94;
-                                    v94 = v93 == 2.0f;
+                                    bool v86;
+                                    v86 = v85 != 2.0f;
                                     
                                     
-                                    bool v95;
-                                    v95 = v94 != true;
-                                    
-                                    
-                                    if (v95){
+                                    if (v86){
                                         
                                         
                                         return 9l;

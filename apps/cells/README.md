@@ -227,6 +227,8 @@ the way the matrix builds its Delphi rows: `fpc -O2 -Mdelphi` (`SPIRAL_FPC`, `fp
 A cell's `///>` lines are its whole target list (no Rust run beside them).
 A test without `///>` lines runs on its file's default targets: the `///>` lines of the file's `static` prelude test
 (`///> c` above `test prelude static =`), else `SPIRAL_CELLS_DEFAULT_TARGET` (or `default_target:`, e.g. `fsharp`).
+A test with its own `///>` lines keeps them and also inherits the `-d` crates of the default target with the same tool
+(`///> rust -d serde_json` on the prelude gives every `///> rust` test of the file `serde_json`).
 With none of those, a test without `///>` lines fails with `test <name> has no ///> target` instead of running on Zig,
 the default every other cell still gets; `mix spiral.targets <paths> [--check]` lists such tests without running anything.
 `SPIRAL_CELLS_DEFAULT_TARGET=rust` keeps the Rust host (an empty variable is unset on Windows); `default_target: ""` does too.
@@ -281,6 +283,9 @@ matching message without any `E...` code fails too and says so. In a notebook th
 number or the diagnostic's case name (`EJP0040`, `ETY-TermError`) and must match whole: `ETY-Term` does not match
 `ETY-TermError`. The type checker names its codes after the error case, so
 `test rejects_mixed_units fails ETY-TermError "Unification failure" =` pins both.
+The matching diagnostic must also be located in the test's own body (at or after the program line that holds the body's
+first line): a definition before the block that fails with the same message makes the test fail with
+`reported only before the test body`, so a broken module can no longer make an unrelated negative pass.
 
 ### Build-only tests
 
@@ -313,11 +318,14 @@ way on every backend, so for them the union and collection rules only matter for
 `__assert_eq { actual = A; expected = E }`: inside that test's block, the failing `_assert_eq E` literal becomes `A`, its
 type suffix kept (`_assert_eq 5i32` -> `_assert_eq 4i32`), under a `<file>.accept.lock`. The literal rewritten is the failing
 assert's own: with `k` passing `__assert_eq { expected = ... }` lines in the output, it is the `k+1`-th `_assert_eq` written in the
-test's block, and it must be the literal `E` (otherwise the test is refused), so equal literals elsewhere are never touched. An accepted test is run again, and accepted again, until it passes or fails in a way that cannot be
+test's block, and it must be the literal `E` (otherwise the test is refused), so equal literals elsewhere are never touched. A flat
+tuple of plain literals is rewritten element by element, each element keeping its own suffix
+(`_assert_eq (0i32, 0u32)` -> `_assert_eq (3i32, 4u32)`); a nested tuple is refused, since it prints flattened. An accepted test is run again, and accepted again, until it passes or fails in a way that cannot be
 accepted (at most 25 rounds), so every assertion of the test is pinned in one run. Such tests report `accepted` (counted in
 `executed` and `accepted`), and the run passes when nothing else failed. A test fails, with `accept_refused` saying why,
 when its block has no matching literal, two on one line, a literal that ran more often than it is written (a loop or a
-helper), an actual value that is not a plain literal, or a later failure that is no mismatch. Without the flag a mismatch
+helper), an actual value that is neither a plain literal nor a flat tuple of them, or a later failure that is no mismatch. Each
+`spiral-tests file` summary line carries those reasons as `accept_refused` (test name -> reason). Without the flag a mismatch
 fails and the file is not touched.
 
 ### X compatibility

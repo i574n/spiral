@@ -22,8 +22,9 @@ and method5 (v0 : bool, v1 : float32, v2 : int32) : int32 =
             1
     else
         2
-and method7 (v0 : string) : bool =
-    true
+and method7 (v0 : string, v1 : string) : bool =
+    let v2 : bool = v0 = v1
+    v2
 and method9 (v0 : uint32) : bool =
     let v1 : uint32 = v0 + 5u
     let v2 : uint32 = v1 % 4u
@@ -50,7 +51,7 @@ and method8 (v0 : int32) : int32 =
         1
 and method6 (v0 : int32) : int32 =
     let v1 : string = "spiral"
-    let v2 : bool = method7(v1)
+    let v2 : bool = method7(v1, v1)
     if v2 then
         method8(v0)
     else

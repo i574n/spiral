@@ -265,340 +265,7 @@ partial def utf8_scalar_at_byte_offset_1 (p0 : String) (p1 : Int32) : IO Int32 :
                                         spiralFail "UTF-8 sequence has an invalid continuation byte."
                             else
                                 spiralFail "UTF-8 scalar starts with an invalid lead byte."
-partial def utf8_canonical_equal_bounded_loop_0 (p0 : String) (p1 : Int32) (p2 : Int32) (p3 : Int32) (p4 : Int32) (p5 : Int32) (p6 : Int32) : IO Bool := do
-    let mut v0 : String := p0
-    let mut v1 : Int32 := p1
-    let mut v2 : Int32 := p2
-    let mut v3 : Int32 := p3
-    let mut v4 : Int32 := p4
-    let mut v5 : Int32 := p5
-    let mut v6 : Int32 := p6
-    let mut v7 : Bool := default
-    let mut v75 : Int32 := default
-    let mut v76 : Int32 := default
-    let mut v77 : Int32 := default
-    let mut v8 : Bool := default
-    let mut v9 : Bool := default
-    let mut v13 : Int32 := default
-    let mut v14 : Bool := default
-    let mut v19 : Int32 := default
-    let mut v15 : Bool := default
-    let mut v16 : Bool := default
-    let mut v20 : Bool := default
-    let mut v66 : Int32 := default
-    let mut v67 : Int32 := default
-    let mut v21 : Bool := default
-    let mut v22 : Bool := default
-    let mut v23 : Bool := default
-    let mut v24 : Bool := default
-    let mut v25 : Bool := default
-    let mut v26 : Bool := default
-    let mut v27 : Bool := default
-    let mut v28 : Bool := default
-    let mut v29 : Bool := default
-    let mut v30 : Bool := default
-    let mut v31 : Bool := default
-    let mut v32 : Bool := default
-    let mut v33 : Bool := default
-    let mut v34 : Bool := default
-    let mut v35 : Bool := default
-    let mut v68 : Int32 := default
-    let mut v78 : Bool := default
-    let mut v146 : Int32 := default
-    let mut v147 : Int32 := default
-    let mut v148 : Int32 := default
-    let mut v79 : Bool := default
-    let mut v80 : Bool := default
-    let mut v84 : Int32 := default
-    let mut v85 : Bool := default
-    let mut v90 : Int32 := default
-    let mut v86 : Bool := default
-    let mut v87 : Bool := default
-    let mut v91 : Bool := default
-    let mut v137 : Int32 := default
-    let mut v138 : Int32 := default
-    let mut v92 : Bool := default
-    let mut v93 : Bool := default
-    let mut v94 : Bool := default
-    let mut v95 : Bool := default
-    let mut v96 : Bool := default
-    let mut v97 : Bool := default
-    let mut v98 : Bool := default
-    let mut v99 : Bool := default
-    let mut v100 : Bool := default
-    let mut v101 : Bool := default
-    let mut v102 : Bool := default
-    let mut v103 : Bool := default
-    let mut v104 : Bool := default
-    let mut v105 : Bool := default
-    let mut v106 : Bool := default
-    let mut v139 : Int32 := default
-    let mut v149 : Bool := default
-    let mut v150 : Bool := default
-    let mut v151 : Bool := default
-    let mut v152 : Bool := default
-    repeat
-        v7 := (decide (v3 >= (0 : Int32)))
-        if v7 then
-            v75 := v3
-            v76 := v1
-            v77 := (-1 : Int32)
-        else
-            v8 := (v1 == v5)
-            if v8 then
-                v75 := (-1 : Int32)
-                v76 := v1
-                v77 := (-1 : Int32)
-            else
-                v9 := (decide (v1 > v5))
-                if v9 then
-                    spiralFail "UTF-8 canonical stream offset exceeds the string."
-                else
-                    v13 := (← utf8_scalar_at_byte_offset_1 v0 v1)
-                    v14 := (decide (v13 < (128 : Int32)))
-                    if v14 then
-                        v19 := (1 : Int32)
-                    else
-                        v15 := (decide (v13 < (2048 : Int32)))
-                        if v15 then
-                            v19 := (2 : Int32)
-                        else
-                            v16 := (decide (v13 < (65536 : Int32)))
-                            if v16 then
-                                v19 := (3 : Int32)
-                            else
-                                v19 := (4 : Int32)
-                    v20 := (v13 == (192 : Int32))
-                    if v20 then
-                        v66 := (65 : Int32)
-                        v67 := (768 : Int32)
-                    else
-                        v21 := (v13 == (193 : Int32))
-                        if v21 then
-                            v66 := (65 : Int32)
-                            v67 := (769 : Int32)
-                        else
-                            v22 := (v13 == (195 : Int32))
-                            if v22 then
-                                v66 := (65 : Int32)
-                                v67 := (771 : Int32)
-                            else
-                                v23 := (v13 == (196 : Int32))
-                                if v23 then
-                                    v66 := (65 : Int32)
-                                    v67 := (776 : Int32)
-                                else
-                                    v24 := (v13 == (199 : Int32))
-                                    if v24 then
-                                        v66 := (67 : Int32)
-                                        v67 := (807 : Int32)
-                                    else
-                                        v25 := (v13 == (201 : Int32))
-                                        if v25 then
-                                            v66 := (69 : Int32)
-                                            v67 := (769 : Int32)
-                                        else
-                                            v26 := (v13 == (211 : Int32))
-                                            if v26 then
-                                                v66 := (79 : Int32)
-                                                v67 := (769 : Int32)
-                                            else
-                                                v27 := (v13 == (213 : Int32))
-                                                if v27 then
-                                                    v66 := (79 : Int32)
-                                                    v67 := (771 : Int32)
-                                                else
-                                                    v28 := (v13 == (224 : Int32))
-                                                    if v28 then
-                                                        v66 := (97 : Int32)
-                                                        v67 := (768 : Int32)
-                                                    else
-                                                        v29 := (v13 == (225 : Int32))
-                                                        if v29 then
-                                                            v66 := (97 : Int32)
-                                                            v67 := (769 : Int32)
-                                                        else
-                                                            v30 := (v13 == (227 : Int32))
-                                                            if v30 then
-                                                                v66 := (97 : Int32)
-                                                                v67 := (771 : Int32)
-                                                            else
-                                                                v31 := (v13 == (228 : Int32))
-                                                                if v31 then
-                                                                    v66 := (97 : Int32)
-                                                                    v67 := (776 : Int32)
-                                                                else
-                                                                    v32 := (v13 == (231 : Int32))
-                                                                    if v32 then
-                                                                        v66 := (99 : Int32)
-                                                                        v67 := (807 : Int32)
-                                                                    else
-                                                                        v33 := (v13 == (233 : Int32))
-                                                                        if v33 then
-                                                                            v66 := (101 : Int32)
-                                                                            v67 := (769 : Int32)
-                                                                        else
-                                                                            v34 := (v13 == (243 : Int32))
-                                                                            if v34 then
-                                                                                v66 := (111 : Int32)
-                                                                                v67 := (769 : Int32)
-                                                                            else
-                                                                                v35 := (v13 == (245 : Int32))
-                                                                                if v35 then
-                                                                                    v66 := (111 : Int32)
-                                                                                    v67 := (771 : Int32)
-                                                                                else
-                                                                                    v66 := v13
-                                                                                    v67 := (-1 : Int32)
-                    v68 := (v1 + v19)
-                    v75 := v66
-                    v76 := v68
-                    v77 := v67
-        v78 := (decide (v4 >= (0 : Int32)))
-        if v78 then
-            v146 := v4
-            v147 := v2
-            v148 := (-1 : Int32)
-        else
-            v79 := (v2 == v6)
-            if v79 then
-                v146 := (-1 : Int32)
-                v147 := v2
-                v148 := (-1 : Int32)
-            else
-                v80 := (decide (v2 > v6))
-                if v80 then
-                    spiralFail "UTF-8 canonical stream offset exceeds the string."
-                else
-                    v84 := (← utf8_scalar_at_byte_offset_1 v0 v2)
-                    v85 := (decide (v84 < (128 : Int32)))
-                    if v85 then
-                        v90 := (1 : Int32)
-                    else
-                        v86 := (decide (v84 < (2048 : Int32)))
-                        if v86 then
-                            v90 := (2 : Int32)
-                        else
-                            v87 := (decide (v84 < (65536 : Int32)))
-                            if v87 then
-                                v90 := (3 : Int32)
-                            else
-                                v90 := (4 : Int32)
-                    v91 := (v84 == (192 : Int32))
-                    if v91 then
-                        v137 := (65 : Int32)
-                        v138 := (768 : Int32)
-                    else
-                        v92 := (v84 == (193 : Int32))
-                        if v92 then
-                            v137 := (65 : Int32)
-                            v138 := (769 : Int32)
-                        else
-                            v93 := (v84 == (195 : Int32))
-                            if v93 then
-                                v137 := (65 : Int32)
-                                v138 := (771 : Int32)
-                            else
-                                v94 := (v84 == (196 : Int32))
-                                if v94 then
-                                    v137 := (65 : Int32)
-                                    v138 := (776 : Int32)
-                                else
-                                    v95 := (v84 == (199 : Int32))
-                                    if v95 then
-                                        v137 := (67 : Int32)
-                                        v138 := (807 : Int32)
-                                    else
-                                        v96 := (v84 == (201 : Int32))
-                                        if v96 then
-                                            v137 := (69 : Int32)
-                                            v138 := (769 : Int32)
-                                        else
-                                            v97 := (v84 == (211 : Int32))
-                                            if v97 then
-                                                v137 := (79 : Int32)
-                                                v138 := (769 : Int32)
-                                            else
-                                                v98 := (v84 == (213 : Int32))
-                                                if v98 then
-                                                    v137 := (79 : Int32)
-                                                    v138 := (771 : Int32)
-                                                else
-                                                    v99 := (v84 == (224 : Int32))
-                                                    if v99 then
-                                                        v137 := (97 : Int32)
-                                                        v138 := (768 : Int32)
-                                                    else
-                                                        v100 := (v84 == (225 : Int32))
-                                                        if v100 then
-                                                            v137 := (97 : Int32)
-                                                            v138 := (769 : Int32)
-                                                        else
-                                                            v101 := (v84 == (227 : Int32))
-                                                            if v101 then
-                                                                v137 := (97 : Int32)
-                                                                v138 := (771 : Int32)
-                                                            else
-                                                                v102 := (v84 == (228 : Int32))
-                                                                if v102 then
-                                                                    v137 := (97 : Int32)
-                                                                    v138 := (776 : Int32)
-                                                                else
-                                                                    v103 := (v84 == (231 : Int32))
-                                                                    if v103 then
-                                                                        v137 := (99 : Int32)
-                                                                        v138 := (807 : Int32)
-                                                                    else
-                                                                        v104 := (v84 == (233 : Int32))
-                                                                        if v104 then
-                                                                            v137 := (101 : Int32)
-                                                                            v138 := (769 : Int32)
-                                                                        else
-                                                                            v105 := (v84 == (243 : Int32))
-                                                                            if v105 then
-                                                                                v137 := (111 : Int32)
-                                                                                v138 := (769 : Int32)
-                                                                            else
-                                                                                v106 := (v84 == (245 : Int32))
-                                                                                if v106 then
-                                                                                    v137 := (111 : Int32)
-                                                                                    v138 := (771 : Int32)
-                                                                                else
-                                                                                    v137 := v84
-                                                                                    v138 := (-1 : Int32)
-                    v139 := (v2 + v90)
-                    v146 := v137
-                    v147 := v139
-                    v148 := v138
-        v149 := (decide (v75 < (0 : Int32)))
-        if v149 then
-            v150 := (v146 == (-1 : Int32))
-            return v150
-        else
-            v151 := (decide (v146 < (0 : Int32)))
-            if v151 then
-                return false
-            else
-                v152 := (v75 == v146)
-                if v152 then
-                    let t0 := v0
-                    let t76 := v76
-                    let t147 := v147
-                    let t77 := v77
-                    let t148 := v148
-                    let t5 := v5
-                    let t6 := v6
-                    v0 := t0
-                    v1 := t76
-                    v2 := t147
-                    v3 := t77
-                    v4 := t148
-                    v5 := t5
-                    v6 := t6
-                    continue
-                else
-                    return false
-partial def utf8_canonical_equal_bounded_loop_3 (p0 : String) (p1 : String) (p2 : Int32) (p3 : Int32) (p4 : Int32) (p5 : Int32) (p6 : Int32) (p7 : Int32) : IO Bool := do
+partial def utf8_canonical_equal_bounded_loop_0 (p0 : String) (p1 : String) (p2 : Int32) (p3 : Int32) (p4 : Int32) (p5 : Int32) (p6 : Int32) (p7 : Int32) : IO Bool := do
     let mut v0 : String := p0
     let mut v1 : String := p1
     let mut v2 : Int32 := p2
@@ -1026,7 +693,7 @@ partial def spiralMain : IO Int32 := do
     v4 := (-1 : Int32)
     v5 := (5 : Int32)
     v6 := (5 : Int32)
-    v7 := (← utf8_canonical_equal_bounded_loop_0 v0 v1 v2 v3 v4 v5 v6)
+    v7 := (← utf8_canonical_equal_bounded_loop_0 v0 v0 v1 v2 v3 v4 v5 v6)
     v8 := ""
     v9 := (0 : Int32)
     v10 := (0 : Int32)
@@ -1034,7 +701,7 @@ partial def spiralMain : IO Int32 := do
     v12 := (-1 : Int32)
     v13 := (0 : Int32)
     v14 := (0 : Int32)
-    v15 := (← utf8_canonical_equal_bounded_loop_0 v8 v9 v10 v11 v12 v13 v14)
+    v15 := (← utf8_canonical_equal_bounded_loop_0 v8 v8 v9 v10 v11 v12 v13 v14)
     v16 := "éõç"
     v17 := "éõç"
     v18 := (0 : Int32)
@@ -1043,7 +710,7 @@ partial def spiralMain : IO Int32 := do
     v21 := (-1 : Int32)
     v22 := (6 : Int32)
     v23 := (9 : Int32)
-    v24 := (← utf8_canonical_equal_bounded_loop_3 v16 v17 v18 v19 v20 v21 v22 v23)
+    v24 := (← utf8_canonical_equal_bounded_loop_0 v16 v17 v18 v19 v20 v21 v22 v23)
     v25 := "é̃"
     v26 := "é̃"
     v27 := (0 : Int32)
@@ -1052,7 +719,7 @@ partial def spiralMain : IO Int32 := do
     v30 := (-1 : Int32)
     v31 := (4 : Int32)
     v32 := (5 : Int32)
-    v33 := (← utf8_canonical_equal_bounded_loop_3 v25 v26 v27 v28 v29 v30 v31 v32)
+    v33 := (← utf8_canonical_equal_bounded_loop_0 v25 v26 v27 v28 v29 v30 v31 v32)
     v34 := "À"
     v35 := "À"
     v36 := (0 : Int32)
@@ -1061,7 +728,7 @@ partial def spiralMain : IO Int32 := do
     v39 := (-1 : Int32)
     v40 := (2 : Int32)
     v41 := (3 : Int32)
-    v42 := (← utf8_canonical_equal_bounded_loop_3 v34 v35 v36 v37 v38 v39 v40 v41)
+    v42 := (← utf8_canonical_equal_bounded_loop_0 v34 v35 v36 v37 v38 v39 v40 v41)
     v43 := "Ω"
     v44 := (0 : Int32)
     v45 := (0 : Int32)
@@ -1069,7 +736,7 @@ partial def spiralMain : IO Int32 := do
     v47 := (-1 : Int32)
     v48 := (2 : Int32)
     v49 := (2 : Int32)
-    v50 := (← utf8_canonical_equal_bounded_loop_0 v43 v44 v45 v46 v47 v48 v49)
+    v50 := (← utf8_canonical_equal_bounded_loop_0 v43 v43 v44 v45 v46 v47 v48 v49)
     v51 := "ẽ́"
     v52 := (0 : Int32)
     v53 := (0 : Int32)
@@ -1077,7 +744,7 @@ partial def spiralMain : IO Int32 := do
     v55 := (-1 : Int32)
     v56 := (5 : Int32)
     v57 := (5 : Int32)
-    v58 := (← utf8_canonical_equal_bounded_loop_3 v26 v51 v52 v53 v54 v55 v56 v57)
+    v58 := (← utf8_canonical_equal_bounded_loop_0 v26 v51 v52 v53 v54 v55 v56 v57)
     v59 := "é"
     v60 := "á"
     v61 := (0 : Int32)
@@ -1086,7 +753,7 @@ partial def spiralMain : IO Int32 := do
     v64 := (-1 : Int32)
     v65 := (2 : Int32)
     v66 := (2 : Int32)
-    v67 := (← utf8_canonical_equal_bounded_loop_3 v59 v60 v61 v62 v63 v64 v65 v66)
+    v67 := (← utf8_canonical_equal_bounded_loop_0 v59 v60 v61 v62 v63 v64 v65 v66)
     v68 := "ω"
     v69 := (0 : Int32)
     v70 := (0 : Int32)
@@ -1094,7 +761,7 @@ partial def spiralMain : IO Int32 := do
     v72 := (-1 : Int32)
     v73 := (2 : Int32)
     v74 := (2 : Int32)
-    v75 := (← utf8_canonical_equal_bounded_loop_3 v43 v68 v69 v70 v71 v72 v73 v74)
+    v75 := (← utf8_canonical_equal_bounded_loop_0 v43 v68 v69 v70 v71 v72 v73 v74)
     v76 := "e"
     v77 := (0 : Int32)
     v78 := (0 : Int32)
@@ -1102,7 +769,7 @@ partial def spiralMain : IO Int32 := do
     v80 := (-1 : Int32)
     v81 := (2 : Int32)
     v82 := (1 : Int32)
-    v83 := (← utf8_canonical_equal_bounded_loop_3 v59 v76 v77 v78 v79 v80 v81 v82)
+    v83 := (← utf8_canonical_equal_bounded_loop_0 v59 v76 v77 v78 v79 v80 v81 v82)
     if v7 then
         if v15 then
             if v24 then

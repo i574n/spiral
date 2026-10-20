@@ -18,86 +18,68 @@ func spiral_main() -> Int32 {
     var v7: Double = (0.0 as Double)
     v7 = (v0).rounded(.down)
     var v8: Bool = false
-    v8 = (v7 == (2.0 as Double))
-    var v9: Bool = false
-    v9 = (v8 != true)
-    if (v9) {
+    v8 = (v7 != (2.0 as Double))
+    if (v8) {
         return 1
     } else {
-        var v10: Double = (0.0 as Double)
-        v10 = (v0).rounded(.up)
-        var v11: Bool = false
-        v11 = (v10 == (3.0 as Double))
-        var v12: Bool = false
-        v12 = (v11 != true)
-        if (v12) {
+        var v9: Double = (0.0 as Double)
+        v9 = (v0).rounded(.up)
+        var v10: Bool = false
+        v10 = (v9 != (3.0 as Double))
+        if (v10) {
             return 2
         } else {
-            var v13: Double = (0.0 as Double)
-            v13 = (v0).rounded(.toNearestOrEven)
-            var v14: Bool = false
-            v14 = (v13 == (3.0 as Double))
-            var v15: Bool = false
-            v15 = (v14 != true)
-            if (v15) {
+            var v11: Double = (0.0 as Double)
+            v11 = (v0).rounded(.toNearestOrEven)
+            var v12: Bool = false
+            v12 = (v11 != (3.0 as Double))
+            if (v12) {
                 return 3
             } else {
-                var v16: Double = (0.0 as Double)
-                v16 = (v1).rounded(.toNearestOrEven)
-                var v17: Bool = false
-                v17 = (v16 == (3.0 as Double))
-                var v18: Bool = false
-                v18 = (v17 != true)
-                if (v18) {
+                var v13: Double = (0.0 as Double)
+                v13 = (v1).rounded(.toNearestOrEven)
+                var v14: Bool = false
+                v14 = (v13 != (3.0 as Double))
+                if (v14) {
                     return 4
                 } else {
-                    var v19: Double = (0.0 as Double)
-                    v19 = (v2).rounded(.toNearestOrEven)
-                    var v20: Bool = false
-                    v20 = (v19 == (-2.0 as Double))
-                    var v21: Bool = false
-                    v21 = (v20 != true)
-                    if (v21) {
+                    var v15: Double = (0.0 as Double)
+                    v15 = (v2).rounded(.toNearestOrEven)
+                    var v16: Bool = false
+                    v16 = (v15 != (-2.0 as Double))
+                    if (v16) {
                         return 5
                     } else {
-                        var v22: Double = (0.0 as Double)
-                        v22 = (v3).rounded(.toNearestOrEven)
-                        var v23: Bool = false
-                        v23 = (v22 == (4.0 as Double))
-                        var v24: Bool = false
-                        v24 = (v23 != true)
-                        if (v24) {
+                        var v17: Double = (0.0 as Double)
+                        v17 = (v3).rounded(.toNearestOrEven)
+                        var v18: Bool = false
+                        v18 = (v17 != (4.0 as Double))
+                        if (v18) {
                             return 6
                         } else {
-                            var v25: Double = (0.0 as Double)
-                            v25 = (v4).rounded(.toNearestOrEven)
-                            var v26: Bool = false
-                            v26 = (v25 == (0.0 as Double))
-                            var v27: Bool = false
-                            v27 = (v26 != true)
-                            if (v27) {
+                            var v19: Double = (0.0 as Double)
+                            v19 = (v4).rounded(.toNearestOrEven)
+                            var v20: Bool = false
+                            v20 = (v19 != (0.0 as Double))
+                            if (v20) {
                                 return 7
                             } else {
-                                var v28: Double = (0.0 as Double)
-                                v28 = atan2(v5, v5)
-                                var v29: Double = (0.0 as Double)
-                                v29 = (v28 * (1000.0 as Double))
-                                var v30: Double = (0.0 as Double)
-                                v30 = (v29).rounded(.down)
-                                var v31: Bool = false
-                                v31 = (v30 == (785.0 as Double))
-                                var v32: Bool = false
-                                v32 = (v31 != true)
-                                if (v32) {
+                                var v21: Double = (0.0 as Double)
+                                v21 = atan2(v5, v5)
+                                var v22: Double = (0.0 as Double)
+                                v22 = (v21 * (1000.0 as Double))
+                                var v23: Double = (0.0 as Double)
+                                v23 = (v22).rounded(.down)
+                                var v24: Bool = false
+                                v24 = (v23 != (785.0 as Double))
+                                if (v24) {
                                     return 8
                                 } else {
-                                    var v33: Float = (0.0 as Float)
-                                    v33 = (v6).rounded(.down)
-                                    var v34: Bool = false
-                                    v34 = (v33 == (2.0 as Float))
-                                    var v35: Bool = false
-                                    v35 = (v34 != true)
-                                    if (v35) {
+                                    var v25: Float = (0.0 as Float)
+                                    v25 = (v6).rounded(.down)
+                                    var v26: Bool = false
+                                    v26 = (v25 != (2.0 as Float))
+                                    if (v26) {
                                         return 9
                                     } else {
                                         return 0

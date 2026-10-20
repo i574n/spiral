@@ -3,12 +3,11 @@ defmodule Spiral.Cells.CellTest do
 
   alias Spiral.Cells.Cell
 
-  test "inlines __spiral_emit_rust and prints the i32 value" do
+  test "prints the i32 value of compiler output whose emits are already inlined" do
     rust = """
     fn spiral_main() -> i32 {
-        let mut v0: Rc<str> = "{ let mut out = std::io::stdout(); let _ = <std::io::Stdout as std::io::Write>::write_all(&mut out, $0.as_ref().as_bytes()); let _ = <std::io::Stdout as std::io::Write>::write_all(&mut out, &[10u8]); let _ = <std::io::Stdout as std::io::Write>::flush(&mut out); }";
         let mut v1: Rc<str> = Rc::<str>::from("Hello from Spiral!");
-        __spiral_emit_rust v1 v0 ;
+        { let mut out = std::io::stdout(); let _ = <std::io::Stdout as std::io::Write>::write_all(&mut out, v1.as_ref().as_bytes()); let _ = <std::io::Stdout as std::io::Write>::write_all(&mut out, &[10u8]); let _ = <std::io::Stdout as std::io::Write>::flush(&mut out); };
         49i32
     }
     fn main() {
@@ -30,25 +29,6 @@ defmodule Spiral.Cells.CellTest do
 
     assert Cell.patch_python(exits) == "import sys\ndef main():\n    return 3\n\n" <> entry
     assert Cell.patch_python("def main():\n    return 3\n\n" <> entry) == "def main():\n    return 3\n\n" <> entry
-  end
-
-  test "inlines an emit bound to a tuple (the former marker spelling is still read)" do
-    rust = """
-    fn spiral_main() -> i32 {
-        let mut v0: Rc<str> = "{ spiral_trace_hold(&$0) }";
-        let mut v1: Rc<dyn Fn() -> (i32, i32)> = closure0();
-        let (mut v2, mut v3): (i32, i32) = Fable.Core.RustInterop.emitRustExpr v1 v0 ;
-        0i32
-    }
-    fn main() {
-        let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-        std::process::exit(main.join().unwrap());
-    }
-    """
-
-    patched = Cell.patch_rust(rust, false)
-    refute patched =~ "emitRustExpr"
-    assert patched =~ "let (mut v2, mut v3): (i32, i32) = { spiral_trace_hold(&v1) };"
   end
 
   test "patching a 2000-line main.rs is linear" do
@@ -78,9 +58,8 @@ defmodule Spiral.Cells.CellTest do
               do: "    let mut v#{i * 100 + j}: i32 = v#{i * 100 + j - 1} + #{j}i32; // ü\n"
 
         filler <>
-          "    let mut v#{10_000 + i}: Rc<str> = \"{ spiral_trace_hold(&$0, \\\"ü #{i}\\\") }\";\n" <>
           "    let mut v#{20_000 + i}: Rc<str> = Rc::<str>::from(\"ü\");\n" <>
-          "    __spiral_emit_rust v#{20_000 + i} v#{10_000 + i} ;\n\n\n\n"
+          "    { spiral_trace_hold(&v#{20_000 + i}, \"ü #{i}\") };\n\n\n\n"
       end
 
     "fn spiral_main() -> i32 {\n" <>

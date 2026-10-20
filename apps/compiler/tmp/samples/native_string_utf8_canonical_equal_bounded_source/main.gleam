@@ -6,6 +6,7 @@ pub fn spiral_string_length(text: String) -> Int {
 }
 
 @external(erlang, "erlang", "halt")
+@external(javascript, "node:process", "exit")
 pub fn spiral_halt(code: Int) -> a
 
 pub fn spiral_string_index(text: String, index: Int) -> String {
@@ -326,403 +327,7 @@ pub fn utf8_scalar_at_byte_offset_1(v0: String, v1: Int) -> Int {
         }
     }
 }
-pub fn utf8_canonical_equal_bounded_loop_0(v0: String, v1: Int, v2: Int, v3: Int, v4: Int, v5: Int, v6: Int) -> Bool {
-    let v7 = v3 >= 0
-    let #(v75, v76, v77) =
-        case v7 {
-            True -> {
-                #(v3, v1, -1)
-            }
-            False -> {
-                let v8 = v1 == v5
-                case v8 {
-                    True -> {
-                        #(-1, v1, -1)
-                    }
-                    False -> {
-                        let v9 = v1 > v5
-                        case v9 {
-                            True -> {
-                                panic as "UTF-8 canonical stream offset exceeds the string."
-                            }
-                            False -> {
-                                let v13 = utf8_scalar_at_byte_offset_1(v0, v1)
-                                let v14 = v13 < 128
-                                let v19 =
-                                    case v14 {
-                                        True -> {
-                                            1
-                                        }
-                                        False -> {
-                                            let v15 = v13 < 2048
-                                            case v15 {
-                                                True -> {
-                                                    2
-                                                }
-                                                False -> {
-                                                    let v16 = v13 < 65536
-                                                    case v16 {
-                                                        True -> {
-                                                            3
-                                                        }
-                                                        False -> {
-                                                            4
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                let v20 = v13 == 192
-                                let #(v66, v67) =
-                                    case v20 {
-                                        True -> {
-                                            #(65, 768)
-                                        }
-                                        False -> {
-                                            let v21 = v13 == 193
-                                            case v21 {
-                                                True -> {
-                                                    #(65, 769)
-                                                }
-                                                False -> {
-                                                    let v22 = v13 == 195
-                                                    case v22 {
-                                                        True -> {
-                                                            #(65, 771)
-                                                        }
-                                                        False -> {
-                                                            let v23 = v13 == 196
-                                                            case v23 {
-                                                                True -> {
-                                                                    #(65, 776)
-                                                                }
-                                                                False -> {
-                                                                    let v24 = v13 == 199
-                                                                    case v24 {
-                                                                        True -> {
-                                                                            #(67, 807)
-                                                                        }
-                                                                        False -> {
-                                                                            let v25 = v13 == 201
-                                                                            case v25 {
-                                                                                True -> {
-                                                                                    #(69, 769)
-                                                                                }
-                                                                                False -> {
-                                                                                    let v26 = v13 == 211
-                                                                                    case v26 {
-                                                                                        True -> {
-                                                                                            #(79, 769)
-                                                                                        }
-                                                                                        False -> {
-                                                                                            let v27 = v13 == 213
-                                                                                            case v27 {
-                                                                                                True -> {
-                                                                                                    #(79, 771)
-                                                                                                }
-                                                                                                False -> {
-                                                                                                    let v28 = v13 == 224
-                                                                                                    case v28 {
-                                                                                                        True -> {
-                                                                                                            #(97, 768)
-                                                                                                        }
-                                                                                                        False -> {
-                                                                                                            let v29 = v13 == 225
-                                                                                                            case v29 {
-                                                                                                                True -> {
-                                                                                                                    #(97, 769)
-                                                                                                                }
-                                                                                                                False -> {
-                                                                                                                    let v30 = v13 == 227
-                                                                                                                    case v30 {
-                                                                                                                        True -> {
-                                                                                                                            #(97, 771)
-                                                                                                                        }
-                                                                                                                        False -> {
-                                                                                                                            let v31 = v13 == 228
-                                                                                                                            case v31 {
-                                                                                                                                True -> {
-                                                                                                                                    #(97, 776)
-                                                                                                                                }
-                                                                                                                                False -> {
-                                                                                                                                    let v32 = v13 == 231
-                                                                                                                                    case v32 {
-                                                                                                                                        True -> {
-                                                                                                                                            #(99, 807)
-                                                                                                                                        }
-                                                                                                                                        False -> {
-                                                                                                                                            let v33 = v13 == 233
-                                                                                                                                            case v33 {
-                                                                                                                                                True -> {
-                                                                                                                                                    #(101, 769)
-                                                                                                                                                }
-                                                                                                                                                False -> {
-                                                                                                                                                    let v34 = v13 == 243
-                                                                                                                                                    case v34 {
-                                                                                                                                                        True -> {
-                                                                                                                                                            #(111, 769)
-                                                                                                                                                        }
-                                                                                                                                                        False -> {
-                                                                                                                                                            let v35 = v13 == 245
-                                                                                                                                                            case v35 {
-                                                                                                                                                                True -> {
-                                                                                                                                                                    #(111, 771)
-                                                                                                                                                                }
-                                                                                                                                                                False -> {
-                                                                                                                                                                    #(v13, -1)
-                                                                                                                                                                }
-                                                                                                                                                            }
-                                                                                                                                                        }
-                                                                                                                                                    }
-                                                                                                                                                }
-                                                                                                                                            }
-                                                                                                                                        }
-                                                                                                                                    }
-                                                                                                                                }
-                                                                                                                            }
-                                                                                                                        }
-                                                                                                                    }
-                                                                                                                }
-                                                                                                            }
-                                                                                                        }
-                                                                                                    }
-                                                                                                }
-                                                                                            }
-                                                                                        }
-                                                                                    }
-                                                                                }
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                let v68 = spiral_wrap_signed(v1 + v19, 32)
-                                #(v66, v68, v67)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    let v78 = v4 >= 0
-    let #(v146, v147, v148) =
-        case v78 {
-            True -> {
-                #(v4, v2, -1)
-            }
-            False -> {
-                let v79 = v2 == v6
-                case v79 {
-                    True -> {
-                        #(-1, v2, -1)
-                    }
-                    False -> {
-                        let v80 = v2 > v6
-                        case v80 {
-                            True -> {
-                                panic as "UTF-8 canonical stream offset exceeds the string."
-                            }
-                            False -> {
-                                let v84 = utf8_scalar_at_byte_offset_1(v0, v2)
-                                let v85 = v84 < 128
-                                let v90 =
-                                    case v85 {
-                                        True -> {
-                                            1
-                                        }
-                                        False -> {
-                                            let v86 = v84 < 2048
-                                            case v86 {
-                                                True -> {
-                                                    2
-                                                }
-                                                False -> {
-                                                    let v87 = v84 < 65536
-                                                    case v87 {
-                                                        True -> {
-                                                            3
-                                                        }
-                                                        False -> {
-                                                            4
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                let v91 = v84 == 192
-                                let #(v137, v138) =
-                                    case v91 {
-                                        True -> {
-                                            #(65, 768)
-                                        }
-                                        False -> {
-                                            let v92 = v84 == 193
-                                            case v92 {
-                                                True -> {
-                                                    #(65, 769)
-                                                }
-                                                False -> {
-                                                    let v93 = v84 == 195
-                                                    case v93 {
-                                                        True -> {
-                                                            #(65, 771)
-                                                        }
-                                                        False -> {
-                                                            let v94 = v84 == 196
-                                                            case v94 {
-                                                                True -> {
-                                                                    #(65, 776)
-                                                                }
-                                                                False -> {
-                                                                    let v95 = v84 == 199
-                                                                    case v95 {
-                                                                        True -> {
-                                                                            #(67, 807)
-                                                                        }
-                                                                        False -> {
-                                                                            let v96 = v84 == 201
-                                                                            case v96 {
-                                                                                True -> {
-                                                                                    #(69, 769)
-                                                                                }
-                                                                                False -> {
-                                                                                    let v97 = v84 == 211
-                                                                                    case v97 {
-                                                                                        True -> {
-                                                                                            #(79, 769)
-                                                                                        }
-                                                                                        False -> {
-                                                                                            let v98 = v84 == 213
-                                                                                            case v98 {
-                                                                                                True -> {
-                                                                                                    #(79, 771)
-                                                                                                }
-                                                                                                False -> {
-                                                                                                    let v99 = v84 == 224
-                                                                                                    case v99 {
-                                                                                                        True -> {
-                                                                                                            #(97, 768)
-                                                                                                        }
-                                                                                                        False -> {
-                                                                                                            let v100 = v84 == 225
-                                                                                                            case v100 {
-                                                                                                                True -> {
-                                                                                                                    #(97, 769)
-                                                                                                                }
-                                                                                                                False -> {
-                                                                                                                    let v101 = v84 == 227
-                                                                                                                    case v101 {
-                                                                                                                        True -> {
-                                                                                                                            #(97, 771)
-                                                                                                                        }
-                                                                                                                        False -> {
-                                                                                                                            let v102 = v84 == 228
-                                                                                                                            case v102 {
-                                                                                                                                True -> {
-                                                                                                                                    #(97, 776)
-                                                                                                                                }
-                                                                                                                                False -> {
-                                                                                                                                    let v103 = v84 == 231
-                                                                                                                                    case v103 {
-                                                                                                                                        True -> {
-                                                                                                                                            #(99, 807)
-                                                                                                                                        }
-                                                                                                                                        False -> {
-                                                                                                                                            let v104 = v84 == 233
-                                                                                                                                            case v104 {
-                                                                                                                                                True -> {
-                                                                                                                                                    #(101, 769)
-                                                                                                                                                }
-                                                                                                                                                False -> {
-                                                                                                                                                    let v105 = v84 == 243
-                                                                                                                                                    case v105 {
-                                                                                                                                                        True -> {
-                                                                                                                                                            #(111, 769)
-                                                                                                                                                        }
-                                                                                                                                                        False -> {
-                                                                                                                                                            let v106 = v84 == 245
-                                                                                                                                                            case v106 {
-                                                                                                                                                                True -> {
-                                                                                                                                                                    #(111, 771)
-                                                                                                                                                                }
-                                                                                                                                                                False -> {
-                                                                                                                                                                    #(v84, -1)
-                                                                                                                                                                }
-                                                                                                                                                            }
-                                                                                                                                                        }
-                                                                                                                                                    }
-                                                                                                                                                }
-                                                                                                                                            }
-                                                                                                                                        }
-                                                                                                                                    }
-                                                                                                                                }
-                                                                                                                            }
-                                                                                                                        }
-                                                                                                                    }
-                                                                                                                }
-                                                                                                            }
-                                                                                                        }
-                                                                                                    }
-                                                                                                }
-                                                                                            }
-                                                                                        }
-                                                                                    }
-                                                                                }
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                let v139 = spiral_wrap_signed(v2 + v90, 32)
-                                #(v137, v139, v138)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    let v149 = v75 < 0
-    case v149 {
-        True -> {
-            let v150 = v146 == -1
-            v150
-        }
-        False -> {
-            let v151 = v146 < 0
-            case v151 {
-                True -> {
-                    False
-                }
-                False -> {
-                    let v152 = v75 == v146
-                    case v152 {
-                        True -> {
-                            utf8_canonical_equal_bounded_loop_0(v0, v76, v147, v77, v148, v5, v6)
-                        }
-                        False -> {
-                            False
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-pub fn utf8_canonical_equal_bounded_loop_3(v0: String, v1: String, v2: Int, v3: Int, v4: Int, v5: Int, v6: Int, v7: Int) -> Bool {
+pub fn utf8_canonical_equal_bounded_loop_0(v0: String, v1: String, v2: Int, v3: Int, v4: Int, v5: Int, v6: Int, v7: Int) -> Bool {
     let v8 = v4 >= 0
     let #(v76, v77, v78) =
         case v8 {
@@ -1107,7 +712,7 @@ pub fn utf8_canonical_equal_bounded_loop_3(v0: String, v1: String, v2: Int, v3: 
                     let v153 = v76 == v147
                     case v153 {
                         True -> {
-                            utf8_canonical_equal_bounded_loop_3(v0, v1, v77, v148, v78, v149, v6, v7)
+                            utf8_canonical_equal_bounded_loop_0(v0, v1, v77, v148, v78, v149, v6, v7)
                         }
                         False -> {
                             False
@@ -1126,7 +731,7 @@ let v3 = -1
 let v4 = -1
 let v5 = 5
 let v6 = 5
-let v7 = utf8_canonical_equal_bounded_loop_0(v0, v1, v2, v3, v4, v5, v6)
+let v7 = utf8_canonical_equal_bounded_loop_0(v0, v0, v1, v2, v3, v4, v5, v6)
 let v8 = ""
 let v9 = 0
 let v10 = 0
@@ -1134,7 +739,7 @@ let v11 = -1
 let v12 = -1
 let v13 = 0
 let v14 = 0
-let v15 = utf8_canonical_equal_bounded_loop_0(v8, v9, v10, v11, v12, v13, v14)
+let v15 = utf8_canonical_equal_bounded_loop_0(v8, v8, v9, v10, v11, v12, v13, v14)
 let v16 = "éõç"
 let v17 = "éõç"
 let v18 = 0
@@ -1143,7 +748,7 @@ let v20 = -1
 let v21 = -1
 let v22 = 6
 let v23 = 9
-let v24 = utf8_canonical_equal_bounded_loop_3(v16, v17, v18, v19, v20, v21, v22, v23)
+let v24 = utf8_canonical_equal_bounded_loop_0(v16, v17, v18, v19, v20, v21, v22, v23)
 let v25 = "é̃"
 let v26 = "é̃"
 let v27 = 0
@@ -1152,7 +757,7 @@ let v29 = -1
 let v30 = -1
 let v31 = 4
 let v32 = 5
-let v33 = utf8_canonical_equal_bounded_loop_3(v25, v26, v27, v28, v29, v30, v31, v32)
+let v33 = utf8_canonical_equal_bounded_loop_0(v25, v26, v27, v28, v29, v30, v31, v32)
 let v34 = "À"
 let v35 = "À"
 let v36 = 0
@@ -1161,7 +766,7 @@ let v38 = -1
 let v39 = -1
 let v40 = 2
 let v41 = 3
-let v42 = utf8_canonical_equal_bounded_loop_3(v34, v35, v36, v37, v38, v39, v40, v41)
+let v42 = utf8_canonical_equal_bounded_loop_0(v34, v35, v36, v37, v38, v39, v40, v41)
 let v43 = "Ω"
 let v44 = 0
 let v45 = 0
@@ -1169,7 +774,7 @@ let v46 = -1
 let v47 = -1
 let v48 = 2
 let v49 = 2
-let v50 = utf8_canonical_equal_bounded_loop_0(v43, v44, v45, v46, v47, v48, v49)
+let v50 = utf8_canonical_equal_bounded_loop_0(v43, v43, v44, v45, v46, v47, v48, v49)
 let v51 = "ẽ́"
 let v52 = 0
 let v53 = 0
@@ -1177,7 +782,7 @@ let v54 = -1
 let v55 = -1
 let v56 = 5
 let v57 = 5
-let v58 = utf8_canonical_equal_bounded_loop_3(v26, v51, v52, v53, v54, v55, v56, v57)
+let v58 = utf8_canonical_equal_bounded_loop_0(v26, v51, v52, v53, v54, v55, v56, v57)
 let v59 = "é"
 let v60 = "á"
 let v61 = 0
@@ -1186,7 +791,7 @@ let v63 = -1
 let v64 = -1
 let v65 = 2
 let v66 = 2
-let v67 = utf8_canonical_equal_bounded_loop_3(v59, v60, v61, v62, v63, v64, v65, v66)
+let v67 = utf8_canonical_equal_bounded_loop_0(v59, v60, v61, v62, v63, v64, v65, v66)
 let v68 = "ω"
 let v69 = 0
 let v70 = 0
@@ -1194,7 +799,7 @@ let v71 = -1
 let v72 = -1
 let v73 = 2
 let v74 = 2
-let v75 = utf8_canonical_equal_bounded_loop_3(v43, v68, v69, v70, v71, v72, v73, v74)
+let v75 = utf8_canonical_equal_bounded_loop_0(v43, v68, v69, v70, v71, v72, v73, v74)
 let v76 = "e"
 let v77 = 0
 let v78 = 0
@@ -1202,7 +807,7 @@ let v79 = -1
 let v80 = -1
 let v81 = 2
 let v82 = 1
-let v83 = utf8_canonical_equal_bounded_loop_3(v59, v76, v77, v78, v79, v80, v81, v82)
+let v83 = utf8_canonical_equal_bounded_loop_0(v59, v76, v77, v78, v79, v80, v81, v82)
 case v7 {
     True -> {
         case v15 {

@@ -39,3 +39,44 @@ test an_answered_call_closes_the_transcript =
         Result ("getLocation", "{\"location\":\"Cincinnati\"}",
         Assistant ("Sunny, open the windows.", {model = "local"; tokens_out = tokens_out}, Done)))))
     weigh t |> _assert_eq 11118i32
+
+
+/// ### persist
+open sm'_operators
+
+union rec exchanges =
+    | NoExchange
+    | Exchange : string * string * string * exchanges
+
+inl json_specials () : string = "\\\"\n"
+
+inl json_escape_of (k : i32) : string = if k = 0i32 then "\\\\" elif k = 1i32 then "\\\"" else "\\n"
+
+let rec json_special_index (c : char) (k : i32) : i32 =
+    if k >= sm.length (json_specials ()) then -1i32
+    elif sm.index (json_specials ()) k = c then k
+    else json_special_index c (k + 1i32)
+
+let rec json_escape_from (text : string) (start : i32) (i : i32) (acc : string) : string =
+    if i >= sm.length text then acc ++# sm.slice text {from=start; to=i - 1i32}
+    else
+        inl k = json_special_index (sm.index text i) 0i32
+        if k < 0i32 then json_escape_from text start (i + 1i32) acc
+        else json_escape_from text (i + 1i32) (i + 1i32) (acc ++# sm.slice text {from=start; to=i - 1i32} ++# json_escape_of k)
+
+inl json_string (text : string) : string =
+    "\"" ++# json_escape_from text 0i32 0i32 "" ++# "\""
+
+inl exchange_line (name : string) (arguments : string) (result : string) : string =
+    "{\"name\":" ++# json_string name ++# ",\"arguments\":" ++# json_string arguments ++# ",\"result\":" ++# json_string result ++# "}"
+
+inl rec exchange_lines (log : exchanges) : string =
+    match log with
+    | NoExchange => ""
+    | Exchange (name, arguments, result, rest) => exchange_line name arguments result ++# "\n" ++# exchange_lines rest
+
+///> c
+///> rust
+test exchanges_persist_as_json_lines =
+    inl log = Exchange ("getLocation", "{}", "{\"location\":\"Cincinnati\"}", Exchange ("getWeather", "{\"city\":\"Cincinnati\"}", "sunny\nwarm", NoExchange))
+    exchange_lines log |> _assert_eq "{\"name\":\"getLocation\",\"arguments\":\"{}\",\"result\":\"{\\\"location\\\":\\\"Cincinnati\\\"}\"}\n{\"name\":\"getWeather\",\"arguments\":\"{\\\"city\\\":\\\"Cincinnati\\\"}\",\"result\":\"sunny\\nwarm\"}\n"

@@ -5,6 +5,7 @@ pub fn spiral_string_length(text: String) -> Int {
 }
 
 @external(erlang, "erlang", "halt")
+@external(javascript, "node:process", "exit")
 pub fn spiral_halt(code: Int) -> a
 
 pub fn spiral_string_index(text: String, index: Int) -> String {
@@ -52,224 +53,196 @@ let v8 = "a\\nb"
 let v9 = "first\n(* not a comment *)\n// nor this\n\n$\"not a macro\" !x\ninl fake () = 1\n  indented"
 let v10 = "\ntop\n\nlevel"
 let v11 = spiral_string_length(v6)
-let v12 = v11 == 7
-let v13 = v12 != True
-case v13 {
+let v12 = v11 != 7
+case v12 {
     True -> {
         1
     }
     False -> {
-        let v14 = spiral_string_index(v6, 2)
-        let v15 = v14 == "\""
-        let v16 = v15 != True
-        case v16 {
+        let v13 = spiral_string_index(v6, 2)
+        let v14 = v13 != "\""
+        case v14 {
             True -> {
                 2
             }
             False -> {
-                let v17 = spiral_string_length(v7)
-                let v18 = v17 == 0
-                let v19 = v18 != True
-                case v19 {
+                let v15 = spiral_string_length(v7)
+                let v16 = v15 != 0
+                case v16 {
                     True -> {
                         3
                     }
                     False -> {
-                        let v20 = spiral_string_length(v8)
-                        let v21 = v20 == 4
-                        let v22 = v21 != True
-                        case v22 {
+                        let v17 = spiral_string_length(v8)
+                        let v18 = v17 != 4
+                        case v18 {
                             True -> {
                                 4
                             }
                             False -> {
-                                let v23 = spiral_string_index(v8, 1)
-                                let v24 = v23 == "\\"
-                                let v25 = v24 != True
-                                case v25 {
+                                let v19 = spiral_string_index(v8, 1)
+                                let v20 = v19 != "\\"
+                                case v20 {
                                     True -> {
                                         5
                                     }
                                     False -> {
-                                        let v26 = spiral_string_length(v9)
-                                        let v27 = v26 == 83
-                                        let v28 = v27 != True
-                                        case v28 {
+                                        let v21 = spiral_string_length(v9)
+                                        let v22 = v21 != 83
+                                        case v22 {
                                             True -> {
                                                 6
                                             }
                                             False -> {
-                                                let v29 = spiral_string_index(v9, 5)
-                                                let v30 = v29 == "\n"
-                                                let v31 = v30 != True
-                                                case v31 {
+                                                let v23 = spiral_string_index(v9, 5)
+                                                let v24 = v23 != "\n"
+                                                case v24 {
                                                     True -> {
                                                         7
                                                     }
                                                     False -> {
-                                                        let v32 = spiral_string_index(v9, 37)
-                                                        let v33 = v32 == "\n"
-                                                        let v34 = v33 != True
-                                                        case v34 {
+                                                        let v25 = spiral_string_index(v9, 37)
+                                                        let v26 = v25 != "\n"
+                                                        case v26 {
                                                             True -> {
                                                                 8
                                                             }
                                                             False -> {
-                                                                let v35 = spiral_string_index(v9, 38)
-                                                                let v36 = v35 == "\n"
-                                                                let v37 = v36 != True
-                                                                case v37 {
+                                                                let v27 = spiral_string_index(v9, 38)
+                                                                let v28 = v27 != "\n"
+                                                                case v28 {
                                                                     True -> {
                                                                         9
                                                                     }
                                                                     False -> {
-                                                                        let v38 = spiral_string_index(v9, 39)
-                                                                        let v39 = v38 == "$"
-                                                                        let v40 = v39 != True
-                                                                        case v40 {
+                                                                        let v29 = spiral_string_index(v9, 39)
+                                                                        let v30 = v29 != "$"
+                                                                        case v30 {
                                                                             True -> {
                                                                                 10
                                                                             }
                                                                             False -> {
-                                                                                let v41 = spiral_string_index(v9, 57)
-                                                                                let v42 = v41 == "i"
-                                                                                let v43 = v42 != True
-                                                                                case v43 {
+                                                                                let v31 = spiral_string_index(v9, 57)
+                                                                                let v32 = v31 != "i"
+                                                                                case v32 {
                                                                                     True -> {
                                                                                         11
                                                                                     }
                                                                                     False -> {
-                                                                                        let v44 = spiral_string_index(v9, 82)
-                                                                                        let v45 = v44 == "d"
-                                                                                        let v46 = v45 != True
-                                                                                        case v46 {
+                                                                                        let v33 = spiral_string_index(v9, 82)
+                                                                                        let v34 = v33 != "d"
+                                                                                        case v34 {
                                                                                             True -> {
                                                                                                 12
                                                                                             }
                                                                                             False -> {
-                                                                                                let v47 = spiral_string_length(v10)
-                                                                                                let v48 = v47 == 11
-                                                                                                let v49 = v48 != True
-                                                                                                case v49 {
+                                                                                                let v35 = spiral_string_length(v10)
+                                                                                                let v36 = v35 != 11
+                                                                                                case v36 {
                                                                                                     True -> {
                                                                                                         13
                                                                                                     }
                                                                                                     False -> {
-                                                                                                        let v50 = spiral_string_index(v10, 0)
-                                                                                                        let v51 = v50 == "\n"
-                                                                                                        let v52 = v51 != True
-                                                                                                        case v52 {
+                                                                                                        let v37 = spiral_string_index(v10, 0)
+                                                                                                        let v38 = v37 != "\n"
+                                                                                                        case v38 {
                                                                                                             True -> {
                                                                                                                 14
                                                                                                             }
                                                                                                             False -> {
-                                                                                                                let v53 = spiral_string_index(v10, 5)
-                                                                                                                let v54 = v53 == "\n"
-                                                                                                                let v55 = v54 != True
-                                                                                                                case v55 {
+                                                                                                                let v39 = spiral_string_index(v10, 5)
+                                                                                                                let v40 = v39 != "\n"
+                                                                                                                case v40 {
                                                                                                                     True -> {
                                                                                                                         15
                                                                                                                     }
                                                                                                                     False -> {
-                                                                                                                        let v56 = v0 == 16
-                                                                                                                        let v57 = v56 != True
-                                                                                                                        case v57 {
+                                                                                                                        let v41 = v0 != 16
+                                                                                                                        case v41 {
                                                                                                                             True -> {
                                                                                                                                 16
                                                                                                                             }
                                                                                                                             False -> {
-                                                                                                                                let v58 = spiral_string_length(v1)
-                                                                                                                                let v59 = v58 == 3
-                                                                                                                                let v60 = v59 != True
-                                                                                                                                case v60 {
+                                                                                                                                let v42 = spiral_string_length(v1)
+                                                                                                                                let v43 = v42 != 3
+                                                                                                                                case v43 {
                                                                                                                                     True -> {
                                                                                                                                         17
                                                                                                                                     }
                                                                                                                                     False -> {
-                                                                                                                                        let v61 = spiral_string_length(v2)
-                                                                                                                                        let v62 = v61 == 8
-                                                                                                                                        let v63 = v62 != True
-                                                                                                                                        case v63 {
+                                                                                                                                        let v44 = spiral_string_length(v2)
+                                                                                                                                        let v45 = v44 != 8
+                                                                                                                                        case v45 {
                                                                                                                                             True -> {
                                                                                                                                                 18
                                                                                                                                             }
                                                                                                                                             False -> {
-                                                                                                                                                let v64 = spiral_string_index(v2, 7)
-                                                                                                                                                let v65 = v64 == "\""
-                                                                                                                                                let v66 = v65 != True
-                                                                                                                                                case v66 {
+                                                                                                                                                let v46 = spiral_string_index(v2, 7)
+                                                                                                                                                let v47 = v46 != "\""
+                                                                                                                                                case v47 {
                                                                                                                                                     True -> {
                                                                                                                                                         19
                                                                                                                                                     }
                                                                                                                                                     False -> {
-                                                                                                                                                        let v67 = spiral_string_length(v3)
-                                                                                                                                                        let v68 = v67 == 7
-                                                                                                                                                        let v69 = v68 != True
-                                                                                                                                                        case v69 {
+                                                                                                                                                        let v48 = spiral_string_length(v3)
+                                                                                                                                                        let v49 = v48 != 7
+                                                                                                                                                        case v49 {
                                                                                                                                                             True -> {
                                                                                                                                                                 20
                                                                                                                                                             }
                                                                                                                                                             False -> {
-                                                                                                                                                                let v70 = spiral_string_index(v3, 4)
-                                                                                                                                                                let v71 = v70 == "\""
-                                                                                                                                                                let v72 = v71 != True
-                                                                                                                                                                case v72 {
+                                                                                                                                                                let v50 = spiral_string_index(v3, 4)
+                                                                                                                                                                let v51 = v50 != "\""
+                                                                                                                                                                case v51 {
                                                                                                                                                                     True -> {
                                                                                                                                                                         21
                                                                                                                                                                     }
                                                                                                                                                                     False -> {
-                                                                                                                                                                        let v73 = spiral_string_length(v4)
-                                                                                                                                                                        let v74 = v73 == 23
-                                                                                                                                                                        let v75 = v74 != True
-                                                                                                                                                                        case v75 {
+                                                                                                                                                                        let v52 = spiral_string_length(v4)
+                                                                                                                                                                        let v53 = v52 != 23
+                                                                                                                                                                        case v53 {
                                                                                                                                                                             True -> {
                                                                                                                                                                                 22
                                                                                                                                                                             }
                                                                                                                                                                             False -> {
-                                                                                                                                                                                let v76 = spiral_string_index(v4, 6)
-                                                                                                                                                                                let v77 = v76 == " "
-                                                                                                                                                                                let v78 = v77 != True
-                                                                                                                                                                                case v78 {
+                                                                                                                                                                                let v54 = spiral_string_index(v4, 6)
+                                                                                                                                                                                let v55 = v54 != " "
+                                                                                                                                                                                case v55 {
                                                                                                                                                                                     True -> {
                                                                                                                                                                                         23
                                                                                                                                                                                     }
                                                                                                                                                                                     False -> {
-                                                                                                                                                                                        let v79 = spiral_string_index(v4, 10)
-                                                                                                                                                                                        let v80 = v79 == "s"
-                                                                                                                                                                                        let v81 = v80 != True
-                                                                                                                                                                                        case v81 {
+                                                                                                                                                                                        let v56 = spiral_string_index(v4, 10)
+                                                                                                                                                                                        let v57 = v56 != "s"
+                                                                                                                                                                                        case v57 {
                                                                                                                                                                                             True -> {
                                                                                                                                                                                                 24
                                                                                                                                                                                             }
                                                                                                                                                                                             False -> {
-                                                                                                                                                                                                let v82 = spiral_string_index(v4, 17)
-                                                                                                                                                                                                let v83 = v82 == "\n"
-                                                                                                                                                                                                let v84 = v83 != True
-                                                                                                                                                                                                case v84 {
+                                                                                                                                                                                                let v58 = spiral_string_index(v4, 17)
+                                                                                                                                                                                                let v59 = v58 != "\n"
+                                                                                                                                                                                                case v59 {
                                                                                                                                                                                                     True -> {
                                                                                                                                                                                                         25
                                                                                                                                                                                                     }
                                                                                                                                                                                                     False -> {
-                                                                                                                                                                                                        let v85 = spiral_string_index(v4, 22)
-                                                                                                                                                                                                        let v86 = v85 == "d"
-                                                                                                                                                                                                        let v87 = v86 != True
-                                                                                                                                                                                                        case v87 {
+                                                                                                                                                                                                        let v60 = spiral_string_index(v4, 22)
+                                                                                                                                                                                                        let v61 = v60 != "d"
+                                                                                                                                                                                                        case v61 {
                                                                                                                                                                                                             True -> {
                                                                                                                                                                                                                 26
                                                                                                                                                                                                             }
                                                                                                                                                                                                             False -> {
-                                                                                                                                                                                                                let v88 = spiral_string_length(v5)
-                                                                                                                                                                                                                let v89 = v88 == 5
-                                                                                                                                                                                                                let v90 = v89 != True
-                                                                                                                                                                                                                case v90 {
+                                                                                                                                                                                                                let v62 = spiral_string_length(v5)
+                                                                                                                                                                                                                let v63 = v62 != 5
+                                                                                                                                                                                                                case v63 {
                                                                                                                                                                                                                     True -> {
                                                                                                                                                                                                                         27
                                                                                                                                                                                                                     }
                                                                                                                                                                                                                     False -> {
-                                                                                                                                                                                                                        let v91 = spiral_string_index(v5, 3)
-                                                                                                                                                                                                                        let v92 = v91 == "c"
-                                                                                                                                                                                                                        let v93 = v92 != True
-                                                                                                                                                                                                                        case v93 {
+                                                                                                                                                                                                                        let v64 = spiral_string_index(v5, 3)
+                                                                                                                                                                                                                        let v65 = v64 != "c"
+                                                                                                                                                                                                                        case v65 {
                                                                                                                                                                                                                             True -> {
                                                                                                                                                                                                                                 28
                                                                                                                                                                                                                             }

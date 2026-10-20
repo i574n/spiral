@@ -5,19 +5,17 @@ let v2 = 1
 let v3 = 1
 let v4 = 1.5
 let v5 = 0.0 -. v4
-let v6 = v0 == v1
-let v7 = v6 != True
-case v7 {
+let v6 = v0 != v1
+case v6 {
     True -> {
-        let v8 = v2 == v3
-        let v9 = v8 != True
-        case v9 {
+        let v7 = v2 != v3
+        case v7 {
             True -> {
                 2
             }
             False -> {
-                let v10 = v5 == -1.5
-                case v10 {
+                let v8 = v5 == -1.5
+                case v8 {
                     True -> {
                         0
                     }

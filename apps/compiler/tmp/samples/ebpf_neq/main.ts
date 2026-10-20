@@ -5,16 +5,14 @@ export function main(): number {
     let v3: number = 1;
     let v4: number = 1.5;
     let v5: number = -v4;
-    let v6: boolean = v0 === v1;
-    let v7: boolean = v6 !== true;
-    if (v7) {
-        let v8: boolean = v2 === v3;
-        let v9: boolean = v8 !== true;
-        if (v9) {
+    let v6: boolean = v0 !== v1;
+    if (v6) {
+        let v7: boolean = v2 !== v3;
+        if (v7) {
             return 2;
         } else {
-            let v10: boolean = v5 === (-1.5);
-            if (v10) {
+            let v8: boolean = v5 === (-1.5);
+            if (v8) {
                 return 0;
             } else {
                 return 3;

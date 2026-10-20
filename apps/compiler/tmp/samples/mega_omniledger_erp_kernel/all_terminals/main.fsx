@@ -551,9 +551,6 @@ let rec method0 () : struct (int64 * int64 * int64 * int64 * int64 * int64 * int
 and method1 (v0 : string, v1 : string) : unit =
     if v0 <> v1 then failwith "erp-NetIntercompany-typed-decode-roundtrip-mismatch"
     ()
-and method2 (v0 : string) : unit =
-    if v0 <> v0 then failwith "erp-NetIntercompany-typed-decode-roundtrip-mismatch"
-    ()
 let v0 : int64 = 0L + 1L
 let v1 : int64 = v0 + 1L
 let v2 : int64 = v1 + 1L
@@ -6274,7 +6271,7 @@ let v4757 : string =
         let v4756 : string = (let fields = [| v4721; v4722; v4723; v4724; v4725; v4726; v4727; v4736; v4737; v4738; v4739; string v4740; v4741; v4750; v4751; v4752; v4753; string v4754; v4755 |] in let bytes = fields |> Array.collect (fun value -> let payload = System.Text.Encoding.UTF8.GetBytes(value) in let length = System.BitConverter.GetBytes(System.Net.IPAddress.HostToNetworkOrder(payload.Length)) in Array.append length payload) in System.Convert.ToBase64String(bytes))
         v4756
 method1(v4692, v4757)
-method2(v4692)
+method1(v4692, v4692)
 method1(v4692, v4757)
 let v4773 : string = "payment-settled-through-composed-typed-fx-route"
 if 6L <> 6L || 1L <> 1L || v4773 <> "payment-settled-through-composed-typed-fx-route" then failwith "erp-p2p-settle-payment-from-decoded-runtime-mismatch"
@@ -6419,7 +6416,7 @@ let v4955 : string =
         let v4954 : string = (let fields = [| v4919; v4920; v4921; v4922; v4923; v4924; v4925; v4934; v4935; v4936; v4937; string v4938; v4939; v4948; v4949; v4950; v4951; string v4952; v4953 |] in let bytes = fields |> Array.collect (fun value -> let payload = System.Text.Encoding.UTF8.GetBytes(value) in let length = System.BitConverter.GetBytes(System.Net.IPAddress.HostToNetworkOrder(payload.Length)) in Array.append length payload) in System.Convert.ToBase64String(bytes))
         v4954
 method1(v4864, v4955)
-method2(v4864)
+method1(v4864, v4864)
 method1(v4864, v4955)
 let v4966 : string = (let fields = [| v4526; v4527; v4528; v4821; v4526; v4527; string 1000L; v4822 |] in let bytes = fields |> Array.collect (fun value -> let payload = System.Text.Encoding.UTF8.GetBytes(value) in let length = System.BitConverter.GetBytes(System.Net.IPAddress.HostToNetworkOrder(payload.Length)) in Array.append length payload) in System.Convert.ToBase64String(bytes))
 let struct (v4967 : string, v4968 : string, v4969 : string, v4970 : string, v4971 : string, v4972 : string, v4973 : int64, v4974 : string) = (let tryDecode (text : string) = try let bytes = System.Convert.FromBase64String(text) in let mutable offset = 0 in let fields = System.Collections.Generic.List<string>() in let mutable valid = true in while valid && offset < bytes.Length do if offset + 4 > bytes.Length then valid <- false else let raw = System.BitConverter.ToInt32(bytes, offset) |> System.Net.IPAddress.NetworkToHostOrder in offset <- offset + 4; if raw < 0 || offset + raw > bytes.Length then valid <- false else fields.Add(System.Text.Encoding.UTF8.GetString(bytes, offset, raw)); offset <- offset + raw done; if valid && offset = bytes.Length then Some(fields.ToArray()) else None with _ -> None in match tryDecode v4966 with Some fields when fields.Length = 8 && fields.[0] = "company-a" && fields.[1] = "USD" && fields.[2] = "widget-a" && fields.[4] = fields.[0] && fields.[5] = fields.[1] && fields.[3].Length > 0 && fields.[7].Length > 0 && fields.[3] <> fields.[7] -> (match System.Int64.TryParse(fields.[6]) with true,amount when amount > 0L -> fields.[0],fields.[1],fields.[2],fields.[3],fields.[4],fields.[5],amount,fields.[7] | _ -> failwith "erp-ReserveBudget-typed-decode-invalid-amount") | _ -> failwith "erp-ReserveBudget-typed-decode-invalid-frame")
@@ -7229,7 +7226,7 @@ let v5840 : string =
         let v5839 : string = (let fields = [| v5804; v5805; v5806; v5807; v5808; v5809; v5810; v5819; v5820; v5821; v5822; string v5823; v5824; v5833; v5834; v5835; v5836; string v5837; v5838 |] in let bytes = fields |> Array.collect (fun value -> let payload = System.Text.Encoding.UTF8.GetBytes(value) in let length = System.BitConverter.GetBytes(System.Net.IPAddress.HostToNetworkOrder(payload.Length)) in Array.append length payload) in System.Convert.ToBase64String(bytes))
         v5839
 method1(v5775, v5840)
-method2(v5775)
+method1(v5775, v5775)
 method1(v5775, v5840)
 let struct (v5864 : string, v5865 : string, v5866 : string, v5867 : string, v5868 : string, v5869 : string, v5870 : string) =
     match v5803 with

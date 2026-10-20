@@ -1,8 +1,10 @@
-@external(erlang, "math", "log")
-pub fn spiral_math_log(x: Float) -> Float
-
-@external(erlang, "math", "exp")
-pub fn spiral_math_exp(x: Float) -> Float
+import gleam/float
+pub fn spiral_math_log(x: Float) -> Float {
+  case float.logarithm(x) {
+    Ok(value) -> value
+    Error(_) -> panic as "spiral math: log outside the real domain"
+  }
+}
 
 @external(erlang, "math", "tanh")
 pub fn spiral_math_tanh(x: Float) -> Float
@@ -34,7 +36,7 @@ let v8 =
 let v11 =
     case v8 {
         True -> {
-            let v9 = spiral_math_exp(v0)
+            let v9 = float.exponential(v0)
             let v10 = v9 == v1
             v10
         }
@@ -45,7 +47,7 @@ let v11 =
 let v14 =
     case v11 {
         True -> {
-            let v12 = spiral_math_exp(v2)
+            let v12 = float.exponential(v2)
             let v13 = v12 == v3
             v13
         }

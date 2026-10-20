@@ -12,8 +12,8 @@ defmodule Mix.Tasks.Spiral.CompilerDaemon do
         IO.puts("no compiler daemon is listening")
 
       daemons ->
-        IO.puts("port\tpid\tstamp\tidle_min\tqueued\tretiring")
-        Enum.each(daemons, fn d -> IO.puts("#{d.port}\t#{d.pid}\t#{d.stamp}\t#{d.idle_min}\t#{d.queued}\t#{d.retiring}") end)
+        IO.puts("port\tpid\tstamp\tidle_min\tqueued\tretiring\towner")
+        Enum.each(daemons, fn d -> IO.puts("#{d.port}\t#{d.pid}\t#{d.stamp}\t#{d.idle_min}\t#{d.queued}\t#{d.retiring}\t#{d.owner}") end)
     end
   end
 

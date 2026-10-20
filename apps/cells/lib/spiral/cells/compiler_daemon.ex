@@ -91,6 +91,8 @@ defmodule Spiral.Cells.CompilerDaemon do
   @spec banner() :: String.t()
   def banner, do: "spiral-cells\t#{@version}\t#{System.pid()}\t#{boot_stamp()}"
 
+  defp owner, do: (System.get_env("SPIRAL_CELLS_DAEMON_OWNER") || "unrecorded") |> String.replace(["\t", "\r", "\n"], " ")
+
   defp boot_stamp do
     case :persistent_term.get({__MODULE__, :boot_stamp}, :unset) do
       :unset ->
@@ -845,7 +847,7 @@ defmodule Spiral.Cells.CompilerDaemon do
 
           "status" ->
             %{idle_min: idle_min, queued: queued, retiring: retiring} = GenServer.call(server, :status, 5_000)
-            :gen_tcp.send(sock, "status\t#{System.pid()}\t#{boot_stamp()}\t#{idle_min}\t#{queued}\t#{retiring}\n")
+            :gen_tcp.send(sock, "status\t#{System.pid()}\t#{boot_stamp()}\t#{idle_min}\t#{queued}\t#{retiring}\t#{owner()}\n")
             handle(sock, server, listen)
 
           "notebook\t" <> request ->

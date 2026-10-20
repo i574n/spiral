@@ -34,15 +34,15 @@ defmodule Spiral.Cells.CompilerClient do
             case recv_line(sock, 1_000) do
               {:ok, "status\t" <> rest} ->
                 case String.split(String.trim(rest), "\t") do
-                  [pid, stamp, idle, queued, retiring] ->
-                    %{port: port, pid: pid, stamp: stamp, idle_min: idle, queued: queued, retiring: retiring}
+                  [pid, stamp, idle, queued, retiring | owner] ->
+                    %{port: port, pid: pid, stamp: stamp, idle_min: idle, queued: queued, retiring: retiring, owner: Enum.join(owner, " ")}
 
                   _ ->
-                    %{port: port, pid: nil, stamp: nil, idle_min: nil, queued: nil, retiring: nil}
+                    %{port: port, pid: nil, stamp: nil, idle_min: nil, queued: nil, retiring: nil, owner: nil}
                 end
 
               _ ->
-                %{port: port, pid: nil, stamp: nil, idle_min: nil, queued: nil, retiring: nil}
+                %{port: port, pid: nil, stamp: nil, idle_min: nil, queued: nil, retiring: nil, owner: nil}
             end
 
           :gen_tcp.close(sock)
@@ -470,7 +470,8 @@ defmodule Spiral.Cells.CompilerClient do
     env = [
       {"PATH", path},
       {"MIX_ENV", mix_env()},
-      {"SPIRAL_CELLS_COMPILER_PORT", Integer.to_string(port)}
+      {"SPIRAL_CELLS_COMPILER_PORT", Integer.to_string(port)},
+      {"SPIRAL_CELLS_DAEMON_OWNER", daemon_owner()}
     ]
 
     case System.cmd("sh", ["-c", script, "sh", project, elixir, log, err],
@@ -492,6 +493,7 @@ defmodule Spiral.Cells.CompilerClient do
       $env:PATH = '#{String.replace(path, "'", "''")}'
       $env:MIX_ENV = '#{mix_env()}'
       $env:SPIRAL_CELLS_COMPILER_PORT = '#{port}'
+      $env:SPIRAL_CELLS_DAEMON_OWNER = '#{daemon_owner()}'
       Start-Process -FilePath $env:ComSpec -WorkingDirectory '#{String.replace(project, "'", "''")}' -WindowStyle Hidden -ArgumentList '#{String.replace(daemon_command_line(elixir, log, err), "'", "''")}'
       """
 
@@ -503,6 +505,12 @@ defmodule Spiral.Cells.CompilerClient do
         {:error,
          process_error("could not start the compiler daemon (#{status}): #{String.trim(out)}")}
     end
+  end
+
+  @doc false
+  def daemon_owner do
+    command = System.argv() |> Enum.join(" ") |> String.replace(["\t", "\r", "\n", "'", "\""], " ") |> String.slice(0, 160)
+    "os_pid #{System.pid()} argv #{command}"
   end
 
   @doc false

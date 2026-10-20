@@ -40,9 +40,9 @@ inl render props_fn : _ _ =
                     props.data
                     |> optionm'.unbox
                     |> optionm.map leptos.signal_get
-                    |> optionm'.default_value (;[] |> am'.to_vec)
+                    |> optionm'.default_value (;[] |> am'.base |> am'.to_vec)
                 match data |> am'.from_vec with
-                | (a ;[] : _ int _) =>
+                | (array ;[] : array _) =>
                     "No data"
                     |> error_label.render
                     |> leptos.element_to_fragment

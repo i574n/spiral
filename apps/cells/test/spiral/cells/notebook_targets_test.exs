@@ -52,4 +52,12 @@ defmodule Spiral.Cells.NotebookTargetsTest do
       if saved, do: System.put_env("SPIRAL_CELLS_DEFAULT_TARGET", saved)
     end
   end
+
+  test "a test's own target inherits the static prelude's crates for the same tool" do
+    defaults = Spiral.Cells.Builders.commands("///> rust -d serde_json -d chrono")
+    [rust] = Notebook.inherit_deps(Spiral.Cells.Builders.commands("///> rust -d serde_json"), defaults)
+    assert Enum.map(rust.deps, & &1.name) == ["serde_json", "chrono"]
+    [zig] = Notebook.inherit_deps(Spiral.Cells.Builders.commands("///> zig"), defaults)
+    assert zig.deps == []
+  end
 end

@@ -115,12 +115,10 @@ fn spiralMain() i32 {
     var v0: i32 = undefined; _ = &v0;
     var v1: i32 = undefined; _ = &v1;
     var v2: bool = undefined; _ = &v2;
-    var v3: bool = undefined; _ = &v3;
     v0 = @as(i32, 7);
     v1 = v0 *% @as(i32, 2);
-    v2 = v1 == @as(i32, 14);
-    v3 = v2 != true;
-    if (v3) {
+    v2 = v1 != @as(i32, 14);
+    if (v2) {
         return @as(i32, 1);
     } else {
         return @as(i32, 0);

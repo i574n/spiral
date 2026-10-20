@@ -381,396 +381,7 @@ fn utf8_scalar_at_byte_offset_1(p0: []const u8, p1: i32) i32 {
         }
     }
 }
-fn utf8_canonical_equal_bounded_loop_0(p0: []const u8, p1: i32, p2: i32, p3: i32, p4: i32, p5: i32, p6: i32) bool {
-    var v0: []const u8 = p0; _ = &v0;
-    var v1: i32 = p1; _ = &v1;
-    var v2: i32 = p2; _ = &v2;
-    var v3: i32 = p3; _ = &v3;
-    var v4: i32 = p4; _ = &v4;
-    var v5: i32 = p5; _ = &v5;
-    var v6: i32 = p6; _ = &v6;
-    var v7: bool = undefined; _ = &v7;
-    var v75: i32 = undefined; _ = &v75;
-    var v76: i32 = undefined; _ = &v76;
-    var v77: i32 = undefined; _ = &v77;
-    var v8: bool = undefined; _ = &v8;
-    var v9: bool = undefined; _ = &v9;
-    var v13: i32 = undefined; _ = &v13;
-    var v14: bool = undefined; _ = &v14;
-    var v19: i32 = undefined; _ = &v19;
-    var v15: bool = undefined; _ = &v15;
-    var v16: bool = undefined; _ = &v16;
-    var v20: bool = undefined; _ = &v20;
-    var v66: i32 = undefined; _ = &v66;
-    var v67: i32 = undefined; _ = &v67;
-    var v21: bool = undefined; _ = &v21;
-    var v22: bool = undefined; _ = &v22;
-    var v23: bool = undefined; _ = &v23;
-    var v24: bool = undefined; _ = &v24;
-    var v25: bool = undefined; _ = &v25;
-    var v26: bool = undefined; _ = &v26;
-    var v27: bool = undefined; _ = &v27;
-    var v28: bool = undefined; _ = &v28;
-    var v29: bool = undefined; _ = &v29;
-    var v30: bool = undefined; _ = &v30;
-    var v31: bool = undefined; _ = &v31;
-    var v32: bool = undefined; _ = &v32;
-    var v33: bool = undefined; _ = &v33;
-    var v34: bool = undefined; _ = &v34;
-    var v35: bool = undefined; _ = &v35;
-    var v68: i32 = undefined; _ = &v68;
-    var v78: bool = undefined; _ = &v78;
-    var v146: i32 = undefined; _ = &v146;
-    var v147: i32 = undefined; _ = &v147;
-    var v148: i32 = undefined; _ = &v148;
-    var v79: bool = undefined; _ = &v79;
-    var v80: bool = undefined; _ = &v80;
-    var v84: i32 = undefined; _ = &v84;
-    var v85: bool = undefined; _ = &v85;
-    var v90: i32 = undefined; _ = &v90;
-    var v86: bool = undefined; _ = &v86;
-    var v87: bool = undefined; _ = &v87;
-    var v91: bool = undefined; _ = &v91;
-    var v137: i32 = undefined; _ = &v137;
-    var v138: i32 = undefined; _ = &v138;
-    var v92: bool = undefined; _ = &v92;
-    var v93: bool = undefined; _ = &v93;
-    var v94: bool = undefined; _ = &v94;
-    var v95: bool = undefined; _ = &v95;
-    var v96: bool = undefined; _ = &v96;
-    var v97: bool = undefined; _ = &v97;
-    var v98: bool = undefined; _ = &v98;
-    var v99: bool = undefined; _ = &v99;
-    var v100: bool = undefined; _ = &v100;
-    var v101: bool = undefined; _ = &v101;
-    var v102: bool = undefined; _ = &v102;
-    var v103: bool = undefined; _ = &v103;
-    var v104: bool = undefined; _ = &v104;
-    var v105: bool = undefined; _ = &v105;
-    var v106: bool = undefined; _ = &v106;
-    var v139: i32 = undefined; _ = &v139;
-    var v149: bool = undefined; _ = &v149;
-    var v150: bool = undefined; _ = &v150;
-    var v151: bool = undefined; _ = &v151;
-    var v152: bool = undefined; _ = &v152;
-    var tmp64: []const u8 = undefined; _ = &tmp64;
-    var tmp65: i32 = undefined; _ = &tmp65;
-    var tmp66: i32 = undefined; _ = &tmp66;
-    var tmp67: i32 = undefined; _ = &tmp67;
-    var tmp68: i32 = undefined; _ = &tmp68;
-    var tmp69: i32 = undefined; _ = &tmp69;
-    var tmp70: i32 = undefined; _ = &tmp70;
-    while (true) {
-        v7 = v3 >= @as(i32, 0);
-        if (v7) {
-            v75 = v3;
-            v76 = v1;
-            v77 = @as(i32, -1);
-        } else {
-            v8 = v1 == v5;
-            if (v8) {
-                v75 = @as(i32, -1);
-                v76 = v1;
-                v77 = @as(i32, -1);
-            } else {
-                v9 = v1 > v5;
-                if (v9) {
-                    if (spiral_true) spiralFail("UTF-8 canonical stream offset exceeds the string.");
-                } else {
-                    v13 = utf8_scalar_at_byte_offset_1(v0, v1);
-                    v14 = v13 < @as(i32, 128);
-                    if (v14) {
-                        v19 = @as(i32, 1);
-                    } else {
-                        v15 = v13 < @as(i32, 2048);
-                        if (v15) {
-                            v19 = @as(i32, 2);
-                        } else {
-                            v16 = v13 < @as(i32, 65536);
-                            if (v16) {
-                                v19 = @as(i32, 3);
-                            } else {
-                                v19 = @as(i32, 4);
-                            }
-                        }
-                    }
-                    v20 = v13 == @as(i32, 192);
-                    if (v20) {
-                        v66 = @as(i32, 65);
-                        v67 = @as(i32, 768);
-                    } else {
-                        v21 = v13 == @as(i32, 193);
-                        if (v21) {
-                            v66 = @as(i32, 65);
-                            v67 = @as(i32, 769);
-                        } else {
-                            v22 = v13 == @as(i32, 195);
-                            if (v22) {
-                                v66 = @as(i32, 65);
-                                v67 = @as(i32, 771);
-                            } else {
-                                v23 = v13 == @as(i32, 196);
-                                if (v23) {
-                                    v66 = @as(i32, 65);
-                                    v67 = @as(i32, 776);
-                                } else {
-                                    v24 = v13 == @as(i32, 199);
-                                    if (v24) {
-                                        v66 = @as(i32, 67);
-                                        v67 = @as(i32, 807);
-                                    } else {
-                                        v25 = v13 == @as(i32, 201);
-                                        if (v25) {
-                                            v66 = @as(i32, 69);
-                                            v67 = @as(i32, 769);
-                                        } else {
-                                            v26 = v13 == @as(i32, 211);
-                                            if (v26) {
-                                                v66 = @as(i32, 79);
-                                                v67 = @as(i32, 769);
-                                            } else {
-                                                v27 = v13 == @as(i32, 213);
-                                                if (v27) {
-                                                    v66 = @as(i32, 79);
-                                                    v67 = @as(i32, 771);
-                                                } else {
-                                                    v28 = v13 == @as(i32, 224);
-                                                    if (v28) {
-                                                        v66 = @as(i32, 97);
-                                                        v67 = @as(i32, 768);
-                                                    } else {
-                                                        v29 = v13 == @as(i32, 225);
-                                                        if (v29) {
-                                                            v66 = @as(i32, 97);
-                                                            v67 = @as(i32, 769);
-                                                        } else {
-                                                            v30 = v13 == @as(i32, 227);
-                                                            if (v30) {
-                                                                v66 = @as(i32, 97);
-                                                                v67 = @as(i32, 771);
-                                                            } else {
-                                                                v31 = v13 == @as(i32, 228);
-                                                                if (v31) {
-                                                                    v66 = @as(i32, 97);
-                                                                    v67 = @as(i32, 776);
-                                                                } else {
-                                                                    v32 = v13 == @as(i32, 231);
-                                                                    if (v32) {
-                                                                        v66 = @as(i32, 99);
-                                                                        v67 = @as(i32, 807);
-                                                                    } else {
-                                                                        v33 = v13 == @as(i32, 233);
-                                                                        if (v33) {
-                                                                            v66 = @as(i32, 101);
-                                                                            v67 = @as(i32, 769);
-                                                                        } else {
-                                                                            v34 = v13 == @as(i32, 243);
-                                                                            if (v34) {
-                                                                                v66 = @as(i32, 111);
-                                                                                v67 = @as(i32, 769);
-                                                                            } else {
-                                                                                v35 = v13 == @as(i32, 245);
-                                                                                if (v35) {
-                                                                                    v66 = @as(i32, 111);
-                                                                                    v67 = @as(i32, 771);
-                                                                                } else {
-                                                                                    v66 = v13;
-                                                                                    v67 = @as(i32, -1);
-                                                                                }
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    v68 = v1 +% v19;
-                    v75 = v66;
-                    v76 = v68;
-                    v77 = v67;
-                }
-            }
-        }
-        v78 = v4 >= @as(i32, 0);
-        if (v78) {
-            v146 = v4;
-            v147 = v2;
-            v148 = @as(i32, -1);
-        } else {
-            v79 = v2 == v6;
-            if (v79) {
-                v146 = @as(i32, -1);
-                v147 = v2;
-                v148 = @as(i32, -1);
-            } else {
-                v80 = v2 > v6;
-                if (v80) {
-                    if (spiral_true) spiralFail("UTF-8 canonical stream offset exceeds the string.");
-                } else {
-                    v84 = utf8_scalar_at_byte_offset_1(v0, v2);
-                    v85 = v84 < @as(i32, 128);
-                    if (v85) {
-                        v90 = @as(i32, 1);
-                    } else {
-                        v86 = v84 < @as(i32, 2048);
-                        if (v86) {
-                            v90 = @as(i32, 2);
-                        } else {
-                            v87 = v84 < @as(i32, 65536);
-                            if (v87) {
-                                v90 = @as(i32, 3);
-                            } else {
-                                v90 = @as(i32, 4);
-                            }
-                        }
-                    }
-                    v91 = v84 == @as(i32, 192);
-                    if (v91) {
-                        v137 = @as(i32, 65);
-                        v138 = @as(i32, 768);
-                    } else {
-                        v92 = v84 == @as(i32, 193);
-                        if (v92) {
-                            v137 = @as(i32, 65);
-                            v138 = @as(i32, 769);
-                        } else {
-                            v93 = v84 == @as(i32, 195);
-                            if (v93) {
-                                v137 = @as(i32, 65);
-                                v138 = @as(i32, 771);
-                            } else {
-                                v94 = v84 == @as(i32, 196);
-                                if (v94) {
-                                    v137 = @as(i32, 65);
-                                    v138 = @as(i32, 776);
-                                } else {
-                                    v95 = v84 == @as(i32, 199);
-                                    if (v95) {
-                                        v137 = @as(i32, 67);
-                                        v138 = @as(i32, 807);
-                                    } else {
-                                        v96 = v84 == @as(i32, 201);
-                                        if (v96) {
-                                            v137 = @as(i32, 69);
-                                            v138 = @as(i32, 769);
-                                        } else {
-                                            v97 = v84 == @as(i32, 211);
-                                            if (v97) {
-                                                v137 = @as(i32, 79);
-                                                v138 = @as(i32, 769);
-                                            } else {
-                                                v98 = v84 == @as(i32, 213);
-                                                if (v98) {
-                                                    v137 = @as(i32, 79);
-                                                    v138 = @as(i32, 771);
-                                                } else {
-                                                    v99 = v84 == @as(i32, 224);
-                                                    if (v99) {
-                                                        v137 = @as(i32, 97);
-                                                        v138 = @as(i32, 768);
-                                                    } else {
-                                                        v100 = v84 == @as(i32, 225);
-                                                        if (v100) {
-                                                            v137 = @as(i32, 97);
-                                                            v138 = @as(i32, 769);
-                                                        } else {
-                                                            v101 = v84 == @as(i32, 227);
-                                                            if (v101) {
-                                                                v137 = @as(i32, 97);
-                                                                v138 = @as(i32, 771);
-                                                            } else {
-                                                                v102 = v84 == @as(i32, 228);
-                                                                if (v102) {
-                                                                    v137 = @as(i32, 97);
-                                                                    v138 = @as(i32, 776);
-                                                                } else {
-                                                                    v103 = v84 == @as(i32, 231);
-                                                                    if (v103) {
-                                                                        v137 = @as(i32, 99);
-                                                                        v138 = @as(i32, 807);
-                                                                    } else {
-                                                                        v104 = v84 == @as(i32, 233);
-                                                                        if (v104) {
-                                                                            v137 = @as(i32, 101);
-                                                                            v138 = @as(i32, 769);
-                                                                        } else {
-                                                                            v105 = v84 == @as(i32, 243);
-                                                                            if (v105) {
-                                                                                v137 = @as(i32, 111);
-                                                                                v138 = @as(i32, 769);
-                                                                            } else {
-                                                                                v106 = v84 == @as(i32, 245);
-                                                                                if (v106) {
-                                                                                    v137 = @as(i32, 111);
-                                                                                    v138 = @as(i32, 771);
-                                                                                } else {
-                                                                                    v137 = v84;
-                                                                                    v138 = @as(i32, -1);
-                                                                                }
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    v139 = v2 +% v90;
-                    v146 = v137;
-                    v147 = v139;
-                    v148 = v138;
-                }
-            }
-        }
-        v149 = v75 < @as(i32, 0);
-        if (v149) {
-            v150 = v146 == @as(i32, -1);
-            return v150;
-        } else {
-            v151 = v146 < @as(i32, 0);
-            if (v151) {
-                return false;
-            } else {
-                v152 = v75 == v146;
-                if (v152) {
-                    tmp64 = v0;
-                    tmp65 = v76;
-                    tmp66 = v147;
-                    tmp67 = v77;
-                    tmp68 = v148;
-                    tmp69 = v5;
-                    tmp70 = v6;
-                    v0 = tmp64;
-                    v1 = tmp65;
-                    v2 = tmp66;
-                    v3 = tmp67;
-                    v4 = tmp68;
-                    v5 = tmp69;
-                    v6 = tmp70;
-                    continue;
-                } else {
-                    return false;
-                }
-            }
-        }
-    }
-}
-fn utf8_canonical_equal_bounded_loop_3(p0: []const u8, p1: []const u8, p2: i32, p3: i32, p4: i32, p5: i32, p6: i32, p7: i32) bool {
+fn utf8_canonical_equal_bounded_loop_0(p0: []const u8, p1: []const u8, p2: i32, p3: i32, p4: i32, p5: i32, p6: i32, p7: i32) bool {
     var v0: []const u8 = p0; _ = &v0;
     var v1: []const u8 = p1; _ = &v1;
     var v2: i32 = p2; _ = &v2;
@@ -1255,7 +866,7 @@ fn spiralMain() i32 {
     v4 = @as(i32, -1);
     v5 = @as(i32, 5);
     v6 = @as(i32, 5);
-    v7 = utf8_canonical_equal_bounded_loop_0(v0, v1, v2, v3, v4, v5, v6);
+    v7 = utf8_canonical_equal_bounded_loop_0(v0, v0, v1, v2, v3, v4, v5, v6);
     v8 = "";
     v9 = @as(i32, 0);
     v10 = @as(i32, 0);
@@ -1263,7 +874,7 @@ fn spiralMain() i32 {
     v12 = @as(i32, -1);
     v13 = @as(i32, 0);
     v14 = @as(i32, 0);
-    v15 = utf8_canonical_equal_bounded_loop_0(v8, v9, v10, v11, v12, v13, v14);
+    v15 = utf8_canonical_equal_bounded_loop_0(v8, v8, v9, v10, v11, v12, v13, v14);
     v16 = "\xc3\xa9\xc3\xb5\xc3\xa7";
     v17 = "e\xcc\x81o\xcc\x83c\xcc\xa7";
     v18 = @as(i32, 0);
@@ -1272,7 +883,7 @@ fn spiralMain() i32 {
     v21 = @as(i32, -1);
     v22 = @as(i32, 6);
     v23 = @as(i32, 9);
-    v24 = utf8_canonical_equal_bounded_loop_3(v16, v17, v18, v19, v20, v21, v22, v23);
+    v24 = utf8_canonical_equal_bounded_loop_0(v16, v17, v18, v19, v20, v21, v22, v23);
     v25 = "\xc3\xa9\xcc\x83";
     v26 = "e\xcc\x81\xcc\x83";
     v27 = @as(i32, 0);
@@ -1281,7 +892,7 @@ fn spiralMain() i32 {
     v30 = @as(i32, -1);
     v31 = @as(i32, 4);
     v32 = @as(i32, 5);
-    v33 = utf8_canonical_equal_bounded_loop_3(v25, v26, v27, v28, v29, v30, v31, v32);
+    v33 = utf8_canonical_equal_bounded_loop_0(v25, v26, v27, v28, v29, v30, v31, v32);
     v34 = "\xc3\x80";
     v35 = "A\xcc\x80";
     v36 = @as(i32, 0);
@@ -1290,7 +901,7 @@ fn spiralMain() i32 {
     v39 = @as(i32, -1);
     v40 = @as(i32, 2);
     v41 = @as(i32, 3);
-    v42 = utf8_canonical_equal_bounded_loop_3(v34, v35, v36, v37, v38, v39, v40, v41);
+    v42 = utf8_canonical_equal_bounded_loop_0(v34, v35, v36, v37, v38, v39, v40, v41);
     v43 = "\xce\xa9";
     v44 = @as(i32, 0);
     v45 = @as(i32, 0);
@@ -1298,7 +909,7 @@ fn spiralMain() i32 {
     v47 = @as(i32, -1);
     v48 = @as(i32, 2);
     v49 = @as(i32, 2);
-    v50 = utf8_canonical_equal_bounded_loop_0(v43, v44, v45, v46, v47, v48, v49);
+    v50 = utf8_canonical_equal_bounded_loop_0(v43, v43, v44, v45, v46, v47, v48, v49);
     v51 = "e\xcc\x83\xcc\x81";
     v52 = @as(i32, 0);
     v53 = @as(i32, 0);
@@ -1306,7 +917,7 @@ fn spiralMain() i32 {
     v55 = @as(i32, -1);
     v56 = @as(i32, 5);
     v57 = @as(i32, 5);
-    v58 = utf8_canonical_equal_bounded_loop_3(v26, v51, v52, v53, v54, v55, v56, v57);
+    v58 = utf8_canonical_equal_bounded_loop_0(v26, v51, v52, v53, v54, v55, v56, v57);
     v59 = "\xc3\xa9";
     v60 = "\xc3\xa1";
     v61 = @as(i32, 0);
@@ -1315,7 +926,7 @@ fn spiralMain() i32 {
     v64 = @as(i32, -1);
     v65 = @as(i32, 2);
     v66 = @as(i32, 2);
-    v67 = utf8_canonical_equal_bounded_loop_3(v59, v60, v61, v62, v63, v64, v65, v66);
+    v67 = utf8_canonical_equal_bounded_loop_0(v59, v60, v61, v62, v63, v64, v65, v66);
     v68 = "\xcf\x89";
     v69 = @as(i32, 0);
     v70 = @as(i32, 0);
@@ -1323,7 +934,7 @@ fn spiralMain() i32 {
     v72 = @as(i32, -1);
     v73 = @as(i32, 2);
     v74 = @as(i32, 2);
-    v75 = utf8_canonical_equal_bounded_loop_3(v43, v68, v69, v70, v71, v72, v73, v74);
+    v75 = utf8_canonical_equal_bounded_loop_0(v43, v68, v69, v70, v71, v72, v73, v74);
     v76 = "e";
     v77 = @as(i32, 0);
     v78 = @as(i32, 0);
@@ -1331,7 +942,7 @@ fn spiralMain() i32 {
     v80 = @as(i32, -1);
     v81 = @as(i32, 2);
     v82 = @as(i32, 1);
-    v83 = utf8_canonical_equal_bounded_loop_3(v59, v76, v77, v78, v79, v80, v81, v82);
+    v83 = utf8_canonical_equal_bounded_loop_0(v59, v76, v77, v78, v79, v80, v81, v82);
     if (v7) {
         if (v15) {
             if (v24) {

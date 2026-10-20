@@ -26,7 +26,7 @@ test run_tests static =
             runtime.execution_options fun x => { x with
                 command = "cargo +nightly-2026-10-18 test --timings -- --show-output"
                 working_directory = file_system.get_source_directory () |> Some |> optionm'.box
-                environment_variables = ;[ "TEST", "1" ]
+                environment_variables = am'.base ;[ "TEST", "1" ]
             }
             |> runtime.execute_with_options
             |> fun exit_code, result =>

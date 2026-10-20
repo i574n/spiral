@@ -6,6 +6,7 @@ pub fn spiral_string_length(text: String) -> Int {
 }
 
 @external(erlang, "erlang", "halt")
+@external(javascript, "node:process", "exit")
 pub fn spiral_halt(code: Int) -> a
 
 pub fn spiral_string_index(text: String, index: Int) -> String {

@@ -772,6 +772,19 @@ Every gate is a command plus a number. "Looks fine" is not a gate.
   and on Rust. Gate: frontier fixtures compiled by a Spiral-hosted engine on one backend. That is a separate
   epic, planned when Phase 6 is done.
 
+### Hopac 0.5.1 caveats (docs re-read 2026-10-19)
+
+- `Scheduler.kill` is for an idle local scheduler only: a per-build scheduler waits for idle (`Scheduler.wait`)
+  before `kill`, on the failure path too.
+- `Job.conCollect` is coarse-grained and raises `AggregateException` when several jobs fail: codegen per method
+  (D16) runs in chunks and reports the first failure in single-flight's order (D6).
+- `Stream.Src.tap` sees only the events after it attaches, so the HUD (D14) starts from a snapshot of the counts.
+- D3 fills use `IVar.fill`, which fails on a second write; `tryFill` would hide a double commit.
+- `choose` is left-biased among available alternatives, and a `withNackJob` constructor never runs when an
+  earlier alternative is already available (Programming.md), as the G2 ban list and D16.2 assume. On Gleam a selector
+  takes messages in mailbox order, not in the order its subjects were added, so D15's left bias needs a zero-timeout
+  poll of the left subject before blocking on the selector (HOPACSOTA-P7).
+
 ## Gates every phase runs
 
 | Gate | Command | Pass |

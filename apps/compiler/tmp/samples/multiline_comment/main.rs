@@ -4,9 +4,8 @@ use std::rc::Rc;
 fn spiral_main() -> i32 {
     let mut v0: i32 = 7i32;
     let mut v1: i32 = v0.wrapping_mul(2i32);
-    let mut v2: bool = v1 == 14i32;
-    let mut v3: bool = v2 != true;
-    if v3 {
+    let mut v2: bool = v1 != 14i32;
+    if v2 {
         1i32
     } else {
         0i32

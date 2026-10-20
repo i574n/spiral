@@ -160,16 +160,19 @@ fn method3(p0: i32) i32 {
         return @as(i32, 1);
     }
 }
-fn method7(p0: []const u8) bool {
+fn method7(p0: []const u8, p1: []const u8) bool {
     var v0: []const u8 = p0; _ = &v0;
-    return true;
+    var v1: []const u8 = p1; _ = &v1;
+    var v2: bool = undefined; _ = &v2;
+    v2 = std.mem.eql(u8, v0, v1);
+    return v2;
 }
 fn method2(p0: i32) i32 {
     var v0: i32 = p0; _ = &v0;
     var v1: []const u8 = undefined; _ = &v1;
     var v2: bool = undefined; _ = &v2;
     v1 = "spiral";
-    v2 = method7(v1);
+    v2 = method7(v1, v1);
     if (v2) {
         return method3(v0);
     } else {

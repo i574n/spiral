@@ -9,7 +9,7 @@ open sm'_operators
 /// ### get_union_fields
 inl get_union_fields forall union_type. () : list (string * union_type) =
     real
-        real_core.union_to_record
+        real_core.union_type_to_record
             `union_type
             forall union_record_type. =>
                 real_core.record_type_fold
@@ -100,23 +100,21 @@ test get_union_fields =
     get_union_fields ()
     |> listm'.box
     |> listm'.to_array'
-    |> a
+    |> array
     |> am'.sort_by snd
-    |> fun (a x : _ int _) => x
-    |> _assert_eq' ;[ "Wasm", Wasm; "Contract", Contract ]
-
+    |> fun (array x : array _) => x
+    |> _assert_eq' (am'.base ;[ "Wasm", Wasm; "Contract", Contract ])
     get_union_fields ()
     |> listm'.box
     |> listm'.to_array'
-    |> a
+    |> array
     |> am'.sort_by snd
-    |> fun (a x : _ int _) => x
-    |> _assert_eq' ;[ "Some", Some 0i32; "None", None ]
-
+    |> fun (array x : array _) => x
+    |> _assert_eq' (am'.base ;[ "Some", Some 0i32; "None", None ])
 /// ### get_union_fields_untag
 inl get_union_fields_untag forall union_type. () : list (string * union_type) =
     real
-        real_core.union_to_record
+        real_core.union_type_to_record
             `union_type
             forall union_record_type. =>
                 inl result =
@@ -199,7 +197,7 @@ inl union_try_pick forall t. (key : string) : option t =
     )
     |> listm'.box
     |> listm'.to_array'
-    |> fun x => a x : _ int _
+    |> fun x => array x : array _
     |> am'.try_pick fun key', x =>
         if key' =. key
         then Some x
@@ -252,7 +250,7 @@ test union_try_pick_2 =
 /// ### union_cases_fold
 inl union_cases_fold forall union_type state. (step : state -> union_type -> state) (initial : state) : state =
     real
-        real_core.union_to_record `union_type forall union_record_type. =>
+        real_core.union_type_to_record `union_type forall union_record_type. =>
             real_core.record_type_fold
                 fun acc key => forall value. => step acc (real_core.nominal_create `union_type (key, ()))
                 initial
@@ -280,7 +278,7 @@ inl union_to_string forall t. (x : t) : string =
         else
             inl has_case =
                 real
-                    real_core.union_to_record
+                    real_core.union_type_to_record
                         `t
                         forall union_record_type. =>
                             real_core.record_type_fold_back

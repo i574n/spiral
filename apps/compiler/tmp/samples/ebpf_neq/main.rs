@@ -8,16 +8,14 @@ fn spiral_main() -> i32 {
     let mut v3: u32 = 1u32;
     let mut v4: f32 = 1.5f32;
     let mut v5: f32 = -(v4);
-    let mut v6: bool = v0 == v1;
-    let mut v7: bool = v6 != true;
-    if v7 {
-        let mut v8: bool = v2 == v3;
-        let mut v9: bool = v8 != true;
-        if v9 {
+    let mut v6: bool = v0 != v1;
+    if v6 {
+        let mut v7: bool = v2 != v3;
+        if v7 {
             2i32
         } else {
-            let mut v10: bool = v5 == -1.5f32;
-            if v10 {
+            let mut v8: bool = v5 == -1.5f32;
+            if v8 {
                 0i32
             } else {
                 3i32

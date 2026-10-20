@@ -638,7 +638,7 @@ inl try forall t. (fn : () -> t) (ex_fn : exn -> option t) : option t =
 ///> typescript
 test try no_agree "exception text is backend-specific" =
     try
-        fun () => a ;[ 0i32 ] |> am'.index 1i32 |> sm'.format
+        fun () => ;[ 0i32 ] |> am'.index 1i32 |> sm'.format
         (fun ex => $'!ex ' |> sm'.format_exception |> Some)
     |> optionm.value
     |> _assert_eq (run_target function
@@ -659,7 +659,7 @@ test try no_agree "exception text is backend-specific" =
 ///> typescript
 test try_2 =
     try
-        fun () => a ;[ 0i32 ] |> am'.index 0i32 |> sm'.format
+        fun () => ;[ 0i32 ] |> am'.index 0i32 |> sm'.format
         (fun ex => $'!ex ' |> sm'.format_exception |> Some)
     |> optionm.value
     |> _assert_eq "0"
@@ -687,6 +687,17 @@ inl try_unit forall t. (fn : () -> ()) (ex_fn : (() -> exn) -> ()) : t =
         | Zig => fun () =>
             fn ()
             $'std.mem.zeroes(`t)' : t
+        | Gleam _ => fun () =>
+            global "import exception"
+            inl fn = dyn fn
+            inl ex_fn = dyn ex_fn
+            $'case exception.rescue(fn() { !fn(Nil) }) { Ok(_) -> Nil Error(_) -> !ex_fn(fn(_) { Nil }) }' : ()
+            $'Nil' : t
+        | Lua => fun () =>
+            inl fn = dyn fn
+            inl ex_fn = dyn ex_fn
+            $'if not pcall(!fn) then !ex_fn(function(dom) return nil end) end' : ()
+            $'(function() return nil end)()' : t
         | _ => fun () =>
             if try_unit_fsharp_python ()
             then
@@ -754,6 +765,19 @@ inl try_finally forall t. (fn : () -> ()) (finally : () -> ()) : t =
             fn ()
             finally ()
             $'std.mem.zeroes(`t)' : t
+        | Gleam _ => fun () =>
+            global "import exception"
+            inl fn = dyn fn
+            inl finally = dyn finally
+            $'exception.defer(fn() { !finally(Nil) }, fn() { !fn(Nil) })' : ()
+            $'Nil' : t
+        | Lua => fun () =>
+            inl fn = dyn fn
+            inl finally = dyn finally
+            $'local spiral_try_ok, spiral_try_error = pcall(!fn)' : ()
+            finally ()
+            $'if not spiral_try_ok then error(spiral_try_error, 0) end' : ()
+            $'(function() return nil end)()' : t
         | _ => fun () =>
             if try_unit_fsharp_python ()
             then
@@ -799,3 +823,27 @@ inl try_finally forall t. (fn : () -> ()) (finally : () -> ()) : t =
 
 /// ### (:>)
 prototype (~:>) r : forall t. t -> r
+
+///> gleam -d exception=">= 2.0.0 and < 3.0.0"
+test try_unit_rescues_a_failure_on_gleam =
+    inl hits = mut 0i32
+    try_unit (fun () => failwith "boom") (fun _ => hits <- *hits + 1i32)
+    *hits |> _assert_eq 1i32
+
+///> gleam -d exception=">= 2.0.0 and < 3.0.0"
+test try_finally_cleans_up_on_gleam =
+    inl cleaned = mut 0i32
+    try_finally (fun () => ()) (fun () => cleaned <- *cleaned + 1i32)
+    *cleaned |> _assert_eq 1i32
+
+///> lua
+test try_unit_rescues_a_failure_on_lua =
+    inl hits = mut 0i32
+    try_unit (fun () => failwith "boom") (fun _ => hits <- *hits + 1i32)
+    *hits |> _assert_eq 1i32
+
+///> lua
+test try_finally_cleans_up_on_lua =
+    inl cleaned = mut 0i32
+    try_finally (fun () => ()) (fun () => cleaned <- *cleaned + 1i32)
+    *cleaned |> _assert_eq 1i32

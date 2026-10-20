@@ -285,8 +285,8 @@ instance (~:>) fragment = fun x =>
     real
         typecase t with
         | array_base (view' (html_element ~el)) =>
-            inl x = a x
-            inl x = am.toList `a `int `(view' (html_element el)) x
+            inl x = array x
+            inl x = arraym.toList `array `(view' (html_element el)) x
             inl x = listm.map `(view' (html_element el)) `view (element_to_view `el) x
             view_list_to_fragment x
         | list (view' (html_element ~el)) =>

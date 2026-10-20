@@ -208,7 +208,7 @@ inl execution_options (fn : execution_options -> execution_options) : execution_
     {
         command = ""
         cancellation_token = None |> optionm'.box
-        environment_variables = ;[]
+        environment_variables = am'.base ;[]
         on_line = None |> optionm'.box
         stdin = None |> optionm'.box
         trace = true
@@ -760,7 +760,7 @@ test arg_union =
     |> command_init_arg ("trace-level", 't') (
         real arg_union `trace_level ignore
     )
-    |> command_get_matches_from ;[ "_"; "--trace-level"; "critical" ]
+    |> command_get_matches_from (am'.base ;[ "_"; "--trace-level"; "critical" ])
     |> matches_get_one "trace-level"
     |> optionm'.unwrap
     |> sm'.from_std_string
@@ -1066,7 +1066,7 @@ inl execute_with_options_fsharp (options : execution_options) : i32 * string =
                             |> iter_collect''
                             |> am'.vec_map sm'.from_std_string
                             |> am'.from_vec
-                            |> fun x => x : _ i32 _
+                            |> fun x => x : array _
                             |> seq.of_array
                             |> sm'.concat "\n"
                         |> optionm'.unbox
@@ -1140,7 +1140,7 @@ inl execute_with_options_rust (options : execution_options) : i32 * string =
                 lines
                 |> am'.vec_map sm'.from_std_string
                 |> am'.from_vec
-                |> fun x => x : _ i32 _
+                |> fun x => x : array _
                 |> seq.of_array
                 |> sm'.concat "\n"
                 |> sm'.trim

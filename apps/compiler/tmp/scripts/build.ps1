@@ -87,7 +87,16 @@ function Invoke-SpiralReadyToRun([string]$Dotnet, [string]$OutDir) {
         $log = & $cg.Tool $dll.FullName -o $tmp -r (Join-Path $cg.Framework '*.dll') @refs --targetos $os --targetarch $arch -O 2>&1
         $why = ($log | Select-Object -First 1) -replace '\s+', ' '
         if ($LASTEXITCODE -eq 0 -and (Test-Path $tmp)) {
-            try { [IO.File]::Move($tmp, $dll.FullName, $true); $done++; continue } catch { $why = $_.Exception.Message }
+            try { [IO.File]::Move($tmp, $dll.FullName, $true); $done++; continue }
+            catch {
+                $why = $_.Exception.Message
+                $aside = "$($dll.FullName).r2r-old-$(Get-Date -Format 'HHmmssfff')"
+                try { [IO.File]::Move($dll.FullName, $aside) } catch { $aside = $null }
+                if ($aside) {
+                    try { [IO.File]::Move($tmp, $dll.FullName); $done++; continue }
+                    catch { $why = $_.Exception.Message; [IO.File]::Move($aside, $dll.FullName) }
+                }
+            }
         }
         if (Test-Path $tmp) { [IO.File]::Delete($tmp) }
         if ($LASTEXITCODE -ne 0) { Set-Content $skip $stamp }
@@ -130,9 +139,19 @@ foreach ($m in $modes) {
     if ($Configuration -eq 'Release') { Unlock-SpiralOutputs (Join-Path $cache "bin/$m/SpiralCompiler/$Configuration/net11.0") }
     $buildDirectory = Get-SpiralBuildDirectory $dotnet
     Push-Location $(if ($buildDirectory) { $buildDirectory } else { Join-Path $BundleRoot 'compiler' })
-    try { & $dotnet @args }
+    try {
+        & $dotnet @args | Tee-Object -Variable buildOutput
+        $exit = $LASTEXITCODE
+        $retry = 0
+        while ($exit -ne 0 -and $Configuration -eq 'Release' -and $retry -lt 3 -and ($buildOutput -match 'MSB3021|MSB3027') -and -not ($buildOutput -match 'error FS\d')) {
+            $retry++
+            Write-Host "== outputs locked by running compilers: unlock and recopy, attempt $retry" -ForegroundColor Yellow
+            Unlock-SpiralOutputs (Join-Path $cache "bin/$m/SpiralCompiler/$Configuration/net11.0")
+            & $dotnet @args | Tee-Object -Variable buildOutput
+            $exit = $LASTEXITCODE
+        }
+    }
     finally { $env:DOTNET_gcServer, $env:DOTNET_GCConserveMemory, $env:MSBUILDDISABLENODEREUSE = $gcSaved; Pop-Location }
-    $exit = $LASTEXITCODE
     if ($exit -eq 0 -and $Configuration -eq 'Release') { Invoke-SpiralReadyToRun $dotnet (Join-Path $cache "bin/$m/SpiralCompiler/$Configuration/net11.0") }
     $seconds = [math]::Round($sw.Elapsed.TotalSeconds, 1)
     "$(Get-Date -Format s)`t$m`t$Configuration`t$seconds`t$exit`t$(Get-FileSha256 $core)`t$core" | Add-Content $receipts
