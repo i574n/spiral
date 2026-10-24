@@ -27,23 +27,17 @@ mutual
 partial def closure1 (p0 : Int32) (p1 : Int32) : IO Int32 := do
     let mut v0 : Int32 := p0
     let mut v1 : Int32 := p1
-    let mut v2 : Int32 := default
-    let mut v3 : Int32 := default
-    v2 := (v0 * (10 : Int32))
-    v3 := (v2 + v1)
+    let v2 : Int32 := (v0 * (10 : Int32))
+    let v3 : Int32 := (v2 + v1)
     return v3
 partial def f_c0 (p0 : Int32) : IO (Int32 → IO Int32) := do
     let mut v0 : Int32 := p0
     return (closure1 v0)
 partial def spiralMain : IO Int32 := do
-    let mut v0 : (Int32 → IO (Int32 → IO Int32)) := default
-    let mut v1 : (Int32 → IO Int32) := default
-    let mut v2 : Int32 := default
-    let mut v3 : Bool := default
-    v0 := f_c0
-    v1 := (← v0 (3 : Int32))
-    v2 := (← v1 (4 : Int32))
-    v3 := (v2 == (34 : Int32))
+    let v0 : (Int32 → IO (Int32 → IO Int32)) := f_c0
+    let v1 : (Int32 → IO Int32) := (← v0 (3 : Int32))
+    let v2 : Int32 := (← v1 (4 : Int32))
+    let v3 : Bool := (v2 == (34 : Int32))
     if v3 then
         return (0 : Int32)
     else

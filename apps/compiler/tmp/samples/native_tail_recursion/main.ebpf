@@ -42,8 +42,7 @@ static int32_t sp_method1(int32_t p0) {
         if (v2) {
             return 0;
         } else {
-            int32_t t306_1 = v1;
-            v0 = t306_1;
+            v0 = v1;
             continue;
         }
     }

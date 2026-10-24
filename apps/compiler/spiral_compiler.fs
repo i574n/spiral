@@ -7452,6 +7452,8 @@ module spiral_compiler =
         let [<Literal>] EJP0035 = "[spiral_compiler] EJP0035"
         /// EJP0040: Partial evaluation nested more dynamic `if` branches than the limit (runaway inline recursion).
         let [<Literal>] EJP0040 = "[spiral_compiler] EJP0040"
+        /// EJP0041: Laying out a union nested more union types than the limit (a type index that grows at every level).
+        let [<Literal>] EJP0041 = "[spiral_compiler] EJP0041"
 
         // MIGRATION / destructive domain migration migration phase.
         // Error text is admitted at one explicit ingress boundary, converted to a
@@ -7478,6 +7480,7 @@ module spiral_compiler =
             | DiagnosticEJP0034
             | DiagnosticEJP0035
             | DiagnosticEJP0040
+            | DiagnosticEJP0041
 
         type DiagnosticCauseId =
             | DiagnosticJoinPointAnnotationMismatch
@@ -7636,6 +7639,7 @@ module spiral_compiler =
             | DiagnosticEJP0034 -> EJP0034
             | DiagnosticEJP0035 -> EJP0035
             | DiagnosticEJP0040 -> EJP0040
+            | DiagnosticEJP0041 -> EJP0041
 
         let codeIdText = function
             | DiagnosticEJP0002 -> "EJP0002"
@@ -7659,6 +7663,7 @@ module spiral_compiler =
             | DiagnosticEJP0034 -> "EJP0034"
             | DiagnosticEJP0035 -> "EJP0035"
             | DiagnosticEJP0040 -> "EJP0040"
+            | DiagnosticEJP0041 -> "EJP0041"
 
         let causeText = function
             | DiagnosticJoinPointAnnotationMismatch -> "join_point_annotation_mismatch"
@@ -7937,6 +7942,8 @@ module spiral_compiler =
             let facts = classifyFacts message
             if hasCode DiagnosticEJP0040 message || has "error[EJP0040]" message then
                 classified facts DiagnosticEJP0040 DiagnosticRunawayInlineUnroll DiagnosticTerminalSemantic
+            elif hasCode DiagnosticEJP0041 message || has "error[EJP0041]" message then
+                classified facts DiagnosticEJP0041 DiagnosticRunawayInlineUnroll DiagnosticTerminalSemantic
             elif has "Cannot construct an instance of a void type" message
                || hasAll ["void type"; "Cannot construct"] message then
                 classified facts DiagnosticEJP0013 DiagnosticVoidInstanceConstruction DiagnosticRetryAfterCacheInvalidation
@@ -44123,6 +44130,7 @@ module spiral_compiler =
         is_top_down : bool
         default_env : DefaultEnv
         continuation_column : int option
+        operator_floor : int option
         } with
 
         member d.Index with get() = d.i.contents and set(i) = d.i.Value <- i
@@ -45133,21 +45141,24 @@ module spiral_compiler =
                     |>> fun (r, (a, b)) -> RawTypecase(r,a,b)) d
 
             let case_record =
-                let create = skip_op "=" >>. next
-                let modify = skip_op "#=" >>. next
+                let field_value column d = next {d with operator_floor = Some (column + 1)}
+                let create column = skip_op "=" >>. field_value column
+                let modify column = skip_op "#=" >>. field_value column
                 let var = blockParsingRange record_var
                 let inject = skip_unary_op "$" >>. blockParsingRange read_small_var
-                let record_create_body =
-                    (var .>>. opt create |>> function (a,Some b) -> RawRecordWithSymbol(a,b) | (a,None) -> RawRecordWithSymbol(a,rawv a))
-                    <|> (inject .>>. create |>> RawRecordWithInjectVar)
+                let record_create_body d =
+                    let column = col d
+                    ((var .>>. opt (create column) |>> function (a,Some b) -> RawRecordWithSymbol(a,b) | (a,None) -> RawRecordWithSymbol(a,rawv a))
+                    <|> (inject .>>. create column |>> RawRecordWithInjectVar)) d
                 let record_create = blockParsingRange (curlies (sepBy record_create_body (optional (skip_op ";")))) |>> fun (r,withs) -> (r,[],withs,[])
-                let record_with_bodies =
-                    (var >>= fun a ->
-                        ((modify |>> fun b -> RawRecordWithSymbolModify(a,b))
-                        <|> (opt create |>> function Some b -> RawRecordWithSymbol(a,b) | None -> RawRecordWithSymbol(a,rawv a))))
+                let record_with_bodies d =
+                    let column = col d
+                    ((var >>= fun a ->
+                        ((modify column |>> fun b -> RawRecordWithSymbolModify(a,b))
+                        <|> (opt (create column) |>> function Some b -> RawRecordWithSymbol(a,b) | None -> RawRecordWithSymbol(a,rawv a))))
                     <|> (inject >>= fun a ->
-                        ((modify |>> fun b -> RawRecordWithInjectVarModify(a,b))
-                        <|> (create |>> fun b -> RawRecordWithInjectVar(a,b))))
+                        ((modify column |>> fun b -> RawRecordWithInjectVarModify(a,b))
+                        <|> (create column |>> fun b -> RawRecordWithInjectVar(a,b))))) d
                 let record_without_bodies = (var |>> RawRecordWithoutSymbol) <|> (inject |>> RawRecordWithoutInjectVar)
                 let record_with =
                     blockParsingRange
@@ -45261,7 +45272,8 @@ module spiral_compiler =
 
         and operator_chain rbp_floor d =
             let term = application
-            let i = col d
+            let i = match d.operator_floor with Some floor -> min floor (col d) | None -> col d
+            let d = {d with operator_floor = None}
             let op = blockParsingIndent i (<=) op
 
             let apply_operator parsed left right =
@@ -49366,7 +49378,7 @@ module spiral_compiler =
         | Printf | Add | Sub | Mult | Div | Mod | Pow | LT | LTE | EQ | NEQ | GT | GTE
         | BitwiseAnd | BitwiseOr | BitwiseXor | BitwiseComplement | ShiftLeft | ShiftRight
         | Neg | Log | Exp | Tanh | Sqrt | Sin | Cos | NanIs | Conv
-        | StringLength | StringIndex | StringSlice | ArrayIndex | ArrayIndexSet | ArrayLength | MonotonicDelayMs | Export | Assign -> true
+        | StringLength | StringIndex | StringSlice | ArrayCreate | ArrayIndex | ArrayIndexSet | ArrayLength | MonotonicDelayMs | Export | Assign -> true
         | _ -> false
 
     /// ### semantic_tokens
@@ -50130,6 +50142,19 @@ module spiral_compiler =
     /// ### show_layout_type
     let show_layout_type = function Heap -> "heap" | HeapMutable -> "mut" | StackMutable -> "stack_mut" | StackRefs -> "stack_refs" | HeapRefs -> "heap_refs"
     
+
+    /// ### RecordWithRetypeCensus
+    module RecordWithRetypeCensus =
+        let output = System.Environment.GetEnvironmentVariable "SPIRAL_RECORD_WITH_CENSUS_OUT"
+        let enabled = not (System.String.IsNullOrEmpty output)
+        let pending = System.Collections.Concurrent.ConcurrentQueue<unit -> string>()
+        let flushAtExit =
+            lazy (System.AppDomain.CurrentDomain.ProcessExit.Add(fun _ ->
+                let rows = pending |> Seq.map (fun row -> try row () with e -> "error\t" + e.Message) |> Seq.distinct |> Seq.toArray
+                try System.IO.File.AppendAllLines(output, rows) with _ -> ()))
+        let record (row : unit -> string) =
+            flushAtExit.Force()
+            pending.Enqueue row
 
     /// ### show_t
     let show_t (env : TopEnv) x =
@@ -51109,6 +51134,15 @@ module spiral_compiler =
                                 m
                                 |> Map.tryPick (fun (i, k) v -> if k = x.symbol then Some i else None)
                                 |> Option.defaultValue m.Count
+                            if RecordWithRetypeCensus.enabled then
+                                m
+                                |> Map.tryPick (fun (_, k) v -> if k = x.symbol then Some v else None)
+                                |> Option.iter (fun before ->
+                                    let position : VSCPos = fst x.range
+                                    let after = x.var
+                                    RecordWithRetypeCensus.record (fun () ->
+                                        let a, b = show_t top_env before, show_t top_env after
+                                        sprintf "%s\t%d\t%d\t%s\t%s\t%s" (if a = b then "same" else "retyped") (position.line + 1) (position.character + 1) x.symbol a b))
                             Map.add (i, x.symbol) x.var m
                         )
                     withouts |> List.fold (fun m x -> m |> Map.filter (fun (_, k) _ -> k <> x.symbol)) m
@@ -51185,6 +51219,13 @@ module spiral_compiler =
                             | None -> None
                         | _ -> None
                     | _ -> None
+                match with_base |> Option.map visit_t with
+                | Some (TyMetavar _ as base_type) when List.isEmpty withouts ->
+                    match visit_t s with
+                    | TyRecord _ as expected -> unify r base_type expected
+                    | expected when (nominal_record_fields expected).IsSome -> unify r base_type expected
+                    | _ -> ()
+                | _ -> ()
                 match with_base |> Option.bind nominal_record_fields with
                 | Some fields when List.length l = 1 && List.isEmpty withouts ->
                     withs |> List.iter (fun x ->
@@ -53457,6 +53498,404 @@ module spiral_compiler =
     
 
 #if SPIRAL_CORE_HOPACSOTA
+    /// ## PartEvalEngineHopacsota
+    module PartEvalEngine =
+        open System.Collections.Generic
+        open Hopac
+        open Hopac.Infixes
+        let workers =
+            match System.Environment.GetEnvironmentVariable "SPIRAL_HOPACSOTA_WORKERS" with
+            | null | "" -> System.Environment.ProcessorCount
+            | text ->
+                match System.Int32.TryParse text with
+                | true, count when count > 0 -> count
+                | _ -> failwithf "SPIRAL_HOPACSOTA_WORKERS must be a positive integer, got %s" text
+        let evaluating_threads = if System.Environment.GetEnvironmentVariable "SPIRAL_RUST_GAP_TRACE" = "1" then 1 else workers
+        let stats_enabled = System.Environment.GetEnvironmentVariable "SPIRAL_HOPACSOTA_STATS" = "1"
+        let body_stack_bytes = 1536 <<< 20
+        exception HopacsotaConflict of string
+        type Marks(prefix : string) =
+            let mutable count = 0
+            member val Children = Dictionary<string, ResizeArray<string>>()
+            member val Prints = Dictionary<string, string>()
+            member val Failures = Dictionary<string, exn>()
+            member val Keys = Dictionary<obj, string>(HashIdentity.Structural)
+            member _.Name(kind : string) =
+                count <- count + 1
+                sprintf "\u0001hopacsota-%s-%s%d" kind prefix count
+        [<AllowNullLiteral>]
+        type BodyContext(id : int) =
+            member val Id = id
+            member val Marks = Marks(sprintf "t%d." id)
+            member val Ready = Dictionary<obj, obj>(HashIdentity.Structural)
+            member val Families = Dictionary<obj, obj>(HashIdentity.Reference)
+            member val Nesting = ref 0
+            member val Chain : obj list = [] with get, set
+            member val Inherited : obj list = [] with get, set
+            member val Claims = 0 with get, set
+            member val ReadyHits = 0 with get, set
+            member val Bridges = 0 with get, set
+            member val Waits = 0 with get, set
+            member val Bodies = 0 with get, set
+            member val Crashes = ResizeArray<exn>()
+        type EntryState =
+            | Evaluating
+            | Announced
+            | Filled
+            | Abandoned
+        type Entry(owner : int, marker : string) =
+            member val Owner = owner
+            member val Marker = marker
+            member val State = Evaluating with get, set
+            member val Waiters : IVar<unit> list = [] with get, set
+        type TableOp =
+            | ClaimOp of lookup : (unit -> obj voption) * mark : (unit -> unit) * caller : int * ancestor : bool
+            | FillOp of fill_write : (unit -> unit)
+            | AnnounceOp of announce_write : (unit -> unit) * usable : bool
+            | AbandonOp
+            | FamilyOp of create : (unit -> obj)
+        type TableReply =
+            | Taken of marker : string
+            | Present of value : obj * filled : bool * marker : string
+            | Again
+            | Wait of signal : IVar<unit> * owner : int
+            | Written
+            | Family of obj
+            | Failed of exn
+        type Table() =
+            let entries = Dictionary<obj, Entry>(HashIdentity.Structural)
+            let mutable named = 0
+            let mutable conflicts = 0
+            let mutable abandoned = 0
+            let release (entry : Entry) (state : EntryState) =
+                let waiters = entry.Waiters
+                entry.State <- state
+                entry.Waiters <- []
+                waiters
+            member _.Conflicts = conflicts
+            member _.Abandoned = abandoned
+            member _.Decide(id : obj, op : TableOp) : TableReply * IVar<unit> list =
+                    try
+                        match op with
+                        | ClaimOp(lookup, mark, caller, ancestor) ->
+                            match entries.TryGetValue id with
+                            | true, entry ->
+                                match entry.State with
+                                | Evaluating when caller <> entry.Owner && not ancestor ->
+                                    let signal = IVar()
+                                    entry.Waiters <- signal :: entry.Waiters
+                                    Wait(signal, entry.Owner), []
+                                | state ->
+                                    if state = Abandoned && caller <> entry.Owner then conflicts <- conflicts + 1
+                                    match lookup () with
+                                    | ValueSome value -> Present(value, (state = Filled), entry.Marker), []
+                                    | ValueNone -> Again, []
+                            | false, _ ->
+                                match lookup () with
+                                | ValueSome value -> Present(value, true, ""), []
+                                | ValueNone ->
+                                    mark ()
+                                    named <- named + 1
+                                    let marker = sprintf "\u0001hopacsota-key-%d" named
+                                    entries.[id] <- Entry(caller, marker)
+                                    Taken marker, []
+                        | FillOp write ->
+                            write ()
+                            match entries.TryGetValue id with
+                            | true, entry -> Written, release entry Filled
+                            | false, _ ->
+                                let entry = Entry(-1, "")
+                                entry.State <- Filled
+                                entries.[id] <- entry
+                                Written, []
+                        | AnnounceOp(write, usable) ->
+                            write ()
+                            match entries.TryGetValue id with
+                            | true, entry when usable && (entry.State = Evaluating || entry.State = Abandoned) -> Written, release entry Announced
+                            | _ -> Written, []
+                        | AbandonOp ->
+                            match entries.TryGetValue id with
+                            | true, entry when entry.State = Evaluating ->
+                                abandoned <- abandoned + 1
+                                Written, release entry Abandoned
+                            | _ -> Written, []
+                        | FamilyOp create -> Family (create ()), []
+                    with error -> Failed error, []
+        type GraphRequest =
+            | AddEdge of waiter : int * owner : int * accepted : IVar<bool>
+            | RemoveEdge of waiter : int
+            | CountCycles of count : IVar<int>
+        type Graph() =
+            let waits_on = Dictionary<int, int>()
+            let mutable cycles = 0
+            member _.Cycles = cycles
+            member _.Handle(request : GraphRequest) : Job<unit> =
+                match request with
+                | AddEdge(waiter, owner, accepted) ->
+                    let mutable at = owner
+                    let mutable closes = at = waiter
+                    while not closes && waits_on.ContainsKey at do
+                        at <- waits_on.[at]
+                        closes <- at = waiter
+                    if closes then cycles <- cycles + 1 else waits_on.[waiter] <- owner
+                    IVar.fill accepted (not closes)
+                | RemoveEdge waiter ->
+                    waits_on.Remove waiter |> ignore
+                    Job.unit ()
+                | CountCycles count -> IVar.fill count cycles
+        type WorkRequest =
+            | Spawn of body : (unit -> unit) * inherited : obj list
+            | Take of finished : bool * next : IVar<((unit -> unit) * obj list) voption>
+            | Drain of drained : IVar<unit>
+            | Stop
+        type Worklist(initial_tokens : int) =
+            let queue = Queue<(unit -> unit) * obj list>()
+            let idle = Queue<IVar<((unit -> unit) * obj list) voption>>()
+            let mutable tokens = initial_tokens
+            let mutable outstanding = 0
+            let mutable drained : IVar<unit> option = None
+            let mutable stopped = false
+            let mutable spawned = 0
+            member _.Spawned = spawned
+            member this.Handle(request : WorkRequest) : Job<unit> =
+                match request with
+                | Spawn(body, inherited) ->
+                    outstanding <- outstanding + 1
+                    spawned <- spawned + 1
+                    queue.Enqueue((body, inherited))
+                | Take(finished, next) ->
+                    if finished then
+                        outstanding <- outstanding - 1
+                        tokens <- tokens + 1
+                    idle.Enqueue next
+                | Drain reply ->
+                    tokens <- tokens + 1
+                    drained <- Some reply
+                | Stop -> stopped <- true
+                this.Settle()
+            member _.Settle() : Job<unit> =
+                job {
+                    while tokens > 0 && queue.Count > 0 && idle.Count > 0 do
+                        tokens <- tokens - 1
+                        do! IVar.fill (idle.Dequeue()) (ValueSome (queue.Dequeue()))
+                    match drained with
+                    | Some reply when outstanding = 0 ->
+                        drained <- None
+                        do! IVar.fill reply ()
+                    | _ -> ()
+                    if stopped then
+                        while idle.Count > 0 do
+                            do! IVar.fill (idle.Dequeue()) ValueNone
+                }
+        [<AllowNullLiteral>]
+        type Engine(workers : int) =
+            let control = Scheduler.create { Scheduler.Create.Def with NumWorkers = Some 1; TopLevelHandler = Some (fun error -> eprintfn "hopacsota engine: a server job failed: %O" error; Job.unit ()) }
+            let context = new System.Threading.ThreadLocal<BodyContext>()
+            let root = BodyContext 0
+            let contexts = ResizeArray<BodyContext> [root]
+            let table = Table()
+            let guard = MVar<Table>(table)
+            let graph = Graph()
+            let edges = Ch<GraphRequest>()
+            let work = Ch<WorkRequest>()
+            let worklist = Worklist(workers - 1)
+            let bridge (operation : Job<'a>) : 'a =
+                let ctx = context.Value
+                ctx.Bridges <- ctx.Bridges + 1
+                Scheduler.run control operation
+            do
+                context.Value <- root
+                bridge (job {
+                    do! Job.foreverServer (Ch.take edges >>= graph.Handle)
+                    do! Job.foreverServer (Ch.take work >>= worklist.Handle)
+                })
+            let ask (id : obj) (op : TableOp) : TableReply =
+                bridge (job {
+                    let! answer, wake = MVar.modifyFun (fun (table : Table) -> table, table.Decide(id, op)) guard
+                    for signal in wake do
+                        do! IVar.fill signal ()
+                    return answer
+                })
+            let leave (ctx : BodyContext) (id : obj) =
+                let rec drop = function
+                    | [] -> []
+                    | entry :: rest -> if entry = id then rest else entry :: drop rest
+                ctx.Chain <- drop ctx.Chain
+            let abandon_chain (ctx : BodyContext) =
+                for id in ctx.Chain do ask id AbandonOp |> ignore
+                ctx.Chain <- []
+            let await (ctx : BodyContext) (signal : IVar<unit>) (holder : int) =
+                ctx.Waits <- ctx.Waits + 1
+                let accepted =
+                    bridge (job {
+                        let! accepted = edges *<+=>- fun reply -> AddEdge(ctx.Id, holder, reply)
+                        if accepted then
+                            do! IVar.read signal
+                            do! Ch.give edges (RemoveEdge ctx.Id)
+                        return accepted
+                    })
+                if not accepted then raise (HopacsotaConflict (sprintf "body thread %d would wait on a key owned by body thread %d, which already waits on it" ctx.Id holder))
+            let rec settle (ctx : BodyContext) (id : obj) (lookup : unit -> obj voption) (mark : unit -> unit) =
+                match ask id (ClaimOp(lookup, mark, ctx.Id, List.contains id ctx.Chain || List.contains id ctx.Inherited)) with
+                | Wait(signal, holder) ->
+                    await ctx signal holder
+                    settle ctx id lookup mark
+                | reply -> reply
+            let lower_stack_limit () =
+                bridge (Job.unit ())
+                let field = typeof<Scheduler>.Assembly.GetType("Hopac.Core.Worker").GetField("ThreadStackLimit", System.Reflection.BindingFlags.NonPublic ||| System.Reflection.BindingFlags.Static)
+                if not (isNull field) then
+                    let mutable marker = 0uy
+                    let here = NativeInterop.NativePtr.toNativeInt &&marker
+                    let anchored = NativeInterop.NativePtr.toNativeInt (NativeInterop.NativePtr.ofVoidPtr<byte> (System.Reflection.Pointer.Unbox (field.GetValue null)))
+                    if anchored > here - nativeint (512 <<< 20) then
+                        let lowered = here - nativeint (body_stack_bytes - (128 <<< 20))
+                        field.SetValue(null, System.Reflection.Pointer.Box(NativeInterop.NativePtr.toVoidPtr (NativeInterop.NativePtr.ofNativeInt<byte> lowered), field.FieldType))
+            do lower_stack_limit ()
+            let body_loop (ctx : BodyContext) =
+                context.Value <- ctx
+                lower_stack_limit ()
+                let mutable finished = false
+                let mutable running = true
+                while running do
+                    let report = finished
+                    match bridge (work *<+=>- fun next -> Take(report, next)) with
+                    | ValueSome (body, inherited) ->
+                        ctx.Bodies <- ctx.Bodies + 1
+                        ctx.Inherited <- inherited
+                        ctx.Chain <- []
+                        try
+                            try body () with error -> ctx.Crashes.Add error
+                        finally
+                            abandon_chain ctx
+                            ctx.Inherited <- []
+                        finished <- true
+                    | ValueNone -> running <- false
+            let threads =
+                Array.init workers (fun index ->
+                    let ctx = BodyContext(index + 1)
+                    contexts.Add ctx
+                    let thread = new System.Threading.Thread((fun () -> body_loop ctx), body_stack_bytes)
+                    thread.IsBackground <- true
+                    thread.Name <- sprintf "hopacsota-body-%d" (index + 1)
+                    thread)
+            do for thread in threads do thread.Start()
+            let counts () =
+                bridge (job {
+                    let! conflicts, abandoned = MVar.modifyFun (fun (table : Table) -> table, (table.Conflicts, table.Abandoned)) guard
+                    let! cycles = edges *<+=>- CountCycles
+                    return conflicts, abandoned, cycles
+                })
+            member _.Context = context.Value
+            member _.Marks = contexts |> Seq.map (fun ctx -> ctx.Marks) |> List.ofSeq
+            member _.Spawn(body : unit -> unit) =
+                let ctx = context.Value
+                bridge (Ch.give work (Spawn(body, ctx.Chain @ ctx.Inherited)))
+            member _.Claim<'k, 'v>(table : Dictionary<'k, 'v>, key : 'k, pending : 'v) : 'v voption =
+                let ctx = context.Value
+                ctx.Claims <- ctx.Claims + 1
+                let id = box (table, key)
+                match ctx.Ready.TryGetValue id with
+                | true, value ->
+                    ctx.ReadyHits <- ctx.ReadyHits + 1
+                    ValueSome (unbox<'v> value)
+                | _ ->
+                    let lookup () = match table.TryGetValue key with | true, value -> ValueSome (box value) | _ -> ValueNone
+                    match settle ctx id lookup (fun () -> table.[key] <- pending) with
+                    | Taken marker ->
+                        ctx.Marks.Keys.[id] <- marker
+                        ctx.Chain <- id :: ctx.Chain
+                        ValueNone
+                    | Present(value, filled, marker) ->
+                        if marker <> "" then ctx.Marks.Keys.[id] <- marker
+                        if filled then ctx.Ready.[id] <- value
+                        ValueSome (unbox<'v> value)
+                    | Failed error -> raise error
+                    | reply -> failwithf "Compiler error: a hopacsota claim got %A." reply
+            member _.Validated<'k, 'v>(table : Dictionary<'k, 'v>, key : 'k) : bool =
+                let ctx = context.Value
+                ctx.Claims <- ctx.Claims + 1
+                let id = box (table, key)
+                if ctx.Ready.ContainsKey id then
+                    ctx.ReadyHits <- ctx.ReadyHits + 1
+                    true
+                else
+                    let lookup () = match table.TryGetValue key with | true, value -> ValueSome (box value) | _ -> ValueNone
+                    match settle ctx id lookup ignore with
+                    | Taken marker ->
+                        ctx.Marks.Keys.[box key] <- marker
+                        ctx.Chain <- id :: ctx.Chain
+                        false
+                    | Present(value, _, marker) ->
+                        if marker <> "" then ctx.Marks.Keys.[box key] <- marker
+                        ctx.Ready.[id] <- value
+                        true
+                    | Again -> false
+                    | Failed error -> raise error
+                    | reply -> failwithf "Compiler error: a hopacsota validation claim got %A." reply
+            member _.Read<'k, 'v>(table : Dictionary<'k, 'v>, key : 'k) : 'v =
+                match context.Value.Ready.TryGetValue (box (table, key)) with
+                | true, value -> unbox<'v> value
+                | _ -> failwith "Compiler error: hopacsota read a backend switch type it did not validate."
+            member _.Fill<'k, 'v>(table : Dictionary<'k, 'v>, key : 'k, value : 'v) =
+                let ctx = context.Value
+                let id = box (table, key)
+                match ask id (FillOp (fun () -> table.[key] <- value)) with
+                | Failed error -> raise error
+                | _ ->
+                    if ctx.Marks.Keys.ContainsKey id then ctx.Ready.[id] <- box value
+                    leave ctx id
+            member _.Announce<'k, 'v>(usable : bool, table : Dictionary<'k, 'v>, key : 'k, value : 'v) =
+                let id = box (table, key)
+                match ask id (AnnounceOp((fun () -> table.[key] <- value), usable)) with
+                | Failed error -> raise error
+                | _ -> if usable then leave context.Value id
+            member _.Family<'f, 'd>(outer : Dictionary<'f, 'd>, create : 'f -> 'd, key : 'f) : 'd =
+                let ctx = context.Value
+                let local =
+                    match ctx.Families.TryGetValue (box outer) with
+                    | true, local -> local :?> Dictionary<'f, 'd>
+                    | _ ->
+                        let local = Dictionary<'f, 'd>(outer.Comparer)
+                        ctx.Families.[box outer] <- box local
+                        local
+                match local.TryGetValue key with
+                | true, value -> value
+                | _ ->
+                    let id = box (outer, key)
+                    let find () =
+                        match outer.TryGetValue key with
+                        | true, value -> box value
+                        | _ ->
+                            let value = create key
+                            outer.[key] <- value
+                            box value
+                    match ask id (FamilyOp find) with
+                    | Family value ->
+                        let value = unbox<'d> value
+                        local.[key] <- value
+                        value
+                    | Failed error -> raise error
+                    | reply -> failwithf "Compiler error: a hopacsota family lookup got %A." reply
+            member _.Finished() = abandon_chain context.Value
+            member _.Drain() =
+                bridge (work *<+=>- Drain)
+                contexts |> Seq.collect (fun ctx -> ctx.Crashes) |> Seq.tryHead |> Option.iter raise
+            member _.Check() =
+                let conflicts, _, cycles = counts ()
+                if conflicts + cycles > 0 then raise (HopacsotaConflict (sprintf "hopacsota parallel conflict: %d foreign claims of abandoned keys, %d wait-for cycles; the canonical-order restart (D4) is not built yet, rerun with SPIRAL_HOPACSOTA_POLICY=inline" conflicts cycles))
+            member _.Close() =
+                let conflicts, abandoned, cycles = counts ()
+                bridge (Ch.give work Stop)
+                for thread in threads do thread.Join()
+                Scheduler.wait control
+                if stats_enabled then
+                    let total count = contexts |> Seq.sumBy count
+                    eprintfn "hopacsota engine: workers=%d bodies=%d spawned=%d claims=%d ready_hits=%d bridges=%d waits=%d abandoned=%d conflicts=%d cycles=%d" workers (total (fun ctx -> ctx.Bodies)) worklist.Spawned (total (fun ctx -> ctx.Claims)) (total (fun ctx -> ctx.ReadyHits)) (total (fun ctx -> ctx.Bridges)) (total (fun ctx -> ctx.Waits)) abandoned conflicts cycles
+                Scheduler.kill control
+                context.Dispose()
+#endif
+#if SPIRAL_CORE_HOPACSOTA
     /// ## PartEvalSeamsHopacsota
     module PartEvalSeams =
         open System.Collections.Generic
@@ -53474,35 +53913,38 @@ module spiral_compiler =
             | DepthFirst
             | BreadthFirst
             | Seeded of int
+            | Parallel
         let policy =
             match System.Environment.GetEnvironmentVariable "SPIRAL_HOPACSOTA_POLICY" with
             | null | "" | "inline" -> None
             | "dfs" -> Some DepthFirst
             | "bfs" -> Some BreadthFirst
             | text when text.StartsWith "random:" -> Some (Seeded (int (text.Substring 7)))
-            | text -> failwithf "SPIRAL_HOPACSOTA_POLICY must be inline, dfs, bfs or random:<seed>, got %s" text
+            | "parallel" -> Some Parallel
+            | text -> failwithf "SPIRAL_HOPACSOTA_POLICY must be inline, dfs, bfs, random:<seed> or parallel, got %s" text
         [<AllowNullLiteral>]
         type Session<'env>(policy : Policy, adapter : Adapter<'env>) =
             let queue = ResizeArray<unit -> unit>()
-            let children = Dictionary<string, ResizeArray<string>>()
-            let key_lists = Dictionary<obj, string>(HashIdentity.Structural)
+            let own = PartEvalEngine.Marks ""
             let seeded = match policy with Seeded seed -> System.Random(seed) | _ -> null
-            let failures = Dictionary<string, exn>()
-            let prints = Dictionary<string, string>()
             let mutable active = true
+            let mutable engine : PartEvalEngine.Engine = null
+            let marks () = if isNull engine then own else engine.Context.Marks
             let fail (list : ResizeArray<string>) (error : exn) =
-                let marker = sprintf "\u0001hopacsota-fail-%d" failures.Count
-                failures.[marker] <- error
+                let marks = marks ()
+                let marker = marks.Name "fail"
+                marks.Failures.[marker] <- error
                 list.Add marker
             member _.Defer<'a>(s : 'env, relative : 'env, deferred : 'a option, evaluate : 'env -> 'a) : 'a =
                 match policy, deferred with
-                | (BreadthFirst | Seeded _), Some result when active ->
+                | (BreadthFirst | Seeded _ | Parallel), Some result when active ->
                     let child = ResizeArray<string>()
-                    let marker = sprintf "\u0001hopacsota-globals-%d" children.Count
-                    children.[marker] <- child
+                    let marks = marks ()
+                    let marker = marks.Name "globals"
+                    marks.Children.[marker] <- child
                     (adapter.globals s).Add marker
                     let body_env = adapter.with_globals relative child
-                    queue.Add(fun () ->
+                    let body () =
                         let saved_if = adapter.dynamic_if ()
                         let saved_validating = adapter.validating ()
                         adapter.set_dynamic_if 0
@@ -53512,38 +53954,60 @@ module spiral_compiler =
                             with error -> fail child error
                         finally
                             adapter.set_dynamic_if saved_if
-                            adapter.set_validating saved_validating)
+                            adapter.set_validating saved_validating
+                    if isNull engine then queue.Add body else engine.Spawn body
                     result
                 | _ -> evaluate s
+            member _.Engine = engine
             member _.Drain() =
-                let mutable head = 0
-                while head < queue.Count do
-                    let index = match policy with Seeded _ -> head + seeded.Next(queue.Count - head) | _ -> head
-                    let job = queue.[index]
-                    queue.[index] <- queue.[head]
-                    head <- head + 1
-                    job ()
-                queue.Clear()
+                if isNull engine then
+                    let mutable head = 0
+                    while head < queue.Count do
+                        let index = match policy with Seeded _ -> head + seeded.Next(queue.Count - head) | _ -> head
+                        let job = queue.[index]
+                        queue.[index] <- queue.[head]
+                        head <- head + 1
+                        job ()
+                    queue.Clear()
+                else engine.Drain()
             member _.KeyHit(key : obj, s : 'env) =
-                match key_lists.TryGetValue key with
-                | true, marker when active -> (adapter.globals s).Add marker
-                | _ -> ()
+                if active then
+                    match (marks ()).Keys.TryGetValue key with
+                    | true, marker -> (adapter.globals s).Add marker
+                    | _ ->
+                        match own.Keys.TryGetValue key with
+                        | true, marker -> (adapter.globals s).Add marker
+                        | _ -> ()
             member _.KeyBody(key : obj, label : string, s : 'env) : 'env =
                 if not active then s
                 else
+                    let marks = marks ()
+                    let marker =
+                        match marks.Keys.TryGetValue key with
+                        | true, marker when not (isNull engine) && not (marks.Children.ContainsKey marker) -> marker
+                        | _ ->
+                            let marker = marks.Name ("key-" + label)
+                            marks.Keys.[key] <- marker
+                            marker
                     let list = ResizeArray<string>()
-                    let marker = sprintf "\u0001hopacsota-key-%d:%s" key_lists.Count label
-                    key_lists.[key] <- marker
-                    children.[marker] <- list
+                    marks.Children.[marker] <- list
                     (adapter.globals s).Add marker
                     adapter.with_globals s list
             member _.Print(s : 'env, text : string) =
                 if active then
-                    let marker = sprintf "\u0001hopacsota-print-%d" prints.Count
-                    prints.[marker] <- text
+                    let marks = marks ()
+                    let marker = marks.Name "print"
+                    marks.Prints.[marker] <- text
                     (adapter.globals s).Add marker
                 else printfn "%s" text
             member _.Finish(root : ResizeArray<string>) : exn option =
+                let children = Dictionary<string, ResizeArray<string>>()
+                let prints = Dictionary<string, string>()
+                let failures = Dictionary<string, exn>()
+                for marks in (if isNull engine then [own] else own :: engine.Marks) do
+                    for KeyValue(marker, list) in marks.Children do children.[marker] <- list
+                    for KeyValue(marker, text) in marks.Prints do prints.[marker] <- text
+                    for KeyValue(marker, error) in marks.Failures do failures.[marker] <- error
                 let seen = HashSet<string>()
                 let expanded = HashSet<string>()
                 let result = ResizeArray<string>()
@@ -53569,14 +54033,24 @@ module spiral_compiler =
                     adapter.rebuild_index root
                 failure
             member this.Root<'a>(root : ResizeArray<string>, f : unit -> 'a) : 'a =
+                match policy with
+                | Parallel -> engine <- PartEvalEngine.Engine(PartEvalEngine.evaluating_threads)
+                | _ -> ()
                 try
                     let result = try Some (f ()) with error -> fail root error; None
+                    if not (isNull engine) then engine.Finished()
                     this.Drain()
                     active <- false
+                    if not (isNull engine) then engine.Check()
                     match this.Finish root with
                     | Some error -> raise error
                     | None -> result.Value
-                finally active <- false
+                finally
+                    active <- false
+                    if not (isNull engine) then
+                        let closing = engine
+                        engine <- null
+                        closing.Close()
         let start (adapter : Adapter<'env>) : Session<'env> =
             match policy with
             | Some policy -> Session(policy, adapter)
@@ -53591,14 +54065,37 @@ module spiral_compiler =
         type Claim<'v> =
             | Found of 'v
             | Owner
-        let claim (_ : Session<'env>) (table : Dictionary<'k, 'v>) (key : 'k) (pending : 'v) : Claim<'v> =
-            match table.TryGetValue key with
-            | true, value -> Found value
-            | false, _ ->
-                table.[key] <- pending
-                Owner
-        let fill (_ : Session<'env>) (table : Dictionary<'k, 'v>) (key : 'k) (value : 'v) = table.[key] <- value
-        let announce (_ : Session<'env>) (table : Dictionary<'k, 'v>) (key : 'k) (value : 'v) = table.[key] <- value
+        let private engine_of (session : Session<'env>) = if isNull session then null else session.Engine
+        let claim (session : Session<'env>) (table : Dictionary<'k, 'v>) (key : 'k) (pending : 'v) : Claim<'v> =
+            let engine = engine_of session
+            if isNull engine then
+                match table.TryGetValue key with
+                | true, value -> Found value
+                | false, _ ->
+                    table.[key] <- pending
+                    Owner
+            else
+                match engine.Claim(table, key, pending) with
+                | ValueSome value -> Found value
+                | ValueNone -> Owner
+        let fill (session : Session<'env>) (table : Dictionary<'k, 'v>) (key : 'k) (value : 'v) =
+            let engine = engine_of session
+            if isNull engine then table.[key] <- value else engine.Fill(table, key, value)
+        let announce (session : Session<'env>) (usable : bool) (table : Dictionary<'k, 'v>) (key : 'k) (value : 'v) =
+            let engine = engine_of session
+            if isNull engine then table.[key] <- value else engine.Announce(usable, table, key, value)
+        let family (session : Session<'env>) (outer : Dictionary<'f, 'd>) (create : 'f -> 'd) (key : 'f) : 'd =
+            let engine = engine_of session
+            if isNull engine then Utils.memoize outer create key else engine.Family(outer, create, key)
+        let nesting (session : Session<'env>) (shared : int ref) : int ref =
+            let engine = engine_of session
+            if isNull engine then shared else engine.Context.Nesting
+        let validated (session : Session<'env>) (table : Dictionary<'k, 'v>) (key : 'k) : bool =
+            let engine = engine_of session
+            if isNull engine then table.ContainsKey key else engine.Validated(table, key)
+        let read (session : Session<'env>) (table : Dictionary<'k, 'v>) (key : 'k) : 'v =
+            let engine = engine_of session
+            if isNull engine then table.[key] else engine.Read(table, key)
 #else
     /// ## PartEvalSeams
     module PartEvalSeams =
@@ -53629,7 +54126,11 @@ module spiral_compiler =
                 table.[key] <- pending
                 Owner
         let inline fill (_ : Session<'env>) (table : System.Collections.Generic.Dictionary<'k, 'v>) (key : 'k) (value : 'v) = table.[key] <- value
-        let inline announce (_ : Session<'env>) (table : System.Collections.Generic.Dictionary<'k, 'v>) (key : 'k) (value : 'v) = table.[key] <- value
+        let inline announce (_ : Session<'env>) (_ : bool) (table : System.Collections.Generic.Dictionary<'k, 'v>) (key : 'k) (value : 'v) = table.[key] <- value
+        let inline family (_ : Session<'env>) (outer : System.Collections.Generic.Dictionary<'f, 'd>) (create : 'f -> 'd) (key : 'f) : 'd = Utils.memoize outer create key
+        let inline nesting (_ : Session<'env>) (shared : int ref) : int ref = shared
+        let inline validated (_ : Session<'env>) (table : System.Collections.Generic.Dictionary<'k, 'v>) (key : 'k) : bool = table.ContainsKey key
+        let inline read (_ : Session<'env>) (table : System.Collections.Generic.Dictionary<'k, 'v>) (key : 'k) : 'v = table.[key]
 #endif
 #if SPIRAL_CORE_GPT5PARALLEL
     /// ## PartEval
@@ -137244,6 +137745,14 @@ module spiral_compiler =
             | true, n when n > 0 -> n
             | _ -> 1000
 
+    module UnionNesting =
+        let limit =
+            match System.Int32.TryParse(System.Environment.GetEnvironmentVariable "SPIRAL_UNION_NESTING_LIMIT") with
+            | true, n when n > 0 -> n
+            | _ -> 256
+        let depth = new System.Threading.ThreadLocal<int>(fun () -> 0)
+        let hint = sprintf "keep the recursion static, or erase the growing type index at runtime with an existential; if the nesting is legitimate, raise SPIRAL_UNION_NESTING_LIMIT=<n> (now %d)"
+        let headline (case : string) = sprintf "laying out union case %s nested more than %d union types: a type index that grows at every level (term n -> term (succ n)) has no finite layout" case
     /// What a stalled build waits on in partial evaluation, for the BuildFile stall message: `peval` installs a
     /// probe over its join-point tables (join points whose specialization is still pending, by name).
     module PevalStallProbe =
@@ -150951,7 +151460,13 @@ module spiral_compiler =
                 let cases =
                     Map.fold (fun cases (i,k) v ->
                         let v = Option.defaultValue (fst v) (snd v) // If the union case is generalized, use the specialized destructor instead of the constructor to evaluate the type.
-                        match ty s v with
+                        let depth = UnionNesting.depth.Value + 1
+                        if depth > UnionNesting.limit then
+                            let frames = s.trace |> List.map (fun (r: Range) -> r.path, (fst r.range).line, (fst r.range).character)
+                            raise (partEvalTypeError [] (RunawayUnrollDiagnostic.render "EJP0041" (UnionNesting.headline (string k) UnionNesting.limit) frames (UnionNesting.hint UnionNesting.limit)))
+                        UnionNesting.depth.Value <- depth
+                        let laid = try ty s v finally UnionNesting.depth.Value <- depth - 1
+                        match laid with
                         | YVoid -> cases
                         // D49 (single-flight's ty_is_uninhabited): a case whose payload is uninhabited can never be built.
                         | v when ty_is_uninhabited_gpt5parallel s v -> cases
@@ -159143,6 +159658,14 @@ module spiral_compiler =
             | _ -> 1000
         let depth = new System.Threading.ThreadLocal<int>(fun () -> 0)
 
+    module UnionNesting =
+        let limit =
+            match System.Int32.TryParse(System.Environment.GetEnvironmentVariable "SPIRAL_UNION_NESTING_LIMIT") with
+            | true, n when n > 0 -> n
+            | _ -> 256
+        let depth = new System.Threading.ThreadLocal<int>(fun () -> 0)
+        let hint = sprintf "keep the recursion static, or erase the growing type index at runtime with an existential; if the nesting is legitimate, raise SPIRAL_UNION_NESTING_LIMIT=<n> (now %d)"
+        let headline (case : string) = sprintf "laying out union case %s nested more than %d union types: a type index that grows at every level (term n -> term (succ n)) has no finite layout" case
     /// ### GlobalsIndex
     /// The membership set of a PartEval globals list (`global'` adds to both), kept per list instance.
     module GlobalsIndex =
@@ -159240,7 +159763,7 @@ module spiral_compiler =
                     match ty s annot with
                     | YFun(a,b,_) as x -> a,b,x
                     | annot -> raise_type_error s <| sprintf "Expected a function type in annotation during closure conversion. Got: %s" (show_ty annot)
-                let dict, hc_table = Utils.memoize join_point_closure (fun _ -> Dictionary(HashIdentity.Structural), HashConsTable()) (s.backend, body)
+                let dict, hc_table = PartEvalSeams.family hopacsota join_point_closure (fun _ -> Dictionary(HashIdentity.Structural), HashConsTable()) (s.backend, body)
                 let call_args, env_global_value = data_to_rdata s hc_table gl_term
                 let join_point_key = hc_table.Add(env_global_value, s.env_global_type, fun_ty)
 
@@ -159251,6 +159774,7 @@ module spiral_compiler =
                 match PartEvalSeams.claim hopacsota dict join_point_key None with
                 | PartEvalSeams.Found _ -> PartEvalSeams.key_hit hopacsota (box (dict, join_point_key)) s
                 | PartEvalSeams.Owner ->
+                    PartEvalSeams.announce hopacsota true dict join_point_key None
                     let s = rename_global_term s
                     let domain_data = ty_to_data s domain
                     s.env_stack_term.[0] <- domain_data
@@ -159387,6 +159911,7 @@ module spiral_compiler =
                     | YNominal _ | YApply _ as nominal ->
                         try loop (depth-1) (nominal_type_apply s nominal) with PartEvalTypeError _ -> false
                     | _ -> false
+            let uninhabited_nesting = PartEvalSeams.nesting hopacsota uninhabited_nesting
             if uninhabited_nesting.Value >= 32 then false
             else
                 uninhabited_nesting.Value <- uninhabited_nesting.Value + 1
@@ -159406,7 +159931,7 @@ module spiral_compiler =
                 let env_global_type = Array.map (vt s) scope.ty.free_vars
                 let env_global_term = Array.map (v s) scope.term.free_vars
 
-                let dict, hc_table = Utils.memoize join_point_type (fun _ -> Dictionary(HashIdentity.Structural), HashConsTable()) body
+                let dict, hc_table = PartEvalSeams.family hopacsota join_point_type (fun _ -> Dictionary(HashIdentity.Structural), HashConsTable()) body
                 let join_point_key = hc_table.Add(env_global_type)
                 match PartEvalSeams.claim hopacsota dict join_point_key None with
                 | PartEvalSeams.Found (Some ret_ty) -> PartEvalSeams.key_hit hopacsota (box (dict, join_point_key)) s; ret_ty
@@ -159451,7 +159976,13 @@ module spiral_compiler =
                 let cases =
                     Map.fold (fun cases (i,k) v ->
                         let v = Option.defaultValue (fst v) (snd v) // If the union case is generalized, use the specialized destructor instead of the constructor to evaluate the type.
-                        match ty s v with
+                        let depth = UnionNesting.depth.Value + 1
+                        if depth > UnionNesting.limit then
+                            let frames = s.trace |> List.map (fun (r: Range) -> r.path, (fst r.range).line, (fst r.range).character)
+                            raise_type_error { s with trace = [] } (RunawayUnrollDiagnostic.render "EJP0041" (UnionNesting.headline (string k) UnionNesting.limit) frames (UnionNesting.hint UnionNesting.limit))
+                        UnionNesting.depth.Value <- depth
+                        let laid = try ty s v finally UnionNesting.depth.Value <- depth - 1
+                        match laid with
                         | YVoid -> cases
                         // A case whose payload is uninhabited (a GADT-specialized union left without cases, ...) can never be
                         // built: dropping it prunes the match arms that would unbox it instead of evaluating them on an empty
@@ -159827,7 +160358,7 @@ module spiral_compiler =
                 let env_global_term = Array.map (v s) scope.term.free_vars
 
                 let backend' = match backend with None -> s.backend | Some (_,backend) -> backend_strings.Add backend
-                let dict, hc_table = Utils.memoize join_point_method (fun _ -> Dictionary(HashIdentity.Structural), HashConsTable()) (backend', body)
+                let dict, hc_table = PartEvalSeams.family hopacsota join_point_method (fun _ -> Dictionary(HashIdentity.Structural), HashConsTable()) (backend', body)
                 let call_args, env_global_value = data_to_rdata s hc_table env_global_term
                 let join_point_key = hc_table.Add(env_global_value, env_global_type)
 
@@ -159852,7 +160383,7 @@ module spiral_compiler =
                             }
                         let s = rename_global_term s
                         let annot = Option.map (ty s) annot
-                        PartEvalSeams.announce hopacsota dict join_point_key (None, annot, jp_name)
+                        PartEvalSeams.announce hopacsota (Option.isSome annot) dict join_point_key (None, annot, jp_name)
                         let s = PartEvalSeams.key_body hopacsota (box (dict, join_point_key)) "method" s
                         PartEvalSeams.defer hopacsota s { s with trace = [r]; inline_depth = InlineDepthOps.root } annot (fun (s : LangEnv) ->
                             let seq,ty = term_scope'' s body annot
@@ -160282,14 +160813,14 @@ module spiral_compiler =
                             // that captures a mutable compile-time HashMap/HashSet has no key and is evaluated every time.
                             let key = try Some (backend, snd (data_to_rdata s backend_switch_validated_hc [|b|])) with :? PartEvalTypeError -> None
                             match key with
-                            | Some key when backend_switch_validated.ContainsKey key -> PartEvalSeams.key_hit hopacsota (box key) s; validate_type backend_switch_validated.[key]
+                            | Some key when PartEvalSeams.validated hopacsota backend_switch_validated key -> PartEvalSeams.key_hit hopacsota (box key) s; validate_type (PartEvalSeams.read hopacsota backend_switch_validated key)
                             | _ ->
                                 let s = match key with Some key -> PartEvalSeams.key_body hopacsota (box key) "bsv" s | None -> s
                                 let s = {s with seq=ResizeArray(); cse=Dictionary HashIdentity.Structural :: s.cse; backend=backend_strings.Add backend; i=backend_switch_validation_tags ()}
                                 RustGapTrace.validating.Value <- RustGapTrace.validating.Value + 1
                                 try
                                     let t' = data_to_ty s (apply s (b, DB))
-                                    key |> Option.iter (fun key -> backend_switch_validated.[key] <- t')
+                                    key |> Option.iter (fun key -> PartEvalSeams.fill hopacsota backend_switch_validated key t')
                                     validate_type t'
                                 finally RustGapTrace.validating.Value <- RustGapTrace.validating.Value - 1
                     )
@@ -163982,7 +164513,25 @@ module spiral_compiler =
                     | None ->
                         parameters |> Array.map (fun (L(k,t)) -> match t with YPrim StringT -> $"v{k}: &str" | t -> $"v{k}: {tyv t}") |> String.concat ", ",
                         parameters |> Array.map (fun (L(k,t)) -> match t with YPrim StringT -> $"Rc::<str>::from(v{k})" | _ -> $"v{k}") |> String.concat ", "
-                exports.Add($"pub fn {name}({decl}) -> {tup_ty range} {{\n    {closure_names.[tag]}()({call})\n}}\n")
+                let returned_record =
+                    match range with
+                    | YNominal n ->
+                        match env.nominal_apply range with
+                        | YRecord fields when not fields.IsEmpty && fields |> Map.forall (fun _ t -> match t with YPrim _ -> true | _ -> false) ->
+                            Some (n.node.name |> String.map (fun c -> if System.Char.IsLetterOrDigit c || c = '_' then c else '_'), fields)
+                        | _ -> None
+                    | _ -> None
+                match returned_record with
+                | Some (record_name, fields) ->
+                    if exported_record_names.Add record_name then
+                        let members = fields |> Map.toArray |> Array.map (fun ((_,k),t) -> $"    pub {k}: {tyv t},") |> String.concat "\n"
+                        exports.Insert(0, $"pub struct {record_name} {{\n{members}\n}}\n")
+                    let parts = fields |> Map.toArray |> Array.mapi (fun j ((_,k),_) -> k, $"f{j}")
+                    let binding = if parts.Length = 1 then snd parts.[0] else parts |> Array.map snd |> String.concat ", " |> sprintf "(%s)"
+                    let build = parts |> Array.map (fun (k, f) -> $"{k}: {f}") |> String.concat ", "
+                    exports.Add($"pub fn {name}({decl}) -> {record_name} {{\n    let {binding} = {closure_names.[tag]}()({call});\n    {record_name} {{ {build} }}\n}}\n")
+                | None ->
+                    exports.Add($"pub fn {name}({decl}) -> {tup_ty range} {{\n    {closure_names.[tag]}()({call})\n}}\n")
                 if d.IsNone then line s "()"
             | TyOp(op,l) ->
                 let unary f = match l with [x] -> f $"({tup x})" | _ -> raise_codegen_error $"Compiler error: {op} expects one argument."
@@ -166297,7 +166846,215 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             | c -> strb.Append c |> ignore
         strb.Append('"').ToString()
     /// ### codegenBend
+    let bendW64Prelude = """def w64_bit(+c: Bool) -> U32:
+  match c:
+    case True{}:
+      {1 : U32}
+    case False{}:
+      {0 : U32}
+
+def w64_add_with(+ah: U32, +bh: U32, +al: U32, +lo: U32) -> U32 & U32:
+  (U32.add(U32.add(ah, bh), w64_bit(U32.is_lt(lo, al))), lo)
+
+def w64_add(a: U32 & U32, b: U32 & U32) -> U32 & U32:
+  (+ah, +al) = a
+  (+bh, +bl) = b
+  w64_add_with(ah, bh, al, U32.add(al, bl))
+
+def w64_mul32_with(+p00: U32, +mid: U32, +p11: U32, +mid_carry: U32) -> U32 & U32:
+  w64_add((U32.add(p11, U32.add(U32.shrn(mid, U32.to_nat(16)), U32.shln(mid_carry, U32.to_nat(16)))), U32.shln(mid, U32.to_nat(16))), ({0 : U32}, p00))
+
+def w64_mul32_mid(+p00: U32, +p01: U32, +p10: U32, +p11: U32) -> U32 & U32:
+  w64_mul32_with(p00, U32.add(p01, p10), p11, w64_bit(U32.is_lt(U32.add(p01, p10), p01)))
+
+def w64_mul32(+a: U32, +b: U32) -> U32 & U32:
+  w64_mul32_mid(U32.mul(U32.and(a, 65535), U32.and(b, 65535)), U32.mul(U32.and(a, 65535), U32.shrn(b, U32.to_nat(16))), U32.mul(U32.shrn(a, U32.to_nat(16)), U32.and(b, 65535)), U32.mul(U32.shrn(a, U32.to_nat(16)), U32.shrn(b, U32.to_nat(16))))
+
+def w64_mul_with(low: U32 & U32, +cross: U32) -> U32 & U32:
+  (+lh, +ll) = low
+  (U32.add(lh, cross), ll)
+
+def w64_mul(a: U32 & U32, b: U32 & U32) -> U32 & U32:
+  (+ah, +al) = a
+  (+bh, +bl) = b
+  w64_mul_with(w64_mul32(al, bl), U32.add(U32.mul(ah, bl), U32.mul(al, bh)))
+
+def w64_eq(a: U32 & U32, +h: U32, +l: U32) -> Bool:
+  (+ah, +al) = a
+  Bool.and(U32.is_eq(ah, h), U32.is_eq(al, l))
+
+def w64_not(a: U32 & U32) -> U32 & U32:
+  (+ah, +al) = a
+  (U32.not(ah), U32.not(al))
+
+def w64_neg(a: U32 & U32) -> U32 & U32:
+  w64_add(w64_not(a), ({0 : U32}, {1 : U32}))
+
+def w64_sub(a: U32 & U32, b: U32 & U32) -> U32 & U32:
+  w64_add(a, w64_neg(b))
+
+def w64_pick_bool(+same: Bool, +low: Bool, +high: Bool) -> Bool:
+  match same:
+    case True{}:
+      low
+    case False{}:
+      high
+
+def w64_ult_with(+ah: U32, +al: U32, +bh: U32, +bl: U32) -> Bool:
+  w64_pick_bool(U32.is_eq(ah, bh), U32.is_lt(al, bl), U32.is_lt(ah, bh))
+
+def w64_ult(a: U32 & U32, b: U32 & U32) -> Bool:
+  (+ah, +al) = a
+  (+bh, +bl) = b
+  w64_ult_with(ah, al, bh, bl)
+
+def w64_slt(a: U32 & U32, b: U32 & U32) -> Bool:
+  (+ah, +al) = a
+  (+bh, +bl) = b
+  w64_ult_with(U32.xor(ah, 2147483648), al, U32.xor(bh, 2147483648), bl)
+
+def w64_pick(+first: Bool, a: U32 & U32, b: U32 & U32) -> U32 & U32:
+  match first:
+    case True{}:
+      a
+    case False{}:
+      b
+
+def w64_shl(a: U32 & U32, +n: U32) -> U32 & U32:
+  (+ah, +al) = a
+  w64_pick(U32.is_eq(n, 0), (ah, al), w64_pick(U32.is_lt(n, 32), (U32.or(U32.shln(ah, U32.to_nat(n)), U32.shrn(al, U32.to_nat(U32.sub(32, n)))), U32.shln(al, U32.to_nat(n))), (U32.shln(al, U32.to_nat(U32.sub(n, 32))), {0 : U32})))
+
+def w64_lshr(a: U32 & U32, +n: U32) -> U32 & U32:
+  (+ah, +al) = a
+  w64_pick(U32.is_eq(n, 0), (ah, al), w64_pick(U32.is_lt(n, 32), (U32.shrn(ah, U32.to_nat(n)), U32.or(U32.shrn(al, U32.to_nat(n)), U32.shln(ah, U32.to_nat(U32.sub(32, n))))), ({0 : U32}, U32.shrn(ah, U32.to_nat(U32.sub(n, 32))))))
+
+def w64_or(a: U32 & U32, b: U32 & U32) -> U32 & U32:
+  (+ah, +al) = a
+  (+bh, +bl) = b
+  (U32.or(ah, bh), U32.or(al, bl))
+
+def w64_ashr(a: U32 & U32, +n: U32) -> U32 & U32:
+  (+ah, +al) = a
+  w64_pick(U32.is_lt(ah, 2147483648), w64_lshr((ah, al), n), w64_pick(U32.is_eq(n, 0), (ah, al), w64_or(w64_lshr((ah, al), n), w64_shl(({4294967295 : U32}, {4294967295 : U32}), U32.sub(64, n)))))
+
+def w64_and(a: U32 & U32, b: U32 & U32) -> U32 & U32:
+  (+ah, +al) = a
+  (+bh, +bl) = b
+  (U32.and(ah, bh), U32.and(al, bl))
+
+def u32_pick(+first: Bool, +a: U32, +b: U32) -> U32:
+  match first:
+    case True{}:
+      a
+    case False{}:
+      b
+
+def w64_bit_at(+nh: U32, +nl: U32, +k: U32) -> U32:
+  u32_pick(U32.is_lt(k, 32), U32.and(U32.shrn(nl, U32.to_nat(k)), 1), U32.and(U32.shrn(nh, U32.to_nat(U32.sub(k, 32))), 1))
+
+def w64_udiv_rec(fuel: Nat, +i: U32, +nh: U32, +nl: U32, +dh: U32, +dl: U32, +qh: U32, +ql: U32, +rh: U32, +rl: U32) -> (U32 & U32) & (U32 & U32):
+  match fuel:
+    case 0n:
+      ((qh, ql), (rh, rl))
+    case 1n+p:
+      +k = U32.sub(i, 1)
+      +sh = U32.or(U32.shln(rh, U32.to_nat(1)), U32.shrn(rl, U32.to_nat(31)))
+      +sl = U32.or(U32.shln(rl, U32.to_nat(1)), w64_bit_at(nh, nl, k))
+      +take = Bool.not(w64_ult_with(sh, sl, dh, dl))
+      +th = U32.sub(U32.sub(sh, dh), w64_bit(U32.is_lt(sl, dl)))
+      +tl = U32.sub(sl, dl)
+      +nqh = u32_pick(Bool.and(take, Bool.not(U32.is_lt(k, 32))), U32.or(qh, U32.shln(1, U32.to_nat(U32.sub(k, 32)))), qh)
+      +nql = u32_pick(Bool.and(take, U32.is_lt(k, 32)), U32.or(ql, U32.shln(1, U32.to_nat(k))), ql)
+      w64_udiv_rec(p, k, nh, nl, dh, dl, nqh, nql, u32_pick(take, th, sh), u32_pick(take, tl, sl))
+
+def w64_udivmod(n: U32 & U32, d: U32 & U32) -> (U32 & U32) & (U32 & U32):
+  (+nh, +nl) = n
+  (+dh, +dl) = d
+  w64_udiv_rec(64n, 64, nh, nl, dh, dl, {0 : U32}, {0 : U32}, {0 : U32}, {0 : U32})
+
+def w64_quotient(qr: (U32 & U32) & (U32 & U32)) -> U32 & U32:
+  (q, r) = qr
+  q
+
+def w64_remainder(qr: (U32 & U32) & (U32 & U32)) -> U32 & U32:
+  (q, r) = qr
+  r
+
+def w64_abs_with(+h: U32, +l: U32) -> U32 & U32:
+  w64_pick(U32.is_lt(h, 2147483648), (h, l), w64_neg((h, l)))
+
+def w64_sdiv(n: U32 & U32, d: U32 & U32) -> U32 & U32:
+  (+nh, +nl) = n
+  (+dh, +dl) = d
+  w64_pick(Bool.xor(U32.is_lt(nh, 2147483648), U32.is_lt(dh, 2147483648)), w64_neg(w64_quotient(w64_udivmod(w64_abs_with(nh, nl), w64_abs_with(dh, dl)))), w64_quotient(w64_udivmod(w64_abs_with(nh, nl), w64_abs_with(dh, dl))))
+
+def w64_srem(n: U32 & U32, d: U32 & U32) -> U32 & U32:
+  (+nh, +nl) = n
+  (+dh, +dl) = d
+  w64_pick(U32.is_lt(nh, 2147483648), w64_remainder(w64_udivmod(w64_abs_with(nh, nl), w64_abs_with(dh, dl))), w64_neg(w64_remainder(w64_udivmod(w64_abs_with(nh, nl), w64_abs_with(dh, dl)))))
+
+def w64_udiv(n: U32 & U32, d: U32 & U32) -> U32 & U32:
+  w64_quotient(w64_udivmod(n, d))
+
+def w64_urem(n: U32 & U32, d: U32 & U32) -> U32 & U32:
+  w64_remainder(w64_udivmod(n, d))
+
+def w64_hi(p: U32 & U32) -> U32:
+  (+h, +l) = p
+  h
+
+def w64_lo(p: U32 & U32) -> U32:
+  (+h, +l) = p
+  l
+
+def w64_of_u32(+x: U32) -> U32 & U32:
+  ({0 : U32}, x)
+
+def w64_of_i32(+x: U32) -> U32 & U32:
+  (u32_pick(U32.is_lt(x, 2147483648), {0 : U32}, {4294967295 : U32}), x)
+
+def w64_show_rec(fuel: Nat, +stop: Bool, +h: U32, +l: U32, acc: String) -> String:
+  match fuel:
+    case 0n:
+      acc
+    case 1n+p:
+      match stop:
+        case True{}:
+          acc
+        case False{}:
+          +qh = w64_hi(w64_udiv((h, l), ({0 : U32}, {10 : U32})))
+          +ql = w64_lo(w64_udiv((h, l), ({0 : U32}, {10 : U32})))
+          +digit = w64_lo(w64_urem((h, l), ({0 : U32}, {10 : U32})))
+          w64_show_rec(p, Bool.and(U32.is_eq(qh, 0), U32.is_eq(ql, 0)), qh, ql, U32.show(digit) ++ acc)
+
+def w64_show_u(p: U32 & U32) -> String:
+  (+h, +l) = p
+  w64_show_rec(20n, False{}, h, l, "")
+
+def w64_show_s_if(+negative: Bool, +h: U32, +l: U32) -> String:
+  match negative:
+    case True{}:
+      "-" ++ w64_show_u(w64_neg((h, l)))
+    case False{}:
+      w64_show_u((h, l))
+
+def w64_show_s(p: U32 & U32) -> String:
+  (+h, +l) = p
+  w64_show_s_if(Bool.not(U32.is_lt(h, 2147483648)), h, l)
+
+def w64_equal(a: U32 & U32, b: U32 & U32) -> Bool:
+  (+ah, +al) = a
+  (+bh, +bl) = b
+  Bool.and(U32.is_eq(ah, bh), U32.is_eq(al, bl))
+
+def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
+  (+ah, +al) = a
+  (+bh, +bl) = b
+  (U32.xor(ah, bh), U32.xor(al, bl))
+"""
+
     let codegenBend (env : PartEvalResult) (x : TypedBind []) =
+
         let method_names = Dictionary<int, string>()
         let closure_names = Dictionary<int, string>()
         let defs = ResizeArray<string>()
@@ -166305,6 +167062,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         let unsupported what = raise_codegen_error $"The Bend backend doesn't support {what} yet."
         let primBend = function
             | Int32T | UInt32T | CharT | Int8T | Int16T | UInt8T | UInt16T -> "U32"
+            | Int64T | UInt64T -> "(U32 & U32)"
             | BoolT -> "Bool"
             | StringT -> "String"
             | Float32T -> "F32"
@@ -166381,6 +167139,8 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         let lit = function
             | LitInt32 x -> $"{{{uint32 x} : U32}}"
             | LitUInt32 x -> $"{{{x} : U32}}"
+            | LitInt64 x -> $"({{{uint32 (uint64 x >>> 32)} : U32}}, {{{uint32 (uint64 x)} : U32}})"
+            | LitUInt64 x -> $"({{{uint32 (x >>> 32)} : U32}}, {{{uint32 x} : U32}})"
             | LitInt8 x -> $"{{{uint32 (int32 x)} : U32}}"
             | LitInt16 x -> $"{{{uint32 (int32 x)} : U32}}"
             | LitUInt8 x -> $"{{{x} : U32}}"
@@ -166449,6 +167209,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             if depth > default_depth_limit then unsupported $"default values of the recursive type {show_ty t}"
             match t with
             | YPrim (Int32T | UInt32T | CharT | Int8T | Int16T | UInt8T | UInt16T) -> "{0 : U32}"
+            | YPrim (Int64T | UInt64T) -> "({0 : U32}, {0 : U32})"
             | YPrim BoolT -> "False{}"
             | YPrim StringT -> bendString ""
             | YPrim Float32T -> "0.0"
@@ -166581,6 +167342,10 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 let captured_args = captured |> Array.map (fun (L(i,_)) -> $"v{i}, ") |> String.concat ""
                 $"IO.pure({result}, d => {name}({captured_args}d))"
             | TyApply(L(i,_), b) -> $"v{i}({tup b})"
+            | TyConv(YPrim (Int64T | UInt64T), b) when (match prim_of b with Some (Int64T | UInt64T) -> true | _ -> false) -> $"IO.pure({result}, {tup b})"
+            | TyConv(YPrim (Int64T | UInt64T), b) when (match prim_of b with Some (Int32T | Int8T | Int16T) -> true | _ -> false) -> $"IO.pure({result}, w64_of_i32({tup b}))"
+            | TyConv(YPrim (Int64T | UInt64T), b) when (match prim_of b with Some (UInt32T | UInt8T | UInt16T | CharT) -> true | _ -> false) -> $"IO.pure({result}, w64_of_u32({tup b}))"
+            | TyConv(YPrim (Int32T | UInt32T), b) when (match prim_of b with Some (Int64T | UInt64T) -> true | _ -> false) -> $"IO.pure({result}, w64_lo({tup b}))"
             | TyConv(YPrim (Int32T | UInt32T), b) when (match prim_of b with Some (Int32T | UInt32T) -> true | _ -> false) -> $"IO.pure({result}, {tup b})"
             | TyConv(YPrim (Int8T | Int16T | UInt8T | UInt16T as t), b) when is_small_int (prim_of b) || prim_of b = Some Int32T || prim_of b = Some UInt32T -> $"IO.pure({result}, {narrow_small t (tup b)})"
             | TyConv(YPrim (Int32T | UInt32T), b) when is_small_int (prim_of b) -> $"IO.pure({result}, {tup b})"
@@ -166595,6 +167360,8 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                         | Choice1Of2 text -> bendString text
                         | Choice2Of2 (_, w) ->
                             match w with
+                            | WV(L(_,YPrim Int64T)) | WLit (LitInt64 _) -> $"w64_show_s({show_w w})"
+                            | WV(L(_,YPrim UInt64T)) | WLit (LitUInt64 _) -> $"w64_show_u({show_w w})"
                             | WV(L(_,YPrim Int32T)) | WLit (LitInt32 _) -> $"spiral_i32_show({show_w w})"
                             | WV(L(_,YPrim UInt32T)) | WLit (LitUInt32 _) -> $"U32.show({show_w w})"
                             | WV(L(_,YPrim (Int8T | Int16T))) | WLit (LitInt8 _ | LitInt16 _) -> $"spiral_i32_show({show_w w})"
@@ -166626,6 +167393,8 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 let is_bool = match l with x :: _ -> prim_of x = Some BoolT | [] -> false
                 let is_string = match l with x :: _ -> prim_of x = Some StringT | [] -> false
                 let is_float = match l with x :: _ -> prim_of x = Some Float32T | [] -> false
+                let is_w64 = match l with x :: _ -> (match prim_of x with Some (Int64T | UInt64T) -> true | _ -> false) | [] -> false
+                let signed64 = match l with x :: _ -> prim_of x = Some Int64T | [] -> false
                 let expr =
                   match op with
                   | Dyn -> unary id
@@ -166645,6 +167414,24 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                   | LTE when is_string -> bin (sprintf "String.is_le(%s, %s)")
                   | GT when is_string -> bin (sprintf "String.is_gt(%s, %s)")
                   | GTE when is_string -> bin (sprintf "String.is_ge(%s, %s)")
+                  | Add when is_w64 -> bin (sprintf "w64_add(%s, %s)")
+                  | Sub when is_w64 -> bin (sprintf "w64_sub(%s, %s)")
+                  | Mult when is_w64 -> bin (sprintf "w64_mul(%s, %s)")
+                  | Div when is_w64 -> bin (if signed64 then sprintf "w64_sdiv(%s, %s)" else sprintf "w64_udiv(%s, %s)")
+                  | Mod when is_w64 -> bin (if signed64 then sprintf "w64_srem(%s, %s)" else sprintf "w64_urem(%s, %s)")
+                  | LT when is_w64 -> bin (if signed64 then sprintf "w64_slt(%s, %s)" else sprintf "w64_ult(%s, %s)")
+                  | GT when is_w64 -> bin (fun a b -> if signed64 then $"w64_slt({b}, {a})" else $"w64_ult({b}, {a})")
+                  | LTE when is_w64 -> bin (fun a b -> if signed64 then $"Bool.not(w64_slt({b}, {a}))" else $"Bool.not(w64_ult({b}, {a}))")
+                  | GTE when is_w64 -> bin (fun a b -> if signed64 then $"Bool.not(w64_slt({a}, {b}))" else $"Bool.not(w64_ult({a}, {b}))")
+                  | EQ when is_w64 -> bin (sprintf "w64_equal(%s, %s)")
+                  | NEQ when is_w64 -> bin (sprintf "Bool.not(w64_equal(%s, %s))")
+                  | BitwiseAnd when is_w64 -> bin (sprintf "w64_and(%s, %s)")
+                  | BitwiseOr when is_w64 -> bin (sprintf "w64_or(%s, %s)")
+                  | BitwiseXor when is_w64 -> bin (sprintf "w64_xor(%s, %s)")
+                  | BitwiseComplement when is_w64 -> unary (sprintf "w64_not(%s)")
+                  | ShiftLeft when is_w64 -> bin (sprintf "w64_shl(%s, %s)")
+                  | ShiftRight when is_w64 -> bin (if signed64 then sprintf "w64_ashr(%s, %s)" else sprintf "w64_lshr(%s, %s)")
+                  | Neg when is_w64 -> unary (sprintf "w64_neg(%s)")
                   | Add -> bin (sprintf "U32.add(%s, %s)")
                   | Sub -> bin (sprintf "U32.sub(%s, %s)")
                   | Mult -> bin (sprintf "U32.mul(%s, %s)")
@@ -166802,6 +167589,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         let program = StringBuilder()
         program.Append(bendPrelude) |> ignore
         let emittedDefs = String.concat "\n" defs
+        if emittedDefs.Contains "w64_" then program.Append(bendW64Prelude) |> ignore
         if emittedDefs.Contains "spiral_narrow_i8(" then program.Append("def spiral_narrow_i8(+x: U32) -> U32:\n  U32.sub(U32.xor(U32.and(x, 255), 128), 128)\n\n") |> ignore
         if emittedDefs.Contains "spiral_narrow_i16(" then program.Append("def spiral_narrow_i16(+x: U32) -> U32:\n  U32.sub(U32.xor(U32.and(x, 65535), 32768), 32768)\n\n") |> ignore
         types |> Seq.iter (fun x -> program.Append(x).Append('\n') |> ignore)
@@ -167024,7 +167812,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             if not (externals.Contains decl) then externals.Add decl
         let spiralStringSlicing () =
             spiralStrings ()
-            let decl = "@external(erlang, \"erlang\", \"halt\")\n@external(javascript, \"node:process\", \"exit\")\npub fn spiral_halt(code: Int) -> a\n\npub fn spiral_string_index(text: String, index: Int) -> String {\n  case bit_array.slice(bit_array.from_string(text), index, 1) {\n    Ok(<<byte>>) ->\n      case string.utf_codepoint(byte) {\n        Ok(codepoint) -> string.from_utf_codepoints([codepoint])\n        Error(_) -> panic as \"spiral string index: not a single-byte character\"\n      }\n    _ -> panic as \"spiral string index: out of range\"\n  }\n}\n\npub fn spiral_string_slice(text: String, from: Int, to: Int) -> String {\n  let bytes = bit_array.from_string(text)\n  let length = bit_array.byte_size(bytes)\n  case from < 0 || from > length || to < from - 1 || to >= length {\n    True -> panic as \"spiral string slice: out of range\"\n    False ->\n      case to < from {\n        True -> \"\"\n        False ->\n          case bit_array.slice(bytes, from, to - from + 1) {\n            Ok(part) ->\n              case bit_array.to_string(part) {\n                Ok(slice) -> slice\n                Error(_) -> panic as \"spiral string slice: splits a character\"\n              }\n            Error(_) -> panic as \"spiral string slice: out of range\"\n          }\n      }\n  }\n}"
+            let decl = "@external(erlang, \"erlang\", \"halt\")\n@external(javascript, \"node:process\", \"exit\")\npub fn spiral_halt(code: Int) -> a\n\npub fn spiral_string_index(text: String, index: Int) -> String {\n  case bit_array.slice(bit_array.from_string(text), index, 1) {\n    Ok(<<byte>>) ->\n      case string.utf_codepoint(byte) {\n        Ok(codepoint) -> string.from_utf_codepoints([codepoint])\n        Error(_) -> panic as \"spiral string index: not a single-byte character\"\n      }\n    _ -> panic as \"spiral string index: out of range\"\n  }\n}\n\n@external(erlang, \"gleam_stdlib\", \"identity\")\nfn spiral_string_of_checked_bytes(bytes: BitArray) -> String {\n  case bit_array.to_string(bytes) {\n    Ok(text) -> text\n    Error(_) -> panic as \"spiral string slice: splits a character\"\n  }\n}\n\nfn spiral_string_starts_character(bytes: BitArray, at: Int) -> Bool {\n  case bit_array.slice(bytes, at, 1) {\n    Ok(<<lead>>) -> lead < 128 || lead >= 192\n    _ -> True\n  }\n}\n\npub fn spiral_string_slice(text: String, from: Int, to: Int) -> String {\n  let bytes = bit_array.from_string(text)\n  let length = bit_array.byte_size(bytes)\n  case from < 0 || from > length || to < from - 1 || to >= length {\n    True -> panic as \"spiral string slice: out of range\"\n    False ->\n      case to < from {\n        True -> \"\"\n        False ->\n          case spiral_string_starts_character(bytes, from) && spiral_string_starts_character(bytes, to + 1) {\n            False -> panic as \"spiral string slice: splits a character\"\n            True ->\n              case bit_array.slice(bytes, from, to - from + 1) {\n                Ok(part) -> spiral_string_of_checked_bytes(part)\n                Error(_) -> panic as \"spiral string slice: out of range\"\n              }\n          }\n      }\n  }\n}"
             if not (externals.Contains decl) then externals.Add decl
         let rec tyv x =
             match x with
@@ -176927,6 +177715,7 @@ end
             comments = comments; tokens = tokens; layout_columns = layout_columns; i = ref 0; is_top_down = is_top_down
             default_env = default_env
             continuation_column = None
+            operator_floor = None
             }
         assert (env.tokens_cords.Length = env.tokens.Length)
         let result = if List.isEmpty raw_string_errors then blockParsingParse env else Error raw_string_errors
@@ -177643,7 +178432,8 @@ end
     /// ### packages
     let packages p =
         let i = column p
-        let file = rangeSpiProj (((skipChar '|' >>% true) <|>% false) .>>.  file') >>= fun (r,(is_in_compiler_dir,name)) p ->
+        let relativePath p = many1Satisfy2L (fun c -> c = '.') (fun c -> is_var_charSpiProj c || c = '.' || c = '/') "relative package path" p
+        let file = rangeSpiProj (((skipChar '|' >>% true) <|>% false) .>>. (relativePath <|> file')) >>= fun (r,(is_in_compiler_dir,name)) p ->
             match p.Peek() with
             | '-' -> p.Skip(); (spacesSpiProj >>% {range=r; name=name; is_in_compiler_dir=is_in_compiler_dir; is_include=true}) p
             | _ -> (spacesSpiProj >>% {range=r; name=name; is_in_compiler_dir=is_in_compiler_dir; is_include=false}) p
@@ -177858,8 +178648,9 @@ end
                         configured |> Path.GetFullPath
                     )
                 x.packages |> List.map (fun x ->
-                    let name = if x.is_include then None else Some x.name
-                    let base_dir = if x.is_in_compiler_dir then compiler_dir.Value else snd package_dir
+                    let relative = x.name.StartsWith "."
+                    let name = if x.is_include then None elif relative then Some (Path.GetFileName (x.name.TrimEnd '/')) else Some x.name
+                    let base_dir = if x.is_in_compiler_dir then compiler_dir.Value elif relative then pdir else snd package_dir
                     let dir = Path.Combine(base_dir,x.name)
                     let dir' = dir |> SpiralFileSystem.standardize_path
                     let dir'' = dir' |> SpiralFileSystem.standardize_path
@@ -177985,7 +178776,7 @@ end
             while elements.MoveNext () do
                 let element = elements.GetTextElement ()
                 let rune = System.Char.ConvertToUtf32 (element, 0)
-                width <- width + (if wide rune then 2 elif System.Globalization.CharUnicodeInfo.GetUnicodeCategory rune = System.Globalization.UnicodeCategory.NonSpacingMark then 0 else 1)
+                width <- width + (if rune = 1 then 1000 elif rune = 2 then 0 elif wide rune then 2 elif System.Globalization.CharUnicodeInfo.GetUnicodeCategory rune = System.Globalization.UnicodeCategory.NonSpacingMark then 0 else 1)
             width
 
         let isMacroOpening token =
@@ -178077,55 +178868,87 @@ end
               default_float = Float64T
               edition = (match edition with Edition2 -> UpstreamEdition2 | Edition3 -> ForkEdition3) }
 
-        let isPosition (shape : Type) =
-            FSharpType.IsRecord (shape, true)
-            && (FSharpType.GetRecordFields (shape, true) |> Array.map (fun field -> field.Name) |> Array.sort) = [| "character"; "line" |]
+        type ShapeKind =
+            | PositionShape
+            | EnumShape
+            | UnionShape of tag : (obj -> int) * cases : (UnionCaseInfo * (obj -> obj[]))[]
+            | TupleShape of fields : (obj -> obj[])
+            | RecordShape of fields : (obj -> obj[])
+            | PairShape
+            | ArrayShape
+            | EnumerableShape
+            | OtherShape
 
-        let rec foldedConcat (value : obj) : string option =
+        let shapeKinds = Collections.Concurrent.ConcurrentDictionary<Type, ShapeKind> ()
+
+        let shapeKindOf (shape : Type) =
+            shapeKinds.GetOrAdd (shape, fun shape ->
+                let isPosition =
+                    FSharpType.IsRecord (shape, true)
+                    && (FSharpType.GetRecordFields (shape, true) |> Array.map (fun field -> field.Name) |> Array.sort) = [| "character"; "line" |]
+                if isPosition then PositionShape
+                elif shape.IsEnum then EnumShape
+                elif FSharpType.IsUnion (shape, true) then
+                    let cases = FSharpType.GetUnionCases (shape, true)
+                    let declaring = cases.[0].DeclaringType
+                    UnionShape (FSharpValue.PreComputeUnionTagReader (declaring, true), cases |> Array.map (fun case -> case, FSharpValue.PreComputeUnionReader (case, true)))
+                elif FSharpType.IsTuple shape then TupleShape (FSharpValue.PreComputeTupleReader shape)
+                elif FSharpType.IsRecord (shape, true) then RecordShape (FSharpValue.PreComputeRecordReader (shape, true))
+                elif shape.IsGenericType && shape.GetGenericTypeDefinition () = typedefof<Collections.Generic.KeyValuePair<_, _>> then PairShape
+                elif shape.IsArray then ArrayShape
+                elif typeof<Collections.IEnumerable>.IsAssignableFrom shape then EnumerableShape
+                else OtherShape)
+
+        let unionFieldsOf (value : obj) =
             if isNull value then None
             else
-                let shape = value.GetType ()
-                if not (FSharpType.IsUnion (shape, true)) then None
-                else
-                    let case, fields = FSharpValue.GetUnionFields (value, shape, true)
-                    match case.Name with
-                    | "RawLit" when fields.Length = 2 ->
-                        let literal = fields.[1]
-                        let literalCase, literalFields = FSharpValue.GetUnionFields (literal, literal.GetType (), true)
-                        if literalCase.Name = "LitString" then Some (literalFields.[0] :?> string) else None
-                    | "RawApply" when fields.Length = 3 && not (isNull fields.[1]) ->
-                        let inner = fields.[1]
-                        let innerCase, innerFields = FSharpValue.GetUnionFields (inner, inner.GetType (), true)
-                        if innerCase.Name <> "RawApply" || innerFields.Length <> 3 || isNull innerFields.[1] then None
-                        else
-                            let operatorCase, operatorFields = FSharpValue.GetUnionFields (innerFields.[1], innerFields.[1].GetType (), true)
-                            if operatorCase.Name = "RawV" && operatorFields.Length >= 2 && (operatorFields.[1] :? string) && (operatorFields.[1] :?> string) = "^^" then
-                                match foldedConcat innerFields.[2], foldedConcat fields.[2] with
-                                | Some a, Some b -> Some (a + b)
-                                | _ -> None
-                            else None
-                    | "RawAnnot" when fields.Length = 3 && not (isNull fields.[2]) ->
-                        let typeCase, typeFields = FSharpValue.GetUnionFields (fields.[2], fields.[2].GetType (), true)
-                        if typeCase.Name = "RawTPrim" && typeFields.Length = 2 && string typeFields.[1] = "StringT" then foldedConcat fields.[1] else None
-                    | "RawOp" when fields.Length = 3 ->
-                        let opCase, _ = FSharpValue.GetUnionFields (fields.[1], fields.[1].GetType (), true)
-                        if opCase.Name <> "StaticStringConcat" then None
-                        else
-                            let args = (fields.[2] :?> Collections.IEnumerable) |> Seq.cast<obj> |> List.ofSeq
-                            match args |> List.map foldedConcat with
-                            | [ Some a; Some b ] -> Some (a + b)
-                            | _ -> None
+                match shapeKindOf (value.GetType ()) with
+                | UnionShape (tag, cases) ->
+                    let case, read = cases.[tag value]
+                    Some (case, read value)
+                | _ -> None
+
+        let rec foldedConcat (value : obj) : string option =
+            match unionFieldsOf value with
+            | None -> None
+            | Some (case, fields) ->
+                match case.Name with
+                | "RawLit" when fields.Length = 2 ->
+                    match unionFieldsOf fields.[1] with
+                    | Some (literalCase, literalFields) when literalCase.Name = "LitString" -> Some (literalFields.[0] :?> string)
                     | _ -> None
+                | "RawApply" when fields.Length = 3 && not (isNull fields.[1]) ->
+                    match unionFieldsOf fields.[1] with
+                    | Some (innerCase, innerFields) when innerCase.Name = "RawApply" && innerFields.Length = 3 && not (isNull innerFields.[1]) ->
+                        match unionFieldsOf innerFields.[1] with
+                        | Some (operatorCase, operatorFields) when operatorCase.Name = "RawV" && operatorFields.Length >= 2 && (operatorFields.[1] :? string) && (operatorFields.[1] :?> string) = "^^" ->
+                            match foldedConcat innerFields.[2], foldedConcat fields.[2] with
+                            | Some a, Some b -> Some (a + b)
+                            | _ -> None
+                        | _ -> None
+                    | _ -> None
+                | "RawAnnot" when fields.Length = 3 && not (isNull fields.[2]) ->
+                    match unionFieldsOf fields.[2] with
+                    | Some (typeCase, typeFields) when typeCase.Name = "RawTPrim" && typeFields.Length = 2 && string typeFields.[1] = "StringT" -> foldedConcat fields.[1]
+                    | _ -> None
+                | "RawOp" when fields.Length = 3 ->
+                    match unionFieldsOf fields.[1] with
+                    | Some (opCase, _) when opCase.Name = "StaticStringConcat" ->
+                        let args = (fields.[2] :?> Collections.IEnumerable) |> Seq.cast<obj> |> List.ofSeq
+                        match args |> List.map foldedConcat with
+                        | [ Some a; Some b ] -> Some (a + b)
+                        | _ -> None
+                    | _ -> None
+                | _ -> None
 
         type ShapeStep =
             | Emit of string
             | Visit of obj
 
         let rawSeqHalves (item : obj) =
-            if isNull item || not (FSharpType.IsUnion (item.GetType (), true)) then None
-            else
-                let case, fields = FSharpValue.GetUnionFields (item, item.GetType (), true)
-                if case.Name = "RawSeq" && fields.Length = 3 then Some (fields.[1], fields.[2]) else None
+            match unionFieldsOf item with
+            | Some (case, fields) when case.Name = "RawSeq" && fields.Length = 3 -> Some (fields.[1], fields.[2])
+            | _ -> None
 
         let sequenced (value : obj) =
             let items = ResizeArray<obj> ()
@@ -178141,10 +178964,9 @@ end
             List.ofSeq items
 
         let macroTextOf (item : obj) =
-            if isNull item || not (FSharpType.IsUnion (item.GetType (), true)) then None
-            else
-                let case, fields = FSharpValue.GetUnionFields (item, item.GetType (), true)
-                if case.Name = "RawMacroText" && fields.Length = 2 && (fields.[1] :? string) then Some (fields.[1] :?> string) else None
+            match unionFieldsOf item with
+            | Some (case, fields) when case.Name = "RawMacroText" && fields.Length = 2 && (fields.[1] :? string) -> Some (fields.[1] :?> string)
+            | _ -> None
 
         let enumeratedSteps (value : Collections.IEnumerable) =
             let steps = ResizeArray<ShapeStep> ()
@@ -178173,23 +178995,22 @@ end
             | :? float as number -> [ Emit (string (BitConverter.DoubleToInt64Bits number) + "d") ]
             | _ ->
                 let shape = value.GetType ()
-                if isPosition shape then [ Emit "p" ]
-                elif shape.IsEnum then [ Emit (value.ToString () + ";") ]
-                elif FSharpType.IsUnion (shape, true) then
+                match shapeKindOf shape with
+                | PositionShape -> [ Emit "p" ]
+                | EnumShape -> [ Emit (value.ToString () + ";") ]
+                | UnionShape (tag, cases) ->
                     match foldedConcat value with
                     | Some text -> [ Emit ("(RawLit <pp> (LitString \"" + string text.Length + ":" + text + "))") ]
                     | None when (rawSeqHalves value).IsSome -> spaced "(RawSeq*" (sequenced value)
                     | None ->
-                        let case, fields = FSharpValue.GetUnionFields (value, shape, true)
-                        spaced ("(" + case.Name) fields
-                elif FSharpType.IsTuple shape then enclosed "<" (FSharpValue.GetTupleFields value) ">"
-                elif FSharpType.IsRecord (shape, true) then enclosed "{" (FSharpValue.GetRecordFields (value, true)) "}"
-                elif shape.IsGenericType && shape.GetGenericTypeDefinition () = typedefof<Collections.Generic.KeyValuePair<_, _>> then
-                    enclosed "{" [ shape.GetProperty("Key").GetValue value; shape.GetProperty("Value").GetValue value ] "}"
-                elif shape.IsArray then enclosed "[" (Seq.cast<obj> (value :?> Array)) "]"
-                elif typeof<Collections.IEnumerable>.IsAssignableFrom shape then
-                    Emit "[" :: enumeratedSteps (value :?> Collections.IEnumerable) @ [ Emit "]" ]
-                else [ Emit ("?" + shape.Name) ]
+                        let case, read = cases.[tag value]
+                        spaced ("(" + case.Name) (read value)
+                | TupleShape read -> enclosed "<" (read value) ">"
+                | RecordShape read -> enclosed "{" (read value) "}"
+                | PairShape -> enclosed "{" [ shape.GetProperty("Key").GetValue value; shape.GetProperty("Value").GetValue value ] "}"
+                | ArrayShape -> enclosed "[" (Seq.cast<obj> (value :?> Array)) "]"
+                | EnumerableShape -> Emit "[" :: enumeratedSteps (value :?> Collections.IEnumerable) @ [ Emit "]" ]
+                | OtherShape -> [ Emit ("?" + shape.Name) ]
 
         let shapeOf (builder : StringBuilder) (root : obj) =
             let pending = Collections.Generic.Stack<ShapeStep> ()
@@ -178351,7 +179172,21 @@ end
                 | _ -> ())
             marks
 
-        let gapRule (lexemes : Lexeme[]) (constraintMarks : bool[]) (index : int) =
+        let arrayBrackets (lexemes : Lexeme[]) =
+            let marks = Array.zeroCreate lexemes.Length
+            let openers = System.Collections.Generic.Stack<bool> ()
+            lexemes
+            |> Array.iteri (fun index lexeme ->
+                match lexeme.Token with
+                | TokParenthesis (Square, Open) ->
+                    let array = index > 0 && (match lexemes.[index - 1].Token with TokUnaryOperator (";", _) -> true | _ -> false)
+                    openers.Push array
+                    marks.[index] <- array
+                | TokParenthesis (Square, Close) -> marks.[index] <- (openers.Count = 0 || openers.Pop ())
+                | _ -> ())
+            marks
+
+        let gapRule (lexemes : Lexeme[]) (constraintMarks : bool[]) (arrayMarks : bool[]) (index : int) =
             let left = lexemes.[index - 1]
             let right = lexemes.[index]
             let at offset = if index + offset >= 0 && index + offset < lexemes.Length then Some lexemes.[index + offset].Token else None
@@ -178384,6 +179219,7 @@ end
                         elif appliesToParenthesis left.Token && isOpening Round right.Token && left.Span.NearTo = right.Span.From then Fixed (ApplicationSpace, 1)
                         elif isOpening Curly left.Token && isClosing Curly right.Token then Fixed (EmptyBracketTight, 0)
                         elif isOpening Square left.Token && isClosing Square right.Token then Fixed (EmptyBracketTight, 0)
+                        elif (arrayMarks.[index - 1] && isOpening Square left.Token) || (arrayMarks.[index] && isClosing Square right.Token) then AsWritten
                         elif isOpening Curly left.Token || isOpening Square left.Token then Fixed (BracketInnerSpace, 1)
                         elif isClosing Curly right.Token || isClosing Square right.Token then Fixed (BracketInnerSpace, 1)
                         else AsWritten
@@ -178418,13 +179254,14 @@ end
                     | _ -> { Number = line.Number; Shape = line.Shape }, [ GuardKept ], Some trimmed.Text
             | Code (indent, lexemes, tail) ->
                 let marks = constraintBraces lexemes
+                let arrays = arrayBrackets lexemes
                 let changes = ResizeArray ()
                 let respaced =
                     lexemes
                     |> Array.mapi (fun index lexeme ->
                         if index = 0 then lexeme
                         else
-                            match gapRule lexemes marks index, lexeme.Before with
+                            match gapRule lexemes marks arrays index, lexeme.Before with
                             | Fixed (reason, width), Whitespace current when current <> width ->
                                 changes.Add (Respaced reason)
                                 { lexeme with Before = Whitespace width }
@@ -178696,7 +179533,7 @@ end
 
         type FlatLine =
             | Kept of string
-            | Joined of string
+            | Joined of string * lineStarts : (string * bool) list * sourceLines : (int * string option * string list) list
 
         type FlatBlock =
             | Flattened of FlatLine list * original : string list
@@ -179025,6 +179862,9 @@ end
                             text + separator + tail
                 join items
 
+        let segmentHead = "inl spiral_format_segment () ="
+        let segmentTail = "spiral_format_segment_end"
+
         let flattenBlock (lines : Line<'phase> list) : FlatBlock =
             let leading = lines |> List.takeWhile (fun line -> match line.Shape with Code (0, _, _) -> false | _ -> true)
             let afterLeading = lines |> List.skip leading.Length
@@ -179079,7 +179919,77 @@ end
                             | _ -> line :: merged) []
                         |> List.rev
                     let text = flattenRegion typeLevel NoOpening armsWithGuards
-                    Flattened (leadingText @ [ Joined text ] @ trailingText, rest |> List.map render)
+                    let lineStarts = [ for line in armsWithGuards do for index in 0 .. line.Lexemes.Length - 1 -> line.Lexemes.[index].Text.Text, index = 0 ]
+                    let writtenLexemes = code |> Seq.map (fun line -> line.Number, line.Lexemes.Length) |> dict
+                    let sourceLines =
+                        [ for line in armsWithGuards ->
+                            let unmerged = writtenLexemes.[line.Number] = line.Lexemes.Length
+                            let written =
+                                match line.Remark with
+                                | None -> Some (codeText line.Lexemes)
+                                | Some remark when remark.StartsWith "(* //" && remark.EndsWith " *)" -> Some (codeText line.Lexemes + " " + remark.Substring (3, remark.Length - 6))
+                                | Some _ -> None
+                            line.Indent, (if unmerged then written else None), line.Leading ]
+                    Flattened (leadingText @ [ Joined (text, lineStarts, sourceLines) ] @ trailingText, rest |> List.map render)
+
+        let segmentBlocks (lines : Line<'phase> list) : FlatBlock list option =
+            let isOpaque (line : Line<'phase>) = match line.Shape with Opaque _ -> true | _ -> false
+            let kept (part : Line<'phase> list) = Flattened (part |> List.map (fun line -> Kept (render line)), [])
+            let leading = lines |> List.takeWhile (fun line -> match line.Shape with Code (0, _, _) -> false | _ -> true)
+            let rest = lines |> List.skip leading.Length
+            let endsWithEquals (line : Line<'phase>) =
+                match line.Shape with
+                | Code (_, lexemes, _) when lexemes.Length > 0 -> (match lexemes.[lexemes.Length - 1].Token with TokOperator ("=", _) -> true | _ -> false)
+                | _ -> false
+            if not (rest |> List.exists isOpaque) then None
+            else
+                match List.tryFindIndex endsWithEquals rest with
+                | Some headEnd when not (List.take (headEnd + 1) rest |> List.exists isOpaque) ->
+                    let head = List.take (headEnd + 1) rest
+                    let body = List.skip (headEnd + 1) rest
+                    let codeIndents = body |> List.choose (fun line -> match line.Shape with Code (indent, _, _) -> Some indent | _ -> None)
+                    match codeIndents with
+                    | 4 :: _ when codeIndents |> List.forall (fun indent -> indent >= 4) ->
+                        let statements = ResizeArray<Line<'phase> list> ()
+                        let current = ResizeArray<Line<'phase>> ()
+                        let opensStatement (line : Line<'phase>) (previousOpaque : bool) =
+                            match line.Shape with
+                            | Code (4, _, _) -> true
+                            | Opaque (verbatim, _) -> not previousOpaque && verbatim.Text.Length > 4 && verbatim.Text.StartsWith "    " && verbatim.Text.[4] <> ' '
+                            | _ -> false
+                        let mutable previousOpaque = false
+                        for line in body do
+                            if opensStatement line previousOpaque && current |> Seq.exists (fun l -> match l.Shape with Code _ | Opaque _ -> true | _ -> false) then
+                                statements.Add (List.ofSeq current)
+                                current.Clear ()
+                            current.Add line
+                            previousOpaque <- isOpaque line
+                        if current.Count > 0 then statements.Add (List.ofSeq current)
+                        let synthetic (number : int) (text : string) = { Number = number; Shape = fst (lexLine lex_state_init text) }
+                        let laid (run : Line<'phase> list) =
+                            match flattenBlock ((synthetic (-1) segmentHead :: run) @ [ synthetic (-2) ("    " + segmentTail) ]) with
+                            | Flattened _ as block -> block
+                            | Refused _ -> kept run
+                        let blocks = ResizeArray<FlatBlock> [ kept (leading @ head) ]
+                        let run = ResizeArray<Line<'phase>> ()
+                        let flush () =
+                            if run.Count > 0 then
+                                blocks.Add (laid (List.ofSeq run))
+                                run.Clear ()
+                        for statement in statements do
+                            if statement |> List.exists isOpaque then
+                                flush ()
+                                blocks.Add (kept statement)
+                            else run.AddRange statement
+                        flush ()
+                        Some (List.ofSeq blocks)
+                    | _ -> None
+                | _ -> None
+
+        let flattenBlocks (lines : Line<'phase> list) : FlatBlock list =
+            match segmentBlocks lines with
+            | Some blocks -> blocks
+            | None -> [ flattenBlock lines ]
 
         let blocksOf (source : Source<'phase>) =
             let lines = List.ofArray source.SourceLines
@@ -179096,11 +180006,11 @@ end
             split lines [] false
 
         let flatten (source : Source<'phase>) =
-            let blocks = blocksOf source |> List.map flattenBlock
+            let blocks = blocksOf source |> List.collect flattenBlocks
             let lines =
                 blocks
                 |> List.collect (function
-                    | Flattened (flat, _) -> flat |> List.map (function Kept text | Joined text -> text)
+                    | Flattened (flat, _) -> flat |> List.map (function Kept text | Joined (text, _, _) -> text)
                     | Refused (_, _, original) -> original)
             lines, blocks
 
@@ -179213,6 +180123,115 @@ end
 
             afterArrow mapped
 
+        let authoredBreaks = new System.Threading.ThreadLocal<System.Collections.Generic.HashSet<int>> (fun () -> System.Collections.Generic.HashSet<int> ())
+        let syntheticTokens = new System.Threading.ThreadLocal<System.Collections.Generic.HashSet<int>> (fun () -> System.Collections.Generic.HashSet<int> ())
+        let authoredBreakMark = '\u0001'
+        let syntheticMark = '\u0002'
+
+        let appendMarked (builder : StringBuilder) (lexeme : Lexeme) =
+            if builder.Length > 0 && authoredBreaks.Value.Contains lexeme.Span.From then builder.Append authoredBreakMark |> ignore
+            if syntheticTokens.Value.Contains lexeme.Span.From then builder.Append syntheticMark |> ignore
+            builder.Append lexeme.Text.Text |> ignore
+
+        let markedText (lexeme : Lexeme) = (if syntheticTokens.Value.Contains lexeme.Span.From then string syntheticMark else "") + lexeme.Text.Text
+
+        let stripMarks (text : string) = text.Replace(string authoredBreakMark, "").Replace(string syntheticMark, "")
+
+        let dropSyntheticParentheses (text : string) =
+            let builder = StringBuilder ()
+            let mutable index = 0
+            while index < text.Length do
+                let current = text.[index]
+                if current = syntheticMark && index + 1 < text.Length && (text.[index + 1] = '(' || text.[index + 1] = ')') then index <- index + 2
+                elif current = syntheticMark || current = authoredBreakMark then index <- index + 1
+                else
+                    builder.Append current |> ignore
+                    index <- index + 1
+            builder.ToString ()
+
+        let liftSyntheticGroups (lines : string list) =
+            let opener = string syntheticMark + "("
+            let closer = string syntheticMark + ")"
+            let indentOf (line : string) = line.Length - line.TrimStart(' ').Length
+            let laid = Array.ofList lines
+            let output = ResizeArray<string> ()
+            let shifts = System.Collections.Generic.Stack<int> ()
+            let mutable shifted = 0
+            for index in 0 .. laid.Length - 1 do
+                let line = laid.[index]
+                let trimmed = line.Trim ()
+                if trimmed = opener && index + 1 < laid.Length then
+                    let shift = max 0 (indentOf laid.[index + 1] - indentOf line)
+                    shifts.Push shift
+                    shifted <- shifted + shift
+                elif trimmed = closer && shifts.Count > 0 then shifted <- shifted - shifts.Pop ()
+                else output.Add (line.Substring (min shifted (indentOf line)))
+            List.ofSeq output
+
+        let tokenLines = new System.Threading.ThreadLocal<System.Collections.Generic.Dictionary<int, int>> (fun () -> System.Collections.Generic.Dictionary<int, int> ())
+        let sourceLineTable = new System.Threading.ThreadLocal<(int * string option * string list)[]> (fun () -> [||])
+        let sourceLineTokens = new System.Threading.ThreadLocal<int[]> (fun () -> [||])
+        let relaidSpans = new System.Threading.ThreadLocal<System.Collections.Generic.List<int * int>> (fun () -> System.Collections.Generic.List<int * int> ())
+        let relayOnly = new System.Threading.ThreadLocal<int[] option> (fun () -> None)
+
+        type ThenHabit =
+            | ThenLeads
+            | ThenTrails
+
+        let thenHabit = new System.Threading.ThreadLocal<ThenHabit> (fun () -> ThenLeads)
+
+        let thenHabitOf (lines : string seq) =
+            let rows =
+                lines
+                |> Seq.map (fun raw -> raw.Length - raw.TrimStart(' ').Length, raw.Trim ())
+                |> Seq.filter (fun (_, text) -> text <> "" && not (text.StartsWith "//"))
+                |> Array.ofSeq
+            let mutable leading = 0
+            let mutable trailing = 0
+            for at in 0 .. rows.Length - 1 do
+                let indent, text = rows.[at]
+                if text = "then" || text.StartsWith "then " then leading <- leading + 1
+                elif (text.StartsWith "if " || text.StartsWith "elif ") && at + 1 < rows.Length then
+                    let nextIndent, nextText = rows.[at + 1]
+                    let opensBranch = nextText = "else" || nextText = "elif" || nextText.StartsWith "else " || nextText.StartsWith "elif "
+                    if text.EndsWith " then" && nextIndent > indent then trailing <- trailing + 1
+                    elif text.Contains " then " && nextIndent = indent && opensBranch then trailing <- trailing + 1
+            if trailing > leading then ThenTrails else ThenLeads
+
+        let markAuthoredBreaks (lexemes : Lexeme[]) (lineStarts : (string * bool) list) (sourceLines : (int * string option * string list) list) =
+            let breaks = authoredBreaks.Value
+            let synthetic = syntheticTokens.Value
+            let lines = tokenLines.Value
+            breaks.Clear ()
+            synthetic.Clear ()
+            lines.Clear ()
+            let table = Array.ofList sourceLines
+            let counts = Array.zeroCreate<int> table.Length
+            let starts = Array.ofList lineStarts
+            let mutable next = 0
+            let mutable line = -1
+            let mutable aligned = true
+            for lexeme in lexemes do
+                if next < starts.Length && lexeme.Text.Text = fst starts.[next] then
+                    if snd starts.[next] then
+                        line <- line + 1
+                        if next > 0 then breaks.Add lexeme.Span.From |> ignore
+                    if line >= 0 && line < counts.Length then
+                        lines.[lexeme.Span.From] <- line
+                        counts.[line] <- counts.[line] + 1
+                    else aligned <- false
+                    next <- next + 1
+                else synthetic.Add lexeme.Span.From |> ignore
+            if next < starts.Length || not aligned then
+                breaks.Clear ()
+                synthetic.Clear ()
+                lines.Clear ()
+                sourceLineTable.Value <- [||]
+                sourceLineTokens.Value <- [||]
+            else
+                sourceLineTable.Value <- table
+                sourceLineTokens.Value <- counts
+
         let rec inlineText (raw : Node list) =
             let nodes = simplify raw
             let builder = StringBuilder ()
@@ -179220,10 +180239,10 @@ end
                 match node with
                 | Leaf lexeme ->
                     if not first then builder.Append (gapBefore lexeme) |> ignore
-                    builder.Append lexeme.Text.Text |> ignore
+                    appendMarked builder lexeme
                 | Group (opening, inner, closing) ->
                     if not first then builder.Append (gapBefore opening) |> ignore
-                    builder.Append opening.Text.Text |> ignore
+                    appendMarked builder opening
                     let padded =
                         not inner.IsEmpty
                         && not opening.InsideMacro
@@ -179234,7 +180253,7 @@ end
                     if padded then builder.Append ' ' |> ignore
                     inner |> List.iteri (fun index child -> emit (index = 0) child)
                     if padded then builder.Append ' ' |> ignore
-                    builder.Append closing.Text.Text |> ignore
+                    appendMarked builder closing
             nodes |> List.iteri (fun index node -> emit (index = 0) node)
             builder.ToString ()
 
@@ -179409,6 +180428,10 @@ end
 
         let literalSplitting = LiteralSplitting ()
 
+        let textElementsOf (text : string) : string list =
+            let elements = System.Globalization.StringInfo.GetTextElementEnumerator text
+            [ while elements.MoveNext () do yield elements.GetTextElement () ]
+
         let literalChain (indent : int) (node : Node) : LaidLine list option =
             match node with
             | Group (opening, inner, closing) when literalSplitting.Enabled && opening.Token = TokStringOpen && not (fits indent (inlineText [ node ])) ->
@@ -179418,25 +180441,28 @@ end
                         match child with
                         | Leaf lexeme ->
                             match lexeme.Token with
-                            | TokText text -> lexeme.Text.Text |> Seq.map string |> List.ofSeq
+                            | TokText text -> textElementsOf lexeme.Text.Text
                             | _ -> [ lexeme.Text.Text ]
                         | _ -> [ inlineText [ child ] ])
-                let room = 120 - indent - 3 - 3
+                let room = max 40 (120 - indent - 3 - 3)
                 let pieces = ResizeArray<string> ()
                 let current = StringBuilder ()
                 let mutable lastSpace = -1
+                let mutable lastNewline = -1
                 let mutable width = 0
                 for unit in units do
                     current.Append unit |> ignore
                     width <- width + displayWidth unit
                     if unit = " " then lastSpace <- current.Length
+                    if unit = "\\n" then lastNewline <- current.Length
                     if width >= room then
-                        let cut = if lastSpace > room / 2 then lastSpace else current.Length
+                        let cut = if lastNewline > room / 4 then lastNewline elif lastSpace > room / 2 then lastSpace else current.Length
                         let text = current.ToString ()
                         pieces.Add (text.Substring (0, cut))
                         current.Clear().Append (text.Substring cut) |> ignore
                         width <- displayWidth (current.ToString ())
                         lastSpace <- -1
+                        lastNewline <- -1
                 if current.Length > 0 then pieces.Add (current.ToString ())
                 Some (pieces |> List.ofSeq |> List.mapi (fun index piece -> { Indent = indent; Text = (if index = 0 then "" else "^^ ") + "\"" + piece + "\"" }))
             | _ -> None
@@ -179448,6 +180474,182 @@ end
                 | word :: earlier, Whitespace 0 -> (word @ [ node ]) :: earlier
                 | _ -> [ node ] :: words) []
             |> List.rev
+
+        let splitMacroLine (line : string) : string list =
+            if not literalSplitting.Enabled || line.Length <= 120 then [ line ]
+            else
+                match lexLine lex_state_init line with
+                | Code (indent, lexemes, tail), _ when tail.Text.Trim().Length = 0 ->
+                    let opens = lexemes |> Array.indexed |> Array.filter (fun (_, lexeme) -> lexeme.Token = TokMacroOpen) |> Array.map fst
+                    let spans =
+                        opens
+                        |> Array.choose (fun start ->
+                            let rec find index depth =
+                                if index >= lexemes.Length then None
+                                else
+                                    match lexemes.[index].Token with
+                                    | TokMacroOpen when index <> start -> find (index + 1) (depth + 1)
+                                    | TokMacroClose when depth = 0 -> Some index
+                                    | TokMacroClose -> find (index + 1) (depth - 1)
+                                    | _ -> find (index + 1) depth
+                            find (start + 1) 0 |> Option.map (fun stop -> start, stop))
+                    match spans |> Array.filter (fun (start, stop) -> lexemes.[stop].Span.NearTo - lexemes.[start].Span.From >= 24) |> Array.sortByDescending (fun (start, stop) -> lexemes.[stop].Span.NearTo - lexemes.[start].Span.From) |> Array.tryHead with
+                    | Some (start, stop) ->
+                        let openText = lexemes.[start].Text.Text
+                        let closeText = lexemes.[stop].Text.Text
+                        let units =
+                            let rec collect index (acc : string list) =
+                                if index >= stop then List.rev acc
+                                else
+                                    let lexeme = lexemes.[index]
+                                    let gapBefore at = line.Substring (lexemes.[at - 1].Span.NearTo, lexemes.[at].Span.From - lexemes.[at - 1].Span.NearTo)
+                                    match lexeme.Token with
+                                    | TokMacroExpression (_, Open) ->
+                                        let rec closing at depth =
+                                            if at >= stop then stop - 1
+                                            else
+                                                match lexemes.[at].Token with
+                                                | TokMacroExpression (_, Close) when depth = 0 -> at
+                                                | TokMacroExpression (_, Close) -> closing (at + 1) (depth - 1)
+                                                | TokMacroExpression (_, Open) -> closing (at + 1) (depth + 1)
+                                                | _ -> closing (at + 1) depth
+                                        let last = closing (index + 1) 0
+                                        let whole = gapBefore index + line.Substring (lexeme.Span.From, lexemes.[last].Span.NearTo - lexeme.Span.From)
+                                        collect (last + 1) (whole :: acc)
+                                    | TokText _ when (gapBefore index).Length = 0 -> collect (index + 1) (List.rev (textElementsOf lexeme.Text.Text) @ acc)
+                                    | _ -> collect (index + 1) ((gapBefore index + lexeme.Text.Text) :: acc)
+                            collect (start + 1) []
+                        let prefix = line.Substring (0, lexemes.[start].Span.From)
+                        let suffix = line.Substring lexemes.[stop].Span.NearTo
+                        let roomFor (index : int) = max 40 (if index = 0 then 120 - prefix.Length - openText.Length - 2 else 120 - indent - 4 - 2)
+                        let pieces = ResizeArray<string> ()
+                        let current = StringBuilder ()
+                        let mutable lastSpace = -1
+                        let mutable lastCommaSpace = -1
+                        let mutable lastSemicolonSpace = -1
+                        let rec glueHoles (pending : string list) =
+                            match pending with
+                            | "{" :: expression :: "}" :: rest when expression.StartsWith "!" -> ("{" + expression + "}") :: glueHoles rest
+                            | unit :: rest -> unit :: glueHoles rest
+                            | [] -> []
+                        for unit in glueHoles units do
+                            current.Append unit |> ignore
+                            let leadingSpaces = unit.Length - unit.TrimStart(' ').Length
+                            let spaceAt =
+                                if unit = " " then Some (current.Length, current.Length - 2)
+                                elif leadingSpaces > 0 && leadingSpaces < unit.Length then Some (current.Length - unit.Length + leadingSpaces, current.Length - unit.Length - 1)
+                                else None
+                            match spaceAt with
+                            | Some (after, before) ->
+                                lastSpace <- after
+                                if before >= 0 && current.[before] = ',' then lastCommaSpace <- after
+                                if before >= 0 && current.[before] = ';' then lastSemicolonSpace <- after
+                            | None -> ()
+                            let room = roomFor pieces.Count
+                            if current.Length >= room then
+                                let cut = if lastSemicolonSpace > room / 2 then lastSemicolonSpace elif lastCommaSpace > room / 2 then lastCommaSpace elif lastSpace > room / 2 then lastSpace else current.Length
+                                let text = current.ToString ()
+                                pieces.Add (text.Substring (0, cut))
+                                current.Clear().Append (text.Substring cut) |> ignore
+                                lastSpace <- -1
+                                lastCommaSpace <- -1
+                                lastSemicolonSpace <- -1
+                        if current.Length > 0 then pieces.Add (current.ToString ())
+                        let pieces =
+                            pieces
+                            |> List.ofSeq
+                            |> List.fold (fun (kept : string list) piece ->
+                                let leadingSpaces = piece.Length - piece.TrimStart(' ').Length
+                                match kept with
+                                | previous :: earlier when leadingSpaces > 0 -> piece.Substring leadingSpaces :: (previous + piece.Substring (0, leadingSpaces)) :: earlier
+                                | _ -> piece :: kept) []
+                            |> List.rev
+                            |> List.filter (fun piece -> piece.Length > 0)
+                        if pieces.Length < 2 || roomFor 0 < 12 || pieces |> List.exists (fun piece -> piece.StartsWith " ") then [ line ]
+                        else
+                            let continuation = System.String (' ', indent + 4)
+                            pieces
+                            |> List.mapi (fun index piece ->
+                                let lead = if index = 0 then prefix + openText else continuation
+                                let trail = if index = pieces.Length - 1 then closeText + suffix else "\\"
+                                lead + piece + trail)
+                    | None -> [ line ]
+                | _ -> [ line ]
+
+        let rec lexemesOfNodes (nodes : Node list) : Lexeme list =
+            nodes |> List.collect (fun node -> match node with Leaf lexeme -> [ lexeme ] | Group (opening, inner, closing) -> opening :: lexemesOfNodes inner @ [ closing ])
+
+        let asWrittenStatement (indent : int) (nodes : Node list) : LaidLine list option =
+            let table = sourceLineTable.Value
+            if table.Length = 0 then None
+            else
+                let owned = lexemesOfNodes nodes |> List.filter (fun lexeme -> not (syntheticTokens.Value.Contains lexeme.Span.From))
+                let lineOf (lexeme : Lexeme) = match tokenLines.Value.TryGetValue lexeme.Span.From with | true, line -> line | _ -> -1
+                let lines = owned |> List.map lineOf
+                match lines with
+                | [] -> None
+                | first :: _ when List.contains -1 lines -> None
+                | first :: _ ->
+                    let last = List.max lines
+                    let total = [ first .. last ] |> List.sumBy (fun line -> sourceLineTokens.Value.[line])
+                    let ordered = lines |> List.pairwise |> List.forall (fun (a, b) -> a <= b)
+                    if not ordered || total <> owned.Length then None
+                    else
+                        let baseIndent = let i, _, _ = table.[first] in i
+                        let candidate =
+                            [ for line in first .. last ->
+                                let i, text, leading = table.[line]
+                                i - baseIndent + indent, text, (if line > first then leading else []) ]
+                        let splitLater (i : int) (text : string) =
+                            match splitMacroLine (System.String (' ', i) + text) with
+                            | [ _ ] -> false
+                            | pieces -> pieces |> List.forall (fun piece -> piece.Length <= 120)
+                        let remarkOf (entry : string) =
+                            if entry.StartsWith "(* //" && entry.EndsWith " *)" then Some (entry.Substring (3, entry.Length - 6)) else None
+                        let keepable (i : int) (text : string option) (leading : string list) =
+                            i >= 0
+                            && leading |> List.forall (fun entry -> entry = blankMarker || (remarkOf entry).IsSome)
+                            && (match text with Some t -> fits i t || splitLater i t | None -> false)
+                        let joinHeads =
+                            owned
+                            |> List.pairwise
+                            |> List.filter (fun (opening, keyword) ->
+                                opening.Token = TokParenthesis (Round, Open)
+                                && not opening.InsideMacro
+                                && isKeyword SpecJoin (Leaf keyword)
+                                && lineOf opening = lineOf keyword
+                                && (owned |> List.tryFind (fun other -> lineOf other = lineOf opening) |> Option.exists (fun other -> other.Span.From = opening.Span.From)))
+                            |> List.map (fun (opening, _) -> lineOf opening)
+                            |> Set.ofList
+                        let bareJoinHeads (rows : (int * string option * string list) list) =
+                            let rows = Array.ofList rows
+                            for at in 0 .. rows.Length - 2 do
+                                match rows.[at], rows.[at + 1] with
+                                | (i, Some t, leading), (ni, Some next, _) when Set.contains (first + at) joinHeads && ni = i && next.StartsWith "|> " && t.StartsWith "(join " && t.EndsWith ")" && not (t.Contains "\"") && not (t.Contains "'('") && not (t.Contains "')'") ->
+                                    let inner = t.Substring (1, t.Length - 2)
+                                    let mutable depth = 0
+                                    let mutable balanced = true
+                                    for c in inner do
+                                        if c = '(' then depth <- depth + 1
+                                        elif c = ')' then
+                                            depth <- depth - 1
+                                            if depth < 0 then balanced <- false
+                                    if balanced && depth = 0 then rows.[at] <- (i, Some inner, leading)
+                                | _ -> ()
+                            List.ofArray rows
+                        let asWritten () =
+                            Some (bareJoinHeads candidate |> List.collect (fun (i, text, leading) ->
+                                (leading |> List.map (fun entry -> match remarkOf entry with Some remark -> { Indent = i; Text = remark } | None -> { Indent = 0; Text = "" }))
+                                @ [ { Indent = i; Text = Option.get text } ]))
+                        let complete = candidate |> List.forall (fun (i, text, leading) -> i >= 0 && text.IsSome && leading |> List.forall (fun entry -> entry = blankMarker || (remarkOf entry).IsSome))
+                        if candidate |> List.forall (fun (i, text, leading) -> keepable i text leading) then asWritten ()
+                        else
+                            match relayOnly.Value with
+                            | Some allowed when complete && not (Array.contains first allowed) -> asWritten ()
+                            | Some _ -> None
+                            | None ->
+                                relaidSpans.Value.Add ((first, last))
+                                None
 
         let rec layoutBlock (indent : int) (nodes : Node list) : LaidLine list =
             let parts = statements nodes
@@ -179469,8 +180671,11 @@ end
                     if a = 0 then layoutStatement indent part
                     else
                         match layoutStatement indent (List.tail part) with
-                        | first :: rest -> { first with Text = "and " + first.Text } :: rest
-                        | [] -> [])
+                        | first :: rest when fits first.Indent ("and " + first.Text) -> { first with Text = "and " + first.Text } :: rest
+                        | _ ->
+                            match layoutStatement (indent + 4) (List.tail part) |> List.map (fun line -> if line.Text = "" then line else { line with Indent = line.Indent - 4 }) with
+                            | first :: rest -> { first with Text = "and " + first.Text } :: rest
+                            | [] -> [])
 
         and attachRemark (indent : int) (remark : string) (lines : LaidLine list) : LaidLine list =
             match List.rev lines with
@@ -179501,6 +180706,9 @@ end
                 attachRemark indent remark (layoutStatement indent (List.take (stripped.Length - 1) stripped))
             | _ ->
             let nodes = stripped
+            match asWrittenStatement indent nodes with
+            | Some lines -> lines
+            | None ->
             match nodes with
             | first :: second :: _ when isKeyword SpecAnd first && (isKeyword SpecInl second || isKeyword SpecLet second) ->
                 match layoutStatement indent (List.tail nodes) with
@@ -179525,25 +180733,25 @@ end
                 match List.skip (at + 1) nodes with
                 | [ Leaf quote; Group (opening, inner, closing) ] ->
                     { Indent = indent; Text = inlineText (List.take (at + 1) nodes) }
-                    :: { Indent = indent + 4; Text = quote.Text.Text + opening.Text.Text }
+                    :: { Indent = indent + 4; Text = quote.Text.Text + (markedText opening) }
                     :: layoutBlock (indent + 8) inner
-                    @ [ { Indent = indent + 4; Text = closing.Text.Text } ]
+                    @ [ { Indent = indent + 4; Text = (markedText closing) } ]
                 | _ -> [ { Indent = indent; Text = whole } ]
             | first :: _ when (isKeyword SpecType first || isKeyword SpecNominal first) && (indexOfTop (isOperator "=") nodes).IsSome && (not (fits indent whole) || (isKeyword SpecType first && (match List.skip ((indexOfTop (isOperator "=") nodes).Value + 1) nodes with [ record ] -> (match fieldRecord record with Some _ -> true | None -> false) | _ -> false))) ->
                 let at = (indexOfTop (isOperator "=") nodes).Value
                 match List.skip (at + 1) nodes with
                 | [ Group (opening, inner, closing) ] when opening.Token = TokParenthesis (Curly, Open) ->
                     { Indent = indent; Text = inlineText (List.take (at + 1) nodes) }
-                    :: { Indent = indent + 4; Text = opening.Text.Text }
+                    :: { Indent = indent + 4; Text = (markedText opening) }
                     :: (splitOn (isOperator ";") inner |> List.filter (fun field -> not field.IsEmpty) |> List.map (fun field -> { Indent = indent + 8; Text = inlineText field }))
-                    @ [ { Indent = indent + 4; Text = closing.Text.Text } ]
+                    @ [ { Indent = indent + 4; Text = (markedText closing) } ]
                 | prefix when (match List.tryLast prefix with Some (Group (opening, _, _)) -> opening.Token = TokParenthesis (Curly, Open) | _ -> false) ->
                     match List.last prefix with
                     | Group (opening, inner, closing) ->
                         { Indent = indent; Text = inlineText (List.take (at + 1) nodes) }
-                        :: { Indent = indent + 4; Text = inlineText (List.take (prefix.Length - 1) prefix) + " " + opening.Text.Text }
+                        :: { Indent = indent + 4; Text = inlineText (List.take (prefix.Length - 1) prefix) + " " + (markedText opening) }
                         :: (splitOn (isOperator ";") inner |> List.filter (fun field -> not field.IsEmpty) |> List.map (fun field -> { Indent = indent + 8; Text = inlineText field }))
-                        @ [ { Indent = indent + 4; Text = closing.Text.Text } ]
+                        @ [ { Indent = indent + 4; Text = (markedText closing) } ]
                     | _ -> [ { Indent = indent; Text = whole } ]
                 | body when not (fits indent whole) ->
                     let head = List.take (at + 1) nodes
@@ -179567,8 +180775,11 @@ end
                     elif bodyParts.Length = 1 && fits indent (headText + " " + inlineComplete body) && (indent > 0 || isKeyword SpecInstance first) && not (opensLayout body) then [ { Indent = indent; Text = headText + " " + inlineComplete body } ]
                     elif indent > 0 && not (List.exists isPipe body) && fits indent headText && bodyParts.Length = 1 && (lastArgumentLambda indent headText body).IsSome && (trailingLambdaNeedsBlock body || not (fits indent whole)) then
                         (lastArgumentLambda indent headText body).Value
-                    elif fits indent headText then { Indent = indent; Text = headText } :: layoutBlock (indent + 4) body
-                    else layoutHead indent (List.take at nodes) @ [ { Indent = indent + 4; Text = "=" } ] @ layoutBlock (indent + 4) body
+                    else
+                        match asWrittenStatement indent head with
+                        | Some lines -> lines @ layoutBlock (indent + 4) body
+                        | None when fits indent headText -> { Indent = indent; Text = headText } :: layoutBlock (indent + 4) body
+                        | None -> layoutHead indent (List.take at nodes) @ [ { Indent = indent + 4; Text = "=" } ] @ layoutBlock (indent + 4) body
                 | None -> [ { Indent = indent; Text = whole } ]
             | _ -> layoutExpression indent nodes
 
@@ -179618,9 +180829,9 @@ end
                             else
                             match segment with
                             | [ Group (opening, inner, closing) ] when opening.Token = TokParenthesis (Curly, Open) && not opening.InsideMacro && not inner.IsEmpty ->
-                                { Indent = indent + 4; Text = opening.Text.Text }
+                                { Indent = indent + 4; Text = (markedText opening) }
                                 :: (splitOn (isOperator ";") inner |> List.filter (fun field -> not field.IsEmpty) |> List.map (fun field -> { Indent = indent + 8; Text = inlineText field }))
-                                @ [ { Indent = indent + 4; Text = closing.Text.Text + arrow } ]
+                                @ [ { Indent = indent + 4; Text = (markedText closing) + arrow } ]
                             | _ -> layoutType (indent + 4) arrow segment)
                         |> List.concat
                     headLines @ segmentLines
@@ -179652,9 +180863,9 @@ end
             match nodes with
             | [ Group (opening, inner, closing) ] when opening.Token = TokParenthesis (Round, Open) && not opening.InsideMacro && not inner.IsEmpty ->
                 match quantifierPrefix inner with
-                | Some (prefix, body) when fits at (opening.Text.Text + inlineText prefix) ->
-                    { Indent = at; Text = opening.Text.Text + inlineText prefix } :: layoutType (at + 4) (closing.Text.Text + suffix) body
-                | _ -> { Indent = at; Text = opening.Text.Text } :: layoutType (at + 4) "" inner @ [ { Indent = at; Text = closing.Text.Text + suffix } ]
+                | Some (prefix, body) when fits at ((markedText opening) + inlineText prefix) ->
+                    { Indent = at; Text = (markedText opening) + inlineText prefix } :: layoutType (at + 4) ((markedText closing) + suffix) body
+                | _ -> { Indent = at; Text = (markedText opening) } :: layoutType (at + 4) "" inner @ [ { Indent = at; Text = (markedText closing) + suffix } ]
             | [ Group (opening, inner, closing) ] when opening.Token = TokParenthesis (Curly, Open) && not opening.InsideMacro && not inner.IsEmpty ->
                 let fields = splitOn (isOperator ";") inner |> List.filter (fun field -> not field.IsEmpty)
                 let fieldLines (field : Node list) =
@@ -179662,7 +180873,7 @@ end
                     | Some colon when colon > 0 && not (fits (at + 4) (inlineText field)) ->
                         { Indent = at + 4; Text = inlineText (List.take (colon + 1) field) } :: layoutType (at + 8) "" (List.skip (colon + 1) field)
                     | _ -> [ { Indent = at + 4; Text = inlineText field } ]
-                { Indent = at; Text = opening.Text.Text } :: (fields |> List.collect fieldLines) @ [ { Indent = at; Text = closing.Text.Text + suffix } ]
+                { Indent = at; Text = (markedText opening) } :: (fields |> List.collect fieldLines) @ [ { Indent = at; Text = (markedText closing) + suffix } ]
             | _ ->
                 let plainWord (word : Node list) = word |> List.forall (fun node -> match node with Leaf lexeme -> not lexeme.InsideMacro | Group _ -> false)
                 match gluedWords nodes with
@@ -179724,16 +180935,27 @@ end
                     match List.rev inner with
                     | Group (tupleOpening, tupleInner, tupleClosing) :: before when tupleOpening.Token = TokParenthesis (Round, Open) && hasTopComma tupleInner ->
                         let items = splitOn (isOperator ",") tupleInner |> List.filter (fun item -> not item.IsEmpty)
-                        let head = opening.Text.Text + (if before.IsEmpty then "" else inlineText (List.rev before) + " ") + tupleOpening.Text.Text
+                        let head = (markedText opening) + (if before.IsEmpty then "" else inlineText (List.rev before) + " ") + (markedText tupleOpening)
                         Some (
                             { Indent = indent + 4; Text = head }
                             :: (items |> List.mapi (fun index item -> { Indent = indent + 8; Text = inlineText item + (if index < items.Length - 1 then "," else "") }))
-                            @ [ { Indent = indent + 4; Text = tupleClosing.Text.Text + closing.Text.Text } ])
+                            @ [ { Indent = indent + 4; Text = (markedText tupleClosing) + (markedText closing) } ])
                     | _ ->
                         match indexOfTop (isOperator ":") inner with
-                        | Some colon when colon > 0 && colon < inner.Length - 1 && fits (indent + 4) (opening.Text.Text + inlineText (List.take (colon + 1) inner)) ->
-                            Some ({ Indent = indent + 4; Text = opening.Text.Text + inlineText (List.take (colon + 1) inner) } :: layoutType (indent + 8) closing.Text.Text (List.skip (colon + 1) inner))
-                        | _ -> None
+                        | Some colon when colon > 0 && colon < inner.Length - 1 && fits (indent + 4) ((markedText opening) + inlineText (List.take (colon + 1) inner)) ->
+                            Some ({ Indent = indent + 4; Text = (markedText opening) + inlineText (List.take (colon + 1) inner) } :: layoutType (indent + 8) (markedText closing) (List.skip (colon + 1) inner))
+                        | _ ->
+                            let bareName (node : Node) = match node with Leaf lexeme -> (match lexeme.Token with TokVar _ -> not lexeme.InsideMacro | _ -> false) | Group _ -> false
+                            match inner with
+                            | Group (recordOpening, names, recordClosing) :: annotation when recordOpening.Token = TokParenthesis (Curly, Open) && not names.IsEmpty && List.forall bareName names ->
+                                let closingText = (markedText recordClosing) + (if annotation.IsEmpty then "" else " " + inlineText annotation) + (markedText closing)
+                                if fits (indent + 4) closingText then
+                                    Some (
+                                        { Indent = indent + 4; Text = (markedText opening) + (markedText recordOpening) }
+                                        :: (names |> List.map (fun name -> { Indent = indent + 8; Text = inlineText [ name ] }))
+                                        @ [ { Indent = indent + 4; Text = closingText } ])
+                                else None
+                            | _ -> None
                 | _ -> None
             for parameter in parameters do
                 let candidate = inlineText (List.ofSeq current @ [ parameter ])
@@ -179755,10 +180977,10 @@ end
                     let rec typeLines (at : int) (nodes : Node list) : LaidLine list =
                         let packedNodes = packNodes at "" "" nodes
                         match List.rev nodes with
-                        | Group (opening, inner, closing) :: before when packedNodes |> List.exists (fun line -> not (fits line.Indent line.Text)) && opening.Token = TokParenthesis (Round, Open) && not inner.IsEmpty && fits at ((if before.IsEmpty then "" else inlineText (List.rev before) + " ") + opening.Text.Text) ->
-                            { Indent = at; Text = (if before.IsEmpty then "" else inlineText (List.rev before) + " ") + opening.Text.Text }
+                        | Group (opening, inner, closing) :: before when packedNodes |> List.exists (fun line -> not (fits line.Indent line.Text)) && opening.Token = TokParenthesis (Round, Open) && not inner.IsEmpty && fits at ((if before.IsEmpty then "" else inlineText (List.rev before) + " ") + (markedText opening)) ->
+                            { Indent = at; Text = (if before.IsEmpty then "" else inlineText (List.rev before) + " ") + (markedText opening) }
                             :: typeLines (at + 4) inner
-                            @ [ { Indent = at; Text = closing.Text.Text } ]
+                            @ [ { Indent = at; Text = (markedText closing) } ]
                         | _ -> packedNodes
                     let packedAnnotation = typeLines (indent + 4) annotation
                     let typeNodes = List.tail annotation
@@ -179817,6 +181039,14 @@ end
             | _ when longPipeline nodes -> true
             | _ when carriesComment nodes -> true
             | _ when (match List.tryFindIndex (fun node -> isKeyword SpecFunction node) nodes with Some at -> (match List.tryItem (at + 1) nodes with Some next -> isOperator "|" next | None -> false) | None -> false) -> true
+            | first :: rest when isKeyword SpecIf first && sourceLineTable.Value.Length > 0 ->
+                let breaks = authoredBreaks.Value
+                let rec anyBreak (nodes : Node list) =
+                    match nodes with
+                    | Leaf lexeme :: tail -> breaks.Contains lexeme.Span.From || anyBreak tail
+                    | Group (opening, inner, closing) :: tail -> breaks.Contains opening.Span.From || anyBreak inner || breaks.Contains closing.Span.From || anyBreak tail
+                    | [] -> false
+                anyBreak rest
             | first :: _ when isKeyword SpecMatch first || isKeyword SpecIf first || isKeyword SpecTypecase first -> true
             | first :: _ when isKeyword SpecFun first ->
                 match indexOfTop (isOperator "=>") nodes with
@@ -179879,9 +181109,9 @@ end
                                 match List.rev part with
                                 | Group (opening, inner, closing) :: before when not (fits partIndent (prefix + inlineText part + comma)) && opening.Token = TokParenthesis (Round, Open) && List.exists (isOperator ",") inner ->
                                     let items = splitOn (isOperator ",") inner |> List.filter (fun item -> not item.IsEmpty)
-                                    { Indent = partIndent; Text = prefix + (if before.IsEmpty then "" else inlineText (List.rev before) + " ") + opening.Text.Text }
+                                    { Indent = partIndent; Text = prefix + (if before.IsEmpty then "" else inlineText (List.rev before) + " ") + (markedText opening) }
                                     :: (items |> List.mapi (fun position item -> layoutPatternItem (indent + 8) (if position < items.Length - 1 then "," else "") item) |> List.concat)
-                                    @ [ { Indent = indent + 4; Text = closing.Text.Text + comma } ]
+                                    @ [ { Indent = indent + 4; Text = (markedText closing) + comma } ]
                                 | _ when prefix = "" -> layoutPatternItem partIndent comma part
                                 | _ -> [ { Indent = partIndent; Text = prefix + inlineText part + comma } ])
                             |> List.concat
@@ -179897,9 +181127,9 @@ end
                             let tail =
                                 if (statements body).Length = 1 && fits (indent + 4) bodyText && not (opensLayout body) then [ { Indent = indent + 4; Text = bodyText } ]
                                 else { Indent = indent + 4; Text = "=>" } :: layoutBlock (indent + 8) body
-                            { Indent = indent; Text = "| " + inlineText (List.rev before) + " " + opening.Text.Text }
+                            { Indent = indent; Text = "| " + inlineText (List.rev before) + " " + (markedText opening) }
                             :: (items |> List.mapi (fun position item -> layoutPatternItem (indent + 8) (if position < items.Length - 1 then "," else "") item) |> List.concat)
-                            @ [ { Indent = indent + 4; Text = closing.Text.Text } ]
+                            @ [ { Indent = indent + 4; Text = (markedText closing) } ]
                             @ tail
                         | _ -> [ { Indent = indent; Text = line } ]
                     else
@@ -179918,13 +181148,13 @@ end
                 match List.rev item with
                 | Group (opening, inner, closing) :: before when opening.Token = TokParenthesis (Round, Open) && not opening.InsideMacro && List.exists (isOperator ",") inner && not (carriesComment inner) ->
                     let items = splitOn (isOperator ",") inner |> List.filter (fun part -> not part.IsEmpty)
-                    { Indent = at; Text = (if before.IsEmpty then "" else inlineText (List.rev before) + " ") + opening.Text.Text }
+                    { Indent = at; Text = (if before.IsEmpty then "" else inlineText (List.rev before) + " ") + (markedText opening) }
                     :: (items |> List.mapi (fun position part -> layoutPatternItem (at + 4) (if position < items.Length - 1 then "," else "") part) |> List.concat)
-                    @ [ { Indent = at; Text = closing.Text.Text + suffix } ]
-                | Group (opening, inner, closing) :: before when opening.Token = TokParenthesis (Round, Open) && not opening.InsideMacro && not inner.IsEmpty && not (carriesComment inner) && fits at ((if before.IsEmpty then "" else inlineText (List.rev before) + " ") + opening.Text.Text) ->
-                    { Indent = at; Text = (if before.IsEmpty then "" else inlineText (List.rev before) + " ") + opening.Text.Text }
+                    @ [ { Indent = at; Text = (markedText closing) + suffix } ]
+                | Group (opening, inner, closing) :: before when opening.Token = TokParenthesis (Round, Open) && not opening.InsideMacro && not inner.IsEmpty && not (carriesComment inner) && fits at ((if before.IsEmpty then "" else inlineText (List.rev before) + " ") + (markedText opening)) ->
+                    { Indent = at; Text = (if before.IsEmpty then "" else inlineText (List.rev before) + " ") + (markedText opening) }
                     :: layoutPatternItem (at + 4) "" inner
-                    @ [ { Indent = at; Text = closing.Text.Text + suffix } ]
+                    @ [ { Indent = at; Text = (markedText closing) + suffix } ]
                 | _ -> [ { Indent = at; Text = inlineText item + suffix } ]
 
         and layoutExpression (indent : int) (nodes : Node list) : LaidLine list =
@@ -179946,6 +181176,8 @@ end
                     | _ -> indexOfTop (isOperator "=>") nodes
             match nodes with
             | [ single ] when (literalChain indent single).IsSome -> (literalChain indent single).Value
+            | _ when not (fits indent whole) && not (carriesComment nodes) && not (match lexemesOfNodes nodes with _ :: rest -> rest |> List.exists (fun lexeme -> authoredBreaks.Value.Contains lexeme.Span.From) | [] -> false) && (match chainSegments nodes with Some (_, _, depth) -> depth >= 3 | None -> false) && (fillChain indent nodes |> List.forall (fun laid -> fits laid.Indent laid.Text)) ->
+                fillChain indent nodes
             | _ when annotationAt.IsSome && annotationAt.Value > 0 ->
                 let at = annotationAt.Value
                 let left = List.take at nodes
@@ -179957,13 +181189,13 @@ end
                 let at = arrowAt.Value
                 { Indent = indent; Text = inlineText (List.take (at + 1) nodes) } :: layoutBlock (indent + 4) (unwrapBody (List.skip (at + 1) nodes))
             | [ (Leaf tick); (Group (opening, inner, closing)) ] when not tick.InsideMacro && (match tick.Token with TokUnaryOperator ("`", _) -> true | _ -> false) && opening.Token = TokParenthesis (Round, Open) && not (fits indent whole) && not inner.IsEmpty && not (carriesComment inner) ->
-                { Indent = indent; Text = tick.Text.Text + opening.Text.Text } :: layoutType (indent + 4) "" inner @ [ { Indent = indent; Text = closing.Text.Text } ]
+                { Indent = indent; Text = tick.Text.Text + (markedText opening) } :: layoutType (indent + 4) "" inner @ [ { Indent = indent; Text = (markedText closing) } ]
             | [ (Leaf unary); (Group (opening, inner, closing)) ] when (match unary.Token with TokUnaryOperator _ -> true | _ -> false) && opening.Token = TokParenthesis (Square, Open) && not (fits indent whole) && not inner.IsEmpty ->
                 let items = splitOn (isOperator ";") inner |> List.filter (fun item -> not item.IsEmpty)
-                { Indent = indent; Text = unary.Text.Text + opening.Text.Text } :: (items |> List.collect (layoutExpression (indent + 4))) @ [ { Indent = indent; Text = closing.Text.Text } ]
+                { Indent = indent; Text = unary.Text.Text + (markedText opening) } :: (items |> List.collect (layoutExpression (indent + 4))) @ [ { Indent = indent; Text = (markedText closing) } ]
             | [ Group (opening, inner, closing) as record ] when opening.Token = TokParenthesis (Curly, Open) && functionRecord record ->
                 let openText, fields = recordOpening opening inner
-                { Indent = indent; Text = openText } :: layoutFields (indent + 4) fields @ [ { Indent = indent; Text = closing.Text.Text } ]
+                { Indent = indent; Text = openText } :: layoutFields (indent + 4) fields @ [ { Indent = indent; Text = (markedText closing) } ]
             | [ Group (opening, _, _) as record ] when (opening.Token = TokParenthesis (Curly, Open) || opening.Token = TokParenthesis (Square, Open)) && not (fits indent whole) -> layoutArgument indent record
             | [ first; (Group (opening, inner, _)) ] when (isKeyword SpecReal first || isKeyword SpecJoin first) && opening.Token = TokParenthesis (Round, Open) && (not (fits indent whole) || (statements (unwrapBody inner)).Length > 1 || isStatement (unwrapBody inner) || opensLayout (unwrapBody inner)) ->
                 { Indent = indent; Text = inlineText [ first ] } :: layoutBlock (indent + 4) (unwrapBody inner)
@@ -179990,6 +181222,7 @@ end
                             @ [ { Indent = indent; Text = inlineText [ List.last head ] } ]
                     headLines @ layoutArms indent arms
                 | None -> [ { Indent = indent; Text = whole } ]
+            | first :: _ when isKeyword SpecIf first && (statements nodes).Length = 1 && fits indent whole && not (opensLayout nodes) -> [ { Indent = indent; Text = whole } ]
             | first :: _ when isKeyword SpecIf first ->
                 let branches = ResizeArray<Node * Node list> ()
                 let mutable keyword = first
@@ -180005,9 +181238,47 @@ end
                         if isKeyword SpecElse node && depth > 0 then depth <- depth - 1
                         current.Add node
                 branches.Add (keyword, List.ofSeq current)
+                let keywordLine (node : Node) =
+                    match node with
+                    | Leaf lexeme -> match tokenLines.Value.TryGetValue lexeme.Span.From with | true, line -> Some line | _ -> None
+                    | Group _ -> None
+                let keywordLines = branches |> Seq.map (fst >> keywordLine) |> List.ofSeq
+                let writtenOnOneLine = keywordLines |> List.forall Option.isSome && (List.distinct keywordLines).Length = 1
+                let thenStaysOnCondition (keywordNode : Node) =
+                    match keywordNode with
+                    | Leaf lexeme when isKeyword SpecThen keywordNode && sourceLineTable.Value.Length > 0 ->
+                        if writtenOnOneLine || not (tokenLines.Value.ContainsKey lexeme.Span.From) then thenHabit.Value = ThenTrails
+                        else not (authoredBreaks.Value.Contains lexeme.Span.From)
+                    | _ -> false
+                let rec mergeThen (pending : (Node * bool * LaidLine list) list) =
+                    match pending with
+                    | (conditionNode, _, condition) :: (thenNode, bodyOnOwnLine, thenLine :: body) :: rest
+                        when (isKeyword SpecIf conditionNode || isKeyword SpecElif conditionNode)
+                             && thenStaysOnCondition thenNode
+                             && not condition.IsEmpty
+                             && (List.last condition).Indent = thenLine.Indent
+                             && (thenLine.Text = "then" || (thenLine.Text.StartsWith "then " && not bodyOnOwnLine))
+                             && fits thenLine.Indent ((List.last condition).Text + " " + thenLine.Text) ->
+                        let last = List.last condition
+                        List.take (condition.Length - 1) condition @ [ { last with Text = last.Text + " " + thenLine.Text } ] @ body @ mergeThen rest
+                    | (conditionNode, _, condition) :: (thenNode, true, thenLine :: body) :: rest
+                        when (isKeyword SpecIf conditionNode || isKeyword SpecElif conditionNode)
+                             && thenStaysOnCondition thenNode
+                             && not condition.IsEmpty
+                             && (List.last condition).Indent = thenLine.Indent
+                             && thenLine.Text.StartsWith "then "
+                             && fits thenLine.Indent ((List.last condition).Text + " then") ->
+                        let last = List.last condition
+                        List.take (condition.Length - 1) condition
+                        @ [ { last with Text = last.Text + " then" } ]
+                        @ [ { Indent = thenLine.Indent + 4; Text = thenLine.Text.Substring 5 } ]
+                        @ body
+                        @ mergeThen rest
+                    | (_, _, lines) :: rest -> lines @ mergeThen rest
+                    | [] -> []
                 branches
                 |> List.ofSeq
-                |> List.collect (fun (keywordNode, branch) ->
+                |> List.map (fun (keywordNode, branch) ->
                     let keywordComments =
                         match keywordNode with
                         | Leaf lexeme ->
@@ -180018,10 +181289,28 @@ end
                     let word = inlineText [ keywordNode ]
                     let body = if isKeyword SpecIf keywordNode || isKeyword SpecElif keywordNode then branch else unwrapBody branch
                     let line = word + " " + inlineComplete (if isKeyword SpecIf keywordNode || isKeyword SpecElif keywordNode then branch else body)
+                    let elseIfChain () =
+                        match body with
+                        | first :: _ when isKeyword SpecElse keywordNode && isKeyword SpecIf first && (statements body).Length = 1 ->
+                            let asElif (lines : LaidLine list) (shift : int) =
+                                match lines |> List.map (fun line -> if line.Text = "" then line else { line with Indent = line.Indent - shift }) with
+                                | head :: rest when head.Indent = indent && (head.Text = "if" || head.Text.StartsWith "if ") && fits indent ("el" + head.Text) -> Some ({ head with Text = "el" + head.Text } :: rest)
+                                | _ -> None
+                            match layoutExpression indent body with
+                            | head :: _ when head.Indent = indent && (head.Text = "if" || head.Text.StartsWith "if ") && not (fits indent ("el" + head.Text)) ->
+                                asElif (layoutExpression (indent + 2) body) 2
+                            | laid -> asElif laid 0
+                        | _ -> None
+                    let elseIfBody = isKeyword SpecElse keywordNode && (match body with first :: _ -> isKeyword SpecIf first | [] -> false)
                     let laid =
-                        if (statements body).Length = 1 && fits indent line && not (opensLayout body) then [ { Indent = indent; Text = line } ]
-                        else { Indent = indent; Text = word } :: layoutBlock (indent + 4) body
-                    keywordComments @ laid)
+                        if (statements body).Length = 1 && fits indent line && not (opensLayout body) && not elseIfBody then [ { Indent = indent; Text = line } ]
+                        else
+                            match elseIfChain () with
+                            | Some chain -> chain
+                            | None -> { Indent = indent; Text = word } :: layoutBlock (indent + 4) body
+                    let bodyOnOwnLine = match body with Leaf lexeme :: _ -> authoredBreaks.Value.Contains lexeme.Span.From | Group (opening, _, _) :: _ -> authoredBreaks.Value.Contains opening.Span.From | [] -> false
+                    keywordNode, bodyOnOwnLine, keywordComments @ laid)
+                |> mergeThen
             | _ ->
                 match List.tryFindIndexBack (isKeyword SpecFunction) nodes with
                 | Some at when at = nodes.Length - 1 || (match List.tryItem (at + 1) nodes with Some next -> isOperator "|" next | None -> false) ->
@@ -180047,7 +181336,7 @@ end
                         match body with
                         | [ Group (opening, inner, closing) as record ] when opening.Token = TokParenthesis (Curly, Open) && not opening.InsideMacro && (fieldRecord record).IsSome && fits indent (inlineText head + " " + fst (recordOpening opening inner)) ->
                             let openText, fields = recordOpening opening inner
-                            { Indent = indent; Text = inlineText head + " " + openText } :: layoutFields (indent + 4) fields @ [ { Indent = indent; Text = closing.Text.Text } ]
+                            { Indent = indent; Text = inlineText head + " " + openText } :: layoutFields (indent + 4) fields @ [ { Indent = indent; Text = (markedText closing) } ]
                         | _ ->
                         if fits indent (inlineText head) || at = 0 then { Indent = indent; Text = inlineText head } :: layoutBlock (indent + 4) body
                         else breakLong indent nodes
@@ -180087,11 +181376,17 @@ end
             if commaItems.Length > 1 then
                 commaItems
                 |> List.mapi (fun index item ->
+                    let parenthesizedIf =
+                        match item with
+                        | [ Group (opening, _, _) ] -> opening.Token = TokParenthesis (Round, Open) && not opening.InsideMacro && (match unwrapBody item with first :: _ -> isKeyword SpecIf first | [] -> false)
+                        | _ -> false
                     let lines =
-                        match layoutExpression indent item with
-                        | [ single ] when index < commaItems.Length - 1 && not (fits single.Indent (single.Text + ",")) ->
-                            layoutExpression (indent + 1) item |> List.map (fun line -> { line with Indent = max 0 (line.Indent - 1) })
-                        | laid -> laid
+                        if parenthesizedIf && fits indent (inlineText item + ",") && not (carriesComment item) then [ { Indent = indent; Text = inlineText item } ]
+                        else
+                            match layoutExpression indent item with
+                            | [ single ] when index < commaItems.Length - 1 && not (fits single.Indent (single.Text + ",")) ->
+                                layoutExpression (indent + 1) item |> List.map (fun line -> { line with Indent = max 0 (line.Indent - 1) })
+                            | laid -> laid
                     let lines = if index < commaItems.Length - 1 then keepLambdaParentheses item lines else lines
                     if index = commaItems.Length - 1 then lines
                     else
@@ -180122,6 +181417,13 @@ end
                         match withGap with
                         | [ single ] when lowest >= 45 && (literalChain (indent + 4) single).IsSome ->
                             { Indent = indent; Text = "(" } :: (literalChain (indent + 4) single).Value @ [ { Indent = indent; Text = ")" } ]
+                        | [ Group (opening, _, closing) ] when opening.Token = TokParenthesis (Round, Open) && not opening.InsideMacro && not (carriesComment withGap) && not (fits indent (inlineText withGap)) && (match unwrapBody withGap with first :: _ -> isKeyword SpecIf first || isKeyword SpecMatch first || isKeyword SpecTypecase first | [] -> false) ->
+                            match layoutExpression (indent + 4) (unwrapBody withGap) with
+                            | first :: rest ->
+                                match List.rev ({ Indent = indent; Text = (markedText opening) + first.Text } :: rest) with
+                                | last :: before -> List.rev ({ last with Text = last.Text + (markedText closing) } :: before)
+                                | [] -> layoutExpression indent withGap
+                            | [] -> layoutExpression indent withGap
                         | _ -> layoutExpression indent withGap
                     else
                         let segment, comments = withoutLeadingGap withGap
@@ -180175,13 +181477,33 @@ end
                         let laidStage =
                             if fits indent stageText && not (opensLayout stage) && not (trailingLambdaNeedsBlock stage) && not (stage |> List.exists (fun node -> isKeyword SpecFun node) && opensLayout (List.skip (List.findIndex (fun node -> isKeyword SpecFun node) stage) stage)) then [ { Indent = indent; Text = stageText } ]
                             else
-                                match lastArgumentLambda indent op stage with
+                                let isLambdaArgument (node : Node) =
+                                    match node with
+                                    | Group (opening, _, _) when opening.Token = TokParenthesis (Round, Open) && not opening.InsideMacro -> (match unwrapLambda [ node ] with first :: _ -> isKeyword SpecFun first | [] -> false)
+                                    | _ -> false
+                                let middleLambda () =
+                                    match stage |> List.indexed |> List.filter (fun (_, node) -> isLambdaArgument node) with
+                                    | [ (at, group) ] when at > 0 && at < stage.Length - 1 && not (carriesComment stage) ->
+                                        let lambda = unwrapLambda [ group ]
+                                        match indexOfTop (isOperator "=>") lambda with
+                                        | Some arrow ->
+                                            let headText = op + " " + inlineText (List.take at stage) + " " + inlineText (List.take (arrow + 1) lambda)
+                                            let body = unwrapBody (List.skip (arrow + 1) lambda)
+                                            if fits indent headText && not body.IsEmpty then
+                                                Some ({ Indent = indent; Text = headText } :: layoutBlock (indent + 8) body @ (List.skip (at + 1) stage |> List.collect (layoutArgument (indent + 4))))
+                                            else None
+                                        | None -> None
+                                    | _ -> None
+                                match lastArgumentLambda indent op stage |> Option.orElseWith middleLambda with
                                 | Some lines -> lines
                                 | None ->
                                     let wrappedLambda = index = segments.Length - 1 && (match stage with [ Group _ ] -> (match unwrapLambda stage with first :: _ -> isKeyword SpecFun first | [] -> false) | _ -> false)
                                     let bareLambda = wrappedLambda || stage |> List.exists (fun node -> isKeyword SpecFun node)
                                     match layoutExpression (if bareLambda then indent else indent + op.Length + 1) (if wrappedLambda && index = segments.Length - 1 then unwrapLambda stage else stage) with
-                                    | first :: rest -> { Indent = indent; Text = op + " " + first.Text } :: rest
+                                    | first :: rest ->
+                                        let aligned = indent + op.Length + 1
+                                        let shift = if bareLambda || rest.IsEmpty then 0 elif rest |> List.forall (fun line -> line.Text = "" || line.Indent >= aligned + 4) then op.Length + 1 else 0
+                                        { Indent = indent; Text = op + " " + first.Text } :: (rest |> List.map (fun line -> if line.Text = "" then line else { line with Indent = line.Indent - shift }))
                                     | [] -> [ { Indent = indent; Text = op } ]
                         commentLines @ laidStage)
                 |> List.concat
@@ -180241,12 +181563,12 @@ end
                             let headText = inlineText before
                             let lambdaHead = inlineText (List.take (arrow + 1) lambda)
                             let simpleHead = before |> List.forall (fun node -> match node with Leaf l -> not l.InsideMacro && (match l.Token with TokVar _ | TokSymbol _ | TokValue _ | TokUnaryOperator _ -> true | _ -> false) | Group _ -> true)
-                            if simpleHead && fits indent (headText + " " + opening.Text.Text) then
+                            if simpleHead && fits indent (headText + " " + (markedText opening)) then
                                 let items = splitOn (isOperator ";") inner |> List.filter (fun item -> not item.IsEmpty)
                                 Some (
-                                    { Indent = indent; Text = headText + " " + opening.Text.Text }
+                                    { Indent = indent; Text = headText + " " + (markedText opening) }
                                     :: (items |> List.collect (layoutExpression (indent + 4)))
-                                    @ [ { Indent = indent; Text = closing.Text.Text + " " + lambdaHead } ]
+                                    @ [ { Indent = indent; Text = (markedText closing) + " " + lambdaHead } ]
                                     @ layoutBlock (indent + 4) (unwrapBody (List.skip (arrow + 1) lambda)))
                             else None
                     | _ -> None
@@ -180263,9 +181585,9 @@ end
                         literalChain (indent + 4) literal
                         |> Option.map (fun pieces ->
                             let gap = match opening.Before with Whitespace 0 -> "" | _ -> " "
-                            { Indent = indent; Text = inlineText [ Leaf bang; Leaf name ] + gap + opening.Text.Text }
+                            { Indent = indent; Text = inlineText [ Leaf bang; Leaf name ] + gap + (markedText opening) }
                             :: pieces
-                            @ [ { Indent = indent; Text = closing.Text.Text } ])
+                            @ [ { Indent = indent; Text = (markedText closing) } ])
                     | _ -> None
                 match (if intrinsicTuple then None elif intrinsicLiteral.IsSome then intrinsicLiteral elif bracketThenLambda.IsSome then bracketThenLambda else lastArgumentLambda indent "" nodes) with
                 | Some lines -> lines
@@ -180274,20 +181596,20 @@ end
                                  not before.IsEmpty && not unary.InsideMacro && (match unary.Token with TokUnaryOperator _ -> true | _ -> false)
                                  && opening.Token = TokParenthesis (Square, Open) && not inner.IsEmpty && not (fits indent whole)
                                  && (match opening.Before with Whitespace 0 -> true | _ -> false)
-                                 && fits indent (inlineText (List.rev before) + " " + unary.Text.Text + opening.Text.Text)
+                                 && fits indent (inlineText (List.rev before) + " " + unary.Text.Text + (markedText opening))
                              | _ -> false) ->
                     match List.rev nodes with
                     | Group (opening, inner, closing) :: Leaf unary :: before ->
                         let items = splitOn (isOperator ";") inner |> List.filter (fun item -> not item.IsEmpty)
-                        { Indent = indent; Text = inlineText (List.rev before) + " " + unary.Text.Text + opening.Text.Text }
+                        { Indent = indent; Text = inlineText (List.rev before) + " " + unary.Text.Text + (markedText opening) }
                         :: (items |> List.collect (layoutExpression (indent + 4)))
-                        @ [ { Indent = indent; Text = closing.Text.Text } ]
+                        @ [ { Indent = indent; Text = (markedText closing) } ]
                     | _ -> [ { Indent = indent; Text = whole } ]
                 | None when (match List.rev nodes with
                              | (Group (opening, _, _) as record) :: before ->
                                  not before.IsEmpty && opening.Token = TokParenthesis (Curly, Open) && not opening.InsideMacro
                                  && (functionRecord record || not (fits indent whole))
-                                 && fits indent (inlineText (List.rev before) + " " + opening.Text.Text)
+                                 && fits indent (inlineText (List.rev before) + " " + (markedText opening))
                                  && not (List.rev before |> List.exists (fun node -> isPipe node || (match node with Leaf l -> not l.InsideMacro && (match l.Token with TokKeyword _ | TokOperator _ -> true | _ -> false) | Group _ -> false)))
                              | _ -> false) ->
                     match List.rev nodes with
@@ -180295,22 +181617,22 @@ end
                         let openText, fields = recordOpening opening inner
                         { Indent = indent; Text = inlineText (List.rev before) + " " + openText }
                         :: layoutFields (indent + 4) fields
-                        @ [ { Indent = indent; Text = closing.Text.Text } ]
+                        @ [ { Indent = indent; Text = (markedText closing) } ]
                     | _ -> [ { Indent = indent; Text = whole } ]
                 | None when (match List.rev nodes with
                              | Group (opening, inner, _) :: before ->
                                  not before.IsEmpty && opening.Token = TokParenthesis (Square, Open) && not opening.InsideMacro && not inner.IsEmpty
                                  && not (fits indent whole)
                                  && (match opening.Before with Whitespace 0 -> false | _ -> true)
-                                 && fits indent (inlineText (List.rev before) + " " + opening.Text.Text)
+                                 && fits indent (inlineText (List.rev before) + " " + (markedText opening))
                                  && List.rev before |> List.forall (fun node -> match node with Leaf l -> not l.InsideMacro && (match l.Token with TokVar _ | TokSymbol _ | TokValue _ -> true | _ -> false) | Group _ -> true)
                              | _ -> false) ->
                     match List.rev nodes with
                     | Group (opening, inner, closing) :: before ->
                         let items = splitOn (isOperator ";") inner |> List.filter (fun item -> not item.IsEmpty)
-                        { Indent = indent; Text = inlineText (List.rev before) + " " + opening.Text.Text }
+                        { Indent = indent; Text = inlineText (List.rev before) + " " + (markedText opening) }
                         :: (items |> List.collect (layoutExpression (indent + 4)))
-                        @ [ { Indent = indent; Text = closing.Text.Text } ]
+                        @ [ { Indent = indent; Text = (markedText closing) } ]
                     | _ -> [ { Indent = indent; Text = whole } ]
                 | None when intrinsicTuple ->
                     match layoutTuple indent (List.last nodes) with
@@ -180323,7 +181645,7 @@ end
                     | _ -> false
                 let tupleArgument =
                     match rest with
-                    | [ Group (opening, inner, _) ] -> opening.Token = TokParenthesis (Round, Open) && hasTopComma inner && not (fits indent whole) && fits indent (inlineText (List.take headCount nodes) + " " + opening.Text.Text)
+                    | [ Group (opening, inner, _) ] -> opening.Token = TokParenthesis (Round, Open) && hasTopComma inner && not (fits indent whole) && fits indent (inlineText (List.take headCount nodes) + " " + (markedText opening))
                     | _ -> false
                 if restIsArguments && tupleArgument then
                     match layoutTuple indent (List.head rest) with
@@ -180334,15 +181656,15 @@ end
                      && (match unwrapLambda [ List.head rest ] with first :: _ -> not (isKeyword SpecFun first || isKeyword SpecFunction first) | [] -> false) then
                     let opened =
                         match List.head rest with
-                        | Group (_, inner, closing) when not (hasTopComma inner) -> layoutBlock (indent + 4) (unwrapBody inner) @ [ { Indent = indent; Text = closing.Text.Text } ]
+                        | Group (_, inner, closing) when not (hasTopComma inner) -> layoutBlock (indent + 4) (unwrapBody inner) @ [ { Indent = indent; Text = (markedText closing) } ]
                         | group -> List.tail (layoutTuple indent group)
                     { Indent = indent; Text = inlineText (List.take headCount nodes) + " (" } :: opened
                 elif restIsArguments && intrinsicRecord then
                     match List.head rest with
                     | Group (opening, [ Group (innerOpening, fields, innerClosing) ], closing) ->
-                        { Indent = indent; Text = inlineText (List.take headCount nodes) + " " + opening.Text.Text + innerOpening.Text.Text }
+                        { Indent = indent; Text = inlineText (List.take headCount nodes) + " " + (markedText opening) + (markedText innerOpening) }
                         :: layoutFields (indent + 4) fields
-                        @ [ { Indent = indent; Text = innerClosing.Text.Text + closing.Text.Text } ]
+                        @ [ { Indent = indent; Text = (markedText innerClosing) + (markedText closing) } ]
                     | _ -> [ { Indent = indent; Text = whole } ]
                 elif restIsArguments && rest.Length = 1 && isCurly (List.head rest) then
                     match List.head rest with
@@ -180350,7 +181672,7 @@ end
                         let openText, fields = recordOpening opening inner
                         { Indent = indent; Text = inlineText (List.take headCount nodes) + " " + openText }
                         :: layoutFields (indent + 4) fields
-                        @ [ { Indent = indent; Text = closing.Text.Text } ]
+                        @ [ { Indent = indent; Text = (markedText closing) } ]
                     | Leaf _ -> [ { Indent = indent; Text = whole } ]
                 elif restIsArguments && rest.Length = 1 && (literalChain (indent + 4) (match List.head rest with Group (opening, [ single ], _) when opening.Token = TokParenthesis (Round, Open) && isStringGroup single -> single | other -> other)).IsSome then
                     let literal = match List.head rest with Group (opening, [ single ], _) when opening.Token = TokParenthesis (Round, Open) && isStringGroup single -> single | other -> other
@@ -180401,6 +181723,11 @@ end
                         let lambdaHead = List.take (arrow + 1) lambda
                         let body = unwrapBody (List.skip (arrow + 1) lambda)
                         let headText = (if prefix = "" then "" else prefix + " ") + inlineText (List.take (nodes.Length - 1) nodes) + " " + inlineText lambdaHead
+                        match body with
+                        | [ Group (opening, inner, closing) ] when opening.Token = TokParenthesis (Curly, Open) && not opening.InsideMacro && sourceLineTable.Value.Length > 0 && not (authoredBreaks.Value.Contains opening.Span.From) && fits indent (headText + " " + fst (recordOpening opening inner)) ->
+                            let openText, fields = recordOpening opening inner
+                            Some ({ Indent = indent; Text = headText + " " + openText } :: layoutFields (indent + 4) fields @ [ { Indent = indent; Text = (markedText closing) } ])
+                        | _ ->
                         if fits indent headText then Some ({ Indent = indent; Text = headText } :: layoutBlock (indent + 4) body)
                         else None
                     | None -> None
@@ -180411,17 +181738,17 @@ end
             match argument with
             | Group (opening, inner, closing) when opening.Token = TokParenthesis (Square, Open) && not inner.IsEmpty && not (fits indent (inlineText [ argument ])) ->
                 let items = splitOn (isOperator ";") inner |> List.filter (fun item -> not item.IsEmpty)
-                { Indent = indent; Text = opening.Text.Text } :: (items |> List.collect (layoutExpression (indent + 4))) @ [ { Indent = indent; Text = closing.Text.Text } ]
+                { Indent = indent; Text = (markedText opening) } :: (items |> List.collect (layoutExpression (indent + 4))) @ [ { Indent = indent; Text = (markedText closing) } ]
             | Group (opening, inner, closing) when opening.Token = TokParenthesis (Round, Open) && not inner.IsEmpty && not (hasTopComma inner) && (not (fits indent (inlineText [ argument ])) || carriesComment [ argument ]) && (match unwrapLambda [ argument ] with first :: _ -> not (isKeyword SpecFun first) | [] -> true) ->
                 let closingComments =
                     match closing.Before with
                     | Embedded gap -> commentsIn gap.Text |> List.filter (fun comment -> comment <> "") |> List.map (fun comment -> { Indent = indent + 4; Text = comment })
                     | Whitespace _ -> []
-                { Indent = indent; Text = opening.Text.Text } :: layoutBlock (indent + 4) (unwrapBody inner) @ closingComments @ [ { Indent = indent; Text = closing.Text.Text } ]
+                { Indent = indent; Text = (markedText opening) } :: layoutBlock (indent + 4) (unwrapBody inner) @ closingComments @ [ { Indent = indent; Text = (markedText closing) } ]
             | Group (opening, inner, _) when opening.Token = TokParenthesis (Round, Open) && hasTopComma inner && not (fits indent (inlineText [ argument ])) -> layoutTuple indent argument
             | Group (opening, inner, closing) when opening.Token = TokParenthesis (Curly, Open) && not (fits indent (inlineText [ argument ])) ->
                 let openText, fields = recordOpening opening inner
-                { Indent = indent; Text = openText } :: layoutFields (indent + 4) fields @ [ { Indent = indent; Text = closing.Text.Text } ]
+                { Indent = indent; Text = openText } :: layoutFields (indent + 4) fields @ [ { Indent = indent; Text = (markedText closing) } ]
             | _ -> layoutExpression indent (unwrapLambda [ argument ])
 
         and keepLambdaParentheses (item : Node list) (lines : LaidLine list) =
@@ -180457,13 +181784,49 @@ end
                             | last :: before -> List.rev ({ last with Text = last.Text + "," } :: before)
                             | [] -> [])
                     |> List.concat
-                { Indent = indent; Text = opening.Text.Text } :: laid @ [ { Indent = indent; Text = closing.Text.Text } ]
+                { Indent = indent; Text = (markedText opening) } :: laid @ [ { Indent = indent; Text = (markedText closing) } ]
             | Leaf _ -> layoutExpression indent [ argument ]
+
+        and chainSegments (nodes : Node list) : (string list * string * int) option =
+            let plain (part : Node list) =
+                not (opensLayout part)
+                && part |> List.forall (fun node ->
+                    match node with
+                    | Leaf lexeme -> not lexeme.InsideMacro && (match lexeme.Token with TokKeyword _ -> false | TokOperator ("=>", _) -> false | _ -> true)
+                    | Group (opening, _, _) -> not opening.InsideMacro)
+            match List.tryLast nodes with
+            | Some (Group (opening, inner, closing)) when opening.Token = TokParenthesis (Round, Open) && not opening.InsideMacro && not inner.IsEmpty ->
+                let head = List.take (nodes.Length - 1) nodes
+                let items = splitOn (isOperator ",") inner |> List.filter (fun item -> not item.IsEmpty)
+                let lead = List.take (items.Length - 1) items
+                if not (plain head) || not (lead |> List.forall plain) then None
+                else
+                    match chainSegments (List.last items) with
+                    | Some (segments, closers, depth) ->
+                        let headText = if head.IsEmpty then "" else inlineText head + " "
+                        let leadText = if lead.IsEmpty then "" else (lead |> List.map inlineText |> String.concat ", ") + ", "
+                        Some ((headText + (markedText opening) + leadText) :: segments, closers + (markedText closing), depth + 1)
+                    | None -> if plain inner then Some ([ inlineText nodes ], "", 0) else None
+            | _ -> if plain nodes && not nodes.IsEmpty then Some ([ inlineText nodes ], "", 0) else None
+
+        and fillChain (indent : int) (nodes : Node list) : LaidLine list =
+            match chainSegments nodes with
+            | Some (first :: rest, closers, _) ->
+                let lines = ResizeArray<LaidLine> ()
+                let mutable current = { Indent = indent; Text = first }
+                for segment in rest do
+                    if fits current.Indent (current.Text + segment) || current.Text.Length = 0 then current <- { current with Text = current.Text + segment }
+                    else
+                        lines.Add ({ current with Text = current.Text.TrimEnd () })
+                        current <- { Indent = indent + 4; Text = segment }
+                lines.Add ({ current with Text = current.Text + closers })
+                List.ofSeq lines
+            | _ -> [ { Indent = indent; Text = inlineComplete nodes } ]
 
         and recordOpening (opening : Lexeme) (inner : Node list) =
             match indexOfTop (isKeyword SpecWith) inner with
-            | Some at when at > 0 -> opening.Text.Text + " " + inlineText (List.take (at + 1) inner), List.skip (at + 1) inner
-            | _ -> opening.Text.Text, inner
+            | Some at when at > 0 -> (markedText opening) + " " + inlineText (List.take (at + 1) inner), List.skip (at + 1) inner
+            | _ -> (markedText opening), inner
 
         and layoutFields (indent : int) (inner : Node list) : LaidLine list =
             splitOn (isOperator ";") inner
@@ -180501,21 +181864,28 @@ end
 
         type FlatLayout =
             | LaidOut of string list
+            | AsWritten
             | CommentsMisplaced of expected : int * placed : int
             | CommentsInline of count : int
             | NotOneCodeLine
 
-        let layoutFlatLine (text : string) : FlatLayout =
+        let layoutFlatLine (text : string) (lineStarts : (string * bool) list) (sourceLines : (int * string option * string list) list) : FlatLayout =
             match lexLine lex_state_init text with
             | Code (0, lexemes, tail), _ when tail.Text.Trim().Length = 0 ->
                 let expected = lexemes |> Array.sumBy (fun lexeme -> match lexeme.Before with Embedded gap -> (commentsIn gap.Text |> List.filter (fun comment -> comment <> "")).Length | Whitespace _ -> 0)
+                markAuthoredBreaks lexemes lineStarts sourceLines
                 let nodes = mergeAll (fst (nodesOf (List.ofArray lexemes)))
                 let laid = layoutBlock 0 nodes |> List.map (fun line -> System.String (' ', line.Indent) + line.Text)
+                authoredBreaks.Value.Clear ()
+                syntheticTokens.Value.Clear ()
+                tokenLines.Value.Clear ()
+                sourceLineTable.Value <- [||]
+                sourceLineTokens.Value <- [||]
                 let mutable state = lex_state_init
                 let mutable placed = 0
                 let mutable inlined = 0
                 for line in laid do
-                    let shape, next = lexLine state line
+                    let shape, next = lexLine state (stripMarks line)
                     state <- next
                     match shape with
                     | Remark _ -> placed <- placed + 1
@@ -180535,103 +181905,24 @@ end
             if not literalSplitting.Enabled then text
             else
                 let output = ResizeArray<string> ()
+                let authored = ResizeArray<string> ()
                 let mutable state = lex_state_init
                 let mutable pending : string option = None
+                let keepOrJoin (joined : string) =
+                    if authored |> Seq.exists (fun line -> line.Length > 120) then output.Add joined else output.AddRange authored
+                    authored.Clear ()
                 for line in splitLines text do
                     let shape, next = lexLine state line
                     let joined = match pending with Some head -> head + line.TrimStart () | None -> line
+                    authored.Add line
                     match shape with
                     | Opaque (_, InMacro) when line.EndsWith "\\" && next <> lex_state_init -> pending <- Some (joined.Substring (0, joined.Length - 1))
                     | _ ->
-                        output.Add joined
+                        keepOrJoin joined
                         pending <- None
                     state <- next
-                pending |> Option.iter output.Add
+                pending |> Option.iter keepOrJoin
                 String.concat "\n" output + (if text.EndsWith "\n" then "\n" else "")
-
-        let splitMacroLine (line : string) : string list =
-            if not literalSplitting.Enabled || line.Length <= 120 then [ line ]
-            else
-                match lexLine lex_state_init line with
-                | Code (indent, lexemes, tail), _ when tail.Text.Trim().Length = 0 ->
-                    let opens = lexemes |> Array.indexed |> Array.filter (fun (_, lexeme) -> lexeme.Token = TokMacroOpen) |> Array.map fst
-                    let spans =
-                        opens
-                        |> Array.choose (fun start ->
-                            let rec find index depth =
-                                if index >= lexemes.Length then None
-                                else
-                                    match lexemes.[index].Token with
-                                    | TokMacroOpen when index <> start -> find (index + 1) (depth + 1)
-                                    | TokMacroClose when depth = 0 -> Some index
-                                    | TokMacroClose -> find (index + 1) (depth - 1)
-                                    | _ -> find (index + 1) depth
-                            find (start + 1) 0 |> Option.map (fun stop -> start, stop))
-                    match spans |> Array.filter (fun (start, stop) -> lexemes.[stop].Span.NearTo - lexemes.[start].Span.From >= 24) |> Array.sortByDescending (fun (start, stop) -> lexemes.[stop].Span.NearTo - lexemes.[start].Span.From) |> Array.tryHead with
-                    | Some (start, stop) ->
-                        let openText = lexemes.[start].Text.Text
-                        let closeText = lexemes.[stop].Text.Text
-                        let units =
-                            let rec collect index (acc : string list) =
-                                if index >= stop then List.rev acc
-                                else
-                                    let lexeme = lexemes.[index]
-                                    let gapBefore at = line.Substring (lexemes.[at - 1].Span.NearTo, lexemes.[at].Span.From - lexemes.[at - 1].Span.NearTo)
-                                    match lexeme.Token with
-                                    | TokMacroExpression (_, Open) ->
-                                        let rec closing at depth =
-                                            if at >= stop then stop - 1
-                                            else
-                                                match lexemes.[at].Token with
-                                                | TokMacroExpression (_, Close) when depth = 0 -> at
-                                                | TokMacroExpression (_, Close) -> closing (at + 1) (depth - 1)
-                                                | TokMacroExpression (_, Open) -> closing (at + 1) (depth + 1)
-                                                | _ -> closing (at + 1) depth
-                                        let last = closing (index + 1) 0
-                                        let whole = gapBefore index + line.Substring (lexeme.Span.From, lexemes.[last].Span.NearTo - lexeme.Span.From)
-                                        collect (last + 1) (whole :: acc)
-                                    | TokText _ when (gapBefore index).Length = 0 -> collect (index + 1) (List.rev (lexeme.Text.Text |> Seq.map string |> List.ofSeq) @ acc)
-                                    | _ -> collect (index + 1) ((gapBefore index + lexeme.Text.Text) :: acc)
-                            collect (start + 1) []
-                        let prefix = line.Substring (0, lexemes.[start].Span.From)
-                        let suffix = line.Substring lexemes.[stop].Span.NearTo
-                        let roomFor (index : int) = if index = 0 then 120 - prefix.Length - openText.Length - 2 else 120 - indent - 4 - 2
-                        let pieces = ResizeArray<string> ()
-                        let current = StringBuilder ()
-                        let mutable lastSpace = -1
-                        for unit in units do
-                            current.Append unit |> ignore
-                            let leadingSpaces = unit.Length - unit.TrimStart(' ').Length
-                            if unit = " " then lastSpace <- current.Length
-                            elif leadingSpaces > 0 && leadingSpaces < unit.Length then lastSpace <- current.Length - unit.Length + leadingSpaces
-                            let room = roomFor pieces.Count
-                            if current.Length >= room then
-                                let cut = if lastSpace > room / 2 then lastSpace else current.Length
-                                let text = current.ToString ()
-                                pieces.Add (text.Substring (0, cut))
-                                current.Clear().Append (text.Substring cut) |> ignore
-                                lastSpace <- -1
-                        if current.Length > 0 then pieces.Add (current.ToString ())
-                        let pieces =
-                            pieces
-                            |> List.ofSeq
-                            |> List.fold (fun (kept : string list) piece ->
-                                let leadingSpaces = piece.Length - piece.TrimStart(' ').Length
-                                match kept with
-                                | previous :: earlier when leadingSpaces > 0 -> piece.Substring leadingSpaces :: (previous + piece.Substring (0, leadingSpaces)) :: earlier
-                                | _ -> piece :: kept) []
-                            |> List.rev
-                            |> List.filter (fun piece -> piece.Length > 0)
-                        if pieces.Length < 2 || roomFor 0 < 12 || pieces |> List.exists (fun piece -> piece.StartsWith " ") then [ line ]
-                        else
-                            let continuation = System.String (' ', indent + 4)
-                            pieces
-                            |> List.mapi (fun index piece ->
-                                let lead = if index = 0 then prefix + openText else continuation
-                                let trail = if index = pieces.Length - 1 then closeText + suffix else "\\"
-                                lead + piece + trail)
-                    | None -> [ line ]
-                | _ -> [ line ]
 
         type LayoutTally() =
             member val VerbatimBlocks = 0 with get, set
@@ -180672,32 +181963,148 @@ end
 
         let layout (source : Source<'phase>) =
             let _, blocks = flatten source
+            thenHabit.Value <- thenHabitOf (blocks |> Seq.collect (function Flattened (_, original) -> original | Refused (_, _, original) -> original))
             let output = ResizeArray<string> ()
             let mutable previousCode : string option = None
             let mutable previousSingleInstance = false
+            let mutable pendingBlanks = 0
             for block in blocks do
                 let lines =
                     match block with
                     | Flattened (flat, original) ->
                         flat |> List.collect (function
                             | Kept text -> [ text ]
-                            | Joined text ->
+                            | Joined (text, lineStarts, sourceLines) ->
                                 let shapes (lines : string list) =
                                     blockShapes source.FileEdition source.FileUnit (String.concat "\n" lines + "\n")
                                     |> List.map (fun block -> block.Shape)
                                     |> List.filter (fun shape -> shape <> "error")
                                 let kept () = original |> List.rev |> List.skipWhile (fun line -> line.Trim().Length = 0) |> List.rev
                                 let head () = original |> List.tryFind (fun line -> line.Trim().Length > 0 && not (line.TrimStart().StartsWith "//")) |> Option.defaultValue ""
-                                let expected = shapes original
-                                let sameParse (lines : string list) = shapes lines = expected && not (expected |> List.exists (fun shape -> shape.StartsWith "error ("))
-                                match layoutFlatLine text with
-                                | LaidOut laid when sameParse laid ->
-                                    let split = laid |> List.collect splitMacroLine
-                                    if split = laid || sameParse split then split else laid
-                                | LaidOut _ ->
-                                    layoutTally.GuardedBlocks <- layoutTally.GuardedBlocks + 1
-                                    layoutTally.Kept.Add ("parse-guard", head ())
-                                    kept ()
+                                let expected = lazy (shapes original)
+                                let sameParse (lines : string list) = not (expected.Value |> List.exists (fun shape -> shape.StartsWith "error (")) && shapes lines = expected.Value
+                                let chosen (marked : string list) =
+                                    let preferred = List.map dropSyntheticParentheses (liftSyntheticGroups marked)
+                                    if sameParse preferred then Some preferred
+                                    else
+                                        let plain = List.map stripMarks marked
+                                        if sameParse plain then Some plain else None
+                                let fitsAsWritten = original |> List.forall (fun line -> line.TrimStart().StartsWith "//" || displayWidth line <= 120)
+                                relaidSpans.Value.Clear ()
+                                let retried () =
+                                    let spans = relaidSpans.Value |> Seq.distinct |> List.ofSeq
+                                    let inside (a1, b1) (a2, b2) = a2 <= a1 && b1 <= b2
+                                    let leaves = spans |> List.filter (fun span -> not (spans |> List.exists (fun other -> other <> span && inside other span)))
+                                    let around span = spans |> List.filter (fun other -> inside span other)
+                                    let parentheses (lines : string list) = lines |> List.sumBy (fun line -> line |> Seq.filter (fun c -> c = '(' || c = ')') |> Seq.length)
+                                    let authored = parentheses original
+                                    let mutable accepted : (int * int) list = []
+                                    let mutable best = None
+                                    for leaf in leaves do
+                                        relayOnly.Value <- Some ((accepted @ around leaf) |> List.map fst |> List.distinct |> Array.ofList)
+                                        match layoutFlatLine text lineStarts sourceLines with
+                                        | LaidOut retry ->
+                                            match chosen retry with
+                                            | Some laid when parentheses laid = authored ->
+                                                accepted <- accepted @ around leaf
+                                                best <- Some laid
+                                            | _ -> ()
+                                        | _ -> ()
+                                    relayOnly.Value <- None
+                                    best
+                                let textHabits (lines : string list) : string list =
+                                    let rows = ResizeArray<string>(lines)
+                                    let indentOf (line : string) = line.Length - line.TrimStart(' ').Length
+                                    let pad (indent : int) (text : string) = System.String (' ', indent) + text
+                                    let balanced (text : string) =
+                                        not (text.Contains "\"")
+                                        && not (text.Contains "'('")
+                                        && not (text.Contains "')'")
+                                        && (text |> Seq.fold (fun depth c -> if depth < 0 then depth elif c = '(' then depth + 1 elif c = ')' then depth - 1 else depth) 0) = 0
+                                    let pipeStageAt (at : int) (indent : int) = at < rows.Count && indentOf rows.[at] = indent && rows.[at].TrimStart().StartsWith "|> "
+                                    let mutable at = 0
+                                    while at < rows.Count - 1 do
+                                        let line = rows.[at]
+                                        let trimmed = line.Trim ()
+                                        let i = indentOf line
+                                        if trimmed.StartsWith "(join " && trimmed.EndsWith ")" && pipeStageAt (at + 1) i && balanced (trimmed.Substring (1, trimmed.Length - 2)) then
+                                            rows.[at] <- pad i (trimmed.Substring (1, trimmed.Length - 2))
+                                        elif trimmed = "("
+                                             && at + 3 < rows.Count
+                                             && rows.[at + 1].TrimStart().StartsWith "join "
+                                             && indentOf rows.[at + 1] = i + 4
+                                             && rows.[at + 2].Trim () = ")"
+                                             && indentOf rows.[at + 2] = i
+                                             && pipeStageAt (at + 3) i
+                                             && balanced (rows.[at + 1].Trim ()) then
+                                            rows.[at] <- pad i (rows.[at + 1].Trim ())
+                                            rows.RemoveRange (at + 1, 2)
+                                        at <- at + 1
+                                    let quoteSafe (line : string) =
+                                        not (line.Contains "\"\"\"") && not (line.EndsWith "\\") && (line |> Seq.filter (fun c -> c = '"') |> Seq.length) % 2 = 0
+                                    let mutable at = 0
+                                    while at < rows.Count - 1 do
+                                        let line = rows.[at]
+                                        let i = indentOf line
+                                        if line.TrimStart().StartsWith "|> " && rows.[at + 1].Trim () <> "" && indentOf rows.[at + 1] = i + 7 then
+                                            let stop = [ at + 1 .. rows.Count - 1 ] |> List.tryFind (fun k -> rows.[k].Trim () <> "" && indentOf rows.[k] <= i) |> Option.defaultValue rows.Count
+                                            let block = [ at + 1 .. stop - 1 ]
+                                            if block |> List.forall (fun k -> rows.[k].Trim () = "" || (indentOf rows.[k] >= i + 3 && quoteSafe rows.[k])) then
+                                                for k in block do
+                                                    if rows.[k].Trim () <> "" then rows.[k] <- rows.[k].Substring 3
+                                                let head = rows.[at + 1].Trim ()
+                                                if head.StartsWith "fun " && head.EndsWith "=>" && at + 2 < stop && indentOf rows.[at + 2] > i + 4 && fits 0 (line + " " + head) then
+                                                    rows.[at] <- line + " " + head
+                                                    rows.RemoveAt (at + 1)
+                                        at <- at + 1
+                                    let leavesOpen (line : string) =
+                                        let mutable depth = 0
+                                        for c in line do
+                                            if c = '{' || c = '(' || c = '[' then depth <- depth + 1
+                                            elif c = '}' || c = ')' || c = ']' then depth <- depth - 1
+                                        depth > 0
+                                    let mutable at = 1
+                                    while at < rows.Count do
+                                        let line = rows.[at]
+                                        let i = indentOf line
+                                        let previous = rows.[at - 1]
+                                        let p = indentOf previous
+                                        if line.Trim () <> "" && i % 4 <> 0 && p % 4 = 0 && i > p && quoteSafe line && quoteSafe previous && leavesOpen previous then
+                                            let mutable k = at
+                                            while k < rows.Count && rows.[k].Trim () <> "" && indentOf rows.[k] = i && quoteSafe rows.[k] do k <- k + 1
+                                            if [ at .. k - 1 ] |> List.forall (fun j -> fits (p + 4) (rows.[j].TrimStart ())) then
+                                                for j in at .. k - 1 do rows.[j] <- pad (p + 4) (rows.[j].TrimStart ())
+                                            at <- k
+                                        else at <- at + 1
+                                    List.ofSeq rows
+                                match (if fitsAsWritten then AsWritten else layoutFlatLine text lineStarts sourceLines) with
+                                | AsWritten ->
+                                    let written = kept ()
+                                    let habitual = textHabits written
+                                    if habitual <> written && sameParse habitual then habitual else written
+                                | LaidOut marked ->
+                                    match chosen marked with
+                                    | Some laid ->
+                                        let split = laid |> List.collect splitMacroLine
+                                        if split = laid || sameParse split then split else laid
+                                    | None ->
+                                        match retried () with
+                                        | Some laid ->
+                                            layoutTally.Kept.Add ("parse-guard-partial", head ())
+                                            let split = laid |> List.collect splitMacroLine
+                                            if split = laid || sameParse split then split else laid
+                                        | None ->
+                                            layoutTally.GuardedBlocks <- layoutTally.GuardedBlocks + 1
+                                            layoutTally.Kept.Add ("parse-guard", head ())
+                                            match Environment.GetEnvironmentVariable "SPIRAL_FORMAT_GUARD_DUMP" with
+                                            | null | "" -> ()
+                                            | directory ->
+                                                let originalText = String.concat "\n" original
+                                                let candidateText = String.concat "\n" (List.map stripMarks marked)
+                                                let name = sprintf "%08x.txt" ((originalText.GetHashCode ()) &&& 0x7fffffff)
+                                                Directory.CreateDirectory directory |> ignore
+                                                File.WriteAllText (Path.Combine (directory, name), "== original\n" + originalText + "\n== candidate\n" + candidateText + "\n== expected shapes\n" + String.concat "\n" expected.Value + "\n== candidate shapes\n" + String.concat "\n" (shapes (List.map stripMarks marked)) + "\n")
+                                            kept ()
                                 | refusal ->
                                     let lines = kept ()
                                     layoutTally.VerbatimBlocks <- layoutTally.VerbatimBlocks + 1
@@ -180706,26 +182113,30 @@ end
                                         match refusal with
                                         | CommentsInline count -> sprintf "comments-inline %d" count
                                         | CommentsMisplaced (expected, placed) -> sprintf "comments-misplaced %d/%d" placed expected
-                                        | NotOneCodeLine | LaidOut _ -> "not-one-code-line"
+                                        | NotOneCodeLine | LaidOut _ | AsWritten -> "not-one-code-line"
                                     layoutTally.Kept.Add (reason, head ())
                                     lines)
                     | Refused (_, _, original) -> original
-                let lines = lines |> List.skipWhile (fun line -> line.Trim().Length = 0) |> List.rev |> List.skipWhile (fun line -> line.Trim().Length = 0) |> List.rev
+                let lines = lines |> List.filter (fun line -> let trimmed = line.Trim () in trimmed <> segmentHead && trimmed <> segmentTail)
+                let isBlankLine (line : string) = line.Trim().Length = 0
+                let leadingBlanks = lines |> List.takeWhile isBlankLine |> List.length
+                let trailingBlanks = lines |> List.rev |> List.takeWhile isBlankLine |> List.length
+                let lines = lines |> List.skipWhile isBlankLine |> List.rev |> List.skipWhile isBlankLine |> List.rev
                 match lines with
-                | [] -> ()
+                | [] -> pendingBlanks <- pendingBlanks + leadingBlanks
                 | first :: _ ->
                     let codeStart = lines |> List.tryFind (fun line -> not (line.TrimStart().StartsWith "//") && line.Trim().Length > 0)
                     let codeLines = lines |> List.filter (fun line -> not (line.TrimStart().StartsWith "//") && line.Trim().Length > 0)
                     let oneLineInstance = codeLines.Length = 1 && codeLines.Head.StartsWith "instance "
                     let singleInstance = oneLineInstance && first = codeLines.Head
                     match previousCode with
-                    | Some previous when not (isOpenLine previous && (match codeStart with Some c -> isOpenLine c && first = c | None -> false)) && not (singleInstance && previousSingleInstance) -> output.Add ""
-                    | _ -> ()
+                    | Some _ -> for _ in 1 .. pendingBlanks + leadingBlanks do output.Add ""
+                    | None -> ()
+                    pendingBlanks <- trailingBlanks
                     match block with
                     | Refused _ -> output.AddRange lines
                     | Flattened _ ->
-                        for line in rewrapComments lines do
-                            if not (line.Trim().Length = 0 && output.Count > 0 && output.[output.Count - 1].Trim().Length = 0) then output.Add line
+                        output.AddRange (rewrapComments lines)
                     previousCode <- match codeStart with Some c -> Some c | None -> previousCode
                     previousSingleInstance <- oneLineInstance
             List.ofSeq output
@@ -180922,8 +182333,10 @@ end
         let formatText (path : string) (edition : Edition) (text : string) =
             let prespaced = let spaced, _ = respace (lexText path edition (joinMacroContinuations text)) in joinLines (renderAll spaced)
             let laid = joinLines (Array.ofList (layout (lexText path edition prespaced)))
-            let spaced, _ = respace (lexText path edition laid)
-            joinLines (renderAll spaced)
+            if laid = prespaced && Environment.GetEnvironmentVariable "SPIRAL_FORMAT_FULL_SECOND_PASS" <> "1" then prespaced
+            else
+                let spaced, _ = respace (lexText path edition laid)
+                joinLines (renderAll spaced)
 
         let commentWords (source : Source<'phase>) =
             let words (text : string) =
@@ -181176,16 +182589,17 @@ end
 
         let generatedDirectories = set [ "target"; "node_modules"; "deps"; "bin"; "obj"; "_build"; ".git"; ".history" ]
 
-        let insideGeneratedDirectory (root : string) (file : string) =
-            Path.GetRelativePath(root, Path.GetDirectoryName file).Split ([| '\\'; '/' |]) |> Array.exists generatedDirectories.Contains
+        let rec sourceFilesUnder (directory : string) : string seq =
+            seq {
+                yield! Directory.EnumerateFiles directory |> Seq.filter (fun file -> file.EndsWith ".spi" || file.EndsWith ".spir")
+                for child in Directory.EnumerateDirectories directory do
+                    let info = DirectoryInfo child
+                    if not (generatedDirectories.Contains info.Name) && not (info.Attributes.HasFlag FileAttributes.ReparsePoint) then
+                        yield! sourceFilesUnder child
+            }
 
         let sourceFiles (input : string) =
-            if Directory.Exists input then
-                Directory.EnumerateFiles (input, "*.*", SearchOption.AllDirectories)
-                |> Seq.filter (fun file -> file.EndsWith ".spi" || file.EndsWith ".spir")
-                |> Seq.filter (fun file -> not (insideGeneratedDirectory input file))
-                |> Seq.sort
-                |> List.ofSeq
+            if Directory.Exists input then sourceFilesUnder input |> Seq.sort |> List.ofSeq
             else [ input ]
 
         let formatDegree () =
@@ -181814,7 +183228,13 @@ end
                 task {
                     if File.Exists path then
                         try let! x = File.ReadAllTextAsync(path)
-                            return LoadModule(path,wdiff_module_init_all (file_default_env default_env packages path) (is_top_down path) x |> Some)
+                            let parsed = ref Unchecked.defaultof<_>
+                            let failure : exn ref = ref null
+                            let parser = System.Threading.Thread((fun () -> try parsed.Value <- wdiff_module_init_all (file_default_env default_env packages path) (is_top_down path) x with error -> failure.Value <- error), 512 <<< 20)
+                            parser.Start ()
+                            parser.Join ()
+                            if not (isNull failure.Value) then raise failure.Value
+                            return LoadModule(path,parsed.Value |> Some)
                         with _ -> return LoadModule(path,None)
                     else return LoadModule(path,None) // Note: We need this case otherwise 'con' might cause the file read to deadlock. https://superuser.com/questions/86999/why-cant-i-name-a-folder-or-file-con-in-windows
                 } |> queue.Enqueue
@@ -181982,131 +183402,104 @@ end
         | XCompatMention -> "X turns '@' before a name into a mention"
         | XCompatCashtag -> "X turns '$' before letters into a cashtag link"
         | XCompatAutolink -> "X shortens what looks like a domain to a 23-character t.co link"
-        | XCompatOverweight -> "one post holds 280 weighted characters (CJK and emoji weigh 2, links 23); split this definition"
+        | XCompatOverweight -> "one post holds 280 weighted characters (CJK and emoji weigh 2, links 23), less the cell's cN k/n header line and 1 per defused link dot; split this definition"
 
-    /// ### xCompatTopLevelDomains
-    let xCompatTopLevelDomains =
-        lazy (
-            [
-            "aaa aarp abb abbott abbvie abc able abogado abudhabi ac academy accenture accountant accountants aco"
-            "actor ad ads adult ae aeg aero aetna af afl africa ag agakhan agency ai aig airbus airforce airtel"
-            "akdn al alibaba alipay allfinanz allstate ally alsace alstom am amazon americanexpress"
-            "americanfamily amex amfam amica amsterdam analytics android anquan anz ao aol apartments app apple"
-            "aq aquarelle ar arab aramco archi army arpa art arte as asda asia associates at athleta attorney au"
-            "auction audi audible audio auspost author auto autos aw aws ax axa az azure ba baby baidu banamex"
-            "band bank bar barcelona barclaycard barclays barefoot bargains baseball basketball bauhaus bayern bb"
-            "bbc bbt bbva bcg bcn bd be beats beauty beer berlin best bestbuy bet bf bg bh bharti bi bible bid"
-            "bike bing bingo bio biz bj black blackfriday blockbuster blog bloomberg blue bm bms bmw bn"
-            "bnpparibas bo boats boehringer bofa bom bond boo book booking bosch bostik boston bot boutique box"
-            "br bradesco bridgestone broadway broker brother brussels bs bt build builders business buy buzz bv"
-            "bw by bz bzh ca cab cafe cal call calvinklein cam camera camp canon capetown capital capitalone car"
-            "caravan cards care career careers cars casa case cash casino cat catering catholic cba cbn cbre cc"
-            "cd center ceo cern cf cfa cfd cg ch chanel channel charity chase chat cheap chintai christmas chrome"
-            "church ci cipriani circle cisco citadel citi citic city ck cl claims cleaning click clinic clinique"
-            "clothing cloud club clubmed cm cn co coach codes coffee college cologne com commbank community"
-            "company compare computer comsec condos construction consulting contact contractors cooking cool coop"
-            "corsica country coupon coupons courses cpa cr credit creditcard creditunion cricket crown crs cruise"
-            "cruises cu cuisinella cv cw cx cy cymru cyou cz dad dance data date dating datsun day dclk dds de"
-            "deal dealer deals degree delivery dell deloitte delta democrat dental dentist desi design dev dhl"
-            "diamonds diet digital direct directory discount discover dish diy dj dk dm dnp do docs doctor dog"
-            "domains dot download drive dtv dubai dupont durban dvag dvr dz earth eat ec eco edeka edu education"
-            "ee eg email emerck energy engineer engineering enterprises epson equipment er ericsson erni es esq"
-            "estate et eu eurovision eus events exchange expert exposed express extraspace fage fail fairwinds"
-            "faith family fan fans farm farmers fashion fast fedex feedback ferrari ferrero fi fidelity fido film"
-            "final finance financial fire firestone firmdale fish fishing fit fitness fj fk flickr flights flir"
-            "florist flowers fly fm fo foo food football ford forex forsale forum foundation fox fr free"
-            "fresenius frl frogans frontier ftr fujitsu fun fund furniture futbol fyi ga gal gallery gallo gallup"
-            "game games gap garden gay gb gbiz gd gdn ge gea gent genting george gf gg ggee gh gi gift gifts"
-            "gives giving gl glass gle global globo gm gmail gmbh gmo gmx gn godaddy gold goldpoint golf goodyear"
-            "goog google gop got gov gp gq gr grainger graphics gratis green gripe grocery group gs gt gu gucci"
-            "guge guide guitars guru gw gy hair hamburg hangout haus hbo hdfc hdfcbank health healthcare help"
-            "helsinki here hermes hiphop hisamitsu hitachi hiv hk hkt hm hn hockey holdings holiday homedepot"
-            "homegoods homes homesense honda horse hospital host hosting hot hotels hotmail house how hr hsbc ht"
-            "hu hughes hyatt hyundai ibm icbc ice icu id ie ieee ifm ikano il im imamat imdb immo immobilien in"
-            "inc industries infiniti info ing ink institute insurance insure int international intuit investments"
-            "io ipiranga iq ir irish is ismaili ist istanbul it itau itv jaguar java jcb je jeep jetzt jewelry"
-            "jio jll jm jmp jnj jo jobs joburg jot joy jp jpmorgan jprs juegos kaufen kddi ke kerryhotels"
-            "kerryproperties kfh kg kh ki kia kids kim kindle kitchen kiwi km kn koeln komatsu kosher kp kpmg kpn"
-            "kr krd kred kuokgroup kw ky kyoto kz la lacaixa lamborghini lamer land landrover lanxess lasalle lat"
-            "latino latrobe law lawyer lb lc lds lease leclerc lefrak legal lego lexus lgbt li lidl life"
-            "lifeinsurance lifestyle lighting like lilly limited limo lincoln link live living lk llc llp loan"
-            "loans locker locus lol london lotte lotto love lpl lplfinancial lr ls lt ltd ltda lu lundbeck luxe"
-            "luxury lv ly ma madrid maif maison makeup man management mango map market marketing markets marriott"
-            "marshalls mattel mba mc mckinsey md me med media meet melbourne meme memorial men menu merck"
-            "merckmsd mg mh miami microsoft mil mini mint mit mitsubishi mk ml mlb mls mm mma mn mo mobi mobile"
-            "moda moe moi mom monash money monster mormon mortgage moscow moto motorcycles mov movie mp mq mr ms"
-            "msd mt mtn mtr mu museum music mv mw mx my mz na nab nagoya name navy nba nc ne nec net netbank"
-            "netflix network neustar new news next nextdirect nexus nf nfl ng ngo nhk ni nico nike nikon ninja"
-            "nissan nissay nl no nokia norton now nowruz nowtv np nr nra nrw ntt nu nyc nz obi observer office"
-            "okinawa olayan olayangroup ollo om omega one ong onl online ooo open oracle orange org organic"
-            "origins osaka otsuka ott ovh pa page panasonic paris pars partners parts party pay pccw pe pet pf"
-            "pfizer pg ph pharmacy phd philips phone photo photography photos physio pics pictet pictures pid pin"
-            "ping pink pioneer pizza pk pl place play playstation plumbing plus pm pn pnc pohl poker politie porn"
-            "post pr praxi press prime pro prod productions prof progressive promo properties property protection"
-            "pru prudential ps pt pub pw pwc py qa qpon quebec quest racing radio re read realestate realtor"
-            "realty recipes red redumbrella rehab reise reisen reit reliance ren rent rentals repair report"
-            "republican rest restaurant review reviews rexroth rich richardli ricoh ril rio rip ro rocks rodeo"
-            "rogers room rs rsvp ru rugby ruhr run rw rwe ryukyu sa saarland safe safety sakura sale salon"
-            "samsclub samsung sandvik sandvikcoromant sanofi sap sarl sas save saxo sb sbi sbs sc scb schaeffler"
-            "schmidt scholarships school schule schwarz science scot sd se search seat secure security seek"
-            "select sener services seven sew sex sexy sfr sg sh shangrila sharp shell shia shiksha shoes shop"
-            "shopping shouji show si silk sina singles site sj sk ski skin sky skype sl sling sm smart smile sn"
-            "sncf so soccer social softbank software sohu solar solutions song sony soy spa space sport spot sr"
-            "srl ss st stada staples star statebank statefarm stc stcgroup stockholm storage store stream studio"
-            "study style su sucks supplies supply support surf surgery suzuki sv swatch swiss sx sy sydney"
-            "systems sz tab taipei talk taobao target tatamotors tatar tattoo tax taxi tc tci td tdk team tech"
-            "technology tel temasek tennis teva tf tg th thd theater theatre tiaa tickets tienda tips tires tirol"
-            "tj tjmaxx tjx tk tkmaxx tl tm tmall tn to today tokyo tools top toray toshiba total tours town"
-            "toyota toys tr trade trading training travel travelers travelersinsurance trust trv tt tube tui"
-            "tunes tushu tv tvs tw tz ua ubank ubs ug uk unicom university uno uol ups us uy uz va vacations vana"
-            "vanguard vc ve vegas ventures verisign versicherung vet vg vi viajes video vig viking villas vin vip"
-            "virgin visa vision viva vivo vlaanderen vn vodka volvo vote voting voto voyage vu wales walmart"
-            "walter wang wanggou watch watches weather weatherchannel web webcam weber website wed wedding weibo"
-            "weir wf whoswho wien wiki williamhill win windows wine winners wme woodside work works world wow ws"
-            "wtc wtf xbox xerox xihuan xin xxx xyz yachts yahoo yamaxun yandex ye yodobashi yoga yokohama you"
-            "youtube yt yun za zappos zara zero zip zm zone zuerich zw"
-            ]
-            |> List.collect (fun row -> row.Split ' ' |> List.ofArray)
-            |> Set.ofList)
+    /// ### PostabilityProfile
+    type PostabilityProfile =
+        {
+            name : string
+            weightLimit : int
+            linkWeight : int
+            defaultWeight : int
+            weightRanges : (int * int * int) list
+            domainPattern : Text.RegularExpressions.Regex
+            topLevelDomains : Set<string>
+            shortDomainsLinked : Set<string>
+            twoLetterSecondLabelLongerThan : int
+            entityPatterns : (XCompatKind * Text.RegularExpressions.Regex) list
+            onePostHeader : string
+            headerSeparator : string
+            defusedBefore : Text.RegularExpressions.Regex
+            defusedAfter : Text.RegularExpressions.Regex
+            defusedExtraWeight : int
+        }
 
-    /// ### xCompatShortDomainsThatXLinks
-    let xCompatShortDomainsThatXLinks = set [ "t.co" ]
+    /// ### postabilityProfileOfFile
+    let postabilityProfileOfFile (path : string) : PostabilityProfile =
+        use document = Text.Json.JsonDocument.Parse (IO.File.ReadAllText path)
+        let root = document.RootElement
+        let at (element : Text.Json.JsonElement) (name : string) = element.GetProperty name
+        let text (element : Text.Json.JsonElement) (name : string) = (at element name).GetString ()
+        let number (element : Text.Json.JsonElement) (name : string) = (at element name).GetInt32 ()
+        let regex (pattern : string) = Text.RegularExpressions.Regex pattern
+        let post = at root "post"
+        let weights = at root "code_point_weight"
+        let links = at root "links"
+        let entities = at root "entities"
+        let posting = at root "posting"
+        let defused = at posting "defused_dot"
+        let domainsFile = IO.Path.Combine (IO.Path.GetDirectoryName (IO.Path.GetFullPath path), text links "top_level_domains_file")
+        {
+            name = text root "profile"
+            weightLimit = number post "weight_limit"
+            linkWeight = number post "link_weight"
+            defaultWeight = number weights "default"
+            weightRanges = [ for range in (at weights "ranges").EnumerateArray () -> range.[0].GetInt32 (), range.[1].GetInt32 (), range.[2].GetInt32 () ]
+            domainPattern = regex (text links "domain_pattern")
+            topLevelDomains = IO.File.ReadAllLines domainsFile |> Array.map (fun line -> line.Trim ()) |> Array.filter (fun line -> line <> "") |> Set.ofArray
+            shortDomainsLinked = [ for domain in (at links "short_domains_always_linked").EnumerateArray () -> domain.GetString () ] |> Set.ofList
+            twoLetterSecondLabelLongerThan = number links "two_letter_tld_needs_second_label_longer_than"
+            entityPatterns = [ XCompatHashtag, regex (text entities "hashtag"); XCompatMention, regex (text entities "mention"); XCompatCashtag, regex (text entities "cashtag") ]
+            onePostHeader = text posting "budget_header_for_one_post"
+            headerSeparator = text posting "header_separator"
+            defusedBefore = regex ("^" + text defused "before" + "$")
+            defusedAfter = regex ("^" + text defused "after" + "$")
+            defusedExtraWeight = number defused "extra_weight"
+        }
 
-    /// ### xCompatPatterns
-    let xCompatHashtagPattern = Text.RegularExpressions.Regex @"(?<![\p{L}\p{N}_&#＃])[#＃](?=[\p{L}\p{N}_]*\p{L})[\p{L}\p{N}_]+"
-    let xCompatMentionPattern = Text.RegularExpressions.Regex @"(?<![\p{L}\p{N}_!#$%&*@＠])[@＠][A-Za-z0-9_]{1,15}(?![A-Za-z0-9_@＠])"
-    let xCompatCashtagPattern = Text.RegularExpressions.Regex @"(?<![\p{L}\p{N}_$])\$[A-Za-z]{1,6}(?:[._][A-Za-z]{1,2})?(?![\p{L}\p{N}_])"
-    let xCompatDomainPattern = Text.RegularExpressions.Regex @"(?<![\p{L}\p{N}@\-_./])(?:[A-Za-z0-9](?:[A-Za-z0-9\-_]*[A-Za-z0-9])?\.)+([A-Za-z]{2,63})(?![\p{L}\p{N}_\-])"
+    /// ### postabilityProfilePath
+    let postabilityProfilePath (file : string) : string option =
+        match Environment.GetEnvironmentVariable "SPIRAL_POSTABILITY_PROFILE" with
+        | null | "" ->
+            let rec nearest (directory : string) =
+                if isNull directory then None
+                else
+                    let folder = IO.Path.Combine (directory, "postability")
+                    let found = if IO.Directory.Exists folder then IO.Directory.GetFiles (folder, "*.json") |> Array.sort |> Array.tryHead else None
+                    match found with
+                    | Some profile -> Some profile
+                    | None -> nearest (IO.Path.GetDirectoryName directory)
+            nearest (IO.Path.GetDirectoryName (IO.Path.GetFullPath file))
+        | path -> Some path
+
+    /// ### postabilityProfiles
+    let postabilityProfiles = Collections.Concurrent.ConcurrentDictionary<string, PostabilityProfile> ()
+
+    /// ### postabilityProfileFor
+    let postabilityProfileFor (file : string) : PostabilityProfile option =
+        postabilityProfilePath file |> Option.map (fun path -> postabilityProfiles.GetOrAdd (IO.Path.GetFullPath path, postabilityProfileOfFile))
 
     /// ### xCompatLinks
-    let xCompatLinks (link : string) (topLevelDomain : string) =
-        if not (xCompatTopLevelDomains.Force().Contains topLevelDomain) then false
-        elif xCompatShortDomainsThatXLinks.Contains (link.ToLowerInvariant ()) then true
+    let xCompatLinks (profile : PostabilityProfile) (link : string) (topLevelDomain : string) =
+        if not (profile.topLevelDomains.Contains topLevelDomain) then false
+        elif profile.shortDomainsLinked.Contains (link.ToLowerInvariant ()) then true
         elif topLevelDomain.Length = 2 then
             let labels = link.Split '.'
-            labels.[labels.Length - 2].Length > 2
+            labels.[labels.Length - 2].Length > profile.twoLetterSecondLabelLongerThan
         else true
 
-    /// ### xCompatPostWeightLimit
-    let xCompatPostWeightLimit = 280
-
     /// ### xCompatCodePointWeight
-    let xCompatCodePointWeight (codePoint : int) =
-        if codePoint <= 0x10FF
-           || (codePoint >= 0x2000 && codePoint <= 0x200D)
-           || (codePoint >= 0x2010 && codePoint <= 0x201F)
-           || (codePoint >= 0x2032 && codePoint <= 0x2037) then 1
-        else 2
-
-    /// ### xCompatLinkWeight
-    let xCompatLinkWeight = 23
+    let xCompatCodePointWeight (profile : PostabilityProfile) (codePoint : int) =
+        match profile.weightRanges |> List.tryFind (fun (low, high, _) -> codePoint >= low && codePoint <= high) with
+        | Some (_, _, weight) -> weight
+        | None -> profile.defaultWeight
 
     /// ### xCompatPostWeight
-    let xCompatPostWeight (post : string) =
-        let links = [ for found in xCompatDomainPattern.Matches post do if xCompatLinks found.Value (found.Groups.[1].Value.ToLowerInvariant ()) then yield found ]
+    let xCompatPostWeight (profile : PostabilityProfile) (post : string) =
+        let links = [ for found in profile.domainPattern.Matches post do if xCompatLinks profile found.Value (found.Groups.[1].Value.ToLowerInvariant ()) then yield found ]
         let unlinked = links |> List.rev |> List.fold (fun (rest : string) found -> rest.Remove (found.Index, found.Length)) post
-        let characters = unlinked.EnumerateRunes () |> Seq.sumBy (fun rune -> xCompatCodePointWeight rune.Value)
-        characters + xCompatLinkWeight * links.Length
+        let characters = unlinked.EnumerateRunes () |> Seq.sumBy (fun rune -> xCompatCodePointWeight profile rune.Value)
+        characters + profile.linkWeight * links.Length
 
     /// ### xCompatTopLevelBlocks
     let xCompatTopLevelBlocks (lines : string []) =
@@ -182117,32 +183510,40 @@ end
             let body = lines.[start .. stop - 1] |> Array.toList |> List.rev |> List.skipWhile String.IsNullOrWhiteSpace |> List.rev
             start + 1, String.Join ("\n", body))
 
+    /// ### xCompatDefusedDots
+    let xCompatDefusedDots (profile : PostabilityProfile) (block : string) =
+        seq { 1 .. block.Length - 2 }
+        |> Seq.filter (fun i -> block.[i] = '.' && profile.defusedBefore.IsMatch (string block.[i - 1]) && profile.defusedAfter.IsMatch (string block.[i + 1]))
+        |> Seq.length
+
+    /// ### xCompatPostableLimit
+    let xCompatPostableLimit (profile : PostabilityProfile) (cell : int) (block : string) =
+        profile.weightLimit - xCompatPostWeight profile (profile.onePostHeader.Replace ("{block}", string cell) + profile.headerSeparator) - profile.defusedExtraWeight * xCompatDefusedDots profile block
+
     /// ### xCompatOverweightFindings
-    let xCompatOverweightFindings (lines : string []) =
-        [ for row, block in xCompatTopLevelBlocks lines do
-            let weight = xCompatPostWeight block
-            if weight > xCompatPostWeightLimit then
-                yield { kind = XCompatOverweight; line = row; column = 1; text = $"weight {weight} > {xCompatPostWeightLimit}" } ]
+    let xCompatOverweightFindings (profile : PostabilityProfile) (lines : string []) =
+        [ for position, (row, block) in List.indexed (xCompatTopLevelBlocks lines) do
+            let weight = xCompatPostWeight profile block
+            let limit = xCompatPostableLimit profile (position + 1) block
+            if weight > limit then
+                yield { kind = XCompatOverweight; line = row; column = 1; text = $"weight {weight} > {limit} ({profile.weightLimit} minus the c{position + 1} k/n header and defused dots)" } ]
 
     /// ### xCompatLineFindings
-    let xCompatLineFindings (line : string) (row : int) =
-        let marks =
-            [ XCompatHashtag, xCompatHashtagPattern; XCompatMention, xCompatMentionPattern; XCompatCashtag, xCompatCashtagPattern ]
-            |> List.collect (fun (kind, pattern) -> [ for found in pattern.Matches line -> kind, found.Index, found.Value ])
+    let xCompatLineFindings (profile : PostabilityProfile) (line : string) (row : int) =
+        let marks = profile.entityPatterns |> List.collect (fun (kind, pattern) -> [ for found in pattern.Matches line -> kind, found.Index, found.Value ])
         let links =
-            [ for found in xCompatDomainPattern.Matches line do
-                if xCompatLinks found.Value (found.Groups.[1].Value.ToLowerInvariant ()) then yield XCompatAutolink, found.Index, found.Value ]
+            [ for found in profile.domainPattern.Matches line do
+                if xCompatLinks profile found.Value (found.Groups.[1].Value.ToLowerInvariant ()) then yield XCompatAutolink, found.Index, found.Value ]
         marks @ links
         |> List.sortBy (fun (_, start, _) -> start)
         |> List.map (fun (kind, start, text) ->
             { kind = kind; line = row; column = Globalization.StringInfo(line.Substring (0, start)).LengthInTextElements + 1; text = text })
 
     /// ### xCompatFindings
-    let xCompatFindings (source : string) =
+    let xCompatFindings (profile : PostabilityProfile) (source : string) =
         let lines = source.Replace("\r\n", "\n").Split '\n'
-        let marks = lines |> List.ofArray |> List.mapi (fun index line -> xCompatLineFindings line (index + 1)) |> List.concat
-        marks @ xCompatOverweightFindings lines |> List.sortBy (fun finding -> finding.line, finding.column)
-
+        let marks = lines |> List.ofArray |> List.mapi (fun index line -> xCompatLineFindings profile line (index + 1)) |> List.concat
+        marks @ xCompatOverweightFindings profile lines |> List.sortBy (fun finding -> finding.line, finding.column)
     /// ### xCompatReportLine
     let xCompatReportLine (path : string) (finding : XCompatFinding) =
         $"{path}:{finding.line}:{finding.column}: {xCompatKindName finding.kind}: {finding.text} ({xCompatHint finding.kind})"
@@ -182173,9 +183574,12 @@ end
     let xCompatWarnEntry (file : string) =
         try
             if xCompatEnabled file && IO.File.Exists file then
-                let text = IO.File.ReadAllText file
-                if xCompatWarnedTexts.TryAdd ((file, text), ()) then
-                    for finding in xCompatFindings text do eprintfn "%s" (xCompatWarningLine file finding)
+                match postabilityProfileFor file with
+                | Some profile ->
+                    let text = IO.File.ReadAllText file
+                    if xCompatWarnedTexts.TryAdd ((file, text), ()) then
+                        for finding in xCompatFindings profile text do eprintfn "%s" (xCompatWarningLine file finding)
+                | None -> ()
         with _ -> ()
 #if SPIRAL_CORE_GPT5PARALLEL
     /// ## SignalRSupervisor

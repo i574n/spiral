@@ -8,15 +8,12 @@ func sp_method1(_ p0: Int32, _ p1: Float) -> Float {
         v2 = (v0 &- 1)
         var v3: Float = (0.0 as Float)
         v3 = (v1 + (1.5 as Float))
-        var v4: Bool = false
-        v4 = (v2 == 0)
+        let v4: Bool = (v2 == 0)
         if (v4) {
             return v3
         } else {
-            let t361_2: Int32 = v2
-            let t397_3: Float = v3
-            v0 = t361_2
-            v1 = t397_3
+            v0 = v2
+            v1 = v3
             continue
         }
     }

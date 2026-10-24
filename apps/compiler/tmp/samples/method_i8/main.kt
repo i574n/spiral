@@ -9,12 +9,10 @@ fun sp_method0(p0: Byte): Byte {
     }
 }
 fun spiral_main(): Int {
-    var v0: Byte = (0).toByte()
-    v0 = (100).toByte()
+    val v0: Byte = (100).toByte()
     var v1: Byte = (0).toByte()
     v1 = sp_method0(v0)
-    var v2: Boolean = false
-    v2 = (v1 == (100).toByte())
+    val v2: Boolean = (v1 == (100).toByte())
     if (v2) {
         return 0
     } else {

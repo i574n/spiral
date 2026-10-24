@@ -1,7 +1,7 @@
 function target_global_0(v0: string): void {
 }
 export function main(): number {
-    let v0: string = "SPIRAL_ITEM_METADATA_TEST_missing-item";
+    const v0: string = "SPIRAL_ITEM_METADATA_TEST_missing-item";
     target_global_0(v0);
     return 0;
 }

@@ -87,11 +87,40 @@ inl rec terminal forall from to. (plan : flash_plan from to) : string =
         terminal right
 
 inl build_plan () : flash_plan idle settled =
-    inl debt : debt_note pool_alpha borrower_7 usdc block_19000000 = debt_note (pool_alpha "alpha", borrower_7 "borrower-7", usdc "usdc", block_19000000 19000000, "debt-alpha-7-usdc")
-    inl route : route_receipt pool_alpha borrower_7 usdc block_19000000 = route_receipt (pool_alpha "alpha", borrower_7 "borrower-7", usdc "usdc", block_19000000 19000000, "alpha-beta-alpha")
-    inl profit : profit_receipt pool_alpha borrower_7 usdc block_19000000 = profit_receipt (pool_alpha "alpha", borrower_7 "borrower-7", usdc "usdc", block_19000000 19000000, "profit-173")
-    inl repaid' : repayment_receipt pool_alpha borrower_7 usdc block_19000000 = repayment_receipt (pool_alpha "alpha", borrower_7 "borrower-7", usdc "usdc", block_19000000 19000000, "repaid-alpha")
-    inl settled' : settlement_receipt pool_alpha borrower_7 usdc block_19000000 = settlement_receipt (pool_alpha "alpha", borrower_7 "borrower-7", usdc "usdc", block_19000000 19000000, "settled-block")
+    inl debt : debt_note pool_alpha borrower_7 usdc block_19000000 =
+        debt_note (
+            pool_alpha "alpha",
+            borrower_7 "borrower-7",
+            usdc "usdc",
+            block_19000000 19000000,
+            "debt-alpha-7-usdc"
+        )
+    inl route : route_receipt pool_alpha borrower_7 usdc block_19000000 =
+        route_receipt (
+            pool_alpha "alpha",
+            borrower_7 "borrower-7",
+            usdc "usdc",
+            block_19000000 19000000,
+            "alpha-beta-alpha"
+        )
+    inl profit : profit_receipt pool_alpha borrower_7 usdc block_19000000 =
+        profit_receipt (pool_alpha "alpha", borrower_7 "borrower-7", usdc "usdc", block_19000000 19000000, "profit-173")
+    inl repaid' : repayment_receipt pool_alpha borrower_7 usdc block_19000000 =
+        repayment_receipt (
+            pool_alpha "alpha",
+            borrower_7 "borrower-7",
+            usdc "usdc",
+            block_19000000 19000000,
+            "repaid-alpha"
+        )
+    inl settled' : settlement_receipt pool_alpha borrower_7 usdc block_19000000 =
+        settlement_receipt (
+            pool_alpha "alpha",
+            borrower_7 "borrower-7",
+            usdc "usdc",
+            block_19000000 19000000,
+            "settled-block"
+        )
     inl borrow : flash_plan idle borrowed = FlashStep (exists (Borrow "pool-alpha", debt))
     inl route_step : flash_plan borrowed routed = FlashStep (exists (Route (debt, "dex-beta"), route))
     inl arbitrage : flash_plan routed arbitraged = FlashStep (exists (Arbitrage (route, "sell-weth"), profit))
@@ -105,16 +134,39 @@ inl build_plan () : flash_plan idle settled =
 inl inspect_packed (packed_flash value : packed_flash) : string = value
 
 inl serialize_authority (_ : string) (_ : string) (_ : string) (_ : string) : string =
-    "schema\tnode_id\toperation\tfrom\tto\tdeps\teffect\tcapability\tretry_budget\n1\tborrow\tBorrow\tidle\tborrowed\t\tnon_idempotent\tpool-alpha\t0\n1\troute\tRoute\tborrowed\trouted\tborrow\tidempotent\tdex-router\t1\n1\tarbitrage\tArbitrage\trouted\tarbitraged\troute\tnon_idempotent\tmarket-maker\t0\n1\trepay\tRepay\tarbitraged\trepaid\tarbitrage\tnon_idempotent\tpool-alpha\t0\n1\tsettle\tSettle\trepaid\tsettled\trepay\tnon_idempotent\tatomic-block\t0\n"
+    "schema\tnode_id\toperation\tfrom\tto\tdeps\teffect\tcapability\tretry_budget\n"
+    ^^ "1\tborrow\tBorrow\tidle\tborrowed\t\tnon_idempotent\tpool-alpha\t0\n"
+    ^^ "1\troute\tRoute\tborrowed\trouted\tborrow\tidempotent\tdex-router\t1\n"
+    ^^ "1\tarbitrage\tArbitrage\trouted\tarbitraged\troute\tnon_idempotent\tmarket-maker\t0\n"
+    ^^ "1\trepay\tRepay\tarbitraged\trepaid\tarbitrage\tnon_idempotent\tpool-alpha\t0\n"
+    ^^ "1\tsettle\tSettle\trepaid\tsettled\trepay\tnon_idempotent\tatomic-block\t0\n"
 
 inl main () : string =
     inl plan = build_plan ()
-    inl borrow_probe : flash_op idle borrowed (debt_note pool_alpha borrower_7 usdc block_19000000) = Borrow "pool-alpha"
-    inl debt_probe : debt_note pool_alpha borrower_7 usdc block_19000000 = debt_note (pool_alpha "alpha", borrower_7 "borrower-7", usdc "usdc", block_19000000 19000000, "debt-alpha-7-usdc")
-    inl profit_probe : profit_receipt pool_alpha borrower_7 usdc block_19000000 = profit_receipt (pool_alpha "alpha", borrower_7 "borrower-7", usdc "usdc", block_19000000 19000000, "profit-173")
-    inl repay_probe : flash_op arbitraged repaid (repayment_receipt pool_alpha borrower_7 usdc block_19000000) = Repay (debt_probe, profit_probe)
-    inl repaid_probe : repayment_receipt pool_alpha borrower_7 usdc block_19000000 = repayment_receipt (pool_alpha "alpha", borrower_7 "borrower-7", usdc "usdc", block_19000000 19000000, "repaid-alpha")
-    inl settle_probe : flash_op repaid settled (settlement_receipt pool_alpha borrower_7 usdc block_19000000) = Settle repaid_probe
+    inl borrow_probe : flash_op idle borrowed (debt_note pool_alpha borrower_7 usdc block_19000000) =
+        Borrow "pool-alpha"
+    inl debt_probe : debt_note pool_alpha borrower_7 usdc block_19000000 =
+        debt_note (
+            pool_alpha "alpha",
+            borrower_7 "borrower-7",
+            usdc "usdc",
+            block_19000000 19000000,
+            "debt-alpha-7-usdc"
+        )
+    inl profit_probe : profit_receipt pool_alpha borrower_7 usdc block_19000000 =
+        profit_receipt (pool_alpha "alpha", borrower_7 "borrower-7", usdc "usdc", block_19000000 19000000, "profit-173")
+    inl repay_probe : flash_op arbitraged repaid (repayment_receipt pool_alpha borrower_7 usdc block_19000000) =
+        Repay (debt_probe, profit_probe)
+    inl repaid_probe : repayment_receipt pool_alpha borrower_7 usdc block_19000000 =
+        repayment_receipt (
+            pool_alpha "alpha",
+            borrower_7 "borrower-7",
+            usdc "usdc",
+            block_19000000 19000000,
+            "repaid-alpha"
+        )
+    inl settle_probe : flash_op repaid settled (settlement_receipt pool_alpha borrower_7 usdc block_19000000) =
+        Settle repaid_probe
     inl risk = assess (conservative_policy borrow_probe)
     inl probe = assess (adversarial_policy repay_probe)
     inl effect = execute (ledger_interpreter settle_probe)

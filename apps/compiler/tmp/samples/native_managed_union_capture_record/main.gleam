@@ -26,21 +26,12 @@ pub fn spiral_array_from_storage(storage: gary.ErlangArray(option.Option(a)), si
   SpiralArray(key: key, size: size)
 }
 
-pub fn spiral_array_create(size: Int) -> SpiralArray(a) {
-  list.repeat(option.None, size) |> array.from_list(option.None) |> spiral_array_from_storage(size)
-}
 
 pub fn spiral_array_create_filled(size: Int, value: a) -> SpiralArray(a) {
   list.repeat(option.Some(value), size) |> array.from_list(option.None) |> spiral_array_from_storage(size)
 }
 
-pub fn spiral_array_from_list(values: List(a)) -> SpiralArray(a) {
-  values |> list.map(option.Some) |> array.from_list(option.None) |> spiral_array_from_storage(list.length(values))
-}
 
-pub fn spiral_array_to_list(xs: SpiralArray(a)) -> List(a) {
-  list.repeat(Nil, xs.size) |> list.index_map(fn(_, i) { spiral_array_get(xs, i) })
-}
 
 pub fn spiral_array_get(xs: SpiralArray(a), i: Int) -> a {
   case i >= 0 && i < xs.size {
@@ -69,9 +60,6 @@ pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
   int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
 }
 
-pub fn spiral_wrap_unsigned(value: Int, bits: Int) -> Int {
-  int.bitwise_and(value, int.bitwise_shift_left(1, bits) - 1)
-}
 
 pub fn spiral_string_length(text: String) -> Int {
   bit_array.byte_size(bit_array.from_string(text))
@@ -125,31 +113,31 @@ pub fn closure0(capt: Nil) -> fn(Int) -> fn(Int) -> Int {
     }
 }
 pub fn method0(v0: fn(Int) -> fn(Int) -> Int) -> fn(Int) -> Int {
-    v0( 0  )
+    v0(0)
 }
 pub fn method1(v0: fn(Int) -> fn(Int) -> Int) -> fn(Int) -> Int {
-    v0( 4  )
+    v0(4)
 }
 pub fn method4(v0: fn(Int) -> Int) -> Int {
-    let v1 = v0( 2  )
+    let v1 = v0(2)
     let v2 = spiral_wrap_signed(v1 + 5, 32)
     v2
 }
 pub fn method3(v0: fn(Int) -> Int) -> Int {
-    let v1 = v0( 1  )
+    let v1 = v0(1)
     let v2 = method4(v0)
     let v3 = spiral_wrap_signed(v1 + v2, 32)
     v3
 }
 pub fn method2(v0: fn(Int) -> Int, v1: fn(Int) -> Int) -> Int {
-    let v2 = v0( 5  )
+    let v2 = v0(5)
     let v3 = method3(v1)
     let v4 = spiral_wrap_signed(v2 + v3, 32)
     v4
 }
 pub fn main() {
-let v0 = closure0(Nil)
-let v1 = method0(v0)
-let v2 = method1(v0)
-method2(v1, v2)
+    let v0 = closure0(Nil)
+    let v1 = method0(v0)
+    let v2 = method1(v0)
+    method2(v1, v2)
 }

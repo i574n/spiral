@@ -8,22 +8,22 @@ function spiral_array_set<T>(array: T[], index: number, value: T): void {
 }
 type Mut0 = { l0: number, l1: string };
 export function main(): number {
-    let v0: number = 1.5;
-    let v1: string = "no";
-    let v2: Mut0 = { l0: v0, l1: v1 };
-    let v3: Array<Mut0> = new Array<Mut0>(1).fill(undefined as unknown as Mut0);
+    const v0: number = 1.5;
+    const v1: string = "no";
+    const v2: Mut0 = { l0: v0, l1: v1 };
+    const v3: Array<Mut0> = new Array<Mut0>(1).fill(undefined as unknown as Mut0);
     spiral_array_set(v3, 0, v2);
     let v4: Mut0 = spiral_array_index(v3, 0);
-    let v5: number = 2.5;
-    let v6: string = "hi";
+    const v5: number = 2.5;
+    const v6: string = "hi";
     v4.l0 = v5;
     v4.l1 = v6;
-    let v7: number = v4.l0;
-    let v8: string = v4.l1;
-    let v9: boolean = v7 === 2.5;
+    const v7: number = v4.l0;
+    const v8: string = v4.l1;
+    const v9: boolean = v7 === 2.5;
     let v11: boolean;
     if (v9) {
-        let v10: boolean = v8 === "hi";
+        const v10: boolean = v8 === "hi";
         v11 = v10;
     } else {
         v11 = false;

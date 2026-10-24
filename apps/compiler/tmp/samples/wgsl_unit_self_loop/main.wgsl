@@ -26,12 +26,7 @@ fn sp_fill_0(p0: i32, p1: u32, p2: i32) {
             spiral_heap[v1 + 1u + bitcast<u32>(v2) * 1u + 0u] = bitcast<u32>(v2);
             var v4: i32 = 0i;
             v4 = (v2 + 1i);
-            let spiral_t1: i32 = v0;
-            let spiral_t2: u32 = v1;
-            let spiral_t3: i32 = v4;
-            v0 = spiral_t1;
-            v1 = spiral_t2;
-            v2 = spiral_t3;
+            v2 = v4;
             continue;
         } else {
             return;

@@ -12,6 +12,7 @@ inl main () : i32 =
     !!!!ArrayIndexSet(flags, 0i32, false)
     !!!!ArrayIndexSet(flags, 1i32, true)
     !!!!ArrayIndexSet(flags, 2i32, false)
-    inl total = !!!!ArrayIndex(xs, 1i32) +. !!!!ArrayIndex(xs, 2i32) +. !!!!ArrayIndex(xs, 3i32) +. !!!!ArrayIndex(xs, 4i32)
+    inl total =
+        !!!!ArrayIndex(xs, 1i32) +. !!!!ArrayIndex(xs, 2i32) +. !!!!ArrayIndex(xs, 3i32) +. !!!!ArrayIndex(xs, 4i32)
     inl bonus = if !!!!ArrayIndex(flags, 1i32) then (if !!!!ArrayIndex(flags, 0i32) then 0i32 else 100i32) else 0i32
     total +. bonus +. !!!!ArrayLength(`i32, xs)

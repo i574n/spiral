@@ -55,12 +55,9 @@ fun sp_method2(p0: Int, p1: String, p2: String): String {
                 v9 = "c"
                 v10 = v9
             }
-            val t763_3: Int = v3
-            val t797_4: String = v4
-            val t834_10: String = v10
-            v0 = t763_3
-            v1 = t797_4
-            v2 = t834_10
+            v0 = v3
+            v1 = v4
+            v2 = v10
             continue
         }
     }

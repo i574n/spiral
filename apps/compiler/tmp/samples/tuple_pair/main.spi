@@ -1,6 +1,6 @@
-inl make_pair ~x ~y = x,y
+inl make_pair ~x ~y = x, y
 
-inl sum_pair ~(x,y) = x +. y
+inl sum_pair ~(x, y) = x +. y
 
 inl main () : i32 =
     inl ~x = 20i32

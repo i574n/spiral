@@ -1,4 +1,8 @@
-inl gauge () : reactors.reactor f64 (reactors.signal f64) (reactors.signal f64) = {init = 0f64; react = fun s _ x => s, x}
+inl gauge () : reactors.reactor f64 (reactors.signal f64) (reactors.signal f64) =
+    {
+        init = 0f64
+        react = fun s _ x => s, x
+    }
 
 inl main () : i32 =
     inl program = reactors.chain (reactors.timer 4i64) (gauge ())

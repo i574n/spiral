@@ -30,8 +30,27 @@ let value_at (s : string) (key : string) : i32 =
     find_top s needle 0i32 (sm.length s) (sm.length needle) 0i32 false
 
 let digit_of (c : char) : i32 =
-    if c = '0' then 0i32 elif c = '1' then 1i32 elif c = '2' then 2i32 elif c = '3' then 3i32 elif c = '4' then 4i32
-    elif c = '5' then 5i32 elif c = '6' then 6i32 elif c = '7' then 7i32 elif c = '8' then 8i32 elif c = '9' then 9i32 else -1i32
+    if c = '0'
+    then 0i32
+    elif c = '1'
+    then 1i32
+    elif c = '2'
+    then 2i32
+    elif c = '3'
+    then 3i32
+    elif c = '4'
+    then 4i32
+    elif c = '5'
+    then 5i32
+    elif c = '6'
+    then 6i32
+    elif c = '7'
+    then 7i32
+    elif c = '8'
+    then 8i32
+    elif c = '9'
+    then 9i32
+    else -1i32
 
 let rec digits (s : string) (at : i32) (n : i32) (acc : i32) : i32 =
     if at >= n then acc
@@ -54,7 +73,7 @@ let rec closing_quote (s : string) (at : i32) (n : i32) : i32 =
         else closing_quote s (at + 1i32) n
 
 let text_between (s : string) (from : i32) (until : i32) : string =
-    if until <= from then "" else sm.slice s {from = from; to = until - 1i32}
+    if until <= from then "" else sm.slice s { from = from; to = until - 1i32 }
 
 let unescaped (s : string) (at : i32) : string =
     inl c = sm.index s at
@@ -95,13 +114,16 @@ let rec object_end (s : string) (at : i32) (n : i32) (depth : i32) (in_text : bo
 
 let object_at (s : string) (at : i32) : string =
     if at < 0i32 then "{}"
-    else sm.slice s {from = at; to = object_end s at (sm.length s) 0i32 false}
+    else sm.slice s { from = at; to = object_end s at (sm.length s) 0i32 false }
 
 let record_start (starts : array_base i32) (count : i32) (position : i32) : () =
     inl capacity = !!!!ArrayLength(`i32, starts)
     if count < capacity then !!!!ArrayIndexSet(starts, count, position)
 
-let rec item_starts (s : string) (at : i32) (n : i32) (depth : i32) (in_text : bool) (count : i32) (starts : array_base i32) : i32 =
+let rec item_starts
+    (s : string) (at : i32) (n : i32) (depth : i32) (in_text : bool) (count : i32) (starts : array_base i32)
+    : i32
+    =
     if at >= n then count
     else
         inl c = sm.index s at

@@ -4,8 +4,10 @@ nominal i0 = ()
 nominal i1 = ()
 nominal i2 = ()
 
-union segment build contig start finish = | Segment :: forall build contig start finish. string -> segment build contig start finish
-union region build contig start finish = | Region :: forall build contig start finish. string -> region build contig start finish
+union segment build contig start finish =
+    | Segment :: forall build contig start finish. string -> segment build contig start finish
+union region build contig start finish =
+    | Region :: forall build contig start finish. string -> region build contig start finish
 
 inl merge forall build contig start middle finish.
     (left : segment build contig start middle)

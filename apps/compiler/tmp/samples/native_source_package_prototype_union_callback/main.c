@@ -55,24 +55,18 @@ US0 US0_Flag(bool v0) { // Flag
 static inline void ClosureDecrefBody0(Closure0 * x){
     (void)x;
 }
-void ClosureDecref0(Fun0 * self){
+static void ClosureDecref0(Fun0 * self){
     Closure0 * x = (Closure0 *) self;
     if (x != NULL && --(x->base.refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
-US0 closure0(Fun0 * self, int32_t v1){
+static US0 closure0(Fun0 * self, int32_t v1){
     Closure0 * x = (Closure0 *) self;
     int32_t v0 = x->v0;
-    
     ClosureDecref0(self);
-    
-    
-    bool v2;
-    v2 = v1 == v0;
-    
-    
+    bool v2 = v1 == v0;
     return US0_Flag(v2);
 }
-Fun0 * ClosureCreate0(int32_t v0){
+static Fun0 * ClosureCreate0(int32_t v0){
     Closure0 * x = malloc(sizeof(Closure0));
     x->base.refc = 1;
     x->base.decref_fptr = ClosureDecref0;
@@ -80,63 +74,36 @@ Fun0 * ClosureCreate0(int32_t v0){
     x->v0 = v0;
     return &x->base;
 }
-US0 method0(Fun0 * v0, int32_t v1){
-    
-    
+static US0 method0(Fun0 * v0, int32_t v1){
     return v0->fptr(v0, v1);
 }
 int32_t main(){
-    
-    
-    int32_t v0;
-    v0 = 2l;
-    
-    
-    Fun0 * v1;
-    v1 = ClosureCreate0(v0);
+    int32_t v0 = 2l;
+    Fun0 * v1 = ClosureCreate0(v0);
     (v1)->refc++;
-    
-    US0 v2;
-    v2 = method0(v1, v0);
-    
+    US0 v2 = method0(v1, v0);
     (v1)->decref_fptr(v1);
     int32_t v8;
     switch (v2.tag) {
         case 2: { // Flag
             bool v4 = v2.case2.v0;
-            
-            
             if (v4){
-                
-                
                 v8 = 11l;
             } else {
-                
-                
                 v8 = 5l;
             }
             break;
         }
         case 1: { // Hit
             int32_t v3 = v2.case1.v0;
-            
-            
             v8 = v3;
             break;
         }
         default: { // Idle
-            
-            
-            
             v8 = 3l;
             break;
         }
     }
-    
-    
-    int32_t v9;
-    v9 = v8 + 31l;
-    
-    
+    int32_t v9 = v8 + 31l;
     return v9;
 }

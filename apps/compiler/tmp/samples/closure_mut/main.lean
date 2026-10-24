@@ -35,16 +35,13 @@ partial def f_c0 (p0 : (IO.Ref M0)) (p1 : Int32) : IO (IO.Ref M0) := do
     return v0
 partial def spiralMain : IO Int32 := do
     let mut v0 : (IO.Ref M0) ← IO.mkRef default
-    let mut v1 : (Int32 → IO (IO.Ref M0)) := default
     let mut v2 : (IO.Ref M0) ← IO.mkRef default
-    let mut v3 : Int32 := default
-    let mut v4 : Bool := default
     v0 := (← IO.mkRef (M0.mk (1 : Int32)))
-    v1 := (f_c0 v0)
+    let v1 : (Int32 → IO (IO.Ref M0)) := (f_c0 v0)
     v2 := (← v1 (1 : Int32))
     v2.modify (fun r => { r with l0 := (7 : Int32) })
-    v3 := (← v2.get).l0
-    v4 := (v3 == (7 : Int32))
+    let v3 : Int32 := (← v2.get).l0
+    let v4 : Bool := (v3 == (7 : Int32))
     if v4 then
         return (0 : Int32)
     else

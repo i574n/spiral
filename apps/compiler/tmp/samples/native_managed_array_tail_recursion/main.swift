@@ -16,12 +16,10 @@ func sp_method1(_ p0: Int32, _ p1: SpiralArray<Int32>, _ p2: SpiralArray<Int32>)
         if (v4) {
             return v2
         } else {
-            let t387_3: Int32 = v3
-            let t423_2: SpiralArray<Int32> = v2
-            let t472_1: SpiralArray<Int32> = v1
-            v0 = t387_3
-            v1 = t423_2
-            v2 = t472_1
+            v0 = v3
+            let t408_1: SpiralArray<Int32> = v1
+            v1 = v2
+            v2 = t408_1
             continue
         }
     }
@@ -54,13 +52,10 @@ func spiral_main() -> Int32 {
     v3.items[Int(0)] = 13
     var v4: Int32 = 0
     v4 = v1.items[Int(0)]
-    var v5: Bool = false
-    v5 = (v4 == 13)
+    let v5: Bool = (v4 == 13)
     if (v5) {
-        var v6: Int32 = 0
-        v6 = v2.items[Int(0)]
-        var v7: Bool = false
-        v7 = (v6 == 11)
+        let v6: Int32 = v2.items[Int(0)]
+        let v7: Bool = (v6 == 11)
         if (v7) {
             return 0
         } else {

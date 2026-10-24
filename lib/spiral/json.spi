@@ -12,7 +12,7 @@ inl decode forall t. (text : string) : t =
 inl tool_schema forall t. (name : string) (_ : t) : string =
     real json_real.tool_schema name `t
 
-type weather_query = {location : string; days : i32; metric : bool}
+type weather_query = { location : string; days : i32; metric : bool }
 
 test decode_reads_a_flat_record =
     inl ~reply = "{\"location\":\"Cincinnati\",\"days\":3,\"metric\":true}"
@@ -21,7 +21,7 @@ test decode_reads_a_flat_record =
     args.days + bonus + sm.length args.location
     |> _assert_eq 113i32
 
-type city_query = {city : string; days : option i32; units : option string}
+type city_query = { city : string; days : option i32; units : option string }
 
 test decode_fills_missing_options_with_none =
     inl ~reply = "{\"city\":\"Recife\",\"days\":4}"
@@ -31,8 +31,8 @@ test decode_fills_missing_options_with_none =
     days + units + sm.length q.city
     |> _assert_eq 60i32
 
-type place = {city : string; days : i32}
-type forecast_query = {days : i32; where : place; metric : bool}
+type place = { city : string; days : i32 }
+type forecast_query = { days : i32; where : place; metric : bool }
 
 test decode_reads_nested_records =
     inl ~reply = "{\"days\":3,\"where\":{\"city\":\"Cincinnati\",\"days\":40},\"metric\":true}"
@@ -42,24 +42,30 @@ test decode_reads_nested_records =
     |> _assert_eq 153i32
 
 test decode_matches_keys_at_their_own_depth =
-    inl ~reply = "{\"where\":{\"city\":\"Cincinnati\",\"days\":40},\"note\":\"\\\"days\\\":9\",\"days\":3,\"metric\":true}"
+    inl ~reply =
+        "{\"where\":{\"city\":\"Cincinnati\",\"days\":40},\"note\":\"\\\"days\\\":9\",\"days\":3,\"metric\":true}"
     inl args : forecast_query = decode reply
     inl bonus = if args.metric then 100i32 else 0i32
     args.days + bonus + args.where.days + sm.length args.where.city
     |> _assert_eq 153i32
 
-type tagged_order = {customer : string; quantities : array_base i32; tags : array_base string}
+type tagged_order = { customer : string; quantities : array_base i32; tags : array_base string }
 
 test decode_reads_arrays_of_scalars =
     inl ~reply = "{\"customer\":\"ana\",\"quantities\":[3, 40, 200],\"tags\":[\"a,b\", \"]x\"]}"
     inl o : tagged_order = decode reply
     inl q : array i32 = array o.quantities
     inl t : array string = array o.tags
-    length q * 1000i32 + index q 0i32 + index q 1i32 + index q 2i32 + sm.length (index t 0i32) * 10000i32 + sm.length (index t 1i32) * 100000i32
+    length q * 1000i32
+    + index q 0i32
+    + index q 1i32
+    + index q 2i32
+    + sm.length (index t 0i32) * 10000i32
+    + sm.length (index t 1i32) * 100000i32
     |> _assert_eq 233243i32
 
-type order_line = {sku : string; qty : i32}
-type line_order = {customer : string; lines : array_base order_line}
+type order_line = { sku : string; qty : i32 }
+type line_order = { customer : string; lines : array_base order_line }
 
 test decode_reads_arrays_of_records =
     inl ~reply = "{\"customer\":\"ana\",\"lines\":[{\"sku\":\"p1\",\"qty\":2}, {\"sku\":\"p22\",\"qty\":30}]}"
@@ -71,11 +77,13 @@ test decode_reads_arrays_of_records =
     |> _assert_eq 32232i32
 
 union units = Metric | Imperial
-union target = TargetCity : string | TargetHere | TargetGrid : {row : i32; col : i32}
-type target_request = {units : units; where : target; other : target}
+union target = TargetCity : string | TargetHere | TargetGrid : { row : i32; col : i32 }
+type target_request = { units : units; where : target; other : target }
 
 test decode_reads_unions_by_case_name =
-    inl ~reply = "{\"units\":\"Imperial\",\"where\":{\"TargetCity\":\"Recife\"},\"other\":{\"TargetGrid\":{\"row\":4,\"col\":7}}}"
+    inl ~reply =
+        "{\"units\":\"Imperial\",\"where\":{\"TargetCity\":\"Recife\"},\"other\":{\"TargetGrid\":{\"row\":4,\"col\""
+        ^^ ":7}}}"
     inl r : target_request = decode reply
     inl u = match r.units with | Metric => 1i32 | Imperial => 2i32
     inl w = match r.where with | TargetCity name => sm.length name * 10i32 | TargetHere => 0i32 | TargetGrid _ => 9i32
@@ -84,7 +92,7 @@ test decode_reads_unions_by_case_name =
     |> _assert_eq 4762i32
 
 union spot = SpotAt : i32 * i32 | SpotHere
-type span_request = {span : i32 * string; where : spot}
+type span_request = { span : i32 * string; where : spot }
 
 test decode_reads_tuples_as_pairs =
     inl ~reply = "{\"span\":[12, \"days\"],\"where\":{\"SpotAt\":[3, 9]}}"
@@ -95,14 +103,28 @@ test decode_reads_tuples_as_pairs =
     |> _assert_eq 43912i32
 
 union region = RegionCity : string | RegionPoint : f64 * f64 | RegionHere
-type forecast_args = {where : region; days : option i32; units : units; hours : array_base i32}
+type forecast_args = { where : region; days : option i32; units : units; hours : array_base i32 }
 
 test tool_schema_describes_records_unions_options_and_arrays =
-    inl args : forecast_args = {where = RegionHere; days = None; units = Metric; hours = am'.init_base 3i32 (fun _ => 0i32)}
+    inl args : forecast_args =
+        {
+            where = RegionHere
+            days = None
+            units = Metric
+            hours = am'.init_base 3i32 fun _ => 0i32
+        }
     tool_schema "getForecast" args
-    |> _assert_eq "{\"name\":\"getForecast\",\"parameters\":{\"type\":\"object\",\"properties\":{\"where\":{\"oneOf\":[{\"type\":\"object\",\"properties\":{\"RegionCity\":{\"type\":\"string\"}},\"required\":[\"RegionCity\"]},{\"type\":\"object\",\"properties\":{\"RegionPoint\":{\"type\":\"array\",\"prefixItems\":[{\"type\":\"number\"},{\"type\":\"number\"}]}},\"required\":[\"RegionPoint\"]},{\"const\":\"RegionHere\"}]},\"days\":{\"type\":\"integer\"},\"units\":{\"type\":\"string\",\"oneOf\":[{\"const\":\"Metric\"},{\"const\":\"Imperial\"}]},\"hours\":{\"type\":\"array\",\"items\":{\"type\":\"integer\"}}},\"required\":[\"where\",\"units\",\"hours\"]}}"
+    |> _assert_eq (
+           "{\"name\":\"getForecast\",\"parameters\":{\"type\":\"object\",\"properties\":{\"where\":{\"oneOf\":[{\""
+           ^^ "type\":\"object\",\"properties\":{\"RegionCity\":{\"type\":\"string\"}},\"required\":[\"RegionCity\"]},"
+           ^^ "{\"type\":\"object\",\"properties\":{\"RegionPoint\":{\"type\":\"array\",\"prefixItems\":[{\"type\":\"n"
+           ^^ "umber\"},{\"type\":\"number\"}]}},\"required\":[\"RegionPoint\"]},{\"const\":\"RegionHere\"}]},\"days\""
+           ^^ ":{\"type\":\"integer\"},\"units\":{\"type\":\"string\",\"oneOf\":[{\"const\":\"Metric\"},{\"const\":\"I"
+           ^^ "mperial\"}]},\"hours\":{\"type\":\"array\",\"items\":{\"type\":\"integer\"}}},\"required\":[\"where\",\""
+           ^^ "units\",\"hours\"]}}"
+       )
 
-type quote_query = {said : string; path : string; days : i32}
+type quote_query = { said : string; path : string; days : i32 }
 
 test decode_unescapes_strings =
     inl ~reply = "{\"said\":\"say \\\"hi\\\"\\n\",\"path\":\"a\\\\b\",\"days\":7}"
@@ -110,7 +132,7 @@ test decode_unescapes_strings =
     inl exact = if q.said = "say \"hi\"\n" && q.path = "a\\b" then 10000i32 else 0i32
     exact + q.days + sm.length q.said * 10i32 + sm.length q.path * 1000i32
     |> _assert_eq 13097i32
-type stamp = {span : i32 * string * i32; flag : bool}
+type stamp = { span : i32 * string * i32; flag : bool }
 
 test decode_reads_tuples_longer_than_two =
     inl ~reply = "{\"span\":[12,\"days\",7],\"flag\":true}"

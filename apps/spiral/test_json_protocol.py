@@ -74,6 +74,35 @@ class JsonProtocol(unittest.TestCase):
         self.assertIn("rust-protocol-failure", result.stdout + result.stderr)
         self.assertNotIn('"extension"', result.stdout)
 
+    def run_lua(self, source):
+        with tempfile.TemporaryDirectory(prefix="spiral json lua ü ") as folder:
+            script = Path(folder) / "main with spaces.lua"
+            script.write_text(source, encoding="utf-8", newline="")
+            return subprocess.run(
+                [str(CLI), "lua", "--lua-path", str(script)],
+                cwd=ROOT,
+                env={**os.environ, "SPIRAL_JSON": "1", "TRACE_LEVEL": "Info"},
+                capture_output=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=60,
+            )
+
+    def test_lua_print_and_write_are_the_output(self):
+        source = 'print("lua-print", 1)\nio.write("lua-", "write")\nreturn 6 * 7\n'
+        result = self.run_lua(source)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(json.loads(result.stdout)["command_result"])
+        self.assertEqual(payload["extension"], "lua")
+        self.assertEqual(payload["code"], source)
+        self.assertEqual(payload["output"], "lua-print\t1\nlua-write")
+
+    def test_lua_runtime_error_is_a_failure_with_its_message(self):
+        result = self.run_lua('error("lua-protocol-failure")\n')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("lua-protocol-failure", result.stdout + result.stderr)
+        self.assertNotIn('"command_result"', result.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -11,9 +11,15 @@
     | NormalizationDerivationEmpty :: \* alphabet. normalization_derivation alphabet normalization_shape_empty
     | NormalizationDerivationEpsilon :: \* alphabet. normalization_derivation alphabet normalization_shape_epsilon
     | NormalizationDerivationChar :: \* alphabet. alphabet -> normalization_derivation alphabet normalization_shape_char
-    | NormalizationDerivationAlt :: \* alphabet left right. normalization_derivation alphabet left * normalization_derivation alphabet right -> normalization_derivation alphabet (normalization_shape_alt left right)
-    | NormalizationDerivationCat :: \* alphabet left right. normalization_derivation alphabet left * normalization_derivation alphabet right -> normalization_derivation alphabet (normalization_shape_cat left right)
-    | NormalizationDerivationStar :: \* alphabet inner. normalization_derivation alphabet inner -> normalization_derivation alphabet (normalization_shape_star inner)
+    | NormalizationDerivationAlt :: \* alphabet left right.
+        normalization_derivation alphabet left * normalization_derivation alphabet right ->
+        normalization_derivation alphabet (normalization_shape_alt left right)
+    | NormalizationDerivationCat :: \* alphabet left right.
+        normalization_derivation alphabet left * normalization_derivation alphabet right ->
+        normalization_derivation alphabet (normalization_shape_cat left right)
+    | NormalizationDerivationStar :: \* alphabet inner.
+        normalization_derivation alphabet inner ->
+        normalization_derivation alphabet (normalization_shape_star inner)
 
 :| packed_normalization_derivation alphabet =
     | PackedNormalizationDerivation : (\? shape. normalization_derivation alphabet shape)
@@ -41,16 +47,24 @@
             := \? inner_shape. inner_derivation = packed
             PackedNormalizationDerivation (\? (NormalizationDerivationStar inner_derivation))
 
-:= ^ normalization_derivation_source \* alphabet shape. (derivation : normalization_derivation alphabet shape) : regex alphabet =
+:= ^ normalization_derivation_source \* alphabet shape.
+    (derivation : normalization_derivation alphabet shape)
+    : regex alphabet
+    =
     ?= derivation ?|
     | NormalizationDerivationEmpty => RegexEmpty
     | NormalizationDerivationEpsilon => RegexEpsilon
     | NormalizationDerivationChar symbol => RegexChar symbol
-    | NormalizationDerivationAlt (left, right) => RegexAlt (normalization_derivation_source left, normalization_derivation_source right)
-    | NormalizationDerivationCat (left, right) => RegexCat (normalization_derivation_source left, normalization_derivation_source right)
+    | NormalizationDerivationAlt (left, right) =>
+        RegexAlt (normalization_derivation_source left, normalization_derivation_source right)
+    | NormalizationDerivationCat (left, right) =>
+        RegexCat (normalization_derivation_source left, normalization_derivation_source right)
     | NormalizationDerivationStar inner => RegexStar (normalization_derivation_source inner)
 
-:~ ^ normalization_referee_alt_insert \* alphabet {symbol_compare}. (term : regex alphabet) (value : regex alphabet) : regex alphabet =
+:~ ^ normalization_referee_alt_insert \* alphabet {symbol_compare}.
+    (term : regex alphabet) (value : regex alphabet)
+    : regex alphabet
+    =
     ?= value ?|
     | RegexEmpty => term
     | RegexAlt (head, tail) =>
@@ -64,13 +78,19 @@
         | SymbolSame => atom
         | SymbolGreater => RegexAlt (atom, term)
 
-:~ ^ normalization_referee_alt \* alphabet {symbol_compare}. (left : regex alphabet) (right : regex alphabet) : regex alphabet =
+:~ ^ normalization_referee_alt \* alphabet {symbol_compare}.
+    (left : regex alphabet) (right : regex alphabet)
+    : regex alphabet
+    =
     ?= left ?|
     | RegexEmpty => right
     | RegexAlt (head, tail) => normalization_referee_alt tail (normalization_referee_alt_insert head right)
     | atom => normalization_referee_alt_insert atom right
 
-:~ ^ normalization_referee_cat \* alphabet {symbol_compare}. (left : regex alphabet) (right : regex alphabet) : regex alphabet =
+:~ ^ normalization_referee_cat \* alphabet {symbol_compare}.
+    (left : regex alphabet) (right : regex alphabet)
+    : regex alphabet
+    =
     ?= right ?|
     | RegexEmpty => RegexEmpty
     | RegexEpsilon => left

@@ -15,4 +15,8 @@ inl python_annotated_macro_types (k : i32) : i32 =
 
 inl main () : i32 =
     inl ~k = 7i32
-    !!!!BackendSwitch({ C = fun () => 24i32 : i32; Python = fun () => python_annotated_macro_types k : i32; Bend = fun () => 24i32 : i32 })
+    !!!!BackendSwitch({
+        C = fun () => 24i32 : i32
+        Python = fun () => python_annotated_macro_types k : i32
+        Bend = fun () => 24i32 : i32
+    })

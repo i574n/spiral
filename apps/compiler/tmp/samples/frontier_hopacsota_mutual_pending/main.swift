@@ -25,8 +25,7 @@ func sp_is_even_0(_ p0: Int32) -> Bool {
     }
 }
 func spiral_main() -> Int32 {
-    var v0: Int32 = 0
-    v0 = 10
+    let v0: Int32 = 10
     var v1: Bool = false
     v1 = sp_is_even_0(v0)
     if (v1) {

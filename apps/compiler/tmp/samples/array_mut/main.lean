@@ -33,15 +33,13 @@ partial def spiralMain : IO Int32 := do
     let mut v0 : (IO.Ref (Array (IO.Ref M0))) ← IO.mkRef #[]
     let mut v1 : (IO.Ref M0) ← IO.mkRef default
     let mut v2 : (IO.Ref M0) ← IO.mkRef default
-    let mut v3 : Int32 := default
-    let mut v4 : Bool := default
     v0 := (← IO.mkRef (← (Array.replicate (spiralIdx (1 : Int32)) ()).mapM (fun _ => IO.mkRef default)))
     v1 := (← IO.mkRef (M0.mk (1 : Int32)))
     v0.modify (fun xs => xs.set! (spiralIdx (0 : Int32)) v1)
     v2 := (← spiralIndex (← v0.get) (spiralIdx (0 : Int32)))
     v2.modify (fun r => { r with l0 := (7 : Int32) })
-    v3 := (← v2.get).l0
-    v4 := (v3 == (7 : Int32))
+    let v3 : Int32 := (← v2.get).l0
+    let v4 : Bool := (v3 == (7 : Int32))
     if v4 then
         return (0 : Int32)
     else

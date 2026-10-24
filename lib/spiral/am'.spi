@@ -22,6 +22,7 @@ inl index forall el. (i : int) (a : array el) : el =
         TypeScript = fun () => index a i
         Zig = fun () => index a i
         Lean = fun () => index a i
+        C = fun () => index a i
     }
 
 /// ### index_base
@@ -226,7 +227,7 @@ inl range start end s =
 /// ### vec
 nominal vec t =
     `(
-        rust_type
+        rust.rust_type
             `($'Vec<`t>')
             `($'Vec<`t>')
             "type Vec<'T> = class end"
@@ -373,7 +374,7 @@ inl vec_chunks forall t. (n : i32) (vec : vec t) : vec (vec t) =
 /// ### slice
 nominal slice t =
     `(
-        rust_type
+        rust.rust_type
             `($'Slice<`t>')
             `($'[`t]')
             "type Slice<'T> = class end"
@@ -395,14 +396,14 @@ type slice'_switch el =
     }
 nominal slice' el dim =
     `(
-        fsharp_global "type Slice'<'T> = class end"
+        rust.fsharp_global "type Slice'<'T> = class end"
         $'' : $'backend_switch `(slice'_switch el)'
     )
 
 /// ### slice''
 nominal slice'' el dim =
     `(
-        rust_type
+        rust.rust_type
             `($'Slice\'_<`el>')
             `($'[`el; 10]')
             "type Slice'_<'T> = class end"
@@ -461,7 +462,19 @@ inl as_bytes forall t. (x : t) : rust.ref (slice u8) =
 
 /// ### any
 inl any forall t. (fn : t -> bool) (source : array_base t) : bool =
-    !\($'"!source.any(|x| !fn(x))"')
+    inl n = source |> array |> length
+    let rec loop i =
+        if i >= n then false
+        elif source |> index_base i |> fn then true
+        else loop (i + 1)
+    loop 0
+
+///> rust
+///> fsharp
+///> typescript
+test any =
+    inl source = init 5
+    (source |> any (fun x => x = 3), source |> any (fun x => x > 10)) |> _assert_eq (true, false)
 
 /// ### iter_collect vec
 instance iter_collect vec = fun (iter : into_iterator u) =>
@@ -499,20 +512,31 @@ inl distinct forall el. (a : array el) : array el =
     then
         inl a = $'!a ' : array el
         inl r = $'Rc::new(RefCell::new(Vec::with_capacity(!a.borrow().len())))' : array el
-        loop.for' {from=0; nearTo=length a} fun i =>
+        loop.for' { from = 0; nearTo = length a } fun i =>
             inl x = index i a
             inl n = length r
-            inl s = mut {j=0}
+            inl s = mut { j = 0 }
             loop.while' (fun () => s.j < n && index s.j r <> x) fun () =>
-                s <- {j=s.j + 1}
+                s <- { j = s.j + 1 }
             if s.j = n then $'!r.borrow_mut().push(!x)' : ()
         $'!r ' : array el
     else $'!a |> Array.distinct'
 
+inl growable forall el. () : array el =
+    run_target function
+        | Rust => fun () => $'Rc::new(RefCell::new(Vec::new()))' : array el
+        | _ => fun () => failwith "growable: no arm for this backend"
+
+inl push_back forall el. (item : el) (items : array el) : () =
+    run_target function
+        | Rust => fun () => $'(!items).borrow_mut().push(!item)' : ()
+        | _ => fun () => failwith "push_back: no arm for this backend"
+
 /// ### skip
 inl skip forall el. (n : int) (a : array el) : array el =
     run_target function
-        | Rust => fun () => $'Rc::new(RefCell::new((!a).borrow().iter().skip((!n) as usize).cloned().collect::<Vec<_>>()))' : array el
+        | Rust => fun () => $'Rc::new(RefCell::new((!a).borrow().iter().skip((!n) as \
+            usize).cloned().collect::<Vec<_>>()))' : array el
         | Zig => fun () => $'(spiral_gpa.dupe(`el, (!a)[\@intCast(!n)..]) catch \@panic("out of memory"))' : array el
         | _ => fun () => $'!a |> Array.skip !n '
 
@@ -587,29 +611,38 @@ inl sort_by forall el key. (fn : el -> key) (a : array el) : array el =
     inl insertion_sort () =
         inl r = arraym.map id ($'!a ' : array el)
         inl keys = arraym.map fn ($'!a ' : array el)
-        loop.for' {from=1; nearTo=length r} fun i =>
+        loop.for' { from = 1; nearTo = length r } fun i =>
             inl x = index i r
             inl k = index i keys
-            inl s = mut {j=i}
+            inl s = mut { j = i }
             loop.while' (fun () => s.j > 0 && gt_is (comp (index (s.j - 1) keys) k)) fun () =>
                 inl j = s.j
                 set r j (index (j - 1) r)
                 set keys j (index (j - 1) keys)
-                s <- {j=j - 1}
+                s <- { j = j - 1 }
             set r s.j x
             set keys s.j k
         $'!r ' : array el
     backend_switch {
         Gleam = fun () => fsharp ()
-        Lua = fun () => fsharp ()
+        Lua = insertion_sort
         Fsharp = fun () => fsharp ()
         Python = fun () =>
             inl keys = arraym.map fn ($'!a ' : array el)
-            $'!a[sorted(range(len(!a)), key=lambda __i: (lambda __k: (__k.tag, __k) if hasattr(__k, "tag") else __k)(!keys[__i]))]' : array el
+            $'!a[sorted(range(len(!a)), key=lambda __i: (lambda __k: (__k.tag, __k) if hasattr(__k, "tag") else \
+                __k)(!keys[__i]))]' : array el
         TypeScript = fun () =>
             inl keys = arraym.map fn ($'!a ' : array el)
-            global "function spiral_compare(a: any, b: any): number { if (typeof a === 'object' && a !== null && typeof b === 'object' && b !== null) { if (Array.isArray(a)) { for (let i = 0; i < Math.min(a.length, b.length); i++) { const c = spiral_compare(a[i], b[i]); if (c !== 0) return c; } return a.length - b.length; } if (a.tag !== b.tag) return a.tag - b.tag; for (const k of Object.keys(a)) { if (k === 'tag') continue; const c = spiral_compare(a[k], b[k]); if (c !== 0) return c; } return 0; } return a < b ? -1 : a > b ? 1 : 0; }"
-            $'!a.map((_x: any, i: number) => i).sort((i: number, j: number) => spiral_compare(!keys[i], !keys[j])).map((i: number) => !a[i])' : array el
+            global (
+                "function spiral_compare(a: any, b: any): number { if (typeof a === 'object' && a !== null && "
+                ^^ "typeof b === 'object' && b !== null) { if (Array.isArray(a)) { for (let i = 0; i < "
+                ^^ "Math.min(a.length, b.length); i++) { const c = spiral_compare(a[i], b[i]); if (c !== 0) return c; "
+                ^^ "} return a.length - b.length; } if (a.tag !== b.tag) return a.tag - b.tag; for (const k of "
+                ^^ "Object.keys(a)) { if (k === 'tag') continue; const c = spiral_compare(a[k], b[k]); if (c !== 0) "
+                ^^ "return c; } return 0; } return a < b ? -1 : a > b ? 1 : 0; }"
+            )
+            $'!a.map((_x: any, i: number) => i).sort((i: number, j: number) => spiral_compare(!keys[i], \
+                !keys[j])).map((i: number) => !a[i])' : array el
         Cpp = fun () => fsharp ()
         CppHost = fun () => fsharp ()
         Delphi = fun () => fsharp ()
@@ -620,16 +653,17 @@ inl sort_by forall el key. (fn : el -> key) (a : array el) : array el =
             inl a = $'!a ' : array el
             inl key_fn = join (rust.one_param_fn fn)
             inl r = $'Rc::new(RefCell::new(!a.borrow().clone()))' : array el
-            inl keys = $'Rc::new(RefCell::new(!a.borrow().iter().map(|x| !key_fn(x.clone())).collect::<Vec<_>>()))' : array key
-            loop.for' {from=1; nearTo=length a} fun i =>
+            inl keys =
+                $'Rc::new(RefCell::new(!a.borrow().iter().map(|x| !key_fn(x.clone())).collect::<Vec<_>>()))' : array key
+            loop.for' { from = 1; nearTo = length a } fun i =>
                 inl x = index i r
                 inl k = index i keys
-                inl s = mut {j=i}
+                inl s = mut { j = i }
                 loop.while' (fun () => s.j > 0 && gt_is (comp (index (s.j - 1) keys) k)) fun () =>
                     inl j = s.j
                     set r j (index (j - 1) r)
                     set keys j (index (j - 1) keys)
-                    s <- {j=j - 1}
+                    s <- { j = j - 1 }
                 set r s.j x
                 set keys s.j k
             $'!r ' : array el
@@ -638,12 +672,29 @@ inl sort_by forall el key. (fn : el -> key) (a : array el) : array el =
 /// ### sort
 inl sort forall el. (a : array el) : array el =
     run_target function
-        | Zig => fun () => sort_by id a
-        | _ => fun () => $'!a |> Array.sort'
+        | Fsharp => fun () => $'!a |> Array.sort'
+        | _ => fun () => sort_by id a
 
 /// ### sort_descending
 inl sort_descending forall el. (a : array el) : array el =
-    $'!a |> Array.sortDescending'
+    run_target function
+        | Fsharp => fun () => $'!a |> Array.sortDescending'
+        | _ => fun () =>
+            inl ascending = sort a
+            inl n = length ascending
+            arraym.init n fun i => index (n - 1 - i) ascending
+
+///> rust
+///> fsharp
+///> python
+///> typescript
+///> lua
+test sort_orders_on_every_backend =
+    inl a = ;[ 3i32; 1i32; 2i32 ]
+    inl ascending = sort a
+    if index 0 ascending <> 1i32 || index 2 ascending <> 3i32 then failwith "ascending"
+    inl descending = sort_descending a
+    if index 0 descending <> 3i32 || index 2 descending <> 1i32 then failwith "descending"
 
 /// ### transpose
 inl transpose forall el. (a : array_base (array_base el)) : array_base (array_base el) =

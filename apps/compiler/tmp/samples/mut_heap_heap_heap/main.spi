@@ -2,25 +2,26 @@ inl main () : i32 =
     inl ~n = 3i32
     inl ~word = "no"
     inl inner_pair = n, word
-    inl inner = !!!!LayoutToHeap({value = inner_pair})
+    inl inner = !!!!LayoutToHeap({ value = inner_pair })
     inl ~extra = 1i32
     inl mid_pair = inner, extra
-    inl mid = !!!!LayoutToHeap({value = mid_pair})
+    inl mid = !!!!LayoutToHeap({ value = mid_pair })
     inl ~mark = 2i32
     inl outer_pair = mid, mark
-    inl outer = !!!!LayoutToHeap({value = outer_pair})
-    inl slot : mut {value : heap {value : (heap {value : (heap {value : i32 * string}) * i32}) * i32}} = !!!!LayoutToHeapMutable({value = outer})
+    inl outer = !!!!LayoutToHeap({ value = outer_pair })
+    inl slot : mut { value : heap { value : (heap { value : (heap { value : i32 * string }) * i32 }) * i32 } } =
+        !!!!LayoutToHeapMutable({ value = outer })
     inl ~m = 7i32
     inl ~next = "hi"
     inl next_pair = m, next
-    inl next_inner = !!!!LayoutToHeap({value = next_pair})
+    inl next_inner = !!!!LayoutToHeap({ value = next_pair })
     inl ~count = 4i32
     inl next_mid_pair = next_inner, count
-    inl next_mid = !!!!LayoutToHeap({value = next_mid_pair})
+    inl next_mid = !!!!LayoutToHeap({ value = next_mid_pair })
     inl ~flag = 5i32
     inl next_outer_pair = next_mid, flag
-    inl next_outer = !!!!LayoutToHeap({value = next_outer_pair})
-    slot <- {value = next_outer}
+    inl next_outer = !!!!LayoutToHeap({ value = next_outer_pair })
+    slot <- { value = next_outer }
     inl opened = !!!!LayoutIndex(slot)
     inl held = opened.value
     inl outer_opened = !!!!LayoutIndex(held)

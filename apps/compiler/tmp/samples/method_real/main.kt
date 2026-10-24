@@ -9,12 +9,10 @@ fun sp_method0(p0: Int): Double {
     }
 }
 fun spiral_main(): Int {
-    var v0: Int = 0
-    v0 = 7
+    val v0: Int = 7
     var v1: Double = 0.0
     v1 = sp_method0(v0)
-    var v2: Boolean = false
-    v2 = (v1 == 1.5)
+    val v2: Boolean = (v1 == 1.5)
     if (v2) {
         return 0
     } else {

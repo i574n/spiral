@@ -11,7 +11,9 @@ union callset_authority state sample build contig =
     | CallsetAuthority :: forall state sample build contig. string -> callset_authority state sample build contig
 
 union resource scope epoch lifecycle sample build contig =
-    | Resource :: forall scope epoch lifecycle sample build contig. string -> resource scope epoch lifecycle sample build contig
+    | Resource :: forall scope epoch lifecycle sample build contig.
+        string ->
+        resource scope epoch lifecycle sample build contig
 
 union view scope epoch hydration =
     | View :: forall scope epoch hydration. string -> view scope epoch hydration

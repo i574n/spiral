@@ -40,28 +40,19 @@ fun sp_second_codepoint_1(p0: String): String {
     return v1
 }
 fun spiral_main(): Int {
-    var v0: String = ""
-    v0 = "éλ"
+    val v0: String = "éλ"
     var v1: String = ""
     v1 = sp_first_codepoint_0(v0)
-    var v2: String = ""
-    v2 = sp_second_codepoint_1(v0)
-    var v3: String = ""
-    v3 = (v1 + v2)
-    var v4: Int = 0
-    v4 = spiralStringLength(v1)
-    var v5: Boolean = false
-    v5 = (v4 == 2)
+    val v2: String = sp_second_codepoint_1(v0)
+    val v3: String = (v1 + v2)
+    val v4: Int = spiralStringLength(v1)
+    val v5: Boolean = (v4 == 2)
     if (v5) {
-        var v6: Int = 0
-        v6 = spiralStringLength(v2)
-        var v7: Boolean = false
-        v7 = (v6 == 2)
+        val v6: Int = spiralStringLength(v2)
+        val v7: Boolean = (v6 == 2)
         if (v7) {
-            var v8: Int = 0
-            v8 = spiralStringLength(v3)
-            var v9: Boolean = false
-            v9 = (v8 == 4)
+            val v8: Int = spiralStringLength(v3)
+            val v9: Boolean = (v8 == 4)
             if (v9) {
                 return 0
             } else {

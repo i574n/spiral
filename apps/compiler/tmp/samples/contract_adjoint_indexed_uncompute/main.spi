@@ -4,10 +4,14 @@ nominal dirty = ()
 nominal clean = ()
 nominal verified = ()
 
-union workspace lineage program state = | Workspace :: forall lineage program state. string -> workspace lineage program state
+union workspace lineage program state =
+    | Workspace :: forall lineage program state. string -> workspace lineage program state
 union adjoint_proof program state = | Adjoint :: forall program state. string -> adjoint_proof program state
 
-inl uncompute forall lineage program. (workspace : workspace lineage program dirty) (proof : adjoint_proof program verified) : workspace lineage program clean =
+inl uncompute forall lineage program.
+    (workspace : workspace lineage program dirty) (proof : adjoint_proof program verified)
+    : workspace lineage program clean
+    =
     match workspace, proof with | Workspace _, Adjoint _ => Workspace "adjoint-uncompute-clean"
 
 inl main () : string =

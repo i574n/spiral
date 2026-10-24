@@ -4,7 +4,15 @@ inl (~!\\) forall t u. ((args : t), (code : string)) : u =
 inl show_value forall t. (value : t) : () =
     inl rust () : () =
         inl _ : () =
-            !\\(value, $'"{ struct SpiralKinoShow<T>(T); trait SpiralKinoDebug { fn spiral_cells_show(&self) -> String; } impl<T: std::fmt::Debug> SpiralKinoDebug for SpiralKinoShow<T> { fn spiral_cells_show(&self) -> String { format\!(\\\"{:?}\\\", self.0) } } trait SpiralKinoOther { fn spiral_cells_show(&self) -> String; } impl<T> SpiralKinoOther for &SpiralKinoShow<T> { fn spiral_cells_show(&self) -> String { String::from(std::any::type_name::<T>()) } } let text = (&SpiralKinoShow(&$0)).spiral_cells_show(); let mut out = std::io::stdout(); let _ = <std::io::Stdout as std::io::Write>::write_all(&mut out, format\!(\\\"SPIRAL_CELLS_VALUE:{}\\\", text).as_bytes()); let _ = <std::io::Stdout as std::io::Write>::write_all(&mut out, &[10u8]); let _ = <std::io::Stdout as std::io::Write>::flush(&mut out); }"')
+            !\\(value, $'"{ struct SpiralKinoShow<T>(T); trait SpiralKinoDebug { fn spiral_cells_show(&self) -> \
+                String; } impl<T: std::fmt::Debug> SpiralKinoDebug for SpiralKinoShow<T> { fn \
+                spiral_cells_show(&self) -> String { format\!(\\\"{:?}\\\", self.0) } } trait SpiralKinoOther { fn \
+                spiral_cells_show(&self) -> String; } impl<T> SpiralKinoOther for &SpiralKinoShow<T> { fn \
+                spiral_cells_show(&self) -> String { String::from(std::any::type_name::<T>()) } } let text = \
+                (&SpiralKinoShow(&$0)).spiral_cells_show(); let mut out = std::io::stdout(); let _ = <std::io::Stdout \
+                as std::io::Write>::write_all(&mut out, format\!(\\\"SPIRAL_CELLS_VALUE:{}\\\", text).as_bytes()); \
+                let _ = <std::io::Stdout as std::io::Write>::write_all(&mut out, &[10u8]); let _ = <std::io::Stdout \
+                as std::io::Write>::flush(&mut out); }"')
         ()
     inl gleam () : () =
         global "import gleam/io"
@@ -13,9 +21,10 @@ inl show_value forall t. (value : t) : () =
     inl cpp () : () =
         global "#include <iostream>"
         $'std::cout << !value << std::endl' : ()
-    !!!!BackendSwitch ({
+    !!!!BackendSwitch({
         Rust = fun () => rust ()
-        Fsharp = fun () => $'System.Console.WriteLine(match box !value with :? string as s -> s | v -> sprintf "%A" v)' : ()
+        Fsharp = fun () => $'System.Console.WriteLine(match box !value with :? string as s -> s | v -> sprintf "%A" \
+            v)' : ()
         TypeScript = fun () => $'console.log(!value)' : ()
         Python = fun () => $'print(!value)' : ()
         Lua = fun () =>
@@ -38,7 +47,10 @@ inl show_value forall t. (value : t) : () =
 inl write_line forall t. (text : t) : () =
     inl rust () : () =
         inl _ : () =
-            !\\(text, $'"{ let mut out = std::io::stdout(); let _ = <std::io::Stdout as std::io::Write>::write_all(&mut out, ToString::to_string(&$0).as_bytes()); let _ = <std::io::Stdout as std::io::Write>::write_all(&mut out, &[10u8]); let _ = <std::io::Stdout as std::io::Write>::flush(&mut out); }"')
+            !\\(text, $'"{ let mut out = std::io::stdout(); let _ = <std::io::Stdout as \
+                std::io::Write>::write_all(&mut out, ToString::to_string(&$0).as_bytes()); let _ = <std::io::Stdout \
+                as std::io::Write>::write_all(&mut out, &[10u8]); let _ = <std::io::Stdout as \
+                std::io::Write>::flush(&mut out); }"')
         ()
     inl gleam () : () =
         global "import gleam/io"
@@ -46,7 +58,7 @@ inl write_line forall t. (text : t) : () =
     inl cpp () : () =
         global "#include <iostream>"
         $'std::cout << !text << std::endl' : ()
-    !!!!BackendSwitch ({
+    !!!!BackendSwitch({
         Rust = fun () => rust ()
         Fsharp = fun () => $'System.Console.WriteLine(!text)' : ()
         TypeScript = fun () => $'console.log(!text)' : ()

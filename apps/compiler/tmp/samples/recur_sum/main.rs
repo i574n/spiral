@@ -2,20 +2,20 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 fn sum_0(mut v0: i32) -> i32 {
-    let mut v1: bool = v0 < 1i32;
+    let v1: bool = v0 < 1i32;
     if v1 {
         0i32
     } else {
-        let mut v2: i32 = v0.wrapping_sub(1i32);
-        let mut v3: i32 = sum_0(v2);
-        let mut v4: i32 = v0.wrapping_add(v3);
+        let v2: i32 = v0.wrapping_sub(1i32);
+        let v3: i32 = sum_0(v2);
+        let v4: i32 = v0.wrapping_add(v3);
         v4
     }
 }
 fn spiral_main() -> i32 {
-    let mut v0: i32 = 4i32;
-    let mut v1: i32 = sum_0(v0);
-    let mut v2: bool = v1 == 10i32;
+    let v0: i32 = 4i32;
+    let v1: i32 = sum_0(v0);
+    let v2: bool = v1 == 10i32;
     if v2 {
         0i32
     } else {

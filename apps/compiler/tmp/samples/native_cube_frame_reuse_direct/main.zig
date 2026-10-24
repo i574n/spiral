@@ -41,30 +41,6 @@ fn spiralFlush() void {
     spiralWrite(1, spiral_out_buffer[0..spiral_out_len]);
     spiral_out_len = 0;
 }
-fn spiralPrint(s: []const u8) void {
-    if (s.len > spiral_out_buffer.len - spiral_out_len) spiralFlush();
-    if (s.len > spiral_out_buffer.len) {
-        spiralWrite(1, s);
-        return;
-    }
-    @memcpy(spiral_out_buffer[spiral_out_len..][0..s.len], s);
-    spiral_out_len += s.len;
-}
-fn spiralFloatText(x: anytype) []u8 {
-    var buffer: [std.fmt.float.bufferSize(.decimal, @TypeOf(x))]u8 = undefined;
-    const text = std.fmt.float.render(&buffer, x, .{ .mode = .decimal }) catch unreachable;
-    return spiral_gpa.dupe(u8, text) catch @panic("out of memory");
-}
-fn spiralPrintAny(x: anytype) void {
-    const T = @TypeOf(x);
-    if (T == []const u8) return spiralPrint(x);
-    if (@typeInfo(T) == .float) return spiralPrint(spiralFloatText(x));
-    const s = switch (@typeInfo(T)) {
-        .bool => std.fmt.allocPrint(spiral_gpa, "{}", .{x}),
-        else => std.fmt.allocPrint(spiral_gpa, "{d}", .{x}),
-    } catch @panic("out of memory");
-    spiralPrint(s);
-}
 fn spiralFail(s: []const u8) noreturn {
     spiralFlush();
     spiralWrite(2, s);
@@ -84,15 +60,6 @@ fn spiralConv(comptime T: type, x: anytype) T {
 fn spiralConcat(a: []const u8, b: []const u8) []const u8 {
     return std.mem.concat(spiral_gpa, u8, &.{ a, b }) catch @panic("out of memory");
 }
-fn spiralStringSlice(s: []const u8, from: i64, upto: i64) []const u8 {
-    const len: i64 = @intCast(s.len);
-    if (from < 0 or from > len or upto < from - 1 or upto >= len) std.process.exit(3);
-    if (upto < from) return "";
-    const a: usize = @intCast(from);
-    const b: usize = @intCast(upto + 1);
-    if ((s[a] & 0xC0) == 0x80 or (b < s.len and (s[b] & 0xC0) == 0x80)) std.process.exit(3);
-    return s[a..b];
-}
 fn spiralIndex(len: usize, i: anytype) usize {
     if (i < 0 or i >= len) std.process.exit(3);
     return @intCast(i);
@@ -106,22 +73,15 @@ fn spiralNewArray(comptime T: type, n: anytype) []T {
     }
     return a;
 }
-fn spiralCreate(comptime T: type, v: T) *T {
-    const p = spiral_gpa.create(T) catch @panic("out of memory");
-    p.* = v;
-    return p;
-}
 const US0 = struct { tag: i32, c1_0: f64 = undefined, c1_1: f64 = undefined, c1_2: f64 = undefined };
 fn method0(p0: i32) bool {
     var v0: i32 = p0; _ = &v0;
-    var v1: bool = undefined; _ = &v1;
-    v1 = v0 < @as(i32, 3);
+    const v1: bool = v0 < @as(i32, 3);
     return v1;
 }
 fn method1(p0: i32) bool {
     var v0: i32 = p0; _ = &v0;
-    var v1: bool = undefined; _ = &v1;
-    v1 = v0 < @as(i32, 7040);
+    const v1: bool = v0 < @as(i32, 7040);
     return v1;
 }
 fn US0_Hidden() US0 {
@@ -135,51 +95,6 @@ fn method2(p0: []i32, p1: f64, p2: f64, p3: f64) i32 {
     var v1: f64 = p1; _ = &v1;
     var v2: f64 = p2; _ = &v2;
     var v3: f64 = p3; _ = &v3;
-    var v4: f64 = undefined; _ = &v4;
-    var v5: f64 = undefined; _ = &v5;
-    var v6: f64 = undefined; _ = &v6;
-    var v7: f64 = undefined; _ = &v7;
-    var v8: f64 = undefined; _ = &v8;
-    var v9: f64 = undefined; _ = &v9;
-    var v10: f64 = undefined; _ = &v10;
-    var v11: f64 = undefined; _ = &v11;
-    var v12: f64 = undefined; _ = &v12;
-    var v13: f64 = undefined; _ = &v13;
-    var v14: f64 = undefined; _ = &v14;
-    var v15: f64 = undefined; _ = &v15;
-    var v16: f64 = undefined; _ = &v16;
-    var v17: f64 = undefined; _ = &v17;
-    var v18: f64 = undefined; _ = &v18;
-    var v19: f64 = undefined; _ = &v19;
-    var v20: f64 = undefined; _ = &v20;
-    var v21: f64 = undefined; _ = &v21;
-    var v22: f64 = undefined; _ = &v22;
-    var v23: f64 = undefined; _ = &v23;
-    var v24: f64 = undefined; _ = &v24;
-    var v25: f64 = undefined; _ = &v25;
-    var v26: f64 = undefined; _ = &v26;
-    var v27: f64 = undefined; _ = &v27;
-    var v28: f64 = undefined; _ = &v28;
-    var v29: f64 = undefined; _ = &v29;
-    var v30: f64 = undefined; _ = &v30;
-    var v31: f64 = undefined; _ = &v31;
-    var v32: f64 = undefined; _ = &v32;
-    var v33: f64 = undefined; _ = &v33;
-    var v34: f64 = undefined; _ = &v34;
-    var v35: f64 = undefined; _ = &v35;
-    var v36: f64 = undefined; _ = &v36;
-    var v37: f64 = undefined; _ = &v37;
-    var v38: f64 = undefined; _ = &v38;
-    var v39: f64 = undefined; _ = &v39;
-    var v40: f64 = undefined; _ = &v40;
-    var v41: f64 = undefined; _ = &v41;
-    var v42: f64 = undefined; _ = &v42;
-    var v43: f64 = undefined; _ = &v43;
-    var v44: f64 = undefined; _ = &v44;
-    var v45: f64 = undefined; _ = &v45;
-    var v46: f64 = undefined; _ = &v46;
-    var v47: f64 = undefined; _ = &v47;
-    var v48: bool = undefined; _ = &v48;
     var v50: bool = undefined; _ = &v50;
     var v49: bool = undefined; _ = &v49;
     var v52: bool = undefined; _ = &v52;
@@ -199,51 +114,51 @@ fn method2(p0: []i32, p1: f64, p2: f64, p3: f64) i32 {
     var v67: i32 = undefined; _ = &v67;
     var v68: i32 = undefined; _ = &v68;
     var v69: i32 = undefined; _ = &v69;
-    v4 = @sin(v1);
-    v5 = @as(f64, 20.0) * v4;
-    v6 = @sin(v2);
-    v7 = v5 * v6;
-    v8 = @cos(v3);
-    v9 = v7 * v8;
-    v10 = @cos(v1);
-    v11 = @as(f64, -20.0) * v10;
-    v12 = v11 * v6;
-    v13 = v12 * v8;
-    v14 = v9 - v13;
-    v15 = @as(f64, 20.0) * v10;
-    v16 = @sin(v3);
-    v17 = v15 * v16;
-    v18 = v14 + v17;
-    v19 = @as(f64, -20.0) * v4;
-    v20 = v19 * v16;
-    v21 = v18 + v20;
-    v22 = @cos(v2);
-    v23 = @as(f64, 20.0) * v22;
-    v24 = v23 * v8;
-    v25 = v21 + v24;
-    v26 = v15 * v8;
-    v27 = v19 * v8;
-    v28 = v26 + v27;
-    v29 = v7 * v16;
-    v30 = v28 - v29;
-    v31 = v12 * v16;
-    v32 = v30 + v31;
-    v33 = v23 * v16;
-    v34 = v32 - v33;
-    v35 = v11 * v22;
-    v36 = v5 * v22;
-    v37 = v35 - v36;
-    v38 = @as(f64, 20.0) * v6;
-    v39 = v37 + v38;
-    v40 = v39 + @as(f64, 100.0);
-    v41 = @as(f64, 1.0) / v40;
-    v42 = @as(f64, 40.0) * v41;
-    v43 = v42 * v25;
-    v44 = v43 * @as(f64, 2.0);
-    v45 = @as(f64, 40.0) + v44;
-    v46 = v42 * v34;
-    v47 = @as(f64, 22.0) + v46;
-    v48 = v45 >= @as(f64, 0.0);
+    const v4: f64 = @sin(v1);
+    const v5: f64 = @as(f64, 20.0) * v4;
+    const v6: f64 = @sin(v2);
+    const v7: f64 = v5 * v6;
+    const v8: f64 = @cos(v3);
+    const v9: f64 = v7 * v8;
+    const v10: f64 = @cos(v1);
+    const v11: f64 = @as(f64, -20.0) * v10;
+    const v12: f64 = v11 * v6;
+    const v13: f64 = v12 * v8;
+    const v14: f64 = v9 - v13;
+    const v15: f64 = @as(f64, 20.0) * v10;
+    const v16: f64 = @sin(v3);
+    const v17: f64 = v15 * v16;
+    const v18: f64 = v14 + v17;
+    const v19: f64 = @as(f64, -20.0) * v4;
+    const v20: f64 = v19 * v16;
+    const v21: f64 = v18 + v20;
+    const v22: f64 = @cos(v2);
+    const v23: f64 = @as(f64, 20.0) * v22;
+    const v24: f64 = v23 * v8;
+    const v25: f64 = v21 + v24;
+    const v26: f64 = v15 * v8;
+    const v27: f64 = v19 * v8;
+    const v28: f64 = v26 + v27;
+    const v29: f64 = v7 * v16;
+    const v30: f64 = v28 - v29;
+    const v31: f64 = v12 * v16;
+    const v32: f64 = v30 + v31;
+    const v33: f64 = v23 * v16;
+    const v34: f64 = v32 - v33;
+    const v35: f64 = v11 * v22;
+    const v36: f64 = v5 * v22;
+    const v37: f64 = v35 - v36;
+    const v38: f64 = @as(f64, 20.0) * v6;
+    const v39: f64 = v37 + v38;
+    const v40: f64 = v39 + @as(f64, 100.0);
+    const v41: f64 = @as(f64, 1.0) / v40;
+    const v42: f64 = @as(f64, 40.0) * v41;
+    const v43: f64 = v42 * v25;
+    const v44: f64 = v43 * @as(f64, 2.0);
+    const v45: f64 = @as(f64, 40.0) + v44;
+    const v46: f64 = v42 * v34;
+    const v47: f64 = @as(f64, 22.0) + v46;
+    const v48: bool = v45 >= @as(f64, 0.0);
     if (v48) {
         v49 = v45 < @as(f64, 160.0);
         v50 = v49;
@@ -306,51 +221,6 @@ fn method3(p0: []i32, p1: f64, p2: f64, p3: f64) i32 {
     var v1: f64 = p1; _ = &v1;
     var v2: f64 = p2; _ = &v2;
     var v3: f64 = p3; _ = &v3;
-    var v4: f64 = undefined; _ = &v4;
-    var v5: f64 = undefined; _ = &v5;
-    var v6: f64 = undefined; _ = &v6;
-    var v7: f64 = undefined; _ = &v7;
-    var v8: f64 = undefined; _ = &v8;
-    var v9: f64 = undefined; _ = &v9;
-    var v10: f64 = undefined; _ = &v10;
-    var v11: f64 = undefined; _ = &v11;
-    var v12: f64 = undefined; _ = &v12;
-    var v13: f64 = undefined; _ = &v13;
-    var v14: f64 = undefined; _ = &v14;
-    var v15: f64 = undefined; _ = &v15;
-    var v16: f64 = undefined; _ = &v16;
-    var v17: f64 = undefined; _ = &v17;
-    var v18: f64 = undefined; _ = &v18;
-    var v19: f64 = undefined; _ = &v19;
-    var v20: f64 = undefined; _ = &v20;
-    var v21: f64 = undefined; _ = &v21;
-    var v22: f64 = undefined; _ = &v22;
-    var v23: f64 = undefined; _ = &v23;
-    var v24: f64 = undefined; _ = &v24;
-    var v25: f64 = undefined; _ = &v25;
-    var v26: f64 = undefined; _ = &v26;
-    var v27: f64 = undefined; _ = &v27;
-    var v28: f64 = undefined; _ = &v28;
-    var v29: f64 = undefined; _ = &v29;
-    var v30: f64 = undefined; _ = &v30;
-    var v31: f64 = undefined; _ = &v31;
-    var v32: f64 = undefined; _ = &v32;
-    var v33: f64 = undefined; _ = &v33;
-    var v34: f64 = undefined; _ = &v34;
-    var v35: f64 = undefined; _ = &v35;
-    var v36: f64 = undefined; _ = &v36;
-    var v37: f64 = undefined; _ = &v37;
-    var v38: f64 = undefined; _ = &v38;
-    var v39: f64 = undefined; _ = &v39;
-    var v40: f64 = undefined; _ = &v40;
-    var v41: f64 = undefined; _ = &v41;
-    var v42: f64 = undefined; _ = &v42;
-    var v43: f64 = undefined; _ = &v43;
-    var v44: f64 = undefined; _ = &v44;
-    var v45: f64 = undefined; _ = &v45;
-    var v46: f64 = undefined; _ = &v46;
-    var v47: f64 = undefined; _ = &v47;
-    var v48: bool = undefined; _ = &v48;
     var v50: bool = undefined; _ = &v50;
     var v49: bool = undefined; _ = &v49;
     var v52: bool = undefined; _ = &v52;
@@ -370,51 +240,51 @@ fn method3(p0: []i32, p1: f64, p2: f64, p3: f64) i32 {
     var v67: i32 = undefined; _ = &v67;
     var v68: i32 = undefined; _ = &v68;
     var v69: i32 = undefined; _ = &v69;
-    v4 = @sin(v1);
-    v5 = @as(f64, 10.0) * v4;
-    v6 = @sin(v2);
-    v7 = v5 * v6;
-    v8 = @cos(v3);
-    v9 = v7 * v8;
-    v10 = @cos(v1);
-    v11 = @as(f64, -10.0) * v10;
-    v12 = v11 * v6;
-    v13 = v12 * v8;
-    v14 = v9 - v13;
-    v15 = @as(f64, 10.0) * v10;
-    v16 = @sin(v3);
-    v17 = v15 * v16;
-    v18 = v14 + v17;
-    v19 = @as(f64, -10.0) * v4;
-    v20 = v19 * v16;
-    v21 = v18 + v20;
-    v22 = @cos(v2);
-    v23 = @as(f64, 10.0) * v22;
-    v24 = v23 * v8;
-    v25 = v21 + v24;
-    v26 = v15 * v8;
-    v27 = v19 * v8;
-    v28 = v26 + v27;
-    v29 = v7 * v16;
-    v30 = v28 - v29;
-    v31 = v12 * v16;
-    v32 = v30 + v31;
-    v33 = v23 * v16;
-    v34 = v32 - v33;
-    v35 = v11 * v22;
-    v36 = v5 * v22;
-    v37 = v35 - v36;
-    v38 = @as(f64, 10.0) * v6;
-    v39 = v37 + v38;
-    v40 = v39 + @as(f64, 100.0);
-    v41 = @as(f64, 1.0) / v40;
-    v42 = @as(f64, 40.0) * v41;
-    v43 = v42 * v25;
-    v44 = v43 * @as(f64, 2.0);
-    v45 = @as(f64, 90.0) + v44;
-    v46 = v42 * v34;
-    v47 = @as(f64, 22.0) + v46;
-    v48 = v45 >= @as(f64, 0.0);
+    const v4: f64 = @sin(v1);
+    const v5: f64 = @as(f64, 10.0) * v4;
+    const v6: f64 = @sin(v2);
+    const v7: f64 = v5 * v6;
+    const v8: f64 = @cos(v3);
+    const v9: f64 = v7 * v8;
+    const v10: f64 = @cos(v1);
+    const v11: f64 = @as(f64, -10.0) * v10;
+    const v12: f64 = v11 * v6;
+    const v13: f64 = v12 * v8;
+    const v14: f64 = v9 - v13;
+    const v15: f64 = @as(f64, 10.0) * v10;
+    const v16: f64 = @sin(v3);
+    const v17: f64 = v15 * v16;
+    const v18: f64 = v14 + v17;
+    const v19: f64 = @as(f64, -10.0) * v4;
+    const v20: f64 = v19 * v16;
+    const v21: f64 = v18 + v20;
+    const v22: f64 = @cos(v2);
+    const v23: f64 = @as(f64, 10.0) * v22;
+    const v24: f64 = v23 * v8;
+    const v25: f64 = v21 + v24;
+    const v26: f64 = v15 * v8;
+    const v27: f64 = v19 * v8;
+    const v28: f64 = v26 + v27;
+    const v29: f64 = v7 * v16;
+    const v30: f64 = v28 - v29;
+    const v31: f64 = v12 * v16;
+    const v32: f64 = v30 + v31;
+    const v33: f64 = v23 * v16;
+    const v34: f64 = v32 - v33;
+    const v35: f64 = v11 * v22;
+    const v36: f64 = v5 * v22;
+    const v37: f64 = v35 - v36;
+    const v38: f64 = @as(f64, 10.0) * v6;
+    const v39: f64 = v37 + v38;
+    const v40: f64 = v39 + @as(f64, 100.0);
+    const v41: f64 = @as(f64, 1.0) / v40;
+    const v42: f64 = @as(f64, 40.0) * v41;
+    const v43: f64 = v42 * v25;
+    const v44: f64 = v43 * @as(f64, 2.0);
+    const v45: f64 = @as(f64, 90.0) + v44;
+    const v46: f64 = v42 * v34;
+    const v47: f64 = @as(f64, 22.0) + v46;
+    const v48: bool = v45 >= @as(f64, 0.0);
     if (v48) {
         v49 = v45 < @as(f64, 160.0);
         v50 = v49;
@@ -477,51 +347,6 @@ fn method4(p0: []i32, p1: f64, p2: f64, p3: f64) i32 {
     var v1: f64 = p1; _ = &v1;
     var v2: f64 = p2; _ = &v2;
     var v3: f64 = p3; _ = &v3;
-    var v4: f64 = undefined; _ = &v4;
-    var v5: f64 = undefined; _ = &v5;
-    var v6: f64 = undefined; _ = &v6;
-    var v7: f64 = undefined; _ = &v7;
-    var v8: f64 = undefined; _ = &v8;
-    var v9: f64 = undefined; _ = &v9;
-    var v10: f64 = undefined; _ = &v10;
-    var v11: f64 = undefined; _ = &v11;
-    var v12: f64 = undefined; _ = &v12;
-    var v13: f64 = undefined; _ = &v13;
-    var v14: f64 = undefined; _ = &v14;
-    var v15: f64 = undefined; _ = &v15;
-    var v16: f64 = undefined; _ = &v16;
-    var v17: f64 = undefined; _ = &v17;
-    var v18: f64 = undefined; _ = &v18;
-    var v19: f64 = undefined; _ = &v19;
-    var v20: f64 = undefined; _ = &v20;
-    var v21: f64 = undefined; _ = &v21;
-    var v22: f64 = undefined; _ = &v22;
-    var v23: f64 = undefined; _ = &v23;
-    var v24: f64 = undefined; _ = &v24;
-    var v25: f64 = undefined; _ = &v25;
-    var v26: f64 = undefined; _ = &v26;
-    var v27: f64 = undefined; _ = &v27;
-    var v28: f64 = undefined; _ = &v28;
-    var v29: f64 = undefined; _ = &v29;
-    var v30: f64 = undefined; _ = &v30;
-    var v31: f64 = undefined; _ = &v31;
-    var v32: f64 = undefined; _ = &v32;
-    var v33: f64 = undefined; _ = &v33;
-    var v34: f64 = undefined; _ = &v34;
-    var v35: f64 = undefined; _ = &v35;
-    var v36: f64 = undefined; _ = &v36;
-    var v37: f64 = undefined; _ = &v37;
-    var v38: f64 = undefined; _ = &v38;
-    var v39: f64 = undefined; _ = &v39;
-    var v40: f64 = undefined; _ = &v40;
-    var v41: f64 = undefined; _ = &v41;
-    var v42: f64 = undefined; _ = &v42;
-    var v43: f64 = undefined; _ = &v43;
-    var v44: f64 = undefined; _ = &v44;
-    var v45: f64 = undefined; _ = &v45;
-    var v46: f64 = undefined; _ = &v46;
-    var v47: f64 = undefined; _ = &v47;
-    var v48: bool = undefined; _ = &v48;
     var v50: bool = undefined; _ = &v50;
     var v49: bool = undefined; _ = &v49;
     var v52: bool = undefined; _ = &v52;
@@ -541,51 +366,51 @@ fn method4(p0: []i32, p1: f64, p2: f64, p3: f64) i32 {
     var v67: i32 = undefined; _ = &v67;
     var v68: i32 = undefined; _ = &v68;
     var v69: i32 = undefined; _ = &v69;
-    v4 = @sin(v1);
-    v5 = @as(f64, 5.0) * v4;
-    v6 = @sin(v2);
-    v7 = v5 * v6;
-    v8 = @cos(v3);
-    v9 = v7 * v8;
-    v10 = @cos(v1);
-    v11 = @as(f64, -5.0) * v10;
-    v12 = v11 * v6;
-    v13 = v12 * v8;
-    v14 = v9 - v13;
-    v15 = @as(f64, 5.0) * v10;
-    v16 = @sin(v3);
-    v17 = v15 * v16;
-    v18 = v14 + v17;
-    v19 = @as(f64, -5.0) * v4;
-    v20 = v19 * v16;
-    v21 = v18 + v20;
-    v22 = @cos(v2);
-    v23 = @as(f64, 5.0) * v22;
-    v24 = v23 * v8;
-    v25 = v21 + v24;
-    v26 = v15 * v8;
-    v27 = v19 * v8;
-    v28 = v26 + v27;
-    v29 = v7 * v16;
-    v30 = v28 - v29;
-    v31 = v12 * v16;
-    v32 = v30 + v31;
-    v33 = v23 * v16;
-    v34 = v32 - v33;
-    v35 = v11 * v22;
-    v36 = v5 * v22;
-    v37 = v35 - v36;
-    v38 = @as(f64, 5.0) * v6;
-    v39 = v37 + v38;
-    v40 = v39 + @as(f64, 100.0);
-    v41 = @as(f64, 1.0) / v40;
-    v42 = @as(f64, 40.0) * v41;
-    v43 = v42 * v25;
-    v44 = v43 * @as(f64, 2.0);
-    v45 = @as(f64, 120.0) + v44;
-    v46 = v42 * v34;
-    v47 = @as(f64, 22.0) + v46;
-    v48 = v45 >= @as(f64, 0.0);
+    const v4: f64 = @sin(v1);
+    const v5: f64 = @as(f64, 5.0) * v4;
+    const v6: f64 = @sin(v2);
+    const v7: f64 = v5 * v6;
+    const v8: f64 = @cos(v3);
+    const v9: f64 = v7 * v8;
+    const v10: f64 = @cos(v1);
+    const v11: f64 = @as(f64, -5.0) * v10;
+    const v12: f64 = v11 * v6;
+    const v13: f64 = v12 * v8;
+    const v14: f64 = v9 - v13;
+    const v15: f64 = @as(f64, 5.0) * v10;
+    const v16: f64 = @sin(v3);
+    const v17: f64 = v15 * v16;
+    const v18: f64 = v14 + v17;
+    const v19: f64 = @as(f64, -5.0) * v4;
+    const v20: f64 = v19 * v16;
+    const v21: f64 = v18 + v20;
+    const v22: f64 = @cos(v2);
+    const v23: f64 = @as(f64, 5.0) * v22;
+    const v24: f64 = v23 * v8;
+    const v25: f64 = v21 + v24;
+    const v26: f64 = v15 * v8;
+    const v27: f64 = v19 * v8;
+    const v28: f64 = v26 + v27;
+    const v29: f64 = v7 * v16;
+    const v30: f64 = v28 - v29;
+    const v31: f64 = v12 * v16;
+    const v32: f64 = v30 + v31;
+    const v33: f64 = v23 * v16;
+    const v34: f64 = v32 - v33;
+    const v35: f64 = v11 * v22;
+    const v36: f64 = v5 * v22;
+    const v37: f64 = v35 - v36;
+    const v38: f64 = @as(f64, 5.0) * v6;
+    const v39: f64 = v37 + v38;
+    const v40: f64 = v39 + @as(f64, 100.0);
+    const v41: f64 = @as(f64, 1.0) / v40;
+    const v42: f64 = @as(f64, 40.0) * v41;
+    const v43: f64 = v42 * v25;
+    const v44: f64 = v43 * @as(f64, 2.0);
+    const v45: f64 = @as(f64, 120.0) + v44;
+    const v46: f64 = v42 * v34;
+    const v47: f64 = @as(f64, 22.0) + v46;
+    const v48: bool = v45 >= @as(f64, 0.0);
     if (v48) {
         v49 = v45 < @as(f64, 160.0);
         v50 = v49;
@@ -667,16 +492,6 @@ fn frame_text_loop_5(p0: []i32, p1: i32, p2: i32, p3: i32, p4: []const u8) []con
     var v23: bool = undefined; _ = &v23;
     var v22: bool = undefined; _ = &v22;
     var v24: []const u8 = undefined; _ = &v24;
-    var tmp18: []i32 = undefined; _ = &tmp18;
-    var tmp19: i32 = undefined; _ = &tmp19;
-    var tmp20: i32 = undefined; _ = &tmp20;
-    var tmp21: i32 = undefined; _ = &tmp21;
-    var tmp22: []const u8 = undefined; _ = &tmp22;
-    var tmp23: []i32 = undefined; _ = &tmp23;
-    var tmp24: i32 = undefined; _ = &tmp24;
-    var tmp25: i32 = undefined; _ = &tmp25;
-    var tmp26: i32 = undefined; _ = &tmp26;
-    var tmp27: []const u8 = undefined; _ = &tmp27;
     while (true) {
         v5 = v3 == v2;
         if (v5) {
@@ -716,28 +531,12 @@ fn frame_text_loop_5(p0: []i32, p1: i32, p2: i32, p3: i32, p4: []const u8) []con
             }
             if (v23) {
                 v24 = spiralConcat(v17, "\n");
-                tmp18 = v0;
-                tmp19 = v1;
-                tmp20 = v2;
-                tmp21 = v18;
-                tmp22 = v24;
-                v0 = tmp18;
-                v1 = tmp19;
-                v2 = tmp20;
-                v3 = tmp21;
-                v4 = tmp22;
+                v3 = v18;
+                v4 = v24;
                 continue;
             } else {
-                tmp23 = v0;
-                tmp24 = v1;
-                tmp25 = v2;
-                tmp26 = v18;
-                tmp27 = v17;
-                v0 = tmp23;
-                v1 = tmp24;
-                v2 = tmp25;
-                v3 = tmp26;
-                v4 = tmp27;
+                v3 = v18;
+                v4 = v17;
                 continue;
             }
         }
@@ -746,15 +545,12 @@ fn frame_text_loop_5(p0: []i32, p1: i32, p2: i32, p3: i32, p4: []const u8) []con
 fn runtime_byte_8(p0: []const u8, p1: i32) u8 {
     var v0: []const u8 = p0; _ = &v0;
     var v1: i32 = p1; _ = &v1;
-    var v2: u8 = undefined; _ = &v2;
-    v2 = v0[spiralIndex(v0.len, v1)];
+    const v2: u8 = v0[spiralIndex(v0.len, v1)];
     return v2;
 }
 fn utf8_scalar_at_byte_offset_7(p0: []const u8, p1: i32) i32 {
     var v0: []const u8 = p0; _ = &v0;
     var v1: i32 = p1; _ = &v1;
-    var v2: i32 = undefined; _ = &v2;
-    var v3: bool = undefined; _ = &v3;
     var v5: bool = undefined; _ = &v5;
     var v7: u8 = undefined; _ = &v7;
     var v8: i32 = undefined; _ = &v8;
@@ -828,8 +624,8 @@ fn utf8_scalar_at_byte_offset_7(p0: []const u8, p1: i32) i32 {
     var v93: i32 = undefined; _ = &v93;
     var v94: bool = undefined; _ = &v94;
     var v96: bool = undefined; _ = &v96;
-    v2 = @as(i32, @intCast(v0.len));
-    v3 = v1 < @as(i32, 0);
+    const v2: i32 = @as(i32, @intCast(v0.len));
+    const v3: bool = v1 < @as(i32, 0);
     if (v3) {
         spiralFail("UTF-8 byte offset is negative.");
     } else {
@@ -1027,10 +823,6 @@ fn loop_6(p0: []const u8, p1: i32, p2: i32, p3: i32) i32 {
     var v10: bool = undefined; _ = &v10;
     var v14: i32 = undefined; _ = &v14;
     var v15: i32 = undefined; _ = &v15;
-    var tmp9: []const u8 = undefined; _ = &tmp9;
-    var tmp10: i32 = undefined; _ = &tmp10;
-    var tmp11: i32 = undefined; _ = &tmp11;
-    var tmp12: i32 = undefined; _ = &tmp12;
     while (true) {
         v4 = v2 == v1;
         if (v4) {
@@ -1059,14 +851,8 @@ fn loop_6(p0: []const u8, p1: i32, p2: i32, p3: i32) i32 {
                 }
                 v14 = v2 +% v13;
                 v15 = v3 +% v7;
-                tmp9 = v0;
-                tmp10 = v1;
-                tmp11 = v14;
-                tmp12 = v15;
-                v0 = tmp9;
-                v1 = tmp10;
-                v2 = tmp11;
-                v3 = tmp12;
+                v2 = v14;
+                v3 = v15;
                 continue;
             }
         }
@@ -1104,10 +890,6 @@ fn spiralMain() i32 {
     var v32: bool = undefined; _ = &v32;
     var v34: i32 = undefined; _ = &v34;
     var v35: i32 = undefined; _ = &v35;
-    var v36: i32 = undefined; _ = &v36;
-    var v37: i32 = undefined; _ = &v37;
-    var v38: i32 = undefined; _ = &v38;
-    var v39: bool = undefined; _ = &v39;
     var v41: bool = undefined; _ = &v41;
     var v40: bool = undefined; _ = &v40;
     var v43: bool = undefined; _ = &v43;
@@ -1171,10 +953,10 @@ fn spiralMain() i32 {
         v35 = v2 +% @as(i32, 1);
         v2 = v35;
     }
-    v36 = v1[spiralIndex(v1.len, @as(i32, 0))];
-    v37 = v1[spiralIndex(v1.len, @as(i32, 1))];
-    v38 = v1[spiralIndex(v1.len, @as(i32, 2))];
-    v39 = v36 == @as(i32, 45702);
+    const v36: i32 = v1[spiralIndex(v1.len, @as(i32, 0))];
+    const v37: i32 = v1[spiralIndex(v1.len, @as(i32, 1))];
+    const v38: i32 = v1[spiralIndex(v1.len, @as(i32, 2))];
+    const v39: bool = v36 == @as(i32, 45702);
     if (v39) {
         v40 = v37 == @as(i32, 43786);
         v41 = v40;

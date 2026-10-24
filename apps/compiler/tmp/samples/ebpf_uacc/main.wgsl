@@ -20,10 +20,8 @@ fn sp_method1(p0: i32, p1: u32) -> u32 {
         if (v4) {
             return v3;
         } else {
-            let spiral_t1: i32 = v2;
-            let spiral_t2: u32 = v3;
-            v0 = spiral_t1;
-            v1 = spiral_t2;
+            v0 = v2;
+            v1 = v3;
             continue;
         }
     }

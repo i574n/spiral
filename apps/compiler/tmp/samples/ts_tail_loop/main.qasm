@@ -12,10 +12,8 @@ def sp_method1(int[32] p0, int[32] p1) -> int[32] {
         if (v4) {
             return v3;
         } else {
-            int[32] t328_2 = v2;
-            int[32] t362_3 = v3;
-            v0 = t328_2;
-            v1 = t362_3;
+            v0 = v2;
+            v1 = v3;
             continue;
         }
     }

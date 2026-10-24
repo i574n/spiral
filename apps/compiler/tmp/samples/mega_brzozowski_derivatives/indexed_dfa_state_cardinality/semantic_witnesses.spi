@@ -128,7 +128,10 @@ inl indexed_dfa_semantic_program_passes forall alphabet.
 
 inl indexed_dfa_semantic_witnesses_contract () : string =
     inl bit_capability : indexed_dfa_capability bit_alphabet = make_indexed_dfa_capability ()
-    inl bit_sealed = seal_indexed_dfa_semantic_minimized_surface bit_capability (ends_with_zero ()) (bit_indexed_finite_alphabet_descriptor ())
+    inl bit_sealed =
+        seal_indexed_dfa_semantic_minimized_surface bit_capability
+            (ends_with_zero ())
+            (bit_indexed_finite_alphabet_descriptor ())
     match bit_sealed with
     | IndexedDfaSemanticMinimizedSurfaceRejected =>
         failwith "bit semantic minimized surface should certify"
@@ -136,9 +139,15 @@ inl indexed_dfa_semantic_witnesses_contract () : string =
         inl exists alphabet symbol_count closure_count representative_count. surface = packed
         assert_static
             (indexed_dfa_semantic_surface_structural_contract surface)
-            "semantic minimized surface must retain exact representative-row cardinality without replaying quotient booleans"
+            (
+                "semantic minimized surface must retain exact representative-row cardinality without replaying "
+                ^^ "quotient booleans"
+            )
     inl tri_capability : indexed_dfa_capability tri_alphabet = make_indexed_dfa_capability ()
-    inl tri_sealed = seal_indexed_dfa_semantic_minimized_surface tri_capability (tri_ab_star_then_c ()) (tri_indexed_finite_alphabet_descriptor ())
+    inl tri_sealed =
+        seal_indexed_dfa_semantic_minimized_surface tri_capability
+            (tri_ab_star_then_c ())
+            (tri_indexed_finite_alphabet_descriptor ())
     match tri_sealed with
     | IndexedDfaSemanticMinimizedSurfaceRejected =>
         failwith "ternary semantic minimized surface should certify"

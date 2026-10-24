@@ -58,7 +58,10 @@ defmodule Spiral.Cells.CompilerPool do
        queues: %{},
        order: [],
        served: 0,
-       peak_workers: 1
+       peak_workers: 1,
+       free_reading: :none,
+       probing: false,
+       refused_growth: 0
      }}
   end
 
@@ -73,12 +76,16 @@ defmodule Spiral.Cells.CompilerPool do
 
   def handle_call(:stats, _from, state) do
     extra = state.workers -- [state.first]
-    {:reply, %{workers: length(state.workers), idle: length(state.idle), queued: queued(state), served: state.served, peak_workers: state.peak_workers, extra_workers: extra}, state}
+    {:reply, %{workers: length(state.workers), idle: length(state.idle), queued: queued(state), served: state.served, peak_workers: state.peak_workers, extra_workers: extra, refused_growth: state.refused_growth, last_free_mb: last_free_mb(state.free_reading)}, state}
   end
 
   @impl true
   def handle_info({:done, worker}, state) do
     {:noreply, dispatch(%{state | idle: [worker | state.idle], served: state.served + 1})}
+  end
+
+  def handle_info({:free_mb, mb}, state) do
+    {:noreply, dispatch(%{state | free_reading: {System.monotonic_time(:millisecond), mb}, probing: false})}
   end
 
   def handle_info({:EXIT, pid, _reason}, state) do
@@ -132,7 +139,9 @@ defmodule Spiral.Cells.CompilerPool do
   defp grow(%{idle: [], start_worker: start} = state) when is_function(start, 0) do
     waiting = queued(state)
 
-    if waiting > 0 and length(state.workers) < state.max_workers and room?(state) do
+    {room, state} = if waiting > 0 and length(state.workers) < state.max_workers, do: room(state), else: {:not_needed, state}
+
+    if room == :room do
       case start.() do
         {:ok, pid} ->
           workers = [pid | state.workers]
@@ -143,30 +152,54 @@ defmodule Spiral.Cells.CompilerPool do
           %{state | max_workers: length(state.workers)}
       end
     else
-      state
+      if room == :no_room, do: %{state | refused_growth: state.refused_growth + 1}, else: state
     end
   end
 
   defp grow(state), do: state
 
-  defp room?(state) do
-    case cached_free_mb(state.free_mb) do
-      nil -> true
-      free -> free >= server_mb() + reserve_mb()
-    end
-  end
+  @free_reading_ttl_ms 10_000
 
-  defp cached_free_mb(probe) do
+  defp room(state) do
     now = System.monotonic_time(:millisecond)
 
-    case Process.get(:spiral_cells_free_mb) do
-      {at, mb} when now - at < 10_000 -> mb
-      _ ->
-        mb = probe.()
-        Process.put(:spiral_cells_free_mb, {now, mb})
-        mb
+    state =
+      case state.free_reading do
+        {at, _} when now - at < @free_reading_ttl_ms -> state
+        _ -> probe_free_mb(state)
+      end
+
+    case state.free_reading do
+      :none -> {:waiting_for_reading, state}
+      {_, nil} -> {:room, state}
+      {_, free} -> if free >= server_mb() + reserve_mb(), do: {:room, state}, else: {:no_room, state}
     end
   end
+
+  defp probe_free_mb(%{probing: true} = state), do: state
+
+  defp probe_free_mb(state) do
+    pool = self()
+    probe = state.free_mb
+
+    Task.start(fn ->
+      mb =
+        try do
+          probe.()
+        rescue
+          _ -> nil
+        catch
+          _, _ -> nil
+        end
+
+      send(pool, {:free_mb, mb})
+    end)
+
+    %{state | probing: true}
+  end
+
+  defp last_free_mb({_, mb}), do: mb
+  defp last_free_mb(:none), do: nil
 
   defp server_mb, do: env_mb("SPIRAL_CELLS_DAEMON_SERVER_MB", @default_server_mb)
   defp reserve_mb, do: env_mb("SPIRAL_CELLS_DAEMON_RESERVE_MB", @default_reserve_mb)

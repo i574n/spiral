@@ -1,0 +1,118 @@
+///- --package .
+open sm'_operators
+
+type decimal = { units : i64; scale : i32 }
+
+let rec power_of_ten (n : i32) (acc : i64) : i64 = if n <= 0i32 then acc else power_of_ten (n - 1i32) (acc * 10i64)
+
+inl larger (a : i32) (b : i32) : i32 = if a > b then a else b
+
+inl at_scale (scale : i32) (d : decimal) : i64 = d.units * power_of_ten (scale - d.scale) 1i64
+
+let rec normalized (d : decimal) : decimal =
+    if d.scale > 0i32 && d.units % 10i64 = 0i64 then normalized { units = d.units / 10i64; scale = d.scale - 1i32 }
+    else d
+
+inl of_int (n : i64) : decimal = { units = n; scale = 0i32 }
+
+inl add (a : decimal) (b : decimal) : decimal =
+    inl scale = larger a.scale b.scale
+    normalized { units = at_scale scale a + at_scale scale b; scale = scale }
+
+inl negate (a : decimal) : decimal = { a with units = 0i64 - a.units }
+
+inl subtract (a : decimal) (b : decimal) : decimal = add a (negate b)
+
+inl multiply (a : decimal) (b : decimal) : decimal = normalized { units = a.units * b.units; scale = a.scale + b.scale }
+
+inl compare (a : decimal) (b : decimal) : i32 =
+    inl scale = larger a.scale b.scale
+    inl x = at_scale scale a
+    inl y = at_scale scale b
+    if x < y then -1i32 elif x > y then 1i32 else 0i32
+
+inl floor_division (n : i64) (d : i64) : i64 =
+    inl q = n / d
+    if n % d <> 0i64 && (n < 0i64) <> (d < 0i64) then q - 1i64 else q
+
+inl round_to (places : i32) (a : decimal) : decimal =
+    if a.scale <= places then a
+    else
+        inl step = power_of_ten (a.scale - places) 1i64
+        normalized { units = floor_division (a.units * 2i64 + step) (step * 2i64); scale = places }
+
+inl round (a : decimal) : decimal = round_to 0i32 a
+
+inl divide (places : i32) (a : decimal) (b : decimal) : decimal =
+    inl numerator = a.units * power_of_ten (places + b.scale) 1i64
+    inl denominator = b.units * power_of_ten a.scale 1i64
+    normalized { units = numerator / denominator; scale = places }
+
+inl digit_value (c : string) : i64 = conv (sm'.index_of c "0123456789") : i64
+
+let rec digits_from
+    (s : string) (i : i32) (acc : i64) (scale : i32) (seen_point : bool) (digits : i32)
+    : option decimal
+    =
+    if i >= sm'.length s then (if digits = 0i32 then None else Some { units = acc; scale = scale })
+    else
+        inl c = sm'.substring i 1i32 s
+        if c = "." then (if seen_point then None else digits_from s (i + 1i32) acc scale true digits)
+        elif sm'.index_of c "0123456789" >= 0i32 then
+            inl scale = if seen_point then scale + 1i32 else scale
+            digits_from s (i + 1i32) (acc * 10i64 + digit_value c) scale seen_point (digits + 1i32)
+        else None
+
+inl parse (text : string) : option decimal =
+    inl s = sm'.trim text
+    if s = "" then None
+    else
+        inl sign = sm'.substring 0i32 1i32 s
+        inl body = if sign = "-" || sign = "+" then sm'.substring 1i32 (sm'.length s - 1i32) s else s
+        match digits_from body 0i32 0i64 0i32 false 0i32 with
+        | Some d => Some (normalized (if sign = "-" then negate d else d))
+        | None => None
+
+let rec digits_text (n : i64) (acc : string) : string =
+    inl digit = sm'.substring (conv (n % 10i64) : i32) 1i32 "0123456789"
+    if n < 10i64 then digit ++# acc else digits_text (n / 10i64) (digit ++# acc)
+
+let rec zero_padded (text : string) (width : i32) : string =
+    if sm'.length text >= width then text else zero_padded ("0" ++# text) width
+
+inl text (a : decimal) : string =
+    inl negative = a.units < 0i64
+    inl magnitude = if negative then 0i64 - a.units else a.units
+    inl sign = if negative then "-" else ""
+    if a.scale <= 0i32 then sign ++# digits_text magnitude ""
+    else
+        inl digits = zero_padded (digits_text magnitude "") (a.scale + 1i32)
+        inl whole = sm'.length digits - a.scale
+        sign ++# sm'.substring 0i32 whole digits ++# "." ++# sm'.substring whole a.scale digits
+///> rust
+test decimals_are_exact =
+    inl d (s : string) = match parse s with Some x => x | None => failwith ("parses " ++# s)
+    if text (add (d "0.1") (d "0.2")) <> "0.3" then failwith "0.1 + 0.2 = 0.3"
+    if text (subtract (d "10") (d "0.01")) <> "9.99" then failwith "10 - 0.01"
+    if text (multiply (d "1.5") (d "-2.25")) <> "-3.375" then failwith "1.5 * -2.25"
+    if text (d "+007.500") <> "7.5" then failwith "sign, leading and trailing zeros"
+    if compare (d "2.50") (d "2.5") <> 0i32 || compare (d "-1") (d "0.5") <> -1i32 then failwith "compare"
+    if text (divide 4i32 (d "1") (d "3")) <> "0.3333" then failwith "1 div 3 at 4 places"
+    if text (divide 0i32 (d "1.25") (d "1")) <> "1" then failwith "a finer dividend truncates to the places"
+
+///> rust
+test round_follows_xpath =
+    inl d (s : string) = match parse s with Some x => x | None => failwith ("parses " ++# s)
+    if text (round (d "2.5")) <> "3" then failwith "2.5 rounds up"
+    if text (round (d "-2.5")) <> "-2" then failwith "-2.5 rounds toward positive infinity"
+    if text (round (d "-2.51")) <> "-3" then failwith "-2.51 rounds down"
+    if text (round_to 2i32 (d "1.005")) <> "1.01" then failwith "half up at two places"
+    inl cents = round (multiply (d "12.345") (d "100"))
+    if text (divide 2i32 cents (d "100")) <> "12.35" then failwith "the EN 16931 two-place idiom"
+
+///> rust
+test rejects_malformed_numbers =
+    match parse "1.2.3" with Some _ => failwith "two points" | None => ()
+    match parse "12a" with Some _ => failwith "a letter" | None => ()
+    match parse "-" with Some _ => failwith "a bare sign" | None => ()
+    match parse "" with Some _ => failwith "empty" | None => ()

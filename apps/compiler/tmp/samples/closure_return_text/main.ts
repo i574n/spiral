@@ -1,8 +1,8 @@
 function g_c1(v0: string, v1: number): ((a0: number) => string) {
     return (v2: number): string => {
-        let v3: boolean = v1 === 0;
+        const v3: boolean = v1 === 0;
         if (v3) {
-            let v4: string = "no";
+            const v4: string = "no";
             return v4;
         } else {
             return v0;
@@ -15,11 +15,11 @@ function f_c0(v0: string): ((a0: number) => ((a0: number) => string)) {
     };
 }
 export function main(): number {
-    let v0: string = "hi";
-    let v1: ((a0: number) => ((a0: number) => string)) = f_c0(v0);
-    let v2: ((a0: number) => string) = v1(1);
-    let v3: string = v2(0);
-    let v4: boolean = v3 === "hi";
+    const v0: string = "hi";
+    const v1: ((a0: number) => ((a0: number) => string)) = f_c0(v0);
+    const v2: ((a0: number) => string) = v1(1);
+    const v3: string = v2(0);
+    const v4: boolean = v3 === "hi";
     if (v4) {
         return 0;
     } else {

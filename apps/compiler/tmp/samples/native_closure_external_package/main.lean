@@ -27,10 +27,8 @@ mutual
 partial def f_c0 (p0 : String) (p1 : Int32) : IO Int32 := do
     let mut v0 : String := p0
     let mut v1 : Int32 := p1
-    let mut v2 : Int32 := default
-    let mut v3 : Int32 := default
-    v2 := (Int32.ofNat v0.utf8ByteSize)
-    v3 := (v2 + v1)
+    let v2 : Int32 := (Int32.ofNat v0.utf8ByteSize)
+    let v3 : Int32 := (v2 + v1)
     return v3
 partial def apply_1 (p0 : (Int32 → IO Int32)) (p1 : Int32) : IO Int32 := do
     let mut v0 : (Int32 → IO Int32) := p0
@@ -39,18 +37,13 @@ partial def apply_1 (p0 : (Int32 → IO Int32)) (p1 : Int32) : IO Int32 := do
 partial def method0 (p0 : (Int32 → IO Int32)) (p1 : Int32) : IO Int32 := do
     let mut v0 : (Int32 → IO Int32) := p0
     let mut v1 : Int32 := p1
-    let mut v2 : Int32 := default
-    let mut v3 : Int32 := default
-    v2 := (← apply_1 v0 v1)
-    v3 := (v2 + (1 : Int32))
+    let v2 : Int32 := (← apply_1 v0 v1)
+    let v3 : Int32 := (v2 + (1 : Int32))
     return v3
 partial def spiralMain : IO Int32 := do
-    let mut v0 : String := default
-    let mut v1 : (Int32 → IO Int32) := default
-    let mut v2 : Int32 := default
-    v0 := "abc"
-    v1 := (f_c0 v0)
-    v2 := (38 : Int32)
+    let v0 : String := "abc"
+    let v1 : (Int32 → IO Int32) := (f_c0 v0)
+    let v2 : Int32 := (38 : Int32)
     return (← method0 v1 v2)
 end
 def main : IO UInt32 := do

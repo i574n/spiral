@@ -62,7 +62,10 @@ inl registry () : public_registry round_29 epoch_3 registry_digest_29 authentica
 inl evidence () : equivocation_evidence round_29 epoch_3 evidence_root_29 authenticated =
     EquivocationEvidence "two-equivocation-files-verified"
 
-inl commit () : public_byzantine_commit transfer_a manifest_a round_29 epoch_3 registry_digest_29 evidence_root_29 committed =
+inl commit
+    ()
+    : public_byzantine_commit transfer_a manifest_a round_29 epoch_3 registry_digest_29 evidence_root_29 committed
+    =
     PublicByzantineCommit (registry (), evidence (), "public-quorum-commit")
 
 inl leaf () : transparency_leaf epoch_3 snapshot_digest_30 registry_digest_29 evidence_root_29 authenticated =
@@ -71,11 +74,17 @@ inl leaf () : transparency_leaf epoch_3 snapshot_digest_30 registry_digest_29 ev
 inl proof () : inclusion_proof leaf_0 snapshot_digest_fork merkle_root_30 authenticated =
     InclusionProof "proof-for-a-different-snapshot"
 
-inl rooted () : rooted_byzantine_authority transfer_a manifest_a round_29 epoch_3 registry_digest_29 evidence_root_29 leaf_0 snapshot_digest_30 merkle_root_30 durable =
+inl rooted
+    ()
+    : rooted_byzantine_authority transfer_a manifest_a round_29 epoch_3 registry_digest_29 evidence_root_29 leaf_0
+        snapshot_digest_30 merkle_root_30 durable
+    =
     RootedByzantineAuthority (commit (), leaf (), proof (), "transparent-byzantine-authority")
 
 inl inspect forall round epoch registry evidence leaf snapshot root.
-    (_ : rooted_byzantine_authority transfer_a manifest_a round epoch registry evidence leaf snapshot root durable) : string =
+    (_ : rooted_byzantine_authority transfer_a manifest_a round epoch registry evidence leaf snapshot root durable)
+    : string
+    =
     "transparency-rooted-public-byzantine-commit"
 
 inl main () : string =

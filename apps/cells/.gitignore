@@ -4,7 +4,6 @@
 /deps/
 /doc/
 /.fetch
-erl_crash.dump
 *.ez
 spiral_cells-*.tar
 /tmp/

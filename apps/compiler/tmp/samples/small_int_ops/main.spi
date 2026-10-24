@@ -24,5 +24,21 @@ inl main () : i32 =
     inl n16 = !!!!Neg(p)
     inl ~q = 40000u16
     inl sh16 = !!!!ShiftLeft(q, 1i32)
-    if mul =. 44i8 && dv =. (0i8 -. 4i8) && md =. (0i8 -. 2i8) && neg =. (0i8 -. 3i8) && sh =. (0i8 -. 56i8) && ud =. 66u8 && um =. 2u8 && band =. 8u8 && bor =. 207u8 && bxor =. 199u8 && inv =. 240u8 && d16 =. 2857i16 && m16 =. 1i16 && n16 =. (0i16 -. 20000i16) && sh16 =. 14464u16 then 0i32
+    if
+        mul =. 44i8
+        && dv =. (0i8 -. 4i8)
+        && md =. (0i8 -. 2i8)
+        && neg =. (0i8 -. 3i8)
+        && sh =. (0i8 -. 56i8)
+        && ud =. 66u8
+        && um =. 2u8
+        && band =. 8u8
+        && bor =. 207u8
+        && bxor =. 199u8
+        && inv =. 240u8
+        && d16 =. 2857i16
+        && m16 =. 1i16
+        && n16 =. (0i16 -. 20000i16)
+        && sh16 =. 14464u16
+    then 0i32
     else 1i32

@@ -196,12 +196,17 @@ module Program =
                         | Some diagnostic when (match message with TypeErrors _ -> true | _ -> false) ->
                             entryTypeErrors <- Some diagnostic
                             Threading.Tasks.Task.Delay(1000).ContinueWith(fun (_ : Threading.Tasks.Task) ->
-                                waiter.TrySetResult(diagnostic) |> ignore)
+                                let parseDetail = lock gate (fun () -> match related with Some text when text.StartsWith "ParserErrors" -> $"\n{text}" | _ -> "")
+                                waiter.TrySetResult(diagnostic + parseDetail) |> ignore)
                             |> ignore
                         | Some diagnostic -> waiter.TrySetResult(diagnostic) |> ignore
                         | None ->
                             match diagnosticForOther message with
-                            | Some text -> related <- Some text
+                            | Some text ->
+                                related <- Some text
+                                match message with
+                                | ParserErrors _ -> eprintfn "warning: %s (blocks that fail to parse are left out of their module)" text
+                                | _ -> ()
                             | None -> ()
                     | None -> ())
 
@@ -253,6 +258,19 @@ module Program =
                 binding = binding
                 }
 
+    let private filesUnder (root : string) (skipDirectory : string -> bool) : string seq =
+        let visited = System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        let rec walk (directory : string) : string seq =
+            seq {
+                let info = DirectoryInfo directory
+                let real = match info.ResolveLinkTarget true with null -> info.FullName | target -> target.FullName
+                if visited.Add real then
+                    yield! Directory.EnumerateFiles directory
+                    for child in Directory.EnumerateDirectories directory do
+                        if not (skipDirectory (Path.GetFileName child)) then yield! walk child
+            }
+        walk root
+
     let private sourceGraphFingerprint (inputPath : string) =
         let relevantSource (path : string) =
             let name = Path.GetFileName(path)
@@ -269,7 +287,7 @@ module Program =
         addRoot (Environment.GetEnvironmentVariable "SPIRAL_COMPILER_PACKAGE_DIR")
         let files =
             roots
-            |> Seq.collect (fun root -> Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories))
+            |> Seq.collect (fun root -> filesUnder root (fun _ -> false))
             |> Seq.filter relevantSource
             |> Seq.map Path.GetFullPath
             |> Seq.distinct
@@ -573,7 +591,21 @@ module Program =
                         let parent = Path.GetDirectoryName outputPath
                         if not (String.IsNullOrWhiteSpace parent) then Directory.CreateDirectory parent |> ignore
                         let coreFile = Path.ChangeExtension(inputPath, Path.GetExtension outputPath)
-                        match multiFile with
+                        let manifestOf (stem : string) = stem + ".spiral-parts"
+                        let splitParts =
+                            let manifest = manifestOf (Path.ChangeExtension(inputPath, null))
+                            if multiFile.IsNone && coreWrites && File.Exists manifest && File.GetLastWriteTimeUtc manifest >= started.AddSeconds -2.0 then
+                                Some ((".rs" :: (File.ReadAllLines manifest |> Array.filter (String.IsNullOrWhiteSpace >> not) |> List.ofArray)) @ [ ".spiral-parts" ])
+                            else None
+                        if multiFile.IsNone && splitParts.IsNone && coreWrites && backend = "Rust" then
+                            let outStem = Path.Combine(Path.GetDirectoryName outputPath, Path.GetFileNameWithoutExtension outputPath)
+                            for stem in List.distinct [ Path.ChangeExtension(inputPath, null); outStem ] do
+                                let manifest = manifestOf stem
+                                if File.Exists manifest && File.GetLastWriteTimeUtc manifest < started.AddSeconds -2.0 then
+                                    for suffix in File.ReadAllLines manifest |> Array.filter (String.IsNullOrWhiteSpace >> not) do
+                                        try File.Delete(stem + suffix) with _ -> ()
+                                    try File.Delete manifest with _ -> ()
+                        match (match multiFile with Some suffixes -> Some suffixes | None -> splitParts) with
                         | Some suffixes ->
                             let coreBase = Path.ChangeExtension(inputPath, null)
                             let outBase = Path.Combine(Path.GetDirectoryName outputPath, Path.GetFileNameWithoutExtension outputPath)
@@ -599,7 +631,7 @@ module Program =
                             | Some cached -> cached.binding
                             | None when String.Equals(backend, "Fsharp", StringComparison.Ordinal) -> discoverEntryBinding generated
                             | None -> "main"
-                        if multiFile.IsNone && cache.Reuse then cache.Put(uri, backend, fingerprint, generated, binding)
+                        if multiFile.IsNone && splitParts.IsNone && cache.Reuse then cache.Put(uri, backend, fingerprint, generated, binding)
                         writeEntryManifest outputPath binding generated.Length revisionMode backend
                         Ok (generated.Length, binding, revisionMode)
             finally
@@ -1147,14 +1179,20 @@ module Program =
             paths
             |> Array.collect (fun path ->
                 if Directory.Exists path then
-                    Directory.GetFiles (path, "*", SearchOption.AllDirectories)
+                    filesUnder path (fun name -> List.contains name [ "target"; "node_modules"; "deps"; "bin"; "obj"; "_build"; ".git"; ".history" ])
+                    |> Array.ofSeq
                     |> Array.filter (fun file -> extensions.Contains (Path.GetExtension file))
                     |> Array.map (fun file -> file.Replace ('\\', '/'))
                     |> Array.sort
                 elif File.Exists path then [| path |]
                 else [||])
             |> Array.distinct
-        let findings = [ for file in files do for finding in xCompatFindings (File.ReadAllText file) -> file, finding ]
+        let findings =
+            [ for file in files do
+                match postabilityProfileFor file with
+                | Some profile ->
+                    for finding in xCompatFindings profile (File.ReadAllText file) do yield file, finding
+                | None -> () ]
         for file, finding in findings do printfn "%s" (xCompatReportLine file finding)
         let byKind =
             findings
@@ -1252,5 +1290,5 @@ module Program =
                 eprintfn "%s" message
                 5
         else
-            eprintfn "usage: SpiralCompiler [--default-int i8|i16|i32|i64|u8|u16|u32|u64] [--default-float f32|f64] [--backend Fsharp|C|Rust|Delphi|Zig|TypeScript|Lua|Gleam|\"Cpp + Cuda\"|\"Python + Cuda\"] <input.spi> <output.fsx|.c|.rs|.pas|.zig|.ts|.lua|.gleam|.cpp|.py> | --check INPUT.spi | --test-blocks INPUT.spi OUTPUT.tsv|- | --source-blocks OUTPUT.tsv|- INPUT.spi [INPUT.spi ...] | --capabilities | --plan-ir [--timeout-ms N] INPUT.spi OUTPUT.ir | --batch JOBS.tsv RESULTS.tsv [--timeout-ms N] | --server SOCKET INPUT.spi | --server-tcp SOCKET [--stall-seconds N] | build-file IN OUT [IN OUT ...] [--timeout MS] [--exit-on-error] | fsharp IN.spi [--timeout MS] | format FILE|DIR ... [--check] [--no-split-literals] | format --stdin --path PATH | format-corpus check|space|convert|flatten|format [--list FILE] [--out DIR] CORPUS.tsv"
+            eprintfn "usage: SpiralCompiler [--default-int i8|i16|i32|i64|u8|u16|u32|u64] [--default-float f32|f64] [--backend Fsharp|C|Rust|Delphi|Zig|Wasm|Wgsl|Calyx|Kotlin|Swift|OpenQasm|Ebpf|Lean|Bend|TypeScript|Lua|Gleam|\"Cpp + Cuda\"|\"Python + Cuda\"] <input.spi> <output.fsx|.c|.rs|.pas|.zig|.wat|.wgsl|.futil|.kt|.swift|.qasm|.ebpf|.lean|.bend|.ts|.lua|.gleam|.cpp|.py> | --check INPUT.spi | --test-blocks INPUT.spi OUTPUT.tsv|- | --source-blocks OUTPUT.tsv|- INPUT.spi [INPUT.spi ...] | --capabilities | --plan-ir [--timeout-ms N] INPUT.spi OUTPUT.ir | --batch JOBS.tsv RESULTS.tsv [--timeout-ms N] | --server SOCKET INPUT.spi | --server-tcp SOCKET [--stall-seconds N] | build-file IN OUT [IN OUT ...] [--timeout MS] [--exit-on-error] | fsharp IN.spi [--timeout MS] | format FILE|DIR ... [--check] [--no-split-literals] | format --stdin --path PATH | format-corpus check|space|convert|flatten|format [--list FILE] [--out DIR] CORPUS.tsv"
             2

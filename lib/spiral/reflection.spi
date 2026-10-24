@@ -384,8 +384,8 @@ test get_functions_types =
     |> sm'.format
     |> _assert_eq' (
         [
-            "one", ["a", "int32"], "int32"
-            "two", ["a", "int32"; "b", "int32"], "int32"
+            "one", [ "a", "int32" ], "int32"
+            "two", [ "a", "int32"; "b", "int32" ], "int32"
         ]
         |> listm.map fun (name, args, result) => name, (args |> listm'.box |> listm'.to_array', result)
         |> listm'.box

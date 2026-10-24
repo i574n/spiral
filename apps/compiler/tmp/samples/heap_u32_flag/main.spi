@@ -3,7 +3,7 @@ inl main () : i32 =
     inl ~word = "hi"
     inl ~on = true
     inl trip = n, word, on
-    inl box = !!!!LayoutToHeap({value = trip})
+    inl box = !!!!LayoutToHeap({ value = trip })
     inl opened = !!!!LayoutIndex(box)
     inl ~(left, mid, right) = opened.value
     if left =. 4000000000u32 && !!!!EQ(mid, "hi") && right then 0i32 else 1i32

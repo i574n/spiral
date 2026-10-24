@@ -6,17 +6,11 @@ pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
   int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
 }
 
-pub fn spiral_wrap_unsigned(value: Int, bits: Int) -> Int {
-  int.bitwise_and(value, int.bitwise_shift_left(1, bits) - 1)
-}
 
 pub fn spiral_string_length(text: String) -> Int {
   bit_array.byte_size(bit_array.from_string(text))
 }
 
-@external(erlang, "erlang", "halt")
-@external(javascript, "node:process", "exit")
-pub fn spiral_halt(code: Int) -> a
 
 pub fn spiral_string_index(text: String, index: Int) -> String {
   case bit_array.slice(bit_array.from_string(text), index, 1) {
@@ -29,26 +23,21 @@ pub fn spiral_string_index(text: String, index: Int) -> String {
   }
 }
 
-pub fn spiral_string_slice(text: String, from: Int, to: Int) -> String {
-  let bytes = bit_array.from_string(text)
-  let length = bit_array.byte_size(bytes)
-  case from < 0 || from > length || to < from - 1 || to >= length {
-    True -> panic as "spiral string slice: out of range"
-    False ->
-      case to < from {
-        True -> ""
-        False ->
-          case bit_array.slice(bytes, from, to - from + 1) {
-            Ok(part) ->
-              case bit_array.to_string(part) {
-                Ok(slice) -> slice
-                Error(_) -> panic as "spiral string slice: splits a character"
-              }
-            Error(_) -> panic as "spiral string slice: out of range"
-          }
-      }
+@external(erlang, "gleam_stdlib", "identity")
+fn spiral_string_of_checked_bytes(bytes: BitArray) -> String {
+  case bit_array.to_string(bytes) {
+    Ok(text) -> text
+    Error(_) -> panic as "spiral string slice: splits a character"
   }
 }
+
+fn spiral_string_starts_character(bytes: BitArray, at: Int) -> Bool {
+  case bit_array.slice(bytes, at, 1) {
+    Ok(<<lead>>) -> lead < 128 || lead >= 192
+    _ -> True
+  }
+}
+
 
 pub fn method2(v0: Int, v1: String, v2: String) -> String {
     let v3 = spiral_wrap_signed(v0 - 1, 32)
@@ -129,33 +118,33 @@ pub fn method0() -> String {
     }
 }
 pub fn main() {
-let v0 = method0()
-let v1 = spiral_string_length(v0)
-let v2 = v1 == 6
-case v2 {
-    True -> {
-        let v3 = spiral_string_index(v0, 0)
-        let v4 = v3 == "a"
-        case v4 {
-            True -> {
-                let v5 = spiral_string_index(v0, 5)
-                let v6 = v5 == "c"
-                case v6 {
-                    True -> {
-                        0
-                    }
-                    False -> {
-                        1
+    let v0 = method0()
+    let v1 = spiral_string_length(v0)
+    let v2 = v1 == 6
+    case v2 {
+        True -> {
+            let v3 = spiral_string_index(v0, 0)
+            let v4 = v3 == "a"
+            case v4 {
+                True -> {
+                    let v5 = spiral_string_index(v0, 5)
+                    let v6 = v5 == "c"
+                    case v6 {
+                        True -> {
+                            0
+                        }
+                        False -> {
+                            1
+                        }
                     }
                 }
-            }
-            False -> {
-                2
+                False -> {
+                    2
+                }
             }
         }
+        False -> {
+            3
+        }
     }
-    False -> {
-        3
-    }
-}
 }

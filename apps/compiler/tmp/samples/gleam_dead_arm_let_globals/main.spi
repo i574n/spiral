@@ -1,0 +1,19 @@
+let gleam_marked (x : i32) : i32 =
+    !!!!BackendSwitch({
+        Gleam = fun () =>
+            global "import spiral_dead_arm_marker"
+            x
+        Rust = fun () => x
+        C = fun () => x
+    })
+
+let picked (x : i32) : i32 =
+    !!!!BackendSwitch({
+        Rust = fun () => gleam_marked x
+        Gleam = fun () => x
+        C = fun () => x
+    })
+
+inl main () : i32 =
+    inl ~x = 5i32
+    picked x + 1i32

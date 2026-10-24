@@ -2,34 +2,34 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 fn spiral_main() -> i32 {
-    let mut v0: i32 = 7i32;
-    let mut v1: i32 = 2i32;
-    let mut v2: u32 = 4294967295u32;
-    let mut v3: i32 = v0.wrapping_neg();
-    let mut v4: i32 = -3i32;
-    let mut v5: i32 = -12i32;
-    let mut v6: i32 = -4i32;
-    let mut v7: i32 = -1i32;
-    let mut v8: i32 = v3.wrapping_div(v1);
-    let mut v9: bool = v8 == v4;
+    let v0: i32 = 7i32;
+    let v1: i32 = 2i32;
+    let v2: u32 = 4294967295u32;
+    let v3: i32 = v0.wrapping_neg();
+    let v4: i32 = -3i32;
+    let v5: i32 = -12i32;
+    let v6: i32 = -4i32;
+    let v7: i32 = -1i32;
+    let v8: i32 = v3.wrapping_div(v1);
+    let v9: bool = v8 == v4;
     if v9 {
-        let mut v10: i32 = v3.wrapping_rem(v1);
-        let mut v11: bool = v10 == v7;
+        let v10: i32 = v3.wrapping_rem(v1);
+        let v11: bool = v10 == v7;
         if v11 {
-            let mut v12: i32 = v3.wrapping_shr((1i32) as u32);
-            let mut v13: bool = v12 == v6;
+            let v12: i32 = v3.wrapping_shr((1i32) as u32);
+            let v13: bool = v12 == v6;
             if v13 {
-                let mut v14: i32 = v4.wrapping_shl((2i32) as u32);
-                let mut v15: bool = v14 == v5;
+                let v14: i32 = v4.wrapping_shl((2i32) as u32);
+                let v15: bool = v14 == v5;
                 if v15 {
-                    let mut v16: u32 = v2.wrapping_add(1u32);
-                    let mut v17: bool = v16 == 0u32;
+                    let v16: u32 = v2.wrapping_add(1u32);
+                    let v17: bool = v16 == 0u32;
                     if v17 {
-                        let mut v18: u32 = v2.wrapping_mul(v2);
-                        let mut v19: bool = v18 == 1u32;
+                        let v18: u32 = v2.wrapping_mul(v2);
+                        let v19: bool = v18 == 1u32;
                         if v19 {
-                            let mut v20: u32 = v2.wrapping_shr((28i32) as u32);
-                            let mut v21: bool = v20 == 15u32;
+                            let v20: u32 = v2.wrapping_shr((28i32) as u32);
+                            let v21: bool = v20 == 15u32;
                             if v21 {
                                 0i32
                             } else {

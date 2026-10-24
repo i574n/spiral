@@ -1,21 +1,24 @@
 open main
 
-inl u64_add (a : u64) (b : u64) : u64 = !!!!Add(a,b)
-inl u64_mul (a : u64) (b : u64) : u64 = !!!!Mult(a,b)
-inl u64_and (a : u64) (b : u64) : u64 = !!!!BitwiseAnd(a,b)
-inl u64_shr (a : u64) (b : i32) : u64 = !!!!ShiftRight(a,b)
-inl u64_eq (a : u64) (b : u64) : bool = !!!!EQ(a,b)
-inl i32_add (a : i32) (b : i32) : i32 = !!!!Add(a,b)
-inl i32_sub (a : i32) (b : i32) : i32 = !!!!Sub(a,b)
-inl i32_lt (a : i32) (b : i32) : bool = !!!!LT(a,b)
-inl i32_eq (a : i32) (b : i32) : bool = !!!!EQ(a,b)
+inl u64_add (a : u64) (b : u64) : u64 = !!!!Add(a, b)
+inl u64_mul (a : u64) (b : u64) : u64 = !!!!Mult(a, b)
+inl u64_and (a : u64) (b : u64) : u64 = !!!!BitwiseAnd(a, b)
+inl u64_shr (a : u64) (b : i32) : u64 = !!!!ShiftRight(a, b)
+inl u64_eq (a : u64) (b : u64) : bool = !!!!EQ(a, b)
+inl i32_add (a : i32) (b : i32) : i32 = !!!!Add(a, b)
+inl i32_sub (a : i32) (b : i32) : i32 = !!!!Sub(a, b)
+inl i32_lt (a : i32) (b : i32) : bool = !!!!LT(a, b)
+inl i32_eq (a : i32) (b : i32) : bool = !!!!EQ(a, b)
 
 inl lcg_next (seed : u64) : u64 = u64_and (u64_add (u64_mul seed 1103515245u64) 12345u64) 2147483647u64
 
 inl lcg_bit (seed : u64) : bit_alphabet =
     if u64_eq (u64_and (u64_shr seed 16i32) 1u64) 0u64 then zero () else one ()
 
-let rec random_bit_input (seed : u64) (length : i32) (acc : linear_input bit_alphabet) : linear_input bit_alphabet * u64 =
+let rec random_bit_input
+    (seed : u64) (length : i32) (acc : linear_input bit_alphabet)
+    : linear_input bit_alphabet * u64
+    =
     if i32_lt 0i32 length then
         inl next = lcg_next seed
         random_bit_input next (i32_sub length 1i32) (InputCons (lcg_bit next, acc))
@@ -24,7 +27,10 @@ let rec random_bit_input (seed : u64) (length : i32) (acc : linear_input bit_alp
 let rec zeros_input (length : i32) (acc : linear_input bit_alphabet) : linear_input bit_alphabet =
     if i32_lt 0i32 length then zeros_input (i32_sub length 1i32) (InputCons (zero (), acc)) else acc
 
-let rec backtrack_stack forall alphabet {symbol_compare}. (stack : regex_list alphabet) (input : linear_input alphabet) : bool =
+let rec backtrack_stack forall alphabet {symbol_compare}.
+    (stack : regex_list alphabet) (input : linear_input alphabet)
+    : bool
+    =
     match stack with
     | RegexListNil =>
         match input with
@@ -46,7 +52,10 @@ let rec backtrack_stack forall alphabet {symbol_compare}. (stack : regex_list al
             if backtrack_stack (RegexListCons (inner, stack)) input then true
             else backtrack_stack rest input
 
-inl backtrack_accepts forall alphabet {symbol_compare}. (value : regex alphabet) (input : linear_input alphabet) : bool =
+inl backtrack_accepts forall alphabet {symbol_compare}.
+    (value : regex alphabet) (input : linear_input alphabet)
+    : bool
+    =
     backtrack_stack (RegexListCons (value, RegexListNil)) input
 
 inl rec star_bodies_consume forall alphabet. (value : regex alphabet) : bool =
@@ -61,26 +70,46 @@ inl rec static_snoc forall alphabet. (states : regex_list alphabet) (value : reg
     | RegexListNil => RegexListCons (value, RegexListNil)
     | RegexListCons (head, rest) => RegexListCons (head, static_snoc rest value)
 
-inl rec static_bit_closure (pending : regex_list bit_alphabet) (seen : regex_list bit_alphabet) : regex_list bit_alphabet =
+inl rec static_bit_closure
+    (pending : regex_list bit_alphabet) (seen : regex_list bit_alphabet)
+    : regex_list bit_alphabet
+    =
     match pending with
     | RegexListNil => seen
     | RegexListCons (state, rest) =>
-        if static_contains state seen then static_bit_closure rest seen
-        else static_bit_closure (RegexListCons (static_step state (zero ()), RegexListCons (static_step state (one ()), rest))) (static_snoc seen state)
+        if static_contains state seen
+        then static_bit_closure rest seen
+        else
+            static_bit_closure
+                (RegexListCons (static_step state (zero ()), RegexListCons (static_step state (one ()), rest)))
+                (static_snoc seen state)
 
-inl rec static_index_of forall alphabet {symbol_compare}. (value : regex alphabet) (states : regex_list alphabet) (index : i32) : i32 =
+inl rec static_index_of forall alphabet {symbol_compare}.
+    (value : regex alphabet) (states : regex_list alphabet) (index : i32)
+    : i32
+    =
     match states with
     | RegexListNil => failwith "brzozowski-staged-state-missing"
-    | RegexListCons (head, rest) => if static_regex_equal value head then index else static_index_of value rest (i32_add index 1i32)
+    | RegexListCons (head, rest) =>
+        if static_regex_equal value head
+        then index
+        else static_index_of value rest (i32_add index 1i32)
 
-inl rec static_next (all : regex_list bit_alphabet) (states : regex_list bit_alphabet) (symbol : bit_alphabet) (state : i32) (index : i32) : i32 =
+inl rec static_next
+    (all : regex_list bit_alphabet) (states : regex_list bit_alphabet) (symbol : bit_alphabet) (state : i32)
+    (index : i32)
+    : i32
+    =
     match states with
     | RegexListNil => failwith "brzozowski-staged-no-states"
     | RegexListCons (head, rest) =>
         inl target = static_index_of (static_step head symbol) all 0i32
         match rest with
         | RegexListNil => target
-        | RegexListCons _ => if i32_eq state index then target else static_next all rest symbol state (i32_add index 1i32)
+        | RegexListCons _ =>
+            if i32_eq state index
+            then target
+            else static_next all rest symbol state (i32_add index 1i32)
 
 inl rec static_accepting (states : regex_list bit_alphabet) (state : i32) (index : i32) : bool =
     match states with
@@ -127,9 +156,15 @@ inl fourth_from_end_one () : regex bit_alphabet =
         RegexCat (RegexChar (one ()), RegexCat (bit_any (), RegexCat (bit_any (), bit_any ()))))
 
 inl zero_or_two_zeros_then_one () : regex bit_alphabet =
-    RegexCat (RegexStar (RegexAlt (RegexChar (zero ()), RegexCat (RegexChar (zero ()), RegexChar (zero ())))), RegexChar (one ()))
+    RegexCat (
+        RegexStar (RegexAlt (RegexChar (zero ()), RegexCat (RegexChar (zero ()), RegexChar (zero ())))),
+        RegexChar (one ())
+    )
 
-inl count_random_matches (engine : match_engine) (value : regex bit_alphabet) (length : i32) (count : i32) (seed : u64) (accepted : i32) : i32 =
+inl count_random_matches
+    (engine : match_engine) (value : regex bit_alphabet) (length : i32) (count : i32) (seed : u64) (accepted : i32)
+    : i32
+    =
     let rec loop (count : i32) (seed : u64) (accepted : i32) : i32 =
         if i32_lt 0i32 count then
             match random_bit_input seed length InputEmpty with
@@ -141,10 +176,17 @@ inl count_random_matches (engine : match_engine) (value : regex bit_alphabet) (l
 
 inl count_zero_runs (engine : match_engine) (value : regex bit_alphabet) (n : i32) (max : i32) (accepted : i32) : i32 =
     let rec loop (n : i32) (accepted : i32) : i32 =
-        if i32_lt max n then accepted
+        if i32_lt max n
+        then accepted
         else
-            inl accepted = if engine_accepts engine value (zeros_input n InputEmpty) then i32_add accepted 1i32 else accepted
-            inl accepted = if engine_accepts engine value (zeros_input n (InputCons (one (), InputEmpty))) then i32_add accepted 1i32 else accepted
+            inl accepted =
+                if engine_accepts engine value (zeros_input n InputEmpty)
+                then i32_add accepted 1i32
+                else accepted
+            inl accepted =
+                if engine_accepts engine value (zeros_input n (InputCons (one (), InputEmpty)))
+                then i32_add accepted 1i32
+                else accepted
             loop (i32_add n 1i32) accepted
     loop n accepted
 

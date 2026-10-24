@@ -1,6 +1,3 @@
-local function spiral_wrap_unsigned(value, bits)
-    return value % (2 ^ bits)
-end
 local function spiral_wrap_signed(value, bits)
     local modulus = 2 ^ bits
     value = value % modulus
@@ -19,15 +16,14 @@ function Us0_One(v0) return { tag = "Us0_One",  _1 = v0 } end
 function Us0_Both(v0, v1) return { tag = "Us0_Both",  _1 = v0,  _2 = v1 } end
 
 function sum_0(v0)
-    local __v = { v0 }
-    if __v[1] ~= nil and __v[1].tag == "Us0_Both" then
-        local v2 = __v[1]._1
-        local v3 = __v[1]._2
+    if v0 ~= nil and v0.tag == "Us0_Both" then
+        local v2 = v0._1
+        local v3 = v0._2
         local v4 = spiral_wrap_signed(spiral_mul_mod32(v2, 10), 32)
         local v5 = spiral_wrap_signed((v4 + v3), 32)
         return v5
-    elseif __v[1] ~= nil and __v[1].tag == "Us0_One" then
-        local v1 = __v[1]._1
+    elseif v0 ~= nil and v0.tag == "Us0_One" then
+        local v1 = v0._1
         return v1
     end
 end

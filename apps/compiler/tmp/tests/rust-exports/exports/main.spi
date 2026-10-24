@@ -2,17 +2,17 @@ let scalar () : i32 = 7i32
 let opaque (~value : string) : u64 = $"!value.len() as u64" : u64
 let unused (value : string) : string = "ignored"
 let choose (first : i32) (second : i32) : i32 =
-    if !!!!LT(first,second) then first else second
+    if !!!!LT(first, second) then first else second
 let echo (value : string) : string = value
-let size (value : string) : u64 = !!!!StringLength(`u64,value)
+let size (value : string) : u64 = !!!!StringLength(`u64, value)
 let five (value : string) : string * string * string * string * string =
     value, "second", "", "fourth", "fifth"
 let ordered (first : string) (second : string) (third : string) (fourth : string) (fifth : string) : u64 =
-    if !!!!NEQ(!!!!StringLength(`u64,first),1u64) then 1u64
-    elif !!!!NEQ(!!!!StringLength(`u64,second),2u64) then 2u64
-    elif !!!!NEQ(!!!!StringLength(`u64,third),3u64) then 3u64
-    elif !!!!NEQ(!!!!StringLength(`u64,fourth),4u64) then 4u64
-    elif !!!!NEQ(!!!!StringLength(`u64,fifth),5u64) then 5u64
+    if !!!!NEQ(!!!!StringLength(`u64, first), 1u64) then 1u64
+    elif !!!!NEQ(!!!!StringLength(`u64, second), 2u64) then 2u64
+    elif !!!!NEQ(!!!!StringLength(`u64, third), 3u64) then 3u64
+    elif !!!!NEQ(!!!!StringLength(`u64, fourth), 4u64) then 4u64
+    elif !!!!NEQ(!!!!StringLength(`u64, fifth), 5u64) then 5u64
     else 18446744073709551615u64
 
 inl export forall t. (name : string) (f : t) : () = !!!!Export(name, f)
@@ -24,5 +24,7 @@ inl main () : i32 =
     export "export_echo" ((fun value => echo value) : string -> string)
     export "export_size" ((fun value => size value) : string -> u64)
     export "export_five" ((fun value => five value) : string -> string * string * string * string * string)
-    export "export_ordered" ((fun (a, b, c, d, e) => ordered a b c d e) : string * string * string * string * string -> u64)
+    export
+        "export_ordered"
+        ((fun (a, b, c, d, e) => ordered a b c d e) : string * string * string * string * string -> u64)
     0i32

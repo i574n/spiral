@@ -1,6 +1,9 @@
 open main
 
-inl impossible_closed_unit_identity_progress_value_cross_type () : exact_linear_indexed_term exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_bool_type =
+inl impossible_closed_unit_identity_progress_value_cross_type
+    ()
+    : exact_linear_indexed_term exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_bool_type
+    =
     inl step =
         ExactLinearIndexedClosedUnitIdentityBetaStep (
             ExactLinearIndexedUnit (

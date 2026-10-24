@@ -4,7 +4,7 @@ use std::rc::Rc;
 struct Heap0 { l0: i32 }
 fn f_c0(mut v0: Rc<Heap0>, mut v1: Rc<Heap0>) -> Rc<dyn Fn(i32) -> (Rc<Heap0>, Rc<Heap0>)> {
     Rc::new(move |mut v2: i32| -> (Rc<Heap0>, Rc<Heap0>) {
-        let mut v3: bool = v2 == 0i32;
+        let v3: bool = v2 == 0i32;
         if v3 {
             (v1.clone(), v0.clone())
         } else {
@@ -13,16 +13,16 @@ fn f_c0(mut v0: Rc<Heap0>, mut v1: Rc<Heap0>) -> Rc<dyn Fn(i32) -> (Rc<Heap0>, R
     })
 }
 fn spiral_main() -> i32 {
-    let mut v0: i32 = 3i32;
-    let mut v1: i32 = 4i32;
-    let mut v2: Rc<Heap0> = Rc::new(Heap0 { l0: v0 });
-    let mut v3: Rc<Heap0> = Rc::new(Heap0 { l0: v1 });
-    let mut v4: Rc<dyn Fn(i32) -> (Rc<Heap0>, Rc<Heap0>)> = f_c0(v2.clone(), v3.clone());
+    let v0: i32 = 3i32;
+    let v1: i32 = 4i32;
+    let v2: Rc<Heap0> = Rc::new(Heap0 { l0: v0 });
+    let v3: Rc<Heap0> = Rc::new(Heap0 { l0: v1 });
+    let mut v4: Rc<dyn Fn(i32) -> (Rc<Heap0>, Rc<Heap0>)> = f_c0(v2, v3);
     let (mut v5, mut v6): (Rc<Heap0>, Rc<Heap0>) = v4(1i32);
-    let mut v7: i32 = v5.l0.clone();
-    let mut v8: i32 = v6.l0.clone();
-    let mut v9: i32 = v7.wrapping_add(v8);
-    let mut v10: bool = v9 == 7i32;
+    let v7: i32 = v5.l0.clone();
+    let v8: i32 = v6.l0.clone();
+    let v9: i32 = v7.wrapping_add(v8);
+    let v10: bool = v9 == 7i32;
     if v10 {
         0i32
     } else {

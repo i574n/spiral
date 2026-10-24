@@ -266,8 +266,7 @@ fun sp_utf8_scalar_at_byte_offset_1(p0: String, p1: Int): Int {
                                                 v83 = v82
                                             }
                                             if (v83) {
-                                                var v84: Int = 0
-                                                v84 = (v8 - 240)
+                                                val v84: Int = (v8 - 240)
                                                 var v85: Int = 0
                                                 v85 = (v84 * 262144)
                                                 var v86: Int = 0
@@ -276,10 +275,8 @@ fun sp_utf8_scalar_at_byte_offset_1(p0: String, p1: Int): Int {
                                                 v87 = (v86 * 4096)
                                                 var v88: Int = 0
                                                 v88 = (v85 + v87)
-                                                var v89: Int = 0
-                                                v89 = (v72 - 128)
-                                                var v90: Int = 0
-                                                v90 = (v89 * 64)
+                                                val v89: Int = (v72 - 128)
+                                                val v90: Int = (v89 * 64)
                                                 var v91: Int = 0
                                                 v91 = (v88 + v90)
                                                 var v92: Int = 0
@@ -577,8 +574,7 @@ fun sp_utf8_canonical_equal_bounded_loop_0(p0: String, p1: String, p2: Int, p3: 
                                 v138 = 65
                                 v139 = 771
                             } else {
-                                var v95: Boolean = false
-                                v95 = (v85 == 196)
+                                val v95: Boolean = (v85 == 196)
                                 if (v95) {
                                     v138 = 65
                                     v139 = 776
@@ -589,68 +585,57 @@ fun sp_utf8_canonical_equal_bounded_loop_0(p0: String, p1: String, p2: Int, p3: 
                                         v138 = 67
                                         v139 = 807
                                     } else {
-                                        var v97: Boolean = false
-                                        v97 = (v85 == 201)
+                                        val v97: Boolean = (v85 == 201)
                                         if (v97) {
                                             v138 = 69
                                             v139 = 769
                                         } else {
-                                            var v98: Boolean = false
-                                            v98 = (v85 == 211)
+                                            val v98: Boolean = (v85 == 211)
                                             if (v98) {
                                                 v138 = 79
                                                 v139 = 769
                                             } else {
-                                                var v99: Boolean = false
-                                                v99 = (v85 == 213)
+                                                val v99: Boolean = (v85 == 213)
                                                 if (v99) {
                                                     v138 = 79
                                                     v139 = 771
                                                 } else {
-                                                    var v100: Boolean = false
-                                                    v100 = (v85 == 224)
+                                                    val v100: Boolean = (v85 == 224)
                                                     if (v100) {
                                                         v138 = 97
                                                         v139 = 768
                                                     } else {
-                                                        var v101: Boolean = false
-                                                        v101 = (v85 == 225)
+                                                        val v101: Boolean = (v85 == 225)
                                                         if (v101) {
                                                             v138 = 97
                                                             v139 = 769
                                                         } else {
-                                                            var v102: Boolean = false
-                                                            v102 = (v85 == 227)
+                                                            val v102: Boolean = (v85 == 227)
                                                             if (v102) {
                                                                 v138 = 97
                                                                 v139 = 771
                                                             } else {
-                                                                var v103: Boolean = false
-                                                                v103 = (v85 == 228)
+                                                                val v103: Boolean = (v85 == 228)
                                                                 if (v103) {
                                                                     v138 = 97
                                                                     v139 = 776
                                                                 } else {
-                                                                    var v104: Boolean = false
-                                                                    v104 = (v85 == 231)
+                                                                    val v104: Boolean = (v85 == 231)
                                                                     if (v104) {
                                                                         v138 = 99
                                                                         v139 = 807
                                                                     } else {
-                                                                        var v105: Boolean = false
-                                                                        v105 = (v85 == 233)
+                                                                        val v105: Boolean = (v85 == 233)
                                                                         if (v105) {
                                                                             v138 = 101
                                                                             v139 = 769
                                                                         } else {
-                                                                            var v106: Boolean = false
-                                                                            v106 = (v85 == 243)
+                                                                            val v106: Boolean = (v85 == 243)
                                                                             if (v106) {
                                                                                 v138 = 111
                                                                                 v139 = 769
                                                                             } else {
-                                                                                var v107: Boolean = false
-                                                                                v107 = (v85 == 245)
+                                                                                val v107: Boolean = (v85 == 245)
                                                                                 if (v107) {
                                                                                     v138 = 111
                                                                                     v139 = 771
@@ -673,45 +658,28 @@ fun sp_utf8_canonical_equal_bounded_loop_0(p0: String, p1: String, p2: Int, p3: 
                             }
                         }
                     }
-                    var v140: Int = 0
-                    v140 = (v3 + v91)
+                    val v140: Int = (v3 + v91)
                     v147 = v138
                     v148 = v140
                     v149 = v139
                 }
             }
         }
-        var v150: Boolean = false
-        v150 = (v76 < 0)
+        val v150: Boolean = (v76 < 0)
         if (v150) {
-            var v151: Boolean = false
-            v151 = (v147 == -1)
+            val v151: Boolean = (v147 == -1)
             return v151
         } else {
-            var v152: Boolean = false
-            v152 = (v147 < 0)
+            val v152: Boolean = (v147 < 0)
             if (v152) {
                 return false
             } else {
-                var v153: Boolean = false
-                v153 = (v76 == v147)
+                val v153: Boolean = (v76 == v147)
                 if (v153) {
-                    val t19434_0: String = v0
-                    val t19481_1: String = v1
-                    val t19528_77: Int = v77
-                    val t19574_148: Int = v148
-                    val t19622_78: Int = v78
-                    val t19668_149: Int = v149
-                    val t19716_6: Int = v6
-                    val t19760_7: Int = v7
-                    v0 = t19434_0
-                    v1 = t19481_1
-                    v2 = t19528_77
-                    v3 = t19574_148
-                    v4 = t19622_78
-                    v5 = t19668_149
-                    v6 = t19716_6
-                    v7 = t19760_7
+                    v2 = v77
+                    v3 = v148
+                    v4 = v78
+                    v5 = v149
                     continue
                 } else {
                     return false
@@ -722,10 +690,8 @@ fun sp_utf8_canonical_equal_bounded_loop_0(p0: String, p1: String, p2: Int, p3: 
     return false
 }
 fun spiral_main(): Int {
-    var v0: String = ""
-    v0 = "plain"
-    var v1: Int = 0
-    v1 = 0
+    val v0: String = "plain"
+    val v1: Int = 0
     var v2: Int = 0
     v2 = 0
     var v3: Int = 0
@@ -734,8 +700,7 @@ fun spiral_main(): Int {
     v4 = -1
     var v5: Int = 0
     v5 = 5
-    var v6: Int = 0
-    v6 = 5
+    val v6: Int = 5
     var v7: Boolean = false
     v7 = sp_utf8_canonical_equal_bounded_loop_0(v0, v0, v1, v2, v3, v4, v5, v6)
     var v8: String = ""
@@ -744,8 +709,7 @@ fun spiral_main(): Int {
     v9 = 0
     var v10: Int = 0
     v10 = 0
-    var v11: Int = 0
-    v11 = -1
+    val v11: Int = -1
     var v12: Int = 0
     v12 = -1
     var v13: Int = 0
@@ -824,38 +788,27 @@ fun spiral_main(): Int {
     v49 = 2
     var v50: Boolean = false
     v50 = sp_utf8_canonical_equal_bounded_loop_0(v43, v43, v44, v45, v46, v47, v48, v49)
-    var v51: String = ""
-    v51 = "ẽ́"
+    val v51: String = "ẽ́"
     var v52: Int = 0
     v52 = 0
     var v53: Int = 0
     v53 = 0
-    var v54: Int = 0
-    v54 = -1
-    var v55: Int = 0
-    v55 = -1
-    var v56: Int = 0
-    v56 = 5
-    var v57: Int = 0
-    v57 = 5
-    var v58: Boolean = false
-    v58 = sp_utf8_canonical_equal_bounded_loop_0(v26, v51, v52, v53, v54, v55, v56, v57)
-    var v59: String = ""
-    v59 = "é"
-    var v60: String = ""
-    v60 = "á"
-    var v61: Int = 0
-    v61 = 0
-    var v62: Int = 0
-    v62 = 0
+    val v54: Int = -1
+    val v55: Int = -1
+    val v56: Int = 5
+    val v57: Int = 5
+    val v58: Boolean = sp_utf8_canonical_equal_bounded_loop_0(v26, v51, v52, v53, v54, v55, v56, v57)
+    val v59: String = "é"
+    val v60: String = "á"
+    val v61: Int = 0
+    val v62: Int = 0
     var v63: Int = 0
     v63 = -1
     var v64: Int = 0
     v64 = -1
     var v65: Int = 0
     v65 = 2
-    var v66: Int = 0
-    v66 = 2
+    val v66: Int = 2
     var v67: Boolean = false
     v67 = sp_utf8_canonical_equal_bounded_loop_0(v59, v60, v61, v62, v63, v64, v65, v66)
     var v68: String = ""

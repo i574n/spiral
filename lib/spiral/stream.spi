@@ -309,7 +309,7 @@ test unzip =
 /// ### io_error
 nominal io_error =
     `(
-        rust_type
+        rust.rust_type
             `($'std_io_Error')
             `($'std::io::Error')
             "type std_io_Error = string"
@@ -325,7 +325,7 @@ inl new_io_error (text : string) : io_error =
 /// ### buf_reader
 nominal buf_reader t =
     `(
-        rust_type
+        rust.rust_type
             `($'std_io_BufReader<`t>')
             `($'std::io::BufReader<`t>')
             "type std_io_BufReader<'T> = class end"
@@ -334,7 +334,7 @@ nominal buf_reader t =
 /// ### cursor
 nominal cursor t =
     `(
-        rust_type
+        rust.rust_type
             `($'std_io_Cursor<`t>')
             `($'std::io::Cursor<`t>')
             "type std_io_Cursor<'T> = class end"
@@ -343,7 +343,7 @@ nominal cursor t =
 /// ### buf_reader_tokio
 nominal buf_reader_tokio t =
     `(
-        rust_type
+        rust.rust_type
             `($'tokio_io_BufReader<`t>')
             `($'tokio::io::BufReader<`t>')
             "type tokio_io_BufReader<'T> = class end"
@@ -360,7 +360,7 @@ inl new_cursor forall t. (x : t) : cursor t =
 /// ### lines
 nominal lines t =
     `(
-        rust_type
+        rust.rust_type
             `($'std_io_Lines<`t>')
             `($'std::io::Lines<`t>')
             "type std_io_Lines<'T> = class end"
@@ -373,7 +373,7 @@ inl buf_read_lines forall t. (buf_reader : buf_reader t) : lines (buf_reader t) 
 /// ### decode_reader_bytes
 nominal decode_reader_bytes t u =
     `(
-        rust_type
+        rust.rust_type
             `($'encoding_rs_io_DecodeReaderBytes<`t, `u>')
             `($'encoding_rs_io::DecodeReaderBytes<`t, `u>')
             "type encoding_rs_io_DecodeReaderBytes<'T, 'U> = class end"

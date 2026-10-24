@@ -1,6 +1,9 @@
 open main
 
-inl impossible_corrected_cic_conversion_constraint_sort_mismatch () : corrected_cic_conversion_constraint_program (cic_chain_succ cic_chain_zero) =
+inl impossible_corrected_cic_conversion_constraint_sort_mismatch
+    ()
+    : corrected_cic_conversion_constraint_program (cic_chain_succ cic_chain_zero)
+    =
     CorrectedCicConversionConstraintProgramIntrinsicTerms (exists (
         corrected_cic_structural_defeq_pair_authority_make
             (corrected_cic_true ())

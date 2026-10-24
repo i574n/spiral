@@ -70,11 +70,16 @@ inl with_packed_pentagon forall space a e p q r s result.
         inl exists v1 v2 v3 v4 v5 e12 e23 e34 e15 e54 filler. cell = payload
         visit cell
 
-inl v1 () : parenthesization space_x point_a point_e path_p path_q path_r path_s vertex_1 = Parenthesization "(((p.q).r).s)"
-inl v2 () : parenthesization space_x point_a point_e path_p path_q path_r path_s vertex_2 = Parenthesization "((p.(q.r)).s)"
-inl v3 () : parenthesization space_x point_a point_e path_p path_q path_r path_s vertex_3 = Parenthesization "(p.((q.r).s))"
-inl v4 () : parenthesization space_x point_a point_e path_p path_q path_r path_s vertex_4 = Parenthesization "(p.(q.(r.s)))"
-inl v5 () : parenthesization space_x point_a point_e path_p path_q path_r path_s vertex_5 = Parenthesization "((p.q).(r.s))"
+inl v1 () : parenthesization space_x point_a point_e path_p path_q path_r path_s vertex_1 =
+    Parenthesization "(((p.q).r).s)"
+inl v2 () : parenthesization space_x point_a point_e path_p path_q path_r path_s vertex_2 =
+    Parenthesization "((p.(q.r)).s)"
+inl v3 () : parenthesization space_x point_a point_e path_p path_q path_r path_s vertex_3 =
+    Parenthesization "(p.((q.r).s))"
+inl v4 () : parenthesization space_x point_a point_e path_p path_q path_r path_s vertex_4 =
+    Parenthesization "(p.(q.(r.s)))"
+inl v5 () : parenthesization space_x point_a point_e path_p path_q path_r path_s vertex_5 =
+    Parenthesization "((p.q).(r.s))"
 
 inl a12 () : associator_2cell space_x point_a point_e path_p path_q path_r path_s vertex_1 vertex_2 edge_12 =
     Associator2Cell (v1 (), v2 (), "alpha-12")
@@ -87,16 +92,37 @@ inl a15 () : associator_2cell space_x point_a point_e path_p path_q path_r path_
 inl a54 () : associator_2cell space_x point_a point_e path_p path_q path_r path_s vertex_5 vertex_4 edge_54 =
     Associator2Cell (v5 (), v4 (), "alpha-54")
 
-inl coherent_pentagon () : pentagon_3cell space_x point_a point_e path_p path_q path_r path_s vertex_1 vertex_2 vertex_3 vertex_4 vertex_5 edge_12 edge_23 edge_34 edge_15 edge_54 pentagon_filler =
-    Pentagon3Cell (v1 (), v2 (), v3 (), v4 (), v5 (), a12 (), a23 (), a34 (), a15 (), a54 (), "mac-lane-pentagon-filler")
+inl coherent_pentagon
+    ()
+    : pentagon_3cell space_x point_a point_e path_p path_q path_r path_s vertex_1 vertex_2 vertex_3 vertex_4 vertex_5
+        edge_12 edge_23 edge_34 edge_15 edge_54 pentagon_filler
+    =
+    Pentagon3Cell (
+        v1 (),
+        v2 (),
+        v3 (),
+        v4 (),
+        v5 (),
+        a12 (),
+        a23 (),
+        a34 (),
+        a15 (),
+        a54 (),
+        "mac-lane-pentagon-filler"
+    )
 
 inl label forall v1' v2' v3' v4' v5' e12' e23' e34' e15' e54' filler.
-    (_ : pentagon_3cell space_x point_a point_e path_p path_q path_r path_s v1' v2' v3' v4' v5' e12' e23' e34' e15' e54' filler) : string =
+    (_ :
+        pentagon_3cell
+            space_x point_a point_e path_p path_q path_r path_s v1' v2' v3' v4' v5' e12' e23' e34' e15' e54' filler)
+    : string
+    =
     "hott-associator-pentagon-coherent"
 
 inl main () : string =
     inl chain : composable_4 space_x point_a point_b point_c point_d point_e path_p path_q path_r path_s =
         Composable4 (Path "p", Path "q", Path "r", Path "s")
     inl _ = chain
-    inl packed : packed_pentagon space_x point_a point_e path_p path_q path_r path_s = PackedPentagon (exists (coherent_pentagon ()))
+    inl packed : packed_pentagon space_x point_a point_e path_p path_q path_r path_s =
+        PackedPentagon (exists (coherent_pentagon ()))
     with_packed_pentagon `$label packed

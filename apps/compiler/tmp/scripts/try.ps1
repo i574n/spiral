@@ -45,7 +45,7 @@ if ($compiler.ExitCode -eq 0) {
         'C' { gcc -std=c11 -O2 -fwrapv -w -o $exe $output -lm; & $exe }
         'Zig' { zig build-exe $output -O ReleaseFast -fno-emit-implib "-femit-bin=$exe" 2>&1 | Out-Null; & $exe }
         'Lua' { lua (Join-Path $env:SPIRAL_WORKSPACE_ROOT 'tests/native-shims/run_main.lua') $output }
-        'Rust' { rustc --edition 2024 -O -A warnings -o $exe $output; & $exe }
+        'Rust' { $pin = if ((Get-Command rustc -ErrorAction SilentlyContinue).Source -match '[\\/]\.cargo[\\/]bin[\\/]') { @('+nightly-2026-10-18') } else { @() }; rustc $pin --edition 2024 -O -A warnings -o $exe $output; & $exe }
     }
     $result += ", run exit $LASTEXITCODE"
 }

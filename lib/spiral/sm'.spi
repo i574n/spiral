@@ -180,14 +180,32 @@ inl obj_to_string_wasm forall t. (x : t) : string =
     elif (real typecase t with char => true | _ => false) then $'(call $char_to_str !x)' : string
     elif (real typecase t with i64 => true | _ => false) then $'(call $i64_to_str !x)' : string
     elif (real typecase t with u64 => true | _ => false) then $'(call $u64_to_str !x)' : string
-    elif (real typecase t with i8 => true | i16 => true | i32 => true | _ => false) then $'(call $i64_to_str (i64.extend_i32_s !x))' : string
-    elif (real typecase t with u8 => true | u16 => true | u32 => true | _ => false) then $'(call $u64_to_str (i64.extend_i32_u !x))' : string
+    elif (real typecase t with i8 => true | i16 => true | i32 => true | _ => false) then $'(call $i64_to_str \
+        (i64.extend_i32_s !x))' : string
+    elif (real typecase t with u8 => true | u16 => true | u32 => true | _ => false) then $'(call $u64_to_str \
+        (i64.extend_i32_u !x))' : string
     else $'backend_switch_has_no_Wasm_arm_in_lib_spiral' : string
 inl obj_to_string_zig forall t. (x : t) : string =
-    if (real typecase t with string => true | string_builder_real => true | _ => false) then $'!x ' : string
-    elif (real typecase t with char => true | _ => false) then $'(std.fmt.allocPrint(spiral_gpa, "{c}", .{ !x }) catch \@panic("out of memory"))' : string
-    elif (real typecase t with bool => true | _ => false) then $'(if (!x) "true" else "false")' : string
-    elif (real typecase t with f32 => true | f64 => true | i8 => true | i16 => true | i32 => true | i64 => true | u8 => true | u16 => true | u32 => true | u64 => true | _ => false)
+    if (real typecase t with string => true | string_builder_real => true | _ => false)
+    then $'!x ' : string
+    elif (real typecase t with char => true | _ => false)
+    then $'(std.fmt.allocPrint(spiral_gpa, "{c}", .{ !x }) catch \@panic("out of memory"))' : string
+    elif (real typecase t with bool => true | _ => false)
+    then $'(if (!x) "true" else "false")' : string
+    elif
+        real
+            typecase t with
+            | f32 => true
+            | f64 => true
+            | i8 => true
+            | i16 => true
+            | i32 => true
+            | i64 => true
+            | u8 => true
+            | u16 => true
+            | u32 => true
+            | u64 => true
+            | _ => false
     then $'(std.fmt.allocPrint(spiral_gpa, "{d}", .{ !x }) catch \@panic("out of memory"))' : string
     else $'(std.fmt.allocPrint(spiral_gpa, "{any}", .{ !x }) catch \@panic("out of memory"))' : string
 
@@ -272,13 +290,45 @@ inl (~#?**) s =
     s |> obj_to_string
 
 /// ### concat_list
-inl concat_list separator input =
+let rec concat_pass (separator : string) (input : list string) (paired : list string) : list string =
+    match input with
+    | Cons (left, Cons (right, rest)) => concat_pass separator rest (Cons (left ++# separator ++# right, paired))
+    | Cons (last, Nil) => listm.rev (Cons (last, paired))
+    | Nil => listm.rev paired
+
+let rec concat_balanced (separator : string) (input : list string) : string =
+    match input with
+    | Nil => ""
+    | Cons (only, Nil) => only
+    | _ => concat_balanced separator (concat_pass separator input Nil)
+
+inl concat_right_fold separator input =
     (input, { acc = ""; sep = "" })
     ||> listm.foldBack fun (x : string) { acc sep } => {
         acc = x ++# sep ++# acc
         sep = separator
     }
     |> fun { acc } => acc
+
+inl concat_list separator input : string =
+    backend_switch {
+        Gleam = fun () => concat_balanced separator input
+        Lua = fun () => concat_right_fold separator input
+        Fsharp = fun () => concat_right_fold separator input
+        Python = fun () => concat_right_fold separator input
+        Cpp = fun () => concat_right_fold separator input
+        CppHost = fun () => concat_right_fold separator input
+        Rust = fun () => concat_right_fold separator input
+        TypeScript = fun () => concat_right_fold separator input
+        Zig = fun () => concat_right_fold separator input
+        Lean = fun () => concat_right_fold separator input
+        C = fun () => concat_right_fold separator input
+        Delphi = fun () => concat_right_fold separator input
+        Wasm = fun () => concat_right_fold separator input
+        Bend = fun () => concat_right_fold separator input
+        Kotlin = fun () => concat_right_fold separator input
+        Swift = fun () => concat_right_fold separator input
+    }
 
 ///> gleam
 ///> fsharp
@@ -306,6 +356,7 @@ inl slice forall t {number; int}. (from : t) (to : t) s : string =
         Gleam = fun () =>
             sm.slice s { from to } : string
         Lua = fun () => sm.slice s { from to } : string
+        C = fun () => sm.slice s { from to } : string
         Fsharp = fun () => sm.slice s { from to } : string
         Python = fun () => sm.slice s { from to } : string
         Rust = fun () => sm.slice s { from to } : string
@@ -411,10 +462,128 @@ inl format forall t. (x : t) : string =
 ///> typescript
 ///> c
 test format =
-    ("1", "2", ["3"; "4"], { b = "5"; c = "6"; a = fun () => "7" }, ;[ 8i32 ])
+    ("1", "2", [ "3"; "4" ], { b = "5"; c = "6"; a = fun () => "7" }, ;[ 8i32 ])
     |> format
     |> _assert_eq "(1, 2, Cons(3, Cons(4, Nil)), { b = 5; c = 6; a = 7 }, [8])"
 
+/// ### format_fixed_digits
+inl format_fixed_digits (decimals : i32) (x : f64) : string =
+    inl negative = x < 0.0
+    inl magnitude = if negative then 0.0 - x else x
+    let rec up (v : f64) (e : i32) : f64 * i32 =
+        if v > 0.0 && v < 4503599627370496.0 then up (v * 2.0) (e - 1) else v, e
+    let rec down (v : f64) (e : i32) : f64 * i32 =
+        if v >= 9007199254740992.0 then down (v / 2.0) (e + 1) else v, e
+    inl raised, raised_by = up magnitude 0
+    inl mantissa, exponent = down raised raised_by
+    inl digits : array i32 = create 1200
+    let rec clear (i : i32) : () =
+        if i < 1200 then
+            set digits i 0
+            clear (i + 1)
+    clear 0
+    let rec put (m : u64) (i : i32) : i32 =
+        if m = 0u64
+        then i
+        else
+            set digits i (conv (m % 10u64))
+            put (m / 10u64) (i + 1)
+    inl scale_by (factor : i32) (length : i32) : i32 =
+        let rec spill (j : i32) (carry : i32) : i32 =
+            if carry = 0
+            then j
+            else
+                set digits j (carry % 10)
+                spill (j + 1) (carry / 10)
+        let rec go (i : i32) (carry : i32) : i32 =
+            if i < length
+            then
+                inl t = am'.index i digits * factor + carry
+                set digits i (t % 10)
+                go (i + 1) (t / 10)
+            else spill length carry
+        go 0 0
+    let rec repeat (times : i32) (factor : i32) (length : i32) : i32 =
+        if times <= 0 then length else repeat (times - 1) factor (scale_by factor length)
+    inl started = put (conv mantissa) 0
+    inl scaled = repeat decimals 10 started
+    inl length, drop =
+        if exponent >= 0 then repeat exponent 2 scaled, 0 else repeat (0 - exponent) 5 scaled, 0 - exponent
+    let rec lower_nonzero (i : i32) : bool =
+        if i < 0 then false elif am'.index i digits <> 0 then true else lower_nonzero (i - 1)
+    inl rounds_up =
+        if drop <= 0
+        then false
+        else
+            inl top = am'.index (drop - 1) digits
+            inl odd = drop < length && am'.index drop digits % 2 = 1
+            top > 5 || top = 5 && (lower_nonzero (drop - 2) || odd)
+    let rec carry_from (i : i32) (length : i32) : i32 =
+        inl t = am'.index i digits + 1
+        set digits i (t % 10)
+        inl grown = if i >= length then i + 1 else length
+        if t < 10 then grown else carry_from (i + 1) grown
+    inl final = if rounds_up then carry_from drop length else length
+    inl top = if final - drop > decimals + 1 then final - 1 else drop + decimals
+    let rec leading (i : i32) : i32 =
+        if i > drop + decimals && am'.index i digits = 0 then leading (i - 1) else i
+    inl first = leading top
+    inl digit_text (d : i32) : string =
+        if d = 0 then "0" elif d = 1 then "1" elif d = 2 then "2" elif d = 3 then "3" elif d = 4 then "4"
+        elif d = 5 then "5" elif d = 6 then "6" elif d = 7 then "7" elif d = 8 then "8" else "9"
+    let rec text (i : i32) (acc : string) : string =
+        if i < drop
+        then acc
+        else
+            inl point = if decimals > 0 && i = drop + decimals - 1 then "." else ""
+            text (i - 1) (acc ++# point ++# digit_text (am'.index i digits))
+    (if negative then "-" else "") ++# text first ""
+
+/// ### format_fixed
+inl format_fixed (decimals : i32) (x : f64) : string =
+    backend_switch {
+        Fsharp = fun () =>
+            $'(!x).ToString("F" + string !decimals, System.Globalization.CultureInfo.InvariantCulture)' : string
+        Lua = fun () => $'string.format("%." .. !decimals .. "f", !x)' : string
+        Python = fun () => $'format(!x, "." + str(!decimals) + "f")' : string
+        Rust = fun () => $'Rc::<str>::from(format\!("{:.*}", !decimals as usize, !x).as_str())' : string
+        TypeScript = fun () => $'(!x).toFixed(!decimals)' : string
+        C = fun () => format_fixed_digits decimals x
+        Gleam = fun () => format_fixed_digits decimals x
+        Zig = fun () => format_fixed_digits decimals x
+    }
+
+///> rust
+///> fsharp
+///> lua
+///> python
+///> typescript
+///> c
+///> gleam
+///> zig
+test format_fixed_avoids_ties =
+    (
+        2.0 / 3.0 |> format_fixed 3,
+        0.0 - 1.0 / 3.0 |> format_fixed 1,
+        12.0 |> format_fixed 0,
+        0.000000001 |> format_fixed 3,
+        1234.5678 |> format_fixed 2
+    )
+    |> _assert_eq ("0.667", "-0.3", "12", "0.000", "1234.57")
+
+///> c
+///> gleam
+///> zig
+test format_fixed_digits_rounds_exact_ties_to_even =
+    (
+        0.125 |> format_fixed 2,
+        2.5 |> format_fixed 0,
+        2.675 |> format_fixed 2,
+        9.995 |> format_fixed 2,
+        0.0 - 0.04 |> format_fixed 1,
+        10000000000000000000000.0 |> format_fixed 2
+    )
+    |> _assert_eq ("0.12", "2", "2.67", "9.99", "-0.0", "10000000000000000000000.00")
 /// ### (~#?)
 inl (~#?) s =
     s |> format
@@ -436,7 +605,7 @@ inl show forall t. (x : t) : string =
 ///> rust
 ///> typescript
 test show =
-    show ("1", 2i32, ["3"; "4"], { b = "5"; c = (6i32, Some 'x') }, ;[ ("7", 8i32) ])
+    show ("1", 2i32, [ "3"; "4" ], { b = "5"; c = (6i32, Some 'x') }, ;[ ("7", 8i32) ])
     |> _assert_eq "(1, 2, Cons(3, Cons(4, Nil)), { b = 5; c = (6, Some(x)) }, [(7, 8)])"
 
 ///> gleam
@@ -467,11 +636,16 @@ test to_char_array_2 =
     |> _assert_eq #?(;[ 'a'; 'b'; 'c' ])
 
 /// ### concat_array
-inl concat_array (separator : string) (input : array string) =
-    (input, { acc = ""; sep = "" })
-    ||> arraym.foldBack fun (x : string) { acc sep } =>
-            { acc = x ++# sep ++# acc; sep = separator }
-    |> fun { acc } => acc
+inl concat_array (separator : string) (input : array string) : string =
+    run_target function
+        | Rust => fun () =>
+            $'Rc::<str>::from((*!input).borrow().iter().map(|x| &**x).collect::<Vec<&str>>().join(&*!separator).as_str())'
+            : string
+        | _ => fun () =>
+            ({ acc = ""; sep = "" }, input)
+            ||> arraym.fold fun { acc sep } (x : string) =>
+                    { acc = acc ++# sep ++# x; sep = separator }
+            |> fun { acc } => acc
 
 ///> fsharp
 ///> rust
@@ -491,6 +665,111 @@ test concat_array print_code =
             2
             3
             """
+
+inl lines (text : string) : array string =
+    run_target function
+        | Rust => fun () =>
+            $'Rc::new(RefCell::new((*!text).lines().map(|line| Rc::<str>::from(line)).collect::<Vec<Rc<str>>>()))'
+            : array string
+        | _ => fun () => failwith "lines: no arm for this backend"
+
+inl nonempty_lines (text : string) : array string =
+    run_target function
+        | Rust => fun () =>
+            $'Rc::new(RefCell::new((*!text).lines().filter(|line| \!line.is_empty()).map(|line| Rc::<str>::from(line)).collect::<Vec<Rc<str>>>()))'
+            : array string
+        | _ => fun () => failwith "nonempty_lines: no arm for this backend"
+
+inl lines_gleam () =
+    global "import gleam/list"
+    global "import gleam/result"
+    global "import gleam/string"
+    global """
+        fn spiral_sm_lines(text: String) -> List(String) {
+          let parts =
+            string.split(text, "\n")
+            |> list.map(fn(line) {
+              case string.ends_with(line, "\r") {
+                True -> string.drop_end(line, 1)
+                False -> line
+              }
+            })
+          case list.last(parts) {
+            Ok("") -> list.take(parts, list.length(parts) - 1)
+            _ -> parts
+          }
+        }
+
+        fn spiral_sm_nonempty_lines(text: String) -> List(String) {
+          spiral_sm_lines(text) |> list.filter(fn(line) { line != "" })
+        }
+
+        fn spiral_sm_nth_line(lines: List(String), index: Int) -> String {
+          lines |> list.drop(index) |> list.first |> result.unwrap("")
+        }
+        """
+
+inl line_count (text : string) : int =
+    run_target function
+        | Rust => fun () => $'(*!text).lines().count() as i32' : int
+        | Gleam => fun () =>
+            lines_gleam ()
+            $'list.length(spiral_sm_lines(!text))' : int
+        | _ => fun () => failwith "line_count: no arm for this backend"
+
+inl nonempty_line_count (text : string) : int =
+    run_target function
+        | Rust => fun () => $'(*!text).lines().filter(|line| \!line.is_empty()).count() as i32' : int
+        | Gleam => fun () =>
+            lines_gleam ()
+            $'list.length(spiral_sm_nonempty_lines(!text))' : int
+        | _ => fun () => failwith "nonempty_line_count: no arm for this backend"
+
+inl line_at (index : int) (text : string) : string =
+    run_target function
+        | Rust => fun () => $'Rc::<str>::from((*!text).lines().nth(!index as usize).unwrap_or(""))' : string
+        | Gleam => fun () =>
+            lines_gleam ()
+            $'spiral_sm_nth_line(spiral_sm_lines(!text), !index)' : string
+        | _ => fun () => failwith "line_at: no arm for this backend"
+
+inl nonempty_line_at (index : int) (text : string) : string =
+    run_target function
+        | Rust => fun () =>
+            $'Rc::<str>::from((*!text).lines().filter(|line| \!line.is_empty()).nth(!index as usize).unwrap_or(""))'
+            : string
+        | Gleam => fun () =>
+            lines_gleam ()
+            $'spiral_sm_nth_line(spiral_sm_nonempty_lines(!text), !index)' : string
+        | _ => fun () => failwith "nonempty_line_at: no arm for this backend"
+
+///> rust
+test line_counts_and_picks_scan_without_splitting =
+    inl text = "a\r\n\nb\n"
+    line_count text |> _assert_eq 3
+    nonempty_line_count text |> _assert_eq 2
+    line_at 0 text |> _assert_eq "a"
+    line_at 1 text |> _assert_eq ""
+    nonempty_line_at 1 text |> _assert_eq "b"
+    line_at 9 text |> _assert_eq ""
+
+///> rust
+test lines_follow_rust_line_rules =
+    inl text = "a\r\n\nb\n"
+    (am'.length (lines text) : int) |> _assert_eq 3
+    (am'.length (nonempty_lines text) : int) |> _assert_eq 2
+    am'.index 0 (lines text) |> _assert_eq "a"
+    am'.index 1 (nonempty_lines text) |> _assert_eq "b"
+    (am'.length (lines "") : int) |> _assert_eq 0
+
+///> rust
+test a_growable_array_joins_in_one_pass =
+    inl items : array string = am'.growable ()
+    am'.push_back "a" items
+    am'.push_back "" items
+    am'.push_back "b" items
+    items |> concat_array "\n" |> _assert_eq "a\n\nb"
+    (am'.growable () : array string) |> concat_array "," |> _assert_eq ""
 
 /// ### ellipsis
 inl ellipsis (max : i32) (s : string) =
@@ -514,17 +793,42 @@ test ellipsis =
 
 /// ## fsharp
 
+inl last_index_of_gleam () =
+    global "import gleam/bit_array"
+    global "import gleam/dynamic.{type Dynamic}"
+    global "import gleam/erlang/atom"
+    global """
+        @external(erlang, "string", "find")
+        fn spiral_sm_find_trailing(text: String, search: String, direction: atom.Atom) -> Dynamic
+
+        @external(erlang, "gleam_stdlib", "identity")
+        fn spiral_sm_coerce(value: a) -> b
+
+        fn spiral_sm_last_index_of(text: String, search: String) -> Int {
+          let size = bit_array.byte_size(bit_array.from_string(text))
+          case search {
+            "" -> size
+            _ -> {
+              let found = spiral_sm_find_trailing(text, search, atom.create("trailing"))
+              case found == spiral_sm_coerce(atom.create("nomatch")) {
+                True -> -1
+                False -> size - bit_array.byte_size(spiral_sm_coerce(found))
+              }
+            }
+          }
+        }
+        """
+
 /// ### last_index_of
 inl last_index_of (search : string) (s : string) : i32 =
     inl search = dyn search
     run_target function
         | Zig => fun () => $'(if (std.mem.lastIndexOf(u8, !s, !search)) |i| \@as(i32, \@intCast(i)) else -1)' : i32
         | Rust => fun () => $'!s.rfind(&*!search).map(|i| i as i32).unwrap_or(-1)' : i32
+        | Gleam => fun () =>
+            last_index_of_gleam ()
+            $'spiral_sm_last_index_of(!s, !search)' : i32
         | _ => fun () => $'!s.LastIndexOf !search ' : i32
-
-/// ### index_of_char
-inl index_of_char (search : char) (s : string) : int =
-    $'!s.IndexOf !search '
 
 /// ### index_of_char_from
 inl index_of_char_from (from : i32) (c : char) (s : string) : i32 =
@@ -544,19 +848,52 @@ test index_of_char_from =
     |> _assert_eq 4i32
 
 /// ### index_of
+/// ### portable_matches_at
+inl portable_matches_at (search : string) (s : string) (at : i32) : bool =
+    inl m : i32 = sm.length search
+    let rec same (k : i32) : bool =
+        if k >= m then true
+        elif sm.index s (at + k) = sm.index search k then same (k + 1)
+        else false
+    same 0
+
+/// ### portable_index_of
+inl portable_index_of (search : string) (s : string) : i32 =
+    inl n : i32 = sm.length s
+    inl m : i32 = sm.length search
+    let rec scan (at : i32) : i32 =
+        if at + m > n then -1i32
+        elif portable_matches_at search s at then at
+        else scan (at + 1)
+    scan 0
+
+/// ### index_of
 inl index_of (search : string) (s : string) : int =
     backend_switch {
         Gleam = fun () =>
             global "import gleam/bit_array"
             global "import gleam/string"
-            $'case string.split_once(!s, !search) { Ok(spiral_split) -> bit_array.byte_size(bit_array.from_string(spiral_split.0)) Error(_) -> -1 }' : int
+            global """
+                @external(erlang, "binary", "split")
+                fn spiral_binary_split_first(text: String, search: String) -> List(String) {
+                  case string.split_once(text, search) {
+                    Ok(#(head, tail)) -> [head, tail]
+                    Error(_) -> [text]
+                  }
+                }
+                """
+            $'case !search { "" -> 0 _ -> case spiral_binary_split_first(!s, !search) { \
+                [spiral_head, _] -> bit_array.byte_size(bit_array.from_string(spiral_head)) _ -> -1 } }' : int
         Lua = fun () => $'((string.find(!s, !search, 1, true) or 0) - 1)' : int
         Fsharp = fun () => $'(!s).IndexOf(!search, System.StringComparison.Ordinal)' : int
-        Python = fun () => $'(lambda spiral_found: -1 if spiral_found < 0 else len((!s)[:spiral_found].encode("utf-8", "surrogateescape")))((!s).find(!search))' : int
+        Python = fun () => $'(lambda spiral_found: -1 if spiral_found < 0 else \
+            len((!s)[:spiral_found].encode("utf-8", "surrogateescape")))((!s).find(!search))' : int
         Rust = fun () => $'!s.find(&*!search).map(|i| i as `int).unwrap_or(-1)' : int
+        C = fun () => conv (portable_index_of search s) : int
         TypeScript = fun () => $'!s.indexOf(!search)' : int
         Zig = fun () => $'(if (std.mem.indexOf(u8, !s, !search)) |i| \@as(`int, \@intCast(i)) else -1)' : int
-        Lean = fun () => $'(if (!search).isEmpty then 0 else match (!s).splitOn !search with | [_] => -1 | p :: _ => `int.ofNat p.utf8ByteSize | [] => -1)' : int
+        Lean = fun () => $'(if (!search).isEmpty then 0 else match (!s).splitOn !search with | [_] => -1 | p :: _ => \
+            `int.ofNat p.utf8ByteSize | [] => -1)' : int
     }
 
 ///> gleam
@@ -657,6 +994,10 @@ inl ends_with (value : string) (s : string) : bool =
         TypeScript = fun () => $'!s.endsWith(!value)' : bool
         Lua = fun () => $'!value == "" or !s:sub(-##!value) == !value ' : bool
         Zig = fun () => $'std.mem.endsWith(u8, !s, !value)' : bool
+        C = fun () =>
+            inl n : i32 = sm.length s
+            inl m : i32 = sm.length value
+            m <= n && portable_matches_at value s (n - m)
         Lean = fun () => $'(!s).endsWith !value ' : bool
     }
 
@@ -672,21 +1013,19 @@ inl starts_with (value : string) (s : string) : bool =
         Rust = fun () => $'!s.starts_with(&*!value)' : bool
         TypeScript = fun () => $'!s.startsWith(!value)' : bool
         Zig = fun () => $'std.mem.startsWith(u8, !s, !value)' : bool
+        C = fun () =>
+            inl n : i32 = sm.length s
+            inl m : i32 = sm.length value
+            m <= n && portable_matches_at value s 0
         Lean = fun () => $'(!s).startsWith !value ' : bool
     }
-
-/// ### is_white_space
-inl is_white_space (c : char) : bool =
-    run_target function
-        | Zig => fun () => $'std.ascii.isWhitespace(!c)' : bool
-        | _ => fun () => c |> $'System.Char.IsWhiteSpace'
 
 /// ### substring
 inl substring (start : i32) (len : i32) (str : string) : string =
     run_target function
         | Rust => fun () => $'Rc::<str>::from(&(!str)[((!start) as usize)..(((!start) + (!len)) as usize)])' : string
         | Zig => fun () => $'(!str)[\@intCast(!start)..\@intCast(!start + !len)]' : string
-        | Gleam => fun () => sm.slice str {from=start; to=start + len - 1}
+        | Gleam => fun () => sm.slice str { from = start; to = start + len - 1 }
         | _ => fun () => $'!str.Substring (!start, !len)'
 
 ///> gleam
@@ -694,7 +1033,13 @@ inl substring (start : i32) (len : i32) (str : string) : string =
 ///> fsharp
 test substring_cuts_by_start_and_length =
     inl before_slash (s : string) = s |> substring 0 (s |> index_of "/")
-    ("spiral" |> substring 1 3, "spiral" |> substring 0 0, "spiral" |> substring 6 0, before_slash "é/x", before_slash "a’😀/b")
+    (
+        "spiral" |> substring 1 3,
+        "spiral" |> substring 0 0,
+        "spiral" |> substring 6 0,
+        before_slash "é/x",
+        before_slash "a’😀/b"
+    )
     |> _assert_eq ("pir", "", "", "é", "a’😀")
 
 /// ### to_lower
@@ -773,26 +1118,6 @@ test builder_append =
     |> obj_to_string
     |> _assert_eq "abcdef"
 
-/// ### builder_append_line
-inl builder_append_line (sb : string_builder) : string_builder =
-    backend_switch {
-        Gleam = fun () =>
-            sb |> builder_append "\n"
-        Lua = fun () =>
-            sb |> builder_append "\n"
-        Fsharp = fun () =>
-            ($'!sb.AppendLine ()' : string_builder) |> ignore
-            sb
-        Python = fun () =>
-            sb |> builder_append "\n"
-        Rust = fun () =>
-            sb |> builder_append "\n"
-        TypeScript = fun () =>
-            sb |> builder_append "\n"
-        Zig = fun () =>
-            sb |> builder_append "\n"
-    }
-
 /// ### builder_replace
 inl builder_replace (old : string) (new : string) (sb : string_builder) : string_builder =
     backend_switch {
@@ -804,11 +1129,11 @@ inl builder_replace (old : string) (new : string) (sb : string_builder) : string
         Fsharp = fun () =>
             ($'!sb.Replace (!old, !new)' : string_builder) |> ignore
             sb
-        Python = fun () =>
-            ($'!sb.getvalue().replace(!old, !new)' : string) |> string_builder
+        Python = fun () => ($'!sb.getvalue().replace(!old, !new)' : string) |> string_builder
         Rust = fun () => $'!sb.replace(&*!old, &*!new)' : string_builder
         TypeScript = fun () => $'!sb.split(!old).join(!new)' : string_builder
-        Zig = fun () => $'(std.mem.replaceOwned(u8, spiral_gpa, !sb, !old, !new) catch \@panic("out of memory"))' : string_builder
+        Zig = fun () =>
+            $'(std.mem.replaceOwned(u8, spiral_gpa, !sb, !old, !new) catch \@panic("out of memory"))' : string_builder
     }
 
 ///> gleam
@@ -879,8 +1204,10 @@ inl builder_insert (i : int) (s : string) (sb : string_builder) : string_builder
         Python = fun () =>
             inl sb = sb |> obj_to_string
             $'"".join([!sb[:!i], !s, !sb[!i:]])' |> string_builder
-        Rust = fun () => $'{ let mut r = !sb.clone(); let at = r.char_indices().nth(!i as usize).map(|(b, _)| b).unwrap_or(r.len()); r.insert_str(at, &*!s); r }' : string_builder
-        Zig = fun () => $'(std.mem.concat(spiral_gpa, u8, &.{ (!sb)[0..\@intCast(!i)], !s, (!sb)[\@intCast(!i)..] }) catch \@panic("out of memory"))' : string_builder
+        Rust = fun () => $'{ let mut r = !sb.clone(); let at = r.char_indices().nth(!i as usize).map(|(b, _)| \
+            b).unwrap_or(r.len()); r.insert_str(at, &*!s); r }' : string_builder
+        Zig = fun () => $'(std.mem.concat(spiral_gpa, u8, &.{ (!sb)[0..\@intCast(!i)], !s, (!sb)[\@intCast(!i)..] }) \
+            catch \@panic("out of memory"))' : string_builder
     }
 
 ///> gleam
@@ -996,6 +1323,27 @@ test trim_with =
     |> trim_with [ ' '; '\t'; '\n' ]
     |> _assert_eq "jkl"
 
+/// ### trim_end_suffix
+inl trim_end_suffix (suffix : string) (input : string) : string =
+    inl suffix_length : int = suffix |> length
+    let rec loop (text : string) : string =
+        if suffix_length > 0 && (text |> ends_with suffix)
+        then text |> slice 0 ((text |> length) - suffix_length - 1) |> loop
+        else text
+    loop input
+
+///> rust
+///> fsharp
+///> gleam
+test trim_end_suffix_removes_every_trailing_copy =
+    (
+        "a.spi.spi" |> trim_end_suffix ".spi",
+        "a.spi" |> trim_end_suffix ".rs",
+        "abc" |> trim_end_suffix "",
+        ".spi" |> trim_end_suffix ".spi"
+    )
+    |> _assert_eq ("a", "a.spi", "abc", "")
+
 /// ### trim
 inl trim (input : string) : string =
     input |> trim_with []
@@ -1085,7 +1433,13 @@ inl replace (old : string) (new : string) (s : string) : string =
 ///> rust
 ///> gleam
 test search_and_replace_treat_text_literally =
-    ("a.b%c" |> index_of ".", "a.b%c" |> index_of "%", "x" |> index_of "y", "a.b.c" |> replace "." "%", "a.b" |> starts_with "a.")
+    (
+        "a.b%c" |> index_of ".",
+        "a.b%c" |> index_of "%",
+        "x" |> index_of "y",
+        "a.b.c" |> replace "." "%",
+        "a.b" |> starts_with "a."
+    )
     |> _assert_eq (1, 3, -1, "a%b%c", true)
 
 /// ### split
@@ -1096,13 +1450,79 @@ inl split (separator : string) (str : string) : array_base string =
             ($'!str |> string.split(!separator)' : listm'.list' string)
             |> listm'.to_array'
         Fsharp = fun () => $'!str.Split !separator ' : array_base string
+        Lua = fun () =>
+            $'(function(s, sep) if sep == "" then return {s} end local parts, from = {}, 1 while true do local at = \
+            string.find(s, sep, from, true) if not at then parts[##parts + 1] = string.sub(s, from) return parts end \
+            parts[##parts + 1] = string.sub(s, from, at - 1) from = at + ##sep end end)(!str, !separator)'
+            : array_base string
+        C = fun () =>
+            inl n : i32 = sm.length str
+            inl m : i32 = sm.length separator
+            inl matches_at (at : i32) : bool =
+                let rec same (k : i32) : bool =
+                    if k >= m then true
+                    elif sm.index str (at + k) = sm.index separator k then same (k + 1)
+                    else false
+                same 0
+            let rec next_from (at : i32) : i32 =
+                if at + m > n then n
+                elif matches_at at then at
+                else next_from (at + 1)
+            let rec count (at : i32) (parts : i32) : i32 =
+                inl hit = next_from at
+                if hit >= n then parts else count (hit + m) (parts + 1)
+            let rec start_of (part : i32) (at : i32) : i32 =
+                if part = 0 then at else start_of (part - 1) (next_from at + m)
+            if m = 0
+            then am'.init_base 1i32 fun _ => str
+            else
+                am'.init_base (count 0 1) fun (part : i32) =>
+                    inl from = start_of part 0
+                    sm.slice str { from = from; to = next_from from - 1 }
         Python = fun () => $'!str.split(!separator)' : array_base string
         Rust = fun () =>
             $'Rc::new(RefCell::new(!str.split(&*!separator).map(|x| Rc::<str>::from(x)).collect::<Vec<Rc<str>>>()))'
             : array_base string
         TypeScript = fun () => $'!str.split(!separator)' : array_base string
-        Zig = fun () => $'blk: { var parts: std.ArrayList([]const u8) = .empty; var it = std.mem.splitSequence(u8, !str, !separator); while (it.next()) |p| parts.append(spiral_gpa, p) catch \@panic("out of memory"); break :blk parts.items; }' : array_base string
+        Zig = fun () => $'blk: { var parts: std.ArrayList([]const u8) = .empty; var it = std.mem.splitSequence(u8, \
+            !str, !separator); while (it.next()) |p| parts.append(spiral_gpa, p) catch \@panic("out of memory"); \
+            break :blk parts.items; }' : array_base string
     }
+
+///> rust
+///> fsharp
+///> lua
+///> c
+test split_keeps_empty_and_edge_parts =
+    inl parts = "a,,c" |> split "," |> array
+    inl edges = ",a," |> split "," |> array
+    inl pattern_like = "a%b.c" |> split "%" |> array
+    (
+        am'.length parts,
+        am'.index 0 parts,
+        am'.index 1 parts,
+        am'.index 2 parts,
+        am'.length edges,
+        am'.index 1 edges,
+        am'.index 1 pattern_like
+    )
+    |> _assert_eq (3, "a", "", "c", 3, "a", "b.c")
+
+/// ### listed
+inl listed (separator : string) (item : string) (input : string) : bool =
+    input |> split separator |> am'.any (fun part => trim part = item)
+
+///> rust
+///> fsharp
+///> gleam
+test listed_compares_trimmed_parts =
+    (
+        "a | b | c" |> listed "|" "b",
+        "a|bc" |> listed "|" "b",
+        "" |> listed "|" "b",
+        "b" |> listed "|" "b"
+    )
+    |> _assert_eq (true, false, false, true)
 
 /// ### split_string
 inl split_string (separator : array_base string) (str : string) : array_base string =
@@ -1136,7 +1556,7 @@ inl byte_to_string (format : string) (x : u8) : string =
 /// ### str
 nominal str =
     `(
-        rust_type
+        rust.rust_type
             `($'Str')
             `($'str')
             "type Str = string"
@@ -1146,20 +1566,17 @@ nominal str =
 inl chars (x : rust.ref str) : rust.mut' (into_iterator char) =
     !\\(x, $'$"$0.chars()"')
 
-/// ### char_is_alphanumeric
-inl char_is_alphanumeric (x : char) : bool =
-    !\\(x, $'$"$0.is_alphanumeric()"')
-
 /// ### byte_slice
 inl byte_slice (s : string) : rust.ref (am'.slice u8) =
     backend_switch {
-        Rust = fun () => $'{ let owned: Rc<str> = (!s).clone(); Box::leak(owned.as_bytes().to_vec().into_boxed_slice()) }' : rust.ref (am'.slice u8)
+        Rust = fun () => $'{ let owned: Rc<str> = (!s).clone(); Box::leak(owned.as_bytes().to_vec().into_boxed_slice()\
+            ) }' : rust.ref (am'.slice u8)
     }
 
 /// ### display
 nominal display t =
     `(
-        rust_type
+        rust.rust_type
             `($'std_fmt_Display<`t>')
             `($'std::fmt::Display<`t>')
             "type std_fmt_Display<'T> = class end"
@@ -1168,7 +1585,7 @@ nominal display t =
 /// ### base64_decode_error
 nominal base64_decode_error =
     `(
-        rust_type
+        rust.rust_type
             `($'base64_DecodeError')
             `($'base64::DecodeError')
             "type base64_DecodeError = class end"
@@ -1177,7 +1594,7 @@ nominal base64_decode_error =
 /// ### borsh_io_error
 nominal borsh_io_error =
     `(
-        rust_type
+        rust.rust_type
             `($'borsh_io_Error')
             `($'borsh::io::Error')
             "type borsh_io_Error = class end"
@@ -1186,7 +1603,7 @@ nominal borsh_io_error =
 /// ### utf8_error
 nominal utf8_error =
     `(
-        rust_type
+        rust.rust_type
             `($'std_str_Utf8Error')
             `($'std::str::Utf8Error')
             "type std_str_Utf8Error = class end"
@@ -1195,7 +1612,7 @@ nominal utf8_error =
 /// ### from_utf8_error
 nominal from_utf8_error =
     `(
-        rust_type
+        rust.rust_type
             `($'std_string_FromUtf8Error')
             `($'std::string::FromUtf8Error')
             "type std_string_FromUtf8Error = class end"
@@ -1204,7 +1621,7 @@ nominal from_utf8_error =
 /// ### json_value
 nominal json_value =
     `(
-        rust_type
+        rust.rust_type
             `($'serde_json_Value')
             `($'serde_json::Value')
             "type serde_json_Value = class end"
@@ -1213,7 +1630,7 @@ nominal json_value =
 /// ### json_error
 nominal json_error =
     `(
-        rust_type
+        rust.rust_type
             `($'serde_json_Error')
             `($'serde_json::Error')
             "type serde_json_Error = class end"
@@ -1222,7 +1639,7 @@ nominal json_error =
 /// ### serde_wasm_bindgen_error
 nominal serde_wasm_bindgen_error =
     `(
-        rust_type
+        rust.rust_type
             `($'serde_wasm_bindgen_Error')
             `($'serde_wasm_bindgen::Error')
             "type serde_wasm_bindgen_Error = class end"
@@ -1231,7 +1648,7 @@ nominal serde_wasm_bindgen_error =
 /// ### js_string
 nominal js_string =
     `(
-        rust_type
+        rust.rust_type
             `($'js_sys_JsString')
             `($'js_sys::JsString')
             "type js_sys_JsString = class end"
@@ -1240,7 +1657,7 @@ nominal js_string =
 /// ### os_str
 nominal os_str =
     `(
-        rust_type
+        rust.rust_type
             `($'std_ffi_OsStr')
             `($'std::ffi::OsStr')
             "type std_ffi_OsStr = class end"
@@ -1249,7 +1666,7 @@ nominal os_str =
 /// ### c_str
 nominal c_str =
     `(
-        rust_type
+        rust.rust_type
             `($'std_ffi_CStr')
             `($'std::ffi::CStr')
             "type std_ffi_CStr = class end"
@@ -1258,7 +1675,7 @@ nominal c_str =
 /// ### c_string
 nominal c_string =
     `(
-        rust_type
+        rust.rust_type
             `($'std_ffi_CString')
             `($'std::ffi::CString')
             "type std_ffi_CString = class end"
@@ -1267,7 +1684,7 @@ nominal c_string =
 /// ### os_string
 nominal os_string =
     `(
-        rust_type
+        rust.rust_type
             `($'std_ffi_OsString')
             `($'std::ffi::OsString')
             "type std_ffi_OsString = class end"
@@ -1331,10 +1748,6 @@ inl as_str_std (s : std_string) : rust.ref str =
 inl into_boxed_str (s : std_string) : rust.box str =
     !\\(s, $'"$0.into_boxed_str()"')
 
-/// ### os_string_as_ref
-inl os_string_as_ref (s : os_string) : rust.ref os_str =
-    !\\(s, $'"$0.as_ref()"')
-
 /// ### to_os_string
 inl to_os_string (s : rust.ref os_str) : os_string =
     !\\(s, $'"$0.to_os_string()"')
@@ -1388,7 +1801,7 @@ inl format'' (format : string) : std_string =
 /// ### regex
 nominal regex =
     `(
-        rust_type
+        rust.rust_type
             `($'regex_Regex')
             `($'regex::Regex')
             "type regex_Regex = class end"
@@ -1397,7 +1810,7 @@ nominal regex =
 /// ### regex_error
 nominal regex_error =
     `(
-        rust_type
+        rust.rust_type
             `($'regex_Error')
             `($'regex::Error')
             "type regex_Error = class end"
@@ -1410,7 +1823,7 @@ inl new_regex (pattern : string) : resultm.result' regex regex_error =
 /// ### captures
 nominal regex_captures t =
     `(
-        rust_type
+        rust.rust_type
             `($'regex_Captures<`t>')
             `($'regex::Captures<`t>')
             "type regex_Captures<'T> = class end"
@@ -1419,7 +1832,7 @@ nominal regex_captures t =
 /// ### regex_capture_matches
 nominal regex_capture_matches =
     `(
-        rust_type
+        rust.rust_type
             `($'regex_CaptureMatches')
             `($'regex::CaptureMatches')
             "type regex_CaptureMatches = class end"
@@ -1428,7 +1841,7 @@ nominal regex_capture_matches =
 /// ### regex_capture_names
 nominal regex_capture_names =
     `(
-        rust_type
+        rust.rust_type
             `($'regex_CaptureNames')
             `($'regex::CaptureNames')
             "type regex_CaptureNames = class end"
@@ -1440,7 +1853,7 @@ inl regex_capture_names (regex : regex) : regex_capture_names =
 /// ### match'
 nominal match' =
     `(
-        rust_type
+        rust.rust_type
             `($'regex_Match')
             `($'regex::Match')
             "type regex_Match = class end"
@@ -1462,11 +1875,15 @@ let regex_captures (s : string) (regex : regex) : am'.vec (mapm.hash_map string 
 
         (!\($'"true; let _regex_captures : Vec<_> = !matches.map(|x| { //"') : bool) |> ignore
 
-        inl fn (match' : rust.static_ref (rust.mut' (regex_captures rust.static_lifetime))) : mapm.hash_map string string =
+        inl fn
+            (match' : rust.static_ref (rust.mut' (regex_captures rust.static_lifetime)))
+            : mapm.hash_map string string
+            =
 
             inl names = regex |> regex_capture_names
 
-            (!\($'"true; let _regex_captures : std::collections::HashMap<_, _> = !names.map(|x| { //"') : bool) |> ignore
+            (!\($'"true; let _regex_captures : std::collections::HashMap<_, _> = !names.map(|x| { //"') : bool)
+            |> ignore
 
             inl fn (n : string) : pair string string =
                 inl n' = n |> rust.clone
@@ -1540,6 +1957,51 @@ inl deserialize_vec (value : json_value) : resultm.result' (am'.vec u8) std_stri
 inl encode_uri_component (s : std_string) : js_string =
     !\($'"js_sys::encode_uri_component(&!s)"')
 
+inl percent_encode_gleam () =
+    global "import gleam/bit_array"
+    global "import gleam/int"
+    global "import gleam/string"
+    global """
+        fn spiral_sm_percent_kept(b: Int) -> String {
+          let assert Ok(c) = bit_array.to_string(<<b>>)
+          c
+        }
+
+        fn spiral_sm_percent_byte(b: Int) -> String {
+          case b {
+            b if b >= 48 && b <= 57 -> spiral_sm_percent_kept(b)
+            b if b >= 65 && b <= 90 -> spiral_sm_percent_kept(b)
+            b if b >= 97 && b <= 122 -> spiral_sm_percent_kept(b)
+            45 | 46 | 95 | 126 -> spiral_sm_percent_kept(b)
+            _ -> "%" <> string.pad_start(int.to_base16(b), 2, "0")
+          }
+        }
+
+        fn spiral_sm_percent_bytes(bits: BitArray, acc: String) -> String {
+          case bits {
+            <<b, rest:bits>> -> spiral_sm_percent_bytes(rest, acc <> spiral_sm_percent_byte(b))
+            _ -> acc
+          }
+        }
+        """
+
+/// ### percent_encode
+inl percent_encode (s : string) : string =
+    backend_switch {
+        Gleam = fun () =>
+            percent_encode_gleam ()
+            $'spiral_sm_percent_bytes(bit_array.from_string(!s), "")' : string
+        Rust = fun () =>
+            $'Rc::<str>::from(!s.bytes().map(|b| if b.is_ascii_alphanumeric() || b"-._~".contains(&b) \
+                { (b as char).to_string() } else { format\!("%{:02X}", b) }).collect::<String>())' : string
+    }
+
+///> rust
+///> gleam
+test percent_encode_keeps_only_unreserved =
+    inl ~text = "a b+c,d!~-._/é"
+    percent_encode text |> _assert_eq "a%20b%2Bc%2Cd%21~-._%2F%C3%A9"
+
 /// ### strip_prefix
 inl strip_prefix (prefix : char) (s : std_string) : optionm'.option' (rust.ref str) =
     inl s = join s
@@ -1554,25 +2016,10 @@ inl string_from_utf8 (bytes : am'.vec u8) : resultm.result' std_string from_utf8
     inl bytes = join bytes
     !\\(bytes, $'"std::string::String::from_utf8($0)"')
 
-/// ### base64_decode
-inl base64_decode (s : std_string) : result std_string std_string =
-    fun () =>
-        inl s = join s
-        inl bytes : resultm.result' (am'.vec u8) base64_decode_error =
-            !\($'"base64::Engine::decode(&base64::engine::general_purpose::STANDARD, !s)"')
-        bytes
-        |> resultm.map_error' format'
-        |> resultm.try'
-        |> string_from_utf8
-        |> resultm.map_error' format'
-    |> fun x =>
-        join x ()
-        |> resultm.unbox
-
 /// ### encoding'
 nominal encoding' =
     `(
-        rust_type
+        rust.rust_type
             `($'encoding_rs_Encoding')
             `($'encoding_rs::Encoding')
             "type encoding_rs_Encoding = class end"
@@ -1590,14 +2037,10 @@ inl encoding_1252' () : rust.ref encoding' =
 inl encoding_encode' (encoding : rust.ref encoding') (text : string) : rust.cow (am'.slice u8) =
     !\\((encoding, text), $'"$0.encode(&*$1).0"')
 
-/// ### utf8_decode
-inl utf8_decode (data : am'.vec u8) : resultm.result' std_string (rust.cow str) =
-    !\($'$"encoding::Encoding::decode(encoding::all::UTF_8, &!data, encoding::DecoderTrap::Replace)"')
-
 /// ### windows
 nominal windows t =
     `(
-        rust_type
+        rust.rust_type
             `($'std_slice_Windows<`t>')
             `($'std::slice::Windows<`t>')
             "type std_slice_Windows<'T> = class end"
@@ -1664,8 +2107,32 @@ inl contains (value : string) (s : string) : bool =
         Rust = fun () => $'!s.contains(&*!value)' : bool
         TypeScript = fun () => $'!s.includes(!value)' : bool
         Zig = fun () => $'(std.mem.indexOf(u8, !s, !value) \!= null)' : bool
+        C = fun () => portable_index_of value s >= 0i32
         Lean = fun () => $'(!s).contains !value ' : bool
     }
+
+///> c
+///> gleam
+///> rust
+test searches_agree_on_c =
+    (
+        "a.b%c" |> index_of ".",
+        "a.b%c" |> index_of "%",
+        "a.b%c" |> index_of "y",
+        "a.b%c" |> index_of "",
+        "a.b%c" |> index_of "b%c"
+    )
+    |> _assert_eq (1, 3, -1, 0, 2)
+    (
+        "a.b%c" |> contains "%c",
+        "a.b%c" |> contains "x",
+        "a.b%c" |> starts_with "a.",
+        "a.b%c" |> starts_with "b",
+        "a.b%c" |> ends_with "%c",
+        "a.b%c" |> ends_with "a",
+        "" |> ends_with ""
+    )
+    |> _assert_eq (true, false, true, false, true, false, true)
 
 /// ### to_string result t u
 instance to_string result t u = fun x =>
@@ -1928,3 +2395,38 @@ inl main () =
 /// ### to_string std_string
 open rust
 instance to_string std_string = from_std_string
+
+/// ### split_list
+let rec split_list (separator : string) (s : string) : list string =
+    inl at : i32 = index_of separator s
+    inl width : i32 = length separator
+    if at < 0i32 || width = 0i32 then [ s ]
+    else Cons (substring 0i32 at s, split_list separator (substring (at + width) (length s - at - width) s))
+
+///> rust
+///> gleam
+test split_list_uses_the_whole_separator =
+    inl ~s = "a::b::::c"
+    (
+        split_list "::" s |> concat_list "|",
+        split_list "," "x" |> concat_list "|",
+        split_list "," "a," |> concat_list "|"
+    )
+    |> _assert_eq ("a|b||c", "x", "a|")
+
+/// ### decimal_i32
+let rec decimal_from (text : string) (i : i32) (n : i32) : option i32 =
+    if i >= length text then Some n
+    else
+        inl d : i32 = index_of (substring i 1i32 text) "0123456789"
+        inl overflows = n > 214748364i32 || (n = 214748364i32 && d > 7i32)
+        if d < 0i32 || overflows then None else decimal_from text (i + 1i32) (n * 10i32 + d)
+
+inl decimal_i32 (text : string) : option i32 = if text = "" then None else decimal_from text 0i32 0i32
+
+///> rust
+///> gleam
+test decimal_text_is_strict =
+    inl ~t = "2147483647"
+    (decimal_i32 t, decimal_i32 "12", decimal_i32 "", decimal_i32 "-1", decimal_i32 "1x", decimal_i32 "2147483648")
+    |> _assert_eq (Some 2147483647i32, Some 12i32, None, None, None, None)

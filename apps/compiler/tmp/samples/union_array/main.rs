@@ -7,21 +7,21 @@ enum US0 {
     US0_Held(Rc<RefCell<Vec<i32>>>),
 }
 fn spiral_main() -> i32 {
-    let mut v0: i32 = 2i32;
-    let mut v1: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); v0 as usize]));
-    let mut v2: i32 = 7i32;
+    let v0: i32 = 2i32;
+    let v1: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); v0 as usize]));
+    let v2: i32 = 7i32;
     v1.clone().borrow_mut()[0i32 as usize] = v2;
-    let mut v3: bool = true;
-    let mut v6: US0 = if v3 {
-        US0::US0_Held(v1.clone())
+    let v3: bool = true;
+    let v6: US0 = if v3 {
+        US0::US0_Held(v1)
     } else {
         US0::US0_Missing
     };
     match &v6 {
         US0::US0_Held(v7) => {
-            let mut v7: Rc<RefCell<Vec<i32>>> = v7.clone();
-            let mut v8: i32 = v7.clone().borrow()[0i32 as usize].clone();
-            let mut v9: bool = v8 == 7i32;
+            let v7: Rc<RefCell<Vec<i32>>> = v7.clone();
+            let v8: i32 = v7.borrow()[0i32 as usize].clone();
+            let v9: bool = v8 == 7i32;
             if v9 {
                 0i32
             } else {

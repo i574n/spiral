@@ -4,8 +4,12 @@ nominal derivative_runtime_raw = ()
 nominal derivative_runtime_checked = ()
 
 union derivative_runtime_state alphabet phase =
-    | DerivativeRuntimeRaw :: forall alphabet. regex alphabet * alphabet * linear_input alphabet -> derivative_runtime_state alphabet derivative_runtime_raw
-    | DerivativeRuntimeChecked :: forall alphabet. regex alphabet * alphabet * linear_input alphabet * bool -> derivative_runtime_state alphabet derivative_runtime_checked
+    | DerivativeRuntimeRaw :: forall alphabet.
+        regex alphabet * alphabet * linear_input alphabet ->
+        derivative_runtime_state alphabet derivative_runtime_raw
+    | DerivativeRuntimeChecked :: forall alphabet.
+        regex alphabet * alphabet * linear_input alphabet * bool ->
+        derivative_runtime_state alphabet derivative_runtime_checked
 
 nominal derivative_runtime_check_capability alphabet =
     regex alphabet -> alphabet -> linear_input alphabet -> bool

@@ -18,14 +18,10 @@ def sp_method2(int[32] p0, int[32] p1, int[32] p2, int[32] p3) -> (int[32], int[
         if (v8) {
             return v5, v6, v7;
         } else {
-            int[32] t521_4 = v4;
-            int[32] t555_5 = v5;
-            int[32] t589_6 = v6;
-            int[32] t623_7 = v7;
-            v0 = t521_4;
-            v1 = t555_5;
-            v2 = t589_6;
-            v3 = t623_7;
+            v0 = v4;
+            v1 = v5;
+            v2 = v6;
+            v3 = v7;
             continue;
         }
     }

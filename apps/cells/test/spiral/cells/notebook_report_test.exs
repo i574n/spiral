@@ -672,6 +672,30 @@ defmodule Spiral.Cells.NotebookReportTest do
     assert Enum.all?(sources, &(&1 =~ "inl main () : i32 =\n    inl _ = spiral_cells_test ()\n    0i32\n"))
   end
 
+  test "a wgsl test returns its body's i32 as main's status; other targets still return 0i32", %{dir: dir} do
+    path = Path.join(dir, "status.spi")
+
+    File.write!(path, """
+    ///> wgsl
+    test on_gpu =
+        inl ~x = 1i32
+        if x = 2i32 then 0i32 else 1i32
+
+    ///> c
+    test on_c =
+        1i32 + 1i32
+    """)
+
+    {:ok, agent} = Agent.start_link(fn -> [] end)
+
+    Notebook.run_report(path, compile: compile(agent), target: fn _ -> {:ok, %{stdout: ""}} end)
+
+    [gpu, c] = Agent.get(agent, & &1) |> Enum.sort_by(&String.contains?(&1, "1i32 + 1i32"))
+    assert gpu =~ ~r/inl main \(\) : i32 =\n    spiral_cells_test \(\)\n*\z/
+    refute gpu =~ "inl _ = spiral_cells_test ()"
+    assert c =~ "inl main () : i32 =\n    inl _ = spiral_cells_test ()\n    0i32\n"
+  end
+
   test "a static block of only opens is a prelude, not a discovered test; a static block with definitions stays static" do
     doc = Document.parse_spi("///> c\ntest base static =\n    open testing\n    open sm'_operators\n\ntest helpers static =\n    inl twice x = x + x\n\ntest one =\n    1i32 |> _assert_eq 1i32\n", "")
     assert ["prelude", "static", "test"] = Enum.map(Document.tests(doc), & &1.mode)
@@ -766,5 +790,33 @@ defmodule Spiral.Cells.NotebookReportTest do
         do: {:ok, %{exit_status: status, output: "assert\n", duration_ms: 1}},
         else: {:ok, %{exit_status: 0, output: "ok\n", duration_ms: 1}}
     end
+  end
+
+  test "a reference header mode names the target every other target is compared with", %{dir: dir} do
+    spi = """
+    /// # reference
+    inl one () = 1i32
+
+    ///> lua
+    ///> gleam
+    test differ reference gleam =
+        one () + 0i32
+    """
+
+    assert Document.to_spi_tested(Document.parse_spi(spi, "")) == spi
+    assert Document.parse_spi(spi, "").cells |> Enum.any?(&(&1.source =~ "///- --test --reference gleam"))
+    path = Path.join(dir, "reference.spi")
+    File.write!(path, spi)
+
+    target = fn %{builder: builder} ->
+      printed = if builder.tool == :gleam, do: "2\n", else: "1\n"
+      {:ok, %{exit_status: 0, output: printed}}
+    end
+
+    compile = fn _ -> {:ok, "differ\n"} end
+    {_, report} = Notebook.run_report(path, compile: compile, rustc: fn _ -> :ok end, execute: exit_when("never", 0), target: target)
+    differ = Enum.find(report["tests"], &(&1["name"] == "differ"))
+    assert differ["message"] =~ "targets disagree with the reference gleam: gleam printed \"2.0\", lua printed \"1.0\""
+    assert Enum.find(differ["targets"], &(&1["target"] == "lua"))["status"] == "disagrees"
   end
 end

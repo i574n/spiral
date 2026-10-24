@@ -1,32 +1,22 @@
 fun spiral_main(): Int {
-    var v0: Int = 0
-    v0 = 4
+    val v0: Int = 4
     var v1: Array<Int> = emptyArray<Int>()
     v1 = Array(v0) { 0 }
     v1[0] = 10
     v1[1] = 20
     v1[2] = 30
-    var v2: Int = 0
-    v2 = v1[0]
-    var v3: Int = 0
-    v3 = v1[1]
-    var v4: Int = 0
-    v4 = (v2 + v3)
+    val v2: Int = v1[0]
+    val v3: Int = v1[1]
+    val v4: Int = (v2 + v3)
     v1[3] = v4
-    var v5: Int = 0
-    v5 = v1[2]
-    var v6: Int = 0
-    v6 = v1[3]
-    var v7: Int = 0
-    v7 = (v5 + v6)
-    var v8: Int = 0
-    v8 = v1.size
-    var v9: Boolean = false
-    v9 = (v8 == v0)
+    val v5: Int = v1[2]
+    val v6: Int = v1[3]
+    val v7: Int = (v5 + v6)
+    val v8: Int = v1.size
+    val v9: Boolean = (v8 == v0)
     var v11: Boolean = false
     if (v9) {
-        var v10: Boolean = false
-        v10 = (v7 == 60)
+        val v10: Boolean = (v7 == 60)
         v11 = v10
     } else {
         v11 = false

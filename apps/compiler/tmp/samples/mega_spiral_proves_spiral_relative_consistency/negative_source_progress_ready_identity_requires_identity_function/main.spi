@@ -1,6 +1,11 @@
 open main
 
-inl impossible_source_progress_ready_identity_requires_identity_function () : exact_linear_indexed_closed_ready_beta_or_neutral (exact_linear_indexed_closed_source_application_ready_unit_tensor exact_linear_indexed_closed_source_unit) exact_linear_unit_type =
+inl impossible_source_progress_ready_identity_requires_identity_function
+    ()
+    : exact_linear_indexed_closed_ready_beta_or_neutral
+        (exact_linear_indexed_closed_source_application_ready_unit_tensor exact_linear_indexed_closed_source_unit)
+        exact_linear_unit_type
+    =
     inl argument_source :
         exact_linear_indexed_closed_value_source
             exact_linear_indexed_closed_source_unit
@@ -9,7 +14,9 @@ inl impossible_source_progress_ready_identity_requires_identity_function () : ex
             "the-Unit-argument-has-the-domain-needed-by-the-nonidentity-Lambda"
     ExactLinearIndexedClosedReadyBetaIdentity (
         argument_source,
-        "this-must-be-rejected-because-the-Ready-identity-witness-is-indexed-by-the-canonical-identity-Lambda-not-an-arbitrary-closed-Lambda")
+        "this-must-be-rejected-because-the-Ready-identity-witness-is-indexed-by-the-canonical-identity-Lambda-not-a"
+        ^^ "n-arbitrary-closed-Lambda"
+    )
 
 inl main () =
     impossible_source_progress_ready_identity_requires_identity_function ()

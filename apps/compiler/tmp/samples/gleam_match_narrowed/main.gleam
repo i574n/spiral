@@ -4,9 +4,6 @@ pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
   int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
 }
 
-pub fn spiral_wrap_unsigned(value: Int, bits: Int) -> Int {
-  int.bitwise_and(value, int.bitwise_shift_left(1, bits) - 1)
-}
 
 pub type Us0 {
     Us0Circle(f0i0 : Int)
@@ -105,26 +102,26 @@ pub fn measure_tri_2(v0: Us0, v1: Int) -> Int {
     }
 }
 pub fn main() {
-let v0 = 0
-let v1 = pick_0(v0)
-let v2 = measure_1(v1, v0)
-let v3 = spiral_wrap_signed(v0 + 1, 32)
-let v4 = pick_0(v3)
-let v5 = measure_1(v4, v3)
-let v6 = spiral_wrap_signed(v2 + v5, 32)
-let v7 = spiral_wrap_signed(v0 + 2, 32)
-let v8 = pick_0(v7)
-let v9 = measure_1(v8, v7)
-let v10 = spiral_wrap_signed(v6 + v9, 32)
-let v11 = spiral_wrap_signed(v0 + 3, 32)
-let v12 = pick_0(v11)
-let v13 = measure_1(v12, v11)
-let v14 = spiral_wrap_signed(v10 + v13, 32)
-let v15 = pick_0(v7)
-let v16 = measure_tri_2(v15, v0)
-let v17 = spiral_wrap_signed(v14 + v16, 32)
-let v18 = pick_0(v0)
-let v19 = measure_tri_2(v18, v0)
-let v20 = spiral_wrap_signed(v17 + v19, 32)
-v20
+    let v0 = 0
+    let v1 = pick_0(v0)
+    let v2 = measure_1(v1, v0)
+    let v3 = spiral_wrap_signed(v0 + 1, 32)
+    let v4 = pick_0(v3)
+    let v5 = measure_1(v4, v3)
+    let v6 = spiral_wrap_signed(v2 + v5, 32)
+    let v7 = spiral_wrap_signed(v0 + 2, 32)
+    let v8 = pick_0(v7)
+    let v9 = measure_1(v8, v7)
+    let v10 = spiral_wrap_signed(v6 + v9, 32)
+    let v11 = spiral_wrap_signed(v0 + 3, 32)
+    let v12 = pick_0(v11)
+    let v13 = measure_1(v12, v11)
+    let v14 = spiral_wrap_signed(v10 + v13, 32)
+    let v15 = pick_0(v7)
+    let v16 = measure_tri_2(v15, v0)
+    let v17 = spiral_wrap_signed(v14 + v16, 32)
+    let v18 = pick_0(v0)
+    let v19 = measure_tri_2(v18, v0)
+    let v20 = spiral_wrap_signed(v17 + v19, 32)
+    v20
 }

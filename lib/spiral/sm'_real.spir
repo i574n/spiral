@@ -9,7 +9,7 @@ test sm static =
 
 nominal std_string_real =
     `(
-        rust_type
+        rust.rust_type
             `($'std_string_String')
             `($'std::string::String')
             "type std_string_String = string"
@@ -35,7 +35,7 @@ inl from_std_string_real (str : std_string_real) : string =
 
 inl symbol_to_string_real forall t {symbol}. : string =
     inl x = real_core.type_to_symbol `t
-    !!!!SymbolToString (x)
+    !!!!SymbolToString(x)
 
 /// ### symbol_to_string
 ///> gleam
@@ -464,7 +464,12 @@ and inl format_debug_other_rust forall t. (x : t) : string =
             | _ =>
                 if real_core.prim_type_is `u || real_core.union_type_is `u || real_core.nominal_type_is `u
                 then format_debug_real `u y
-                else $'Rc::<str>::from({ struct W<T>(T); trait D { fn s(&self) -> String; } impl<T: std::fmt::Debug> D for &W<T> { fn s(&self) -> String { format\!("{:?}", self.0) } } trait P { fn s(&self) -> String; } impl<T> P for W<T> { fn s(&self) -> String { String::from("<`t>") } } (&&W(&!y)).s() })' : string
+                else
+                    $'Rc::<str>::from({ struct W<T>(T); trait D { fn s(&self) -> String; } impl<T: std::fmt::Debug> D \
+                        for &W<T> { fn s(&self) -> String { format\!("{:?}", self.0) } } trait P { fn s(&self) -> \
+                        String; } impl<T> P for W<T> { fn s(&self) -> String { String::from("<`t>") } } \
+                        (&&W(&!y)).s() })'
+                    : string
         inl y = real_core.nominal_strip x
         payload `(`y) y
     else $'Rc::<str>::from("<`t>")' : string
@@ -561,12 +566,31 @@ inl format_pretty_real forall t. (x : t) : string =
         | Rust => fun x =>
             inl rec structural forall u. () : bool =
                 typecase u with
-                | optionm'.option' ~a => if real_core.prim_type_is `a then false else true
-                | listm'.list' ~a => if real_core.prim_type_is `a then false else true
-                | seq.seq' ~a => if real_core.prim_type_is `a then false else true
-                | array_base ~a => if real_core.prim_type_is `a then false else true
-                | ~a * ~b => if structural `a () then true else structural `b ()
-                | {} => real_core.record_type_fold (fun acc key => forall v. => if acc then true else structural `v ()) false `u
+                | optionm'.option' ~a =>
+                    if real_core.prim_type_is `a
+                    then false
+                    else true
+                | listm'.list' ~a =>
+                    if real_core.prim_type_is `a
+                    then false
+                    else true
+                | seq.seq' ~a =>
+                    if real_core.prim_type_is `a
+                    then false
+                    else true
+                | array_base ~a =>
+                    if real_core.prim_type_is `a
+                    then false
+                    else true
+                | ~a * ~b =>
+                    if structural `a ()
+                    then true
+                    else structural `b ()
+                | {} =>
+                    real_core.record_type_fold
+                        fun acc key => forall v. => if acc then true else structural `v ()
+                        false
+                        `u
                 | _ => real_core.union_type_is `u
             if structural `t ()
             then format_debug_real `t x
@@ -972,7 +996,7 @@ let format_real forall t. (x : t) : string =
         | (x : string) => p ("%s", x)
         | (x : char) => p ("%c", x)
         | (x : bool) => p ("%s", if x then "true" else "false")
-        | (a,b) => write a . write ", " . write b
+        | (a, b) => write a . write ", " . write b
         | {} as x =>
             write "{ "
             inl _result =
@@ -1020,8 +1044,10 @@ inl rec show_real forall t. (x : t) : string =
         inl _, fields =
             real_core.record_fold
                 fun { state = separator, acc key value } =>
-                    "; ", acc ++#* separator ++#* symbol_to_string_real `(`key) ++#* " = " ++#* show_real `(`value) value
-                ("", "") x
+                    "; ",
+                    acc ++#* separator ++#* symbol_to_string_real `(`key) ++#* " = " ++#* show_real `(`value) value
+                ("", "")
+                x
         "{ " ++#* fields ++#* " }"
     | array_base ~el => show_elements_real `el x
     | _ =>

@@ -41,55 +41,24 @@ partial def lcg_0 (p0 : UInt64) (p1 : UInt64) (p2 : Int32) (p3 : UInt64) : IO UI
             v5 := (v2 - (1 : Int32))
             v6 := (v3 * v0)
             v7 := (v6 + v1)
-            let t0 := v0
-            let t1 := v1
-            let t5 := v5
-            let t7 := v7
-            v0 := t0
-            v1 := t1
-            v2 := t5
-            v3 := t7
+            v2 := v5
+            v3 := v7
             continue
 partial def spiralMain : IO Int32 := do
-    let mut v0 : UInt64 := default
-    let mut v1 : UInt64 := default
-    let mut v2 : UInt64 := default
-    let mut v3 : Int32 := default
-    let mut v4 : UInt64 := default
-    let mut v5 : Int64 := default
-    let mut v6 : Int64 := default
-    let mut v7 : UInt64 := default
-    let mut v8 : Int64 := default
-    let mut v9 : UInt64 := default
-    let mut v10 : Int64 := default
-    let mut v11 : Int64 := default
-    let mut v12 : Int64 := default
-    let mut v13 : Int64 := default
-    let mut v14 : Int64 := default
-    let mut v15 : UInt64 := default
-    let mut v16 : UInt64 := default
-    let mut v17 : Int64 := default
-    let mut v18 : UInt64 := default
-    let mut v19 : Float := default
-    let mut v20 : Int64 := default
-    let mut v21 : UInt32 := default
-    let mut v22 : Float := default
-    let mut v23 : Bool := default
     let mut v24 : Int32 := default
-    let mut v25 : Bool := default
-    v0 := (42 : UInt64)
-    v1 := (6364136223846793005 : UInt64)
-    v2 := (1442695040888963407 : UInt64)
-    v3 := (1000 : Int32)
-    v4 := (← lcg_0 v1 v2 v3 v0)
+    let v0 : UInt64 := (42 : UInt64)
+    let v1 : UInt64 := (6364136223846793005 : UInt64)
+    let v2 : UInt64 := (1442695040888963407 : UInt64)
+    let v3 : Int32 := (1000 : Int32)
+    let v4 : UInt64 := (← lcg_0 v1 v2 v3 v0)
     IO.print "lcg "
     IO.print (toString v4)
     IO.print "\n"
-    v5 := (9223372036854775807 : Int64)
-    v6 := (-9223372036854775807 : Int64)
-    v7 := (18446744073709551615 : UInt64)
-    v8 := (v6 - (1 : Int64))
-    v9 := (v7 + (2 : UInt64))
+    let v5 : Int64 := (9223372036854775807 : Int64)
+    let v6 : Int64 := (-9223372036854775807 : Int64)
+    let v7 : UInt64 := (18446744073709551615 : UInt64)
+    let v8 : Int64 := (v6 - (1 : Int64))
+    let v9 : UInt64 := (v7 + (2 : UInt64))
     IO.print "max "
     IO.print (toString v5)
     IO.print " min "
@@ -97,17 +66,17 @@ partial def spiralMain : IO Int32 := do
     IO.print " wrap "
     IO.print (toString v9)
     IO.print "\n"
-    v10 := (-9007199254740993 : Int64)
-    v11 := (7 : Int64)
-    v12 := (v10 / v11)
-    v13 := (v10 % v11)
+    let v10 : Int64 := (-9007199254740993 : Int64)
+    let v11 : Int64 := (7 : Int64)
+    let v12 : Int64 := (v10 / v11)
+    let v13 : Int64 := (v10 % v11)
     IO.print "div "
     IO.print (toString v12)
     IO.print " mod "
     IO.print (toString v13)
     IO.print "\n"
-    v14 := (v10 >>> (Int64.ofInt (SpiralToInt.toI (3 : Int32))))
-    v15 := (v4 >>> (UInt64.ofInt (SpiralToInt.toI (60 : Int32))))
+    let v14 : Int64 := (v10 >>> (Int64.ofInt (SpiralToInt.toI (3 : Int32))))
+    let v15 : UInt64 := (v4 >>> (UInt64.ofInt (SpiralToInt.toI (60 : Int32))))
     IO.print "shl "
     IO.print (toString (4611686018427387904 : Int64))
     IO.print " shr "
@@ -115,9 +84,9 @@ partial def spiralMain : IO Int32 := do
     IO.print " ushr "
     IO.print (toString v15)
     IO.print "\n"
-    v16 := (v4 &&& (18446744069414584320 : UInt64))
-    v17 := (v10 ||| (255 : Int64))
-    v18 := (v4 ^^^ v1)
+    let v16 : UInt64 := (v4 &&& (18446744069414584320 : UInt64))
+    let v17 : Int64 := (v10 ||| (255 : Int64))
+    let v18 : UInt64 := (v4 ^^^ v1)
     IO.print "and "
     IO.print (toString v16)
     IO.print " or "
@@ -125,11 +94,11 @@ partial def spiralMain : IO Int32 := do
     IO.print " xor "
     IO.print (toString v18)
     IO.print "\n"
-    v19 := (1E+18 : Float)
-    v20 := (Int64.ofInt (SpiralToInt.toI v19))
-    v21 := (UInt32.ofInt (SpiralToInt.toI v4))
-    v22 := (Float.ofInt (SpiralToInt.toI v10))
-    v23 := (decide (v22 < (0.0 : Float)))
+    let v19 : Float := (1E+18 : Float)
+    let v20 : Int64 := (Int64.ofInt (SpiralToInt.toI v19))
+    let v21 : UInt32 := (UInt32.ofInt (SpiralToInt.toI v4))
+    let v22 : Float := (Float.ofInt (SpiralToInt.toI v10))
+    let v23 : Bool := (decide (v22 < (0.0 : Float)))
     if v23 then
         v24 := (1 : Int32)
     else
@@ -141,7 +110,7 @@ partial def spiralMain : IO Int32 := do
     IO.print " "
     IO.print (toString v24)
     IO.print "\n"
-    v25 := (decide (v4 > v1))
+    let v25 : Bool := (decide (v4 > v1))
     if v25 then
         return (1 : Int32)
     else

@@ -1,7 +1,7 @@
 inl main () : i32 =
     inl ~n = 7i32
-    inl inner = !!!!LayoutToHeap({value = n})
-    inl outer = !!!!LayoutToHeap({box = inner})
+    inl inner = !!!!LayoutToHeap({ value = n })
+    inl outer = !!!!LayoutToHeap({ box = inner })
     inl opened = !!!!LayoutIndex(outer)
     inl value = !!!!LayoutIndex(opened.box)
     if value.value =. 7i32 then 0i32 else 1i32

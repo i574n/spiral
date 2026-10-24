@@ -5,22 +5,22 @@ fn target_global_0(mut v0: Rc<str>) -> () {
     ()
 }
 fn spiral_main() -> i32 {
-    let mut v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("SPIRAL_TARGET_GLOBAL_RUST_PRELUDE_pos-p_B64:Ly9Q"); } LIT.with(|lit| lit.clone()) };
+    let v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("SPIRAL_TARGET_GLOBAL_RUST_PRELUDE_pos-p_B64:Ly9Q"); } LIT.with(|lit| lit.clone()) };
     target_global_0(v0.clone());
-    target_global_0(v0.clone());
-    let mut v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("SPIRAL_TARGET_GLOBAL_RUST_BEFORE_MAIN_pos-b_B64:Ly9C"); } LIT.with(|lit| lit.clone()) };
-    target_global_0(v1.clone());
-    let mut v2: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("SPIRAL_TARGET_GLOBAL_RUST_AFTER_MAIN_test-item_B64:Zm4gc3BpcmFsX2F0dHJpYnV0ZV9zbW9rZSgpIHsKICAgIGFzc2VydF9lcSEoNiAqIDcsIDQyKTsKfQo="); } LIT.with(|lit| lit.clone()) };
-    target_global_0(v2.clone());
-    let mut v3: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("SPIRAL_ITEM_METADATA_TEST_test-item"); } LIT.with(|lit| lit.clone()) };
-    target_global_0(v3.clone());
-    let mut v4: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("SPIRAL_TARGET_GLOBAL_DELPHI_PRELUDE_pos-p_B64:Ly9Q"); } LIT.with(|lit| lit.clone()) };
+    target_global_0(v0);
+    let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("SPIRAL_TARGET_GLOBAL_RUST_BEFORE_MAIN_pos-b_B64:Ly9C"); } LIT.with(|lit| lit.clone()) };
+    target_global_0(v1);
+    let v2: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("SPIRAL_TARGET_GLOBAL_RUST_AFTER_MAIN_test-item_B64:Zm4gc3BpcmFsX2F0dHJpYnV0ZV9zbW9rZSgpIHsKICAgIGFzc2VydF9lcSEoNiAqIDcsIDQyKTsKfQo="); } LIT.with(|lit| lit.clone()) };
+    target_global_0(v2);
+    let v3: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("SPIRAL_ITEM_METADATA_TEST_test-item"); } LIT.with(|lit| lit.clone()) };
+    target_global_0(v3);
+    let v4: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("SPIRAL_TARGET_GLOBAL_DELPHI_PRELUDE_pos-p_B64:Ly9Q"); } LIT.with(|lit| lit.clone()) };
     target_global_0(v4.clone());
-    target_global_0(v4.clone());
-    let mut v5: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("SPIRAL_TARGET_GLOBAL_DELPHI_BEFORE_MAIN_pos-b_B64:Ly9C"); } LIT.with(|lit| lit.clone()) };
-    target_global_0(v5.clone());
-    let mut v6: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("SPIRAL_TARGET_GLOBAL_DELPHI_AFTER_MAIN_test-item_B64:cHJvY2VkdXJlIFNwaXJhbFRhcmdldEdsb2JhbFNtb2tlOwpiZWdpbgogIGlmIDYgKiA3IDw+IDQyIHRoZW4gSGFsdCgxKTsKZW5kOwo="); } LIT.with(|lit| lit.clone()) };
-    target_global_0(v6.clone());
+    target_global_0(v4);
+    let v5: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("SPIRAL_TARGET_GLOBAL_DELPHI_BEFORE_MAIN_pos-b_B64:Ly9C"); } LIT.with(|lit| lit.clone()) };
+    target_global_0(v5);
+    let v6: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("SPIRAL_TARGET_GLOBAL_DELPHI_AFTER_MAIN_test-item_B64:cHJvY2VkdXJlIFNwaXJhbFRhcmdldEdsb2JhbFNtb2tlOwpiZWdpbgogIGlmIDYgKiA3IDw+IDQyIHRoZW4gSGFsdCgxKTsKZW5kOwo="); } LIT.with(|lit| lit.clone()) };
+    target_global_0(v6);
     0i32
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }

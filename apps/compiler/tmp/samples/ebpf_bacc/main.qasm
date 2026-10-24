@@ -18,10 +18,8 @@ def sp_method1(int[32] p0, bool p1) -> bool {
         if (v5) {
             return v4;
         } else {
-            int[32] t448_2 = v2;
-            bool t482_4 = v4;
-            v0 = t448_2;
-            v1 = t482_4;
+            v0 = v2;
+            v1 = v4;
             continue;
         }
     }

@@ -232,9 +232,24 @@ $compileMemoDir = Join-Path $cache 'compile-memo'
 New-Item -ItemType Directory -Force $compileMemoDir | Out-Null
 $compileSignatureLines = [Collections.Generic.List[string]]::new()
 foreach ($binary in @(Get-ChildItem (Split-Path $compiler) -Filter '*.dll' -File | Sort-Object Name)) { $compileSignatureLines.Add("$($binary.Name)=$([Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([IO.File]::ReadAllBytes($binary.FullName))))") }
+function Get-SpiralSourceFiles([string]$root) {
+    $prunedDirectories = [Collections.Generic.HashSet[string]]::new([string[]]@('target', '_build', 'node_modules', '.git'), [StringComparer]::OrdinalIgnoreCase)
+    $sourceExtensions = [Collections.Generic.HashSet[string]]::new([string[]]@('.spi', '.spir', '.spiproj'), [StringComparer]::OrdinalIgnoreCase)
+    $pending = [Collections.Generic.Stack[string]]::new()
+    $pending.Push([IO.Path]::GetFullPath($root))
+    $found = [Collections.Generic.List[string]]::new()
+    while ($pending.Count -gt 0) {
+        $directory = $pending.Pop()
+        try {
+            foreach ($file in [IO.Directory]::EnumerateFiles($directory)) { if ($sourceExtensions.Contains([IO.Path]::GetExtension($file))) { $found.Add($file) } }
+            foreach ($child in [IO.Directory]::EnumerateDirectories($directory)) { if (-not $prunedDirectories.Contains([IO.Path]::GetFileName($child))) { $pending.Push($child) } }
+        }
+        catch [IO.IOException], [UnauthorizedAccessException] { }
+    }
+    $found | Sort-Object
+}
 foreach ($root in @($BundleRoot, (Join-Path $BundleRoot '../../../lib'), $env:SPIRAL_COMPILER_PACKAGE_DIR) | Where-Object { $_ -and (Test-Path $_) }) {
-    $sources = Get-ChildItem $root -Recurse -File -Include '*.spi', '*.spir', '*.spiproj' -ErrorAction SilentlyContinue | Where-Object FullName -notmatch '[\\/](target|_build|node_modules|\.git)[\\/]' | Sort-Object FullName
-    foreach ($source in $sources) { $compileSignatureLines.Add("$([IO.Path]::GetRelativePath($root, $source.FullName))=$([Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([IO.File]::ReadAllBytes($source.FullName))))") }
+    foreach ($source in Get-SpiralSourceFiles $root) { $compileSignatureLines.Add("$([IO.Path]::GetRelativePath($root, $source))=$([Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([IO.File]::ReadAllBytes($source))))") }
 }
 Get-ChildItem Env: | Where-Object { $_.Name -like 'SPIRAL_*' -and $_.Name -notin 'SPIRAL_NATIVE_PARALLEL', 'SPIRAL_BIN_CACHE_DIR' -and $_.Name -notlike 'SPIRAL_CELLS_*' } | Sort-Object Name | ForEach-Object { $compileSignatureLines.Add("env $($_.Name)=$($_.Value)") }
 $compileSignature = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes(($compileSignatureLines -join "`n") + "`n$mode`n$compiler"))).ToLowerInvariant()
@@ -784,7 +799,7 @@ if ($Native) {
                 continue
             }
             $sha = if ($w.Status -eq 'ran') { [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($w.Stdout))).ToLowerInvariant().Substring(0, 16) } else { '' }
-            $processExit = if ($IsWindows -or $w.Exit -isnot [int]) { $w.Exit } else { $w.Exit -band 255 }
+            $processExit = if ($IsWindows -or "$($w.Exit)" -notmatch '^-?\d+$') { $w.Exit } else { [int]([int64]"$($w.Exit)" -band 255) }
             $nativeResults[$entry.Job.Key] = [pscustomobject]@{ Status = $w.Status; Exit = $processExit; Stdout = $sha; Detail = $w.Detail; Ms = $w.Ms; RunMs = $w.Ms }
             Write-Host ("native {0} Fsharp: {1} exit {2} ({3:N1}s, warm)" -f $entry.Job.Id, $w.Status, $processExit, ($w.Ms / 1000))
         }

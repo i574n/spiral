@@ -10,9 +10,6 @@ pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
   int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
 }
 
-pub fn spiral_wrap_unsigned(value: Int, bits: Int) -> Int {
-  int.bitwise_and(value, int.bitwise_shift_left(1, bits) - 1)
-}
 
 pub fn f_c0(capt: #(String)) -> fn(Int) -> Int {
     fn (v1) {
@@ -23,12 +20,12 @@ pub fn f_c0(capt: #(String)) -> fn(Int) -> Int {
     }
 }
 pub fn main() {
-let v0 = "abc"
-let v1 = f_c0(#(v0))
-let v2 = v1( 10  )
-let v3 = v1( 20  )
-let v4 = v1( 3  )
-let v5 = spiral_wrap_signed(v2 + v3, 32)
-let v6 = spiral_wrap_signed(v5 + v4, 32)
-v6
+    let v0 = "abc"
+    let v1 = f_c0(#(v0))
+    let v2 = v1(10)
+    let v3 = v1(20)
+    let v4 = v1(3)
+    let v5 = spiral_wrap_signed(v2 + v3, 32)
+    let v6 = spiral_wrap_signed(v5 + v4, 32)
+    v6
 }

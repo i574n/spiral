@@ -1,0 +1,793 @@
+open sm'_operators
+
+union token_keyword =
+    | SpecIn
+    | SpecAnd
+    | SpecFun
+    | SpecMatch
+    | SpecTypecase
+    | SpecFunction
+    | SpecWith
+    | SpecWithout
+    | SpecAs
+    | SpecWhen
+    | SpecInl
+    | SpecForall
+    | SpecExists
+    | SpecLet
+    | SpecInm
+    | SpecInb
+    | SpecRec
+    | SpecIf
+    | SpecThen
+    | SpecElif
+    | SpecElse
+    | SpecJoin
+    | SpecJoinBackend
+    | SpecType
+    | SpecNominal
+    | SpecReal
+    | SpecUnion
+    | SpecOpen
+    | SpecWildcard
+    | SpecPrototype
+    | SpecInstance
+
+union parenthesis_state = Open | Close
+
+union parenthesis = Round | Square | Curly
+
+union macro_kind = MTerm | MType | MTypeLit | MTermInline
+
+union literal =
+    | LitUInt8 : u8
+    | LitUInt16 : u16
+    | LitUInt32 : u32
+    | LitUInt64 : u64
+    | LitInt8 : i8
+    | LitInt16 : i16
+    | LitInt32 : i32
+    | LitInt64 : i64
+    | LitFloat32 : f32
+    | LitFloat64 : f64
+    | LitBool : bool
+    | LitString : string
+    | LitChar : char
+
+union semantic_token_legend =
+    | LegendVariable
+    | LegendSymbol
+    | LegendString
+    | LegendNumber
+    | LegendOperator
+    | LegendUnaryOperator
+    | LegendComment
+    | LegendKeyword
+    | LegendParenthesis
+    | LegendTypeVariable
+    | LegendEscapedChar
+    | LegendUnescapedChar
+    | LegendNumberSuffix
+    | LegendEscapedVar
+
+inl legend_code (legend : semantic_token_legend) : i32 =
+    match legend with
+    | LegendVariable => 0
+    | LegendSymbol => 1
+    | LegendString => 2
+    | LegendNumber => 3
+    | LegendOperator => 4
+    | LegendUnaryOperator => 5
+    | LegendComment => 6
+    | LegendKeyword => 7
+    | LegendParenthesis => 8
+    | LegendTypeVariable => 9
+    | LegendEscapedChar => 10
+    | LegendUnescapedChar => 11
+    | LegendNumberSuffix => 12
+    | LegendEscapedVar => 13
+
+union spiral_token =
+    | TokVar : string * semantic_token_legend
+    | TokSymbol : string * semantic_token_legend
+    | TokOperator : string * semantic_token_legend
+    | TokUnaryOperator : string * semantic_token_legend
+    | TokValue : literal
+    | TokValueSuffix
+    | TokDefaultValue : string
+    | TokComment : string
+    | TokKeyword : token_keyword
+    | TokParenthesis : parenthesis * parenthesis_state
+    | TokStringOpen
+    | TokStringClose
+    | TokText : string
+    | TokEscapedChar : char
+    | TokEscapedVar
+    | TokUnescapedChar : char
+    | TokMacroOpen
+    | TokMacroClose
+    | TokMacroTermVar : string * bool
+    | TokMacroTypeVar : string
+    | TokMacroTypeLitVar : string
+    | TokMacroExpression : macro_kind * parenthesis_state
+
+type lex_state = { triple_quotes : i32; comment_depth : i32; macro_close : option char }
+
+inl lex_state_init () : lex_state = { triple_quotes = 0; comment_depth = 0; macro_close = None }
+
+inl in_triple (state : lex_state) : bool = 0 < state.triple_quotes
+
+inl lex_state_error (state : lex_state) : option string =
+    if in_triple state
+    then Some ("Unterminated triple-quoted string. Expected '" ++# sm'.replicate state.triple_quotes "\"" ++# "'.")
+    elif 0 < state.comment_depth then Some "Unterminated multiline comment. Expected '*)'."
+    else
+        match state.macro_close with
+        | Some _ =>
+            Some "Unterminated macro: a line ending in '\\' continues the macro on the next line, which must close it."
+        | None => None
+
+inl comment_scan (text : string) (from : i32) (open_depth : i32) : i32 * i32 =
+    inl length : i32 = sm'.length text
+    inl char_is (i : i32) (expected : char) : bool = if i < length then sm'.index i text = expected else false
+    let rec scan (i : i32) (depth : i32) : i32 * i32 =
+        if i < length && 0 < depth then
+            if char_is i '(' && char_is (i + 1) '*' then
+                if char_is (i + 2) ')' then scan (i + 3) depth else scan (i + 2) (depth + 1)
+            elif char_is i '*' && char_is (i + 1) ')' then scan (i + 2) (depth - 1)
+            else scan (i + 1) depth
+        else i, depth
+    scan from open_depth
+
+inl edition3_symbol_token (symbol : string) : option spiral_token =
+    match symbol with
+    | ":=" => Some (TokKeyword SpecInl)
+    | ":~" => Some (TokKeyword SpecLet)
+    | "^" => Some (TokKeyword SpecRec)
+    | ":&" => Some (TokKeyword SpecAnd)
+    | ";;" => Some (TokKeyword SpecIn)
+    | "\\" => Some (TokKeyword SpecFun)
+    | "\\|" => Some (TokKeyword SpecFunction)
+    | "\\*" => Some (TokKeyword SpecForall)
+    | "\\?" => Some (TokKeyword SpecExists)
+    | "?" => Some (TokKeyword SpecIf)
+    | "?>" => Some (TokKeyword SpecThen)
+    | "|?" => Some (TokKeyword SpecElif)
+    | "|:" => Some (TokKeyword SpecElse)
+    | "?=" => Some (TokKeyword SpecMatch)
+    | "?:" => Some (TokKeyword SpecTypecase)
+    | "?|" => Some (TokKeyword SpecWith)
+    | "-|" => Some (TokKeyword SpecWithout)
+    | "&=" => Some (TokKeyword SpecAs)
+    | "?&" => Some (TokKeyword SpecWhen)
+    | ":==" => Some (TokKeyword SpecType)
+    | ":!" => Some (TokKeyword SpecNominal)
+    | ":|" => Some (TokKeyword SpecUnion)
+    | ":?" => Some (TokKeyword SpecPrototype)
+    | ":+" => Some (TokKeyword SpecInstance)
+    | ":<" => Some (TokKeyword SpecOpen)
+    | "~>" => Some (TokKeyword SpecReal)
+    | "~~" => Some (TokKeyword SpecJoin)
+    | "~~>" => Some (TokKeyword SpecJoinBackend)
+    | "!+" => Some (TokValue (LitBool true))
+    | "!-" => Some (TokValue (LitBool false))
+    | _ => None
+
+inl word_token (word : string) : spiral_token =
+    match word with
+    | "in" => TokKeyword SpecIn
+    | "and" => TokKeyword SpecAnd
+    | "fun" => TokKeyword SpecFun
+    | "match" => TokKeyword SpecMatch
+    | "typecase" => TokKeyword SpecTypecase
+    | "function" => TokKeyword SpecFunction
+    | "with" => TokKeyword SpecWith
+    | "without" => TokKeyword SpecWithout
+    | "as" => TokKeyword SpecAs
+    | "when" => TokKeyword SpecWhen
+    | "inl" => TokKeyword SpecInl
+    | "forall" => TokKeyword SpecForall
+    | "let" => TokKeyword SpecLet
+    | "inm" => TokKeyword SpecInm
+    | "inb" => TokKeyword SpecInb
+    | "rec" => TokKeyword SpecRec
+    | "if" => TokKeyword SpecIf
+    | "then" => TokKeyword SpecThen
+    | "elif" => TokKeyword SpecElif
+    | "else" => TokKeyword SpecElse
+    | "join" => TokKeyword SpecJoin
+    | "join_backend" => TokKeyword SpecJoinBackend
+    | "type" => TokKeyword SpecType
+    | "nominal" => TokKeyword SpecNominal
+    | "real" => TokKeyword SpecReal
+    | "union" => TokKeyword SpecUnion
+    | "open" => TokKeyword SpecOpen
+    | "_" => TokKeyword SpecWildcard
+    | "prototype" => TokKeyword SpecPrototype
+    | "instance" => TokKeyword SpecInstance
+    | "true" => TokValue (LitBool true)
+    | "false" => TokValue (LitBool false)
+    | "exists" => TokKeyword SpecExists
+    | _ => TokVar (word, LegendVariable)
+
+inl token_group (token : spiral_token) : semantic_token_legend =
+    match token with
+    | TokVar (_, legend) | TokSymbol (_, legend) | TokOperator (_, legend) | TokUnaryOperator (_, legend) => legend
+    | TokValue (LitChar _) | TokValue (LitString _) => LegendString
+    | TokStringOpen | TokStringClose | TokText _ | TokMacroOpen | TokMacroClose => LegendString
+    | TokComment _ => LegendComment
+    | TokKeyword _ => LegendKeyword
+    | TokParenthesis _ | TokMacroExpression _ => LegendParenthesis
+    | TokMacroTypeVar _ | TokMacroTypeLitVar _ => LegendTypeVariable
+    | TokMacroTermVar _ => LegendVariable
+    | TokEscapedChar _ => LegendEscapedChar
+    | TokEscapedVar => LegendEscapedVar
+    | TokUnescapedChar _ => LegendUnescapedChar
+    | TokValue _ | TokDefaultValue _ => LegendNumber
+    | TokValueSuffix => LegendNumberSuffix
+
+inl token_legend (token : spiral_token) : i32 = token |> token_group |> legend_code
+
+///> c
+///> rust
+test keywords_and_variables_get_their_legends =
+    if token_legend (word_token "typecase") <> 7 then failwith "typecase is a keyword"
+    if token_legend (word_token "join_backend") <> 7 then failwith "join_backend is a keyword"
+    if token_legend (word_token "spiral") <> 0 then failwith "a plain word is a variable"
+    if token_legend (TokValue (LitInt32 3)) <> 3 then failwith "an int literal is a number"
+    if token_legend (TokParenthesis (Round, Open)) <> 8 then failwith "a parenthesis has the parenthesis legend"
+    if token_legend (TokValue (LitBool true)) <> 3 then failwith "a bool literal is a number, as in token_groups"
+    if token_legend (TokValue (LitString "s")) <> 2 then failwith "a string literal is a string"
+    if token_legend TokValueSuffix <> 12 then failwith "a value suffix has its own legend"
+    if token_legend (TokMacroTypeLitVar "t") <> 9 then failwith "a macro type literal var is a type variable"
+
+///> c
+///> rust
+test lex_state_reports_triple_quotes =
+    inl clean = lex_state_init ()
+    if in_triple clean then failwith "no triple quotes"
+    if in_triple { clean with triple_quotes = 3 } = false then failwith "inside triple quotes"
+
+///> c
+///> rust
+///> fsharp
+test lex_state_error_names_what_is_unterminated =
+    inl clean = lex_state_init ()
+    inl message state =
+        match lex_state_error state with
+        | Some text => text
+        | None => ""
+    if message clean <> "" then failwith "a clean state has no error"
+    if message { clean with triple_quotes = 3 } <> "Unterminated triple-quoted string. Expected '\"\"\"'."
+    then failwith "the triple quote count is spelled out"
+    if message { clean with comment_depth = 2 } <> "Unterminated multiline comment. Expected '*)'."
+    then failwith "an open comment is named"
+    if message { clean with macro_close = Some '"' } = "" then failwith "an open macro is an error"
+
+///> c
+///> rust
+///> fsharp
+test comment_scan_nests_and_skips_the_multiplication_operator =
+    if comment_scan "a *) b" 0 1 <> (4, 0) then failwith "one close ends one level"
+    if comment_scan "x (* y *) z *) w" 0 1 <> (14, 0) then failwith "a nested comment closes before the outer"
+    if comment_scan "(*) still" 0 1 <> (9, 1) then failwith "(*) neither opens nor closes"
+    if comment_scan "abc" 0 2 <> (3, 2) then failwith "an unclosed comment runs to the line end"
+    if comment_scan "*) tail" 5 1 <> (7, 1) then failwith "the scan starts at the given index"
+
+///> c
+///> rust
+///> fsharp
+test edition3_symbols_map_to_keywords =
+    inl legend symbol =
+        match edition3_symbol_token symbol with
+        | Some token => token_legend token
+        | None => -1
+    if legend ":=" <> 7 then failwith ":= is inl"
+    if legend "\\|" <> 7 then failwith "backslash bar is function"
+    if legend "~~>" <> 7 then failwith "~~> is join_backend"
+    if legend "!+" <> 3 then failwith "!+ is the literal true"
+    if legend "+" <> -1 then failwith "plus is an ordinary operator"
+
+union lexer_char =
+    | Glyph : char
+    | LineEnd
+
+inl code (c : char) : i32 = sm'.convert_to_utf32 c
+
+inl in_range (low : char) (high : char) (c : char) : bool = code c >= code low && code c <= code high
+
+inl is_ascii_lower (c : char) : bool = c |> in_range 'a' 'z'
+
+inl is_ascii_upper (c : char) : bool = c |> in_range 'A' 'Z'
+
+inl is_digit (c : char) : bool = c |> in_range '0' '9'
+
+inl is_hex_digit (c : char) : bool = is_digit c || in_range 'a' 'f' c || in_range 'A' 'F' c
+
+inl is_letter (c : char) : bool = is_ascii_lower c || is_ascii_upper c || code c > code '~'
+
+inl is_small_var_char_starting (c : char) : bool = is_ascii_lower c || c = '_'
+
+inl is_big_var_char_starting (c : char) : bool = is_ascii_upper c
+
+inl is_var_char_starting (c : char) : bool = is_letter c || c = '_'
+
+inl is_var_char (c : char) : bool = is_letter c || is_digit c || c = '_' || c = '\''
+
+inl is_parenth_open (c : char) : bool = c = '(' || c = '[' || c = '{'
+
+inl is_parenth_close (c : char) : bool = c = ')' || c = ']' || c = '}'
+
+inl is_operator_char (c : char) : bool =
+    in_range '!' '~' c && (is_var_char c || c = '"' || is_parenth_open c || is_parenth_close c) = false
+
+inl is_prefix_separator (x : lexer_char) : bool =
+    match x with
+    | LineEnd => true
+    | Glyph c => c = ' ' || is_parenth_open c
+
+inl is_postfix_separator (x : lexer_char) : bool =
+    match x with
+    | LineEnd => true
+    | Glyph c => c = ' ' || is_parenth_close c
+
+inl is_separator (x : lexer_char) : bool =
+    is_prefix_separator x || (match x with Glyph c => is_parenth_close c | LineEnd => false)
+
+///> rust
+///> fsharp
+test char_classes_match_the_fsharp_tokenizer =
+    if is_var_char_starting '1' then failwith "a digit cannot start a variable"
+    if is_var_char_starting '_' = false then failwith "an underscore starts a variable"
+    if is_var_char '\'' = false then failwith "a prime continues a variable"
+    if is_small_var_char_starting 'A' then failwith "an upper letter is not small"
+    if is_big_var_char_starting 'A' = false then failwith "an upper letter is big"
+    if is_operator_char '+' = false then failwith "plus is an operator char"
+    if is_operator_char '(' then failwith "a parenthesis is not an operator char"
+    if is_operator_char '"' then failwith "a quote is not an operator char"
+    if is_operator_char 'x' then failwith "a letter is not an operator char"
+    if is_prefix_separator LineEnd = false then failwith "the line end separates"
+    if is_prefix_separator (Glyph '(') = false then failwith "an open parenthesis prefixes"
+    if is_postfix_separator (Glyph ')') = false then failwith "a close parenthesis postfixes"
+    if is_separator (Glyph 'a') then failwith "a letter does not separate"
+    if is_hex_digit 'F' = false then failwith "F is a hex digit"
+    if is_hex_digit 'g' then failwith "g is not a hex digit"
+
+type cursor = { text : string; from : i32 }
+
+type span = { from : i32; near_to : i32 }
+
+union lexed =
+    | Lexed : span * spiral_token * cursor
+    | LexError : i32 * string
+
+inl cursor_of (text : string) : cursor = { text = text; from = 0 }
+
+inl peek_at (offset : i32) (at : cursor) : lexer_char =
+    inl i = at.from + offset
+    if 0 <= i && i < sm'.length at.text then Glyph (sm'.index i at.text) else LineEnd
+
+inl peek (at : cursor) : lexer_char = peek_at 0 at
+
+inl advance (count : i32) (at : cursor) : cursor = { at with from = at.from + count }
+
+inl glyph_is (predicate : char -> bool) (x : lexer_char) : bool =
+    match x with
+    | Glyph c => predicate c
+    | LineEnd => false
+
+let rec skip_while (predicate : char -> bool) (at : cursor) : cursor =
+    if peek at |> glyph_is predicate then at |> advance 1 |> skip_while predicate else at
+
+inl skip_spaces (at : cursor) : cursor = at |> skip_while (fun c => c = ' ')
+
+inl text_between (start : cursor) (stop : cursor) : string = start.text |> sm'.slice start.from (stop.from - 1)
+
+inl span_between (start : cursor) (stop : cursor) : span = { from = start.from; near_to = stop.from }
+
+inl lex_var (start : cursor) : lexed =
+    if peek start |> glyph_is is_var_char_starting then
+        inl past = start |> advance 1 |> skip_while is_var_char
+        if peek past |> glyph_is (fun c => c = ':')
+        then LexError (start.from, ": is not allowed directly after a var.")
+        else Lexed (span_between start past, text_between start past |> word_token, skip_spaces past)
+    else LexError (start.from, "variable")
+
+inl lex_symbol (start : cursor) : lexed =
+    inl symbol name = TokSymbol (name, LegendSymbol)
+    inl dot = peek start |> glyph_is (fun c => c = '.')
+    if dot && (peek_at 1 start |> glyph_is (fun c => c = '(')) then
+        inl body = start |> advance 2
+        inl past = body |> skip_while is_operator_char
+        if past.from = body.from then LexError (body.from, "operator")
+        elif peek past |> glyph_is (fun c => c = ')') then
+            inl closed = past |> advance 1
+            Lexed (span_between start closed, text_between body past |> symbol, skip_spaces closed)
+        else LexError (past.from, "')'")
+    elif dot && (peek_at 1 start |> glyph_is is_var_char_starting) then
+        inl body = start |> advance 1
+        inl past = body |> skip_while is_var_char
+        Lexed (span_between start past, text_between body past |> symbol, skip_spaces past)
+    else LexError (start.from, "symbol")
+
+let rec without_list_separators (text : string) : string =
+    inl length : i32 = sm'.length text
+    if length = 0 then text
+    else
+        inl last = sm'.index (length - 1) text
+        if last = ',' || last = ';' then text |> sm'.slice 0 (length - 2) |> without_list_separators else text
+
+inl lex_operator (start : cursor) : lexed =
+    if peek start |> glyph_is is_operator_char then
+        inl past = start |> advance 1 |> skip_while is_operator_char
+        inl name = text_between start past
+        match edition3_symbol_token name with
+        | Some keyword => Lexed (span_between start past, keyword, skip_spaces past)
+        | None =>
+            inl trimmed = without_list_separators name
+            inl trimmed_length : i32 = sm'.length trimmed
+            inl trimmed_keyword =
+                if 0 < trimmed_length && trimmed_length < sm'.length name then edition3_symbol_token trimmed else None
+            match trimmed_keyword with
+            | Some keyword =>
+                inl stop = { start with from = start.from + trimmed_length }
+                Lexed (span_between start stop, keyword, skip_spaces stop)
+            | None =>
+                inl unary = is_prefix_separator (peek_at -1 start) && is_postfix_separator (peek past) = false
+                inl token =
+                    if unary then TokUnaryOperator (name, LegendUnaryOperator) else TokOperator (name, LegendOperator)
+                Lexed (span_between start past, token, skip_spaces past)
+    else LexError (start.from, "operator")
+
+inl lexed_summary (result : lexed) : i32 * i32 * i32 =
+    match result with
+    | Lexed (range, token, rest) => token_legend token, range.near_to, rest.from
+    | LexError (at, _) => -1, at, -1
+
+inl lexed_text (result : lexed) : string =
+    match result with
+    | Lexed (_, TokVar (name, _), _) | Lexed (_, TokSymbol (name, _), _) => name
+    | Lexed (_, TokOperator (name, _), _) | Lexed (_, TokUnaryOperator (name, _), _) => name
+    | Lexed (_, TokComment text, _) => text
+    | Lexed _ => ""
+    | LexError (_, message) => message
+
+///> rust
+///> fsharp
+test lex_var_reads_words_keywords_and_rejects_a_colon =
+    if cursor_of "foo bar" |> lex_var |> lexed_summary <> (0, 3, 4) then failwith "a word is a variable up to the space"
+    if cursor_of "foo bar" |> lex_var |> lexed_text <> "foo" then failwith "the variable text is the word"
+    if cursor_of "inl x" |> lex_var |> lexed_summary <> (7, 3, 4) then failwith "inl is a keyword"
+    if cursor_of "x': y" |> lex_var |> lexed_summary <> (-1, 0, -1) then failwith "no colon right after a var"
+    if cursor_of "1x" |> lex_var |> lexed_summary <> (-1, 0, -1) then failwith "a digit cannot start a var"
+    if { text = "a  b"; from = 3 } |> lex_var |> lexed_summary <> (0, 4, 4) then failwith "a var at the line end"
+
+///> rust
+///> fsharp
+test lex_symbol_reads_dot_names_and_dot_operators =
+    if cursor_of ".foo x" |> lex_symbol |> lexed_summary <> (1, 4, 5) then failwith "a dot name is a symbol"
+    if cursor_of ".foo x" |> lex_symbol |> lexed_text <> "foo" then failwith "the symbol text drops the dot"
+    if cursor_of ".(+) x" |> lex_symbol |> lexed_summary <> (1, 4, 5) then failwith "a dot operator in parentheses"
+    if cursor_of ".(+) x" |> lex_symbol |> lexed_text <> "+" then failwith "the operator text is inside the parentheses"
+    if cursor_of ".(+ x" |> lex_symbol |> lexed_summary <> (-1, 3, -1) then failwith "an unclosed dot operator"
+    if cursor_of ".1" |> lex_symbol |> lexed_summary <> (-1, 0, -1) then failwith "a dot and a digit is no symbol"
+
+///> rust
+///> fsharp
+test lex_operator_tells_unary_binary_and_edition3_keywords =
+    if cursor_of "+ 1" |> lex_operator |> lexed_summary <> (4, 1, 2) then failwith "plus before a space is binary"
+    if { text = "a -b"; from = 2 } |> lex_operator |> lexed_summary <> (5, 3, 3) then failwith "glued minus is unary"
+    if { text = "a - b"; from = 2 } |> lex_operator |> lexed_summary <> (4, 3, 4) then failwith "spaced minus is binary"
+    if cursor_of ":= x" |> lex_operator |> lexed_summary <> (7, 2, 3) then failwith ":= is the inl keyword"
+    if cursor_of "|?, x" |> lex_operator |> lexed_summary <> (7, 2, 2) then failwith "keyword gives the comma back"
+    if cursor_of "+=, x" |> lex_operator |> lexed_text <> "+=," then failwith "an operator keeps its comma"
+    if cursor_of "x" |> lex_operator |> lexed_summary <> (-1, 0, -1) then failwith "a letter is no operator"
+
+inl char_at_is (offset : i32) (expected : char) (at : cursor) : bool =
+    peek_at offset at |> glyph_is (fun c => c = expected)
+
+let rec skip_doc_markers (at : cursor) : cursor =
+    inl spaced_marker = (char_at_is 0 '!' at || char_at_is 0 '-' at || char_at_is 0 '>' at) && char_at_is 1 ' ' at
+    if char_at_is 0 '/' at || spaced_marker then at |> advance 1 |> skip_doc_markers else at
+
+inl lex_comment (state : lex_state) (start : cursor) : lexed * lex_state =
+    if char_at_is 0 '/' start && char_at_is 1 '/' start then
+        inl marked = start |> advance 2 |> skip_doc_markers
+        if char_at_is 0 ' ' marked then
+            inl body = marked |> advance 1
+            inl stop = { body with from = sm'.length body.text }
+            Lexed (span_between start stop, TokComment (text_between body stop), stop), state
+        else LexError (marked.from, "whitespace"), state
+    elif char_at_is 0 '(' start && char_at_is 1 '*' start && (char_at_is 2 ' ' start || peek_at 2 start = LineEnd) then
+        inl stop_index, depth = comment_scan start.text (start.from + 2) 1
+        inl stop = { start with from = stop_index }
+        inl comment = TokComment (text_between start stop)
+        Lexed (span_between start stop, comment, stop), { state with comment_depth = depth }
+    else LexError (start.from, "comment"), state
+inl lex_char_quoted (start : cursor) : lexed =
+    inl escaped c =
+        if c = 'n' then '\n'
+        elif c = 'r' then '\r'
+        elif c = 't' then '\t'
+        elif c = 'b' then '\b'
+        else c
+    inl closed (body : cursor) (value : char) : lexed =
+        if peek body |> glyph_is (fun c => c = '\'') then
+            inl stop = body |> advance 1
+            Lexed (span_between start stop, TokValue (LitChar value), skip_spaces stop)
+        else LexError (body.from, "'''")
+    if peek start |> glyph_is (fun c => c = '\'') then
+        inl body = start |> advance 1
+        match peek body with
+        | LineEnd => LexError (body.from, "character or '")
+        | Glyph c when c = '\\' =>
+            inl escape = body |> advance 1
+            match peek escape with
+            | LineEnd => LexError (escape.from, "character or '")
+            | Glyph c => closed (escape |> advance 1) (escaped c)
+        | Glyph c => closed (body |> advance 1) c
+    else LexError (start.from, "'''")
+
+///> rust
+///> fsharp
+test lex_comment_reads_line_and_block_comments =
+    inl clean = lex_state_init ()
+    inl summary text =
+        inl result, _ = cursor_of text |> lex_comment clean
+        lexed_summary result
+    inl body text =
+        inl result, _ = cursor_of text |> lex_comment clean
+        lexed_text result
+    inl depth text =
+        inl _, state = cursor_of text |> lex_comment clean
+        state.comment_depth
+    if summary "// note" <> (6, 7, 7) then failwith "a line comment runs to the end"
+    if body "// note" <> "note" then failwith "the comment text starts after the space"
+    if body "///> rust" <> "rust" then failwith "doc and target markers are skipped"
+    if summary "//x" <> (-1, 2, -1) then failwith "a line comment needs a space"
+    if summary "(* a *) b" <> (6, 7, 7) then failwith "a block comment ends after its close"
+    if depth "(* a" <> 1 then failwith "an open block comment carries its depth"
+    if depth "(*" <> 1 then failwith "an open block comment may end the line"
+    if summary "(*) x" <> (-1, 0, -1) then failwith "(*) is the multiplication operator"
+
+///> rust
+///> fsharp
+test lex_char_quoted_reads_plain_and_escaped_chars =
+    inl value text =
+        match cursor_of text |> lex_char_quoted with
+        | Lexed (_, TokValue (LitChar c), _) => c
+        | _ => '?'
+    if cursor_of "'a' x" |> lex_char_quoted |> lexed_summary <> (2, 3, 4) then failwith "a quoted char is a string"
+    if value "'a'" <> 'a' then failwith "a plain char"
+    if value "'\\n'" <> '\n' then failwith "an escaped newline"
+    if value "'\\q'" <> 'q' then failwith "an unknown escape is the char itself"
+    if cursor_of "'ab'" |> lex_char_quoted |> lexed_summary <> (-1, 2, -1) then failwith "two chars do not close"
+    if cursor_of "'" |> lex_char_quoted |> lexed_summary <> (-1, 1, -1) then failwith "a lone quote ends the line"
+
+union lexed_number =
+    | NumberSuffixed : span * literal * span * cursor
+    | NumberPlain : span * string * cursor
+    | NumberError : i32 * string
+
+inl digit_run (start : cursor) : option (string * cursor) =
+    if peek start |> glyph_is is_digit then
+        inl past = start |> advance 1 |> skip_while (fun c => is_digit c || c = '_')
+        Some (text_between start past |> sm'.replace "_" "", past)
+    else None
+
+inl number_suffixed (start : cursor) (text : string) (suffix : cursor) : lexed_number =
+    inl parsed literal_of (description : string) (stop : cursor) : lexed_number =
+        if is_separator (peek stop) || (peek stop |> glyph_is is_operator_char) then
+            match convert.try_convert text with
+            | Some value =>
+                inl value_span = { from = start.from; near_to = suffix.from }
+                NumberSuffixed (value_span, literal_of value, span_between suffix stop, skip_spaces stop)
+            | None =>
+                inl message = "The string " ++# text ++# " cannot be safely parsed as " ++# description ++# "."
+                NumberError (start.from, message)
+        else NumberError (stop.from, "separator")
+    inl width = suffix |> advance 1
+    inl two (a : char) (b : char) : bool = char_at_is 0 a width && char_at_is 1 b width
+    if char_at_is 0 'i' suffix then
+        if char_at_is 0 '8' width then parsed (fun (x : i8) => LitInt8 x) "i8" (width |> advance 1)
+        elif two '1' '6' then parsed (fun (x : i16) => LitInt16 x) "i16" (width |> advance 2)
+        elif two '3' '2' then parsed (fun (x : i32) => LitInt32 x) "i32" (width |> advance 2)
+        elif two '6' '4' then parsed (fun (x : i64) => LitInt64 x) "i64" (width |> advance 2)
+        else NumberError (width.from, "8,16,32 or 64")
+    elif char_at_is 0 'u' suffix then
+        if char_at_is 0 '8' width then parsed (fun (x : u8) => LitUInt8 x) "uint8" (width |> advance 1)
+        elif two '1' '6' then parsed (fun (x : u16) => LitUInt16 x) "u16" (width |> advance 2)
+        elif two '3' '2' then parsed (fun (x : u32) => LitUInt32 x) "u32" (width |> advance 2)
+        elif two '6' '4' then parsed (fun (x : u64) => LitUInt64 x) "u64" (width |> advance 2)
+        else NumberError (width.from, "8,16,32 or 64")
+    elif char_at_is 0 'f' suffix then
+        if two '3' '2' then parsed (fun (x : f32) => LitFloat32 x) "f32" (width |> advance 2)
+        elif two '6' '4' then parsed (fun (x : f64) => LitFloat64 x) "f64" (width |> advance 2)
+        else NumberError (width.from, "32 or 64")
+    else NumberPlain (span_between start suffix, text, skip_spaces suffix)
+
+inl lex_number (start : cursor) : lexed_number =
+    inl negative =
+        char_at_is 0 '-' start && (peek_at 1 start |> glyph_is is_digit) && is_prefix_separator (peek_at -1 start)
+    inl body = if negative then start |> advance 1 else start
+    inl sign = if negative then "-" else ""
+    match digit_run body with
+    | None => NumberError (body.from, "number")
+    | Some (whole, after_whole) =>
+        if char_at_is 0 '.' after_whole then
+            match after_whole |> advance 1 |> digit_run with
+            | Some (fraction, after_fraction) =>
+                number_suffixed start (sign ++# whole ++# "." ++# fraction) after_fraction
+            | None => NumberError (after_whole.from + 1, "number")
+        else number_suffixed start (sign ++# whole) after_whole
+
+inl number_value (result : lexed_number) : option literal =
+    match result with
+    | NumberSuffixed (_, value, _, _) => Some value
+    | _ => None
+
+inl number_spans (result : lexed_number) : i32 * i32 * i32 =
+    match result with
+    | NumberSuffixed (value_span, _, suffix_span, rest) => value_span.near_to, suffix_span.near_to, rest.from
+    | NumberPlain (range, _, rest) => range.near_to, -1, rest.from
+    | NumberError (at, _) => -1, at, -1
+
+inl number_text (result : lexed_number) : string =
+    match result with
+    | NumberPlain (_, text, _) => text
+    | NumberError (_, message) => message
+    | NumberSuffixed _ => ""
+
+///> rust
+///> fsharp
+test lex_number_reads_suffixes_signs_and_fractions =
+    inl lexed text = cursor_of text |> lex_number
+    if lexed "42 x" |> number_spans <> (2, -1, 3) then failwith "an unsuffixed number"
+    if lexed "42 x" |> number_text <> "42" then failwith "the unsuffixed text"
+    if lexed "1_000i32" |> number_value <> Some (LitInt32 1000) then failwith "underscores are dropped"
+    if lexed "1_000i32" |> number_spans <> (5, 8, 8) then failwith "the value span ends where the suffix starts"
+    if { text = "a -5i8"; from = 2 } |> lex_number |> number_value <> Some (LitInt8 -5i8) then failwith "signed"
+    if { text = "x-5"; from = 1 } |> lex_number |> number_spans <> (-1, 1, -1) then failwith "a glued minus is no sign"
+    if lexed "1.5f32 " |> number_value <> Some (LitFloat32 1.5f32) then failwith "a float with a suffix"
+    if lexed "2.25" |> number_text <> "2.25" then failwith "an unsuffixed fraction keeps its text"
+    if lexed "1.x" |> number_spans <> (-1, 2, -1) then failwith "a dot needs digits after it"
+    if lexed "300u8" |> number_text <> "The string 300 cannot be safely parsed as uint8." then failwith "u8 overflow"
+    if lexed "7i32x" |> number_spans <> (-1, 4, -1) then failwith "a suffix needs a separator after it"
+    if lexed "7i32+" |> number_value <> Some (LitInt32 7) then failwith "an operator char separates"
+    if lexed "7i9" |> number_spans <> (-1, 2, -1) then failwith "an unknown width"
+
+union lexed_tokens =
+    | LexedTokens : list (span * spiral_token) * cursor * lex_state
+    | LexFailure : i32 * string
+
+inl lex_bracket (start : cursor) : lexed =
+    inl stop = start |> advance 1
+    inl bracket kind = Lexed (span_between start stop, TokParenthesis kind, skip_spaces stop)
+    match peek start with
+    | Glyph c when c = '(' => bracket (Round, Open)
+    | Glyph c when c = '[' => bracket (Square, Open)
+    | Glyph c when c = '{' => bracket (Curly, Open)
+    | Glyph c when c = ')' => bracket (Round, Close)
+    | Glyph c when c = ']' => bracket (Square, Close)
+    | Glyph c when c = '}' => bracket (Curly, Close)
+    | _ => LexError (start.from, "`(`,`[`,`{`,`}`,`]` or `)`")
+
+inl escaped_token (c : char) : spiral_token =
+    if c = 'n' then TokEscapedChar '\n'
+    elif c = 'r' then TokEscapedChar '\r'
+    elif c = 't' then TokEscapedChar '\t'
+    elif c = 'b' then TokEscapedChar '\b'
+    else TokUnescapedChar c
+
+let rec quoted_text
+    (state : lex_state)
+    (segment : cursor)
+    (at : cursor)
+    (tokens : list (span * spiral_token))
+    : lexed_tokens
+    =
+    inl flushed () =
+        if segment.from < at.from
+        then Cons ((span_between segment at, TokText (text_between segment at)), tokens)
+        else tokens
+    match peek at with
+    | LineEnd => LexFailure (at.from, "character or \"")
+    | Glyph c when c = '"' =>
+        inl stop = at |> advance 1
+        LexedTokens (listm.rev (Cons ((span_between at stop, TokStringClose), flushed ())), skip_spaces stop, state)
+    | Glyph c when c = '\\' =>
+        match peek_at 1 at with
+        | LineEnd => LexFailure (at.from + 1, "character")
+        | Glyph escaped =>
+            inl stop = at |> advance 2
+            quoted_text state stop stop (Cons ((span_between at stop, escaped_token escaped), flushed ()))
+    | Glyph _ => quoted_text state segment (at |> advance 1) tokens
+
+inl lex_string_quoted (state : lex_state) (start : cursor) : lexed_tokens =
+    if char_at_is 0 '"' start then
+        inl body = start |> advance 1
+        quoted_text state body body (Cons ((span_between start body, TokStringOpen), Nil))
+    else LexFailure (start.from, "\"")
+
+let rec triple_close_from (quotes : i32) (at : cursor) : option cursor =
+    match peek at with
+    | LineEnd => None
+    | Glyph c when c = '"' =>
+        inl run_end = at |> skip_while (fun c => c = '"')
+        if quotes <= run_end.from - at.from then Some at else triple_close_from quotes run_end
+    | Glyph _ => at |> advance 1 |> triple_close_from quotes
+
+inl lex_triple_body (state : lex_state) (body : cursor) : lexed_tokens =
+    match triple_close_from state.triple_quotes body with
+    | Some run =>
+        inl run_end = run |> skip_while (fun c => c = '"')
+        inl close = { run_end with from = run_end.from - state.triple_quotes }
+        inl closing = Cons ((span_between close run_end, TokStringClose), Nil)
+        inl text = span_between body close, TokText (text_between body close)
+        inl tokens = if body.from < close.from then Cons (text, closing) else closing
+        LexedTokens (tokens, run_end, { state with triple_quotes = 0 })
+    | None =>
+        inl stop = { body with from = sm'.length body.text }
+        LexedTokens (Cons ((span_between body stop, TokText (text_between body stop ++# "\n")), Nil), stop, state)
+
+inl lex_triple_open (state : lex_state) (start : cursor) : lexed_tokens =
+    if char_at_is 0 '"' start && char_at_is 1 '"' start && char_at_is 2 '"' start then
+        inl run = (start |> skip_while (fun c => c = '"')).from - start.from
+        inl quotes = if run = 6 then 3 else run
+        inl body = start |> advance quotes
+        inl opening = span_between start body, TokStringOpen
+        match lex_triple_body { state with triple_quotes = quotes } body with
+        | LexedTokens (tokens, rest, next) => LexedTokens (Cons (opening, tokens), skip_spaces rest, next)
+        | failure => failure
+    else LexFailure (start.from, "triple-string: not a triple opener nor continuation")
+
+let rec token_tags (tokens : list (span * spiral_token)) : string =
+    inl tag token =
+        match token with
+        | TokStringOpen => "open"
+        | TokStringClose => "close"
+        | TokText text => "text:" ++# text
+        | TokEscapedChar _ => "esc"
+        | TokUnescapedChar _ => "unesc"
+        | _ => "other"
+    match tokens with
+    | Nil => ""
+    | Cons ((_, token), Nil) => tag token
+    | Cons ((_, token), rest) => tag token ++# " " ++# token_tags rest
+
+inl lexed_tokens_summary (result : lexed_tokens) : string * i32 * i32 =
+    match result with
+    | LexedTokens (tokens, rest, state) => token_tags tokens, rest.from, state.triple_quotes
+    | LexFailure (at, message) => message, at, -1
+
+///> rust
+///> fsharp
+test lex_bracket_reads_each_bracket =
+    if cursor_of "( x" |> lex_bracket |> lexed_summary <> (8, 1, 2) then failwith "an open round bracket"
+    if cursor_of "}" |> lex_bracket |> lexed_summary <> (8, 1, 1) then failwith "a close curly bracket"
+    if cursor_of "a" |> lex_bracket |> lexed_summary <> (-1, 0, -1) then failwith "a letter is no bracket"
+
+///> rust
+///> fsharp
+test lex_string_quoted_splits_text_and_escapes =
+    inl clean = lex_state_init ()
+    inl summary text = cursor_of text |> lex_string_quoted clean |> lexed_tokens_summary
+    if summary "\"ab\" x" <> ("open text:ab close", 5, 0) then failwith "a plain string"
+    if summary "\"a\\nb\"" <> ("open text:a esc text:b close", 6, 0) then failwith "an escape splits the text"
+    if summary "\"a\\qb\"" <> ("open text:a unesc text:b close", 6, 0) then failwith "an unknown escape is unescaped"
+    if summary "\"\"" <> ("open close", 2, 0) then failwith "an empty string has no text"
+    if summary "\"ab" <> ("character or \"", 3, -1) then failwith "an unclosed string"
+
+///> rust
+///> fsharp
+test lex_triple_strings_open_close_and_continue =
+    inl clean = lex_state_init ()
+    inl opened text = cursor_of text |> lex_triple_open clean |> lexed_tokens_summary
+    if opened "\"\"\"abc\"\"\" x" <> ("open text:abc close", 10, 0) then failwith "a one-line raw string"
+    if opened "\"\"\"abc" <> ("open text:abc\n", 6, 3) then failwith "an unclosed raw string goes on"
+    if opened "\"\"\"\"\"\"" <> ("open close", 6, 0) then failwith "six quotes are the empty string"
+    if opened "\"\"\"\"x\"\"\"\"" <> ("open text:x close", 9, 0) then failwith "four quotes close with four"
+    if opened "\"\"\" a \"\" b \"\"\"" <> ("open text: a \"\" b  close", 14, 0) then failwith "short runs are text"
+    inl inside = { clean with triple_quotes = 3 }
+    inl continued = cursor_of "end\"\"\" tail" |> lex_triple_body inside |> lexed_tokens_summary
+    if continued <> ("text:end close", 6, 0) then failwith "a continued raw string closes"

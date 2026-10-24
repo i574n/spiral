@@ -1,6 +1,9 @@
 open main
 
-inl impossible_recursive_beta_result_mismatch () : exact_linear_indexed_closed_recursive_beta_derivation exact_linear_bool_type exact_linear_bool_type =
+inl impossible_recursive_beta_result_mismatch
+    ()
+    : exact_linear_indexed_closed_recursive_beta_derivation exact_linear_bool_type exact_linear_bool_type
+    =
     ExactLinearIndexedClosedRecursiveBetaDerivationTensorLeftUnit (
         ExactLinearIndexedClosedRecursiveBetaDerivationBound (
             ExactLinearIndexedBoolTrue (

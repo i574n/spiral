@@ -18,10 +18,8 @@ fn sp_count_down_0(p0: i32, p1: i32) -> i32 {
             v3 = (v0 - 1i);
             var v4: i32 = 0i;
             v4 = (v1 + 1i);
-            let spiral_t1: i32 = v3;
-            let spiral_t2: i32 = v4;
-            v0 = spiral_t1;
-            v1 = spiral_t2;
+            v0 = v3;
+            v1 = v4;
             continue;
         } else {
             return v1;

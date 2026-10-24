@@ -1,14 +1,11 @@
 fun spiral_main(): Int {
-    var v0: Int = 0
-    v0 = 120
-    var v1: Boolean = false
-    v1 = (v0 == 32)
+    val v0: Int = 120
+    val v1: Boolean = (v0 == 32)
     var v3: Boolean = false
     if (v1) {
         v3 = true
     } else {
-        var v2: Boolean = false
-        v2 = (v0 == 47)
+        val v2: Boolean = (v0 == 47)
         v3 = v2
     }
     if (v3) {

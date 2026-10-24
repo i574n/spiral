@@ -11,14 +11,14 @@ inl main () : i32 =
     inl ~objects : array (i32 * i32) = $'cp.empty(1,dtype=object)'
     set objects 0i32 (3i32, 4i32)
     inl a, b = index objects 0i32
-    inl pair_sum = !!!!Add(left,right)
-    inl object_sum = !!!!Add(a,b)
+    inl pair_sum = !!!!Add(left, right)
+    inl object_sum = !!!!Add(a, b)
     inl plain_value = index plain 0i32
-    if !!!!EQ(pair_sum,42i32) then
-        if !!!!EQ(plain_value,7i32) then
-            if !!!!EQ(scalar,9i32) then
+    if !!!!EQ(pair_sum, 42i32) then
+        if !!!!EQ(plain_value, 7i32) then
+            if !!!!EQ(scalar, 9i32) then
                 if scalar_is_native then
-                    if !!!!EQ(object_sum,7i32) then 0i32 else 5i32
+                    if !!!!EQ(object_sum, 7i32) then 0i32 else 5i32
                 else 4i32
             else 3i32
         else 2i32

@@ -33,7 +33,11 @@ module.exports = grammar({
 
     line_comment: _ => token(prec(3, /\/\/[^\r\n]*/)),
 
-    definition_line: _ => token(prec(2, /(inl|let|type|union|nominal|prototype|instance|open|and)[ \t][^\r\n]*/)),
+    definition_line: $ => seq(
+      alias(token(prec(2, /((and)[ \t]+)?(inl|let|type|union|nominal|prototype|instance|open|and)[ \t]+(rec[ \t]+)?/)), $.definition_keyword),
+      optional(field('name', alias(token.immediate(prec(1, /\([^)\r\n]*\)|[^\s(:=]+/)), $.definition_name))),
+      optional(alias(token.immediate(/[^\r\n]+/), $.definition_rest)),
+    ),
 
     indented_line: _ => token(prec(1, /[ \t]+[^\r\n]*/)),
 

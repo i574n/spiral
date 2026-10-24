@@ -49,7 +49,8 @@ union byzantine_commit transfer manifest round epoch state =
         string -> byzantine_commit transfer manifest round epoch state
 
 union byzantine_mesh_op transfer good_manifest fork_manifest round pa pb pc px py from_epoch to_epoch from to effect =
-    | CollectAuthenticatedStatements :: forall transfer good_manifest fork_manifest round pa pb pc px py from_epoch to_epoch.
+    | CollectAuthenticatedStatements :: forall transfer good_manifest fork_manifest round pa pb pc px py from_epoch
+        to_epoch.
         signed_statement transfer good_manifest pa round authenticated *
         signed_statement transfer good_manifest pb round authenticated *
         signed_statement transfer good_manifest pc round authenticated *
@@ -57,7 +58,9 @@ union byzantine_mesh_op transfer good_manifest fork_manifest round pa pb pc px p
         signed_statement transfer fork_manifest px round authenticated *
         signed_statement transfer good_manifest py round authenticated *
         signed_statement transfer fork_manifest py round authenticated ->
-        byzantine_mesh_op transfer good_manifest fork_manifest round pa pb pc px py from_epoch to_epoch collecting equivocation_detected idempotent
+        byzantine_mesh_op
+            transfer good_manifest fork_manifest round pa pb pc px py from_epoch to_epoch collecting
+            equivocation_detected idempotent
     | ProveAndExpelEquivocators :: forall transfer good_manifest fork_manifest round pa pb pc px py from_epoch to_epoch.
         equivocation_proof transfer px round good_manifest fork_manifest authenticated *
         equivocation_proof transfer py round good_manifest fork_manifest authenticated *
@@ -65,7 +68,9 @@ union byzantine_mesh_op transfer good_manifest fork_manifest round pa pb pc px p
         expulsion_receipt py from_epoch to_epoch durable *
         distinct_honest_peers pa pb pc distinct *
         membership_epoch to_epoch pa pb pc durable ->
-        byzantine_mesh_op transfer good_manifest fork_manifest round pa pb pc px py from_epoch to_epoch equivocation_detected reconfigured non_idempotent
+        byzantine_mesh_op
+            transfer good_manifest fork_manifest round pa pb pc px py from_epoch to_epoch equivocation_detected
+            reconfigured non_idempotent
     | FormCanonicalQuorum :: forall transfer good_manifest fork_manifest round pa pb pc px py from_epoch to_epoch.
         signed_statement transfer good_manifest pa round authenticated *
         signed_statement transfer good_manifest pb round authenticated *
@@ -73,11 +78,15 @@ union byzantine_mesh_op transfer good_manifest fork_manifest round pa pb pc px p
         distinct_honest_peers pa pb pc distinct *
         membership_epoch to_epoch pa pb pc durable *
         canonical_quorum transfer good_manifest round to_epoch pa pb pc authenticated ->
-        byzantine_mesh_op transfer good_manifest fork_manifest round pa pb pc px py from_epoch to_epoch reconfigured quorum_ready idempotent
+        byzantine_mesh_op
+            transfer good_manifest fork_manifest round pa pb pc px py from_epoch to_epoch reconfigured quorum_ready
+            idempotent
     | PublishCanonicalManifest :: forall transfer good_manifest fork_manifest round pa pb pc px py from_epoch to_epoch.
         canonical_quorum transfer good_manifest round to_epoch pa pb pc authenticated *
         byzantine_commit transfer good_manifest round to_epoch committed ->
-        byzantine_mesh_op transfer good_manifest fork_manifest round pa pb pc px py from_epoch to_epoch quorum_ready committed non_idempotent
+        byzantine_mesh_op
+            transfer good_manifest fork_manifest round pa pb pc px py from_epoch to_epoch quorum_ready committed
+            non_idempotent
 
 union byzantine_row transfer good_manifest round from_epoch to_epoch from to effect =
     | ByzantineRow :: forall transfer good_manifest round from_epoch to_epoch from to effect.
@@ -86,9 +95,10 @@ union byzantine_row transfer good_manifest round from_epoch to_epoch from to eff
 union byzantine_node transfer good_manifest fork_manifest round pa pb pc px py from_epoch to_epoch from to =
     | ByzantineNode :: forall transfer good_manifest fork_manifest round pa pb pc px py from_epoch to_epoch from to.
         (exists effect.
-            byzantine_mesh_op transfer good_manifest fork_manifest round pa pb pc px py from_epoch to_epoch from to effect *
-            byzantine_row transfer good_manifest round from_epoch to_epoch from to effect)
-        -> byzantine_node transfer good_manifest fork_manifest round pa pb pc px py from_epoch to_epoch from to
+            byzantine_mesh_op
+                transfer good_manifest fork_manifest round pa pb pc px py from_epoch to_epoch from to effect *
+            byzantine_row transfer good_manifest round from_epoch to_epoch from to effect) ->
+        byzantine_node transfer good_manifest fork_manifest round pa pb pc px py from_epoch to_epoch from to
 
 union rec byzantine_plan transfer good_manifest fork_manifest round pa pb pc px py from_epoch to_epoch from to =
     | ByzantineLeaf :: forall transfer good_manifest fork_manifest round pa pb pc px py from_epoch to_epoch from to.
@@ -103,27 +113,37 @@ union rec byzantine_plan transfer good_manifest fork_manifest round pa pb pc px 
 union packed_byzantine_mesh transfer good_manifest =
     | PackedByzantineMesh :: forall transfer good_manifest.
         (exists fork_manifest round pa pb pc px py from_epoch to_epoch.
-            byzantine_plan transfer good_manifest fork_manifest round pa pb pc px py from_epoch to_epoch collecting committed)
-        -> packed_byzantine_mesh transfer good_manifest
+            byzantine_plan
+                transfer good_manifest fork_manifest round pa pb pc px py from_epoch to_epoch collecting committed) ->
+        packed_byzantine_mesh transfer good_manifest
 
 inl with_packed_byzantine_mesh forall transfer good_manifest result.
-    (visit : forall fork_manifest round pa pb pc px py from_epoch to_epoch.
-        byzantine_plan transfer good_manifest fork_manifest round pa pb pc px py from_epoch to_epoch collecting committed -> result)
-    (packed : packed_byzantine_mesh transfer good_manifest) : result =
+    (visit :
+        forall fork_manifest round pa pb pc px py from_epoch to_epoch.
+            byzantine_plan
+                transfer good_manifest fork_manifest round pa pb pc px py from_epoch to_epoch collecting committed ->
+            result)
+    (packed : packed_byzantine_mesh transfer good_manifest)
+    : result
+    =
     match packed with
     | PackedByzantineMesh payload =>
         inl exists fork_manifest round pa pb pc px py from_epoch to_epoch. plan = payload
         visit plan
 
 inl node_label forall transfer good_manifest fork_manifest round pa pb pc px py from_epoch to_epoch from to.
-    (node : byzantine_node transfer good_manifest fork_manifest round pa pb pc px py from_epoch to_epoch from to) : string =
+    (node : byzantine_node transfer good_manifest fork_manifest round pa pb pc px py from_epoch to_epoch from to)
+    : string
+    =
     match node with
     | ByzantineNode payload =>
         inl exists effect. _, ByzantineRow label = payload
         label
 
 inl rec terminal_label forall transfer good_manifest fork_manifest round pa pb pc px py from_epoch to_epoch from to.
-    (plan : byzantine_plan transfer good_manifest fork_manifest round pa pb pc px py from_epoch to_epoch from to) : string =
+    (plan : byzantine_plan transfer good_manifest fork_manifest round pa pb pc px py from_epoch to_epoch from to)
+    : string
+    =
     match plan with
     | ByzantineLeaf node => node_label node
     | ByzantineThen payload =>
@@ -139,7 +159,11 @@ inl membership () : membership_epoch epoch_1 peer_a peer_b peer_c durable =
 inl quorum () : canonical_quorum transfer_a manifest_good round_28 epoch_1 peer_a peer_b peer_c authenticated =
     CanonicalQuorum "three-honest-authenticated-statements"
 
-inl collect_node () : byzantine_node transfer_a manifest_good manifest_fork round_28 peer_a peer_b peer_c peer_x peer_y epoch_0 epoch_1 collecting equivocation_detected =
+inl collect_node
+    ()
+    : byzantine_node transfer_a manifest_good manifest_fork round_28 peer_a peer_b peer_c peer_x peer_y epoch_0 epoch_1
+        collecting equivocation_detected
+    =
     ByzantineNode (exists (
         CollectAuthenticatedStatements (
             SignedStatement "peer-a-good",
@@ -153,7 +177,11 @@ inl collect_node () : byzantine_node transfer_a manifest_good manifest_fork roun
         ByzantineRow "collect-seven-valid-statements"
     ))
 
-inl expel_node () : byzantine_node transfer_a manifest_good manifest_fork round_28 peer_a peer_b peer_c peer_x peer_y epoch_0 epoch_1 equivocation_detected reconfigured =
+inl expel_node
+    ()
+    : byzantine_node transfer_a manifest_good manifest_fork round_28 peer_a peer_b peer_c peer_x peer_y epoch_0 epoch_1
+        equivocation_detected reconfigured
+    =
     ByzantineNode (exists (
         ProveAndExpelEquivocators (
             EquivocationProof "peer-x-two-valid-conflicting-statements",
@@ -166,7 +194,11 @@ inl expel_node () : byzantine_node transfer_a manifest_good manifest_fork round_
         ByzantineRow "expel-only-after-equivocation-proof"
     ))
 
-inl quorum_node () : byzantine_node transfer_a manifest_good manifest_fork round_28 peer_a peer_b peer_c peer_x peer_y epoch_0 epoch_1 reconfigured quorum_ready =
+inl quorum_node
+    ()
+    : byzantine_node transfer_a manifest_good manifest_fork round_28 peer_a peer_b peer_c peer_x peer_y epoch_0 epoch_1
+        reconfigured quorum_ready
+    =
     ByzantineNode (exists (
         FormCanonicalQuorum (
             SignedStatement "peer-a-good",
@@ -182,7 +214,11 @@ inl quorum_node () : byzantine_node transfer_a manifest_good manifest_fork round
 inl stale_commit () : byzantine_commit transfer_a manifest_good round_28 epoch_0 committed =
     ByzantineCommit "stale-membership-epoch-0"
 
-inl commit_node () : byzantine_node transfer_a manifest_good manifest_fork round_28 peer_a peer_b peer_c peer_x peer_y epoch_0 epoch_1 quorum_ready committed =
+inl commit_node
+    ()
+    : byzantine_node transfer_a manifest_good manifest_fork round_28 peer_a peer_b peer_c peer_x peer_y epoch_0 epoch_1
+        quorum_ready committed
+    =
     ByzantineNode (exists (
         PublishCanonicalManifest (
             quorum (),
@@ -191,7 +227,11 @@ inl commit_node () : byzantine_node transfer_a manifest_good manifest_fork round
         ByzantineRow "byzantine-mesh-healed-and-committed"
     ))
 
-inl plan () : byzantine_plan transfer_a manifest_good manifest_fork round_28 peer_a peer_b peer_c peer_x peer_y epoch_0 epoch_1 collecting committed =
+inl plan
+    ()
+    : byzantine_plan transfer_a manifest_good manifest_fork round_28 peer_a peer_b peer_c peer_x peer_y epoch_0 epoch_1
+        collecting committed
+    =
     ByzantineThen (exists (
         ByzantineThen (exists (
             ByzantineThen (exists (
@@ -204,7 +244,11 @@ inl plan () : byzantine_plan transfer_a manifest_good manifest_fork round_28 pee
     ))
 
 inl inspect forall fork_manifest round pa pb pc px py from_epoch to_epoch.
-    (plan : byzantine_plan transfer_a manifest_good fork_manifest round pa pb pc px py from_epoch to_epoch collecting committed) : string =
+    (plan :
+        byzantine_plan
+            transfer_a manifest_good fork_manifest round pa pb pc px py from_epoch to_epoch collecting committed)
+    : string
+    =
     terminal_label plan
 
 inl main () : string =

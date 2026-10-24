@@ -1,6 +1,6 @@
 sealed interface UH0 { val tag: Int }
 data class UH0_Link(val f0: Int, val f1: UH0) : UH0 { override val tag: Int = 0 }
-class UH0_End : UH0 { override val tag: Int = 1 }
+object UH0_End : UH0 { override val tag: Int = 1 }
 object UH0_Zero : UH0 { override val tag: Int = -1 }
 fun sp_build_0(p0: Int, p1: UH0): UH0 {
     var v0: Int = p0
@@ -15,10 +15,8 @@ fun sp_build_0(p0: Int, p1: UH0): UH0 {
             v3 = (v0 - 1)
             var v4: UH0 = UH0_Link(0, UH0_Zero)
             v4 = UH0_Link(v0, v1)
-            val t362_3: Int = v3
-            val t396_4: UH0 = v4
-            v0 = t362_3
-            v1 = t396_4
+            v0 = v3
+            v1 = v4
             continue
         }
     }
@@ -38,8 +36,7 @@ fun sp_sum_1(p0: UH0, p1: Int): Int {
             v4 = (v1 * 31)
             var v5: Int = 0
             v5 = (v4 + v2)
-            var v6: Int = 0
-            v6 = (v5 % 9973)
+            val v6: Int = (v5 % 9973)
             return sp_sum_1(v3, v6)
         }
         else -> throw RuntimeException()
@@ -49,7 +46,7 @@ fun spiral_main(): Int {
     var v0: Int = 0
     v0 = 1000000
     var v1: UH0 = UH0_Link(0, UH0_Zero)
-    v1 = UH0_End()
+    v1 = UH0_End
     var v2: UH0 = UH0_Link(0, UH0_Zero)
     v2 = sp_build_0(v0, v1)
     var v3: Int = 0

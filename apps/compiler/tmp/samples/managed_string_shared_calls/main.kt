@@ -34,16 +34,12 @@ fun sp_measure_0(p0: String): Int {
     return v1
 }
 fun spiral_main(): Int {
-    var v0: String = ""
-    v0 = "qwe"
+    val v0: String = "qwe"
     var v1: Int = 0
     v1 = sp_measure_0(v0)
-    var v2: Int = 0
-    v2 = sp_measure_0(v0)
-    var v3: Int = 0
-    v3 = (v1 + v2)
-    var v4: Int = 0
-    v4 = (v3 - 6)
+    val v2: Int = sp_measure_0(v0)
+    val v3: Int = (v1 + v2)
+    val v4: Int = (v3 - 6)
     return v4
 }
 fun main() {

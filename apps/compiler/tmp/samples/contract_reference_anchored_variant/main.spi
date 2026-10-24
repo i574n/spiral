@@ -6,10 +6,15 @@ nominal allele_t = ()
 nominal raw = ()
 nominal normalized = ()
 
-union reference build contig pos allele = | Reference :: forall build contig pos allele. string -> reference build contig pos allele
-union variant build contig pos ref alt state = | Variant :: forall build contig pos ref alt state. string -> variant build contig pos ref alt state
+union reference build contig pos allele =
+    | Reference :: forall build contig pos allele. string -> reference build contig pos allele
+union variant build contig pos ref alt state =
+    | Variant :: forall build contig pos ref alt state. string -> variant build contig pos ref alt state
 
-inl normalize forall build contig pos ref alt. (reference : reference build contig pos ref) (variant : variant build contig pos ref alt raw) : variant build contig pos ref alt normalized =
+inl normalize forall build contig pos ref alt.
+    (reference : reference build contig pos ref) (variant : variant build contig pos ref alt raw)
+    : variant build contig pos ref alt normalized
+    =
     match reference, variant with | Reference _, Variant _ => Variant "reference-anchored-variant"
 
 inl main () : string =

@@ -9,14 +9,14 @@ function spiral_array_set<T>(array: T[], index: number, value: T): void {
 type US0_Missing = { readonly tag: 0 };
 type US0_Held = { readonly tag: 1, readonly f0: Array<number> };
 type US0 = US0_Missing | US0_Held;
-function US0_Missing(): US0 { return { tag: 0 }; }
+const US0_Missing_shared: US0 = { tag: 0 }; function US0_Missing(): US0 { return US0_Missing_shared; }
 function US0_Held(f0: Array<number>): US0 { return { tag: 1, f0: f0 }; }
 export function main(): number {
-    let v0: number = 2;
-    let v1: Array<number> = new Array<number>(v0).fill(0);
-    let v2: number = 7;
+    const v0: number = 2;
+    const v1: Array<number> = new Array<number>(v0).fill(0);
+    const v2: number = 7;
     spiral_array_set(v1, 0, v2);
-    let v3: boolean = true;
+    const v3: boolean = true;
     let v6: US0;
     if (v3) {
         v6 = US0_Held(v1);
@@ -25,9 +25,9 @@ export function main(): number {
     }
     switch (v6.tag) {
         case 1: {
-            let v7: Array<number> = v6.f0;
-            let v8: number = spiral_array_index(v7, 0);
-            let v9: boolean = v8 === 7;
+            const v7: Array<number> = v6.f0;
+            const v8: number = spiral_array_index(v7, 0);
+            const v9: boolean = v8 === 7;
             if (v9) {
                 return 0;
             } else {
@@ -37,7 +37,6 @@ export function main(): number {
         }
         case 0: {
             return 1;
-            break;
         }
         default: throw new Error("Compiler error: unreachable union case.");
     }

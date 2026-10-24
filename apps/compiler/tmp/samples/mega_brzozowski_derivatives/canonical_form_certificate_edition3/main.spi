@@ -47,13 +47,24 @@
     | _ => !+
 
 :~ ^ canonical_regex_form \* alphabet {symbol_compare}.
-    (value : regex alphabet) : bool =
+    (value : regex alphabet)
+    : bool
+    =
     ?= value ?|
     | RegexEmpty => !+
     | RegexEpsilon => !+
     | RegexChar _ => !+
-    | RegexAlt (head, tail) => canonical_alt_atom head && canonical_regex_form head && canonical_regex_form tail && canonical_alt_ordered head tail
-    | RegexCat (left, right) => canonical_cat_left left && canonical_cat_right right && canonical_cat_star_reduced left right && canonical_regex_form left && canonical_regex_form right
+    | RegexAlt (head, tail) =>
+        canonical_alt_atom head
+        && canonical_regex_form head
+        && canonical_regex_form tail
+        && canonical_alt_ordered head tail
+    | RegexCat (left, right) =>
+        canonical_cat_left left
+        && canonical_cat_right right
+        && canonical_cat_star_reduced left right
+        && canonical_regex_form left
+        && canonical_regex_form right
     | RegexStar inner => canonical_star_inner inner && canonical_regex_form inner
 
 :~ ^ normalized_corpus_is_canonical \* alphabet {symbol_compare}.
@@ -95,21 +106,43 @@
     := tri_symbols = finite_alphabet_symbols tri_descriptor
     := bit_corpus = regex_corpus_depth_one bit_symbols
     := tri_corpus = regex_corpus_depth_one tri_symbols
-    assert_static (normalized_corpus_is_canonical bit_corpus) "every normalized bit corpus term must satisfy structural canonical form"
-    assert_static (normalized_corpus_is_canonical tri_corpus) "every normalized ternary corpus term must satisfy structural canonical form"
-    assert_static (canonical_derivatives_are_canonical_corpus bit_corpus bit_symbols) "every canonical bit derivative must already satisfy structural canonical form"
-    assert_static (canonical_derivatives_are_canonical_corpus tri_corpus tri_symbols) "every canonical ternary derivative must already satisfy structural canonical form"
+    assert_static
+        (normalized_corpus_is_canonical bit_corpus)
+        "every normalized bit corpus term must satisfy structural canonical form"
+    assert_static
+        (normalized_corpus_is_canonical tri_corpus)
+        "every normalized ternary corpus term must satisfy structural canonical form"
+    assert_static
+        (canonical_derivatives_are_canonical_corpus bit_corpus bit_symbols)
+        "every canonical bit derivative must already satisfy structural canonical form"
+    assert_static
+        (canonical_derivatives_are_canonical_corpus tri_corpus tri_symbols)
+        "every canonical ternary derivative must already satisfy structural canonical form"
     assert_static (bool_same (canonical_regex_form (RegexAlt (o, z))) !-) "unsorted alternation must not be canonical"
     assert_static (bool_same (canonical_regex_form (RegexAlt (z, z))) !-) "duplicate alternation must not be canonical"
-    assert_static (bool_same (canonical_regex_form (RegexAlt (RegexAlt (z, o), RegexEpsilon))) !-) "left-nested alternation must not be canonical"
-    assert_static (bool_same (canonical_regex_form (RegexCat (RegexEpsilon, z))) !-) "epsilon concatenation identity must not remain in canonical form"
-    assert_static (bool_same (canonical_regex_form (RegexCat (RegexCat (z, o), z))) !-) "left-associated concatenation must not remain in canonical form"
+    assert_static
+        (bool_same (canonical_regex_form (RegexAlt (RegexAlt (z, o), RegexEpsilon))) !-)
+        "left-nested alternation must not be canonical"
+    assert_static
+        (bool_same (canonical_regex_form (RegexCat (RegexEpsilon, z))) !-)
+        "epsilon concatenation identity must not remain in canonical form"
+    assert_static
+        (bool_same (canonical_regex_form (RegexCat (RegexCat (z, o), z))) !-)
+        "left-associated concatenation must not remain in canonical form"
     assert_static (bool_same (canonical_regex_form empty_star) !-) "star of empty must not remain in canonical form"
-    assert_static (bool_same (canonical_regex_form (RegexStar zstar)) !-) "nested star must not remain in canonical form"
-    assert_static (bool_same (canonical_regex_form (RegexCat (zstar, zstar))) !-) "duplicate adjacent stars must be reduced in canonical form"
+    assert_static
+        (bool_same (canonical_regex_form (RegexStar zstar)) !-)
+        "nested star must not remain in canonical form"
+    assert_static
+        (bool_same (canonical_regex_form (RegexCat (zstar, zstar))) !-)
+        "duplicate adjacent stars must be reduced in canonical form"
     assert_static (canonical_regex_form (normalize (RegexAlt (o, z)))) "normalization must repair unsorted alternation"
     assert_static (canonical_regex_form (normalize (RegexAlt (z, z)))) "normalization must remove duplicate alternation"
-    assert_static (canonical_regex_form (normalize (RegexCat (RegexEpsilon, z)))) "normalization must remove concatenation identity"
+    assert_static
+        (canonical_regex_form (normalize (RegexCat (RegexEpsilon, z))))
+        "normalization must remove concatenation identity"
     assert_static (canonical_regex_form (normalize (RegexStar zstar))) "normalization must collapse nested star"
-    assert_static (canonical_regex_form (normalize (RegexCat (zstar, zstar)))) "normalization must collapse duplicate adjacent stars"
+    assert_static
+        (canonical_regex_form (normalize (RegexCat (zstar, zstar))))
+        "normalization must collapse duplicate adjacent stars"
     "brzozowski-canonical-form-certificate-green"

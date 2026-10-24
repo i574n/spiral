@@ -1,5 +1,35 @@
 [
   {
+    "type": "definition_line",
+    "named": true,
+    "fields": {
+      "name": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "definition_name",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "definition_keyword",
+          "named": true
+        },
+        {
+          "type": "definition_rest",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "source_file",
     "named": true,
     "root": true,
@@ -70,7 +100,15 @@
     }
   },
   {
-    "type": "definition_line",
+    "type": "definition_keyword",
+    "named": true
+  },
+  {
+    "type": "definition_name",
+    "named": true
+  },
+  {
+    "type": "definition_rest",
     "named": true
   },
   {

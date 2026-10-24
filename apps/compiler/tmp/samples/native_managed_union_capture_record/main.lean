@@ -51,7 +51,6 @@ partial def closure1 (p0 : U0) (p1 : Int32) : IO Int32 := do
     let mut v8 : Int32 := default
     let mut v9 : Int32 := default
     let mut v10 : Int32 := default
-    let mut v13 : Int32 := default
     match v0 with
     | U0.Empty =>
         v12 := (3 : Int32)
@@ -66,20 +65,18 @@ partial def closure1 (p0 : U0) (p1 : Int32) : IO Int32 := do
         v9 := (← spiralIndex (← v3.get) (spiralIdx (1 : Int32)))
         v10 := (v8 + v9)
         v12 := v10
-    v13 := (v12 + v1)
+    let v13 : Int32 := (v12 + v1)
     return v13
 partial def closure0 (p0 : Int32) : IO (Int32 → IO Int32) := do
     let mut v0 : Int32 := p0
     let mut v1 : (IO.Ref (Array Int32)) ← IO.mkRef #[]
-    let mut v2 : Int32 := default
-    let mut v3 : Bool := default
     let mut v7 : U0 := default
     let mut v5 : String := default
     v1 := (← IO.mkRef (Array.replicate (spiralIdx (2 : Int32)) (default : Int32)))
     v1.modify (fun xs => xs.set! (spiralIdx (0 : Int32)) v0)
-    v2 := (v0 + (1 : Int32))
+    let v2 : Int32 := (v0 + (1 : Int32))
     v1.modify (fun xs => xs.set! (spiralIdx (1 : Int32)) v2)
-    v3 := (v0 == (0 : Int32))
+    let v3 : Bool := (v0 == (0 : Int32))
     if v3 then
         v7 := U0.Empty
     else
@@ -94,37 +91,26 @@ partial def method1 (p0 : (Int32 → IO (Int32 → IO Int32))) : IO (Int32 → I
     return (← v0 (4 : Int32))
 partial def method4 (p0 : (Int32 → IO Int32)) : IO Int32 := do
     let mut v0 : (Int32 → IO Int32) := p0
-    let mut v1 : Int32 := default
-    let mut v2 : Int32 := default
-    v1 := (← v0 (2 : Int32))
-    v2 := (v1 + (5 : Int32))
+    let v1 : Int32 := (← v0 (2 : Int32))
+    let v2 : Int32 := (v1 + (5 : Int32))
     return v2
 partial def method3 (p0 : (Int32 → IO Int32)) : IO Int32 := do
     let mut v0 : (Int32 → IO Int32) := p0
-    let mut v1 : Int32 := default
-    let mut v2 : Int32 := default
-    let mut v3 : Int32 := default
-    v1 := (← v0 (1 : Int32))
-    v2 := (← method4 v0)
-    v3 := (v1 + v2)
+    let v1 : Int32 := (← v0 (1 : Int32))
+    let v2 : Int32 := (← method4 v0)
+    let v3 : Int32 := (v1 + v2)
     return v3
 partial def method2 (p0 : (Int32 → IO Int32)) (p1 : (Int32 → IO Int32)) : IO Int32 := do
     let mut v0 : (Int32 → IO Int32) := p0
     let mut v1 : (Int32 → IO Int32) := p1
-    let mut v2 : Int32 := default
-    let mut v3 : Int32 := default
-    let mut v4 : Int32 := default
-    v2 := (← v0 (5 : Int32))
-    v3 := (← method3 v1)
-    v4 := (v2 + v3)
+    let v2 : Int32 := (← v0 (5 : Int32))
+    let v3 : Int32 := (← method3 v1)
+    let v4 : Int32 := (v2 + v3)
     return v4
 partial def spiralMain : IO Int32 := do
-    let mut v0 : (Int32 → IO (Int32 → IO Int32)) := default
-    let mut v1 : (Int32 → IO Int32) := default
-    let mut v2 : (Int32 → IO Int32) := default
-    v0 := closure0
-    v1 := (← method0 v0)
-    v2 := (← method1 v0)
+    let v0 : (Int32 → IO (Int32 → IO Int32)) := closure0
+    let v1 : (Int32 → IO Int32) := (← method0 v0)
+    let v2 : (Int32 → IO Int32) := (← method1 v0)
     return (← method2 v1 v2)
 end
 def main : IO UInt32 := do

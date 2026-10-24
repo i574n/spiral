@@ -5,8 +5,8 @@ fn target_global_0(mut v0: Rc<str>) -> () {
     ()
 }
 fn spiral_main() -> i32 {
-    let mut v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("SPIRAL_ITEM_METADATA_TEST_missing-item"); } LIT.with(|lit| lit.clone()) };
-    target_global_0(v0.clone());
+    let v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("SPIRAL_ITEM_METADATA_TEST_missing-item"); } LIT.with(|lit| lit.clone()) };
+    target_global_0(v0);
     0i32
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }

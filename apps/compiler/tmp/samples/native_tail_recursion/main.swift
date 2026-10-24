@@ -5,13 +5,11 @@ func sp_method1(_ p0: Int32) -> Int32 {
     while true {
         var v1: Int32 = 0
         v1 = (v0 &- 1)
-        var v2: Bool = false
-        v2 = (v1 == 0)
+        let v2: Bool = (v1 == 0)
         if (v2) {
             return 0
         } else {
-            let t247_1: Int32 = v1
-            v0 = t247_1
+            v0 = v1
             continue
         }
     }

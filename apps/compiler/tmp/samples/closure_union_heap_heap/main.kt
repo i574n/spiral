@@ -1,14 +1,14 @@
 class Heap0(val l0: Int, val l1: String)
 class Heap1(val l0: Heap0, val l1: Int)
 sealed interface US0 { val tag: Int }
-class US0_None : US0 { override val tag: Int = 0 }
+object US0_None : US0 { override val tag: Int = 0 }
 data class US0_Held(val f0: Heap1) : US0 { override val tag: Int = 1 }
 fun f_c0(v0: Heap1): (Int) -> US0 {
     fun body(v1: Int): US0 {
         var v2: Boolean = false
         v2 = (v1 == 0)
         if (v2) {
-            return US0_None()
+            return US0_None
         } else {
             return US0_Held(v0)
         }
@@ -32,16 +32,14 @@ fun sp_score_0(p0: US0): Int {
             v6 = (v4 == 7)
             var v8: Boolean = false
             if (v6) {
-                var v7: Boolean = false
-                v7 = (v5 == "hi")
+                val v7: Boolean = (v5 == "hi")
                 v8 = v7
             } else {
                 v8 = false
             }
             var v10: Boolean = false
             if (v8) {
-                var v9: Boolean = false
-                v9 = (v3 == 1)
+                val v9: Boolean = (v3 == 1)
                 v10 = v9
             } else {
                 v10 = false
@@ -59,10 +57,8 @@ fun sp_score_0(p0: US0): Int {
     }
 }
 fun spiral_main(): Int {
-    var v0: Int = 0
-    v0 = 7
-    var v1: String = ""
-    v1 = "hi"
+    val v0: Int = 7
+    val v1: String = "hi"
     var v2: Heap0 = Heap0(0, "")
     v2 = Heap0(v0, v1)
     var v3: Int = 0
@@ -71,7 +67,7 @@ fun spiral_main(): Int {
     v4 = Heap1(v2, v3)
     var v5: (Int) -> US0 = { _: Int -> throw RuntimeException() }
     v5 = f_c0(v4)
-    var v6: US0 = US0_None()
+    var v6: US0 = US0_None
     v6 = v5(1)
     return sp_score_0(v6)
 }

@@ -1,36 +1,36 @@
 sealed interface US0 { val tag: Int }
-class US0_BitZero : US0 { override val tag: Int = 0 }
-class US0_BitOne : US0 { override val tag: Int = 1 }
+object US0_BitZero : US0 { override val tag: Int = 0 }
+object US0_BitOne : US0 { override val tag: Int = 1 }
 sealed interface UH1 { val tag: Int }
-class UH1_RegexEmpty : UH1 { override val tag: Int = 0 }
-class UH1_RegexEpsilon : UH1 { override val tag: Int = 1 }
+object UH1_RegexEmpty : UH1 { override val tag: Int = 0 }
+object UH1_RegexEpsilon : UH1 { override val tag: Int = 1 }
 data class UH1_RegexChar(val f0: US0) : UH1 { override val tag: Int = 2 }
 data class UH1_RegexAlt(val f0: UH1, val f1: UH1) : UH1 { override val tag: Int = 3 }
 data class UH1_RegexCat(val f0: UH1, val f1: UH1) : UH1 { override val tag: Int = 4 }
 data class UH1_RegexStar(val f0: UH1) : UH1 { override val tag: Int = 5 }
 sealed interface UH2 { val tag: Int }
-class UH2_InputEmpty : UH2 { override val tag: Int = 0 }
+object UH2_InputEmpty : UH2 { override val tag: Int = 0 }
 data class UH2_InputCons(val f0: US0, val f1: UH2) : UH2 { override val tag: Int = 1 }
 sealed interface US3 { val tag: Int }
-class US3_SymbolLess : US3 { override val tag: Int = 0 }
-class US3_SymbolSame : US3 { override val tag: Int = 1 }
-class US3_SymbolGreater : US3 { override val tag: Int = 2 }
+object US3_SymbolLess : US3 { override val tag: Int = 0 }
+object US3_SymbolSame : US3 { override val tag: Int = 1 }
+object US3_SymbolGreater : US3 { override val tag: Int = 2 }
 sealed interface US4 { val tag: Int }
-class US4_Nullable : US4 { override val tag: Int = 0 }
-class US4_NonNullable : US4 { override val tag: Int = 1 }
+object US4_Nullable : US4 { override val tag: Int = 0 }
+object US4_NonNullable : US4 { override val tag: Int = 1 }
 sealed interface US5 { val tag: Int }
-class US5_TriA : US5 { override val tag: Int = 0 }
-class US5_TriB : US5 { override val tag: Int = 1 }
-class US5_TriC : US5 { override val tag: Int = 2 }
+object US5_TriA : US5 { override val tag: Int = 0 }
+object US5_TriB : US5 { override val tag: Int = 1 }
+object US5_TriC : US5 { override val tag: Int = 2 }
 sealed interface UH6 { val tag: Int }
-class UH6_RegexEmpty : UH6 { override val tag: Int = 0 }
-class UH6_RegexEpsilon : UH6 { override val tag: Int = 1 }
+object UH6_RegexEmpty : UH6 { override val tag: Int = 0 }
+object UH6_RegexEpsilon : UH6 { override val tag: Int = 1 }
 data class UH6_RegexChar(val f0: US5) : UH6 { override val tag: Int = 2 }
 data class UH6_RegexAlt(val f0: UH6, val f1: UH6) : UH6 { override val tag: Int = 3 }
 data class UH6_RegexCat(val f0: UH6, val f1: UH6) : UH6 { override val tag: Int = 4 }
 data class UH6_RegexStar(val f0: UH6) : UH6 { override val tag: Int = 5 }
 sealed interface UH7 { val tag: Int }
-class UH7_InputEmpty : UH7 { override val tag: Int = 0 }
+object UH7_InputEmpty : UH7 { override val tag: Int = 0 }
 data class UH7_InputCons(val f0: US5, val f1: UH7) : UH7 { override val tag: Int = 1 }
 class SpiralTuple0(val v0: UH2, val v1: ULong)
 fun sp_random_bit_input_1(p0: ULong, p1: Int, p2: UH2): SpiralTuple0 {
@@ -55,30 +55,27 @@ fun sp_random_bit_input_1(p0: ULong, p1: Int, p2: UH2): SpiralTuple0 {
             v9 = (v8 and 1uL)
             var v10: Boolean = false
             v10 = (v9 == 0uL)
-            var v13: US0 = US0_BitZero()
+            var v13: US0 = US0_BitZero
             if (v10) {
-                var v11: US0 = US0_BitZero()
-                v11 = US0_BitZero()
+                var v11: US0 = US0_BitZero
+                v11 = US0_BitZero
                 v13 = v11
             } else {
-                var v12: US0 = US0_BitZero()
-                v12 = US0_BitOne()
+                var v12: US0 = US0_BitZero
+                v12 = US0_BitOne
                 v13 = v12
             }
-            var v14: UH2 = UH2_InputEmpty()
+            var v14: UH2 = UH2_InputEmpty
             v14 = UH2_InputCons(v13, v2)
-            val t1106_6: ULong = v6
-            val t1143_7: Int = v7
-            val t1178_14: UH2 = v14
-            v0 = t1106_6
-            v1 = t1143_7
-            v2 = t1178_14
+            v0 = v6
+            v1 = v7
+            v2 = v14
             continue
         } else {
             return SpiralTuple0(v2, v0)
         }
     }
-    return SpiralTuple0(UH2_InputEmpty(), 0uL)
+    return SpiralTuple0(UH2_InputEmpty, 0uL)
 }
 fun sp_run_2(p0: Int, p1: UH2): Boolean {
     var v0: Int = p0
@@ -91,13 +88,13 @@ fun sp_run_2(p0: Int, p1: UH2): Boolean {
             v6 = (v0 == 0)
             var v19: Int = 0
             if (v6) {
-                var v10: US3 = US3_SymbolLess()
+                var v10: US3 = US3_SymbolLess
                 when (v4.tag) {
                     1 -> {
-                        v10 = US3_SymbolGreater()
+                        v10 = US3_SymbolGreater
                     }
                     0 -> {
-                        v10 = US3_SymbolSame()
+                        v10 = US3_SymbolSame
                     }
                     else -> throw RuntimeException()
                 }
@@ -116,13 +113,13 @@ fun sp_run_2(p0: Int, p1: UH2): Boolean {
                     v19 = 0
                 }
             } else {
-                var v16: US3 = US3_SymbolLess()
+                var v16: US3 = US3_SymbolLess
                 when (v4.tag) {
                     1 -> {
-                        v16 = US3_SymbolGreater()
+                        v16 = US3_SymbolGreater
                     }
                     0 -> {
-                        v16 = US3_SymbolSame()
+                        v16 = US3_SymbolSame
                     }
                     else -> throw RuntimeException()
                 }
@@ -164,7 +161,7 @@ fun sp_regex_compare_8(p0: UH1, p1: UH1): US3 {
                 3 -> {
                     var v55: UH1 = (v1 as UH1_RegexAlt).f0
                     var v56: UH1 = (v1 as UH1_RegexAlt).f1
-                    var v57: US3 = US3_SymbolLess()
+                    var v57: US3 = US3_SymbolLess
                     v57 = sp_regex_compare_8(v53, v55)
                     when (v57.tag) {
                         1 -> {
@@ -176,7 +173,7 @@ fun sp_regex_compare_8(p0: UH1, p1: UH1): US3 {
                     }
                 }
                 else -> {
-                    return US3_SymbolGreater()
+                    return US3_SymbolGreater
                 }
             }
         }
@@ -187,7 +184,7 @@ fun sp_regex_compare_8(p0: UH1, p1: UH1): US3 {
                 4 -> {
                     var v34: UH1 = (v1 as UH1_RegexCat).f0
                     var v35: UH1 = (v1 as UH1_RegexCat).f1
-                    var v36: US3 = US3_SymbolLess()
+                    var v36: US3 = US3_SymbolLess
                     v36 = sp_regex_compare_8(v28, v34)
                     when (v36.tag) {
                         1 -> {
@@ -200,16 +197,16 @@ fun sp_regex_compare_8(p0: UH1, p1: UH1): US3 {
                 }
                 2 -> {
                     var v32: US0 = (v1 as UH1_RegexChar).f0
-                    return US3_SymbolGreater()
+                    return US3_SymbolGreater
                 }
                 0 -> {
-                    return US3_SymbolGreater()
+                    return US3_SymbolGreater
                 }
                 1 -> {
-                    return US3_SymbolGreater()
+                    return US3_SymbolGreater
                 }
                 else -> {
-                    return US3_SymbolLess()
+                    return US3_SymbolLess
                 }
             }
         }
@@ -222,10 +219,10 @@ fun sp_regex_compare_8(p0: UH1, p1: UH1): US3 {
                         1 -> {
                             when (v13.tag) {
                                 1 -> {
-                                    return US3_SymbolSame()
+                                    return US3_SymbolSame
                                 }
                                 0 -> {
-                                    return US3_SymbolGreater()
+                                    return US3_SymbolGreater
                                 }
                                 else -> throw RuntimeException()
                             }
@@ -233,10 +230,10 @@ fun sp_regex_compare_8(p0: UH1, p1: UH1): US3 {
                         0 -> {
                             when (v13.tag) {
                                 1 -> {
-                                    return US3_SymbolLess()
+                                    return US3_SymbolLess
                                 }
                                 0 -> {
-                                    return US3_SymbolSame()
+                                    return US3_SymbolSame
                                 }
                                 else -> throw RuntimeException()
                             }
@@ -245,36 +242,36 @@ fun sp_regex_compare_8(p0: UH1, p1: UH1): US3 {
                     }
                 }
                 0 -> {
-                    return US3_SymbolGreater()
+                    return US3_SymbolGreater
                 }
                 1 -> {
-                    return US3_SymbolGreater()
+                    return US3_SymbolGreater
                 }
                 else -> {
-                    return US3_SymbolLess()
+                    return US3_SymbolLess
                 }
             }
         }
         0 -> {
             when (v1.tag) {
                 0 -> {
-                    return US3_SymbolSame()
+                    return US3_SymbolSame
                 }
                 else -> {
-                    return US3_SymbolLess()
+                    return US3_SymbolLess
                 }
             }
         }
         1 -> {
             when (v1.tag) {
                 0 -> {
-                    return US3_SymbolGreater()
+                    return US3_SymbolGreater
                 }
                 1 -> {
-                    return US3_SymbolSame()
+                    return US3_SymbolSame
                 }
                 else -> {
-                    return US3_SymbolLess()
+                    return US3_SymbolLess
                 }
             }
         }
@@ -284,14 +281,14 @@ fun sp_regex_compare_8(p0: UH1, p1: UH1): US3 {
                 3 -> {
                     var v45: UH1 = (v1 as UH1_RegexAlt).f0
                     var v46: UH1 = (v1 as UH1_RegexAlt).f1
-                    return US3_SymbolLess()
+                    return US3_SymbolLess
                 }
                 5 -> {
                     var v48: UH1 = (v1 as UH1_RegexStar).f0
                     return sp_regex_compare_8(v44, v48)
                 }
                 else -> {
-                    return US3_SymbolGreater()
+                    return US3_SymbolGreater
                 }
             }
         }
@@ -305,11 +302,11 @@ fun sp_alt_insert_sorted_7(p0: UH1, p1: UH1): UH1 {
         3 -> {
             var v2: UH1 = (v1 as UH1_RegexAlt).f0
             var v3: UH1 = (v1 as UH1_RegexAlt).f1
-            var v4: US3 = US3_SymbolLess()
+            var v4: US3 = US3_SymbolLess
             v4 = sp_regex_compare_8(v0, v2)
             when (v4.tag) {
                 2 -> {
-                    var v6: UH1 = UH1_RegexEmpty()
+                    var v6: UH1 = UH1_RegexEmpty
                     v6 = sp_alt_insert_sorted_7(v0, v3)
                     return UH1_RegexAlt(v2, v6)
                 }
@@ -326,7 +323,7 @@ fun sp_alt_insert_sorted_7(p0: UH1, p1: UH1): UH1 {
             return v0
         }
         else -> {
-            var v11: US3 = US3_SymbolLess()
+            var v11: US3 = US3_SymbolLess
             v11 = sp_regex_compare_8(v0, v1)
             when (v11.tag) {
                 2 -> {
@@ -350,7 +347,7 @@ fun sp_make_alt_6(p0: UH1, p1: UH1): UH1 {
         3 -> {
             var v2: UH1 = (v0 as UH1_RegexAlt).f0
             var v3: UH1 = (v0 as UH1_RegexAlt).f1
-            var v4: UH1 = UH1_RegexEmpty()
+            var v4: UH1 = UH1_RegexEmpty
             v4 = sp_alt_insert_sorted_7(v2, v1)
             return sp_make_alt_6(v3, v4)
         }
@@ -411,15 +408,15 @@ fun sp_regex_equal_10(p0: UH1, p1: UH1): Boolean {
             when (v1.tag) {
                 2 -> {
                     var v5: US0 = (v1 as UH1_RegexChar).f0
-                    var v15: US3 = US3_SymbolLess()
+                    var v15: US3 = US3_SymbolLess
                     when (v4.tag) {
                         1 -> {
                             when (v5.tag) {
                                 1 -> {
-                                    v15 = US3_SymbolSame()
+                                    v15 = US3_SymbolSame
                                 }
                                 0 -> {
-                                    v15 = US3_SymbolGreater()
+                                    v15 = US3_SymbolGreater
                                 }
                                 else -> throw RuntimeException()
                             }
@@ -427,10 +424,10 @@ fun sp_regex_equal_10(p0: UH1, p1: UH1): Boolean {
                         0 -> {
                             when (v5.tag) {
                                 1 -> {
-                                    v15 = US3_SymbolLess()
+                                    v15 = US3_SymbolLess
                                 }
                                 0 -> {
-                                    v15 = US3_SymbolSame()
+                                    v15 = US3_SymbolSame
                                 }
                                 else -> throw RuntimeException()
                             }
@@ -491,12 +488,12 @@ fun sp_make_cat_9(p0: UH1, p1: UH1): UH1 {
     var v1: UH1 = p1
     when (v0.tag) {
         0 -> {
-            return UH1_RegexEmpty()
+            return UH1_RegexEmpty
         }
         else -> {
             when (v1.tag) {
                 0 -> {
-                    return UH1_RegexEmpty()
+                    return UH1_RegexEmpty
                 }
                 else -> {
                     when (v0.tag) {
@@ -513,7 +510,7 @@ fun sp_make_cat_9(p0: UH1, p1: UH1): UH1 {
                                         4 -> {
                                             var v12: UH1 = (v0 as UH1_RegexCat).f0
                                             var v13: UH1 = (v0 as UH1_RegexCat).f1
-                                            var v14: UH1 = UH1_RegexEmpty()
+                                            var v14: UH1 = UH1_RegexEmpty
                                             v14 = sp_make_cat_9(v13, v1)
                                             return UH1_RegexCat(v12, v14)
                                         }
@@ -552,10 +549,10 @@ fun sp_make_star_11(p0: UH1): UH1 {
     var v0: UH1 = p0
     when (v0.tag) {
         0 -> {
-            return UH1_RegexEpsilon()
+            return UH1_RegexEpsilon
         }
         1 -> {
-            return UH1_RegexEpsilon()
+            return UH1_RegexEpsilon
         }
         5 -> {
             var v3: UH1 = (v0 as UH1_RegexStar).f0
@@ -572,18 +569,18 @@ fun sp_normalize_5(p0: UH1): UH1 {
         3 -> {
             var v5: UH1 = (v0 as UH1_RegexAlt).f0
             var v6: UH1 = (v0 as UH1_RegexAlt).f1
-            var v7: UH1 = UH1_RegexEmpty()
+            var v7: UH1 = UH1_RegexEmpty
             v7 = sp_normalize_5(v5)
-            var v8: UH1 = UH1_RegexEmpty()
+            var v8: UH1 = UH1_RegexEmpty
             v8 = sp_normalize_5(v6)
             return sp_make_alt_6(v7, v8)
         }
         4 -> {
             var v10: UH1 = (v0 as UH1_RegexCat).f0
             var v11: UH1 = (v0 as UH1_RegexCat).f1
-            var v12: UH1 = UH1_RegexEmpty()
+            var v12: UH1 = UH1_RegexEmpty
             v12 = sp_normalize_5(v10)
-            var v13: UH1 = UH1_RegexEmpty()
+            var v13: UH1 = UH1_RegexEmpty
             v13 = sp_normalize_5(v11)
             return sp_make_cat_9(v12, v13)
         }
@@ -592,14 +589,14 @@ fun sp_normalize_5(p0: UH1): UH1 {
             return UH1_RegexChar(v3)
         }
         0 -> {
-            return UH1_RegexEmpty()
+            return UH1_RegexEmpty
         }
         1 -> {
-            return UH1_RegexEpsilon()
+            return UH1_RegexEpsilon
         }
         5 -> {
             var v15: UH1 = (v0 as UH1_RegexStar).f0
-            var v16: UH1 = UH1_RegexEmpty()
+            var v16: UH1 = UH1_RegexEmpty
             v16 = sp_normalize_5(v15)
             return sp_make_star_11(v16)
         }
@@ -612,25 +609,25 @@ fun sp_nullable_13(p0: UH1): US4 {
         3 -> {
             var v5: UH1 = (v0 as UH1_RegexAlt).f0
             var v6: UH1 = (v0 as UH1_RegexAlt).f1
-            var v7: US4 = US4_Nullable()
+            var v7: US4 = US4_Nullable
             v7 = sp_nullable_13(v5)
-            var v8: US4 = US4_Nullable()
+            var v8: US4 = US4_Nullable
             v8 = sp_nullable_13(v6)
             when (v7.tag) {
                 0 -> {
-                    return US4_Nullable()
+                    return US4_Nullable
                 }
                 else -> {
                     when (v8.tag) {
                         0 -> {
-                            return US4_Nullable()
+                            return US4_Nullable
                         }
                         else -> {
                             when (v7.tag) {
                                 1 -> {
                                     when (v8.tag) {
                                         1 -> {
-                                            return US4_NonNullable()
+                                            return US4_NonNullable
                                         }
                                         else -> throw RuntimeException()
                                     }
@@ -645,39 +642,39 @@ fun sp_nullable_13(p0: UH1): US4 {
         4 -> {
             var v16: UH1 = (v0 as UH1_RegexCat).f0
             var v17: UH1 = (v0 as UH1_RegexCat).f1
-            var v18: US4 = US4_Nullable()
+            var v18: US4 = US4_Nullable
             v18 = sp_nullable_13(v16)
-            var v19: US4 = US4_Nullable()
+            var v19: US4 = US4_Nullable
             v19 = sp_nullable_13(v17)
             when (v18.tag) {
                 0 -> {
                     when (v19.tag) {
                         0 -> {
-                            return US4_Nullable()
+                            return US4_Nullable
                         }
                         else -> {
-                            return US4_NonNullable()
+                            return US4_NonNullable
                         }
                     }
                 }
                 else -> {
-                    return US4_NonNullable()
+                    return US4_NonNullable
                 }
             }
         }
         2 -> {
             var v3: US0 = (v0 as UH1_RegexChar).f0
-            return US4_NonNullable()
+            return US4_NonNullable
         }
         0 -> {
-            return US4_NonNullable()
+            return US4_NonNullable
         }
         1 -> {
-            return US4_Nullable()
+            return US4_Nullable
         }
         5 -> {
             var v25: UH1 = (v0 as UH1_RegexStar).f0
-            return US4_Nullable()
+            return US4_Nullable
         }
         else -> throw RuntimeException()
     }
@@ -689,29 +686,29 @@ fun sp_derivative_12(p0: UH1, p1: US0): UH1 {
         3 -> {
             var v19: UH1 = (v0 as UH1_RegexAlt).f0
             var v20: UH1 = (v0 as UH1_RegexAlt).f1
-            var v21: UH1 = UH1_RegexEmpty()
+            var v21: UH1 = UH1_RegexEmpty
             v21 = sp_derivative_12(v19, v1)
-            var v22: UH1 = UH1_RegexEmpty()
+            var v22: UH1 = UH1_RegexEmpty
             v22 = sp_derivative_12(v20, v1)
             return sp_make_alt_6(v21, v22)
         }
         4 -> {
             var v24: UH1 = (v0 as UH1_RegexCat).f0
             var v25: UH1 = (v0 as UH1_RegexCat).f1
-            var v26: US4 = US4_Nullable()
+            var v26: US4 = US4_Nullable
             v26 = sp_nullable_13(v24)
             when (v26.tag) {
                 1 -> {
-                    var v31: UH1 = UH1_RegexEmpty()
+                    var v31: UH1 = UH1_RegexEmpty
                     v31 = sp_derivative_12(v24, v1)
                     return sp_make_cat_9(v31, v25)
                 }
                 0 -> {
-                    var v27: UH1 = UH1_RegexEmpty()
+                    var v27: UH1 = UH1_RegexEmpty
                     v27 = sp_derivative_12(v24, v1)
-                    var v28: UH1 = UH1_RegexEmpty()
+                    var v28: UH1 = UH1_RegexEmpty
                     v28 = sp_make_cat_9(v27, v25)
-                    var v29: UH1 = UH1_RegexEmpty()
+                    var v29: UH1 = UH1_RegexEmpty
                     v29 = sp_derivative_12(v25, v1)
                     return sp_make_alt_6(v28, v29)
                 }
@@ -720,15 +717,15 @@ fun sp_derivative_12(p0: UH1, p1: US0): UH1 {
         }
         2 -> {
             var v4: US0 = (v0 as UH1_RegexChar).f0
-            var v14: US3 = US3_SymbolLess()
+            var v14: US3 = US3_SymbolLess
             when (v4.tag) {
                 1 -> {
                     when (v1.tag) {
                         1 -> {
-                            v14 = US3_SymbolSame()
+                            v14 = US3_SymbolSame
                         }
                         0 -> {
-                            v14 = US3_SymbolGreater()
+                            v14 = US3_SymbolGreater
                         }
                         else -> throw RuntimeException()
                     }
@@ -736,10 +733,10 @@ fun sp_derivative_12(p0: UH1, p1: US0): UH1 {
                 0 -> {
                     when (v1.tag) {
                         1 -> {
-                            v14 = US3_SymbolLess()
+                            v14 = US3_SymbolLess
                         }
                         0 -> {
-                            v14 = US3_SymbolSame()
+                            v14 = US3_SymbolSame
                         }
                         else -> throw RuntimeException()
                     }
@@ -756,22 +753,22 @@ fun sp_derivative_12(p0: UH1, p1: US0): UH1 {
                 }
             }
             if (v15) {
-                return UH1_RegexEpsilon()
+                return UH1_RegexEpsilon
             } else {
-                return UH1_RegexEmpty()
+                return UH1_RegexEmpty
             }
         }
         0 -> {
-            return UH1_RegexEmpty()
+            return UH1_RegexEmpty
         }
         1 -> {
-            return UH1_RegexEmpty()
+            return UH1_RegexEmpty
         }
         5 -> {
             var v35: UH1 = (v0 as UH1_RegexStar).f0
-            var v36: UH1 = UH1_RegexEmpty()
+            var v36: UH1 = UH1_RegexEmpty
             v36 = sp_derivative_12(v35, v1)
-            var v37: UH1 = UH1_RegexEmpty()
+            var v37: UH1 = UH1_RegexEmpty
             v37 = sp_make_star_11(v35)
             return sp_make_cat_9(v36, v37)
         }
@@ -781,9 +778,9 @@ fun sp_derivative_12(p0: UH1, p1: US0): UH1 {
 fun sp_canonical_derivative_4(p0: UH1, p1: US0): UH1 {
     var v0: UH1 = p0
     var v1: US0 = p1
-    var v2: UH1 = UH1_RegexEmpty()
+    var v2: UH1 = UH1_RegexEmpty
     v2 = sp_normalize_5(v0)
-    var v3: UH1 = UH1_RegexEmpty()
+    var v3: UH1 = UH1_RegexEmpty
     v3 = sp_derivative_12(v2, v1)
     return sp_normalize_5(v3)
 }
@@ -794,14 +791,14 @@ fun sp_accepts_3(p0: UH1, p1: UH2): Boolean {
         1 -> {
             var v6: US0 = (v1 as UH2_InputCons).f0
             var v7: UH2 = (v1 as UH2_InputCons).f1
-            var v8: UH1 = UH1_RegexEmpty()
+            var v8: UH1 = UH1_RegexEmpty
             v8 = sp_canonical_derivative_4(v0, v6)
             return sp_accepts_3(v8, v7)
         }
         0 -> {
-            var v2: UH1 = UH1_RegexEmpty()
+            var v2: UH1 = UH1_RegexEmpty
             v2 = sp_normalize_5(v0)
-            var v3: US4 = US4_Nullable()
+            var v3: US4 = US4_Nullable
             v3 = sp_nullable_13(v2)
             when (v3.tag) {
                 1 -> {
@@ -826,13 +823,13 @@ fun sp_loop_0(p0: Int, p1: UH1, p2: Int, p3: ULong, p4: Int): Int {
         var v5: Boolean = false
         v5 = (0 < v2)
         if (v5) {
-            var v6: UH2 = UH2_InputEmpty()
-            v6 = UH2_InputEmpty()
-            var v7: UH2 = UH2_InputEmpty()
+            var v6: UH2 = UH2_InputEmpty
+            v6 = UH2_InputEmpty
+            var v7: UH2 = UH2_InputEmpty
             var v8: ULong = 0uL
-            val spiral_tuple432 = sp_random_bit_input_1(v3, v0, v6)
-            v7 = spiral_tuple432.v0
-            v8 = spiral_tuple432.v1
+            val spiral_tuple426 = sp_random_bit_input_1(v3, v0, v6)
+            v7 = spiral_tuple426.v0
+            v8 = spiral_tuple426.v1
             var v9: Int = 0
             v9 = 0
             var v10: Boolean = false
@@ -858,16 +855,9 @@ fun sp_loop_0(p0: Int, p1: UH1, p2: Int, p3: ULong, p4: Int): Int {
                 } else {
                     v16 = v4
                 }
-                val t1341_0: Int = v0
-                val t1380_1: UH1 = v1
-                val t1419_14: Int = v14
-                val t1460_8: ULong = v8
-                val t1501_16: Int = v16
-                v0 = t1341_0
-                v1 = t1380_1
-                v2 = t1419_14
-                v3 = t1460_8
-                v4 = t1501_16
+                v2 = v14
+                v3 = v8
+                v4 = v16
                 continue
             } else {
                 System.err.println("brzozowski-compiled-core-disagrees-on-random-input")
@@ -889,20 +879,18 @@ fun sp_zeros_input_15(p0: Int, p1: UH2): UH2 {
         if (v2) {
             var v3: Int = 0
             v3 = (v0 - 1)
-            var v4: US0 = US0_BitZero()
-            v4 = US0_BitZero()
-            var v5: UH2 = UH2_InputEmpty()
+            var v4: US0 = US0_BitZero
+            v4 = US0_BitZero
+            var v5: UH2 = UH2_InputEmpty
             v5 = UH2_InputCons(v4, v1)
-            val t400_3: Int = v3
-            val t434_5: UH2 = v5
-            v0 = t400_3
-            v1 = t434_5
+            v0 = v3
+            v1 = v5
             continue
         } else {
             return v1
         }
     }
-    return UH2_InputEmpty()
+    return UH2_InputEmpty
 }
 fun sp_run_16(p0: Int, p1: UH2): Boolean {
     var v0: Int = p0
@@ -922,13 +910,13 @@ fun sp_run_16(p0: Int, p1: UH2): Boolean {
                 if (v13) {
                     v26 = 1
                 } else {
-                    var v22: US3 = US3_SymbolLess()
+                    var v22: US3 = US3_SymbolLess
                     when (v5.tag) {
                         1 -> {
-                            v22 = US3_SymbolGreater()
+                            v22 = US3_SymbolGreater
                         }
                         0 -> {
-                            v22 = US3_SymbolSame()
+                            v22 = US3_SymbolSame
                         }
                         else -> throw RuntimeException()
                     }
@@ -973,9 +961,9 @@ fun sp_loop_14(p0: Int, p1: UH1, p2: Int, p3: Int): Int {
         if (v4) {
             return v3
         } else {
-            var v5: UH2 = UH2_InputEmpty()
-            v5 = UH2_InputEmpty()
-            var v6: UH2 = UH2_InputEmpty()
+            var v5: UH2 = UH2_InputEmpty
+            v5 = UH2_InputEmpty
+            var v6: UH2 = UH2_InputEmpty
             v6 = sp_zeros_input_15(v2, v5)
             var v7: Int = 0
             v7 = 2
@@ -1005,13 +993,13 @@ fun sp_loop_14(p0: Int, p1: UH1, p2: Int, p3: Int): Int {
                 System.exit(1)
                 throw RuntimeException()
             }
-            var v16: US0 = US0_BitZero()
-            v16 = US0_BitOne()
-            var v17: UH2 = UH2_InputEmpty()
-            v17 = UH2_InputEmpty()
-            var v18: UH2 = UH2_InputEmpty()
+            var v16: US0 = US0_BitZero
+            v16 = US0_BitOne
+            var v17: UH2 = UH2_InputEmpty
+            v17 = UH2_InputEmpty
+            var v18: UH2 = UH2_InputEmpty
             v18 = UH2_InputCons(v16, v17)
-            var v19: UH2 = UH2_InputEmpty()
+            var v19: UH2 = UH2_InputEmpty
             v19 = sp_zeros_input_15(v2, v18)
             var v20: Int = 0
             v20 = 2
@@ -1043,14 +1031,8 @@ fun sp_loop_14(p0: Int, p1: UH1, p2: Int, p3: Int): Int {
             }
             var v29: Int = 0
             v29 = (v2 + 1)
-            val t2630_0: Int = v0
-            val t2665_1: UH1 = v1
-            val t2700_29: Int = v29
-            val t2737_28: Int = v28
-            v0 = t2630_0
-            v1 = t2665_1
-            v2 = t2700_29
-            v3 = t2737_28
+            v2 = v29
+            v3 = v28
             continue
         }
     }
@@ -1067,13 +1049,13 @@ fun sp_run_17(p0: Int, p1: UH7): Boolean {
             v7 = (v0 == 0)
             var v47: Int = 0
             if (v7) {
-                var v10: US3 = US3_SymbolLess()
+                var v10: US3 = US3_SymbolLess
                 when (v5.tag) {
                     0 -> {
-                        v10 = US3_SymbolSame()
+                        v10 = US3_SymbolSame
                     }
                     else -> {
-                        v10 = US3_SymbolGreater()
+                        v10 = US3_SymbolGreater
                     }
                 }
                 var v11: Boolean = false
@@ -1088,16 +1070,16 @@ fun sp_run_17(p0: Int, p1: UH7): Boolean {
                 if (v11) {
                     v47 = 0
                 } else {
-                    var v17: US3 = US3_SymbolLess()
+                    var v17: US3 = US3_SymbolLess
                     when (v5.tag) {
                         0 -> {
-                            v17 = US3_SymbolLess()
+                            v17 = US3_SymbolLess
                         }
                         1 -> {
-                            v17 = US3_SymbolSame()
+                            v17 = US3_SymbolSame
                         }
                         2 -> {
-                            v17 = US3_SymbolGreater()
+                            v17 = US3_SymbolGreater
                         }
                         else -> throw RuntimeException()
                     }
@@ -1120,13 +1102,13 @@ fun sp_run_17(p0: Int, p1: UH7): Boolean {
                 var v21: Boolean = false
                 v21 = (v0 == 1)
                 if (v21) {
-                    var v24: US3 = US3_SymbolLess()
+                    var v24: US3 = US3_SymbolLess
                     when (v5.tag) {
                         0 -> {
-                            v24 = US3_SymbolSame()
+                            v24 = US3_SymbolSame
                         }
                         else -> {
-                            v24 = US3_SymbolGreater()
+                            v24 = US3_SymbolGreater
                         }
                     }
                     var v25: Boolean = false
@@ -1144,13 +1126,13 @@ fun sp_run_17(p0: Int, p1: UH7): Boolean {
                         v47 = 2
                     }
                 } else {
-                    var v36: US3 = US3_SymbolLess()
+                    var v36: US3 = US3_SymbolLess
                     when (v5.tag) {
                         0 -> {
-                            v36 = US3_SymbolSame()
+                            v36 = US3_SymbolSame
                         }
                         else -> {
-                            v36 = US3_SymbolGreater()
+                            v36 = US3_SymbolGreater
                         }
                     }
                     var v37: Boolean = false
@@ -1196,7 +1178,7 @@ fun sp_regex_compare_23(p0: UH6, p1: UH6): US3 {
                 3 -> {
                     var v61: UH6 = (v1 as UH6_RegexAlt).f0
                     var v62: UH6 = (v1 as UH6_RegexAlt).f1
-                    var v63: US3 = US3_SymbolLess()
+                    var v63: US3 = US3_SymbolLess
                     v63 = sp_regex_compare_23(v59, v61)
                     when (v63.tag) {
                         1 -> {
@@ -1208,7 +1190,7 @@ fun sp_regex_compare_23(p0: UH6, p1: UH6): US3 {
                     }
                 }
                 else -> {
-                    return US3_SymbolGreater()
+                    return US3_SymbolGreater
                 }
             }
         }
@@ -1219,7 +1201,7 @@ fun sp_regex_compare_23(p0: UH6, p1: UH6): US3 {
                 4 -> {
                     var v40: UH6 = (v1 as UH6_RegexCat).f0
                     var v41: UH6 = (v1 as UH6_RegexCat).f1
-                    var v42: US3 = US3_SymbolLess()
+                    var v42: US3 = US3_SymbolLess
                     v42 = sp_regex_compare_23(v34, v40)
                     when (v42.tag) {
                         1 -> {
@@ -1232,16 +1214,16 @@ fun sp_regex_compare_23(p0: UH6, p1: UH6): US3 {
                 }
                 2 -> {
                     var v38: US5 = (v1 as UH6_RegexChar).f0
-                    return US3_SymbolGreater()
+                    return US3_SymbolGreater
                 }
                 0 -> {
-                    return US3_SymbolGreater()
+                    return US3_SymbolGreater
                 }
                 1 -> {
-                    return US3_SymbolGreater()
+                    return US3_SymbolGreater
                 }
                 else -> {
-                    return US3_SymbolLess()
+                    return US3_SymbolLess
                 }
             }
         }
@@ -1254,27 +1236,27 @@ fun sp_regex_compare_23(p0: UH6, p1: UH6): US3 {
                         0 -> {
                             when (v13.tag) {
                                 0 -> {
-                                    return US3_SymbolSame()
+                                    return US3_SymbolSame
                                 }
                                 else -> {
-                                    return US3_SymbolLess()
+                                    return US3_SymbolLess
                                 }
                             }
                         }
                         else -> {
                             when (v13.tag) {
                                 0 -> {
-                                    return US3_SymbolGreater()
+                                    return US3_SymbolGreater
                                 }
                                 else -> {
                                     when (v10.tag) {
                                         1 -> {
                                             when (v13.tag) {
                                                 1 -> {
-                                                    return US3_SymbolSame()
+                                                    return US3_SymbolSame
                                                 }
                                                 2 -> {
-                                                    return US3_SymbolLess()
+                                                    return US3_SymbolLess
                                                 }
                                                 else -> throw RuntimeException()
                                             }
@@ -1282,10 +1264,10 @@ fun sp_regex_compare_23(p0: UH6, p1: UH6): US3 {
                                         2 -> {
                                             when (v13.tag) {
                                                 1 -> {
-                                                    return US3_SymbolGreater()
+                                                    return US3_SymbolGreater
                                                 }
                                                 2 -> {
-                                                    return US3_SymbolSame()
+                                                    return US3_SymbolSame
                                                 }
                                                 else -> throw RuntimeException()
                                             }
@@ -1298,36 +1280,36 @@ fun sp_regex_compare_23(p0: UH6, p1: UH6): US3 {
                     }
                 }
                 0 -> {
-                    return US3_SymbolGreater()
+                    return US3_SymbolGreater
                 }
                 1 -> {
-                    return US3_SymbolGreater()
+                    return US3_SymbolGreater
                 }
                 else -> {
-                    return US3_SymbolLess()
+                    return US3_SymbolLess
                 }
             }
         }
         0 -> {
             when (v1.tag) {
                 0 -> {
-                    return US3_SymbolSame()
+                    return US3_SymbolSame
                 }
                 else -> {
-                    return US3_SymbolLess()
+                    return US3_SymbolLess
                 }
             }
         }
         1 -> {
             when (v1.tag) {
                 0 -> {
-                    return US3_SymbolGreater()
+                    return US3_SymbolGreater
                 }
                 1 -> {
-                    return US3_SymbolSame()
+                    return US3_SymbolSame
                 }
                 else -> {
-                    return US3_SymbolLess()
+                    return US3_SymbolLess
                 }
             }
         }
@@ -1337,14 +1319,14 @@ fun sp_regex_compare_23(p0: UH6, p1: UH6): US3 {
                 3 -> {
                     var v51: UH6 = (v1 as UH6_RegexAlt).f0
                     var v52: UH6 = (v1 as UH6_RegexAlt).f1
-                    return US3_SymbolLess()
+                    return US3_SymbolLess
                 }
                 5 -> {
                     var v54: UH6 = (v1 as UH6_RegexStar).f0
                     return sp_regex_compare_23(v50, v54)
                 }
                 else -> {
-                    return US3_SymbolGreater()
+                    return US3_SymbolGreater
                 }
             }
         }
@@ -1358,11 +1340,11 @@ fun sp_alt_insert_sorted_22(p0: UH6, p1: UH6): UH6 {
         3 -> {
             var v2: UH6 = (v1 as UH6_RegexAlt).f0
             var v3: UH6 = (v1 as UH6_RegexAlt).f1
-            var v4: US3 = US3_SymbolLess()
+            var v4: US3 = US3_SymbolLess
             v4 = sp_regex_compare_23(v0, v2)
             when (v4.tag) {
                 2 -> {
-                    var v6: UH6 = UH6_RegexEmpty()
+                    var v6: UH6 = UH6_RegexEmpty
                     v6 = sp_alt_insert_sorted_22(v0, v3)
                     return UH6_RegexAlt(v2, v6)
                 }
@@ -1379,7 +1361,7 @@ fun sp_alt_insert_sorted_22(p0: UH6, p1: UH6): UH6 {
             return v0
         }
         else -> {
-            var v11: US3 = US3_SymbolLess()
+            var v11: US3 = US3_SymbolLess
             v11 = sp_regex_compare_23(v0, v1)
             when (v11.tag) {
                 2 -> {
@@ -1403,7 +1385,7 @@ fun sp_make_alt_21(p0: UH6, p1: UH6): UH6 {
         3 -> {
             var v2: UH6 = (v0 as UH6_RegexAlt).f0
             var v3: UH6 = (v0 as UH6_RegexAlt).f1
-            var v4: UH6 = UH6_RegexEmpty()
+            var v4: UH6 = UH6_RegexEmpty
             v4 = sp_alt_insert_sorted_22(v2, v1)
             return sp_make_alt_21(v3, v4)
         }
@@ -1464,32 +1446,32 @@ fun sp_regex_equal_25(p0: UH6, p1: UH6): Boolean {
             when (v1.tag) {
                 2 -> {
                     var v5: US5 = (v1 as UH6_RegexChar).f0
-                    var v21: US3 = US3_SymbolLess()
+                    var v21: US3 = US3_SymbolLess
                     when (v4.tag) {
                         0 -> {
                             when (v5.tag) {
                                 0 -> {
-                                    v21 = US3_SymbolSame()
+                                    v21 = US3_SymbolSame
                                 }
                                 else -> {
-                                    v21 = US3_SymbolLess()
+                                    v21 = US3_SymbolLess
                                 }
                             }
                         }
                         else -> {
                             when (v5.tag) {
                                 0 -> {
-                                    v21 = US3_SymbolGreater()
+                                    v21 = US3_SymbolGreater
                                 }
                                 else -> {
                                     when (v4.tag) {
                                         1 -> {
                                             when (v5.tag) {
                                                 1 -> {
-                                                    v21 = US3_SymbolSame()
+                                                    v21 = US3_SymbolSame
                                                 }
                                                 2 -> {
-                                                    v21 = US3_SymbolLess()
+                                                    v21 = US3_SymbolLess
                                                 }
                                                 else -> throw RuntimeException()
                                             }
@@ -1497,10 +1479,10 @@ fun sp_regex_equal_25(p0: UH6, p1: UH6): Boolean {
                                         2 -> {
                                             when (v5.tag) {
                                                 1 -> {
-                                                    v21 = US3_SymbolGreater()
+                                                    v21 = US3_SymbolGreater
                                                 }
                                                 2 -> {
-                                                    v21 = US3_SymbolSame()
+                                                    v21 = US3_SymbolSame
                                                 }
                                                 else -> throw RuntimeException()
                                             }
@@ -1565,12 +1547,12 @@ fun sp_make_cat_24(p0: UH6, p1: UH6): UH6 {
     var v1: UH6 = p1
     when (v0.tag) {
         0 -> {
-            return UH6_RegexEmpty()
+            return UH6_RegexEmpty
         }
         else -> {
             when (v1.tag) {
                 0 -> {
-                    return UH6_RegexEmpty()
+                    return UH6_RegexEmpty
                 }
                 else -> {
                     when (v0.tag) {
@@ -1587,7 +1569,7 @@ fun sp_make_cat_24(p0: UH6, p1: UH6): UH6 {
                                         4 -> {
                                             var v12: UH6 = (v0 as UH6_RegexCat).f0
                                             var v13: UH6 = (v0 as UH6_RegexCat).f1
-                                            var v14: UH6 = UH6_RegexEmpty()
+                                            var v14: UH6 = UH6_RegexEmpty
                                             v14 = sp_make_cat_24(v13, v1)
                                             return UH6_RegexCat(v12, v14)
                                         }
@@ -1626,10 +1608,10 @@ fun sp_make_star_26(p0: UH6): UH6 {
     var v0: UH6 = p0
     when (v0.tag) {
         0 -> {
-            return UH6_RegexEpsilon()
+            return UH6_RegexEpsilon
         }
         1 -> {
-            return UH6_RegexEpsilon()
+            return UH6_RegexEpsilon
         }
         5 -> {
             var v3: UH6 = (v0 as UH6_RegexStar).f0
@@ -1646,18 +1628,18 @@ fun sp_normalize_20(p0: UH6): UH6 {
         3 -> {
             var v5: UH6 = (v0 as UH6_RegexAlt).f0
             var v6: UH6 = (v0 as UH6_RegexAlt).f1
-            var v7: UH6 = UH6_RegexEmpty()
+            var v7: UH6 = UH6_RegexEmpty
             v7 = sp_normalize_20(v5)
-            var v8: UH6 = UH6_RegexEmpty()
+            var v8: UH6 = UH6_RegexEmpty
             v8 = sp_normalize_20(v6)
             return sp_make_alt_21(v7, v8)
         }
         4 -> {
             var v10: UH6 = (v0 as UH6_RegexCat).f0
             var v11: UH6 = (v0 as UH6_RegexCat).f1
-            var v12: UH6 = UH6_RegexEmpty()
+            var v12: UH6 = UH6_RegexEmpty
             v12 = sp_normalize_20(v10)
-            var v13: UH6 = UH6_RegexEmpty()
+            var v13: UH6 = UH6_RegexEmpty
             v13 = sp_normalize_20(v11)
             return sp_make_cat_24(v12, v13)
         }
@@ -1666,14 +1648,14 @@ fun sp_normalize_20(p0: UH6): UH6 {
             return UH6_RegexChar(v3)
         }
         0 -> {
-            return UH6_RegexEmpty()
+            return UH6_RegexEmpty
         }
         1 -> {
-            return UH6_RegexEpsilon()
+            return UH6_RegexEpsilon
         }
         5 -> {
             var v15: UH6 = (v0 as UH6_RegexStar).f0
-            var v16: UH6 = UH6_RegexEmpty()
+            var v16: UH6 = UH6_RegexEmpty
             v16 = sp_normalize_20(v15)
             return sp_make_star_26(v16)
         }
@@ -1686,25 +1668,25 @@ fun sp_nullable_28(p0: UH6): US4 {
         3 -> {
             var v5: UH6 = (v0 as UH6_RegexAlt).f0
             var v6: UH6 = (v0 as UH6_RegexAlt).f1
-            var v7: US4 = US4_Nullable()
+            var v7: US4 = US4_Nullable
             v7 = sp_nullable_28(v5)
-            var v8: US4 = US4_Nullable()
+            var v8: US4 = US4_Nullable
             v8 = sp_nullable_28(v6)
             when (v7.tag) {
                 0 -> {
-                    return US4_Nullable()
+                    return US4_Nullable
                 }
                 else -> {
                     when (v8.tag) {
                         0 -> {
-                            return US4_Nullable()
+                            return US4_Nullable
                         }
                         else -> {
                             when (v7.tag) {
                                 1 -> {
                                     when (v8.tag) {
                                         1 -> {
-                                            return US4_NonNullable()
+                                            return US4_NonNullable
                                         }
                                         else -> throw RuntimeException()
                                     }
@@ -1719,39 +1701,39 @@ fun sp_nullable_28(p0: UH6): US4 {
         4 -> {
             var v16: UH6 = (v0 as UH6_RegexCat).f0
             var v17: UH6 = (v0 as UH6_RegexCat).f1
-            var v18: US4 = US4_Nullable()
+            var v18: US4 = US4_Nullable
             v18 = sp_nullable_28(v16)
-            var v19: US4 = US4_Nullable()
+            var v19: US4 = US4_Nullable
             v19 = sp_nullable_28(v17)
             when (v18.tag) {
                 0 -> {
                     when (v19.tag) {
                         0 -> {
-                            return US4_Nullable()
+                            return US4_Nullable
                         }
                         else -> {
-                            return US4_NonNullable()
+                            return US4_NonNullable
                         }
                     }
                 }
                 else -> {
-                    return US4_NonNullable()
+                    return US4_NonNullable
                 }
             }
         }
         2 -> {
             var v3: US5 = (v0 as UH6_RegexChar).f0
-            return US4_NonNullable()
+            return US4_NonNullable
         }
         0 -> {
-            return US4_NonNullable()
+            return US4_NonNullable
         }
         1 -> {
-            return US4_Nullable()
+            return US4_Nullable
         }
         5 -> {
             var v25: UH6 = (v0 as UH6_RegexStar).f0
-            return US4_Nullable()
+            return US4_Nullable
         }
         else -> throw RuntimeException()
     }
@@ -1763,29 +1745,29 @@ fun sp_derivative_27(p0: UH6, p1: US5): UH6 {
         3 -> {
             var v25: UH6 = (v0 as UH6_RegexAlt).f0
             var v26: UH6 = (v0 as UH6_RegexAlt).f1
-            var v27: UH6 = UH6_RegexEmpty()
+            var v27: UH6 = UH6_RegexEmpty
             v27 = sp_derivative_27(v25, v1)
-            var v28: UH6 = UH6_RegexEmpty()
+            var v28: UH6 = UH6_RegexEmpty
             v28 = sp_derivative_27(v26, v1)
             return sp_make_alt_21(v27, v28)
         }
         4 -> {
             var v30: UH6 = (v0 as UH6_RegexCat).f0
             var v31: UH6 = (v0 as UH6_RegexCat).f1
-            var v32: US4 = US4_Nullable()
+            var v32: US4 = US4_Nullable
             v32 = sp_nullable_28(v30)
             when (v32.tag) {
                 1 -> {
-                    var v37: UH6 = UH6_RegexEmpty()
+                    var v37: UH6 = UH6_RegexEmpty
                     v37 = sp_derivative_27(v30, v1)
                     return sp_make_cat_24(v37, v31)
                 }
                 0 -> {
-                    var v33: UH6 = UH6_RegexEmpty()
+                    var v33: UH6 = UH6_RegexEmpty
                     v33 = sp_derivative_27(v30, v1)
-                    var v34: UH6 = UH6_RegexEmpty()
+                    var v34: UH6 = UH6_RegexEmpty
                     v34 = sp_make_cat_24(v33, v31)
-                    var v35: UH6 = UH6_RegexEmpty()
+                    var v35: UH6 = UH6_RegexEmpty
                     v35 = sp_derivative_27(v31, v1)
                     return sp_make_alt_21(v34, v35)
                 }
@@ -1794,32 +1776,32 @@ fun sp_derivative_27(p0: UH6, p1: US5): UH6 {
         }
         2 -> {
             var v4: US5 = (v0 as UH6_RegexChar).f0
-            var v20: US3 = US3_SymbolLess()
+            var v20: US3 = US3_SymbolLess
             when (v4.tag) {
                 0 -> {
                     when (v1.tag) {
                         0 -> {
-                            v20 = US3_SymbolSame()
+                            v20 = US3_SymbolSame
                         }
                         else -> {
-                            v20 = US3_SymbolLess()
+                            v20 = US3_SymbolLess
                         }
                     }
                 }
                 else -> {
                     when (v1.tag) {
                         0 -> {
-                            v20 = US3_SymbolGreater()
+                            v20 = US3_SymbolGreater
                         }
                         else -> {
                             when (v4.tag) {
                                 1 -> {
                                     when (v1.tag) {
                                         1 -> {
-                                            v20 = US3_SymbolSame()
+                                            v20 = US3_SymbolSame
                                         }
                                         2 -> {
-                                            v20 = US3_SymbolLess()
+                                            v20 = US3_SymbolLess
                                         }
                                         else -> throw RuntimeException()
                                     }
@@ -1827,10 +1809,10 @@ fun sp_derivative_27(p0: UH6, p1: US5): UH6 {
                                 2 -> {
                                     when (v1.tag) {
                                         1 -> {
-                                            v20 = US3_SymbolGreater()
+                                            v20 = US3_SymbolGreater
                                         }
                                         2 -> {
-                                            v20 = US3_SymbolSame()
+                                            v20 = US3_SymbolSame
                                         }
                                         else -> throw RuntimeException()
                                     }
@@ -1851,22 +1833,22 @@ fun sp_derivative_27(p0: UH6, p1: US5): UH6 {
                 }
             }
             if (v21) {
-                return UH6_RegexEpsilon()
+                return UH6_RegexEpsilon
             } else {
-                return UH6_RegexEmpty()
+                return UH6_RegexEmpty
             }
         }
         0 -> {
-            return UH6_RegexEmpty()
+            return UH6_RegexEmpty
         }
         1 -> {
-            return UH6_RegexEmpty()
+            return UH6_RegexEmpty
         }
         5 -> {
             var v41: UH6 = (v0 as UH6_RegexStar).f0
-            var v42: UH6 = UH6_RegexEmpty()
+            var v42: UH6 = UH6_RegexEmpty
             v42 = sp_derivative_27(v41, v1)
-            var v43: UH6 = UH6_RegexEmpty()
+            var v43: UH6 = UH6_RegexEmpty
             v43 = sp_make_star_26(v41)
             return sp_make_cat_24(v42, v43)
         }
@@ -1876,9 +1858,9 @@ fun sp_derivative_27(p0: UH6, p1: US5): UH6 {
 fun sp_canonical_derivative_19(p0: UH6, p1: US5): UH6 {
     var v0: UH6 = p0
     var v1: US5 = p1
-    var v2: UH6 = UH6_RegexEmpty()
+    var v2: UH6 = UH6_RegexEmpty
     v2 = sp_normalize_20(v0)
-    var v3: UH6 = UH6_RegexEmpty()
+    var v3: UH6 = UH6_RegexEmpty
     v3 = sp_derivative_27(v2, v1)
     return sp_normalize_20(v3)
 }
@@ -1889,14 +1871,14 @@ fun sp_accepts_18(p0: UH6, p1: UH7): Boolean {
         1 -> {
             var v6: US5 = (v1 as UH7_InputCons).f0
             var v7: UH7 = (v1 as UH7_InputCons).f1
-            var v8: UH6 = UH6_RegexEmpty()
+            var v8: UH6 = UH6_RegexEmpty
             v8 = sp_canonical_derivative_19(v0, v6)
             return sp_accepts_18(v8, v7)
         }
         0 -> {
-            var v2: UH6 = UH6_RegexEmpty()
+            var v2: UH6 = UH6_RegexEmpty
             v2 = sp_normalize_20(v0)
-            var v3: US4 = US4_Nullable()
+            var v3: US4 = US4_Nullable
             v3 = sp_nullable_28(v2)
             when (v3.tag) {
                 1 -> {
@@ -1918,23 +1900,23 @@ fun spiral_main(): Int {
     v1 = 32
     var v2: Int = 0
     v2 = 16
-    var v3: US0 = US0_BitZero()
-    v3 = US0_BitZero()
-    var v4: UH1 = UH1_RegexEmpty()
+    var v3: US0 = US0_BitZero
+    v3 = US0_BitZero
+    var v4: UH1 = UH1_RegexEmpty
     v4 = UH1_RegexChar(v3)
-    var v5: US0 = US0_BitZero()
-    v5 = US0_BitOne()
-    var v6: UH1 = UH1_RegexEmpty()
+    var v5: US0 = US0_BitZero
+    v5 = US0_BitOne
+    var v6: UH1 = UH1_RegexEmpty
     v6 = UH1_RegexChar(v5)
-    var v7: UH1 = UH1_RegexEmpty()
+    var v7: UH1 = UH1_RegexEmpty
     v7 = UH1_RegexAlt(v4, v6)
-    var v8: UH1 = UH1_RegexEmpty()
+    var v8: UH1 = UH1_RegexEmpty
     v8 = UH1_RegexStar(v7)
-    var v9: US0 = US0_BitZero()
-    v9 = US0_BitZero()
-    var v10: UH1 = UH1_RegexEmpty()
+    var v9: US0 = US0_BitZero
+    v9 = US0_BitZero
+    var v10: UH1 = UH1_RegexEmpty
     v10 = UH1_RegexChar(v9)
-    var v11: UH1 = UH1_RegexEmpty()
+    var v11: UH1 = UH1_RegexEmpty
     v11 = UH1_RegexCat(v8, v10)
     var v12: ULong = 0uL
     v12 = 1uL
@@ -1950,29 +1932,29 @@ fun spiral_main(): Int {
         System.exit(1)
         throw RuntimeException()
     }
-    var v16: US0 = US0_BitZero()
-    v16 = US0_BitZero()
-    var v17: UH1 = UH1_RegexEmpty()
+    var v16: US0 = US0_BitZero
+    v16 = US0_BitZero
+    var v17: UH1 = UH1_RegexEmpty
     v17 = UH1_RegexChar(v16)
-    var v18: US0 = US0_BitZero()
-    v18 = US0_BitZero()
-    var v19: UH1 = UH1_RegexEmpty()
+    var v18: US0 = US0_BitZero
+    v18 = US0_BitZero
+    var v19: UH1 = UH1_RegexEmpty
     v19 = UH1_RegexChar(v18)
-    var v20: US0 = US0_BitZero()
-    v20 = US0_BitZero()
-    var v21: UH1 = UH1_RegexEmpty()
+    var v20: US0 = US0_BitZero
+    v20 = US0_BitZero
+    var v21: UH1 = UH1_RegexEmpty
     v21 = UH1_RegexChar(v20)
-    var v22: UH1 = UH1_RegexEmpty()
+    var v22: UH1 = UH1_RegexEmpty
     v22 = UH1_RegexCat(v19, v21)
-    var v23: UH1 = UH1_RegexEmpty()
+    var v23: UH1 = UH1_RegexEmpty
     v23 = UH1_RegexAlt(v17, v22)
-    var v24: UH1 = UH1_RegexEmpty()
+    var v24: UH1 = UH1_RegexEmpty
     v24 = UH1_RegexStar(v23)
-    var v25: US0 = US0_BitZero()
-    v25 = US0_BitOne()
-    var v26: UH1 = UH1_RegexEmpty()
+    var v25: US0 = US0_BitZero
+    v25 = US0_BitOne
+    var v26: UH1 = UH1_RegexEmpty
     v26 = UH1_RegexChar(v25)
-    var v27: UH1 = UH1_RegexEmpty()
+    var v27: UH1 = UH1_RegexEmpty
     v27 = UH1_RegexCat(v24, v26)
     var v28: Int = 0
     v28 = 1
@@ -1988,64 +1970,45 @@ fun spiral_main(): Int {
         System.exit(1)
         throw RuntimeException()
     }
-    var v32: US5 = US5_TriA()
-    v32 = US5_TriA()
-    var v33: UH6 = UH6_RegexEmpty()
+    var v32: US5 = US5_TriA
+    v32 = US5_TriA
+    var v33: UH6 = UH6_RegexEmpty
     v33 = UH6_RegexChar(v32)
-    var v34: US5 = US5_TriA()
-    v34 = US5_TriB()
-    var v35: UH6 = UH6_RegexEmpty()
+    var v34: US5 = US5_TriA
+    v34 = US5_TriB
+    var v35: UH6 = UH6_RegexEmpty
     v35 = UH6_RegexChar(v34)
-    var v36: UH6 = UH6_RegexEmpty()
+    var v36: UH6 = UH6_RegexEmpty
     v36 = UH6_RegexAlt(v33, v35)
-    var v37: UH6 = UH6_RegexEmpty()
+    var v37: UH6 = UH6_RegexEmpty
     v37 = UH6_RegexStar(v36)
-    var v38: US5 = US5_TriA()
-    v38 = US5_TriC()
-    var v39: UH6 = UH6_RegexEmpty()
-    v39 = UH6_RegexChar(v38)
-    var v40: UH6 = UH6_RegexEmpty()
-    v40 = UH6_RegexCat(v37, v39)
-    var v41: US5 = US5_TriA()
-    v41 = US5_TriA()
-    var v42: US5 = US5_TriA()
-    v42 = US5_TriB()
-    var v43: US5 = US5_TriA()
-    v43 = US5_TriA()
-    var v44: US5 = US5_TriA()
-    v44 = US5_TriC()
-    var v45: UH7 = UH7_InputEmpty()
-    v45 = UH7_InputEmpty()
-    var v46: UH7 = UH7_InputEmpty()
-    v46 = UH7_InputCons(v44, v45)
-    var v47: UH7 = UH7_InputEmpty()
+    val v38: US5 = US5_TriC
+    val v39: UH6 = UH6_RegexChar(v38)
+    val v40: UH6 = UH6_RegexCat(v37, v39)
+    val v41: US5 = US5_TriA
+    var v42: US5 = US5_TriA
+    v42 = US5_TriB
+    var v43: US5 = US5_TriA
+    v43 = US5_TriA
+    val v44: US5 = US5_TriC
+    val v45: UH7 = UH7_InputEmpty
+    val v46: UH7 = UH7_InputCons(v44, v45)
+    var v47: UH7 = UH7_InputEmpty
     v47 = UH7_InputCons(v43, v46)
-    var v48: UH7 = UH7_InputEmpty()
-    v48 = UH7_InputCons(v42, v47)
-    var v49: UH7 = UH7_InputEmpty()
-    v49 = UH7_InputCons(v41, v48)
-    var v50: US5 = US5_TriA()
-    v50 = US5_TriA()
-    var v51: US5 = US5_TriA()
-    v51 = US5_TriB()
-    var v52: US5 = US5_TriA()
-    v52 = US5_TriA()
-    var v53: US5 = US5_TriA()
-    v53 = US5_TriB()
-    var v54: UH7 = UH7_InputEmpty()
-    v54 = UH7_InputEmpty()
-    var v55: UH7 = UH7_InputEmpty()
-    v55 = UH7_InputCons(v53, v54)
-    var v56: UH7 = UH7_InputEmpty()
-    v56 = UH7_InputCons(v52, v55)
-    var v57: UH7 = UH7_InputEmpty()
+    val v48: UH7 = UH7_InputCons(v42, v47)
+    val v49: UH7 = UH7_InputCons(v41, v48)
+    val v50: US5 = US5_TriA
+    val v51: US5 = US5_TriB
+    val v52: US5 = US5_TriA
+    val v53: US5 = US5_TriB
+    val v54: UH7 = UH7_InputEmpty
+    val v55: UH7 = UH7_InputCons(v53, v54)
+    val v56: UH7 = UH7_InputCons(v52, v55)
+    var v57: UH7 = UH7_InputEmpty
     v57 = UH7_InputCons(v51, v56)
-    var v58: UH7 = UH7_InputEmpty()
-    v58 = UH7_InputCons(v50, v57)
-    var v59: Int = 0
-    v59 = 0
-    var v60: Boolean = false
-    v60 = sp_run_17(v59, v49)
+    val v58: UH7 = UH7_InputCons(v50, v57)
+    val v59: Int = 0
+    val v60: Boolean = sp_run_17(v59, v49)
     var v62: Boolean = false
     if (v60) {
         v62 = sp_accepts_18(v40, v49)
@@ -2056,15 +2019,12 @@ fun spiral_main(): Int {
     if (v62) {
         var v63: Int = 0
         v63 = 0
-        var v64: Boolean = false
-        v64 = sp_run_17(v63, v58)
+        val v64: Boolean = sp_run_17(v63, v58)
         if (v64) {
             v68 = false
         } else {
-            var v65: Boolean = false
-            v65 = sp_accepts_18(v40, v58)
-            var v66: Boolean = false
-            v66 = (v65 == false)
+            val v65: Boolean = sp_accepts_18(v40, v58)
+            val v66: Boolean = (v65 == false)
             v68 = v66
         }
     } else {

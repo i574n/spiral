@@ -4,15 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 int32_t main(){
-    
-    
-    int32_t v0;
-    v0 = 7l;
-    
-    
-    int32_t v1;
-    v1 = spiral_abi_libc_strlen(v0);
-    
-    
+    int32_t v0 = 7l;
+    int32_t v1 = spiral_abi_libc_strlen(v0);
     return v1;
 }

@@ -1,6 +1,6 @@
 function f_c0(v0: number): ((a0: number) => [number, number]) {
     return (v1: number): [number, number] => {
-        let v2: boolean = v1 === 0;
+        const v2: boolean = v1 === 0;
         if (v2) {
             return [0, 0];
         } else {
@@ -9,13 +9,13 @@ function f_c0(v0: number): ((a0: number) => [number, number]) {
     };
 }
 export function main(): number {
-    let v0: number = 100;
-    let v1: ((a0: number) => [number, number]) = f_c0(v0);
+    const v0: number = 100;
+    const v1: ((a0: number) => [number, number]) = f_c0(v0);
     let [v2, v3]: [number, number] = v1(1);
-    let v4: boolean = v2 === 100;
+    const v4: boolean = v2 === 100;
     let v6: boolean;
     if (v4) {
-        let v5: boolean = v3 === 7;
+        const v5: boolean = v3 === 7;
         v6 = v5;
     } else {
         v6 = false;

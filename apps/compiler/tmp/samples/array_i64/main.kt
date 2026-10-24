@@ -1,13 +1,10 @@
 fun spiral_main(): Int {
     var v0: Array<Long> = emptyArray<Long>()
     v0 = Array(1) { 0L }
-    var v1: Long = 0L
-    v1 = 5000000000L
+    val v1: Long = 5000000000L
     v0[0] = v1
-    var v2: Long = 0L
-    v2 = v0[0]
-    var v3: Boolean = false
-    v3 = (v2 == 5000000000L)
+    val v2: Long = v0[0]
+    val v3: Boolean = (v2 == 5000000000L)
     if (v3) {
         return 0
     } else {

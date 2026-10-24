@@ -3,10 +3,8 @@ fun sp_method0(p0: String): Boolean {
     return true
 }
 fun spiral_main(): Int {
-    var v0: String = ""
-    v0 = "spiral"
-    var v1: Boolean = false
-    v1 = sp_method0(v0)
+    val v0: String = "spiral"
+    val v1: Boolean = sp_method0(v0)
     if (v1) {
         return 0
     } else {

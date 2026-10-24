@@ -7,3 +7,7 @@
 (doc_comment) @comment.doc
 
 (line_comment) @comment
+
+(definition_keyword) @keyword
+
+(definition_name) @function

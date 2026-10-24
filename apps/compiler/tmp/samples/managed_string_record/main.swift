@@ -44,8 +44,7 @@ func sp_score_1(_ p0: Int32, _ p1: String) -> Int32 {
     return v3
 }
 func spiral_main() -> Int32 {
-    var v0: String = ""
-    v0 = "qwe"
+    let v0: String = "qwe"
     var v1: String = ""
     var v2: Int32 = 0
     let spiral_tuple120 = sp_method0(v0)
@@ -53,12 +52,9 @@ func spiral_main() -> Int32 {
     v2 = spiral_tuple120.1
     var v3: Int32 = 0
     v3 = sp_score_1(v2, v1)
-    var v4: Int32 = 0
-    v4 = sp_score_1(v2, v1)
-    var v5: Int32 = 0
-    v5 = (v3 &+ v4)
-    var v6: Int32 = 0
-    v6 = (v5 &- 12)
+    let v4: Int32 = sp_score_1(v2, v1)
+    let v5: Int32 = (v3 &+ v4)
+    let v6: Int32 = (v5 &- 12)
     return v6
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

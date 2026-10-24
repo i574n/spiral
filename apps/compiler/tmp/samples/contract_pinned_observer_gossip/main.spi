@@ -10,12 +10,19 @@ nominal distinct = ()
 nominal reconciled = ()
 
 union genesis_pin log pin state = | Pin :: forall log pin state. string -> genesis_pin log pin state
-union observer_checkpoint log pin observer head state = | Checkpoint :: forall log pin observer head state. string -> observer_checkpoint log pin observer head state
-union distinct_observers left right state = | Distinct :: forall left right state. string -> distinct_observers left right state
+union observer_checkpoint log pin observer head state =
+    | Checkpoint :: forall log pin observer head state. string -> observer_checkpoint log pin observer head state
+union distinct_observers left right state =
+    | Distinct :: forall left right state. string -> distinct_observers left right state
 union gossip_quorum log pin state = | Quorum :: forall log pin state. string -> gossip_quorum log pin state
 
-inl reconcile forall log pin left right head_left head_right. (pin : genesis_pin log pin pinned) (left : observer_checkpoint log pin left head_left observed) (right : observer_checkpoint log pin right head_right observed) (proof : distinct_observers left right distinct) : gossip_quorum log pin reconciled =
-    match pin, left, right, proof with | Pin _, Checkpoint _, Checkpoint _, Distinct _ => Quorum "transparency-gossip-quorum"
+inl reconcile forall log pin left right head_left head_right.
+    (pin : genesis_pin log pin pinned) (left : observer_checkpoint log pin left head_left observed)
+    (right : observer_checkpoint log pin right head_right observed) (proof : distinct_observers left right distinct)
+    : gossip_quorum log pin reconciled
+    =
+    match pin, left, right, proof with
+    | Pin _, Checkpoint _, Checkpoint _, Distinct _ => Quorum "transparency-gossip-quorum"
 
 inl main () : string =
     inl pin : genesis_pin log_a pin_a pinned = Pin "external-pin"

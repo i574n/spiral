@@ -55,58 +55,39 @@ US0 US0_Flag(bool v0) { // Flag
 static inline void ClosureDecrefBody0(Closure0 * x){
     (void)x;
 }
-void ClosureDecref0(Fun0 * self){
+static void ClosureDecref0(Fun0 * self){
     Closure0 * x = (Closure0 *) self;
     if (x != NULL && --(x->base.refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
-int32_t closure0(Fun0 * self, int32_t v1){
+static int32_t closure0(Fun0 * self, int32_t v1){
     Closure0 * x = (Closure0 *) self;
     US0 v0 = x->v0;
-    
     ClosureDecref0(self);
-    
-    
     int32_t v7;
     switch (v0.tag) {
         case 2: { // Flag
             bool v3 = v0.case2.v0;
-            
-            
             if (v3){
-                
-                
                 v7 = 11l;
             } else {
-                
-                
                 v7 = 5l;
             }
             break;
         }
         case 1: { // Hit
             int32_t v2 = v0.case1.v0;
-            
-            
             v7 = v2;
             break;
         }
         default: { // Idle
-            
-            
-            
             v7 = 3l;
             break;
         }
     }
-    
-    
-    int32_t v8;
-    v8 = v7 + v1;
-    
-    
+    int32_t v8 = v7 + v1;
     return v8;
 }
-Fun0 * ClosureCreate0(US0 v0){
+static Fun0 * ClosureCreate0(US0 v0){
     Closure0 * x = malloc(sizeof(Closure0));
     x->base.refc = 1;
     x->base.decref_fptr = ClosureDecref0;
@@ -114,49 +95,23 @@ Fun0 * ClosureCreate0(US0 v0){
     x->v0 = v0;
     return &x->base;
 }
-int32_t method0(Fun0 * v0){
-    
-    
+static int32_t method0(Fun0 * v0){
     return v0->fptr(v0, 31l);
 }
 int32_t main(){
-    
-    
-    int32_t v0;
-    v0 = 2l;
-    
-    
-    bool v1;
-    v1 = v0 == 0l;
-    
-    
+    int32_t v0 = 2l;
+    bool v1 = v0 == 0l;
     US0 v7;
     if (v1){
-        
-        
         v7 = US0_Idle();
     } else {
-        
-        
-        bool v3;
-        v3 = v0 == 1l;
-        
-        
+        bool v3 = v0 == 1l;
         if (v3){
-            
-            
             v7 = US0_Hit(7l);
         } else {
-            
-            
             v7 = US0_Flag(true);
         }
     }
-    
-    
-    Fun0 * v8;
-    v8 = ClosureCreate0(v7);
-    
-    
+    Fun0 * v8 = ClosureCreate0(v7);
     return method0(v8);
 }

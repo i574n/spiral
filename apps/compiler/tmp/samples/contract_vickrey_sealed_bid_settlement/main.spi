@@ -25,9 +25,15 @@ union reveal auction bidder lot currency =
     | RevealC501 :: string -> reveal auction_501 bidder_c lot_gpu_9 currency_usdc
 
 union valid_reveal auction bidder lot currency =
-    | ValidA501 :: commitment auction_501 bidder_a lot_gpu_9 * reveal auction_501 bidder_a lot_gpu_9 currency_usdc -> valid_reveal auction_501 bidder_a lot_gpu_9 currency_usdc
-    | ValidB501 :: commitment auction_501 bidder_b lot_gpu_9 * reveal auction_501 bidder_b lot_gpu_9 currency_usdc -> valid_reveal auction_501 bidder_b lot_gpu_9 currency_usdc
-    | ValidC501 :: commitment auction_501 bidder_c lot_gpu_9 * reveal auction_501 bidder_c lot_gpu_9 currency_usdc -> valid_reveal auction_501 bidder_c lot_gpu_9 currency_usdc
+    | ValidA501 ::
+        commitment auction_501 bidder_a lot_gpu_9 * reveal auction_501 bidder_a lot_gpu_9 currency_usdc ->
+        valid_reveal auction_501 bidder_a lot_gpu_9 currency_usdc
+    | ValidB501 ::
+        commitment auction_501 bidder_b lot_gpu_9 * reveal auction_501 bidder_b lot_gpu_9 currency_usdc ->
+        valid_reveal auction_501 bidder_b lot_gpu_9 currency_usdc
+    | ValidC501 ::
+        commitment auction_501 bidder_c lot_gpu_9 * reveal auction_501 bidder_c lot_gpu_9 currency_usdc ->
+        valid_reveal auction_501 bidder_c lot_gpu_9 currency_usdc
 
 union commitment_root auction lot =
     | CommitmentRoot501 :: string -> commitment_root auction_501 lot_gpu_9
@@ -128,8 +134,12 @@ inl settlement_a () = SettlementA501 (winner_a (), price_850 ())
 
 union sealed_auction_result =
     | SealedCommitment :: (exists auction lot. commitment_root auction lot) -> sealed_auction_result
-    | SealedRanking :: (exists auction bidders lot currency. ranking auction bidders lot currency) -> sealed_auction_result
-    | SealedSettlement :: (exists auction bidder bidders lot currency. settlement auction bidder bidders lot currency) -> sealed_auction_result
+    | SealedRanking ::
+        (exists auction bidders lot currency. ranking auction bidders lot currency) ->
+        sealed_auction_result
+    | SealedSettlement ::
+        (exists auction bidder bidders lot currency. settlement auction bidder bidders lot currency) ->
+        sealed_auction_result
 
 inl inspect_sealed (value : sealed_auction_result) : string =
     match value with
@@ -144,12 +154,28 @@ inl inspect_sealed (value : sealed_auction_result) : string =
         "sealed-settlement"
 
 inl serialize_authority (_ : string) (_ : string) (_ : string) (_ : string) : string =
-    "schema\tnode_id\toperation\tfrom\tto\tdeps\teffect\tcapability\tretry_budget\n1\tclose-commitments\tCloseCommitments\topen\tcommitments_closed\t\tnon_idempotent\tauctioneer\t0\n1\topen-reveals\tOpenReveals\tcommitments_closed\treveals_open\tclose-commitments\tnon_idempotent\tauctioneer\t0\n1\tverify-reveals\tVerifyReveal\treveals_open\treveals_verified\topen-reveals\tidempotent\tcommitment-verifier\t1\n1\trank-bids\tRankBids\treveals_verified\tranked\tverify-reveals\tnon_idempotent\tpricing-engine\t0\n1\tsecond-price\tComputeSecondPrice\tranked\tpriced\trank-bids\tnon_idempotent\tvickrey-rule\t0\n1\tsettle-winner\tSettleWinner\tpriced\tsettled\tsecond-price\tnon_idempotent\tsettlement-ledger\t0\n"
+    "schema\tnode_id\toperation\tfrom\tto\tdeps\teffect\tcapability\tretry_budget\n"
+    ^^ "1\tclose-commitments\tCloseCommitments\topen\tcommitments_closed\t\tnon_idempotent\tauctioneer\t0\n"
+    ^^ "1\topen-reveals\tOpenReveals\tcommitments_closed\treveals_open\tclose-commitments\tnon_idempotent\tauctioneer\t"
+    ^^ "0\n1\tverify-reveals\tVerifyReveal\treveals_open\treveals_verified\topen-reveals\tidempotent\tcommitment-verif"
+    ^^ "ier\t1\n1\trank-bids\tRankBids\treveals_verified\tranked\tverify-reveals\tnon_idempotent\tpricing-engine\t0\n"
+    ^^ "1\tsecond-price\tComputeSecondPrice\tranked\tpriced\trank-bids\tnon_idempotent\tvickrey-rule\t0\n"
+    ^^ "1\tsettle-winner\tSettleWinner\tpriced\tsettled\tsecond-price\tnon_idempotent\tsettlement-ledger\t0\n"
 
 inl main () : string =
-    inl verify_op : auction_op reveals_open reveals_verified (valid_reveal auction_501 bidder_a lot_gpu_9 currency_usdc) = VerifyReveal (ca (), ra ())
-    inl price_op : auction_op ranked priced (winner auction_501 bidder_a bidders_abc lot_gpu_9 currency_usdc * second_price auction_501 bidders_abc lot_gpu_9 currency_usdc) = ComputeSecondPrice (ranking_abc ())
-    inl settle_op : auction_op priced settled (settlement auction_501 bidder_a bidders_abc lot_gpu_9 currency_usdc) = SettleWinner (winner_a (), price_850 ())
+    inl verify_op
+        : auction_op reveals_open reveals_verified (valid_reveal auction_501 bidder_a lot_gpu_9 currency_usdc)
+        =
+        VerifyReveal (ca (), ra ())
+    inl price_op
+        : auction_op ranked priced (
+            winner auction_501 bidder_a bidders_abc lot_gpu_9 currency_usdc * second_price auction_501 bidders_abc
+                lot_gpu_9 currency_usdc
+        )
+        =
+        ComputeSecondPrice (ranking_abc ())
+    inl settle_op : auction_op priced settled (settlement auction_501 bidder_a bidders_abc lot_gpu_9 currency_usdc) =
+        SettleWinner (winner_a (), price_850 ())
     inl commitments = interpret (commitment_interpreter verify_op)
     inl pricing = interpret (pricing_interpreter price_op)
     inl ledger = interpret (ledger_interpreter settle_op)

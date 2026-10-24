@@ -18,7 +18,10 @@ defmodule Spiral.Cells.NotebookCli do
     accept: :boolean,
     x_compat: :boolean,
     metrics: :string,
-    livemd: :boolean
+    livemd: :boolean,
+    patch: :keep,
+    probe: :string,
+    target: :keep
   ]
 
   @single_path_options [:output_path, :spi_path, :spir_path, :fs_path, :livemd_path]
@@ -32,12 +35,12 @@ defmodule Spiral.Cells.NotebookCli do
   end
 
   defp execute_parsed(opts) do
-    paths = Keyword.get_values(opts, :path)
+    paths = Keyword.get_values(opts, :path) ++ probe_paths(opts)
     tests = test_names(opts)
 
     cond do
       paths == [] ->
-        {{:error, "missing --path"}, []}
+        {{:error, "missing --path or --probe"}, []}
 
       length(paths) > 1 and Enum.any?(@single_path_options, &opts[&1]) ->
         {{:error, "--output-path, --spi-path, --spir-path, --fs-path and --livemd-path take a single --path"}, []}
@@ -50,6 +53,38 @@ defmodule Spiral.Cells.NotebookCli do
           {:error, message} -> {{:error, message}, []}
         end
     end
+  end
+
+  @doc false
+  def patches(opts) do
+    for spec <- Keyword.get_values(opts, :patch),
+        %{"file" => file, "old" => old, "new" => new} <- JSON.decode!(File.read!(spec)),
+        do: {Path.expand(file, Path.dirname(Path.expand(spec))), old, new}
+  end
+
+  @doc false
+  def probe_paths(opts) do
+    case opts[:probe] do
+      nil ->
+        []
+
+      main ->
+        main = Path.expand(main)
+        source = File.read!(main)
+        package = Path.dirname(main)
+        header = if File.exists?(Path.join(package, "package.spiproj")), do: "///- --package #{package}\n\n", else: ""
+        dir = Path.join(System.tmp_dir!(), "spiral-probe-#{:erlang.phash2({main, source})}")
+        File.mkdir_p!(dir)
+        path = Path.join(dir, "probe.spi")
+        File.write!(path, header <> probe_notebook(source, Keyword.get_values(opts, :target)))
+        [path]
+    end
+  end
+
+  @doc false
+  def probe_notebook(main_text, targets) do
+    directives = Enum.map_join(targets, "", &"///> #{String.downcase(&1)}\n")
+    String.trim_trailing(main_text, "\n") <> "\n\n" <> directives <> "test probe =\n    main ()\n"
   end
 
   defp test_names(opts) do
@@ -78,7 +113,8 @@ defmodule Spiral.Cells.NotebookCli do
             spi: opts[:spi] != false,
             tests: filters[path],
             memo: opts[:memo],
-            accept: opts[:accept] == true
+            accept: opts[:accept] == true,
+            patches: patches(opts)
           )
 
         {Path.expand(path), status, report}
@@ -98,7 +134,7 @@ defmodule Spiral.Cells.NotebookCli do
   def x_compat_lines(paths, opts) do
     for path <- paths,
         opts[:x_compat] == true or Spiral.Cells.XCompat.edition3?(path),
-        finding <- path |> File.read!() |> Spiral.Cells.XCompat.rewrites(),
+        finding <- path |> File.read!() |> Spiral.Cells.XCompat.rewrites(Spiral.Cells.XCompat.profile_for(path)),
         do: "x-compat " <> Spiral.Cells.XCompat.format(Path.expand(path), finding)
   end
 

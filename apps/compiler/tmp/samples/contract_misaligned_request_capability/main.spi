@@ -53,7 +53,9 @@ instance authorize emergency = fun (emergency token) =>
     | PairToken _ => "emergency-pair"
 
 union sealed_request =
-    | SealedRequest :: (exists capability result. request capability result * capability_token capability) -> sealed_request
+    | SealedRequest ::
+        (exists capability result. request capability result * capability_token capability) ->
+        sealed_request
 
 inl inspect forall capability result.
     (request : request capability result)
@@ -81,7 +83,21 @@ inl sealed_value () : sealed_request =
     SealedRequest (exists (batch_request (), batch_token ()))
 
 inl emit (_ : string) (_ : string) (_ : string) (_ : string) : string =
-    "schema\tkind\tnode_id\toperation\tfrom\tto\tdeps\teffect\tcapability\tretry_budget\tresult\tsequence\n1\tplan\tread\tRead\tkey\trow\t\tidempotent\treader\t2\t\t\n1\tplan\twrite\tWrite\trow\treceipt\tread\tnon_idempotent\twriter\t0\t\t\n1\tplan\tbatch\tBatch\trequests\tpaired-result\tread,write\tidempotent\treader-writer\t1\t\t\n1\tplan\tcompare\tCompareSwap\trow-version\tversion\tbatch\tnon_idempotent\tadministrator\t0\t\t\n1\tplan\tmap\tMapRequest\tversion\tmapped\tcompare\tidempotent\tmapper\t1\t\t\n1\treceipt\tread\tRead\tkey\trow\t\t\t\t\tcommitted\t1\n1\treceipt\twrite\tWrite\trow\treceipt\t\t\t\t\tcommitted\t3\n1\treceipt\tbatch\tBatch\trequests\tpaired-result\t\t\t\t\tcommitted\t5\n1\treceipt\tcompare\tCompareSwap\trow-version\tversion\t\t\t\t\tcommitted\t7\n1\treceipt\tmap\tMapRequest\tversion\tmapped\t\t\t\t\tcommitted\t9\n1\tevent\tread\tRead\tkey\trow\t\t\t\t\tsuccess\t2\n1\tevent\twrite\tWrite\trow\treceipt\t\t\t\t\tsuccess\t4\n1\tevent\tbatch\tBatch\trequests\tpaired-result\t\t\t\t\tsuccess\t6\n1\tevent\tcompare\tCompareSwap\trow-version\tversion\t\t\t\t\tsuccess\t8\n1\tevent\tmap\tMapRequest\tversion\tmapped\t\t\t\t\tsuccess\t10\n"
+    "schema\tkind\tnode_id\toperation\tfrom\tto\tdeps\teffect\tcapability\tretry_budget\tresult\tsequence\n"
+    ^^ "1\tplan\tread\tRead\tkey\trow\t\tidempotent\treader\t2\t\t\n"
+    ^^ "1\tplan\twrite\tWrite\trow\treceipt\tread\tnon_idempotent\twriter\t0\t\t\n"
+    ^^ "1\tplan\tbatch\tBatch\trequests\tpaired-result\tread,write\tidempotent\treader-writer\t1\t\t\n"
+    ^^ "1\tplan\tcompare\tCompareSwap\trow-version\tversion\tbatch\tnon_idempotent\tadministrator\t0\t\t\n"
+    ^^ "1\tplan\tmap\tMapRequest\tversion\tmapped\tcompare\tidempotent\tmapper\t1\t\t\n"
+    ^^ "1\treceipt\tread\tRead\tkey\trow\t\t\t\t\tcommitted\t1\n"
+    ^^ "1\treceipt\twrite\tWrite\trow\treceipt\t\t\t\t\tcommitted\t3\n"
+    ^^ "1\treceipt\tbatch\tBatch\trequests\tpaired-result\t\t\t\t\tcommitted\t5\n"
+    ^^ "1\treceipt\tcompare\tCompareSwap\trow-version\tversion\t\t\t\t\tcommitted\t7\n"
+    ^^ "1\treceipt\tmap\tMapRequest\tversion\tmapped\t\t\t\t\tcommitted\t9\n"
+    ^^ "1\tevent\tread\tRead\tkey\trow\t\t\t\t\tsuccess\t2\n1\tevent\twrite\tWrite\trow\treceipt\t\t\t\t\tsuccess\t4\n"
+    ^^ "1\tevent\tbatch\tBatch\trequests\tpaired-result\t\t\t\t\tsuccess\t6\n"
+    ^^ "1\tevent\tcompare\tCompareSwap\trow-version\tversion\t\t\t\t\tsuccess\t8\n"
+    ^^ "1\tevent\tmap\tMapRequest\tversion\tmapped\t\t\t\t\tsuccess\t10\n"
 
 inl main () : string =
     inspect (batch_request ()) (WriterToken "writer-only")

@@ -51,15 +51,12 @@ partial def sum_0 (p0 : U0) : IO Int32 := do
         v1 := f1
         return v1
 partial def spiralMain : IO Int32 := do
-    let mut v0 : Bool := default
     let mut v3 : U0 := default
     let mut v6 : U0 := default
-    let mut v7 : Int32 := default
-    let mut v8 : Bool := default
     let mut v11 : Bool := default
     let mut v9 : Int32 := default
     let mut v10 : Bool := default
-    v0 := true
+    let v0 : Bool := true
     if v0 then
         v3 := (U0.Both (3 : Int32) (4 : Int32))
     else
@@ -68,8 +65,8 @@ partial def spiralMain : IO Int32 := do
         v6 := (U0.One (5 : Int32))
     else
         v6 := (U0.Both (1 : Int32) (1 : Int32))
-    v7 := (← sum_0 v3)
-    v8 := (v7 == (34 : Int32))
+    let v7 : Int32 := (← sum_0 v3)
+    let v8 : Bool := (v7 == (34 : Int32))
     if v8 then
         v9 := (← sum_0 v6)
         v10 := (v9 == (5 : Int32))

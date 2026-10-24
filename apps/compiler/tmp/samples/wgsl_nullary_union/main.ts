@@ -3,12 +3,12 @@ type US0_East = { readonly tag: 1 };
 type US0_South = { readonly tag: 2 };
 type US0_West = { readonly tag: 3 };
 type US0 = US0_North | US0_East | US0_South | US0_West;
-function US0_North(): US0 { return { tag: 0 }; }
-function US0_East(): US0 { return { tag: 1 }; }
-function US0_South(): US0 { return { tag: 2 }; }
-function US0_West(): US0 { return { tag: 3 }; }
+const US0_North_shared: US0 = { tag: 0 }; function US0_North(): US0 { return US0_North_shared; }
+const US0_East_shared: US0 = { tag: 1 }; function US0_East(): US0 { return US0_East_shared; }
+const US0_South_shared: US0 = { tag: 2 }; function US0_South(): US0 { return US0_South_shared; }
+const US0_West_shared: US0 = { tag: 3 }; function US0_West(): US0 { return US0_West_shared; }
 export function main(): number {
-    let v0: US0 = US0_North();
+    const v0: US0 = US0_North();
     let v8: US0;
     switch (v0.tag) {
         case 1: {
@@ -49,7 +49,7 @@ export function main(): number {
         }
         default: throw new Error("Compiler error: unreachable union case.");
     }
-    let v17: US0 = US0_South();
+    const v17: US0 = US0_South();
     let v18: boolean;
     switch (v16.tag === v17.tag ? v16.tag : -1) {
         case 1: {
@@ -106,8 +106,8 @@ export function main(): number {
             v23 = 7;
         }
     }
-    let v24: number = Math.imul(v23, 3);
-    let v25: number = (v21 + v24) | 0;
+    const v24: number = Math.imul(v23, 3);
+    const v25: number = (v21 + v24) | 0;
     let v27: number;
     switch (v16.tag) {
         case 1: {
@@ -122,9 +122,9 @@ export function main(): number {
             v27 = 7;
         }
     }
-    let v28: number = Math.imul(v27, 9);
-    let v29: number = (v25 + v28) | 0;
-    let v30: number = (v29 + v19) | 0;
+    const v28: number = Math.imul(v27, 9);
+    const v29: number = (v25 + v28) | 0;
+    const v30: number = (v29 + v19) | 0;
     return v30;
 }
 process.exitCode = main();

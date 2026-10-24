@@ -6,10 +6,18 @@ nominal draft = ()
 nominal rooted = ()
 nominal verified = ()
 
-union registry_snapshot previous current epoch state = | Snapshot :: forall previous current epoch state. string -> registry_snapshot previous current epoch state
-union root_link previous current from_epoch to_epoch state = | RootLink :: forall previous current from_epoch to_epoch state. string -> root_link previous current from_epoch to_epoch state
+union registry_snapshot previous current epoch state =
+    | Snapshot :: forall previous current epoch state. string -> registry_snapshot previous current epoch state
+union root_link previous current from_epoch to_epoch state =
+    | RootLink :: forall previous current from_epoch to_epoch state.
+        string ->
+        root_link previous current from_epoch to_epoch state
 
-inl advance forall previous current from_epoch to_epoch. (snapshot : registry_snapshot previous current to_epoch draft) (link : root_link previous current from_epoch to_epoch verified) : registry_snapshot previous current to_epoch rooted =
+inl advance forall previous current from_epoch to_epoch.
+    (snapshot : registry_snapshot previous current to_epoch draft)
+    (link : root_link previous current from_epoch to_epoch verified)
+    : registry_snapshot previous current to_epoch rooted
+    =
     match snapshot, link with | Snapshot _, RootLink _ => Snapshot "registry-root-advanced"
 
 inl main () : string =

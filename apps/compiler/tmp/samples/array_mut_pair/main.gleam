@@ -27,17 +27,8 @@ pub fn spiral_array_create(size: Int) -> SpiralArray(a) {
   list.repeat(option.None, size) |> array.from_list(option.None) |> spiral_array_from_storage(size)
 }
 
-pub fn spiral_array_create_filled(size: Int, value: a) -> SpiralArray(a) {
-  list.repeat(option.Some(value), size) |> array.from_list(option.None) |> spiral_array_from_storage(size)
-}
 
-pub fn spiral_array_from_list(values: List(a)) -> SpiralArray(a) {
-  values |> list.map(option.Some) |> array.from_list(option.None) |> spiral_array_from_storage(list.length(values))
-}
 
-pub fn spiral_array_to_list(xs: SpiralArray(a)) -> List(a) {
-  list.repeat(Nil, xs.size) |> list.index_map(fn(_, i) { spiral_array_get(xs, i) })
-}
 
 pub fn spiral_array_get(xs: SpiralArray(a), i: Int) -> a {
   case i >= 0 && i < xs.size {
@@ -88,33 +79,33 @@ pub fn spiral_ref_set(reference: SpiralRef(a), value: a) -> Nil {
 
 pub type Mut0 { Mut0(l0 : Int, l1 : String) }
 pub fn main() {
-let v0 = 3
-let v1 = "no"
-let v2 = spiral_ref_new(Mut0(l0: v0, l1: v1))
-let v3 = spiral_array_create(1)
-spiral_array_set(v3, 0, v2)
-let v4 = spiral_array_get(v3, 0)
-let v5 = 7
-let v6 = "hi"
-spiral_ref_set(v4, Mut0(l0: v5, l1: v6))
-let #(v7, v8) = #(spiral_ref_get(v4).l0, spiral_ref_get(v4).l1)
-let v9 = v7 == 7
-let v11 =
-    case v9 {
+    let v0 = 3
+    let v1 = "no"
+    let v2 = spiral_ref_new(Mut0(l0: v0, l1: v1))
+    let v3 = spiral_array_create(1)
+    spiral_array_set(v3, 0, v2)
+    let v4 = spiral_array_get(v3, 0)
+    let v5 = 7
+    let v6 = "hi"
+    spiral_ref_set(v4, Mut0(l0: v5, l1: v6))
+    let #(v7, v8) = #(spiral_ref_get(v4).l0, spiral_ref_get(v4).l1)
+    let v9 = v7 == 7
+    let v11 =
+        case v9 {
+            True -> {
+                let v10 = v8 == "hi"
+                v10
+            }
+            False -> {
+                False
+            }
+        }
+    case v11 {
         True -> {
-            let v10 = v8 == "hi"
-            v10
+            0
         }
         False -> {
-            False
+            1
         }
     }
-case v11 {
-    True -> {
-        0
-    }
-    False -> {
-        1
-    }
-}
 }

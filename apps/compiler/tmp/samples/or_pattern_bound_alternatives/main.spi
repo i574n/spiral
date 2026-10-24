@@ -1,0 +1,14 @@
+union shape =
+    | Circle : i32
+    | Square : i32
+    | Triangle : i32
+    | Dot
+
+let area (s : shape) : i32 =
+    match s with
+    | Circle x | Square x | Triangle x => x * x + 7i32 * x - 3i32
+    | Dot => 0i32
+
+inl main () : i32 =
+    inl ~s = Square 4i32
+    area s

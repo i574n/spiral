@@ -33,7 +33,6 @@ partial def spiralMain : IO Int32 := do
     let mut v4 : Bool := default
     let mut v5 : Bool := default
     let mut v6 : Int32 := default
-    let mut v7 : Int32 := default
     v0 := (0 : Int32)
     v1 := (0 : Int32)
     repeat
@@ -50,7 +49,7 @@ partial def spiralMain : IO Int32 := do
             else
                 v6 := (v1 + v0)
                 v1 := v6
-    v7 := (v1 - (12 : Int32))
+    let v7 : Int32 := (v1 - (12 : Int32))
     return v7
 end
 def main : IO UInt32 := do

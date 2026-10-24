@@ -26,9 +26,8 @@ def spiralStringSlice (s : String) (a b : Int) : IO String := do
 mutual
 partial def is_odd_1 (p0 : Int32) : IO Bool := do
     let mut v0 : Int32 := p0
-    let mut v1 : Bool := default
     let mut v2 : Int32 := default
-    v1 := (v0 == (0 : Int32))
+    let v1 : Bool := (v0 == (0 : Int32))
     if v1 then
         return false
     else
@@ -36,19 +35,16 @@ partial def is_odd_1 (p0 : Int32) : IO Bool := do
         return (← is_even_0 v2)
 partial def is_even_0 (p0 : Int32) : IO Bool := do
     let mut v0 : Int32 := p0
-    let mut v1 : Bool := default
     let mut v2 : Int32 := default
-    v1 := (v0 == (0 : Int32))
+    let v1 : Bool := (v0 == (0 : Int32))
     if v1 then
         return true
     else
         v2 := (v0 - (1 : Int32))
         return (← is_odd_1 v2)
 partial def spiralMain : IO Int32 := do
-    let mut v0 : Int32 := default
-    let mut v1 : Bool := default
-    v0 := (10 : Int32)
-    v1 := (← is_even_0 v0)
+    let v0 : Int32 := (10 : Int32)
+    let v1 : Bool := (← is_even_0 v0)
     if v1 then
         return (0 : Int32)
     else

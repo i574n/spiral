@@ -10,10 +10,10 @@ union signal t =
     | Absent
 
 /// ### tag
-type tag = {time : i64; micro : i32}
+type tag = { time : i64; micro : i32 }
 
 /// ### reactor
-type reactor s i o = {init : s; react : s -> tag -> i -> s * o}
+type reactor s i o = { init : s; react : s -> tag -> i -> s * o }
 
 /// ### chain
 inl chain forall sa sb i m o. (a : reactor sa i m) (b : reactor sb m o) : reactor (sa * sb) i o =
@@ -36,7 +36,10 @@ inl both forall sa sb i oa ob. (a : reactor sa i oa) (b : reactor sb i ob) : rea
     }
 
 /// ### with_deadline
-inl with_deadline forall s o. (deadline : i64) (body : reactor s i64 o) (on_violation : s -> tag -> s * o) : reactor s i64 o =
+inl with_deadline forall s o.
+    (deadline : i64) (body : reactor s i64 o) (on_violation : s -> tag -> s * o)
+    : reactor s i64 o
+    =
     {
         init = body.init
         react = fun state now lag =>
@@ -52,7 +55,10 @@ union reactor_mode =
     | FirstMode
     | SecondMode
 
-inl modal forall sa sb i o. (entry : mode_entry) (first : reactor sa i o) (second : reactor sb i o) (leave : o -> bool) : reactor (reactor_mode * sa * sb) i o =
+inl modal forall sa sb i o.
+    (entry : mode_entry) (first : reactor sa i o) (second : reactor sb i o) (leave : o -> bool)
+    : reactor (reactor_mode * sa * sb) i o
+    =
     inl entered_second sb = match entry with | Reset => second.init | History => sb
     inl entered_first sa = match entry with | Reset => first.init | History => sa
     {
@@ -72,18 +78,22 @@ inl run_ticks forall s i o. (program : reactor s i o) (input : tag -> i) (ticks 
     let rec loop (state : s) (time : i64) : s =
         if time >= ticks then state
         else
-            inl now = {time = time; micro = 0i32}
+            inl now = { time = time; micro = 0i32 }
             inl state, _ = program.react state now (input now)
             loop state (time + 1i64)
     loop program.init 0i64
 
 /// ### run_micro
-inl run_micro forall s i o acc. (program : reactor s i (signal o)) (input : tag -> i) (ticks : i64) (cap : i32) (step : acc -> o -> acc) (initial : acc) : acc * i64 =
+inl run_micro forall s i o acc.
+    (program : reactor s i (signal o)) (input : tag -> i) (ticks : i64) (cap : i32) (step : acc -> o -> acc)
+    (initial : acc)
+    : acc * i64
+    =
     let rec loop (state : s) (time : i64) (micro : i32) (total : acc) (microsteps : i64) : acc * i64 =
         if time >= ticks then total, microsteps
         elif micro >= cap then loop state (time + 1i64) 0i32 total microsteps
         else
-            inl now = {time = time; micro = micro}
+            inl now = { time = time; micro = micro }
             inl state, out = program.react state now (input now)
             match out with
             | Present v => loop state time (micro + 1i32) (step total v) (microsteps + 1i64)
@@ -116,7 +126,7 @@ inl sink () : reactor (i64 * i64) (signal i64) (signal i64) =
     }
 
 test chain_delays_one_tick =
-    inl after : reactor (signal i64) (signal i64) (signal i64) = {init = Absent; react = fun held _ x => x, held}
+    inl after : reactor (signal i64) (signal i64) (signal i64) = { init = Absent; react = fun held _ x => x, held }
     inl program = chain (chain (chain (timer 4i64) (scale 3i64)) after) (sink ())
     inl _, total = run_ticks program (fun _ => ()) 20i64
     total |> _assert_eq (45i64, 5i64)
@@ -129,7 +139,7 @@ test both_fans_out_and_joins =
         | Absent, Present y => Present y
         | Absent, Absent => Absent
     inl merge4 : reactor () ((signal i64 * signal i64) * (signal i64 * signal i64)) (signal i64) =
-        {init = (); react = fun () _ ((a, b), (c, d)) => (), add (add a b) (add c d)}
+        { init = (); react = fun () _ ((a, b), (c, d)) => (), add (add a b) (add c d) }
     inl bank = both (both (scale 1i64) (scale 2i64)) (both (scale 3i64) (scale 4i64))
     inl _, total = run_ticks (chain (chain (chain (timer 3i64) bank) merge4) (sink ())) (fun _ => ()) 12i64
     total |> _assert_eq (100i64, 4i64)
@@ -162,7 +172,11 @@ test microsteps_share_the_tag_through_a_chain =
     |> _assert_eq (15072i64, 6i64)
 
 test deadlines_run_the_violation_handler =
-    inl sampler : reactor i64 i64 (signal i64) = {init = 0i64; react = fun count now _ => count + 1i64, Present (now.time * 10i64)}
+    inl sampler : reactor i64 i64 (signal i64) =
+        {
+            init = 0i64
+            react = fun count now _ => count + 1i64, Present (now.time * 10i64)
+        }
     inl guarded = with_deadline 5i64 sampler (fun count _ => count, Present -1i64)
     inl tally : reactor (i64 * i64) (signal i64) (signal i64) =
         {
@@ -197,7 +211,11 @@ test modal_reset_restarts_history_resumes =
         | Present v => v % 3i64 = 0i64
         | Absent => false
     inl total entry =
-        inl _, totals = run_ticks (chain (modal entry (timer 1i64) (chain (timer 1i64) (scale 10i64)) every_third) (sink ())) (fun _ => ()) 9i64
+        inl _, totals =
+            run_ticks
+                (chain (modal entry (timer 1i64) (chain (timer 1i64) (scale 10i64)) every_third) (sink ()))
+                fun _ => ()
+                9i64
         inl sum, _ = totals
         sum
     (total Reset, total History) |> _assert_eq (72i64, 81i64)
@@ -207,9 +225,17 @@ inl physical_micros () : i64 =
     backend_switch {
         C = fun () =>
             global "#include <stdint.h>"
-            global "#ifdef _WIN32\n__declspec(dllimport) void __stdcall GetSystemTimePreciseAsFileTime(unsigned long long *);\nstatic int64_t spiral_physical_micros(void) { unsigned long long t; GetSystemTimePreciseAsFileTime(&t); return (int64_t)(t / 10ULL) - 11644473600000000LL; }\n#else\n#include <time.h>\nstatic int64_t spiral_physical_micros(void) { struct timespec ts; clock_gettime(CLOCK_REALTIME, &ts); return (int64_t)ts.tv_sec * 1000000 + ts.tv_nsec / 1000; }\n#endif"
+            global (
+                "#ifdef _WIN32\n__declspec(dllimport) void __stdcall GetSystemTimePreciseAsFileTime(unsigned long "
+                ^^ "long *);\nstatic int64_t spiral_physical_micros(void) { unsigned long long t; "
+                ^^ "GetSystemTimePreciseAsFileTime(&t); return (int64_t)(t / 10ULL) - 11644473600000000LL; }\n#else\n"
+                ^^ "#include <time.h>\nstatic int64_t spiral_physical_micros(void) { struct timespec ts; "
+                ^^ "clock_gettime(CLOCK_REALTIME, &ts); return (int64_t)ts.tv_sec * 1000000 + ts.tv_nsec / 1000; }\n"
+                ^^ "#endif"
+            )
             $'spiral_physical_micros()' : i64
-        Rust = fun () => $'(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_micros() as i64)' : i64
+        Rust = fun () =>
+            $'(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_micros() as i64)' : i64
         Zig = fun () => date_time.zig_micros_now ()
     }
 

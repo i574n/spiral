@@ -7,40 +7,40 @@ enum US0 {
     US0_Whole(i32),
 }
 fn twice_1(mut v0: f64) -> i32 {
-    let mut v1: f64 = v0 * 2.0f64;
-    let mut v2: i32 = (v1 as i32);
+    let v1: f64 = v0 * 2.0f64;
+    let v2: i32 = (v1 as i32);
     v2
 }
 fn score_0(mut v0: US0) -> i32 {
     match &v0 {
         US0::US0_Real(v1) => {
-            let mut v1: f64 = *v1;
+            let v1: f64 = *v1;
             twice_1(v1)
         }
         US0::US0_Whole(v3) => {
-            let mut v3: i32 = *v3;
+            let v3: i32 = *v3;
             v3
         }
     }
 }
 fn spiral_main() -> i32 {
-    let mut v0: bool = true;
-    let mut v1: f64 = 1.5f64;
-    let mut v4: US0 = if v0 {
+    let v0: bool = true;
+    let v1: f64 = 1.5f64;
+    let v4: US0 = if v0 {
         US0::US0_Real(v1)
     } else {
         US0::US0_Whole(1i32)
     };
-    let mut v7: US0 = if v0 {
+    let v7: US0 = if v0 {
         US0::US0_Whole(5i32)
     } else {
         US0::US0_Real(v1)
     };
-    let mut v8: i32 = score_0(v4.clone());
-    let mut v9: bool = v8 == 3i32;
-    let mut v12: bool = if v9 {
-        let mut v10: i32 = score_0(v7.clone());
-        let mut v11: bool = v10 == 5i32;
+    let v8: i32 = score_0(v4);
+    let v9: bool = v8 == 3i32;
+    let v12: bool = if v9 {
+        let v10: i32 = score_0(v7);
+        let v11: bool = v10 == 5i32;
         v11
     } else {
         false

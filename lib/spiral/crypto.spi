@@ -24,7 +24,7 @@ inl sha256_compute_hash (x : sha256) (data : array u8) : array u8 =
 /// ### sha256'
 nominal sha256' =
     `(
-        rust_type
+        rust.rust_type
             `($'sha2_Sha256')
             `($'sha2::Sha256')
             "type sha2_Sha256 = class end"
@@ -227,6 +227,56 @@ test hash_text =
     ""
     |> hash_text
     |> _assert_eq "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+
+inl crypto_gleam_sha1 () =
+    global "import gleam/bit_array"
+    global "import gleam/erlang/atom"
+    global "import gleam/string"
+    global """
+        @external(erlang, "crypto", "hash")
+        fn spiral_crypto_hash_by(kind: atom.Atom, data: String) -> BitArray
+
+        @external(erlang, "crypto", "mac")
+        fn spiral_crypto_mac(kind: atom.Atom, sub: atom.Atom, key: String, data: String) -> BitArray
+
+        fn spiral_crypto_sha1_hex(text: String) -> String {
+          string.lowercase(bit_array.base16_encode(spiral_crypto_hash_by(atom.create("sha"), text)))
+        }
+
+        fn spiral_crypto_hmac_sha1_base64(key: String, text: String) -> String {
+          spiral_crypto_mac(atom.create("hmac"), atom.create("sha"), key, text) |> bit_array.base64_encode(True)
+        }
+        """
+
+/// ### sha1_hex
+inl sha1_hex (text : string) : string =
+    backend_switch {
+        Gleam = fun () =>
+            crypto_gleam_sha1 ()
+            $'spiral_crypto_sha1_hex(!text)' : string
+        Rust = fun () =>
+            $'Rc::<str>::from(<sha1::Sha1 as sha1::Digest>::digest(!text.as_bytes()).iter().map(|b| \
+                format\!("{:02x}", b)).collect::<String>())' : string
+    }
+
+/// ### hmac_sha1_base64
+inl hmac_sha1_base64 (key : string) (text : string) : string =
+    backend_switch {
+        Gleam = fun () =>
+            crypto_gleam_sha1 ()
+            $'spiral_crypto_hmac_sha1_base64(!key, !text)' : string
+        Rust = fun () =>
+            $'{ let mut m = <hmac::Hmac<sha1::Sha1> as hmac::KeyInit>::new_from_slice(!key.as_bytes()).unwrap(); \
+                hmac::Mac::update(&mut m, !text.as_bytes()); Rc::<str>::from(base64::Engine::encode( \
+                &base64::engine::general_purpose::STANDARD, hmac::Mac::finalize(m).into_bytes())) }' : string
+    }
+
+///> rust -d sha1 hmac base64
+///> gleam
+test sha1_hex_and_hmac_sha1_base64 =
+    inl ~text = "abc"
+    (sha1_hex text, hmac_sha1_base64 "key" "The quick brown fox jumps over the lazy dog")
+    |> _assert_eq ("a9993e364706816aba3e25717850c26c9cd0d89d", "3nybhbi3iqa8ino29wqQcBydtNk=")
 
 /// ### hash_to_port
 inl hash_to_port (text : string) : u16 =

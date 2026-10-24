@@ -31,11 +31,11 @@ function spiral_string_slice(value: string, from: number, to: number): string {
 }
 function left_c0(v0: string, v1: number): ((a0: number) => number) {
     return (v2: number): number => {
-        let v3: boolean = v2 > 0;
+        const v3: boolean = v2 > 0;
         if (v3) {
-            let v4: number = spiral_string_length(v0);
-            let v5: number = (v4 + v1) | 0;
-            let v6: number = (v5 + v2) | 0;
+            const v4: number = spiral_string_length(v0);
+            const v5: number = (v4 + v1) | 0;
+            const v6: number = (v5 + v2) | 0;
             return v6;
         } else {
             return 0;
@@ -44,11 +44,11 @@ function left_c0(v0: string, v1: number): ((a0: number) => number) {
 }
 function right_c1(v0: string, v1: number): ((a0: number) => number) {
     return (v2: number): number => {
-        let v3: boolean = v2 > 0;
+        const v3: boolean = v2 > 0;
         if (v3) {
-            let v4: number = spiral_string_length(v0);
-            let v5: number = (v4 + v1) | 0;
-            let v6: number = (v5 + v2) | 0;
+            const v4: number = spiral_string_length(v0);
+            const v5: number = (v4 + v1) | 0;
+            const v6: number = (v5 + v2) | 0;
             let v7: number = (v6 - 1) | 0;
             return v7;
         } else {
@@ -60,11 +60,11 @@ function method0(v0: ((a0: number) => number)): number {
     return v0(37);
 }
 export function main(): number {
-    let v0: string = "abc";
-    let v1: string = "wxyz";
-    let v2: number = 2;
-    let v3: number = 2;
-    let v4: boolean = true;
+    const v0: string = "abc";
+    const v1: string = "wxyz";
+    const v2: number = 2;
+    const v3: number = 2;
+    const v4: boolean = true;
     let v7: ((a0: number) => number);
     if (v4) {
         v7 = left_c0(v0, v2);

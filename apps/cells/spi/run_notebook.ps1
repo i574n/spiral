@@ -13,6 +13,9 @@ $elixir = Join-Path $homeDir "scoop/apps/elixir/current/bin"
 $sep = [IO.Path]::PathSeparator
 if (Test-Path $erlang) { $env:PATH = "$erlang$sep$env:PATH" }
 if (Test-Path $elixir) { $env:PATH = "$elixir$sep$env:PATH" }
+$crashDumps = Join-Path ($env:LOCALAPPDATA ?? $homeDir) "spiral-bin/crash-dumps"
+New-Item -ItemType Directory -Force $crashDumps | Out-Null
+$env:ERL_CRASH_DUMP = Join-Path $crashDumps "erl_crash-$(Get-Date -Format yyyyMMdd-HHmmss)-$PID.dump"
 $cwd = (Get-Location).Path
 $fixed = New-Object System.Collections.Generic.List[string]
 $key = $null

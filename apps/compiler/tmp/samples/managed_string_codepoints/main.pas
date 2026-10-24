@@ -31,12 +31,6 @@ var
   v12: LongInt;
   v11: LongInt;
   v13: LongInt;
-  tmp8: AnsiString;
-  tmp9: AnsiChar;
-  tmp10: AnsiChar;
-  tmp11: LongInt;
-  tmp12: LongInt;
-  tmp13: LongInt;
 begin
   while True do begin
       v6 := v3 = v5;
@@ -59,18 +53,8 @@ begin
               v12 := v11;
           end;
           v13 := v3 + 1;
-          tmp8 := v0;
-          tmp9 := v1;
-          tmp10 := v2;
-          tmp11 := v13;
-          tmp12 := v12;
-          tmp13 := v5;
-          v0 := tmp8;
-          v1 := tmp9;
-          v2 := tmp10;
-          v3 := tmp11;
-          v4 := tmp12;
-          v5 := tmp13;
+          v3 := v13;
+          v4 := v12;
           Continue;
       end;
   end;
@@ -83,23 +67,9 @@ var
   v11: Boolean;
   v10: Boolean;
   v12: LongInt;
-  tmp6: AnsiString;
-  tmp7: AnsiChar;
-  tmp8: AnsiChar;
-  tmp9: LongInt;
-  tmp10: LongInt;
-  tmp11: LongInt;
-  tmp12: LongInt;
   v14: Boolean;
   v15: LongInt;
   v16: LongInt;
-  tmp16: AnsiString;
-  tmp17: AnsiChar;
-  tmp18: AnsiChar;
-  tmp19: LongInt;
-  tmp20: LongInt;
-  tmp21: LongInt;
-  tmp22: LongInt;
 begin
   while True do begin
       v7 := v4 = v6;
@@ -117,20 +87,7 @@ begin
           end;
           if v11 then begin
               v12 := v4 + 1;
-              tmp6 := v0;
-              tmp7 := v1;
-              tmp8 := v2;
-              tmp9 := v3;
-              tmp10 := v12;
-              tmp11 := v5;
-              tmp12 := v6;
-              v0 := tmp6;
-              v1 := tmp7;
-              v2 := tmp8;
-              v3 := tmp9;
-              v4 := tmp10;
-              v5 := tmp11;
-              v6 := tmp12;
+              v4 := v12;
               Continue;
           end else begin
               v14 := v5 = v3;
@@ -140,20 +97,8 @@ begin
               end else begin
                   v15 := v4 + 1;
                   v16 := v5 + 1;
-                  tmp16 := v0;
-                  tmp17 := v1;
-                  tmp18 := v2;
-                  tmp19 := v3;
-                  tmp20 := v15;
-                  tmp21 := v16;
-                  tmp22 := v6;
-                  v0 := tmp16;
-                  v1 := tmp17;
-                  v2 := tmp18;
-                  v3 := tmp19;
-                  v4 := tmp20;
-                  v5 := tmp21;
-                  v6 := tmp22;
+                  v4 := v15;
+                  v5 := v16;
                   Continue;
               end;
           end;

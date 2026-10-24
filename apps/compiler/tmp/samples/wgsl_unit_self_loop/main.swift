@@ -15,12 +15,7 @@ func sp_fill_0(_ p0: Int32, _ p1: SpiralArray<Int32>, _ p2: Int32) {
             v1.items[Int(v2)] = v2
             var v4: Int32 = 0
             v4 = (v2 &+ 1)
-            let t341_0: Int32 = v0
-            let t377_1: SpiralArray<Int32> = v1
-            let t426_4: Int32 = v4
-            v0 = t341_0
-            v1 = t377_1
-            v2 = t426_4
+            v2 = v4
             continue
         } else {
             return
@@ -28,8 +23,7 @@ func sp_fill_0(_ p0: Int32, _ p1: SpiralArray<Int32>, _ p2: Int32) {
     }
 }
 func spiral_main() -> Int32 {
-    var v0: Int32 = 0
-    v0 = 6
+    let v0: Int32 = 6
     var v1: SpiralArray<Int32> = SpiralArray<Int32>([])
     v1 = SpiralArray<Int32>(Array(repeating: 0, count: Int(6)))
     var v2: Int32 = 0

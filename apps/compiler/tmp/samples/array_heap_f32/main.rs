@@ -8,16 +8,16 @@ impl Default for Heap0 {
     }
 }
 fn spiral_main() -> i32 {
-    let mut v0: f32 = 1.5f32;
-    let mut v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
-    let mut v2: Rc<Heap0> = Rc::new(Heap0 { l0: v0, l1: v1.clone() });
-    let mut v3: Rc<RefCell<Vec<Rc<Heap0>>>> = Rc::new(RefCell::new(vec![<Rc<Heap0>>::default(); 1i32 as usize]));
-    v3.clone().borrow_mut()[0i32 as usize] = v2.clone();
-    let mut v4: Rc<Heap0> = v3.clone().borrow()[0i32 as usize].clone();
+    let v0: f32 = 1.5f32;
+    let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
+    let v2: Rc<Heap0> = Rc::new(Heap0 { l0: v0, l1: v1 });
+    let v3: Rc<RefCell<Vec<Rc<Heap0>>>> = Rc::new(RefCell::new(vec![<Rc<Heap0>>::default(); 1i32 as usize]));
+    v3.clone().borrow_mut()[0i32 as usize] = v2;
+    let v4: Rc<Heap0> = v3.borrow()[0i32 as usize].clone();
     let (mut v5, mut v6): (f32, Rc<str>) = (v4.l0.clone(), v4.l1.clone());
-    let mut v7: bool = v5 == 1.5f32;
-    let mut v9: bool = if v7 {
-        let mut v8: bool = v6.clone() == { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
+    let v7: bool = v5 == 1.5f32;
+    let v9: bool = if v7 {
+        let v8: bool = &*v6 == "hi";
         v8
     } else {
         false

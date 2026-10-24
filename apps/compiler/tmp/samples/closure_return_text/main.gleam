@@ -20,17 +20,17 @@ pub fn f_c0(capt: #(String)) -> fn(Int) -> fn(Int) -> String {
     }
 }
 pub fn main() {
-let v0 = "hi"
-let v1 = f_c0(#(v0))
-let v2 = v1( 1  )
-let v3 = v2( 0  )
-let v4 = v3 == "hi"
-case v4 {
-    True -> {
-        0
+    let v0 = "hi"
+    let v1 = f_c0(#(v0))
+    let v2 = v1(1)
+    let v3 = v2(0)
+    let v4 = v3 == "hi"
+    case v4 {
+        True -> {
+            0
+        }
+        False -> {
+            1
+        }
     }
-    False -> {
-        1
-    }
-}
 }

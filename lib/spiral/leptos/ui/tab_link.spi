@@ -6,12 +6,16 @@ open leptos
 inl render { href icon label select } : _ (_ a') =
     a' [
         attr_fn "href" (href >> sm'.to_std_string)
-        class_fn "inline-flex shrink-0 items-center [justify-content:center] flex-1 gap-2 border-t-2 [white-space:nowrap] mb-[11px] pt-[8px] pr-[15px] pl-[15px] text-sm font-medium " fun () =>
-            if select ()
-            then "border-grey-200 text-grey-900"
-            else "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
-        attr_fn "aria-current" fun () =>
-            (if select () then "page" else "") |> sm'.to_std_string
+        class_fn
+            (
+                "inline-flex shrink-0 items-center [justify-content:center] flex-1 gap-2 border-t-2 "
+                ^^ "[white-space:nowrap] mb-[11px] pt-[8px] pr-[15px] pl-[15px] text-sm font-medium "
+            )
+            fun () =>
+                if select ()
+                then "border-grey-200 text-grey-900"
+                else "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+        attr_fn "aria-current" fun () => (if select () then "page" else "") |> sm'.to_std_string
     ] fun () =>
         :>[
             icon |> fragment_to_view

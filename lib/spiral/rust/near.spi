@@ -23,7 +23,7 @@ type vector_switch t =
     }
 nominal vector t =
     `(
-        fsharp_global "type near_sdk_store_vec_Vector<'T> = class end"
+        rust.fsharp_global "type near_sdk_store_vec_Vector<'T> = class end"
         backend_switch `(()) `({}) {
             Rust = (fun () => global """
                 #[cfg(target_arch = "wasm32")]
@@ -57,7 +57,7 @@ nominal vector t =
 /// ### lookup_map
 nominal lookup_map k v =
     `(
-        rust_type
+        rust.rust_type
             `($'near_sdk_store_LookupMap<`k, `v>')
             `($'near_sdk::store::LookupMap<`k, `v>')
             "type near_sdk_store_LookupMap<'K, 'V> = class end"
@@ -66,7 +66,7 @@ nominal lookup_map k v =
 /// ### iterable_set
 nominal iterable_set t =
     `(
-        rust_type
+        rust.rust_type
             `($'near_sdk_store_IterableSet<`t>')
             `($'near_sdk::store::IterableSet<`t>')
             "type near_sdk_store_IterableSet<'T> = class end"
@@ -88,7 +88,7 @@ type account_id_switch =
     }
 nominal account_id =
     `(
-        fsharp_global "type near_sdk_AccountId = class end"
+        rust.fsharp_global "type near_sdk_AccountId = class end"
         $'' : $'backend_switch `(account_id_switch)'
     )
 
@@ -103,7 +103,8 @@ inl new_iterable_set prefix =
 /// ### new_vector
 inl new_vector (prefix : rust.ref (am'.slice u8)) : vector u8 =
     backend_switch {
-        Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::store::vec::Vector::new(!prefix); \#[cfg(not(target_arch = "wasm32"))] let v = SpiralNearVec(<std::vec::Vec<u8>>::new()); v }' : vector u8
+        Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::store::vec::Vector::new(!prefix); \
+            \#[cfg(not(target_arch = "wasm32"))] let v = SpiralNearVec(<std::vec::Vec<u8>>::new()); v }' : vector u8
     }
 
 /// ### vector_extend
@@ -121,7 +122,8 @@ inl vector_to_vec forall (t : * -> *) u. (vector : t (vector u)) : am'.vec u =
 /// ### keccak512
 inl keccak512 (entropy : am'.vec u8) : am'.vec u8 =
     backend_switch {
-        Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::keccak512(&(!entropy)); \#[cfg(not(target_arch = "wasm32"))] let v = <std::vec::Vec<u8>>::from([1u8, 5, 4, 4, 5]); v }' : am'.vec u8
+        Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::keccak512(&(!entropy)); \
+            \#[cfg(not(target_arch = "wasm32"))] let v = <std::vec::Vec<u8>>::from([1u8, 5, 4, 4, 5]); v }' : am'.vec u8
     }
 
 /// ### log
@@ -189,14 +191,14 @@ type near_token_switch =
     }
 nominal near_token =
     `(
-        fsharp_global "type near_token_NearToken = class end"
+        rust.fsharp_global "type near_token_NearToken = class end"
         $'' : $'backend_switch `(near_token_switch)'
     )
 
 /// ### near_token_sdk
 nominal near_token_sdk =
     `(
-        rust_type
+        rust.rust_type
             `($'near_sdk_NearToken')
             `($'near_sdk::NearToken')
             "type near_sdk_NearToken = class end"
@@ -205,43 +207,50 @@ nominal near_token_sdk =
 /// ### random_seed
 inl random_seed () : am'.vec u8 =
     backend_switch {
-        Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::random_seed(); \#[cfg(not(target_arch = "wasm32"))] let v = <std::vec::Vec<u8>>::from([1u8, 5, 4, 4, 5]); v }' : am'.vec u8
+        Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::random_seed(); \
+            \#[cfg(not(target_arch = "wasm32"))] let v = <std::vec::Vec<u8>>::from([1u8, 5, 4, 4, 5]); v }' : am'.vec u8
     }
 
 /// ### block_timestamp
 inl block_timestamp () : u64 =
     backend_switch {
-        Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::block_timestamp(); \#[cfg(not(target_arch = "wasm32"))] let v = 1u64; v }' : u64
+        Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::block_timestamp(); \
+            \#[cfg(not(target_arch = "wasm32"))] let v = 1u64; v }' : u64
     }
 
 /// ### block_height
 inl block_height () : u64 =
     backend_switch {
-        Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::block_height(); \#[cfg(not(target_arch = "wasm32"))] let v = 1u64; v }' : u64
+        Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::block_height(); \
+            \#[cfg(not(target_arch = "wasm32"))] let v = 1u64; v }' : u64
     }
 
 /// ### epoch_height
 inl epoch_height () : u64 =
     backend_switch {
-        Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::epoch_height(); \#[cfg(not(target_arch = "wasm32"))] let v = 1u64; v }' : u64
+        Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::epoch_height(); \
+            \#[cfg(not(target_arch = "wasm32"))] let v = 1u64; v }' : u64
     }
 
 /// ### account_balance
 inl account_balance () : near_token =
     backend_switch {
-        Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::account_balance().as_yoctonear(); \#[cfg(not(target_arch = "wasm32"))] let v = 1u128; v }' : near_token
+        Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::account_balance().as_yoctonear(); \
+            \#[cfg(not(target_arch = "wasm32"))] let v = 1u128; v }' : near_token
     }
 
 /// ### predecessor_account_id
 inl predecessor_account_id () : account_id =
     backend_switch {
-        Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::predecessor_account_id().to_string(); \#[cfg(not(target_arch = "wasm32"))] let v = String::from("a"); v }' : account_id
+        Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::predecessor_account_id().to_string\
+            (); \#[cfg(not(target_arch = "wasm32"))] let v = String::from("a"); v }' : account_id
     }
 
 /// ### signer_account_id
 inl signer_account_id () : account_id =
     backend_switch {
-        Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::signer_account_id().to_string(); \#[cfg(not(target_arch = "wasm32"))] let v = String::from("a"); v }' : account_id
+        Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::signer_account_id().to_string(); \
+            \#[cfg(not(target_arch = "wasm32"))] let v = String::from("a"); v }' : account_id
     }
 
 /// ### as_yoctonear

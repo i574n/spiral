@@ -18,7 +18,9 @@ union cancel_token scope epoch owner state =
 
 union task_step scope epoch owner from to =
     | StartTask :: forall scope epoch owner. task_step scope epoch owner pending running
-    | CancelRunning :: forall scope epoch owner. cancel_token scope epoch owner fresh -> task_step scope epoch owner running cancelled
+    | CancelRunning :: forall scope epoch owner.
+        cancel_token scope epoch owner fresh ->
+        task_step scope epoch owner running cancelled
 
 union rec task_plan scope epoch owner from to =
     | TaskLeaf :: forall scope epoch owner from to.

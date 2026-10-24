@@ -4,10 +4,9 @@ function Us0_One() return { tag = "Us0_One" } end
 
 local v0 = Us0_Zero()
 local getv2 = function()
-    local __v = { v0 }
-    if __v[1] ~= nil and __v[1].tag == "Us0_One" then
+    if v0 ~= nil and v0.tag == "Us0_One" then
         return false
-    elseif __v[1] ~= nil and __v[1].tag == "Us0_Zero" then
+    elseif v0 ~= nil and v0.tag == "Us0_Zero" then
         return true
     end
 end

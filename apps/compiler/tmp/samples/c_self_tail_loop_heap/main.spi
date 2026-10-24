@@ -1,4 +1,4 @@
-type tactic = {weights : array_base i32; bias : i32}
+type tactic = { weights : array_base i32; bias : i32 }
 
 inl main () : i32 =
     inl w : array_base i32 = !!!!ArrayCreate(`i32, 4i32)
@@ -14,4 +14,4 @@ inl main () : i32 =
             inl slot = !!!!Mod(i, 4i32)
             inl weight : i32 = !!!!ArrayIndex(t.weights, slot)
             loop t !!!!Add(i, 1i32) !!!!Mod(!!!!Add(!!!!Add(!!!!Mult(acc, 7i32), weight), t.bias), 9973i32)
-    !!!!Mod(loop {weights = w; bias = bias} 0i32 0i32, 256i32)
+    !!!!Mod(loop { weights = w; bias = bias } 0i32 0i32, 256i32)

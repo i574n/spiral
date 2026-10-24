@@ -4,59 +4,59 @@ use std::rc::Rc;
 struct Heap0 { l0: i32, l1: Rc<str> }
 struct Mut0 { l0: Rc<Heap0>, l1: Rc<Heap0>, l2: Rc<Heap0> }
 fn spiral_main() -> i32 {
-    let mut v0: i32 = 1i32;
-    let mut v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("no"); } LIT.with(|lit| lit.clone()) };
-    let mut v2: Rc<Heap0> = Rc::new(Heap0 { l0: v0, l1: v1.clone() });
-    let mut v3: i32 = 2i32;
-    let mut v4: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("zz"); } LIT.with(|lit| lit.clone()) };
-    let mut v5: Rc<Heap0> = Rc::new(Heap0 { l0: v3, l1: v4.clone() });
-    let mut v6: i32 = 3i32;
-    let mut v7: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("aa"); } LIT.with(|lit| lit.clone()) };
-    let mut v8: Rc<Heap0> = Rc::new(Heap0 { l0: v6, l1: v7.clone() });
-    let mut v9: Rc<RefCell<Mut0>> = Rc::new(RefCell::new(Mut0 { l0: v2.clone(), l1: v5.clone(), l2: v8.clone() }));
-    let mut v10: i32 = 7i32;
-    let mut v11: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
-    let mut v12: Rc<Heap0> = Rc::new(Heap0 { l0: v10, l1: v11.clone() });
-    let mut v13: i32 = 4i32;
-    let mut v14: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("yo"); } LIT.with(|lit| lit.clone()) };
-    let mut v15: Rc<Heap0> = Rc::new(Heap0 { l0: v13, l1: v14.clone() });
-    let mut v16: i32 = 9i32;
-    let mut v17: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("ok"); } LIT.with(|lit| lit.clone()) };
-    let mut v18: Rc<Heap0> = Rc::new(Heap0 { l0: v16, l1: v17.clone() });
-    v9.borrow_mut().l0 = v12.clone();
-    v9.borrow_mut().l1 = v15.clone();
-    v9.borrow_mut().l2 = v18.clone();
+    let v0: i32 = 1i32;
+    let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("no"); } LIT.with(|lit| lit.clone()) };
+    let v2: Rc<Heap0> = Rc::new(Heap0 { l0: v0, l1: v1 });
+    let v3: i32 = 2i32;
+    let v4: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("zz"); } LIT.with(|lit| lit.clone()) };
+    let v5: Rc<Heap0> = Rc::new(Heap0 { l0: v3, l1: v4 });
+    let v6: i32 = 3i32;
+    let v7: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("aa"); } LIT.with(|lit| lit.clone()) };
+    let v8: Rc<Heap0> = Rc::new(Heap0 { l0: v6, l1: v7 });
+    let mut v9: Rc<RefCell<Mut0>> = Rc::new(RefCell::new(Mut0 { l0: v2, l1: v5, l2: v8 }));
+    let v10: i32 = 7i32;
+    let v11: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
+    let v12: Rc<Heap0> = Rc::new(Heap0 { l0: v10, l1: v11 });
+    let v13: i32 = 4i32;
+    let v14: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("yo"); } LIT.with(|lit| lit.clone()) };
+    let v15: Rc<Heap0> = Rc::new(Heap0 { l0: v13, l1: v14 });
+    let v16: i32 = 9i32;
+    let v17: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("ok"); } LIT.with(|lit| lit.clone()) };
+    let v18: Rc<Heap0> = Rc::new(Heap0 { l0: v16, l1: v17 });
+    v9.borrow_mut().l0 = v12;
+    v9.borrow_mut().l1 = v15;
+    v9.borrow_mut().l2 = v18;
     let (mut v19, mut v20, mut v21): (Rc<Heap0>, Rc<Heap0>, Rc<Heap0>) = (v9.borrow().l0.clone(), v9.borrow().l1.clone(), v9.borrow().l2.clone());
     let (mut v22, mut v23): (i32, Rc<str>) = (v19.l0.clone(), v19.l1.clone());
     let (mut v24, mut v25): (i32, Rc<str>) = (v20.l0.clone(), v20.l1.clone());
     let (mut v26, mut v27): (i32, Rc<str>) = (v21.l0.clone(), v21.l1.clone());
-    let mut v28: bool = v22 == 7i32;
-    let mut v30: bool = if v28 {
-        let mut v29: bool = v23.clone() == { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
+    let v28: bool = v22 == 7i32;
+    let v30: bool = if v28 {
+        let v29: bool = &*v23 == "hi";
         v29
     } else {
         false
     };
-    let mut v32: bool = if v30 {
-        let mut v31: bool = v24 == 4i32;
+    let v32: bool = if v30 {
+        let v31: bool = v24 == 4i32;
         v31
     } else {
         false
     };
-    let mut v34: bool = if v32 {
-        let mut v33: bool = v25.clone() == { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("yo"); } LIT.with(|lit| lit.clone()) };
+    let v34: bool = if v32 {
+        let v33: bool = &*v25 == "yo";
         v33
     } else {
         false
     };
-    let mut v36: bool = if v34 {
-        let mut v35: bool = v26 == 9i32;
+    let v36: bool = if v34 {
+        let v35: bool = v26 == 9i32;
         v35
     } else {
         false
     };
-    let mut v38: bool = if v36 {
-        let mut v37: bool = v27.clone() == { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("ok"); } LIT.with(|lit| lit.clone()) };
+    let v38: bool = if v36 {
+        let v37: bool = &*v27 == "ok";
         v37
     } else {
         false

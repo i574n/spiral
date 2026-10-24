@@ -253,16 +253,6 @@ test take_while_5 =
     |> _assert_eq 10
 
 /// ### memoize
-inl memoize seq =
-    inl state = mut []
-    fun n =>
-        match *state |> listm'.try_find (fun (n', _) => n' = n) with
-        | Some (_, v) => v
-        | None =>
-            inl new_state = seq n
-            state <- (n, new_state) :: *state
-            new_state
-
 inl memoize_ seq =
     inl state = mut []
     fun n =>
@@ -272,6 +262,8 @@ inl memoize_ seq =
             inl new_state = seq n
             state <- (n, new_state) :: *state
             new_state
+
+inl memoize seq = memoize_ seq
 
 test memoize =
     inl seq =
@@ -535,7 +527,8 @@ inl rev'' forall t. (items : seq' t) : seq' t =
         Python = fun () => $'list(reversed(!items))' : seq' t
         Rust = fun () => $'Rc::new({ let mut v = (!items).as_ref().clone(); v.reverse(); v })' : seq' t
         TypeScript = fun () => $'[...!items].reverse()' : seq' t
-        Zig = fun () => $'blk: { const r = spiral_gpa.dupe(`t, !items) catch \@panic("out of memory"); std.mem.reverse(`t, r); break :blk r; }' : seq' t
+        Zig = fun () => $'blk: { const r = spiral_gpa.dupe(`t, !items) catch \@panic("out of memory"); \
+            std.mem.reverse(`t, r); break :blk r; }' : seq' t
     }
 
 ///> fsharp
@@ -556,7 +549,7 @@ test rev =
 /// ### fuse
 nominal fuse t =
     `(
-        rust_type
+        rust.rust_type
             `($'core_iter_Fuse<`t>')
             `($'core::iter::Fuse<`t>')
             "type core_iter_Fuse<'T> = class end"

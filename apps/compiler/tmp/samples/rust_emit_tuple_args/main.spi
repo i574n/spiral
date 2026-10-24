@@ -14,4 +14,8 @@ inl main () : i32 =
     inl ~a = 1i32
     inl ~b = 2i32
     inl ~c = 40i32
-    !!!!BackendSwitch({ C = fun () => portable a b c : i32; Rust = fun () => native a b c : i32; Bend = fun () => portable a b c : i32 })
+    !!!!BackendSwitch({
+        C = fun () => portable a b c : i32
+        Rust = fun () => native a b c : i32
+        Bend = fun () => portable a b c : i32
+    })

@@ -62,7 +62,7 @@ inl flip fn a b =
 
 /// ### do
 inl do (body : () -> ()) : () =
-    !!!!Do (body())
+    !!!!Do(body ())
 
 /// ### let'
 inl let' fn =
@@ -232,7 +232,7 @@ test join_body_unit print_code =
 
 /// ### (+.)
 inl (+.) forall t. (a : t) (b : t) : t =
-    !!!!Add(a,b)
+    !!!!Add(a, b)
 
 ///> gleam
 ///> fsharp
@@ -245,7 +245,7 @@ test join_body_unit_2 =
 
 /// ### (-.)
 inl (-.) forall t. (a : t) (b : t) : t =
-    !!!!Sub(a,b)
+    !!!!Sub(a, b)
 
 ///> gleam
 ///> fsharp
@@ -258,7 +258,7 @@ test join_body_unit_3 =
 
 /// ### (*.)
 inl (*.) forall t. (a : t) (b : t) : t =
-    !!!!Mult(a,b)
+    !!!!Mult(a, b)
 
 ///> gleam
 ///> fsharp
@@ -271,7 +271,7 @@ test join_body_unit_4 =
 
 /// ### (/.)
 inl (/.) forall t. (a : t) (b : t) : t =
-    !!!!Div(a,b)
+    !!!!Div(a, b)
 
 ///> gleam
 ///> fsharp
@@ -601,7 +601,13 @@ inl exn x =
 inl catch_unwind_rust forall t. (fn : () -> t) (ex_fn : exn -> t) : t =
     inl fn = dyn fn
     inl ex_fn = dyn ex_fn
-    $'{ thread_local\! { static QUIET: std::cell::Cell<u32> = std::cell::Cell::new(0); } static HOOK: std::sync::Once = std::sync::Once::new(); HOOK.call_once(|| { let prev = std::panic::take_hook(); std::panic::set_hook(Box::new(move |info| if cfg\!(panic = "abort") || QUIET.with(|q| q.get()) == 0 { prev(info) })) }); QUIET.with(|q| q.set(q.get() + 1)); let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (!fn)())); QUIET.with(|q| q.set(q.get() - 1)); match r { Ok(x) => x, Err(e) => (!ex_fn)(Rc::<str>::from(e.downcast_ref::<String>().map(|s| s.as_str()).or_else(|| e.downcast_ref::<&str>().copied()).unwrap_or("panic"))) } }' : t
+    $'{ thread_local\! { static QUIET: std::cell::Cell<u32> = std::cell::Cell::new(0); } static HOOK: std::sync::Once \
+        = std::sync::Once::new(); HOOK.call_once(|| { let prev = std::panic::take_hook(); \
+        std::panic::set_hook(Box::new(move |info| if cfg\!(panic = "abort") || QUIET.with(|q| q.get()) == 0 { \
+        prev(info) })) }); QUIET.with(|q| q.set(q.get() + 1)); let r = \
+        std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (!fn)())); QUIET.with(|q| q.set(q.get() - 1)); match \
+        r { Ok(x) => x, Err(e) => (!ex_fn)(Rc::<str>::from(e.downcast_ref::<String>().map(|s| s.as_str()).or_else(|| \
+        e.downcast_ref::<&str>().copied()).unwrap_or("panic"))) } }' : t
 
 inl try forall t. (fn : () -> t) (ex_fn : exn -> option t) : option t =
     inl some x : option t = Some x

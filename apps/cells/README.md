@@ -259,7 +259,9 @@ over the body's own locals work; `static` bodies stay top level, since they hold
 returns `0i32` after the call: `spiral_cells_test ()` when the body ends in an `_assert`, else `inl _ = spiral_cells_test ()`,
 which takes a unit or a value alike. A test therefore compiles once; before, a body ending in another unit expression
 or in a value was compiled a second time after the first compile failed (physics.spi: 58 compile requests for 39 tests
-before, 40 after).
+before, 40 after). A test with a `///> wgsl` line is the exception: its main ends in `spiral_cells_test ()`, so the body's
+`i32` is the status every target of that test exits with. Until 2026-10-20 the wgsl body's status was bound to `_` and
+main returned `0i32`, so every `///> wgsl` test passed.
 `--path` may be repeated; with several,
 `--output-dir <dir>` writes each notebook's `<name>.ipynb` there (`--output-path` takes a single `--path`). With several
 `--path`, each `--test` name runs in the files that have it, files with none of them are skipped, and only a name no

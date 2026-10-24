@@ -64,12 +64,10 @@ func sp_score_0(_ p0: US0) -> Int32 {
             var v9: String = ""
             v8 = v5.l0
             v9 = v5.l1
-            var v10: Bool = false
-            v10 = (v6 == 7)
+            let v10: Bool = (v6 == 7)
             var v12: Bool = false
             if (v10) {
-                var v11: Bool = false
-                v11 = (v7 == "hi")
+                let v11: Bool = (v7 == "hi")
                 v12 = v11
             } else {
                 v12 = false
@@ -110,10 +108,8 @@ func sp_score_0(_ p0: US0) -> Int32 {
     }
 }
 func spiral_main() -> Int32 {
-    var v0: Int32 = 0
-    v0 = 1
-    var v1: String = ""
-    v1 = "no"
+    let v0: Int32 = 1
+    let v1: String = "no"
     var v2: Heap0 = Heap0(l0: 0, l1: "")
     v2 = Heap0(l0: v0, l1: v1)
     var v3: Int32 = 0
@@ -149,35 +145,25 @@ func spiral_main() -> Int32 {
     v17 = "hi"
     var v18: Heap0 = Heap0(l0: 0, l1: "")
     v18 = Heap0(l0: v16, l1: v17)
-    var v19: Int32 = 0
-    v19 = 4
-    var v20: String = ""
-    v20 = "yo"
-    var v21: Heap0 = Heap0(l0: 0, l1: "")
-    v21 = Heap0(l0: v19, l1: v20)
-    var v22: Heap1 = Heap1(l0: Heap0(l0: 0, l1: ""), l1: Heap0(l0: 0, l1: ""))
-    v22 = Heap1(l0: v18, l1: v21)
-    var v23: Int32 = 0
-    v23 = 2
-    var v24: Heap2 = Heap2(l0: Heap1(l0: Heap0(l0: 0, l1: ""), l1: Heap0(l0: 0, l1: "")), l1: 0)
-    v24 = Heap2(l0: v22, l1: v23)
-    var v25: Bool = false
-    v25 = true
+    let v19: Int32 = 4
+    let v20: String = "yo"
+    let v21: Heap0 = Heap0(l0: v19, l1: v20)
+    let v22: Heap1 = Heap1(l0: v18, l1: v21)
+    let v23: Int32 = 2
+    let v24: Heap2 = Heap2(l0: v22, l1: v23)
+    let v25: Bool = true
     var v28: US0 = US0_None()
     if (v25) {
         v28 = US0_Held(f0: v24)
     } else {
         v28 = US0_None()
     }
-    var v29: Heap3 = Heap3(l0: US0_None())
-    v29 = Heap3(l0: v28)
+    let v29: Heap3 = Heap3(l0: v28)
     var v30: Mut4 = Mut4(l0: Heap3(l0: US0_None()))
     v30 = v15.items[Int(0)]
     v30.l0 = v29
-    var v31: Heap3 = Heap3(l0: US0_None())
-    v31 = v30.l0
-    var v32: US0 = US0_None()
-    v32 = v31.l0
+    let v31: Heap3 = v30.l0
+    let v32: US0 = v31.l0
     return sp_score_0(v32)
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

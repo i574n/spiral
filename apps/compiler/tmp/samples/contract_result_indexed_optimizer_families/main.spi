@@ -67,7 +67,12 @@ inl with_executable forall output.
 inl conceal forall result. (_ : program result) (_ : result) : string = "result-parametric"
 
 inl value_program () : program value =
-    MapProgram (exists (PairProgram (Operation (Load (address "0x10")), Operation (Add (value 3, value 4))), fun (_ : value * value) => value 7))
+    MapProgram (
+        exists (
+            PairProgram (Operation (Load (address "0x10")), Operation (Add (value 3, value 4))),
+            fun (_ : value * value) => value 7
+        )
+    )
 
 inl branch_program () : program branch_result =
     Operation (Branch (condition true))
@@ -79,7 +84,12 @@ inl executable_value () : executable =
     CudaExecutable (exists (cuda (launch_program ()), event "event-42"))
 
 inl serialize_authority (_ : string) (_ : string) (_ : string) (_ : string) : string =
-    "schema\tnode_id\toperation\tfrom\tto\tdeps\teffect\tcapability\tretry_budget\n1\tload\tLoad\taddress\tvalue\t\tidempotent\tmemory\t2\n1\tadd\tAdd\tvalues\tvalue\tload\tidempotent\tcompute\t2\n1\tbranch\tBranch\tcondition\tbranch-result\tadd\tidempotent\tcontrol\t1\n1\tallocate\tAllocate\tsize\tbuffer\tbranch\tnon_idempotent\tmemory\t0\n1\tlaunch\tLaunch\tkernel-buffer\tevent\tallocate\tnon_idempotent\taccelerator\t0\n"
+    "schema\tnode_id\toperation\tfrom\tto\tdeps\teffect\tcapability\tretry_budget\n"
+    ^^ "1\tload\tLoad\taddress\tvalue\t\tidempotent\tmemory\t2\n"
+    ^^ "1\tadd\tAdd\tvalues\tvalue\tload\tidempotent\tcompute\t2\n"
+    ^^ "1\tbranch\tBranch\tcondition\tbranch-result\tadd\tidempotent\tcontrol\t1\n"
+    ^^ "1\tallocate\tAllocate\tsize\tbuffer\tbranch\tnon_idempotent\tmemory\t0\n"
+    ^^ "1\tlaunch\tLaunch\tkernel-buffer\tevent\tallocate\tnon_idempotent\taccelerator\t0\n"
 
 inl main () : string =
     inl cpu_lowered = lower (cpu (value_program ()))

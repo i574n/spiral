@@ -1,43 +1,41 @@
 type UH0_Leaf = { readonly tag: 0 };
 type UH0_Node = { readonly tag: 1, readonly f0: number, readonly f1: UH0, readonly f2: UH0 };
 type UH0 = UH0_Leaf | UH0_Node;
-function UH0_Leaf(): UH0 { return { tag: 0 }; }
+const UH0_Leaf_shared: UH0 = { tag: 0 }; function UH0_Leaf(): UH0 { return UH0_Leaf_shared; }
 function UH0_Node(f0: number, f1: UH0, f2: UH0): UH0 { return { tag: 1, f0: f0, f1: f1, f2: f2 }; }
 function sum_0(v0: UH0): number {
     switch (v0.tag) {
         case 0: {
             return 0;
-            break;
         }
         case 1: {
-            let v1: number = v0.f0;
-            let v2: UH0 = v0.f1;
-            let v3: UH0 = v0.f2;
-            let v4: number = sum_0(v2);
-            let v5: number = sum_0(v3);
-            let v6: number = (v4 + v5) | 0;
-            let v7: number = (v1 + v6) | 0;
+            const v1: number = v0.f0;
+            const v2: UH0 = v0.f1;
+            const v3: UH0 = v0.f2;
+            const v4: number = sum_0(v2);
+            const v5: number = sum_0(v3);
+            const v6: number = (v4 + v5) | 0;
+            const v7: number = (v1 + v6) | 0;
             return v7;
-            break;
         }
         default: throw new Error("Compiler error: unreachable union case.");
     }
 }
 function f_c0(v0: UH0): ((a0: number) => number) {
     return (v1: number): number => {
-        let v2: number = sum_0(v0);
-        let v3: number = (v2 + v1) | 0;
+        const v2: number = sum_0(v0);
+        const v3: number = (v2 + v1) | 0;
         return v3;
     };
 }
 export function main(): number {
-    let v0: UH0 = UH0_Leaf();
-    let v1: number = 2;
-    let v2: UH0 = UH0_Node(v1, v0, v0);
-    let v3: ((a0: number) => number) = f_c0(v2);
-    let v4: number = v3(19);
-    let v5: number = v3(19);
-    let v6: number = (v4 + v5) | 0;
+    const v0: UH0 = UH0_Leaf();
+    const v1: number = 2;
+    const v2: UH0 = UH0_Node(v1, v0, v0);
+    const v3: ((a0: number) => number) = f_c0(v2);
+    const v4: number = v3(19);
+    const v5: number = v3(19);
+    const v6: number = (v4 + v5) | 0;
     return v6;
 }
 process.exitCode = main();

@@ -1,6 +1,6 @@
 union slot =
     | None
-    | Held : (heap {value : i32 * string} * heap {value : i32 * string} * heap {value : i32 * string})
+    | Held : (heap { value : i32 * string } * heap { value : i32 * string } * heap { value : i32 * string })
 
 let score x : i32 =
     match x with
@@ -12,23 +12,25 @@ let score x : i32 =
         inl ~(c, d) = mid_opened.value
         inl right_opened = !!!!LayoutIndex(right)
         inl ~(e, h) = right_opened.value
-        if a =. 7i32 && !!!!EQ(b, "hi") && c =. 4i32 && !!!!EQ(d, "yo") && e =. 9i32 && !!!!EQ(h, "ok") then 0i32 else 1i32
+        if a =. 7i32 && !!!!EQ(b, "hi") && c =. 4i32 && !!!!EQ(d, "yo") && e =. 9i32 && !!!!EQ(h, "ok")
+        then 0i32
+        else 1i32
 
 inl main () : i32 =
     inl ~n = 7i32
     inl ~word = "hi"
     inl left_pair = n, word
-    inl left_heap = !!!!LayoutToHeap({value = left_pair})
+    inl left_heap = !!!!LayoutToHeap({ value = left_pair })
     inl ~m = 4i32
     inl ~other = "yo"
     inl mid_pair = m, other
-    inl mid_heap = !!!!LayoutToHeap({value = mid_pair})
+    inl mid_heap = !!!!LayoutToHeap({ value = mid_pair })
     inl ~k = 9i32
     inl ~tail = "ok"
     inl right_pair = k, tail
-    inl right_heap = !!!!LayoutToHeap({value = right_pair})
+    inl right_heap = !!!!LayoutToHeap({ value = right_pair })
     inl ~flag = true
     inl held = if flag then Held (left_heap, mid_heap, right_heap) else None
-    inl box = !!!!LayoutToHeap({value = held})
+    inl box = !!!!LayoutToHeap({ value = held })
     inl opened = !!!!LayoutIndex(box)
     score opened.value

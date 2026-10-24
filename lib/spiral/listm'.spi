@@ -19,9 +19,7 @@ test append print_code =
 
 /// ### collect
 inl collect forall t r. (fn : t -> list r) (items : list t) : list r =
-    items
-    |> listm.map fn
-    |> listm.fold (++) []
+    listm.foldBack (fun x acc => listm.append (fn x) acc) items []
 
 /// ### replicate
 inl replicate count x =
@@ -35,6 +33,19 @@ inl map4 f l1 l2 l3 l4 =
             루프 xs1 xs2 xs3 xs4 (f x1 x2 x3 x4 :: acc)
         | _ => acc |> listm.rev
     루프 l1 l2 l3 l4 []
+
+inl map4_ f l1 l2 l3 l4 =
+    let rec 루프 l1 l2 l3 l4 acc =
+        match l1, l2, l3, l4 with
+        | (x1 :: xs1), (x2 :: xs2), (x3 :: xs3), (x4 :: xs4) =>
+            루프 xs1 xs2 xs3 xs4 (f x1 x2 x3 x4 :: acc)
+        | _ => acc |> listm.rev
+    루프 l1 l2 l3 l4 []
+
+test map4_ =
+    inl xs = [ 1i32; 2; 3 ] |> dyn
+    map4_ (fun a b c d => a + b + c + d) xs xs xs xs
+    |> _assert_eq [ 4i32; 8; 12 ]
 
 /// ### init_series
 inl init_series start end inc =
@@ -196,6 +207,33 @@ test try_find =
     listm.init 10i32 id
     |> try_find ((=) 5i32)
     |> _assert_eq (Some 5i32)
+/// ### try_find'
+inl try_find' fn list =
+    inl rec body fn = function
+        | [] => None
+        | x :: xs =>
+            if fn x
+            then Some x
+            else 루프 xs
+    and inl 루프 list =
+        if var_is list |> not
+        then body fn list
+        else
+            inl fn = join fn
+            inl list = dyn list
+            join body fn list
+    루프 list
+
+///> rust
+///> gleam
+test try_find_prime_searches_a_runtime_list_at_run_time =
+    inl ~l = [ 3i32; 8; 5; 10 ]
+    (try_find' (fun x => x > 4i32) l, try_find' (fun x => x > 40i32) l) |> _assert_eq (Some 8i32, None)
+
+///> rust
+///> gleam
+test try_find_prime_folds_a_static_list =
+    try_find' (fun x => x % 2i32 = 0i32) [ 1i32; 3; 4; 6 ] |> _assert_eq (Some 4i32)
 
 inl find x =
     try_find x >> optionm.value
@@ -419,7 +457,10 @@ inl cons' forall t. (head : t) (tail : list' t) : list' t =
         TypeScript = fun () => $'[!head, ...!tail]' : list' t
         Zig = fun () =>
             inl len : i32 = $'\@as(i32, \@intCast(!tail.len))'
-            inl r : array t = arraym.init (len + 1i32) fun i => if i = 0i32 then head else $'!tail[\@intCast(!i - 1)]' : t
+            inl r : array t = arraym.init (len + 1i32) fun i =>
+                if i = 0i32
+                then head
+                else $'!tail[\@intCast(!i - 1)]' : t
             inl (array r) = r
             $'!r ' : list' t
     }
@@ -455,7 +496,8 @@ inl rev' forall t. (items : list' t) : list' t =
         Python = fun () => $'list(reversed(!items))' : list' t
         Rust = fun () => $'Rc::new({ let mut v = (!items).as_ref().clone(); v.reverse(); v })' : list' t
         TypeScript = fun () => $'[...!items].reverse()' : list' t
-        Zig = fun () => $'blk: { const r = spiral_gpa.dupe(`t, !items) catch \@panic("out of memory"); std.mem.reverse(`t, r); break :blk r; }' : list' t
+        Zig = fun () => $'blk: { const r = spiral_gpa.dupe(`t, !items) catch \@panic("out of memory"); \
+            std.mem.reverse(`t, r); break :blk r; }' : list' t
     }
 
 /// ### fold'
@@ -746,3 +788,28 @@ inl pairwise forall t. (list : list t) : list (t * t) =
         | (x1 : t) :: x2 :: xs => (x1, x2) :: 루프 (x2 :: xs)
         | _ => []
     루프 list
+
+/// ### take_
+inl take_ forall t. (n : i32) (l : list t) : list t =
+    let rec taken (n : i32) (l : list t) : list t =
+        match l with
+        | Cons (x, xs) when n > 0i32 => Cons (x, taken (n - 1i32) xs)
+        | _ => Nil
+    taken n l
+
+///> rust
+///> gleam
+test take_stops_at_the_count_or_the_end =
+    inl ~n = 2i32
+    (
+        (listm.length (take_ n [ 1i32; 2; 3 ]) : i32),
+        (listm.length (take_ 5i32 [ 1i32 ]) : i32),
+        (listm.length (take_ (-1i32) [ 1i32 ]) : i32)
+    )
+    |> _assert_eq (2i32, 1i32, 0i32)
+
+///> rust
+///> gleam
+test collect_keeps_order =
+    inl ~l = [ 1i32; 2; 3 ]
+    collect (fun x => [ x; x * 10i32 ]) l |> _assert_eq [ 1i32; 10; 2; 20; 3; 30 ]

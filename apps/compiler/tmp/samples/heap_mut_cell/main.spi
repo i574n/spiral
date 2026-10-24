@@ -2,14 +2,14 @@ inl main () : i32 =
     inl ~n = 3i32
     inl ~word = "no"
     inl pair = n, word
-    inl cell : mut {value : i32 * string} = !!!!LayoutToHeapMutable({value = pair})
-    inl outer = !!!!LayoutToHeap({value = cell})
+    inl cell : mut { value : i32 * string } = !!!!LayoutToHeapMutable({ value = pair })
+    inl outer = !!!!LayoutToHeap({ value = cell })
     inl opened = !!!!LayoutIndex(outer)
-    inl held : mut {value : i32 * string} = opened.value
+    inl held : mut { value : i32 * string } = opened.value
     inl ~m = 7i32
     inl ~next = "hi"
     inl replaced = m, next
-    held <- {value = replaced}
+    held <- { value = replaced }
     inl cell_opened = !!!!LayoutIndex(held)
     inl ~(left, right) = cell_opened.value
     if left =. 7i32 && !!!!EQ(right, "hi") then 0i32 else 1i32

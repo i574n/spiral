@@ -128,60 +128,43 @@ fun sp_utf8_scalar_at_byte_offset_0(p0: String, p1: Int): Int {
                                 v32 = (v1 + 1)
                                 var v33: Int = 0
                                 v33 = sp_runtime_byte_1(v0, v32)
-                                var v34: Int = 0
-                                v34 = (v33 and 255)
-                                var v35: Int = 0
-                                v35 = sp_runtime_byte_1(v0, v29)
-                                var v36: Int = 0
-                                v36 = (v35 and 255)
-                                var v37: Boolean = false
-                                v37 = (v34 < 128)
+                                val v34: Int = (v33 and 255)
+                                val v35: Int = sp_runtime_byte_1(v0, v29)
+                                val v36: Int = (v35 and 255)
+                                val v37: Boolean = (v34 < 128)
                                 var v39: Boolean = false
                                 if (v37) {
                                     v39 = false
                                 } else {
-                                    var v38: Boolean = false
-                                    v38 = (v34 < 192)
+                                    val v38: Boolean = (v34 < 192)
                                     v39 = v38
                                 }
                                 if (v39) {
-                                    var v40: Boolean = false
-                                    v40 = (v36 < 128)
+                                    val v40: Boolean = (v36 < 128)
                                     var v42: Boolean = false
                                     if (v40) {
                                         v42 = false
                                     } else {
-                                        var v41: Boolean = false
-                                        v41 = (v36 < 192)
+                                        val v41: Boolean = (v36 < 192)
                                         v42 = v41
                                     }
                                     if (v42) {
-                                        var v43: Int = 0
-                                        v43 = (v8 - 224)
-                                        var v44: Int = 0
-                                        v44 = (v43 * 4096)
-                                        var v45: Int = 0
-                                        v45 = (v34 - 128)
-                                        var v46: Int = 0
-                                        v46 = (v45 * 64)
-                                        var v47: Int = 0
-                                        v47 = (v44 + v46)
-                                        var v48: Int = 0
-                                        v48 = (v36 - 128)
-                                        var v49: Int = 0
-                                        v49 = (v47 + v48)
-                                        var v50: Boolean = false
-                                        v50 = (v49 < 2048)
+                                        val v43: Int = (v8 - 224)
+                                        val v44: Int = (v43 * 4096)
+                                        val v45: Int = (v34 - 128)
+                                        val v46: Int = (v45 * 64)
+                                        val v47: Int = (v44 + v46)
+                                        val v48: Int = (v36 - 128)
+                                        val v49: Int = (v47 + v48)
+                                        val v50: Boolean = (v49 < 2048)
                                         if (v50) {
                                             System.err.println("UTF-8 sequence is overlong.")
                                             System.exit(1)
                                             throw RuntimeException()
                                         } else {
-                                            var v52: Boolean = false
-                                            v52 = (v49 >= 55296)
+                                            val v52: Boolean = (v49 >= 55296)
                                             if (v52) {
-                                                var v53: Boolean = false
-                                                v53 = (v49 <= 57343)
+                                                val v53: Boolean = (v49 <= 57343)
                                                 if (v53) {
                                                     System.err.println("UTF-8 sequence encodes a surrogate.")
                                                     System.exit(1)
@@ -205,8 +188,7 @@ fun sp_utf8_scalar_at_byte_offset_0(p0: String, p1: Int): Int {
                                 }
                             }
                         } else {
-                            var v63: Boolean = false
-                            v63 = (v8 < 245)
+                            val v63: Boolean = (v8 < 245)
                             if (v63) {
                                 var v64: Int = 0
                                 v64 = (v1 + 3)
@@ -261,40 +243,27 @@ fun sp_utf8_scalar_at_byte_offset_0(p0: String, p1: Int): Int {
                                             if (v81) {
                                                 v83 = false
                                             } else {
-                                                var v82: Boolean = false
-                                                v82 = (v74 < 192)
+                                                val v82: Boolean = (v74 < 192)
                                                 v83 = v82
                                             }
                                             if (v83) {
-                                                var v84: Int = 0
-                                                v84 = (v8 - 240)
-                                                var v85: Int = 0
-                                                v85 = (v84 * 262144)
-                                                var v86: Int = 0
-                                                v86 = (v69 - 128)
-                                                var v87: Int = 0
-                                                v87 = (v86 * 4096)
-                                                var v88: Int = 0
-                                                v88 = (v85 + v87)
-                                                var v89: Int = 0
-                                                v89 = (v72 - 128)
-                                                var v90: Int = 0
-                                                v90 = (v89 * 64)
-                                                var v91: Int = 0
-                                                v91 = (v88 + v90)
-                                                var v92: Int = 0
-                                                v92 = (v74 - 128)
-                                                var v93: Int = 0
-                                                v93 = (v91 + v92)
-                                                var v94: Boolean = false
-                                                v94 = (v93 < 65536)
+                                                val v84: Int = (v8 - 240)
+                                                val v85: Int = (v84 * 262144)
+                                                val v86: Int = (v69 - 128)
+                                                val v87: Int = (v86 * 4096)
+                                                val v88: Int = (v85 + v87)
+                                                val v89: Int = (v72 - 128)
+                                                val v90: Int = (v89 * 64)
+                                                val v91: Int = (v88 + v90)
+                                                val v92: Int = (v74 - 128)
+                                                val v93: Int = (v91 + v92)
+                                                val v94: Boolean = (v93 < 65536)
                                                 if (v94) {
                                                     System.err.println("UTF-8 sequence is overlong.")
                                                     System.exit(1)
                                                     throw RuntimeException()
                                                 } else {
-                                                    var v96: Boolean = false
-                                                    v96 = (v93 > 1114111)
+                                                    val v96: Boolean = (v93 > 1114111)
                                                     if (v96) {
                                                         System.err.println("UTF-8 scalar is above U+10FFFF.")
                                                         System.exit(1)
@@ -332,20 +301,16 @@ fun sp_utf8_scalar_at_byte_offset_0(p0: String, p1: Int): Int {
     }
 }
 fun spiral_main(): Int {
-    var v0: String = ""
-    v0 = "é"
-    var v1: Int = 0
-    v1 = 0
+    val v0: String = "é"
+    val v1: Int = 0
     var v2: Int = 0
     v2 = sp_utf8_scalar_at_byte_offset_0(v0, v1)
     var v3: String = ""
     v3 = "õ"
-    var v4: Int = 0
-    v4 = 0
+    val v4: Int = 0
     var v5: Int = 0
     v5 = sp_utf8_scalar_at_byte_offset_0(v3, v4)
-    var v6: String = ""
-    v6 = "ç"
+    val v6: String = "ç"
     var v7: Int = 0
     v7 = 0
     var v8: Int = 0
@@ -354,16 +319,14 @@ fun spiral_main(): Int {
     v9 = "́"
     var v10: Int = 0
     v10 = 0
-    var v11: Int = 0
-    v11 = sp_utf8_scalar_at_byte_offset_0(v9, v10)
+    val v11: Int = sp_utf8_scalar_at_byte_offset_0(v9, v10)
     var v12: String = ""
     v12 = "̃"
     var v13: Int = 0
     v13 = 0
     var v14: Int = 0
     v14 = sp_utf8_scalar_at_byte_offset_0(v12, v13)
-    var v15: String = ""
-    v15 = "̧"
+    val v15: String = "̧"
     var v16: Int = 0
     v16 = 0
     var v17: Int = 0
@@ -412,20 +375,17 @@ fun spiral_main(): Int {
                                 v64 = 79
                                 v65 = 769
                             } else {
-                                var v25: Boolean = false
-                                v25 = (v2 == 213)
+                                val v25: Boolean = (v2 == 213)
                                 if (v25) {
                                     v64 = 79
                                     v65 = 771
                                 } else {
-                                    var v26: Boolean = false
-                                    v26 = (v2 == 224)
+                                    val v26: Boolean = (v2 == 224)
                                     if (v26) {
                                         v64 = 97
                                         v65 = 768
                                     } else {
-                                        var v27: Boolean = false
-                                        v27 = (v2 == 225)
+                                        val v27: Boolean = (v2 == 225)
                                         if (v27) {
                                             v64 = 97
                                             v65 = 769
@@ -448,8 +408,7 @@ fun spiral_main(): Int {
                                                         v64 = 99
                                                         v65 = 807
                                                     } else {
-                                                        var v31: Boolean = false
-                                                        v31 = (v2 == 233)
+                                                        val v31: Boolean = (v2 == 233)
                                                         if (v31) {
                                                             v64 = 101
                                                             v65 = 769
@@ -484,8 +443,7 @@ fun spiral_main(): Int {
             }
         }
     }
-    var v66: Boolean = false
-    v66 = (v5 == 192)
+    val v66: Boolean = (v5 == 192)
     var v112: Int = 0
     var v113: Int = 0
     if (v66) {
@@ -600,100 +558,84 @@ fun spiral_main(): Int {
             }
         }
     }
-    var v114: Boolean = false
-    v114 = (v8 == 192)
+    val v114: Boolean = (v8 == 192)
     var v160: Int = 0
     var v161: Int = 0
     if (v114) {
         v160 = 65
         v161 = 768
     } else {
-        var v115: Boolean = false
-        v115 = (v8 == 193)
+        val v115: Boolean = (v8 == 193)
         if (v115) {
             v160 = 65
             v161 = 769
         } else {
-            var v116: Boolean = false
-            v116 = (v8 == 195)
+            val v116: Boolean = (v8 == 195)
             if (v116) {
                 v160 = 65
                 v161 = 771
             } else {
-                var v117: Boolean = false
-                v117 = (v8 == 196)
+                val v117: Boolean = (v8 == 196)
                 if (v117) {
                     v160 = 65
                     v161 = 776
                 } else {
-                    var v118: Boolean = false
-                    v118 = (v8 == 199)
+                    val v118: Boolean = (v8 == 199)
                     if (v118) {
                         v160 = 67
                         v161 = 807
                     } else {
-                        var v119: Boolean = false
-                        v119 = (v8 == 201)
+                        val v119: Boolean = (v8 == 201)
                         if (v119) {
                             v160 = 69
                             v161 = 769
                         } else {
-                            var v120: Boolean = false
-                            v120 = (v8 == 211)
+                            val v120: Boolean = (v8 == 211)
                             if (v120) {
                                 v160 = 79
                                 v161 = 769
                             } else {
-                                var v121: Boolean = false
-                                v121 = (v8 == 213)
+                                val v121: Boolean = (v8 == 213)
                                 if (v121) {
                                     v160 = 79
                                     v161 = 771
                                 } else {
-                                    var v122: Boolean = false
-                                    v122 = (v8 == 224)
+                                    val v122: Boolean = (v8 == 224)
                                     if (v122) {
                                         v160 = 97
                                         v161 = 768
                                     } else {
-                                        var v123: Boolean = false
-                                        v123 = (v8 == 225)
+                                        val v123: Boolean = (v8 == 225)
                                         if (v123) {
                                             v160 = 97
                                             v161 = 769
                                         } else {
-                                            var v124: Boolean = false
-                                            v124 = (v8 == 227)
+                                            val v124: Boolean = (v8 == 227)
                                             if (v124) {
                                                 v160 = 97
                                                 v161 = 771
                                             } else {
-                                                var v125: Boolean = false
-                                                v125 = (v8 == 228)
+                                                val v125: Boolean = (v8 == 228)
                                                 if (v125) {
                                                     v160 = 97
                                                     v161 = 776
                                                 } else {
-                                                    var v126: Boolean = false
-                                                    v126 = (v8 == 231)
+                                                    val v126: Boolean = (v8 == 231)
                                                     if (v126) {
                                                         v160 = 99
                                                         v161 = 807
                                                     } else {
-                                                        var v127: Boolean = false
-                                                        v127 = (v8 == 233)
+                                                        val v127: Boolean = (v8 == 233)
                                                         if (v127) {
                                                             v160 = 101
                                                             v161 = 769
                                                         } else {
-                                                            var v128: Boolean = false
-                                                            v128 = (v8 == 243)
+                                                            val v128: Boolean = (v8 == 243)
                                                             if (v128) {
                                                                 v160 = 111
                                                                 v161 = 769
                                                             } else {
-                                                                var v129: Boolean = false
-                                                                v129 = (v8 == 245)
+                                                                val v129: Boolean = (v8 == 245)
                                                                 if (v129) {
                                                                     v160 = 111
                                                                     v161 = 771
@@ -716,16 +658,14 @@ fun spiral_main(): Int {
             }
         }
     }
-    var v162: Boolean = false
-    v162 = (v11 == 769)
+    val v162: Boolean = (v11 == 769)
     var v163: Int = 0
     if (v162) {
         v163 = 233
     } else {
         v163 = -1
     }
-    var v164: Boolean = false
-    v164 = (v163 < 0)
+    val v164: Boolean = (v163 < 0)
     var v165: Int = 0
     var v166: Int = 0
     if (v164) {
@@ -735,22 +675,19 @@ fun spiral_main(): Int {
         v165 = v163
         v166 = -1
     }
-    var v167: Boolean = false
-    v167 = (v14 == 769)
+    val v167: Boolean = (v14 == 769)
     var v170: Int = 0
     if (v167) {
         v170 = 243
     } else {
-        var v168: Boolean = false
-        v168 = (v14 == 771)
+        val v168: Boolean = (v14 == 771)
         if (v168) {
             v170 = 245
         } else {
             v170 = -1
         }
     }
-    var v171: Boolean = false
-    v171 = (v170 < 0)
+    val v171: Boolean = (v170 < 0)
     var v172: Int = 0
     var v173: Int = 0
     if (v171) {
@@ -760,16 +697,14 @@ fun spiral_main(): Int {
         v172 = v170
         v173 = -1
     }
-    var v174: Boolean = false
-    v174 = (v17 == 807)
+    val v174: Boolean = (v17 == 807)
     var v175: Int = 0
     if (v174) {
         v175 = 231
     } else {
         v175 = -1
     }
-    var v176: Boolean = false
-    v176 = (v175 < 0)
+    val v176: Boolean = (v175 < 0)
     var v177: Int = 0
     var v178: Int = 0
     if (v176) {
@@ -779,67 +714,55 @@ fun spiral_main(): Int {
         v177 = v175
         v178 = -1
     }
-    var v179: Boolean = false
-    v179 = (v64 == 101)
+    val v179: Boolean = (v64 == 101)
     var v181: Boolean = false
     if (v179) {
-        var v180: Boolean = false
-        v180 = (v65 == v11)
+        val v180: Boolean = (v65 == v11)
         v181 = v180
     } else {
         v181 = false
     }
     if (v181) {
-        var v182: Boolean = false
-        v182 = (v112 == 111)
+        val v182: Boolean = (v112 == 111)
         var v184: Boolean = false
         if (v182) {
-            var v183: Boolean = false
-            v183 = (v113 == v14)
+            val v183: Boolean = (v113 == v14)
             v184 = v183
         } else {
             v184 = false
         }
         if (v184) {
-            var v185: Boolean = false
-            v185 = (v160 == 99)
+            val v185: Boolean = (v160 == 99)
             var v187: Boolean = false
             if (v185) {
-                var v186: Boolean = false
-                v186 = (v161 == v17)
+                val v186: Boolean = (v161 == v17)
                 v187 = v186
             } else {
                 v187 = false
             }
             if (v187) {
-                var v188: Boolean = false
-                v188 = (v165 == v2)
+                val v188: Boolean = (v165 == v2)
                 var v190: Boolean = false
                 if (v188) {
-                    var v189: Boolean = false
-                    v189 = (v166 == -1)
+                    val v189: Boolean = (v166 == -1)
                     v190 = v189
                 } else {
                     v190 = false
                 }
                 if (v190) {
-                    var v191: Boolean = false
-                    v191 = (v172 == v5)
+                    val v191: Boolean = (v172 == v5)
                     var v193: Boolean = false
                     if (v191) {
-                        var v192: Boolean = false
-                        v192 = (v173 == -1)
+                        val v192: Boolean = (v173 == -1)
                         v193 = v192
                     } else {
                         v193 = false
                     }
                     if (v193) {
-                        var v194: Boolean = false
-                        v194 = (v177 == v8)
+                        val v194: Boolean = (v177 == v8)
                         var v196: Boolean = false
                         if (v194) {
-                            var v195: Boolean = false
-                            v195 = (v178 == -1)
+                            val v195: Boolean = (v178 == -1)
                             v196 = v195
                         } else {
                             v196 = false

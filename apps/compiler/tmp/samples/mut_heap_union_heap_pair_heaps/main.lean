@@ -120,67 +120,43 @@ partial def score_0 (p0 : U0) : IO Int32 := do
     | U0.None =>
         return (1 : Int32)
 partial def spiralMain : IO Int32 := do
-    let mut v0 : Int32 := default
-    let mut v1 : String := default
-    let mut v2 : H0 := default
-    let mut v3 : Int32 := default
-    let mut v4 : String := default
-    let mut v5 : H0 := default
-    let mut v6 : H1 := default
-    let mut v7 : Int32 := default
-    let mut v8 : H2 := default
-    let mut v9 : Bool := default
     let mut v12 : U0 := default
-    let mut v13 : H3 := default
     let mut v14 : (IO.Ref M4) ← IO.mkRef default
-    let mut v15 : Int32 := default
-    let mut v16 : String := default
-    let mut v17 : H0 := default
-    let mut v18 : Int32 := default
-    let mut v19 : String := default
-    let mut v20 : H0 := default
-    let mut v21 : H1 := default
-    let mut v22 : Int32 := default
-    let mut v23 : H2 := default
-    let mut v24 : Bool := default
     let mut v27 : U0 := default
-    let mut v28 : H3 := default
-    let mut v29 : H3 := default
-    let mut v30 : U0 := default
-    v0 := (1 : Int32)
-    v1 := "no"
-    v2 := (H0.mk v0 v1)
-    v3 := (2 : Int32)
-    v4 := "zz"
-    v5 := (H0.mk v3 v4)
-    v6 := (H1.mk v2 v5)
-    v7 := (3 : Int32)
-    v8 := (H2.mk v6 v7)
-    v9 := true
+    let v0 : Int32 := (1 : Int32)
+    let v1 : String := "no"
+    let v2 : H0 := (H0.mk v0 v1)
+    let v3 : Int32 := (2 : Int32)
+    let v4 : String := "zz"
+    let v5 : H0 := (H0.mk v3 v4)
+    let v6 : H1 := (H1.mk v2 v5)
+    let v7 : Int32 := (3 : Int32)
+    let v8 : H2 := (H2.mk v6 v7)
+    let v9 : Bool := true
     if v9 then
         v12 := (U0.Held v8)
     else
         v12 := U0.None
-    v13 := (H3.mk v12)
+    let v13 : H3 := (H3.mk v12)
     v14 := (← IO.mkRef (M4.mk v13))
-    v15 := (7 : Int32)
-    v16 := "hi"
-    v17 := (H0.mk v15 v16)
-    v18 := (4 : Int32)
-    v19 := "yo"
-    v20 := (H0.mk v18 v19)
-    v21 := (H1.mk v17 v20)
-    v22 := (2 : Int32)
-    v23 := (H2.mk v21 v22)
-    v24 := true
+    let v15 : Int32 := (7 : Int32)
+    let v16 : String := "hi"
+    let v17 : H0 := (H0.mk v15 v16)
+    let v18 : Int32 := (4 : Int32)
+    let v19 : String := "yo"
+    let v20 : H0 := (H0.mk v18 v19)
+    let v21 : H1 := (H1.mk v17 v20)
+    let v22 : Int32 := (2 : Int32)
+    let v23 : H2 := (H2.mk v21 v22)
+    let v24 : Bool := true
     if v24 then
         v27 := (U0.Held v23)
     else
         v27 := U0.None
-    v28 := (H3.mk v27)
+    let v28 : H3 := (H3.mk v27)
     v14.modify (fun r => { r with l0 := v28 })
-    v29 := (← v14.get).l0
-    v30 := v29.l0
+    let v29 : H3 := (← v14.get).l0
+    let v30 : U0 := v29.l0
     return (← score_0 v30)
 end
 def main : IO UInt32 := do

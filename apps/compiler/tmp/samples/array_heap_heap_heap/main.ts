@@ -10,40 +10,40 @@ type Heap0 = { readonly l0: number, readonly l1: string };
 type Heap1 = { readonly l0: Heap0, readonly l1: number };
 type Heap2 = { readonly l0: Heap1, readonly l1: number };
 export function main(): number {
-    let v0: number = 7;
-    let v1: string = "hi";
-    let v2: Heap0 = { l0: v0, l1: v1 };
-    let v3: number = 1;
-    let v4: Heap1 = { l0: v2, l1: v3 };
-    let v5: number = 2;
-    let v6: Heap2 = { l0: v4, l1: v5 };
-    let v7: Array<Heap2> = new Array<Heap2>(1).fill(undefined as unknown as Heap2);
+    const v0: number = 7;
+    const v1: string = "hi";
+    const v2: Heap0 = { l0: v0, l1: v1 };
+    const v3: number = 1;
+    const v4: Heap1 = { l0: v2, l1: v3 };
+    const v5: number = 2;
+    const v6: Heap2 = { l0: v4, l1: v5 };
+    const v7: Array<Heap2> = new Array<Heap2>(1).fill(undefined as unknown as Heap2);
     spiral_array_set(v7, 0, v6);
-    let v8: Heap2 = spiral_array_index(v7, 0);
-    let v9: Heap1 = v8.l0;
-    let v10: number = v8.l1;
-    let v11: Heap0 = v9.l0;
-    let v12: number = v9.l1;
-    let v13: number = v11.l0;
-    let v14: string = v11.l1;
-    let v15: boolean = v13 === 7;
+    const v8: Heap2 = spiral_array_index(v7, 0);
+    const v9: Heap1 = v8.l0;
+    const v10: number = v8.l1;
+    const v11: Heap0 = v9.l0;
+    const v12: number = v9.l1;
+    const v13: number = v11.l0;
+    const v14: string = v11.l1;
+    const v15: boolean = v13 === 7;
     let v17: boolean;
     if (v15) {
-        let v16: boolean = v14 === "hi";
+        const v16: boolean = v14 === "hi";
         v17 = v16;
     } else {
         v17 = false;
     }
     let v19: boolean;
     if (v17) {
-        let v18: boolean = v12 === 1;
+        const v18: boolean = v12 === 1;
         v19 = v18;
     } else {
         v19 = false;
     }
     let v21: boolean;
     if (v19) {
-        let v20: boolean = v10 === 2;
+        const v20: boolean = v10 === 2;
         v21 = v20;
     } else {
         v21 = false;

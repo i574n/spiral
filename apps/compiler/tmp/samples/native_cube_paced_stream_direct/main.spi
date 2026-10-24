@@ -22,10 +22,17 @@ inl get_distance_from_cam () = 100f64
 inl get_k1 () = 40f64
 
 inl while' (cond : () -> bool) (body : () -> ()) : () =
-    !!!!While((join cond()),(body()))
+    !!!!While((join cond ()), (body ()))
 
 inl set' forall t. (a : t) ~(b : t) : () =
-    !!!!BackendSwitch({ Fsharp = fun () => $"!a <- !b" : (); C = fun () => $"!a = !b" : (); Zig = fun () => $"!a = !b" : (); Lean = fun () => $"!a := !b" : (); Rust = fun () => $"!a = !b" : (); Delphi = fun () => $"!a := !b" : () })
+    !!!!BackendSwitch({
+        Fsharp = fun () => $"!a <- !b" : ()
+        C = fun () => $"!a = !b" : ()
+        Zig = fun () => $"!a = !b" : ()
+        Lean = fun () => $"!a := !b" : ()
+        Rust = fun () => $"!a = !b" : ()
+        Delphi = fun () => $"!a := !b" : ()
+    })
 
 inl sin64 (x : f64) : f64 = !!!!Sin(x)
 inl cos64 (x : f64) : f64 = !!!!Cos(x)

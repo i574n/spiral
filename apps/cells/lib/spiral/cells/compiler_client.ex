@@ -54,6 +54,53 @@ defmodule Spiral.Cells.CompilerClient do
     end)
   end
 
+  @spec pool_stats() :: map() | nil
+  def pool_stats do
+    rows = Enum.flat_map(pool_ports(), &pool_row/1)
+
+    if rows == [] do
+      nil
+    else
+      %{
+        served: rows |> Enum.map(& &1.served) |> Enum.sum(),
+        refused_growth: rows |> Enum.map(& &1.refused_growth) |> Enum.sum(),
+        peak_workers: rows |> Enum.map(& &1.peak_workers) |> Enum.max(),
+        last_free_mb: rows |> Enum.map(& &1.last_free_mb) |> Enum.reject(&is_nil/1) |> Enum.min(fn -> nil end)
+      }
+    end
+  end
+
+  defp pool_row(port) do
+    case :gen_tcp.connect({127, 0, 0, 1}, port, socket_opts(), 300) do
+      {:ok, sock} ->
+        :gen_tcp.send(sock, "pool\n")
+
+        row =
+          with {:ok, "pool\t" <> rest} <- recv_line(sock, 1_000),
+               [served, refused, peak, free] <- String.split(String.trim(rest), "\t"),
+               {served, ""} <- Integer.parse(served),
+               {refused, ""} <- Integer.parse(refused),
+               {peak, ""} <- Integer.parse(peak) do
+            [%{served: served, refused_growth: refused, peak_workers: peak, last_free_mb: free_reading(free)}]
+          else
+            _ -> []
+          end
+
+        :gen_tcp.close(sock)
+        row
+
+      {:error, _} ->
+        []
+    end
+  end
+
+  defp free_reading(text) do
+    case Integer.parse(text) do
+      {mb, ""} -> mb
+      _ -> nil
+    end
+  end
+
   @spec pool_ports() :: [non_neg_integer()]
   def pool_ports do
     size =
@@ -65,19 +112,7 @@ defmodule Spiral.Cells.CompilerClient do
     Enum.map(0..(size - 1), &(base_port() + &1))
   end
 
-  defp busy_table do
-    case :ets.whereis(:spiral_cells_compiler_busy) do
-      :undefined ->
-        try do
-          :ets.new(:spiral_cells_compiler_busy, [:named_table, :public, :set, write_concurrency: true])
-        rescue
-          ArgumentError -> :spiral_cells_compiler_busy
-        end
-
-      table ->
-        table
-    end
-  end
+  defp busy_table, do: Spiral.Cells.Tables.ensure(:spiral_cells_compiler_busy, [:set, write_concurrency: true])
 
   defp acquire_port do
     table = busy_table()

@@ -22,24 +22,18 @@ typedef struct {
 static inline void ClosureDecrefBody0(Closure0 * x){
     (void)x;
 }
-void ClosureDecref0(Fun0 * self){
+static void ClosureDecref0(Fun0 * self){
     Closure0 * x = (Closure0 *) self;
     if (x != NULL && --(x->base.refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
-int32_t add_c0(Fun0 * self, int32_t v1){
+static int32_t add_c0(Fun0 * self, int32_t v1){
     Closure0 * x = (Closure0 *) self;
     int32_t v0 = x->v0;
-    
     ClosureDecref0(self);
-    
-    
-    int32_t v2;
-    v2 = v1 + v0;
-    
-    
+    int32_t v2 = v1 + v0;
     return v2;
 }
-Fun0 * ClosureCreate0(int32_t v0){
+static Fun0 * ClosureCreate0(int32_t v0){
     Closure0 * x = malloc(sizeof(Closure0));
     x->base.refc = 1;
     x->base.decref_fptr = ClosureDecref0;
@@ -50,57 +44,33 @@ Fun0 * ClosureCreate0(int32_t v0){
 static inline void HeapDecrefBody0(Heap0 * x){
     (x->v0)->decref_fptr(x->v0);
 }
-void HeapDecref0(Heap0 * x){
+static void HeapDecref0(Heap0 * x){
     if (x != NULL && --(x->refc) == 0) { HeapDecrefBody0(x); free(x); }
 }
-Heap0 * HeapCreate0(Fun0 * v0, int32_t v1){
+static Heap0 * HeapCreate0(Fun0 * v0, int32_t v1){
     Heap0 * x = malloc(sizeof(Heap0));
     x->refc = 1;
     x->v0 = v0; x->v1 = v1;
     return x;
 }
 int32_t main(){
-    
-    
-    int32_t v0;
-    v0 = 3l;
-    
-    
-    int32_t v1;
-    v1 = 4l;
-    
-    
-    Fun0 * v2;
-    v2 = ClosureCreate0(v0);
+    int32_t v0 = 3l;
+    int32_t v1 = 4l;
+    Fun0 * v2 = ClosureCreate0(v0);
     (v2)->refc++;
-    
-    Heap0 * v3;
-    v3 = HeapCreate0(v2, v1);
-    
+    Heap0 * v3 = HeapCreate0(v2, v1);
     (v2)->decref_fptr(v2);
     Fun0 * v4; int32_t v5;
     v4 = v3->v0; v5 = v3->v1;
     (v4)->refc += 2;
     HeapDecref0(v3);
-    int32_t v6;
-    v6 = v4->fptr(v4, 0l);
-    
+    int32_t v6 = v4->fptr(v4, 0l);
     (v4)->decref_fptr(v4);
-    int32_t v7;
-    v7 = v6 + v5;
-    
-    
-    bool v8;
-    v8 = v7 == 7l;
-    
-    
+    int32_t v7 = v6 + v5;
+    bool v8 = v7 == 7l;
     if (v8){
-        
-        
         return 0l;
     } else {
-        
-        
         return 1l;
     }
 }

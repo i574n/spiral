@@ -129,60 +129,43 @@ func sp_utf8_scalar_at_byte_offset_0(_ p0: String, _ p1: Int32) -> Int32 {
                                 v32 = (v1 &+ 1)
                                 var v33: Int32 = 0
                                 v33 = sp_runtime_byte_1(v0, v32)
-                                var v34: Int32 = 0
-                                v34 = (v33 & 255)
-                                var v35: Int32 = 0
-                                v35 = sp_runtime_byte_1(v0, v29)
-                                var v36: Int32 = 0
-                                v36 = (v35 & 255)
-                                var v37: Bool = false
-                                v37 = (v34 < 128)
+                                let v34: Int32 = (v33 & 255)
+                                let v35: Int32 = sp_runtime_byte_1(v0, v29)
+                                let v36: Int32 = (v35 & 255)
+                                let v37: Bool = (v34 < 128)
                                 var v39: Bool = false
                                 if (v37) {
                                     v39 = false
                                 } else {
-                                    var v38: Bool = false
-                                    v38 = (v34 < 192)
+                                    let v38: Bool = (v34 < 192)
                                     v39 = v38
                                 }
                                 if (v39) {
-                                    var v40: Bool = false
-                                    v40 = (v36 < 128)
+                                    let v40: Bool = (v36 < 128)
                                     var v42: Bool = false
                                     if (v40) {
                                         v42 = false
                                     } else {
-                                        var v41: Bool = false
-                                        v41 = (v36 < 192)
+                                        let v41: Bool = (v36 < 192)
                                         v42 = v41
                                     }
                                     if (v42) {
-                                        var v43: Int32 = 0
-                                        v43 = (v8 &- 224)
-                                        var v44: Int32 = 0
-                                        v44 = (v43 &* 4096)
-                                        var v45: Int32 = 0
-                                        v45 = (v34 &- 128)
-                                        var v46: Int32 = 0
-                                        v46 = (v45 &* 64)
-                                        var v47: Int32 = 0
-                                        v47 = (v44 &+ v46)
-                                        var v48: Int32 = 0
-                                        v48 = (v36 &- 128)
-                                        var v49: Int32 = 0
-                                        v49 = (v47 &+ v48)
-                                        var v50: Bool = false
-                                        v50 = (v49 < 2048)
+                                        let v43: Int32 = (v8 &- 224)
+                                        let v44: Int32 = (v43 &* 4096)
+                                        let v45: Int32 = (v34 &- 128)
+                                        let v46: Int32 = (v45 &* 64)
+                                        let v47: Int32 = (v44 &+ v46)
+                                        let v48: Int32 = (v36 &- 128)
+                                        let v49: Int32 = (v47 &+ v48)
+                                        let v50: Bool = (v49 < 2048)
                                         if (v50) {
                                             "UTF-8 sequence is overlong.".withCString { ptr in _ = fputs(ptr, stderr) }
                                             fputs("\n", stderr)
                                             exit(1)
                                         } else {
-                                            var v52: Bool = false
-                                            v52 = (v49 >= 55296)
+                                            let v52: Bool = (v49 >= 55296)
                                             if (v52) {
-                                                var v53: Bool = false
-                                                v53 = (v49 <= 57343)
+                                                let v53: Bool = (v49 <= 57343)
                                                 if (v53) {
                                                     "UTF-8 sequence encodes a surrogate.".withCString { ptr in _ = fputs(ptr, stderr) }
                                                     fputs("\n", stderr)
@@ -206,8 +189,7 @@ func sp_utf8_scalar_at_byte_offset_0(_ p0: String, _ p1: Int32) -> Int32 {
                                 }
                             }
                         } else {
-                            var v63: Bool = false
-                            v63 = (v8 < 245)
+                            let v63: Bool = (v8 < 245)
                             if (v63) {
                                 var v64: Int32 = 0
                                 v64 = (v1 &+ 3)
@@ -262,40 +244,27 @@ func sp_utf8_scalar_at_byte_offset_0(_ p0: String, _ p1: Int32) -> Int32 {
                                             if (v81) {
                                                 v83 = false
                                             } else {
-                                                var v82: Bool = false
-                                                v82 = (v74 < 192)
+                                                let v82: Bool = (v74 < 192)
                                                 v83 = v82
                                             }
                                             if (v83) {
-                                                var v84: Int32 = 0
-                                                v84 = (v8 &- 240)
-                                                var v85: Int32 = 0
-                                                v85 = (v84 &* 262144)
-                                                var v86: Int32 = 0
-                                                v86 = (v69 &- 128)
-                                                var v87: Int32 = 0
-                                                v87 = (v86 &* 4096)
-                                                var v88: Int32 = 0
-                                                v88 = (v85 &+ v87)
-                                                var v89: Int32 = 0
-                                                v89 = (v72 &- 128)
-                                                var v90: Int32 = 0
-                                                v90 = (v89 &* 64)
-                                                var v91: Int32 = 0
-                                                v91 = (v88 &+ v90)
-                                                var v92: Int32 = 0
-                                                v92 = (v74 &- 128)
-                                                var v93: Int32 = 0
-                                                v93 = (v91 &+ v92)
-                                                var v94: Bool = false
-                                                v94 = (v93 < 65536)
+                                                let v84: Int32 = (v8 &- 240)
+                                                let v85: Int32 = (v84 &* 262144)
+                                                let v86: Int32 = (v69 &- 128)
+                                                let v87: Int32 = (v86 &* 4096)
+                                                let v88: Int32 = (v85 &+ v87)
+                                                let v89: Int32 = (v72 &- 128)
+                                                let v90: Int32 = (v89 &* 64)
+                                                let v91: Int32 = (v88 &+ v90)
+                                                let v92: Int32 = (v74 &- 128)
+                                                let v93: Int32 = (v91 &+ v92)
+                                                let v94: Bool = (v93 < 65536)
                                                 if (v94) {
                                                     "UTF-8 sequence is overlong.".withCString { ptr in _ = fputs(ptr, stderr) }
                                                     fputs("\n", stderr)
                                                     exit(1)
                                                 } else {
-                                                    var v96: Bool = false
-                                                    v96 = (v93 > 1114111)
+                                                    let v96: Bool = (v93 > 1114111)
                                                     if (v96) {
                                                         "UTF-8 scalar is above U+10FFFF.".withCString { ptr in _ = fputs(ptr, stderr) }
                                                         fputs("\n", stderr)
@@ -333,20 +302,16 @@ func sp_utf8_scalar_at_byte_offset_0(_ p0: String, _ p1: Int32) -> Int32 {
     }
 }
 func spiral_main() -> Int32 {
-    var v0: String = ""
-    v0 = "é"
-    var v1: Int32 = 0
-    v1 = 0
+    let v0: String = "é"
+    let v1: Int32 = 0
     var v2: Int32 = 0
     v2 = sp_utf8_scalar_at_byte_offset_0(v0, v1)
     var v3: String = ""
     v3 = "õ"
-    var v4: Int32 = 0
-    v4 = 0
+    let v4: Int32 = 0
     var v5: Int32 = 0
     v5 = sp_utf8_scalar_at_byte_offset_0(v3, v4)
-    var v6: String = ""
-    v6 = "ç"
+    let v6: String = "ç"
     var v7: Int32 = 0
     v7 = 0
     var v8: Int32 = 0
@@ -355,16 +320,14 @@ func spiral_main() -> Int32 {
     v9 = "́"
     var v10: Int32 = 0
     v10 = 0
-    var v11: Int32 = 0
-    v11 = sp_utf8_scalar_at_byte_offset_0(v9, v10)
+    let v11: Int32 = sp_utf8_scalar_at_byte_offset_0(v9, v10)
     var v12: String = ""
     v12 = "̃"
     var v13: Int32 = 0
     v13 = 0
     var v14: Int32 = 0
     v14 = sp_utf8_scalar_at_byte_offset_0(v12, v13)
-    var v15: String = ""
-    v15 = "̧"
+    let v15: String = "̧"
     var v16: Int32 = 0
     v16 = 0
     var v17: Int32 = 0
@@ -413,20 +376,17 @@ func spiral_main() -> Int32 {
                                 v64 = 79
                                 v65 = 769
                             } else {
-                                var v25: Bool = false
-                                v25 = (v2 == 213)
+                                let v25: Bool = (v2 == 213)
                                 if (v25) {
                                     v64 = 79
                                     v65 = 771
                                 } else {
-                                    var v26: Bool = false
-                                    v26 = (v2 == 224)
+                                    let v26: Bool = (v2 == 224)
                                     if (v26) {
                                         v64 = 97
                                         v65 = 768
                                     } else {
-                                        var v27: Bool = false
-                                        v27 = (v2 == 225)
+                                        let v27: Bool = (v2 == 225)
                                         if (v27) {
                                             v64 = 97
                                             v65 = 769
@@ -449,8 +409,7 @@ func spiral_main() -> Int32 {
                                                         v64 = 99
                                                         v65 = 807
                                                     } else {
-                                                        var v31: Bool = false
-                                                        v31 = (v2 == 233)
+                                                        let v31: Bool = (v2 == 233)
                                                         if (v31) {
                                                             v64 = 101
                                                             v65 = 769
@@ -485,8 +444,7 @@ func spiral_main() -> Int32 {
             }
         }
     }
-    var v66: Bool = false
-    v66 = (v5 == 192)
+    let v66: Bool = (v5 == 192)
     var v112: Int32 = 0
     var v113: Int32 = 0
     if (v66) {
@@ -601,100 +559,84 @@ func spiral_main() -> Int32 {
             }
         }
     }
-    var v114: Bool = false
-    v114 = (v8 == 192)
+    let v114: Bool = (v8 == 192)
     var v160: Int32 = 0
     var v161: Int32 = 0
     if (v114) {
         v160 = 65
         v161 = 768
     } else {
-        var v115: Bool = false
-        v115 = (v8 == 193)
+        let v115: Bool = (v8 == 193)
         if (v115) {
             v160 = 65
             v161 = 769
         } else {
-            var v116: Bool = false
-            v116 = (v8 == 195)
+            let v116: Bool = (v8 == 195)
             if (v116) {
                 v160 = 65
                 v161 = 771
             } else {
-                var v117: Bool = false
-                v117 = (v8 == 196)
+                let v117: Bool = (v8 == 196)
                 if (v117) {
                     v160 = 65
                     v161 = 776
                 } else {
-                    var v118: Bool = false
-                    v118 = (v8 == 199)
+                    let v118: Bool = (v8 == 199)
                     if (v118) {
                         v160 = 67
                         v161 = 807
                     } else {
-                        var v119: Bool = false
-                        v119 = (v8 == 201)
+                        let v119: Bool = (v8 == 201)
                         if (v119) {
                             v160 = 69
                             v161 = 769
                         } else {
-                            var v120: Bool = false
-                            v120 = (v8 == 211)
+                            let v120: Bool = (v8 == 211)
                             if (v120) {
                                 v160 = 79
                                 v161 = 769
                             } else {
-                                var v121: Bool = false
-                                v121 = (v8 == 213)
+                                let v121: Bool = (v8 == 213)
                                 if (v121) {
                                     v160 = 79
                                     v161 = 771
                                 } else {
-                                    var v122: Bool = false
-                                    v122 = (v8 == 224)
+                                    let v122: Bool = (v8 == 224)
                                     if (v122) {
                                         v160 = 97
                                         v161 = 768
                                     } else {
-                                        var v123: Bool = false
-                                        v123 = (v8 == 225)
+                                        let v123: Bool = (v8 == 225)
                                         if (v123) {
                                             v160 = 97
                                             v161 = 769
                                         } else {
-                                            var v124: Bool = false
-                                            v124 = (v8 == 227)
+                                            let v124: Bool = (v8 == 227)
                                             if (v124) {
                                                 v160 = 97
                                                 v161 = 771
                                             } else {
-                                                var v125: Bool = false
-                                                v125 = (v8 == 228)
+                                                let v125: Bool = (v8 == 228)
                                                 if (v125) {
                                                     v160 = 97
                                                     v161 = 776
                                                 } else {
-                                                    var v126: Bool = false
-                                                    v126 = (v8 == 231)
+                                                    let v126: Bool = (v8 == 231)
                                                     if (v126) {
                                                         v160 = 99
                                                         v161 = 807
                                                     } else {
-                                                        var v127: Bool = false
-                                                        v127 = (v8 == 233)
+                                                        let v127: Bool = (v8 == 233)
                                                         if (v127) {
                                                             v160 = 101
                                                             v161 = 769
                                                         } else {
-                                                            var v128: Bool = false
-                                                            v128 = (v8 == 243)
+                                                            let v128: Bool = (v8 == 243)
                                                             if (v128) {
                                                                 v160 = 111
                                                                 v161 = 769
                                                             } else {
-                                                                var v129: Bool = false
-                                                                v129 = (v8 == 245)
+                                                                let v129: Bool = (v8 == 245)
                                                                 if (v129) {
                                                                     v160 = 111
                                                                     v161 = 771
@@ -717,16 +659,14 @@ func spiral_main() -> Int32 {
             }
         }
     }
-    var v162: Bool = false
-    v162 = (v11 == 769)
+    let v162: Bool = (v11 == 769)
     var v163: Int32 = 0
     if (v162) {
         v163 = 233
     } else {
         v163 = -1
     }
-    var v164: Bool = false
-    v164 = (v163 < 0)
+    let v164: Bool = (v163 < 0)
     var v165: Int32 = 0
     var v166: Int32 = 0
     if (v164) {
@@ -736,22 +676,19 @@ func spiral_main() -> Int32 {
         v165 = v163
         v166 = -1
     }
-    var v167: Bool = false
-    v167 = (v14 == 769)
+    let v167: Bool = (v14 == 769)
     var v170: Int32 = 0
     if (v167) {
         v170 = 243
     } else {
-        var v168: Bool = false
-        v168 = (v14 == 771)
+        let v168: Bool = (v14 == 771)
         if (v168) {
             v170 = 245
         } else {
             v170 = -1
         }
     }
-    var v171: Bool = false
-    v171 = (v170 < 0)
+    let v171: Bool = (v170 < 0)
     var v172: Int32 = 0
     var v173: Int32 = 0
     if (v171) {
@@ -761,16 +698,14 @@ func spiral_main() -> Int32 {
         v172 = v170
         v173 = -1
     }
-    var v174: Bool = false
-    v174 = (v17 == 807)
+    let v174: Bool = (v17 == 807)
     var v175: Int32 = 0
     if (v174) {
         v175 = 231
     } else {
         v175 = -1
     }
-    var v176: Bool = false
-    v176 = (v175 < 0)
+    let v176: Bool = (v175 < 0)
     var v177: Int32 = 0
     var v178: Int32 = 0
     if (v176) {
@@ -780,67 +715,55 @@ func spiral_main() -> Int32 {
         v177 = v175
         v178 = -1
     }
-    var v179: Bool = false
-    v179 = (v64 == 101)
+    let v179: Bool = (v64 == 101)
     var v181: Bool = false
     if (v179) {
-        var v180: Bool = false
-        v180 = (v65 == v11)
+        let v180: Bool = (v65 == v11)
         v181 = v180
     } else {
         v181 = false
     }
     if (v181) {
-        var v182: Bool = false
-        v182 = (v112 == 111)
+        let v182: Bool = (v112 == 111)
         var v184: Bool = false
         if (v182) {
-            var v183: Bool = false
-            v183 = (v113 == v14)
+            let v183: Bool = (v113 == v14)
             v184 = v183
         } else {
             v184 = false
         }
         if (v184) {
-            var v185: Bool = false
-            v185 = (v160 == 99)
+            let v185: Bool = (v160 == 99)
             var v187: Bool = false
             if (v185) {
-                var v186: Bool = false
-                v186 = (v161 == v17)
+                let v186: Bool = (v161 == v17)
                 v187 = v186
             } else {
                 v187 = false
             }
             if (v187) {
-                var v188: Bool = false
-                v188 = (v165 == v2)
+                let v188: Bool = (v165 == v2)
                 var v190: Bool = false
                 if (v188) {
-                    var v189: Bool = false
-                    v189 = (v166 == -1)
+                    let v189: Bool = (v166 == -1)
                     v190 = v189
                 } else {
                     v190 = false
                 }
                 if (v190) {
-                    var v191: Bool = false
-                    v191 = (v172 == v5)
+                    let v191: Bool = (v172 == v5)
                     var v193: Bool = false
                     if (v191) {
-                        var v192: Bool = false
-                        v192 = (v173 == -1)
+                        let v192: Bool = (v173 == -1)
                         v193 = v192
                     } else {
                         v193 = false
                     }
                     if (v193) {
-                        var v194: Bool = false
-                        v194 = (v177 == v8)
+                        let v194: Bool = (v177 == v8)
                         var v196: Bool = false
                         if (v194) {
-                            var v195: Bool = false
-                            v195 = (v178 == -1)
+                            let v195: Bool = (v178 == -1)
                             v196 = v195
                         } else {
                             v196 = false

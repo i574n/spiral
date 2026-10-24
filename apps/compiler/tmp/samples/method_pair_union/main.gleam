@@ -18,29 +18,29 @@ pub fn method0(v0: Int) -> #(Us0, Us0) {
     }
 }
 pub fn main() {
-let v0 = 7
-let #(v1, v2) = method0(v0)
-case v1  {
-    Us0None -> {
-        1
-    }
-    Us0Some(v3) -> {
-        case v2  {
-            Us0None -> {
-                let v4 = v3 == 7
-                case v4 {
-                    True -> {
-                        0
-                    }
-                    False -> {
-                        1
+    let v0 = 7
+    let #(v1, v2) = method0(v0)
+    case v1  {
+        Us0None -> {
+            1
+        }
+        Us0Some(v3) -> {
+            case v2  {
+                Us0None -> {
+                    let v4 = v3 == 7
+                    case v4 {
+                        True -> {
+                            0
+                        }
+                        False -> {
+                            1
+                        }
                     }
                 }
-            }
-            Us0Some(v6) -> {
-                1
+                Us0Some(v6) -> {
+                    1
+                }
             }
         }
     }
-}
 }

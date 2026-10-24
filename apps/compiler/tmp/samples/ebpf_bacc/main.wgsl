@@ -26,10 +26,8 @@ fn sp_method1(p0: i32, p1: bool) -> bool {
         if (v5) {
             return v4;
         } else {
-            let spiral_t1: i32 = v2;
-            let spiral_t2: bool = v4;
-            v0 = spiral_t1;
-            v1 = spiral_t2;
+            v0 = v2;
+            v1 = v4;
             continue;
         }
     }

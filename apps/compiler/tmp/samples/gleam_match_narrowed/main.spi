@@ -33,5 +33,9 @@ let pick (k : i32) : shape =
 
 inl main () : i32 =
     inl ~a = 0i32
-    inl narrowed = measure (pick a) a + measure (pick (a + 1)) (a + 1) + measure (pick (a + 2)) (a + 2) + measure (pick (a + 3)) (a + 3)
+    inl narrowed =
+        measure (pick a) a
+        + measure (pick (a + 1)) (a + 1)
+        + measure (pick (a + 2)) (a + 2)
+        + measure (pick (a + 3)) (a + 3)
     narrowed + measure_tri (pick (a + 2)) a + measure_tri (pick a) a

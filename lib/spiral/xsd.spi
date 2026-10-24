@@ -1,0 +1,445 @@
+///- --package .
+open sm'_operators
+open xml
+
+union xsd_facet =
+    | Enumeration : string
+    | Pattern : string
+    | Length : i32
+    | MinLength : i32
+    | MaxLength : i32
+    | WhiteSpace : string
+    | TotalDigits : i32
+    | FractionDigits : i32
+    | OtherFacet : string * string
+
+union rec xsd =
+    | Simple : string * string * list xsd_facet
+    | Complex : string * xsd * list xsd
+    | Sequence : i32 * i32 * list xsd
+    | Choice : i32 * i32 * list xsd
+    | Element : string * string * i32 * i32 * option xsd
+    | Derived : string * string * xsd * list xsd
+    | Attribute : string * string * bool * string * option xsd
+    | AnyContent
+    | Empty
+
+type xsd_schema =
+    {
+        target_namespace : string
+        includes : list string
+        simple_types : list xsd
+        complex_types : list xsd
+        elements : list xsd
+    }
+
+let rec reverse forall t. (rest : list t) (acc : list t) : list t =
+    match rest with
+    | Cons (x, xs) => reverse xs (Cons (x, acc))
+    | Nil => acc
+
+inl digit_of (c : string) : i32 =
+    if c = "0" then 0i32 elif c = "1" then 1i32 elif c = "2" then 2i32 elif c = "3" then 3i32 elif c = "4" then 4i32
+    elif c = "5" then 5i32 elif c = "6" then 6i32 elif c = "7" then 7i32 elif c = "8" then 8i32 elif c = "9" then 9i32
+    else -1i32
+
+let rec digits_value (s : string) (pos : i32) (acc : i32) : i32 =
+    if pos >= sm'.length s then acc
+    else
+        inl d = digit_of (xml.at s pos)
+        if d < 0i32 then -1i32 else digits_value s (pos + 1i32) (acc * 10i32 + d)
+
+inl parse_count (s : string) : i32 = if s = "" then -1i32 else digits_value s 0i32 0i32
+
+inl attribute_or (key : string) (fallback : string) (attributes : list (string * string)) : string =
+    match xml.attribute_of key attributes with
+    | Some value => value
+    | None => fallback
+
+inl occurs (attributes : list (string * string)) : i32 * i32 =
+    inl min = attribute_or "minOccurs" "1" attributes |> parse_count
+    inl max_text = attribute_or "maxOccurs" "1" attributes
+    min, (if max_text = "unbounded" then -1i32 else parse_count max_text)
+
+let rec facets_of (nodes : list xml.xml_node) (acc : list xsd_facet) : list xsd_facet =
+    match nodes with
+    | Cons (XmlElement (name, attributes, _), rest) =>
+        inl value = attribute_or "value" "" attributes
+        inl local = xml.local_name name
+        inl facet =
+            if local = "enumeration" then Some (Enumeration value)
+            elif local = "pattern" then Some (Pattern value)
+            elif local = "length" then Some (Length (parse_count value))
+            elif local = "minLength" then Some (MinLength (parse_count value))
+            elif local = "maxLength" then Some (MaxLength (parse_count value))
+            elif local = "whiteSpace" then Some (WhiteSpace value)
+            elif local = "totalDigits" then Some (TotalDigits (parse_count value))
+            elif local = "fractionDigits" then Some (FractionDigits (parse_count value))
+            elif local = "annotation" then None
+            else Some (OtherFacet (local, value))
+        facets_of rest (match facet with Some f => Cons (f, acc) | None => acc)
+    | Cons (XmlText _, rest) => facets_of rest acc
+    | Nil => reverse acc Nil
+
+let rec first_named
+    (target : string) (nodes : list xml.xml_node)
+    : option (list (string * string) * list xml.xml_node)
+    =
+    match nodes with
+    | Cons (XmlElement (name, attributes, children), rest) =>
+        if xml.local_name name = target then Some (attributes, children) else first_named target rest
+    | Cons (XmlText _, rest) => first_named target rest
+    | Nil => None
+
+inl is_pattern_facet (facet : xsd_facet) : bool = match facet with Pattern _ => true | _ => false
+
+inl is_enumeration_facet (facet : xsd_facet) : bool = match facet with Enumeration _ => true | _ => false
+
+let rec all_facets (keep : xsd_facet -> bool) (facets : list xsd_facet) : bool =
+    match facets with
+    | Cons (facet, rest) => keep facet && all_facets keep rest
+    | Nil => true
+
+let rec union_member_facets (nodes : list xml.xml_node) (acc : list xsd_facet) : option (list xsd_facet) =
+    match nodes with
+    | Cons (XmlElement (name, _, children), rest) when xml.local_name name = "simpleType" =>
+        match first_named "restriction" children with
+        | Some (attributes, facets) =>
+            if sm'.ends_with "string" (attribute_or "base" "" attributes)
+            then union_member_facets rest (listm.append acc (facets_of facets Nil))
+            else None
+        | None => None
+    | Cons (XmlElement (name, _, _), rest) when xml.local_name name = "annotation" => union_member_facets rest acc
+    | Cons (XmlText _, rest) => union_member_facets rest acc
+    | Cons (_, _) => None
+    | Nil => Some acc
+
+inl union_of (name : string) (attributes : list (string * string)) (members : list xml.xml_node) : xsd =
+    inl member_types = attribute_or "memberTypes" "" attributes
+    inl marker = Simple (name, "", Cons (OtherFacet ("union", member_types), Nil))
+    if member_types <> "" then marker
+    else
+        match union_member_facets members Nil with
+        | Some facets =>
+            match facets with
+            | Nil => marker
+            | _ =>
+                if all_facets is_pattern_facet facets || all_facets is_enumeration_facet facets
+                then Simple (name, "xs:string", facets)
+                else marker
+        | None => marker
+
+inl simple_of (name : string) (children : list xml.xml_node) : xsd =
+    match first_named "restriction" children with
+    | Some (attributes, facets) => Simple (name, attribute_or "base" "" attributes, facets_of facets Nil)
+    | None =>
+        match first_named "union" children with
+        | Some (attributes, members) => union_of name attributes members
+        | None => Simple (name, "", Nil)
+
+let rec particle_of (node : xml.xml_node) : option xsd =
+    match node with
+    | XmlElement (name, attributes, children) =>
+        inl local = xml.local_name name
+        inl min, max = occurs attributes
+        if local = "element" then
+            inl inline =
+                match first_named "simpleType" children with
+                | Some (_, simple_children) => Some (simple_of "" simple_children)
+                | None =>
+                    match first_named "complexType" children with
+                    | Some (complex_attributes, complex_children) =>
+                        Some (complex_of "" complex_attributes complex_children)
+                    | None => None
+            Some (
+                Element (
+                    attribute_or "name" (attribute_or "ref" "" attributes) attributes,
+                    attribute_or "type" "" attributes,
+                    min,
+                    max,
+                    inline
+                )
+            )
+        elif local = "sequence" then Some (Sequence (min, max, particles_of children Nil))
+        elif local = "choice" then Some (Choice (min, max, particles_of children Nil))
+        elif local = "any" then Some AnyContent
+        else None
+    | XmlText _ => None
+
+and let particles_of (nodes : list xml.xml_node) (acc : list xsd) : list xsd =
+    match nodes with
+    | Cons (node, rest) => particles_of rest (match particle_of node with Some p => Cons (p, acc) | None => acc)
+    | Nil => reverse acc Nil
+
+and let complex_of (name : string) (_ : list (string * string)) (children : list xml.xml_node) : xsd =
+    match first_named "complexContent" children with
+    | Some (_, content_children) => derived_of name content_children
+    | None =>
+        match first_named "simpleContent" children with
+        | Some (_, content_children) => derived_of name content_children
+        | None => Complex (name, content_of children, attributes_of children Nil)
+
+and let content_of (children : list xml.xml_node) : xsd =
+    match particles_of children Nil with
+    | Cons (first, _) => first
+    | Nil => Empty
+
+and let derived_of (name : string) (children : list xml.xml_node) : xsd =
+    match first_named "extension" children with
+    | Some (attributes, inner) =>
+        Derived (name, attribute_or "base" "" attributes, content_of inner, attributes_of inner Nil)
+    | None =>
+        match first_named "restriction" children with
+        | Some (attributes, inner) =>
+            Derived (name, attribute_or "base" "" attributes, content_of inner, attributes_of inner Nil)
+        | None => Complex (name, Empty, Nil)
+
+and let attributes_of (nodes : list xml.xml_node) (acc : list xsd) : list xsd =
+    match nodes with
+    | Cons (XmlElement (name, attributes, children), rest) =>
+        if xml.local_name name = "attribute" then
+            inl inline =
+                match first_named "simpleType" children with
+                | Some (_, simple_children) => Some (simple_of "" simple_children)
+                | None => None
+            inl attribute =
+                Attribute (
+                    attribute_or "name" "" attributes,
+                    attribute_or "type" "" attributes,
+                    attribute_or "use" "optional" attributes = "required",
+                    attribute_or "fixed" "" attributes,
+                    inline
+                )
+            attributes_of rest (Cons (attribute, acc))
+        else attributes_of rest acc
+    | Cons (XmlText _, rest) => attributes_of rest acc
+    | Nil => reverse acc Nil
+
+let rec schema_items (nodes : list xml.xml_node) (schema : xsd_schema) : xsd_schema =
+    match nodes with
+    | Cons (XmlElement (name, attributes, children), rest) =>
+        inl local = xml.local_name name
+        inl item_name = attribute_or "name" "" attributes
+        inl schema =
+            if local = "simpleType"
+            then { schema with simple_types = Cons (simple_of item_name children, schema.simple_types) }
+            elif local = "complexType"
+            then { schema with complex_types = Cons (complex_of item_name attributes children, schema.complex_types) }
+            elif local = "element" then
+                match particle_of (XmlElement (name, attributes, children)) with
+                | Some e => { schema with elements = Cons (e, schema.elements) }
+                | None => schema
+            elif local = "include" || local = "import"
+            then { schema with includes = Cons (attribute_or "schemaLocation" "" attributes, schema.includes) }
+            else schema
+        schema_items rest schema
+    | Cons (XmlText _, rest) => schema_items rest schema
+    | Nil => schema
+
+inl xml_schema_namespace () : string = "http://www.w3.org/2001/XMLSchema"
+
+inl prefix_of (name : string) : string =
+    inl colon = sm'.index_of ":" name
+    if colon < 0i32 then "" else sm'.substring 0i32 colon name
+
+let rec has_prefix (target : string) (prefixes : list string) : bool =
+    match prefixes with
+    | Cons (x, rest) => x = target || has_prefix target rest
+    | Nil => false
+
+let rec xml_schema_prefixes (attributes : list (string * string)) (acc : list string) : list string =
+    match attributes with
+    | Cons ((key, value), rest) =>
+        inl acc =
+            if value <> xml_schema_namespace () then acc
+            elif key = "xmlns" then Cons ("", acc)
+            elif sm'.starts_with "xmlns:" key then Cons (sm'.substring 6i32 (sm'.length key - 6i32) key, acc)
+            else acc
+        xml_schema_prefixes rest acc
+    | Nil => acc
+
+inl canonical_reference (prefixes : list string) (reference : string) : string =
+    if reference = "" then reference
+    elif has_prefix (prefix_of reference) prefixes then "xs:" ++# xml.local_name reference
+    else reference
+
+let rec canonical_item (prefixes : list string) (item : xsd) : xsd =
+    match item with
+    | Simple (name, base, facets) => Simple (name, canonical_reference prefixes base, facets)
+    | Complex (name, content, attributes) =>
+        Complex (name, canonical_item prefixes content, canonical_attributes prefixes attributes Nil)
+    | Derived (name, base, content, attributes) =>
+        Derived (
+            name,
+            canonical_reference prefixes base,
+            canonical_item prefixes content,
+            canonical_attributes prefixes attributes Nil
+        )
+    | Sequence (min, max, items) => Sequence (min, max, canonical_items prefixes items Nil)
+    | Choice (min, max, items) => Choice (min, max, canonical_items prefixes items Nil)
+    | Element (name, type_reference, min, max, inline) =>
+        Element (name, canonical_reference prefixes type_reference, min, max, canonical_inline prefixes inline)
+    | Attribute (name, type_reference, required, fixed, inline) =>
+        Attribute (name, canonical_reference prefixes type_reference, required, fixed, canonical_inline prefixes inline)
+    | AnyContent => AnyContent
+    | Empty => Empty
+
+and let canonical_items (prefixes : list string) (items : list xsd) (acc : list xsd) : list xsd =
+    match items with
+    | Cons (item, rest) => canonical_items prefixes rest (Cons (canonical_item prefixes item, acc))
+    | Nil => reverse acc Nil
+
+and let canonical_inline (prefixes : list string) (inline : option xsd) : option xsd =
+    match inline with
+    | Some inner => Some (canonical_item prefixes inner)
+    | None => None
+
+and let canonical_attributes (prefixes : list string) (attributes : list xsd) (acc : list xsd) : list xsd =
+    canonical_items prefixes attributes acc
+
+inl canonical_schema (prefixes : list string) (schema : xsd_schema) : xsd_schema =
+    {
+        target_namespace = schema.target_namespace
+        includes = schema.includes
+        simple_types = canonical_items prefixes schema.simple_types Nil
+        complex_types = canonical_items prefixes schema.complex_types Nil
+        elements = canonical_items prefixes schema.elements Nil
+    }
+
+inl read_schema (text : string) : xsd_schema =
+    inl empty = { target_namespace = ""; includes = Nil; simple_types = Nil; complex_types = Nil; elements = Nil }
+    match first_named "schema" (xml.read_xml text) with
+    | Some (attributes, children) =>
+        inl model = schema_items children { empty with target_namespace = attribute_or "targetNamespace" "" attributes }
+        canonical_schema (xml_schema_prefixes attributes Nil) model
+    | None => empty
+
+let rec count_list forall t. (items : list t) : i32 =
+    match items with
+    | Cons (_, rest) => 1i32 + count_list rest
+    | Nil => 0i32
+
+let rec enumeration_count (types : list xsd) : i32 =
+    match types with
+    | Cons (Simple (_, _, facets), rest) => count_enumerations facets + enumeration_count rest
+    | Cons (_, rest) => enumeration_count rest
+    | Nil => 0i32
+
+and let count_enumerations (facets : list xsd_facet) : i32 =
+    match facets with
+    | Cons (Enumeration _, rest) => 1i32 + count_enumerations rest
+    | Cons (_, rest) => count_enumerations rest
+    | Nil => 0i32
+
+///> rust
+test occurs_and_facets_parse =
+    inl text =
+        "<xs:schema targetNamespace=\"n\"><xs:complexType name=\"C\"><xs:sequence><xs:element name=\"a\" "
+        ^^ "type=\"T\" minOccurs=\"0\" maxOccurs=\"unbounded\"/></xs:sequence><xs:attribute name=\"v\" "
+        ^^ "type=\"xs:string\" use=\"required\"/></xs:complexType></xs:schema>"
+    match (read_schema text).complex_types with
+    | Cons (
+            Complex (
+                name,
+                Sequence (_, _, Cons (Element (element_name, type_ref, min, max, _), Nil)),
+                Cons (Attribute (attribute_name, _, required, _, _), Nil)
+            ),
+            Nil
+        )
+        =>
+            if name <> "C" || element_name <> "a" || type_ref <> "T" then failwith "names"
+            if min <> 0i32 || max <> -1i32 then failwith "occurs 0..unbounded"
+            if attribute_name <> "v" || required = false then failwith "required attribute"
+    | _ => failwith "complex type shape"
+
+///> rust
+test complex_content_extension_keeps_its_base =
+    inl text =
+        "<xs:schema><xs:complexType name=\"D\"><xs:complexContent><xs:extension "
+        ^^ "base=\"B\"><xs:sequence><xs:element name=\"e\" type=\"T\"/></xs:sequence><xs:attribute name=\"a\" "
+        ^^ "type=\"xs:string\"/></xs:extension></xs:complexContent></xs:complexType></xs:schema>"
+    match (read_schema text).complex_types with
+    | Cons (
+            Derived (
+                name,
+                base,
+                Sequence (_, _, Cons (Element (element_name, _, _, _, _), Nil)),
+                Cons (Attribute (attribute_name, _, _, _, _), Nil)
+            ),
+            Nil
+        )
+        => if name <> "D" || base <> "B" || element_name <> "e" || attribute_name <> "a" then failwith "derived names"
+    | _ => failwith "derived complex type shape"
+
+///> rust
+test default_xml_schema_namespace_marks_builtins =
+    inl text =
+        "<schema xmlns=\"http://www.w3.org/2001/XMLSchema\" xmlns:ds=\"d\"><simpleType name=\"D\"><restriction "
+        ^^ "base=\"base64Binary\"/></simpleType><simpleType name=\"E\"><restriction "
+        ^^ "base=\"ds:D\"/></simpleType></schema>"
+    match (read_schema text).simple_types with
+    | Cons (Simple (_, first_base, _), Cons (Simple (_, second_base, _), Nil)) =>
+        if first_base <> "xs:base64Binary" && second_base <> "xs:base64Binary"
+        then failwith "the unprefixed builtin becomes xs:base64Binary"
+        if first_base <> "ds:D" && second_base <> "ds:D" then failwith "a prefixed non-schema reference is kept"
+    | _ => failwith "two simple types"
+
+///> rust
+test any_wildcard_is_kept =
+    inl text =
+        "<xs:schema><xs:complexType name=\"W\"><xs:sequence><xs:any "
+        ^^ "processContents=\"skip\"/></xs:sequence></xs:complexType></xs:schema>"
+    match (read_schema text).complex_types with
+    | Cons (Complex (_, Sequence (_, _, Cons (AnyContent, Nil)), _), Nil) => ()
+    | _ => failwith "xs:any becomes AnyContent"
+
+///> rust
+test attribute_fixed_value_and_inline_type_are_kept =
+    inl text =
+        "<xs:schema><xs:complexType name=\"A\"><xs:attribute name=\"Algorithm\" type=\"T\" use=\"required\" "
+        ^^ "fixed=\"urn:x\"/><xs:attribute name=\"Id\"><xs:simpleType><xs:restriction base=\"xs:ID\"><xs:pattern "
+        ^^ "value=\"NFe[0-9]{44}\"/></xs:restriction></xs:simpleType></xs:attribute></xs:complexType></xs:schema>"
+    match (read_schema text).complex_types with
+    | Cons (
+            Complex (
+                _,
+                _,
+                Cons (
+                    Attribute (_, _, required, fixed, None),
+                    Cons (Attribute (_, _, _, _, Some (Simple (_, base, _))), Nil)
+                )
+            ),
+            Nil
+        )
+        =>
+            if required = false || fixed <> "urn:x" then failwith "the fixed value is kept"
+            if base <> "xs:ID" then failwith "the inline attribute type keeps its base"
+    | _ => failwith "two attributes, the second with an inline simple type"
+
+///> rust
+test pattern_unions_become_alternative_patterns =
+    inl member pattern =
+        "<xsd:simpleType><xsd:restriction base=\"xsd:string\"><xsd:pattern value=\""
+        ++# pattern
+        ++# "\"/></xsd:restriction></xsd:simpleType>"
+    inl regon =
+        "<xsd:simpleType name=\"TNrREGON\"><xsd:union>"
+        ++# member "\\d{9}"
+        ++# member "\\d{14}"
+        ++# "</xsd:union></xsd:simpleType>"
+    inl named = "<xsd:simpleType name=\"M\"><xsd:union memberTypes=\"A B\"/></xsd:simpleType>"
+    inl text = "<xsd:schema xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">" ++# regon ++# named ++# "</xsd:schema>"
+    match (read_schema text).simple_types with
+    | Cons (Simple (first, first_base, first_facets), Cons (Simple (_, _, second_facets), Nil)) =>
+        inl regon_facets, other_facets =
+            if first = "TNrREGON" then first_facets, second_facets else second_facets, first_facets
+        match regon_facets with
+        | Cons (Pattern a, Cons (Pattern b, Nil)) =>
+            if a <> "\\d{9}" || b <> "\\d{14}" then failwith "both member patterns, in order"
+        | _ => failwith "a pattern union lowers to its member patterns"
+        match other_facets with
+        | Cons (OtherFacet (kind, members), Nil) =>
+            if kind <> "union" || members <> "A B" then failwith "the named-member union marker"
+        | _ => failwith "a memberTypes union keeps a marker"
+        if first = "TNrREGON" && first_base <> "xs:string" then failwith "the lowered union is a string"
+    | _ => failwith "two simple types"

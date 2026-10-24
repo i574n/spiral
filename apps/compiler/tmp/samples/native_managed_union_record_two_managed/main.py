@@ -38,6 +38,7 @@ def spiral_array_index(array, index):
     return value.item() if isinstance(array, cp.ndarray) and array.dtype.kind != 'O' else value
 class US0_Empty(NamedTuple): # Empty
     tag = 0
+US0_Empty_shared = US0_Empty()
 class US0_Item(NamedTuple): # Item
     v0 : string
     v1 : cp.ndarray
@@ -48,7 +49,7 @@ def closure0():
         v1 = v0 == 0
         if v1:
             del v1
-            return US0_Empty()
+            return US0_Empty_shared
         else:
             del v1
             v3 = cp.zeros(2,dtype=cp.int32)

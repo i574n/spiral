@@ -19,6 +19,7 @@ modules:
     math
     mapm
     iter
+    float_text
     sm'_prototypes-
     sm'_real*
     sm'
@@ -38,7 +39,9 @@ modules:
     threading
     async
     reactors
+    unicode
     json_scan
+    csv
     json_real*
     json
     conversation
@@ -48,6 +51,7 @@ modules:
         near_workspaces
     stream
     runtime
+    process
     file_system
     file_system_operators
     crypto
@@ -91,3 +95,21 @@ modules:
     store
     state_core
     testing
+    xml
+    xsd
+    xsd_resolve
+    xsd_regex
+    xpath
+    schematron
+    xsd_emit
+    json_schema
+    decimal
+    xpath_eval
+    schematron_run
+    xsd_constraints
+    erlang_process
+    otp_actor
+    otp_supervisor
+    step_runtime
+    cursor_walk
+    oauth

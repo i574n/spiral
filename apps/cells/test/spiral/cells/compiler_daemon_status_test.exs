@@ -13,10 +13,34 @@ defmodule Spiral.Cells.CompilerDaemonStatusTest do
           port: 0,
           on_retire: fn -> send(test, :retired) end,
           idle_ms: 60_000,
-          idle_check_ms: 50
+          idle_check_ms: 50,
+          pressure_idle_ms: 0
         )
 
       ref = Process.monitor(pid)
+      assert_receive :retired, 5_000
+      assert_receive {:DOWN, ^ref, :process, ^pid, :normal}, 5_000
+    after
+      System.delete_env("SPIRAL_CELLS_COMPILER_RETIRE_FREE_MB")
+    end
+  end
+
+  test "under memory pressure an idle daemon still waits out the pressure idle before it retires" do
+    test = self()
+    System.put_env("SPIRAL_CELLS_COMPILER_RETIRE_FREE_MB", "100000000")
+
+    try do
+      {:ok, pid} =
+        CompilerDaemon.start_link(
+          port: 0,
+          on_retire: fn -> send(test, :retired) end,
+          idle_ms: 60_000,
+          idle_check_ms: 20,
+          pressure_idle_ms: 600
+        )
+
+      ref = Process.monitor(pid)
+      refute_receive :retired, 300
       assert_receive :retired, 5_000
       assert_receive {:DOWN, ^ref, :process, ^pid, :normal}, 5_000
     after

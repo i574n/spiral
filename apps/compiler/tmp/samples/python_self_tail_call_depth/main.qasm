@@ -10,10 +10,8 @@ def sp_count_down_0(int[32] p0, int[32] p1) -> int[32] {
             v3 = (v0 - 1);
             int[32] v4 = 0;
             v4 = (v1 + 1);
-            int[32] t305_3 = v3;
-            int[32] t339_4 = v4;
-            v0 = t305_3;
-            v1 = t339_4;
+            v0 = v3;
+            v1 = v4;
             continue;
         } else {
             return v1;

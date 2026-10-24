@@ -505,7 +505,10 @@ inl new_arc_memo forall t. (fn : () -> t) : arc_memo t =
         """
     inl fn = join fn
     inl fn = (fun () => fn () |> send_wrapper_new) |> send_wrapper_new
-    $'leptos::prelude::ArcMemo::new_with_compare(move |_| (*!fn)(), |a: Option<&leptos::__reexports::send_wrapper::SendWrapper<`t>>, b: Option<&leptos::__reexports::send_wrapper::SendWrapper<`t>>| (&SpiralMemoChanged(a.map(|x| &**x), b.map(|x| &**x))).spiral_memo_changed())'
+    $'leptos::prelude::ArcMemo::new_with_compare(move |_| (*!fn)(), |a: \
+        Option<&leptos::__reexports::send_wrapper::SendWrapper<`t>>, b: \
+        Option<&leptos::__reexports::send_wrapper::SendWrapper<`t>>| (&SpiralMemoChanged(a.map(|x| &**x), b.map(|x| \
+        &**x))).spiral_memo_changed())'
 
 /// ### new_arc_local_resource
 inl new_arc_local_resource forall t.
@@ -683,7 +686,8 @@ inl for forall t u (signal : * -> *).
     inl key = (fun (x : send_wrapper t) => x |> send_wrapper_get |> key_fn) |> send_wrapper_new
     inl child = (fun (x : send_wrapper t) => x |> send_wrapper_get |> children' |> fragment_to_view) |> send_wrapper_new
     for [
-        $'"each={ move || (*!items)().into_iter().map(leptos::__reexports::send_wrapper::SendWrapper::new).collect::<Vec<_>>() }"'
+        $'"each={ move || (*!items)().into_iter().map(leptos::__reexports::send_wrapper::SendWrapper::new).collect::<V\
+            ec<_>>() }"'
         $'"key={ move |x: &leptos::__reexports::send_wrapper::SendWrapper<_>| (*!key)(x.clone()) }"'
         $'"children={ move |x: leptos::__reexports::send_wrapper::SendWrapper<_>| (*!child)(x) }"'
     ]
@@ -728,7 +732,8 @@ inl location_search (location : location) : memo sm'.std_string =
 
 /// ### url_try_from
 inl url_try_from (s : rust.ref sm'.str) : resultm.result' url sm'.std_string =
-    !\\(s, $'"<leptos_router::location::BrowserUrl as leptos_router::location::LocationProvider>::parse($0).map_err(|x| x.as_string().unwrap_or_default())"')
+    !\\(s, $'"<leptos_router::location::BrowserUrl as leptos_router::location::LocationProvider>::parse($0).map_err(|x\
+        | x.as_string().unwrap_or_default())"')
 
 /// ### url_pathname
 inl url_pathname (url : url) : sm'.std_string =

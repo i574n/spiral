@@ -1,0 +1,11 @@
+inl wrap_twice forall t. (value : t) : option (option t) = Some (Some value)
+
+let run { first_argument_name second_argument_name third_argument_name fourth_argument }
+    : option (
+        option (
+            i32
+        )
+    )
+    =
+    inl total = first_argument_name + second_argument_name + third_argument_name + fourth_argument + first_argument_name + 1i32
+    wrap_twice total

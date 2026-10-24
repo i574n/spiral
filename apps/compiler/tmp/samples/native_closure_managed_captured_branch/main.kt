@@ -43,8 +43,7 @@ fun right_c1(v0: String): (Int) -> Int {
         v2 = spiralStringLength(v0)
         var v3: Int = 0
         v3 = (v2 + v1)
-        var v4: Int = 0
-        v4 = (v3 - 1)
+        val v4: Int = (v3 - 1)
         return v4
     }
     return { p0: Int -> body(p0) }
@@ -54,10 +53,8 @@ fun sp_method0(p0: (Int) -> Int): Int {
     return v0(39)
 }
 fun spiral_main(): Int {
-    var v0: String = ""
-    v0 = "abc"
-    var v1: String = ""
-    v1 = "wxyz"
+    val v0: String = "abc"
+    val v1: String = "wxyz"
     var v2: Boolean = false
     v2 = true
     var v5: (Int) -> Int = { _: Int -> throw RuntimeException() }

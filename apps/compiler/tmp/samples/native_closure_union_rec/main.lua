@@ -1,6 +1,3 @@
-local function spiral_wrap_unsigned(value, bits)
-    return value % (2 ^ bits)
-end
 local function spiral_wrap_signed(value, bits)
     local modulus = 2 ^ bits
     value = value % modulus
@@ -241,9 +238,9 @@ function spiral_w64.tostring(a, s)
     until not more
     return sign .. string.reverse(table.concat(digits))
 end
-local Uh0_Cons, Uh0_Nil, closure0, build_0, sum_1
+local Uh0_Cons, closure0, build_0, sum_1
 function Uh0_Cons(v0, v1) return { tag = "Uh0_Cons",  _1 = v0,  _2 = v1 } end
-function Uh0_Nil() return { tag = "Uh0_Nil" } end
+Uh0_Nil = (function() local shared = { tag = "Uh0_Nil" } return function() return shared end end)()
 
 function closure0(capt)
     local v0 = (table.unpack or unpack)(capt)
@@ -264,14 +261,13 @@ function build_0(v0)
 end
 
 function sum_1(v0, v1)
-    local __v = { v0 }
-    if __v[1] ~= nil and __v[1].tag == "Uh0_Cons" then
-        local v2 = __v[1]._1
-        local v3 = __v[1]._2
+    if v0 ~= nil and v0.tag == "Uh0_Cons" then
+        local v2 = v0._1
+        local v3 = v0._2
         local v4 = v3(nil)
         local v5 = spiral_w64.add(v1, v2, false)
         return sum_1(v4, v5)
-    elseif __v[1] ~= nil and __v[1].tag == "Uh0_Nil" then
+    elseif v0 ~= nil and v0.tag == "Uh0_Nil" then
         return v1
     end
 end

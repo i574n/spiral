@@ -14,7 +14,7 @@ inl base_let' x =
 /// ### future
 nominal future t =
     `(
-        rust_type
+        rust.rust_type
             `($'std_future_Future<`t>')
             `($'std::future::Future<Output = `t>')
             "type std_future_Future<'T> = class end"
@@ -32,26 +32,14 @@ inl block_on_tokio forall t. (fn : future_pin t) : t =
         !\($'$"tokio::runtime::Builder::new_multi_thread().enable_all().build().unwrap()"')
     !\\(fn, $'"!runtime.handle().block_on($0)"')
 
-/// ### block_on_futures_lite
-inl block_on_futures_lite forall t. (fn : future_pin t) : t =
-    !\\(fn, $'"futures_lite::future::block_on($0)"')
-
 /// ### block_on_futures
 inl block_on_futures forall t. (fn : future_pin t) : t =
     !\\(fn, $'"futures::executor::block_on($0)"')
 
-/// ### block_on_async_std
-inl block_on_async_std forall t. (fn : future_pin t) : t =
-    !\\(fn, $'"async_std::task::block_on($0)"')
-
-/// ### block_on_tokio_send
-inl block_on_tokio_send forall t. (fn : future_pin_send t) : t =
-    !\($'"tokio::runtime::block_on(!fn)"')
-
 /// ### stream_ext_tokio
 nominal stream_ext_tokio =
     `(
-        rust_type
+        rust.rust_type
             `($'tokio_stream_StreamExt')
             `($'tokio_stream::StreamExt')
             "type tokio_stream_StreamExt = class end"
@@ -60,18 +48,11 @@ nominal stream_ext_tokio =
 /// ### join_handle_tokio
 nominal join_handle_tokio t =
     `(
-        rust_type
+        rust.rust_type
             `($'tokio_task_JoinHandle<`t>')
             `($'tokio::task::JoinHandle<`t>')
             "type tokio_task_JoinHandle<'T> = class end"
     )
-
-/// ### stream_collect_tokio
-inl stream_collect_tokio forall t u.
-    (stream : t)
-    : future_pin (am'.vec u)
-    =
-    !\($'"Box::pin(tokio_stream::StreamExt::collect(!stream))"')
 
 /// ### stream_collect_futures
 inl stream_collect_futures forall t u.
@@ -79,23 +60,6 @@ inl stream_collect_futures forall t u.
     : future_pin (am'.vec u)
     =
     !\($'"Box::pin(futures::stream::StreamExt::collect(!stream))"')
-
-/// ### stream_next_tokio
-inl stream_next_tokio forall t u.
-    (stream : t)
-    : future_pin (optionm'.option' u)
-    =
-    !\($'"let mut !stream = !stream"')
-    !\($'"Box::pin(tokio_stream::StreamExt::next(&mut !stream))"')
-
-/// ### stream_filter_map_tokio
-inl stream_filter_map_tokio forall t u v.
-    (fn : u -> optionm'.option' v)
-    (stream : t)
-    : infer' v
-    =
-    inl fn = join fn
-    !\($'"tokio_stream::StreamExt::filter_map(!stream, |x| !fn(x))"')
 
 /// ### stream_filter_map_futures
 inl stream_filter_map_futures forall t u v.
@@ -106,27 +70,26 @@ inl stream_filter_map_futures forall t u v.
     inl fn = join fn
     !\($'"futures::stream::StreamExt::filter_map(!stream, |x| async { !fn(x) })"')
 
-/// ### spawn_tokio
-inl spawn_tokio forall t. (fn : future_pin_send t) : join_handle_tokio t =
-    !\($'"tokio::runtime::spawn(!fn)"')
-
 /// ### try_join_all
 nominal try_join_all t =
     `(
-        rust_type
+        rust.rust_type
             `($'futures_future_TryJoinAll<`t>')
             `($'futures::future::TryJoinAll<`t>')
             "type futures_future_TryJoinAll<'T> = class end"
     )
 
-inl try_join_all forall t. (x : am'.vec (future_pin (resultm.result' t sm'.std_string))) : try_join_all (future_pin (resultm.result' t sm'.std_string)) =
+inl try_join_all forall t.
+    (x : am'.vec (future_pin (resultm.result' t sm'.std_string)))
+    : try_join_all (future_pin (resultm.result' t sm'.std_string))
+    =
     inl x = join x
     !\($'"futures::future::try_join_all(!x)"')
 
 /// ### fuse_tokio
 nominal fuse_tokio t =
     `(
-        rust_type
+        rust.rust_type
             `($'tokio_prelude_stream_Fuse<`t>')
             `($'tokio::prelude::stream::Fuse<`t>')
             "type tokio_prelude_stream_Fuse<'T> = class end"
@@ -135,14 +98,10 @@ nominal fuse_tokio t =
 /// ### fuse'
 type fuse' t = fuse_tokio t
 
-/// ### future_fuse
-inl future_fuse forall t. (x : future_pin t) : fuse' (future_pin t) =
-    !\($'"futures::future::FutureExt::fuse(!x)"')
-
 /// ### join_all
 nominal join_all t =
     `(
-        rust_type
+        rust.rust_type
             `($'futures_future_JoinAll<`t>')
             `($'futures::future::JoinAll<`t>')
             "type futures_future_JoinAll<'T> = class end"
@@ -152,32 +111,14 @@ inl join_all forall t. (x : am'.vec (future_pin t)) : join_all (future_pin t) =
     inl x = join x
     !\($'"futures::future::join_all(!x)"')
 
-/// ### join_all_send
-inl join_all_send forall t. (x : am'.vec (future_pin_send t)) : join_all (future_pin_send t) =
-    inl x = join x
-    !\($'"futures::future::join_all(!x)"')
-
 /// ### join_handle'
 type join_handle' t = join_handle_tokio t
 
-/// ### await_handle
-inl await_handle forall t. (x : join_handle' t) : t =
-    !\($'"!x.await"')
-
-/// ### await_all
-inl await_all forall t. (x : join_all (future_pin t)) : am'.vec t =
-    !\($'"!x.await"')
-
-/// ### await_all_send
-inl await_all_send forall t. (x : join_all (future_pin_send t)) : am'.vec t =
-    !\($'"!x.await"')
-
 /// ### try_await_all
-inl try_await_all forall t. (x : try_join_all (future_pin (resultm.result' t sm'.std_string))) : resultm.result' (am'.vec t) sm'.std_string =
-    !\($'"!x.await"')
-
-/// ### try_await_all_send
-inl try_await_all_send forall t. (x : try_join_all (future_pin_send (resultm.result' t sm'.std_string))) : resultm.result' (am'.vec t) sm'.std_string =
+inl try_await_all forall t.
+    (x : try_join_all (future_pin (resultm.result' t sm'.std_string)))
+    : resultm.result' (am'.vec t) sm'.std_string
+    =
     !\($'"!x.await"')
 
 /// ### await
@@ -205,11 +146,6 @@ inl par_map forall t u. (fn : t -> u) (ar : into_iter t) : into_iter u =
 /// ### par_collect
 inl par_collect forall t. (iter : into_iter t) : am'.vec t =
     iter |> am'.to_vec
-
-/// ### try_join_all_iter
-inl try_join_all_iter forall t. (x : am'.vec (future_pin_send (resultm.result' t sm'.std_string))) : try_join_all (future_pin_send (resultm.result' t sm'.std_string)) =
-    inl x = join x
-    !\($'"futures::future::try_join_all(!x)"')
 
 /// ### future_init
 inl future_init forall t. (move : bool) (x : () -> t) : infer' t =
@@ -313,14 +249,47 @@ inl run_synchronously forall t. (a : async t) : t =
         | Cuda => fun () =>
             $'asyncio.run(!a())'
         | Rust => fun () =>
-            $'{ struct SpiralThreadWaker(std::thread::Thread); impl std::task::Wake for SpiralThreadWaker { fn wake(self: std::sync::Arc<Self>) { self.0.unpark(); } } let waker = std::task::Waker::from(std::sync::Arc::new(SpiralThreadWaker(std::thread::current()))); let mut cx = std::task::Context::from_waker(&waker); let mut f = !a; loop { match std::future::Future::poll(f.as_mut(), &mut cx) { std::task::Poll::Ready(v) => break v, std::task::Poll::Pending => std::thread::park() } } }' : t
+            $'{ struct SpiralThreadWaker(std::thread::Thread); impl std::task::Wake for SpiralThreadWaker { fn \
+                wake(self: std::sync::Arc<Self>) { self.0.unpark(); } } let waker = \
+                std::task::Waker::from(std::sync::Arc::new(SpiralThreadWaker(std::thread::current()))); let mut cx = \
+                std::task::Context::from_waker(&waker); let mut f = !a; loop { match \
+                std::future::Future::poll(f.as_mut(), &mut cx) { std::task::Poll::Ready(v) => break v, \
+                std::task::Poll::Pending => std::thread::park() } } }' : t
         | _ => fun () => null ()
 
 inl catch_rust forall t. (a : async t) : async (resultm.result' t exn) =
-    $'Box::pin({ thread_local\! { static QUIET: std::cell::Cell<u32> = std::cell::Cell::new(0); } static HOOK: std::sync::Once = std::sync::Once::new(); HOOK.call_once(|| { let prev = std::panic::take_hook(); std::panic::set_hook(Box::new(move |info| if cfg\!(panic = "abort") || QUIET.with(|q| q.get()) == 0 { prev(info) })) }); let mut f = !a; std::future::poll_fn(move |cx| { QUIET.with(|q| q.set(q.get() + 1)); let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| std::future::Future::poll(f.as_mut(), cx))); QUIET.with(|q| q.set(q.get() - 1)); match r { Ok(std::task::Poll::Ready(v)) => std::task::Poll::Ready(Ok(v)), Ok(std::task::Poll::Pending) => std::task::Poll::Pending, Err(e) => std::task::Poll::Ready(Err(Rc::<str>::from(e.downcast_ref::<String>().map(|s| s.as_str()).or_else(|| e.downcast_ref::<&str>().copied()).unwrap_or("panic")))) } }) })' : async (resultm.result' t exn)
+    $'Box::pin({ thread_local\! { static QUIET: std::cell::Cell<u32> = std::cell::Cell::new(0); } static HOOK: \
+        std::sync::Once = std::sync::Once::new(); HOOK.call_once(|| { let prev = std::panic::take_hook(); \
+        std::panic::set_hook(Box::new(move |info| if cfg\!(panic = "abort") || QUIET.with(|q| q.get()) == 0 { \
+        prev(info) })) }); let mut f = !a; std::future::poll_fn(move |cx| { QUIET.with(|q| q.set(q.get() + 1)); let r \
+        = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| std::future::Future::poll(f.as_mut(), cx))); \
+        QUIET.with(|q| q.set(q.get() - 1)); match r { Ok(std::task::Poll::Ready(v)) => std::task::Poll::Ready(Ok(v)), \
+        Ok(std::task::Poll::Pending) => std::task::Poll::Pending, Err(e) => \
+        std::task::Poll::Ready(Err(Rc::<str>::from(e.downcast_ref::<String>().map(|s| s.as_str()).or_else(|| \
+        e.downcast_ref::<&str>().copied()).unwrap_or("panic")))) } }) })' : async (resultm.result' t exn)
 
 inl start_child_rust forall t. (timeout : i32) (a : async t) : async (async t) =
-    $'Box::pin({ thread_local\! { static QUIET: std::cell::Cell<u32> = std::cell::Cell::new(0); } static HOOK: std::sync::Once = std::sync::Once::new(); HOOK.call_once(|| { let prev = std::panic::take_hook(); std::panic::set_hook(Box::new(move |info| if cfg\!(panic = "abort") || QUIET.with(|q| q.get()) == 0 { prev(info) })) }); let mut f = !a; let timeout_ms: i32 = !timeout; async move { let deadline = if timeout_ms >= 0 { Some(std::time::Instant::now() + std::time::Duration::from_millis(timeout_ms as u64)) } else { None }; let first = std::future::poll_fn(|cx| { QUIET.with(|q| q.set(q.get() + 1)); let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| std::future::Future::poll(f.as_mut(), cx))); QUIET.with(|q| q.set(q.get() - 1)); std::task::Poll::Ready(r) }).await; let mut done = match first { Ok(std::task::Poll::Ready(v)) => Some(Ok((v, std::time::Instant::now()))), Ok(std::task::Poll::Pending) => None, Err(e) => Some(Err(e)) }; let mut timer: Option<std::sync::Arc<std::sync::Mutex<std::task::Waker>>> = None; let h: std::pin::Pin<Box<dyn std::future::Future<Output = `t>>> = Box::pin(std::future::poll_fn(move |cx| { if done.is_none() { if let std::task::Poll::Ready(v) = std::future::Future::poll(f.as_mut(), cx) { done = Some(Ok((v, std::time::Instant::now()))) } } match done.take() { Some(Err(e)) => std::panic::resume_unwind(e), Some(Ok((v, at))) => if deadline.map_or(false, |d| at > d) { panic\!("The operation has timed out.") } else { std::task::Poll::Ready(v) }, None => match deadline { Some(d) if std::time::Instant::now() >= d => panic\!("The operation has timed out."), Some(d) => { match &timer { Some(w) => *w.lock().unwrap() = cx.waker().clone(), None => { let w = std::sync::Arc::new(std::sync::Mutex::new(cx.waker().clone())); let w2 = w.clone(); std::thread::spawn(move || { let now = std::time::Instant::now(); if d > now { std::thread::sleep(d - now) } w2.lock().unwrap().wake_by_ref() }); timer = Some(w) } } std::task::Poll::Pending }, None => std::task::Poll::Pending } } })); h } })' : async (async t)
+    $'Box::pin({ thread_local\! { static QUIET: std::cell::Cell<u32> = std::cell::Cell::new(0); } static HOOK: \
+        std::sync::Once = std::sync::Once::new(); HOOK.call_once(|| { let prev = std::panic::take_hook(); \
+        std::panic::set_hook(Box::new(move |info| if cfg\!(panic = "abort") || QUIET.with(|q| q.get()) == 0 { \
+        prev(info) })) }); let mut f = !a; let timeout_ms: i32 = !timeout; async move { let deadline = if timeout_ms \
+        >= 0 { Some(std::time::Instant::now() + std::time::Duration::from_millis(timeout_ms as u64)) } else { None }; \
+        let first = std::future::poll_fn(|cx| { QUIET.with(|q| q.set(q.get() + 1)); let r = \
+        std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| std::future::Future::poll(f.as_mut(), cx))); \
+        QUIET.with(|q| q.set(q.get() - 1)); std::task::Poll::Ready(r) }).await; let mut done = match first { \
+        Ok(std::task::Poll::Ready(v)) => Some(Ok((v, std::time::Instant::now()))), Ok(std::task::Poll::Pending) => \
+        None, Err(e) => Some(Err(e)) }; let mut timer: Option<std::sync::Arc<std::sync::Mutex<std::task::Waker>>> = \
+        None; let h: std::pin::Pin<Box<dyn std::future::Future<Output = `t>>> = Box::pin(std::future::poll_fn(move \
+        |cx| { if done.is_none() { if let std::task::Poll::Ready(v) = std::future::Future::poll(f.as_mut(), cx) { \
+        done = Some(Ok((v, std::time::Instant::now()))) } } match done.take() { Some(Err(e)) => \
+        std::panic::resume_unwind(e), Some(Ok((v, at))) => if deadline.map_or(false, |d| at > d) { panic\!("The \
+        operation has timed out.") } else { std::task::Poll::Ready(v) }, None => match deadline { Some(d) if \
+        std::time::Instant::now() >= d => panic\!("The operation has timed out."), Some(d) => { match &timer { \
+        Some(w) => *w.lock().unwrap() = cx.waker().clone(), None => { let w = \
+        std::sync::Arc::new(std::sync::Mutex::new(cx.waker().clone())); let w2 = w.clone(); std::thread::spawn(move \
+        || { let now = std::time::Instant::now(); if d > now { std::thread::sleep(d - now) } \
+        w2.lock().unwrap().wake_by_ref() }); timer = Some(w) } } std::task::Poll::Pending }, None => \
+        std::task::Poll::Pending } } })); h } })' : async (async t)
 
 /// ### start
 inl start (a : async ()) : () =
@@ -332,50 +301,6 @@ inl start (a : async ()) : () =
             | TypeScript _ => fun () =>
                 a |> $'Async.Start'
             | _ => fun () => null ()
-
-/// ### start_child
-inl start_child forall t. (a : async t) : async (async t) =
-    if is_rust ()
-    then a |> start_child_rust -1
-    else
-        run_target function
-            | Fsharp _
-            | TypeScript _ => fun () =>
-                a |> $'Async.StartChild'
-            | _ => fun () => null ()
-
-/// ### start_child_timeout
-inl start_child_timeout forall t. (timeout : i32) (a : async t) : async (async t) =
-    if is_rust ()
-    then a |> start_child_rust timeout
-    else
-        run_target function
-            | Fsharp _
-            | TypeScript _ => fun () =>
-                $'Async.StartChild (!a, !timeout)'
-            | _ => fun () => null ()
-
-/// ### start_immediate
-inl start_immediate forall t. (a : async t) : () =
-    if is_rust ()
-    then a |> run_synchronously |> fun _ => ()
-    else
-        run_target function
-            | Fsharp _
-            | TypeScript _ => fun () =>
-                a |> $'Async.StartImmediate'
-            | _ => fun () => null ()
-
-/// ### start_with_continuations
-inl start_with_continuations forall t. (a : async t) : () =
-    if is_rust ()
-    then a |> catch_rust |> run_synchronously |> fun _ => ()
-    else
-        run_target_args' a function
-            | Fsharp _
-            | TypeScript _ => fun a =>
-                $'Async.StartWithContinuations (!a, ignore, ignore, ignore)'
-            | _ => fun _ => null ()
 
 /// ### task_canceled_exception
 nominal task_canceled_exception = $'System.Threading.Tasks.TaskCanceledException'
@@ -404,13 +329,6 @@ inl let' forall t. (a : async t) : t =
     $'let\! !a = !a '
     $'!a '
 
-/// ### return_await
-inl return_await forall t. (a : async t) : () =
-    backend_switch {
-        Fsharp = fun () => $'return\! !a ' : ()
-        Python = fun () => $'asyncio.run(!a())' : ()
-    }
-
 /// ### return_await'
 inl return_await' forall t. (a : async t) : t =
     backend_switch {
@@ -435,9 +353,6 @@ inl catch' forall t e. (a : async t) : async (choice2' t e) =
 inl cancellation_token () : async threading.cancellation_token =
     $'Async.CancellationToken'
 
-inl default_cancellation_token () : threading.cancellation_token =
-    $'Async.DefaultCancellationToken'
-
 /// ### value_task
 nominal value_task = $'System.Threading.Tasks.ValueTask'
 
@@ -446,10 +361,6 @@ inl value_task_as_task (task : value_task) : task () =
     run_target function
         | Fsharp => fun () => $'!task.AsTask' ()
         | _ => fun () => null ()
-
-/// ### await_value_task_unit
-inl await_value_task_unit (task : value_task) : async () =
-    task |> value_task_as_task |> await_task
 
 /// ## main
 inl main () =

@@ -19,26 +19,22 @@ fun sp_walk_0(p0: Int): Int {
             var v7: Int = (v6 as US0_Step).f0
             var v8: Int = (v6 as US0_Step).f1
             var v9: Int = (v6 as US0_Step).f2
-            var v10: Int = 0
-            v10 = (v8 * v9)
-            var v11: Int = 0
-            v11 = (v7 + v10)
+            val v10: Int = (v8 * v9)
+            val v11: Int = (v7 + v10)
             return v11
         }
         else -> throw RuntimeException()
     }
 }
 fun spiral_main(): Int {
-    var v0: Int = 0
-    v0 = 5
+    val v0: Int = 5
     var v1: Int = 0
     v1 = sp_walk_0(v0)
     var v2: Int = 0
     v2 = (v0 - 4)
     var v3: Int = 0
     v3 = sp_walk_0(v2)
-    var v4: Int = 0
-    v4 = (v1 + v3)
+    val v4: Int = (v1 + v3)
     return v4
 }
 fun main() {

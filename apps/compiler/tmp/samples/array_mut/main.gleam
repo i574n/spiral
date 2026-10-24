@@ -27,17 +27,8 @@ pub fn spiral_array_create(size: Int) -> SpiralArray(a) {
   list.repeat(option.None, size) |> array.from_list(option.None) |> spiral_array_from_storage(size)
 }
 
-pub fn spiral_array_create_filled(size: Int, value: a) -> SpiralArray(a) {
-  list.repeat(option.Some(value), size) |> array.from_list(option.None) |> spiral_array_from_storage(size)
-}
 
-pub fn spiral_array_from_list(values: List(a)) -> SpiralArray(a) {
-  values |> list.map(option.Some) |> array.from_list(option.None) |> spiral_array_from_storage(list.length(values))
-}
 
-pub fn spiral_array_to_list(xs: SpiralArray(a)) -> List(a) {
-  list.repeat(Nil, xs.size) |> list.index_map(fn(_, i) { spiral_array_get(xs, i) })
-}
 
 pub fn spiral_array_get(xs: SpiralArray(a), i: Int) -> a {
   case i >= 0 && i < xs.size {
@@ -88,19 +79,19 @@ pub fn spiral_ref_set(reference: SpiralRef(a), value: a) -> Nil {
 
 pub type Mut0 { Mut0(l0 : Int) }
 pub fn main() {
-let v0 = spiral_array_create(1)
-let v1 = spiral_ref_new(Mut0(l0: 1))
-spiral_array_set(v0, 0, v1)
-let v2 = spiral_array_get(v0, 0)
-spiral_ref_set(v2, Mut0(l0: 7))
-let v3 = spiral_ref_get(v2).l0
-let v4 = v3 == 7
-case v4 {
-    True -> {
-        0
+    let v0 = spiral_array_create(1)
+    let v1 = spiral_ref_new(Mut0(l0: 1))
+    spiral_array_set(v0, 0, v1)
+    let v2 = spiral_array_get(v0, 0)
+    spiral_ref_set(v2, Mut0(l0: 7))
+    let v3 = spiral_ref_get(v2).l0
+    let v4 = v3 == 7
+    case v4 {
+        True -> {
+            0
+        }
+        False -> {
+            1
+        }
     }
-    False -> {
-        1
-    }
-}
 }

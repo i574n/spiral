@@ -23,6 +23,7 @@ def spiral_wrap(x, bits, signed):
 UH0 = Union["UH0_Nil", "UH0_Cons"]
 class UH0_Nil(NamedTuple): # Nil
     tag = 0
+UH0_Nil_shared = UH0_Nil()
 class UH0_Cons(NamedTuple): # Cons
     v0 : cp.ndarray
     v1 : UH0
@@ -47,7 +48,7 @@ def main():
     v0 = 2
     v1 = cp.zeros(v0,dtype=cp.int32)
     del v0
-    v2 = UH0_Nil()
+    v2 = UH0_Nil_shared
     v3 = UH0_Cons(v1, v2)
     del v2
     v4 = UH0_Cons(v1, v3)

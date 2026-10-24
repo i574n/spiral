@@ -10,10 +10,16 @@ nominal epoch1 = ()
 nominal live = ()
 nominal hydrated = ()
 
-union signed_authority signer key digest state = | SignedAuthority :: forall signer key digest state. string -> signed_authority signer key digest state
-union genome_batch signer digest sample build contig = | GenomeBatch :: forall signer digest sample build contig. string -> genome_batch signer digest sample build contig
-union resource scope epoch signer digest sample build contig state = | Resource :: forall scope epoch signer digest sample build contig state. string -> resource scope epoch signer digest sample build contig state
-union view scope epoch signer digest state = | View :: forall scope epoch signer digest state. string -> view scope epoch signer digest state
+union signed_authority signer key digest state =
+    | SignedAuthority :: forall signer key digest state. string -> signed_authority signer key digest state
+union genome_batch signer digest sample build contig =
+    | GenomeBatch :: forall signer digest sample build contig. string -> genome_batch signer digest sample build contig
+union resource scope epoch signer digest sample build contig state =
+    | Resource :: forall scope epoch signer digest sample build contig state.
+        string ->
+        resource scope epoch signer digest sample build contig state
+union view scope epoch signer digest state =
+    | View :: forall scope epoch signer digest state. string -> view scope epoch signer digest state
 
 inl publish forall scope epoch signer key digest sample build contig.
     (authority : signed_authority signer key digest verified)

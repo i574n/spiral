@@ -29,14 +29,13 @@ partial def loop_0 (p0 : Int32) (p1 : Int32) (p2 : Int32) (p3 : Int32) : IO (Int
     let mut v1 : Int32 := p1
     let mut v2 : Int32 := p2
     let mut v3 : Int32 := p3
-    let mut v4 : Bool := default
     let mut v9 : Int32 := default
     let mut v10 : Int32 := default
     let mut v5 : Int32 := default
     let mut v6 : Int32 := default
     let mut v7 : Int32 := default
     let mut v8 : Int32 := default
-    v4 := (decide (v1 >= v0))
+    let v4 : Bool := (decide (v1 >= v0))
     if v4 then
         v9 := v2
         v10 := v3
@@ -50,21 +49,14 @@ partial def loop_0 (p0 : Int32) (p1 : Int32) (p2 : Int32) (p3 : Int32) : IO (Int
         v10 := v8
     return (v9, v10)
 partial def spiralMain : IO Int32 := do
-    let mut v0 : Int32 := default
-    let mut v1 : Int32 := default
-    let mut v2 : Int32 := default
-    let mut v3 : Int32 := default
-    let mut v4 : Int32 := default
-    let mut v5 : Int32 := default
-    let mut v6 : Int32 := default
-    v0 := (5 : Int32)
-    v1 := (0 : Int32)
-    v2 := (1 : Int32)
-    v3 := (2 : Int32)
+    let v0 : Int32 := (5 : Int32)
+    let v1 : Int32 := (0 : Int32)
+    let v2 : Int32 := (1 : Int32)
+    let v3 : Int32 := (2 : Int32)
     let (r2_0, r2_1) := (← loop_0 v0 v1 v2 v3)
-    v4 := r2_0
-    v5 := r2_1
-    v6 := (v4 + v5)
+    let v4 : Int32 := r2_0
+    let v5 : Int32 := r2_1
+    let v6 : Int32 := (v4 + v5)
     return v6
 end
 def main : IO UInt32 := do

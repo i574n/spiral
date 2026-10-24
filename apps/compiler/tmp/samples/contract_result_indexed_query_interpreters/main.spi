@@ -54,7 +54,11 @@ inl packed_value () : packed_query =
     PackedSql (exists (sql (LookupUser "user-7"), row "row-7"))
 
 inl serialize_authority (_ : string) (_ : string) (_ : string) : string =
-    "schema\tnode_id\toperation\tfrom\tto\tdeps\teffect\tcapability\tretry_budget\n1\tlookup\tLookupUser\trequest\trow\t\tidempotent\tquery\t2\n1\tcount\tCountTenants\trequest\tcount\t\tidempotent\tquery\t2\n1\tpair\tPairQuery\trow-count\tpaired\tlookup,count\tidempotent\tcompose\t1\n1\tmap\tMapQuery\tcount\tmapped\tcount\tidempotent\tmap\t1\n"
+    "schema\tnode_id\toperation\tfrom\tto\tdeps\teffect\tcapability\tretry_budget\n"
+    ^^ "1\tlookup\tLookupUser\trequest\trow\t\tidempotent\tquery\t2\n"
+    ^^ "1\tcount\tCountTenants\trequest\tcount\t\tidempotent\tquery\t2\n"
+    ^^ "1\tpair\tPairQuery\trow-count\tpaired\tlookup,count\tidempotent\tcompose\t1\n"
+    ^^ "1\tmap\tMapQuery\tcount\tmapped\tcount\tidempotent\tmap\t1\n"
 
 inl main () : string =
     inl sql_result = run_query (sql (query_value ()))

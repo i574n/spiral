@@ -18,28 +18,14 @@ func sp_loop_0(_ p0: Int32, _ p1: SpiralArray<Int32>, _ p2: Int32, _ p3: Int32, 
         } else {
             var v6: Int32 = 0
             v6 = (v3 % 4)
-            var v7: Int32 = 0
-            v7 = v1.items[Int(v6)]
-            var v8: Int32 = 0
-            v8 = (v3 &+ 1)
-            var v9: Int32 = 0
-            v9 = (v4 &* 7)
-            var v10: Int32 = 0
-            v10 = (v9 &+ v7)
-            var v11: Int32 = 0
-            v11 = (v10 &+ v2)
-            var v12: Int32 = 0
-            v12 = (v11 % 9973)
-            let t803_0: Int32 = v0
-            let t839_1: SpiralArray<Int32> = v1
-            let t888_2: Int32 = v2
-            let t924_8: Int32 = v8
-            let t960_12: Int32 = v12
-            v0 = t803_0
-            v1 = t839_1
-            v2 = t888_2
-            v3 = t924_8
-            v4 = t960_12
+            let v7: Int32 = v1.items[Int(v6)]
+            let v8: Int32 = (v3 &+ 1)
+            let v9: Int32 = (v4 &* 7)
+            let v10: Int32 = (v9 &+ v7)
+            let v11: Int32 = (v10 &+ v2)
+            let v12: Int32 = (v11 % 9973)
+            v3 = v8
+            v4 = v12
             continue
         }
     }
@@ -52,10 +38,8 @@ func spiral_main() -> Int32 {
     v0.items[Int(1)] = 2
     v0.items[Int(2)] = 3
     v0.items[Int(3)] = 4
-    var v1: Int32 = 0
-    v1 = 0
-    var v2: Int32 = 0
-    v2 = 1000000
+    let v1: Int32 = 0
+    let v2: Int32 = 1000000
     var v3: Int32 = 0
     v3 = 0
     var v4: Int32 = 0

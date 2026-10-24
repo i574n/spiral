@@ -2,11 +2,11 @@ inl main () : i32 =
     inl ~n = 3i32
     inl ~word = "no"
     inl pair = n, word
-    inl box : mut {value : i32 * string} = !!!!LayoutToHeapMutable({value = pair})
+    inl box : mut { value : i32 * string } = !!!!LayoutToHeapMutable({ value = pair })
     inl ~m = 7i32
     inl ~next = "hi"
     inl replaced = m, next
-    box <- {value = replaced}
+    box <- { value = replaced }
     inl opened = !!!!LayoutIndex(box)
     inl ~(left, right) = opened.value
     if left =. 7i32 && !!!!EQ(right, "hi") then 0i32 else 1i32

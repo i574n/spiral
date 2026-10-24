@@ -15,7 +15,7 @@ inl new_state (k : u32) : state =
     }
 
 inl total (s : state) : i32 =
-    inl {version seeds owners} = s
+    inl { version seeds owners } = s
     $'(!version as i32) + (!seeds.0.len() as i32) + (*!owners.0.get(&1u32).unwrap() as i32)'
 
 inl native (k : u32) : i32 =

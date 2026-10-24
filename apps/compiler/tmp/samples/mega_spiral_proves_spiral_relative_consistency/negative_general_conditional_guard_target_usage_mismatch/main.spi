@@ -1,6 +1,16 @@
 open main
 
-inl impossible_general_conditional_guard_target_usage_mismatch (guard_step : exact_linear_indexed_small_step exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_indexed_usage_empty exact_linear_bool_type) (branch : exact_linear_indexed_term exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_unit_type) : exact_linear_indexed_small_step exact_linear_free_context_empty exact_linear_indexed_usage_empty (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty) exact_linear_unit_type =
+inl impossible_general_conditional_guard_target_usage_mismatch
+    (guard_step :
+        exact_linear_indexed_small_step
+            exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_indexed_usage_empty
+            exact_linear_bool_type)
+    (branch :
+        exact_linear_indexed_term
+            exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_unit_type)
+    : exact_linear_indexed_small_step exact_linear_free_context_empty exact_linear_indexed_usage_empty
+        (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty) exact_linear_unit_type
+    =
     ExactLinearIndexedConditionalGuardStep (exists (
         guard_step,
         branch,
@@ -13,7 +23,10 @@ inl impossible_general_conditional_guard_target_usage_mismatch (guard_step : exa
 
 inl main () =
     inl empty_usage = exact_linear_indexed_empty_usage ()
-    inl guard_step : exact_linear_indexed_small_step exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_indexed_usage_empty exact_linear_bool_type =
+    inl guard_step
+        : exact_linear_indexed_small_step exact_linear_free_context_empty exact_linear_indexed_usage_empty
+            exact_linear_indexed_usage_empty exact_linear_bool_type
+        =
         ExactLinearIndexedConditionalTrueStep (exists (
             empty_usage,
             ExactLinearIndexedBoolFalse (

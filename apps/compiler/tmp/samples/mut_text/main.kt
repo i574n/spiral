@@ -1,16 +1,12 @@
 class Mut0(var l0: String)
 fun spiral_main(): Int {
-    var v0: String = ""
-    v0 = "no"
+    val v0: String = "no"
     var v1: Mut0 = Mut0("")
     v1 = Mut0(v0)
-    var v2: String = ""
-    v2 = "hi"
+    val v2: String = "hi"
     v1.l0 = v2
-    var v3: String = ""
-    v3 = v1.l0
-    var v4: Boolean = false
-    v4 = (v3 == "hi")
+    val v3: String = v1.l0
+    val v4: Boolean = (v3 == "hi")
     if (v4) {
         return 0
     } else {

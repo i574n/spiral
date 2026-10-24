@@ -7,8 +7,7 @@ func sp_twice_1(_ p0: Double) -> Int32 {
     var v0: Double = p0
     var v1: Double = (0.0 as Double)
     v1 = (v0 * (2.0 as Double))
-    var v2: Int32 = 0
-    v2 = Int32(v1)
+    let v2: Int32 = Int32(v1)
     return v2
 }
 func sp_score_0(_ p0: US0) -> Int32 {
@@ -25,8 +24,7 @@ func sp_score_0(_ p0: US0) -> Int32 {
     }
 }
 func spiral_main() -> Int32 {
-    var v0: Bool = false
-    v0 = true
+    let v0: Bool = true
     var v1: Double = (0.0 as Double)
     v1 = (1.5 as Double)
     var v4: US0 = US0_Real(f0: (0.0 as Double))
@@ -41,16 +39,12 @@ func spiral_main() -> Int32 {
     } else {
         v7 = US0_Real(f0: v1)
     }
-    var v8: Int32 = 0
-    v8 = sp_score_0(v4)
-    var v9: Bool = false
-    v9 = (v8 == 3)
+    let v8: Int32 = sp_score_0(v4)
+    let v9: Bool = (v8 == 3)
     var v12: Bool = false
     if (v9) {
-        var v10: Int32 = 0
-        v10 = sp_score_0(v7)
-        var v11: Bool = false
-        v11 = (v10 == 5)
+        let v10: Int32 = sp_score_0(v7)
+        let v11: Bool = (v10 == 5)
         v12 = v11
     } else {
         v12 = false

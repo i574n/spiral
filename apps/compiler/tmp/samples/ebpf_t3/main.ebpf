@@ -52,14 +52,10 @@ static SpiralTuple0 sp_method2(int32_t p0, int32_t p1, int32_t p2, int32_t p3) {
         if (v8) {
             return (SpiralTuple0){v5, v6, v7};
         } else {
-            int32_t t585_4 = v4;
-            int32_t t619_5 = v5;
-            int32_t t653_6 = v6;
-            int32_t t687_7 = v7;
-            v0 = t585_4;
-            v1 = t619_5;
-            v2 = t653_6;
-            v3 = t687_7;
+            v0 = v4;
+            v1 = v5;
+            v2 = v6;
+            v3 = v7;
             continue;
         }
     }

@@ -8,24 +8,15 @@ fun f_c0(v0: Heap2): (Int) -> Heap2 {
     return { p0: Int -> body(p0) }
 }
 fun spiral_main(): Int {
-    var v0: Int = 0
-    v0 = 7
-    var v1: String = ""
-    v1 = "hi"
-    var v2: Heap0 = Heap0(0, "")
-    v2 = Heap0(v0, v1)
-    var v3: Int = 0
-    v3 = 1
-    var v4: Heap1 = Heap1(Heap0(0, ""), 0)
-    v4 = Heap1(v2, v3)
-    var v5: Int = 0
-    v5 = 2
-    var v6: Heap2 = Heap2(Heap1(Heap0(0, ""), 0), 0)
-    v6 = Heap2(v4, v5)
-    var v7: (Int) -> Heap2 = { _: Int -> throw RuntimeException() }
-    v7 = f_c0(v6)
-    var v8: Heap2 = Heap2(Heap1(Heap0(0, ""), 0), 0)
-    v8 = v7(1)
+    val v0: Int = 7
+    val v1: String = "hi"
+    val v2: Heap0 = Heap0(v0, v1)
+    val v3: Int = 1
+    val v4: Heap1 = Heap1(v2, v3)
+    val v5: Int = 2
+    val v6: Heap2 = Heap2(v4, v5)
+    val v7: (Int) -> Heap2 = f_c0(v6)
+    val v8: Heap2 = v7(1)
     var v9: Heap1 = Heap1(Heap0(0, ""), 0)
     var v10: Int = 0
     v9 = v8.l0
@@ -38,28 +29,24 @@ fun spiral_main(): Int {
     var v14: String = ""
     v13 = v11.l0
     v14 = v11.l1
-    var v15: Boolean = false
-    v15 = (v13 == 7)
+    val v15: Boolean = (v13 == 7)
     var v17: Boolean = false
     if (v15) {
-        var v16: Boolean = false
-        v16 = (v14 == "hi")
+        val v16: Boolean = (v14 == "hi")
         v17 = v16
     } else {
         v17 = false
     }
     var v19: Boolean = false
     if (v17) {
-        var v18: Boolean = false
-        v18 = (v12 == 1)
+        val v18: Boolean = (v12 == 1)
         v19 = v18
     } else {
         v19 = false
     }
     var v21: Boolean = false
     if (v19) {
-        var v20: Boolean = false
-        v20 = (v10 == 2)
+        val v20: Boolean = (v10 == 2)
         v21 = v20
     } else {
         v21 = false

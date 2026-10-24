@@ -40,7 +40,7 @@ function spiral_string_slice(value: string, from: number, to: number): string {
 type US0_Empty = { readonly tag: 0 };
 type US0_Item = { readonly tag: 1, readonly f0: string, readonly f1: Array<number> };
 type US0 = US0_Empty | US0_Item;
-function US0_Empty(): US0 { return { tag: 0 }; }
+const US0_Empty_shared: US0 = { tag: 0 }; function US0_Empty(): US0 { return US0_Empty_shared; }
 function US0_Item(f0: string, f1: Array<number>): US0 { return { tag: 1, f0: f0, f1: f1 }; }
 function closure1(v0: US0): ((a0: number) => number) {
     return (v1: number): number => {
@@ -51,36 +51,36 @@ function closure1(v0: US0): ((a0: number) => number) {
                 break;
             }
             case 1: {
-                let v2: string = v0.f0;
-                let v3: Array<number> = v0.f1;
-                let v4: number = spiral_string_length(v2);
-                let v5: number = v3.length;
-                let v6: number = (v4 + v5) | 0;
+                const v2: string = v0.f0;
+                const v3: Array<number> = v0.f1;
+                const v4: number = spiral_string_length(v2);
+                const v5: number = v3.length;
+                const v6: number = (v4 + v5) | 0;
                 let v7: number = spiral_array_index(v3, 0);
-                let v8: number = (v6 + v7) | 0;
-                let v9: number = spiral_array_index(v3, 1);
-                let v10: number = (v8 + v9) | 0;
+                const v8: number = (v6 + v7) | 0;
+                const v9: number = spiral_array_index(v3, 1);
+                const v10: number = (v8 + v9) | 0;
                 v12 = v10;
                 break;
             }
             default: throw new Error("Compiler error: unreachable union case.");
         }
-        let v13: number = (v12 + v1) | 0;
+        const v13: number = (v12 + v1) | 0;
         return v13;
     };
 }
 function closure0(): ((a0: number) => ((a0: number) => number)) {
     return (v0: number): ((a0: number) => number) => {
-        let v1: Array<number> = new Array<number>(2).fill(0);
+        const v1: Array<number> = new Array<number>(2).fill(0);
         spiral_array_set(v1, 0, v0);
-        let v2: number = (v0 + 1) | 0;
+        const v2: number = (v0 + 1) | 0;
         spiral_array_set(v1, 1, v2);
-        let v3: boolean = v0 === 0;
+        const v3: boolean = v0 === 0;
         let v7: US0;
         if (v3) {
             v7 = US0_Empty();
         } else {
-            let v5: string = "hi";
+            const v5: string = "hi";
             v7 = US0_Item(v5, v1);
         }
         return closure1(v7);
@@ -93,26 +93,26 @@ function method1(v0: ((a0: number) => ((a0: number) => number))): ((a0: number) 
     return v0(4);
 }
 function method4(v0: ((a0: number) => number)): number {
-    let v1: number = v0(2);
-    let v2: number = (v1 + 5) | 0;
+    const v1: number = v0(2);
+    const v2: number = (v1 + 5) | 0;
     return v2;
 }
 function method3(v0: ((a0: number) => number)): number {
-    let v1: number = v0(1);
-    let v2: number = method4(v0);
-    let v3: number = (v1 + v2) | 0;
+    const v1: number = v0(1);
+    const v2: number = method4(v0);
+    const v3: number = (v1 + v2) | 0;
     return v3;
 }
 function method2(v0: ((a0: number) => number), v1: ((a0: number) => number)): number {
-    let v2: number = v0(5);
-    let v3: number = method3(v1);
-    let v4: number = (v2 + v3) | 0;
+    const v2: number = v0(5);
+    const v3: number = method3(v1);
+    const v4: number = (v2 + v3) | 0;
     return v4;
 }
 export function main(): number {
-    let v0: ((a0: number) => ((a0: number) => number)) = closure0();
-    let v1: ((a0: number) => number) = method0(v0);
-    let v2: ((a0: number) => number) = method1(v0);
+    const v0: ((a0: number) => ((a0: number) => number)) = closure0();
+    const v1: ((a0: number) => number) = method0(v0);
+    const v2: ((a0: number) => number) = method1(v0);
     return method2(v1, v2);
 }
 process.exitCode = main();

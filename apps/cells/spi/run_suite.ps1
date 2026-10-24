@@ -6,11 +6,14 @@ param(
     [int]$TimeoutMin = 60
 )
 $ErrorActionPreference = 'Continue'
-if (Get-Process otclient_gl_x64, canary -ErrorAction Ignore) { "deferred: a live game client or server is running ($(Get-Date -Format HH:mm:ss))"; return }
+if (Get-Process otclient_gl_x64, canary -ErrorAction Ignore) { "deferred: a live game client or server is running ($(Get-Date -Format HH:mm:ss))"; exit 75 }
 $cells = Split-Path $PSScriptRoot
 $repo = Split-Path (Split-Path $cells)
 $state = Join-Path ($env:LOCALAPPDATA ?? $HOME) 'spiral-bin'
 $env:PATH = "$env:USERPROFILE\scoop\apps\erlang\current\bin;$env:USERPROFILE\scoop\apps\elixir\current\bin;$env:PATH"
+$crashDumps = Join-Path $state 'crash-dumps'
+New-Item -ItemType Directory -Force $crashDumps | Out-Null
+$env:ERL_CRASH_DUMP = Join-Path $crashDumps "erl_crash-$Label-$(Get-Date -Format yyyyMMdd-HHmmss).dump"
 $env:MIX_BUILD_PATH = Join-Path $state "cells-builds/$Label"
 $env:SPIRAL_DOTNET = Join-Path $state 'toolchains/dotnet/dotnet.exe'
 $env:SPIRAL_WORKSPACE_ROOT = Join-Path $repo 'apps/compiler/tmp'
@@ -39,4 +42,4 @@ $suiteOutcome = if ($suite.ExitCode) { "exit $($suite.ExitCode)" } else { 'ok' }
 try { Write-RunLedger 'cells-suite' "kino suite $Label" ([scriptblock]::Create("'" + ("run_suite.ps1 -Label $Label $($Tests -join ' ')" -replace "'", "''") + "'")) $suite.StartTime $suite.StartTime '-' $suiteOutcome 0 } catch { Write-Warning "run ledger: $($_.Exception.Message)" }
 "== $Label exit $($suite.ExitCode) (log $log)"
 Select-String -Path $log -Pattern '^\s+\d+\) test|tests, \d+ failure' | ForEach-Object Line
-$global:LASTEXITCODE = $suite.ExitCode
+exit $suite.ExitCode

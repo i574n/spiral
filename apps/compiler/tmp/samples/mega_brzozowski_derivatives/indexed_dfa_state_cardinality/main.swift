@@ -68,12 +68,9 @@ func sp_random_bit_input_1(_ p0: UInt64, _ p1: Int32, _ p2: UH2) -> (UH2, UInt64
             }
             var v14: UH2 = UH2_InputEmpty()
             v14 = UH2_InputCons(f0: v13, f1: v2)
-            let t1227_6: UInt64 = v6
-            let t1265_7: Int32 = v7
-            let t1302_14: UH2 = v14
-            v0 = t1227_6
-            v1 = t1265_7
-            v2 = t1302_14
+            v0 = v6
+            v1 = v7
+            v2 = v14
             continue
         } else {
             return (v2, v0)
@@ -741,16 +738,9 @@ func sp_loop_0(_ p0: Int32, _ p1: UH1, _ p2: Int32, _ p3: UInt64, _ p4: Int32) -
                 } else {
                     v16 = v4
                 }
-                let t1372_0: Int32 = v0
-                let t1413_1: UH1 = v1
-                let t1452_14: Int32 = v14
-                let t1495_8: UInt64 = v8
-                let t1537_16: Int32 = v16
-                v0 = t1372_0
-                v1 = t1413_1
-                v2 = t1452_14
-                v3 = t1495_8
-                v4 = t1537_16
+                v2 = v14
+                v3 = v8
+                v4 = v16
                 continue
             } else {
                 "brzozowski-compiled-core-disagrees-on-random-input".withCString { ptr in _ = fputs(ptr, stderr) }
@@ -776,10 +766,8 @@ func sp_zeros_input_15(_ p0: Int32, _ p1: UH2) -> UH2 {
             v4 = US0_BitZero()
             var v5: UH2 = UH2_InputEmpty()
             v5 = UH2_InputCons(f0: v4, f1: v1)
-            let t417_3: Int32 = v3
-            let t453_5: UH2 = v5
-            v0 = t417_3
-            v1 = t453_5
+            v0 = v3
+            v1 = v5
             continue
         } else {
             return v1
@@ -922,14 +910,8 @@ func sp_loop_14(_ p0: Int32, _ p1: UH1, _ p2: Int32, _ p3: Int32) -> Int32 {
             }
             var v29: Int32 = 0
             v29 = (v2 &+ 1)
-            let t2679_0: Int32 = v0
-            let t2716_1: UH1 = v1
-            let t2751_29: Int32 = v29
-            let t2790_28: Int32 = v28
-            v0 = t2679_0
-            v1 = t2716_1
-            v2 = t2751_29
-            v3 = t2790_28
+            v2 = v29
+            v3 = v28
             continue
         }
     }
@@ -1733,52 +1715,33 @@ func spiral_main() -> Int32 {
     v36 = UH6_RegexAlt(f0: v33, f1: v35)
     var v37: UH6 = UH6_RegexEmpty()
     v37 = UH6_RegexStar(f0: v36)
-    var v38: US5 = US5_TriA()
-    v38 = US5_TriC()
-    var v39: UH6 = UH6_RegexEmpty()
-    v39 = UH6_RegexChar(f0: v38)
-    var v40: UH6 = UH6_RegexEmpty()
-    v40 = UH6_RegexCat(f0: v37, f1: v39)
-    var v41: US5 = US5_TriA()
-    v41 = US5_TriA()
+    let v38: US5 = US5_TriC()
+    let v39: UH6 = UH6_RegexChar(f0: v38)
+    let v40: UH6 = UH6_RegexCat(f0: v37, f1: v39)
+    let v41: US5 = US5_TriA()
     var v42: US5 = US5_TriA()
     v42 = US5_TriB()
     var v43: US5 = US5_TriA()
     v43 = US5_TriA()
-    var v44: US5 = US5_TriA()
-    v44 = US5_TriC()
-    var v45: UH7 = UH7_InputEmpty()
-    v45 = UH7_InputEmpty()
-    var v46: UH7 = UH7_InputEmpty()
-    v46 = UH7_InputCons(f0: v44, f1: v45)
+    let v44: US5 = US5_TriC()
+    let v45: UH7 = UH7_InputEmpty()
+    let v46: UH7 = UH7_InputCons(f0: v44, f1: v45)
     var v47: UH7 = UH7_InputEmpty()
     v47 = UH7_InputCons(f0: v43, f1: v46)
-    var v48: UH7 = UH7_InputEmpty()
-    v48 = UH7_InputCons(f0: v42, f1: v47)
-    var v49: UH7 = UH7_InputEmpty()
-    v49 = UH7_InputCons(f0: v41, f1: v48)
-    var v50: US5 = US5_TriA()
-    v50 = US5_TriA()
-    var v51: US5 = US5_TriA()
-    v51 = US5_TriB()
-    var v52: US5 = US5_TriA()
-    v52 = US5_TriA()
-    var v53: US5 = US5_TriA()
-    v53 = US5_TriB()
-    var v54: UH7 = UH7_InputEmpty()
-    v54 = UH7_InputEmpty()
-    var v55: UH7 = UH7_InputEmpty()
-    v55 = UH7_InputCons(f0: v53, f1: v54)
-    var v56: UH7 = UH7_InputEmpty()
-    v56 = UH7_InputCons(f0: v52, f1: v55)
+    let v48: UH7 = UH7_InputCons(f0: v42, f1: v47)
+    let v49: UH7 = UH7_InputCons(f0: v41, f1: v48)
+    let v50: US5 = US5_TriA()
+    let v51: US5 = US5_TriB()
+    let v52: US5 = US5_TriA()
+    let v53: US5 = US5_TriB()
+    let v54: UH7 = UH7_InputEmpty()
+    let v55: UH7 = UH7_InputCons(f0: v53, f1: v54)
+    let v56: UH7 = UH7_InputCons(f0: v52, f1: v55)
     var v57: UH7 = UH7_InputEmpty()
     v57 = UH7_InputCons(f0: v51, f1: v56)
-    var v58: UH7 = UH7_InputEmpty()
-    v58 = UH7_InputCons(f0: v50, f1: v57)
-    var v59: Int32 = 0
-    v59 = 0
-    var v60: Bool = false
-    v60 = sp_run_17(v59, v49)
+    let v58: UH7 = UH7_InputCons(f0: v50, f1: v57)
+    let v59: Int32 = 0
+    let v60: Bool = sp_run_17(v59, v49)
     var v62: Bool = false
     if (v60) {
         v62 = sp_accepts_18(v40, v49)
@@ -1789,15 +1752,12 @@ func spiral_main() -> Int32 {
     if (v62) {
         var v63: Int32 = 0
         v63 = 0
-        var v64: Bool = false
-        v64 = sp_run_17(v63, v58)
+        let v64: Bool = sp_run_17(v63, v58)
         if (v64) {
             v68 = false
         } else {
-            var v65: Bool = false
-            v65 = sp_accepts_18(v40, v58)
-            var v66: Bool = false
-            v66 = (v65 == false)
+            let v65: Bool = sp_accepts_18(v40, v58)
+            let v66: Bool = (v65 == false)
             v68 = v66
         }
     } else {

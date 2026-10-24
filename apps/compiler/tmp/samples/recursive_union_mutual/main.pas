@@ -11,17 +11,21 @@ function UH1_B(a0: TUH0): TUH1;
 begin
   Result := TUH1.Create; Result.tag := 0; Result.c0_0 := a0;
 end;
+var UH1_StopB_shared: TUH1 = nil;
 function UH1_StopB: TUH1;
 begin
-  Result := TUH1.Create; Result.tag := 1; 
+  if UH1_StopB_shared = nil then begin UH1_StopB_shared := TUH1.Create; UH1_StopB_shared.tag := 1; end;
+  Result := UH1_StopB_shared;
 end;
 function UH0_A(a0: TUH1): TUH0;
 begin
   Result := TUH0.Create; Result.tag := 0; Result.c0_0 := a0;
 end;
+var UH0_StopA_shared: TUH0 = nil;
 function UH0_StopA: TUH0;
 begin
-  Result := TUH0.Create; Result.tag := 1; 
+  if UH0_StopA_shared = nil then begin UH0_StopA_shared := TUH0.Create; UH0_StopA_shared.tag := 1; end;
+  Result := UH0_StopA_shared;
 end;
 function SpiralMain: LongInt;
 var

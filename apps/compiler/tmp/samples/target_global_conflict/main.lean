@@ -28,17 +28,13 @@ partial def target_global_0 (p0 : String) : IO Unit := do
     let mut v0 : String := p0
     return ()
 partial def spiralMain : IO Int32 := do
-    let mut v0 : String := default
-    let mut v1 : String := default
-    let mut v2 : String := default
-    let mut v3 : String := default
-    v0 := "SPIRAL_TARGET_GLOBAL_RUST_PRELUDE_same_B64:Ly9Q"
+    let v0 : String := "SPIRAL_TARGET_GLOBAL_RUST_PRELUDE_same_B64:Ly9Q"
     let _ := (← target_global_0 v0)
-    v1 := "SPIRAL_TARGET_GLOBAL_RUST_BEFORE_MAIN_same_B64:Ly9C"
+    let v1 : String := "SPIRAL_TARGET_GLOBAL_RUST_BEFORE_MAIN_same_B64:Ly9C"
     let _ := (← target_global_0 v1)
-    v2 := "SPIRAL_TARGET_GLOBAL_DELPHI_PRELUDE_same_B64:Ly9Q"
+    let v2 : String := "SPIRAL_TARGET_GLOBAL_DELPHI_PRELUDE_same_B64:Ly9Q"
     let _ := (← target_global_0 v2)
-    v3 := "SPIRAL_TARGET_GLOBAL_DELPHI_BEFORE_MAIN_same_B64:Ly9C"
+    let v3 : String := "SPIRAL_TARGET_GLOBAL_DELPHI_BEFORE_MAIN_same_B64:Ly9C"
     let _ := (← target_global_0 v3)
     return (0 : Int32)
 end

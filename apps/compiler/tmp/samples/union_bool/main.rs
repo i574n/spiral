@@ -9,7 +9,7 @@ enum US0 {
 fn score_0(mut v0: US0) -> i32 {
     match &v0 {
         US0::US0_No(v1) => {
-            let mut v1: bool = *v1;
+            let v1: bool = *v1;
             if v1 {
                 1i32
             } else {
@@ -17,28 +17,28 @@ fn score_0(mut v0: US0) -> i32 {
             }
         }
         US0::US0_Yes(v3) => {
-            let mut v3: i32 = *v3;
+            let v3: i32 = *v3;
             v3
         }
     }
 }
 fn spiral_main() -> i32 {
-    let mut v0: bool = true;
-    let mut v3: US0 = if v0 {
+    let v0: bool = true;
+    let v3: US0 = if v0 {
         US0::US0_Yes(7i32)
     } else {
         US0::US0_No(false)
     };
-    let mut v6: US0 = if v0 {
+    let v6: US0 = if v0 {
         US0::US0_No(true)
     } else {
         US0::US0_Yes(1i32)
     };
-    let mut v7: i32 = score_0(v3.clone());
-    let mut v8: bool = v7 == 7i32;
-    let mut v11: bool = if v8 {
-        let mut v9: i32 = score_0(v6.clone());
-        let mut v10: bool = v9 == 1i32;
+    let v7: i32 = score_0(v3);
+    let v8: bool = v7 == 7i32;
+    let v11: bool = if v8 {
+        let v9: i32 = score_0(v6);
+        let v10: bool = v9 == 1i32;
         v10
     } else {
         false

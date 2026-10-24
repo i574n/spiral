@@ -23,10 +23,10 @@ typedef struct {
 static inline void ArrayDecrefBody0(Array0 * x){
     (void)x;
 }
-void ArrayDecref0(Array0 * x){
+static void ArrayDecref0(Array0 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody0(x); free(x); }
 }
-Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
+static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     uint32_t size = sizeof(Array0) + sizeof(char) * len;
     Array0 * x = malloc(size);
     if (init_at_zero) { memset(x,0,size); }
@@ -34,7 +34,7 @@ Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     x->len = len;
     return x;
 }
-Array0 * ArrayLit0(uint32_t len, char * ptr){
+static Array0 * ArrayLit0(uint32_t len, char * ptr){
     Array0 * x = ArrayCreate0(len, false);
     memcpy(x->ptr, ptr, sizeof(char) * len);
     return x;
@@ -75,13 +75,10 @@ US0 US0_Number(int32_t v0) { // Number
     x.case1.v0 = v0;
     return x;
 }
-int32_t score0(US0 v0){
-    
-    
+static int32_t score0(US0 v0){
     switch (v0.tag) {
         case 1: { // Number
             int32_t v3 = v0.case1.v0;
-            
             USDecref0(&(v0));
             return v3;
             break;
@@ -90,9 +87,7 @@ int32_t score0(US0 v0){
             String * v1 = v0.case0.v0;
             (v1)->refc++;
             USDecref0(&(v0));
-            int32_t v2;
-            v2 = v1->len-1;
-            
+            int32_t v2 = v1->len-1;
             StringDecref(v1);
             return v2;
             break;
@@ -100,43 +95,20 @@ int32_t score0(US0 v0){
     }
 }
 int32_t main(){
-    
-    
-    bool v0;
-    v0 = false;
-    
-    
+    bool v0 = false;
     US0 v4;
     if (v0){
-        
-        
         v4 = US0_Number(7l);
     } else {
-        
-        
-        String * v2;
-        v2 = StringLit(4, "qwe");
-        
-        
+        String * v2 = StringLit(4, "qwe");
         v4 = US0_Text(v2);
     }
     USIncref0(&(v4));
-    
-    int32_t v5;
-    v5 = score0(v4);
+    int32_t v5 = score0(v4);
     USIncref0(&(v4));
-    
-    int32_t v6;
-    v6 = score0(v4);
-    
+    int32_t v6 = score0(v4);
     USDecref0(&(v4));
-    int32_t v7;
-    v7 = v5 + v6;
-    
-    
-    int32_t v8;
-    v8 = v7 - 6l;
-    
-    
+    int32_t v7 = v5 + v6;
+    int32_t v8 = v7 - 6l;
     return v8;
 }

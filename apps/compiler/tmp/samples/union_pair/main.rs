@@ -9,35 +9,35 @@ enum US0 {
 fn sum_0(mut v0: US0) -> i32 {
     match &v0 {
         US0::US0_Both(v2, v3) => {
-            let mut v2: i32 = *v2;
-            let mut v3: i32 = *v3;
-            let mut v4: i32 = v2.wrapping_mul(10i32);
-            let mut v5: i32 = v4.wrapping_add(v3);
+            let v2: i32 = *v2;
+            let v3: i32 = *v3;
+            let v4: i32 = v2.wrapping_mul(10i32);
+            let v5: i32 = v4.wrapping_add(v3);
             v5
         }
         US0::US0_One(v1) => {
-            let mut v1: i32 = *v1;
+            let v1: i32 = *v1;
             v1
         }
     }
 }
 fn spiral_main() -> i32 {
-    let mut v0: bool = true;
-    let mut v3: US0 = if v0 {
+    let v0: bool = true;
+    let v3: US0 = if v0 {
         US0::US0_Both(3i32, 4i32)
     } else {
         US0::US0_One(1i32)
     };
-    let mut v6: US0 = if v0 {
+    let v6: US0 = if v0 {
         US0::US0_One(5i32)
     } else {
         US0::US0_Both(1i32, 1i32)
     };
-    let mut v7: i32 = sum_0(v3.clone());
-    let mut v8: bool = v7 == 34i32;
-    let mut v11: bool = if v8 {
-        let mut v9: i32 = sum_0(v6.clone());
-        let mut v10: bool = v9 == 5i32;
+    let v7: i32 = sum_0(v3);
+    let v8: bool = v7 == 34i32;
+    let v11: bool = if v8 {
+        let v9: i32 = sum_0(v6);
+        let v10: bool = v9 == 5i32;
         v10
     } else {
         false

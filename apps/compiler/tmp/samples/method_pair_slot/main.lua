@@ -15,11 +15,10 @@ end
 
 local v0 = 7
 local v1, v2 = (table.unpack or unpack)(method0(v0))
-local __v = { v1 }
-if __v[1] ~= nil and __v[1].tag == "Us0_None" then
+if v1 ~= nil and v1.tag == "Us0_None" then
     return 1
-elseif __v[1] ~= nil and __v[1].tag == "Us0_Some" then
-    local v3 = __v[1]._1
+elseif v1 ~= nil and v1.tag == "Us0_Some" then
+    local v3 = v1._1
     local v4 = v3 == 7
     local getv6 = function()
         if v4 then

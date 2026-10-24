@@ -2,7 +2,7 @@ inl main () : i32 =
     inl ~x = 1.5f32
     inl ~n = 7i32
     inl pair = x, n
-    inl box = !!!!LayoutToHeap({value = pair})
+    inl box = !!!!LayoutToHeap({ value = pair })
     inl opened = !!!!LayoutIndex(box)
     inl ~(left, right) = opened.value
     if left =. 1.5f32 && right =. 7i32 then 0i32 else 1i32

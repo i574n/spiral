@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 typedef struct UH0 UH0;
-void UHDecref0(UH0 * x);
+static void UHDecref0(UH0 * x);
 struct UH0 {
     int refc;
     int tag;
@@ -24,7 +24,7 @@ static inline void UHDecrefBody0(UH0 * x){
         }
     }
 }
-void UHDecref0(UH0 * x){
+static void UHDecref0(UH0 * x){
     while (x != NULL && --(x->refc) == 0) {
         UH0 * next = NULL;
         switch (x->tag) {
@@ -39,10 +39,8 @@ void UHDecref0(UH0 * x){
     }
 }
 UH0 * UH0_Leaf() { // Leaf
-    UH0 * x = malloc(sizeof(UH0));
-    x->tag = 0;
-    x->refc = 1;
-    return x;
+    static UH0 x = { .refc = 1073741823, .tag = 0 };
+    return &x;
 }
 UH0 * UH0_Node(int32_t v0, UH0 * v1, UH0 * v2) { // Node
     UH0 * x = malloc(sizeof(UH0));
@@ -51,13 +49,9 @@ UH0 * UH0_Node(int32_t v0, UH0 * v1, UH0 * v2) { // Node
     x->case1.v0 = v0; x->case1.v1 = v1; x->case1.v2 = v2;
     return x;
 }
-int32_t sum1(UH0 * v0){
-    
-    
+static int32_t sum1(UH0 * v0){
     switch (v0->tag) {
         case 0: { // Leaf
-            
-            
             UHDecref0(v0);
             return 0l;
             break;
@@ -66,94 +60,50 @@ int32_t sum1(UH0 * v0){
             int32_t v1 = v0->case1.v0; UH0 * v2 = v0->case1.v1; UH0 * v3 = v0->case1.v2;
             (v2)->refc += 2; (v3)->refc++;
             UHDecref0(v0);
-            int32_t v4;
-            v4 = sum1(v2);
+            int32_t v4 = sum1(v2);
             (v3)->refc++;
             UHDecref0(v2);
-            int32_t v5;
-            v5 = sum1(v3);
-            
+            int32_t v5 = sum1(v3);
             UHDecref0(v3);
-            int32_t v6;
-            v6 = v4 + v5;
-            
-            
-            int32_t v7;
-            v7 = v1 + v6;
-            
-            
+            int32_t v6 = v4 + v5;
+            int32_t v7 = v1 + v6;
             return v7;
             break;
         }
     }
 }
-int32_t consume_pair0(UH0 * v0, UH0 * v1){
+static int32_t consume_pair0(UH0 * v0, UH0 * v1){
     (v0)->refc++;
-    
-    int32_t v2;
-    v2 = sum1(v0);
+    int32_t v2 = sum1(v0);
     (v1)->refc++;
     UHDecref0(v0);
-    int32_t v3;
-    v3 = sum1(v1);
-    
+    int32_t v3 = sum1(v1);
     UHDecref0(v1);
-    int32_t v4;
-    v4 = v2 + v3;
-    
-    
+    int32_t v4 = v2 + v3;
     return v4;
 }
 int32_t main(){
-    
-    
-    int32_t v0;
-    v0 = 1l;
-    
-    
-    int32_t v1;
-    v1 = 2l;
-    
-    
-    UH0 * v2;
-    v2 = UH0_Leaf();
+    int32_t v0 = 1l;
+    int32_t v1 = 2l;
+    UH0 * v2 = UH0_Leaf();
     (v2)->refc += 2;
-    
-    UH0 * v3;
-    v3 = UH0_Node(v1, v2, v2);
+    UH0 * v3 = UH0_Node(v1, v2, v2);
     (v3)->refc += 2;
     UHDecref0(v2);
-    UH0 * v4;
-    v4 = UH0_Node(v0, v3, v3);
-    
+    UH0 * v4 = UH0_Node(v0, v3, v3);
     UHDecref0(v3);
-    int32_t v5;
-    v5 = 1l;
-    
-    
-    int32_t v6;
-    v6 = 2l;
-    
-    
-    UH0 * v7;
-    v7 = UH0_Leaf();
+    int32_t v5 = 1l;
+    int32_t v6 = 2l;
+    UH0 * v7 = UH0_Leaf();
     (v7)->refc += 2;
-    
-    UH0 * v8;
-    v8 = UH0_Node(v6, v7, v7);
+    UH0 * v8 = UH0_Node(v6, v7, v7);
     (v8)->refc += 2;
     UHDecref0(v7);
-    UH0 * v9;
-    v9 = UH0_Node(v5, v8, v8);
+    UH0 * v9 = UH0_Node(v5, v8, v8);
     (v4)->refc++; (v9)->refc++;
     UHDecref0(v8);
-    int32_t v10;
-    v10 = consume_pair0(v4, v9);
-    
+    int32_t v10 = consume_pair0(v4, v9);
     UHDecref0(v4); UHDecref0(v9);
-    int32_t v11;
-    v11 = v10 - 10l;
-    
-    
+    int32_t v11 = v10 - 10l;
     return v11;
 }

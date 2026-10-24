@@ -2,31 +2,42 @@ inl main () : i32 =
     inl ~n = 1i32
     inl ~word = "no"
     inl left_pair = n, word
-    inl left_heap = !!!!LayoutToHeap({value = left_pair})
+    inl left_heap = !!!!LayoutToHeap({ value = left_pair })
     inl ~m = 2i32
     inl ~other = "zz"
     inl right_pair = m, other
-    inl right_heap = !!!!LayoutToHeap({value = right_pair})
+    inl right_heap = !!!!LayoutToHeap({ value = right_pair })
     inl pair = left_heap, right_heap
-    inl inner = !!!!LayoutToHeap({value = pair})
+    inl inner = !!!!LayoutToHeap({ value = pair })
     inl ~mark = 3i32
     inl outer_pair = inner, mark
-    inl outer = !!!!LayoutToHeap({value = outer_pair})
-    inl slot : mut {value : heap {value : (heap {value : heap {value : i32 * string} * heap {value : i32 * string}}) * i32}} = !!!!LayoutToHeapMutable({value = outer})
+    inl outer = !!!!LayoutToHeap({ value = outer_pair })
+    inl slot
+        : mut
+            {
+                value :
+                    heap
+                        {
+                            value :
+                                (heap { value : heap { value : i32 * string } * heap { value : i32 * string } }) * i32
+                        }
+            }
+        =
+        !!!!LayoutToHeapMutable({ value = outer })
     inl ~a0 = 7i32
     inl ~b0 = "hi"
     inl next_left_pair = a0, b0
-    inl next_left = !!!!LayoutToHeap({value = next_left_pair})
+    inl next_left = !!!!LayoutToHeap({ value = next_left_pair })
     inl ~c0 = 4i32
     inl ~d0 = "yo"
     inl next_right_pair = c0, d0
-    inl next_right = !!!!LayoutToHeap({value = next_right_pair})
+    inl next_right = !!!!LayoutToHeap({ value = next_right_pair })
     inl next_pair = next_left, next_right
-    inl next_inner = !!!!LayoutToHeap({value = next_pair})
+    inl next_inner = !!!!LayoutToHeap({ value = next_pair })
     inl ~flag = 2i32
     inl next_outer_pair = next_inner, flag
-    inl next_outer = !!!!LayoutToHeap({value = next_outer_pair})
-    slot <- {value = next_outer}
+    inl next_outer = !!!!LayoutToHeap({ value = next_outer_pair })
+    slot <- { value = next_outer }
     inl opened = !!!!LayoutIndex(slot)
     inl held = opened.value
     inl outer_opened = !!!!LayoutIndex(held)

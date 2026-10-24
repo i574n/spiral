@@ -44,8 +44,7 @@ fun sp_score_1(p0: Int, p1: String): Int {
     return v3
 }
 fun spiral_main(): Int {
-    var v0: String = ""
-    v0 = "qwe"
+    val v0: String = "qwe"
     var v1: String = ""
     var v2: Int = 0
     val spiral_tuple113 = sp_method0(v0)
@@ -53,12 +52,9 @@ fun spiral_main(): Int {
     v2 = spiral_tuple113.v1
     var v3: Int = 0
     v3 = sp_score_1(v2, v1)
-    var v4: Int = 0
-    v4 = sp_score_1(v2, v1)
-    var v5: Int = 0
-    v5 = (v3 + v4)
-    var v6: Int = 0
-    v6 = (v5 - 12)
+    val v4: Int = sp_score_1(v2, v1)
+    val v5: Int = (v3 + v4)
+    val v6: Int = (v5 - 12)
     return v6
 }
 fun main() {

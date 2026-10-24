@@ -28,11 +28,10 @@ partial def left_c0 (p0 : String) (p1 : Int32) (p2 : Int32) : IO Int32 := do
     let mut v0 : String := p0
     let mut v1 : Int32 := p1
     let mut v2 : Int32 := p2
-    let mut v3 : Bool := default
     let mut v4 : Int32 := default
     let mut v5 : Int32 := default
     let mut v6 : Int32 := default
-    v3 := (decide (v2 > (0 : Int32)))
+    let v3 : Bool := (decide (v2 > (0 : Int32)))
     if v3 then
         v4 := (Int32.ofNat v0.utf8ByteSize)
         v5 := (v4 + v1)
@@ -44,12 +43,11 @@ partial def right_c1 (p0 : String) (p1 : Int32) (p2 : Int32) : IO Int32 := do
     let mut v0 : String := p0
     let mut v1 : Int32 := p1
     let mut v2 : Int32 := p2
-    let mut v3 : Bool := default
     let mut v4 : Int32 := default
     let mut v5 : Int32 := default
     let mut v6 : Int32 := default
     let mut v7 : Int32 := default
-    v3 := (decide (v2 > (0 : Int32)))
+    let v3 : Bool := (decide (v2 > (0 : Int32)))
     if v3 then
         v4 := (Int32.ofNat v0.utf8ByteSize)
         v5 := (v4 + v1)
@@ -62,17 +60,12 @@ partial def method0 (p0 : (Int32 → IO Int32)) : IO Int32 := do
     let mut v0 : (Int32 → IO Int32) := p0
     return (← v0 (37 : Int32))
 partial def spiralMain : IO Int32 := do
-    let mut v0 : String := default
-    let mut v1 : String := default
-    let mut v2 : Int32 := default
-    let mut v3 : Int32 := default
-    let mut v4 : Bool := default
     let mut v7 : (Int32 → IO Int32) := default
-    v0 := "abc"
-    v1 := "wxyz"
-    v2 := (2 : Int32)
-    v3 := (2 : Int32)
-    v4 := true
+    let v0 : String := "abc"
+    let v1 : String := "wxyz"
+    let v2 : Int32 := (2 : Int32)
+    let v3 : Int32 := (2 : Int32)
+    let v4 : Bool := true
     if v4 then
         v7 := (left_c0 v0 v2)
     else

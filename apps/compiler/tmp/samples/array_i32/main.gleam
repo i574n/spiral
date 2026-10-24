@@ -24,21 +24,12 @@ pub fn spiral_array_from_storage(storage: gary.ErlangArray(option.Option(a)), si
   SpiralArray(key: key, size: size)
 }
 
-pub fn spiral_array_create(size: Int) -> SpiralArray(a) {
-  list.repeat(option.None, size) |> array.from_list(option.None) |> spiral_array_from_storage(size)
-}
 
 pub fn spiral_array_create_filled(size: Int, value: a) -> SpiralArray(a) {
   list.repeat(option.Some(value), size) |> array.from_list(option.None) |> spiral_array_from_storage(size)
 }
 
-pub fn spiral_array_from_list(values: List(a)) -> SpiralArray(a) {
-  values |> list.map(option.Some) |> array.from_list(option.None) |> spiral_array_from_storage(list.length(values))
-}
 
-pub fn spiral_array_to_list(xs: SpiralArray(a)) -> List(a) {
-  list.repeat(Nil, xs.size) |> list.index_map(fn(_, i) { spiral_array_get(xs, i) })
-}
 
 pub fn spiral_array_get(xs: SpiralArray(a), i: Int) -> a {
   case i >= 0 && i < xs.size {
@@ -67,41 +58,38 @@ pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
   int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
 }
 
-pub fn spiral_wrap_unsigned(value: Int, bits: Int) -> Int {
-  int.bitwise_and(value, int.bitwise_shift_left(1, bits) - 1)
-}
 
 pub fn main() {
-let v0 = 4
-let v1 = spiral_array_create_filled(v0, 0)
-spiral_array_set(v1, 0, 10)
-spiral_array_set(v1, 1, 20)
-spiral_array_set(v1, 2, 30)
-let v2 = spiral_array_get(v1, 0)
-let v3 = spiral_array_get(v1, 1)
-let v4 = spiral_wrap_signed(v2 + v3, 32)
-spiral_array_set(v1, 3, v4)
-let v5 = spiral_array_get(v1, 2)
-let v6 = spiral_array_get(v1, 3)
-let v7 = spiral_wrap_signed(v5 + v6, 32)
-let v8 = v1.size
-let v9 = v8 == v0
-let v11 =
-    case v9 {
+    let v0 = 4
+    let v1 = spiral_array_create_filled(v0, 0)
+    spiral_array_set(v1, 0, 10)
+    spiral_array_set(v1, 1, 20)
+    spiral_array_set(v1, 2, 30)
+    let v2 = spiral_array_get(v1, 0)
+    let v3 = spiral_array_get(v1, 1)
+    let v4 = spiral_wrap_signed(v2 + v3, 32)
+    spiral_array_set(v1, 3, v4)
+    let v5 = spiral_array_get(v1, 2)
+    let v6 = spiral_array_get(v1, 3)
+    let v7 = spiral_wrap_signed(v5 + v6, 32)
+    let v8 = v1.size
+    let v9 = v8 == v0
+    let v11 =
+        case v9 {
+            True -> {
+                let v10 = v7 == 60
+                v10
+            }
+            False -> {
+                False
+            }
+        }
+    case v11 {
         True -> {
-            let v10 = v7 == 60
-            v10
+            0
         }
         False -> {
-            False
+            1
         }
     }
-case v11 {
-    True -> {
-        0
-    }
-    False -> {
-        1
-    }
-}
 }

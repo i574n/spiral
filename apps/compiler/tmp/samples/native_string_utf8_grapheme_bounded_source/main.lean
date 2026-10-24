@@ -27,14 +27,11 @@ mutual
 partial def runtime_byte_2 (p0 : String) (p1 : Int32) : IO Char := do
     let mut v0 : String := p0
     let mut v1 : Int32 := p1
-    let mut v2 : Char := default
-    v2 := (Char.ofNat (v0.toUTF8.get! (spiralIdx v1)).toNat)
+    let v2 : Char := (Char.ofNat (v0.toUTF8.get! (spiralIdx v1)).toNat)
     return v2
 partial def utf8_scalar_at_byte_offset_1 (p0 : String) (p1 : Int32) : IO Int32 := do
     let mut v0 : String := p0
     let mut v1 : Int32 := p1
-    let mut v2 : Int32 := default
-    let mut v3 : Bool := default
     let mut v5 : Bool := default
     let mut v7 : Char := default
     let mut v8 : Int32 := default
@@ -108,8 +105,8 @@ partial def utf8_scalar_at_byte_offset_1 (p0 : String) (p1 : Int32) : IO Int32 :
     let mut v93 : Int32 := default
     let mut v94 : Bool := default
     let mut v96 : Bool := default
-    v2 := (Int32.ofNat v0.utf8ByteSize)
-    v3 := (decide (v1 < (0 : Int32)))
+    let v2 : Int32 := (Int32.ofNat v0.utf8ByteSize)
+    let v3 : Bool := (decide (v1 < (0 : Int32)))
     if v3 then
         spiralFail "UTF-8 byte offset is negative."
     else
@@ -393,30 +390,10 @@ partial def utf8_grapheme_count_bounded_loop_0 (p0 : String) (p1 : Int32) (p2 : 
                     v47 := (v2 + (1 : Int32))
                     v48 := v47
                 v49 := (v1 + v13)
-                let t0 := v0
-                let t49 := v49
-                let t48 := v48
-                let t3 := v3
-                v0 := t0
-                v1 := t49
-                v2 := t48
-                v3 := t3
+                v1 := v49
+                v2 := v48
                 continue
 partial def spiralMain : IO Int32 := do
-    let mut v0 : String := default
-    let mut v1 : Int32 := default
-    let mut v2 : Int32 := default
-    let mut v3 : Int32 := default
-    let mut v4 : Int32 := default
-    let mut v5 : String := default
-    let mut v6 : Int32 := default
-    let mut v7 : Int32 := default
-    let mut v8 : Int32 := default
-    let mut v9 : Int32 := default
-    let mut v10 : String := default
-    let mut v11 : Int32 := default
-    let mut v12 : Int32 := default
-    let mut v13 : Bool := default
     let mut v43 : Bool := default
     let mut v14 : Bool := default
     let mut v15 : Bool := default
@@ -437,23 +414,22 @@ partial def spiralMain : IO Int32 := do
     let mut v45 : Int32 := default
     let mut v46 : Int32 := default
     let mut v47 : Int32 := default
-    let mut v50 : Bool := default
     let mut v51 : Bool := default
     let mut v52 : Bool := default
-    v0 := "Aéé☕️👍🏽Z"
-    v1 := (0 : Int32)
-    v2 := (0 : Int32)
-    v3 := (21 : Int32)
-    v4 := (← utf8_grapheme_count_bounded_loop_0 v0 v1 v2 v3)
-    v5 := "́̈A"
-    v6 := (0 : Int32)
-    v7 := (0 : Int32)
-    v8 := (5 : Int32)
-    v9 := (← utf8_grapheme_count_bounded_loop_0 v5 v6 v7 v8)
-    v10 := "Aé🙂Z"
-    v11 := (4 : Int32)
-    v12 := (← utf8_scalar_at_byte_offset_1 v10 v11)
-    v13 := (decide (v12 >= (768 : Int32)))
+    let v0 : String := "Aéé☕️👍🏽Z"
+    let v1 : Int32 := (0 : Int32)
+    let v2 : Int32 := (0 : Int32)
+    let v3 : Int32 := (21 : Int32)
+    let v4 : Int32 := (← utf8_grapheme_count_bounded_loop_0 v0 v1 v2 v3)
+    let v5 : String := "́̈A"
+    let v6 : Int32 := (0 : Int32)
+    let v7 : Int32 := (0 : Int32)
+    let v8 : Int32 := (5 : Int32)
+    let v9 : Int32 := (← utf8_grapheme_count_bounded_loop_0 v5 v6 v7 v8)
+    let v10 : String := "Aé🙂Z"
+    let v11 : Int32 := (4 : Int32)
+    let v12 : Int32 := (← utf8_scalar_at_byte_offset_1 v10 v11)
+    let v13 : Bool := (decide (v12 >= (768 : Int32)))
     if v13 then
         v14 := (decide (v12 <= (879 : Int32)))
         if v14 then
@@ -522,7 +498,7 @@ partial def spiralMain : IO Int32 := do
         v46 := (0 : Int32)
         v47 := (9 : Int32)
         v49 := (← utf8_grapheme_count_bounded_loop_0 v10 v45 v46 v47)
-    v50 := (v4 == (6 : Int32))
+    let v50 : Bool := (v4 == (6 : Int32))
     if v50 then
         v51 := (v9 == (2 : Int32))
         if v51 then

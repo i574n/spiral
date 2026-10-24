@@ -45,7 +45,7 @@ defmodule Spiral.Cells.CompilerDaemonTest do
     assert CompilerClient.daemon_command_line(~S"C:\e\elixir.bat", ~S"C:\r\k.log", ~S"C:\r\k.err.log", "C:/k/_build/dev/lib/*/ebin") ==
              ~S{/d /c ""C:\e\elixir.bat" -pa "C:/k/_build/dev/lib/*/ebin" -e Spiral.Cells.CompilerDaemon.serve_app() 1>"C:\r\k.log" 2>"C:\r\k.err.log""}
 
-    assert CompilerClient.compiled_ebins() =~ ~r{/_build/[^/]+/lib/\*/ebin$}
+    assert CompilerClient.compiled_ebins() =~ ~r{/lib/\*/ebin$}
   end
 
   test "queued clients share one compiler and do not overlap" do

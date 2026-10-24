@@ -33,4 +33,11 @@ inl main () : i32 =
     inl wrapped = Values values
     inl ~observed = observe wrapped
     inl ~refs_after = join refcount alias
-    (c1 -. 1i32) +. (c2 -. 2i32) +. (c3 -. 4i32) +. (c4 -. 8i32) +. (c5 -. 16i32) +. (refs_before -. 2i32) +. (observed -. 20i32) +. (refs_after -. 2i32)
+    (c1 -. 1i32)
+    +. (c2 -. 2i32)
+    +. (c3 -. 4i32)
+    +. (c4 -. 8i32)
+    +. (c5 -. 16i32)
+    +. (refs_before -. 2i32)
+    +. (observed -. 20i32)
+    +. (refs_after -. 2i32)

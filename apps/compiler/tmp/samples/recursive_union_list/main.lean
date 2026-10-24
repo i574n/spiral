@@ -49,24 +49,15 @@ partial def sum_0 (p0 : U0) : IO Int32 := do
     | U0.Nil =>
         return (0 : Int32)
 partial def spiralMain : IO Int32 := do
-    let mut v0 : Int32 := default
-    let mut v1 : Int32 := default
-    let mut v2 : Int32 := default
-    let mut v3 : U0 := default
-    let mut v4 : U0 := default
-    let mut v5 : U0 := default
-    let mut v6 : U0 := default
-    let mut v7 : Int32 := default
-    let mut v8 : Int32 := default
-    v0 := (1 : Int32)
-    v1 := (2 : Int32)
-    v2 := (3 : Int32)
-    v3 := U0.Nil
-    v4 := (U0.Cons v2 v3)
-    v5 := (U0.Cons v1 v4)
-    v6 := (U0.Cons v0 v5)
-    v7 := (← sum_0 v6)
-    v8 := (v7 - (6 : Int32))
+    let v0 : Int32 := (1 : Int32)
+    let v1 : Int32 := (2 : Int32)
+    let v2 : Int32 := (3 : Int32)
+    let v3 : U0 := U0.Nil
+    let v4 : U0 := (U0.Cons v2 v3)
+    let v5 : U0 := (U0.Cons v1 v4)
+    let v6 : U0 := (U0.Cons v0 v5)
+    let v7 : Int32 := (← sum_0 v6)
+    let v8 : Int32 := (v7 - (6 : Int32))
     return v8
 end
 def main : IO UInt32 := do

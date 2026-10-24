@@ -8,18 +8,18 @@ function spiral_array_set<T>(array: T[], index: number, value: T): void {
 }
 type Heap0 = { readonly l0: Array<number>, readonly l1: number };
 export function main(): number {
-    let v0: Array<number> = new Array<number>(1).fill(0);
-    let v1: number = 1.5;
+    const v0: Array<number> = new Array<number>(1).fill(0);
+    const v1: number = 1.5;
     spiral_array_set(v0, 0, v1);
-    let v2: number = 7;
-    let v3: Heap0 = { l0: v0, l1: v2 };
-    let v4: Array<number> = v3.l0;
-    let v5: number = v3.l1;
-    let v6: number = spiral_array_index(v4, 0);
-    let v7: boolean = v6 === 1.5;
+    const v2: number = 7;
+    const v3: Heap0 = { l0: v0, l1: v2 };
+    const v4: Array<number> = v3.l0;
+    const v5: number = v3.l1;
+    const v6: number = spiral_array_index(v4, 0);
+    const v7: boolean = v6 === 1.5;
     let v9: boolean;
     if (v7) {
-        let v8: boolean = v5 === 7;
+        const v8: boolean = v5 === 7;
         v9 = v8;
     } else {
         v9 = false;

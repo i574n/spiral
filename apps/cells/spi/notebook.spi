@@ -1,4 +1,4 @@
-inl (++) (left : string) (right : string) : string = !!!!StaticStringConcat(left,right)
+inl (++) (left : string) (right : string) : string = !!!!StaticStringConcat(left, right)
 
 union rec nb =
     | NoNb
@@ -71,7 +71,10 @@ let rec flags_from (src : string) (i : i32) (acc : flags) : flags =
         inl k = take_token src j
         flags_from src k (Flag (text.slice_len src j (k - j), acc))
 
-let rec read_flags (xs : flags) (packages : nb) (test : i32) (is_real : i32) (timeout : string) : nb * i32 * i32 * string =
+let rec read_flags
+    (xs : flags) (packages : nb) (test : i32) (is_real : i32) (timeout : string)
+    : nb * i32 * i32 * string
+    =
     match xs with
     | NoFlag => packages, test, is_real, timeout
     | Flag ("--package", Flag (path, rest)) =>
@@ -79,7 +82,8 @@ let rec read_flags (xs : flags) (packages : nb) (test : i32) (is_real : i32) (ti
         else read_flags rest (add_nb packages path) test is_real timeout
     | Flag ("--package", rest) => read_flags rest packages test is_real timeout
     | Flag ("--ignore", rest) => read_flags rest packages 3i32 is_real timeout
-    | Flag ("--test", Flag ("static", rest)) => read_flags rest packages (if test = 3i32 then 3i32 else 2i32) is_real timeout
+    | Flag ("--test", Flag ("static", rest)) =>
+        read_flags rest packages (if test = 3i32 then 3i32 else 2i32) is_real timeout
     | Flag ("--test", rest) => read_flags rest packages (if test >= 2i32 then test else 1i32) is_real timeout
     | Flag ("--real", rest) => read_flags rest packages test 1i32 timeout
     | Flag ("--timeout", Flag (ms, rest)) =>
@@ -88,17 +92,30 @@ let rec read_flags (xs : flags) (packages : nb) (test : i32) (is_real : i32) (ti
         read_flags rest packages test is_real timeout2
     | Flag (_, rest) => read_flags rest packages test is_real timeout
 
-let rec scan_lines (src : string) (i : i32) (packages : nb) (test : i32) (is_real : i32) (timeout : string) (body : nb) (opens : nb) (skip : i32) : nb * i32 * i32 * string * string * nb * i32 =
+let rec scan_lines
+    (src : string) (i : i32) (packages : nb) (test : i32) (is_real : i32) (timeout : string) (body : nb) (opens : nb)
+    (skip : i32)
+    : nb * i32 * i32 * string * string * nb * i32
+    =
     match text.next_line src i with
-    | LineDone => packages, test, is_real, timeout, text.trim_trailing_newlines (join_rev body "" 0i32), rev_nb opens NoNb, skip
+    | LineDone =>
+        packages, test, is_real, timeout, text.trim_trailing_newlines (join_rev body "" 0i32), rev_nb opens NoNb, skip
     | LineGot (line, next) =>
         inl trimmed = text.trim line
-        if text.starts_with trimmed "///" then
-            if text.starts_with trimmed "///- " then
+        if text.starts_with trimmed "///"
+        then
+            if text.starts_with trimmed "///- "
+            then
                 inl packages2, test2, is_real2, timeout2 =
-                    read_flags (flags_from (text.drop trimmed (text.length "///- ")) 0i32 NoFlag) packages test is_real timeout
+                    read_flags
+                        (flags_from (text.drop trimmed (text.length "///- ")) 0i32 NoFlag)
+                        packages
+                        test
+                        is_real
+                        timeout
                 scan_lines src next packages2 test2 is_real2 timeout2 body opens skip
-            elif text.starts_with trimmed "///>" then
+            elif text.starts_with trimmed "///>"
+            then
                 inl rest = text.trim (text.drop trimmed (text.length "///>"))
                 inl skip2 = if rest = "_" then 1i32 else skip
                 scan_lines src next packages test is_real timeout body opens skip2
@@ -164,7 +181,10 @@ let rec indent_body (src : string) (i : i32) (acc : string) : string =
         inl row = if text.trim line = "" then "" else "    " ++ line
         indent_body src next (if row = "" && acc = "" then acc else acc ++ "\n" ++ row)
 
-let rec split_declarations (src : string) (i : i32) (in_declaration : bool) (declarations : string) (rest : string) : string * string =
+let rec split_declarations
+    (src : string) (i : i32) (in_declaration : bool) (declarations : string) (rest : string)
+    : string * string
+    =
     match text.next_line src i with
     | LineDone => declarations, rest
     | LineGot (line, next) =>
@@ -180,29 +200,43 @@ let rec last_top_block (src : string) (i : i32) (block : string) : string =
         if line <> "" && text.starts_with line " " = false then last_top_block src next line
         else last_top_block src next (block ++ "\n" ++ line)
 
-inl scoped_test_body (body : string) : string =
+let rec names_status_target (src : string) (i : i32) : bool =
+    match text.next_line src i with
+    | LineDone => false
+    | LineGot (line, next) =>
+        if text.starts_with (text.trim line) "///> wgsl" then true else names_status_target src next
+
+inl scoped_test_body (returns_status : bool) (body : string) : string =
     inl declarations, rest = split_declarations body 0i32 false "" ""
     if text.trim rest = "" then body
     else
         inl ends_in_assertion = text.contains (last_top_block rest 0i32 "") "_assert"
-        inl call = if ends_in_assertion then """
+        inl call =
+            if ends_in_assertion then """
 
-            spiral_cells_test ()
-            0i32
-            """ else """
+                spiral_cells_test ()
+                0i32
+                """
+            elif returns_status then """
 
-            inl _ = spiral_cells_test ()
-            0i32
-            """
+                spiral_cells_test ()
+                """
+            else """
+
+                inl _ = spiral_cells_test ()
+                0i32
+                """
         text.trim declarations ++ "\ninl spiral_cells_test () =" ++ indent_body rest 0i32 "" ++ call
 
 inl real_entry () : string = "spiral_cells_real"
 
 inl real_program (packages : nb) (reals : nb) (body : string) : string * string =
     inl wrapped, generated = cell.wrap body
-    if generated = 1i32 then
+    if generated = 1i32
+    then
         inl entry = text.replace wrapped "inl main () : i32 =" ("inl " ++ real_entry () ++ " () =")
-        program packages NoNb NoNb ("inl main () : i32 =\n    inl _ = real " ++ real_entry () ++ " ()\n    0i32"), join_nb (snoc reals entry)
+        program packages NoNb NoNb ("inl main () : i32 =\n    inl _ = real " ++ real_entry () ++ " ()\n    0i32"),
+        join_nb (snoc reals entry)
     else program packages NoNb NoNb "", join_nb (snoc reals body)
 
 union plan_scope =
@@ -233,38 +267,69 @@ inl step_budget (budget : file_budget) (test : i32) (timeout : string) : string 
     elif test = 1i32 || test = 2i32 then inherited_budget budget
     else "-"
 
-inl whole_file (scope : plan_scope) (last_def : i32) (packages : nb) (opens : nb) (defs : nb) (reals : nb) (budget : file_budget) (acc : steps) : steps =
+inl whole_file
+    (scope : plan_scope) (last_def : i32) (packages : nb) (opens : nb) (defs : nb) (reals : nb) (budget : file_budget)
+    (acc : steps)
+    : steps
+    =
     match scope with
     | EveryCell => acc
-    | TestsAndWholeFile => if last_def < 0i32 then acc else Step (last_def, inherited_budget budget, program packages opens defs "", join_nb reals, acc)
+    | TestsAndWholeFile =>
+        if last_def < 0i32
+        then acc
+        else Step (last_def, inherited_budget budget, program packages opens defs "", join_nb reals, acc)
 
-let rec walk (scope : plan_scope) (xs : sources) (index : i32) (last_def : i32) (packages : nb) (opens : nb) (defs : nb) (reals : nb) (budget : file_budget) (acc : steps) : steps =
+let rec walk
+    (scope : plan_scope) (xs : sources) (index : i32) (last_def : i32) (packages : nb) (opens : nb) (defs : nb)
+    (reals : nb) (budget : file_budget) (acc : steps)
+    : steps
+    =
     match xs with
     | NoSource => whole_file scope last_def packages opens defs reals budget acc
     | Source (kind, source, rest) =>
-        if kind <> "spiral" then walk scope rest (index + 1i32) last_def packages opens defs reals budget acc
+        if kind <> "spiral"
+        then walk scope rest (index + 1i32) last_def packages opens defs reals budget acc
         else
             inl cell_packages, test, is_real, timeout, body, cell_opens, skip = scan source
             inl packages2 = merge packages cell_packages
             inl budget2 = budget_after budget timeout
-            if test = 3i32 then walk scope rest (index + 1i32) last_def packages2 opens defs reals budget2 acc
+            if test = 3i32
+            then walk scope rest (index + 1i32) last_def packages2 opens defs reals budget2 acc
             else
                 inl code, real_code =
-                    if skip = 1i32 then "///> _", ""
-                    elif is_real = 1i32 then real_program packages2 reals body
-                    else program packages2 opens defs (if test = 1i32 then scoped_test_body body else body), join_nb reals
+                    if skip = 1i32
+                    then "///> _", ""
+                    elif is_real = 1i32
+                    then real_program packages2 reals body
+                    else
+                        program packages2 opens defs (
+                            if test = 1i32
+                            then scoped_test_body (names_status_target source 0i32) body
+                            else body
+                        ),
+                        join_nb reals
                 inl timeout_text = step_budget budget2 test timeout
                 inl step = if planned scope test then Step (index, timeout_text, code, real_code, acc) else acc
                 inl kept = test <> 1i32 && skip = 0i32 && text.trim body <> ""
                 inl last_def2 = if kept && test = 0i32 then index else last_def
-                if is_real = 1i32 then
-                    walk scope rest (index + 1i32) last_def2 packages2 opens defs (if kept then snoc reals body else reals) budget2 step
-                elif test = 1i32 then
-                    walk scope rest (index + 1i32) last_def2 packages2 opens defs reals budget2 step
-                elif kept then
-                    walk scope rest (index + 1i32) last_def2 packages2 opens (snoc defs body) reals budget2 step
-                else
-                    walk scope rest (index + 1i32) last_def2 packages2 opens defs reals budget2 step
+                if is_real = 1i32
+                then
+                    walk scope rest
+                        (index + 1i32)
+                        last_def2
+                        packages2
+                        opens
+                        defs
+                        if kept
+                        then snoc reals body
+                        else reals
+                        budget2
+                        step
+                elif test = 1i32
+                then walk scope rest (index + 1i32) last_def2 packages2 opens defs reals budget2 step
+                elif kept
+                then walk scope rest (index + 1i32) last_def2 packages2 opens (snoc defs body) reals budget2 step
+                else walk scope rest (index + 1i32) last_def2 packages2 opens defs reals budget2 step
 
 let rec rev_steps (xs : steps) (acc : steps) : steps =
     match xs with
@@ -288,7 +353,10 @@ inl plan_in (scope : plan_scope) (src : string) : string =
     | LineDone => "0\n"
     | LineGot (lib, next) =>
         inl packages = if lib = "-" || lib = "" then NoNb else Nb (lib, NoNb)
-        inl found = rev_steps (walk scope (load_sources (text.drop src next)) 0i32 -1i32 packages NoNb NoNb NoNb BudgetUnseen NoStep) NoStep
+        inl found =
+            rev_steps
+                (walk scope (load_sources (text.drop src next)) 0i32 -1i32 packages NoNb NoNb NoNb BudgetUnseen NoStep)
+                NoStep
         text.show_i32 (count_steps found) ++ "\n" ++ emit_steps found
 
 inl plan (src : string) : string = plan_in EveryCell src

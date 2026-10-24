@@ -13,24 +13,28 @@ if ($Tool) { $Tool = (Resolve-Path $Tool).Path } else { $Tool = pwsh (Join-Path 
 $renderer = Join-Path ([IO.Path]::GetTempPath()) "publish-tree-$PID-$(Split-Path $Tool -Leaf)"
 Copy-Item $Tool $renderer -Force
 
-$excluded = @('.elixir_ls', '.git', '.history', '.vscode', 'bin', 'build', 'deps', 'node_modules', 'obj', 'pkg', 'target') + $Exclude
-$included = @(
-    'LICENSE', 'Dockerfile', '*.ans', '*.cs', '*.css', '*.csproj', '*.dependencies', '*.livemd', '*.editorconfig', '*.exs',
-    '*.fs', '*.fsproj', '*.fsx', '*.gleam', '*.gitattributes', '*.gitignore', '*.html', '*.ico', '*.ipynb', '*.js', '*.json',
-    '*.log', '*.md', '*.nix', '*.out', '*.ps1', '*.py', '*.references', '*.rs', '*.sln', '*.spi', '*.spiproj', '*.spir',
-    '*.toml', '*.ts', '*.vsix', '*.wasm', '*.webm', '*.yaml', '*.yml', '*.zip'
-) + $Include
-$rsyncArguments = @('-av') + @($excluded | ForEach-Object { '--exclude', $_ }) + @($included | ForEach-Object { '--include', $_ }) +
-    @('--include', '*/', '--exclude', '*', '--no-links', '--prune-empty-dirs', './', 'dist/')
-
 Set-Location $Root
 Remove-Item dist -Recurse -Force -ErrorAction Ignore
-$env:CYGWIN = "noglob"
-rsync @rsyncArguments
-if ($LASTEXITCODE -ne 0) { throw "publish-tree.ps1 / rsync failed (exit code $LASTEXITCODE)" }
+function Test-Excluded([string] $path) { foreach ($segment in $path -split '/') { foreach ($pattern in $Exclude) { if ($segment -like $pattern) { return $true } } }; $false }
+$tracked = @(git -c core.quotepath=off ls-files -z | ForEach-Object { $_ -split "`0" } | Where-Object { $_ -and !(Test-Excluded $_) })
+if ($LASTEXITCODE -ne 0) { throw "publish-tree.ps1 / git ls-files failed in $Root (exit code $LASTEXITCODE)" }
+$extra = @(if ($Include) {
+    git -c core.quotepath=off ls-files -z --others | ForEach-Object { $_ -split "`0" } | Where-Object { $_ -and $_ -notmatch '^dist/' -and !(Test-Excluded $_) } |
+        Where-Object { $name = Split-Path $_ -Leaf; @($Include | Where-Object { $name -like $_ }).Count }
+})
+git checkout-index -a -f --prefix=dist/
+if ($LASTEXITCODE -ne 0) { throw "publish-tree.ps1 / git checkout-index failed (exit code $LASTEXITCODE)" }
+foreach ($file in @(git -c core.quotepath=off ls-files -z | ForEach-Object { $_ -split "`0" } | Where-Object { $_ -and (Test-Excluded $_) })) { Remove-Item -LiteralPath (Join-Path 'dist' $file) -Force -ErrorAction Ignore }
+foreach ($file in $extra) {
+    $target = Join-Path 'dist' $file
+    New-Item -ItemType Directory -Force (Split-Path $target) | Out-Null
+    Copy-Item -LiteralPath $file $target
+}
+Get-ChildItem -LiteralPath dist -Recurse -Force | Where-Object { (Get-Item -LiteralPath $_.FullName -Force).LinkType } | Remove-Item -Force -ErrorAction Ignore
+Write-Output "publish-tree.ps1 / $($tracked.Count) tracked files$(if ($extra) { " + $($extra.Count) untracked matching $($Include -join ', ')" }) copied to dist"
 
-Get-ChildItem -Path dist -Recurse -Force | Where-Object { $_.Name.StartsWith(".") } | ForEach-Object {
-    Rename-Item -Path $_.FullName -NewName "_$($_.Name.Substring(1))"
+Get-ChildItem -Path dist -Recurse -Force | Sort-Object { $_.FullName.Length } -Descending | Where-Object { $_.Name.StartsWith(".") } | ForEach-Object {
+    Rename-Item -LiteralPath $_.FullName -NewName "_$($_.Name.Substring(1))"
 }
 
 & $renderer --dir dist --html dist/index.html

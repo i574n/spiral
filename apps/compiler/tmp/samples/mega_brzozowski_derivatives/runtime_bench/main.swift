@@ -61,12 +61,9 @@ func sp_random_bit_input_1(_ p0: UInt64, _ p1: Int32, _ p2: UH2) -> (UH2, UInt64
             }
             var v14: UH2 = UH2_InputEmpty()
             v14 = UH2_InputCons(f0: v13, f1: v2)
-            let t1227_6: UInt64 = v6
-            let t1265_7: Int32 = v7
-            let t1302_14: UH2 = v14
-            v0 = t1227_6
-            v1 = t1265_7
-            v2 = t1302_14
+            v0 = v6
+            v1 = v7
+            v2 = v14
             continue
         } else {
             return (v2, v0)
@@ -655,16 +652,9 @@ func sp_loop_0(_ p0: UH1, _ p1: Int32, _ p2: Int32, _ p3: UInt64, _ p4: Int32) -
             }
             var v12: Int32 = 0
             v12 = (v2 &- 1)
-            let t956_0: UH1 = v0
-            let t990_1: Int32 = v1
-            let t1026_12: Int32 = v12
-            let t1065_8: UInt64 = v8
-            let t1103_11: Int32 = v11
-            v0 = t956_0
-            v1 = t990_1
-            v2 = t1026_12
-            v3 = t1065_8
-            v4 = t1103_11
+            v2 = v12
+            v3 = v8
+            v4 = v11
             continue
         } else {
             return v4
@@ -685,10 +675,8 @@ func sp_zeros_input_14(_ p0: Int32, _ p1: UH2) -> UH2 {
             v4 = US0_BitZero()
             var v5: UH2 = UH2_InputEmpty()
             v5 = UH2_InputCons(f0: v4, f1: v1)
-            let t417_3: Int32 = v3
-            let t453_5: UH2 = v5
-            v0 = t417_3
-            v1 = t453_5
+            v0 = v3
+            v1 = v5
             continue
         } else {
             return v1
@@ -741,14 +729,8 @@ func sp_loop_13(_ p0: UH1, _ p1: Int32, _ p2: Int32, _ p3: Int32) -> Int32 {
             }
             var v17: Int32 = 0
             v17 = (v2 &+ 1)
-            let t1446_0: UH1 = v0
-            let t1481_1: Int32 = v1
-            let t1518_17: Int32 = v17
-            let t1557_16: Int32 = v16
-            v0 = t1446_0
-            v1 = t1481_1
-            v2 = t1518_17
-            v3 = t1557_16
+            v2 = v17
+            v3 = v16
             continue
         }
     }
@@ -896,16 +878,9 @@ func sp_loop_15(_ p0: UH1, _ p1: Int32, _ p2: Int32, _ p3: UInt64, _ p4: Int32) 
             }
             var v14: Int32 = 0
             v14 = (v2 &- 1)
-            let t1153_0: UH1 = v0
-            let t1188_1: Int32 = v1
-            let t1225_14: Int32 = v14
-            let t1264_8: UInt64 = v8
-            let t1302_13: Int32 = v13
-            v0 = t1153_0
-            v1 = t1188_1
-            v2 = t1225_14
-            v3 = t1264_8
-            v4 = t1302_13
+            v2 = v14
+            v3 = v8
+            v4 = v13
             continue
         } else {
             return v4
@@ -966,14 +941,8 @@ func sp_loop_17(_ p0: UH1, _ p1: Int32, _ p2: Int32, _ p3: Int32) -> Int32 {
             }
             var v21: Int32 = 0
             v21 = (v2 &+ 1)
-            let t1840_0: UH1 = v0
-            let t1875_1: Int32 = v1
-            let t1912_21: Int32 = v21
-            let t1951_20: Int32 = v20
-            v0 = t1840_0
-            v1 = t1875_1
-            v2 = t1912_21
-            v3 = t1951_20
+            v2 = v21
+            v3 = v20
             continue
         }
     }
@@ -1036,14 +1005,9 @@ func sp_loop_18(_ p0: Int32, _ p1: Int32, _ p2: UInt64, _ p3: Int32) -> Int32 {
             }
             var v12: Int32 = 0
             v12 = (v1 &- 1)
-            let t972_0: Int32 = v0
-            let t1008_12: Int32 = v12
-            let t1047_7: UInt64 = v7
-            let t1085_11: Int32 = v11
-            v0 = t972_0
-            v1 = t1008_12
-            v2 = t1047_7
-            v3 = t1085_11
+            v1 = v12
+            v2 = v7
+            v3 = v11
             continue
         } else {
             return v3
@@ -1330,14 +1294,9 @@ func sp_loop_20(_ p0: Int32, _ p1: Int32, _ p2: UInt64, _ p3: Int32) -> Int32 {
             }
             var v12: Int32 = 0
             v12 = (v1 &- 1)
-            let t972_0: Int32 = v0
-            let t1008_12: Int32 = v12
-            let t1047_7: UInt64 = v7
-            let t1085_11: Int32 = v11
-            v0 = t972_0
-            v1 = t1008_12
-            v2 = t1047_7
-            v3 = t1085_11
+            v1 = v12
+            v2 = v7
+            v3 = v11
             continue
         } else {
             return v3
@@ -1456,12 +1415,8 @@ func sp_loop_22(_ p0: Int32, _ p1: Int32, _ p2: Int32) -> Int32 {
             }
             var v18: Int32 = 0
             v18 = (v1 &+ 1)
-            let t1512_0: Int32 = v0
-            let t1549_18: Int32 = v18
-            let t1588_17: Int32 = v17
-            v0 = t1512_0
-            v1 = t1549_18
-            v2 = t1588_17
+            v1 = v18
+            v2 = v17
             continue
         }
     }
@@ -1477,10 +1432,7 @@ func sp_loop_24(_ p0: SpiralArray<Int32>, _ p1: Int32) {
             v0.items[Int(v1)] = 0
             var v3: Int32 = 0
             v3 = (v1 &+ 1)
-            let t306_0: SpiralArray<Int32> = v0
-            let t355_3: Int32 = v3
-            v0 = t306_0
-            v1 = t355_3
+            v1 = v3
             continue
         } else {
             return
@@ -1497,10 +1449,7 @@ func sp_loop_25(_ p0: SpiralArray<Int32>, _ p1: Int32) {
             v0.items[Int(v1)] = 0
             var v3: Int32 = 0
             v3 = (v1 &+ 1)
-            let t303_0: SpiralArray<Int32> = v0
-            let t352_3: Int32 = v3
-            v0 = t303_0
-            v1 = t352_3
+            v1 = v3
             continue
         } else {
             return
@@ -1634,28 +1583,7 @@ func sp_probe_27(_ p0: SpiralArray<Int32>, _ p1: SpiralArray<Int32>, _ p2: Spira
                 v46 = (v10 &+ 1)
                 var v47: Int32 = 0
                 v47 = (v46 & 8191)
-                let t4805_0: SpiralArray<Int32> = v0
-                let t4859_1: SpiralArray<Int32> = v1
-                let t4913_2: SpiralArray<Int32> = v2
-                let t4967_3: SpiralArray<Int32> = v3
-                let t5021_4: SpiralArray<Int32> = v4
-                let t5075_5: SpiralArray<Int32> = v5
-                let t5129_6: SpiralArray<Int32> = v6
-                let t5183_7: Int32 = v7
-                let t5224_8: Int32 = v8
-                let t5265_9: Int32 = v9
-                let t5306_47: Int32 = v47
-                v0 = t4805_0
-                v1 = t4859_1
-                v2 = t4913_2
-                v3 = t4967_3
-                v4 = t5021_4
-                v5 = t5075_5
-                v6 = t5129_6
-                v7 = t5183_7
-                v8 = t5224_8
-                v9 = t5265_9
-                v10 = t5306_47
+                v10 = v47
                 continue
             }
         }
@@ -1776,24 +1704,8 @@ func sp_interned_make_alt_29(_ p0: SpiralArray<Int32>, _ p1: SpiralArray<Int32>,
                 v13 = v1.items[Int(v7)]
                 var v14: Int32 = 0
                 v14 = sp_interned_alt_insert_30(v0, v1, v2, v3, v4, v5, v6, v13, v8)
-                let t1122_0: SpiralArray<Int32> = v0
-                let t1176_1: SpiralArray<Int32> = v1
-                let t1230_2: SpiralArray<Int32> = v2
-                let t1284_3: SpiralArray<Int32> = v3
-                let t1338_4: SpiralArray<Int32> = v4
-                let t1392_5: SpiralArray<Int32> = v5
-                let t1446_6: SpiralArray<Int32> = v6
-                let t1500_12: Int32 = v12
-                let t1543_14: Int32 = v14
-                v0 = t1122_0
-                v1 = t1176_1
-                v2 = t1230_2
-                v3 = t1284_3
-                v4 = t1338_4
-                v5 = t1392_5
-                v6 = t1446_6
-                v7 = t1500_12
-                v8 = t1543_14
+                v7 = v12
+                v8 = v14
                 continue
             } else {
                 return sp_interned_alt_insert_30(v0, v1, v2, v3, v4, v5, v6, v7, v8)
@@ -2144,30 +2056,9 @@ func sp_loop_32(_ p0: SpiralArray<Int32>, _ p1: SpiralArray<Int32>, _ p2: Spiral
             }
             var v19: Int32 = 0
             v19 = (v9 &- 1)
-            let t1463_0: SpiralArray<Int32> = v0
-            let t1513_1: SpiralArray<Int32> = v1
-            let t1563_2: SpiralArray<Int32> = v2
-            let t1613_3: SpiralArray<Int32> = v3
-            let t1663_4: SpiralArray<Int32> = v4
-            let t1713_5: SpiralArray<Int32> = v5
-            let t1763_6: SpiralArray<Int32> = v6
-            let t1813_7: Int32 = v7
-            let t1850_8: Int32 = v8
-            let t1887_19: Int32 = v19
-            let t1926_15: UInt64 = v15
-            let t1966_18: Int32 = v18
-            v0 = t1463_0
-            v1 = t1513_1
-            v2 = t1563_2
-            v3 = t1613_3
-            v4 = t1663_4
-            v5 = t1713_5
-            v6 = t1763_6
-            v7 = t1813_7
-            v8 = t1850_8
-            v9 = t1887_19
-            v10 = t1926_15
-            v11 = t1966_18
+            v9 = v19
+            v10 = v15
+            v11 = v18
             continue
         } else {
             return v11
@@ -2227,28 +2118,8 @@ func sp_loop_36(_ p0: SpiralArray<Int32>, _ p1: SpiralArray<Int32>, _ p2: Spiral
             }
             var v24: Int32 = 0
             v24 = (v9 &+ 1)
-            let t1993_0: SpiralArray<Int32> = v0
-            let t2043_1: SpiralArray<Int32> = v1
-            let t2093_2: SpiralArray<Int32> = v2
-            let t2143_3: SpiralArray<Int32> = v3
-            let t2193_4: SpiralArray<Int32> = v4
-            let t2243_5: SpiralArray<Int32> = v5
-            let t2293_6: SpiralArray<Int32> = v6
-            let t2343_7: Int32 = v7
-            let t2380_8: Int32 = v8
-            let t2417_24: Int32 = v24
-            let t2456_23: Int32 = v23
-            v0 = t1993_0
-            v1 = t2043_1
-            v2 = t2093_2
-            v3 = t2143_3
-            v4 = t2193_4
-            v5 = t2243_5
-            v6 = t2293_6
-            v7 = t2343_7
-            v8 = t2380_8
-            v9 = t2417_24
-            v10 = t2456_23
+            v9 = v24
+            v10 = v23
             continue
         }
     }
@@ -2353,8 +2224,7 @@ func spiral_main() -> Int32 {
     v47 = US0_BitZero()
     var v48: UH1 = UH1_RegexEmpty()
     v48 = UH1_RegexChar(f0: v47)
-    var v49: UH1 = UH1_RegexEmpty()
-    v49 = UH1_RegexCat(f0: v46, f1: v48)
+    let v49: UH1 = UH1_RegexCat(f0: v46, f1: v48)
     var v50: UH1 = UH1_RegexEmpty()
     v50 = UH1_RegexAlt(f0: v44, f1: v49)
     var v51: UH1 = UH1_RegexEmpty()
@@ -2385,122 +2255,69 @@ func spiral_main() -> Int32 {
     v63 = UH1_RegexChar(f0: v62)
     var v64: UH1 = UH1_RegexEmpty()
     v64 = UH1_RegexAlt(f0: v61, f1: v63)
-    var v65: UH1 = UH1_RegexEmpty()
-    v65 = UH1_RegexStar(f0: v64)
-    var v66: US0 = US0_BitZero()
-    v66 = US0_BitZero()
-    var v67: UH1 = UH1_RegexEmpty()
-    v67 = UH1_RegexChar(f0: v66)
-    var v68: UH1 = UH1_RegexEmpty()
-    v68 = UH1_RegexCat(f0: v65, f1: v67)
-    var v69: US0 = US0_BitZero()
-    v69 = US0_BitZero()
-    var v70: UH1 = UH1_RegexEmpty()
-    v70 = UH1_RegexChar(f0: v69)
-    var v71: US0 = US0_BitZero()
-    v71 = US0_BitOne()
-    var v72: UH1 = UH1_RegexEmpty()
-    v72 = UH1_RegexChar(f0: v71)
-    var v73: UH1 = UH1_RegexEmpty()
-    v73 = UH1_RegexAlt(f0: v70, f1: v72)
-    var v74: UH1 = UH1_RegexEmpty()
-    v74 = UH1_RegexStar(f0: v73)
-    var v75: US0 = US0_BitZero()
-    v75 = US0_BitOne()
-    var v76: UH1 = UH1_RegexEmpty()
-    v76 = UH1_RegexChar(f0: v75)
-    var v77: US0 = US0_BitZero()
-    v77 = US0_BitZero()
-    var v78: UH1 = UH1_RegexEmpty()
-    v78 = UH1_RegexChar(f0: v77)
+    let v65: UH1 = UH1_RegexStar(f0: v64)
+    let v66: US0 = US0_BitZero()
+    let v67: UH1 = UH1_RegexChar(f0: v66)
+    let v68: UH1 = UH1_RegexCat(f0: v65, f1: v67)
+    let v69: US0 = US0_BitZero()
+    let v70: UH1 = UH1_RegexChar(f0: v69)
+    let v71: US0 = US0_BitOne()
+    let v72: UH1 = UH1_RegexChar(f0: v71)
+    let v73: UH1 = UH1_RegexAlt(f0: v70, f1: v72)
+    let v74: UH1 = UH1_RegexStar(f0: v73)
+    let v75: US0 = US0_BitOne()
+    let v76: UH1 = UH1_RegexChar(f0: v75)
+    let v77: US0 = US0_BitZero()
+    let v78: UH1 = UH1_RegexChar(f0: v77)
     var v79: US0 = US0_BitZero()
     v79 = US0_BitOne()
-    var v80: UH1 = UH1_RegexEmpty()
-    v80 = UH1_RegexChar(f0: v79)
-    var v81: UH1 = UH1_RegexEmpty()
-    v81 = UH1_RegexAlt(f0: v78, f1: v80)
-    var v82: US0 = US0_BitZero()
-    v82 = US0_BitZero()
-    var v83: UH1 = UH1_RegexEmpty()
-    v83 = UH1_RegexChar(f0: v82)
-    var v84: US0 = US0_BitZero()
-    v84 = US0_BitOne()
-    var v85: UH1 = UH1_RegexEmpty()
-    v85 = UH1_RegexChar(f0: v84)
-    var v86: UH1 = UH1_RegexEmpty()
-    v86 = UH1_RegexAlt(f0: v83, f1: v85)
-    var v87: US0 = US0_BitZero()
-    v87 = US0_BitZero()
-    var v88: UH1 = UH1_RegexEmpty()
-    v88 = UH1_RegexChar(f0: v87)
-    var v89: US0 = US0_BitZero()
-    v89 = US0_BitOne()
-    var v90: UH1 = UH1_RegexEmpty()
-    v90 = UH1_RegexChar(f0: v89)
-    var v91: UH1 = UH1_RegexEmpty()
-    v91 = UH1_RegexAlt(f0: v88, f1: v90)
-    var v92: UH1 = UH1_RegexEmpty()
-    v92 = UH1_RegexCat(f0: v86, f1: v91)
-    var v93: UH1 = UH1_RegexEmpty()
-    v93 = UH1_RegexCat(f0: v81, f1: v92)
-    var v94: UH1 = UH1_RegexEmpty()
-    v94 = UH1_RegexCat(f0: v76, f1: v93)
-    var v95: UH1 = UH1_RegexEmpty()
-    v95 = UH1_RegexCat(f0: v74, f1: v94)
-    var v96: UInt64 = (0 as UInt64)
-    v96 = (1 as UInt64)
-    var v97: Int32 = 0
-    v97 = 0
-    var v98: Int32 = 0
-    v98 = sp_loop_15(v68, v59, v58, v96, v97)
-    var v99: Int32 = 0
-    v99 = sp_loop_15(v95, v59, v58, v96, v97)
-    var v100: Int32 = 0
-    v100 = 16
-    var v101: US0 = US0_BitZero()
-    v101 = US0_BitZero()
-    var v102: UH1 = UH1_RegexEmpty()
-    v102 = UH1_RegexChar(f0: v101)
-    var v103: US0 = US0_BitZero()
-    v103 = US0_BitZero()
-    var v104: UH1 = UH1_RegexEmpty()
-    v104 = UH1_RegexChar(f0: v103)
-    var v105: US0 = US0_BitZero()
-    v105 = US0_BitZero()
-    var v106: UH1 = UH1_RegexEmpty()
-    v106 = UH1_RegexChar(f0: v105)
-    var v107: UH1 = UH1_RegexEmpty()
-    v107 = UH1_RegexCat(f0: v104, f1: v106)
-    var v108: UH1 = UH1_RegexEmpty()
-    v108 = UH1_RegexAlt(f0: v102, f1: v107)
-    var v109: UH1 = UH1_RegexEmpty()
-    v109 = UH1_RegexStar(f0: v108)
-    var v110: US0 = US0_BitZero()
-    v110 = US0_BitOne()
-    var v111: UH1 = UH1_RegexEmpty()
-    v111 = UH1_RegexChar(f0: v110)
-    var v112: UH1 = UH1_RegexEmpty()
-    v112 = UH1_RegexCat(f0: v109, f1: v111)
-    var v113: Int32 = 0
-    v113 = 0
-    var v114: Int32 = 0
-    v114 = 1
-    var v115: Int32 = 0
-    v115 = sp_loop_17(v112, v100, v114, v113)
-    var v116: Bool = false
-    v116 = (v40 == v98)
+    let v80: UH1 = UH1_RegexChar(f0: v79)
+    let v81: UH1 = UH1_RegexAlt(f0: v78, f1: v80)
+    let v82: US0 = US0_BitZero()
+    let v83: UH1 = UH1_RegexChar(f0: v82)
+    let v84: US0 = US0_BitOne()
+    let v85: UH1 = UH1_RegexChar(f0: v84)
+    let v86: UH1 = UH1_RegexAlt(f0: v83, f1: v85)
+    let v87: US0 = US0_BitZero()
+    let v88: UH1 = UH1_RegexChar(f0: v87)
+    let v89: US0 = US0_BitOne()
+    let v90: UH1 = UH1_RegexChar(f0: v89)
+    let v91: UH1 = UH1_RegexAlt(f0: v88, f1: v90)
+    let v92: UH1 = UH1_RegexCat(f0: v86, f1: v91)
+    let v93: UH1 = UH1_RegexCat(f0: v81, f1: v92)
+    let v94: UH1 = UH1_RegexCat(f0: v76, f1: v93)
+    let v95: UH1 = UH1_RegexCat(f0: v74, f1: v94)
+    let v96: UInt64 = (1 as UInt64)
+    let v97: Int32 = 0
+    let v98: Int32 = sp_loop_15(v68, v59, v58, v96, v97)
+    let v99: Int32 = sp_loop_15(v95, v59, v58, v96, v97)
+    let v100: Int32 = 16
+    let v101: US0 = US0_BitZero()
+    let v102: UH1 = UH1_RegexChar(f0: v101)
+    let v103: US0 = US0_BitZero()
+    let v104: UH1 = UH1_RegexChar(f0: v103)
+    let v105: US0 = US0_BitZero()
+    let v106: UH1 = UH1_RegexChar(f0: v105)
+    let v107: UH1 = UH1_RegexCat(f0: v104, f1: v106)
+    let v108: UH1 = UH1_RegexAlt(f0: v102, f1: v107)
+    let v109: UH1 = UH1_RegexStar(f0: v108)
+    let v110: US0 = US0_BitOne()
+    let v111: UH1 = UH1_RegexChar(f0: v110)
+    let v112: UH1 = UH1_RegexCat(f0: v109, f1: v111)
+    let v113: Int32 = 0
+    let v114: Int32 = 1
+    let v115: Int32 = sp_loop_17(v112, v100, v114, v113)
+    let v116: Bool = (v40 == v98)
     var v118: Bool = false
     if (v116) {
-        var v117: Bool = false
-        v117 = (v41 == v99)
+        let v117: Bool = (v41 == v99)
         v118 = v117
     } else {
         v118 = false
     }
     var v120: Bool = false
     if (v118) {
-        var v119: Bool = false
-        v119 = (v57 == v115)
+        let v119: Bool = (v57 == v115)
         v120 = v119
     } else {
         v120 = false
@@ -2511,40 +2328,27 @@ func spiral_main() -> Int32 {
         fputs("\n", stderr)
         exit(1)
     }
-    var v121: Int32 = 0
-    v121 = 200
-    var v122: Int32 = 0
-    v122 = 32
-    var v123: UInt64 = (0 as UInt64)
-    v123 = (1 as UInt64)
-    var v124: Int32 = 0
-    v124 = 0
-    var v125: Int32 = 0
-    v125 = sp_loop_18(v122, v121, v123, v124)
-    var v126: Int32 = 0
-    v126 = sp_loop_20(v122, v121, v123, v124)
-    var v127: Int32 = 0
-    v127 = 16
-    var v128: Int32 = 0
-    v128 = 0
-    var v129: Int32 = 0
-    v129 = 1
-    var v130: Int32 = 0
-    v130 = sp_loop_22(v127, v129, v128)
-    var v131: Bool = false
-    v131 = (v40 == v125)
+    let v121: Int32 = 200
+    let v122: Int32 = 32
+    let v123: UInt64 = (1 as UInt64)
+    let v124: Int32 = 0
+    let v125: Int32 = sp_loop_18(v122, v121, v123, v124)
+    let v126: Int32 = sp_loop_20(v122, v121, v123, v124)
+    let v127: Int32 = 16
+    let v128: Int32 = 0
+    let v129: Int32 = 1
+    let v130: Int32 = sp_loop_22(v127, v129, v128)
+    let v131: Bool = (v40 == v125)
     var v133: Bool = false
     if (v131) {
-        var v132: Bool = false
-        v132 = (v41 == v126)
+        let v132: Bool = (v41 == v126)
         v133 = v132
     } else {
         v133 = false
     }
     var v135: Bool = false
     if (v133) {
-        var v134: Bool = false
-        v134 = (v57 == v130)
+        let v134: Bool = (v57 == v130)
         v135 = v134
     } else {
         v135 = false
@@ -2555,55 +2359,33 @@ func spiral_main() -> Int32 {
         fputs("\n", stderr)
         exit(1)
     }
-    var v136: Int32 = 0
-    v136 = 200
-    var v137: Int32 = 0
-    v137 = 32
-    var v138: SpiralArray<Int32> = SpiralArray<Int32>([])
-    v138 = SpiralArray<Int32>(Array(repeating: 0, count: Int(4096)))
-    var v139: SpiralArray<Int32> = SpiralArray<Int32>([])
-    v139 = SpiralArray<Int32>(Array(repeating: 0, count: Int(4096)))
-    var v140: SpiralArray<Int32> = SpiralArray<Int32>([])
-    v140 = SpiralArray<Int32>(Array(repeating: 0, count: Int(4096)))
-    var v141: SpiralArray<Int32> = SpiralArray<Int32>([])
-    v141 = SpiralArray<Int32>(Array(repeating: 0, count: Int(4096)))
-    var v142: SpiralArray<Int32> = SpiralArray<Int32>([])
-    v142 = SpiralArray<Int32>(Array(repeating: 0, count: Int(8192)))
-    var v143: SpiralArray<Int32> = SpiralArray<Int32>([])
-    v143 = SpiralArray<Int32>(Array(repeating: 0, count: Int(8192)))
-    var v144: SpiralArray<Int32> = SpiralArray<Int32>([])
-    v144 = SpiralArray<Int32>(Array(repeating: 0, count: Int(1)))
-    var v145: Int32 = 0
-    v145 = 0
+    let v136: Int32 = 200
+    let v137: Int32 = 32
+    let v138: SpiralArray<Int32> = SpiralArray<Int32>(Array(repeating: 0, count: Int(4096)))
+    let v139: SpiralArray<Int32> = SpiralArray<Int32>(Array(repeating: 0, count: Int(4096)))
+    let v140: SpiralArray<Int32> = SpiralArray<Int32>(Array(repeating: 0, count: Int(4096)))
+    let v141: SpiralArray<Int32> = SpiralArray<Int32>(Array(repeating: 0, count: Int(4096)))
+    let v142: SpiralArray<Int32> = SpiralArray<Int32>(Array(repeating: 0, count: Int(8192)))
+    let v143: SpiralArray<Int32> = SpiralArray<Int32>(Array(repeating: 0, count: Int(8192)))
+    let v144: SpiralArray<Int32> = SpiralArray<Int32>(Array(repeating: 0, count: Int(1)))
+    let v145: Int32 = 0
     sp_loop_24(v142, v145)
-    var v146: Int32 = 0
-    v146 = 0
+    let v146: Int32 = 0
     sp_loop_24(v143, v146)
-    var v147: Int32 = 0
-    v147 = 0
+    let v147: Int32 = 0
     sp_loop_25(v144, v147)
-    var v148: Int32 = 0
-    v148 = 0
-    var v149: Int32 = 0
-    v149 = 0
-    var v150: Int32 = 0
-    v150 = 0
-    var v151: Int32 = 0
-    v151 = sp_interned_node_26(v138, v139, v140, v141, v142, v143, v144, v148, v149, v150)
-    var v152: Int32 = 0
-    v152 = 1
-    var v153: Int32 = 0
-    v153 = 0
-    var v154: Int32 = 0
-    v154 = 0
-    var v155: Int32 = 0
-    v155 = sp_interned_node_26(v138, v139, v140, v141, v142, v143, v144, v152, v153, v154)
-    var v156: Bool = false
-    v156 = (v151 == 0)
+    let v148: Int32 = 0
+    let v149: Int32 = 0
+    let v150: Int32 = 0
+    let v151: Int32 = sp_interned_node_26(v138, v139, v140, v141, v142, v143, v144, v148, v149, v150)
+    let v152: Int32 = 1
+    let v153: Int32 = 0
+    let v154: Int32 = 0
+    let v155: Int32 = sp_interned_node_26(v138, v139, v140, v141, v142, v143, v144, v152, v153, v154)
+    let v156: Bool = (v151 == 0)
     var v158: Bool = false
     if (v156) {
-        var v157: Bool = false
-        v157 = (v155 == 1)
+        let v157: Bool = (v155 == 1)
         v158 = v157
     } else {
         v158 = false
@@ -2628,141 +2410,76 @@ func spiral_main() -> Int32 {
         fputs("\n", stderr)
         exit(1)
     }
-    var v173: US0 = US0_BitZero()
-    v173 = US0_BitZero()
-    var v174: UH1 = UH1_RegexEmpty()
-    v174 = UH1_RegexChar(f0: v173)
-    var v175: US0 = US0_BitZero()
-    v175 = US0_BitOne()
-    var v176: UH1 = UH1_RegexEmpty()
-    v176 = UH1_RegexChar(f0: v175)
-    var v177: UH1 = UH1_RegexEmpty()
-    v177 = UH1_RegexAlt(f0: v174, f1: v176)
-    var v178: UH1 = UH1_RegexEmpty()
-    v178 = UH1_RegexStar(f0: v177)
-    var v179: US0 = US0_BitZero()
-    v179 = US0_BitZero()
-    var v180: UH1 = UH1_RegexEmpty()
-    v180 = UH1_RegexChar(f0: v179)
-    var v181: UH1 = UH1_RegexEmpty()
-    v181 = UH1_RegexCat(f0: v178, f1: v180)
-    var v182: Int32 = 0
-    v182 = sp_interned_of_regex_raw_28(v166, v167, v168, v169, v170, v171, v172, v181)
-    var v183: UInt64 = (0 as UInt64)
-    v183 = (1 as UInt64)
-    var v184: Int32 = 0
-    v184 = 0
-    var v185: Int32 = 0
-    v185 = sp_loop_32(v166, v167, v168, v169, v170, v171, v172, v137, v182, v136, v183, v184)
-    var v186: US0 = US0_BitZero()
-    v186 = US0_BitZero()
-    var v187: UH1 = UH1_RegexEmpty()
-    v187 = UH1_RegexChar(f0: v186)
-    var v188: US0 = US0_BitZero()
-    v188 = US0_BitOne()
-    var v189: UH1 = UH1_RegexEmpty()
-    v189 = UH1_RegexChar(f0: v188)
-    var v190: UH1 = UH1_RegexEmpty()
-    v190 = UH1_RegexAlt(f0: v187, f1: v189)
-    var v191: UH1 = UH1_RegexEmpty()
-    v191 = UH1_RegexStar(f0: v190)
-    var v192: US0 = US0_BitZero()
-    v192 = US0_BitOne()
-    var v193: UH1 = UH1_RegexEmpty()
-    v193 = UH1_RegexChar(f0: v192)
-    var v194: US0 = US0_BitZero()
-    v194 = US0_BitZero()
-    var v195: UH1 = UH1_RegexEmpty()
-    v195 = UH1_RegexChar(f0: v194)
-    var v196: US0 = US0_BitZero()
-    v196 = US0_BitOne()
-    var v197: UH1 = UH1_RegexEmpty()
-    v197 = UH1_RegexChar(f0: v196)
-    var v198: UH1 = UH1_RegexEmpty()
-    v198 = UH1_RegexAlt(f0: v195, f1: v197)
-    var v199: US0 = US0_BitZero()
-    v199 = US0_BitZero()
-    var v200: UH1 = UH1_RegexEmpty()
-    v200 = UH1_RegexChar(f0: v199)
-    var v201: US0 = US0_BitZero()
-    v201 = US0_BitOne()
-    var v202: UH1 = UH1_RegexEmpty()
-    v202 = UH1_RegexChar(f0: v201)
-    var v203: UH1 = UH1_RegexEmpty()
-    v203 = UH1_RegexAlt(f0: v200, f1: v202)
-    var v204: US0 = US0_BitZero()
-    v204 = US0_BitZero()
-    var v205: UH1 = UH1_RegexEmpty()
-    v205 = UH1_RegexChar(f0: v204)
-    var v206: US0 = US0_BitZero()
-    v206 = US0_BitOne()
-    var v207: UH1 = UH1_RegexEmpty()
-    v207 = UH1_RegexChar(f0: v206)
-    var v208: UH1 = UH1_RegexEmpty()
-    v208 = UH1_RegexAlt(f0: v205, f1: v207)
-    var v209: UH1 = UH1_RegexEmpty()
-    v209 = UH1_RegexCat(f0: v203, f1: v208)
-    var v210: UH1 = UH1_RegexEmpty()
-    v210 = UH1_RegexCat(f0: v198, f1: v209)
-    var v211: UH1 = UH1_RegexEmpty()
-    v211 = UH1_RegexCat(f0: v193, f1: v210)
-    var v212: UH1 = UH1_RegexEmpty()
-    v212 = UH1_RegexCat(f0: v191, f1: v211)
-    var v213: Int32 = 0
-    v213 = sp_interned_of_regex_raw_28(v166, v167, v168, v169, v170, v171, v172, v212)
-    var v214: UInt64 = (0 as UInt64)
-    v214 = (1 as UInt64)
-    var v215: Int32 = 0
-    v215 = 0
-    var v216: Int32 = 0
-    v216 = sp_loop_32(v166, v167, v168, v169, v170, v171, v172, v137, v213, v136, v214, v215)
-    var v217: Int32 = 0
-    v217 = 16
-    var v218: SpiralArray<Int32> = SpiralArray<Int32>([])
-    v218 = SpiralArray<Int32>(Array(repeating: 0, count: Int(4096)))
-    var v219: SpiralArray<Int32> = SpiralArray<Int32>([])
-    v219 = SpiralArray<Int32>(Array(repeating: 0, count: Int(4096)))
-    var v220: SpiralArray<Int32> = SpiralArray<Int32>([])
-    v220 = SpiralArray<Int32>(Array(repeating: 0, count: Int(4096)))
-    var v221: SpiralArray<Int32> = SpiralArray<Int32>([])
-    v221 = SpiralArray<Int32>(Array(repeating: 0, count: Int(4096)))
-    var v222: SpiralArray<Int32> = SpiralArray<Int32>([])
-    v222 = SpiralArray<Int32>(Array(repeating: 0, count: Int(8192)))
-    var v223: SpiralArray<Int32> = SpiralArray<Int32>([])
-    v223 = SpiralArray<Int32>(Array(repeating: 0, count: Int(8192)))
-    var v224: SpiralArray<Int32> = SpiralArray<Int32>([])
-    v224 = SpiralArray<Int32>(Array(repeating: 0, count: Int(1)))
-    var v225: Int32 = 0
-    v225 = 0
+    let v173: US0 = US0_BitZero()
+    let v174: UH1 = UH1_RegexChar(f0: v173)
+    let v175: US0 = US0_BitOne()
+    let v176: UH1 = UH1_RegexChar(f0: v175)
+    let v177: UH1 = UH1_RegexAlt(f0: v174, f1: v176)
+    let v178: UH1 = UH1_RegexStar(f0: v177)
+    let v179: US0 = US0_BitZero()
+    let v180: UH1 = UH1_RegexChar(f0: v179)
+    let v181: UH1 = UH1_RegexCat(f0: v178, f1: v180)
+    let v182: Int32 = sp_interned_of_regex_raw_28(v166, v167, v168, v169, v170, v171, v172, v181)
+    let v183: UInt64 = (1 as UInt64)
+    let v184: Int32 = 0
+    let v185: Int32 = sp_loop_32(v166, v167, v168, v169, v170, v171, v172, v137, v182, v136, v183, v184)
+    let v186: US0 = US0_BitZero()
+    let v187: UH1 = UH1_RegexChar(f0: v186)
+    let v188: US0 = US0_BitOne()
+    let v189: UH1 = UH1_RegexChar(f0: v188)
+    let v190: UH1 = UH1_RegexAlt(f0: v187, f1: v189)
+    let v191: UH1 = UH1_RegexStar(f0: v190)
+    let v192: US0 = US0_BitOne()
+    let v193: UH1 = UH1_RegexChar(f0: v192)
+    let v194: US0 = US0_BitZero()
+    let v195: UH1 = UH1_RegexChar(f0: v194)
+    let v196: US0 = US0_BitOne()
+    let v197: UH1 = UH1_RegexChar(f0: v196)
+    let v198: UH1 = UH1_RegexAlt(f0: v195, f1: v197)
+    let v199: US0 = US0_BitZero()
+    let v200: UH1 = UH1_RegexChar(f0: v199)
+    let v201: US0 = US0_BitOne()
+    let v202: UH1 = UH1_RegexChar(f0: v201)
+    let v203: UH1 = UH1_RegexAlt(f0: v200, f1: v202)
+    let v204: US0 = US0_BitZero()
+    let v205: UH1 = UH1_RegexChar(f0: v204)
+    let v206: US0 = US0_BitOne()
+    let v207: UH1 = UH1_RegexChar(f0: v206)
+    let v208: UH1 = UH1_RegexAlt(f0: v205, f1: v207)
+    let v209: UH1 = UH1_RegexCat(f0: v203, f1: v208)
+    let v210: UH1 = UH1_RegexCat(f0: v198, f1: v209)
+    let v211: UH1 = UH1_RegexCat(f0: v193, f1: v210)
+    let v212: UH1 = UH1_RegexCat(f0: v191, f1: v211)
+    let v213: Int32 = sp_interned_of_regex_raw_28(v166, v167, v168, v169, v170, v171, v172, v212)
+    let v214: UInt64 = (1 as UInt64)
+    let v215: Int32 = 0
+    let v216: Int32 = sp_loop_32(v166, v167, v168, v169, v170, v171, v172, v137, v213, v136, v214, v215)
+    let v217: Int32 = 16
+    let v218: SpiralArray<Int32> = SpiralArray<Int32>(Array(repeating: 0, count: Int(4096)))
+    let v219: SpiralArray<Int32> = SpiralArray<Int32>(Array(repeating: 0, count: Int(4096)))
+    let v220: SpiralArray<Int32> = SpiralArray<Int32>(Array(repeating: 0, count: Int(4096)))
+    let v221: SpiralArray<Int32> = SpiralArray<Int32>(Array(repeating: 0, count: Int(4096)))
+    let v222: SpiralArray<Int32> = SpiralArray<Int32>(Array(repeating: 0, count: Int(8192)))
+    let v223: SpiralArray<Int32> = SpiralArray<Int32>(Array(repeating: 0, count: Int(8192)))
+    let v224: SpiralArray<Int32> = SpiralArray<Int32>(Array(repeating: 0, count: Int(1)))
+    let v225: Int32 = 0
     sp_loop_24(v222, v225)
-    var v226: Int32 = 0
-    v226 = 0
+    let v226: Int32 = 0
     sp_loop_24(v223, v226)
-    var v227: Int32 = 0
-    v227 = 0
+    let v227: Int32 = 0
     sp_loop_25(v224, v227)
-    var v228: Int32 = 0
-    v228 = 0
-    var v229: Int32 = 0
-    v229 = 0
-    var v230: Int32 = 0
-    v230 = 0
-    var v231: Int32 = 0
-    v231 = sp_interned_node_26(v218, v219, v220, v221, v222, v223, v224, v228, v229, v230)
-    var v232: Int32 = 0
-    v232 = 1
-    var v233: Int32 = 0
-    v233 = 0
-    var v234: Int32 = 0
-    v234 = 0
-    var v235: Int32 = 0
-    v235 = sp_interned_node_26(v218, v219, v220, v221, v222, v223, v224, v232, v233, v234)
-    var v236: Bool = false
-    v236 = (v231 == 0)
+    let v228: Int32 = 0
+    let v229: Int32 = 0
+    let v230: Int32 = 0
+    let v231: Int32 = sp_interned_node_26(v218, v219, v220, v221, v222, v223, v224, v228, v229, v230)
+    let v232: Int32 = 1
+    let v233: Int32 = 0
+    let v234: Int32 = 0
+    let v235: Int32 = sp_interned_node_26(v218, v219, v220, v221, v222, v223, v224, v232, v233, v234)
+    let v236: Bool = (v231 == 0)
     var v238: Bool = false
     if (v236) {
-        var v237: Bool = false
-        v237 = (v235 == 1)
+        let v237: Bool = (v235 == 1)
         v238 = v237
     } else {
         v238 = false
@@ -2787,52 +2504,33 @@ func spiral_main() -> Int32 {
         fputs("\n", stderr)
         exit(1)
     }
-    var v253: US0 = US0_BitZero()
-    v253 = US0_BitZero()
-    var v254: UH1 = UH1_RegexEmpty()
-    v254 = UH1_RegexChar(f0: v253)
-    var v255: US0 = US0_BitZero()
-    v255 = US0_BitZero()
-    var v256: UH1 = UH1_RegexEmpty()
-    v256 = UH1_RegexChar(f0: v255)
-    var v257: US0 = US0_BitZero()
-    v257 = US0_BitZero()
-    var v258: UH1 = UH1_RegexEmpty()
-    v258 = UH1_RegexChar(f0: v257)
-    var v259: UH1 = UH1_RegexEmpty()
-    v259 = UH1_RegexCat(f0: v256, f1: v258)
-    var v260: UH1 = UH1_RegexEmpty()
-    v260 = UH1_RegexAlt(f0: v254, f1: v259)
-    var v261: UH1 = UH1_RegexEmpty()
-    v261 = UH1_RegexStar(f0: v260)
-    var v262: US0 = US0_BitZero()
-    v262 = US0_BitOne()
-    var v263: UH1 = UH1_RegexEmpty()
-    v263 = UH1_RegexChar(f0: v262)
-    var v264: UH1 = UH1_RegexEmpty()
-    v264 = UH1_RegexCat(f0: v261, f1: v263)
-    var v265: Int32 = 0
-    v265 = sp_interned_of_regex_raw_28(v246, v247, v248, v249, v250, v251, v252, v264)
-    var v266: Int32 = 0
-    v266 = 1
-    var v267: Int32 = 0
-    v267 = 0
-    var v268: Int32 = 0
-    v268 = sp_loop_36(v246, v247, v248, v249, v250, v251, v252, v217, v265, v266, v267)
-    var v269: Bool = false
-    v269 = (v40 == v185)
+    let v253: US0 = US0_BitZero()
+    let v254: UH1 = UH1_RegexChar(f0: v253)
+    let v255: US0 = US0_BitZero()
+    let v256: UH1 = UH1_RegexChar(f0: v255)
+    let v257: US0 = US0_BitZero()
+    let v258: UH1 = UH1_RegexChar(f0: v257)
+    let v259: UH1 = UH1_RegexCat(f0: v256, f1: v258)
+    let v260: UH1 = UH1_RegexAlt(f0: v254, f1: v259)
+    let v261: UH1 = UH1_RegexStar(f0: v260)
+    let v262: US0 = US0_BitOne()
+    let v263: UH1 = UH1_RegexChar(f0: v262)
+    let v264: UH1 = UH1_RegexCat(f0: v261, f1: v263)
+    let v265: Int32 = sp_interned_of_regex_raw_28(v246, v247, v248, v249, v250, v251, v252, v264)
+    let v266: Int32 = 1
+    let v267: Int32 = 0
+    let v268: Int32 = sp_loop_36(v246, v247, v248, v249, v250, v251, v252, v217, v265, v266, v267)
+    let v269: Bool = (v40 == v185)
     var v271: Bool = false
     if (v269) {
-        var v270: Bool = false
-        v270 = (v41 == v216)
+        let v270: Bool = (v41 == v216)
         v271 = v270
     } else {
         v271 = false
     }
     var v273: Bool = false
     if (v271) {
-        var v272: Bool = false
-        v272 = (v57 == v268)
+        let v272: Bool = (v57 == v268)
         v273 = v272
     } else {
         v273 = false
@@ -2843,24 +2541,21 @@ func spiral_main() -> Int32 {
         fputs("\n", stderr)
         exit(1)
     }
-    var v274: Bool = false
-    v274 = (v57 == 16)
+    let v274: Bool = (v57 == 16)
     if (v274) {
     } else {
         "brzozowski-bench-zero-runs-count".withCString { ptr in _ = fputs(ptr, stderr) }
         fputs("\n", stderr)
         exit(1)
     }
-    var v275: Bool = false
-    v275 = (v40 == 93)
+    let v275: Bool = (v40 == 93)
     if (v275) {
     } else {
         "brzozowski-bench-ends-with-zero-count".withCString { ptr in _ = fputs(ptr, stderr) }
         fputs("\n", stderr)
         exit(1)
     }
-    var v276: Bool = false
-    v276 = (v41 == 97)
+    let v276: Bool = (v41 == 97)
     if (v276) {
     } else {
         "brzozowski-bench-fourth-from-end-count".withCString { ptr in _ = fputs(ptr, stderr) }

@@ -22,5 +22,6 @@ inl finalize_root_7
 
 inl main () : finality_receipt batch_700 epoch_31 root_poseidon_7 =
     inl proof : zk_proof batch_700 epoch_31 root_poseidon_7 = zk_proof "proof-root-7"
-    inl wrong : availability_certificate batch_700 epoch_31 root_poseidon_8 = availability_certificate "availability-root-8"
+    inl wrong : availability_certificate batch_700 epoch_31 root_poseidon_8 =
+        availability_certificate "availability-root-8"
     finalize_root_7 proof wrong

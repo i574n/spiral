@@ -30,8 +30,7 @@ fn sp_layers_0(p0: i32) -> i32 {
             var v5: i32 = v4.c1f0;
             var v6: i32 = 0i;
             v6 = (v5 + 1i);
-            let spiral_t1: i32 = v6;
-            v0 = spiral_t1;
+            v0 = v6;
             continue;
         }
     }

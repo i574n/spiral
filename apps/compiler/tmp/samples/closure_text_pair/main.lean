@@ -28,10 +28,9 @@ partial def f_c0 (p0 : String) (p1 : String) (p2 : Int32) : IO (String × String
     let mut v0 : String := p0
     let mut v1 : String := p1
     let mut v2 : Int32 := p2
-    let mut v3 : Bool := default
     let mut v4 : String := default
     let mut v5 : String := default
-    v3 := (v2 == (0 : Int32))
+    let v3 : Bool := (v2 == (0 : Int32))
     if v3 then
         v4 := "no"
         v5 := "nay"
@@ -39,21 +38,15 @@ partial def f_c0 (p0 : String) (p1 : String) (p2 : Int32) : IO (String × String
     else
         return (v0, v1)
 partial def spiralMain : IO Int32 := do
-    let mut v0 : String := default
-    let mut v1 : String := default
-    let mut v2 : (Int32 → IO (String × String)) := default
-    let mut v3 : String := default
-    let mut v4 : String := default
-    let mut v5 : Bool := default
     let mut v7 : Bool := default
     let mut v6 : Bool := default
-    v0 := "hi"
-    v1 := "yo"
-    v2 := (f_c0 v0 v1)
+    let v0 : String := "hi"
+    let v1 : String := "yo"
+    let v2 : (Int32 → IO (String × String)) := (f_c0 v0 v1)
     let (r1_0, r1_1) := (← v2 (1 : Int32))
-    v3 := r1_0
-    v4 := r1_1
-    v5 := (v3 == "hi")
+    let v3 : String := r1_0
+    let v4 : String := r1_1
+    let v5 : Bool := (v3 == "hi")
     if v5 then
         v6 := (v4 == "yo")
         v7 := v6

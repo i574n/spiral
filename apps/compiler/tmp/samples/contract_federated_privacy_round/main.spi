@@ -6,11 +6,16 @@ nominal available = ()
 nominal spent = ()
 nominal aggregated = ()
 
-union privacy_budget client budget state = | Budget :: forall client budget state. string -> privacy_budget client budget state
-union clipped_update model round client budget state = | Update :: forall model round client budget state. string -> clipped_update model round client budget state
+union privacy_budget client budget state =
+    | Budget :: forall client budget state. string -> privacy_budget client budget state
+union clipped_update model round client budget state =
+    | Update :: forall model round client budget state. string -> clipped_update model round client budget state
 union aggregate model round state = | Aggregate :: forall model round state. string -> aggregate model round state
 
-inl consume forall model round client budget. (budget : privacy_budget client budget available) (update : clipped_update model round client budget available) : privacy_budget client budget spent * aggregate model round aggregated =
+inl consume forall model round client budget.
+    (budget : privacy_budget client budget available) (update : clipped_update model round client budget available)
+    : privacy_budget client budget spent * aggregate model round aggregated
+    =
     match budget, update with | Budget _, Update _ => Budget "spent", Aggregate "federated-round-published"
 
 inl main () : string =

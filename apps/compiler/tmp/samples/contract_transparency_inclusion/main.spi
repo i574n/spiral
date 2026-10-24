@@ -6,10 +6,16 @@ nominal committed = ()
 nominal verified = ()
 
 union transparency_root log root state = | Root :: forall log root state. string -> transparency_root log root state
-union inclusion_witness log root leaf index state = | Inclusion :: forall log root leaf index state. string -> inclusion_witness log root leaf index state
-union registry_leaf log leaf index state = | Leaf :: forall log leaf index state. string -> registry_leaf log leaf index state
+union inclusion_witness log root leaf index state =
+    | Inclusion :: forall log root leaf index state. string -> inclusion_witness log root leaf index state
+union registry_leaf log leaf index state =
+    | Leaf :: forall log leaf index state. string -> registry_leaf log leaf index state
 
-inl admit forall log root leaf index. (root : transparency_root log root committed) (leaf : registry_leaf log leaf index committed) (proof : inclusion_witness log root leaf index verified) : string =
+inl admit forall log root leaf index.
+    (root : transparency_root log root committed) (leaf : registry_leaf log leaf index committed)
+    (proof : inclusion_witness log root leaf index verified)
+    : string
+    =
     match root, leaf, proof with | Root _, Leaf _, Inclusion _ => "transparency-inclusion-verified"
 
 inl main () : string =

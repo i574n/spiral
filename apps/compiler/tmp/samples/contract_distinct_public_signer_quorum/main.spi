@@ -5,7 +5,8 @@ nominal key_b = ()
 nominal digest_a = ()
 nominal verified = ()
 
-union public_signature signer key digest state = | Signature :: forall signer key digest state. string -> public_signature signer key digest state
+union public_signature signer key digest state =
+    | Signature :: forall signer key digest state. string -> public_signature signer key digest state
 union distinct left right = | SignerAB :: distinct signer_a signer_b
 union quorum digest left right = | Quorum :: forall digest left right. string -> quorum digest left right
 

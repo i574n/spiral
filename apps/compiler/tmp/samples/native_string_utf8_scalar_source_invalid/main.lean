@@ -27,14 +27,11 @@ mutual
 partial def runtime_byte_1 (p0 : String) (p1 : Int32) : IO Char := do
     let mut v0 : String := p0
     let mut v1 : Int32 := p1
-    let mut v2 : Char := default
-    v2 := (Char.ofNat (v0.toUTF8.get! (spiralIdx v1)).toNat)
+    let v2 : Char := (Char.ofNat (v0.toUTF8.get! (spiralIdx v1)).toNat)
     return v2
 partial def utf8_scalar_at_byte_offset_0 (p0 : String) (p1 : Int32) : IO Int32 := do
     let mut v0 : String := p0
     let mut v1 : Int32 := p1
-    let mut v2 : Int32 := default
-    let mut v3 : Bool := default
     let mut v5 : Bool := default
     let mut v7 : Char := default
     let mut v8 : Int32 := default
@@ -108,8 +105,8 @@ partial def utf8_scalar_at_byte_offset_0 (p0 : String) (p1 : Int32) : IO Int32 :
     let mut v93 : Int32 := default
     let mut v94 : Bool := default
     let mut v96 : Bool := default
-    v2 := (Int32.ofNat v0.utf8ByteSize)
-    v3 := (decide (v1 < (0 : Int32)))
+    let v2 : Int32 := (Int32.ofNat v0.utf8ByteSize)
+    let v3 : Bool := (decide (v1 < (0 : Int32)))
     if v3 then
         spiralFail "UTF-8 byte offset is negative."
     else
@@ -266,10 +263,8 @@ partial def utf8_scalar_at_byte_offset_0 (p0 : String) (p1 : Int32) : IO Int32 :
                             else
                                 spiralFail "UTF-8 scalar starts with an invalid lead byte."
 partial def spiralMain : IO Int32 := do
-    let mut v0 : String := default
-    let mut v1 : Int32 := default
-    v0 := "é"
-    v1 := (1 : Int32)
+    let v0 : String := "é"
+    let v1 : Int32 := (1 : Int32)
     return (← utf8_scalar_at_byte_offset_0 v0 v1)
 end
 def main : IO UInt32 := do

@@ -47,6 +47,9 @@ inl test_value () = 1
 
 (source_file
   (other_line)
-  (definition_line)
+  (definition_line
+    (definition_keyword)
+    name: (definition_name)
+    (definition_rest))
   (indented_line)
   (line_comment))

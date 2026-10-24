@@ -16,9 +16,15 @@ union mounted_list scope key state =
 
 union reconcile_step scope key from to =
     | BeginReconcile :: forall scope key. reconcile_step scope key mounted reconciling
-    | ApplyInserted :: forall scope key. (exists value. keyed_child key value) -> reconcile_step scope key reconciling reconciled
-    | ApplyUpdated :: forall scope key. (exists value. keyed_child key value) -> reconcile_step scope key reconciling reconciled
-    | ApplyRemoved :: forall scope key. (exists value. keyed_child key value) -> reconcile_step scope key reconciling reconciled
+    | ApplyInserted :: forall scope key.
+        (exists value. keyed_child key value) ->
+        reconcile_step scope key reconciling reconciled
+    | ApplyUpdated :: forall scope key.
+        (exists value. keyed_child key value) ->
+        reconcile_step scope key reconciling reconciled
+    | ApplyRemoved :: forall scope key.
+        (exists value. keyed_child key value) ->
+        reconcile_step scope key reconciling reconciled
 
 union rec reconcile_plan scope key from to =
     | ReconcileLeaf :: forall scope key from to.

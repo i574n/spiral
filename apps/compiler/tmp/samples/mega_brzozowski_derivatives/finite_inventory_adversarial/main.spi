@@ -79,33 +79,58 @@ inl lookup_matches_descriptor () : bool =
 
 inl main () : string =
     inl valid = valid_descriptor ()
-    assert_static (finite_alphabet_descriptor_certified valid) "ordered inventory with matching independent cardinality must certify"
-    assert_static (lookup_matches_descriptor ()) "rank lookup must be derived deterministically from the certified inventory"
+    assert_static
+        (finite_alphabet_descriptor_certified valid)
+        "ordered inventory with matching independent cardinality must certify"
+    assert_static
+        (lookup_matches_descriptor ())
+        "rank lookup must be derived deterministically from the certified inventory"
 
     inl swapped = swapped_descriptor ()
-    assert_static (bool_same (finite_alphabet_descriptor_certified swapped) false) "swapped descriptor inventory must fail canonical ordering"
+    assert_static
+        (bool_same (finite_alphabet_descriptor_certified swapped) false)
+        "swapped descriptor inventory must fail canonical ordering"
 
     inl short = short_descriptor ()
-    assert_static (alphabet_inventory_well_formed (finite_alphabet_symbols short)) "short inventory may be locally ordered"
-    assert_static (bool_same (finite_alphabet_descriptor_certified short) false) "cardinality must reject an inventory that omits a domain slot"
+    assert_static
+        (alphabet_inventory_well_formed (finite_alphabet_symbols short))
+        "short inventory may be locally ordered"
+    assert_static
+        (bool_same (finite_alphabet_descriptor_certified short) false)
+        "cardinality must reject an inventory that omits a domain slot"
 
     inl self_consistent_short = self_consistent_short_descriptor ()
-    assert_static (symbol_list_cardinality_matches (finite_alphabet_symbols self_consistent_short) (adversarial_cardinality_one ())) "self-consistent short descriptor should demonstrate the old circularity"
-    assert_static (bool_same (finite_alphabet_descriptor_certified self_consistent_short) false) "canonical finite-domain authority must reject a self-consistent truncated descriptor"
+    assert_static
+        (
+            symbol_list_cardinality_matches
+                (finite_alphabet_symbols self_consistent_short)
+                (adversarial_cardinality_one ())
+        )
+        "self-consistent short descriptor should demonstrate the old circularity"
+    assert_static
+        (bool_same (finite_alphabet_descriptor_certified self_consistent_short) false)
+        "canonical finite-domain authority must reject a self-consistent truncated descriptor"
 
     inl long_cardinality = long_cardinality_descriptor ()
-    assert_static (bool_same (finite_alphabet_descriptor_certified long_cardinality) false) "cardinality must reject a descriptor claiming more slots than its inventory carries"
+    assert_static
+        (bool_same (finite_alphabet_descriptor_certified long_cardinality) false)
+        "cardinality must reject a descriptor claiming more slots than its inventory carries"
 
     inl duplicate = duplicate_descriptor ()
-    assert_static (bool_same (finite_alphabet_descriptor_certified duplicate) false) "duplicate inventory values must not certify even when cardinality matches"
+    assert_static
+        (bool_same (finite_alphabet_descriptor_certified duplicate) false)
+        "duplicate inventory values must not certify even when cardinality matches"
 
     inl bit_descriptor : finite_alphabet_descriptor bit_alphabet = finite_alphabet ()
-    assert_static (finite_alphabet_descriptor_certified bit_descriptor) "production bit descriptor must certify through list plus cardinality only"
+    assert_static
+        (finite_alphabet_descriptor_certified bit_descriptor)
+        "production bit descriptor must certify through list plus cardinality only"
 
     inl forged : certified_alphabet_inventory adversarial_alphabet = certified_alphabet_inventory short
     inl forged_runner_rejected =
         match dfa_run_certified RegexEpsilon forged InputEmpty with
         | DfaEscapedClosure => true
         | _ => false
-    assert_static forged_runner_rejected "a publicly forged certified descriptor nominal must be revalidated by the runner"
+    assert_static forged_runner_rejected
+        "a publicly forged certified descriptor nominal must be revalidated by the runner"
     "brzozowski-finite-inventory-adversarial-green"

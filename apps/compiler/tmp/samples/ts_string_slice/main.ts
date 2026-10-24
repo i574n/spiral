@@ -30,20 +30,20 @@ function spiral_string_slice(value: string, from: number, to: number): string {
     return spiral_utf8_decoder.decode(bytes.subarray(from, to + 1));
 }
 function middle_0(v0: string): string {
-    let v1: string = spiral_string_slice(v0, 1, 3);
+    const v1: string = spiral_string_slice(v0, 1, 3);
     return v1;
 }
 export function main(): number {
-    let v0: string = "alpha";
-    let v1: string = middle_0(v0);
-    let v2: number = spiral_string_length(v1);
-    let v3: boolean = v2 === 3;
+    const v0: string = "alpha";
+    const v1: string = middle_0(v0);
+    const v2: number = spiral_string_length(v1);
+    const v3: boolean = v2 === 3;
     if (v3) {
-        let v4: number = spiral_string_index(v1, 0);
-        let v5: boolean = v4 === 108;
+        const v4: number = spiral_string_index(v1, 0);
+        const v5: boolean = v4 === 108;
         if (v5) {
-            let v6: number = spiral_string_index(v1, 2);
-            let v7: boolean = v6 === 104;
+            const v6: number = spiral_string_index(v1, 2);
+            const v7: boolean = v6 === 104;
             if (v7) {
                 return 0;
             } else {

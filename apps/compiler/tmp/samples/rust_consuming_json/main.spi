@@ -1,5 +1,8 @@
 inl native (k : i32) : i32 =
-    global "#[derive(Clone)] struct Outcome(i32); impl Outcome { fn json(self) -> i32 { self.0 + 1 } fn borsh(self) -> i32 { self.0 * 2 } }"
+    global (
+        "#[derive(Clone)] struct Outcome(i32); impl Outcome { fn json(self) -> i32 { self.0 + 1 } fn borsh(self) "
+        ^^ "-> i32 { self.0 * 2 } }"
+    )
     inl o : $'Outcome' = $'Outcome(!k)'
     inl a : i32 = $'!o.json()'
     inl b : i32 = $'!o.borsh()'

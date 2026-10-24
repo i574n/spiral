@@ -65,12 +65,9 @@ static int32_t sp_method2(int32_t p0, int32_t p1, int32_t p2) {
                 v10 = (v6 + 1);
                 v6 = v10;
             }
-            int32_t t863_3 = v3;
-            int32_t t897_4 = v4;
-            int32_t t931_7 = v7;
-            v0 = t863_3;
-            v1 = t897_4;
-            v2 = t931_7;
+            v0 = v3;
+            v1 = v4;
+            v2 = v7;
             continue;
         }
     }

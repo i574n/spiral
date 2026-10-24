@@ -14,5 +14,14 @@ inl main () : i32 =
     inl u2 = u +. 1u64
     inl ushift = !!!!ShiftRight(u, 1i32)
     inl from_u = !!!!Conv(`u64, n)
-    if q =. (0i64 -. 1250000000i64) && prod =. 1000000000000i64 && shifted =. (0i64 -. 4i64) && from_i =. 7i64 && as_i =. 9i32 && u2 =. 4294967297u64 && ushift =. 2147483648u64 && from_u =. 7u64 then 0i32
+    if
+        q =. (0i64 -. 1250000000i64)
+        && prod =. 1000000000000i64
+        && shifted =. (0i64 -. 4i64)
+        && from_i =. 7i64
+        && as_i =. 9i32
+        && u2 =. 4294967297u64
+        && ushift =. 2147483648u64
+        && from_u =. 7u64
+    then 0i32
     else 1i32

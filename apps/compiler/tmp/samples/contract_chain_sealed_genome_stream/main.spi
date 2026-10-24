@@ -15,7 +15,9 @@ union genome_batch sample build contig digest =
     | GenomeBatch :: forall sample build contig digest. string -> genome_batch sample build contig digest
 
 union resource scope epoch sample build contig digest state =
-    | Resource :: forall scope epoch sample build contig digest state. string -> resource scope epoch sample build contig digest state
+    | Resource :: forall scope epoch sample build contig digest state.
+        string ->
+        resource scope epoch sample build contig digest state
 
 union view scope epoch digest state =
     | View :: forall scope epoch digest state. string -> view scope epoch digest state

@@ -4,7 +4,8 @@ param(
     [Parameter(Mandatory)] [string] $Sample,
     [string] $Backend = 'C',
     [int] $Rounds = 5,
-    [switch] $Native
+    [switch] $Native,
+    [double] $QuietCores = 0
 )
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'env.ps1')
@@ -53,16 +54,38 @@ function Measure-Compile([string] $dll, [string] $label, [int] $round) {
     }
     [pscustomobject]@{ Label = $label; Round = $round; Ms = $ms; Exit = $compileExit; Bytes = $bytes; RunMs = $runMs; RunExit = $runExit }
 }
+function Get-BusyCores {
+    $before = @{}
+    foreach ($p in Get-Process) { try { $before[$p.Id] = $p.TotalProcessorTime.TotalSeconds } catch {} }
+    $watch = [Diagnostics.Stopwatch]::StartNew()
+    Start-Sleep -Seconds 2
+    $busy = 0.0
+    foreach ($p in Get-Process) { try { if ($before.ContainsKey($p.Id) -and $p.Id -ne $PID) { $busy += $p.TotalProcessorTime.TotalSeconds - $before[$p.Id] } } catch {} }
+    [math]::Round($busy / $watch.Elapsed.TotalSeconds, 1)
+}
 try {
     $rows = for ($round = 1; $round -le $Rounds; $round++) {
         $order = if ($round % 2) { @(@('A', $A), @('B', $B)) } else { @(@('B', $B), @('A', $A)) }
-        foreach ($pair in $order) { Measure-Compile $pair[1] $pair[0] $round }
+        foreach ($pair in $order) {
+            $load = if ($QuietCores -gt 0) { Get-BusyCores } else { $null }
+            Measure-Compile $pair[1] $pair[0] $round | Add-Member -NotePropertyName Load -NotePropertyValue $load -PassThru
+        }
     }
     $median = { param($xs) $s = @($xs | Sort-Object); $s[[int][Math]::Floor(($s.Count - 1) / 2)] }
     $a = & $median ($rows | Where-Object Label -eq 'A' | ForEach-Object Ms)
     $b = & $median ($rows | Where-Object Label -eq 'B' | ForEach-Object Ms)
     $rows | Format-Table -AutoSize | Out-String -Width 120
     "median A $a ms, B $b ms, B/A $([Math]::Round($b / [Math]::Max(1, $a), 3)) ($Rounds rounds, alternating order, fresh process per compile, $Backend, $(Split-Path $dir -Leaf))"
+    if ($QuietCores -gt 0) {
+        $loudRounds = @($rows | Where-Object { $_.Load -ge $QuietCores } | ForEach-Object Round | Sort-Object -Unique)
+        $quiet = @($rows | Where-Object { $loudRounds -notcontains $_.Round })
+        $quietRounds = @($quiet | ForEach-Object Round | Sort-Object -Unique).Count
+        if ($quietRounds) {
+            $qa = & $median ($quiet | Where-Object Label -eq 'A' | ForEach-Object Ms)
+            $qb = & $median ($quiet | Where-Object Label -eq 'B' | ForEach-Object Ms)
+            "quiet rounds (other load < $QuietCores cores before both compiles): $quietRounds of $Rounds; median A $qa ms, B $qb ms, B/A $([Math]::Round($qb / [Math]::Max(1, $qa), 3))"
+        } else { "quiet rounds (other load < $QuietCores cores before both compiles): 0 of $Rounds" }
+    }
     $sizes = $rows | Group-Object Label | ForEach-Object { "$($_.Name) $((@($_.Group.Bytes) | Sort-Object -Unique) -join '/') bytes" }
     "outputs: $($sizes -join ', ')"
     $runText = ''

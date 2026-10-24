@@ -5,12 +5,10 @@ final class SpiralArray<T> {
     init(_ items: [T]) { self.items = items }
 }
 func spiral_main() -> Int32 {
-    var v0: Int32 = 0
-    v0 = 3
+    let v0: Int32 = 3
     var v1: SpiralArray<(Int32, Bool)> = SpiralArray<(Int32, Bool)>([])
     v1 = SpiralArray<(Int32, Bool)>(Array(repeating: (0, false), count: Int(v0)))
-    var v2: Int32 = 0
-    v2 = 4
+    let v2: Int32 = 4
     v1.items[Int(0)] = (v2, true)
     v1.items[Int(1)] = (7, false)
     v1.items[Int(2)] = (9, true)
@@ -24,8 +22,7 @@ func spiral_main() -> Int32 {
     let spiral_tuple559 = v1.items[Int(1)]
     v5 = spiral_tuple559.0
     v6 = spiral_tuple559.1
-    var v7: Int32 = 0
-    v7 = 2
+    let v7: Int32 = 2
     var v8: Int32 = 0
     var v9: Bool = false
     let spiral_tuple743 = v1.items[Int(v7)]
@@ -49,16 +46,11 @@ func spiral_main() -> Int32 {
     } else {
         v12 = 0
     }
-    var v13: Int32 = 0
-    v13 = (v3 &+ v5)
-    var v14: Int32 = 0
-    v14 = (v13 &+ v8)
-    var v15: Int32 = 0
-    v15 = (v14 &+ v10)
-    var v16: Int32 = 0
-    v16 = (v15 &+ v11)
-    var v17: Int32 = 0
-    v17 = (v16 &+ v12)
+    let v13: Int32 = (v3 &+ v5)
+    let v14: Int32 = (v13 &+ v8)
+    let v15: Int32 = (v14 &+ v10)
+    let v16: Int32 = (v15 &+ v11)
+    let v17: Int32 = (v16 &+ v12)
     return v17
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

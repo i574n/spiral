@@ -31,28 +31,28 @@ function spiral_string_slice(value: string, from: number, to: number): string {
 }
 function choose_0(v0: boolean): string {
     if (v0) {
-        let v1: string = "alpha";
+        const v1: string = "alpha";
         return v1;
     } else {
-        let v2: string = "beta";
+        const v2: string = "beta";
         return v2;
     }
 }
 function measure_1(v0: string): number {
-    let v1: number = spiral_string_length(v0);
+    const v1: number = spiral_string_length(v0);
     return v1;
 }
 export function main(): number {
-    let v0: boolean = true;
-    let v1: string = choose_0(v0);
-    let v2: boolean = false;
-    let v3: string = choose_0(v2);
-    let v4: number = measure_1(v1);
-    let v5: number = measure_1(v1);
-    let v6: number = (v4 + v5) | 0;
-    let v7: number = measure_1(v3);
-    let v8: number = (v6 + v7) | 0;
-    let v9: number = (v8 - 14) | 0;
+    const v0: boolean = true;
+    const v1: string = choose_0(v0);
+    const v2: boolean = false;
+    const v3: string = choose_0(v2);
+    const v4: number = measure_1(v1);
+    const v5: number = measure_1(v1);
+    const v6: number = (v4 + v5) | 0;
+    const v7: number = measure_1(v3);
+    const v8: number = (v6 + v7) | 0;
+    const v9: number = (v8 - 14) | 0;
     return v9;
 }
 process.exitCode = main();

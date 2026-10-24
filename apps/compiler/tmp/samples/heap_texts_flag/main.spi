@@ -14,7 +14,7 @@ inl main () : i32 =
     set values 0i32 word
     inl ~flag = true
     inl pair = values, flag
-    inl box = !!!!LayoutToHeap({value = pair})
+    inl box = !!!!LayoutToHeap({ value = pair })
     inl opened = !!!!LayoutIndex(box)
     inl ~(held, on) = opened.value
     if !!!!EQ(get held 0i32, "hi") && on then 0i32 else 1i32

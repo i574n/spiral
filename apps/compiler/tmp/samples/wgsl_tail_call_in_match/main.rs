@@ -8,21 +8,21 @@ enum US0 {
 }
 fn layers_0(mut v0: i32) -> i32 {
     loop {
-        let mut v1: bool = v0 >= 5i32;
-        let mut v4: US0 = if v1 {
+        let v1: bool = v0 >= 5i32;
+        let v4: US0 = if v1 {
             US0::US0_Done(v0)
         } else {
             US0::US0_More(v0)
         };
         match &v4 {
             US0::US0_Done(v8) => {
-                let mut v8: i32 = *v8;
-                let mut v9: i32 = v8.wrapping_mul(2i32);
+                let v8: i32 = *v8;
+                let v9: i32 = v8.wrapping_mul(2i32);
                 return v9;
             }
             US0::US0_More(v5) => {
-                let mut v5: i32 = *v5;
-                let mut v6: i32 = v5.wrapping_add(1i32);
+                let v5: i32 = *v5;
+                let v6: i32 = v5.wrapping_add(1i32);
                 v0 = v6;
                 continue;
             }

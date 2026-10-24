@@ -43,10 +43,8 @@ static int32_t sp_count_down_0(int32_t p0, int32_t p1) {
             v3 = (v0 - 1);
             int32_t v4 = 0;
             v4 = (v1 + 1);
-            int32_t t368_3 = v3;
-            int32_t t402_4 = v4;
-            v0 = t368_3;
-            v1 = t402_4;
+            v0 = v3;
+            v1 = v4;
             continue;
         } else {
             return v1;

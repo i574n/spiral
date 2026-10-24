@@ -8,23 +8,23 @@ enum US0 {
     US0_Some(i32),
 }
 fn method0(mut v0: i32, mut v1: Rc<Heap0>) -> (US0, Rc<Heap0>) {
-    let mut v2: US0 = US0::US0_Some(v0);
-    (v2.clone(), v1.clone())
+    let v2: US0 = US0::US0_Some(v0);
+    (v2, v1)
 }
 fn spiral_main() -> i32 {
-    let mut v0: i32 = 3i32;
-    let mut v1: i32 = 4i32;
-    let mut v2: Rc<Heap0> = Rc::new(Heap0 { l0: v1 });
-    let (mut v3, mut v4): (US0, Rc<Heap0>) = method0(v0, v2.clone());
+    let v0: i32 = 3i32;
+    let v1: i32 = 4i32;
+    let v2: Rc<Heap0> = Rc::new(Heap0 { l0: v1 });
+    let (mut v3, mut v4): (US0, Rc<Heap0>) = method0(v0, v2);
     match &v3 {
         US0::US0_None => {
             1i32
         }
         US0::US0_Some(v5) => {
-            let mut v5: i32 = *v5;
-            let mut v6: i32 = v4.l0.clone();
-            let mut v7: i32 = v5.wrapping_add(v6);
-            let mut v8: bool = v7 == 7i32;
+            let v5: i32 = *v5;
+            let v6: i32 = v4.l0.clone();
+            let v7: i32 = v5.wrapping_add(v6);
+            let v8: bool = v7 == 7i32;
             if v8 {
                 0i32
             } else {

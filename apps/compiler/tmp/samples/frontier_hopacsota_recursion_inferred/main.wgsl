@@ -17,8 +17,7 @@ fn sp_count_0(p0: i32) -> i32 {
         } else {
             var v2: i32 = 0i;
             v2 = (v0 - 1i);
-            let spiral_t1: i32 = v2;
-            v0 = spiral_t1;
+            v0 = v2;
             continue;
         }
     }

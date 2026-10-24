@@ -85,6 +85,7 @@ defmodule Spiral.Cells.Mounts do
           case entry.kind do
             :link -> make_link(link, entry.target)
             :shadow -> shadow(link, entry.target)
+            :patched -> patched(link, entry.target, entry.patches, entry.package_dir)
           end
 
         case placed do
@@ -109,9 +110,11 @@ defmodule Spiral.Cells.Mounts do
       |> Enum.sort_by(& &1.name)
       |> Enum.map_join("\n", fn entry ->
         stamp =
-          if entry.kind == :shadow,
-            do: "\t#{mtime(Path.join(entry.target, "package.spiproj"))}",
-            else: ""
+          case entry.kind do
+            :shadow -> "\t#{mtime(Path.join(entry.target, "package.spiproj"))}"
+            :patched -> "\t#{mtime(Path.join(entry.target, "package.spiproj"))}\t#{patches_digest({entry.package_dir, entry.patches})}"
+            :link -> ""
+          end
 
         "#{entry.name}\t#{entry.kind}\t#{forward(entry.target)}#{stamp}"
       end)
@@ -120,17 +123,52 @@ defmodule Spiral.Cells.Mounts do
     :crypto.hash(:sha256, payload) |> Base.encode16(case: :lower) |> binary_part(0, 16)
   end
 
-  defp shadow(link, target) do
+  defp patches_digest(patches) do
+    :crypto.hash(:sha256, :erlang.term_to_binary(patches)) |> Base.encode16(case: :lower) |> binary_part(0, 16)
+  end
+
+  defp patched(link, target, patches, package_dir) do
+    patched_names = patches |> Enum.map(&elem(&1, 0)) |> MapSet.new()
+
+    with :ok <- top_level_only(patched_names),
+         :ok <- shadow(link, target, patched_names, package_dir) do
+      Enum.reduce_while(patches, :ok, fn {file, old, new}, :ok ->
+        text = File.read!(Path.join(target, file))
+
+        if String.contains?(text, old) do
+          File.write!(Path.join(link, file), String.replace(text, old, new, global: false))
+          {:cont, :ok}
+        else
+          {:halt, {:error, "patch for #{file} does not apply: #{inspect(old)} is not in #{Path.join(target, file)}"}}
+        end
+      end)
+    end
+  end
+
+  defp top_level_only(names) do
+    case Enum.find(names, &(Path.dirname(&1) != ".")) do
+      nil -> :ok
+      nested -> {:error, "patch target #{nested} is nested; patched mounts take top-level package files only"}
+    end
+  end
+
+  defp project_for_mount(text, _target, :siblings), do: text |> then(&Regex.replace(~r/^packageDir:\s*.+$/m, &1, "packageDir: ..")) |> sibling_entries()
+
+  defp project_for_mount(text, target, :absolute) do
+    Regex.replace(~r/^packageDir:\s*(.+)$/m, text, fn _, dir -> "packageDir: " <> (dir |> String.trim() |> Path.expand(target)) end)
+  end
+
+  defp shadow(link, target, skipped \\ MapSet.new(), package_dir \\ :siblings) do
     File.mkdir_p!(link)
     text = File.read!(Path.join(target, "package.spiproj"))
-    rewritten = Regex.replace(~r/^packageDir:\s*.+$/m, text, "packageDir: ..")
+    rewritten = project_for_mount(text, target, package_dir)
     File.write!(Path.join(link, "package.spiproj"), rewritten)
     File.write!(Path.join(link, "spiral_cells_shadow"), "")
 
     case File.ls(target) do
       {:ok, names} ->
         Enum.reduce_while(names, :ok, fn name, :ok ->
-          if name == "package.spiproj" do
+          if name == "package.spiproj" or MapSet.member?(skipped, name) do
             {:cont, :ok}
           else
             case make_link(Path.join(link, name), Path.join(target, name)) do
@@ -266,7 +304,8 @@ defmodule Spiral.Cells.Mounts do
         for {item, declared} <- package_entries(text) do
           name = Path.basename(item)
           suffix = String.replace_prefix(declared, item, "")
-          %{name: name, target: Path.expand(item, base), import: name <> suffix}
+          target = if relative_entry?(item), do: Path.expand(item, dir), else: Path.expand(item, base)
+          %{name: name, target: target, import: name <> suffix}
         end
 
       _ ->
@@ -333,6 +372,19 @@ defmodule Spiral.Cells.Mounts do
       end)
 
     closure(queue, named, found)
+  end
+
+  defp relative_entry?(item), do: String.starts_with?(item, ["./", "../", ".\\", "..\\"])
+
+  defp sibling_entries(text) do
+    Enum.reduce(package_entries(text), text, fn {item, declared}, acc ->
+      if relative_entry?(item) do
+        suffix = String.replace_prefix(declared, item, "")
+        String.replace(acc, ~r/^(\s+)#{Regex.escape(declared)}\s*$/m, "\\1#{Path.basename(item)}#{suffix}")
+      else
+        acc
+      end
+    end)
   end
 
   defp package_base(dir, text) do

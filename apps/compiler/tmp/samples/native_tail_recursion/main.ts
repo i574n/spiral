@@ -1,7 +1,7 @@
 function method1(v0: number): number {
     tail: while (true) {
-        let v1: number = (v0 - 1) | 0;
-        let v2: boolean = v1 === 0;
+        const v1: number = (v0 - 1) | 0;
+        const v2: boolean = v1 === 0;
         if (v2) {
             return 0;
         } else {
@@ -11,7 +11,7 @@ function method1(v0: number): number {
     }
 }
 function method0(v0: number): number {
-    let v1: boolean = v0 === 0;
+    const v1: boolean = v0 === 0;
     if (v1) {
         return 0;
     } else {

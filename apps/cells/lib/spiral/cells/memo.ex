@@ -4,7 +4,7 @@ defmodule Spiral.Cells.Memo do
   @format 1
   @keep_entries 5_000
   @prune_every_ms 600_000
-  @tool_opts [:print_code, :plot, :render_plot, :spiral, :python, :lua, :pwsh, :cc, :dcc, :rustc_bin]
+  @tool_opts [:print_code, :plot, :render_plot, :spiral, :python, :lua, :pwsh, :cc, :dcc, :rustc_bin, :patches]
   @stub_opts [:compile, :rustc, :execute, :target, :host]
 
   @spec context(keyword(), [map()]) :: map() | nil
@@ -19,11 +19,43 @@ defmodule Spiral.Cells.Memo do
           format: @format,
           compiler: {binaries, opts |> core_dir() |> tree_print(bounds)},
           kino: kino_identity(),
-          tools: Keyword.take(opts, @tool_opts)
+          tools: tool_identity(opts)
         },
         packages: package_prints(steps, bounds),
         bounds: bounds
       }
+    end
+  end
+
+  @resolved_tools [:rustc, :cc, :dcc, :fpc, :zig, :gleam, :erl, :bun, :python, :lua, :wgsl_run, :naga, :pwsh, :dotnet, :spiral, :plot]
+
+  @doc false
+  @spec tool_identity(keyword()) :: term()
+  def tool_identity(opts) do
+    {lean, lean_args} = Toolchain.lean(opts)
+    {Keyword.take(opts, @tool_opts), {:lean, tool_stamp(lean), lean_args}, for(tool <- @resolved_tools, do: {tool, tool_stamp(apply(Toolchain, tool, [opts]))})}
+  end
+
+  defp tool_stamp(nil), do: nil
+
+  defp tool_stamp(path) do
+    real = shim_target(path) || path
+
+    case File.stat(real, time: :posix) do
+      {:ok, %File.Stat{size: size, mtime: mtime}} -> {real, size, mtime}
+      _ -> {real, :missing}
+    end
+  end
+
+  defp shim_target(path) do
+    shim = Path.rootname(path) <> ".shim"
+
+    with true <- File.regular?(shim),
+         {:ok, text} <- File.read(shim),
+         [_, target] <- Regex.run(~r/^\s*path\s*=\s*"?([^"\r\n]+)"?\s*$/m, text) do
+      target
+    else
+      _ -> nil
     end
   end
 
@@ -56,7 +88,7 @@ defmodule Spiral.Cells.Memo do
       context = %{dir: dir(opts)}
 
       key =
-        {@code_format, kino_identity(), Keyword.take(opts, @tool_opts), code_parts}
+        {@code_format, kino_identity(), tool_identity(opts), code_parts}
         |> :erlang.term_to_binary()
         |> then(&:crypto.hash(:sha256, &1))
         |> Base.encode16(case: :lower)
@@ -241,17 +273,7 @@ defmodule Spiral.Cells.Memo do
   end
 
   defp bounds_table do
-    case :ets.whereis(@bounds_table) do
-      :undefined ->
-        try do
-          :ets.new(@bounds_table, [:named_table, :public, :set])
-        rescue
-          ArgumentError -> @bounds_table
-        end
-
-      _ ->
-        @bounds_table
-    end
+    Spiral.Cells.Tables.ensure(@bounds_table, [:set])
   end
 
   defp bounds_key(binaries, text) do
@@ -339,7 +361,7 @@ defmodule Spiral.Cells.Memo do
             Map.put(block, :scope, module.scope)
           end
 
-        deps = for dep <- Spiral.Cells.Mounts.declared_dependencies(dir), do: {dep.name, tree_print(dep.target, bounds)}
+        deps = for dep <- Spiral.Cells.Mounts.declared_dependencies(dir), do: {dep.name, package_index(dep.target, bounds)}
 
         %{
           project: project,
@@ -385,8 +407,10 @@ defmodule Spiral.Cells.Memo do
   end
 
   defp package_print_for(%{blocks: blocks} = index, _program, true) do
-    {index.project, index.deps, blocks |> Map.keys() |> Enum.sort() |> Enum.map(&{&1, blocks[&1].print})}
+    {index.project, full_deps_print(index.deps), blocks |> Map.keys() |> Enum.sort() |> Enum.map(&{&1, blocks[&1].print})}
   end
+
+  defp full_deps_print(deps), do: for({name, dep} <- deps, do: {name, package_print_for(dep, "", true)})
 
   defp package_print_for(index, program, false), do: reached_package_print(index, program)
   defp package_print_for(other, _program, true), do: other
@@ -397,7 +421,9 @@ defmodule Spiral.Cells.Memo do
     from_operators = for {op, id} <- index.operators, String.contains?(program, op), do: id
     seeds = resolve_references(index, unqualified, qualified, in_scope) ++ from_operators ++ index.always
     reached = reach_package_blocks(seeds, index, MapSet.new())
-    {index.project, index.deps, reached |> Enum.sort() |> Enum.map(&{&1, index.blocks[&1].print})}
+    reached_text = Enum.map_join(reached, "\n", &index.blocks[&1].text)
+    deps = for {name, dep} <- index.deps, do: {name, reached_package_print(dep, program <> "\n" <> reached_text)}
+    {index.project, deps, reached |> Enum.sort() |> Enum.map(&{&1, index.blocks[&1].print})}
   end
 
   defp reached_package_print(other, _program), do: other

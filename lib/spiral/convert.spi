@@ -64,7 +64,20 @@ inl to forall t u. (x : t) : u =
         |> optionm.value
 
 inl numeric_conv forall t u. (x : t) : u =
-    if (real typecase t with i8 => true | i16 => true | i32 => true | i64 => true | u8 => true | u16 => true | u32 => true | u64 => true | f32 => true | f64 => true | _ => false)
+    if
+        real
+            typecase t with
+            | i8 => true
+            | i16 => true
+            | i32 => true
+            | i64 => true
+            | u8 => true
+            | u16 => true
+            | u32 => true
+            | u64 => true
+            | f32 => true
+            | f64 => true
+            | _ => false
     then real conv `t `u x
     else $'!x ' : u
 
@@ -167,7 +180,8 @@ inl convert_i32 forall t. (x : t) : int =
             if is_string_type x
             then x |> convert_i32_base 10 : int
             elif is_float_type x
-            then $'\@as(i32, \@intFromFloat(if (\@abs(!x - \@trunc(!x)) == 0.5) 2.0 * \@round(!x / 2.0) else \@round(!x)))' : int
+            then $'\@as(i32, \@intFromFloat(if (\@abs(!x - \@trunc(!x)) == 0.5) 2.0 * \@round(!x / 2.0) else \
+                \@round(!x)))' : int
             else x |> numeric_conv : int
         Lean = fun () =>
             if is_string_type x
@@ -193,21 +207,57 @@ inl convert_i32 forall t. (x : t) : int =
 inl integer_fits forall u. (_ : u) (value : i64) : bool =
     inl bounded : bool = real typecase u with i64 => false | u64 => false | _ => true
     inl lowest : i64 = real typecase u with i8 => -128i64 | i16 => -32768i64 | i32 => -2147483648i64 | _ => 0i64
-    inl highest : i64 = real typecase u with i8 => 127i64 | i16 => 32767i64 | i32 => 2147483647i64 | u8 => 255i64 | u16 => 65535i64 | u32 => 4294967295i64 | _ => 0i64
+    inl highest : i64 =
+        real
+            typecase u with
+            | i8 => 127i64
+            | i16 => 32767i64
+            | i32 => 2147483647i64
+            | u8 => 255i64
+            | u16 => 65535i64
+            | u32 => 4294967295i64
+            | _ => 0i64
     not bounded || (value >= lowest && value <= highest)
 
 inl parsed_integer forall u. (ok : bool) (value : i64) : option u =
-    inl integral : bool = real typecase u with i8 => true | i16 => true | i32 => true | i64 => true | u8 => true | u16 => true | u32 => true | u64 => true | _ => false
+    inl integral : bool =
+        real
+            typecase u with
+            | i8 => true
+            | i16 => true
+            | i32 => true
+            | i64 => true
+            | u8 => true
+            | u16 => true
+            | u32 => true
+            | u64 => true
+            | _ => false
     if integral then
         inl converted : u = real conv `i64 `u value
         if ok && integer_fits converted value then Some converted else None
     else None
 
 inl try_convert forall t u. (x : t) : option u =
-    x |> to' fun x =>
+    x
+    |> to' fun x =>
         backend_switch {
             Gleam = fun () =>
-                if is_string_type x && (real typecase u with i8 => true | i16 => true | i32 => true | i64 => true | u8 => true | u16 => true | u32 => true | u64 => true | _ => false) then
+                if
+                    is_string_type x
+                    && (
+                        real
+                            typecase u with
+                            | i8 => true
+                            | i16 => true
+                            | i32 => true
+                            | i64 => true
+                            | u8 => true
+                            | u16 => true
+                            | u32 => true
+                            | u64 => true
+                            | _ => false
+                    )
+                then
                     global "import gleam/int"
                     global "import gleam/string"
                     inl (n : int), (err : int) =
@@ -218,7 +268,10 @@ inl try_convert forall t u. (x : t) : option u =
                 else x |> to |> Some
             Lua = fun () =>
                 if is_string_type x
-                then parsed_integer ($'(string.match(!x, "^%s*[+-]?%d+%s*$") ~= nil)' : bool) ($'(tonumber(!x) or 0)' : i64)
+                then
+                    parsed_integer
+                        ($'(string.match(!x, "^%s*[+-]?%d+%s*$") ~= nil)' : bool)
+                        ($'(tonumber(!x) or 0)' : i64)
                 else x |> to |> Some : _ u
             Fsharp = fun () =>
                 resultm.from_try
@@ -246,12 +299,19 @@ inl try_convert forall t u. (x : t) : option u =
                     global "#include <stdlib.h>"
                     global "#include <ctype.h>"
                     global "#include <errno.h>"
-                    global "static bool spiral_integer_text_ok(const char *s) { char *end; while (isspace((unsigned char)*s)) s++; if (!*s) return false; errno = 0; strtoll(s, &end, 10); if (errno != 0 || end == s) return false; while (isspace((unsigned char)*end)) end++; return *end == 0; }"
+                    global (
+                        "static bool spiral_integer_text_ok(const char *s) { char *end; while (isspace((unsigned "
+                        ^^ "char)*s)) s++; if (!*s) return false; errno = 0; strtoll(s, &end, 10); if (errno != 0 || "
+                        ^^ "end == s) return false; while (isspace((unsigned char)*end)) end++; return *end == 0; }"
+                    )
                     parsed_integer ($'spiral_integer_text_ok((!x)->ptr)' : bool) ($'strtoll((!x)->ptr, NULL, 10)' : i64)
                 else x |> to |> Some : _ u
             Delphi = fun () =>
                 if is_string_type x
-                then parsed_integer ($'(StrToInt64Def(Trim(!x), 0) = StrToInt64Def(Trim(!x), 1))' : bool) ($'StrToInt64Def(Trim(!x), 0)' : i64)
+                then
+                    parsed_integer
+                        ($'(StrToInt64Def(Trim(!x), 0) = StrToInt64Def(Trim(!x), 1))' : bool)
+                        ($'StrToInt64Def(Trim(!x), 0)' : i64)
                 else x |> to |> Some : _ u
             TypeScript = fun () =>
                 if is_string_type x
@@ -261,27 +321,34 @@ inl try_convert forall t u. (x : t) : option u =
                 else x |> to |> Some : _ u
             Wasm = fun () =>
                 if is_string_type x
-                then parsed_integer ($'(call $integer_text_ok !x)' : bool) ($'(call $parse_i64 !x (i32.const 10))' : i64)
+                then
+                    parsed_integer ($'(call $integer_text_ok !x)' : bool) ($'(call $parse_i64 !x (i32.const 10))' : i64)
                 else x |> to |> Some : _ u
             Zig = fun () =>
                 if is_string_type x
                 then
-                    inl ok : bool = $'(if (std.fmt.parseInt(i64, std.mem.trim(u8, !x, " \\t\\r\\n"), 10)) |_| true else |_| false)'
+                    inl ok : bool = $'(if (std.fmt.parseInt(i64, std.mem.trim(u8, !x, " \\t\\r\\n"), 10)) |_| true \
+                        else |_| false)'
                     parsed_integer ok ($'(std.fmt.parseInt(i64, std.mem.trim(u8, !x, " \\t\\r\\n"), 10) catch 0)' : i64)
                 else x |> to |> Some : _ u
             Lean = fun () =>
                 if is_string_type x
                 then
                     lean_parse_helpers ()
-                    parsed_integer ($'(spiralParseInt? !x).isSome' : bool) ($'(Int64.ofInt ((spiralParseInt? !x).getD 0))' : i64)
+                    parsed_integer ($'(spiralParseInt? !x).isSome' : bool) ($'(Int64.ofInt ((spiralParseInt? !x).getD \
+                        0))' : i64)
                 else x |> to |> Some : _ u
             Kotlin = fun () =>
                 if is_string_type x
-                then parsed_integer ($'((!x).trim().toLongOrNull() \!= null)' : bool) ($'((!x).trim().toLongOrNull() ?: 0L)' : i64)
+                then
+                    parsed_integer
+                        ($'((!x).trim().toLongOrNull() \!= null)' : bool)
+                        ($'((!x).trim().toLongOrNull() ?: 0L)' : i64)
                 else x |> to |> Some : _ u
             Swift = fun () =>
                 if is_string_type x
-                then parsed_integer ($'((!x).split(separator: " ").count == 1 && Int64(String((!x).split(separator: " ")[0])) \!= nil)' : bool) ($'(Int64(String((!x).split(separator: " ").first ?? "")) ?? 0)' : i64)
+                then parsed_integer ($'((!x).split(separator: " ").count == 1 && Int64(String((!x).split(separator: " \
+                    ")[0])) \!= nil)' : bool) ($'(Int64(String((!x).split(separator: " ").first ?? "")) ?? 0)' : i64)
                 else x |> to |> Some : _ u
         }
 

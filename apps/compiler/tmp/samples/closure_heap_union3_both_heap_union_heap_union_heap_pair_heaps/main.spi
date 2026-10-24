@@ -1,10 +1,10 @@
 union slot =
     | None
-    | Held : (heap {value : (heap {value : heap {value : i32 * string} * heap {value : i32 * string}}) * i32})
+    | Held : (heap { value : (heap { value : heap { value : i32 * string } * heap { value : i32 * string } }) * i32 })
 
 union wrap =
     | Absent
-    | Box : (heap {value : slot})
+    | Box : (heap { value : slot })
     | Mark : i32
 
 let score x : i32 =
@@ -30,37 +30,37 @@ inl main () : i32 =
     inl ~n = 7i32
     inl ~word = "hi"
     inl left_pair = n, word
-    inl left_heap = !!!!LayoutToHeap({value = left_pair})
+    inl left_heap = !!!!LayoutToHeap({ value = left_pair })
     inl ~m = 4i32
     inl ~other = "yo"
     inl right_pair = m, other
-    inl right_heap = !!!!LayoutToHeap({value = right_pair})
+    inl right_heap = !!!!LayoutToHeap({ value = right_pair })
     inl pair = left_heap, right_heap
-    inl inner = !!!!LayoutToHeap({value = pair})
+    inl inner = !!!!LayoutToHeap({ value = pair })
     inl ~mark = 2i32
     inl outer_pair = inner, mark
-    inl outer = !!!!LayoutToHeap({value = outer_pair})
+    inl outer = !!!!LayoutToHeap({ value = outer_pair })
     inl ~on = true
     inl held = if on then Held outer else None
-    inl box = !!!!LayoutToHeap({value = held})
+    inl box = !!!!LayoutToHeap({ value = held })
     inl ~use_box = true
     inl wrapped = if use_box then Box box else Mark 1i32
     inl ~tag = 3i32
     inl marked = Mark tag
-    inl cover_box = !!!!LayoutToHeap({value = wrapped})
-    inl cover_mark = !!!!LayoutToHeap({value = marked})
-    inl f (z : i32) : heap {value : wrap} =
+    inl cover_box = !!!!LayoutToHeap({ value = wrapped })
+    inl cover_mark = !!!!LayoutToHeap({ value = marked })
+    inl f (z : i32) : heap { value : wrap } =
         if z =. 0i32 then
             cover_mark
         else
             cover_box
     inl ~g = f
-    inl cell : mut {value : heap {value : wrap}} = !!!!LayoutToHeapMutable({value = g 1i32})
+    inl cell : mut { value : heap { value : wrap } } = !!!!LayoutToHeapMutable({ value = g 1i32 })
     inl before = !!!!LayoutIndex(cell)
     inl before_heap = before.value
     inl before_opened = !!!!LayoutIndex(before_heap)
     inl before_score = score before_opened.value
-    cell <- {value = g 0i32}
+    cell <- { value = g 0i32 }
     inl after = !!!!LayoutIndex(cell)
     inl after_heap = after.value
     inl after_opened = !!!!LayoutIndex(after_heap)

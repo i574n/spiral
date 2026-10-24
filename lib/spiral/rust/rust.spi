@@ -2,6 +2,31 @@
 test rust static =
     open testing
 
+type rust_type_switch fs rs =
+    {
+        Gleam : fs
+        Lua : fs
+        Fsharp : fs
+        Python : fs
+        TypeScript : fs
+        Cpp : fs
+        CppHost : fs
+        Delphi : fs
+        Cuda : fs
+        Zig : fs
+        Lean : fs
+        Rust : rs
+    }
+
+inl fsharp_global (text : string) : () =
+    backend_switch {
+        Fsharp = fun () => global text
+    }
+
+inl rust_type forall fs rs. (fsharp : string) : $'backend_switch `(rust_type_switch fs rs)' =
+    fsharp_global fsharp
+    $'' : $'backend_switch `(rust_type_switch fs rs)'
+
 /// ## rust
 
 /// ### any_base

@@ -28,14 +28,10 @@ func sp_loop_0(_ p0: Int32, _ p1: Int32, _ p2: Int32, _ p3: Int32) -> (Int32, In
     return (v9, v10)
 }
 func spiral_main() -> Int32 {
-    var v0: Int32 = 0
-    v0 = 5
-    var v1: Int32 = 0
-    v1 = 0
-    var v2: Int32 = 0
-    v2 = 1
-    var v3: Int32 = 0
-    v3 = 2
+    let v0: Int32 = 5
+    let v1: Int32 = 0
+    let v2: Int32 = 1
+    let v3: Int32 = 2
     var v4: Int32 = 0
     var v5: Int32 = 0
     let spiral_tuple217 = sp_loop_0(v0, v1, v2, v3)

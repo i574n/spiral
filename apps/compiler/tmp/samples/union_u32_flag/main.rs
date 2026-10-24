@@ -9,17 +9,17 @@ enum US0 {
 fn score_0(mut v0: US0) -> i32 {
     match &v0 {
         US0::US0_All(v1, v2, v3) => {
-            let mut v1: u32 = *v1;
-            let mut v2: Rc<str> = v2.clone();
-            let mut v3: bool = *v3;
-            let mut v4: bool = v1 == 4000000000u32;
-            let mut v6: bool = if v4 {
-                let mut v5: bool = v2.clone() == { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
+            let v1: u32 = *v1;
+            let v2: Rc<str> = v2.clone();
+            let v3: bool = *v3;
+            let v4: bool = v1 == 4000000000u32;
+            let v6: bool = if v4 {
+                let v5: bool = &*v2 == "hi";
                 v5
             } else {
                 false
             };
-            let mut v7: bool = v6 && v3;
+            let v7: bool = v6 && v3;
             if v7 {
                 0i32
             } else {
@@ -32,16 +32,16 @@ fn score_0(mut v0: US0) -> i32 {
     }
 }
 fn spiral_main() -> i32 {
-    let mut v0: u32 = 4000000000u32;
-    let mut v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
-    let mut v2: bool = true;
-    let mut v3: bool = true;
-    let mut v6: US0 = if v3 {
-        US0::US0_All(v0, v1.clone(), v2)
+    let v0: u32 = 4000000000u32;
+    let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
+    let v2: bool = true;
+    let v3: bool = true;
+    let v6: US0 = if v3 {
+        US0::US0_All(v0, v1, v2)
     } else {
         US0::US0_None
     };
-    score_0(v6.clone())
+    score_0(v6)
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();

@@ -149,10 +149,15 @@ inl rec terminal_label forall transfer artifact digest route manifest pa pb pc c
         inl exists middle. _, node = payload
         node_label node
 
-inl manifest () : mesh_manifest transfer_a payload_a digest_a route_mesh manifest_a scheduled = MeshManifest "mesh-manifest-a"
+inl manifest () : mesh_manifest transfer_a payload_a digest_a route_mesh manifest_a scheduled =
+    MeshManifest "mesh-manifest-a"
 inl distinct_peers () : peer_distinct peer_a peer_b peer_c distinct = PeerDistinct "a-ne-b-ne-c"
 
-inl schedule_node () : mesh_node transfer_a payload_a digest_a route_mesh manifest_a peer_a peer_b peer_c chunk_0 chunk_1 chunk_2 inbox_a inbox_b inbox_c source_ready scheduled =
+inl schedule_node
+    ()
+    : mesh_node transfer_a payload_a digest_a route_mesh manifest_a peer_a peer_b peer_c chunk_0 chunk_1 chunk_2 inbox_a
+        inbox_b inbox_c source_ready scheduled
+    =
     MeshNode (exists (
         ScheduleAdversarially (
             Payload "checkpoint-payload",
@@ -165,7 +170,11 @@ inl schedule_node () : mesh_node transfer_a payload_a digest_a route_mesh manife
         MeshRow "schedule-reversed-duplicated-corrupted"
     ))
 
-inl throttle_node () : mesh_node transfer_a payload_a digest_a route_mesh manifest_a peer_a peer_b peer_c chunk_0 chunk_1 chunk_2 inbox_a inbox_b inbox_c scheduled throttled =
+inl throttle_node
+    ()
+    : mesh_node transfer_a payload_a digest_a route_mesh manifest_a peer_a peer_b peer_c chunk_0 chunk_1 chunk_2 inbox_a
+        inbox_b inbox_c scheduled throttled
+    =
     MeshNode (exists (
         ApplyBackpressure (
             BackpressureReceipt "peer-a-limit-2",
@@ -175,7 +184,11 @@ inl throttle_node () : mesh_node transfer_a payload_a digest_a route_mesh manife
         MeshRow "bounded-inbox-backpressure"
     ))
 
-inl deliver_node () : mesh_node transfer_a payload_a digest_a route_mesh manifest_a peer_a peer_b peer_c chunk_0 chunk_1 chunk_2 inbox_a inbox_b inbox_c throttled delivered =
+inl deliver_node
+    ()
+    : mesh_node transfer_a payload_a digest_a route_mesh manifest_a peer_a peer_b peer_c chunk_0 chunk_1 chunk_2 inbox_a
+        inbox_b inbox_c throttled delivered
+    =
     MeshNode (exists (
         DeliverOutOfOrder (
             ChunkDelivery "a-c2", ChunkDelivery "a-c0",
@@ -185,7 +198,11 @@ inl deliver_node () : mesh_node transfer_a payload_a digest_a route_mesh manifes
         MeshRow "out-of-order-content-addressed-delivery"
     ))
 
-inl converge_node () : mesh_node transfer_a payload_a digest_a route_mesh manifest_a peer_a peer_b peer_c chunk_0 chunk_1 chunk_2 inbox_a inbox_b inbox_c delivered converged =
+inl converge_node
+    ()
+    : mesh_node transfer_a payload_a digest_a route_mesh manifest_a peer_a peer_b peer_c chunk_0 chunk_1 chunk_2 inbox_a
+        inbox_b inbox_c delivered converged
+    =
     MeshNode (exists (
         DeduplicateAndRejectCorruption (
             DuplicateReceipt "b-c1-duplicate",
@@ -198,7 +215,11 @@ inl converge_node () : mesh_node transfer_a payload_a digest_a route_mesh manife
 inl stale_peer_c_output () : peer_output transfer_a manifest_stale peer_c payload_a digest_a accepted =
     PeerOutput "peer-c-stale-manifest"
 
-inl commit_node () : mesh_node transfer_a payload_a digest_a route_mesh manifest_a peer_a peer_b peer_c chunk_0 chunk_1 chunk_2 inbox_a inbox_b inbox_c converged committed =
+inl commit_node
+    ()
+    : mesh_node transfer_a payload_a digest_a route_mesh manifest_a peer_a peer_b peer_c chunk_0 chunk_1 chunk_2 inbox_a
+        inbox_b inbox_c converged committed
+    =
     MeshNode (exists (
         PublishConvergedMesh (
             manifest (),
@@ -211,7 +232,11 @@ inl commit_node () : mesh_node transfer_a payload_a digest_a route_mesh manifest
         MeshRow "adversarial-mesh-converged"
     ))
 
-inl plan () : mesh_plan transfer_a payload_a digest_a route_mesh manifest_a peer_a peer_b peer_c chunk_0 chunk_1 chunk_2 inbox_a inbox_b inbox_c source_ready committed =
+inl plan
+    ()
+    : mesh_plan transfer_a payload_a digest_a route_mesh manifest_a peer_a peer_b peer_c chunk_0 chunk_1 chunk_2 inbox_a
+        inbox_b inbox_c source_ready committed
+    =
     MeshThen (exists (
         MeshThen (exists (
             MeshThen (exists (
@@ -227,7 +252,9 @@ inl plan () : mesh_plan transfer_a payload_a digest_a route_mesh manifest_a peer
     ))
 
 inl inspect forall route manifest pa pb pc ca cb cc ia ib ic.
-    (plan : mesh_plan transfer_a payload_a digest_a route manifest pa pb pc ca cb cc ia ib ic source_ready committed) : string =
+    (plan : mesh_plan transfer_a payload_a digest_a route manifest pa pb pc ca cb cc ia ib ic source_ready committed)
+    : string
+    =
     terminal_label plan
 
 inl main () : string =

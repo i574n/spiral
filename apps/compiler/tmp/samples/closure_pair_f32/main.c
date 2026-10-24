@@ -28,10 +28,10 @@ struct Closure0 {
 static inline void ArrayDecrefBody0(Array0 * x){
     (void)x;
 }
-void ArrayDecref0(Array0 * x){
+static void ArrayDecref0(Array0 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody0(x); free(x); }
 }
-Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
+static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     uint32_t size = sizeof(Array0) + sizeof(char) * len;
     Array0 * x = malloc(size);
     if (init_at_zero) { memset(x,0,size); }
@@ -39,7 +39,7 @@ Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     x->len = len;
     return x;
 }
-Array0 * ArrayLit0(uint32_t len, char * ptr){
+static Array0 * ArrayLit0(uint32_t len, char * ptr){
     Array0 * x = ArrayCreate0(len, false);
     memcpy(x->ptr, ptr, sizeof(char) * len);
     return x;
@@ -58,36 +58,25 @@ static inline Tuple0 TupleCreate0(float v0, String * v1){
 static inline void ClosureDecrefBody0(Closure0 * x){
     StringDecref(x->v1);
 }
-void ClosureDecref0(Fun0 * self){
+static void ClosureDecref0(Fun0 * self){
     Closure0 * x = (Closure0 *) self;
     if (x != NULL && --(x->base.refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
-Tuple0 f_c0(Fun0 * self, int32_t v2){
+static Tuple0 f_c0(Fun0 * self, int32_t v2){
     Closure0 * x = (Closure0 *) self;
     float v0 = x->v0; String * v1 = x->v1;
     (v1)->refc++;
     ClosureDecref0(self);
-    
-    
-    bool v3;
-    v3 = v2 == 0l;
-    
-    
+    bool v3 = v2 == 0l;
     if (v3){
-        
         StringDecref(v1);
-        String * v4;
-        v4 = StringLit(3, "no");
-        
-        
+        String * v4 = StringLit(3, "no");
         return TupleCreate0(0.0f, v4);
     } else {
-        
-        
         return TupleCreate0(v0, v1);
     }
 }
-Fun0 * ClosureCreate0(float v0, String * v1){
+static Fun0 * ClosureCreate0(float v0, String * v1){
     Closure0 * x = malloc(sizeof(Closure0));
     x->base.refc = 1;
     x->base.decref_fptr = ClosureDecref0;
@@ -96,52 +85,28 @@ Fun0 * ClosureCreate0(float v0, String * v1){
     return &x->base;
 }
 int32_t main(){
-    
-    
-    float v0;
-    v0 = 1.5f;
-    
-    
-    String * v1;
-    v1 = StringLit(3, "hi");
+    float v0 = 1.5f;
+    String * v1 = StringLit(3, "hi");
     (v1)->refc++;
-    
-    Fun0 * v2;
-    v2 = ClosureCreate0(v0, v1);
+    Fun0 * v2 = ClosureCreate0(v0, v1);
     (v2)->refc++;
     StringDecref(v1);
     float v3; String * v4;
     Tuple0 tmp0 = v2->fptr(v2, 1l);
     v3 = tmp0.v0; v4 = tmp0.v1;
-    
     (v2)->decref_fptr(v2);
-    bool v5;
-    v5 = v3 == 1.5f;
-    
-    
+    bool v5 = v3 == 1.5f;
     bool v7;
     if (v5){
-        
-        
-        bool v6;
-        v6 = strcmp(v4->ptr, "hi") == 0;
-        
-        
+        bool v6 = strcmp(v4->ptr, "hi") == 0;
         v7 = v6;
     } else {
-        
-        
         v7 = false;
     }
-    
     StringDecref(v4);
     if (v7){
-        
-        
         return 0l;
     } else {
-        
-        
         return 1l;
     }
 }

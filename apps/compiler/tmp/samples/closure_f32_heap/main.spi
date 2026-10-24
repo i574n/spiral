@@ -2,8 +2,8 @@ inl main () : i32 =
     inl ~x = 1.5f32
     inl ~word = "hi"
     inl pair = x, word
-    inl box = !!!!LayoutToHeap({value = pair})
-    inl f (z : i32) : heap {value : f32 * string} =
+    inl box = !!!!LayoutToHeap({ value = pair })
+    inl f (z : i32) : heap { value : f32 * string } =
         if z =. 0i32 then
             box
         else

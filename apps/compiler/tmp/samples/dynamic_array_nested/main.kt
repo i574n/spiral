@@ -1,6 +1,5 @@
 fun spiral_main(): Int {
-    var v0: Int = 0
-    v0 = 2
+    val v0: Int = 2
     var v1: Array<Array<Int>> = emptyArray<Array<Int>>()
     v1 = Array(v0) { emptyArray<Int>() }
     var v2: Array<Int> = emptyArray<Int>()
@@ -13,26 +12,16 @@ fun spiral_main(): Int {
     v3[1] = 6
     v1[0] = v2
     v1[1] = v3
-    var v4: Array<Int> = emptyArray<Int>()
-    v4 = v1[0]
-    var v5: Array<Int> = emptyArray<Int>()
-    v5 = v1[1]
-    var v6: Int = 0
-    v6 = v4[0]
-    var v7: Int = 0
-    v7 = v4[1]
-    var v8: Int = 0
-    v8 = (v6 + v7)
-    var v9: Int = 0
-    v9 = v5[0]
-    var v10: Int = 0
-    v10 = (v8 + v9)
-    var v11: Int = 0
-    v11 = v5[1]
-    var v12: Int = 0
-    v12 = (v10 + v11)
-    var v13: Int = 0
-    v13 = (v12 - 18)
+    val v4: Array<Int> = v1[0]
+    val v5: Array<Int> = v1[1]
+    val v6: Int = v4[0]
+    val v7: Int = v4[1]
+    val v8: Int = (v6 + v7)
+    val v9: Int = v5[0]
+    val v10: Int = (v8 + v9)
+    val v11: Int = v5[1]
+    val v12: Int = (v10 + v11)
+    val v13: Int = (v12 - 18)
     return v13
 }
 fun main() {

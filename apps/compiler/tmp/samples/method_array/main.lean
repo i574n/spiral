@@ -31,14 +31,11 @@ partial def method0 (p0 : Int32) : IO (IO.Ref (Array Int32)) := do
     v1.modify (fun xs => xs.set! (spiralIdx (0 : Int32)) v0)
     return v1
 partial def spiralMain : IO Int32 := do
-    let mut v0 : Int32 := default
     let mut v1 : (IO.Ref (Array Int32)) ← IO.mkRef #[]
-    let mut v2 : Int32 := default
-    let mut v3 : Bool := default
-    v0 := (7 : Int32)
+    let v0 : Int32 := (7 : Int32)
     v1 := (← method0 v0)
-    v2 := (← spiralIndex (← v1.get) (spiralIdx (0 : Int32)))
-    v3 := (v2 == (7 : Int32))
+    let v2 : Int32 := (← spiralIndex (← v1.get) (spiralIdx (0 : Int32)))
+    let v3 : Bool := (v2 == (7 : Int32))
     if v3 then
         return (0 : Int32)
     else

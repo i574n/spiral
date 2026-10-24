@@ -1,14 +1,26 @@
 inl while' (cond : () -> bool) (body : () -> ()) : () =
-    !!!!While((join cond()),(body()))
+    !!!!While((join cond ()), (body ()))
 
 inl set' forall t. (a : t) ~(b : t) : () =
-    !!!!BackendSwitch({ C = fun () => $"!a = !b" : (); Ebpf = fun () => $"!a = !b" : (); Zig = fun () => $"!a = !b" : () })
+    !!!!BackendSwitch({
+        C = fun () => $"!a = !b" : ()
+        Ebpf = fun () => $"!a = !b" : ()
+        Zig = fun () => $"!a = !b" : ()
+    })
 
 inl map_update (key : i32) (value : i32) (expect : i32) : i32 =
-    !!!!BackendSwitch({ C = fun () => $"!expect" : i32; Ebpf = fun () => $"spiral_map_update(!key, !value)" : i32; Zig = fun () => expect })
+    !!!!BackendSwitch({
+        C = fun () => $"!expect" : i32
+        Ebpf = fun () => $"spiral_map_update(!key, !value)" : i32
+        Zig = fun () => expect
+    })
 
 inl map_lookup (key : i32) (expect : i32) : i32 =
-    !!!!BackendSwitch({ C = fun () => $"!expect" : i32; Ebpf = fun () => $"spiral_map_lookup(!key)" : i32; Zig = fun () => expect })
+    !!!!BackendSwitch({
+        C = fun () => $"!expect" : i32
+        Ebpf = fun () => $"spiral_map_lookup(!key)" : i32
+        Zig = fun () => expect
+    })
 
 inl main () : i32 =
     inl ~bad = 0i32

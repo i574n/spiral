@@ -25,8 +25,13 @@ inl render props_fn left right : _ (_ dl) =
     inl { cols_class padding_class class } = props
 
     dl [
-        class_fn "grid gap-[1px] flex-1 even:bg-gray-50 [inline-size:max-content] [width:100%] [grid-auto-columns:max-content] " fun () =>
-            cols_class () ++# " " ++# padding_class () ++# " " ++# class ()
+        class_fn
+            (
+                "grid gap-[1px] flex-1 even:bg-gray-50 [inline-size:max-content] [width:100%] "
+                ^^ "[grid-auto-columns:max-content] "
+            )
+            fun () =>
+                cols_class () ++# " " ++# padding_class () ++# " " ++# class ()
     ] fun () =>
         :>[
             dt [

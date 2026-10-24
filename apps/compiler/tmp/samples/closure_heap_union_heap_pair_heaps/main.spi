@@ -1,6 +1,6 @@
 union slot =
     | None
-    | Held : (heap {value : (heap {value : heap {value : i32 * string} * heap {value : i32 * string}}) * i32})
+    | Held : (heap { value : (heap { value : heap { value : i32 * string } * heap { value : i32 * string } }) * i32 })
 
 let score x : i32 =
     match x with
@@ -20,20 +20,20 @@ inl main () : i32 =
     inl ~n = 7i32
     inl ~word = "hi"
     inl left_pair = n, word
-    inl left_heap = !!!!LayoutToHeap({value = left_pair})
+    inl left_heap = !!!!LayoutToHeap({ value = left_pair })
     inl ~m = 4i32
     inl ~other = "yo"
     inl right_pair = m, other
-    inl right_heap = !!!!LayoutToHeap({value = right_pair})
+    inl right_heap = !!!!LayoutToHeap({ value = right_pair })
     inl pair = left_heap, right_heap
-    inl inner = !!!!LayoutToHeap({value = pair})
+    inl inner = !!!!LayoutToHeap({ value = pair })
     inl ~mark = 2i32
     inl outer_pair = inner, mark
-    inl outer = !!!!LayoutToHeap({value = outer_pair})
+    inl outer = !!!!LayoutToHeap({ value = outer_pair })
     inl ~on = true
     inl held = if on then Held outer else None
-    inl box = !!!!LayoutToHeap({value = held})
-    inl f (z : i32) : heap {value : slot} =
+    inl box = !!!!LayoutToHeap({ value = held })
+    inl f (z : i32) : heap { value : slot } =
         if z =. 0i32 then
             box
         else

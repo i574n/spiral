@@ -7,13 +7,10 @@ final class SpiralArray<T> {
 func spiral_main() -> Int32 {
     var v0: SpiralArray<Int64> = SpiralArray<Int64>([])
     v0 = SpiralArray<Int64>(Array(repeating: (0 as Int64), count: Int(1)))
-    var v1: Int64 = (0 as Int64)
-    v1 = (5000000000 as Int64)
+    let v1: Int64 = (5000000000 as Int64)
     v0.items[Int(0)] = v1
-    var v2: Int64 = (0 as Int64)
-    v2 = v0.items[Int(0)]
-    var v3: Bool = false
-    v3 = (v2 == (5000000000 as Int64))
+    let v2: Int64 = v0.items[Int(0)]
+    let v3: Bool = (v2 == (5000000000 as Int64))
     if (v3) {
         return 0
     } else {

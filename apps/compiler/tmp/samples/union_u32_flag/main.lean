@@ -61,15 +61,11 @@ partial def score_0 (p0 : U0) : IO Int32 := do
     | U0.None =>
         return (1 : Int32)
 partial def spiralMain : IO Int32 := do
-    let mut v0 : UInt32 := default
-    let mut v1 : String := default
-    let mut v2 : Bool := default
-    let mut v3 : Bool := default
     let mut v6 : U0 := default
-    v0 := (4000000000 : UInt32)
-    v1 := "hi"
-    v2 := true
-    v3 := true
+    let v0 : UInt32 := (4000000000 : UInt32)
+    let v1 : String := "hi"
+    let v2 : Bool := true
+    let v3 : Bool := true
     if v3 then
         v6 := (U0.All v0 v1 v2)
     else

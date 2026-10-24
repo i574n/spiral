@@ -10,7 +10,11 @@ defmodule Mix.Tasks.Spiral.Notebook do
     gate? = "--gate" in args
     gate_report_dir = Path.join(System.tmp_dir!(), "spiral-cells-gate-#{System.unique_integer([:positive])}")
     args = if gate?, do: gate_args(args, gate_report_dir), else: args
-    {status, lines} = Spiral.Cells.NotebookCli.execute(args)
+    {status, lines} =
+      case Spiral.Cells.Server.try_execute(args) do
+        {:served, reply} -> reply
+        :unavailable -> Spiral.Cells.NotebookCli.execute(args)
+      end
     Enum.each(lines, &IO.puts/1)
 
     cond do

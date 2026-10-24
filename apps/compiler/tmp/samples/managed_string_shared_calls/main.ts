@@ -30,15 +30,15 @@ function spiral_string_slice(value: string, from: number, to: number): string {
     return spiral_utf8_decoder.decode(bytes.subarray(from, to + 1));
 }
 function measure_0(v0: string): number {
-    let v1: number = spiral_string_length(v0);
+    const v1: number = spiral_string_length(v0);
     return v1;
 }
 export function main(): number {
-    let v0: string = "qwe";
-    let v1: number = measure_0(v0);
-    let v2: number = measure_0(v0);
-    let v3: number = (v1 + v2) | 0;
-    let v4: number = (v3 - 6) | 0;
+    const v0: string = "qwe";
+    const v1: number = measure_0(v0);
+    const v2: number = measure_0(v0);
+    const v3: number = (v1 + v2) | 0;
+    const v4: number = (v3 - 6) | 0;
     return v4;
 }
 process.exitCode = main();

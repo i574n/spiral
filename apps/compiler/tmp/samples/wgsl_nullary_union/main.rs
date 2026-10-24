@@ -9,8 +9,8 @@ enum US0 {
     US0_West,
 }
 fn spiral_main() -> i32 {
-    let mut v0: US0 = US0::US0_North;
-    let mut v8: US0 = match &v0 {
+    let v0: US0 = US0::US0_North;
+    let v8: US0 = match &v0 {
         US0::US0_East => {
             US0::US0_South
         }
@@ -24,7 +24,7 @@ fn spiral_main() -> i32 {
             US0::US0_North
         }
     };
-    let mut v16: US0 = match &v8 {
+    let v16: US0 = match &v8 {
         US0::US0_East => {
             US0::US0_South
         }
@@ -38,8 +38,8 @@ fn spiral_main() -> i32 {
             US0::US0_North
         }
     };
-    let mut v17: US0 = US0::US0_South;
-    let mut v18: bool = match (&v16, &v17) {
+    let v17: US0 = US0::US0_South;
+    let v18: bool = match (&v16, &v17) {
         (US0::US0_East, US0::US0_East) => {
             true
         }
@@ -56,12 +56,12 @@ fn spiral_main() -> i32 {
             false
         }
     };
-    let mut v19: i32 = if v18 {
+    let v19: i32 = if v18 {
         100i32
     } else {
         0i32
     };
-    let mut v21: i32 = match &v0 {
+    let v21: i32 = match &v0 {
         US0::US0_East => {
             2i32
         }
@@ -72,7 +72,7 @@ fn spiral_main() -> i32 {
             7i32
         }
     };
-    let mut v23: i32 = match &v8 {
+    let v23: i32 = match &v8 {
         US0::US0_East => {
             2i32
         }
@@ -83,9 +83,9 @@ fn spiral_main() -> i32 {
             7i32
         }
     };
-    let mut v24: i32 = v23.wrapping_mul(3i32);
-    let mut v25: i32 = v21.wrapping_add(v24);
-    let mut v27: i32 = match &v16 {
+    let v24: i32 = v23.wrapping_mul(3i32);
+    let v25: i32 = v21.wrapping_add(v24);
+    let v27: i32 = match &v16 {
         US0::US0_East => {
             2i32
         }
@@ -96,9 +96,9 @@ fn spiral_main() -> i32 {
             7i32
         }
     };
-    let mut v28: i32 = v27.wrapping_mul(9i32);
-    let mut v29: i32 = v25.wrapping_add(v28);
-    let mut v30: i32 = v29.wrapping_add(v19);
+    let v28: i32 = v27.wrapping_mul(9i32);
+    let v29: i32 = v25.wrapping_add(v28);
+    let v30: i32 = v29.wrapping_add(v19);
     v30
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }

@@ -1,14 +1,9 @@
 fun spiral_main(): Int {
-    var v0: Int = 0
-    v0 = 7
-    var v1: Int = 0
-    v1 = 5
-    var v2: Int = 0
-    v2 = v1 * 2
-    var v3: Int = 0
-    v3 = v0
-    var v4: Int = 0
-    v4 = (v2 + v3)
+    val v0: Int = 7
+    val v1: Int = 5
+    val v2: Int = v1 * 2
+    val v3: Int = v0
+    val v4: Int = (v2 + v3)
     return v4
 }
 fun main() {

@@ -30,101 +30,101 @@ function spiral_string_slice(value: string, from: number, to: number): string {
     return spiral_utf8_decoder.decode(bytes.subarray(from, to + 1));
 }
 function runtime_byte_1(v0: string, v1: number): number {
-    let v2: number = spiral_string_index(v0, v1);
+    const v2: number = spiral_string_index(v0, v1);
     return v2;
 }
 function utf8_scalar_at_byte_offset_0(v0: string, v1: number): number {
-    let v2: number = spiral_string_length(v0);
-    let v3: boolean = v1 < 0;
+    const v2: number = spiral_string_length(v0);
+    const v3: boolean = v1 < 0;
     if (v3) {
         throw new Error("UTF-8 byte offset is negative.");
     } else {
-        let v5: boolean = v1 >= v2;
+        const v5: boolean = v1 >= v2;
         if (v5) {
             throw new Error("UTF-8 byte offset is outside the string.");
         } else {
-            let v7: number = runtime_byte_1(v0, v1);
-            let v8: number = v7;
-            let v9: boolean = v8 < 128;
+            const v7: number = runtime_byte_1(v0, v1);
+            const v8: number = v7;
+            const v9: boolean = v8 < 128;
             if (v9) {
                 return v8;
             } else {
-                let v10: boolean = v8 < 194;
+                const v10: boolean = v8 < 194;
                 if (v10) {
                     throw new Error("UTF-8 scalar starts with an invalid lead byte.");
                 } else {
-                    let v12: boolean = v8 < 224;
+                    const v12: boolean = v8 < 224;
                     if (v12) {
-                        let v13: number = (v1 + 1) | 0;
-                        let v14: boolean = v13 >= v2;
+                        const v13: number = (v1 + 1) | 0;
+                        const v14: boolean = v13 >= v2;
                         if (v14) {
                             throw new Error("UTF-8 sequence is truncated.");
                         } else {
-                            let v16: number = runtime_byte_1(v0, v13);
-                            let v17: number = v16;
-                            let v18: boolean = v17 < 128;
+                            const v16: number = runtime_byte_1(v0, v13);
+                            const v17: number = v16;
+                            const v18: boolean = v17 < 128;
                             let v20: boolean;
                             if (v18) {
                                 v20 = false;
                             } else {
-                                let v19: boolean = v17 < 192;
+                                const v19: boolean = v17 < 192;
                                 v20 = v19;
                             }
                             if (v20) {
-                                let v21: number = (v8 - 192) | 0;
-                                let v22: number = Math.imul(v21, 64);
-                                let v23: number = (v17 - 128) | 0;
-                                let v24: number = (v22 + v23) | 0;
+                                const v21: number = (v8 - 192) | 0;
+                                const v22: number = Math.imul(v21, 64);
+                                const v23: number = (v17 - 128) | 0;
+                                const v24: number = (v22 + v23) | 0;
                                 return v24;
                             } else {
                                 throw new Error("UTF-8 sequence has an invalid continuation byte.");
                             }
                         }
                     } else {
-                        let v28: boolean = v8 < 240;
+                        const v28: boolean = v8 < 240;
                         if (v28) {
-                            let v29: number = (v1 + 2) | 0;
-                            let v30: boolean = v29 >= v2;
+                            const v29: number = (v1 + 2) | 0;
+                            const v30: boolean = v29 >= v2;
                             if (v30) {
                                 throw new Error("UTF-8 sequence is truncated.");
                             } else {
-                                let v32: number = (v1 + 1) | 0;
-                                let v33: number = runtime_byte_1(v0, v32);
-                                let v34: number = v33;
-                                let v35: number = runtime_byte_1(v0, v29);
-                                let v36: number = v35;
-                                let v37: boolean = v34 < 128;
+                                const v32: number = (v1 + 1) | 0;
+                                const v33: number = runtime_byte_1(v0, v32);
+                                const v34: number = v33;
+                                const v35: number = runtime_byte_1(v0, v29);
+                                const v36: number = v35;
+                                const v37: boolean = v34 < 128;
                                 let v39: boolean;
                                 if (v37) {
                                     v39 = false;
                                 } else {
-                                    let v38: boolean = v34 < 192;
+                                    const v38: boolean = v34 < 192;
                                     v39 = v38;
                                 }
                                 if (v39) {
-                                    let v40: boolean = v36 < 128;
+                                    const v40: boolean = v36 < 128;
                                     let v42: boolean;
                                     if (v40) {
                                         v42 = false;
                                     } else {
-                                        let v41: boolean = v36 < 192;
+                                        const v41: boolean = v36 < 192;
                                         v42 = v41;
                                     }
                                     if (v42) {
-                                        let v43: number = (v8 - 224) | 0;
-                                        let v44: number = Math.imul(v43, 4096);
-                                        let v45: number = (v34 - 128) | 0;
-                                        let v46: number = Math.imul(v45, 64);
-                                        let v47: number = (v44 + v46) | 0;
-                                        let v48: number = (v36 - 128) | 0;
-                                        let v49: number = (v47 + v48) | 0;
-                                        let v50: boolean = v49 < 2048;
+                                        const v43: number = (v8 - 224) | 0;
+                                        const v44: number = Math.imul(v43, 4096);
+                                        const v45: number = (v34 - 128) | 0;
+                                        const v46: number = Math.imul(v45, 64);
+                                        const v47: number = (v44 + v46) | 0;
+                                        const v48: number = (v36 - 128) | 0;
+                                        const v49: number = (v47 + v48) | 0;
+                                        const v50: boolean = v49 < 2048;
                                         if (v50) {
                                             throw new Error("UTF-8 sequence is overlong.");
                                         } else {
-                                            let v52: boolean = v49 >= 55296;
+                                            const v52: boolean = v49 >= 55296;
                                             if (v52) {
-                                                let v53: boolean = v49 <= 57343;
+                                                const v53: boolean = v49 <= 57343;
                                                 if (v53) {
                                                     throw new Error("UTF-8 sequence encodes a surrogate.");
                                                 } else {
@@ -142,63 +142,63 @@ function utf8_scalar_at_byte_offset_0(v0: string, v1: number): number {
                                 }
                             }
                         } else {
-                            let v63: boolean = v8 < 245;
+                            const v63: boolean = v8 < 245;
                             if (v63) {
-                                let v64: number = (v1 + 3) | 0;
-                                let v65: boolean = v64 >= v2;
+                                const v64: number = (v1 + 3) | 0;
+                                const v65: boolean = v64 >= v2;
                                 if (v65) {
                                     throw new Error("UTF-8 sequence is truncated.");
                                 } else {
-                                    let v67: number = (v1 + 1) | 0;
-                                    let v68: number = runtime_byte_1(v0, v67);
-                                    let v69: number = v68;
-                                    let v70: number = (v1 + 2) | 0;
-                                    let v71: number = runtime_byte_1(v0, v70);
-                                    let v72: number = v71;
-                                    let v73: number = runtime_byte_1(v0, v64);
-                                    let v74: number = v73;
-                                    let v75: boolean = v69 < 128;
+                                    const v67: number = (v1 + 1) | 0;
+                                    const v68: number = runtime_byte_1(v0, v67);
+                                    const v69: number = v68;
+                                    const v70: number = (v1 + 2) | 0;
+                                    const v71: number = runtime_byte_1(v0, v70);
+                                    const v72: number = v71;
+                                    const v73: number = runtime_byte_1(v0, v64);
+                                    const v74: number = v73;
+                                    const v75: boolean = v69 < 128;
                                     let v77: boolean;
                                     if (v75) {
                                         v77 = false;
                                     } else {
-                                        let v76: boolean = v69 < 192;
+                                        const v76: boolean = v69 < 192;
                                         v77 = v76;
                                     }
                                     if (v77) {
-                                        let v78: boolean = v72 < 128;
+                                        const v78: boolean = v72 < 128;
                                         let v80: boolean;
                                         if (v78) {
                                             v80 = false;
                                         } else {
-                                            let v79: boolean = v72 < 192;
+                                            const v79: boolean = v72 < 192;
                                             v80 = v79;
                                         }
                                         if (v80) {
-                                            let v81: boolean = v74 < 128;
+                                            const v81: boolean = v74 < 128;
                                             let v83: boolean;
                                             if (v81) {
                                                 v83 = false;
                                             } else {
-                                                let v82: boolean = v74 < 192;
+                                                const v82: boolean = v74 < 192;
                                                 v83 = v82;
                                             }
                                             if (v83) {
-                                                let v84: number = (v8 - 240) | 0;
-                                                let v85: number = Math.imul(v84, 262144);
-                                                let v86: number = (v69 - 128) | 0;
-                                                let v87: number = Math.imul(v86, 4096);
-                                                let v88: number = (v85 + v87) | 0;
-                                                let v89: number = (v72 - 128) | 0;
-                                                let v90: number = Math.imul(v89, 64);
-                                                let v91: number = (v88 + v90) | 0;
-                                                let v92: number = (v74 - 128) | 0;
-                                                let v93: number = (v91 + v92) | 0;
-                                                let v94: boolean = v93 < 65536;
+                                                const v84: number = (v8 - 240) | 0;
+                                                const v85: number = Math.imul(v84, 262144);
+                                                const v86: number = (v69 - 128) | 0;
+                                                const v87: number = Math.imul(v86, 4096);
+                                                const v88: number = (v85 + v87) | 0;
+                                                const v89: number = (v72 - 128) | 0;
+                                                const v90: number = Math.imul(v89, 64);
+                                                const v91: number = (v88 + v90) | 0;
+                                                const v92: number = (v74 - 128) | 0;
+                                                const v93: number = (v91 + v92) | 0;
+                                                const v94: boolean = v93 < 65536;
                                                 if (v94) {
                                                     throw new Error("UTF-8 sequence is overlong.");
                                                 } else {
-                                                    let v96: boolean = v93 > 1114111;
+                                                    const v96: boolean = v93 > 1114111;
                                                     if (v96) {
                                                         throw new Error("UTF-8 scalar is above U+10FFFF.");
                                                     } else {
@@ -226,26 +226,26 @@ function utf8_scalar_at_byte_offset_0(v0: string, v1: number): number {
     }
 }
 export function main(): number {
-    let v0: string = "Aéλ🙂Z";
-    let v1: number = 0;
-    let v2: number = utf8_scalar_at_byte_offset_0(v0, v1);
-    let v3: number = 1;
-    let v4: number = utf8_scalar_at_byte_offset_0(v0, v3);
-    let v5: number = 3;
-    let v6: number = utf8_scalar_at_byte_offset_0(v0, v5);
-    let v7: number = 5;
-    let v8: number = utf8_scalar_at_byte_offset_0(v0, v7);
-    let v9: number = 9;
-    let v10: number = utf8_scalar_at_byte_offset_0(v0, v9);
-    let v11: boolean = v2 === 65;
+    const v0: string = "Aéλ🙂Z";
+    const v1: number = 0;
+    const v2: number = utf8_scalar_at_byte_offset_0(v0, v1);
+    const v3: number = 1;
+    const v4: number = utf8_scalar_at_byte_offset_0(v0, v3);
+    const v5: number = 3;
+    const v6: number = utf8_scalar_at_byte_offset_0(v0, v5);
+    const v7: number = 5;
+    const v8: number = utf8_scalar_at_byte_offset_0(v0, v7);
+    const v9: number = 9;
+    const v10: number = utf8_scalar_at_byte_offset_0(v0, v9);
+    const v11: boolean = v2 === 65;
     if (v11) {
-        let v12: boolean = v4 === 233;
+        const v12: boolean = v4 === 233;
         if (v12) {
-            let v13: boolean = v6 === 955;
+            const v13: boolean = v6 === 955;
             if (v13) {
-                let v14: boolean = v8 === 128578;
+                const v14: boolean = v8 === 128578;
                 if (v14) {
-                    let v15: boolean = v10 === 90;
+                    const v15: boolean = v10 === 90;
                     if (v15) {
                         return 0;
                     } else {

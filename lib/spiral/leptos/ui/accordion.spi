@@ -39,16 +39,25 @@ inl render props_fn children : _ (_ div) =
                 right_element'
                 |> view_to_fragment
             |> element_to_view
-
             details [
-                class_fn "flex flex-1 [&_summary::-webkit-details-marker]:hidden [&>summary>span]:open:-rotate-180 " props.details_class
+                class_fn
+                    "flex flex-1 [&_summary::-webkit-details-marker]:hidden [&>summary>span]:open:-rotate-180 "
+                    props.details_class
                 attr_fn "open" props.open'
             ] fun () =>
                 :>[
                     summary [
-                        class_fn "flex flex-1 items-center justify-between px-4 cursor-pointer text-gray-600 hover:text-gray-700 bg-gray-300 hover:bg-gray-200 " fun () =>
-                            (if right_element_none then "" else "[margin-right:40px]")
-                            ++# " " ++# summary_class ()
+                        class_fn
+                            (
+                                "flex flex-1 items-center justify-between px-4 cursor-pointer text-gray-600 "
+                                ^^ "hover:text-gray-700 bg-gray-300 hover:bg-gray-200 "
+                            )
+                            fun () =>
+                                if right_element_none
+                                then ""
+                                else "[margin-right:40px]"
+                                ++# " "
+                                ++# summary_class ()
                     ] fun () =>
                         :>[
                             div [
@@ -72,7 +81,6 @@ inl render props_fn children : _ (_ div) =
                             |> element_to_view
                         ]
                     |> element_to_view
-
                     div [
                         $'"class=\\\"flex flex-1 flex-col\\\""'
                     ] fun () =>

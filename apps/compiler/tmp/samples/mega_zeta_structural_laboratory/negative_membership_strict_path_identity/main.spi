@@ -7,7 +7,11 @@ inl impossible_membership_strict_path_identity () =
     match twelve with
     | CertifiedIntervalPositivePositionalSealedCompositeClass payload =>
         inl exists length divisor quotient. _, _, _, membership, _, _ = payload
-        inl impossible : positive_positional_strict_predecessor_path (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one))) (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one))) =
+        inl impossible
+            : positive_positional_strict_predecessor_path
+                (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one)))
+                (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one)))
+            =
             certified_interval_positive_positional_factor_membership_to_strict_path
                 membership
         ()

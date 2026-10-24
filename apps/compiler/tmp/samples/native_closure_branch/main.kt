@@ -19,8 +19,7 @@ fun sp_method0(p0: (Int) -> Int): Int {
     return v0(40)
 }
 fun spiral_main(): Int {
-    var v0: Boolean = false
-    v0 = true
+    val v0: Boolean = true
     var v3: (Int) -> Int = { _: Int -> throw RuntimeException() }
     if (v0) {
         v3 = a_c0()

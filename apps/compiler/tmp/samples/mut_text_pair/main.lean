@@ -31,25 +31,18 @@ end
 deriving instance Inhabited for M0
 mutual
 partial def spiralMain : IO Int32 := do
-    let mut v0 : String := default
-    let mut v1 : String := default
     let mut v2 : (IO.Ref M0) ← IO.mkRef default
-    let mut v3 : String := default
-    let mut v4 : String := default
-    let mut v5 : String := default
-    let mut v6 : String := default
-    let mut v7 : Bool := default
     let mut v9 : Bool := default
     let mut v8 : Bool := default
-    v0 := "no"
-    v1 := "nay"
+    let v0 : String := "no"
+    let v1 : String := "nay"
     v2 := (← IO.mkRef (M0.mk v0 v1))
-    v3 := "hi"
-    v4 := "yo"
+    let v3 : String := "hi"
+    let v4 : String := "yo"
     v2.modify (fun r => { r with l0 := v3, l1 := v4 })
-    v5 := (← v2.get).l0
-    v6 := (← v2.get).l1
-    v7 := (v5 == "hi")
+    let v5 : String := (← v2.get).l0
+    let v6 : String := (← v2.get).l1
+    let v7 : Bool := (v5 == "hi")
     if v7 then
         v8 := (v6 == "yo")
         v9 := v8

@@ -17,17 +17,13 @@ func sp_method1(_ p0: Int32, _ p1: Int32, _ p2: Int32, _ p3: Int32) -> Int32 {
     var v3: Int32 = p3
     var v4: Int32 = 0
     v4 = (v0 &+ v1)
-    var v5: Int32 = 0
-    v5 = (v4 &+ v2)
-    var v6: Int32 = 0
-    v6 = (v5 &+ v3)
-    var v7: Int32 = 0
-    v7 = (v6 &- 10)
+    let v5: Int32 = (v4 &+ v2)
+    let v6: Int32 = (v5 &+ v3)
+    let v7: Int32 = (v6 &- 10)
     return v7
 }
 func spiral_main() -> Int32 {
-    var v0: Int32 = 0
-    v0 = 1
+    let v0: Int32 = 1
     var v1: Int32 = 0
     var v2: Int32 = 0
     var v3: Int32 = 0

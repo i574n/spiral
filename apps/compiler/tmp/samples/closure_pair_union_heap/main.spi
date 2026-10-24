@@ -5,8 +5,8 @@ union slot =
 inl main () : i32 =
     inl ~n = 3i32
     inl ~m = 4i32
-    inl cell = !!!!LayoutToHeap({value = m})
-    inl f (z : i32) : slot * heap {value : i32} =
+    inl cell = !!!!LayoutToHeap({ value = m })
+    inl f (z : i32) : slot * heap { value : i32 } =
         if z =. 0i32 then
             None, cell
         else

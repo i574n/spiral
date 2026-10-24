@@ -7,7 +7,10 @@ inl impossible_fact_derived_observation_cross_outcome () : typed_fx_hashed_state
         inl collision =
             typed_fx_hashed_statement_top_collision_from_recorded_log
                 recorded
-                (TypedFxStatementPayloadHashPrimaryChanged "the-negative-collision-proof-cannot-inhabit-the-duplicate-observation")
+                (
+                    TypedFxStatementPayloadHashPrimaryChanged
+                        "the-negative-collision-proof-cannot-inhabit-the-duplicate-observation"
+                )
         TypedFxHashedStatementClosedDuplicateExact (
             TypedFxHashedStatementEventStoreIdentityCollision (
                 collision,

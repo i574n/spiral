@@ -223,7 +223,7 @@ defmodule Spiral.Cells.TargetsTest do
     assert {:gleam, "x/gleam/src/main.gleam", [%{name: "gleam_community_maths"}]} = Spiral.Cells.Builders.dispatch(builder, "x/gleam/src/main.gleam")
     manifest = Targets.gleam_manifest("x/gleam/src/main.gleam", builder.deps)
     assert manifest =~ ~s(name = "main"\ntarget = "erlang")
-    assert manifest =~ ~s(gleam_stdlib = "0.57.0")
+    assert manifest =~ ~s(gleam_stdlib = ">=1.0.5 and <2.0.0")
     assert manifest =~ ~s(gleam_community_maths = ">=2.0.0")
     [js] = Spiral.Cells.Builders.commands("///> gleam -t javascript")
     assert {:spiral, _} = Spiral.Cells.Builders.dispatch(js, "main.gleam")

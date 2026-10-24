@@ -36,15 +36,12 @@ fun sp_method2(p0: Int, p1: Int, p2: Int): Int {
     v5 = spiral_tuple179.v2
     var v6: Int = 0
     v6 = (v3 + v4)
-    var v7: Int = 0
-    v7 = (v6 + v5)
+    val v7: Int = (v6 + v5)
     return v7
 }
 fun spiral_main(): Int {
-    var v0: Int = 0
-    v0 = 1
-    var v1: Int = 0
-    v1 = 2
+    val v0: Int = 1
+    val v1: Int = 2
     var v2: Int = 0
     v2 = 3
     var v3: Int = 0

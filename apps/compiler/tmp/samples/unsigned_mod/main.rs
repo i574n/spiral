@@ -2,14 +2,14 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 fn method0(mut v0: u32) -> bool {
-    let mut v1: u32 = v0.wrapping_add(5u32);
-    let mut v2: u32 = v1.wrapping_rem(4u32);
-    let mut v3: bool = v2 == 0u32;
+    let v1: u32 = v0.wrapping_add(5u32);
+    let v2: u32 = v1.wrapping_rem(4u32);
+    let v3: bool = v2 == 0u32;
     v3
 }
 fn spiral_main() -> i32 {
-    let mut v0: u32 = 7u32;
-    let mut v1: bool = method0(v0);
+    let v0: u32 = 7u32;
+    let v1: bool = method0(v0);
     if v1 {
         0i32
     } else {

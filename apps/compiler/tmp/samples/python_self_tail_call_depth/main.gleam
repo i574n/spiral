@@ -4,9 +4,6 @@ pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
   int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
 }
 
-pub fn spiral_wrap_unsigned(value: Int, bits: Int) -> Int {
-  int.bitwise_and(value, int.bitwise_shift_left(1, bits) - 1)
-}
 
 pub fn count_down_0(v0: Int, v1: Int) -> Int {
     let v2 = 0 < v0
@@ -22,16 +19,16 @@ pub fn count_down_0(v0: Int, v1: Int) -> Int {
     }
 }
 pub fn main() {
-let v0 = 5000
-let v1 = 0
-let v2 = count_down_0(v0, v1)
-let v3 = v2 == 5000
-case v3 {
-    True -> {
-        0
+    let v0 = 5000
+    let v1 = 0
+    let v2 = count_down_0(v0, v1)
+    let v3 = v2 == 5000
+    case v3 {
+        True -> {
+            0
+        }
+        False -> {
+            1
+        }
     }
-    False -> {
-        1
-    }
-}
 }

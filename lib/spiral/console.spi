@@ -79,13 +79,39 @@ inl write_line forall t. (obj : t) : () =
         Lean = fun () => $'IO.println (toString !obj)' : ()
         C = fun () => write_line_c obj
         Delphi = fun () => $'Writeln(!obj)' : ()
-        Kotlin = fun () => $'run { System.out.write((!obj.toString() + "\\n").toByteArray(Charsets.UTF_8)); System.out.flush() }' : ()
+        Kotlin = fun () => $'run { System.out.write((!obj.toString() + "\\n").toByteArray(Charsets.UTF_8)); \
+            System.out.flush() }' : ()
         Swift = fun () => $'print(!obj)' : ()
         Bend = fun () => write_line_bend obj
         Wasm = fun () =>
             write_wasm obj
             $'(call $print_newline)' : ()
     }
+
+/// ### write_error_line
+inl write_error_line forall t. (obj : t) : () =
+    backend_switch {
+        Gleam = fun () =>
+            global "import gleam/io"
+            $'io.println_error(!obj)' : ()
+        Lua = fun () => $'io.stderr:write(tostring(!obj) .. "\\n")' : ()
+        Fsharp = fun () =>
+            fun () => obj |> $'System.Console.Error.WriteLine'
+            |> exec_unit
+        Python = fun () =>
+            global "import sys"
+            $'print(!obj, file=sys.stderr)' : ()
+        Rust = fun () => $'eprintln\!("{}", !obj)' : ()
+        TypeScript = fun () => $'process.stderr.write(String(!obj) + "\\n")' : ()
+        Lean = fun () => $'IO.eprintln (toString !obj)' : ()
+        Kotlin = fun () => $'run { System.err.write((!obj.toString() + "\\n").toByteArray(Charsets.UTF_8)); \
+            System.err.flush() }' : ()
+    }
+
+///> rust
+///> fsharp
+test write_error_line_writes_without_failing =
+    write_error_line "console.write_error_line probe"
 
 /// ### write
 inl write_c forall t. (x : t) : () =
@@ -124,7 +150,8 @@ inl write forall t. (x : t) : () =
         Lean = fun () => $'IO.print (toString !x)' : ()
         C = fun () => write_c x
         Delphi = fun () => $'Write(!x)' : ()
-        Kotlin = fun () => $'run { System.out.write(!x.toString().toByteArray(Charsets.UTF_8)); System.out.flush() }' : ()
+        Kotlin = fun () =>
+            $'run { System.out.write(!x.toString().toByteArray(Charsets.UTF_8)); System.out.flush() }' : ()
         Swift = fun () => $'print(!x, terminator: "")' : ()
         Wasm = fun () => write_wasm x
     }

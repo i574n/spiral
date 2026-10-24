@@ -65,7 +65,7 @@ inl atan2 (y : f64) (x : f64) : f64 =
             $'spiral_math_atan2(!y, !x)' : float
         Lua = fun () => $'math.atan2(!y, !x)' : float
         Fsharp = fun () => $'System.Math.Atan2 (!y, !x)' : float
-        Python = fun () => 
+        Python = fun () =>
             global "import math"
             $'math.atan2(!y, !x)' : float
         Rust = fun () => $'(!y).atan2(!x)' : float
@@ -100,7 +100,7 @@ inl floor forall t {float}. (n : t) : t =
             n |> $'float.floor' : t
         Lua = fun () => n |> $'math.floor' : t
         Fsharp = fun () => n |> $'floor' : t
-        Python = fun () => 
+        Python = fun () =>
             global "import math"
             $'math.floor(!n)' : t
         Rust = fun () => $'!n.floor()' : t

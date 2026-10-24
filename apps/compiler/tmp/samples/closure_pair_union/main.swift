@@ -10,23 +10,19 @@ func f_c0(_ v0: Int32) -> (Int32) -> (US0, US0) {
         if (v2) {
             var v3: US0 = US0_None()
             v3 = US0_None()
-            var v4: US0 = US0_None()
-            v4 = US0_None()
+            let v4: US0 = US0_None()
             return (v3, v4)
         } else {
             var v5: US0 = US0_None()
             v5 = US0_Some(f0: v0)
-            var v6: US0 = US0_None()
-            v6 = US0_None()
+            let v6: US0 = US0_None()
             return (v5, v6)
         }
     }
 }
 func spiral_main() -> Int32 {
-    var v0: Int32 = 0
-    v0 = 7
-    var v1: (Int32) -> (US0, US0) = { (_: Int32) -> (US0, US0) in fatalError("unreachable closure") }
-    v1 = f_c0(v0)
+    let v0: Int32 = 7
+    let v1: (Int32) -> (US0, US0) = f_c0(v0)
     var v2: US0 = US0_None()
     var v3: US0 = US0_None()
     let spiral_tuple248 = v1(1)

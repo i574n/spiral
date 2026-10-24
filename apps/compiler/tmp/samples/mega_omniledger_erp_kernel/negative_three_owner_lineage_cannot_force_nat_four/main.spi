@@ -2,7 +2,10 @@ open main
 
 inl impossible_three_owner_lineage_cannot_force_nat_four () : erp_p2p_fence_history nat_four =
     inl physical_lineage =
-        ErpP2PPhysicalOwnerLineageTakeover (ErpP2PPhysicalOwnerLineageTakeover (ErpP2PPhysicalOwnerLineageGenesis "owner-a", "owner-b"), "owner-c")
+        ErpP2PPhysicalOwnerLineageTakeover (
+            ErpP2PPhysicalOwnerLineageTakeover (ErpP2PPhysicalOwnerLineageGenesis "owner-a", "owner-b"),
+            "owner-c"
+        )
     match erp_p2p_physical_owner_lineage_history_make physical_lineage with
     | erp_p2p_physical_owner_lineage_history payload =>
         inl exists fence. history = payload

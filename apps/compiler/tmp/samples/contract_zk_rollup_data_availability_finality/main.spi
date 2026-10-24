@@ -136,8 +136,12 @@ inl finality () = Finality700 (proof (), availability ())
 
 union sealed_rollup_result =
     | SealedCommitment :: (exists batch epoch root. erasure_commitment batch epoch root) -> sealed_rollup_result
-    | SealedAvailability :: (exists shardset batch epoch root. availability_certificate shardset batch epoch root) -> sealed_rollup_result
-    | SealedFinality :: (exists shardset batch epoch root. finality_receipt shardset batch epoch root) -> sealed_rollup_result
+    | SealedAvailability ::
+        (exists shardset batch epoch root. availability_certificate shardset batch epoch root) ->
+        sealed_rollup_result
+    | SealedFinality ::
+        (exists shardset batch epoch root. finality_receipt shardset batch epoch root) ->
+        sealed_rollup_result
 
 inl inspect_sealed (value : sealed_rollup_result) : string =
     match value with
@@ -152,13 +156,30 @@ inl inspect_sealed (value : sealed_rollup_result) : string =
         "sealed-finality"
 
 inl serialize_authority (_ : string) (_ : string) (_ : string) (_ : string) : string =
-    "schema\tnode_id\toperation\tfrom\tto\tdeps\teffect\tcapability\tretry_budget\n1\tencode-batch\tEncodeBatch\tbatch_open\tencoded\t\tnon_idempotent\terasure-codec\t0\n1\tpublish-shards\tPublishShards\tencoded\tshards_published\tencode-batch\tidempotent\tda-network\t2\n1\tsample-availability\tSampleAvailability\tshards_published\tavailability_sampled\tpublish-shards\tidempotent\tsamplers\t2\n1\tprove-state\tProveState\tavailability_sampled\tstate_proved\tsample-availability\tnon_idempotent\tzk-prover\t0\n1\tfinalize-batch\tFinalizeBatch\tstate_proved\tfinalized\tprove-state\tnon_idempotent\tsettlement\t0\n"
+    "schema\tnode_id\toperation\tfrom\tto\tdeps\teffect\tcapability\tretry_budget\n"
+    ^^ "1\tencode-batch\tEncodeBatch\tbatch_open\tencoded\t\tnon_idempotent\terasure-codec\t0\n"
+    ^^ "1\tpublish-shards\tPublishShards\tencoded\tshards_published\tencode-batch\tidempotent\tda-network\t2\n"
+    ^^ "1\tsample-availability\tSampleAvailability\tshards_published\tavailability_sampled\tpublish-shards\tidempotent"
+    ^^ "\tsamplers\t2\n1\tprove-state\tProveState\tavailability_sampled\tstate_proved\tsample-availability\tnon_idempo"
+    ^^ "tent\tzk-prover\t0\n1\tfinalize-batch\tFinalizeBatch\tstate_proved\tfinalized\tprove-state\tnon_idempotent\tse"
+    ^^ "ttlement\t0\n"
 
 inl main () : string =
-    inl encode_op : rollup_op batch_open encoded (erasure_commitment batch_700 epoch_31 root_poseidon_7) = EncodeBatch (payload ())
-    inl sample_op : rollup_op shards_published availability_sampled (availability_certificate shard_set_035 batch_700 epoch_31 root_poseidon_7) = SampleAvailability (published ())
-    inl prove_op : rollup_op availability_sampled state_proved (zk_proof shard_set_035 batch_700 epoch_31 root_poseidon_7) = ProveState (trace (), availability ())
-    inl final_op : rollup_op state_proved finalized (finality_receipt shard_set_035 batch_700 epoch_31 root_poseidon_7) = FinalizeBatch (proof (), availability ())
+    inl encode_op : rollup_op batch_open encoded (erasure_commitment batch_700 epoch_31 root_poseidon_7) =
+        EncodeBatch (payload ())
+    inl sample_op
+        : rollup_op shards_published availability_sampled
+            (availability_certificate shard_set_035 batch_700 epoch_31 root_poseidon_7)
+        =
+        SampleAvailability (published ())
+    inl prove_op
+        : rollup_op availability_sampled state_proved (zk_proof shard_set_035 batch_700 epoch_31 root_poseidon_7)
+        =
+        ProveState (trace (), availability ())
+    inl final_op
+        : rollup_op state_proved finalized (finality_receipt shard_set_035 batch_700 epoch_31 root_poseidon_7)
+        =
+        FinalizeBatch (proof (), availability ())
     inl encoding = interpret (encoder_interpreter encode_op)
     inl sampling = interpret (sampler_interpreter sample_op)
     inl verification = interpret (verifier_interpreter prove_op)

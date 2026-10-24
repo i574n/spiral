@@ -1,4 +1,4 @@
-inl (++) (left : string) (right : string) : string = !!!!StaticStringConcat(left,right)
+inl (++) (left : string) (right : string) : string = !!!!StaticStringConcat(left, right)
 
 union rec tokens =
     | NoToken
@@ -62,14 +62,31 @@ inl accept_backend (rest : string) : string =
     else text.err "backend" trimmed
 
 inl finish (kept : string) (print_code : i32) (timeout : i32) (packages : string) (skip : i32) : string =
-    if text.contains kept "\n#!" then text.err "dib" ""
-    elif text.starts_with kept "#!" then text.err "dib" ""
+    if text.contains kept "\n#!"
+    then text.err "dib" ""
+    elif text.starts_with kept "#!"
+    then text.err "dib" ""
     else
         inl wrapped, generated = cell.wrap kept
         inl timeout_text = if timeout < 0i32 then "-" else text.show_i32 timeout
-        "ok\n" ++ text.show_i32 print_code ++ "\n" ++ timeout_text ++ "\n" ++ text.show_i32 generated ++ "\n" ++ packages ++ "\n" ++ text.show_i32 skip ++ "\n" ++ wrapped
+        "ok\n"
+        ++ text.show_i32 print_code
+        ++ "\n"
+        ++ timeout_text
+        ++ "\n"
+        ++ text.show_i32 generated
+        ++ "\n"
+        ++ packages
+        ++ "\n"
+        ++ text.show_i32 skip
+        ++ "\n"
+        ++ wrapped
 
-let rec scan (src : string) (i : i32) (kept : string) (print_code : i32) (timeout : i32) (packages : string) (seen : i32) (started : i32) (skip : i32) : string =
+let rec scan
+    (src : string) (i : i32) (kept : string) (print_code : i32) (timeout : i32) (packages : string) (seen : i32)
+    (started : i32) (skip : i32)
+    : string
+    =
     match text.next_line src i with
     | LineDone => finish kept print_code timeout packages skip
     | LineGot (line, next) =>

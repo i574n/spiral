@@ -1,6 +1,9 @@
 open main
 
-inl constrained_acceptance_transform forall alphabet {symbol_compare}. (item : matcher_case alphabet) : matcher_check alphabet =
+inl constrained_acceptance_transform forall alphabet {symbol_compare}.
+    (item : matcher_case alphabet)
+    : matcher_check alphabet
+    =
     match item with
     | matcher_case (value, input) => matcher_check (accepts value input)
 

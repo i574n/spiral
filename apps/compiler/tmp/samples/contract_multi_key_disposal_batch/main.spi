@@ -11,7 +11,9 @@ union mounted scope keys state =
     | Mounted :: forall scope keys state. string -> mounted scope keys state
 
 union patch scope old_keys new_keys first_removed second_removed state =
-    | Patch :: forall scope old_keys new_keys first_removed second_removed state. string -> patch scope old_keys new_keys first_removed second_removed state
+    | Patch :: forall scope old_keys new_keys first_removed second_removed state.
+        string ->
+        patch scope old_keys new_keys first_removed second_removed state
 
 union disposal scope key state =
     | Disposal :: forall scope key state. string -> disposal scope key state

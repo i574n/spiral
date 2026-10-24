@@ -10,7 +10,7 @@ defmodule Mix.Tasks.Spiral.XCompat do
     files = args |> Enum.flat_map(&sources/1) |> Enum.uniq()
 
     findings =
-      for file <- files, finding <- file |> File.read!() |> Spiral.Cells.XCompat.rewrites() do
+      for file <- files, finding <- file |> File.read!() |> Spiral.Cells.XCompat.rewrites(Spiral.Cells.XCompat.profile_for(file)) do
         Mix.shell().info(Spiral.Cells.XCompat.format(file, finding))
         finding
       end

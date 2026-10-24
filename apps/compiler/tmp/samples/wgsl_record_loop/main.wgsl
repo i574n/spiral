@@ -26,14 +26,8 @@ fn sp_loop_0(p0: i32, p1: i32, p2: i32, p3: i32) -> SpiralTuple0 {
             v5 = (v1 + 1i);
             var v6: i32 = 0i;
             v6 = (v2 + 1i);
-            let spiral_t1: i32 = v0;
-            let spiral_t2: i32 = v5;
-            let spiral_t3: i32 = v6;
-            let spiral_t4: i32 = v3;
-            v0 = spiral_t1;
-            v1 = spiral_t2;
-            v2 = spiral_t3;
-            v3 = spiral_t4;
+            v1 = v5;
+            v2 = v6;
             continue;
         }
     }
@@ -50,9 +44,9 @@ fn spiral_main() -> i32 {
     v3 = 2i;
     var v4: i32 = 0i;
     var v5: i32 = 0i;
-    let spiral_tuple5 = sp_loop_0(v0, v1, v2, v3);
-    v4 = spiral_tuple5.v0;
-    v5 = spiral_tuple5.v1;
+    let spiral_tuple1 = sp_loop_0(v0, v1, v2, v3);
+    v4 = spiral_tuple1.v0;
+    v5 = spiral_tuple1.v1;
     return (v4 + v5);
 }
 @compute @workgroup_size(64)

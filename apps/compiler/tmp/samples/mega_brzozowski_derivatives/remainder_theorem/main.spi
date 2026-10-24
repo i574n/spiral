@@ -8,8 +8,14 @@ union rec derivative_remainder_proof alphabet =
     | RemainderProofEmpty : alphabet * linear_input alphabet
     | RemainderProofEpsilon : alphabet * linear_input alphabet
     | RemainderProofChar : alphabet * alphabet * linear_input alphabet
-    | RemainderProofAlt : alphabet * linear_input alphabet * derivative_remainder_proof alphabet * derivative_remainder_proof alphabet
-    | RemainderProofCat : alphabet * linear_input alphabet * derivative_cat_branch * derivative_remainder_proof alphabet * derivative_remainder_proof alphabet
+    | RemainderProofAlt :
+        alphabet * linear_input alphabet * derivative_remainder_proof alphabet * derivative_remainder_proof alphabet
+    | RemainderProofCat :
+        alphabet *
+        linear_input alphabet *
+        derivative_cat_branch *
+        derivative_remainder_proof alphabet *
+        derivative_remainder_proof alphabet
     | RemainderProofStar : alphabet * linear_input alphabet * derivative_remainder_proof alphabet
 
 let rec derivative_remainder_proof_source forall alphabet.
@@ -113,13 +119,16 @@ let rec derivative_remainder_proof_candidate forall alphabet {symbol_compare}.
             RegexStar (derivative_remainder_proof_source inner))
 
 let rec derivative_remainder_proof_valid forall alphabet {symbol_compare}.
-    (proof : derivative_remainder_proof alphabet) : bool =
+    (proof : derivative_remainder_proof alphabet)
+    : bool
+    =
     inl source = derivative_remainder_proof_source proof
     inl symbol = derivative_remainder_proof_symbol proof
     inl suffix = derivative_remainder_proof_suffix proof
     inl local_candidate = derivative_remainder_proof_candidate proof
     inl local_law = derivative_remainder_candidate_law source symbol suffix local_candidate
-    if local_law then
+    if local_law
+    then
         match proof with
         | RemainderProofEmpty _ => true
         | RemainderProofEpsilon _ => true
@@ -131,7 +140,8 @@ let rec derivative_remainder_proof_valid forall alphabet {symbol_compare}.
                 else false
             else false
         | RemainderProofCat (_, _, branch, left, right) =>
-            if derivative_cat_branch_same branch (derivative_cat_branch_of (derivative_remainder_proof_source left)) then
+            if derivative_cat_branch_same branch (derivative_cat_branch_of (derivative_remainder_proof_source left))
+            then
                 if derivative_remainder_proof_context_same proof left then
                     if derivative_remainder_proof_context_same proof right then
                         if derivative_remainder_proof_valid left then derivative_remainder_proof_valid right else false
@@ -139,7 +149,9 @@ let rec derivative_remainder_proof_valid forall alphabet {symbol_compare}.
                 else false
             else false
         | RemainderProofStar (_, _, inner) =>
-            if derivative_remainder_proof_context_same proof inner then derivative_remainder_proof_valid inner else false
+            if derivative_remainder_proof_context_same proof inner
+            then derivative_remainder_proof_valid inner
+            else false
     else false
 
 nominal derivative_remainder_theorem_certificate alphabet =
@@ -218,37 +230,62 @@ inl run_remainder_theorem_suite () : string =
     inl bit_suffixes = input_corpus_depth_two bit_symbols
     inl tri_suffixes = input_corpus_depth_two tri_symbols
     inl constructor_probe = constructor_theorem_probe ()
-    assert_static (derivative_remainder_theorem_symbols constructor_probe bit_symbols bit_suffixes) "structural remainder theorem certificate should cover every regex constructor"
-    assert_static (derivative_remainder_theorem_symbols (tri_ab_star_then_c ()) tri_symbols tri_suffixes) "structural remainder theorem certificate should generalize across nominal alphabets"
+    assert_static
+        (derivative_remainder_theorem_symbols constructor_probe bit_symbols bit_suffixes)
+        "structural remainder theorem certificate should cover every regex constructor"
+    assert_static
+        (derivative_remainder_theorem_symbols (tri_ab_star_then_c ()) tri_symbols tri_suffixes)
+        "structural remainder theorem certificate should generalize across nominal alphabets"
     inl accepted_suffix = InputCons (one (), InputCons (zero (), InputEmpty))
     inl certificate = derivative_remainder_theorem_certificate_make (ends_with_zero ()) (one ()) accepted_suffix
-    assert_static (derivative_remainder_theorem_certificate_valid certificate) "well-formed derivative remainder theorem certificate should validate"
+    assert_static
+        (derivative_remainder_theorem_certificate_valid certificate)
+        "well-formed derivative remainder theorem certificate should validate"
     inl boolean_blind_source = RegexStar (RegexChar (zero ()))
     inl boolean_blind_suffix = InputCons (one (), InputEmpty)
     inl boolean_blind_candidate = RegexEmpty
-    assert_static (derivative_language_candidate_law boolean_blind_source (zero ()) boolean_blind_suffix boolean_blind_candidate) "acceptance-only derivative law should miss a partial-remainder mutant when both decisions reject"
-    assert_static (bool_same (derivative_remainder_candidate_law boolean_blind_source (zero ()) boolean_blind_suffix boolean_blind_candidate) false) "remainder-set derivative law should reject the same partial-remainder mutant"
+    assert_static
+        (derivative_language_candidate_law boolean_blind_source (zero ()) boolean_blind_suffix boolean_blind_candidate)
+        "acceptance-only derivative law should miss a partial-remainder mutant when both decisions reject"
+    assert_static
+        (
+            bool_same
+                (
+                    derivative_remainder_candidate_law boolean_blind_source
+                        (zero ())
+                        boolean_blind_suffix
+                        boolean_blind_candidate
+                )
+                false
+        )
+        "remainder-set derivative law should reject the same partial-remainder mutant"
     inl forged_context =
         RemainderProofAlt (
             zero (),
             InputEmpty,
             RemainderProofChar (zero (), zero (), InputEmpty),
             RemainderProofChar (one (), one (), InputEmpty))
-    assert_static (bool_same (derivative_remainder_proof_valid forged_context) false) "certificate validation should reject a child proof from a different derivative context"
+    assert_static
+        (bool_same (derivative_remainder_proof_valid forged_context) false)
+        "certificate validation should reject a child proof from a different derivative context"
     inl forged_source =
         derivative_remainder_theorem_certificate (
             RegexEmpty,
             zero (),
             InputEmpty,
             derivative_remainder_proof_make RegexEpsilon (zero ()) InputEmpty)
-    assert_static (bool_same (derivative_remainder_theorem_certificate_valid forged_source) false) "certificate validation should reject a forged source binding"
+    assert_static
+        (bool_same (derivative_remainder_theorem_certificate_valid forged_source) false)
+        "certificate validation should reject a forged source binding"
     inl forged_symbol =
         derivative_remainder_theorem_certificate (
             RegexChar (zero ()),
             one (),
             InputEmpty,
             derivative_remainder_proof_make (RegexChar (zero ())) (zero ()) InputEmpty)
-    assert_static (bool_same (derivative_remainder_theorem_certificate_valid forged_symbol) false) "certificate validation should reject a forged symbol binding"
+    assert_static
+        (bool_same (derivative_remainder_theorem_certificate_valid forged_symbol) false)
+        "certificate validation should reject a forged symbol binding"
     inl forged_branch =
         RemainderProofCat (
             zero (),
@@ -256,7 +293,9 @@ inl run_remainder_theorem_suite () : string =
             RemainderCatNonNullable,
             derivative_remainder_proof_make RegexEpsilon (zero ()) InputEmpty,
             derivative_remainder_proof_make (RegexChar (zero ())) (zero ()) InputEmpty)
-    assert_static (bool_same (derivative_remainder_proof_valid forged_branch) false) "certificate validation should reject a forged nullable concatenation branch"
+    assert_static
+        (bool_same (derivative_remainder_proof_valid forged_branch) false)
+        "certificate validation should reject a forged nullable concatenation branch"
     "brzozowski-remainder-theorem-green"
 
 inl main () : string = run_remainder_theorem_suite ()

@@ -168,6 +168,7 @@ defmodule Spiral.Cells.Notebook do
 
   defp report(tests, selected, %{verdicts: verdicts, unavailable: unavailable, memo: memo} = ran) do
     targets = Map.get(ran, :targets, %{})
+    budgets = Map.get(ran, :budgets, %{})
 
     rows =
       Enum.map(tests, fn test ->
@@ -188,6 +189,7 @@ defmodule Spiral.Cells.Notebook do
         |> then(&if(state == "not_run", do: Map.put(&1, "reason", not_run_reason(ran.status)), else: &1))
         |> then(&if(message, do: Map.put(&1, "message", message), else: &1))
         |> with_mismatch(Map.get(verdicts, test.index))
+        |> with_budget(Map.get(budgets, test.index))
       end)
 
     counts(rows) |> Map.put("tests", rows)
@@ -224,6 +226,29 @@ defmodule Spiral.Cells.Notebook do
   end
 
   defp with_mismatch(row, _verdict), do: row
+
+  defp with_budget(row, nil), do: row
+
+  defp with_budget(row, budget) do
+    slowest = row["targets"] |> Enum.map(&(&1["ms"] || 0)) |> Enum.max(fn -> 0 end)
+    row |> Map.put("timeout_ms", budget) |> Map.put("slowest_ms", slowest)
+  end
+
+  defp headroom(rows) do
+    timed = for row <- rows, is_integer(row["timeout_ms"]) and row["timeout_ms"] > 0, do: row
+
+    case Enum.max_by(timed, &(&1["slowest_ms"] / &1["timeout_ms"]), fn -> nil end) do
+      nil -> %{}
+      row -> %{"slowest_ms" => row["slowest_ms"], "timeout_ms" => row["timeout_ms"], "headroom" => Float.round(row["slowest_ms"] / row["timeout_ms"], 2)}
+    end
+  end
+
+  defp headroom_warn do
+    case Float.parse(System.get_env("SPIRAL_CELLS_HEADROOM_WARN") || "") do
+      {threshold, ""} when threshold > 0 -> threshold
+      _ -> 0.5
+    end
+  end
 
   defp not_run_reason({:error, message}), do: "the run stopped before this test: " <> first_line(message)
   defp not_run_reason(_status), do: "no step ran for this cell"
@@ -289,6 +314,7 @@ defmodule Spiral.Cells.Notebook do
           |> Map.put("failed_targets", failed_targets(rows))
           |> Map.put("mismatches", for(row <- rows, row["status"] == "failed", row["actual"], into: %{}, do: {row["name"], %{"actual" => row["actual"], "expected" => row["expected"]}}))
           |> Map.put("accepted_sites", for(row <- rows, row["accepted_site"], into: %{}, do: {row["name"], row["accepted_site"]}))
+          |> Map.merge(headroom(rows))
         end)
         |> case do
           [] -> [counts([]) |> Map.put("file", path) |> Map.put("failed_tests", []) |> Map.put("accept_refused", %{}) |> Map.put("failed_targets", %{}) |> Map.put("mismatches", %{}) |> Map.put("accepted_sites", %{})]
@@ -303,7 +329,14 @@ defmodule Spiral.Cells.Notebook do
       |> Map.put("files", length(files))
       |> Map.put("no_agree_reasons", Enum.reduce(files, %{}, &Map.merge(&2, &1["no_agree_reasons"], fn _reason, a, b -> a + b end)))
 
-    Enum.map(files, &("spiral-tests file " <> JSON.encode!(&1))) ++
+    warn = headroom_warn()
+
+    warnings =
+      for file <- files, is_number(file["headroom"]) and file["headroom"] >= warn do
+        "spiral-tests headroom " <> JSON.encode!(Map.take(file, ["file", "headroom", "slowest_ms", "timeout_ms"]))
+      end
+
+    Enum.map(files, &("spiral-tests file " <> JSON.encode!(&1))) ++ warnings ++
       ["spiral-tests total " <> JSON.encode!(total)]
   end
 
@@ -364,7 +397,9 @@ defmodule Spiral.Cells.Notebook do
   defp run_cells(path, doc, opts) do
     output_path = opts[:output_path] || path <> ".ipynb"
     root = opts[:root] || Path.dirname(path)
+    pool_before = Spiral.Cells.CompilerClient.pool_stats()
     evaluation = evaluate(doc, Keyword.put(opts, :root, root)) |> accept_mismatches(path, opts)
+    pool_after = Spiral.Cells.CompilerClient.pool_stats()
     %{status: status, outputs: outputs, durations: durations, report: report} = evaluation
 
     outputs =
@@ -378,7 +413,7 @@ defmodule Spiral.Cells.Notebook do
       end
 
     File.mkdir_p!(Path.dirname(output_path))
-    File.write!(output_path, JSON.encode!(ipynb(doc, outputs, durations, report)))
+    File.write!(output_path, JSON.encode!(ipynb(doc, outputs, durations, report) |> pool_metadata(pool_before, pool_after)))
 
     result =
       case status do
@@ -542,6 +577,7 @@ defmodule Spiral.Cells.Notebook do
       |> with_builders(default_builders(cells, opts), implicit_default?(cells, opts), test_cell_names(doc))
       |> keyed_on_the_whole_source()
 
+    budgets = Map.new(spiral, &{&1.index, opts[:timeout] || positive_int(Map.get(&1, :timeout)) || @default_timeout})
     memo = Memo.context(opts, spiral)
     {spiral, recalled} = recall(spiral, memo)
 
@@ -565,7 +601,7 @@ defmodule Spiral.Cells.Notebook do
           Map.new(recalled, &{elem(&1, 0), :hit})
           |> Map.merge(for(%{memo: _} = step <- spiral, into: %{}, do: {step.index, :miss}))
 
-        %{collect(recalled, ran) | memo: flags}
+        %{collect(recalled, ran) | memo: flags} |> Map.put(:budgets, budgets)
 
       {:error, message} ->
         %{no_runs() | status: {:error, message}}
@@ -932,6 +968,7 @@ defmodule Spiral.Cells.Notebook do
         |> Keyword.put(:builders, Map.get_lazy(step, :builders, fn -> Builders.commands(step.cell_source) end))
         |> Keyword.put(:real, Map.get(step, :real, ""))
         |> Keyword.put(:agree, agreement?(step.cell_source))
+        |> Keyword.put(:reference, reference_target(step.cell_source))
         |> Keyword.put(:test_cell, Regex.match?(~r/^\/\/\/- [^\n]*--test\b/m, step.cell_source))
         |> Keyword.put(:build_only, build_only?(step.cell_source))
         |> Keyword.put(:test_name, Map.get(step, :test_name))
@@ -968,6 +1005,13 @@ defmodule Spiral.Cells.Notebook do
   end
 
   defp build_only?(source), do: Regex.match?(~r/^\/\/\/- [^\n]*--build-only\b/m, source)
+
+  defp reference_target(source) do
+    case Regex.run(~r/^\/\/\/- [^\n]*--reference\s+(\w+)/m, source) do
+      [_, target] -> target
+      nil -> nil
+    end
+  end
 
   defp built({:ok, %Result{exit_status: status}}) when status in [nil, 0] do
     {:built, [stream("stdout", "built every target; not run (build_only)\n")]}
@@ -1299,6 +1343,17 @@ defmodule Spiral.Cells.Notebook do
       "cells" => cells
     }
   end
+
+  defp pool_metadata(json, %{} = before, %{} = after_run) do
+    put_in(json, ["metadata", "compiler_pool"], %{
+      "served" => after_run.served - before.served,
+      "refused_growth" => after_run.refused_growth - before.refused_growth,
+      "peak_workers" => after_run.peak_workers,
+      "last_free_mb" => after_run.last_free_mb
+    })
+  end
+
+  defp pool_metadata(json, _before, _after_run), do: json
 
   defp test_metadata(json, nil), do: json
 

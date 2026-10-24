@@ -25,9 +25,20 @@ defmodule Spiral.Cells.CompilerDaemon do
     end
   end
 
+  @memory_reading_timeout_ms 2_000
+
+  defp system_memory_data do
+    task = Task.async(fn -> :memsup.get_system_memory_data() end)
+
+    case Task.yield(task, @memory_reading_timeout_ms) || Task.shutdown(task, :brutal_kill) do
+      {:ok, data} -> data
+      _ -> nil
+    end
+  end
+
   defp free_memory_mb do
     with {:ok, _} <- Application.ensure_all_started(:os_mon),
-         data when is_list(data) <- :memsup.get_system_memory_data(),
+         data when is_list(data) <- system_memory_data(),
          bytes when is_integer(bytes) <- Keyword.get(data, :available_memory) || Keyword.get(data, :free_memory) do
       div(bytes, 1_048_576)
     else
@@ -35,6 +46,13 @@ defmodule Spiral.Cells.CompilerDaemon do
     end
   catch
     _, _ -> nil
+  end
+
+  defp pressure_idle_ms do
+    case Integer.parse(System.get_env("SPIRAL_CELLS_COMPILER_PRESSURE_IDLE_MIN") || "") do
+      {min, ""} when min >= 0 -> min * 60_000
+      _ -> 5 * 60_000
+    end
   end
 
   defp memory_pressed? do
@@ -154,6 +172,7 @@ defmodule Spiral.Cells.CompilerDaemon do
         send(acceptor, :go)
         idle_ms = if opts[:on_retire], do: Keyword.get(opts, :idle_ms, idle_ms()), else: nil
         idle_check_ms = Keyword.get(opts, :idle_check_ms, @idle_check_ms)
+        pressure_idle = Keyword.get(opts, :pressure_idle_ms, pressure_idle_ms())
         if idle_ms, do: Process.send_after(self(), :idle_check, idle_check_ms)
 
         {:ok,
@@ -164,6 +183,7 @@ defmodule Spiral.Cells.CompilerDaemon do
            retiring: false,
            idle_ms: idle_ms,
            idle_check_ms: idle_check_ms,
+           pressure_idle_ms: pressure_idle,
            last_used: System.monotonic_time(:millisecond),
            on_retire: opts[:on_retire],
            compile: opts[:compile],
@@ -216,7 +236,7 @@ defmodule Spiral.Cells.CompilerDaemon do
   def handle_info(:idle_check, %{retiring: false, idle_ms: idle_ms} = state) when is_integer(idle_ms) do
     idle = System.monotonic_time(:millisecond) - state.last_used
     expired = idle >= idle_ms
-    pressed = not expired and idle >= state.idle_check_ms and memory_pressed?()
+    pressed = not expired and idle >= max(state.idle_check_ms, Map.get(state, :pressure_idle_ms, 0)) and memory_pressed?()
 
     if (expired or pressed) and queued() == 0 do
       reason = if expired, do: "idle for #{div(idle, 60_000)} min", else: "idle and free memory under #{retire_free_mb()} MB"
@@ -375,6 +395,10 @@ defmodule Spiral.Cells.CompilerDaemon do
 
   @retire_grace_ms 2_000
 
+  defp mailbox_empty? do
+    match?({:message_queue_len, 0}, Process.info(self(), :message_queue_len))
+  end
+
   defp retire_when_idle(reply) do
     state = elem(reply, tuple_size(reply) - 1)
 
@@ -382,7 +406,7 @@ defmodule Spiral.Cells.CompilerDaemon do
       state.retiring == false ->
         reply
 
-      queued() > 0 or pool_busy?() or System.monotonic_time(:millisecond) - state.retiring < @retire_grace_ms ->
+      queued() > 0 or pool_busy?() or not mailbox_empty?() or System.monotonic_time(:millisecond) - state.retiring < @retire_grace_ms ->
         Process.send_after(self(), :retire_check, 500)
         reply
 
@@ -860,6 +884,10 @@ defmodule Spiral.Cells.CompilerDaemon do
               send(server, :retire)
             end
 
+          "pool" ->
+            :gen_tcp.send(sock, pool_line(server) <> "\n")
+            handle(sock, server, listen)
+
           "retire" ->
             :gen_tcp.close(listen)
             send(server, :retire)
@@ -897,6 +925,17 @@ defmodule Spiral.Cells.CompilerDaemon do
 
       _ ->
         :gen_tcp.close(sock)
+    end
+  end
+
+  defp pool_line(server) do
+    case :persistent_term.get({__MODULE__, :pool, server}, nil) do
+      nil ->
+        "pool\t0\t0\t1\t-"
+
+      pool ->
+        stats = Spiral.Cells.CompilerPool.stats(pool)
+        "pool\t#{stats.served}\t#{Map.get(stats, :refused_growth, 0)}\t#{stats.peak_workers}\t#{Map.get(stats, :last_free_mb) || "-"}"
     end
   end
 

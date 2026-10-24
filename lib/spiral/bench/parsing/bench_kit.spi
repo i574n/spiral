@@ -117,7 +117,9 @@ inl run_case (impl_name : string) split (case_name : string) (input : string) : 
 
 /// ### cases
 let cases () : array_base (string * string) =
-    inl cli = "dotnet repl --exit-after-run --run \"c:/home/git/spiral/lib/spiral/parsing.dib\" --output-path \"c:/home/git/spiral/lib/spiral/parsing.dib.ipynb\""
+    inl cli =
+        "dotnet repl --exit-after-run --run \"c:/home/git/spiral/lib/spiral/parsing.dib\" --output-path "
+        ^^ "\"c:/home/git/spiral/lib/spiral/parsing.dib.ipynb\""
     ;[
         "t01", "a b c"
         "t02", "e f \"g h\" i"
@@ -132,8 +134,12 @@ let cases () : array_base (string * string) =
         "t11", $'"l \\\"m n:\\\\o.p\\\""'
         "t12", $'"--r s \\\\\\"\' t \'\\\\\\" u v w \\\\\\"x y\\\\\\""'
         "cli_repl", cli
-        "cli_cargo", "cargo +nightly-2026-10-18 build --release --manifest-path \"C:/home/git/spiral/workspace/Cargo.toml\" --target-dir \"C:/Users/i574n/AppData/Local/Temp/target dir\""
-        "cli_fs_path", "_ dotnet run --project c:/home/git/spiral/apps/compiler/spiral_compiler.fsproj --fs-path \\\"c:/home/git/spiral/lib/spiral/parsing.fsx\\\""
+        "cli_cargo",
+        "cargo +nightly-2026-10-18 build --release --manifest-path \"C:/home/git/spiral/workspace/Cargo.toml\" "
+        ^^ "--target-dir \"C:/Users/i574n/AppData/Local/Temp/target dir\""
+        "cli_fs_path",
+        "_ dotnet run --project c:/home/git/spiral/apps/compiler/spiral_compiler.fsproj --fs-path "
+        ^^ "\\\"c:/home/git/spiral/lib/spiral/parsing.fsx\\\""
         "cli_x1", repeat_join cli 1
         "cli_x4", repeat_join cli 4
         "cli_x16", repeat_join cli 16

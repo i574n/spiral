@@ -1,14 +1,14 @@
 type Heap0 = { readonly l0: bigint, readonly l1: string };
 export function main(): number {
-    let v0: bigint = 4294967297n;
-    let v1: string = "hi";
-    let v2: Heap0 = { l0: v0, l1: v1 };
-    let v3: bigint = v2.l0;
-    let v4: string = v2.l1;
-    let v5: boolean = v3 === 4294967297n;
+    const v0: bigint = 4294967297n;
+    const v1: string = "hi";
+    const v2: Heap0 = { l0: v0, l1: v1 };
+    const v3: bigint = v2.l0;
+    const v4: string = v2.l1;
+    const v5: boolean = v3 === 4294967297n;
     let v7: boolean;
     if (v5) {
-        let v6: boolean = v4 === "hi";
+        const v6: boolean = v4 === "hi";
         v7 = v6;
     } else {
         v7 = false;

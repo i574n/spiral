@@ -1,10 +1,10 @@
 union slot =
     | Missing
-    | Box : heap {value : i32}
+    | Box : heap { value : i32 }
 
 inl main () : i32 =
     inl ~n = 7i32
-    inl cell = !!!!LayoutToHeap({value = n})
+    inl cell = !!!!LayoutToHeap({ value = n })
     inl ~flag = true
     inl box = if flag then Box cell else Missing
     match box with

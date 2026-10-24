@@ -1,15 +1,18 @@
-inl index forall t{int}. (str : string) (i : t) : char = !!!!StringIndex(str,i)
-inl length forall t{int}. (str : string) : t = !!!!StringLength(`t,str)
-inl slice forall t{int}. (str : string) {from=(a : t) to=(b : t)} = !!!!StringSlice(str,a,b)
-inl concat (left : string) (right : string) : string = !!!!StaticStringConcat(left,right)
+inl index forall t{int}. (str : string) (i : t) : char = !!!!StringIndex(str, i)
+inl length forall t{int}. (str : string) : t = !!!!StringLength(`t, str)
+inl slice forall t{int}. (str : string) { from = (a : t) to = (b : t) } = !!!!StringSlice(str, a, b)
+inl concat (left : string) (right : string) : string = !!!!StaticStringConcat(left, right)
 
 let runtime_byte (str : string) (i : i32) : char = index str i
 
 inl is_continuation_byte (lower : char) (upper : char) (value : char) : bool =
-    if !!!!LT(value,lower) then false
-    else !!!!LT(value,upper)
+    if !!!!LT(value, lower) then false
+    else !!!!LT(value, upper)
 
-let rec codepoint_length_loop (str : string) (lower : char) (upper : char) (byte_index : i32) (count : i32) (byte_length : i32) : i32 =
+let rec codepoint_length_loop
+    (str : string) (lower : char) (upper : char) (byte_index : i32) (count : i32) (byte_length : i32)
+    : i32
+    =
     if (=.) byte_index byte_length then count
     else
         inl value = index str byte_index
@@ -21,15 +24,24 @@ inl codepoint_length (str : string) : i32 =
     inl multibyte_lead_first = runtime_byte "©" 0i32
     codepoint_length_loop str continuation_byte_first multibyte_lead_first 0i32 0i32 (length str : i32)
 
-let rec codepoint_byte_offset_loop (str : string) (lower : char) (upper : char) (target : i32) (byte_index : i32) (codepoint_index : i32) (byte_length : i32) : i32 =
-    if (=.) byte_index byte_length then byte_length
+let rec codepoint_byte_offset_loop
+    (str : string) (lower : char) (upper : char) (target : i32) (byte_index : i32) (codepoint_index : i32)
+    (byte_length : i32)
+    : i32
+    =
+    if (=.) byte_index byte_length
+    then byte_length
     else
         inl value = index str byte_index
-        if is_continuation_byte lower upper value then
-            codepoint_byte_offset_loop str lower upper target ((+.) byte_index 1i32) codepoint_index byte_length
-        elif (=.) codepoint_index target then byte_index
+        if is_continuation_byte lower upper value
+        then codepoint_byte_offset_loop str lower upper target ((+.) byte_index 1i32) codepoint_index byte_length
+        elif (=.) codepoint_index target
+        then byte_index
         else
-            codepoint_byte_offset_loop str lower upper target ((+.) byte_index 1i32) ((+.) codepoint_index 1i32) byte_length
+            codepoint_byte_offset_loop str lower upper target
+                ((+.) byte_index 1i32)
+                ((+.) codepoint_index 1i32)
+                byte_length
 
 inl codepoint_byte_offset (str : string) (target : i32) : i32 =
     inl lower = runtime_byte "À" 1i32
@@ -39,14 +51,14 @@ inl codepoint_byte_offset (str : string) (target : i32) : i32 =
 inl codepoint_index (str : string) (target : i32) : string =
     inl from = codepoint_byte_offset str target
     inl near_to = codepoint_byte_offset str ((+.) target 1i32)
-    slice str {from; to=(-.) near_to 1i32}
+    slice str { from; to = (-.) near_to 1i32 }
 
-inl codepoint_slice (str : string) {from=(from_codepoint : i32) to=(to_codepoint : i32)} : string =
-    if !!!!LT(to_codepoint,from_codepoint) then ""
+inl codepoint_slice (str : string) { from = (from_codepoint : i32) to = (to_codepoint : i32) } : string =
+    if !!!!LT(to_codepoint, from_codepoint) then ""
     else
         inl from = codepoint_byte_offset str from_codepoint
         inl near_to = codepoint_byte_offset str ((+.) to_codepoint 1i32)
-        slice str {from; to=(-.) near_to 1i32}
+        slice str { from; to = (-.) near_to 1i32 }
 
 inl byte_to_i32 (value : char) : i32 =
     !!!!BackendSwitch({
@@ -57,7 +69,8 @@ inl byte_to_i32 (value : char) : i32 =
         Lean = fun () => $"(Int32.ofNat (!value).toNat)" : i32
         Bend = fun () => $"!value" : i32
         Lua = fun () => $"string.byte(!value)" : i32
-        Gleam = fun () => $"case string.to_utf_codepoints(!value) { [spiral_byte_codepoint] -> string.utf_codepoint_to_int(spiral_byte_codepoint) _ -> 0 }" : i32
+        Gleam = fun () => $"case string.to_utf_codepoints(!value) { [spiral_byte_codepoint] -> \
+            string.utf_codepoint_to_int(spiral_byte_codepoint) _ -> 0 }" : i32
         TypeScript = fun () => $"!value" : i32
         Delphi = fun () => $"Ord(!value)" : i32
         Kotlin = fun () => $"(!value and 255)" : i32
@@ -70,7 +83,7 @@ inl valid_continuation_i32 (value : i32) : bool =
     if value < 128i32 then false
     else value < 192i32
 
-inl utf8_fail forall t. (message : string) : t = !!!!FailWith(`t,message)
+inl utf8_fail forall t. (message : string) : t = !!!!FailWith(`t, message)
 
 let utf8_scalar_at_byte_offset (str : string) (byte_offset : i32) : i32 =
     inl byte_length = length str : i32
@@ -179,21 +192,36 @@ inl combining_half_marks_end () = 65071i32
 inl emoji_modifiers_end () = 127999i32
 inl supplementary_variation_selectors_end () = 917999i32
 inl utf8_is_grapheme_extend_bounded (scalar : i32) : bool =
-    if scalar >= combining_diacritical_marks_start () then
-        if scalar <= combining_diacritical_marks_end () then true
-        elif scalar >= combining_diacritical_marks_extended_start () then
-            if scalar <= combining_diacritical_marks_extended_end () then true
-            elif scalar >= combining_diacritical_marks_supplement_start () then
-                if scalar <= combining_diacritical_marks_supplement_end () then true
-                elif scalar >= combining_diacritical_marks_for_symbols_start () then
-                    if scalar <= combining_diacritical_marks_for_symbols_end () then true
-                    elif scalar >= variation_selectors_start () then
-                        if scalar <= variation_selectors_end () then true
-                        elif scalar >= combining_half_marks_start () then
-                            if scalar <= combining_half_marks_end () then true
-                            elif scalar >= emoji_modifiers_start () then
-                                if scalar <= emoji_modifiers_end () then true
-                                elif scalar >= supplementary_variation_selectors_start () then scalar <= supplementary_variation_selectors_end ()
+    if scalar >= combining_diacritical_marks_start ()
+    then
+        if scalar <= combining_diacritical_marks_end ()
+        then true
+        elif scalar >= combining_diacritical_marks_extended_start ()
+        then
+            if scalar <= combining_diacritical_marks_extended_end ()
+            then true
+            elif scalar >= combining_diacritical_marks_supplement_start ()
+            then
+                if scalar <= combining_diacritical_marks_supplement_end ()
+                then true
+                elif scalar >= combining_diacritical_marks_for_symbols_start ()
+                then
+                    if scalar <= combining_diacritical_marks_for_symbols_end ()
+                    then true
+                    elif scalar >= variation_selectors_start ()
+                    then
+                        if scalar <= variation_selectors_end ()
+                        then true
+                        elif scalar >= combining_half_marks_start ()
+                        then
+                            if scalar <= combining_half_marks_end ()
+                            then true
+                            elif scalar >= emoji_modifiers_start ()
+                            then
+                                if scalar <= emoji_modifiers_end ()
+                                then true
+                                elif scalar >= supplementary_variation_selectors_start ()
+                                then scalar <= supplementary_variation_selectors_end ()
                                 else false
                             else false
                         else false
@@ -203,7 +231,10 @@ inl utf8_is_grapheme_extend_bounded (scalar : i32) : bool =
         else false
     else false
 
-let rec utf8_grapheme_count_bounded_loop (str : string) (byte_offset : i32) (cluster_count : i32) (byte_length : i32) : i32 =
+let rec utf8_grapheme_count_bounded_loop
+    (str : string) (byte_offset : i32) (cluster_count : i32) (byte_length : i32)
+    : i32
+    =
     if (=.) byte_offset byte_length then cluster_count
     elif byte_offset > byte_length then utf8_fail "UTF-8 scalar width exceeds the string."
     else
@@ -338,4 +369,3 @@ inl utf8_canonical_equal_bounded (left : string) (right : string) : bool =
         -1i32 -1i32
         (length left : i32)
         (length right : i32)
-

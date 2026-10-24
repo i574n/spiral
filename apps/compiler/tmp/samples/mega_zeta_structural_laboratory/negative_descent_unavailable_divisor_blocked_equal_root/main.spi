@@ -7,7 +7,10 @@ inl impossible_descent_unavailable_divisor_blocked_equal_root () =
         inl exists divisor quotient. children =
             certified_interval_positive_positional_sealed_composite_children_from_witness
                 (CertifiedIntervalPositivePositionalSealedCompositeWitness composite_payload)
-        inl blocked : certified_interval_positive_positional_recursive_descent_blocked (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one))) divisor =
+        inl blocked
+            : certified_interval_positive_positional_recursive_descent_blocked
+                (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one))) divisor
+            =
             CertifiedIntervalPositivePositionalRecursiveDescentBlockedEqual
                 (positive_positional_equal_reflexive root_value)
         ()

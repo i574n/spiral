@@ -51,10 +51,8 @@ static bool sp_method1(int32_t p0, bool p1) {
         if (v5) {
             return v4;
         } else {
-            int32_t t511_2 = v2;
-            bool t545_4 = v4;
-            v0 = t511_2;
-            v1 = t545_4;
+            v0 = v2;
+            v1 = v4;
             continue;
         }
     }

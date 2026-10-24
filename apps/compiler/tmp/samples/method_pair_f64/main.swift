@@ -11,19 +11,16 @@ func sp_method0(_ p0: Int32) -> (Double, Double) {
     }
 }
 func spiral_main() -> Int32 {
-    var v0: Int32 = 0
-    v0 = 7
+    let v0: Int32 = 7
     var v1: Double = (0.0 as Double)
     var v2: Double = (0.0 as Double)
     let spiral_tuple142 = sp_method0(v0)
     v1 = spiral_tuple142.0
     v2 = spiral_tuple142.1
-    var v3: Bool = false
-    v3 = (v1 == (1.5 as Double))
+    let v3: Bool = (v1 == (1.5 as Double))
     var v5: Bool = false
     if (v3) {
-        var v4: Bool = false
-        v4 = (v2 == (2.5 as Double))
+        let v4: Bool = (v2 == (2.5 as Double))
         v5 = v4
     } else {
         v5 = false

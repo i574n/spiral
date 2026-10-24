@@ -212,7 +212,8 @@ inl run_main (args : array_base string) : i32 =
 
     0i32
 
-/// F#: `main` for the Fable build. Native Rust (`--backend Rust`, see build.ps1): runs `run_main` with the process args.
+/// F#: `main` for the Fable build. Native Rust (`--backend Rust`, see build.ps1): runs `run_main` with the process
+/// args.
 inl main () =
     backend_switch {
         Fsharp = fun () => $'let main args = !run_main args' : ()

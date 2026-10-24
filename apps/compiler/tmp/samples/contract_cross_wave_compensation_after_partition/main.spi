@@ -31,7 +31,9 @@ nominal idempotent = ()
 nominal non_idempotent = ()
 
 union energy_offer grid epoch producer offer unit currency state =
-    | EnergyOffer :: forall grid epoch producer offer unit currency state. string -> energy_offer grid epoch producer offer unit currency state
+    | EnergyOffer :: forall grid epoch producer offer unit currency state.
+        string ->
+        energy_offer grid epoch producer offer unit currency state
 
 union energy_demand grid epoch consumer unit state =
     | EnergyDemand :: forall grid epoch consumer unit state. string -> energy_demand grid epoch consumer unit state
@@ -66,56 +68,108 @@ union observer_checkpoint root observer state =
 union distinct_observers left right state =
     | DistinctObservers :: forall left right state. string -> distinct_observers left right state
 
-union clearing_op grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right from to effect =
-    | OfferEnergy :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right.
+union clearing_op grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+    participant_left participant_right root observer_left observer_right from to effect =
+    | OfferEnergy :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+        batch participant_left participant_right root observer_left observer_right.
         energy_offer grid epoch producer offer unit currency offered ->
-        clearing_op grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right offered metered non_idempotent
-    | ReconcileMeters :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right.
+        clearing_op
+            grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+            participant_left participant_right root observer_left observer_right offered metered non_idempotent
+    | ReconcileMeters :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+        batch participant_left participant_right root observer_left observer_right.
         meter_reading grid epoch supply_meter unit available * meter_reading grid epoch demand_meter unit available ->
-        clearing_op grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right metered matched idempotent
-    | MatchDemand :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right.
-        energy_offer grid epoch producer offer unit currency offered * energy_demand grid epoch consumer unit available ->
-        clearing_op grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right matched reserved idempotent
-    | ReserveOffer :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right.
+        clearing_op
+            grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+            participant_left participant_right root observer_left observer_right metered matched idempotent
+    | MatchDemand :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+        batch participant_left participant_right root observer_left observer_right.
+        energy_offer grid epoch producer offer unit currency offered *
+        energy_demand grid epoch consumer unit available ->
+        clearing_op
+            grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+            participant_left participant_right root observer_left observer_right matched reserved idempotent
+    | ReserveOffer :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+        batch participant_left participant_right root observer_left observer_right.
         reserve_token grid epoch offer locked ->
-        clearing_op grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right reserved prepared non_idempotent
-    | PrepareAtomic :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right.
+        clearing_op
+            grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+            participant_left participant_right root observer_left observer_right reserved prepared non_idempotent
+    | PrepareAtomic :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+        batch participant_left participant_right root observer_left observer_right.
         prepare_vote participant_left batch epoch prepared *
         prepare_vote participant_right batch epoch prepared *
         distinct_participants participant_left participant_right distinct ->
-        clearing_op grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right prepared committed non_idempotent
-    | CommitAtomic :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right.
+        clearing_op
+            grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+            participant_left participant_right root observer_left observer_right prepared committed non_idempotent
+    | CommitAtomic :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+        batch participant_left participant_right root observer_left observer_right.
         commit_receipt batch epoch committed * compensation_token batch epoch available ->
-        clearing_op grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right committed carbon_settled non_idempotent
-    | SettleCarbon :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right.
+        clearing_op
+            grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+            participant_left participant_right root observer_left observer_right committed carbon_settled non_idempotent
+    | SettleCarbon :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+        batch participant_left participant_right root observer_left observer_right.
         carbon_proof grid epoch carbon_method available * commit_receipt batch epoch committed ->
-        clearing_op grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right carbon_settled published idempotent
-    | PublishClearing :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right.
-        registry_pin root available * observer_checkpoint root observer_left observed * observer_checkpoint root observer_right observed * distinct_observers observer_left observer_right distinct ->
-        clearing_op grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right published published idempotent
+        clearing_op
+            grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+            participant_left participant_right root observer_left observer_right carbon_settled published idempotent
+    | PublishClearing :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+        batch participant_left participant_right root observer_left observer_right.
+        registry_pin root available *
+        observer_checkpoint root observer_left observed *
+        observer_checkpoint root observer_right observed *
+        distinct_observers observer_left observer_right distinct ->
+        clearing_op
+            grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+            participant_left participant_right root observer_left observer_right published published idempotent
 
 union clearing_row grid epoch offer batch root from to effect =
-    | ClearingRow :: forall grid epoch offer batch root from to effect. string -> clearing_row grid epoch offer batch root from to effect
+    | ClearingRow :: forall grid epoch offer batch root from to effect.
+        string ->
+        clearing_row grid epoch offer batch root from to effect
 
-union clearing_node grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right from to =
-    | ClearingNode :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right from to.
+union clearing_node grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+    participant_left participant_right root observer_left observer_right from to =
+    | ClearingNode :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+        batch participant_left participant_right root observer_left observer_right from to.
         (exists effect.
-            clearing_op grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right from to effect *
-            clearing_row grid epoch offer batch root from to effect)
-        -> clearing_node grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right from to
+            clearing_op
+                grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+                participant_left participant_right root observer_left observer_right from to effect *
+            clearing_row grid epoch offer batch root from to effect) ->
+        clearing_node
+            grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+            participant_left participant_right root observer_left observer_right from to
 
-union rec clearing_plan grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right from to =
-    | ClearingLeaf :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right from to.
-        clearing_node grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right from to ->
-        clearing_plan grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right from to
-    | ClearingThen :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right from to.
+union rec clearing_plan grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+    participant_left participant_right root observer_left observer_right from to =
+    | ClearingLeaf :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+        batch participant_left participant_right root observer_left observer_right from to.
+        clearing_node
+            grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+            participant_left participant_right root observer_left observer_right from to ->
+        clearing_plan
+            grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+            participant_left participant_right root observer_left observer_right from to
+    | ClearingThen :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+        batch participant_left participant_right root observer_left observer_right from to.
         (exists middle.
-            clearing_plan grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right from middle *
-            clearing_node grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right middle to)
-        -> clearing_plan grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right from to
+            clearing_plan
+                grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+                participant_left participant_right root observer_left observer_right from middle *
+            clearing_node
+                grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+                participant_left participant_right root observer_left observer_right middle to) ->
+        clearing_plan
+            grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+            participant_left participant_right root observer_left observer_right from to
 
 union packed_receipt batch epoch =
-    | PackedReceipt :: forall batch epoch. (exists state. commit_receipt batch epoch state) -> packed_receipt batch epoch
+    | PackedReceipt :: forall batch epoch.
+        (exists state. commit_receipt batch epoch state) ->
+        packed_receipt batch epoch
 
 inl receipt_label forall batch epoch state. (receipt : commit_receipt batch epoch state) : string =
     match receipt with | CommitReceipt label => label
@@ -128,46 +182,118 @@ inl with_receipt forall batch epoch result.
         inl exists state. receipt = payload
         visitor receipt
 
-inl node_label forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right from to.
-    (node : clearing_node grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right from to) : string =
+inl node_label forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+    participant_left participant_right root observer_left observer_right from to.
+    (node :
+        clearing_node
+            grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+            participant_left participant_right root observer_left observer_right from to)
+    : string
+    =
     match node with
     | ClearingNode payload =>
         inl exists effect. _, ClearingRow label = payload
         label
 
-inl rec terminal_label forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right from to.
-    (plan : clearing_plan grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right from to) : string =
+inl rec terminal_label forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+    batch participant_left participant_right root observer_left observer_right from to.
+    (plan :
+        clearing_plan
+            grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+            participant_left participant_right root observer_left observer_right from to)
+    : string
+    =
     match plan with
     | ClearingLeaf node => node_label node
     | ClearingThen payload =>
         inl exists middle. _, node = payload
         node_label node
 
-inl offer_node () : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b offered metered =
+inl offer_node
+    ()
+    : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a
+        settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b offered metered
+    =
     ClearingNode (exists (OfferEnergy (EnergyOffer "10-kwh"), ClearingRow "offer"))
 
-inl meter_node () : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b metered matched =
+inl meter_node
+    ()
+    : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a
+        settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b metered matched
+    =
     ClearingNode (exists (ReconcileMeters (MeterReading "supply", MeterReading "demand"), ClearingRow "meter"))
 
-inl match_node () : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b matched reserved =
+inl match_node
+    ()
+    : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a
+        settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b matched reserved
+    =
     ClearingNode (exists (MatchDemand (EnergyOffer "10-kwh", EnergyDemand "10-kwh"), ClearingRow "match"))
 
-inl reserve_node () : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b reserved prepared =
+inl reserve_node
+    ()
+    : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a
+        settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b reserved prepared
+    =
     ClearingNode (exists (ReserveOffer (ReserveToken "locked"), ClearingRow "reserve"))
 
-inl prepare_node () : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b prepared committed =
-    ClearingNode (exists (PrepareAtomic (PrepareVote "grid", PrepareVote "bank", DistinctParticipants "grid-ne-bank"), ClearingRow "prepare-2pc"))
+inl prepare_node
+    ()
+    : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a
+        settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b prepared committed
+    =
+    ClearingNode (
+        exists (
+            PrepareAtomic (PrepareVote "grid", PrepareVote "bank", DistinctParticipants "grid-ne-bank"),
+            ClearingRow "prepare-2pc"
+        )
+    )
 
-inl commit_node () : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b committed carbon_settled =
-    ClearingNode (exists (CommitAtomic (CommitReceipt "committed", CompensationToken "rollback-capability"), ClearingRow "commit-2pc"))
+inl commit_node
+    ()
+    : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a
+        settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b committed
+        carbon_settled
+    =
+    ClearingNode (
+        exists (
+            CommitAtomic (CommitReceipt "committed", CompensationToken "rollback-capability"),
+            ClearingRow "commit-2pc"
+        )
+    )
 
-inl carbon_node () : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b carbon_settled published =
-    ClearingNode (exists (SettleCarbon (CarbonProof "hourly-marginal-carbon", CommitReceipt "committed"), ClearingRow "carbon"))
+inl carbon_node
+    ()
+    : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a
+        settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b carbon_settled
+        published
+    =
+    ClearingNode (
+        exists (SettleCarbon (CarbonProof "hourly-marginal-carbon", CommitReceipt "committed"), ClearingRow "carbon")
+    )
 
-inl publish_node () : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b published published =
-    ClearingNode (exists (PublishClearing (RegistryPin "root", ObserverCheckpoint "observer-a", ObserverCheckpoint "observer-b", DistinctObservers "a-ne-b"), ClearingRow "atomic-carbon-microgrid-clearing"))
+inl publish_node
+    ()
+    : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a
+        settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b published published
+    =
+    ClearingNode (
+        exists (
+            PublishClearing (
+                RegistryPin "root",
+                ObserverCheckpoint "observer-a",
+                ObserverCheckpoint "observer-b",
+                DistinctObservers "a-ne-b"
+            ),
+            ClearingRow "atomic-carbon-microgrid-clearing"
+        )
+    )
 
-inl plan () : clearing_plan grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b offered published =
+inl plan
+    ()
+    : clearing_plan grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a
+        settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b offered published
+    =
     ClearingThen (exists (
         ClearingThen (exists (
             ClearingThen (exists (
@@ -290,16 +416,29 @@ inl with_parallel_outcome forall batch epoch result.
         on_compensated failure compensation
 
 inl compensated_parallel_plan () : parallel_plan settlement_batch_a branch_epoch_1 branch_pending audit_ready =
-    ParallelThen (exists (
-        ParallelLeaf (ParallelNode (exists (
-            CompensateOne (LaneFailure "bank-timeout", LaneCompensation "release-bank-reservation"),
-            ParallelRow "compensate-bank-lane"
-        ))),
-        ParallelNode (exists (
-            PublishParallelAudit (RegistryPin "root", ObserverCheckpoint "observer-a", ObserverCheckpoint "observer-b", DistinctObservers "a-ne-b"),
-            ParallelRow "concurrent-compensating-microgrid"
-        ))
-    ))
+    ParallelThen (
+        exists (
+            ParallelLeaf (
+                ParallelNode (
+                    exists (
+                        CompensateOne (LaneFailure "bank-timeout", LaneCompensation "release-bank-reservation"),
+                        ParallelRow "compensate-bank-lane"
+                    )
+                )
+            ),
+            ParallelNode (
+                exists (
+                    PublishParallelAudit (
+                        RegistryPin "root",
+                        ObserverCheckpoint "observer-a",
+                        ObserverCheckpoint "observer-b",
+                        DistinctObservers "a-ne-b"
+                    ),
+                    ParallelRow "concurrent-compensating-microgrid"
+                )
+            )
+        )
+    )
 
 inl v22_main () : string =
     inl receipt : commit_receipt settlement_batch_a epoch_77 committed = CommitReceipt "committed"
@@ -307,7 +446,8 @@ inl v22_main () : string =
     inl inspected = with_receipt `$receipt_label packed
     inl _ = inspected
     inl failure : lane_failure lane_bank settlement_batch_a branch_epoch_1 branch_failed = LaneFailure "bank-timeout"
-    inl compensation : lane_compensation lane_bank settlement_batch_a branch_epoch_1 branch_compensated = LaneCompensation "release-bank-reservation"
+    inl compensation : lane_compensation lane_bank settlement_batch_a branch_epoch_1 branch_compensated =
+        LaneCompensation "release-bank-reservation"
     inl outcome : parallel_outcome settlement_batch_a branch_epoch_1 =
         ParallelCompensated (exists (failure, compensation))
     inl _ = outcome
@@ -350,19 +490,27 @@ nominal mh_idempotent = ()
 nominal mh_non_idempotent = ()
 
 union replica_snapshot host registry_epoch registry_digest batch state =
-    | ReplicaSnapshot :: forall host registry_epoch registry_digest batch state. string -> replica_snapshot host registry_epoch registry_digest batch state
+    | ReplicaSnapshot :: forall host registry_epoch registry_digest batch state.
+        string ->
+        replica_snapshot host registry_epoch registry_digest batch state
 
 union registry_successor old_epoch old_digest new_epoch new_digest state =
-    | RegistrySuccessor :: forall old_epoch old_digest new_epoch new_digest state. string -> registry_successor old_epoch old_digest new_epoch new_digest state
+    | RegistrySuccessor :: forall old_epoch old_digest new_epoch new_digest state.
+        string ->
+        registry_successor old_epoch old_digest new_epoch new_digest state
 
 union partition_witness left_host right_host batch state =
-    | PartitionWitness :: forall left_host right_host batch state. string -> partition_witness left_host right_host batch state
+    | PartitionWitness :: forall left_host right_host batch state.
+        string ->
+        partition_witness left_host right_host batch state
 
 union distinct_replica_hosts first second third state =
     | DistinctReplicaHosts :: forall first second third state. string -> distinct_replica_hosts first second third state
 
 union replay_merge_receipt left_host right_host coordinator batch registry_epoch registry_digest state =
-    | ReplayMergeReceipt :: forall left_host right_host coordinator batch registry_epoch registry_digest state. string -> replay_merge_receipt left_host right_host coordinator batch registry_epoch registry_digest state
+    | ReplayMergeReceipt :: forall left_host right_host coordinator batch registry_epoch registry_digest state.
+        string ->
+        replay_merge_receipt left_host right_host coordinator batch registry_epoch registry_digest state
 
 union mh_lane_receipt lane batch wave state =
     | MhLaneReceipt :: forall lane batch wave state. string -> mh_lane_receipt lane batch wave state
@@ -371,13 +519,17 @@ union mh_lane_failure lane batch wave state =
     | MhLaneFailure :: forall lane batch wave state. string -> mh_lane_failure lane batch wave state
 
 union mh_cancel_token lane batch wave cancellation_epoch state =
-    | MhCancelToken :: forall lane batch wave cancellation_epoch state. string -> mh_cancel_token lane batch wave cancellation_epoch state
+    | MhCancelToken :: forall lane batch wave cancellation_epoch state.
+        string ->
+        mh_cancel_token lane batch wave cancellation_epoch state
 
 union mh_compensation lane batch wave state =
     | MhCompensation :: forall lane batch wave state. string -> mh_compensation lane batch wave state
 
 union compensation_order first_lane second_lane batch wave state =
-    | CompensationOrder :: forall first_lane second_lane batch wave state. string -> compensation_order first_lane second_lane batch wave state
+    | CompensationOrder :: forall first_lane second_lane batch wave state.
+        string ->
+        compensation_order first_lane second_lane batch wave state
 
 union timeout_witness batch wave deadline state =
     | TimeoutWitness :: forall batch wave deadline state. string -> timeout_witness batch wave deadline state
@@ -401,142 +553,276 @@ inl with_failure_bundle forall batch wave result.
         inl exists first_lane second_lane. first_failure, second_failure, order = payload
         visit first_failure second_failure order
 
-union multihost_recovery_op old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left observer_right observer_third from to effect =
-    | CapturePartition :: forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left observer_right observer_third.
+union multihost_recovery_op old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
+    observer_left observer_right observer_third from to effect =
+    | CapturePartition :: forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
+        observer_left observer_right observer_third.
         replica_snapshot left_host old_epoch old_digest batch mh_available *
         replica_snapshot right_host old_epoch old_digest batch mh_available *
         partition_witness left_host right_host batch mh_partitioned ->
-        multihost_recovery_op old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left observer_right observer_third mh_available mh_partitioned mh_idempotent
-    | AlignRegistry :: forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left observer_right observer_third.
+        multihost_recovery_op
+            old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
+            observer_right observer_third mh_available mh_partitioned mh_idempotent
+    | AlignRegistry :: forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
+        observer_left observer_right observer_third.
         registry_successor old_epoch old_digest new_epoch new_digest mh_fresh ->
-        multihost_recovery_op old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left observer_right observer_third mh_partitioned mh_registry_aligned mh_idempotent
-    | ObserveConcurrentLanes :: forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left observer_right observer_third.
+        multihost_recovery_op
+            old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
+            observer_right observer_third mh_partitioned mh_registry_aligned mh_idempotent
+    | ObserveConcurrentLanes :: forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host
+        coordinator observer_left observer_right observer_third.
         mh_lane_receipt lane_inventory batch wave mh_succeeded *
         mh_lane_failure lane_payment batch wave mh_failed *
         mh_lane_failure lane_shipping batch wave mh_failed *
         mh_lane_receipt lane_risk batch wave mh_succeeded ->
-        multihost_recovery_op old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left observer_right observer_third mh_registry_aligned mh_lanes_observed mh_non_idempotent
-    | ResolveShippingCancellation :: forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left observer_right observer_third.
+        multihost_recovery_op
+            old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
+            observer_right observer_third mh_registry_aligned mh_lanes_observed mh_non_idempotent
+    | ResolveShippingCancellation :: forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host
+        coordinator observer_left observer_right observer_third.
         mh_lane_failure lane_shipping batch wave mh_failed *
         mh_cancel_token lane_shipping batch wave cancellation_epoch_a mh_cancelled ->
-        multihost_recovery_op old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left observer_right observer_third mh_lanes_observed mh_shipping_cancelled mh_non_idempotent
-    | CompensateShippingFirst :: forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left observer_right observer_third.
+        multihost_recovery_op
+            old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
+            observer_right observer_third mh_lanes_observed mh_shipping_cancelled mh_non_idempotent
+    | CompensateShippingFirst :: forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host
+        coordinator observer_left observer_right observer_third.
         mh_lane_failure lane_shipping batch wave mh_failed *
         mh_compensation lane_shipping batch wave mh_compensated ->
-        multihost_recovery_op old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left observer_right observer_third mh_shipping_cancelled mh_shipping_compensated mh_non_idempotent
-    | CompensateBankAfterShipping :: forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left observer_right observer_third.
+        multihost_recovery_op
+            old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
+            observer_right observer_third mh_shipping_cancelled mh_shipping_compensated mh_non_idempotent
+    | CompensateBankAfterShipping :: forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host
+        coordinator observer_left observer_right observer_third.
         mh_lane_failure lane_payment batch wave mh_failed *
         mh_compensation lane_payment batch wave mh_compensated *
         compensation_order lane_shipping lane_payment batch wave mh_distinct ->
-        multihost_recovery_op old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left observer_right observer_third mh_shipping_compensated mh_bank_compensated mh_non_idempotent
-    | FormTimedReplicaQuorum :: forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left observer_right observer_third.
+        multihost_recovery_op
+            old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
+            observer_right observer_third mh_shipping_compensated mh_bank_compensated mh_non_idempotent
+    | FormTimedReplicaQuorum :: forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host
+        coordinator observer_left observer_right observer_third.
         timeout_witness batch wave timeout_deadline_a mh_fresh *
         distinct_replica_hosts left_host right_host coordinator mh_distinct *
         observer_checkpoint registry_root_a observer_left observed *
         observer_checkpoint registry_root_a observer_right observed *
         observer_checkpoint registry_root_a observer_third observed ->
-        multihost_recovery_op old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left observer_right observer_third mh_bank_compensated mh_quorum_ready mh_idempotent
-    | HealReplayReplica :: forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left observer_right observer_third.
+        multihost_recovery_op
+            old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
+            observer_right observer_third mh_bank_compensated mh_quorum_ready mh_idempotent
+    | HealReplayReplica :: forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
+        observer_left observer_right observer_third.
         replay_merge_receipt left_host right_host coordinator batch new_epoch new_digest mh_healed ->
-        multihost_recovery_op old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left observer_right observer_third mh_quorum_ready mh_healed mh_non_idempotent
-    | PublishHealedAudit :: forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left observer_right observer_third.
+        multihost_recovery_op
+            old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
+            observer_right observer_third mh_quorum_ready mh_healed mh_non_idempotent
+    | PublishHealedAudit :: forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
+        observer_left observer_right observer_third.
         registry_pin registry_root_a available *
         distinct_observers observer_left observer_right distinct *
         observer_checkpoint registry_root_a observer_left observed *
         observer_checkpoint registry_root_a observer_right observed ->
-        multihost_recovery_op old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left observer_right observer_third mh_healed mh_published mh_idempotent
+        multihost_recovery_op
+            old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
+            observer_right observer_third mh_healed mh_published mh_idempotent
 
 union multihost_recovery_row batch wave from to effect =
-    | MultihostRecoveryRow :: forall batch wave from to effect. string -> multihost_recovery_row batch wave from to effect
+    | MultihostRecoveryRow :: forall batch wave from to effect.
+        string ->
+        multihost_recovery_row batch wave from to effect
 
-union multihost_recovery_node old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left observer_right observer_third from to =
-    | MultihostRecoveryNode :: forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left observer_right observer_third from to.
+union multihost_recovery_node old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
+    observer_left observer_right observer_third from to =
+    | MultihostRecoveryNode :: forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host
+        coordinator observer_left observer_right observer_third from to.
         (exists effect.
-            multihost_recovery_op old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left observer_right observer_third from to effect *
-            multihost_recovery_row batch wave from to effect)
-        -> multihost_recovery_node old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left observer_right observer_third from to
+            multihost_recovery_op
+                old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
+                observer_right observer_third from to effect *
+            multihost_recovery_row batch wave from to effect) ->
+        multihost_recovery_node
+            old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
+            observer_right observer_third from to
 
-union rec multihost_recovery_plan old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left observer_right observer_third from to =
-    | MultihostRecoveryLeaf :: forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left observer_right observer_third from to.
-        multihost_recovery_node old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left observer_right observer_third from to ->
-        multihost_recovery_plan old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left observer_right observer_third from to
-    | MultihostRecoveryThen :: forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left observer_right observer_third from to.
+union rec multihost_recovery_plan old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
+    observer_left observer_right observer_third from to =
+    | MultihostRecoveryLeaf :: forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host
+        coordinator observer_left observer_right observer_third from to.
+        multihost_recovery_node
+            old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
+            observer_right observer_third from to ->
+        multihost_recovery_plan
+            old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
+            observer_right observer_third from to
+    | MultihostRecoveryThen :: forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host
+        coordinator observer_left observer_right observer_third from to.
         (exists middle.
-            multihost_recovery_plan old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left observer_right observer_third from middle *
-            multihost_recovery_node old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left observer_right observer_third middle to)
-        -> multihost_recovery_plan old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left observer_right observer_third from to
+            multihost_recovery_plan
+                old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
+                observer_right observer_third from middle *
+            multihost_recovery_node
+                old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
+                observer_right observer_third middle to) ->
+        multihost_recovery_plan
+            old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
+            observer_right observer_third from to
 
-inl multihost_node_label forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left observer_right observer_third from to.
-    (node : multihost_recovery_node old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left observer_right observer_third from to) : string =
+inl multihost_node_label forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
+    observer_left observer_right observer_third from to.
+    (node :
+        multihost_recovery_node
+            old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
+            observer_right observer_third from to)
+    : string
+    =
     match node with
     | MultihostRecoveryNode payload =>
         inl exists effect. _, MultihostRecoveryRow label = payload
         label
 
-inl rec multihost_terminal forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left observer_right observer_third from to.
-    (plan : multihost_recovery_plan old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left observer_right observer_third from to) : string =
+inl rec multihost_terminal forall old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator
+    observer_left observer_right observer_third from to.
+    (plan :
+        multihost_recovery_plan
+            old_epoch old_digest new_epoch new_digest batch wave left_host right_host coordinator observer_left
+            observer_right observer_third from to)
+    : string
+    =
     match plan with
     | MultihostRecoveryLeaf node => multihost_node_label node
     | MultihostRecoveryThen payload =>
         inl exists middle. _, node = payload
         multihost_node_label node
 
-inl partition_node () : multihost_recovery_node registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a mh_available mh_partitioned =
+inl partition_node
+    ()
+    : multihost_recovery_node registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new
+        replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a
+        mh_available mh_partitioned
+    =
     MultihostRecoveryNode (exists (
         CapturePartition (ReplicaSnapshot "host-a", ReplicaSnapshot "host-b", PartitionWitness "network-cut"),
         MultihostRecoveryRow "capture-partitioned-replicas"
     ))
 
-inl registry_node () : multihost_recovery_node registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a mh_partitioned mh_registry_aligned =
+inl registry_node
+    ()
+    : multihost_recovery_node registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new
+        replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a
+        mh_partitioned mh_registry_aligned
+    =
     MultihostRecoveryNode (exists (
         AlignRegistry (RegistrySuccessor "registry-v1-to-v2"),
         MultihostRecoveryRow "align-rotated-registry"
     ))
 
-inl lanes_node () : multihost_recovery_node registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a mh_registry_aligned mh_lanes_observed =
-    MultihostRecoveryNode (exists (
-        ObserveConcurrentLanes (MhLaneReceipt "inventory-ok", MhLaneFailure "bank-timeout", MhLaneFailure "carrier-timeout", MhLaneReceipt "risk-ok"),
-        MultihostRecoveryRow "observe-four-lanes-two-failures"
-    ))
+inl lanes_node
+    ()
+    : multihost_recovery_node registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new
+        replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a
+        mh_registry_aligned mh_lanes_observed
+    =
+    MultihostRecoveryNode (
+        exists (
+            ObserveConcurrentLanes (
+                MhLaneReceipt "inventory-ok",
+                MhLaneFailure "bank-timeout",
+                MhLaneFailure "carrier-timeout",
+                MhLaneReceipt "risk-ok"
+            ),
+            MultihostRecoveryRow "observe-four-lanes-two-failures"
+        )
+    )
 
-inl cancel_node () : multihost_recovery_node registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a mh_lanes_observed mh_shipping_cancelled =
+inl cancel_node
+    ()
+    : multihost_recovery_node registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new
+        replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a
+        mh_lanes_observed mh_shipping_cancelled
+    =
     MultihostRecoveryNode (exists (
         ResolveShippingCancellation (MhLaneFailure "carrier-timeout", MhCancelToken "cancel-before-dispatch"),
         MultihostRecoveryRow "resolve-shipping-cancellation-race"
     ))
 
-inl shipping_compensation_node () : multihost_recovery_node registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a mh_shipping_cancelled mh_shipping_compensated =
+inl shipping_compensation_node
+    ()
+    : multihost_recovery_node registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new
+        replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a
+        mh_shipping_cancelled mh_shipping_compensated
+    =
     MultihostRecoveryNode (exists (
         CompensateShippingFirst (MhLaneFailure "carrier-timeout", MhCompensation "release-shipping-slot"),
         MultihostRecoveryRow "compensate-shipping-first"
     ))
 
-inl bank_compensation_node () : multihost_recovery_node registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a mh_shipping_compensated mh_bank_compensated =
-    inl bank_comp : mh_compensation lane_shipping replay_batch_a recovery_wave_1 mh_compensated = MhCompensation "refund-bank"
+inl bank_compensation_node
+    ()
+    : multihost_recovery_node registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new
+        replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a
+        mh_shipping_compensated mh_bank_compensated
+    =
+    inl bank_comp : mh_compensation lane_shipping replay_batch_a recovery_wave_1 mh_compensated =
+        MhCompensation "refund-bank"
     MultihostRecoveryNode (exists (
         CompensateBankAfterShipping (MhLaneFailure "bank-timeout", bank_comp, CompensationOrder "shipping-before-bank"),
         MultihostRecoveryRow "compensate-bank-after-shipping"
     ))
 
-inl quorum_node () : multihost_recovery_node registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a mh_bank_compensated mh_quorum_ready =
-    MultihostRecoveryNode (exists (
-        FormTimedReplicaQuorum (TimeoutWitness "deadline-fresh", DistinctReplicaHosts "a-ne-b-ne-c", ObserverCheckpoint "observer-a", ObserverCheckpoint "observer-b", ObserverCheckpoint "observer-c"),
-        MultihostRecoveryRow "form-time-bounded-replica-quorum"
-    ))
+inl quorum_node
+    ()
+    : multihost_recovery_node registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new
+        replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a
+        mh_bank_compensated mh_quorum_ready
+    =
+    MultihostRecoveryNode (
+        exists (
+            FormTimedReplicaQuorum (
+                TimeoutWitness "deadline-fresh",
+                DistinctReplicaHosts "a-ne-b-ne-c",
+                ObserverCheckpoint "observer-a",
+                ObserverCheckpoint "observer-b",
+                ObserverCheckpoint "observer-c"
+            ),
+            MultihostRecoveryRow "form-time-bounded-replica-quorum"
+        )
+    )
 
-inl heal_node () : multihost_recovery_node registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a mh_quorum_ready mh_healed =
+inl heal_node
+    ()
+    : multihost_recovery_node registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new
+        replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a
+        mh_quorum_ready mh_healed
+    =
     MultihostRecoveryNode (exists (
         HealReplayReplica (ReplayMergeReceipt "join-semilattice-merge"),
         MultihostRecoveryRow "heal-partitioned-replay-state"
     ))
 
-inl publish_healed_node () : multihost_recovery_node registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a mh_healed mh_published =
-    MultihostRecoveryNode (exists (
-        PublishHealedAudit (RegistryPin "root", DistinctObservers "a-ne-b", ObserverCheckpoint "observer-a", ObserverCheckpoint "observer-b"),
-        MultihostRecoveryRow "multihost-partition-healed"
-    ))
+inl publish_healed_node
+    ()
+    : multihost_recovery_node registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new
+        replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a
+        mh_healed mh_published
+    =
+    MultihostRecoveryNode (
+        exists (
+            PublishHealedAudit (
+                RegistryPin "root",
+                DistinctObservers "a-ne-b",
+                ObserverCheckpoint "observer-a",
+                ObserverCheckpoint "observer-b"
+            ),
+            MultihostRecoveryRow "multihost-partition-healed"
+        )
+    )
 
-inl multihost_plan () : multihost_recovery_plan registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a mh_available mh_published =
+inl multihost_plan
+    ()
+    : multihost_recovery_plan registry_epoch_old registry_digest_old registry_epoch_new registry_digest_new
+        replay_batch_a recovery_wave_1 replica_host_a replica_host_b replica_host_c observer_a observer_b observer_a
+        mh_available mh_published
+    =
     MultihostRecoveryThen (exists (
         MultihostRecoveryThen (exists (
             MultihostRecoveryThen (exists (
@@ -570,10 +856,14 @@ inl failure_bundle_label forall first_lane second_lane.
     "two-failures-ordered"
 
 inl main () : string =
-    inl first_failure : mh_lane_failure lane_shipping replay_batch_a recovery_wave_1 mh_failed = MhLaneFailure "carrier-timeout"
-    inl second_failure : mh_lane_failure lane_payment replay_batch_a recovery_wave_1 mh_failed = MhLaneFailure "bank-timeout"
-    inl order : compensation_order lane_shipping lane_payment replay_batch_a recovery_wave_1 mh_distinct = CompensationOrder "shipping-before-bank"
-    inl bundle : failure_bundle replay_batch_a recovery_wave_1 = FailureBundle (exists (first_failure, second_failure, order))
+    inl first_failure : mh_lane_failure lane_shipping replay_batch_a recovery_wave_1 mh_failed =
+        MhLaneFailure "carrier-timeout"
+    inl second_failure : mh_lane_failure lane_payment replay_batch_a recovery_wave_1 mh_failed =
+        MhLaneFailure "bank-timeout"
+    inl order : compensation_order lane_shipping lane_payment replay_batch_a recovery_wave_1 mh_distinct =
+        CompensationOrder "shipping-before-bank"
+    inl bundle : failure_bundle replay_batch_a recovery_wave_1 =
+        FailureBundle (exists (first_failure, second_failure, order))
     inl inspected = with_failure_bundle `$failure_bundle_label bundle
     inl _ = inspected
     multihost_terminal (multihost_plan ())

@@ -13,6 +13,6 @@ inl main () : i32 =
     inl a = create n
     inl ~x = 7i32
     set a 0i32 x
-    inl box = !!!!LayoutToHeap({values = a})
+    inl box = !!!!LayoutToHeap({ values = a })
     inl opened = !!!!LayoutIndex(box)
     if get opened.values 0i32 =. 7i32 then 0i32 else 1i32

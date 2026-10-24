@@ -9,12 +9,22 @@ nominal epoch1 = ()
 nominal verified = ()
 nominal mounted = ()
 
-union rooted_authority root signer digest state = | RootedAuthority :: forall root signer digest state. string -> rooted_authority root signer digest state
-union genome_resource root signer digest sample build contig = | GenomeResource :: forall root signer digest sample build contig. string -> genome_resource root signer digest sample build contig
-union dashboard scope epoch root state = | Dashboard :: forall scope epoch root state. string -> dashboard scope epoch root state
+union rooted_authority root signer digest state =
+    | RootedAuthority :: forall root signer digest state. string -> rooted_authority root signer digest state
+union genome_resource root signer digest sample build contig =
+    | GenomeResource :: forall root signer digest sample build contig.
+        string ->
+        genome_resource root signer digest sample build contig
+union dashboard scope epoch root state =
+    | Dashboard :: forall scope epoch root state. string -> dashboard scope epoch root state
 
-inl mount forall root signer digest sample build contig scope epoch. (authority : rooted_authority root signer digest verified) (resource : genome_resource root signer digest sample build contig) (dashboard : dashboard scope epoch root mounted) : string =
-    match authority, resource, dashboard with | RootedAuthority _, GenomeResource _, Dashboard _ => "rooted-genome-dashboard-mounted"
+inl mount forall root signer digest sample build contig scope epoch.
+    (authority : rooted_authority root signer digest verified)
+    (resource : genome_resource root signer digest sample build contig) (dashboard : dashboard scope epoch root mounted)
+    : string
+    =
+    match authority, resource, dashboard with
+    | RootedAuthority _, GenomeResource _, Dashboard _ => "rooted-genome-dashboard-mounted"
 
 inl main () : string =
     inl authority : rooted_authority root_a signer_a digest_a verified = RootedAuthority "authority"

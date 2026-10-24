@@ -3,13 +3,13 @@ use std::cell::RefCell;
 use std::rc::Rc;
 struct Heap0 { l0: f32, l1: i32 }
 fn spiral_main() -> i32 {
-    let mut v0: f32 = 1.5f32;
-    let mut v1: i32 = 7i32;
-    let mut v2: Rc<Heap0> = Rc::new(Heap0 { l0: v0, l1: v1 });
+    let v0: f32 = 1.5f32;
+    let v1: i32 = 7i32;
+    let v2: Rc<Heap0> = Rc::new(Heap0 { l0: v0, l1: v1 });
     let (mut v3, mut v4): (f32, i32) = (v2.l0.clone(), v2.l1.clone());
-    let mut v5: bool = v3 == 1.5f32;
-    let mut v7: bool = if v5 {
-        let mut v6: bool = v4 == 7i32;
+    let v5: bool = v3 == 1.5f32;
+    let v7: bool = if v5 {
+        let v6: bool = v4 == 7i32;
         v6
     } else {
         false

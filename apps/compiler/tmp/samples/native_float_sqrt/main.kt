@@ -1,18 +1,12 @@
 fun spiral_main(): Int {
-    var v0: Float = 0.0f
-    v0 = 144.0f
-    var v1: Double = 0.0
-    v1 = 81.0
-    var v2: Float = 0.0f
-    v2 = kotlin.math.sqrt(v0)
-    var v3: Double = 0.0
-    v3 = kotlin.math.sqrt(v1)
-    var v4: Boolean = false
-    v4 = (v2 == 12.0f)
+    val v0: Float = 144.0f
+    val v1: Double = 81.0
+    val v2: Float = kotlin.math.sqrt(v0)
+    val v3: Double = kotlin.math.sqrt(v1)
+    val v4: Boolean = (v2 == 12.0f)
     var v6: Boolean = false
     if (v4) {
-        var v5: Boolean = false
-        v5 = (v3 == 9.0)
+        val v5: Boolean = (v3 == 9.0)
         v6 = v5
     } else {
         v6 = false

@@ -17,10 +17,8 @@ func sp_build_0(_ p0: Int32, _ p1: UH0) -> UH0 {
             v3 = (v0 &- 1)
             var v4: UH0 = UH0_Link(f0: 0, f1: UH0_Zero())
             v4 = UH0_Link(f0: v0, f1: v1)
-            let t389_3: Int32 = v3
-            let t425_4: UH0 = v4
-            v0 = t389_3
-            v1 = t425_4
+            v0 = v3
+            v1 = v4
             continue
         }
     }
@@ -39,8 +37,7 @@ func sp_sum_1(_ p0: UH0, _ p1: Int32) -> Int32 {
             v4 = (v1 &* 31)
             var v5: Int32 = 0
             v5 = (v4 &+ v2)
-            var v6: Int32 = 0
-            v6 = (v5 % 9973)
+            let v6: Int32 = (v5 % 9973)
             return sp_sum_1(v3, v6)
         default:
             fatalError("unreachable union case")

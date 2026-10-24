@@ -86,61 +86,61 @@ pub fn score_0(v0: Us1) -> Int {
     }
 }
 pub fn main() {
-let v0 = 7
-let v1 = "hi"
-let v2 = Heap0(l0: v0, l1: v1)
-let v3 = 4
-let v4 = "yo"
-let v5 = Heap0(l0: v3, l1: v4)
-let v6 = Heap1(l0: v2, l1: v5)
-let v7 = 2
-let v8 = Heap2(l0: v6, l1: v7)
-let v9 = True
-let v12 =
-    case v9 {
+    let v0 = 7
+    let v1 = "hi"
+    let v2 = Heap0(l0: v0, l1: v1)
+    let v3 = 4
+    let v4 = "yo"
+    let v5 = Heap0(l0: v3, l1: v4)
+    let v6 = Heap1(l0: v2, l1: v5)
+    let v7 = 2
+    let v8 = Heap2(l0: v6, l1: v7)
+    let v9 = True
+    let v12 =
+        case v9 {
+            True -> {
+                Us0Held(v8)
+            }
+            False -> {
+                Us0None
+            }
+        }
+    let v13 = Heap3(l0: v12)
+    let v14 = True
+    let v17 =
+        case v14 {
+            True -> {
+                Us1Box(v13)
+            }
+            False -> {
+                Us1Mark(1)
+            }
+        }
+    let v18 = 3
+    let v19 = Heap4(l0: v17)
+    let v20 = Us1Mark(v18)
+    let v21 = Heap4(l0: v20)
+    let v22 = v19.l0
+    let v23 = v21.l0
+    let v24 = score_0(v22)
+    let v25 = score_0(v23)
+    let v26 = v24 == 0
+    let v28 =
+        case v26 {
+            True -> {
+                let v27 = v25 == 1
+                v27
+            }
+            False -> {
+                False
+            }
+        }
+    case v28 {
         True -> {
-            Us0Held(v8)
+            0
         }
         False -> {
-            Us0None
+            1
         }
     }
-let v13 = Heap3(l0: v12)
-let v14 = True
-let v17 =
-    case v14 {
-        True -> {
-            Us1Box(v13)
-        }
-        False -> {
-            Us1Mark(1)
-        }
-    }
-let v18 = 3
-let v19 = Heap4(l0: v17)
-let v20 = Us1Mark(v18)
-let v21 = Heap4(l0: v20)
-let v22 = v19.l0
-let v23 = v21.l0
-let v24 = score_0(v22)
-let v25 = score_0(v23)
-let v26 = v24 == 0
-let v28 =
-    case v26 {
-        True -> {
-            let v27 = v25 == 1
-            v27
-        }
-        False -> {
-            False
-        }
-    }
-case v28 {
-    True -> {
-        0
-    }
-    False -> {
-        1
-    }
-}
 }

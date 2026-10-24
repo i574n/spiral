@@ -40,19 +40,31 @@ and inl object_schema forall t. () : string =
     "{\"type\":\"object\",\"properties\":{" ++ props ++ "},\"required\":[" ++ required ++ "]}"
 
 and inl union_schema forall t. () : string =
-    union_type_to_record `t forall cases. =>
-        inl all_nullary, alternatives =
-            record_type_fold
-                fun (all_nullary, alternatives) key =>
-                    forall value. =>
-                        inl name = !!!!SymbolToString(key)
-                        typecase value with
-                        | () => all_nullary, with_item alternatives ("{\"const\":" ++ (in_quotes name) ++ "}")
-                        | _ => false, with_item alternatives ("{\"type\":\"object\",\"properties\":{" ++ (in_quotes name) ++ ":" ++ (schema_of `value ()) ++ "},\"required\":[" ++ (in_quotes name) ++ "]}")
-                (true, "")
-                `cases
-        if all_nullary then "{\"type\":\"string\",\"oneOf\":[" ++ alternatives ++ "]}"
-        else "{\"oneOf\":[" ++ alternatives ++ "]}"
+    union_type_to_record `t (
+        forall cases. =>
+            inl all_nullary, alternatives =
+                record_type_fold
+                    fun (all_nullary, alternatives) key =>
+                        forall value. =>
+                            inl name = !!!!SymbolToString(key)
+                            typecase value with
+                            | () => all_nullary, with_item alternatives ("{\"const\":" ++ (in_quotes name) ++ "}")
+                            | _ =>
+                                false,
+                                with_item alternatives (
+                                    "{\"type\":\"object\",\"properties\":{"
+                                    ++ in_quotes name
+                                    ++ ":"
+                                    ++ (schema_of `value ())
+                                    ++ "},\"required\":["
+                                    ++ in_quotes name
+                                    ++ "]}"
+                                )
+                    (true, "")
+                    `cases
+            if all_nullary then "{\"type\":\"string\",\"oneOf\":[" ++ alternatives ++ "]}"
+            else "{\"oneOf\":[" ++ alternatives ++ "]}"
+    )
 
 inl tool_schema name = forall params. =>
     "{\"name\":" ++ (in_quotes name) ++ ",\"parameters\":" ++ (schema_of `params ()) ++ "}"
@@ -67,9 +79,14 @@ inl rec decode_at forall value. (s : string) (at : i32) : value =
         typecase el with
         | i32 => json_scan.parse_i32_array s at
         | string => json_scan.parse_string_array s at
-        | {} => json_scan.fill_array `el (json_scan.item_count s at) (fun i => decode (json_scan.object_at s (json_scan.item_start s at i)) `el)
+        | {} =>
+            json_scan.fill_array `el (json_scan.item_count s at) fun i =>
+                decode (json_scan.object_at s (json_scan.item_start s at i)) `el
     | ~a * ~b => decode_at `a s (json_scan.item_start s at 0i32), decode_items `b s at 1i32
-    | option ~inner => if at < 0i32 then None `inner else Some `inner (decode_at `inner s at)
+    | option ~inner =>
+        if at < 0i32
+        then None `inner
+        else Some `inner (decode_at `inner s at)
     | _ =>
         if union_type_is `value then
             inl name = json_scan.union_case_name s at

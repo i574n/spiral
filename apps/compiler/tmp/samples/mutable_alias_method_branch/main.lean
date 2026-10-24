@@ -31,10 +31,8 @@ deriving instance Inhabited for M0
 mutual
 partial def method0 (p0 : (IO.Ref M0)) : IO Unit := do
     let mut v0 : (IO.Ref M0) := p0
-    let mut v1 : Int32 := default
-    let mut v2 : Int32 := default
-    v1 := (← v0.get).l0
-    v2 := (v1 + (5 : Int32))
+    let v1 : Int32 := (← v0.get).l0
+    let v2 : Int32 := (v1 + (5 : Int32))
     v0.modify (fun r => { r with l0 := v2 })
     return ()
 partial def method1 (p0 : (IO.Ref M0)) : IO Unit := do
@@ -42,22 +40,18 @@ partial def method1 (p0 : (IO.Ref M0)) : IO Unit := do
     return ()
 partial def method2 (p0 : (IO.Ref M0)) : IO Unit := do
     let mut v0 : (IO.Ref M0) := p0
-    let mut v1 : Int32 := default
-    let mut v2 : Int32 := default
-    v1 := (← v0.get).l0
-    v2 := (v1 + (7 : Int32))
+    let v1 : Int32 := (← v0.get).l0
+    let v2 : Int32 := (v1 + (7 : Int32))
     v0.modify (fun r => { r with l0 := v2 })
     return ()
 partial def spiralMain : IO Int32 := do
     let mut v0 : (IO.Ref M0) ← IO.mkRef default
-    let mut v1 : Int32 := default
-    let mut v2 : Int32 := default
     v0 := (← IO.mkRef (M0.mk (0 : Int32)))
     let _ := (← method0 v0)
     let _ := (← method1 v0)
     let _ := (← method2 v0)
-    v1 := (← v0.get).l0
-    v2 := (v1 - (12 : Int32))
+    let v1 : Int32 := (← v0.get).l0
+    let v2 : Int32 := (v1 - (12 : Int32))
     return v2
 end
 def main : IO UInt32 := do

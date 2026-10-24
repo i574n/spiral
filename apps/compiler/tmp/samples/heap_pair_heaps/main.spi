@@ -2,13 +2,13 @@ inl main () : i32 =
     inl ~n = 7i32
     inl ~word = "hi"
     inl left_pair = n, word
-    inl left_heap = !!!!LayoutToHeap({value = left_pair})
+    inl left_heap = !!!!LayoutToHeap({ value = left_pair })
     inl ~m = 4i32
     inl ~other = "yo"
     inl right_pair = m, other
-    inl right_heap = !!!!LayoutToHeap({value = right_pair})
+    inl right_heap = !!!!LayoutToHeap({ value = right_pair })
     inl pair = left_heap, right_heap
-    inl box = !!!!LayoutToHeap({value = pair})
+    inl box = !!!!LayoutToHeap({ value = pair })
     inl opened = !!!!LayoutIndex(box)
     inl ~(left, right) = opened.value
     inl left_opened = !!!!LayoutIndex(left)

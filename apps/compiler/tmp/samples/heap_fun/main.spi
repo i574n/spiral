@@ -3,7 +3,7 @@ inl main () : i32 =
     inl ~n = 4i32
     inl add (x : i32) : i32 = x +. k
     inl pair = add, n
-    inl box = !!!!LayoutToHeap({value = pair})
+    inl box = !!!!LayoutToHeap({ value = pair })
     inl opened = !!!!LayoutIndex(box)
     inl ~(f, extra) = opened.value
     inl ~g = f

@@ -24,7 +24,8 @@ union transition from to =
 inl execute forall from to. (transition : transition from to) (document : document from) : document to =
     match transition, document with
     | SignTransition, Draft _ => Signed (nfe_signed { xml = "nfe.xml"; digest = "sha256" })
-    | AuthorizeTransition, Signed payload => Authorized (nfe_authorized { xml = payload.xml; protocol = "135240000000005" })
+    | AuthorizeTransition, Signed payload =>
+        Authorized (nfe_authorized { xml = payload.xml; protocol = "135240000000005" })
     | CancelTransition, Authorized payload => Cancelled (nfe_cancelled { xml = payload.xml; reason = "requested" })
 
 union rec workflow a c =

@@ -1,8 +1,20 @@
 inl while' (cond : () -> bool) (body : () -> ()) : () =
-    !!!!While((join cond()),(body()))
+    !!!!While((join cond ()), (body ()))
 
 inl set' forall t. (a : t) ~(b : t) : () =
-    !!!!BackendSwitch({ Fsharp = fun () => $"!a <- !b" : (); C = fun () => $"!a = !b" : (); Zig = fun () => $"!a = !b" : (); Lean = fun () => $"!a := !b" : (); Rust = fun () => $"!a = !b" : (); Delphi = fun () => $"!a := !b" : (); Wgsl = fun () => $"!a = !b" : (); Kotlin = fun () => $"!a = !b" : (); Swift = fun () => $"!a = !b" : (); OpenQasm = fun () => $"!a = !b" : (); Ebpf = fun () => $"!a = !b" : () })
+    !!!!BackendSwitch({
+        Fsharp = fun () => $"!a <- !b" : ()
+        C = fun () => $"!a = !b" : ()
+        Zig = fun () => $"!a = !b" : ()
+        Lean = fun () => $"!a := !b" : ()
+        Rust = fun () => $"!a = !b" : ()
+        Delphi = fun () => $"!a := !b" : ()
+        Wgsl = fun () => $"!a = !b" : ()
+        Kotlin = fun () => $"!a = !b" : ()
+        Swift = fun () => $"!a = !b" : ()
+        OpenQasm = fun () => $"!a = !b" : ()
+        Ebpf = fun () => $"!a = !b" : ()
+    })
 
 inl break' () : () = $"break"
 inl continue' () : () = $"continue"

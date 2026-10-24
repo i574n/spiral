@@ -1,4 +1,4 @@
-inl (++) (left : string) (right : string) : string = !!!!StaticStringConcat(left,right)
+inl (++) (left : string) (right : string) : string = !!!!StaticStringConcat(left, right)
 
 union rec rows =
     | NoRow
@@ -238,30 +238,43 @@ inl armenian_letter (cp : i32) : bool = in_range cp 1329i32 1366i32 || in_range 
 
 inl hebrew_arabic_letter (cp : i32) : bool = in_range cp 1488i32 1514i32 || in_range cp 1568i32 1610i32
 
-inl hangul_letter (cp : i32) : bool = in_range cp 4352i32 4607i32 || in_range cp 12593i32 12686i32 || in_range cp 44032i32 55203i32
+inl hangul_letter (cp : i32) : bool =
+    in_range cp 4352i32 4607i32 || in_range cp 12593i32 12686i32 || in_range cp 44032i32 55203i32
 
-inl kana_han_letter (cp : i32) : bool = in_range cp 12353i32 12438i32 || in_range cp 12449i32 12538i32 || in_range cp 19968i32 40959i32
+inl kana_han_letter (cp : i32) : bool =
+    in_range cp 12353i32 12438i32 || in_range cp 12449i32 12538i32 || in_range cp 19968i32 40959i32
 
 inl unicode_letter (cp : i32) : bool =
-    latin_letter cp || greek_letter cp || cyrillic_letter cp || armenian_letter cp || hebrew_arabic_letter cp || hangul_letter cp || kana_han_letter cp
+    latin_letter cp
+    || greek_letter cp
+    || cyrillic_letter cp
+    || armenian_letter cp
+    || hebrew_arabic_letter cp
+    || hangul_letter cp
+    || kana_han_letter cp
 
 inl name_piece (pending : bool) (acc : string) (piece : string) : string =
     inl sep = if pending && acc <> "" then "_" else ""
     acc ++ sep ++ piece
 
 let rec test_name_go (src : string) (i : i32) (pending : bool) (acc : string) : string =
-    if i >= text.length src then acc
-    elif text.byte_at src i >= 128i32 then
+    if i >= text.length src
+    then acc
+    elif text.byte_at src i >= 128i32
+    then
         inl width = text.utf8_width (text.byte_at src i)
-        if unicode_letter (text.code_point src i) then test_name_go src (i + width) false (name_piece pending acc (text.lowercase (text.slice_len src i width)))
+        if unicode_letter (text.code_point src i)
+        then test_name_go src (i + width) false (name_piece pending acc (text.lowercase (text.slice_len src i width)))
         else test_name_go src (i + width) true acc
-    elif text.has_char (test_name_set ()) 0i32 (text.index src i) then
-        test_name_go src (i + 1i32) false (name_piece pending acc (lower_one src i))
+    elif text.has_char (test_name_set ()) 0i32 (text.index src i)
+    then test_name_go src (i + 1i32) false (name_piece pending acc (lower_one src i))
     else test_name_go src (i + 1i32) true acc
 
 let rec symbol_go (name : string) (i : i32) (acc : string) : string =
-    if i >= text.length name then acc
-    elif text.byte_at name i < 128i32 && text.has_char (test_name_set ()) 0i32 (text.index name i) then symbol_go name (i + 1i32) (acc ++ text.one name i)
+    if i >= text.length name
+    then acc
+    elif text.byte_at name i < 128i32 && text.has_char (test_name_set ()) 0i32 (text.index name i)
+    then symbol_go name (i + 1i32) (acc ++ text.one name i)
     else
         inl width = text.utf8_width (text.byte_at name i)
         symbol_go name (i + width) (acc ++ "u" ++ text.show_hex (text.code_point name i) ++ "_")
@@ -334,22 +347,53 @@ inl reason_after (s : string) (marker : string) : string =
         inl n = quoted_end rest
         if n > 0i32 then text.take rest n else ""
 
-inl agree_mode (head : string) (word : string) (shown : string) : string =
-    if text.contains (" " ++ head ++ " ") (" " ++ word ++ " ") || text.contains (" " ++ head) (" " ++ word ++ " \"") then " " ++ shown ++ reason_after head word else ""
+inl word_after (s : string) (marker : string) : string =
+    inl k = text.find_from s marker 0i32
+    if k < 0i32 then ""
+    else
+        inl start = k + text.length marker
+        text.slice_len s start (text.take_unicode_ident s start - start)
 
-let rec test_block_go (src : string) (i : i32) (targets : rows) (options : string) (body : rows) (name : string) : string =
+inl reference_mode (head : string) : string =
+    inl target = word_after (head ++ " ") " --reference "
+    if target = "" then "" else " reference " ++ target
+
+inl agree_mode (head : string) (word : string) (shown : string) : string =
+    if text.contains (" " ++ head ++ " ") (" " ++ word ++ " ") || text.contains (" " ++ head) (" " ++ word ++ " \"")
+    then " " ++ shown ++ reason_after head word
+    else ""
+
+let rec test_block_go
+    (src : string) (i : i32) (targets : rows) (options : string) (body : rows) (name : string)
+    : string
+    =
     match text.next_line src i with
     | LineDone =>
         inl head = cut_before options " --fails "
-        inl header = "test " ++ name ++ test_mode head "static" "static" ++ test_mode head "--print-code" "print_code" ++ test_mode head "--ignore" "ignore" ++ agree_mode head "--no-agree" "no_agree" ++ test_mode head "--build-only" "build_only" ++ clause_after options " --fails " " fails " ++ " ="
+        inl header =
+            "test "
+            ++ name
+            ++ test_mode head "static" "static"
+            ++ test_mode head "--print-code" "print_code"
+            ++ test_mode head "--ignore" "ignore"
+            ++ agree_mode head "--no-agree" "no_agree"
+            ++ reference_mode head
+            ++ test_mode head "--build-only" "build_only"
+            ++ clause_after options " --fails " " fails "
+            ++ " ="
         inl lines = rev_rows (drop_blank_rows body) NoRow
         join_rows (append_rows (rev_rows targets NoRow) (Row (header, lines)))
     | LineGot (line, next) =>
-        if text.starts_with line "///-" then test_block_go src next targets (options ++ " " ++ text.trim (text.drop line 4i32)) body name
-        elif text.starts_with line "///>" then test_block_go src next (Row (line, targets)) options body name
+        if text.starts_with line "///-"
+        then test_block_go src next targets (options ++ " " ++ text.trim (text.drop line 4i32)) body name
+        elif text.starts_with line "///>"
+        then test_block_go src next (Row (line, targets)) options body name
         else
             match body with
-            | NoRow => if text.blank line then test_block_go src next targets options NoRow name else test_block_go src next targets options (Row (body_row line, NoRow)) name
+            | NoRow =>
+                if text.blank line
+                then test_block_go src next targets options NoRow name
+                else test_block_go src next targets options (Row (body_row line, NoRow)) name
             | _ => test_block_go src next targets options (Row (body_row line, body)) name
 
 inl test_block (source : string) (name : string) : string = test_block_go source 0i32 NoRow "" NoRow name
@@ -403,22 +447,38 @@ inl heading_title (source : string) : string =
     inl line = text.trim (last_heading_line (text.trim source) 0i32 "")
     text.trim (text.replace (text.drop line (heading_marks_end line 0i32)) " (test)" "")
 
-let rec index_tests (real_wanted : bool) (xs : cells) (i : i32) (last : string) (title : string) (used : rows) (acc : rows) : rows =
+let rec index_tests
+    (real_wanted : bool) (xs : cells) (i : i32) (last : string) (title : string) (used : rows) (acc : rows)
+    : rows
+    =
     match xs with
     | NoCell => acc
     | Cell (kind, source, rest) =>
         inl t = text.trim source
-        if kind = "markdown" then
+        if kind = "markdown"
+        then
             inl heading = heading_test_name source
             if heading = "" then index_tests real_wanted rest (i + 1i32) last title used acc
             else index_tests real_wanted rest (i + 1i32) heading (heading_title source) used acc
-        elif kind = "spiral" && test_cell t && spir_cell t = real_wanted then
+        elif kind = "spiral" && test_cell t && spir_cell t = real_wanted
+        then
             inl base = if last = "" then "cell" else last
             inl n = count_row used base
             inl name = if n = 0i32 then base else base ++ "_" ++ text.show_i32 (n + 1i32)
             inl realm = if real_wanted then "real" else "spi"
             inl shown = if title = "" then name else title
-            inl row = text.show_i32 i ++ "\t" ++ name ++ "\t" ++ test_mode_of t ++ "\t" ++ realm ++ "\t" ++ test_symbol name ++ "\t" ++ shown
+            inl row =
+                text.show_i32 i
+                ++ "\t"
+                ++ name
+                ++ "\t"
+                ++ test_mode_of t
+                ++ "\t"
+                ++ realm
+                ++ "\t"
+                ++ test_symbol name
+                ++ "\t"
+                ++ shown
             index_tests real_wanted rest (i + 1i32) last title (Row (base, used)) (Row (row, acc))
         else index_tests real_wanted rest (i + 1i32) last title used acc
 
@@ -452,6 +512,9 @@ let rec flags_valid (s : string) : bool =
         inl n = quoted_end rest
         if n < 0i32 then false else flags_valid (text.drop rest n)
     elif text.starts_with s " build_only" then flags_valid (text.drop s 11i32)
+    elif text.starts_with s " reference " then
+        inl n = text.take_unicode_ident s 11i32
+        if n > 11i32 then flags_valid (text.drop s n) else false
     else false
 
 inl expectation_valid (clause : string) : bool =
@@ -489,9 +552,14 @@ inl test_options (real_mode : bool) (modes : string) : string =
     inl base = if real_mode then "--real " ++ run else run
     inl stat = if text.contains padded " static " then " static" else ""
     inl show = if text.contains padded " print_code " then " --print-code" else ""
-    inl agree = if text.contains padded " no_agree " || text.contains padded " no_agree \"" then " --no-agree" ++ reason_after modes " no_agree" else ""
+    inl agree =
+        if text.contains padded " no_agree " || text.contains padded " no_agree \""
+        then " --no-agree" ++ reason_after modes " no_agree"
+        else ""
     inl build = if text.contains padded " build_only " then " --build-only" else ""
-    base ++ stat ++ show ++ agree ++ build ++ clause_after modes " fails " " --fails "
+    inl target = word_after padded " reference "
+    inl reference = if target = "" then "" else " --reference " ++ target
+    base ++ stat ++ show ++ agree ++ reference ++ build ++ clause_after modes " fails " " --fails "
 
 inl test_cell_source (real_mode : bool) (modes : string) (targets : rows) (body : rows) : string =
     join_rows (Row ("///- " ++ test_options real_mode modes, append_rows targets (Row ("", body))))
@@ -562,7 +630,11 @@ inl test_body (form : header_form) (body : rows) : rows =
     | WellFormed => rev_rows (drop_blank_rows body) NoRow
     | Malformed line => malformed_body line
 
-inl test_cell_of (name : string) (modes : string) (targets : rows) (body : rows) (form : header_form) (real_mode : bool) (acc : cells) : cells =
+inl test_cell_of
+    (name : string) (modes : string) (targets : rows) (body : rows) (form : header_form) (real_mode : bool)
+    (acc : cells)
+    : cells
+    =
     inl source = test_cell_source real_mode modes (rev_rows targets NoRow) (test_body form body)
     if real_mode then Cell ("real_test:" ++ name, source, acc) else Cell ("test:" ++ name, source, acc)
 
@@ -571,21 +643,33 @@ inl close_mode (mode : spi_mode) (targets : rows) (real_mode : bool) (acc : cell
     | Between => code_cell targets real_mode acc
     | InDoc lines => code_cell targets real_mode (doc_cell lines real_mode acc)
     | InCode lines => code_cell (append_rows targets lines) real_mode acc
-    | InTest (name, modes, test_targets, body, form, _) => code_cell targets real_mode (test_cell_of name modes test_targets body form real_mode acc)
+    | InTest (name, modes, test_targets, body, form, _) =>
+        code_cell targets real_mode (test_cell_of name modes test_targets body form real_mode acc)
 
 inl close_open (code : rows) (targets : rows) (real_mode : bool) (acc : cells) : cells =
     if no_rows code then code_cell targets real_mode acc else code_cell (append_rows targets code) real_mode acc
 
-let open_step (line : string) (code : rows) (targets : rows) (real_mode : bool) (acc : cells) : spi_mode * rows * cells =
-    if text.starts_with line "///>" then
+let open_step
+    (line : string) (code : rows) (targets : rows) (real_mode : bool) (acc : cells)
+    : spi_mode * rows * cells
+    =
+    if text.starts_with line "///>"
+    then
         if no_rows code then Between, Row (line, targets), acc else InCode code, Row (line, targets), acc
     else
         match header_of line with
-        | Header (name, modes) => InTest (name, modes, targets, NoRow, WellFormed, -1i32), NoRow, close_open code NoRow real_mode acc
+        | Header (name, modes) =>
+            InTest (name, modes, targets, NoRow, WellFormed, -1i32), NoRow, close_open code NoRow real_mode acc
         | NoHeader =>
-            if test_like line then InTest (malformed_name line, "", targets, NoRow, Malformed line, -1i32), NoRow, close_open code NoRow real_mode acc
-            elif doc_start line then InDoc (Row (undoc line, NoRow)), NoRow, close_open code targets real_mode acc
-            elif no_rows code then
+            if test_like line
+            then
+                InTest (malformed_name line, "", targets, NoRow, Malformed line, -1i32),
+                NoRow,
+                close_open code NoRow real_mode acc
+            elif doc_start line
+            then InDoc (Row (undoc line, NoRow)), NoRow, close_open code targets real_mode acc
+            elif no_rows code
+            then
                 if line = "" && no_rows targets then Between, NoRow, acc
                 else InCode (Row (line, targets)), NoRow, acc
             else InCode (Row (line, append_rows targets code)), NoRow, acc
@@ -605,26 +689,73 @@ let rec body_last_of (bounds : string) (i : i32) (header_row : i32) : i32 =
 
 inl bounded (mode : spi_mode) (bounds : string) (row : i32) : spi_mode =
     match mode with
-    | InTest (name, modes, test_targets, body, form, _) => InTest (name, modes, test_targets, body, form, if bounds = "" then -1i32 else body_last_of bounds 0i32 (row + 1i32))
+    | InTest (name, modes, test_targets, body, form, _) =>
+        InTest (
+            name,
+            modes,
+            test_targets,
+            body,
+            form,
+            if bounds = ""
+            then -1i32
+            else body_last_of bounds 0i32 (row + 1i32)
+        )
     | _ => mode
 
 inl bounded_line (line : string) : string = if indented line then unindent line else line
 
-let rec spi_walk (src : string) (i : i32) (row : i32) (bounds : string) (mode : spi_mode) (targets : rows) (real_mode : bool) (acc : cells) : cells =
+let rec spi_walk
+    (src : string) (i : i32) (row : i32) (bounds : string) (mode : spi_mode) (targets : rows) (real_mode : bool)
+    (acc : cells)
+    : cells
+    =
     match text.next_line src i with
     | LineDone => close_mode mode targets real_mode acc
     | LineGot (line, next) =>
         match mode with
         | InTest (name, modes, test_targets, body, form, last) =>
-            if last >= 0i32 then
-                if row + 1i32 <= last then spi_walk src next (row + 1i32) bounds (InTest (name, modes, test_targets, Row (bounded_line line, body), form, last)) targets real_mode acc
-                else spi_walk src i row bounds Between NoRow real_mode (test_cell_of name modes test_targets body form real_mode acc)
-            elif indented line then spi_walk src next (row + 1i32) bounds (InTest (name, modes, test_targets, Row (unindent line, body), form, last)) targets real_mode acc
-            elif comment_line line && resumes_test src next then spi_walk src next (row + 1i32) bounds (InTest (name, modes, test_targets, Row (line, body), form, last)) targets real_mode acc
-            else spi_walk src i row bounds Between NoRow real_mode (test_cell_of name modes test_targets body form real_mode acc)
+            if last >= 0i32
+            then
+                if row + 1i32 <= last
+                then
+                    spi_walk src next
+                        (row + 1i32)
+                        bounds
+                        (InTest (name, modes, test_targets, Row (bounded_line line, body), form, last))
+                        targets
+                        real_mode
+                        acc
+                else
+                    spi_walk src i row bounds Between NoRow real_mode (
+                        test_cell_of name modes test_targets body form real_mode acc
+                    )
+            elif indented line
+            then
+                spi_walk src next
+                    (row + 1i32)
+                    bounds
+                    (InTest (name, modes, test_targets, Row (unindent line, body), form, last))
+                    targets
+                    real_mode
+                    acc
+            elif comment_line line && resumes_test src next
+            then
+                spi_walk src next
+                    (row + 1i32)
+                    bounds
+                    (InTest (name, modes, test_targets, Row (line, body), form, last))
+                    targets
+                    real_mode
+                    acc
+            else
+                spi_walk src i row bounds Between NoRow real_mode (
+                    test_cell_of name modes test_targets body form real_mode acc
+                )
         | InDoc lines =>
-            if doc_more line then spi_walk src next (row + 1i32) bounds (InDoc (Row (undoc line, lines))) targets real_mode acc
-            elif line = "" then spi_walk src next (row + 1i32) bounds Between targets real_mode (doc_cell lines real_mode acc)
+            if doc_more line
+            then spi_walk src next (row + 1i32) bounds (InDoc (Row (undoc line, lines))) targets real_mode acc
+            elif line = ""
+            then spi_walk src next (row + 1i32) bounds Between targets real_mode (doc_cell lines real_mode acc)
             else spi_walk src i row bounds Between targets real_mode (doc_cell lines real_mode acc)
         | InCode lines =>
             inl mode2, targets2, acc2 = open_step line lines targets real_mode acc
@@ -662,10 +793,12 @@ let rec name_tested (xs : cells) (last : string) (spi_used : rows) (real_used : 
     match xs with
     | NoCell => acc
     | Cell (kind, source, rest) =>
-        if kind = "markdown" then
+        if kind = "markdown"
+        then
             inl heading = heading_test_name source
             name_tested rest (if heading = "" then last else heading) spi_used real_used (Cell (kind, source, acc))
-        elif test_named_kind kind then
+        elif test_named_kind kind
+        then
             inl realm = realm_of kind
             inl used = realm_rows realm spi_used real_used
             inl name = kind_test_name kind
@@ -674,13 +807,16 @@ let rec name_tested (xs : cells) (last : string) (spi_used : rows) (real_used : 
             inl derived = if n = 0i32 then base else base ++ "_" ++ text.show_i32 (n + 1i32)
             inl spi_more = spi_row realm base spi_used
             inl real_more = real_row realm base real_used
-            if derived = name then name_tested rest last spi_more real_more (Cell ("spiral", source, acc))
+            if derived = name
+            then name_tested rest last spi_more real_more (Cell ("spiral", source, acc))
             else
                 inl heading_source = "#### " ++ name ++ " (test)"
                 inl heading = heading_test_name heading_source
                 inl spi_named = spi_row realm heading spi_used
                 inl real_named = real_row realm heading real_used
-                name_tested rest heading spi_named real_named (Cell ("spiral", source, Cell ("markdown", heading_source, acc)))
+                name_tested rest heading spi_named real_named (
+                    Cell ("spiral", source, Cell ("markdown", heading_source, acc))
+                )
         else name_tested rest last spi_used real_used (Cell (kind, source, acc))
 
 inl spi_cells (src : string) (bounds : string) (real_mode : bool) (acc : cells) : cells =

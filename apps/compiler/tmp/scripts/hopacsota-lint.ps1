@@ -29,7 +29,11 @@ $bannedPatterns = [ordered]@{
     'new Thread' = '\bnew\s+(System\.Threading\.)?Thread\s*\('
     'replay/record identifiers' = '(?i)\w*(replay|record|resume|snapshot|ledger)\w*'
 }
-$allowlist = @()
+$allowlist = @(
+    [pscustomobject]@{ Rule = 'Scheduler.run'; Text = 'Scheduler.run control operation'; Reason = 'D5 2b: the one blocking bridge from a body thread or the peval thread to the control scheduler; never called on a Hopac worker' }
+    [pscustomobject]@{ Rule = 'ThreadLocal'; Text = 'new System.Threading.ThreadLocal<BodyContext>()'; Reason = 'D5 2b: body identity for claims; a body thread never migrates; one instance per engine, disposed at Close' }
+    [pscustomobject]@{ Rule = 'new Thread'; Text = 'new System.Threading.Thread((fun () -> body_loop ctx), body_stack_bytes)'; Reason = 'D5 2b: dedicated body threads with the 1.5 GB peval stack, joined at Close' }
+)
 $layer = [Collections.Generic.List[object]]::new()
 $depth = 0
 $stack = [Collections.Generic.List[object]]::new()

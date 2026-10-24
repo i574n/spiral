@@ -3,13 +3,11 @@ fun sp_method1(p0: Int): Int {
     while (true) {
         var v1: Int = 0
         v1 = (v0 - 1)
-        var v2: Boolean = false
-        v2 = (v1 == 0)
+        val v2: Boolean = (v1 == 0)
         if (v2) {
             return 0
         } else {
-            val t238_1: Int = v1
-            v0 = t238_1
+            v0 = v1
             continue
         }
     }

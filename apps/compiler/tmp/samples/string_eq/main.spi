@@ -6,5 +6,6 @@ inl main () : i32 =
     inl ~other = "éy"
     inl ~empty = ""
     inl blank = !!!!StringSlice(same, 1i32, 0i32)
-    if !!!!EQ(cat, same) && !!!!NEQ(cat, other) && !!!!NEQ(left, same) && !!!!EQ(empty, blank) && !!!!NEQ(empty, left) then 0i32
+    if !!!!EQ(cat, same) && !!!!NEQ(cat, other) && !!!!NEQ(left, same) && !!!!EQ(empty, blank) && !!!!NEQ(empty, left)
+    then 0i32
     else 1i32

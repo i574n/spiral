@@ -31,17 +31,17 @@ pub fn score_0(v0: Us0) -> Int {
     }
 }
 pub fn main() {
-let v0 = 4000000000
-let v1 = "hi"
-let v2 = True
-let v5 =
-    case v2 {
-        True -> {
-            Us0Both(v0, v1)
+    let v0 = 4000000000
+    let v1 = "hi"
+    let v2 = True
+    let v5 =
+        case v2 {
+            True -> {
+                Us0Both(v0, v1)
+            }
+            False -> {
+                Us0None
+            }
         }
-        False -> {
-            Us0None
-        }
-    }
-score_0(v5)
+    score_0(v5)
 }

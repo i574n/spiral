@@ -15,8 +15,18 @@ inl main () : i32 =
     inl ~a = -9007199254740993i64
     inl ~b = 7i64
     !!!!Printf("div %d mod %d\n", a /. b, a %. b)
-    !!!!Printf("shl %d shr %d ushr %d\n", !!!!ShiftLeft(1i64, 62i32), !!!!ShiftRight(a, 3i32), !!!!ShiftRight(seed, 60i32))
-    !!!!Printf("and %d or %d xor %d\n", !!!!BitwiseAnd(seed, 18446744069414584320u64), !!!!BitwiseOr(a, 255i64), !!!!BitwiseXor(seed, multiplier))
+    !!!!Printf(
+        "shl %d shr %d ushr %d\n",
+        !!!!ShiftLeft(1i64, 62i32),
+        !!!!ShiftRight(a, 3i32),
+        !!!!ShiftRight(seed, 60i32)
+    )
+    !!!!Printf(
+        "and %d or %d xor %d\n",
+        !!!!BitwiseAnd(seed, 18446744069414584320u64),
+        !!!!BitwiseOr(a, 255i64),
+        !!!!BitwiseXor(seed, multiplier)
+    )
     inl ~f = 1000000000000000000.0f64
     inl g = !!!!Conv(`i64, f)
     inl h = !!!!Conv(`u32, seed)

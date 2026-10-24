@@ -25,6 +25,7 @@ def spiral_wrap(x, bits, signed):
     return x - (1 << bits) if signed and x >> (bits - 1) else x
 class US0_Empty(NamedTuple): # Empty
     tag = 0
+US0_Empty_shared = US0_Empty()
 class US0_Nested(NamedTuple): # Nested
     v0 : cp.ndarray
     tag = 1

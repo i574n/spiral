@@ -31,14 +31,10 @@ fn sp_method2(p0: i32, p1: i32, p2: i32, p3: i32) -> SpiralTuple0 {
         if (v8) {
             return SpiralTuple0(v5, v6, v7);
         } else {
-            let spiral_t1: i32 = v4;
-            let spiral_t2: i32 = v5;
-            let spiral_t3: i32 = v6;
-            let spiral_t4: i32 = v7;
-            v0 = spiral_t1;
-            v1 = spiral_t2;
-            v2 = spiral_t3;
-            v3 = spiral_t4;
+            v0 = v4;
+            v1 = v5;
+            v2 = v6;
+            v3 = v7;
             continue;
         }
     }
@@ -65,10 +61,10 @@ fn sp_method0(p0: i32) -> i32 {
     var v1: i32 = 0i;
     var v2: i32 = 0i;
     var v3: i32 = 0i;
-    let spiral_tuple5 = sp_method1(v0);
-    v1 = spiral_tuple5.v0;
-    v2 = spiral_tuple5.v1;
-    v3 = spiral_tuple5.v2;
+    let spiral_tuple1 = sp_method1(v0);
+    v1 = spiral_tuple1.v0;
+    v2 = spiral_tuple1.v1;
+    v3 = spiral_tuple1.v2;
     var v4: bool = false;
     v4 = (v1 == 3i);
     var v6: bool = false;

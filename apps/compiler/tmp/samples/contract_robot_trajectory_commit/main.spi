@@ -7,10 +7,16 @@ nominal planned = ()
 nominal certified = ()
 nominal committed = ()
 
-union trajectory robot map frame start goal state = | Trajectory :: forall robot map frame start goal state. string -> trajectory robot map frame start goal state
-union safety_envelope robot map frame start goal state = | Envelope :: forall robot map frame start goal state. string -> safety_envelope robot map frame start goal state
+union trajectory robot map frame start goal state =
+    | Trajectory :: forall robot map frame start goal state. string -> trajectory robot map frame start goal state
+union safety_envelope robot map frame start goal state =
+    | Envelope :: forall robot map frame start goal state. string -> safety_envelope robot map frame start goal state
 
-inl commit forall robot map frame start goal. (path : trajectory robot map frame start goal planned) (safety : safety_envelope robot map frame start goal certified) : trajectory robot map frame start goal committed =
+inl commit forall robot map frame start goal.
+    (path : trajectory robot map frame start goal planned)
+    (safety : safety_envelope robot map frame start goal certified)
+    : trajectory robot map frame start goal committed
+    =
     match path, safety with | Trajectory _, Envelope _ => Trajectory "robot-trajectory-committed"
 
 inl main () : string =

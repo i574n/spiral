@@ -1,5 +1,5 @@
-inl pow32 (x : f32) (y : f32) : f32 = !!!!Pow(x,y)
-inl pow64 (x : f64) (y : f64) : f64 = !!!!Pow(x,y)
+inl pow32 (x : f32) (y : f32) : f32 = !!!!Pow(x, y)
+inl pow64 (x : f64) (y : f64) : f64 = !!!!Pow(x, y)
 
 inl main () : i32 =
     inl ~two32 = 2f32

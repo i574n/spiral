@@ -147,8 +147,7 @@ fun sp_method0(p0: Int): Int {
     return sp_method1(v6)
 }
 fun spiral_main(): Int {
-    var v0: Int = 0
-    v0 = 0
+    val v0: Int = 0
     return sp_method0(v0)
 }
 fun main() {

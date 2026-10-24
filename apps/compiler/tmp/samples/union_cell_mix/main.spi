@@ -1,6 +1,6 @@
 union slot =
     | None
-    | Held : (heap {value : i32}) * i32
+    | Held : (heap { value : i32 }) * i32
 
 let score x : i32 =
     match x with
@@ -12,7 +12,7 @@ let score x : i32 =
 inl main () : i32 =
     inl ~a = 3i32
     inl ~b = 4i32
-    inl cell = !!!!LayoutToHeap({value = a})
+    inl cell = !!!!LayoutToHeap({ value = a })
     inl ~flag = true
     inl held = if flag then Held (cell, b) else None
     score held

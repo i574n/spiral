@@ -8,13 +8,13 @@ impl Default for Mut0 {
     }
 }
 fn spiral_main() -> i32 {
-    let mut v0: Rc<RefCell<Vec<Rc<RefCell<Mut0>>>>> = Rc::new(RefCell::new(vec![<Rc<RefCell<Mut0>>>::default(); 1i32 as usize]));
-    let mut v1: Rc<RefCell<Mut0>> = Rc::new(RefCell::new(Mut0 { l0: 1i32 }));
-    v0.clone().borrow_mut()[0i32 as usize] = v1.clone();
-    let mut v2: Rc<RefCell<Mut0>> = v0.clone().borrow()[0i32 as usize].clone();
+    let v0: Rc<RefCell<Vec<Rc<RefCell<Mut0>>>>> = Rc::new(RefCell::new(vec![<Rc<RefCell<Mut0>>>::default(); 1i32 as usize]));
+    let v1: Rc<RefCell<Mut0>> = Rc::new(RefCell::new(Mut0 { l0: 1i32 }));
+    v0.clone().borrow_mut()[0i32 as usize] = v1;
+    let mut v2: Rc<RefCell<Mut0>> = v0.borrow()[0i32 as usize].clone();
     v2.borrow_mut().l0 = 7i32;
-    let mut v3: i32 = v2.borrow().l0.clone();
-    let mut v4: bool = v3 == 7i32;
+    let v3: i32 = v2.borrow().l0.clone();
+    let v4: bool = v3 == 7i32;
     if v4 {
         0i32
     } else {

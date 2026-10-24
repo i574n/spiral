@@ -8,13 +8,20 @@ nominal live = ()
 nominal returned = ()
 
 union qregister lineage epoch state = | QRegister :: forall lineage epoch state. string -> qregister lineage epoch state
-union qloan lineage epoch owner slot state = | QLoan :: forall lineage epoch owner slot state. string -> qloan lineage epoch owner slot state
+union qloan lineage epoch owner slot state =
+    | QLoan :: forall lineage epoch owner slot state. string -> qloan lineage epoch owner slot state
 union borrow_request owner slot = | BorrowRequest :: forall owner slot. string -> borrow_request owner slot
 
-inl borrow forall lineage epoch owner slot. (register : qregister lineage epoch available) (request : borrow_request owner slot) : qregister lineage epoch borrowed * qloan lineage epoch owner slot live =
+inl borrow forall lineage epoch owner slot.
+    (register : qregister lineage epoch available) (request : borrow_request owner slot)
+    : qregister lineage epoch borrowed * qloan lineage epoch owner slot live
+    =
     match request with | BorrowRequest _ => QRegister "borrowed", QLoan "loan"
 
-inl release forall lineage epoch owner slot. (register : qregister lineage epoch borrowed) (loan : qloan lineage epoch owner slot live) : qregister lineage epoch available * qloan lineage epoch owner slot returned =
+inl release forall lineage epoch owner slot.
+    (register : qregister lineage epoch borrowed) (loan : qloan lineage epoch owner slot live)
+    : qregister lineage epoch available * qloan lineage epoch owner slot returned
+    =
     match register, loan with | QRegister _, QLoan _ => QRegister "epoch-owned-loan-returned", QLoan "returned"
 
 inl main () : string =

@@ -1,9 +1,9 @@
-local Uh0_A, Uh0_StopA, Uh1_B, Uh1_StopB
+local Uh0_A, Uh1_B
 function Uh0_A(v0) return { tag = "Uh0_A",  _1 = v0 } end
-function Uh0_StopA() return { tag = "Uh0_StopA" } end
+Uh0_StopA = (function() local shared = { tag = "Uh0_StopA" } return function() return shared end end)()
 
 function Uh1_B(v0) return { tag = "Uh1_B",  _1 = v0 } end
-function Uh1_StopB() return { tag = "Uh1_StopB" } end
+Uh1_StopB = (function() local shared = { tag = "Uh1_StopB" } return function() return shared end end)()
 
 local v0 = true
 local getv5 = function()
@@ -16,10 +16,9 @@ local getv5 = function()
     end
 end
 local v5 = getv5()
-local __v = { v5 }
-if __v[1] ~= nil and __v[1].tag == "Uh0_A" then
-    local v6 = __v[1]._1
+if v5 ~= nil and v5.tag == "Uh0_A" then
+    local v6 = v5._1
     return 0
-elseif __v[1] ~= nil and __v[1].tag == "Uh0_StopA" then
+elseif v5 ~= nil and v5.tag == "Uh0_StopA" then
     return 0
 end

@@ -8,7 +8,6 @@ function method1(v0: LongInt): LongInt;
 var
   v1: LongInt;
   v2: Boolean;
-  tmp2: LongInt;
 begin
   while True do begin
       v1 := v0 - 1;
@@ -17,8 +16,7 @@ begin
           Result := 0;
           Exit;
       end else begin
-          tmp2 := v1;
-          v0 := tmp2;
+          v0 := v1;
           Continue;
       end;
   end;

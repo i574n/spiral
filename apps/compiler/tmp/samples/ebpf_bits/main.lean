@@ -25,26 +25,19 @@ def spiralStringSlice (s : String) (a b : Int) : IO String := do
   else pure (String.Pos.Raw.extract s ⟨a.toNat⟩ ⟨(b + 1).toNat⟩)
 mutual
 partial def spiralMain : IO Int32 := do
-    let mut v0 : UInt32 := default
-    let mut v1 : UInt32 := default
-    let mut v2 : UInt32 := default
-    let mut v3 : UInt32 := default
-    let mut v4 : UInt32 := default
-    let mut v5 : UInt32 := default
-    let mut v6 : Bool := default
     let mut v8 : Bool := default
     let mut v7 : Bool := default
     let mut v10 : Bool := default
     let mut v9 : Bool := default
     let mut v12 : Bool := default
     let mut v11 : Bool := default
-    v0 := (4294967295 : UInt32)
-    v1 := (15 : UInt32)
-    v2 := (v0 &&& v1)
-    v3 := (v0 ||| v1)
-    v4 := (v0 ^^^ v1)
-    v5 := (~~~v1)
-    v6 := (v2 == (15 : UInt32))
+    let v0 : UInt32 := (4294967295 : UInt32)
+    let v1 : UInt32 := (15 : UInt32)
+    let v2 : UInt32 := (v0 &&& v1)
+    let v3 : UInt32 := (v0 ||| v1)
+    let v4 : UInt32 := (v0 ^^^ v1)
+    let v5 : UInt32 := (~~~v1)
+    let v6 : Bool := (v2 == (15 : UInt32))
     if v6 then
         v7 := (v3 == v0)
         v8 := v7

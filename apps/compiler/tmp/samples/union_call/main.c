@@ -25,24 +25,18 @@ typedef struct {
 static inline void ClosureDecrefBody0(Closure0 * x){
     (void)x;
 }
-void ClosureDecref0(Fun0 * self){
+static void ClosureDecref0(Fun0 * self){
     Closure0 * x = (Closure0 *) self;
     if (x != NULL && --(x->base.refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
-int32_t f_c0(Fun0 * self, int32_t v1){
+static int32_t f_c0(Fun0 * self, int32_t v1){
     Closure0 * x = (Closure0 *) self;
     int32_t v0 = x->v0;
-    
     ClosureDecref0(self);
-    
-    
-    int32_t v2;
-    v2 = v1 + v0;
-    
-    
+    int32_t v2 = v1 + v0;
     return v2;
 }
-Fun0 * ClosureCreate0(int32_t v0){
+static Fun0 * ClosureCreate0(int32_t v0){
     Closure0 * x = malloc(sizeof(Closure0));
     x->base.refc = 1;
     x->base.decref_fptr = ClosureDecref0;
@@ -80,59 +74,33 @@ US0 US0_Call(Fun0 * v0) { // Call
     return x;
 }
 int32_t main(){
-    
-    
-    int32_t v0;
-    v0 = 3l;
-    
-    
-    Fun0 * v1;
-    v1 = ClosureCreate0(v0);
-    
-    
-    bool v2;
-    v2 = true;
-    
-    
+    int32_t v0 = 3l;
+    Fun0 * v1 = ClosureCreate0(v0);
+    bool v2 = true;
     US0 v5;
     if (v2){
         (v1)->refc++;
-        
         v5 = US0_Call(v1);
     } else {
-        
-        
         v5 = US0_Missing();
     }
-    
     (v1)->decref_fptr(v1);
     switch (v5.tag) {
         case 1: { // Call
             Fun0 * v6 = v5.case1.v0;
             (v6)->refc += 2;
             USDecref0(&(v5));
-            int32_t v7;
-            v7 = v6->fptr(v6, 4l);
-            
+            int32_t v7 = v6->fptr(v6, 4l);
             (v6)->decref_fptr(v6);
-            bool v8;
-            v8 = v7 == 7l;
-            
-            
+            bool v8 = v7 == 7l;
             if (v8){
-                
-                
                 return 0l;
             } else {
-                
-                
                 return 1l;
             }
             break;
         }
         default: { // Missing
-            
-            
             USDecref0(&(v5));
             return 1l;
             break;

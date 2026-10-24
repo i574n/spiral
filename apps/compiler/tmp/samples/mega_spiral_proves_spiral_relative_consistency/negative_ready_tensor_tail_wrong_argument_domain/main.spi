@@ -21,7 +21,9 @@ inl impossible_ready_tensor_tail_accepts_wrong_domain () =
     ExactLinearIndexedClosedReadyBetaTensorTail (
         function_source,
         wrong_argument,
-        "this-construction-must-be-rejected-because-TensorTail-Ready-keeps-the-Lambda-domain-and-argument-type-identical")
+        "this-construction-must-be-rejected-because-TensorTail-Ready-keeps-the-Lambda-domain-and-argument-type-iden"
+        ^^ "tical"
+    )
 
 inl main () =
     impossible_ready_tensor_tail_accepts_wrong_domain ()

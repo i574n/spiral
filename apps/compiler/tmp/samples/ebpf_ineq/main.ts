@@ -1,21 +1,21 @@
 export function main(): number {
-    let v0: number = (-3);
-    let v1: number = (-4);
-    let v2: number = (-3);
-    let v3: number = 4294967295;
-    let v4: number = 0;
-    let v5: number = 4294967295;
-    let v6: number = (-1.5);
-    let v7: number = (-0.5);
-    let v8: number = (-1.5);
-    let v9: boolean = v0 !== v1;
-    let v10: boolean = v0 !== v2;
-    let v11: boolean = v3 !== v4;
-    let v12: boolean = v3 !== v5;
-    let v13: boolean = v6 !== v7;
-    let v14: boolean = v6 !== v8;
-    let v15: boolean = v9 && v11;
-    let v16: boolean = v15 && v13;
+    const v0: number = (-3);
+    const v1: number = (-4);
+    const v2: number = (-3);
+    const v3: number = 4294967295;
+    const v4: number = 0;
+    const v5: number = 4294967295;
+    const v6: number = (-1.5);
+    const v7: number = (-0.5);
+    const v8: number = (-1.5);
+    const v9: boolean = v0 !== v1;
+    const v10: boolean = v0 !== v2;
+    const v11: boolean = v3 !== v4;
+    const v12: boolean = v3 !== v5;
+    const v13: boolean = v6 !== v7;
+    const v14: boolean = v6 !== v8;
+    const v15: boolean = v9 && v11;
+    const v16: boolean = v15 && v13;
     if (v16) {
         if (v10) {
             return 1;

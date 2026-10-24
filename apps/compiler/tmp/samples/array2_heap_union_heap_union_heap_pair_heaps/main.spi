@@ -1,18 +1,18 @@
 union slot =
     | None
-    | Held : (heap {value : (heap {value : heap {value : i32 * string} * heap {value : i32 * string}}) * i32})
+    | Held : (heap { value : (heap { value : heap { value : i32 * string } * heap { value : i32 * string } }) * i32 })
 
 union wrap =
     | Absent
-    | Box : (heap {value : slot})
+    | Box : (heap { value : slot })
 
-nominal box_array = array_base (heap {value : wrap})
+nominal box_array = array_base (heap { value : wrap })
 
-inl create (n : i32) : box_array = box_array !!!!ArrayCreate(`(heap {value : wrap}), n)
-inl get (values : box_array) (i : i32) : heap {value : wrap} =
+inl create (n : i32) : box_array = box_array !!!!ArrayCreate(`(heap { value : wrap }), n)
+inl get (values : box_array) (i : i32) : heap { value : wrap } =
     match values with
     | box_array raw => !!!!ArrayIndex(raw, i)
-inl set (values : box_array) (i : i32) (value : heap {value : wrap}) : () =
+inl set (values : box_array) (i : i32) (value : heap { value : wrap }) : () =
     match values with
     | box_array raw => !!!!ArrayIndexSet(raw, i, value)
 
@@ -56,37 +56,37 @@ inl main () : i32 =
     inl ~a0 = 7i32
     inl ~b0 = "hi"
     inl left_pair = a0, b0
-    inl left_heap = !!!!LayoutToHeap({value = left_pair})
+    inl left_heap = !!!!LayoutToHeap({ value = left_pair })
     inl ~c0 = 4i32
     inl ~d0 = "yo"
     inl right_pair = c0, d0
-    inl right_heap = !!!!LayoutToHeap({value = right_pair})
+    inl right_heap = !!!!LayoutToHeap({ value = right_pair })
     inl pair = left_heap, right_heap
-    inl inner = !!!!LayoutToHeap({value = pair})
+    inl inner = !!!!LayoutToHeap({ value = pair })
     inl ~e0 = 2i32
     inl outer_pair = inner, e0
-    inl outer = !!!!LayoutToHeap({value = outer_pair})
+    inl outer = !!!!LayoutToHeap({ value = outer_pair })
     inl held = Held outer
-    inl box = !!!!LayoutToHeap({value = held})
+    inl box = !!!!LayoutToHeap({ value = held })
     inl wrapped = Box box
-    inl first = !!!!LayoutToHeap({value = wrapped})
+    inl first = !!!!LayoutToHeap({ value = wrapped })
     inl ~a1 = 8i32
     inl ~b1 = "ok"
     inl left_pair_b = a1, b1
-    inl left_heap_b = !!!!LayoutToHeap({value = left_pair_b})
+    inl left_heap_b = !!!!LayoutToHeap({ value = left_pair_b })
     inl ~c1 = 5i32
     inl ~d1 = "no"
     inl right_pair_b = c1, d1
-    inl right_heap_b = !!!!LayoutToHeap({value = right_pair_b})
+    inl right_heap_b = !!!!LayoutToHeap({ value = right_pair_b })
     inl pair_b = left_heap_b, right_heap_b
-    inl inner_b = !!!!LayoutToHeap({value = pair_b})
+    inl inner_b = !!!!LayoutToHeap({ value = pair_b })
     inl ~e1 = 9i32
     inl outer_pair_b = inner_b, e1
-    inl outer_b = !!!!LayoutToHeap({value = outer_pair_b})
+    inl outer_b = !!!!LayoutToHeap({ value = outer_pair_b })
     inl held_b = Held outer_b
-    inl box_b = !!!!LayoutToHeap({value = held_b})
+    inl box_b = !!!!LayoutToHeap({ value = held_b })
     inl wrapped_b = Box box_b
-    inl second = !!!!LayoutToHeap({value = wrapped_b})
+    inl second = !!!!LayoutToHeap({ value = wrapped_b })
     inl values = create 2i32
     set values 0i32 first
     set values 1i32 second

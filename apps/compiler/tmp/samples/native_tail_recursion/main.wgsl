@@ -17,8 +17,7 @@ fn sp_method1(p0: i32) -> i32 {
         if (v2) {
             return 0i;
         } else {
-            let spiral_t1: i32 = v1;
-            v0 = spiral_t1;
+            v0 = v1;
             continue;
         }
     }

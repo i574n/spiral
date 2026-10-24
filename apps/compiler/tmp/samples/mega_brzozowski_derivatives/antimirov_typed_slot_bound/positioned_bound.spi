@@ -89,4 +89,4 @@ inl main () : string =
         (antimirov_positioned_slot_bound_certified_is
             (certify_antimirov_positioned_slot_bound tri_positioned))
         "ternary positioned regex must certify root-plus-position slot coverage"
-    "brzozowski-antimirov-positioned-bound-green" 
+    "brzozowski-antimirov-positioned-bound-green"

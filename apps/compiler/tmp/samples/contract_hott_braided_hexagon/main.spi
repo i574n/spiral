@@ -82,7 +82,11 @@ inl a45 () : associator_2cell monoidal_x object_a object_b object_c vertex_4 ver
 inl b56 () : braiding_2cell monoidal_x object_a object_b object_c vertex_5 vertex_6 edge_56 =
     Braiding2Cell (v5 (), v6 (), "id-b-tensor-beta-a-c")
 
-inl coherent_hexagon () : braided_hexagon_3cell monoidal_x object_a object_b object_c vertex_1 vertex_2 vertex_3 vertex_4 vertex_5 vertex_6 edge_12 edge_23 edge_36 edge_14 edge_45 edge_56 hexagon_filler =
+inl coherent_hexagon
+    ()
+    : braided_hexagon_3cell monoidal_x object_a object_b object_c vertex_1 vertex_2 vertex_3 vertex_4 vertex_5 vertex_6
+        edge_12 edge_23 edge_36 edge_14 edge_45 edge_56 hexagon_filler
+    =
     BraidedHexagon3Cell (
         v1 (), v2 (), v3 (), v4 (), v5 (), v6 (),
         a12 (), b23 (), a36 (), b14 (), a45 (), b56 (),
@@ -90,7 +94,11 @@ inl coherent_hexagon () : braided_hexagon_3cell monoidal_x object_a object_b obj
     )
 
 inl label forall v1' v2' v3' v4' v5' v6' e12' e23' e36' e14' e45' e56' filler.
-    (_ : braided_hexagon_3cell monoidal_x object_a object_b object_c v1' v2' v3' v4' v5' v6' e12' e23' e36' e14' e45' e56' filler) : string =
+    (_ :
+        braided_hexagon_3cell
+            monoidal_x object_a object_b object_c v1' v2' v3' v4' v5' v6' e12' e23' e36' e14' e45' e56' filler)
+    : string
+    =
     "hott-braided-hexagon-coherent"
 
 inl main () : string =

@@ -3,7 +3,9 @@ nominal vector_succ n = ()
 
 union rec finite_vector alphabet length =
     | FiniteVectorNil :: forall alphabet. finite_vector alphabet vector_zero
-    | FiniteVectorCons :: forall alphabet length. alphabet * finite_vector alphabet length -> finite_vector alphabet (vector_succ length)
+    | FiniteVectorCons :: forall alphabet length.
+        alphabet * finite_vector alphabet length ->
+        finite_vector alphabet (vector_succ length)
 
 union rec finite_rank length =
     | FiniteRankZero :: forall length. finite_rank (vector_succ length)

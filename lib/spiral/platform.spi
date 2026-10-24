@@ -35,7 +35,8 @@ inl run_platform forall t. (fn : os_platform -> (() -> t)) : t =
     fn Windows () |> emit_unit
     $'\#endif'
     $'|> fun x -> _run_platform_!result <- Some x'
-    $'match _run_platform_!result with Some x -> x | None -> failwith "runtime.run_platform / _run_platform_!result=None"'
+    $'match _run_platform_!result with Some x -> x | None -> failwith "runtime.run_platform / \
+        _run_platform_!result=None"'
 
 /// ### is_os_platform
 inl is_os_platform (x : os_platform') : bool =
@@ -57,9 +58,10 @@ inl is_windows () : bool =
         | Gleam => fun () =>
             backend_switch {
                 Gleam = fun () =>
-                    global "import gleam/erlang/os"
+                    global "import gleam/erlang/atom"
+                    global "@external(erlang, \"os\", \"type\") fn platform_os_type() -> #(atom.Atom, atom.Atom)"
             }
-            $'os.family() == os.WindowsNt' : bool
+            $'atom.to_string(platform_os_type().0) == "win32"' : bool
         | Zig => fun () => $'(\@import("builtin").os.tag == .windows)' : bool
         | _ => fun () => failwith "platform.is_windows / no arm for this target"
 

@@ -15,4 +15,3 @@ inl main () : i32 =
     match s with
     | Survived (Living (a, _)) => if a = 60i32 then 0i32 else 1i32
     | Slain _ => 2i32
-

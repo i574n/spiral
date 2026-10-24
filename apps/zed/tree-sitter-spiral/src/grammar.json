@@ -171,15 +171,73 @@
       }
     },
     "definition_line": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "PATTERN",
-          "value": "(inl|let|type|union|nominal|prototype|instance|open|and)[ \\t][^\\r\\n]*"
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "TOKEN",
+            "content": {
+              "type": "PREC",
+              "value": 2,
+              "content": {
+                "type": "PATTERN",
+                "value": "((and)[ \\t]+)?(inl|let|type|union|nominal|prototype|instance|open|and)[ \\t]+(rec[ \\t]+)?"
+              }
+            }
+          },
+          "named": true,
+          "value": "definition_keyword"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "name",
+              "content": {
+                "type": "ALIAS",
+                "content": {
+                  "type": "IMMEDIATE_TOKEN",
+                  "content": {
+                    "type": "PREC",
+                    "value": 1,
+                    "content": {
+                      "type": "PATTERN",
+                      "value": "\\([^)\\r\\n]*\\)|[^\\s(:=]+"
+                    }
+                  }
+                },
+                "named": true,
+                "value": "definition_name"
+              }
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "IMMEDIATE_TOKEN",
+                "content": {
+                  "type": "PATTERN",
+                  "value": "[^\\r\\n]+"
+                }
+              },
+              "named": true,
+              "value": "definition_rest"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
         }
-      }
+      ]
     },
     "indented_line": {
       "type": "TOKEN",

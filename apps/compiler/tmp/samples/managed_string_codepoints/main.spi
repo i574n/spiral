@@ -3,7 +3,7 @@ inl main () =
     inl count = sm.codepoint_length value
     inl second = sm.codepoint_index value 1i32
     inl fourth = sm.codepoint_index value 3i32
-    inl middle = sm.codepoint_slice value {from=1i32; to=3i32}
+    inl middle = sm.codepoint_slice value { from = 1i32; to = 3i32 }
     inl fourth_offset = sm.codepoint_byte_offset value 3i32
     inl second_head = sm.runtime_byte second 0i32
     inl expected_second_head = sm.runtime_byte "é" 0i32

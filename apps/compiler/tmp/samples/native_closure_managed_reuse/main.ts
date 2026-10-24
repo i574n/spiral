@@ -31,19 +31,19 @@ function spiral_string_slice(value: string, from: number, to: number): string {
 }
 function f_c0(v0: string): ((a0: number) => number) {
     return (v1: number): number => {
-        let v2: number = spiral_string_length(v0);
-        let v3: number = (v2 + v1) | 0;
+        const v2: number = spiral_string_length(v0);
+        const v3: number = (v2 + v1) | 0;
         return v3;
     };
 }
 export function main(): number {
-    let v0: string = "abc";
-    let v1: ((a0: number) => number) = f_c0(v0);
-    let v2: number = v1(10);
-    let v3: number = v1(20);
-    let v4: number = v1(3);
-    let v5: number = (v2 + v3) | 0;
-    let v6: number = (v5 + v4) | 0;
+    const v0: string = "abc";
+    const v1: ((a0: number) => number) = f_c0(v0);
+    const v2: number = v1(10);
+    const v3: number = v1(20);
+    const v4: number = v1(3);
+    const v5: number = (v2 + v3) | 0;
+    const v6: number = (v5 + v4) | 0;
     return v6;
 }
 process.exitCode = main();

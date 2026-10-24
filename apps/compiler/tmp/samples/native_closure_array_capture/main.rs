@@ -3,14 +3,14 @@ use std::cell::RefCell;
 use std::rc::Rc;
 fn f_c0(mut v0: Rc<RefCell<Vec<i32>>>) -> Rc<dyn Fn(i32) -> i32> {
     Rc::new(move |mut v1: i32| -> i32 {
-        let mut v2: i32 = (v0.clone().borrow().len() as i32);
-        let mut v3: i32 = v2.wrapping_add(v1);
+        let v2: i32 = (v0.clone().borrow().len() as i32);
+        let v3: i32 = v2.wrapping_add(v1);
         v3
     })
 }
 fn spiral_main() -> i32 {
-    let mut v0: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); 2i32 as usize]));
-    let mut v1: Rc<dyn Fn(i32) -> i32> = f_c0(v0.clone());
+    let v0: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); 2i32 as usize]));
+    let mut v1: Rc<dyn Fn(i32) -> i32> = f_c0(v0);
     v1(40i32)
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }

@@ -8,4 +8,8 @@ inl rust_box_dyn_moved_into_join (k : i32) : i32 =
 
 inl main () : i32 =
     inl ~k = 7i32
-    !!!!BackendSwitch({ C = fun () => 22i32 : i32; Rust = fun () => rust_box_dyn_moved_into_join k : i32; Bend = fun () => 22i32 : i32 })
+    !!!!BackendSwitch({
+        C = fun () => 22i32 : i32
+        Rust = fun () => rust_box_dyn_moved_into_join k : i32
+        Bend = fun () => 22i32 : i32
+    })

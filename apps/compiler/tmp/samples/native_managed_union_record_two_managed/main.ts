@@ -40,19 +40,19 @@ function spiral_string_slice(value: string, from: number, to: number): string {
 type US0_Empty = { readonly tag: 0 };
 type US0_Item = { readonly tag: 1, readonly f0: string, readonly f1: Array<number> };
 type US0 = US0_Empty | US0_Item;
-function US0_Empty(): US0 { return { tag: 0 }; }
+const US0_Empty_shared: US0 = { tag: 0 }; function US0_Empty(): US0 { return US0_Empty_shared; }
 function US0_Item(f0: string, f1: Array<number>): US0 { return { tag: 1, f0: f0, f1: f1 }; }
 function closure0(): ((a0: number) => US0) {
     return (v0: number): US0 => {
-        let v1: boolean = v0 === 0;
+        const v1: boolean = v0 === 0;
         if (v1) {
             return US0_Empty();
         } else {
-            let v3: Array<number> = new Array<number>(2).fill(0);
+            const v3: Array<number> = new Array<number>(2).fill(0);
             spiral_array_set(v3, 0, v0);
-            let v4: number = (v0 + 1) | 0;
+            const v4: number = (v0 + 1) | 0;
             spiral_array_set(v3, 1, v4);
-            let v5: string = "hi";
+            const v5: string = "hi";
             return US0_Item(v5, v3);
         }
     };
@@ -64,8 +64,8 @@ function method1(v0: ((a0: number) => US0)): US0 {
     return v0(4);
 }
 export function main(): number {
-    let v0: ((a0: number) => US0) = closure0();
-    let v1: US0 = method0(v0);
+    const v0: ((a0: number) => US0) = closure0();
+    const v1: US0 = method0(v0);
     let v12: number;
     switch (v1.tag) {
         case 0: {
@@ -73,21 +73,21 @@ export function main(): number {
             break;
         }
         case 1: {
-            let v2: string = v1.f0;
-            let v3: Array<number> = v1.f1;
-            let v4: number = spiral_string_length(v2);
-            let v5: number = v3.length;
-            let v6: number = (v4 + v5) | 0;
-            let v7: number = spiral_array_index(v3, 0);
-            let v8: number = (v6 + v7) | 0;
-            let v9: number = spiral_array_index(v3, 1);
-            let v10: number = (v8 + v9) | 0;
+            const v2: string = v1.f0;
+            const v3: Array<number> = v1.f1;
+            const v4: number = spiral_string_length(v2);
+            const v5: number = v3.length;
+            const v6: number = (v4 + v5) | 0;
+            const v7: number = spiral_array_index(v3, 0);
+            const v8: number = (v6 + v7) | 0;
+            const v9: number = spiral_array_index(v3, 1);
+            const v10: number = (v8 + v9) | 0;
             v12 = v10;
             break;
         }
         default: throw new Error("Compiler error: unreachable union case.");
     }
-    let v13: US0 = method1(v0);
+    const v13: US0 = method1(v0);
     let v24: number;
     switch (v13.tag) {
         case 0: {
@@ -95,22 +95,22 @@ export function main(): number {
             break;
         }
         case 1: {
-            let v14: string = v13.f0;
-            let v15: Array<number> = v13.f1;
-            let v16: number = spiral_string_length(v14);
-            let v17: number = v15.length;
-            let v18: number = (v16 + v17) | 0;
-            let v19: number = spiral_array_index(v15, 0);
-            let v20: number = (v18 + v19) | 0;
-            let v21: number = spiral_array_index(v15, 1);
-            let v22: number = (v20 + v21) | 0;
+            const v14: string = v13.f0;
+            const v15: Array<number> = v13.f1;
+            const v16: number = spiral_string_length(v14);
+            const v17: number = v15.length;
+            const v18: number = (v16 + v17) | 0;
+            const v19: number = spiral_array_index(v15, 0);
+            const v20: number = (v18 + v19) | 0;
+            const v21: number = spiral_array_index(v15, 1);
+            const v22: number = (v20 + v21) | 0;
             v24 = v22;
             break;
         }
         default: throw new Error("Compiler error: unreachable union case.");
     }
-    let v25: number = (v12 + v24) | 0;
-    let v26: number = (v25 + 26) | 0;
+    const v25: number = (v12 + v24) | 0;
+    const v26: number = (v25 + 26) | 0;
     return v26;
 }
 process.exitCode = main();

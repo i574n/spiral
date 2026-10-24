@@ -7,17 +7,17 @@ enum US0 {
     US0_Held(i8),
 }
 fn spiral_main() -> i32 {
-    let mut v0: i8 = 100i8;
-    let mut v1: bool = true;
-    let mut v4: US0 = if v1 {
+    let v0: i8 = 100i8;
+    let v1: bool = true;
+    let v4: US0 = if v1 {
         US0::US0_Held(v0)
     } else {
         US0::US0_Missing
     };
     match &v4 {
         US0::US0_Held(v5) => {
-            let mut v5: i8 = *v5;
-            let mut v6: bool = v5 == 100i8;
+            let v5: i8 = *v5;
+            let v6: bool = v5 == 100i8;
             if v6 {
                 0i32
             } else {

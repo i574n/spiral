@@ -40,11 +40,10 @@ def U0.spiralTag : U0 → Int32
 mutual
 partial def closure0 (p0 : Int32) : IO U0 := do
     let mut v0 : Int32 := p0
-    let mut v1 : Bool := default
     let mut v3 : (IO.Ref (Array Int32)) ← IO.mkRef #[]
     let mut v4 : Int32 := default
     let mut v5 : String := default
-    v1 := (v0 == (0 : Int32))
+    let v1 : Bool := (v0 == (0 : Int32))
     if v1 then
         return U0.Empty
     else
@@ -61,8 +60,6 @@ partial def method1 (p0 : (Int32 → IO U0)) : IO U0 := do
     let mut v0 : (Int32 → IO U0) := p0
     return (← v0 (4 : Int32))
 partial def spiralMain : IO Int32 := do
-    let mut v0 : (Int32 → IO U0) := default
-    let mut v1 : U0 := default
     let mut v12 : Int32 := default
     let mut v2 : String := default
     let mut v3 : (IO.Ref (Array Int32)) ← IO.mkRef #[]
@@ -73,7 +70,6 @@ partial def spiralMain : IO Int32 := do
     let mut v8 : Int32 := default
     let mut v9 : Int32 := default
     let mut v10 : Int32 := default
-    let mut v13 : U0 := default
     let mut v24 : Int32 := default
     let mut v14 : String := default
     let mut v15 : (IO.Ref (Array Int32)) ← IO.mkRef #[]
@@ -84,10 +80,8 @@ partial def spiralMain : IO Int32 := do
     let mut v20 : Int32 := default
     let mut v21 : Int32 := default
     let mut v22 : Int32 := default
-    let mut v25 : Int32 := default
-    let mut v26 : Int32 := default
-    v0 := closure0
-    v1 := (← method0 v0)
+    let v0 : (Int32 → IO U0) := closure0
+    let v1 : U0 := (← method0 v0)
     match v1 with
     | U0.Empty =>
         v12 := (3 : Int32)
@@ -102,7 +96,7 @@ partial def spiralMain : IO Int32 := do
         v9 := (← spiralIndex (← v3.get) (spiralIdx (1 : Int32)))
         v10 := (v8 + v9)
         v12 := v10
-    v13 := (← method1 v0)
+    let v13 : U0 := (← method1 v0)
     match v13 with
     | U0.Empty =>
         v24 := (3 : Int32)
@@ -117,8 +111,8 @@ partial def spiralMain : IO Int32 := do
         v21 := (← spiralIndex (← v15.get) (spiralIdx (1 : Int32)))
         v22 := (v20 + v21)
         v24 := v22
-    v25 := (v12 + v24)
-    v26 := (v25 + (26 : Int32))
+    let v25 : Int32 := (v12 + v24)
+    let v26 : Int32 := (v25 + (26 : Int32))
     return v26
 end
 def main : IO UInt32 := do

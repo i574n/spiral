@@ -2,7 +2,7 @@ inl main () : i32 =
     inl ~left_word = "hi"
     inl ~right_word = "yo"
     inl pair = left_word, right_word
-    inl box = !!!!LayoutToHeap({value = pair})
+    inl box = !!!!LayoutToHeap({ value = pair })
     inl opened = !!!!LayoutIndex(box)
     inl ~(left, right) = opened.value
     if !!!!EQ(left, "hi") && !!!!EQ(right, "yo") then 0i32 else 1i32

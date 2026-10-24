@@ -1,9 +1,9 @@
 inl main () : i32 =
     inl ~a = 3i32
     inl ~b = 4i32
-    inl left = !!!!LayoutToHeap({value = a})
-    inl right = !!!!LayoutToHeap({value = b})
-    inl f (n : i32) : heap {value : i32} * heap {value : i32} =
+    inl left = !!!!LayoutToHeap({ value = a })
+    inl right = !!!!LayoutToHeap({ value = b })
+    inl f (n : i32) : heap { value : i32 } * heap { value : i32 } =
         if n =. 0i32 then
             right, left
         else

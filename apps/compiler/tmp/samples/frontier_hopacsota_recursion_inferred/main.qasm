@@ -9,8 +9,7 @@ def sp_count_0(int[32] p0) -> int[32] {
         } else {
             int[32] v2 = 0;
             v2 = (v0 - 1);
-            int[32] t251_2 = v2;
-            v0 = t251_2;
+            v0 = v2;
             continue;
         }
     }

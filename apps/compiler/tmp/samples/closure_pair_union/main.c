@@ -55,48 +55,26 @@ static inline Tuple0 TupleCreate0(US0 v0, US0 v1){
 static inline void ClosureDecrefBody0(Closure0 * x){
     (void)x;
 }
-void ClosureDecref0(Fun0 * self){
+static void ClosureDecref0(Fun0 * self){
     Closure0 * x = (Closure0 *) self;
     if (x != NULL && --(x->base.refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
-Tuple0 f_c0(Fun0 * self, int32_t v1){
+static Tuple0 f_c0(Fun0 * self, int32_t v1){
     Closure0 * x = (Closure0 *) self;
     int32_t v0 = x->v0;
-    
     ClosureDecref0(self);
-    
-    
-    bool v2;
-    v2 = v1 == 0l;
-    
-    
+    bool v2 = v1 == 0l;
     if (v2){
-        
-        
-        US0 v3;
-        v3 = US0_None();
-        
-        
-        US0 v4;
-        v4 = US0_None();
-        
-        
+        US0 v3 = US0_None();
+        US0 v4 = US0_None();
         return TupleCreate0(v3, v4);
     } else {
-        
-        
-        US0 v5;
-        v5 = US0_Some(v0);
-        
-        
-        US0 v6;
-        v6 = US0_None();
-        
-        
+        US0 v5 = US0_Some(v0);
+        US0 v6 = US0_None();
         return TupleCreate0(v5, v6);
     }
 }
-Fun0 * ClosureCreate0(int32_t v0){
+static Fun0 * ClosureCreate0(int32_t v0){
     Closure0 * x = malloc(sizeof(Closure0));
     x->base.refc = 1;
     x->base.decref_fptr = ClosureDecref0;
@@ -105,57 +83,31 @@ Fun0 * ClosureCreate0(int32_t v0){
     return &x->base;
 }
 int32_t main(){
-    
-    
-    int32_t v0;
-    v0 = 7l;
-    
-    
-    Fun0 * v1;
-    v1 = ClosureCreate0(v0);
+    int32_t v0 = 7l;
+    Fun0 * v1 = ClosureCreate0(v0);
     (v1)->refc++;
-    
     US0 v2; US0 v3;
     Tuple0 tmp0 = v1->fptr(v1, 1l);
     v2 = tmp0.v0; v3 = tmp0.v1;
-    
     (v1)->decref_fptr(v1);
     switch (v2.tag) {
         case 0: { // None
-            
-            
-            
             return 1l;
             break;
         }
         default: { // Some
             int32_t v4 = v2.case1.v0;
-            
-            
             switch (v3.tag) {
                 case 0: { // None
-                    
-                    
-                    
-                    bool v5;
-                    v5 = v4 == 7l;
-                    
-                    
+                    bool v5 = v4 == 7l;
                     if (v5){
-                        
-                        
                         return 0l;
                     } else {
-                        
-                        
                         return 1l;
                     }
                     break;
                 }
                 default: { // Some
-                    
-                    
-                    
                     return 1l;
                     break;
                 }

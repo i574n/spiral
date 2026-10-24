@@ -4,9 +4,6 @@ pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
   int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
 }
 
-pub fn spiral_wrap_unsigned(value: Int, bits: Int) -> Int {
-  int.bitwise_and(value, int.bitwise_shift_left(1, bits) - 1)
-}
 
 pub fn g_c0(capt: #(Int)) -> fn(Int) -> Int {
     fn (v1) {
@@ -27,16 +24,16 @@ pub fn method0(v0: Int) -> fn(Int) -> Int {
     g_c0(#(v0))
 }
 pub fn main() {
-let v0 = 7
-let v1 = method0(v0)
-let v2 = v1( 0  )
-let v3 = v2 == 7
-case v3 {
-    True -> {
-        0
+    let v0 = 7
+    let v1 = method0(v0)
+    let v2 = v1(0)
+    let v3 = v2 == 7
+    case v3 {
+        True -> {
+            0
+        }
+        False -> {
+            1
+        }
     }
-    False -> {
-        1
-    }
-}
 }

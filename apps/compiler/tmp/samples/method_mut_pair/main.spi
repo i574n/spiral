@@ -1,15 +1,15 @@
-inl pick (n : i32) (word : string) : mut {value : i32 * string} =
+inl pick (n : i32) (word : string) : mut { value : i32 * string } =
     inl pair = n, word
-    !!!!LayoutToHeapMutable({value = pair})
+    !!!!LayoutToHeapMutable({ value = pair })
 
 inl main () : i32 =
     inl ~n = 3i32
     inl ~word = "no"
-    inl box : mut {value : i32 * string} = join pick n word
+    inl box : mut { value : i32 * string } = join pick n word
     inl ~m = 7i32
     inl ~next = "hi"
     inl replaced = m, next
-    box <- {value = replaced}
+    box <- { value = replaced }
     inl opened = !!!!LayoutIndex(box)
     inl ~(left, right) = opened.value
     if left =. 7i32 && !!!!EQ(right, "hi") then 0i32 else 1i32

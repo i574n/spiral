@@ -22,6 +22,7 @@ def spiral_array_index(array, index):
     return value.item() if isinstance(array, cp.ndarray) and array.dtype.kind != 'O' else value
 class US0_None(NamedTuple): # None
     tag = 0
+US0_None_shared = US0_None()
 class US0_Some(NamedTuple): # Some
     v0 : i32
     tag = 1
@@ -35,7 +36,7 @@ def main():
     del v2
     v1[0] = v3
     del v3
-    v4 = US0_None()
+    v4 = US0_None_shared
     v1[1] = v4
     del v4
     v5 = spiral_array_index(v1, 0)

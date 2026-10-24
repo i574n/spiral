@@ -3,8 +3,8 @@ use std::cell::RefCell;
 use std::rc::Rc;
 fn f_c0(mut v0: Rc<str>) -> Rc<dyn Fn(i32) -> i32> {
     Rc::new(move |mut v1: i32| -> i32 {
-        let mut v2: i32 = (v0.clone().len() as i32);
-        let mut v3: i32 = v2.wrapping_add(v1);
+        let v2: i32 = (v0.clone().len() as i32);
+        let v3: i32 = v2.wrapping_add(v1);
         v3
     })
 }
@@ -12,23 +12,23 @@ fn apply_1(mut v0: Rc<dyn Fn(i32) -> i32>, mut v1: i32) -> i32 {
     v0(v1)
 }
 fn method0(mut v0: Rc<dyn Fn(i32) -> i32>, mut v1: i32) -> i32 {
-    let mut v2: i32 = apply_1(v0.clone(), v1);
-    let mut v3: i32 = v2.wrapping_add(1i32);
+    let v2: i32 = apply_1(v0, v1);
+    let v3: i32 = v2.wrapping_add(1i32);
     v3
 }
 fn method2(mut v0: Rc<dyn Fn(i32) -> i32>, mut v1: i32) -> i32 {
-    let mut v2: i32 = apply_1(v0.clone(), v1);
-    let mut v3: i32 = v2.wrapping_add(2i32);
+    let v2: i32 = apply_1(v0, v1);
+    let v3: i32 = v2.wrapping_add(2i32);
     v3
 }
 fn spiral_main() -> i32 {
     let mut v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("abc"); } LIT.with(|lit| lit.clone()) };
-    let mut v1: Rc<dyn Fn(i32) -> i32> = f_c0(v0.clone());
-    let mut v2: i32 = 16i32;
-    let mut v3: i32 = method0(v1.clone(), v2);
-    let mut v4: i32 = 17i32;
-    let mut v5: i32 = method2(v1.clone(), v4);
-    let mut v6: i32 = v3.wrapping_add(v5);
+    let v1: Rc<dyn Fn(i32) -> i32> = f_c0(v0);
+    let v2: i32 = 16i32;
+    let v3: i32 = method0(v1.clone(), v2);
+    let v4: i32 = 17i32;
+    let v5: i32 = method2(v1, v4);
+    let v6: i32 = v3.wrapping_add(v5);
     v6
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }

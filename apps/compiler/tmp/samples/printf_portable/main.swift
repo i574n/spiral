@@ -1,14 +1,10 @@
 import CRT
 import WinSDK
 func spiral_main() -> Int32 {
-    var v0: Int32 = 0
-    v0 = 60
-    var v1: Int64 = (0 as Int64)
-    v1 = (-9000000000 as Int64)
-    var v2: UInt8 = UInt8(0)
-    v2 = UInt8(200)
-    var v3: String = ""
-    v3 = "cube"
+    let v0: Int32 = 60
+    let v1: Int64 = (-9000000000 as Int64)
+    let v2: UInt8 = UInt8(200)
+    let v3: String = "cube"
     _ = fputs(v3 + ": " + String(v0) + " frames, checksum " + String(970392) + "\n", stdout)
     _ = fputs("big " + String(v1) + ", small " + String(-5) + ", byte " + String(v2) + "\n", stdout)
     _ = fputs("100% {braces} \"quoted\" \\ tab\tend\n", stdout)

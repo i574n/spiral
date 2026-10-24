@@ -92,8 +92,16 @@ inl new_raw_guid () : guid =
         Zig = fun () =>
             inl a = zig_random_u64 ()
             inl b = zig_random_u64 ()
-            $'(std.fmt.allocPrint(spiral_gpa, "{x:0>8}-{x:0>4}-4{x:0>3}-{x:0>4}-{x:0>12}", .{ !a & 0xffffffff, (!a >> 32) & 0xffff, (!a >> 48) & 0xfff, (!b & 0x3fff) | 0x8000, (!b >> 16) & 0xffffffffffff }) catch \@panic("out of memory"))' : guid
-        Rust = fun () => $'{ use std::hash::{BuildHasher, Hasher}; let mut h = std::collections::hash_map::RandomState::new().build_hasher(); h.write_u128(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0)); let a = h.finish(); h.write_u64(a); let b = h.finish(); let a = (a & 0xffff_ffff_ffff_0fff) | 0x4000; let b = (b & 0x3fff_ffff_ffff_ffff) | 0x8000_0000_0000_0000; Rc::<str>::from(format\!("{:08x}-{:04x}-{:04x}-{:04x}-{:012x}", a >> 32, (a >> 16) & 0xffff, a & 0xffff, b >> 48, b & 0xffff_ffff_ffff)) }' : guid
+            $'(std.fmt.allocPrint(spiral_gpa, "{x:0>8}-{x:0>4}-4{x:0>3}-{x:0>4}-{x:0>12}", .{ !a & 0xffffffff, (!a >> \
+                32) & 0xffff, (!a >> 48) & 0xfff, (!b & 0x3fff) | 0x8000, (!b >> 16) & 0xffffffffffff }) catch \
+                \@panic("out of memory"))' : guid
+        Rust = fun () => $'{ use std::hash::{BuildHasher, Hasher}; let mut h = \
+            std::collections::hash_map::RandomState::new().build_hasher(); \
+            h.write_u128(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| \
+            d.as_nanos()).unwrap_or(0)); let a = h.finish(); h.write_u64(a); let b = h.finish(); let a = (a & \
+            0xffff_ffff_ffff_0fff) | 0x4000; let b = (b & 0x3fff_ffff_ffff_ffff) | 0x8000_0000_0000_0000; \
+            Rc::<str>::from(format\!("{:08x}-{:04x}-{:04x}-{:04x}-{:012x}", a >> 32, (a >> 16) & 0xffff, a & 0xffff, \
+            b >> 48, b & 0xffff_ffff_ffff)) }' : guid
     }
 
 /// ### hash_guid

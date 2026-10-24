@@ -34,7 +34,8 @@ inl render props_fn : _ _ =
         }
         fun () =>
             leptos.div [
-                $'"class=\\\"flex flex-1 flex-col p-[10px] gap-[7px] [border-left-width:1px] [border-bottom-width:1px] border-gray-200 bg-gray-100\\\""'
+                $'"class=\\\"flex flex-1 flex-col p-[10px] gap-[7px] [border-left-width:1px] \
+                    [border-bottom-width:1px] border-gray-200 bg-gray-100\\\""'
             ] fun () =>
                 inl data =
                     props.data
@@ -62,7 +63,11 @@ inl render props_fn : _ _ =
                                     props.select (i, item)
                                 :>[
                                     leptos.button [
-                                        $'"class=\\\"flex flex-1 gap-[10px] [align-items:center] [justify-content:center] inline-block rounded border border-gray-400 hover:bg-gray-100 px-[22px] py-1 text-sm text-gray-900 bg-gray-200 hover:text-gray-600 focus:outline-none focus:ring active:text-gray-500\\\""'
+                                        $'"class=\\\"flex flex-1 gap-[10px] [align-items:center] \
+                                            [justify-content:center] inline-block rounded border border-gray-400 \
+                                            hover:bg-gray-100 px-[22px] py-1 text-sm text-gray-900 bg-gray-200 \
+                                            hover:text-gray-600 focus:outline-none focus:ring \
+                                            active:text-gray-500\\\""'
                                         leptos.on_click on_click
                                         $'"aria-label=!item'"'
                                     ] fun () =>

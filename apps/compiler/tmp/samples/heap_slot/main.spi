@@ -7,7 +7,7 @@ inl main () : i32 =
     inl ~m = 4i32
     inl held = Some n
     inl pair = held, m
-    inl box = !!!!LayoutToHeap({value = pair})
+    inl box = !!!!LayoutToHeap({ value = pair })
     inl opened = !!!!LayoutIndex(box)
     inl ~(left, right) = opened.value
     match left with

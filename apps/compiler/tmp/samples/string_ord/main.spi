@@ -5,7 +5,17 @@ inl main () : i32 =
     inl ~e = "é"
     inl ~ex = "éx"
     inl ~empty = ""
-    if !!!!LT(a, a2) then 1i32
+    if !!!!LT(a, a2)
+    then 1i32
     else
-        if !!!!LT(a, b) && !!!!LT(b, e) && !!!!LT(e, ex) && !!!!LT(empty, a) && !!!!LTE(a, a2) && !!!!GTE(a2, a) && !!!!GT(ex, e) && !!!!GTE(b, a) then 0i32
+        if
+            !!!!LT(a, b)
+            && !!!!LT(b, e)
+            && !!!!LT(e, ex)
+            && !!!!LT(empty, a)
+            && !!!!LTE(a, a2)
+            && !!!!GTE(a2, a)
+            && !!!!GT(ex, e)
+            && !!!!GTE(b, a)
+        then 0i32
         else 1i32

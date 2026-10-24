@@ -9,22 +9,17 @@ class Heap0 {
     }
 }
 func spiral_main() -> Int32 {
-    var v0: Int64 = (0 as Int64)
-    v0 = (5000000000 as Int64)
-    var v1: Double = (0.0 as Double)
-    v1 = (1.5 as Double)
-    var v2: Heap0 = Heap0(l0: (0 as Int64), l1: (0.0 as Double))
-    v2 = Heap0(l0: v0, l1: v1)
+    let v0: Int64 = (5000000000 as Int64)
+    let v1: Double = (1.5 as Double)
+    let v2: Heap0 = Heap0(l0: v0, l1: v1)
     var v3: Int64 = (0 as Int64)
     var v4: Double = (0.0 as Double)
     v3 = v2.l0
     v4 = v2.l1
-    var v5: Bool = false
-    v5 = (v3 == (5000000000 as Int64))
+    let v5: Bool = (v3 == (5000000000 as Int64))
     var v7: Bool = false
     if (v5) {
-        var v6: Bool = false
-        v6 = (v4 == (1.5 as Double))
+        let v6: Bool = (v4 == (1.5 as Double))
         v7 = v6
     } else {
         v7 = false

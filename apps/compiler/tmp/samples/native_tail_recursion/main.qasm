@@ -9,8 +9,7 @@ def sp_method1(int[32] p0) -> int[32] {
         if (v2) {
             return 0;
         } else {
-            int[32] t243_1 = v1;
-            v0 = t243_1;
+            v0 = v1;
             continue;
         }
     }

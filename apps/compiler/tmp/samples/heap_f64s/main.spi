@@ -12,7 +12,7 @@ inl main () : i32 =
     inl a = create 1i32
     inl ~x = 1.5f64
     set a 0i32 x
-    inl box = !!!!LayoutToHeap({values = a})
+    inl box = !!!!LayoutToHeap({ values = a })
     inl opened = !!!!LayoutIndex(box)
     inl y = get opened.values 0i32
     if !!!!EQ(y, 1.5f64) then 0i32 else 1i32

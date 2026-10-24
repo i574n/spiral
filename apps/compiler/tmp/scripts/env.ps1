@@ -26,7 +26,7 @@ function Get-SpiralCoreSource([string]$Mode) {
     Join-Path (Split-Path $BundleRoot -Parent) 'spiral_compiler.fs'
 }
 
-function Get-SpiralCoreProjection([string]$Mode, [string]$Destination, [string]$Source) {
+function Get-SpiralCoreProjection([string]$Mode, [string]$Destination, [string]$Source, [string[]]$KeepDefines = @()) {
     $gpt5parallel = (ConvertTo-SpiralMode $Mode) -eq 'gpt5parallel'
     $hopacsota = (ConvertTo-SpiralMode $Mode) -eq 'hopacsota'
     $text = [IO.File]::ReadAllText($(if ($Source) { $Source } else { Get-SpiralCoreSource $Mode }))
@@ -36,8 +36,9 @@ function Get-SpiralCoreProjection([string]$Mode, [string]$Destination, [string]$
     foreach ($line in [regex]::Split($text, '(?<=\n)')) {
         if ($line.Length -eq 0) { continue }
         $bare = $line.TrimEnd("`r", "`n")
-        if ($bare -ceq '#if SPIRAL_CORE_GPT5PARALLEL') { $depth++; $ours.Add(@($depth, $true, $gpt5parallel)); continue }
-        if ($bare -ceq '#if SPIRAL_CORE_HOPACSOTA') { $depth++; $ours.Add(@($depth, $true, $hopacsota)); continue }
+        if ($bare -ceq '#if SPIRAL_CORE_GPT5PARALLEL' -and $KeepDefines -notcontains 'gpt5parallel') { $depth++; $ours.Add(@($depth, $true, $gpt5parallel)); continue }
+        if ($bare -ceq '#if SPIRAL_CORE_HOPACSOTA' -and $KeepDefines -notcontains 'hopacsota') { $depth++; $ours.Add(@($depth, $true, $hopacsota)); continue }
+        if ($bare -ceq '#if !SPIRAL_CORE_GPT5PARALLEL' -and $KeepDefines -notcontains 'gpt5parallel') { $depth++; $ours.Add(@($depth, $true, -not $gpt5parallel)); continue }
         if ($ours.Count -and $depth -eq $ours[$ours.Count - 1][0] -and ($bare -ceq '#else' -or $bare -ceq '#endif')) {
             if ($bare -ceq '#else') { $ours[$ours.Count - 1] = @($depth, $false, $ours[$ours.Count - 1][2]) } else { $ours.RemoveAt($ours.Count - 1); $depth-- }
             continue

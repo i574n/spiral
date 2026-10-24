@@ -1,13 +1,13 @@
 export function main(): number {
-    let v0: number = 2147483647;
-    let v1: number = 2;
-    let v2: number = 1;
-    let v3: number = (v0 + v1) >>> 0;
-    let v4: number = (v0 + v2) >>> 0;
-    let v5: boolean = v3 === 2147483649;
+    const v0: number = 2147483647;
+    const v1: number = 2;
+    const v2: number = 1;
+    const v3: number = (v0 + v1) >>> 0;
+    const v4: number = (v0 + v2) >>> 0;
+    const v5: boolean = v3 === 2147483649;
     let v7: boolean;
     if (v5) {
-        let v6: boolean = v4 === 2147483648;
+        const v6: boolean = v4 === 2147483648;
         v7 = v6;
     } else {
         v7 = false;

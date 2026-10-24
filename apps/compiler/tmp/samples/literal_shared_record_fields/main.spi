@@ -1,0 +1,9 @@
+type tally = { report : string; failures : string; count : i32 }
+
+let rec run (n : i32) (t : tally) : tally =
+    if n <= 0i32 then t
+    else run (n -. 1i32) { report = t.failures; failures = "y"; count = t.count +. 1i32 }
+
+inl main () : i32 =
+    inl t = run 5i32 { report = ""; failures = ""; count = 0i32 }
+    t.count -. 5i32

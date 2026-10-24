@@ -1,0 +1,31 @@
+nominal zero = ()
+nominal succ n = ()
+
+union rec var n =
+    | VZ :: forall n. var (succ n)
+    | VS :: forall n. var n -> var (succ n)
+
+union rec term n =
+    | Var :: forall n. var n -> term n
+    | Lam :: forall n. term (succ n) -> term n
+    | App :: forall n. term n * term n -> term n
+
+inl rec rename forall n m. (ren : var n -> var m) (t : term n) : term m =
+    match t with
+    | Var v => Var (ren v)
+    | Lam body => Lam (rename (lift ren) body)
+    | App (f, x) => App (rename ren f, rename ren x)
+and inl lift forall n m. (ren : var n -> var m) (v : var (succ n)) : var (succ m) =
+    match v with
+    | VZ => VZ
+    | VS inner => VS (ren inner)
+
+let rec size forall n. (t : term n) : i32 =
+    match t with
+    | Var _ => 1i32
+    | Lam body => 1i32 +. size body
+    | App (f, x) => 1i32 +. size f +. size x
+
+inl main () : i32 =
+    inl ~t : term zero = Lam (App (Var VZ, Lam (Var (VS VZ))))
+    size t

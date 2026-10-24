@@ -165,6 +165,69 @@ heads use it.
 - **Q7. Placement:** a compiler section now, reusing the real tokenizer and block parser, exposed as
   SpiralCompiler format [--check], an eoie verb, Zed format-on-save and Cells; ported to the self-hosted
   Spiral compiler with it.
+
+## Decision taken by the user (2026-10-20 07:2x): keep the way things were
+
+"the formatter is keeping things in a single line where it had breaks before, the formatter also should enforce the way
+things were, try finding a generic balance between the hand written libs". This narrows Q2/Q3: the normalize pass
+joined everything that fits, which is not a template the user wrote (`lib/spiral/rust/rust.spi` `rust_type` arguments,
+one per line in the source, became one line), and line breaking is a mixed habit (Facts: 353 of 498 multi-line
+pipelines would fit on one line), so F2 applies to it.
+
+- Authored line breaks are kept, and nothing is joined.
+- Authored blank lines between definitions are kept (the one-blank habit is 1,923 of 2,105, mixed).
+- A top-level block with no code line over 120 is left as written (spacing rules F4 still apply).
+- Inside a block that has to be laid out, a statement whose source lines all fit is emitted from its source lines,
+  shifted as one; only the statements over 120 are laid out, with the F5 templates.
+- G2 is back to its first form: the user corpus formats to itself except spacing lines, Q1 literal splits and the
+  breaks of lines over 120.
+- Work and numbers: FORMATTER-KEEP-BREAKS, `lab/FORMATTER-KEEP-BREAKS/`.
+
+Rules the keep-breaks candidates added (2026-10-20), each from a count of the user corpus:
+
+- `;[..]` array literals keep their inner gaps as written: the user writes `;[!>"x"]` tight 54 times and spaced 7
+  times, so BracketInnerSpace no longer applies to them (F2). Plain `[ .. ]` lists and records keep the F4 spacing.
+- A statement over 120 whose long lines are all macro strings keeps its authored lines, the blank and `//` lines
+  between them and its trailing `//` remarks; only those lines are split, by the macro continuation (Q1). Before, one
+  long svg path re-laid the whole `svg ([ .. ] ++ props) fun () =>` call and dropped the blank lines inside it.
+  A line is kept only when the macro splitter really brings every piece under 120: a short `$'..' : t` macro it cannot
+  split falls back to the layout (accepting any macro line left 17 lib-head lines over 120).
+- Runs of blank lines between comment blocks stay as written (`util.spi` had runs of 2 and 3 collapsed to 1).
+- Not handled: a double blank line inside a function body still becomes one (8 lines over both corpora).
+
+Candidate 5 on the user corpus: lines lost to joins 0, changed lines 737 removed / 1,576 added (3,102 / 3,218 before
+the decision), 45 of 86 files unchanged, spacing-only hunks 8, lines over 120 334 -> 22; lib-head 365 / 1,036 and
+270 -> 77; a second pass changes nothing.
+
+Candidate 6, installed in single-flight as core EA7AC11D786629F2 together with the hopacsota pack: 727 removed / 1,576
+added on the user corpus, 46 of 86 files unchanged, 1 blank line lost; the matrix review single-flight-20261020-112256
+had 7,290 rows, 0 differing cells and DISAGREE 0. The redo of the 2026-10-19 run (`redo-run.ps1 -Apply`) formatted
+every tracked Spiral file that differed from `HEAD` in spiral, dice, alphabet, polyglot, blog and dir-tree-html: from
+`HEAD` with the old and the new formatter, a three-way merge where the file had changed since, and the new text written
+over the old run's. 1,264 files: 1,261 formatting-only, 3 merged, 0 conflicts, 1,203 rewritten; the diff against `HEAD`
+went from 1,243 files (+87,581 / -46,097) to 482 (+21,447 / -7,446). On the tibia repo it formatted 42 files, lines over
+120 went 473 -> 23, and 15 compiled outputs (C, WGSL, Lua, Rust) stayed byte-identical.
+
+Candidate 7 (installed 2026-10-20, review single-flight-20261020-190616, 0 differing cells): an `else if` chain that must
+be re-laid becomes an `elif` chain. Spiral rejects `else if c then` followed by an indented body (the body of the inner
+`if` would sit left of it), so a staircase was the only valid layout of `else if`; the parser folds `elif` into the same
+nested `RawIfThenElse`, so the guard still compares equal shapes. The chain keeps the user's habit of `then` at the
+start of its line (108 times in the user corpus against 6 one-line `if .. then x`). A chain that fits stays as written.
+
+Candidate 8 (installed with candidate 9 in the 2026-10-21 evening pack, tree core A9A71772B249FB8B): a block that fails the parse guard is retried one re-laid statement at a time.
+The first layout records the source span of every statement kept from its authored lines only because it was too wide;
+each retry lets one innermost span, its enclosing statements and the spans accepted so far change, keeps every other
+statement as written, and must pass the guard. `SPIRAL_FORMAT_GUARD_DUMP=<dir>` writes each rejected candidate with
+its shapes. The dump found the tuple bug: a parenthesized `if` in a comma list was laid as `(if c` with `then`/`else` at
+the parenthesis column, left of the `if`. Candidate 9 keeps such an `if` on one line when it
+fits, and accepts a retry only when it keeps the original's parenthesis count, because a retry in `sm'_real.spir`
+dropped authored parentheses (`(fun () => ..) : t` became `fun () => .. : t`, same AST, not as written). Gates
+(job formatter-c9b): G2 user 0 lines lost to joins, 46 of 86 files unchanged, output identical to candidates 7 and 8;
+G2 lib-head identical to candidate 7 (candidate 8's one differing file, the dropped parentheses, is gone); G1 second
+pass 86 of 86 unchanged. The same pack makes the expected-shape parse lazy, so a block that fits as written is never
+parsed for its shapes (output byte-identical to candidate 9 on the user corpus; `hanja.spi` 139 s against more than
+240 s), and the directory walk skips links.
+
 ## Priority and first targets (user, 2026-10-14 06:47)
 
 The formatter comes before further eoie work: "we need the formatter before to pass through eoie shitty oneline

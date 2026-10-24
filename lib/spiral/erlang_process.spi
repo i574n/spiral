@@ -1,0 +1,160 @@
+/// # erlang_process
+open sm'_operators
+
+test erlang_process static =
+    open testing
+
+inl erlang_process_imports () =
+    global "import gleam/erlang/process"
+    global "import gleam/result"
+
+nominal subject t = $'process.Subject(`t)'
+nominal pid = $'process.Pid'
+nominal monitor = $'process.Monitor'
+nominal selector t = $'process.Selector(`t)'
+nominal timer = $'process.Timer'
+nominal down = $'process.Down'
+nominal exit_reason = $'process.ExitReason'
+nominal received t = $'Result(`t, Nil)'
+
+/// ### self
+inl self () : pid =
+    erlang_process_imports ()
+    $'process.self()'
+
+/// ### new_subject
+inl new_subject forall t. () : subject t =
+    erlang_process_imports ()
+    $'process.new_subject()'
+
+/// ### send
+inl send forall t. (to : subject t) (message : t) : () =
+    erlang_process_imports ()
+    $'process.send(!to, !message)'
+
+/// ### spawn
+inl spawn (work : () -> ()) : pid =
+    erlang_process_imports ()
+    $'process.spawn(fn() { !work(Nil) })'
+
+/// ### spawn_unlinked
+inl spawn_unlinked (work : () -> ()) : pid =
+    erlang_process_imports ()
+    $'process.spawn_unlinked(fn() { !work(Nil) })'
+
+/// ### monitor
+inl monitor (watched : pid) : monitor =
+    erlang_process_imports ()
+    $'process.monitor(!watched)'
+
+/// ### demonitor
+inl demonitor (watch : monitor) : () =
+    erlang_process_imports ()
+    $'process.demonitor_process(!watch)'
+
+/// ### receive
+inl receive forall t. (from : subject t) (timeout_ms : i32) : received t =
+    erlang_process_imports ()
+    $'process.receive(!from, !timeout_ms)'
+
+/// ### receive_forever
+inl receive_forever forall t. (from : subject t) : t =
+    erlang_process_imports ()
+    $'process.receive_forever(!from)'
+
+/// ### received_value
+inl received_value forall t. (outcome : received t) : option t =
+    if $'result.is_ok(!outcome)' : bool
+    then Some ($'result.lazy_unwrap(!outcome, fn() { panic })' : t)
+    else None
+
+/// ### new_selector
+inl new_selector forall t. () : selector t =
+    erlang_process_imports ()
+    $'process.new_selector()'
+
+/// ### select_map
+inl select_map forall t u. (from : subject t) (mapping : t -> u) (choices : selector u) : selector u =
+    erlang_process_imports ()
+    $'process.select_map(!choices, !from, !mapping)'
+
+/// ### select_specific_monitor
+inl select_specific_monitor forall u. (watch : monitor) (mapping : down -> u) (choices : selector u) : selector u =
+    erlang_process_imports ()
+    $'process.select_specific_monitor(!choices, !watch, !mapping)'
+
+/// ### selector_receive
+inl selector_receive forall t. (choices : selector t) (timeout_ms : i32) : received t =
+    erlang_process_imports ()
+    $'process.selector_receive(!choices, !timeout_ms)'
+
+/// ### selector_receive_forever
+inl selector_receive_forever forall t. (choices : selector t) : t =
+    erlang_process_imports ()
+    $'process.selector_receive_forever(!choices)'
+
+/// ### down_reason
+inl down_reason (event : down) : exit_reason =
+    $'case !event { process.ProcessDown(reason: reason, ..) -> reason process.PortDown(reason: reason, ..) -> reason }'
+
+/// ### exited_normally
+inl exited_normally (reason : exit_reason) : bool =
+    erlang_process_imports ()
+    $'!reason == process.Normal'
+
+/// ### send_after
+inl send_after forall t. (to : subject t) (delay_ms : i32) (message : t) : timer =
+    erlang_process_imports ()
+    $'process.send_after(!to, !delay_ms, !message)'
+
+/// ### cancel_timer
+inl cancel_timer (pending : timer) : () =
+    erlang_process_imports ()
+    $'process.cancel_timer(!pending)' : ()
+
+/// ### kill
+inl kill (target : pid) : () =
+    erlang_process_imports ()
+    $'process.kill(!target)'
+
+/// ### schedulers_online
+inl schedulers_online () : i32 =
+    global "import gleam/erlang/atom"
+    global "@external(erlang, \"erlang\", \"system_info\") fn erlang_process_system_info(item: atom.Atom) -> Int"
+    $'erlang_process_system_info(atom.create("schedulers_online"))'
+
+/// ### is_alive
+inl is_alive (target : pid) : bool =
+    erlang_process_imports ()
+    $'process.is_alive(!target)'
+
+///> gleam
+test send_then_receive =
+    inl inbox : subject i32 = new_subject ()
+    send inbox 42i32
+    receive inbox 1000i32
+    |> received_value
+    |> _assert_eq (Some 42i32)
+
+///> gleam
+test receive_times_out =
+    inl inbox : subject i32 = new_subject ()
+    receive inbox 10i32
+    |> received_value
+    |> _assert_eq None
+
+///> gleam
+test spawned_reply =
+    inl inbox : subject i32 = new_subject ()
+    spawn (fun () => send inbox 7i32) |> ignore
+    receive_forever inbox
+    |> _assert_eq 7i32
+
+///> gleam
+test monitor_sees_normal_exit =
+    inl inbox : subject () = new_subject ()
+    inl worker = spawn_unlinked fun () => ()
+    inl watch = monitor worker
+    inl choices : selector bool = new_selector () |> select_specific_monitor watch (down_reason >> exited_normally)
+    selector_receive_forever choices
+    |> _assert_eq true

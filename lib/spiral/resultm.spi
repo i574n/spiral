@@ -76,8 +76,14 @@ inl get forall t e. (source : result t e) : t =
             Fsharp = fun () => $'$"resultm.get / Error x: {!x}"' : string
             Python = fun () => $'f"resultm.get / Error x: {!x}"' : string
             TypeScript = fun () => $'"resultm.get / Error x: " + String(!x)' : string
-            Rust = fun () => $'Rc::<str>::from({ struct SpiralDebug<T>(T); trait SpiralDebugShow { fn show(&self) -> String; } impl<T: std::fmt::Debug> SpiralDebugShow for SpiralDebug<T> { fn show(&self) -> String { format\!("{:?}", self.0) } } trait SpiralTypeShow { fn show(&self) -> String; } impl<T> SpiralTypeShow for &SpiralDebug<T> { fn show(&self) -> String { String::from(std::any::type_name::<T>()) } } format\!("resultm.get / Error x: {}", (&SpiralDebug(&!x)).show()) })' : string
-            Zig = fun () => $'(std.fmt.allocPrint(spiral_gpa, "resultm.get / Error x: {any}", .{ !x }) catch \@panic("out of memory"))' : string
+            Rust = fun () => $'Rc::<str>::from({ struct SpiralDebug<T>(T); trait SpiralDebugShow { fn show(&self) -> \
+                String; } impl<T: std::fmt::Debug> SpiralDebugShow for SpiralDebug<T> { fn show(&self) -> String { \
+                format\!("{:?}", self.0) } } trait SpiralTypeShow { fn show(&self) -> String; } impl<T> \
+                SpiralTypeShow for &SpiralDebug<T> { fn show(&self) -> String { \
+                String::from(std::any::type_name::<T>()) } } format\!("resultm.get / Error x: {}", \
+                (&SpiralDebug(&!x)).show()) })' : string
+            Zig = fun () => $'(std.fmt.allocPrint(spiral_gpa, "resultm.get / Error x: {any}", .{ !x }) catch \
+                \@panic("out of memory"))' : string
         }
         |> failwith
 
@@ -93,6 +99,22 @@ inl map_error forall t e u. (fn : e -> u) (source : result t e) : result t u =
     | Ok x => Ok x
     | Error x => x |> fn |> Error
 
+/// ### collect_list
+inl collect_list forall t e. (items : list (result t e)) : result (list t) e =
+    let rec collected (items : list (result t e)) (acc : list t) : result (list t) e =
+        match items with
+        | Nil => Ok (listm.rev acc)
+        | Cons (Error e, _) => Error e
+        | Cons (Ok x, rest) => collected rest (Cons (x, acc))
+    collected items Nil
+
+///> rust
+///> gleam
+test collect_list_keeps_order_and_stops_at_the_first_error =
+    inl ~bad = "bad"
+    (collect_list ([Ok 1i32; Ok 2] : list (result i32 string)), collect_list [Ok 1i32; Error bad; Error "later"])
+    |> _assert_eq (Ok [1i32; 2], Error "bad")
+
 /// ### unwrap_err
 inl unwrap_err forall t u. (x : result t u) : u =
     match x with
@@ -105,8 +127,14 @@ inl unwrap_err forall t u. (x : result t u) : u =
             Fsharp = fun () => $'$"resultm.unwrap_err / Ok x: {!x}"' : string
             Python = fun () => $'f"resultm.unwrap_err / Ok x: {!x}"' : string
             TypeScript = fun () => $'"resultm.unwrap_err / Ok x: " + String(!x)' : string
-            Rust = fun () => $'Rc::<str>::from({ struct SpiralDebug<T>(T); trait SpiralDebugShow { fn show(&self) -> String; } impl<T: std::fmt::Debug> SpiralDebugShow for SpiralDebug<T> { fn show(&self) -> String { format\!("{:?}", self.0) } } trait SpiralTypeShow { fn show(&self) -> String; } impl<T> SpiralTypeShow for &SpiralDebug<T> { fn show(&self) -> String { String::from(std::any::type_name::<T>()) } } format\!("resultm.unwrap_err / Ok x: {}", (&SpiralDebug(&!x)).show()) })' : string
-            Zig = fun () => $'(std.fmt.allocPrint(spiral_gpa, "resultm.unwrap_err / Ok x: {any}", .{ !x }) catch \@panic("out of memory"))' : string
+            Rust = fun () => $'Rc::<str>::from({ struct SpiralDebug<T>(T); trait SpiralDebugShow { fn show(&self) -> \
+                String; } impl<T: std::fmt::Debug> SpiralDebugShow for SpiralDebug<T> { fn show(&self) -> String { \
+                format\!("{:?}", self.0) } } trait SpiralTypeShow { fn show(&self) -> String; } impl<T> \
+                SpiralTypeShow for &SpiralDebug<T> { fn show(&self) -> String { \
+                String::from(std::any::type_name::<T>()) } } format\!("resultm.unwrap_err / Ok x: {}", \
+                (&SpiralDebug(&!x)).show()) })' : string
+            Zig = fun () => $'(std.fmt.allocPrint(spiral_gpa, "resultm.unwrap_err / Ok x: {any}", .{ !x }) catch \
+                \@panic("out of memory"))' : string
         }
         |> failwith
     | Error x => x
@@ -278,7 +306,7 @@ test map =
 /// ### anyhow_result
 nominal anyhow_result t =
     `(
-        rust_type
+        rust.rust_type
             `($'anyhow_Result<`t>')
             `($'anyhow::Result<`t>')
             "type anyhow_Result<'T> = class end"
@@ -287,7 +315,7 @@ nominal anyhow_result t =
 /// ### anyhow_error
 nominal anyhow_error =
     `(
-        rust_type
+        rust.rust_type
             `($'anyhow_Error')
             `($'anyhow::Error')
             "type anyhow_Error = class end"
@@ -512,3 +540,18 @@ test rc_try_unwrap =
     |> rc_try_unwrap
     |> unbox
     |> _assert_eq (Ok true)
+
+/// ### bind
+inl bind forall a b e. (f : a -> result b e) (r : result a e) : result b e =
+    match r with
+    | Ok x => f x
+    | Error e => Error e
+
+inl resultm_halved (n : i32) : result i32 string = if n % 2i32 = 0i32 then Ok (n / 2i32) else Error "odd"
+
+///> rust
+///> gleam
+test bind_chains_until_the_first_error =
+    inl ~n = 8i32
+    (Ok n |> bind resultm_halved |> bind resultm_halved, Ok 6i32 |> bind resultm_halved |> bind resultm_halved)
+    |> _assert_eq (Ok 2i32, Error "odd")

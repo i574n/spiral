@@ -1,32 +1,32 @@
 inl (+.) forall t. (a : t) (b : t) : t =
-    !!!!Add(a,b)
+    !!!!Add(a, b)
 
 inl (-.) forall t. (a : t) (b : t) : t =
-    !!!!Sub(a,b)
+    !!!!Sub(a, b)
 
 inl (*.) forall t. (a : t) (b : t) : t =
-    !!!!Mult(a,b)
+    !!!!Mult(a, b)
 
 inl (/.) forall t. (a : t) (b : t) : t =
-    !!!!Div(a,b)
+    !!!!Div(a, b)
 
 inl (%.) forall t. (a : t) (b : t) : t =
-    !!!!Mod(a,b)
+    !!!!Mod(a, b)
 
 inl (=.) forall t. (a : t) (b : t) : bool =
-    !!!!EQ(a,b)
+    !!!!EQ(a, b)
 
 inl (<) forall t {number}. (a : t) (b : t) : bool =
-    !!!!LT(a,b)
+    !!!!LT(a, b)
 
 inl (<=) forall t {number}. (a : t) (b : t) : bool =
-    !!!!LTE(a,b)
+    !!!!LTE(a, b)
 
 inl (>) forall t {number}. (a : t) (b : t) : bool =
-    !!!!GT(a,b)
+    !!!!GT(a, b)
 
 inl (>=) forall t {number}. (a : t) (b : t) : bool =
-    !!!!GTE(a,b)
+    !!!!GTE(a, b)
 
 nominal array t = array_base t
 
@@ -35,7 +35,7 @@ prototype index ar el : ar el -> int -> el
 prototype set ar el : ar el -> int -> el -> ()
 prototype length ar el : ar el -> int
 
-instance create array = fun size => array !!!!ArrayCreate(`el,size)
-instance index array = fun (array ar) i => !!!!ArrayIndex(ar,i)
-instance set array = fun (array ar) i v => !!!!ArrayIndexSet(ar,i,v)
-instance length array = fun (array ar) => !!!!ArrayLength(`int,ar)
+instance create array = fun size => array !!!!ArrayCreate(`el, size)
+instance index array = fun (array ar) i => !!!!ArrayIndex(ar, i)
+instance set array = fun (array ar) i v => !!!!ArrayIndexSet(ar, i, v)
+instance length array = fun (array ar) => !!!!ArrayLength(`int, ar)

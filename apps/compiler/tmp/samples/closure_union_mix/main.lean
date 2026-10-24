@@ -37,27 +37,22 @@ partial def f_c0 (p0 : Int32) (p1 : String) (p2 : Int32) : IO U0 := do
     let mut v0 : Int32 := p0
     let mut v1 : String := p1
     let mut v2 : Int32 := p2
-    let mut v3 : Bool := default
-    v3 := (v2 == (0 : Int32))
+    let v3 : Bool := (v2 == (0 : Int32))
     if v3 then
         return (U0.One (0 : Int32))
     else
         return (U0.Both v0 v1)
 partial def spiralMain : IO Int32 := do
-    let mut v0 : Int32 := default
-    let mut v1 : String := default
-    let mut v2 : (Int32 → IO U0) := default
-    let mut v3 : U0 := default
     let mut v5 : Int32 := default
     let mut v6 : String := default
     let mut v7 : Bool := default
     let mut v9 : Bool := default
     let mut v8 : Bool := default
     let mut v4 : Int32 := default
-    v0 := (3 : Int32)
-    v1 := "hi"
-    v2 := (f_c0 v0 v1)
-    v3 := (← v2 (1 : Int32))
+    let v0 : Int32 := (3 : Int32)
+    let v1 : String := "hi"
+    let v2 : (Int32 → IO U0) := (f_c0 v0 v1)
+    let v3 : U0 := (← v2 (1 : Int32))
     match v3 with
     | U0.Both f5 f6 =>
         v5 := f5

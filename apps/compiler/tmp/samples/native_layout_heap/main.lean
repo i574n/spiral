@@ -31,14 +31,10 @@ end
 deriving instance Inhabited for H0
 mutual
 partial def spiralMain : IO Int32 := do
-    let mut v0 : H0 := default
-    let mut v1 : Int32 := default
-    let mut v2 : Int32 := default
-    let mut v3 : Int32 := default
-    v0 := (H0.mk (9 : Int32) (10 : Int32))
-    v1 := v0.l0
-    v2 := v0.l1
-    v3 := (v1 + v2)
+    let v0 : H0 := (H0.mk (9 : Int32) (10 : Int32))
+    let v1 : Int32 := v0.l0
+    let v2 : Int32 := v0.l1
+    let v3 : Int32 := (v1 + v2)
     return v3
 end
 def main : IO UInt32 := do

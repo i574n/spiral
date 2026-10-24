@@ -1,11 +1,9 @@
 class SpiralTuple0(val v0: Int, val v1: Boolean)
 fun spiral_main(): Int {
-    var v0: Int = 0
-    v0 = 3
+    val v0: Int = 3
     var v1: Array<SpiralTuple0> = emptyArray<SpiralTuple0>()
     v1 = Array(v0) { SpiralTuple0(0, false) }
-    var v2: Int = 0
-    v2 = 4
+    val v2: Int = 4
     v1[0] = SpiralTuple0(v2, true)
     v1[1] = SpiralTuple0(7, false)
     v1[2] = SpiralTuple0(9, true)
@@ -19,8 +17,7 @@ fun spiral_main(): Int {
     val spiral_tuple499 = v1[1]
     v5 = spiral_tuple499.v0
     v6 = spiral_tuple499.v1
-    var v7: Int = 0
-    v7 = 2
+    val v7: Int = 2
     var v8: Int = 0
     var v9: Boolean = false
     val spiral_tuple673 = v1[v7]
@@ -44,16 +41,11 @@ fun spiral_main(): Int {
     } else {
         v12 = 0
     }
-    var v13: Int = 0
-    v13 = (v3 + v5)
-    var v14: Int = 0
-    v14 = (v13 + v8)
-    var v15: Int = 0
-    v15 = (v14 + v10)
-    var v16: Int = 0
-    v16 = (v15 + v11)
-    var v17: Int = 0
-    v17 = (v16 + v12)
+    val v13: Int = (v3 + v5)
+    val v14: Int = (v13 + v8)
+    val v15: Int = (v14 + v10)
+    val v16: Int = (v15 + v11)
+    val v17: Int = (v16 + v12)
     return v17
 }
 fun main() {

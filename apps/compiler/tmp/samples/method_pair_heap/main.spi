@@ -1,11 +1,11 @@
-inl pick (left : heap {value : i32}) (right : heap {value : i32}) : heap {value : i32} * heap {value : i32} =
+inl pick (left : heap { value : i32 }) (right : heap { value : i32 }) : heap { value : i32 } * heap { value : i32 } =
     left, right
 
 inl main () : i32 =
     inl ~a = 3i32
     inl ~b = 4i32
-    inl left = !!!!LayoutToHeap({value = a})
-    inl right = !!!!LayoutToHeap({value = b})
+    inl left = !!!!LayoutToHeap({ value = a })
+    inl right = !!!!LayoutToHeap({ value = b })
     inl pair = join pick left right
     inl ~(x, y) = pair
     inl ox = !!!!LayoutIndex(x)

@@ -7,8 +7,8 @@ enum US0 {
     US0_One,
 }
 fn spiral_main() -> i32 {
-    let mut v0: US0 = US0::US0_Zero;
-    let mut v2: bool = match &v0 {
+    let v0: US0 = US0::US0_Zero;
+    let v2: bool = match &v0 {
         US0::US0_One => {
             false
         }

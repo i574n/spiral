@@ -47,23 +47,18 @@ partial def score_0 (p0 : U0) : IO Int32 := do
         v2 := (Int32.ofNat v1.utf8ByteSize)
         return v2
 partial def spiralMain : IO Int32 := do
-    let mut v0 : Bool := default
     let mut v4 : U0 := default
     let mut v2 : String := default
-    let mut v5 : Int32 := default
-    let mut v6 : Int32 := default
-    let mut v7 : Int32 := default
-    let mut v8 : Int32 := default
-    v0 := false
+    let v0 : Bool := false
     if v0 then
         v4 := (U0.Number (7 : Int32))
     else
         v2 := "qwe"
         v4 := (U0.Text v2)
-    v5 := (← score_0 v4)
-    v6 := (← score_0 v4)
-    v7 := (v5 + v6)
-    v8 := (v7 - (6 : Int32))
+    let v5 : Int32 := (← score_0 v4)
+    let v6 : Int32 := (← score_0 v4)
+    let v7 : Int32 := (v5 + v6)
+    let v8 : Int32 := (v7 - (6 : Int32))
     return v8
 end
 def main : IO UInt32 := do

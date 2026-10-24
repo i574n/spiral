@@ -1,6 +1,3 @@
-local function spiral_wrap_unsigned(value, bits)
-    return value % (2 ^ bits)
-end
 local function spiral_wrap_signed(value, bits)
     local modulus = 2 ^ bits
     value = value % modulus
@@ -62,34 +59,32 @@ local getv19 = function()
 end
 local v19 = getv19()
 local getv28 = function()
-    local __v = { v1 }
-    if __v[1] ~= nil and __v[1].tag == "Us0_Circle" then
-        local v20 = __v[1]._1
+    if v1 ~= nil and v1.tag == "Us0_Circle" then
+        local v20 = v1._1
         local v21 = spiral_wrap_signed(spiral_mul_mod32(3, v20), 32)
         local v22 = spiral_wrap_signed(spiral_mul_mod32(v21, v20), 32)
         return v22
-    elseif __v[1] ~= nil and __v[1].tag == "Us0_Empty" then
+    elseif v1 ~= nil and v1.tag == "Us0_Empty" then
         return 0
-    elseif __v[1] ~= nil and __v[1].tag == "Us0_Rect" then
-        local v23 = __v[1]._1
-        local v24 = __v[1]._2
+    elseif v1 ~= nil and v1.tag == "Us0_Rect" then
+        local v23 = v1._1
+        local v24 = v1._2
         local v25 = spiral_wrap_signed(spiral_mul_mod32(v23, v24), 32)
         return v25
     end
 end
 local v28 = getv28()
 local getv37 = function()
-    local __v = { v4 }
-    if __v[1] ~= nil and __v[1].tag == "Us0_Circle" then
-        local v29 = __v[1]._1
+    if v4 ~= nil and v4.tag == "Us0_Circle" then
+        local v29 = v4._1
         local v30 = spiral_wrap_signed(spiral_mul_mod32(3, v29), 32)
         local v31 = spiral_wrap_signed(spiral_mul_mod32(v30, v29), 32)
         return v31
-    elseif __v[1] ~= nil and __v[1].tag == "Us0_Empty" then
+    elseif v4 ~= nil and v4.tag == "Us0_Empty" then
         return 0
-    elseif __v[1] ~= nil and __v[1].tag == "Us0_Rect" then
-        local v32 = __v[1]._1
-        local v33 = __v[1]._2
+    elseif v4 ~= nil and v4.tag == "Us0_Rect" then
+        local v32 = v4._1
+        local v33 = v4._2
         local v34 = spiral_wrap_signed(spiral_mul_mod32(v32, v33), 32)
         return v34
     end
@@ -97,17 +92,16 @@ end
 local v37 = getv37()
 local v38 = spiral_wrap_signed((v28 + v37), 32)
 local getv47 = function()
-    local __v = { v5 }
-    if __v[1] ~= nil and __v[1].tag == "Us0_Circle" then
-        local v39 = __v[1]._1
+    if v5 ~= nil and v5.tag == "Us0_Circle" then
+        local v39 = v5._1
         local v40 = spiral_wrap_signed(spiral_mul_mod32(3, v39), 32)
         local v41 = spiral_wrap_signed(spiral_mul_mod32(v40, v39), 32)
         return v41
-    elseif __v[1] ~= nil and __v[1].tag == "Us0_Empty" then
+    elseif v5 ~= nil and v5.tag == "Us0_Empty" then
         return 0
-    elseif __v[1] ~= nil and __v[1].tag == "Us0_Rect" then
-        local v42 = __v[1]._1
-        local v43 = __v[1]._2
+    elseif v5 ~= nil and v5.tag == "Us0_Rect" then
+        local v42 = v5._1
+        local v43 = v5._2
         local v44 = spiral_wrap_signed(spiral_mul_mod32(v42, v43), 32)
         return v44
     end

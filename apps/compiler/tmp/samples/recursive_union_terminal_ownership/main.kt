@@ -1,5 +1,5 @@
 sealed interface UH0 { val tag: Int }
-class UH0_Leaf : UH0 { override val tag: Int = 0 }
+object UH0_Leaf : UH0 { override val tag: Int = 0 }
 data class UH0_Node(val f0: Int, val f1: UH0, val f2: UH0) : UH0 { override val tag: Int = 1 }
 fun sp_sum_1(p0: UH0): Int {
     var v0: UH0 = p0
@@ -36,30 +36,24 @@ fun sp_consume_pair_0(p0: UH0, p1: UH0): Int {
     return v4
 }
 fun spiral_main(): Int {
-    var v0: Int = 0
-    v0 = 1
-    var v1: Int = 0
-    v1 = 2
-    var v2: UH0 = UH0_Leaf()
-    v2 = UH0_Leaf()
-    var v3: UH0 = UH0_Leaf()
+    val v0: Int = 1
+    val v1: Int = 2
+    var v2: UH0 = UH0_Leaf
+    v2 = UH0_Leaf
+    var v3: UH0 = UH0_Leaf
     v3 = UH0_Node(v1, v2, v2)
-    var v4: UH0 = UH0_Leaf()
+    var v4: UH0 = UH0_Leaf
     v4 = UH0_Node(v0, v3, v3)
     var v5: Int = 0
     v5 = 1
     var v6: Int = 0
     v6 = 2
-    var v7: UH0 = UH0_Leaf()
-    v7 = UH0_Leaf()
-    var v8: UH0 = UH0_Leaf()
-    v8 = UH0_Node(v6, v7, v7)
-    var v9: UH0 = UH0_Leaf()
-    v9 = UH0_Node(v5, v8, v8)
-    var v10: Int = 0
-    v10 = sp_consume_pair_0(v4, v9)
-    var v11: Int = 0
-    v11 = (v10 - 10)
+    var v7: UH0 = UH0_Leaf
+    v7 = UH0_Leaf
+    val v8: UH0 = UH0_Node(v6, v7, v7)
+    val v9: UH0 = UH0_Node(v5, v8, v8)
+    val v10: Int = sp_consume_pair_0(v4, v9)
+    val v11: Int = (v10 - 10)
     return v11
 }
 fun main() {

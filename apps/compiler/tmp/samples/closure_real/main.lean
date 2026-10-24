@@ -27,21 +27,16 @@ mutual
 partial def f_c0 (p0 : Float) (p1 : Int32) : IO Float := do
     let mut v0 : Float := p0
     let mut v1 : Int32 := p1
-    let mut v2 : Bool := default
-    v2 := (v1 == (0 : Int32))
+    let v2 : Bool := (v1 == (0 : Int32))
     if v2 then
         return (0.0 : Float)
     else
         return v0
 partial def spiralMain : IO Int32 := do
-    let mut v0 : Float := default
-    let mut v1 : (Int32 → IO Float) := default
-    let mut v2 : Float := default
-    let mut v3 : Bool := default
-    v0 := (1.5 : Float)
-    v1 := (f_c0 v0)
-    v2 := (← v1 (1 : Int32))
-    v3 := (v2 == (1.5 : Float))
+    let v0 : Float := (1.5 : Float)
+    let v1 : (Int32 → IO Float) := (f_c0 v0)
+    let v2 : Float := (← v1 (1 : Int32))
+    let v3 : Bool := (v2 == (1.5 : Float))
     if v3 then
         return (0 : Int32)
     else

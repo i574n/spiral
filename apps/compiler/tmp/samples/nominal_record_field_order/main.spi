@@ -1,5 +1,5 @@
-nominal point = {x : i32; y : i32}
+nominal point = { x : i32; y : i32 }
 inl main () : i32 =
-    inl p = point {y = 3i32; x = 4i32}
+    inl p = point { y = 3i32; x = 4i32 }
     match p with
-    | point {x y} => !!!!Add(!!!!Mult(x, 10i32), y)
+    | point { x y } => !!!!Add(!!!!Mult(x, 10i32), y)

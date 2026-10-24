@@ -23,21 +23,12 @@ pub fn spiral_array_from_storage(storage: gary.ErlangArray(option.Option(a)), si
   SpiralArray(key: key, size: size)
 }
 
-pub fn spiral_array_create(size: Int) -> SpiralArray(a) {
-  list.repeat(option.None, size) |> array.from_list(option.None) |> spiral_array_from_storage(size)
-}
 
 pub fn spiral_array_create_filled(size: Int, value: a) -> SpiralArray(a) {
   list.repeat(option.Some(value), size) |> array.from_list(option.None) |> spiral_array_from_storage(size)
 }
 
-pub fn spiral_array_from_list(values: List(a)) -> SpiralArray(a) {
-  values |> list.map(option.Some) |> array.from_list(option.None) |> spiral_array_from_storage(list.length(values))
-}
 
-pub fn spiral_array_to_list(xs: SpiralArray(a)) -> List(a) {
-  list.repeat(Nil, xs.size) |> list.index_map(fn(_, i) { spiral_array_get(xs, i) })
-}
 
 pub fn spiral_array_get(xs: SpiralArray(a), i: Int) -> a {
   case i >= 0 && i < xs.size {
@@ -62,17 +53,17 @@ pub fn spiral_array_set(xs: SpiralArray(a), i: Int, value: a) -> Nil {
 }
 
 pub fn main() {
-let v0 = spiral_array_create_filled(2, "")
-let v1 = "hi"
-spiral_array_set(v0, 1, v1)
-let v2 = spiral_array_get(v0, 1)
-let v3 = v2 == "hi"
-case v3 {
-    True -> {
-        0
+    let v0 = spiral_array_create_filled(2, "")
+    let v1 = "hi"
+    spiral_array_set(v0, 1, v1)
+    let v2 = spiral_array_get(v0, 1)
+    let v3 = v2 == "hi"
+    case v3 {
+        True -> {
+            0
+        }
+        False -> {
+            1
+        }
     }
-    False -> {
-        1
-    }
-}
 }

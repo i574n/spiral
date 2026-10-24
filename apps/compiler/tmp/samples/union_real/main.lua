@@ -9,12 +9,11 @@ function twice_1(v0)
 end
 
 function score_0(v0)
-    local __v = { v0 }
-    if __v[1] ~= nil and __v[1].tag == "Us0_Real" then
-        local v1 = __v[1]._1
+    if v0 ~= nil and v0.tag == "Us0_Real" then
+        local v1 = v0._1
         return twice_1(v1)
-    elseif __v[1] ~= nil and __v[1].tag == "Us0_Whole" then
-        local v3 = __v[1]._1
+    elseif v0 ~= nil and v0.tag == "Us0_Whole" then
+        local v3 = v0._1
         return v3
     end
 end

@@ -120,7 +120,8 @@ inl publish_project runtime' output_dir path =
     runtimes
     |> listm.map fun runtime' =>
         runtime.execution_options fun x => { x with
-            command = $'$"dotnet publish \\\"{!path}\\\" --configuration Release --output \\\"{!output_dir}\\\" --runtime {!runtime'}"'
+            command = $'$"dotnet publish \\\"{!path}\\\" --configuration Release --output \\\"{!output_dir}\\\" \
+                --runtime {!runtime'}"'
             working_directory = file_dir |> Some |> optionm'.box
         }
         |> runtime.execute_with_options
@@ -394,7 +395,8 @@ inl process_rust { rs_path deps trace_level runtime cleanup } =
 
     inl command =
         if runtime <> None
-        then $'$"cargo +nightly-2024-07-14 build --timings --release --target wasm32-unknown-unknown --manifest-path \\\"{!cargo_toml_path}\\\""'
+        then $'$"cargo +nightly-2024-07-14 build --timings --release --target wasm32-unknown-unknown --manifest-path \
+            \\\"{!cargo_toml_path}\\\""'
         else $'$"cargo run --timings --manifest-path \\\"{!cargo_toml_path}\\\""'
     inl environment_variables =
         if runtime <> None

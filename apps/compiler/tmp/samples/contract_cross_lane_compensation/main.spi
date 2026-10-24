@@ -31,7 +31,9 @@ nominal idempotent = ()
 nominal non_idempotent = ()
 
 union energy_offer grid epoch producer offer unit currency state =
-    | EnergyOffer :: forall grid epoch producer offer unit currency state. string -> energy_offer grid epoch producer offer unit currency state
+    | EnergyOffer :: forall grid epoch producer offer unit currency state.
+        string ->
+        energy_offer grid epoch producer offer unit currency state
 
 union energy_demand grid epoch consumer unit state =
     | EnergyDemand :: forall grid epoch consumer unit state. string -> energy_demand grid epoch consumer unit state
@@ -66,56 +68,108 @@ union observer_checkpoint root observer state =
 union distinct_observers left right state =
     | DistinctObservers :: forall left right state. string -> distinct_observers left right state
 
-union clearing_op grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right from to effect =
-    | OfferEnergy :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right.
+union clearing_op grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+    participant_left participant_right root observer_left observer_right from to effect =
+    | OfferEnergy :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+        batch participant_left participant_right root observer_left observer_right.
         energy_offer grid epoch producer offer unit currency offered ->
-        clearing_op grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right offered metered non_idempotent
-    | ReconcileMeters :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right.
+        clearing_op
+            grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+            participant_left participant_right root observer_left observer_right offered metered non_idempotent
+    | ReconcileMeters :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+        batch participant_left participant_right root observer_left observer_right.
         meter_reading grid epoch supply_meter unit available * meter_reading grid epoch demand_meter unit available ->
-        clearing_op grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right metered matched idempotent
-    | MatchDemand :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right.
-        energy_offer grid epoch producer offer unit currency offered * energy_demand grid epoch consumer unit available ->
-        clearing_op grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right matched reserved idempotent
-    | ReserveOffer :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right.
+        clearing_op
+            grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+            participant_left participant_right root observer_left observer_right metered matched idempotent
+    | MatchDemand :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+        batch participant_left participant_right root observer_left observer_right.
+        energy_offer grid epoch producer offer unit currency offered *
+        energy_demand grid epoch consumer unit available ->
+        clearing_op
+            grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+            participant_left participant_right root observer_left observer_right matched reserved idempotent
+    | ReserveOffer :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+        batch participant_left participant_right root observer_left observer_right.
         reserve_token grid epoch offer locked ->
-        clearing_op grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right reserved prepared non_idempotent
-    | PrepareAtomic :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right.
+        clearing_op
+            grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+            participant_left participant_right root observer_left observer_right reserved prepared non_idempotent
+    | PrepareAtomic :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+        batch participant_left participant_right root observer_left observer_right.
         prepare_vote participant_left batch epoch prepared *
         prepare_vote participant_right batch epoch prepared *
         distinct_participants participant_left participant_right distinct ->
-        clearing_op grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right prepared committed non_idempotent
-    | CommitAtomic :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right.
+        clearing_op
+            grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+            participant_left participant_right root observer_left observer_right prepared committed non_idempotent
+    | CommitAtomic :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+        batch participant_left participant_right root observer_left observer_right.
         commit_receipt batch epoch committed * compensation_token batch epoch available ->
-        clearing_op grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right committed carbon_settled non_idempotent
-    | SettleCarbon :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right.
+        clearing_op
+            grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+            participant_left participant_right root observer_left observer_right committed carbon_settled non_idempotent
+    | SettleCarbon :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+        batch participant_left participant_right root observer_left observer_right.
         carbon_proof grid epoch carbon_method available * commit_receipt batch epoch committed ->
-        clearing_op grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right carbon_settled published idempotent
-    | PublishClearing :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right.
-        registry_pin root available * observer_checkpoint root observer_left observed * observer_checkpoint root observer_right observed * distinct_observers observer_left observer_right distinct ->
-        clearing_op grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right published published idempotent
+        clearing_op
+            grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+            participant_left participant_right root observer_left observer_right carbon_settled published idempotent
+    | PublishClearing :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+        batch participant_left participant_right root observer_left observer_right.
+        registry_pin root available *
+        observer_checkpoint root observer_left observed *
+        observer_checkpoint root observer_right observed *
+        distinct_observers observer_left observer_right distinct ->
+        clearing_op
+            grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+            participant_left participant_right root observer_left observer_right published published idempotent
 
 union clearing_row grid epoch offer batch root from to effect =
-    | ClearingRow :: forall grid epoch offer batch root from to effect. string -> clearing_row grid epoch offer batch root from to effect
+    | ClearingRow :: forall grid epoch offer batch root from to effect.
+        string ->
+        clearing_row grid epoch offer batch root from to effect
 
-union clearing_node grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right from to =
-    | ClearingNode :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right from to.
+union clearing_node grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+    participant_left participant_right root observer_left observer_right from to =
+    | ClearingNode :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+        batch participant_left participant_right root observer_left observer_right from to.
         (exists effect.
-            clearing_op grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right from to effect *
-            clearing_row grid epoch offer batch root from to effect)
-        -> clearing_node grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right from to
+            clearing_op
+                grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+                participant_left participant_right root observer_left observer_right from to effect *
+            clearing_row grid epoch offer batch root from to effect) ->
+        clearing_node
+            grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+            participant_left participant_right root observer_left observer_right from to
 
-union rec clearing_plan grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right from to =
-    | ClearingLeaf :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right from to.
-        clearing_node grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right from to ->
-        clearing_plan grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right from to
-    | ClearingThen :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right from to.
+union rec clearing_plan grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+    participant_left participant_right root observer_left observer_right from to =
+    | ClearingLeaf :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+        batch participant_left participant_right root observer_left observer_right from to.
+        clearing_node
+            grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+            participant_left participant_right root observer_left observer_right from to ->
+        clearing_plan
+            grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+            participant_left participant_right root observer_left observer_right from to
+    | ClearingThen :: forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+        batch participant_left participant_right root observer_left observer_right from to.
         (exists middle.
-            clearing_plan grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right from middle *
-            clearing_node grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right middle to)
-        -> clearing_plan grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right from to
+            clearing_plan
+                grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+                participant_left participant_right root observer_left observer_right from middle *
+            clearing_node
+                grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+                participant_left participant_right root observer_left observer_right middle to) ->
+        clearing_plan
+            grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+            participant_left participant_right root observer_left observer_right from to
 
 union packed_receipt batch epoch =
-    | PackedReceipt :: forall batch epoch. (exists state. commit_receipt batch epoch state) -> packed_receipt batch epoch
+    | PackedReceipt :: forall batch epoch.
+        (exists state. commit_receipt batch epoch state) ->
+        packed_receipt batch epoch
 
 inl receipt_label forall batch epoch state. (receipt : commit_receipt batch epoch state) : string =
     match receipt with | CommitReceipt label => label
@@ -128,46 +182,118 @@ inl with_receipt forall batch epoch result.
         inl exists state. receipt = payload
         visitor receipt
 
-inl node_label forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right from to.
-    (node : clearing_node grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right from to) : string =
+inl node_label forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+    participant_left participant_right root observer_left observer_right from to.
+    (node :
+        clearing_node
+            grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+            participant_left participant_right root observer_left observer_right from to)
+    : string
+    =
     match node with
     | ClearingNode payload =>
         inl exists effect. _, ClearingRow label = payload
         label
 
-inl rec terminal_label forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right from to.
-    (plan : clearing_plan grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch participant_left participant_right root observer_left observer_right from to) : string =
+inl rec terminal_label forall grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer
+    batch participant_left participant_right root observer_left observer_right from to.
+    (plan :
+        clearing_plan
+            grid epoch producer consumer supply_meter demand_meter unit currency carbon_method offer batch
+            participant_left participant_right root observer_left observer_right from to)
+    : string
+    =
     match plan with
     | ClearingLeaf node => node_label node
     | ClearingThen payload =>
         inl exists middle. _, node = payload
         node_label node
 
-inl offer_node () : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b offered metered =
+inl offer_node
+    ()
+    : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a
+        settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b offered metered
+    =
     ClearingNode (exists (OfferEnergy (EnergyOffer "10-kwh"), ClearingRow "offer"))
 
-inl meter_node () : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b metered matched =
+inl meter_node
+    ()
+    : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a
+        settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b metered matched
+    =
     ClearingNode (exists (ReconcileMeters (MeterReading "supply", MeterReading "demand"), ClearingRow "meter"))
 
-inl match_node () : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b matched reserved =
+inl match_node
+    ()
+    : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a
+        settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b matched reserved
+    =
     ClearingNode (exists (MatchDemand (EnergyOffer "10-kwh", EnergyDemand "10-kwh"), ClearingRow "match"))
 
-inl reserve_node () : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b reserved prepared =
+inl reserve_node
+    ()
+    : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a
+        settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b reserved prepared
+    =
     ClearingNode (exists (ReserveOffer (ReserveToken "locked"), ClearingRow "reserve"))
 
-inl prepare_node () : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b prepared committed =
-    ClearingNode (exists (PrepareAtomic (PrepareVote "grid", PrepareVote "bank", DistinctParticipants "grid-ne-bank"), ClearingRow "prepare-2pc"))
+inl prepare_node
+    ()
+    : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a
+        settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b prepared committed
+    =
+    ClearingNode (
+        exists (
+            PrepareAtomic (PrepareVote "grid", PrepareVote "bank", DistinctParticipants "grid-ne-bank"),
+            ClearingRow "prepare-2pc"
+        )
+    )
 
-inl commit_node () : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b committed carbon_settled =
-    ClearingNode (exists (CommitAtomic (CommitReceipt "committed", CompensationToken "rollback-capability"), ClearingRow "commit-2pc"))
+inl commit_node
+    ()
+    : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a
+        settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b committed
+        carbon_settled
+    =
+    ClearingNode (
+        exists (
+            CommitAtomic (CommitReceipt "committed", CompensationToken "rollback-capability"),
+            ClearingRow "commit-2pc"
+        )
+    )
 
-inl carbon_node () : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b carbon_settled published =
-    ClearingNode (exists (SettleCarbon (CarbonProof "hourly-marginal-carbon", CommitReceipt "committed"), ClearingRow "carbon"))
+inl carbon_node
+    ()
+    : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a
+        settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b carbon_settled
+        published
+    =
+    ClearingNode (
+        exists (SettleCarbon (CarbonProof "hourly-marginal-carbon", CommitReceipt "committed"), ClearingRow "carbon")
+    )
 
-inl publish_node () : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b published published =
-    ClearingNode (exists (PublishClearing (RegistryPin "root", ObserverCheckpoint "observer-a", ObserverCheckpoint "observer-b", DistinctObservers "a-ne-b"), ClearingRow "atomic-carbon-microgrid-clearing"))
+inl publish_node
+    ()
+    : clearing_node grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a
+        settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b published published
+    =
+    ClearingNode (
+        exists (
+            PublishClearing (
+                RegistryPin "root",
+                ObserverCheckpoint "observer-a",
+                ObserverCheckpoint "observer-b",
+                DistinctObservers "a-ne-b"
+            ),
+            ClearingRow "atomic-carbon-microgrid-clearing"
+        )
+    )
 
-inl plan () : clearing_plan grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b offered published =
+inl plan
+    ()
+    : clearing_plan grid_a epoch_77 producer_a consumer_a meter_supply meter_demand kwh brl carbon_method_a offer_a
+        settlement_batch_a participant_grid participant_bank registry_root_a observer_a observer_b offered published
+    =
     ClearingThen (exists (
         ClearingThen (exists (
             ClearingThen (exists (
@@ -290,16 +416,29 @@ inl with_parallel_outcome forall batch epoch result.
         on_compensated failure compensation
 
 inl compensated_parallel_plan () : parallel_plan settlement_batch_a branch_epoch_1 branch_pending audit_ready =
-    ParallelThen (exists (
-        ParallelLeaf (ParallelNode (exists (
-            CompensateOne (LaneFailure "bank-timeout", LaneCompensation "release-bank-reservation"),
-            ParallelRow "compensate-bank-lane"
-        ))),
-        ParallelNode (exists (
-            PublishParallelAudit (RegistryPin "root", ObserverCheckpoint "observer-a", ObserverCheckpoint "observer-b", DistinctObservers "a-ne-b"),
-            ParallelRow "concurrent-compensating-microgrid"
-        ))
-    ))
+    ParallelThen (
+        exists (
+            ParallelLeaf (
+                ParallelNode (
+                    exists (
+                        CompensateOne (LaneFailure "bank-timeout", LaneCompensation "release-bank-reservation"),
+                        ParallelRow "compensate-bank-lane"
+                    )
+                )
+            ),
+            ParallelNode (
+                exists (
+                    PublishParallelAudit (
+                        RegistryPin "root",
+                        ObserverCheckpoint "observer-a",
+                        ObserverCheckpoint "observer-b",
+                        DistinctObservers "a-ne-b"
+                    ),
+                    ParallelRow "concurrent-compensating-microgrid"
+                )
+            )
+        )
+    )
 
 inl main () : string =
     inl receipt : commit_receipt settlement_batch_a epoch_77 committed = CommitReceipt "committed"
@@ -307,7 +446,8 @@ inl main () : string =
     inl inspected = with_receipt `$receipt_label packed
     inl _ = inspected
     inl failure : lane_failure lane_bank settlement_batch_a branch_epoch_1 branch_failed = LaneFailure "bank-timeout"
-    inl compensation : lane_compensation lane_carbon settlement_batch_a branch_epoch_1 branch_compensated = LaneCompensation "release-bank-reservation"
+    inl compensation : lane_compensation lane_carbon settlement_batch_a branch_epoch_1 branch_compensated =
+        LaneCompensation "release-bank-reservation"
     inl outcome : parallel_outcome settlement_batch_a branch_epoch_1 =
         ParallelCompensated (exists (failure, compensation))
     inl _ = outcome

@@ -67,7 +67,12 @@ inl with_executable forall output.
 inl conceal forall result. (_ : program result) (_ : result) : string = "result-parametric"
 
 inl value_program () : program value =
-    MapProgram (exists (PairProgram (Operation (Load (address "0x10")), Operation (Add (value 3, value 4))), fun (_ : value * value) => value 7))
+    MapProgram (
+        exists (
+            PairProgram (Operation (Load (address "0x10")), Operation (Add (value 3, value 4))),
+            fun (_ : value * value) => value 7
+        )
+    )
 
 inl branch_program () : program branch_result =
     Operation (Branch (condition true))
@@ -79,7 +84,22 @@ inl executable_value () : executable =
     CudaExecutable (exists (cuda (launch_program ()), event "event-42"))
 
 inl emit (_ : string) (_ : string) (_ : string) (_ : string) : string =
-    "schema\tkind\tnode_id\toperation\tfrom\tto\tdeps\teffect\tcapability\tretry_budget\tresult\tsequence\n1\tplan\tload\tLoad\taddress\tvalue\t\tidempotent\tmemory\t2\t\t\n1\tplan\tadd\tAdd\tvalues\tvalue\tload\tidempotent\tcompute\t2\t\t\n1\tplan\tbranch\tBranch\tcondition\tbranch-result\tadd\tidempotent\tcontrol\t1\t\t\n1\tplan\tallocate\tAllocate\tsize\tbuffer\tbranch\tnon_idempotent\tmemory\t0\t\t\n1\tplan\tlaunch\tLaunch\tkernel-buffer\tevent\tallocate\tnon_idempotent\taccelerator\t0\t\t\n1\treceipt\tload\tLoad\taddress\tvalue\t\t\t\t\tcommitted\t1\n1\treceipt\tadd\tAdd\tvalues\tvalue\t\t\t\t\tcommitted\t3\n1\treceipt\tbranch\tBranch\tcondition\tbranch-result\t\t\t\t\tcommitted\t5\n1\treceipt\tallocate\tAllocate\tsize\tbuffer\t\t\t\t\tcommitted\t7\n1\treceipt\tlaunch\tLaunch\tkernel-buffer\tevent\t\t\t\t\tcommitted\t9\n1\tevent\tload\tLoad\taddress\tvalue\t\t\t\t\tsuccess\t2\n1\tevent\tadd\tAdd\tvalues\tvalue\t\t\t\t\tsuccess\t4\n1\tevent\tbranch\tBranch\tcondition\tbranch-result\t\t\t\t\tsuccess\t6\n1\tevent\tallocate\tAllocate\tsize\tbuffer\t\t\t\t\tsuccess\t8\n1\tevent\tlaunch\tLaunch\tkernel-buffer\tevent\t\t\t\t\tsuccess\t10\n"
+    "schema\tkind\tnode_id\toperation\tfrom\tto\tdeps\teffect\tcapability\tretry_budget\tresult\tsequence\n"
+    ^^ "1\tplan\tload\tLoad\taddress\tvalue\t\tidempotent\tmemory\t2\t\t\n"
+    ^^ "1\tplan\tadd\tAdd\tvalues\tvalue\tload\tidempotent\tcompute\t2\t\t\n"
+    ^^ "1\tplan\tbranch\tBranch\tcondition\tbranch-result\tadd\tidempotent\tcontrol\t1\t\t\n"
+    ^^ "1\tplan\tallocate\tAllocate\tsize\tbuffer\tbranch\tnon_idempotent\tmemory\t0\t\t\n"
+    ^^ "1\tplan\tlaunch\tLaunch\tkernel-buffer\tevent\tallocate\tnon_idempotent\taccelerator\t0\t\t\n"
+    ^^ "1\treceipt\tload\tLoad\taddress\tvalue\t\t\t\t\tcommitted\t1\n"
+    ^^ "1\treceipt\tadd\tAdd\tvalues\tvalue\t\t\t\t\tcommitted\t3\n"
+    ^^ "1\treceipt\tbranch\tBranch\tcondition\tbranch-result\t\t\t\t\tcommitted\t5\n"
+    ^^ "1\treceipt\tallocate\tAllocate\tsize\tbuffer\t\t\t\t\tcommitted\t7\n"
+    ^^ "1\treceipt\tlaunch\tLaunch\tkernel-buffer\tevent\t\t\t\t\tcommitted\t9\n"
+    ^^ "1\tevent\tload\tLoad\taddress\tvalue\t\t\t\t\tsuccess\t2\n"
+    ^^ "1\tevent\tadd\tAdd\tvalues\tvalue\t\t\t\t\tsuccess\t4\n"
+    ^^ "1\tevent\tbranch\tBranch\tcondition\tbranch-result\t\t\t\t\tsuccess\t6\n"
+    ^^ "1\tevent\tallocate\tAllocate\tsize\tbuffer\t\t\t\t\tsuccess\t8\n"
+    ^^ "1\tevent\tlaunch\tLaunch\tkernel-buffer\tevent\t\t\t\t\tsuccess\t10\n"
 
 inl requires_value (_ : program value) : string = "value-program"
 

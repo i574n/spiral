@@ -2,21 +2,21 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 fn method0(mut v0: Rc<str>) -> (Rc<str>, i32) {
-    let mut v1: i32 = (v0.clone().len() as i32);
-    (v0.clone(), v1)
+    let v1: i32 = (v0.clone().len() as i32);
+    (v0, v1)
 }
 fn score_1(mut v0: i32, mut v1: Rc<str>) -> i32 {
-    let mut v2: i32 = (v1.clone().len() as i32);
-    let mut v3: i32 = v2.wrapping_add(v0);
+    let v2: i32 = (v1.len() as i32);
+    let v3: i32 = v2.wrapping_add(v0);
     v3
 }
 fn spiral_main() -> i32 {
-    let mut v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("qwe"); } LIT.with(|lit| lit.clone()) };
-    let (mut v1, mut v2): (Rc<str>, i32) = method0(v0.clone());
-    let mut v3: i32 = score_1(v2, v1.clone());
-    let mut v4: i32 = score_1(v2, v1.clone());
-    let mut v5: i32 = v3.wrapping_add(v4);
-    let mut v6: i32 = v5.wrapping_sub(12i32);
+    let v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("qwe"); } LIT.with(|lit| lit.clone()) };
+    let (mut v1, mut v2): (Rc<str>, i32) = method0(v0);
+    let v3: i32 = score_1(v2, v1.clone());
+    let v4: i32 = score_1(v2, v1);
+    let v5: i32 = v3.wrapping_add(v4);
+    let v6: i32 = v5.wrapping_sub(12i32);
     v6
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }

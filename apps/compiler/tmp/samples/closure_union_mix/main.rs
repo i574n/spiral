@@ -8,7 +8,7 @@ enum US0 {
 }
 fn f_c0(mut v0: i32, mut v1: Rc<str>) -> Rc<dyn Fn(i32) -> US0> {
     Rc::new(move |mut v2: i32| -> US0 {
-        let mut v3: bool = v2 == 0i32;
+        let v3: bool = v2 == 0i32;
         if v3 {
             US0::US0_One(0i32)
         } else {
@@ -17,17 +17,17 @@ fn f_c0(mut v0: i32, mut v1: Rc<str>) -> Rc<dyn Fn(i32) -> US0> {
     })
 }
 fn spiral_main() -> i32 {
-    let mut v0: i32 = 3i32;
-    let mut v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
-    let mut v2: Rc<dyn Fn(i32) -> US0> = f_c0(v0, v1.clone());
-    let mut v3: US0 = v2(1i32);
+    let v0: i32 = 3i32;
+    let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
+    let mut v2: Rc<dyn Fn(i32) -> US0> = f_c0(v0, v1);
+    let v3: US0 = v2(1i32);
     match &v3 {
         US0::US0_Both(v5, v6) => {
-            let mut v5: i32 = *v5;
-            let mut v6: Rc<str> = v6.clone();
-            let mut v7: bool = v5 == 3i32;
-            let mut v9: bool = if v7 {
-                let mut v8: bool = v6.clone() == { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
+            let v5: i32 = *v5;
+            let v6: Rc<str> = v6.clone();
+            let v7: bool = v5 == 3i32;
+            let v9: bool = if v7 {
+                let v8: bool = &*v6 == "hi";
                 v8
             } else {
                 false
@@ -39,7 +39,7 @@ fn spiral_main() -> i32 {
             }
         }
         US0::US0_One(v4) => {
-            let mut v4: i32 = *v4;
+            let v4: i32 = *v4;
             1i32
         }
     }

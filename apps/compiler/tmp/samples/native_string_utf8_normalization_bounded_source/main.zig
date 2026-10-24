@@ -41,88 +41,25 @@ fn spiralFlush() void {
     spiralWrite(1, spiral_out_buffer[0..spiral_out_len]);
     spiral_out_len = 0;
 }
-fn spiralPrint(s: []const u8) void {
-    if (s.len > spiral_out_buffer.len - spiral_out_len) spiralFlush();
-    if (s.len > spiral_out_buffer.len) {
-        spiralWrite(1, s);
-        return;
-    }
-    @memcpy(spiral_out_buffer[spiral_out_len..][0..s.len], s);
-    spiral_out_len += s.len;
-}
-fn spiralFloatText(x: anytype) []u8 {
-    var buffer: [std.fmt.float.bufferSize(.decimal, @TypeOf(x))]u8 = undefined;
-    const text = std.fmt.float.render(&buffer, x, .{ .mode = .decimal }) catch unreachable;
-    return spiral_gpa.dupe(u8, text) catch @panic("out of memory");
-}
-fn spiralPrintAny(x: anytype) void {
-    const T = @TypeOf(x);
-    if (T == []const u8) return spiralPrint(x);
-    if (@typeInfo(T) == .float) return spiralPrint(spiralFloatText(x));
-    const s = switch (@typeInfo(T)) {
-        .bool => std.fmt.allocPrint(spiral_gpa, "{}", .{x}),
-        else => std.fmt.allocPrint(spiral_gpa, "{d}", .{x}),
-    } catch @panic("out of memory");
-    spiralPrint(s);
-}
 fn spiralFail(s: []const u8) noreturn {
     spiralFlush();
     spiralWrite(2, s);
     spiralWrite(2, "\n");
     std.process.exit(1);
 }
-fn spiralConv(comptime T: type, x: anytype) T {
-    const S = @TypeOf(x);
-    if (@typeInfo(T) == .float) {
-        if (@typeInfo(S) == .float) return @floatCast(x) else return @floatFromInt(x);
-    }
-    if (@typeInfo(S) == .float) return @intFromFloat(x);
-    const U = @Int(.unsigned, @bitSizeOf(T));
-    const wide: i128 = x;
-    return @bitCast(@as(U, @truncate(@as(u128, @bitCast(wide)))));
-}
-fn spiralConcat(a: []const u8, b: []const u8) []const u8 {
-    return std.mem.concat(spiral_gpa, u8, &.{ a, b }) catch @panic("out of memory");
-}
-fn spiralStringSlice(s: []const u8, from: i64, upto: i64) []const u8 {
-    const len: i64 = @intCast(s.len);
-    if (from < 0 or from > len or upto < from - 1 or upto >= len) std.process.exit(3);
-    if (upto < from) return "";
-    const a: usize = @intCast(from);
-    const b: usize = @intCast(upto + 1);
-    if ((s[a] & 0xC0) == 0x80 or (b < s.len and (s[b] & 0xC0) == 0x80)) std.process.exit(3);
-    return s[a..b];
-}
 fn spiralIndex(len: usize, i: anytype) usize {
     if (i < 0 or i >= len) std.process.exit(3);
     return @intCast(i);
 }
-fn spiralNewArray(comptime T: type, n: anytype) []T {
-    const len: usize = @intCast(n);
-    const a = spiral_gpa.alloc(T, len) catch @panic("out of memory");
-    switch (@typeInfo(T)) {
-        .int, .float, .bool => @memset(a, std.mem.zeroes(T)),
-        else => if (T == []const u8) @memset(a, ""),
-    }
-    return a;
-}
-fn spiralCreate(comptime T: type, v: T) *T {
-    const p = spiral_gpa.create(T) catch @panic("out of memory");
-    p.* = v;
-    return p;
-}
 fn runtime_byte_1(p0: []const u8, p1: i32) u8 {
     var v0: []const u8 = p0; _ = &v0;
     var v1: i32 = p1; _ = &v1;
-    var v2: u8 = undefined; _ = &v2;
-    v2 = v0[spiralIndex(v0.len, v1)];
+    const v2: u8 = v0[spiralIndex(v0.len, v1)];
     return v2;
 }
 fn utf8_scalar_at_byte_offset_0(p0: []const u8, p1: i32) i32 {
     var v0: []const u8 = p0; _ = &v0;
     var v1: i32 = p1; _ = &v1;
-    var v2: i32 = undefined; _ = &v2;
-    var v3: bool = undefined; _ = &v3;
     var v5: bool = undefined; _ = &v5;
     var v7: u8 = undefined; _ = &v7;
     var v8: i32 = undefined; _ = &v8;
@@ -196,8 +133,8 @@ fn utf8_scalar_at_byte_offset_0(p0: []const u8, p1: i32) i32 {
     var v93: i32 = undefined; _ = &v93;
     var v94: bool = undefined; _ = &v94;
     var v96: bool = undefined; _ = &v96;
-    v2 = @as(i32, @intCast(v0.len));
-    v3 = v1 < @as(i32, 0);
+    const v2: i32 = @as(i32, @intCast(v0.len));
+    const v3: bool = v1 < @as(i32, 0);
     if (v3) {
         spiralFail("UTF-8 byte offset is negative.");
     } else {
@@ -382,25 +319,6 @@ fn utf8_scalar_at_byte_offset_0(p0: []const u8, p1: i32) i32 {
     }
 }
 fn spiralMain() i32 {
-    var v0: []const u8 = undefined; _ = &v0;
-    var v1: i32 = undefined; _ = &v1;
-    var v2: i32 = undefined; _ = &v2;
-    var v3: []const u8 = undefined; _ = &v3;
-    var v4: i32 = undefined; _ = &v4;
-    var v5: i32 = undefined; _ = &v5;
-    var v6: []const u8 = undefined; _ = &v6;
-    var v7: i32 = undefined; _ = &v7;
-    var v8: i32 = undefined; _ = &v8;
-    var v9: []const u8 = undefined; _ = &v9;
-    var v10: i32 = undefined; _ = &v10;
-    var v11: i32 = undefined; _ = &v11;
-    var v12: []const u8 = undefined; _ = &v12;
-    var v13: i32 = undefined; _ = &v13;
-    var v14: i32 = undefined; _ = &v14;
-    var v15: []const u8 = undefined; _ = &v15;
-    var v16: i32 = undefined; _ = &v16;
-    var v17: i32 = undefined; _ = &v17;
-    var v18: bool = undefined; _ = &v18;
     var v64: i32 = undefined; _ = &v64;
     var v65: i32 = undefined; _ = &v65;
     var v19: bool = undefined; _ = &v19;
@@ -418,7 +336,6 @@ fn spiralMain() i32 {
     var v31: bool = undefined; _ = &v31;
     var v32: bool = undefined; _ = &v32;
     var v33: bool = undefined; _ = &v33;
-    var v66: bool = undefined; _ = &v66;
     var v112: i32 = undefined; _ = &v112;
     var v113: i32 = undefined; _ = &v113;
     var v67: bool = undefined; _ = &v67;
@@ -436,7 +353,6 @@ fn spiralMain() i32 {
     var v79: bool = undefined; _ = &v79;
     var v80: bool = undefined; _ = &v80;
     var v81: bool = undefined; _ = &v81;
-    var v114: bool = undefined; _ = &v114;
     var v160: i32 = undefined; _ = &v160;
     var v161: i32 = undefined; _ = &v161;
     var v115: bool = undefined; _ = &v115;
@@ -454,23 +370,16 @@ fn spiralMain() i32 {
     var v127: bool = undefined; _ = &v127;
     var v128: bool = undefined; _ = &v128;
     var v129: bool = undefined; _ = &v129;
-    var v162: bool = undefined; _ = &v162;
     var v163: i32 = undefined; _ = &v163;
-    var v164: bool = undefined; _ = &v164;
     var v165: i32 = undefined; _ = &v165;
     var v166: i32 = undefined; _ = &v166;
-    var v167: bool = undefined; _ = &v167;
     var v170: i32 = undefined; _ = &v170;
     var v168: bool = undefined; _ = &v168;
-    var v171: bool = undefined; _ = &v171;
     var v172: i32 = undefined; _ = &v172;
     var v173: i32 = undefined; _ = &v173;
-    var v174: bool = undefined; _ = &v174;
     var v175: i32 = undefined; _ = &v175;
-    var v176: bool = undefined; _ = &v176;
     var v177: i32 = undefined; _ = &v177;
     var v178: i32 = undefined; _ = &v178;
-    var v179: bool = undefined; _ = &v179;
     var v181: bool = undefined; _ = &v181;
     var v180: bool = undefined; _ = &v180;
     var v182: bool = undefined; _ = &v182;
@@ -488,25 +397,25 @@ fn spiralMain() i32 {
     var v194: bool = undefined; _ = &v194;
     var v196: bool = undefined; _ = &v196;
     var v195: bool = undefined; _ = &v195;
-    v0 = "\xc3\xa9";
-    v1 = @as(i32, 0);
-    v2 = utf8_scalar_at_byte_offset_0(v0, v1);
-    v3 = "\xc3\xb5";
-    v4 = @as(i32, 0);
-    v5 = utf8_scalar_at_byte_offset_0(v3, v4);
-    v6 = "\xc3\xa7";
-    v7 = @as(i32, 0);
-    v8 = utf8_scalar_at_byte_offset_0(v6, v7);
-    v9 = "\xcc\x81";
-    v10 = @as(i32, 0);
-    v11 = utf8_scalar_at_byte_offset_0(v9, v10);
-    v12 = "\xcc\x83";
-    v13 = @as(i32, 0);
-    v14 = utf8_scalar_at_byte_offset_0(v12, v13);
-    v15 = "\xcc\xa7";
-    v16 = @as(i32, 0);
-    v17 = utf8_scalar_at_byte_offset_0(v15, v16);
-    v18 = v2 == @as(i32, 192);
+    const v0: []const u8 = "\xc3\xa9";
+    const v1: i32 = @as(i32, 0);
+    const v2: i32 = utf8_scalar_at_byte_offset_0(v0, v1);
+    const v3: []const u8 = "\xc3\xb5";
+    const v4: i32 = @as(i32, 0);
+    const v5: i32 = utf8_scalar_at_byte_offset_0(v3, v4);
+    const v6: []const u8 = "\xc3\xa7";
+    const v7: i32 = @as(i32, 0);
+    const v8: i32 = utf8_scalar_at_byte_offset_0(v6, v7);
+    const v9: []const u8 = "\xcc\x81";
+    const v10: i32 = @as(i32, 0);
+    const v11: i32 = utf8_scalar_at_byte_offset_0(v9, v10);
+    const v12: []const u8 = "\xcc\x83";
+    const v13: i32 = @as(i32, 0);
+    const v14: i32 = utf8_scalar_at_byte_offset_0(v12, v13);
+    const v15: []const u8 = "\xcc\xa7";
+    const v16: i32 = @as(i32, 0);
+    const v17: i32 = utf8_scalar_at_byte_offset_0(v15, v16);
+    const v18: bool = v2 == @as(i32, 192);
     if (v18) {
         v64 = @as(i32, 65);
         v65 = @as(i32, 768);
@@ -604,7 +513,7 @@ fn spiralMain() i32 {
             }
         }
     }
-    v66 = v5 == @as(i32, 192);
+    const v66: bool = v5 == @as(i32, 192);
     if (v66) {
         v112 = @as(i32, 65);
         v113 = @as(i32, 768);
@@ -702,7 +611,7 @@ fn spiralMain() i32 {
             }
         }
     }
-    v114 = v8 == @as(i32, 192);
+    const v114: bool = v8 == @as(i32, 192);
     if (v114) {
         v160 = @as(i32, 65);
         v161 = @as(i32, 768);
@@ -800,13 +709,13 @@ fn spiralMain() i32 {
             }
         }
     }
-    v162 = v11 == @as(i32, 769);
+    const v162: bool = v11 == @as(i32, 769);
     if (v162) {
         v163 = @as(i32, 233);
     } else {
         v163 = @as(i32, -1);
     }
-    v164 = v163 < @as(i32, 0);
+    const v164: bool = v163 < @as(i32, 0);
     if (v164) {
         v165 = @as(i32, 101);
         v166 = v11;
@@ -814,7 +723,7 @@ fn spiralMain() i32 {
         v165 = v163;
         v166 = @as(i32, -1);
     }
-    v167 = v14 == @as(i32, 769);
+    const v167: bool = v14 == @as(i32, 769);
     if (v167) {
         v170 = @as(i32, 243);
     } else {
@@ -825,7 +734,7 @@ fn spiralMain() i32 {
             v170 = @as(i32, -1);
         }
     }
-    v171 = v170 < @as(i32, 0);
+    const v171: bool = v170 < @as(i32, 0);
     if (v171) {
         v172 = @as(i32, 111);
         v173 = v14;
@@ -833,13 +742,13 @@ fn spiralMain() i32 {
         v172 = v170;
         v173 = @as(i32, -1);
     }
-    v174 = v17 == @as(i32, 807);
+    const v174: bool = v17 == @as(i32, 807);
     if (v174) {
         v175 = @as(i32, 231);
     } else {
         v175 = @as(i32, -1);
     }
-    v176 = v175 < @as(i32, 0);
+    const v176: bool = v175 < @as(i32, 0);
     if (v176) {
         v177 = @as(i32, 99);
         v178 = v17;
@@ -847,7 +756,7 @@ fn spiralMain() i32 {
         v177 = v175;
         v178 = @as(i32, -1);
     }
-    v179 = v64 == @as(i32, 101);
+    const v179: bool = v64 == @as(i32, 101);
     if (v179) {
         v180 = v65 == v11;
         v181 = v180;

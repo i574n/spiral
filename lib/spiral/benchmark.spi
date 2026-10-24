@@ -59,13 +59,22 @@ inl run forall input expected.
 
     match results_with_time |> am'.map_base fst with
     | items when (items |> (fun x => array x : array _) |> am'.length) <= 1 => ()
-    | items when items |> (fun x => array x : array _) |> arraym.forall' ((=) (items |> (fun x => array x : array _) |> am'.index 0)) => ()
+    | items when
+        items
+        |> (fun x => array x : array _)
+        |> arraym.forall' ((=) (items |> (fun x => array x : array _) |> am'.index 0))
+        => ()
     | results => failwith ($'$"benchmark.run / error / results: {!results}"' : string)
 
     {
         input = input_str
         expected = #?*expected
-        result = results_with_time |> am'.map_base fst |> (fun x => array x : array _) |> am'.index 0 |> sm'.format_debug
+        result =
+            results_with_time
+            |> am'.map_base fst
+            |> (fun x => array x : array _)
+            |> am'.index 0
+            |> sm'.format_debug
         time_list = results_with_time |> am'.map_base snd
     }
 

@@ -3,8 +3,12 @@ open main
 nominal generic_matcher_decision_capability alphabet = regex alphabet -> linear_input alphabet -> bool
 
 union generic_matcher_state alphabet phase =
-    | GenericMatcherRaw :: forall alphabet. regex alphabet * linear_input alphabet -> generic_matcher_state alphabet matcher_raw
-    | GenericMatcherDecided :: forall alphabet. regex alphabet * linear_input alphabet * bool -> generic_matcher_state alphabet matcher_decided
+    | GenericMatcherRaw :: forall alphabet.
+        regex alphabet * linear_input alphabet ->
+        generic_matcher_state alphabet matcher_raw
+    | GenericMatcherDecided :: forall alphabet.
+        regex alphabet * linear_input alphabet * bool ->
+        generic_matcher_state alphabet matcher_decided
 
 inl generic_matcher_decision_capability_default forall alphabet {symbol_compare}.
     : generic_matcher_decision_capability alphabet =
@@ -40,9 +44,17 @@ inl sealed_generic_decided_match_value (state : sealed_generic_decided_match) : 
 
 inl main () : bool =
     inl bit_decided : generic_decided_match bit_alphabet =
-        generic_decided_match (decide_generic_match (generic_matcher_decision_capability_default) (GenericMatcherRaw (ends_with_zero (), input_110 ())))
+        generic_decided_match (
+            decide_generic_match
+                (generic_matcher_decision_capability_default)
+                (GenericMatcherRaw (ends_with_zero (), input_110 ()))
+        )
     inl tri_decided : generic_decided_match tri_alphabet =
-        generic_decided_match (decide_generic_match (generic_matcher_decision_capability_default) (GenericMatcherRaw (tri_a_star (), input_aaa ())))
+        generic_decided_match (
+            decide_generic_match
+                (generic_matcher_decision_capability_default)
+                (GenericMatcherRaw (tri_a_star (), input_aaa ()))
+        )
     inl batch : matcher_batch generic_decided_match (bit_alphabet * tri_alphabet) =
         MatchBatchPair (MatchBatchSingle bit_decided, MatchBatchSingle tri_decided)
     inl batch_ok = matcher_batch_forall `$generic_decided_match_value batch

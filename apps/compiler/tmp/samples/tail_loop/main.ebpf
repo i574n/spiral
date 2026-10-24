@@ -45,10 +45,8 @@ static int32_t sp_method1(int32_t p0, int32_t p1) {
         if (v4) {
             return v3;
         } else {
-            int32_t t391_2 = v2;
-            int32_t t425_3 = v3;
-            v0 = t391_2;
-            v1 = t425_3;
+            v0 = v2;
+            v1 = v3;
             continue;
         }
     }

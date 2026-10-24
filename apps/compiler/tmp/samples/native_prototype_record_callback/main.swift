@@ -16,10 +16,8 @@ func sp_method0(_ p0: @escaping (Int32, Int32) -> (Int32, Int32)) -> (Int32, Int
     return v0(10, 20)
 }
 func spiral_main() -> Int32 {
-    var v0: Int32 = 0
-    v0 = 1
-    var v1: (Int32, Int32) -> (Int32, Int32) = { (_: Int32, _: Int32) -> (Int32, Int32) in fatalError("unreachable closure") }
-    v1 = closure0(v0)
+    let v0: Int32 = 1
+    let v1: (Int32, Int32) -> (Int32, Int32) = closure0(v0)
     var v2: Int32 = 0
     var v3: Int32 = 0
     let spiral_tuple263 = sp_method0(v1)
@@ -29,10 +27,8 @@ func spiral_main() -> Int32 {
     v4 = (10 &+ v2)
     var v5: Int32 = 0
     v5 = (20 &+ v3)
-    var v6: Int32 = 0
-    v6 = (v4 &+ v5)
-    var v7: Int32 = 0
-    v7 = (v6 &+ 7)
+    let v6: Int32 = (v4 &+ v5)
+    let v7: Int32 = (v6 &+ 7)
     return v7
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

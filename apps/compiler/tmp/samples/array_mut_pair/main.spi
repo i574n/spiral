@@ -1,10 +1,10 @@
-nominal cell_array = array_base (mut {value : i32 * string})
+nominal cell_array = array_base (mut { value : i32 * string })
 
-inl create (n : i32) : cell_array = cell_array !!!!ArrayCreate(`(mut {value : i32 * string}), n)
-inl get (array : cell_array) (i : i32) : mut {value : i32 * string} =
+inl create (n : i32) : cell_array = cell_array !!!!ArrayCreate(`(mut { value : i32 * string }), n)
+inl get (array : cell_array) (i : i32) : mut { value : i32 * string } =
     match array with
     | cell_array values => !!!!ArrayIndex(values, i)
-inl set (array : cell_array) (i : i32) (value : mut {value : i32 * string}) : () =
+inl set (array : cell_array) (i : i32) (value : mut { value : i32 * string }) : () =
     match array with
     | cell_array values => !!!!ArrayIndexSet(values, i, value)
 
@@ -12,14 +12,14 @@ inl main () : i32 =
     inl ~n = 3i32
     inl ~word = "no"
     inl pair = n, word
-    inl cell : mut {value : i32 * string} = !!!!LayoutToHeapMutable({value = pair})
+    inl cell : mut { value : i32 * string } = !!!!LayoutToHeapMutable({ value = pair })
     inl a = create 1i32
     set a 0i32 cell
     inl held = get a 0i32
     inl ~m = 7i32
     inl ~next = "hi"
     inl replaced = m, next
-    held <- {value = replaced}
+    held <- { value = replaced }
     inl opened = !!!!LayoutIndex(held)
     inl ~(left, right) = opened.value
     if left =. 7i32 && !!!!EQ(right, "hi") then 0i32 else 1i32

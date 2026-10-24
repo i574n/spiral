@@ -248,7 +248,8 @@ inl rec __assert_contains forall t u. (trace : testing_trace) (b : t) (a : u) : 
                                 | _ => $'(std.mem.indexOf(u8, !a, !b) \!= null)' : bool
                             | _ =>
                                 typecase t with
-                                | string => $'(for (!a) |x| { if (std.mem.eql(u8, x, !b)) break true; } else false)' : bool
+                                | string =>
+                                    $'(for (!a) |x| { if (std.mem.eql(u8, x, !b)) break true; } else false)' : bool
                                 | _ => $'(for (!a) |x| { if (x == !b) break true; } else false)' : bool
                     found
                 | _ => fun () =>
@@ -326,4 +327,15 @@ test counterexamples_find_where_multiply_shift_stops_dividing_by_three =
     inl divide (x : i64) : i64 = x / 3i64
     inl multiply_shift (x : i64) : i64 = (x * 43691i64) >>> 17i32
     counterexamples 3i32 0i64 65535i64 divide multiply_shift |> listm.length |> _assert_eq 0i32
-    counterexamples 2i32 0i64 200000i64 divide multiply_shift |> listm.fold (fun packed x => packed * 1000000i64 + x) 0i64 |> fun packed => (packed = 131072131075i64) |> _assert_eq true
+    counterexamples 2i32 0i64 200000i64 divide multiply_shift
+    |> listm.fold (fun packed x => packed * 1000000i64 + x) 0i64
+    |> fun packed => (packed = 131072131075i64) |> _assert_eq true
+
+/// ### expect
+inl expect (condition : bool) (detail : string) : () = if condition then () else failwith detail
+
+///> rust
+///> fsharp
+test expect_is_silent_when_its_condition_holds =
+    expect (1i32 + 1i32 = 2i32) "arithmetic"
+    expect ("ab" <> "") "a non-empty string"

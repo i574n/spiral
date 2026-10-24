@@ -41,16 +41,8 @@ fn sp_loop_0(p0: i32, p1: u32, p2: i32, p3: i32, p4: i32) -> i32 {
             v11 = (v10 + v2);
             var v12: i32 = 0i;
             v12 = (v11 % 9973i);
-            let spiral_t1: i32 = v0;
-            let spiral_t2: u32 = v1;
-            let spiral_t3: i32 = v2;
-            let spiral_t4: i32 = v8;
-            let spiral_t5: i32 = v12;
-            v0 = spiral_t1;
-            v1 = spiral_t2;
-            v2 = spiral_t3;
-            v3 = spiral_t4;
-            v4 = spiral_t5;
+            v3 = v8;
+            v4 = v12;
             continue;
         }
     }

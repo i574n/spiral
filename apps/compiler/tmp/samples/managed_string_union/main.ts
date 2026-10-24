@@ -37,32 +37,30 @@ function US0_Number(f0: number): US0 { return { tag: 1, f0: f0 }; }
 function score_0(v0: US0): number {
     switch (v0.tag) {
         case 1: {
-            let v3: number = v0.f0;
+            const v3: number = v0.f0;
             return v3;
-            break;
         }
         case 0: {
-            let v1: string = v0.f0;
-            let v2: number = spiral_string_length(v1);
+            const v1: string = v0.f0;
+            const v2: number = spiral_string_length(v1);
             return v2;
-            break;
         }
         default: throw new Error("Compiler error: unreachable union case.");
     }
 }
 export function main(): number {
-    let v0: boolean = false;
+    const v0: boolean = false;
     let v4: US0;
     if (v0) {
         v4 = US0_Number(7);
     } else {
-        let v2: string = "qwe";
+        const v2: string = "qwe";
         v4 = US0_Text(v2);
     }
-    let v5: number = score_0(v4);
-    let v6: number = score_0(v4);
-    let v7: number = (v5 + v6) | 0;
-    let v8: number = (v7 - 6) | 0;
+    const v5: number = score_0(v4);
+    const v6: number = score_0(v4);
+    const v7: number = (v5 + v6) | 0;
+    const v8: number = (v7 - 6) | 0;
     return v8;
 }
 process.exitCode = main();

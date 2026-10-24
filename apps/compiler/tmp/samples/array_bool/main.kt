@@ -1,11 +1,9 @@
 fun spiral_main(): Int {
     var v0: Array<Boolean> = emptyArray<Boolean>()
     v0 = Array(1) { false }
-    var v1: Boolean = false
-    v1 = true
+    val v1: Boolean = true
     v0[0] = v1
-    var v2: Boolean = false
-    v2 = v0[0]
+    val v2: Boolean = v0[0]
     if (v2) {
         return 0
     } else {

@@ -64,7 +64,7 @@ defmodule Spiral.Cells do
           exe = Path.join(dir, exe_name())
 
           with {:ok, names, imports, package_dir} <-
-                 timed(:mount_ms, fn -> mount_packages(dir, prepared.packages, opts[:root], workspace_root(opts)) end),
+                 timed(:mount_ms, fn -> mount_packages(dir, prepared.packages, opts[:root], workspace_root(opts), opts[:patches] || []) end),
                :ok <- timed(:mount_ms, fn -> write_package(dir, names, imports, package_dir, opts[:real]) end) do
             run_builders(builders, dir, spi, exe, prepared, opts, timeout, deadline, started)
           end
@@ -206,7 +206,7 @@ defmodule Spiral.Cells do
          %ProcessError{
            reason: :disagree,
            message:
-             "targets disagree: #{first.target} printed #{inspect(shown(first))}, #{other.target} printed #{inspect(shown(other))}"
+             "#{if opts[:reference], do: "targets disagree with the reference #{first.target}", else: "targets disagree"}: #{first.target} printed #{inspect(shown(first))}, #{other.target} printed #{inspect(shown(other))}"
          }}
     end
   end
@@ -218,10 +218,12 @@ defmodule Spiral.Cells do
       nil
     else
       case Enum.reject(chunks, &(shown(&1) == "")) do
-        [first | rest] ->
-          case Enum.find(rest, &(shown(&1) != shown(first))) do
+        [first | _] = shown_chunks ->
+          reference = Enum.find(shown_chunks, first, &(to_string(&1.target) == opts[:reference]))
+
+          case Enum.find(shown_chunks, &(shown(&1) != shown(reference))) do
             nil -> nil
-            other -> {first, other}
+            other -> {reference, other}
           end
 
         [] ->
@@ -331,7 +333,9 @@ defmodule Spiral.Cells do
            timed(:compile_ms, fn ->
              compile(dir, spi, output, backend, host, builder, prepared, opts, timeout, deadline)
            end) do
-      code_parts = [builder.raw, backend, host, text, show_value, prepared.print_code, opts[:build_only], opts[:test_cell], opts[:root]]
+      code_parts =
+        [builder.raw, backend, host, text, show_value, prepared.print_code, opts[:build_only], opts[:test_cell], opts[:root]] ++
+          List.wrap(Targets.tool_stamp(builder, opts))
       looked_up = System.monotonic_time(:millisecond)
 
       {result, memo} =
@@ -542,20 +546,28 @@ defmodule Spiral.Cells do
   end
 
   defp compile(dir, spi, output, backend, host, builder, prepared, opts, timeout, deadline) do
-    compile(
-      dir,
-      spi,
-      output,
-      backend,
-      host,
-      builder,
-      prepared,
-      opts,
-      timeout,
-      deadline,
-      1,
-      not Map.get(prepared, :no_value, false)
-    )
+    show_value = not Map.get(prepared, :no_value, false)
+    original = File.read!(spi)
+    test_block_main = String.contains?(original, "spiral_cells_test ()")
+    unit_first = opts[:test_cell] == true and prepared.generated_main and not test_block_main
+
+    if unit_first do
+      File.write!(spi, String.trim_trailing(original, "\n") <> "\n    0i32\n")
+
+      case compile(dir, spi, output, backend, host, builder, prepared, opts, timeout, deadline, 2, false) do
+        {:ok, _, _} = compiled ->
+          compiled
+
+        {:error, %TimeoutError{}} = timed_out ->
+          timed_out
+
+        _ ->
+          File.write!(spi, original)
+          compile(dir, spi, output, backend, host, builder, prepared, opts, timeout, deadline, 1, show_value)
+      end
+    else
+      compile(dir, spi, output, backend, host, builder, prepared, opts, timeout, deadline, 1, show_value)
+    end
   end
 
   defp compile(
@@ -933,7 +945,12 @@ defmodule Spiral.Cells do
 
   defp rustup_proxy?(rustc) do
     path = rustc |> Path.expand() |> String.downcase() |> String.replace("\\", "/")
-    String.contains?(path, "/.cargo/bin/") or String.contains?(path, "/rustup/")
+    String.contains?(path, "/.cargo/bin/") or rustup_beside?(rustc)
+  end
+
+  defp rustup_beside?(rustc) do
+    dir = rustc |> Path.expand() |> Path.dirname()
+    Enum.any?(["rustup", "rustup.exe"], &File.regular?(Path.join(dir, &1)))
   end
 
   defp execute(exe, opts, timeout, deadline) do
@@ -1060,9 +1077,9 @@ defmodule Spiral.Cells do
     :ok
   end
 
-  defp mount_packages(_dir, [], _root, _workspace), do: {:ok, [], [], nil}
+  defp mount_packages(_dir, [], _root, _workspace, _patches), do: {:ok, [], [], nil}
 
-  defp mount_packages(_dir, paths, root, workspace) do
+  defp mount_packages(_dir, paths, root, workspace, patches) do
     targets =
       Enum.map(paths, fn path ->
         target = resolve_package(path, root, workspace)
@@ -1072,7 +1089,7 @@ defmodule Spiral.Cells do
     dependencies = Mounts.dependency_closure(targets)
     sibling_names = Enum.map(targets ++ dependencies, &elem(&1, 1))
 
-    case mount_entries(targets ++ dependencies, sibling_names) do
+    case mount_entries(targets ++ dependencies, sibling_names, patches) do
       {:ok, entries} ->
         case Mounts.ensure(entries) do
           {:ok, package_dir} -> {:ok, Enum.map(targets, &elem(&1, 1)), Mounts.qualified_imports(targets), package_dir}
@@ -1084,7 +1101,7 @@ defmodule Spiral.Cells do
     end
   end
 
-  defp mount_entries(targets, sibling_names) do
+  defp mount_entries(targets, sibling_names, patches) do
     Enum.reduce_while(targets, {:ok, []}, fn {target, name}, {:ok, entries} ->
       cond do
         name in ["", "console", "main", "ready"] ->
@@ -1098,8 +1115,17 @@ defmodule Spiral.Cells do
           {:halt, {:error, %ProcessError{message: "Spiral package was not found at #{target}"}}}
 
         true ->
-          kind = if Mounts.share_mounted_deps?(target, sibling_names), do: :shadow, else: :link
-          {:cont, {:ok, entries ++ [%{name: name, target: target, kind: kind}]}}
+          shared = Mounts.share_mounted_deps?(target, sibling_names)
+          own = for {file, old, new} <- patches, Path.expand(Path.dirname(file)) == Path.expand(target), do: {Path.basename(file), old, new}
+
+          entry =
+            cond do
+              own != [] -> %{name: name, target: target, kind: :patched, patches: own, package_dir: if(shared, do: :siblings, else: :absolute)}
+              shared -> %{name: name, target: target, kind: :shadow}
+              true -> %{name: name, target: target, kind: :link}
+            end
+
+          {:cont, {:ok, entries ++ [entry]}}
       end
     end)
   end

@@ -3,11 +3,10 @@ function Us0_Empty() return { tag = "Us0_Empty" } end
 function Us0_Full(v0) return { tag = "Us0_Full",  _1 = v0 } end
 
 function pick_0(v0)
-    local __v = { v0 }
-    if __v[1] ~= nil and __v[1].tag == "Us0_Empty" then
+    if v0 ~= nil and v0.tag == "Us0_Empty" then
         return 0
-    elseif __v[1] ~= nil and __v[1].tag == "Us0_Full" then
-        local v1 = __v[1]._1
+    elseif v0 ~= nil and v0.tag == "Us0_Full" then
+        local v1 = v0._1
         return v1
     end
 end

@@ -77,11 +77,15 @@ nominal finite_length_succ length = length
 
 union rec finite_symbol_vector alphabet length =
     | FiniteSymbolVectorNil :: forall alphabet. finite_symbol_vector alphabet finite_length_zero
-    | FiniteSymbolVectorCons :: forall alphabet length. alphabet * finite_symbol_vector alphabet length -> finite_symbol_vector alphabet (finite_length_succ length)
+    | FiniteSymbolVectorCons :: forall alphabet length.
+        alphabet * finite_symbol_vector alphabet length ->
+        finite_symbol_vector alphabet (finite_length_succ length)
 
 union rec finite_symbol_index length =
     | FiniteSymbolIndexZero :: forall length. finite_symbol_index (finite_length_succ length)
-    | FiniteSymbolIndexSucc :: forall length. finite_symbol_index length -> finite_symbol_index (finite_length_succ length)
+    | FiniteSymbolIndexSucc :: forall length.
+        finite_symbol_index length ->
+        finite_symbol_index (finite_length_succ length)
 
 inl rec finite_symbol_vector_lookup forall alphabet length.
     (index : finite_symbol_index length)
@@ -125,7 +129,8 @@ inl bit_finite_index_zero () : finite_symbol_index bit_finite_length = FiniteSym
 inl bit_finite_index_one () : finite_symbol_index bit_finite_length = FiniteSymbolIndexSucc FiniteSymbolIndexZero
 inl tri_finite_index_zero () : finite_symbol_index tri_finite_length = FiniteSymbolIndexZero
 inl tri_finite_index_one () : finite_symbol_index tri_finite_length = FiniteSymbolIndexSucc FiniteSymbolIndexZero
-inl tri_finite_index_two () : finite_symbol_index tri_finite_length = FiniteSymbolIndexSucc (FiniteSymbolIndexSucc FiniteSymbolIndexZero)
+inl tri_finite_index_two () : finite_symbol_index tri_finite_length =
+    FiniteSymbolIndexSucc (FiniteSymbolIndexSucc FiniteSymbolIndexZero)
 
 nominal finite_alphabet_descriptor alphabet =
     symbol_list alphabet * alphabet_cardinality
@@ -265,15 +270,19 @@ inl rec symbol_list_same forall alphabet {symbol_compare}.
     | _ => false
 
 inl finite_alphabet_descriptor_certified forall alphabet {symbol_compare; finite_alphabet}.
-    (descriptor : finite_alphabet_descriptor alphabet) : bool =
+    (descriptor : finite_alphabet_descriptor alphabet)
+    : bool
+    =
     inl expected : finite_alphabet_descriptor alphabet = finite_alphabet ()
     match descriptor, expected with
-    | finite_alphabet_descriptor (symbols, cardinality), finite_alphabet_descriptor (expected_symbols, expected_cardinality) =>
-        if alphabet_inventory_well_formed symbols then
-            symbol_list_cardinality_matches symbols cardinality &&
-            symbol_list_cardinality_matches expected_symbols expected_cardinality &&
-            symbol_list_same symbols expected_symbols
-        else false
+    | finite_alphabet_descriptor (symbols, cardinality),
+        finite_alphabet_descriptor (expected_symbols, expected_cardinality)
+        =>
+            if alphabet_inventory_well_formed symbols then
+                symbol_list_cardinality_matches symbols cardinality &&
+                symbol_list_cardinality_matches expected_symbols expected_cardinality &&
+                symbol_list_same symbols expected_symbols
+            else false
 
 nominal certified_alphabet_inventory alphabet = finite_alphabet_descriptor alphabet
 
@@ -340,7 +349,10 @@ inl nullable_evidence_same (left : nullable_evidence) (right : nullable_evidence
     | NonNullable, NonNullable => true
     | _ => false
 
-let rec regex_compare forall alphabet {symbol_compare}. (left : regex alphabet) (right : regex alphabet) : symbol_ordering =
+let rec regex_compare forall alphabet {symbol_compare}.
+    (left : regex alphabet) (right : regex alphabet)
+    : symbol_ordering
+    =
     match left with
     | RegexEmpty =>
         match right with
@@ -392,7 +404,10 @@ let rec regex_equal forall alphabet {symbol_compare}. (left : regex alphabet) (r
     | RegexStar left_inner, RegexStar right_inner => regex_equal left_inner right_inner
     | _ => false
 
-let rec alt_insert_sorted forall alphabet {symbol_compare}. (term : regex alphabet) (value : regex alphabet) : regex alphabet =
+let rec alt_insert_sorted forall alphabet {symbol_compare}.
+    (term : regex alphabet) (value : regex alphabet)
+    : regex alphabet
+    =
     match value with
     | RegexEmpty => term
     | RegexAlt (head, tail) =>
@@ -465,7 +480,10 @@ let rec accepts forall alphabet {symbol_compare}. (value : regex alphabet) (inpu
         | NonNullable => false
     | InputCons (symbol, rest) => accepts (canonical_derivative value symbol) rest
 
-let rec reference_derivative forall alphabet {symbol_compare}. (value : regex alphabet) (symbol : alphabet) : regex alphabet =
+let rec reference_derivative forall alphabet {symbol_compare}.
+    (value : regex alphabet) (symbol : alphabet)
+    : regex alphabet
+    =
     match value with
     | RegexEmpty => RegexEmpty
     | RegexEpsilon => RegexEmpty
@@ -482,7 +500,10 @@ let rec reference_derivative forall alphabet {symbol_compare}. (value : regex al
         | NonNullable => RegexCat (reference_derivative left symbol, right)
     | RegexStar inner => RegexCat (reference_derivative inner symbol, RegexStar inner)
 
-let rec reference_accepts forall alphabet {symbol_compare}. (value : regex alphabet) (input : linear_input alphabet) : bool =
+let rec reference_accepts forall alphabet {symbol_compare}.
+    (value : regex alphabet) (input : linear_input alphabet)
+    : bool
+    =
     match input with
     | InputEmpty =>
         match nullable value with
@@ -872,12 +893,18 @@ let rec regex_list_contains forall alphabet {symbol_compare}.
     | RegexListCons (head, tail) =>
         if regex_equal needle head then true else regex_list_contains needle tail
 
-let rec regex_list_subset forall alphabet {symbol_compare}. (left : regex_list alphabet) (right : regex_list alphabet) : bool =
+let rec regex_list_subset forall alphabet {symbol_compare}.
+    (left : regex_list alphabet) (right : regex_list alphabet)
+    : bool
+    =
     match left with
     | RegexListNil => true
     | RegexListCons (head, tail) => if regex_list_contains head right then regex_list_subset tail right else false
 
-inl regex_list_set_equal forall alphabet {symbol_compare}. (left : regex_list alphabet) (right : regex_list alphabet) : bool =
+inl regex_list_set_equal forall alphabet {symbol_compare}.
+    (left : regex_list alphabet) (right : regex_list alphabet)
+    : bool
+    =
     if regex_list_subset left right then regex_list_subset right left else false
 
 inl rec static_nullable forall alphabet. (value : regex alphabet) : bool =
@@ -889,7 +916,10 @@ inl rec static_nullable forall alphabet. (value : regex alphabet) : bool =
     | RegexCat (left, right) => static_nullable left && static_nullable right
     | RegexStar _ => true
 
-inl rec static_regex_compare forall alphabet {symbol_compare}. (left : regex alphabet) (right : regex alphabet) : symbol_ordering =
+inl rec static_regex_compare forall alphabet {symbol_compare}.
+    (left : regex alphabet) (right : regex alphabet)
+    : symbol_ordering
+    =
     match left with
     | RegexEmpty =>
         match right with
@@ -934,7 +964,10 @@ inl static_regex_equal forall alphabet {symbol_compare}. (left : regex alphabet)
     | SymbolSame => true
     | _ => false
 
-inl rec static_alt_insert_sorted forall alphabet {symbol_compare}. (term : regex alphabet) (value : regex alphabet) : regex alphabet =
+inl rec static_alt_insert_sorted forall alphabet {symbol_compare}.
+    (term : regex alphabet) (value : regex alphabet)
+    : regex alphabet
+    =
     match value with
     | RegexEmpty => term
     | RegexAlt (head, tail) =>
@@ -948,13 +981,19 @@ inl rec static_alt_insert_sorted forall alphabet {symbol_compare}. (term : regex
         | SymbolSame => value
         | SymbolGreater => RegexAlt (value, term)
 
-inl rec static_make_alt forall alphabet {symbol_compare}. (left : regex alphabet) (right : regex alphabet) : regex alphabet =
+inl rec static_make_alt forall alphabet {symbol_compare}.
+    (left : regex alphabet) (right : regex alphabet)
+    : regex alphabet
+    =
     match left with
     | RegexEmpty => right
     | RegexAlt (head, tail) => static_make_alt tail (static_alt_insert_sorted head right)
     | _ => static_alt_insert_sorted left right
 
-inl rec static_make_cat forall alphabet {symbol_compare}. (left : regex alphabet) (right : regex alphabet) : regex alphabet =
+inl rec static_make_cat forall alphabet {symbol_compare}.
+    (left : regex alphabet) (right : regex alphabet)
+    : regex alphabet
+    =
     match left, right with
     | RegexEmpty, _ => RegexEmpty
     | _, RegexEmpty => RegexEmpty
@@ -981,7 +1020,10 @@ inl rec static_normalize forall alphabet {symbol_compare}. (value : regex alphab
     | RegexCat (left, right) => static_make_cat (static_normalize left) (static_normalize right)
     | RegexStar inner => static_make_star (static_normalize inner)
 
-inl rec static_derivative forall alphabet {symbol_compare}. (value : regex alphabet) (symbol : alphabet) : regex alphabet =
+inl rec static_derivative forall alphabet {symbol_compare}.
+    (value : regex alphabet) (symbol : alphabet)
+    : regex alphabet
+    =
     match value with
     | RegexEmpty => RegexEmpty
     | RegexEpsilon => RegexEmpty
@@ -991,19 +1033,26 @@ inl rec static_derivative forall alphabet {symbol_compare}. (value : regex alpha
         | _ => RegexEmpty
     | RegexAlt (left, right) => static_make_alt (static_derivative left symbol) (static_derivative right symbol)
     | RegexCat (left, right) =>
-        if static_nullable left then static_make_alt (static_make_cat (static_derivative left symbol) right) (static_derivative right symbol)
+        if static_nullable left
+        then static_make_alt (static_make_cat (static_derivative left symbol) right) (static_derivative right symbol)
         else static_make_cat (static_derivative left symbol) right
     | RegexStar inner => static_make_cat (static_derivative inner symbol) (static_make_star inner)
 
 inl static_step forall alphabet {symbol_compare}. (state : regex alphabet) (symbol : alphabet) : regex alphabet =
     static_normalize (static_derivative state symbol)
 
-inl rec static_contains forall alphabet {symbol_compare}. (value : regex alphabet) (states : regex_list alphabet) : bool =
+inl rec static_contains forall alphabet {symbol_compare}.
+    (value : regex alphabet) (states : regex_list alphabet)
+    : bool
+    =
     match states with
     | RegexListNil => false
     | RegexListCons (head, rest) => if static_regex_equal value head then true else static_contains value rest
 
-inl static_canonical_derivative forall alphabet {symbol_compare}. (value : regex alphabet) (symbol : alphabet) : regex alphabet =
+inl static_canonical_derivative forall alphabet {symbol_compare}.
+    (value : regex alphabet) (symbol : alphabet)
+    : regex alphabet
+    =
     static_normalize (static_derivative (static_normalize value) symbol)
 
 nominal indexed_dfa_capability alphabet =
@@ -1014,7 +1063,10 @@ nominal indexed_dfa_capability alphabet =
     (symbol_list alphabet -> bool) *
     alphabet_cardinality
 
-inl make_indexed_dfa_capability forall alphabet {symbol_compare; finite_alphabet}. () : indexed_dfa_capability alphabet =
+inl make_indexed_dfa_capability forall alphabet {symbol_compare; finite_alphabet}.
+    ()
+    : indexed_dfa_capability alphabet
+    =
     inl descriptor : finite_alphabet_descriptor alphabet = finite_alphabet ()
     indexed_dfa_capability (
         static_normalize,
@@ -1655,19 +1707,24 @@ inl rec static_constructive_pair_trace_enqueue_symbols forall alphabet {symbol_c
     (path : linear_input alphabet)
     (symbols : symbol_list alphabet)
     (pending : dfa_constructive_pair_trace_list alphabet)
-    : dfa_constructive_pair_trace_list alphabet =
+    : dfa_constructive_pair_trace_list alphabet
+    =
     match symbols with
     | SymbolListNil => pending
     | SymbolListCons (symbol, rest) =>
-        inl next_pair = dfa_state_pair (static_canonical_derivative left symbol, static_canonical_derivative right symbol)
+        inl next_pair =
+            dfa_state_pair (static_canonical_derivative left symbol, static_canonical_derivative right symbol)
         inl next_trace = dfa_constructive_pair_trace (next_pair, static_input_snoc path symbol)
-        static_constructive_pair_trace_enqueue_symbols left right path rest (DfaConstructivePairTraceCons (next_trace, pending))
+        static_constructive_pair_trace_enqueue_symbols left right path rest (
+            DfaConstructivePairTraceCons (next_trace, pending)
+        )
 
 inl rec static_constructive_distinguishing_work forall alphabet {symbol_compare}.
     (symbols : symbol_list alphabet)
     (pending : dfa_constructive_pair_trace_list alphabet)
     (seen : dfa_state_pair_list alphabet)
-    : dfa_constructive_distinguishing_result alphabet =
+    : dfa_constructive_distinguishing_result alphabet
+    =
     match pending with
     | DfaConstructivePairTraceNil => DfaConstructiveEquivalent
     | DfaConstructivePairTraceCons (trace, rest) =>
@@ -1675,21 +1732,30 @@ inl rec static_constructive_distinguishing_work forall alphabet {symbol_compare}
         | dfa_constructive_pair_trace (pair, path) =>
             match pair with
             | dfa_state_pair (left, right) =>
-                if static_regex_equal left right then static_constructive_distinguishing_work symbols rest seen
-                elif static_state_pair_list_contains pair seen then static_constructive_distinguishing_work symbols rest seen
-                elif static_nullable_same left right then
+                if static_regex_equal left right
+                then static_constructive_distinguishing_work symbols rest seen
+                elif static_state_pair_list_contains pair seen
+                then static_constructive_distinguishing_work symbols rest seen
+                elif static_nullable_same left right
+                then
                     inl pending' = static_constructive_pair_trace_enqueue_symbols left right path symbols rest
                     static_constructive_distinguishing_work symbols pending' (DfaStatePairCons (pair, seen))
                 else DfaConstructiveDistinguished path
 
 inl static_constructive_distinguishing_result forall alphabet {symbol_compare}.
     (left : regex alphabet) (right : regex alphabet) (symbols : symbol_list alphabet)
-    : dfa_constructive_distinguishing_result alphabet =
+    : dfa_constructive_distinguishing_result alphabet
+    =
     inl pair = dfa_state_pair (static_normalize left, static_normalize right)
     inl trace = dfa_constructive_pair_trace (pair, InputEmpty)
-    static_constructive_distinguishing_work symbols (DfaConstructivePairTraceCons (trace, DfaConstructivePairTraceNil)) DfaStatePairNil
+    static_constructive_distinguishing_work symbols
+        (DfaConstructivePairTraceCons (trace, DfaConstructivePairTraceNil))
+        DfaStatePairNil
 
-inl rec static_input_equal forall alphabet {symbol_compare}. (left : linear_input alphabet) (right : linear_input alphabet) : bool =
+inl rec static_input_equal forall alphabet {symbol_compare}.
+    (left : linear_input alphabet) (right : linear_input alphabet)
+    : bool
+    =
     match left, right with
     | InputEmpty, InputEmpty => true
     | InputCons (left_symbol, left_rest), InputCons (right_symbol, right_rest) =>
@@ -1697,12 +1763,20 @@ inl rec static_input_equal forall alphabet {symbol_compare}. (left : linear_inpu
     | _ => false
 
 inl rec static_input_list_contains forall alphabet {symbol_compare}.
-    (needle : linear_input alphabet) (values : input_list alphabet) : bool =
+    (needle : linear_input alphabet) (values : input_list alphabet)
+    : bool
+    =
     match values with
     | InputListNil => false
-    | InputListCons (head, tail) => if static_input_equal needle head then true else static_input_list_contains needle tail
+    | InputListCons (head, tail) =>
+        if static_input_equal needle head
+        then true
+        else static_input_list_contains needle tail
 
-inl rec static_input_list_append forall alphabet. (left : input_list alphabet) (right : input_list alphabet) : input_list alphabet =
+inl rec static_input_list_append forall alphabet.
+    (left : input_list alphabet) (right : input_list alphabet)
+    : input_list alphabet
+    =
     match left with
     | InputListNil => right
     | InputListCons (head, tail) => InputListCons (head, static_input_list_append tail right)
@@ -1749,7 +1823,10 @@ and inl static_language_star_closure forall alphabet {symbol_compare}.
         inl seen', pending' = static_input_list_enqueue_new candidates seen rest
         static_language_star_closure inner pending' seen'
 
-inl static_language_accepts forall alphabet {symbol_compare}. (value : regex alphabet) (input : linear_input alphabet) : bool =
+inl static_language_accepts forall alphabet {symbol_compare}.
+    (value : regex alphabet) (input : linear_input alphabet)
+    : bool
+    =
     static_input_list_contains InputEmpty (static_language_remainders value input)
 
 inl static_constructive_distinguishing_result_valid forall alphabet {symbol_compare}.
@@ -1765,30 +1842,50 @@ inl static_constructive_distinguishing_result_valid forall alphabet {symbol_comp
         inl right_accepts = static_language_accepts (static_normalize right) input
         if bool_same left_accepts right_accepts then false else true
 
-inl rec static_accepts forall alphabet {symbol_compare}. (value : regex alphabet) (input : linear_input alphabet) : bool =
+inl rec static_accepts forall alphabet {symbol_compare}.
+    (value : regex alphabet) (input : linear_input alphabet)
+    : bool
+    =
     match input with
     | InputEmpty => static_nullable (static_normalize value)
     | InputCons (symbol, rest) => static_accepts (static_canonical_derivative value symbol) rest
 
-inl rec static_reference_derivative forall alphabet {symbol_compare}. (value : regex alphabet) (symbol : alphabet) : regex alphabet =
+inl rec static_reference_derivative forall alphabet {symbol_compare}.
+    (value : regex alphabet) (symbol : alphabet)
+    : regex alphabet
+    =
     match value with
     | RegexEmpty => RegexEmpty
     | RegexEpsilon => RegexEmpty
-    | RegexChar expected => if symbol_equal expected symbol then RegexEpsilon else RegexEmpty
-    | RegexAlt (left, right) => RegexAlt (static_reference_derivative left symbol, static_reference_derivative right symbol)
+    | RegexChar expected =>
+        if symbol_equal expected symbol
+        then RegexEpsilon
+        else RegexEmpty
+    | RegexAlt (left, right) =>
+        RegexAlt (static_reference_derivative left symbol, static_reference_derivative right symbol)
     | RegexCat (left, right) =>
-        if static_nullable left then RegexAlt (RegexCat (static_reference_derivative left symbol, right), static_reference_derivative right symbol)
+        if static_nullable left
+        then
+            RegexAlt (
+                RegexCat (static_reference_derivative left symbol, right),
+                static_reference_derivative right symbol
+            )
         else RegexCat (static_reference_derivative left symbol, right)
     | RegexStar inner => RegexCat (static_reference_derivative inner symbol, RegexStar inner)
 
-inl rec static_reference_accepts forall alphabet {symbol_compare}. (value : regex alphabet) (input : linear_input alphabet) : bool =
+inl rec static_reference_accepts forall alphabet {symbol_compare}.
+    (value : regex alphabet) (input : linear_input alphabet)
+    : bool
+    =
     match input with
     | InputEmpty => static_nullable value
     | InputCons (symbol, rest) => static_reference_accepts (static_reference_derivative value symbol) rest
 
 inl rec static_dfa_enqueue_symbols forall alphabet {symbol_compare}.
-    (source : regex alphabet) (symbols : symbol_list alphabet) (seen : regex_list alphabet) (pending : regex_list alphabet)
-    : regex_list alphabet * regex_list alphabet =
+    (source : regex alphabet) (symbols : symbol_list alphabet) (seen : regex_list alphabet)
+    (pending : regex_list alphabet)
+    : regex_list alphabet * regex_list alphabet
+    =
     match symbols with
     | SymbolListNil => seen, pending
     | SymbolListCons (symbol, rest) =>
@@ -1797,14 +1894,19 @@ inl rec static_dfa_enqueue_symbols forall alphabet {symbol_compare}.
         else static_dfa_enqueue_symbols source rest (RegexListCons (next, seen)) (RegexListCons (next, pending))
 
 inl rec static_dfa_closure_loop forall alphabet {symbol_compare}.
-    (symbols : symbol_list alphabet) (seen : regex_list alphabet) (pending : regex_list alphabet) : regex_list alphabet =
+    (symbols : symbol_list alphabet) (seen : regex_list alphabet) (pending : regex_list alphabet)
+    : regex_list alphabet
+    =
     match pending with
     | RegexListNil => seen
     | RegexListCons (state, rest) =>
         inl seen_next, pending_next = static_dfa_enqueue_symbols state symbols seen rest
         static_dfa_closure_loop symbols seen_next pending_next
 
-inl static_dfa_closure forall alphabet {symbol_compare; finite_alphabet}. (start : regex alphabet) : regex_list alphabet =
+inl static_dfa_closure forall alphabet {symbol_compare; finite_alphabet}.
+    (start : regex alphabet)
+    : regex_list alphabet
+    =
     inl normalized = static_normalize start
     inl initial = RegexListCons (normalized, RegexListNil)
     static_dfa_closure_loop (finite_alphabet_symbols (finite_alphabet ())) initial initial
@@ -1812,25 +1914,38 @@ inl static_dfa_closure forall alphabet {symbol_compare; finite_alphabet}. (start
 inl rec static_input_singletons_from_symbols forall alphabet. (symbols : symbol_list alphabet) : input_list alphabet =
     match symbols with
     | SymbolListNil => InputListNil
-    | SymbolListCons (symbol, rest) => InputListCons (InputCons (symbol, InputEmpty), static_input_singletons_from_symbols rest)
+    | SymbolListCons (symbol, rest) =>
+        InputListCons (InputCons (symbol, InputEmpty), static_input_singletons_from_symbols rest)
 
-inl rec static_input_prepend_symbol_to_corpus forall alphabet. (symbol : alphabet) (inputs : input_list alphabet) : input_list alphabet =
+inl rec static_input_prepend_symbol_to_corpus forall alphabet.
+    (symbol : alphabet) (inputs : input_list alphabet)
+    : input_list alphabet
+    =
     match inputs with
     | InputListNil => InputListNil
-    | InputListCons (input, rest) => InputListCons (InputCons (symbol, input), static_input_prepend_symbol_to_corpus symbol rest)
+    | InputListCons (input, rest) =>
+        InputListCons (InputCons (symbol, input), static_input_prepend_symbol_to_corpus symbol rest)
 
-inl rec static_input_prepend_symbols_to_corpus forall alphabet. (symbols : symbol_list alphabet) (inputs : input_list alphabet) : input_list alphabet =
+inl rec static_input_prepend_symbols_to_corpus forall alphabet.
+    (symbols : symbol_list alphabet) (inputs : input_list alphabet)
+    : input_list alphabet
+    =
     match symbols with
     | SymbolListNil => InputListNil
     | SymbolListCons (symbol, rest) =>
-        static_input_list_append (static_input_prepend_symbol_to_corpus symbol inputs) (static_input_prepend_symbols_to_corpus rest inputs)
+        static_input_list_append
+            (static_input_prepend_symbol_to_corpus symbol inputs)
+            (static_input_prepend_symbols_to_corpus rest inputs)
 
 inl static_input_corpus_depth_two forall alphabet. (symbols : symbol_list alphabet) : input_list alphabet =
     inl singletons = static_input_singletons_from_symbols symbols
-    static_input_list_append (InputListCons (InputEmpty, singletons)) (static_input_prepend_symbols_to_corpus symbols singletons)
+    static_input_list_append
+        (InputListCons (InputEmpty, singletons))
+        (static_input_prepend_symbols_to_corpus symbols singletons)
 
 union sealed_minimized_dfa =
-    | SealedMinimizedDfa : (exists alphabet. regex alphabet * regex_list alphabet * regex_list alphabet * bool * bool * bool)
+    | SealedMinimizedDfa :
+        (exists alphabet. regex alphabet * regex_list alphabet * regex_list alphabet * bool * bool * bool)
 
 inl seal_minimized_dfa_unbounded_reference forall alphabet {symbol_compare; finite_alphabet}.
     (start : regex alphabet) : sealed_minimized_dfa =
@@ -2306,7 +2421,18 @@ inl dfa_run_agrees forall alphabet {symbol_compare; finite_alphabet}.
     | _ => false
 
 nominal dfa_surface_certificate alphabet =
-    regex alphabet * regex_list alphabet * dfa_transition_list alphabet * bool * bool * bool * bool * bool * bool * bool * bool * bool
+    regex alphabet *
+    regex_list alphabet *
+    dfa_transition_list alphabet *
+    bool *
+    bool *
+    bool *
+    bool *
+    bool *
+    bool *
+    bool *
+    bool *
+    bool
 
 union sealed_dfa_surface =
     | SealedDfaSurface : (exists alphabet. dfa_surface_certificate alphabet)
@@ -2314,9 +2440,11 @@ union sealed_dfa_surface =
 inl seal_dfa_surface_certified forall alphabet {symbol_compare; finite_alphabet}.
     (start : regex alphabet)
     (inventory : certified_alphabet_inventory alphabet)
-    : sealed_dfa_surface =
+    : sealed_dfa_surface
+    =
     inl normalized = normalize start
-    if certified_alphabet_inventory_valid inventory then
+    if certified_alphabet_inventory_valid inventory
+    then
         inl symbols = certified_alphabet_inventory_symbols inventory
         inl closure_result = dfa_closure_bounded_with_inventory normalized symbols
         inl closure = dfa_closure_result_states closure_result
@@ -2327,21 +2455,77 @@ inl seal_dfa_surface_certified forall alphabet {symbol_compare; finite_alphabet}
         inl formula_consistent = if closure_complete then dfa_formula_consistent closure symbols else false
         inl table_total = if closure_complete then dfa_transition_table_total closure symbols transitions else false
         inl table_keys_distinct = dfa_transition_keys_distinct transitions
-        inl bounded = if closure_complete then regex_list_within_budget closure (regex_position_subset_bound normalized) else false
+        inl bounded =
+            if closure_complete
+            then regex_list_within_budget closure (regex_position_subset_bound normalized)
+            else false
         inl states_normalized = dfa_states_normalized closure
         inl nullable_preserved = dfa_states_nullable_preserved closure
         inl ordering_coherent = regex_order_laws closure
-        SealedDfaSurface (exists (dfa_surface_certificate (normalized, closure, transitions, closed, distinct, formula_consistent, table_total, table_keys_distinct, bounded, states_normalized, nullable_preserved, ordering_coherent)))
+        SealedDfaSurface (
+            exists (
+                dfa_surface_certificate (
+                    normalized,
+                    closure,
+                    transitions,
+                    closed,
+                    distinct,
+                    formula_consistent,
+                    table_total,
+                    table_keys_distinct,
+                    bounded,
+                    states_normalized,
+                    nullable_preserved,
+                    ordering_coherent
+                )
+            )
+        )
     else
-        SealedDfaSurface (exists (dfa_surface_certificate (normalized, RegexListNil, DfaTransitionNil, false, false, false, false, false, false, false, false, false)))
+        SealedDfaSurface (
+            exists (
+                dfa_surface_certificate (
+                    normalized,
+                    RegexListNil,
+                    DfaTransitionNil,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false
+                )
+            )
+        )
 
 inl seal_dfa_surface forall alphabet {symbol_compare; finite_alphabet}.
-    (start : regex alphabet) : sealed_dfa_surface =
+    (start : regex alphabet)
+    : sealed_dfa_surface
+    =
     match certify_alphabet_inventory (finite_alphabet ()) with
     | AlphabetInventoryCertified inventory => seal_dfa_surface_certified start inventory
     | AlphabetInventoryRejected =>
         inl normalized = normalize start
-        SealedDfaSurface (exists (dfa_surface_certificate (normalized, RegexListNil, DfaTransitionNil, false, false, false, false, false, false, false, false, false)))
+        SealedDfaSurface (
+            exists (
+                dfa_surface_certificate (
+                    normalized,
+                    RegexListNil,
+                    DfaTransitionNil,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false,
+                    false
+                )
+            )
+        )
 
 inl sealed_dfa_surface_closed (surface : sealed_dfa_surface) : bool =
     match surface with
@@ -2411,22 +2595,36 @@ inl sealed_dfa_surface_certified (surface : sealed_dfa_surface) : bool =
     | SealedDfaSurface payload =>
         inl exists alphabet. certificate = payload
         match certificate with
-        | dfa_surface_certificate (_, _, _, closed, distinct, formula_consistent, table_total, table_keys_distinct, bounded, states_normalized, nullable_preserved, ordering_coherent) =>
-            if closed then
-                if distinct then
-                    if formula_consistent then
-                        if table_total then
-                            if table_keys_distinct then
-                                if bounded then
-                                    if states_normalized then
-                                        if nullable_preserved then ordering_coherent else false
+        | dfa_surface_certificate (
+                _,
+                _,
+                _,
+                closed,
+                distinct,
+                formula_consistent,
+                table_total,
+                table_keys_distinct,
+                bounded,
+                states_normalized,
+                nullable_preserved,
+                ordering_coherent
+            )
+            =>
+                if closed then
+                    if distinct then
+                        if formula_consistent then
+                            if table_total then
+                                if table_keys_distinct then
+                                    if bounded then
+                                        if states_normalized then
+                                            if nullable_preserved then ordering_coherent else false
+                                        else false
                                     else false
                                 else false
                             else false
                         else false
                     else false
                 else false
-            else false
 
 nominal matcher_raw = ()
 nominal matcher_decided = ()
@@ -2435,7 +2633,9 @@ nominal matcher_decision_capability alphabet = regex alphabet -> linear_input al
 
 union matcher_state alphabet phase =
     | MatcherRaw :: forall alphabet. regex alphabet * linear_input alphabet -> matcher_state alphabet matcher_raw
-    | MatcherDecided :: forall alphabet. regex alphabet * linear_input alphabet * bool -> matcher_state alphabet matcher_decided
+    | MatcherDecided :: forall alphabet.
+        regex alphabet * linear_input alphabet * bool ->
+        matcher_state alphabet matcher_decided
 
 inl matcher_decision_capability_default forall alphabet {symbol_compare}.
     : matcher_decision_capability alphabet =
@@ -2485,7 +2685,10 @@ nominal matcher_decision_certificate alphabet = regex alphabet * linear_input al
 union sealed_match =
     | SealedMatch : (exists alphabet. matcher_decision_certificate alphabet)
 
-inl seal_match forall alphabet {symbol_compare}. (value : regex alphabet) (input : linear_input alphabet) : sealed_match =
+inl seal_match forall alphabet {symbol_compare}.
+    (value : regex alphabet) (input : linear_input alphabet)
+    : sealed_match
+    =
     SealedMatch (exists (matcher_decision_certificate (value, input, accepts value input)))
 
 inl sealed_match_value (state : sealed_match) : bool =
@@ -2554,11 +2757,12 @@ nominal derivative_language_program alphabet = capability_program regex derivati
 
 inl capture_derivative_language_program forall alphabet {symbol_compare; finite_alphabet}.
     (value : regex alphabet)
-    : derivative_language_program alphabet =
+    : derivative_language_program alphabet
+    =
     inl interpret (program_regex : regex alphabet) : derivative_language_family alphabet =
         inl symbols : symbol_list alphabet = finite_alphabet_symbols (finite_alphabet ())
-        derivative_language_family (
-            fun input => matcher_check (derivative_semantic_triangle_symbols program_regex symbols (input_suffixes input)))
+        derivative_language_family fun input =>
+            matcher_check (derivative_semantic_triangle_symbols program_regex symbols (input_suffixes input))
     derivative_language_program (capability_program_make value interpret)
 
 inl run_derivative_language_program forall alphabet.
@@ -2710,10 +2914,12 @@ union rec matcher_batch (f : * -> *) t =
 inl rec matcher_batch_map forall (f : * -> *) (g : * -> *) t.
     (transform : forall alphabet. f alphabet -> g alphabet)
     (value : matcher_batch f t)
-    : matcher_batch g t =
+    : matcher_batch g t
+    =
     match value with
     | MatchBatchSingle item => MatchBatchSingle (transform item)
-    | MatchBatchPair (left, right) => MatchBatchPair (matcher_batch_map `$transform left, matcher_batch_map `$transform right)
+    | MatchBatchPair (left, right) =>
+        MatchBatchPair (matcher_batch_map `$transform left, matcher_batch_map `$transform right)
 
 inl rec matcher_batch_all_checks forall t. (value : matcher_batch matcher_check t) : bool =
     match value with
@@ -2839,7 +3045,9 @@ inl run_proof_suite () : string =
         )
     inl acceptance_checks : matcher_batch matcher_check (bit_alphabet * tri_alphabet) =
         matcher_batch_map `$check_matcher_acceptance_observation acceptance_batch
-    assert_static (matcher_batch_all_checks acceptance_checks) "higher-ranked acceptance batch should preserve capability-resolved decisions"
+    assert_static
+        (matcher_batch_all_checks acceptance_checks)
+        "higher-ranked acceptance batch should preserve capability-resolved decisions"
     inl program_batch : matcher_batch matcher_program (bit_alphabet * tri_alphabet) =
         MatchBatchPair (
             MatchBatchSingle (capture_acceptance_program (ends_with_zero ()) (input_110 ()) true),
@@ -2847,8 +3055,12 @@ inl run_proof_suite () : string =
         )
     inl program_checks : matcher_batch matcher_check (bit_alphabet * tri_alphabet) =
         matcher_batch_map `$run_matcher_program program_batch
-    assert_static (matcher_batch_all_checks program_checks) "higher-ranked matcher programs should execute captured alphabet capabilities"
-    assert_static (matcher_batch_forall `$matcher_program_passes program_batch) "higher-ranked batch predicate should execute alphabet-indexed programs without erasing their family"
+    assert_static
+        (matcher_batch_all_checks program_checks)
+        "higher-ranked matcher programs should execute captured alphabet capabilities"
+    assert_static
+        (matcher_batch_forall `$matcher_program_passes program_batch)
+        "higher-ranked batch predicate should execute alphabet-indexed programs without erasing their family"
     inl bit_generic_raw : matcher_state bit_alphabet matcher_raw =
         MatcherRaw (ends_with_zero (), input_110 ())
     inl tri_generic_raw : matcher_state tri_alphabet matcher_raw =
@@ -2861,9 +3073,15 @@ inl run_proof_suite () : string =
         MatchBatchPair (
             MatchBatchSingle bit_generic_decided,
             MatchBatchSingle tri_generic_decided)
-    assert_static (matcher_batch_forall `$decided_matcher_value decided_matcher_batch) "generic decided matcher states should coexist in a higher-ranked batch without erasing alphabet indices"
-    assert_static (sealed_decided_matcher_value (seal_decided_matcher bit_generic_decided)) "generic decided matcher existential should preserve a bit decision"
-    assert_static (sealed_decided_matcher_value (seal_decided_matcher tri_generic_decided)) "generic decided matcher existential should preserve a ternary decision"
+    assert_static
+        (matcher_batch_forall `$decided_matcher_value decided_matcher_batch)
+        "generic decided matcher states should coexist in a higher-ranked batch without erasing alphabet indices"
+    assert_static
+        (sealed_decided_matcher_value (seal_decided_matcher bit_generic_decided))
+        "generic decided matcher existential should preserve a bit decision"
+    assert_static
+        (sealed_decided_matcher_value (seal_decided_matcher tri_generic_decided))
+        "generic decided matcher existential should preserve a ternary decision"
     inl derivative_program_batch : matcher_batch derivative_language_program (bit_alphabet * tri_alphabet) =
         MatchBatchPair (
             MatchBatchSingle (capture_derivative_language_program (ends_with_zero ())),
@@ -2873,10 +3091,22 @@ inl run_proof_suite () : string =
         matcher_batch_map `$run_derivative_language_program derivative_program_batch
     inl derivative_program_case_batch : matcher_batch derivative_language_program_case (bit_alphabet * tri_alphabet) =
         MatchBatchPair (
-            MatchBatchSingle (derivative_language_program_case (capture_derivative_language_program (ends_with_zero ()), accepted_runtime_input)),
-            MatchBatchSingle (derivative_language_program_case (capture_derivative_language_program (tri_ab_star_then_c ()), tri_rejected_input))
+            MatchBatchSingle (
+                derivative_language_program_case (
+                    capture_derivative_language_program (ends_with_zero ()),
+                    accepted_runtime_input
+                )
+            ),
+            MatchBatchSingle (
+                derivative_language_program_case (
+                    capture_derivative_language_program (tri_ab_star_then_c ()),
+                    tri_rejected_input
+                )
+            )
         )
-    assert_static (matcher_batch_forall `$derivative_language_program_case_passes derivative_program_case_batch) "higher-ranked derivative programs should preserve their alphabet-indexed law interpreters"
+    assert_static
+        (matcher_batch_forall `$derivative_language_program_case_passes derivative_program_case_batch)
+        "higher-ranked derivative programs should preserve their alphabet-indexed law interpreters"
     inl bit_law_family = run_derivative_language_program (capture_derivative_language_program (ends_with_zero ()))
     inl tri_law_family = run_derivative_language_program (capture_derivative_language_program (tri_ab_star_then_c ()))
     assert_true (matcher_check_value (derivative_language_family_check bit_law_family accepted_runtime_input))
@@ -2888,37 +3118,73 @@ inl run_proof_suite () : string =
         )
     inl _ : matcher_batch normalization_language_family (bit_alphabet * tri_alphabet) =
         matcher_batch_map `$run_normalization_language_program normalization_program_batch
-    inl bit_normalization_family = run_normalization_language_program (capture_normalization_language_program (ends_with_zero ()))
-    inl tri_normalization_family = run_normalization_language_program (capture_normalization_language_program (tri_ab_star_then_c ()))
-    assert_true (matcher_check_value (normalization_language_family_check bit_normalization_family accepted_runtime_input))
+    inl bit_normalization_family =
+        run_normalization_language_program (capture_normalization_language_program (ends_with_zero ()))
+    inl tri_normalization_family =
+        run_normalization_language_program (capture_normalization_language_program (tri_ab_star_then_c ()))
+    assert_true (
+        matcher_check_value (normalization_language_family_check bit_normalization_family accepted_runtime_input)
+    )
     assert_true (matcher_check_value (normalization_language_family_check tri_normalization_family tri_rejected_input))
     inl bit_descriptor : finite_alphabet_descriptor bit_alphabet = finite_alphabet ()
     inl tri_descriptor : finite_alphabet_descriptor tri_alphabet = finite_alphabet ()
     inl bit_symbols : symbol_list bit_alphabet = finite_alphabet_symbols bit_descriptor
     inl tri_symbols : symbol_list tri_alphabet = finite_alphabet_symbols tri_descriptor
-    assert_static (symbol_equal (finite_symbol_vector_lookup (bit_finite_index_zero ()) (bit_finite_symbol_vector ())) (zero ())) "bounded bit index zero should select zero"
-    assert_static (symbol_equal (finite_symbol_vector_lookup (bit_finite_index_one ()) (bit_finite_symbol_vector ())) (one ())) "bounded bit index one should select one"
-    assert_static (symbol_equal (finite_symbol_vector_lookup (tri_finite_index_zero ()) (tri_finite_symbol_vector ())) (tri_a ())) "bounded ternary index zero should select A"
-    assert_static (symbol_equal (finite_symbol_vector_lookup (tri_finite_index_one ()) (tri_finite_symbol_vector ())) (tri_b ())) "bounded ternary index one should select B"
-    assert_static (symbol_equal (finite_symbol_vector_lookup (tri_finite_index_two ()) (tri_finite_symbol_vector ())) (tri_c ())) "bounded ternary index two should select C"
-    assert_static (finite_alphabet_descriptor_certified bit_descriptor) "bit finite-alphabet descriptor should be ordered, distinct and cardinality-complete"
-    assert_static (finite_alphabet_descriptor_certified tri_descriptor) "ternary finite-alphabet descriptor should be ordered, distinct and cardinality-complete"
+    assert_static
+        (symbol_equal (finite_symbol_vector_lookup (bit_finite_index_zero ()) (bit_finite_symbol_vector ())) (zero ()))
+        "bounded bit index zero should select zero"
+    assert_static
+        (symbol_equal (finite_symbol_vector_lookup (bit_finite_index_one ()) (bit_finite_symbol_vector ())) (one ()))
+        "bounded bit index one should select one"
+    assert_static
+        (symbol_equal (finite_symbol_vector_lookup (tri_finite_index_zero ()) (tri_finite_symbol_vector ())) (tri_a ()))
+        "bounded ternary index zero should select A"
+    assert_static
+        (symbol_equal (finite_symbol_vector_lookup (tri_finite_index_one ()) (tri_finite_symbol_vector ())) (tri_b ()))
+        "bounded ternary index one should select B"
+    assert_static
+        (symbol_equal (finite_symbol_vector_lookup (tri_finite_index_two ()) (tri_finite_symbol_vector ())) (tri_c ()))
+        "bounded ternary index two should select C"
+    assert_static
+        (finite_alphabet_descriptor_certified bit_descriptor)
+        "bit finite-alphabet descriptor should be ordered, distinct and cardinality-complete"
+    assert_static
+        (finite_alphabet_descriptor_certified tri_descriptor)
+        "ternary finite-alphabet descriptor should be ordered, distinct and cardinality-complete"
     inl duplicate_bit_inventory = SymbolListCons (zero (), SymbolListCons (zero (), SymbolListNil))
-    assert_static (bool_same (alphabet_inventory_well_formed duplicate_bit_inventory) false) "duplicate alphabet inventory must be rejected"
+    assert_static
+        (bool_same (alphabet_inventory_well_formed duplicate_bit_inventory) false)
+        "duplicate alphabet inventory must be rejected"
     inl incomplete_bit_inventory = SymbolListCons (zero (), SymbolListNil)
     inl incomplete_bit_descriptor : finite_alphabet_descriptor bit_alphabet =
         finite_alphabet_descriptor (
             incomplete_bit_inventory,
             AlphabetCardinalitySucc (AlphabetCardinalitySucc AlphabetCardinalityZero))
-    assert_static (alphabet_inventory_well_formed incomplete_bit_inventory) "a sorted prefix alone cannot prove finite-alphabet completeness"
-    assert_static (bool_same (finite_alphabet_descriptor_certified incomplete_bit_descriptor) false) "descriptor cardinality must reject an incomplete sorted prefix"
-    assert_static (bool_same (input_symbols_covered (input_111 ()) incomplete_bit_inventory) false) "input coverage must detect symbols omitted from the claimed inventory"
+    assert_static
+        (alphabet_inventory_well_formed incomplete_bit_inventory)
+        "a sorted prefix alone cannot prove finite-alphabet completeness"
+    assert_static
+        (bool_same (finite_alphabet_descriptor_certified incomplete_bit_descriptor) false)
+        "descriptor cardinality must reject an incomplete sorted prefix"
+    assert_static
+        (bool_same (input_symbols_covered (input_111 ()) incomplete_bit_inventory) false)
+        "input coverage must detect symbols omitted from the claimed inventory"
     assert_static (
         match dfa_run_with_inventory (ends_with_zero ()) incomplete_bit_descriptor (input_111 ()) with
         | DfaEscapedClosure => true
         | _ => false
     ) "DFA execution must fail closed when descriptor cardinality and inventory disagree"
-    assert_static (bool_same (dfa_closure_result_complete (dfa_closure_bounded_with_budget (ends_with_zero ()) bit_symbols StateBudgetZero)) false) "zero closure budget must terminate as budget-exceeded rather than recurse without a bound"
+    assert_static
+        (
+            bool_same
+                (
+                    dfa_closure_result_complete (
+                        dfa_closure_bounded_with_budget (ends_with_zero ()) bit_symbols StateBudgetZero
+                    )
+                )
+                false
+        )
+        "zero closure budget must terminate as budget-exceeded rather than recurse without a bound"
     inl bit_bases = RegexListCons (
         RegexEmpty,
         RegexListCons (RegexEpsilon, regex_chars_from_symbols bit_symbols))
@@ -2954,27 +3220,57 @@ inl run_proof_suite () : string =
         )
     inl _ : matcher_batch normalization_language_family (bit_alphabet * tri_alphabet) =
         matcher_batch_map `$run_normalization_corpus_program normalization_corpus_program_batch
-    inl bit_normalization_corpus_family = run_normalization_corpus_program (capture_normalization_corpus_program bit_corpus)
-    inl tri_normalization_corpus_family = run_normalization_corpus_program (capture_normalization_corpus_program tri_constructor_corpus)
-    assert_true (matcher_check_value (normalization_language_family_check bit_normalization_corpus_family accepted_runtime_input))
-    assert_true (matcher_check_value (normalization_language_family_check tri_normalization_corpus_family tri_accepted_input))
+    inl bit_normalization_corpus_family =
+        run_normalization_corpus_program (capture_normalization_corpus_program bit_corpus)
+    inl tri_normalization_corpus_family =
+        run_normalization_corpus_program (capture_normalization_corpus_program tri_constructor_corpus)
+    assert_true (
+        matcher_check_value (normalization_language_family_check bit_normalization_corpus_family accepted_runtime_input)
+    )
+    assert_true (
+        matcher_check_value (normalization_language_family_check tri_normalization_corpus_family tri_accepted_input)
+    )
     assert_static (dfa_formula_consistent bit_bases bit_symbols) "base derivative equations should hold structurally"
     assert_static (dfa_formula_consistent bit_stars bit_symbols) "star derivative equations should hold structurally"
     assert_static (dfa_formula_consistent bit_pairs bit_symbols) "binary derivative equations should hold structurally"
-    assert_static (dfa_formula_consistent bit_corpus bit_symbols) "generated derivative equations should hold structurally"
-    assert_static (dfa_states_nullable_preserved bit_corpus) "generated corpus should preserve nullable under normalization"
+    assert_static
+        (dfa_formula_consistent bit_corpus bit_symbols)
+        "generated derivative equations should hold structurally"
+    assert_static
+        (dfa_states_nullable_preserved bit_corpus)
+        "generated corpus should preserve nullable under normalization"
     assert_static (regex_list_normalization_idempotent bit_corpus) "generated corpus normalization should be idempotent"
-    assert_static (canonical_derivative_coherent_corpus bit_corpus bit_symbols) "generated bit corpus should commute canonical derivation with prior normalization"
-    assert_static (canonical_derivative_coherent_corpus tri_constructor_corpus tri_symbols) "ternary constructor corpus should commute canonical derivation with prior normalization"
-    assert_static (dfa_partition_one_distinct (dfa_closure (ends_with_zero ())) bit_symbols) "bit DFA one-step signatures should be distinct"
-    assert_static (dfa_partition_one_distinct (dfa_closure (tri_a_star ())) tri_symbols) "ternary star one-step signatures should be distinct"
-    assert_static (dfa_partition_one_distinct (dfa_closure (tri_ab_star_then_c ())) tri_symbols) "ternary suffix one-step signatures should be distinct"
-    assert_static (dfa_minimal_by_bisimulation (dfa_closure (ends_with_zero ())) bit_symbols) "bit DFA should be behaviorally minimal"
-    assert_static (dfa_minimal_by_bisimulation (dfa_closure (tri_a_star ())) tri_symbols) "ternary star DFA should be behaviorally minimal"
-    assert_static (dfa_minimal_by_bisimulation (dfa_closure (tri_ab_star_then_c ())) tri_symbols) "ternary suffix DFA should be behaviorally minimal"
+    assert_static
+        (canonical_derivative_coherent_corpus bit_corpus bit_symbols)
+        "generated bit corpus should commute canonical derivation with prior normalization"
+    assert_static
+        (canonical_derivative_coherent_corpus tri_constructor_corpus tri_symbols)
+        "ternary constructor corpus should commute canonical derivation with prior normalization"
+    assert_static
+        (dfa_partition_one_distinct (dfa_closure (ends_with_zero ())) bit_symbols)
+        "bit DFA one-step signatures should be distinct"
+    assert_static
+        (dfa_partition_one_distinct (dfa_closure (tri_a_star ())) tri_symbols)
+        "ternary star one-step signatures should be distinct"
+    assert_static
+        (dfa_partition_one_distinct (dfa_closure (tri_ab_star_then_c ())) tri_symbols)
+        "ternary suffix one-step signatures should be distinct"
+    assert_static
+        (dfa_minimal_by_bisimulation (dfa_closure (ends_with_zero ())) bit_symbols)
+        "bit DFA should be behaviorally minimal"
+    assert_static
+        (dfa_minimal_by_bisimulation (dfa_closure (tri_a_star ())) tri_symbols)
+        "ternary star DFA should be behaviorally minimal"
+    assert_static
+        (dfa_minimal_by_bisimulation (dfa_closure (tri_ab_star_then_c ())) tri_symbols)
+        "ternary suffix DFA should be behaviorally minimal"
     inl nonminimal_closure = dfa_closure (tri_cyclic_nonminimal ())
-    assert_static (dfa_partition_one_distinct nonminimal_closure tri_symbols) "one-step partition should miss cyclic language equivalence"
-    assert_static (bool_same (dfa_minimal_by_bisimulation nonminimal_closure tri_symbols) false) "bisimulation should detect cyclic language equivalence"
+    assert_static
+        (dfa_partition_one_distinct nonminimal_closure tri_symbols)
+        "one-step partition should miss cyclic language equivalence"
+    assert_static
+        (bool_same (dfa_minimal_by_bisimulation nonminimal_closure tri_symbols) false)
+        "bisimulation should detect cyclic language equivalence"
     inl accepted_state = decide_bit_match (BitMatcherRaw (ends_with_zero (), accepted_input))
     inl rejected_state = decide_bit_match (BitMatcherRaw (ends_with_zero (), rejected_input))
     assert_true (bit_match_value accepted_state)
@@ -2982,7 +3278,9 @@ inl run_proof_suite () : string =
     inl accepted_sealed = seal_match (ends_with_zero ()) accepted_input
     inl rejected_sealed = seal_match (ends_with_zero ()) rejected_input
     assert_static (sealed_match_value accepted_sealed) "existential match seal should preserve acceptance"
-    assert_static (bool_same (sealed_match_value rejected_sealed) false) "existential match seal should preserve rejection"
+    assert_static
+        (bool_same (sealed_match_value rejected_sealed) false)
+        "existential match seal should preserve rejection"
     inl bit_dfa_surface = seal_dfa_surface (ends_with_zero ())
     inl tri_dfa_surface = seal_dfa_surface (tri_a_star ())
     inl tri_complex_dfa_surface = seal_dfa_surface (tri_ab_star_then_c ())
@@ -2991,8 +3289,12 @@ inl run_proof_suite () : string =
     inl tri_complex_minimized_surface = seal_minimized_dfa (tri_ab_star_then_c ())
     inl cyclic_minimized_surface = seal_minimized_dfa (tri_cyclic_nonminimal ())
     assert_static (sealed_minimized_dfa_certified bit_minimized_surface) "bit minimized DFA should be certified"
-    assert_static (sealed_minimized_dfa_certified tri_minimized_surface) "ternary star minimized DFA should be certified"
-    assert_static (sealed_minimized_dfa_certified tri_complex_minimized_surface) "ternary suffix minimized DFA should be certified"
+    assert_static
+        (sealed_minimized_dfa_certified tri_minimized_surface)
+        "ternary star minimized DFA should be certified"
+    assert_static
+        (sealed_minimized_dfa_certified tri_complex_minimized_surface)
+        "ternary suffix minimized DFA should be certified"
     assert_static (sealed_minimized_dfa_certified cyclic_minimized_surface) "cyclic quotient should be certified"
     assert_static (sealed_dfa_surface_closed bit_dfa_surface) "bit DFA closure should be closed"
     assert_static (sealed_dfa_surface_closed tri_dfa_surface) "ternary star DFA closure should be closed"
@@ -3000,47 +3302,99 @@ inl run_proof_suite () : string =
     assert_static (sealed_dfa_surface_distinct bit_dfa_surface) "bit DFA states should be distinct"
     assert_static (sealed_dfa_surface_distinct tri_dfa_surface) "ternary star DFA states should be distinct"
     assert_static (sealed_dfa_surface_distinct tri_complex_dfa_surface) "ternary suffix DFA states should be distinct"
-    assert_static (sealed_dfa_surface_formula_consistent bit_dfa_surface) "bit DFA derivative formulas should be structurally consistent"
-    assert_static (sealed_dfa_surface_formula_consistent tri_dfa_surface) "ternary star DFA derivative formulas should be structurally consistent"
-    assert_static (sealed_dfa_surface_formula_consistent tri_complex_dfa_surface) "ternary suffix DFA derivative formulas should be structurally consistent"
+    assert_static
+        (sealed_dfa_surface_formula_consistent bit_dfa_surface)
+        "bit DFA derivative formulas should be structurally consistent"
+    assert_static
+        (sealed_dfa_surface_formula_consistent tri_dfa_surface)
+        "ternary star DFA derivative formulas should be structurally consistent"
+    assert_static
+        (sealed_dfa_surface_formula_consistent tri_complex_dfa_surface)
+        "ternary suffix DFA derivative formulas should be structurally consistent"
     assert_static (sealed_dfa_surface_table_total bit_dfa_surface) "bit DFA table should be total"
     assert_static (sealed_dfa_surface_table_total tri_dfa_surface) "ternary star DFA table should be total"
     assert_static (sealed_dfa_surface_table_total tri_complex_dfa_surface) "ternary suffix DFA table should be total"
     assert_static (sealed_dfa_surface_table_keys_distinct bit_dfa_surface) "bit DFA table keys should be unique"
-    assert_static (sealed_dfa_surface_table_keys_distinct tri_dfa_surface) "ternary star DFA table keys should be unique"
-    assert_static (sealed_dfa_surface_table_keys_distinct tri_complex_dfa_surface) "ternary suffix DFA table keys should be unique"
-    assert_static (sealed_dfa_surface_bounded bit_dfa_surface) "bit DFA should satisfy its structural position-subset bound"
-    assert_static (sealed_dfa_surface_bounded tri_dfa_surface) "ternary star DFA should satisfy its structural position-subset bound"
-    assert_static (sealed_dfa_surface_bounded tri_complex_dfa_surface) "ternary suffix DFA should satisfy its structural position-subset bound"
+    assert_static
+        (sealed_dfa_surface_table_keys_distinct tri_dfa_surface)
+        "ternary star DFA table keys should be unique"
+    assert_static
+        (sealed_dfa_surface_table_keys_distinct tri_complex_dfa_surface)
+        "ternary suffix DFA table keys should be unique"
+    assert_static
+        (sealed_dfa_surface_bounded bit_dfa_surface)
+        "bit DFA should satisfy its structural position-subset bound"
+    assert_static
+        (sealed_dfa_surface_bounded tri_dfa_surface)
+        "ternary star DFA should satisfy its structural position-subset bound"
+    assert_static
+        (sealed_dfa_surface_bounded tri_complex_dfa_surface)
+        "ternary suffix DFA should satisfy its structural position-subset bound"
     assert_static (sealed_dfa_surface_states_normalized bit_dfa_surface) "bit DFA states should be normalized"
     assert_static (sealed_dfa_surface_states_normalized tri_dfa_surface) "ternary star DFA states should be normalized"
-    assert_static (sealed_dfa_surface_states_normalized tri_complex_dfa_surface) "ternary suffix DFA states should be normalized"
-    assert_static (sealed_dfa_surface_nullable_preserved bit_dfa_surface) "bit DFA normalization should preserve nullable"
-    assert_static (sealed_dfa_surface_nullable_preserved tri_dfa_surface) "ternary star DFA normalization should preserve nullable"
-    assert_static (sealed_dfa_surface_nullable_preserved tri_complex_dfa_surface) "ternary suffix DFA normalization should preserve nullable"
+    assert_static
+        (sealed_dfa_surface_states_normalized tri_complex_dfa_surface)
+        "ternary suffix DFA states should be normalized"
+    assert_static
+        (sealed_dfa_surface_nullable_preserved bit_dfa_surface)
+        "bit DFA normalization should preserve nullable"
+    assert_static
+        (sealed_dfa_surface_nullable_preserved tri_dfa_surface)
+        "ternary star DFA normalization should preserve nullable"
+    assert_static
+        (sealed_dfa_surface_nullable_preserved tri_complex_dfa_surface)
+        "ternary suffix DFA normalization should preserve nullable"
     assert_static (sealed_dfa_surface_ordering_coherent bit_dfa_surface) "bit DFA ordering should be coherent"
     assert_static (sealed_dfa_surface_ordering_coherent tri_dfa_surface) "ternary star DFA ordering should be coherent"
-    assert_static (sealed_dfa_surface_ordering_coherent tri_complex_dfa_surface) "ternary suffix DFA ordering should be coherent"
+    assert_static
+        (sealed_dfa_surface_ordering_coherent tri_complex_dfa_surface)
+        "ternary suffix DFA ordering should be coherent"
     assert_static (sealed_dfa_surface_certified bit_dfa_surface) "bit DFA surface should be certified"
     assert_static (sealed_dfa_surface_certified tri_dfa_surface) "ternary star DFA surface should be certified"
-    assert_static (sealed_dfa_surface_certified tri_complex_dfa_surface) "ternary suffix DFA surface should be certified"
+    assert_static
+        (sealed_dfa_surface_certified tri_complex_dfa_surface)
+        "ternary suffix DFA surface should be certified"
     inl tri_abc_closure = dfa_closure (tri_abc_sequence ())
-    assert_static (bool_same (regex_list_within_budget tri_abc_closure (state_budget_four ())) false) "three-symbol sequence should exceed the four-state budget"
-    assert_static (regex_list_within_budget tri_abc_closure (state_budget_eight ())) "three-symbol sequence should fit the eight-state budget"
-    assert_static (canonical_closure_within_position_subset_bound (ends_with_zero ())) "bit canonical closure should stay within its structural position-subset bound"
-    assert_static (canonical_closure_within_position_subset_bound (tri_ab_star_then_c ())) "ternary suffix closure should stay within its structural position-subset bound"
-    assert_static (minimized_within_position_subset_bound (ends_with_zero ())) "bit minimized DFA should stay within its structural position-subset bound"
-    assert_static (minimized_within_position_subset_bound (tri_cyclic_nonminimal ())) "cyclic minimized DFA should stay within its structural position-subset bound"
+    assert_static
+        (bool_same (regex_list_within_budget tri_abc_closure (state_budget_four ())) false)
+        "three-symbol sequence should exceed the four-state budget"
+    assert_static
+        (regex_list_within_budget tri_abc_closure (state_budget_eight ()))
+        "three-symbol sequence should fit the eight-state budget"
+    assert_static
+        (canonical_closure_within_position_subset_bound (ends_with_zero ()))
+        "bit canonical closure should stay within its structural position-subset bound"
+    assert_static
+        (canonical_closure_within_position_subset_bound (tri_ab_star_then_c ()))
+        "ternary suffix closure should stay within its structural position-subset bound"
+    assert_static
+        (minimized_within_position_subset_bound (ends_with_zero ()))
+        "bit minimized DFA should stay within its structural position-subset bound"
+    assert_static
+        (minimized_within_position_subset_bound (tri_cyclic_nonminimal ()))
+        "cyclic minimized DFA should stay within its structural position-subset bound"
     assert_static (dfa_run_agrees (ends_with_zero ()) accepted_input) "bit DFA runner should preserve acceptance"
     assert_static (dfa_run_agrees (ends_with_zero ()) rejected_input) "bit DFA runner should preserve rejection"
     assert_static (dfa_run_agrees (tri_a_star ()) (input_aaa ())) "ternary star DFA runner should preserve acceptance"
     assert_static (dfa_run_agrees (tri_a_star ()) (input_aab ())) "ternary star DFA runner should preserve rejection"
-    assert_static (dfa_run_agrees (tri_ab_star_then_c ()) (input_abac ())) "ternary suffix DFA runner should preserve acceptance"
-    assert_static (dfa_run_agrees (tri_ab_star_then_c ()) (input_abab ())) "ternary suffix DFA runner should preserve rejection"
-    assert_static (dfa_run_minimized_agrees (ends_with_zero ()) accepted_input) "bit minimized runner should preserve acceptance"
-    assert_static (dfa_run_minimized_agrees (tri_a_star ()) (input_aab ())) "ternary minimized runner should preserve rejection"
-    assert_static (dfa_run_minimized_agrees (tri_cyclic_nonminimal ()) (input_aaa ())) "cyclic quotient should preserve acceptance"
-    assert_static (dfa_run_minimized_agrees (tri_cyclic_nonminimal ()) (input_aab ())) "cyclic quotient should preserve rejection"
+    assert_static
+        (dfa_run_agrees (tri_ab_star_then_c ()) (input_abac ()))
+        "ternary suffix DFA runner should preserve acceptance"
+    assert_static
+        (dfa_run_agrees (tri_ab_star_then_c ()) (input_abab ()))
+        "ternary suffix DFA runner should preserve rejection"
+    assert_static
+        (dfa_run_minimized_agrees (ends_with_zero ()) accepted_input)
+        "bit minimized runner should preserve acceptance"
+    assert_static
+        (dfa_run_minimized_agrees (tri_a_star ()) (input_aab ()))
+        "ternary minimized runner should preserve rejection"
+    assert_static
+        (dfa_run_minimized_agrees (tri_cyclic_nonminimal ()) (input_aaa ()))
+        "cyclic quotient should preserve acceptance"
+    assert_static
+        (dfa_run_minimized_agrees (tri_cyclic_nonminimal ()) (input_aab ()))
+        "cyclic quotient should preserve rejection"
     inl canonical_alt = RegexAlt (RegexChar (zero ()), RegexChar (one ()))
     inl duplicate_commuted_alt =
         RegexAlt (
@@ -3054,11 +3408,19 @@ inl run_proof_suite () : string =
     inl nested_star = RegexStar (RegexStar (RegexChar (zero ())))
     inl flat_star = RegexStar (RegexChar (zero ()))
     inl duplicate_star_cat = RegexCat (flat_star, flat_star)
-    assert_static (canonical_regex_same duplicate_commuted_alt canonical_alt) "alternative normalization should deduplicate and order"
-    assert_static (canonical_regex_same commuted_alt canonical_alt) "alternative normalization should commute canonically"
-    assert_static (canonical_regex_same associated_cat_left associated_cat_right) "concatenation normalization should reassociate canonically"
+    assert_static
+        (canonical_regex_same duplicate_commuted_alt canonical_alt)
+        "alternative normalization should deduplicate and order"
+    assert_static
+        (canonical_regex_same commuted_alt canonical_alt)
+        "alternative normalization should commute canonically"
+    assert_static
+        (canonical_regex_same associated_cat_left associated_cat_right)
+        "concatenation normalization should reassociate canonically"
     assert_static (canonical_regex_same nested_star flat_star) "star normalization should collapse nested stars"
-    assert_static (canonical_regex_same duplicate_star_cat flat_star) "adjacent identical stars should collapse under concatenation"
+    assert_static
+        (canonical_regex_same duplicate_star_cat flat_star)
+        "adjacent identical stars should collapse under concatenation"
     assert_static (
         regex_equal
             (normalize (derivative (normalize nested_star) (zero ())))
@@ -3071,22 +3433,50 @@ inl run_proof_suite () : string =
     assert_false (accepts (ends_with_zero ()) rejected_runtime_input)
     assert_true (accepts (tri_a_star ()) tri_accepted_input)
     assert_false (accepts (tri_a_star ()) tri_rejected_input)
-    assert_static (accepts (tri_ab_star_then_c ()) (input_abac ())) "ternary suffix matcher should accept the positive case"
-    assert_static (bool_same (accepts (tri_ab_star_then_c ()) (input_abab ())) false) "ternary suffix matcher should reject the negative case"
+    assert_static
+        (accepts (tri_ab_star_then_c ()) (input_abac ()))
+        "ternary suffix matcher should accept the positive case"
+    assert_static
+        (bool_same (accepts (tri_ab_star_then_c ()) (input_abab ())) false)
+        "ternary suffix matcher should reject the negative case"
     assert_true (accepts RegexEpsilon empty_input)
     assert_false (accepts RegexEmpty empty_input)
-    assert_static (canonical_acceptance_agrees (ends_with_zero ()) (input_110 ())) "bit reference matcher should agree on acceptance"
-    assert_static (canonical_acceptance_agrees (ends_with_zero ()) (input_111 ())) "bit reference matcher should agree on rejection"
-    assert_static (canonical_acceptance_agrees (tri_a_star ()) (input_aaa ())) "ternary reference matcher should agree on acceptance"
-    assert_static (canonical_acceptance_agrees (tri_a_star ()) (input_aab ())) "ternary reference matcher should agree on rejection"
-    assert_static (canonical_acceptance_agrees (tri_ab_star_then_c ()) (input_abac ())) "ternary suffix reference matcher should agree on acceptance"
-    assert_static (canonical_acceptance_agrees (tri_ab_star_then_c ()) (input_abab ())) "ternary suffix reference matcher should agree on rejection"
-    assert_static (independent_acceptance_agrees (ends_with_zero ()) (input_110 ())) "bit direct-language oracle should agree on acceptance"
-    assert_static (independent_acceptance_agrees (ends_with_zero ()) (input_111 ())) "bit direct-language oracle should agree on rejection"
-    assert_static (independent_acceptance_agrees (tri_a_star ()) (input_aaa ())) "ternary direct-language oracle should agree on acceptance"
-    assert_static (independent_acceptance_agrees (tri_a_star ()) (input_aab ())) "ternary direct-language oracle should agree on rejection"
-    assert_static (independent_acceptance_agrees (tri_ab_star_then_c ()) (input_abac ())) "ternary suffix direct-language oracle should agree on acceptance"
-    assert_static (independent_acceptance_agrees (tri_ab_star_then_c ()) (input_abab ())) "ternary suffix direct-language oracle should agree on rejection"
+    assert_static
+        (canonical_acceptance_agrees (ends_with_zero ()) (input_110 ()))
+        "bit reference matcher should agree on acceptance"
+    assert_static
+        (canonical_acceptance_agrees (ends_with_zero ()) (input_111 ()))
+        "bit reference matcher should agree on rejection"
+    assert_static
+        (canonical_acceptance_agrees (tri_a_star ()) (input_aaa ()))
+        "ternary reference matcher should agree on acceptance"
+    assert_static
+        (canonical_acceptance_agrees (tri_a_star ()) (input_aab ()))
+        "ternary reference matcher should agree on rejection"
+    assert_static
+        (canonical_acceptance_agrees (tri_ab_star_then_c ()) (input_abac ()))
+        "ternary suffix reference matcher should agree on acceptance"
+    assert_static
+        (canonical_acceptance_agrees (tri_ab_star_then_c ()) (input_abab ()))
+        "ternary suffix reference matcher should agree on rejection"
+    assert_static
+        (independent_acceptance_agrees (ends_with_zero ()) (input_110 ()))
+        "bit direct-language oracle should agree on acceptance"
+    assert_static
+        (independent_acceptance_agrees (ends_with_zero ()) (input_111 ()))
+        "bit direct-language oracle should agree on rejection"
+    assert_static
+        (independent_acceptance_agrees (tri_a_star ()) (input_aaa ()))
+        "ternary direct-language oracle should agree on acceptance"
+    assert_static
+        (independent_acceptance_agrees (tri_a_star ()) (input_aab ()))
+        "ternary direct-language oracle should agree on rejection"
+    assert_static
+        (independent_acceptance_agrees (tri_ab_star_then_c ()) (input_abac ()))
+        "ternary suffix direct-language oracle should agree on acceptance"
+    assert_static
+        (independent_acceptance_agrees (tri_ab_star_then_c ()) (input_abab ()))
+        "ternary suffix direct-language oracle should agree on rejection"
     inl normalization_boolean_blind_source = RegexStar (RegexChar (zero ()))
     inl normalization_boolean_blind_input = InputCons (zero (), InputCons (one (), InputEmpty))
     inl normalization_boolean_blind_candidate : regex bit_alphabet = RegexEmpty
@@ -3095,16 +3485,27 @@ inl run_proof_suite () : string =
             (language_accepts normalization_boolean_blind_source normalization_boolean_blind_input)
             (language_accepts normalization_boolean_blind_candidate normalization_boolean_blind_input)
     ) "boolean-only normalization observation must be able to miss a bad candidate"
-    assert_static (
-        bool_same
-            (normalization_remainder_candidate_law normalization_boolean_blind_source normalization_boolean_blind_input normalization_boolean_blind_candidate)
-            false
-    ) "remainder-set normalization law must distinguish a bad candidate hidden by the final boolean"
+    assert_static
+        (
+            bool_same
+                (
+                    normalization_remainder_candidate_law
+                        normalization_boolean_blind_source
+                        normalization_boolean_blind_input
+                        normalization_boolean_blind_candidate
+                )
+                false
+        )
+        "remainder-set normalization law must distinguish a bad candidate hidden by the final boolean"
     inl bit_suffix_corpus = input_corpus_depth_two bit_symbols
     inl tri_suffix_corpus = input_corpus_depth_two tri_symbols
-    assert_static (derivative_language_law_corpus bit_bases bit_symbols bit_suffix_corpus) "direct-language oracle should validate bit derivative law corpus"
+    assert_static
+        (derivative_language_law_corpus bit_bases bit_symbols bit_suffix_corpus)
+        "direct-language oracle should validate bit derivative law corpus"
     inl tri_law_corpus = RegexListCons (tri_a_star (), RegexListCons (tri_ab_star_then_c (), RegexListNil))
-    assert_static (derivative_language_law_corpus tri_law_corpus tri_symbols tri_suffix_corpus) "direct-language oracle should validate ternary derivative law corpus"
+    assert_static
+        (derivative_language_law_corpus tri_law_corpus tri_symbols tri_suffix_corpus)
+        "direct-language oracle should validate ternary derivative law corpus"
     inl theorem_boundary_probe =
         RegexAlt (
             RegexEmpty,
@@ -3113,28 +3514,66 @@ inl run_proof_suite () : string =
                 RegexCat (
                     RegexStar (RegexAlt (RegexChar (zero ()), RegexChar (one ()))),
                     RegexChar (zero ()))))
-    assert_static (derivative_semantic_triangle_symbols theorem_boundary_probe bit_symbols bit_suffix_corpus) "structural semantic triangle should cover every regex constructor"
-    assert_static (derivative_semantic_triangle_symbols (tri_ab_star_then_c ()) tri_symbols tri_suffix_corpus) "structural semantic triangle should hold for ternary composite regex"
+    assert_static
+        (derivative_semantic_triangle_symbols theorem_boundary_probe bit_symbols bit_suffix_corpus)
+        "structural semantic triangle should cover every regex constructor"
+    assert_static
+        (derivative_semantic_triangle_symbols (tri_ab_star_then_c ()) tri_symbols tri_suffix_corpus)
+        "structural semantic triangle should hold for ternary composite regex"
     inl nullable_remainder_probe = RegexStar (RegexChar (zero ()))
     inl nullable_probe_input = InputCons (zero (), InputEmpty)
     inl raw_source_remainders = language_remainders nullable_remainder_probe nullable_probe_input
-    inl raw_derivative_remainders = language_remainders (canonical_derivative nullable_remainder_probe (zero ())) InputEmpty
-    assert_static (bool_same (input_list_set_equal raw_source_remainders raw_derivative_remainders) false) "raw remainder equality must expose the nullable zero-consumption remainder"
-    assert_static (derivative_remainder_candidate_law nullable_remainder_probe (zero ()) InputEmpty (canonical_derivative nullable_remainder_probe (zero ()))) "derivative remainder law should remove only the zero-consumption remainder"
+    inl raw_derivative_remainders =
+        language_remainders (canonical_derivative nullable_remainder_probe (zero ())) InputEmpty
+    assert_static
+        (bool_same (input_list_set_equal raw_source_remainders raw_derivative_remainders) false)
+        "raw remainder equality must expose the nullable zero-consumption remainder"
+    assert_static
+        (
+            derivative_remainder_candidate_law nullable_remainder_probe
+                (zero ())
+                InputEmpty
+                (canonical_derivative nullable_remainder_probe (zero ()))
+        )
+        "derivative remainder law should remove only the zero-consumption remainder"
     inl bit_suffix = InputCons (one (), InputCons (zero (), InputEmpty))
     inl tri_suffix = InputCons (tri_a (), InputCons (tri_a (), InputEmpty))
-    assert_static (derivative_step_agrees RegexEmpty (zero ()) InputEmpty) "empty derivative step should preserve language"
-    assert_static (derivative_step_agrees RegexEpsilon (zero ()) InputEmpty) "epsilon derivative step should preserve language"
-    assert_static (derivative_step_agrees (RegexChar (zero ())) (zero ()) bit_suffix) "matching-char derivative step should preserve language"
-    assert_static (derivative_step_agrees (RegexChar (zero ())) (one ()) bit_suffix) "mismatching-char derivative step should preserve language"
-    assert_static (derivative_step_agrees (RegexAlt (RegexChar (zero ()), RegexChar (one ()))) (one ()) bit_suffix) "alternative derivative step should preserve language"
-    assert_static (derivative_step_agrees (RegexCat (RegexChar (zero ()), RegexChar (one ()))) (zero ()) bit_suffix) "nonnullable concatenation derivative step should preserve language"
-    assert_static (derivative_step_agrees (RegexCat (RegexEpsilon, RegexChar (one ()))) (one ()) bit_suffix) "nullable concatenation derivative step should preserve language"
-    assert_static (derivative_step_agrees (RegexStar (RegexChar (zero ()))) (zero ()) bit_suffix) "star derivative step should preserve language"
-    assert_static (derivative_step_agrees (ends_with_zero ()) (one ()) bit_suffix) "composite one derivative step should preserve language"
-    assert_static (derivative_step_agrees (ends_with_zero ()) (zero ()) bit_suffix) "composite zero derivative step should preserve language"
-    assert_static (derivative_step_agrees (tri_a_star ()) (tri_a ()) tri_suffix) "ternary derivative step should preserve language"
-    assert_static (derivative_step_agrees (RegexCat (RegexStar (RegexChar (zero ())), RegexChar (one ()))) (zero ()) bit_suffix) "star-concatenation derivative step should preserve language"
+    assert_static
+        (derivative_step_agrees RegexEmpty (zero ()) InputEmpty)
+        "empty derivative step should preserve language"
+    assert_static
+        (derivative_step_agrees RegexEpsilon (zero ()) InputEmpty)
+        "epsilon derivative step should preserve language"
+    assert_static
+        (derivative_step_agrees (RegexChar (zero ())) (zero ()) bit_suffix)
+        "matching-char derivative step should preserve language"
+    assert_static
+        (derivative_step_agrees (RegexChar (zero ())) (one ()) bit_suffix)
+        "mismatching-char derivative step should preserve language"
+    assert_static
+        (derivative_step_agrees (RegexAlt (RegexChar (zero ()), RegexChar (one ()))) (one ()) bit_suffix)
+        "alternative derivative step should preserve language"
+    assert_static
+        (derivative_step_agrees (RegexCat (RegexChar (zero ()), RegexChar (one ()))) (zero ()) bit_suffix)
+        "nonnullable concatenation derivative step should preserve language"
+    assert_static
+        (derivative_step_agrees (RegexCat (RegexEpsilon, RegexChar (one ()))) (one ()) bit_suffix)
+        "nullable concatenation derivative step should preserve language"
+    assert_static
+        (derivative_step_agrees (RegexStar (RegexChar (zero ()))) (zero ()) bit_suffix)
+        "star derivative step should preserve language"
+    assert_static
+        (derivative_step_agrees (ends_with_zero ()) (one ()) bit_suffix)
+        "composite one derivative step should preserve language"
+    assert_static
+        (derivative_step_agrees (ends_with_zero ()) (zero ()) bit_suffix)
+        "composite zero derivative step should preserve language"
+    assert_static
+        (derivative_step_agrees (tri_a_star ()) (tri_a ()) tri_suffix)
+        "ternary derivative step should preserve language"
+    assert_static
+        (derivative_step_agrees (RegexCat (RegexStar (RegexChar (zero ())), RegexChar (one ()))) (zero ()) bit_suffix)
+        "star-concatenation derivative step should preserve language"
     "brzozowski-runtime-suite-green"
 
 inl main () : string =

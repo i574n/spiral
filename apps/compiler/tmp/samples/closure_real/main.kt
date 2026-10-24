@@ -11,14 +11,11 @@ fun f_c0(v0: Double): (Int) -> Double {
     return { p0: Int -> body(p0) }
 }
 fun spiral_main(): Int {
-    var v0: Double = 0.0
-    v0 = 1.5
-    var v1: (Int) -> Double = { _: Int -> throw RuntimeException() }
-    v1 = f_c0(v0)
+    val v0: Double = 1.5
+    val v1: (Int) -> Double = f_c0(v0)
     var v2: Double = 0.0
     v2 = v1(1)
-    var v3: Boolean = false
-    v3 = (v2 == 1.5)
+    val v3: Boolean = (v2 == 1.5)
     if (v3) {
         return 0
     } else {

@@ -70,6 +70,16 @@ function Test-ReadyToRunImage([string]$Path) {
         $cor.ManagedNativeHeaderDirectory.Size -gt 0
     } catch { $true } finally { $fs.Dispose() }
 }
+function Get-ReadyToRunKey([string]$Path, [string]$Runtime, [string]$Target, [hashtable]$Hashes) {
+    $fs = [IO.File]::OpenRead($Path)
+    try {
+        $metadata = [System.Reflection.Metadata.PEReaderExtensions]::GetMetadataReader([System.Reflection.PortableExecutable.PEReader]::new($fs))
+        $references = foreach ($handle in $metadata.AssemblyReferences) { $metadata.GetString($metadata.GetAssemblyReference($handle).Name) }
+    }
+    finally { $fs.Dispose() }
+    $parts = @($Hashes[[IO.Path]::GetFileName($Path)], $Runtime, $Target) + @($references | Sort-Object -Unique | ForEach-Object { $name = "$_.dll"; if ($Hashes.ContainsKey($name)) { "$name=$($Hashes[$name])" } })
+    [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($parts -join "`n"))).Substring(0, 32)
+}
 function Invoke-SpiralReadyToRun([string]$Dotnet, [string]$OutDir) {
     $cg = Get-SpiralCrossgen2 $Dotnet
     if (-not $cg -or -not (Test-Path $cg.Framework)) { Write-Host '== ReadyToRun skipped: no crossgen2 for this runtime (JIT only)' -ForegroundColor Yellow; return }
@@ -77,16 +87,40 @@ function Invoke-SpiralReadyToRun([string]$Dotnet, [string]$OutDir) {
     $os = @{ win = 'windows'; linux = 'linux'; osx = 'osx' }[$os]
     $sw = [Diagnostics.Stopwatch]::StartNew()
     $done = 0
+    $reused = 0
+    $ilHashes = @{}
+    foreach ($file in Get-ChildItem $OutDir -Filter *.dll -File) { $ilHashes[$file.Name] = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([IO.File]::ReadAllBytes($file.FullName))) }
+    $imageCache = Join-Path $sharedCache 'r2r-cache'
+    New-Item -ItemType Directory -Force $imageCache | Out-Null
     foreach ($dll in Get-ChildItem $OutDir -Filter *.dll -File) {
         if (Test-ReadyToRunImage $dll.FullName) { continue }
         $stamp = "$($dll.Length)-$($dll.LastWriteTimeUtc.Ticks)"
         $skip = "$($dll.FullName).r2r-skip"
         if ((Test-Path $skip) -and (Get-Content $skip -Raw).Trim() -eq $stamp) { continue }
         $tmp = "$($dll.FullName).r2r"
-        $refs = Get-ChildItem $OutDir -Filter *.dll -File | Where-Object FullName -ne $dll.FullName | ForEach-Object { '-r', $_.FullName }
-        $log = & $cg.Tool $dll.FullName -o $tmp -r (Join-Path $cg.Framework '*.dll') @refs --targetos $os --targetarch $arch -O 2>&1
-        $why = ($log | Select-Object -First 1) -replace '\s+', ' '
-        if ($LASTEXITCODE -eq 0 -and (Test-Path $tmp)) {
+        $cached = Join-Path $imageCache "$(Get-ReadyToRunKey $dll.FullName $cg.Framework "$os-$arch" $ilHashes).dll"
+        $failureMarker = "$cached.failed"
+        if (Test-Path $cached) {
+            Copy-Item -LiteralPath $cached $tmp -Force
+            (Get-Item -LiteralPath $cached).LastWriteTime = Get-Date
+            $exit = 0
+            $why = 'reused'
+            $reused++
+        }
+        elseif (Test-Path $failureMarker) {
+            (Get-Item -LiteralPath $failureMarker).LastWriteTime = Get-Date
+            $exit = 1
+            $why = "crossgen2 failed on this exact image before: $(Get-Content -LiteralPath $failureMarker -TotalCount 1)"
+        }
+        else {
+            $refs = Get-ChildItem $OutDir -Filter *.dll -File | Where-Object FullName -ne $dll.FullName | ForEach-Object { '-r', $_.FullName }
+            $log = & $cg.Tool $dll.FullName -o $tmp -r (Join-Path $cg.Framework '*.dll') @refs --targetos $os --targetarch $arch -O 2>&1
+            $exit = $LASTEXITCODE
+            $why = ($log | Select-Object -First 1) -replace '\s+', ' '
+            if ($exit -eq 0 -and (Test-Path $tmp)) { Copy-Item -LiteralPath $tmp $cached -Force }
+            elseif ($exit -ne 0) { Set-Content -LiteralPath $failureMarker $why.Substring(0, [Math]::Min(300, $why.Length)) }
+        }
+        if ($exit -eq 0 -and (Test-Path $tmp)) {
             try { [IO.File]::Move($tmp, $dll.FullName, $true); $done++; continue }
             catch {
                 $why = $_.Exception.Message
@@ -99,10 +133,12 @@ function Invoke-SpiralReadyToRun([string]$Dotnet, [string]$OutDir) {
             }
         }
         if (Test-Path $tmp) { [IO.File]::Delete($tmp) }
-        if ($LASTEXITCODE -ne 0) { Set-Content $skip $stamp }
+        if ($exit -ne 0) { Set-Content $skip $stamp }
         Write-Host "== ReadyToRun: $($dll.Name) stays IL ($why)" -ForegroundColor Yellow
     }
-    Write-Host "== ReadyToRun: $done dll(s) precompiled in $([math]::Round($sw.Elapsed.TotalSeconds, 1)) s"
+    $unusedBefore = (Get-Date).AddDays(-30)
+    Get-ChildItem $imageCache -File | Where-Object LastWriteTime -lt $unusedBefore | ForEach-Object { try { $_.Delete() } catch { } }
+    Write-Host "== ReadyToRun: $done dll(s) precompiled in $([math]::Round($sw.Elapsed.TotalSeconds, 1)) s ($reused from the shared image cache)"
 }
 
 function Unlock-SpiralOutputs([string]$OutDir) {

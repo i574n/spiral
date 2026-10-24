@@ -40,36 +40,27 @@ partial def method2 (p0 : Int32) (p1 : Int32) (p2 : Int32) : IO (Int32 × Int32)
         if v6 then
             return (v4, v5)
         else
-            let t3 := v3
-            let t4 := v4
-            let t5 := v5
-            v0 := t3
-            v1 := t4
-            v2 := t5
+            v0 := v3
+            v1 := v4
+            v2 := v5
             continue
 partial def method1 (p0 : Int32) : IO (Int32 × Int32) := do
     let mut v0 : Int32 := p0
-    let mut v1 : Int32 := default
-    let mut v2 : Int32 := default
-    let mut v3 : Bool := default
-    v1 := (0 : Int32)
-    v2 := (0 : Int32)
-    v3 := (v0 == (0 : Int32))
+    let v1 : Int32 := (0 : Int32)
+    let v2 : Int32 := (0 : Int32)
+    let v3 : Bool := (v0 == (0 : Int32))
     if v3 then
         return (v1, v2)
     else
         return (← method2 v0 v1 v2)
 partial def method0 (p0 : Int32) : IO Int32 := do
     let mut v0 : Int32 := p0
-    let mut v1 : Int32 := default
-    let mut v2 : Int32 := default
-    let mut v3 : Bool := default
     let mut v5 : Bool := default
     let mut v4 : Bool := default
     let (r1_0, r1_1) := (← method1 v0)
-    v1 := r1_0
-    v2 := r1_1
-    v3 := (v1 == (4 : Int32))
+    let v1 : Int32 := r1_0
+    let v2 : Int32 := r1_1
+    let v3 : Bool := (v1 == (4 : Int32))
     if v3 then
         v4 := (v2 == (8 : Int32))
         v5 := v4
@@ -80,8 +71,7 @@ partial def method0 (p0 : Int32) : IO Int32 := do
     else
         return (1 : Int32)
 partial def spiralMain : IO Int32 := do
-    let mut v0 : Int32 := default
-    v0 := (4 : Int32)
+    let v0 : Int32 := (4 : Int32)
     return (← method0 v0)
 end
 def main : IO UInt32 := do

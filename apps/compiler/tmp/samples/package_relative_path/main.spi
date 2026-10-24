@@ -1,0 +1,2 @@
+inl main () : i32 =
+    helping.helped 40i32 -. 42i32

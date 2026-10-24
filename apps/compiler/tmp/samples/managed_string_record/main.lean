@@ -26,33 +26,23 @@ def spiralStringSlice (s : String) (a b : Int) : IO String := do
 mutual
 partial def method0 (p0 : String) : IO (String × Int32) := do
     let mut v0 : String := p0
-    let mut v1 : Int32 := default
-    v1 := (Int32.ofNat v0.utf8ByteSize)
+    let v1 : Int32 := (Int32.ofNat v0.utf8ByteSize)
     return (v0, v1)
 partial def score_1 (p0 : Int32) (p1 : String) : IO Int32 := do
     let mut v0 : Int32 := p0
     let mut v1 : String := p1
-    let mut v2 : Int32 := default
-    let mut v3 : Int32 := default
-    v2 := (Int32.ofNat v1.utf8ByteSize)
-    v3 := (v2 + v0)
+    let v2 : Int32 := (Int32.ofNat v1.utf8ByteSize)
+    let v3 : Int32 := (v2 + v0)
     return v3
 partial def spiralMain : IO Int32 := do
-    let mut v0 : String := default
-    let mut v1 : String := default
-    let mut v2 : Int32 := default
-    let mut v3 : Int32 := default
-    let mut v4 : Int32 := default
-    let mut v5 : Int32 := default
-    let mut v6 : Int32 := default
-    v0 := "qwe"
+    let v0 : String := "qwe"
     let (r1_0, r1_1) := (← method0 v0)
-    v1 := r1_0
-    v2 := r1_1
-    v3 := (← score_1 v2 v1)
-    v4 := (← score_1 v2 v1)
-    v5 := (v3 + v4)
-    v6 := (v5 - (12 : Int32))
+    let v1 : String := r1_0
+    let v2 : Int32 := r1_1
+    let v3 : Int32 := (← score_1 v2 v1)
+    let v4 : Int32 := (← score_1 v2 v1)
+    let v5 : Int32 := (v3 + v4)
+    let v6 : Int32 := (v5 - (12 : Int32))
     return v6
 end
 def main : IO UInt32 := do

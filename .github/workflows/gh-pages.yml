@@ -35,7 +35,7 @@ jobs:
           otp-version: "29"
           elixir-version: "1.20"
           gleam-version: "1.19.2"
-          rebar3-version: '3.27.3'
+          rebar3-version: '3.28.0'
 
       - uses: actions/setup-dotnet@v5.4.0
         with:
@@ -74,7 +74,7 @@ jobs:
           otp-version: "29"
           elixir-version: "1.20"
           gleam-version: "1.19.2"
-          rebar3-version: '3.27.3'
+          rebar3-version: '3.28.0'
 
       - uses: oven-sh/setup-bun@v2.2.0
 
@@ -101,6 +101,43 @@ jobs:
             ${{ env.SPIRAL_BIN_CACHE_DIR }}/samples-output.diff
           retention-days: 14
 
+  cells-gate:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    timeout-minutes: 240
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6.1.0
+
+      - uses: moonrepo/setup-rust@v1.3.0
+        with:
+          channel: "nightly-2026-10-18"
+          components: "rust-src"
+
+      - uses: erlef/setup-beam@v1.24.1
+        with:
+          otp-version: "29"
+          elixir-version: "1.20"
+          gleam-version: "1.19.2"
+          rebar3-version: '3.28.0'
+
+      - uses: actions/setup-dotnet@v5.4.0
+        with:
+          dotnet-version: "9.0.202"
+
+      - uses: mlugg/setup-zig@v2.2.1
+        with:
+          version: 0.17.0
+
+      - run: pwsh scripts/workflow.ps1 -Compiler
+
+      - run: pwsh apps/cells/spi/ci_gate.ps1 -Out "${{ runner.temp }}/cells-gate"
+
+      - uses: actions/upload-artifact@v5.0.0
+        if: always()
+        with:
+          name: cells-gate
+          path: ${{ runner.temp }}/cells-gate
+
   push:
     needs: build
     timeout-minutes: 180
@@ -115,7 +152,23 @@ jobs:
           name: gh-pages
           path: gh-pages
 
+      - run: echo "$GITHUB_SHA" > gh-pages/_deploy.txt
+
       - uses: peaceiris/actions-gh-pages@v4.1.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: gh-pages
+          force_orphan: true
+
+      - name: verify the deploy is live
+        shell: pwsh
+        run: |
+          $url = 'https://i574n.github.io/${{ github.event.repository.name }}/'
+          $deadline = (Get-Date).AddMinutes(6)
+          do {
+              $live = try { (Invoke-WebRequest "${url}_deploy.txt?t=$([DateTime]::UtcNow.Ticks)" -SkipHttpErrorCheck).Content.Trim() } catch { '' }
+              if ($live -ne $env:GITHUB_SHA) { Start-Sleep 15 }
+          } while ($live -ne $env:GITHUB_SHA -and (Get-Date) -lt $deadline)
+          if ($live -ne $env:GITHUB_SHA) { throw "pages serve '$live', expected $env:GITHUB_SHA" }
+          $html = (Invoke-WebRequest "${url}?t=$([DateTime]::UtcNow.Ticks)").Content
+          foreach ($mark in 'id="readme"|class="readme', 'name="viewport"') { if ($html -notmatch $mark) { throw "index lacks $mark" } }

@@ -304,9 +304,15 @@ nominal derivative_normalized = ()
 nominal derivative_verified = ()
 
 union derivative_pipeline alphabet phase =
-    | DerivativeUnchecked :: forall alphabet. regex alphabet * alphabet -> derivative_pipeline alphabet derivative_unchecked
-    | DerivativeNormalized :: forall alphabet. regex alphabet * alphabet -> derivative_pipeline alphabet derivative_normalized
-    | DerivativeVerified :: forall alphabet. regex alphabet * alphabet * regex alphabet -> derivative_pipeline alphabet derivative_verified
+    | DerivativeUnchecked :: forall alphabet.
+        regex alphabet * alphabet ->
+        derivative_pipeline alphabet derivative_unchecked
+    | DerivativeNormalized :: forall alphabet.
+        regex alphabet * alphabet ->
+        derivative_pipeline alphabet derivative_normalized
+    | DerivativeVerified :: forall alphabet.
+        regex alphabet * alphabet * regex alphabet ->
+        derivative_pipeline alphabet derivative_verified
 
 nominal derivative_normalization_capability alphabet = regex alphabet -> regex alphabet
 
@@ -329,7 +335,8 @@ inl derivative_pipeline_normalize forall alphabet.
         DerivativeNormalized (normalize_value value, symbol)
 
 nominal derivative_verification_result alphabet = regex alphabet * bool
-nominal derivative_verification_capability alphabet = regex alphabet -> alphabet -> derivative_verification_result alphabet
+nominal derivative_verification_capability alphabet =
+    regex alphabet -> alphabet -> derivative_verification_result alphabet
 
 inl derivative_verification_capability_default forall alphabet {symbol_compare; finite_alphabet}.
     : derivative_verification_capability alphabet =
@@ -382,14 +389,17 @@ nominal derivative_pipeline_program alphabet = capability_program derivative_pip
 inl capture_derivative_pipeline_program forall alphabet {symbol_compare; finite_alphabet}.
     (value : regex alphabet)
     (symbol : alphabet)
-    : derivative_pipeline_program alphabet =
+    : derivative_pipeline_program alphabet
+    =
     inl normalization : derivative_normalization_capability alphabet = derivative_normalization_capability_default
     inl verification : derivative_verification_capability alphabet = derivative_verification_capability_default
     inl interpret (request : derivative_pipeline_request alphabet) : matcher_check alphabet =
         match request with
         | derivative_pipeline_request (program_regex, program_symbol) =>
-            inl raw : derivative_pipeline alphabet derivative_unchecked = derivative_pipeline_begin program_regex program_symbol
-            inl normalized : derivative_pipeline alphabet derivative_normalized = derivative_pipeline_normalize normalization raw
+            inl raw : derivative_pipeline alphabet derivative_unchecked =
+                derivative_pipeline_begin program_regex program_symbol
+            inl normalized : derivative_pipeline alphabet derivative_normalized =
+                derivative_pipeline_normalize normalization raw
             match derivative_pipeline_verify verification normalized with
             | DerivativePipelineRejected => matcher_check false
             | DerivativePipelineVerified verified =>
@@ -411,10 +421,16 @@ inl main () : string =
     inl tri_descriptor : finite_alphabet_descriptor tri_alphabet = finite_alphabet ()
     inl bit_symbols = finite_alphabet_symbols bit_descriptor
     inl tri_symbols = finite_alphabet_symbols tri_descriptor
-    assert_static (finite_alphabet_descriptor_certified bit_descriptor) "Antimirov certificate requires the canonical bit finite-domain descriptor"
-    assert_static (finite_alphabet_descriptor_certified tri_descriptor) "Antimirov certificate requires the canonical ternary finite-domain descriptor"
+    assert_static
+        (finite_alphabet_descriptor_certified bit_descriptor)
+        "Antimirov certificate requires the canonical bit finite-domain descriptor"
+    assert_static
+        (finite_alphabet_descriptor_certified tri_descriptor)
+        "Antimirov certificate requires the canonical ternary finite-domain descriptor"
 
-    assert_static (antimirov_certificate (ends_with_zero ())) "Brzozowski state must reconstruct from its Antimirov partial-derivative subset"
+    assert_static
+        (antimirov_certificate (ends_with_zero ()))
+        "Brzozowski state must reconstruct from its Antimirov partial-derivative subset"
     inl bit_position_source = normalize (ends_with_zero ())
     assert_static (
         match antimirov_position_origins bit_position_source with
@@ -431,8 +447,12 @@ inl main () : string =
                 (antimirov_position_origin_candidate_valid bit_position_source forged_same_count)
                 false
     ) "a same-cardinality forged origin set must fail semantic origin validation"
-    assert_static (antimirov_certificate (tri_a_star ())) "ternary star partial-derivative support must remain bounded and closed"
-    assert_static (antimirov_certificate (tri_ab_star_then_c ())) "ternary concatenation/alt/star support must remain bounded and closed"
+    assert_static
+        (antimirov_certificate (tri_a_star ()))
+        "ternary star partial-derivative support must remain bounded and closed"
+    assert_static
+        (antimirov_certificate (tri_ab_star_then_c ()))
+        "ternary concatenation/alt/star support must remain bounded and closed"
     inl tri_position_source = normalize (tri_ab_star_then_c ())
     assert_static (
         match antimirov_position_origins tri_position_source with
@@ -441,27 +461,37 @@ inl main () : string =
             bool_same (regex_list_exact_budget truncated (regex_position_count tri_position_source)) false
     ) "removing one concrete ternary origin must violate the exact position count"
 
-
     inl bit_corpus = regex_corpus_depth_one bit_symbols
     inl tri_corpus = regex_corpus_depth_one tri_symbols
-    assert_static (antimirov_corpus_certificate bit_corpus) "depth-one bit corpus must satisfy Antimirov reconstruction, support closure and positions-plus-one bound"
-    assert_static (antimirov_corpus_certificate tri_corpus) "depth-one ternary corpus must satisfy Antimirov reconstruction, support closure and positions-plus-one bound"
+    assert_static
+        (antimirov_corpus_certificate bit_corpus)
+        "depth-one bit corpus must satisfy Antimirov reconstruction, support closure and positions-plus-one bound"
+    assert_static
+        (antimirov_corpus_certificate tri_corpus)
+        "depth-one ternary corpus must satisfy Antimirov reconstruction, support closure and positions-plus-one bound"
 
     inl program_batch : matcher_batch antimirov_certificate_program (bit_alphabet * tri_alphabet) =
         MatchBatchPair (
             MatchBatchSingle (capture_antimirov_certificate_program (ends_with_zero ())),
             MatchBatchSingle (capture_antimirov_certificate_program (tri_ab_star_then_c ())))
-    assert_static (matcher_batch_forall `$antimirov_certificate_program_passes program_batch) "higher-ranked Antimirov programs must execute alphabet-indexed certificates without erasing their family"
+    assert_static
+        (matcher_batch_forall `$antimirov_certificate_program_passes program_batch)
+        "higher-ranked Antimirov programs must execute alphabet-indexed certificates without erasing their family"
 
     inl derivative_pipeline_batch : matcher_batch derivative_pipeline_program (bit_alphabet * tri_alphabet) =
         MatchBatchPair (
             MatchBatchSingle (capture_derivative_pipeline_program (RegexStar (RegexChar (zero ()))) (zero ())),
             MatchBatchSingle (capture_derivative_pipeline_program (tri_a_star ()) (tri_a ())))
-    assert_static (matcher_batch_forall `$derivative_pipeline_program_passes derivative_pipeline_batch) "higher-ranked derivative programs must enforce normalize-then-verify before sealing across alphabets"
+    assert_static
+        (matcher_batch_forall `$derivative_pipeline_program_passes derivative_pipeline_batch)
+        "higher-ranked derivative programs must enforce normalize-then-verify before sealing across alphabets"
 
-    inl rejecting_bit_normalization : derivative_normalization_capability bit_alphabet = derivative_normalization_capability_default
-    inl rejecting_bit_raw : derivative_pipeline bit_alphabet derivative_unchecked = derivative_pipeline_begin (RegexStar (RegexChar (zero ()))) (zero ())
-    inl rejecting_bit_normalized : derivative_pipeline bit_alphabet derivative_normalized = derivative_pipeline_normalize rejecting_bit_normalization rejecting_bit_raw
+    inl rejecting_bit_normalization : derivative_normalization_capability bit_alphabet =
+        derivative_normalization_capability_default
+    inl rejecting_bit_raw : derivative_pipeline bit_alphabet derivative_unchecked =
+        derivative_pipeline_begin (RegexStar (RegexChar (zero ()))) (zero ())
+    inl rejecting_bit_normalized : derivative_pipeline bit_alphabet derivative_normalized =
+        derivative_pipeline_normalize rejecting_bit_normalization rejecting_bit_raw
     inl rejecting_bit_verification : derivative_verification_capability bit_alphabet =
         derivative_verification_capability (fun normalized _ => derivative_verification_result (normalized, false))
     assert_static (

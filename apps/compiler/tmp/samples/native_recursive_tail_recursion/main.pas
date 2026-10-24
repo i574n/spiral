@@ -8,9 +8,11 @@ type
 function method2(v0: LongInt): TUH0; forward;
 function method1(v0: LongInt): TUH0; forward;
 function method0: TUH0; forward;
+var UH0_Empty_shared: TUH0 = nil;
 function UH0_Empty: TUH0;
 begin
-  Result := TUH0.Create; Result.tag := 0; 
+  if UH0_Empty_shared = nil then begin UH0_Empty_shared := TUH0.Create; UH0_Empty_shared.tag := 0; end;
+  Result := UH0_Empty_shared;
 end;
 function UH0_Box(a0: LongInt; a1: TUH0): TUH0;
 begin

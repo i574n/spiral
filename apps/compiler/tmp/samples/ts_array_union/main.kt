@@ -1,5 +1,5 @@
 sealed interface US0 { val tag: Int }
-class US0_Empty : US0 { override val tag: Int = 0 }
+object US0_Empty : US0 { override val tag: Int = 0 }
 data class US0_Values(val f0: Array<Int>) : US0 { override val tag: Int = 1 }
 fun sp_score_0(p0: US0): Int {
     var v0: US0 = p0
@@ -15,23 +15,20 @@ fun sp_score_0(p0: US0): Int {
             v3 = v1[0]
             var v4: Int = 0
             v4 = (v2 + v3)
-            var v5: Int = 0
-            v5 = v1[1]
-            var v6: Int = 0
-            v6 = (v4 + v5)
+            val v5: Int = v1[1]
+            val v6: Int = (v4 + v5)
             return v6
         }
         else -> throw RuntimeException()
     }
 }
 fun spiral_main(): Int {
-    var v0: Int = 0
-    v0 = 2
+    val v0: Int = 2
     var v1: Array<Int> = emptyArray<Int>()
     v1 = Array(v0) { 0 }
     v1[0] = 4
     v1[1] = 5
-    var v2: US0 = US0_Empty()
+    var v2: US0 = US0_Empty
     v2 = US0_Values(v1)
     var v3: Int = 0
     v3 = sp_score_0(v2)

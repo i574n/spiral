@@ -15,24 +15,19 @@ func f_c0(_ v0: Int32, _ v1: String) -> (Int32) -> US0 {
     }
 }
 func spiral_main() -> Int32 {
-    var v0: Int32 = 0
-    v0 = 3
-    var v1: String = ""
-    v1 = "hi"
-    var v2: (Int32) -> US0 = { (_: Int32) -> US0 in fatalError("unreachable closure") }
-    v2 = f_c0(v0, v1)
+    let v0: Int32 = 3
+    let v1: String = "hi"
+    let v2: (Int32) -> US0 = f_c0(v0, v1)
     var v3: US0 = US0_One(f0: 0)
     v3 = v2(1)
     switch v3.tag {
         case 1:
             var v5: Int32 = (v3 as! US0_Both).f0
             var v6: String = (v3 as! US0_Both).f1
-            var v7: Bool = false
-            v7 = (v5 == 3)
+            let v7: Bool = (v5 == 3)
             var v9: Bool = false
             if (v7) {
-                var v8: Bool = false
-                v8 = (v6 == "hi")
+                let v8: Bool = (v6 == "hi")
                 v9 = v8
             } else {
                 v9 = false

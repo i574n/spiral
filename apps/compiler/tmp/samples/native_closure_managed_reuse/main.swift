@@ -38,20 +38,15 @@ func f_c0(_ v0: String) -> (Int32) -> Int32 {
     }
 }
 func spiral_main() -> Int32 {
-    var v0: String = ""
-    v0 = "abc"
-    var v1: (Int32) -> Int32 = { (_: Int32) -> Int32 in fatalError("unreachable closure") }
-    v1 = f_c0(v0)
+    let v0: String = "abc"
+    let v1: (Int32) -> Int32 = f_c0(v0)
     var v2: Int32 = 0
     v2 = v1(10)
     var v3: Int32 = 0
     v3 = v1(20)
-    var v4: Int32 = 0
-    v4 = v1(3)
-    var v5: Int32 = 0
-    v5 = (v2 &+ v3)
-    var v6: Int32 = 0
-    v6 = (v5 &+ v4)
+    let v4: Int32 = v1(3)
+    let v5: Int32 = (v2 &+ v3)
+    let v6: Int32 = (v5 &+ v4)
     return v6
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

@@ -339,12 +339,13 @@ defmodule Spiral.Cells.Targets do
   end
 
   @gleam_deps [
-    {"gleam_stdlib", "0.57.0"},
+    {"gleam_stdlib", ">=1.0.5 and <2.0.0"},
     {"gleam_time", ">=1.0.0 and <2.0.0"},
-    {"gleam_erlang", ">=0.34.0 and <1.0.0"},
-    {"envoy", ">=1.0.0 and <2.0.0"},
+    {"gleam_erlang", ">=1.3.0 and <2.0.0"},
+    {"gleam_otp", ">=1.3.0 and <2.0.0"},
+    {"envoy", ">=1.2.0 and <2.0.0"},
     {"gary", ">=1.1.0 and <2.0.0"},
-    {"gtempo", ">=7.1.0 and <8.0.0"}
+    {"gtempo", ">=7.4.0 and <8.0.0"}
   ]
 
   @doc false
@@ -484,6 +485,19 @@ defmodule Spiral.Cells.Targets do
   defp gleam_warning_line?(line) do
     line == "" or String.starts_with?(line, [" ", "\t", "Hint:", "│", "┌"]) or Regex.match?(~r/^\d+ │/, line)
   end
+  @spec tool_stamp(map(), keyword()) :: [term()] | nil
+  def tool_stamp(%{tool: :wgsl}, opts), do: [{:wgsl_tools, Enum.map([Toolchain.wgsl_run(opts), Toolchain.naga(opts)], &file_stamp/1)}]
+  def tool_stamp(_builder, _opts), do: nil
+
+  defp file_stamp(nil), do: nil
+
+  defp file_stamp(path) do
+    case File.stat(System.find_executable(path) || path) do
+      {:ok, %{size: size, mtime: mtime}} -> {path, size, mtime}
+      _ -> {path, nil, nil}
+    end
+  end
+
   @wgsl_no_adapter 3
   defp run_wgsl(path, opts, timeout, deadline) do
     with :ok <- naga_check(path, opts, timeout, deadline) do

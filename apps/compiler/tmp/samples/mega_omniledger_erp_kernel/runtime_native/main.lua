@@ -1,19 +1,3 @@
-local function spiral_wrap_unsigned(value, bits)
-    return value % (2 ^ bits)
-end
-local function spiral_wrap_signed(value, bits)
-    local modulus = 2 ^ bits
-    value = value % modulus
-    if value >= modulus / 2 then value = value - modulus end
-    return value
-end
-local function spiral_mul_mod32(a, b)
-    a = a % 4294967296
-    b = b % 4294967296
-    local a_low = a % 65536
-    local a_high = (a - a_low) / 65536
-    return (a_low * b + ((a_high * b) % 65536) * 65536) % 4294967296
-end
 local function spiral_bit_combine(a, b, keep)
     a = a % 4294967296
     b = b % 4294967296
@@ -1196,19 +1180,18 @@ spilled.getv621 = function()
 end
 spilled.v621 = spilled.getv621()
 spilled.getv640 = function()
-    local __v = { spilled.v621 }
-    if __v[1] ~= nil and __v[1].tag == "Us0_TypedFxHashedStatementChecksumValidationAccepted" then
-        local v625 = __v[1]._1
-        local v626 = __v[1]._2
-        local v627 = __v[1]._3
-        local v628 = __v[1]._4
-        local v629 = __v[1]._5
-        local v630 = __v[1]._6
+    if spilled.v621 ~= nil and spilled.v621.tag == "Us0_TypedFxHashedStatementChecksumValidationAccepted" then
+        local v625 = spilled.v621._1
+        local v626 = spilled.v621._2
+        local v627 = spilled.v621._3
+        local v628 = spilled.v621._4
+        local v629 = spilled.v621._5
+        local v630 = spilled.v621._6
         return { [1]=1, [2]=0, [3]=v625, [4]=v626, [5]=v627, [6]=v628, [7]=v629 }
-    elseif __v[1] ~= nil and __v[1].tag == "Us0_TypedFxHashedStatementChecksumValidationRejected" then
-        local v622 = __v[1]._1
-        local v623 = __v[1]._2
-        local v624 = __v[1]._3
+    elseif spilled.v621 ~= nil and spilled.v621.tag == "Us0_TypedFxHashedStatementChecksumValidationRejected" then
+        local v622 = spilled.v621._1
+        local v623 = spilled.v621._2
+        local v624 = spilled.v621._3
         return { [1]=0, [2]=1, [3]=0, [4]=0, [5]=0, [6]=0, [7]=0 }
     end
 end
@@ -1610,19 +1593,18 @@ spilled.getv904 = function()
 end
 spilled.v904 = spilled.getv904()
 spilled.getv923 = function()
-    local __v = { spilled.v904 }
-    if __v[1] ~= nil and __v[1].tag == "Us0_TypedFxHashedStatementChecksumValidationAccepted" then
-        local v908 = __v[1]._1
-        local v909 = __v[1]._2
-        local v910 = __v[1]._3
-        local v911 = __v[1]._4
-        local v912 = __v[1]._5
-        local v913 = __v[1]._6
+    if spilled.v904 ~= nil and spilled.v904.tag == "Us0_TypedFxHashedStatementChecksumValidationAccepted" then
+        local v908 = spilled.v904._1
+        local v909 = spilled.v904._2
+        local v910 = spilled.v904._3
+        local v911 = spilled.v904._4
+        local v912 = spilled.v904._5
+        local v913 = spilled.v904._6
         return { [1]=1, [2]=0, [3]=v908, [4]=v912 }
-    elseif __v[1] ~= nil and __v[1].tag == "Us0_TypedFxHashedStatementChecksumValidationRejected" then
-        local v905 = __v[1]._1
-        local v906 = __v[1]._2
-        local v907 = __v[1]._3
+    elseif spilled.v904 ~= nil and spilled.v904.tag == "Us0_TypedFxHashedStatementChecksumValidationRejected" then
+        local v905 = spilled.v904._1
+        local v906 = spilled.v904._2
+        local v907 = spilled.v904._3
         return { [1]=0, [2]=1, [3]=0, [4]=0 }
     end
 end
@@ -3225,19 +3207,18 @@ spilled.getv1972 = function()
 end
 spilled.v1972 = spilled.getv1972()
 spilled.getv1991 = function()
-    local __v = { spilled.v1972 }
-    if __v[1] ~= nil and __v[1].tag == "Us0_TypedFxHashedStatementChecksumValidationAccepted" then
-        local v1976 = __v[1]._1
-        local v1977 = __v[1]._2
-        local v1978 = __v[1]._3
-        local v1979 = __v[1]._4
-        local v1980 = __v[1]._5
-        local v1981 = __v[1]._6
+    if spilled.v1972 ~= nil and spilled.v1972.tag == "Us0_TypedFxHashedStatementChecksumValidationAccepted" then
+        local v1976 = spilled.v1972._1
+        local v1977 = spilled.v1972._2
+        local v1978 = spilled.v1972._3
+        local v1979 = spilled.v1972._4
+        local v1980 = spilled.v1972._5
+        local v1981 = spilled.v1972._6
         return { [1]=1, [2]=0, [3]=v1976, [4]=v1980 }
-    elseif __v[1] ~= nil and __v[1].tag == "Us0_TypedFxHashedStatementChecksumValidationRejected" then
-        local v1973 = __v[1]._1
-        local v1974 = __v[1]._2
-        local v1975 = __v[1]._3
+    elseif spilled.v1972 ~= nil and spilled.v1972.tag == "Us0_TypedFxHashedStatementChecksumValidationRejected" then
+        local v1973 = spilled.v1972._1
+        local v1974 = spilled.v1972._2
+        local v1975 = spilled.v1972._3
         return { [1]=0, [2]=1, [3]=0, [4]=0 }
     end
 end
@@ -3829,19 +3810,18 @@ spilled.getv2377 = function()
 end
 spilled.v2377 = spilled.getv2377()
 spilled.getv2396 = function()
-    local __v = { spilled.v2377 }
-    if __v[1] ~= nil and __v[1].tag == "Us0_TypedFxHashedStatementChecksumValidationAccepted" then
-        local v2381 = __v[1]._1
-        local v2382 = __v[1]._2
-        local v2383 = __v[1]._3
-        local v2384 = __v[1]._4
-        local v2385 = __v[1]._5
-        local v2386 = __v[1]._6
+    if spilled.v2377 ~= nil and spilled.v2377.tag == "Us0_TypedFxHashedStatementChecksumValidationAccepted" then
+        local v2381 = spilled.v2377._1
+        local v2382 = spilled.v2377._2
+        local v2383 = spilled.v2377._3
+        local v2384 = spilled.v2377._4
+        local v2385 = spilled.v2377._5
+        local v2386 = spilled.v2377._6
         return { [1]=1, [2]=0, [3]=v2385 }
-    elseif __v[1] ~= nil and __v[1].tag == "Us0_TypedFxHashedStatementChecksumValidationRejected" then
-        local v2378 = __v[1]._1
-        local v2379 = __v[1]._2
-        local v2380 = __v[1]._3
+    elseif spilled.v2377 ~= nil and spilled.v2377.tag == "Us0_TypedFxHashedStatementChecksumValidationRejected" then
+        local v2378 = spilled.v2377._1
+        local v2379 = spilled.v2377._2
+        local v2380 = spilled.v2377._3
         return { [1]=0, [2]=1, [3]=0 }
     end
 end
@@ -4331,19 +4311,18 @@ spilled.getv2714 = function()
 end
 spilled.v2714 = spilled.getv2714()
 spilled.getv2733 = function()
-    local __v = { spilled.v2714 }
-    if __v[1] ~= nil and __v[1].tag == "Us0_TypedFxHashedStatementChecksumValidationAccepted" then
-        local v2718 = __v[1]._1
-        local v2719 = __v[1]._2
-        local v2720 = __v[1]._3
-        local v2721 = __v[1]._4
-        local v2722 = __v[1]._5
-        local v2723 = __v[1]._6
+    if spilled.v2714 ~= nil and spilled.v2714.tag == "Us0_TypedFxHashedStatementChecksumValidationAccepted" then
+        local v2718 = spilled.v2714._1
+        local v2719 = spilled.v2714._2
+        local v2720 = spilled.v2714._3
+        local v2721 = spilled.v2714._4
+        local v2722 = spilled.v2714._5
+        local v2723 = spilled.v2714._6
         return { [1]=1, [2]=0, [3]=v2722 }
-    elseif __v[1] ~= nil and __v[1].tag == "Us0_TypedFxHashedStatementChecksumValidationRejected" then
-        local v2715 = __v[1]._1
-        local v2716 = __v[1]._2
-        local v2717 = __v[1]._3
+    elseif spilled.v2714 ~= nil and spilled.v2714.tag == "Us0_TypedFxHashedStatementChecksumValidationRejected" then
+        local v2715 = spilled.v2714._1
+        local v2716 = spilled.v2714._2
+        local v2717 = spilled.v2714._3
         return { [1]=0, [2]=1, [3]=0 }
     end
 end

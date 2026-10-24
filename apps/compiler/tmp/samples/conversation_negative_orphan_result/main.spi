@@ -4,5 +4,5 @@ inl main () : i32 =
         conversation.System ("short answers",
         conversation.User ("weather for the day?",
         conversation.Result ("getLocation", "{}",
-        conversation.Assistant ("Sunny.", {model = "local"; tokens_out = tokens_out}, conversation.Done))))
+        conversation.Assistant ("Sunny.", { model = "local"; tokens_out = tokens_out }, conversation.Done))))
     conversation.weigh t

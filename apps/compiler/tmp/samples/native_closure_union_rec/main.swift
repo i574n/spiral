@@ -41,24 +41,19 @@ func sp_sum_1(_ p0: UH0, _ p1: UInt64) -> UInt64 {
     }
 }
 func spiral_main() -> Int32 {
-    var v0: UInt64 = (0 as UInt64)
-    v0 = (10 as UInt64)
+    let v0: UInt64 = (10 as UInt64)
     var v1: UH0 = UH0_Cons(f0: (0 as UInt64), f1: { () -> UH0 in fatalError("unreachable closure") })
     v1 = sp_build_0(v0)
-    var v2: UInt64 = (0 as UInt64)
-    v2 = (0 as UInt64)
+    let v2: UInt64 = (0 as UInt64)
     var v3: UInt64 = (0 as UInt64)
     v3 = sp_sum_1(v1, v2)
     var v4: Int32 = 0
     v4 = 5
     var v5: Int32 = 0
     v5 = Int32(truncatingIfNeeded: v3)
-    var v6: Int32 = 0
-    v6 = (v4 &* 2)
-    var v7: Int32 = 0
-    v7 = (v4 &+ v6)
-    var v8: Int32 = 0
-    v8 = (v5 &+ v7)
+    let v6: Int32 = (v4 &* 2)
+    let v7: Int32 = (v4 &+ v6)
+    let v8: Int32 = (v5 &+ v7)
     return v8
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

@@ -48,6 +48,38 @@ function Get-HeavyTicketPrefix([switch] $Wsl) {
     if ($starvedWsl) { 'x' } else { '' }
 }
 
+function Get-HeavyHolders {
+    $holders = foreach ($f in Get-ChildItem $script:HeavyQueue -Filter 'holder-*.h' -ErrorAction Ignore | Sort-Object Name) {
+        $slot, $owner, $started, $label = (Get-Content $f.FullName -Raw -ErrorAction Ignore) -split "`t", 4
+        if (-not $owner -or -not (Get-Process -Id ([int]$owner) -ErrorAction Ignore)) { Remove-Item $f.FullName -Force -ErrorAction Ignore; continue }
+        "slot $slot held $([int]((Get-Date) - [DateTime]::Parse($started)).TotalMinutes) min by pid $owner '$($label.Trim())'"
+    }
+    if ($holders) { $holders -join ', ' } else { 'no holder recorded' }
+}
+
+function Start-HeavyWatchdog([string] $HolderPath, [int] $MaxMinutes) {
+    if (-not $IsWindows -or $MaxMinutes -le 0) { return }
+    $watch = @'
+param($holder, $holderPath, $deadline)
+while ((Test-Path $holderPath) -and (Get-Process -Id $holder -ErrorAction Ignore)) {
+    if ([DateTime]::Now -ge [DateTime]::Parse($deadline)) {
+        $all = Get-CimInstance Win32_Process
+        $children = @{}
+        foreach ($p in $all) { $children[[int]$p.ParentProcessId] += @([int]$p.ProcessId) }
+        $stack = [Collections.Generic.Stack[int]]::new(); $stack.Push([int]$holder)
+        $tree = while ($stack.Count) { $id = $stack.Pop(); foreach ($c in $children[$id]) { if ($c -ne $PID) { $c; $stack.Push($c) } } }
+        foreach ($id in $tree) { Stop-Process -Id $id -Force -ErrorAction Ignore }
+        if ($tree) { Add-Content $holderPath "`texpired: stopped $(@($tree).Count) process(es) of pid $holder" }
+    }
+    Start-Sleep -Seconds 15
+}
+'@
+    $script = Join-Path $script:HeavyQueue 'watchdog.ps1'
+    if (-not (Test-Path $script) -or (Get-Content $script -Raw) -ne $watch) { [IO.File]::WriteAllText($script, $watch) }
+    $deadline = (Get-Date).AddMinutes($MaxMinutes).ToString('o')
+    Start-Process pwsh -WindowStyle Hidden -ArgumentList @('-NoProfile', '-File', $script, $PID, $HolderPath, $deadline) | Out-Null
+}
+
 function Wait-HeavySlot($slots, [string] $ticket) {
     $held = $null
     $queuedAt = Get-Date
@@ -66,7 +98,7 @@ function Wait-HeavySlot($slots, [string] $ticket) {
             }
         } else { Start-Sleep -Seconds 5 }
         if ($null -eq $held -and ((Get-Date) - $lastBeat).TotalMinutes -ge 5) {
-            Write-Host "Invoke-Heavy: still waiting ($([int]((Get-Date) - $queuedAt).TotalMinutes) min, $(Get-HeavyFreeMB) MB free)"
+            Write-Host "Invoke-Heavy: still waiting ($([int]((Get-Date) - $queuedAt).TotalMinutes) min, $(Get-HeavyFreeMB) MB free; $(Get-HeavyHolders))"
             $lastBeat = Get-Date
         }
     }
@@ -92,16 +124,27 @@ function Stop-IdleWsl {
     elseif (-not $next -or -not $next.Name.StartsWith('w')) { Write-Host "Invoke-Heavy: WSL job done, next job isn't WSL: wsl --shutdown"; wsl --shutdown }
 }
 
-function Invoke-Heavy([Parameter(Mandatory)] [scriptblock] $Command, [switch] $Wsl, [string] $Label) {
+function Invoke-Heavy([Parameter(Mandatory)] [scriptblock] $Command, [switch] $Wsl, [string] $Label, [int] $MaxMinutes = $(if ($env:SPIRAL_HEAVY_MAX_MINUTES) { [int]$env:SPIRAL_HEAVY_MAX_MINUTES } else { 240 })) {
     $ledgerQueued = Get-Date
     $ledgerFree = Get-HeavyFreeMB
     $slots = @([System.Threading.Mutex]::new($false, 'Global\spiral-heavy-job'), [System.Threading.Mutex]::new($false, 'Global\spiral-heavy-job-2'))
     New-Item -ItemType Directory -Force $script:HeavyQueue | Out-Null
-    $ticket = '{0}{1:D20}-{2}.t' -f (Get-HeavyTicketPrefix -Wsl:$Wsl), [DateTime]::UtcNow.Ticks, $PID
-    $ticketPath = Join-Path $script:HeavyQueue $ticket
-    New-Item -ItemType File -Force $ticketPath | Out-Null
+    $adopted = $env:SPIRAL_HEAVY_TICKET
+    Remove-Item Env:SPIRAL_HEAVY_TICKET -ErrorAction Ignore
+    if ($adopted -and (Test-Path (Join-Path $script:HeavyQueue $adopted))) {
+        $ticket = $adopted
+        $ticketPath = Join-Path $script:HeavyQueue $ticket
+    } else {
+        $ticket = '{0}{1:D20}-{2}.t' -f (Get-HeavyTicketPrefix -Wsl:$Wsl), [DateTime]::UtcNow.Ticks, $PID
+        $ticketPath = Join-Path $script:HeavyQueue $ticket
+        New-Item -ItemType File -Force $ticketPath | Out-Null
+    }
     try { $held = Wait-HeavySlot $slots $ticket } finally { Remove-Item $ticketPath -Force -ErrorAction Ignore }
-    Write-Host "Invoke-Heavy: acquired slot $($held + 1) after $([int]((Get-Date) - $ledgerQueued).TotalSeconds) s"
+    Write-Host "Invoke-Heavy: acquired slot $($held + 1) after $([int]((Get-Date) - $ledgerQueued).TotalSeconds) s (held at most $MaxMinutes min)"
+    $holderPath = Join-Path $script:HeavyQueue "holder-$($held + 1).h"
+    $holderLabel = if ($Label) { $Label } else { (($Command.ToString() -replace '\s+', ' ').Trim() + ' ' * 80).Substring(0, 80).Trim() }
+    [IO.File]::WriteAllText($holderPath, "$($held + 1)`t$PID`t$((Get-Date).ToString('o'))`t$holderLabel")
+    Start-HeavyWatchdog $holderPath $MaxMinutes
     $wslMarker = Join-Path $script:HeavyQueue "running-wsl-$PID.r"
     if ($Wsl) { New-Item -ItemType File -Force $wslMarker | Out-Null; Wait-WslReady }
     $self = [System.Diagnostics.Process]::GetCurrentProcess()
@@ -115,6 +158,7 @@ function Invoke-Heavy([Parameter(Mandatory)] [scriptblock] $Command, [switch] $W
     finally {
         Write-RunLedger 'heavy' $Label $Command $ledgerQueued $ledgerStarted "$($held + 1)" $ledgerOutcome $ledgerFree
         try { $self.PriorityClass = $priority } catch { }
+        Remove-Item $holderPath -Force -ErrorAction Ignore
         $slots[$held].ReleaseMutex()
         $slots | ForEach-Object { $_.Dispose() }
         if ($Wsl) { Remove-Item $wslMarker -Force -ErrorAction Ignore; Stop-IdleWsl }

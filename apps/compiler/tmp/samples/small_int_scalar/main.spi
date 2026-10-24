@@ -15,5 +15,14 @@ inl main () : i32 =
     inl from8 = !!!!Conv(`i8, n)
     inl ~z = 9i8
     inl as_i = !!!!Conv(`i32, z)
-    if s8 =. (0i8 -. 56i8) && u8s =. 44u8 && sh8 =. (0i8 -. 4i8) && ush =. 100u8 && s16 =. (0i16 -. 25536i16) && u16s =. 14464u16 && from8 =. 7i8 && as_i =. 9i32 then 0i32
+    if
+        s8 =. (0i8 -. 56i8)
+        && u8s =. 44u8
+        && sh8 =. (0i8 -. 4i8)
+        && ush =. 100u8
+        && s16 =. (0i16 -. 25536i16)
+        && u16s =. 14464u16
+        && from8 =. 7i8
+        && as_i =. 9i32
+    then 0i32
     else 1i32

@@ -13,11 +13,10 @@ end
 
 local v0 = 7
 local v1 = method0(v0)
-local __v = { v1 }
-if __v[1] ~= nil and __v[1].tag == "Us0_None" then
+if v1 ~= nil and v1.tag == "Us0_None" then
     return 1
-elseif __v[1] ~= nil and __v[1].tag == "Us0_Some" then
-    local v2 = __v[1]._1
+elseif v1 ~= nil and v1.tag == "Us0_Some" then
+    local v2 = v1._1
     local v3 = v2 == 7
     if v3 then
         return 0

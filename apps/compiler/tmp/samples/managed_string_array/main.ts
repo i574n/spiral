@@ -38,17 +38,17 @@ function spiral_string_slice(value: string, from: number, to: number): string {
     return spiral_utf8_decoder.decode(bytes.subarray(from, to + 1));
 }
 export function main(): number {
-    let v0: Array<string> = new Array<string>(2).fill("");
-    let v1: string = "ab";
+    const v0: Array<string> = new Array<string>(2).fill("");
+    const v1: string = "ab";
     spiral_array_set(v0, 0, v1);
-    let v2: string = "cde";
+    const v2: string = "cde";
     spiral_array_set(v0, 1, v2);
-    let v3: string = spiral_array_index(v0, 0);
-    let v4: string = spiral_array_index(v0, 1);
-    let v5: number = spiral_string_length(v3);
-    let v6: number = spiral_string_length(v4);
-    let v7: number = (v5 + v6) | 0;
-    let v8: number = (v7 - 5) | 0;
+    const v3: string = spiral_array_index(v0, 0);
+    const v4: string = spiral_array_index(v0, 1);
+    const v5: number = spiral_string_length(v3);
+    const v6: number = spiral_string_length(v4);
+    const v7: number = (v5 + v6) | 0;
+    const v8: number = (v7 - 5) | 0;
     return v8;
 }
 process.exitCode = main();
