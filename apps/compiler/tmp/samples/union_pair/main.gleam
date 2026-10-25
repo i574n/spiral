@@ -4,9 +4,6 @@ pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
   int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
 }
 
-pub fn spiral_wrap_unsigned(value: Int, bits: Int) -> Int {
-  int.bitwise_and(value, int.bitwise_shift_left(1, bits) - 1)
-}
 
 pub type Us0 {
     Us0One(f0i0 : Int)
@@ -25,44 +22,44 @@ pub fn sum_0(v0: Us0) -> Int {
     }
 }
 pub fn main() {
-let v0 = True
-let v3 =
-    case v0 {
+    let v0 = True
+    let v3 =
+        case v0 {
+            True -> {
+                Us0Both(3, 4)
+            }
+            False -> {
+                Us0One(1)
+            }
+        }
+    let v6 =
+        case v0 {
+            True -> {
+                Us0One(5)
+            }
+            False -> {
+                Us0Both(1, 1)
+            }
+        }
+    let v7 = sum_0(v3)
+    let v8 = v7 == 34
+    let v11 =
+        case v8 {
+            True -> {
+                let v9 = sum_0(v6)
+                let v10 = v9 == 5
+                v10
+            }
+            False -> {
+                False
+            }
+        }
+    case v11 {
         True -> {
-            Us0Both(3, 4)
+            0
         }
         False -> {
-            Us0One(1)
+            1
         }
     }
-let v6 =
-    case v0 {
-        True -> {
-            Us0One(5)
-        }
-        False -> {
-            Us0Both(1, 1)
-        }
-    }
-let v7 = sum_0(v3)
-let v8 = v7 == 34
-let v11 =
-    case v8 {
-        True -> {
-            let v9 = sum_0(v6)
-            let v10 = v9 == 5
-            v10
-        }
-        False -> {
-            False
-        }
-    }
-case v11 {
-    True -> {
-        0
-    }
-    False -> {
-        1
-    }
-}
 }

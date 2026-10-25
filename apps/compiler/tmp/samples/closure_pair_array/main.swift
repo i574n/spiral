@@ -24,12 +24,9 @@ func f_c0(_ v0: Int32, _ v1: Int32) -> (Int32) -> (SpiralArray<Int32>, SpiralArr
     }
 }
 func spiral_main() -> Int32 {
-    var v0: Int32 = 0
-    v0 = 3
-    var v1: Int32 = 0
-    v1 = 4
-    var v2: (Int32) -> (SpiralArray<Int32>, SpiralArray<Int32>) = { (_: Int32) -> (SpiralArray<Int32>, SpiralArray<Int32>) in fatalError("unreachable closure") }
-    v2 = f_c0(v0, v1)
+    let v0: Int32 = 3
+    let v1: Int32 = 4
+    let v2: (Int32) -> (SpiralArray<Int32>, SpiralArray<Int32>) = f_c0(v0, v1)
     var v3: SpiralArray<Int32> = SpiralArray<Int32>([])
     var v4: SpiralArray<Int32> = SpiralArray<Int32>([])
     let spiral_tuple401 = v2(1)
@@ -37,12 +34,9 @@ func spiral_main() -> Int32 {
     v4 = spiral_tuple401.1
     var v5: Int32 = 0
     v5 = v3.items[Int(0)]
-    var v6: Int32 = 0
-    v6 = v4.items[Int(0)]
-    var v7: Int32 = 0
-    v7 = (v5 &+ v6)
-    var v8: Bool = false
-    v8 = (v7 == 7)
+    let v6: Int32 = v4.items[Int(0)]
+    let v7: Int32 = (v5 &+ v6)
+    let v8: Bool = (v7 == 7)
     if (v8) {
         return 0
     } else {

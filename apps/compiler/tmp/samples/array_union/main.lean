@@ -34,24 +34,19 @@ def U0.spiralTag : U0 → Int32
   | .Some .. => 1
 mutual
 partial def spiralMain : IO Int32 := do
-    let mut v0 : Int32 := default
     let mut v1 : (IO.Ref (Array U0)) ← IO.mkRef #[]
-    let mut v2 : Int32 := default
-    let mut v3 : U0 := default
-    let mut v4 : U0 := default
-    let mut v5 : U0 := default
     let mut v6 : Int32 := default
     let mut v7 : U0 := default
     let mut v8 : Bool := default
     let mut v10 : Int32 := default
-    v0 := (2 : Int32)
+    let v0 : Int32 := (2 : Int32)
     v1 := (← IO.mkRef (Array.replicate (spiralIdx v0) (default : U0)))
-    v2 := (7 : Int32)
-    v3 := (U0.Some v2)
+    let v2 : Int32 := (7 : Int32)
+    let v3 : U0 := (U0.Some v2)
     v1.modify (fun xs => xs.set! (spiralIdx (0 : Int32)) v3)
-    v4 := U0.None
+    let v4 : U0 := U0.None
     v1.modify (fun xs => xs.set! (spiralIdx (1 : Int32)) v4)
-    v5 := (← spiralIndex (← v1.get) (spiralIdx (0 : Int32)))
+    let v5 : U0 := (← spiralIndex (← v1.get) (spiralIdx (0 : Int32)))
     match v5 with
     | U0.None =>
         return (1 : Int32)

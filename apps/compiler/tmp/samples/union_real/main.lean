@@ -35,10 +35,8 @@ def U0.spiralTag : U0 → Int32
 mutual
 partial def twice_1 (p0 : Float) : IO Int32 := do
     let mut v0 : Float := p0
-    let mut v1 : Float := default
-    let mut v2 : Int32 := default
-    v1 := (v0 * (2.0 : Float))
-    v2 := (Int32.ofInt (SpiralToInt.toI v1))
+    let v1 : Float := (v0 * (2.0 : Float))
+    let v2 : Int32 := (Int32.ofInt (SpiralToInt.toI v1))
     return v2
 partial def score_0 (p0 : U0) : IO Int32 := do
     let mut v0 : U0 := p0
@@ -52,17 +50,13 @@ partial def score_0 (p0 : U0) : IO Int32 := do
         v3 := f3
         return v3
 partial def spiralMain : IO Int32 := do
-    let mut v0 : Bool := default
-    let mut v1 : Float := default
     let mut v4 : U0 := default
     let mut v7 : U0 := default
-    let mut v8 : Int32 := default
-    let mut v9 : Bool := default
     let mut v12 : Bool := default
     let mut v10 : Int32 := default
     let mut v11 : Bool := default
-    v0 := true
-    v1 := (1.5 : Float)
+    let v0 : Bool := true
+    let v1 : Float := (1.5 : Float)
     if v0 then
         v4 := (U0.Real v1)
     else
@@ -71,8 +65,8 @@ partial def spiralMain : IO Int32 := do
         v7 := (U0.Whole (5 : Int32))
     else
         v7 := (U0.Real v1)
-    v8 := (← score_0 v4)
-    v9 := (v8 == (3 : Int32))
+    let v8 : Int32 := (← score_0 v4)
+    let v9 : Bool := (v8 == (3 : Int32))
     if v9 then
         v10 := (← score_0 v7)
         v11 := (v10 == (5 : Int32))

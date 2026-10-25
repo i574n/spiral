@@ -31,16 +31,16 @@ function spiral_string_slice(value: string, from: number, to: number): string {
 }
 function left_c0(v0: string): ((a0: number) => number) {
     return (v1: number): number => {
-        let v2: number = spiral_string_length(v0);
-        let v3: number = (v2 + v1) | 0;
+        const v2: number = spiral_string_length(v0);
+        const v3: number = (v2 + v1) | 0;
         return v3;
     };
 }
 function right_c1(v0: string): ((a0: number) => number) {
     return (v1: number): number => {
-        let v2: number = spiral_string_length(v0);
-        let v3: number = (v2 + v1) | 0;
-        let v4: number = (v3 - 1) | 0;
+        const v2: number = spiral_string_length(v0);
+        const v3: number = (v2 + v1) | 0;
+        const v4: number = (v3 - 1) | 0;
         return v4;
     };
 }
@@ -48,9 +48,9 @@ function method0(v0: ((a0: number) => number)): number {
     return v0(39);
 }
 export function main(): number {
-    let v0: string = "abc";
-    let v1: string = "wxyz";
-    let v2: boolean = true;
+    const v0: string = "abc";
+    const v1: string = "wxyz";
+    const v2: boolean = true;
     let v5: ((a0: number) => number);
     if (v2) {
         v5 = left_c0(v0);

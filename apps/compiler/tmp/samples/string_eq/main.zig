@@ -41,46 +41,6 @@ fn spiralFlush() void {
     spiralWrite(1, spiral_out_buffer[0..spiral_out_len]);
     spiral_out_len = 0;
 }
-fn spiralPrint(s: []const u8) void {
-    if (s.len > spiral_out_buffer.len - spiral_out_len) spiralFlush();
-    if (s.len > spiral_out_buffer.len) {
-        spiralWrite(1, s);
-        return;
-    }
-    @memcpy(spiral_out_buffer[spiral_out_len..][0..s.len], s);
-    spiral_out_len += s.len;
-}
-fn spiralFloatText(x: anytype) []u8 {
-    var buffer: [std.fmt.float.bufferSize(.decimal, @TypeOf(x))]u8 = undefined;
-    const text = std.fmt.float.render(&buffer, x, .{ .mode = .decimal }) catch unreachable;
-    return spiral_gpa.dupe(u8, text) catch @panic("out of memory");
-}
-fn spiralPrintAny(x: anytype) void {
-    const T = @TypeOf(x);
-    if (T == []const u8) return spiralPrint(x);
-    if (@typeInfo(T) == .float) return spiralPrint(spiralFloatText(x));
-    const s = switch (@typeInfo(T)) {
-        .bool => std.fmt.allocPrint(spiral_gpa, "{}", .{x}),
-        else => std.fmt.allocPrint(spiral_gpa, "{d}", .{x}),
-    } catch @panic("out of memory");
-    spiralPrint(s);
-}
-fn spiralFail(s: []const u8) noreturn {
-    spiralFlush();
-    spiralWrite(2, s);
-    spiralWrite(2, "\n");
-    std.process.exit(1);
-}
-fn spiralConv(comptime T: type, x: anytype) T {
-    const S = @TypeOf(x);
-    if (@typeInfo(T) == .float) {
-        if (@typeInfo(S) == .float) return @floatCast(x) else return @floatFromInt(x);
-    }
-    if (@typeInfo(S) == .float) return @intFromFloat(x);
-    const U = @Int(.unsigned, @bitSizeOf(T));
-    const wide: i128 = x;
-    return @bitCast(@as(U, @truncate(@as(u128, @bitCast(wide)))));
-}
 fn spiralConcat(a: []const u8, b: []const u8) []const u8 {
     return std.mem.concat(spiral_gpa, u8, &.{ a, b }) catch @panic("out of memory");
 }
@@ -93,33 +53,7 @@ fn spiralStringSlice(s: []const u8, from: i64, upto: i64) []const u8 {
     if ((s[a] & 0xC0) == 0x80 or (b < s.len and (s[b] & 0xC0) == 0x80)) std.process.exit(3);
     return s[a..b];
 }
-fn spiralIndex(len: usize, i: anytype) usize {
-    if (i < 0 or i >= len) std.process.exit(3);
-    return @intCast(i);
-}
-fn spiralNewArray(comptime T: type, n: anytype) []T {
-    const len: usize = @intCast(n);
-    const a = spiral_gpa.alloc(T, len) catch @panic("out of memory");
-    switch (@typeInfo(T)) {
-        .int, .float, .bool => @memset(a, std.mem.zeroes(T)),
-        else => if (T == []const u8) @memset(a, ""),
-    }
-    return a;
-}
-fn spiralCreate(comptime T: type, v: T) *T {
-    const p = spiral_gpa.create(T) catch @panic("out of memory");
-    p.* = v;
-    return p;
-}
 fn spiralMain() i32 {
-    var v0: []const u8 = undefined; _ = &v0;
-    var v1: []const u8 = undefined; _ = &v1;
-    var v2: []const u8 = undefined; _ = &v2;
-    var v3: []const u8 = undefined; _ = &v3;
-    var v4: []const u8 = undefined; _ = &v4;
-    var v5: []const u8 = undefined; _ = &v5;
-    var v6: []const u8 = undefined; _ = &v6;
-    var v7: bool = undefined; _ = &v7;
     var v9: bool = undefined; _ = &v9;
     var v8: bool = undefined; _ = &v8;
     var v11: bool = undefined; _ = &v11;
@@ -128,14 +62,14 @@ fn spiralMain() i32 {
     var v12: bool = undefined; _ = &v12;
     var v15: bool = undefined; _ = &v15;
     var v14: bool = undefined; _ = &v14;
-    v0 = "\xc3\xa9";
-    v1 = "x";
-    v2 = spiralConcat(v0, v1);
-    v3 = "\xc3\xa9x";
-    v4 = "\xc3\xa9y";
-    v5 = "";
-    v6 = spiralStringSlice(v3, @as(i64, @as(i32, 1)), @as(i64, @as(i32, 0)));
-    v7 = std.mem.eql(u8, v2, v3);
+    const v0: []const u8 = "\xc3\xa9";
+    const v1: []const u8 = "x";
+    const v2: []const u8 = spiralConcat(v0, v1);
+    const v3: []const u8 = "\xc3\xa9x";
+    const v4: []const u8 = "\xc3\xa9y";
+    const v5: []const u8 = "";
+    const v6: []const u8 = spiralStringSlice(v3, @as(i64, @as(i32, 1)), @as(i64, @as(i32, 0)));
+    const v7: bool = std.mem.eql(u8, v2, v3);
     if (v7) {
         v8 = !std.mem.eql(u8, v2, v4);
         v9 = v8;

@@ -1,0 +1,7 @@
+:! span = { start : i32; stop : i32 }
+
+:= width (span s) : i32 = s.stop - s.start
+
+:= main () : i32 =
+    !!!!Export("xc_width", ((\ s => width s) : span -> i32))
+    0i32

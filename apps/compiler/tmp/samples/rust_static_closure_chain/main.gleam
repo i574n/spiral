@@ -504,12 +504,12 @@ pub fn loop_0(v0: Uh0, v1: Int) -> Int {
     }
 }
 pub fn main() {
-let v0 = 80
-let v1 = closure0(Nil)
-let v2 = Uh0Cons(v0, v1)
-let v3 = 0
-let v4 = loop_0(v2, v3)
-let v5 = v4 % 200
-let v6 = spiral_wrap_signed(v5, 32)
-v6
+    let v0 = 80
+    let v1 = closure0(Nil)
+    let v2 = Uh0Cons(v0, v1)
+    let v3 = 0
+    let v4 = loop_0(v2, v3)
+    let v5 = v4 % 200
+    let v6 = spiral_wrap_signed(v5, 32)
+    v6
 }

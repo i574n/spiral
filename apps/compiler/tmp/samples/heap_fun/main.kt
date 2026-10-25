@@ -8,24 +8,18 @@ fun add_c0(v0: Int): (Int) -> Int {
     return { p0: Int -> body(p0) }
 }
 fun spiral_main(): Int {
-    var v0: Int = 0
-    v0 = 3
-    var v1: Int = 0
-    v1 = 4
+    val v0: Int = 3
+    val v1: Int = 4
     var v2: (Int) -> Int = { _: Int -> throw RuntimeException() }
     v2 = add_c0(v0)
-    var v3: Heap0 = Heap0({ _: Int -> throw RuntimeException() }, 0)
-    v3 = Heap0(v2, v1)
+    val v3: Heap0 = Heap0(v2, v1)
     var v4: (Int) -> Int = { _: Int -> throw RuntimeException() }
     var v5: Int = 0
     v4 = v3.l0
     v5 = v3.l1
-    var v6: Int = 0
-    v6 = v4(0)
-    var v7: Int = 0
-    v7 = (v6 + v5)
-    var v8: Boolean = false
-    v8 = (v7 == 7)
+    val v6: Int = v4(0)
+    val v7: Int = (v6 + v5)
+    val v8: Boolean = (v7 == 7)
     if (v8) {
         return 0
     } else {

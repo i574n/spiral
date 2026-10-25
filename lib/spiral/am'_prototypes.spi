@@ -1,7 +1,7 @@
 /// ### array
 
-inl array' forall t. (x : array_base t) : array t =
+:= array' \* t. (x : array_base t) : array t =
     array x
 
-inl a' x =
+:= a' x =
     array' x

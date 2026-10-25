@@ -1,6 +1,6 @@
-open leptos
+:< leptos
 
-inl render () : _ (_ svg) =
+:= render () : _ (_ svg) =
     svg [
         $'"xmlns=\\\"http://www.w3.org/2000/svg\\\""'
         $'"fill=\\\"none\\\""'
@@ -9,7 +9,7 @@ inl render () : _ (_ svg) =
         $'"stroke-width=\\\"1.5\\\""'
         $'"stroke=\\\"currentColor\\\""'
         $'"class=\\\"text-red-700\\\""'
-    ] fun () =>
+    ] \ () =>
         :>[
             path [
                 $'"stroke-linecap=\\\"round\\\""'

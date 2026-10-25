@@ -14,18 +14,13 @@ func f_c0(_ v0: Int32) -> (Int32) -> Int32 {
     }
 }
 func spiral_main() -> Int32 {
-    var v0: Int32 = 0
-    v0 = 3
-    var v1: (Int32) -> Int32 = { (_: Int32) -> Int32 in fatalError("unreachable closure") }
-    v1 = f_c0(v0)
+    let v0: Int32 = 3
+    let v1: (Int32) -> Int32 = f_c0(v0)
     var v2: Heap0 = Heap0(l0: { (_: Int32) -> Int32 in fatalError("unreachable closure") })
     v2 = Heap0(l0: v1)
-    var v3: (Int32) -> Int32 = { (_: Int32) -> Int32 in fatalError("unreachable closure") }
-    v3 = v2.l0
-    var v4: Int32 = 0
-    v4 = v3(4)
-    var v5: Bool = false
-    v5 = (v4 == 7)
+    let v3: (Int32) -> Int32 = v2.l0
+    let v4: Int32 = v3(4)
+    let v5: Bool = (v4 == 7)
     if (v5) {
         return 0
     } else {

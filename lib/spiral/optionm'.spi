@@ -1,14 +1,14 @@
 /// # optionm'
-open rust
-open rust_operators
+:< rust
+:< rust_operators
 
 test optionm static =
-    open testing
+    :< testing
 
 /// ## optionm'
 
 /// ### default_value
-inl default_value d =
+:= default_value d =
     optionm.defaultWith d
 
 test default_value =
@@ -17,7 +17,7 @@ test default_value =
     |> _assert_eq 3i32
 
 /// ### (/??)
-inl (/??) a b =
+:= (/??) a b =
     a |> default_value b
 
 test default_value_2 =
@@ -25,18 +25,18 @@ test default_value_2 =
     |> _assert_eq 3i32
 
 /// ### default_with
-inl default_with fn = function
+:= default_with fn = \|
     | Some x => x
     | None => fn ()
 
 test default_with =
     None
-    |> default_with fun () => 3i32
+    |> default_with \ () => 3i32
     |> _assert_eq 3i32
 
 /// ### choose
-inl choose fn a b =
-    match a, b with
+:= choose fn a b =
+    ?= a, b ?|
     | Some x, Some y => fn x y |> Some
     | _ => None
 
@@ -46,14 +46,14 @@ test choose =
     |> _assert_eq (Some 5)
 
 /// ### iter
-inl iter fn = function
+:= iter fn = \|
     | Some x => fn x
     | None => ()
 
 test iter =
-    inl n = mut 1i32
-    inl fn =
-        fun n' =>
+    := n = mut 1i32
+    := fn =
+        \ n' =>
             n <- *n + n'
     Some 1i32 |> iter fn
     None |> iter fn
@@ -61,24 +61,24 @@ test iter =
     |> _assert_eq 2i32
 
 /// ### flatten
-inl flatten x =
-    match x with
+:= flatten x =
+    ?= x ?|
     | Some (Some x) => Some x
     | _ => None
 
 /// ## fsharp
 
 /// ### option'
-inl option'_types () : () =
+:= option'_types () : () =
     backend_switch {
-        Gleam = fun () => global "import gleam/option"
+        Gleam = \ () => global "import gleam/option"
     }
-nominal option'_gleam t =
+:! option'_gleam t =
     `(
         option'_types ()
         $'' : $'option.Option(`t)'
     )
-type option'_switch t =
+:== option'_switch t =
     {
         Gleam : option'_gleam t
         Lua : t
@@ -89,124 +89,124 @@ type option'_switch t =
         Zig : $'?`(t)'
         Lean : $'(Option `t)'
     }
-nominal option' t = $'backend_switch `(option'_switch t)'
+:! option' t = $'backend_switch `(option'_switch t)'
 
 /// ### none'
-inl none' forall t. () : option' t =
+:= none' \* t. () : option' t =
     backend_switch {
-        Gleam = fun () => $'option.None' : option' t
-        Lua = fun () => $'nil' : option' t
-        Fsharp = fun () => $'None' : option' t
-        Python = fun () => $'None' : option' t
-        Rust = fun () => $'None' : option' t
-        TypeScript = fun () => $'undefined' : option' t
-        Zig = fun () => $'null' : option' t
-        Lean = fun () => $'none' : option' t
+        Gleam = \ () => $'option.None' : option' t
+        Lua = \ () => $'nil' : option' t
+        Fsharp = \ () => $'None' : option' t
+        Python = \ () => $'None' : option' t
+        Rust = \ () => $'None' : option' t
+        TypeScript = \ () => $'undefined' : option' t
+        Zig = \ () => $'null' : option' t
+        Lean = \ () => $'none' : option' t
     }
 
 /// ### some'
-inl some' forall t. (x : t) : option' t =
+:= some' \* t. (x : t) : option' t =
     backend_switch {
-        Gleam = fun () => $'!x |> option.Some' : option' t
-        Lua = fun () => $'!x ' : option' t
-        Fsharp = fun () => $'Some !x ' : option' t
-        Python = fun () => $'!x \# some\' ' : option' t
-        Rust = fun () => $'Some(!x.clone())' : option' t
-        TypeScript = fun () => $'!x ' : option' t
-        Zig = fun () => $'!x ' : option' t
-        Lean = fun () => $'(some !x)' : option' t
+        Gleam = \ () => $'!x |> option.Some' : option' t
+        Lua = \ () => $'!x ' : option' t
+        Fsharp = \ () => $'Some !x ' : option' t
+        Python = \ () => $'!x \# some\' ' : option' t
+        Rust = \ () => $'Some(!x.clone())' : option' t
+        TypeScript = \ () => $'!x ' : option' t
+        Zig = \ () => $'!x ' : option' t
+        Lean = \ () => $'(some !x)' : option' t
     }
 
 /// ### is_none'
-inl is_none' forall t. (x : option' t) : bool =
+:= is_none' \* t. (x : option' t) : bool =
     backend_switch {
-        Lua = fun () => $'!x == nil' : bool
-        Python = fun () => $'!x is None' : bool
-        Rust = fun () => $'!x.is_none()' : bool
-        TypeScript = fun () => $'!x === undefined' : bool
+        Lua = \ () => $'!x == nil' : bool
+        Python = \ () => $'!x is None' : bool
+        Rust = \ () => $'!x.is_none()' : bool
+        TypeScript = \ () => $'!x === undefined' : bool
     }
 
 /// ### nullable_value'
-inl nullable_value' forall t. (x : option' t) : t =
+:= nullable_value' \* t. (x : option' t) : t =
     $'!x' : t
 
 /// ### default_value'
-inl default_value' forall t. (value : t) (x : option' t) : t =
+:= default_value' \* t. (value : t) (x : option' t) : t =
     backend_switch {
-        Gleam = fun () => $'!x |> option.unwrap(!value)' : t
-        Lua = fun () => if is_none' x then value else nullable_value' x
-        Fsharp = fun () => $'!x |> Option.defaultValue !value ' : t
-        Python = fun () => if is_none' x then value else nullable_value' x
-        Rust = fun () =>
-            inl value = rust.clone value
+        Gleam = \ () => $'!x |> option.unwrap(!value)' : t
+        Lua = \ () => ? is_none' x ?> value |: nullable_value' x
+        Fsharp = \ () => $'!x |> Option.defaultValue !value ' : t
+        Python = \ () => ? is_none' x ?> value |: nullable_value' x
+        Rust = \ () =>
+            := value = rust.clone value
             $'!x.unwrap_or(!value)' : t
-        TypeScript = fun () => if is_none' x then value else nullable_value' x
-        Zig = fun () => $'(!x orelse !value)' : t
-        Lean = fun () => $'((!x).getD !value)' : t
+        TypeScript = \ () => ? is_none' x ?> value |: nullable_value' x
+        Zig = \ () => $'(!x orelse !value)' : t
+        Lean = \ () => $'((!x).getD !value)' : t
     }
 
 /// ### get'
-inl get' forall t. (x : option' t) : t =
+:= get' \* t. (x : option' t) : t =
     backend_switch {
-        Gleam = fun () =>
+        Gleam = \ () =>
             option'_types ()
             $'!x |> option.unwrap (Nil)' : t
-        Lua = fun () => $'!x ' : t
-        Fsharp = fun () => $'!x |> Option.get' : t
-        Python = fun () => $'!x ' : t
-        Rust = fun () => $'!x.unwrap()' : t
-        TypeScript = fun () => $'!x ' : t
-        Zig = fun () => $'!x.?' : t
-        Lean = fun () => $'(!x).get\!' : t
+        Lua = \ () => $'!x ' : t
+        Fsharp = \ () => $'!x |> Option.get' : t
+        Python = \ () => $'!x ' : t
+        Rust = \ () => $'!x.unwrap()' : t
+        TypeScript = \ () => $'!x ' : t
+        Zig = \ () => $'!x.?' : t
+        Lean = \ () => $'(!x).get\!' : t
     }
 
 /// ### box
-inl box forall t. (x : option t) : option' t =
-    match x with
+:= box \* t. (x : option t) : option' t =
+    ?= x ?|
     | Some x => some' x
     | None => none' ()
 
 /// ### map
-inl map forall t u. (fn : t -> u) (x : option' t) : option' u =
+:= map \* t u. (fn : t -> u) (x : option' t) : option' u =
     backend_switch {
-        Gleam = fun () =>
+        Gleam = \ () =>
             option'_types ()
             $'!x |> option.map(!fn)' : option' u
-        Lua = fun () =>
-            if x =. none' ()
-            then none' ()
-            else fn $'!x ' |> fun x => $'!x ' : option' u
-        Fsharp = fun () =>
-            inl fn = join fn
+        Lua = \ () =>
+            ? x =. none' ()
+            ?> none' ()
+            |: fn $'!x ' |> \ x => $'!x ' : option' u
+        Fsharp = \ () =>
+            := fn = ~~ fn
             $'!x |> Option.map !fn ' : option' u
-        Python = fun () =>
-            if x =. none' ()
-            then none' ()
-            else fn $'!x ' |> fun x => $'!x ' : option' u
-        Rust = fun () =>
-            inl fn = rust.one_param_fn fn
-            inl x = join x
+        Python = \ () =>
+            ? x =. none' ()
+            ?> none' ()
+            |: fn $'!x ' |> \ x => $'!x ' : option' u
+        Rust = \ () =>
+            := fn = rust.one_param_fn fn
+            := x = ~~ x
             $'!x.map(|x| !fn(x))' : option' u
-        TypeScript = fun () =>
-            if $'!x === undefined' : bool
-            then none' ()
-            else fn $'!x ' |> fun x => $'!x ' : option' u
-        Zig = fun () =>
-            if $'(!x == null)' : bool
-            then none' ()
-            else x |> get' |> fn |> some'
-        Lean = fun () =>
-            if $'(!x).isNone' : bool
-            then none' ()
-            else x |> get' |> fn |> some'
+        TypeScript = \ () =>
+            ? $'!x === undefined' : bool
+            ?> none' ()
+            |: fn $'!x ' |> \ x => $'!x ' : option' u
+        Zig = \ () =>
+            ? $'(!x == null)' : bool
+            ?> none' ()
+            |: x |> get' |> fn |> some'
+        Lean = \ () =>
+            ? $'(!x).isNone' : bool
+            ?> none' ()
+            |: x |> get' |> fn |> some'
     }
 
 /// ### map''
-inl map'' forall t u. (fn : t -> u) (x : option' t) : option' u =
+:= map'' \* t u. (fn : t -> u) (x : option' t) : option' u =
     x |> map fn
 
 /// ### unbox
-inl unbox forall t. (x : option' t) : option t =
+:= unbox \* t. (x : option' t) : option t =
     x |> map'' Some |> default_value' None
 
 ///> gleam
@@ -215,26 +215,26 @@ inl unbox forall t. (x : option' t) : option t =
 ///> rust
 ///> typescript
 test unbox =
-    inl x = Some 3i32
-    inl y : option i32 = None
-    inl x' = x |> box |> unbox
-    inl y' = y |> box |> map id |> unbox
+    := x = Some 3i32
+    := y : option i32 = None
+    := x' = x |> box |> unbox
+    := y' = y |> box |> map id |> unbox
     (x', y') |> _assert_eq' (x, y)
 
 /// ### of_obj
-inl of_obj forall t. (x : t) : option' t =
+:= of_obj \* t. (x : t) : option' t =
     backend_switch {
-        Gleam = fun () =>
+        Gleam = \ () =>
             option'_types ()
             $'!x |> option.Some' : option' t
-        Lua = fun () =>
+        Lua = \ () =>
             $'!x ' : option' t
-        Fsharp = fun () => (x |> $'Option.ofObj') : option' t
-        Python = fun () =>
+        Fsharp = \ () => (x |> $'Option.ofObj') : option' t
+        Python = \ () =>
             $'!x ' : option' t
-        Rust = fun () => $'Some(!x.clone())' : option' t
-        TypeScript = fun () => $'(!x ?? undefined)' : option' t
-        Zig = fun () => $'!x ' : option' t
+        Rust = \ () => $'Some(!x.clone())' : option' t
+        TypeScript = \ () => $'(!x ?? undefined)' : option' t
+        Zig = \ () => $'!x ' : option' t
     }
 
 ///> fsharp
@@ -261,60 +261,60 @@ test of_obj_2 =
 /// ## rust
 
 /// ### try'
-inl try' forall t. (x : option' t) : t =
+:= try' \* t. (x : option' t) : t =
     !\\(x, $'"$0?"')
 
 /// ### map'
-inl map' forall t u. (fn : t -> u) (x : option' t) : option' u =
+:= map' \* t u. (fn : t -> u) (x : option' t) : option' u =
     (!\\(x, $'"true; let _optionm_map_ = $0.map(|x| { //"') : bool) |> ignore
-    inl result = fn !\($'"x"')
+    := result = fn !\($'"x"')
     (!\\(result, $'"true; $0 })"') : bool) |> ignore
     !\($'"_optionm_map_"')
 
 /// ### unwrap
-inl unwrap forall t. (x : option' t) : t =
+:= unwrap \* t. (x : option' t) : t =
     !\\(x, $'"$0.unwrap()"')
 
 /// ### take
-inl take forall t. (x : option' t) : option' t =
+:= take \* t. (x : option' t) : option' t =
     (!\\(x, $'"true; let mut !x = !x"') : bool) |> ignore
     !\\(x, $'"Option::take(&mut $0)"')
 
 /// ### take_ref
-inl take_ref forall t. (x : rust.ref (option' t)) : option' t =
+:= take_ref \* t. (x : rust.ref (option' t)) : option' t =
     (!\\(x, $'"true; let mut !x = !x"') : bool) |> ignore
     !\\(x, $'"Option::take(&mut $0)"')
 
 /// ### take_ref_mut
-inl take_ref_mut forall t. (x : rust.ref (rust.mut' (option' t))) : option' t =
+:= take_ref_mut \* t. (x : rust.ref (rust.mut' (option' t))) : option' t =
     !\\(x, $'"Option::take($0)"')
 
 /// ### cloned
-inl cloned forall t. (x : option' (rust.ref t)) : option' t =
+:= cloned \* t. (x : option' (rust.ref t)) : option' t =
     !\\(x, $'"$0.cloned()"')
 
 /// ### as_ref
-inl as_ref forall t. (x : rust.ref (option' t)) : option' (rust.ref t) =
+:= as_ref \* t. (x : rust.ref (option' t)) : option' (rust.ref t) =
     !\\(x, $'"$0.as_ref()"')
 
 /// ### as_mut
-inl as_mut forall t. (x : rust.ref (rust.mut' (option' t))) : option' (rust.ref (rust.mut' t)) =
+:= as_mut \* t. (x : rust.ref (rust.mut' (option' t))) : option' (rust.ref (rust.mut' t)) =
     !\\(x, $'"$0.as_mut()"')
 
 /// ### unwrap_or
-inl unwrap_or forall t. (def : t) (x : option' t) : t =
+:= unwrap_or \* t. (def : t) (x : option' t) : t =
     !\($'"!x.unwrap_or(!def)"')
 
 /// ### and_then
-inl and_then forall t u. (fn : t -> option' u) (x : option' t) : option' u =
+:= and_then \* t u. (fn : t -> option' u) (x : option' t) : option' u =
     !\\((x, fn), $'"$0.and_then(|x| $1(x))"')
 
 /// ### rc_upgrade
-inl rc_upgrade forall t. (x : rust.weak_rc t) : option' (rust.rc t) =
+:= rc_upgrade \* t. (x : rust.weak_rc t) : option' (rust.rc t) =
     !\\(x, $'"std::rc::Weak::upgrade(&$0)"')
 
 /// ### rc_into_inner
-inl rc_into_inner forall t. (x : rust.rc t) : option' t =
+:= rc_into_inner \* t. (x : rust.rc t) : option' t =
     !\\(x, $'"std::rc::Rc::into_inner($0)"')
 
 ///> rust

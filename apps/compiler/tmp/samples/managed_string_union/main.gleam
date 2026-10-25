@@ -10,9 +10,6 @@ pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
   int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
 }
 
-pub fn spiral_wrap_unsigned(value: Int, bits: Int) -> Int {
-  int.bitwise_and(value, int.bitwise_shift_left(1, bits) - 1)
-}
 
 pub type Us0 {
     Us0Text(f0i0 : String)
@@ -30,20 +27,20 @@ pub fn score_0(v0: Us0) -> Int {
     }
 }
 pub fn main() {
-let v0 = False
-let v4 =
-    case v0 {
-        True -> {
-            Us0Number(7)
+    let v0 = False
+    let v4 =
+        case v0 {
+            True -> {
+                Us0Number(7)
+            }
+            False -> {
+                let v2 = "qwe"
+                Us0Text(v2)
+            }
         }
-        False -> {
-            let v2 = "qwe"
-            Us0Text(v2)
-        }
-    }
-let v5 = score_0(v4)
-let v6 = score_0(v4)
-let v7 = spiral_wrap_signed(v5 + v6, 32)
-let v8 = spiral_wrap_signed(v7 - 6, 32)
-v8
+    let v5 = score_0(v4)
+    let v6 = score_0(v4)
+    let v7 = spiral_wrap_signed(v5 + v6, 32)
+    let v8 = spiral_wrap_signed(v7 - 6, 32)
+    v8
 }

@@ -1,39 +1,39 @@
 ///- --package .
-open sm'_operators
-open xsd
+:< sm'_operators
+:< xsd
 
-inl upper_letters () : string = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+:= upper_letters () : string = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-inl lower_letters () : string = "abcdefghijklmnopqrstuvwxyz"
+:= lower_letters () : string = "abcdefghijklmnopqrstuvwxyz"
 
-inl alnum () : string = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+:= alnum () : string = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 
-inl is_upper (c : string) : bool = sm'.index_of c (upper_letters ()) >= 0i32
+:= is_upper (c : string) : bool = sm'.index_of c (upper_letters ()) >= 0i32
 
-inl is_lower (c : string) : bool = sm'.index_of c (lower_letters ()) >= 0i32
+:= is_lower (c : string) : bool = sm'.index_of c (lower_letters ()) >= 0i32
 
-inl is_alnum (c : string) : bool = sm'.index_of c (alnum ()) >= 0i32
+:= is_alnum (c : string) : bool = sm'.index_of c (alnum ()) >= 0i32
 
-let rec snake_from (s : string) (pos : i32) (previous_lower : bool) (previous_upper : bool) (acc : string) : string =
-    if pos >= sm'.length s then acc
-    else
-        inl c = xml.code_point_text s pos
-        inl after = pos + sm'.length c
-        inl next_lower = after < sm'.length s && is_lower (xml.code_point_text s after)
-        inl piece =
-            if is_upper c then (if previous_lower || (previous_upper && next_lower) then "_" else "") ++# sm'.to_lower c
-            elif is_alnum c then c
-            else "_"
+:~ ^ snake_from (s : string) (pos : i32) (previous_lower : bool) (previous_upper : bool) (acc : string) : string =
+    ? pos >= sm'.length s ?> acc
+    |:
+        := c = xml.code_point_text s pos
+        := after = pos + sm'.length c
+        := next_lower = after < sm'.length s && is_lower (xml.code_point_text s after)
+        := piece =
+            ? is_upper c ?> (? previous_lower || (previous_upper && next_lower) ?> "_" |: "") ++# sm'.to_lower c
+            |? is_alnum c ?> c
+            |: "_"
         snake_from s after (is_lower c || (sm'.index_of c "0123456789" >= 0i32)) (is_upper c) (acc ++# piece)
 
-inl type_name (xsd_name : string) : string = "x_" ++# snake_from xsd_name 0i32 false false ""
+:= type_name (xsd_name : string) : string = "x_" ++# snake_from xsd_name 0i32 !- !- ""
 
-let rec has_name (target : string) (items : list string) : bool =
-    match items with
+:~ ^ has_name (target : string) (items : list string) : bool =
+    ?= items ?|
     | x :: rest => x = target || has_name target rest
-    | Nil => false
+    | Nil => !-
 
-inl spiral_keywords () : list string =
+:= spiral_keywords () : list string =
     [
         "and"
         "as"
@@ -64,98 +64,98 @@ inl spiral_keywords () : list string =
         "with"
     ]
 
-inl field_name (xsd_name : string) : string =
-    inl name = snake_from xsd_name 0i32 false false ""
-    if has_name name (spiral_keywords ()) then name ++# "_value" else name
+:= field_name (xsd_name : string) : string =
+    := name = snake_from xsd_name 0i32 !- !- ""
+    ? has_name name (spiral_keywords ()) ?> name ++# "_value" |: name
 
-let rec case_from (s : string) (pos : i32) (acc : string) : string =
-    if pos >= sm'.length s then acc
-    else
-        inl c = xml.code_point_text s pos
-        case_from s (pos + sm'.length c) (acc ++# (if is_alnum c then c else "_"))
+:~ ^ case_from (s : string) (pos : i32) (acc : string) : string =
+    ? pos >= sm'.length s ?> acc
+    |:
+        := c = xml.code_point_text s pos
+        case_from s (pos + sm'.length c) (acc ++# (? is_alnum c ?> c |: "_"))
 
-inl capitalized (s : string) : string =
-    if sm'.length s > 0i32 && is_upper (xml.code_point_text s 0i32) then s else "X" ++# s
+:= capitalized (s : string) : string =
+    ? sm'.length s > 0i32 && is_upper (xml.code_point_text s 0i32) ?> s |: "X" ++# s
 
-inl case_name (owner : string) (value : string) : string =
+:= case_name (owner : string) (value : string) : string =
     capitalized (case_from owner 0i32 "") ++# "_" ++# case_from value 0i32 ""
 
-let rec distinct_values (values : list string) (seen : list string) (acc : list string) : list string =
-    match values with
+:~ ^ distinct_values (values : list string) (seen : list string) (acc : list string) : list string =
+    ?= values ?|
     | v :: rest =>
-        if has_name v seen then distinct_values rest seen acc else distinct_values rest (v :: seen) (v :: acc)
+        ? has_name v seen ?> distinct_values rest seen acc |: distinct_values rest (v :: seen) (v :: acc)
     | Nil => reverse acc Nil
 
-let rec enumeration_values (facets : list xsd_facet) (acc : list string) : list string =
-    match facets with
+:~ ^ enumeration_values (facets : list xsd_facet) (acc : list string) : list string =
+    ?= facets ?|
     | Enumeration value :: rest => enumeration_values rest (value :: acc)
     | _ :: rest => enumeration_values rest acc
     | Nil => reverse acc Nil
 
-inl escape_text (s : string) : string = s |> sm'.replace "\\" "\\\\" |> sm'.replace "\"" "\\\""
+:= escape_text (s : string) : string = s |> sm'.replace "\\" "\\\\" |> sm'.replace "\"" "\\\""
 
-let rec join_lines (lines : list string) (acc : string) : string =
-    match lines with
+:~ ^ join_lines (lines : list string) (acc : string) : string =
+    ?= lines ?|
     | line :: rest => join_lines rest (acc ++# line ++# "\n")
     | Nil => acc
 
-let rec map_strings (f : string -> string) (items : list string) (acc : list string) : list string =
-    match items with
+:~ ^ map_strings (f : string -> string) (items : list string) (acc : list string) : list string =
+    ?= items ?|
     | x :: rest => map_strings f rest (f x :: acc)
     | Nil => reverse acc Nil
 
-let rec unused_case (candidate : string) (used : list string) : string =
-    if has_name candidate used then unused_case (candidate ++# "_") used else candidate
+:~ ^ unused_case (candidate : string) (used : list string) : string =
+    ? has_name candidate used ?> unused_case (candidate ++# "_") used |: candidate
 
-let rec value_cases
+:~ ^ value_cases
     (owner : string) (values : list string) (used : list string) (acc : list (string * string))
     : list (string * string)
     =
-    match values with
+    ?= values ?|
     | v :: rest =>
-        inl case = unused_case (case_name owner v) used
+        := case = unused_case (case_name owner v) used
         value_cases owner rest (case :: used) ((v, case) :: acc)
     | Nil => reverse acc Nil
 
-let rec case_lines
+:~ ^ case_lines
     (pairs : list (string * string)) (line : string -> string -> string) (acc : list string)
     : list string
     =
-    match pairs with
+    ?= pairs ?|
     | (v, case) :: rest => case_lines rest line (line v case :: acc)
     | Nil => reverse acc Nil
 
-inl digit_text (d : i32) : string = sm'.substring d 1i32 "0123456789"
+:= digit_text (d : i32) : string = sm'.substring d 1i32 "0123456789"
 
-let rec digits_text (n : i32) (acc : string) : string =
-    if n < 10i32 then digit_text n ++# acc else digits_text (n / 10i32) (digit_text (n % 10i32) ++# acc)
+:~ ^ digits_text (n : i32) (acc : string) : string =
+    ? n < 10i32 ?> digit_text n ++# acc |: digits_text (n / 10i32) (digit_text (n % 10i32) ++# acc)
 
-inl int_text (n : i32) : string = if n < 0i32 then "-" ++# digits_text (0i32 - n) "" else digits_text n ""
+:= int_text (n : i32) : string = ? n < 0i32 ?> "-" ++# digits_text (0i32 - n) "" |: digits_text n ""
 
-let rec take_items forall t. (count : i32) (items : list t) : list t =
-    match items with
-    | x :: rest => if count <= 0i32 then Nil else x :: take_items (count - 1i32) rest
+:~ ^ take_items \* t. (count : i32) (items : list t) : list t =
+    ?= items ?|
+    | x :: rest => ? count <= 0i32 ?> Nil |: x :: take_items (count - 1i32) rest
     | Nil => Nil
 
-let rec variant_arms (pairs : list (string * string)) (count : i32) (index : i32) (acc : string) : string =
-    match pairs with
-    | (_, last_case) :: Nil => acc ++# (if index = 0i32 then "    " else "    else ") ++# last_case ++# "\n"
+:~ ^ variant_arms (pairs : list (string * string)) (count : i32) (index : i32) (acc : string) : string =
+    ?= pairs ?|
+    | (_, last_case) :: Nil => acc ++# (? index = 0i32 ?> "    " |: "    else ") ++# last_case ++# "\n"
     | (_, variant_case) :: rest =>
-        inl keyword = if index = 0i32 then "    if" else "    elif"
+        := keyword = ? index = 0i32 ?> "    if" |: "    elif"
         variant_arms rest count
             (index + 1i32)
             (acc ++# keyword ++# " index = " ++# int_text index ++# "i32 then " ++# variant_case ++# "\n")
     | Nil => acc
 
-inl union_text (name : string) (values : list string) : string =
-    inl ty = type_name name
-    inl pairs = value_cases name values Nil Nil
-    inl cases = case_lines pairs (fun _ case => "    | " ++# case) Nil
-    inl parse_arms =
-        case_lines pairs (fun v case => "    elif s = \"" ++# escape_text v ++# "\" then Some " ++# case) Nil
-    inl print_arms = case_lines pairs (fun v case => "    | " ++# case ++# " => \"" ++# escape_text v ++# "\"") Nil
-    inl union_part = join_lines ("union " ++# ty ++# " =" :: cases) ""
-    inl parse_part =
+:= union_text (name : string) (values : list string) : string =
+    := ty = type_name name
+    := pairs = value_cases name values Nil Nil
+    := cases = case_lines pairs (\ _ case => "    | " ++# case) Nil
+    := parse_arms =
+        case_lines pairs (\ v case => "    elif s = \"" ++# escape_text v ++# "\" then Some " ++# case) Nil
+    := print_arms = case_lines pairs (\ v case => "    | " ++# case ++# " => \"" ++# escape_text v ++# "\"") Nil
+    := union_part = join_lines ("union " ++# ty ++# " =" :: cases) ""
+    := parse_part =
         join_lines
             (
                 "inl " ++# ty ++# "_of_string (s : string) : option " ++# ty ++# " ="
@@ -163,16 +163,16 @@ inl union_text (name : string) (values : list string) : string =
                 :: parse_arms
             )
             ""
-    inl print_part =
+    := print_part =
         join_lines
             ("inl " ++# ty ++# "_to_string (x : " ++# ty ++# ") : string =" :: "    match x with" :: print_arms)
             ""
-    inl example_part =
-        match pairs with
+    := example_part =
+        ?= pairs ?|
         | Cons _ =>
-            inl variants = take_items 8i32 pairs
-            inl count = count_list variants
-            inl arms = variant_arms variants count 0i32 ""
+            := variants = take_items 8i32 pairs
+            := count = count_list variants
+            := arms = variant_arms variants count 0i32 ""
             "\ninl "
             ++# ty
             ++# "_example (k : i32) : "
@@ -195,19 +195,19 @@ inl union_text (name : string) (values : list string) : string =
         | Nil => ""
     union_part ++# "\n" ++# parse_part ++# "    else None\n\n" ++# print_part ++# example_part
 
-inl union_value_limit () : i32 = 256i32
+:= union_value_limit () : i32 = 256i32
 
-let rec example_pairs (ty : string) (values : list string) (acc : list (string * string)) : list (string * string) =
-    match values with
+:~ ^ example_pairs (ty : string) (values : list string) (acc : list (string * string)) : list (string * string) =
+    ?= values ?|
     | v :: rest =>
-        inl case = ty ++# " \"" ++# escape_text v ++# "\""
+        := case = ty ++# " \"" ++# escape_text v ++# "\""
         example_pairs ty rest ((v, case) :: acc)
     | Nil => reverse acc Nil
 
-inl coded_text (name : string) (table : string) (values : list string) : string =
-    inl ty = type_name name
-    inl examples = example_pairs ty (take_items 8i32 values) Nil
-    inl count = count_list examples
+:= coded_text (name : string) (table : string) (values : list string) : string =
+    := ty = type_name name
+    := examples = example_pairs ty (take_items 8i32 values) Nil
+    := count = count_list examples
     "nominal "
     ++# ty
     ++# " = string\n\n"
@@ -253,23 +253,23 @@ inl coded_text (name : string) (table : string) (values : list string) : string 
     ++# ty
     ++# "_example k)\n"
 
-let rec join_with (separator : string) (items : list string) (acc : string) : string =
-    match items with
-    | item :: rest => join_with separator rest (if acc = "" then item else acc ++# separator ++# item)
+:~ ^ join_with (separator : string) (items : list string) (acc : string) : string =
+    ?= items ?|
+    | item :: rest => join_with separator rest (? acc = "" ?> item |: acc ++# separator ++# item)
     | Nil => acc
 
-inl u32_text (n : u32) : string = int_text (conv n : i32)
+:= u32_text (n : u32) : string = int_text (conv n : i32)
 
-let rec range_tests
+:~ ^ range_tests
     (moves : list xsd_regex.dfa_move) (function_name : string) (keyword : string) (acc : string)
     : string
     =
-    match moves with
+    ?= moves ?|
     | move :: rest =>
-        inl test =
-            if move.low = move.high then "c = " ++# u32_text move.low ++# "u32"
-            else u32_text move.low ++# "u32 <= c && c <= " ++# u32_text move.high ++# "u32"
-        inl arm =
+        := test =
+            ? move.low = move.high ?> "c = " ++# u32_text move.low ++# "u32"
+            |: u32_text move.low ++# "u32 <= c && c <= " ++# u32_text move.high ++# "u32"
+        := arm =
             "            "
             ++# keyword
             ++# " "
@@ -280,68 +280,68 @@ let rec range_tests
             ++# int_text move.target
             ++# "i32 s next\n"
         range_tests rest function_name "elif" (acc ++# arm)
-    | Nil => if acc = "" then "            false\n" else acc ++# "            else false\n"
+    | Nil => ? acc = "" ?> "            false\n" |: acc ++# "            else false\n"
 
-let rec state_arms (rows : list xsd_regex.dfa_state) (function_name : string) (index : i32) (acc : string) : string =
-    match rows with
+:~ ^ state_arms (rows : list xsd_regex.dfa_state) (function_name : string) (index : i32) (acc : string) : string =
+    ?= rows ?|
     | row :: rest =>
-        inl keyword = if index = 0i32 then "        if" else "        elif"
-        inl arm =
+        := keyword = ? index = 0i32 ?> "        if" |: "        elif"
+        := arm =
             keyword ++# " state = " ++# int_text index ++# "i32 then\n" ++# range_tests row.moves function_name "if" ""
         state_arms rest function_name (index + 1i32) (acc ++# arm)
     | Nil => acc ++# "        else false\n"
 
-let rec accepting_states (rows : list xsd_regex.dfa_state) (index : i32) (acc : string) : string =
-    match rows with
+:~ ^ accepting_states (rows : list xsd_regex.dfa_state) (index : i32) (acc : string) : string =
+    ?= rows ?|
     | row :: rest =>
-        inl acc =
-            if row.accepting then (if acc = "" then "" else acc ++# " || ") ++# "state = " ++# int_text index ++# "i32"
-            else acc
+        := acc =
+            ? row.accepting ?> (? acc = "" ?> "" |: acc ++# " || ") ++# "state = " ++# int_text index ++# "i32"
+            |: acc
         accepting_states rest (index + 1i32) acc
-    | Nil => if acc = "" then "false" else acc
+    | Nil => ? acc = "" ?> "false" |: acc
 
-inl dfa_function_text (function_name : string) (rows : list xsd_regex.dfa_state) : string =
+:= dfa_function_text (function_name : string) (rows : list xsd_regex.dfa_state) : string =
     "let rec " ++# function_name ++# " (state : i32) (s : string) (i : i32) : bool =\n"
     ++# "    if i >= sm'.length s then " ++# accepting_states rows 0i32 "" ++# "\n"
     ++# "    else\n"
     ++# "        inl c = xml.code_point_at s i\n"
     ++# "        inl next = i + xml.code_point_width s i\n"
     ++# state_arms rows function_name 0i32 ""
-inl direct_coded_state_limit () : i32 = 128i32
+:= direct_coded_state_limit () : i32 = 128i32
 
-inl direct_coded_dfa (p : string) : option (list xsd_regex.dfa_state) =
+:= direct_coded_dfa (p : string) : option (list xsd_regex.dfa_state) =
     xsd_regex.dfa_of_pattern_within (direct_coded_state_limit ()) p
 
-let rec fnv_from (s : string) (i : i32) (h : u64) : u64 =
-    if i >= sm'.length s then h
-    else
+:~ ^ fnv_from (s : string) (i : i32) (h : u64) : u64 =
+    ? i >= sm'.length s ?> h
+    |:
         fnv_from s
             (i + xml.code_point_width s i)
             (((h ^^^ (conv (xml.code_point_at s i) : u64)) * 16777619u64) &&& 4294967295u64)
 
-let rec hex_text (n : u64) (digits : i32) (acc : string) : string =
-    if digits <= 0i32 then acc
-    else
+:~ ^ hex_text (n : u64) (digits : i32) (acc : string) : string =
+    ? digits <= 0i32 ?> acc
+    |:
         hex_text (n >>> 4i32) (digits - 1i32) (sm'.substring (conv (n &&& 15u64) : i32) 1i32 "0123456789abcdef" ++# acc)
 
-inl pattern_function_name (p : string) : string =
+:= pattern_function_name (p : string) : string =
     "xsd_pattern_" ++# hex_text (fnv_from p 0i32 2166136261u64) 8i32 "" ++# "_" ++# int_text (sm'.length p)
 
-type emitted = { name : string; references : list string; text : string; enumeration_key : string }
+:== emitted = { name : string; references : list string; text : string; enumeration_key : string }
 
-type pattern_code = { functions : list emitted; checks : list string; references : list string }
+:== pattern_code = { functions : list emitted; checks : list string; references : list string }
 
-inl emit_enumeration (name : string) (values : list string) : emitted =
-    if count_list values > union_value_limit () then
-        inl table = xsd_regex.dfa_table_text (xsd_regex.dfa_of_values values)
+:= emit_enumeration (name : string) (values : list string) : emitted =
+    ? count_list values > union_value_limit () ?>
+        := table = xsd_regex.dfa_table_text (xsd_regex.dfa_of_values values)
         {
             name = type_name name
             references = Nil
             text = coded_text name table values
             enumeration_key = "dfa\n" ++# table
         }
-    else
-        inl values = distinct_values values Nil Nil
+    |:
+        := values = distinct_values values Nil Nil
         {
             name = type_name name
             references = Nil
@@ -349,13 +349,13 @@ inl emit_enumeration (name : string) (values : list string) : emitted =
             enumeration_key = "union\n" ++# join_lines values ""
         }
 
-let rec pattern_checks (facets : list xsd_facet) (acc : pattern_code) : pattern_code =
-    match facets with
+:~ ^ pattern_checks (facets : list xsd_facet) (acc : pattern_code) : pattern_code =
+    ?= facets ?|
     | Pattern p :: rest =>
-        match direct_coded_dfa p with
+        ?= direct_coded_dfa p ?|
         | Some rows =>
-            inl function_name = pattern_function_name p
-            inl state_function =
+            := function_name = pattern_function_name p
+            := state_function =
                 {
                     name = function_name
                     references = Nil
@@ -368,43 +368,43 @@ let rec pattern_checks (facets : list xsd_facet) (acc : pattern_code) : pattern_
                 references = (function_name :: acc.references)
             }
         | None =>
-            match xsd_regex.dfa_of_pattern p with
+            ?= xsd_regex.dfa_of_pattern p ?|
             | Some rows =>
-                inl table_name = pattern_function_name p ++# "_table"
-                inl table_text =
+                := table_name = pattern_function_name p ++# "_table"
+                := table_text =
                     "inl "
                     ++# table_name
                     ++# " () : string = \""
                     ++# (escape_text (xsd_regex.dfa_table_text rows) |> sm'.replace "\n" "\\n")
                     ++# "\"\n"
-                inl table_function = { name = table_name; references = Nil; text = table_text; enumeration_key = "" }
+                := table_function = { name = table_name; references = Nil; text = table_text; enumeration_key = "" }
                 pattern_checks rest {
                     functions = (table_function :: acc.functions)
                     checks = (("xsd_regex.table_matches (" ++# table_name ++# " ()) s") :: acc.checks)
                     references = (table_name :: acc.references)
                 }
             | None =>
-                pattern_checks rest { acc with
+                pattern_checks rest { acc ?|
                     checks = (("xsd_regex.pattern_matches \"" ++# escape_text p ++# "\" s") :: acc.checks)
                 }
     | _ :: rest => pattern_checks rest acc
-    | Nil => { acc with checks = reverse acc.checks Nil }
+    | Nil => { acc ?| checks = reverse acc.checks Nil }
 
-let rec length_checks (facets : list xsd_facet) (acc : list string) : list string =
-    match facets with
+:~ ^ length_checks (facets : list xsd_facet) (acc : list string) : list string =
+    ?= facets ?|
     | Length n :: rest => length_checks rest ("xml.code_point_count s = " ++# int_text n :: acc)
     | MinLength n :: rest => length_checks rest ("xml.code_point_count s >= " ++# int_text n :: acc)
     | MaxLength n :: rest => length_checks rest ("xml.code_point_count s <= " ++# int_text n :: acc)
     | _ :: rest => length_checks rest acc
     | Nil => reverse acc Nil
 
-inl validator_text (name : string) (code : pattern_code) (facets : list xsd_facet) : string =
-    inl pattern_part =
-        match code.checks with
+:= validator_text (name : string) (code : pattern_code) (facets : list xsd_facet) : string =
+    := pattern_part =
+        ?= code.checks ?|
         | Nil => "true"
         | patterns => "(" ++# join_with " || " patterns "" ++# ")"
-    inl length_part =
-        match length_checks facets Nil with
+    := length_part =
+        ?= length_checks facets Nil ?|
         | Nil => "true"
         | lengths => join_with " && " lengths ""
     "inl "
@@ -415,135 +415,135 @@ inl validator_text (name : string) (code : pattern_code) (facets : list xsd_face
     ++# length_part
     ++# "\n"
 
-type collected = { fields : list string; references : list string; extra : list emitted }
+:== collected = { fields : list string; references : list string; extra : list emitted }
 
-inl is_builtin_reference (reference : string) : bool = reference = "" || xsd_resolve.is_builtin reference
+:= is_builtin_reference (reference : string) : bool = reference = "" || xsd_resolve.is_builtin reference
 
-inl reference_type (reference : string) : string =
-    if is_builtin_reference reference then "string" else type_name (xml.local_name reference)
+:= reference_type (reference : string) : string =
+    ? is_builtin_reference reference ?> "string" |: type_name (xml.local_name reference)
 
-inl reference_dependency (reference : string) : list string =
-    if is_builtin_reference reference then Nil else type_name (xml.local_name reference) :: Nil
+:= reference_dependency (reference : string) : list string =
+    ? is_builtin_reference reference ?> Nil |: type_name (xml.local_name reference) :: Nil
 
-inl with_occurs (min : i32) (max : i32) (t : string) : string =
-    if max = 1i32 then (if min = 0i32 then "option (" ++# t ++# ")" else t) else "list (" ++# t ++# ")"
+:= with_occurs (min : i32) (max : i32) (t : string) : string =
+    ? max = 1i32 ?> (? min = 0i32 ?> "option (" ++# t ++# ")" |: t) |: "list (" ++# t ++# ")"
 
-inl field_line (name : string) (t : string) : string = "        " ++# field_name name ++# " : " ++# t
+:= field_line (name : string) (t : string) : string = "        " ++# field_name name ++# " : " ++# t
 
-inl line_width () : i32 = 120i32
+:= line_width () : i32 = 120i32
 
-inl field_assignment (field : string) (expression : string) : string =
-    inl one_line = "        " ++# field ++# " = " ++# expression
-    if sm'.length one_line <= line_width () then one_line
-    else "        " ++# field ++# " =\n            " ++# expression
+:= field_assignment (field : string) (expression : string) : string =
+    := one_line = "        " ++# field ++# " = " ++# expression
+    ? sm'.length one_line <= line_width () ?> one_line
+    |: "        " ++# field ++# " =\n            " ++# expression
 
-inl fitted_definition (head : string) (body : string) : string =
-    inl one_line = head ++# " " ++# body
-    if sm'.length one_line <= line_width () then one_line ++# "\n" else head ++# "\n    " ++# body ++# "\n"
+:= fitted_definition (head : string) (body : string) : string =
+    := one_line = head ++# " " ++# body
+    ? sm'.length one_line <= line_width () ?> one_line ++# "\n" |: head ++# "\n    " ++# body ++# "\n"
 
-inl fitted_header (name : string) (parameters : string) (result : string) : string =
-    inl one_line = name ++# " " ++# parameters ++# " : " ++# result ++# " ="
-    if sm'.length one_line <= line_width () then one_line ++# "\n"
-    else name ++# "\n    " ++# parameters ++# "\n    : " ++# result ++# "\n    =\n"
+:= fitted_header (name : string) (parameters : string) (result : string) : string =
+    := one_line = name ++# " " ++# parameters ++# " : " ++# result ++# " ="
+    ? sm'.length one_line <= line_width () ?> one_line ++# "\n"
+    |: name ++# "\n    " ++# parameters ++# "\n    : " ++# result ++# "\n    =\n"
 
-let rec patterns_accept (facets : list xsd_facet) (s : string) (matched : bool) (none_seen : bool) : bool =
-    match facets with
-    | Pattern p :: rest => patterns_accept rest s (matched || xsd_regex.pattern_matches p s) false
+:~ ^ patterns_accept (facets : list xsd_facet) (s : string) (matched : bool) (none_seen : bool) : bool =
+    ?= facets ?|
+    | Pattern p :: rest => patterns_accept rest s (matched || xsd_regex.pattern_matches p s) !-
     | _ :: rest => patterns_accept rest s matched none_seen
     | Nil => matched || none_seen
 
-let rec lengths_accept (facets : list xsd_facet) (s : string) : bool =
-    match facets with
+:~ ^ lengths_accept (facets : list xsd_facet) (s : string) : bool =
+    ?= facets ?|
     | Length n :: rest => xml.code_point_count s = n && lengths_accept rest s
     | MinLength n :: rest => xml.code_point_count s >= n && lengths_accept rest s
     | MaxLength n :: rest => xml.code_point_count s <= n && lengths_accept rest s
     | _ :: rest => lengths_accept rest s
-    | Nil => true
+    | Nil => !+
 
-let rec first_pattern (facets : list xsd_facet) : option string =
-    match facets with
+:~ ^ first_pattern (facets : list xsd_facet) : option string =
+    ?= facets ?|
     | Pattern p :: _ => Some p
     | _ :: rest => first_pattern rest
     | Nil => None
 
-let rec has_length_facet (facets : list xsd_facet) : bool =
-    match facets with
-    | Length _ :: _ => true
-    | MinLength _ :: _ => true
-    | MaxLength _ :: _ => true
+:~ ^ has_length_facet (facets : list xsd_facet) : bool =
+    ?= facets ?|
+    | Length _ :: _ => !+
+    | MinLength _ :: _ => !+
+    | MaxLength _ :: _ => !+
     | _ :: rest => has_length_facet rest
-    | Nil => false
-let rec min_length (facets : list xsd_facet) : i32 =
-    match facets with
+    | Nil => !-
+:~ ^ min_length (facets : list xsd_facet) : i32 =
+    ?= facets ?|
     | Length n :: _ => n
     | MinLength n :: _ => n
     | _ :: rest => min_length rest
     | Nil => 1i32
 
-let rec example_search (facets : list xsd_facet) (r : xsd_regex.rx) (stars : i32) : string =
-    if stars > 64i32 then xsd_regex.example_with 1i32 r
-    else
-        inl candidate = xsd_regex.example_with stars r
-        if patterns_accept facets candidate false true && lengths_accept facets candidate then candidate
-        else example_search facets r (stars + 1i32)
+:~ ^ example_search (facets : list xsd_facet) (r : xsd_regex.rx) (stars : i32) : string =
+    ? stars > 64i32 ?> xsd_regex.example_with 1i32 r
+    |:
+        := candidate = xsd_regex.example_with stars r
+        ? patterns_accept facets candidate !- !+ && lengths_accept facets candidate ?> candidate
+        |: example_search facets r (stars + 1i32)
 
-inl builtin_example (reference : string) : string =
-    inl local = xml.local_name reference
-    if local = "base64Binary" then "AAAA"
-    elif local = "anyURI" then "http://example.com"
-    elif local = "ID" then "ID1"
-    elif local = "dateTime" then "2026-01-01T00:00:00"
-    elif local = "date" then "2026-01-01"
-    elif local = "boolean" then "true"
-    else "1"
+:= builtin_example (reference : string) : string =
+    := local = xml.local_name reference
+    ? local = "base64Binary" ?> "AAAA"
+    |? local = "anyURI" ?> "http://example.com"
+    |? local = "ID" ?> "ID1"
+    |? local = "dateTime" ?> "2026-01-01T00:00:00"
+    |? local = "date" ?> "2026-01-01"
+    |? local = "boolean" ?> "true"
+    |: "1"
 
-inl simple_example (base : string) (facets : list xsd_facet) : string =
-    match first_pattern facets with
+:= simple_example (base : string) (facets : list xsd_facet) : string =
+    ?= first_pattern facets ?|
     | Some p =>
-        match xsd_regex.compile_pattern p with
+        ?= xsd_regex.compile_pattern p ?|
         | Some r => example_search facets r 0i32
         | None => "1"
     | None =>
-        if is_builtin_reference base then
-            inl text = builtin_example base
-            if xml.code_point_count text >= min_length facets then text else xsd_regex.repeated "1" (min_length facets)
-        else xsd_regex.repeated "1" (if min_length facets < 1i32 then 1i32 else min_length facets)
+        ? is_builtin_reference base ?>
+            := text = builtin_example base
+            ? xml.code_point_count text >= min_length facets ?> text |: xsd_regex.repeated "1" (min_length facets)
+        |: xsd_regex.repeated "1" (? min_length facets < 1i32 ?> 1i32 |: min_length facets)
 
-let rec first_element_name (items : list xsd) : string =
-    match items with
+:~ ^ first_element_name (items : list xsd) : string =
+    ?= items ?|
     | Element (name, _, _, _, _) :: _ => name
     | Sequence (_, _, inner) :: rest => first_in_group inner rest
     | Choice (_, _, inner) :: rest => first_in_group inner rest
     | _ :: rest => first_element_name rest
     | Nil => "empty"
 
-and let first_in_group (inner : list xsd) (rest : list xsd) : string =
-    match inner with
+:& :~ first_in_group (inner : list xsd) (rest : list xsd) : string =
+    ?= inner ?|
     | Nil => first_element_name rest
     | _ => first_element_name inner
 
-let rec emit_named (name : string) (item : xsd) : list emitted =
-    match item with
+:~ ^ emit_named (name : string) (item : xsd) : list emitted =
+    ?= item ?|
     | Simple (_, base, facets) =>
-        match enumeration_values facets Nil with
+        ?= enumeration_values facets Nil ?|
         | Nil =>
-            inl ty = type_name name
-            inl inherits =
-                is_builtin_reference base = false
-                && (match first_pattern facets with Some _ => false | None => true)
-                && has_length_facet facets = false
-            inl example =
-                if inherits
-                then "inl " ++# ty ++# "_example (k : i32) : string = " ++# reference_type base ++# "_example_text k\n"
-                else
+            := ty = type_name name
+            := inherits =
+                is_builtin_reference base = !-
+                && (?= first_pattern facets ?| Some _ => !- | None => !+)
+                && has_length_facet facets = !-
+            := example =
+                ? inherits
+                ?> "inl " ++# ty ++# "_example (k : i32) : string = " ++# reference_type base ++# "_example_text k\n"
+                |:
                     "inl "
                     ++# ty
                     ++# "_example (_ : i32) : string = \""
                     ++# escape_text (simple_example base facets)
                     ++# "\"\n"
-            inl example_text = "\ninl " ++# ty ++# "_example_text (k : i32) : string = " ++# ty ++# "_example k\n"
-            inl code = pattern_checks facets { functions = Nil; checks = Nil; references = Nil }
-            inl references = listm.append (if inherits then reference_dependency base else Nil) code.references
+            := example_text = "\ninl " ++# ty ++# "_example_text (k : i32) : string = " ++# ty ++# "_example k\n"
+            := code = pattern_checks facets { functions = Nil; checks = Nil; references = Nil }
+            := references = listm.append (? inherits ?> reference_dependency base |: Nil) code.references
             {
                 name = ty
                 references = references
@@ -565,30 +565,30 @@ let rec emit_named (name : string) (item : xsd) : list emitted =
     | Sequence _ => emit_record name item Nil Nil Nil
     | _ => Nil
 
-and let emit_record
+:& :~ emit_record
     (name : string) (content : xsd) (attributes : list xsd) (prefix_fields : list string)
     (prefix_references : list string)
     : list emitted
     =
-    inl (gathered : collected) =
+    := (gathered : collected) =
         collect_attributes name attributes (
             collect_content name content { fields = Nil; references = Nil; extra = Nil }
         )
-    inl fields = listm.append prefix_fields (reverse gathered.fields Nil)
-    inl ty = type_name name
-    inl text =
-        match fields with
+    := fields = listm.append prefix_fields (reverse gathered.fields Nil)
+    := ty = type_name name
+    := text =
+        ?= fields ?|
         | Nil => "type " ++# ty ++# " = ()\n"
         | _ => "type " ++# ty ++# " =\n    {\n" ++# join_lines fields "" ++# "    }\n"
     { name = ty; references = listm.append prefix_references gathered.references; text = text; enumeration_key = "" }
     :: gathered.extra
 
-and let collect_content (owner : string) (item : xsd) (acc : collected) : collected =
-    match item with
+:& :~ collect_content (owner : string) (item : xsd) (acc : collected) : collected =
+    ?= item ?|
     | Sequence (_, _, items) => collect_items owner items acc
     | Choice (min, max, items) =>
-        inl choice_name = owner ++# "_choice_" ++# first_element_name items
-        inl union_emitted = emit_choice choice_name items
+        := choice_name = owner ++# "_choice_" ++# first_element_name items
+        := union_emitted = emit_choice choice_name items
         {
             fields =
                 field_line ("choice_" ++# first_element_name items) (with_occurs min max (type_name choice_name))
@@ -597,9 +597,9 @@ and let collect_content (owner : string) (item : xsd) (acc : collected) : collec
             extra = listm.append union_emitted acc.extra
         }
     | Element (name, type_reference, min, max, inline) =>
-        match inline with
+        ?= inline ?|
         | Some inner =>
-            inl inner_name = owner ++# "_" ++# name
+            := inner_name = owner ++# "_" ++# name
             {
                 fields = field_line name (with_occurs min max (type_name inner_name)) :: acc.fields
                 references = type_name inner_name :: acc.references
@@ -619,24 +619,24 @@ and let collect_content (owner : string) (item : xsd) (acc : collected) : collec
         }
     | _ => acc
 
-and let collect_items (owner : string) (items : list xsd) (acc : collected) : collected =
-    match items with
+:& :~ collect_items (owner : string) (items : list xsd) (acc : collected) : collected =
+    ?= items ?|
     | item :: rest => collect_items owner rest (collect_content owner item acc)
     | Nil => acc
 
-and let emit_choice (choice_name : string) (items : list xsd) : list emitted =
-    inl (cases : collected) = choice_cases choice_name items { fields = Nil; references = Nil; extra = Nil }
-    inl ty = type_name choice_name
-    inl text = join_lines ("union " ++# ty ++# " =" :: reverse cases.fields Nil) ""
+:& :~ emit_choice (choice_name : string) (items : list xsd) : list emitted =
+    := (cases : collected) = choice_cases choice_name items { fields = Nil; references = Nil; extra = Nil }
+    := ty = type_name choice_name
+    := text = join_lines ("union " ++# ty ++# " =" :: reverse cases.fields Nil) ""
     { name = ty; references = cases.references; text = text; enumeration_key = "" } :: cases.extra
 
-and let choice_cases (choice_name : string) (items : list xsd) (acc : collected) : collected =
-    match items with
+:& :~ choice_cases (choice_name : string) (items : list xsd) (acc : collected) : collected =
+    ?= items ?|
     | Element (name, type_reference, min, max, inline) :: rest =>
-        inl case_label = "    | " ++# case_name choice_name name ++# " : "
-        match inline with
+        := case_label = "    | " ++# case_name choice_name name ++# " : "
+        ?= inline ?|
         | Some inner =>
-            inl inner_name = choice_name ++# "_" ++# name
+            := inner_name = choice_name ++# "_" ++# name
             choice_cases choice_name rest
                 {
                     fields = case_label ++# with_occurs min max (type_name inner_name) :: acc.fields
@@ -651,7 +651,7 @@ and let choice_cases (choice_name : string) (items : list xsd) (acc : collected)
                     extra = acc.extra
                 }
     | Sequence (group_min, group_max, group_items) :: rest =>
-        inl group_name = choice_name ++# "_group_" ++# first_element_name group_items
+        := group_name = choice_name ++# "_group_" ++# first_element_name group_items
         choice_cases choice_name rest {
             fields =
                 "    | "
@@ -665,105 +665,105 @@ and let choice_cases (choice_name : string) (items : list xsd) (acc : collected)
     | _ :: rest => choice_cases choice_name rest acc
     | Nil => acc
 
-and let collect_attributes (owner : string) (attributes : list xsd) (acc : collected) : collected =
-    match attributes with
+:& :~ collect_attributes (owner : string) (attributes : list xsd) (acc : collected) : collected =
+    ?= attributes ?|
     | Attribute (name, type_reference, required, _, inline) :: rest =>
-        inl inner_name = owner ++# "_" ++# name
-        inl t = match inline with Some _ => type_name inner_name | None => reference_type type_reference
-        inl references =
-            match inline with
+        := inner_name = owner ++# "_" ++# name
+        := t = ?= inline ?| Some _ => type_name inner_name | None => reference_type type_reference
+        := references =
+            ?= inline ?|
             | Some _ => type_name inner_name :: Nil
             | None => reference_dependency type_reference
-        inl extra = match inline with Some inner => emit_named inner_name inner | None => Nil
+        := extra = ?= inline ?| Some inner => emit_named inner_name inner | None => Nil
         collect_attributes owner rest
             {
-                fields = field_line name (if required then t else "option (" ++# t ++# ")") :: acc.fields
+                fields = field_line name (? required ?> t |: "option (" ++# t ++# ")") :: acc.fields
                 references = listm.append references acc.references
                 extra = listm.append extra acc.extra
             }
     | _ :: rest => collect_attributes owner rest acc
     | Nil => acc
 
-inl emit_item (item : xsd) : list emitted =
-    match item with
+:= emit_item (item : xsd) : list emitted =
+    ?= item ?|
     | Simple (name, _, _) => emit_named name item
     | Complex (name, _, _) => emit_named name item
     | Derived (name, _, _, _) => emit_named name item
     | Element (name, _, _, _, Some inner) => emit_named name inner
     | _ => Nil
 
-let rec emit_types (types : list xsd) (acc : list emitted) : list emitted =
-    match types with
+:~ ^ emit_types (types : list xsd) (acc : list emitted) : list emitted =
+    ?= types ?|
     | item :: rest => emit_types rest (listm.append (emit_item item) acc)
     | Nil => acc
 
-let rec emitted_names (items : list emitted) (acc : list string) : list string =
-    match items with
+:~ ^ emitted_names (items : list emitted) (acc : list string) : list string =
+    ?= items ?|
     | item :: rest => emitted_names rest (item.name :: acc)
     | Nil => acc
 
-let rec unique_emitted (items : list emitted) (seen : list string) (acc : list emitted) : list emitted =
-    match items with
+:~ ^ unique_emitted (items : list emitted) (seen : list string) (acc : list emitted) : list emitted =
+    ?= items ?|
     | item :: rest =>
-        if has_name item.name seen then unique_emitted rest seen acc
-        else unique_emitted rest (item.name :: seen) (item :: acc)
+        ? has_name item.name seen ?> unique_emitted rest seen acc
+        |: unique_emitted rest (item.name :: seen) (item :: acc)
     | Nil => reverse acc Nil
 
-let rec references_ready (references : list string) (done_names : list string) : bool =
-    match references with
+:~ ^ references_ready (references : list string) (done_names : list string) : bool =
+    ?= references ?|
     | reference :: rest => has_name reference done_names && references_ready rest done_names
-    | Nil => true
+    | Nil => !+
 
-let rec known_references (references : list string) (known : list string) (acc : list string) : list string =
-    match references with
-    | reference :: rest => known_references rest known (if has_name reference known then (reference :: acc) else acc)
+:~ ^ known_references (references : list string) (known : list string) (acc : list string) : list string =
+    ?= references ?|
+    | reference :: rest => known_references rest known (? has_name reference known ?> (reference :: acc) |: acc)
     | Nil => reverse acc Nil
 
-let rec with_known_references (items : list emitted) (known : list string) (acc : list emitted) : list emitted =
-    match items with
+:~ ^ with_known_references (items : list emitted) (known : list string) (acc : list emitted) : list emitted =
+    ?= items ?|
     | item :: rest =>
-        with_known_references rest known ({ item with references = known_references item.references known Nil } :: acc)
+        with_known_references rest known ({ item ?| references = known_references item.references known Nil } :: acc)
     | Nil => reverse acc Nil
 
-let rec order_pass
+:~ ^ order_pass
     (pending : list emitted) (known : list string) (done_names : list string) (ordered : list emitted)
     (deferred : list emitted)
     : list string * list emitted * list emitted
     =
-    match pending with
+    ?= pending ?|
     | item :: rest =>
-        if references_ready item.references done_names
-        then order_pass rest known (item.name :: done_names) (item :: ordered) deferred
-        else order_pass rest known done_names ordered (item :: deferred)
+        ? references_ready item.references done_names
+        ?> order_pass rest known (item.name :: done_names) (item :: ordered) deferred
+        |: order_pass rest known done_names ordered (item :: deferred)
     | Nil => done_names, ordered, reverse deferred Nil
 
-let rec order_emitted
+:~ ^ order_emitted
     (pending : list emitted) (known : list string) (done_names : list string) (ordered : list emitted)
     : list emitted
     =
-    match pending with
+    ?= pending ?|
     | Nil => reverse ordered Nil
     | _ =>
-        inl done_names', ordered', deferred = order_pass pending known done_names ordered Nil
-        if count_list deferred = count_list pending then listm.append (reverse ordered' Nil) deferred
-        else order_emitted deferred known done_names' ordered'
+        := done_names', ordered', deferred = order_pass pending known done_names ordered Nil
+        ? count_list deferred = count_list pending ?> listm.append (reverse ordered' Nil) deferred
+        |: order_emitted deferred known done_names' ordered'
 
-let rec item_texts (items : list emitted) (acc : list string) : list string =
-    match items with
+:~ ^ item_texts (items : list emitted) (acc : list string) : list string =
+    ?= items ?|
     | item :: rest => item_texts rest (item.text ++# "\n" :: acc)
     | Nil => reverse acc Nil
 
-inl texts_of (items : list emitted) : string = sm'.concat_balanced "" (item_texts items Nil)
+:= texts_of (items : list emitted) : string = sm'.concat_balanced "" (item_texts items Nil)
 
-let rec root_element (target : string) (roots : list xsd) : option xsd =
-    match roots with
+:~ ^ root_element (target : string) (roots : list xsd) : option xsd =
+    ?= roots ?|
     | Element (name, root_type, min, max, inline) :: rest =>
-        if name = target then Some (Element (name, root_type, min, max, inline)) else root_element target rest
+        ? name = target ?> Some (Element (name, root_type, min, max, inline)) |: root_element target rest
     | _ :: rest => root_element target rest
     | Nil => None
 
-let rec dereference (roots : list xsd) (item : xsd) : xsd =
-    match item with
+:~ ^ dereference (roots : list xsd) (item : xsd) : xsd =
+    ?= item ?|
     | Element (name, type_reference, min, max, inline) => dereference_element roots name type_reference min max inline
     | Complex (name, content, attributes) => Complex (name, dereference roots content, attributes)
     | Derived (name, base, content, attributes) => Derived (name, base, dereference roots content, attributes)
@@ -771,45 +771,45 @@ let rec dereference (roots : list xsd) (item : xsd) : xsd =
     | Choice (min, max, items) => Choice (min, max, dereference_items roots items Nil)
     | _ => item
 
-and let dereference_element
+:& :~ dereference_element
     (roots : list xsd) (name : string) (type_reference : string) (min : i32) (max : i32) (inline : option xsd)
     : xsd
     =
-    match inline with
+    ?= inline ?|
     | Some inner => Element (name, type_reference, min, max, Some (dereference roots inner))
     | None =>
-        if type_reference <> "" then Element (name, type_reference, min, max, None)
-        else
-            match root_element (xml.local_name name) roots with
+        ? type_reference <> "" ?> Element (name, type_reference, min, max, None)
+        |:
+            ?= root_element (xml.local_name name) roots ?|
             | Some (Element (root_name, root_type, _, _, root_inline)) =>
                 Element (root_name, root_type, min, max, root_inline)
             | _ => Element (name, type_reference, min, max, None)
 
-and let dereference_items (roots : list xsd) (items : list xsd) (acc : list xsd) : list xsd =
-    match items with
+:& :~ dereference_items (roots : list xsd) (items : list xsd) (acc : list xsd) : list xsd =
+    ?= items ?|
     | item :: rest => dereference_items roots rest (dereference roots item :: acc)
     | Nil => reverse acc Nil
 
-let rec first_with_key (key : string) (items : list emitted) : option string =
-    match items with
-    | item :: rest => if item.enumeration_key = key then Some item.name else first_with_key key rest
+:~ ^ first_with_key (key : string) (items : list emitted) : option string =
+    ?= items ?|
+    | item :: rest => ? item.enumeration_key = key ?> Some item.name |: first_with_key key rest
     | Nil => None
 
-inl shared_union_text (name : string) (first : string) : string =
+:= shared_union_text (name : string) (first : string) : string =
     "type " ++# name ++# " = " ++# first ++# "\n\n"
     ++# "inl " ++# name ++# "_of_string (s : string) : option " ++# name ++# " = " ++# first ++# "_of_string s\n\n"
     ++# "inl " ++# name ++# "_to_string (x : " ++# name ++# ") : string = " ++# first ++# "_to_string x\n\n"
     ++# "inl " ++# name ++# "_example (k : i32) : " ++# name ++# " = " ++# first ++# "_example k\n\n"
     ++# "inl " ++# name ++# "_example_text (k : i32) : string = " ++# first ++# "_example_text k\n"
 
-let rec share_unions (items : list emitted) (kept : list emitted) (acc : list emitted) : list emitted =
-    match items with
+:~ ^ share_unions (items : list emitted) (kept : list emitted) (acc : list emitted) : list emitted =
+    ?= items ?|
     | item :: rest =>
-        if item.enumeration_key = "" then share_unions rest kept (item :: acc)
-        else
-            match first_with_key item.enumeration_key kept with
+        ? item.enumeration_key = "" ?> share_unions rest kept (item :: acc)
+        |:
+            ?= first_with_key item.enumeration_key kept ?|
             | Some first =>
-                inl shared =
+                := shared =
                     {
                         name = item.name
                         references = (first :: Nil)
@@ -820,136 +820,136 @@ let rec share_unions (items : list emitted) (kept : list emitted) (acc : list em
             | None => share_unions rest (item :: kept) (item :: acc)
     | Nil => reverse acc Nil
 
-union type_kind =
+:| type_kind =
     | KindText
     | KindEnum
     | KindRecord
 
-inl simple_kind (facets : list xsd_facet) : type_kind =
-    match enumeration_values facets Nil with
+:= simple_kind (facets : list xsd_facet) : type_kind =
+    ?= enumeration_values facets Nil ?|
     | Nil => KindText
     | _ => KindEnum
 
-let rec kinds_of (types : list xsd) (acc : list (string * type_kind)) : list (string * type_kind) =
-    match types with
+:~ ^ kinds_of (types : list xsd) (acc : list (string * type_kind)) : list (string * type_kind) =
+    ?= types ?|
     | Simple (name, _, facets) :: rest => kinds_of rest ((type_name name, simple_kind facets) :: acc)
     | Complex (name, _, _) :: rest => kinds_of rest ((type_name name, KindRecord) :: acc)
     | Derived (name, _, _, _) :: rest => kinds_of rest ((type_name name, KindRecord) :: acc)
     | _ :: rest => kinds_of rest acc
     | Nil => acc
 
-let rec kind_lookup (target : string) (kinds : list (string * type_kind)) : type_kind =
-    match kinds with
-    | (name, kind) :: rest => if name = target then kind else kind_lookup target rest
+:~ ^ kind_lookup (target : string) (kinds : list (string * type_kind)) : type_kind =
+    ?= kinds ?|
+    | (name, kind) :: rest => ? name = target ?> kind |: kind_lookup target rest
     | Nil => KindText
 
-inl reference_kind (reference : string) (kinds : list (string * type_kind)) : type_kind =
-    if is_builtin_reference reference then KindText else kind_lookup (type_name (xml.local_name reference)) kinds
+:= reference_kind (reference : string) (kinds : list (string * type_kind)) : type_kind =
+    ? is_builtin_reference reference ?> KindText |: kind_lookup (type_name (xml.local_name reference)) kinds
 
-inl inline_kind (inner : xsd) : type_kind =
-    match inner with
+:= inline_kind (inner : xsd) : type_kind =
+    ?= inner ?|
     | Simple (_, _, facets) => simple_kind facets
     | _ => KindRecord
 
-inl node_expression (kind : type_kind) (t : string) : string =
-    match kind with
+:= node_expression (kind : type_kind) (t : string) : string =
+    ?= kind ?|
     | KindText => "xml.text_in (xml.element_children c)"
     | KindEnum =>
         "xml.required_value \"" ++# t ++# "\" (" ++# t ++# "_of_string (xml.text_in (xml.element_children c)))"
     | KindRecord => t ++# "_of_xml c"
 
-inl occurs_expression (name : string) (min : i32) (max : i32) (body : string) : string =
-    inl lambda = "(fun c => " ++# body ++# ")"
-    if max = 1i32 then
-        if min = 0i32 then "optionm.map " ++# lambda ++# " (xml.first_child \"" ++# name ++# "\" children)"
-        else lambda ++# " (xml.required_child \"" ++# name ++# "\" children)"
-    else "listm.map " ++# lambda ++# " (xml.children_named \"" ++# name ++# "\" children)"
+:= occurs_expression (name : string) (min : i32) (max : i32) (body : string) : string =
+    := lambda = "(fun c => " ++# body ++# ")"
+    ? max = 1i32 ?>
+        ? min = 0i32 ?> "optionm.map " ++# lambda ++# " (xml.first_child \"" ++# name ++# "\" children)"
+        |: lambda ++# " (xml.required_child \"" ++# name ++# "\" children)"
+    |: "listm.map " ++# lambda ++# " (xml.children_named \"" ++# name ++# "\" children)"
 
-inl quoted_name (acc : string) (name : string) : string =
-    if acc = "" then "\"" ++# name ++# "\"" else acc ++# "; \"" ++# name ++# "\""
+:= quoted_name (acc : string) (name : string) : string =
+    ? acc = "" ?> "\"" ++# name ++# "\"" |: acc ++# "; \"" ++# name ++# "\""
 
-let rec choice_names (items : list xsd) (acc : string) : string =
-    match items with
+:~ ^ choice_names (items : list xsd) (acc : string) : string =
+    ?= items ?|
     | Element (name, _, _, _, _) :: rest => choice_names rest (quoted_name acc name)
     | Sequence (_, _, group_items) :: rest => choice_names rest (quoted_name acc (first_element_name group_items))
     | _ :: rest => choice_names rest acc
     | Nil => acc
 
-inl base_field (kinds : list (string * type_kind)) (base : string) : string =
-    inl t = reference_type base
-    match reference_kind base kinds with
+:= base_field (kinds : list (string * type_kind)) (base : string) : string =
+    := t = reference_type base
+    ?= reference_kind base kinds ?|
     | KindRecord => "        base = " ++# t ++# "_of_children attributes children"
     | KindEnum => "        base = xml.required_value \"" ++# t ++# "\" (" ++# t ++# "_of_string (xml.text_in children))"
     | KindText => "        base = xml.text_in children"
 
-type readers = { lines : list string; functions : list string }
+:== readers = { lines : list string; functions : list string }
 
-inl attribute_type
+:= attribute_type
     (kinds : list (string * type_kind)) (owner : string) (name : string) (type_reference : string) (inline : option xsd)
     : string * type_kind
     =
-    match inline with
+    ?= inline ?|
     | Some inner => type_name (owner ++# "_" ++# name), inline_kind inner
     | None => reference_type type_reference, reference_kind type_reference kinds
 
-let rec reader_named (kinds : list (string * type_kind)) (name : string) (item : xsd) : list string =
-    match item with
+:~ ^ reader_named (kinds : list (string * type_kind)) (name : string) (item : xsd) : list string =
+    ?= item ?|
     | Complex (_, content, attributes) => record_reader kinds name content attributes Nil
     | Derived (_, base, content, attributes) =>
         record_reader kinds name content attributes (base_field kinds base :: Nil)
     | Sequence _ => record_reader kinds name item Nil Nil
     | _ => Nil
 
-and let record_reader
+:& :~ record_reader
     (kinds : list (string * type_kind)) (name : string) (content : xsd) (attributes : list xsd)
     (prefix_lines : list string)
     : list string
     =
-    inl (gathered : readers) =
+    := (gathered : readers) =
         attribute_readers kinds name attributes (content_readers kinds name content { lines = Nil; functions = Nil })
-    inl ty = type_name name
-    inl lines = listm.append prefix_lines (reverse gathered.lines Nil)
-    inl body =
-        match lines with
+    := ty = type_name name
+    := lines = listm.append prefix_lines (reverse gathered.lines Nil)
+    := body =
+        ?= lines ?|
         | Nil => "    ()\n"
         | _ => "    {\n" ++# join_lines lines "" ++# "    }\n"
-    inl of_children =
+    := of_children =
         fitted_header
             ("and let " ++# ty ++# "_of_children")
             "(attributes : list (string * string)) (children : list xml.xml_node)"
             ty
         ++# body
-    inl of_xml =
+    := of_xml =
         fitted_definition
             ("and let " ++# ty ++# "_of_xml (c : xml.xml_node) : " ++# ty ++# " =")
             (ty ++# "_of_children (xml.element_attributes c) (xml.element_children c)")
     of_children :: of_xml :: gathered.functions
 
-and let content_readers (kinds : list (string * type_kind)) (owner : string) (item : xsd) (acc : readers) : readers =
-    match item with
+:& :~ content_readers (kinds : list (string * type_kind)) (owner : string) (item : xsd) (acc : readers) : readers =
+    ?= item ?|
     | Sequence (_, _, items) => items_readers kinds owner items acc
     | Choice (min, max, items) =>
-        inl choice_name = owner ++# "_choice_" ++# first_element_name items
-        inl ty = type_name choice_name
-        inl read = ty ++# "_of_children attributes children"
-        inl expression =
-            if max = 1i32 then
-                if min = 0i32 then
+        := choice_name = owner ++# "_choice_" ++# first_element_name items
+        := ty = type_name choice_name
+        := read = ty ++# "_of_children attributes children"
+        := expression =
+            ? max = 1i32 ?>
+                ? min = 0i32 ?>
                     "if xml.has_any_child ["
                     ++# choice_names items ""
                     ++# "] children then Some ("
                     ++# read
                     ++# ") else None"
-                else read
-            else "Cons (" ++# read ++# ", Nil)"
+                |: read
+            |: "Cons (" ++# read ++# ", Nil)"
         {
             lines = field_assignment (field_name ("choice_" ++# first_element_name items)) expression :: acc.lines
             functions = listm.append (choice_reader kinds choice_name items) acc.functions
         }
     | Element (name, type_reference, min, max, inline) =>
-        match inline with
+        ?= inline ?|
         | Some inner =>
-            inl inner_name = owner ++# "_" ++# name
+            := inner_name = owner ++# "_" ++# name
             {
                 lines =
                     field_assignment (field_name name) (occurs_expression name min max (
@@ -968,34 +968,34 @@ and let content_readers (kinds : list (string * type_kind)) (owner : string) (it
     | AnyContent => { lines = ("        any = Nil" :: acc.lines); functions = acc.functions }
     | _ => acc
 
-and let items_readers (kinds : list (string * type_kind)) (owner : string) (items : list xsd) (acc : readers) : readers =
-    match items with
+:& :~ items_readers (kinds : list (string * type_kind)) (owner : string) (items : list xsd) (acc : readers) : readers =
+    ?= items ?|
     | item :: rest => items_readers kinds owner rest (content_readers kinds owner item acc)
     | Nil => acc
 
-and let choice_reader (kinds : list (string * type_kind)) (choice_name : string) (items : list xsd) : list string =
-    inl (gathered : readers) = choice_arms kinds choice_name items { lines = Nil; functions = Nil }
-    inl ty = type_name choice_name
-    inl header =
+:& :~ choice_reader (kinds : list (string * type_kind)) (choice_name : string) (items : list xsd) : list string =
+    := (gathered : readers) = choice_arms kinds choice_name items { lines = Nil; functions = Nil }
+    := ty = type_name choice_name
+    := header =
         "and let "
         ++# ty
         ++# "_of_children (attributes : list (string * string)) (children : list xml.xml_node) : "
         ++# ty
         ++# " =\n    if false then failwith \"unreachable\"\n"
-    inl body =
+    := body =
         join_lines (reverse gathered.lines Nil) "" ++# "    else failwith \"" ++# ty ++# ": no alternative present\"\n"
     header ++# body :: gathered.functions
 
-and let choice_arms
+:& :~ choice_arms
     (kinds : list (string * type_kind)) (choice_name : string) (items : list xsd) (acc : readers)
     : readers
     =
-    match items with
+    ?= items ?|
     | Element (name, type_reference, min, max, inline) :: rest =>
-        inl arm = "    elif xml.has_child \"" ++# name ++# "\" children then " ++# case_name choice_name name ++# " ("
-        match inline with
+        := arm = "    elif xml.has_child \"" ++# name ++# "\" children then " ++# case_name choice_name name ++# " ("
+        ?= inline ?|
         | Some inner =>
-            inl inner_name = choice_name ++# "_" ++# name
+            := inner_name = choice_name ++# "_" ++# name
             choice_arms kinds choice_name rest {
                 lines =
                     arm
@@ -1016,9 +1016,9 @@ and let choice_arms
                 functions = acc.functions
             }
     | Sequence (group_min, group_max, group_items) :: rest =>
-        inl first = first_element_name group_items
-        inl group_name = choice_name ++# "_group_" ++# first
-        inl arm =
+        := first = first_element_name group_items
+        := group_name = choice_name ++# "_group_" ++# first
+        := arm =
             "    elif xml.has_child \""
             ++# first
             ++# "\" children then "
@@ -1036,17 +1036,17 @@ and let choice_arms
     | _ :: rest => choice_arms kinds choice_name rest acc
     | Nil => acc
 
-and let attribute_readers
+:& :~ attribute_readers
     (kinds : list (string * type_kind)) (owner : string) (attributes : list xsd) (acc : readers)
     : readers
     =
-    match attributes with
+    ?= attributes ?|
     | Attribute (name, type_reference, required, _, inline) :: rest =>
-        inl t, kind = attribute_type kinds owner name type_reference inline
-        inl expression =
-            match kind with
+        := t, kind = attribute_type kinds owner name type_reference inline
+        := expression =
+            ?= kind ?|
             | KindEnum =>
-                if required then
+                ? required ?>
                     "xml.required_value \""
                     ++# t
                     ++# "\" ("
@@ -1054,7 +1054,7 @@ and let attribute_readers
                     ++# "_of_string (xml.required_attribute \""
                     ++# name
                     ++# "\" attributes))"
-                else
+                |:
                     "optionm.map (fun v => xml.required_value \""
                     ++# t
                     ++# "\" ("
@@ -1063,8 +1063,8 @@ and let attribute_readers
                     ++# name
                     ++# "\" attributes)"
             | _ =>
-                if required then "xml.required_attribute \"" ++# name ++# "\" attributes"
-                else "xml.attribute_of \"" ++# name ++# "\" attributes"
+                ? required ?> "xml.required_attribute \"" ++# name ++# "\" attributes"
+                |: "xml.attribute_of \"" ++# name ++# "\" attributes"
         attribute_readers kinds owner rest {
             lines = (field_assignment (field_name name) expression :: acc.lines)
             functions = acc.functions
@@ -1072,112 +1072,112 @@ and let attribute_readers
     | _ :: rest => attribute_readers kinds owner rest acc
     | Nil => acc
 
-inl reader_item (kinds : list (string * type_kind)) (item : xsd) : list string =
-    match item with
+:= reader_item (kinds : list (string * type_kind)) (item : xsd) : list string =
+    ?= item ?|
     | Complex (name, _, _) => reader_named kinds name item
     | Derived (name, _, _, _) => reader_named kinds name item
     | Element (name, _, _, _, Some inner) => reader_named kinds name inner
     | _ => Nil
 
-let rec readers_of (kinds : list (string * type_kind)) (types : list xsd) (acc : list string) : list string =
-    match types with
+:~ ^ readers_of (kinds : list (string * type_kind)) (types : list xsd) (acc : list string) : list string =
+    ?= types ?|
     | item :: rest => readers_of kinds rest (listm.append (reader_item kinds item) acc)
     | Nil => acc
 
-inl value_node (kind : type_kind) (t : string) (name : string) (v : string) : string =
-    match kind with
+:= value_node (kind : type_kind) (t : string) (name : string) (v : string) : string =
+    ?= kind ?|
     | KindText => "xml.element \"" ++# name ++# "\" Nil (xml.text_children " ++# v ++# ")"
     | KindEnum => "xml.element \"" ++# name ++# "\" Nil (xml.text_children (" ++# t ++# "_to_string " ++# v ++# "))"
     | KindRecord => t ++# "_to_xml \"" ++# name ++# "\" " ++# v
 
-inl occurs_part (name : string) (min : i32) (max : i32) (kind : type_kind) (t : string) (source : string) : string =
-    if max = 1i32 then
-        if min = 0i32
-        then "xml.option_list (optionm.map (fun v => " ++# value_node kind t name "v" ++# ") " ++# source ++# ")"
-        else "Cons (" ++# value_node kind t name source ++# ", Nil)"
-    else "listm.map (fun v => " ++# value_node kind t name "v" ++# ") " ++# source
+:= occurs_part (name : string) (min : i32) (max : i32) (kind : type_kind) (t : string) (source : string) : string =
+    ? max = 1i32 ?>
+        ? min = 0i32
+        ?> "xml.option_list (optionm.map (fun v => " ++# value_node kind t name "v" ++# ") " ++# source ++# ")"
+        |: "Cons (" ++# value_node kind t name source ++# ", Nil)"
+    |: "listm.map (fun v => " ++# value_node kind t name "v" ++# ") " ++# source
 
-inl concat_parts (parts : list string) : string =
-    match parts with
+:= concat_parts (parts : list string) : string =
+    ?= parts ?|
     | Nil => "Nil"
     | only :: Nil => only
     | _ => "listm.concat [" ++# join_with "; " parts "" ++# "]"
 
-inl attribute_value_text (kind : type_kind) (t : string) (v : string) : string =
-    match kind with
+:= attribute_value_text (kind : type_kind) (t : string) (v : string) : string =
+    ?= kind ?|
     | KindEnum => t ++# "_to_string " ++# v
     | _ => v
 
-inl base_children (kinds : list (string * type_kind)) (base : string) : list string =
-    inl t = reference_type base
-    match reference_kind base kinds with
+:= base_children (kinds : list (string * type_kind)) (base : string) : list string =
+    := t = reference_type base
+    ?= reference_kind base kinds ?|
     | KindRecord => t ++# "_children x.base" :: Nil
     | KindEnum => "xml.text_children (" ++# t ++# "_to_string x.base)" :: Nil
     | KindText => "xml.text_children x.base" :: Nil
 
-inl base_attributes (kinds : list (string * type_kind)) (base : string) : list string =
-    match reference_kind base kinds with
+:= base_attributes (kinds : list (string * type_kind)) (base : string) : list string =
+    ?= reference_kind base kinds ?|
     | KindRecord => reference_type base ++# "_attributes x.base" :: Nil
     | _ => Nil
 
-type writers = { children : list string; attributes : list string; functions : list string }
+:== writers = { children : list string; attributes : list string; functions : list string }
 
-let rec writer_named (kinds : list (string * type_kind)) (name : string) (item : xsd) : list string =
-    match item with
+:~ ^ writer_named (kinds : list (string * type_kind)) (name : string) (item : xsd) : list string =
+    ?= item ?|
     | Complex (_, content, attributes) => record_writer kinds name content attributes Nil Nil
     | Derived (_, base, content, attributes) =>
         record_writer kinds name content attributes (base_children kinds base) (base_attributes kinds base)
     | Sequence _ => record_writer kinds name item Nil Nil Nil
     | _ => Nil
 
-and let record_writer
+:& :~ record_writer
     (kinds : list (string * type_kind)) (name : string) (content : xsd) (attributes : list xsd)
     (prefix_children : list string) (prefix_attributes : list string)
     : list string
     =
-    inl (gathered : writers) =
+    := (gathered : writers) =
         attribute_writers kinds name attributes (
             content_writers kinds name content { children = Nil; attributes = Nil; functions = Nil }
         )
-    inl ty = type_name name
-    inl children = listm.append prefix_children (reverse gathered.children Nil)
-    inl attribute_parts = listm.append prefix_attributes (reverse gathered.attributes Nil)
-    inl children_function =
+    := ty = type_name name
+    := children = listm.append prefix_children (reverse gathered.children Nil)
+    := attribute_parts = listm.append prefix_attributes (reverse gathered.attributes Nil)
+    := children_function =
         fitted_definition
             ("and let " ++# ty ++# "_children (x : " ++# ty ++# ") : list xml.xml_node =")
             (concat_parts children)
-    inl attributes_function =
+    := attributes_function =
         fitted_definition
             ("and let " ++# ty ++# "_attributes (x : " ++# ty ++# ") : list (string * string) =")
             (concat_parts attribute_parts)
-    inl to_xml =
+    := to_xml =
         fitted_definition
             ("and let " ++# ty ++# "_to_xml (name : string) (x : " ++# ty ++# ") : xml.xml_node =")
             ("xml.element name (" ++# ty ++# "_attributes x) (" ++# ty ++# "_children x)")
     children_function :: attributes_function :: to_xml :: gathered.functions
 
-and let content_writers (kinds : list (string * type_kind)) (owner : string) (item : xsd) (acc : writers) : writers =
-    match item with
+:& :~ content_writers (kinds : list (string * type_kind)) (owner : string) (item : xsd) (acc : writers) : writers =
+    ?= item ?|
     | Sequence (_, _, items) => items_writers kinds owner items acc
     | Choice (min, max, items) =>
-        inl choice_name = owner ++# "_choice_" ++# first_element_name items
-        inl ty = type_name choice_name
-        inl source = "x." ++# field_name ("choice_" ++# first_element_name items)
-        inl part =
-            if max = 1i32 then
-                if min = 0i32 then "xml.option_concat (optionm.map " ++# ty ++# "_children " ++# source ++# ")"
-                else ty ++# "_children " ++# source
-            else "listm.concat (listm.map " ++# ty ++# "_children " ++# source ++# ")"
+        := choice_name = owner ++# "_choice_" ++# first_element_name items
+        := ty = type_name choice_name
+        := source = "x." ++# field_name ("choice_" ++# first_element_name items)
+        := part =
+            ? max = 1i32 ?>
+                ? min = 0i32 ?> "xml.option_concat (optionm.map " ++# ty ++# "_children " ++# source ++# ")"
+                |: ty ++# "_children " ++# source
+            |: "listm.concat (listm.map " ++# ty ++# "_children " ++# source ++# ")"
         {
             children = (part :: acc.children)
             attributes = acc.attributes
             functions = listm.append (choice_writer kinds choice_name items) acc.functions
         }
     | Element (name, type_reference, min, max, inline) =>
-        inl source = "x." ++# field_name name
-        match inline with
+        := source = "x." ++# field_name name
+        ?= inline ?|
         | Some inner =>
-            inl inner_name = owner ++# "_" ++# name
+            := inner_name = owner ++# "_" ++# name
             {
                 children = occurs_part name min max (inline_kind inner) (type_name inner_name) source :: acc.children
                 attributes = acc.attributes
@@ -1197,28 +1197,28 @@ and let content_writers (kinds : list (string * type_kind)) (owner : string) (it
     | AnyContent => { children = ("x.any" :: acc.children); attributes = acc.attributes; functions = acc.functions }
     | _ => acc
 
-and let items_writers (kinds : list (string * type_kind)) (owner : string) (items : list xsd) (acc : writers) : writers =
-    match items with
+:& :~ items_writers (kinds : list (string * type_kind)) (owner : string) (items : list xsd) (acc : writers) : writers =
+    ?= items ?|
     | item :: rest => items_writers kinds owner rest (content_writers kinds owner item acc)
     | Nil => acc
 
-and let choice_writer (kinds : list (string * type_kind)) (choice_name : string) (items : list xsd) : list string =
-    inl (gathered : writers) =
+:& :~ choice_writer (kinds : list (string * type_kind)) (choice_name : string) (items : list xsd) : list string =
+    := (gathered : writers) =
         choice_writer_arms kinds choice_name items { children = Nil; attributes = Nil; functions = Nil }
-    inl ty = type_name choice_name
-    inl header = "and let " ++# ty ++# "_children (x : " ++# ty ++# ") : list xml.xml_node =\n    match x with\n"
+    := ty = type_name choice_name
+    := header = "and let " ++# ty ++# "_children (x : " ++# ty ++# ") : list xml.xml_node =\n    match x with\n"
     header ++# join_lines (reverse gathered.children Nil) "" :: gathered.functions
 
-and let choice_writer_arms
+:& :~ choice_writer_arms
     (kinds : list (string * type_kind)) (choice_name : string) (items : list xsd) (acc : writers)
     : writers
     =
-    match items with
+    ?= items ?|
     | Element (name, type_reference, min, max, inline) :: rest =>
-        inl arm = "    | " ++# case_name choice_name name ++# " v => "
-        match inline with
+        := arm = "    | " ++# case_name choice_name name ++# " v => "
+        ?= inline ?|
         | Some inner =>
-            inl inner_name = choice_name ++# "_" ++# name
+            := inner_name = choice_name ++# "_" ++# name
             choice_writer_arms kinds choice_name rest {
                 children =
                     arm ++# occurs_part name min max (inline_kind inner) (type_name inner_name) "v" :: acc.children
@@ -1238,9 +1238,9 @@ and let choice_writer_arms
                 functions = acc.functions
             }
     | Sequence (group_min, group_max, group_items) :: rest =>
-        inl first = first_element_name group_items
-        inl group_name = choice_name ++# "_group_" ++# first
-        inl arm =
+        := first = first_element_name group_items
+        := group_name = choice_name ++# "_group_" ++# first
+        := arm =
             "    | "
             ++# case_name choice_name ("group_" ++# first)
             ++# " v => "
@@ -1257,17 +1257,17 @@ and let choice_writer_arms
     | _ :: rest => choice_writer_arms kinds choice_name rest acc
     | Nil => acc
 
-and let attribute_writers
+:& :~ attribute_writers
     (kinds : list (string * type_kind)) (owner : string) (attributes : list xsd) (acc : writers)
     : writers
     =
-    match attributes with
+    ?= attributes ?|
     | Attribute (name, type_reference, required, _, inline) :: rest =>
-        inl t, kind = attribute_type kinds owner name type_reference inline
-        inl source = "x." ++# field_name name
-        inl part =
-            if required then "Cons ((\"" ++# name ++# "\", " ++# attribute_value_text kind t source ++# "), Nil)"
-            else
+        := t, kind = attribute_type kinds owner name type_reference inline
+        := source = "x." ++# field_name name
+        := part =
+            ? required ?> "Cons ((\"" ++# name ++# "\", " ++# attribute_value_text kind t source ++# "), Nil)"
+            |:
                 "xml.option_list (optionm.map (fun v => (\""
                 ++# name
                 ++# "\", "
@@ -1283,89 +1283,89 @@ and let attribute_writers
     | _ :: rest => attribute_writers kinds owner rest acc
     | Nil => acc
 
-inl writer_item (kinds : list (string * type_kind)) (item : xsd) : list string =
-    match item with
+:= writer_item (kinds : list (string * type_kind)) (item : xsd) : list string =
+    ?= item ?|
     | Complex (name, _, _) => writer_named kinds name item
     | Derived (name, _, _, _) => writer_named kinds name item
     | Element (name, _, _, _, Some inner) => writer_named kinds name inner
     | _ => Nil
 
-let rec writers_of (kinds : list (string * type_kind)) (types : list xsd) (acc : list string) : list string =
-    match types with
+:~ ^ writers_of (kinds : list (string * type_kind)) (types : list xsd) (acc : list string) : list string =
+    ?= types ?|
     | item :: rest => writers_of kinds rest (listm.append (writer_item kinds item) acc)
     | Nil => acc
 
-inl value_example (kind : type_kind) (t : string) (reference : string) (variant : string) : string =
-    match kind with
+:= value_example (kind : type_kind) (t : string) (reference : string) (variant : string) : string =
+    ?= kind ?|
     | KindText =>
-        if is_builtin_reference reference then "\"" ++# escape_text (builtin_example reference) ++# "\""
-        else t ++# "_example " ++# variant
+        ? is_builtin_reference reference ?> "\"" ++# escape_text (builtin_example reference) ++# "\""
+        |: t ++# "_example " ++# variant
     | _ => t ++# "_example " ++# variant
 
-let rec repeated_cons (value : string -> string) (index : i32) (count : i32) : string =
-    if index >= count then "Nil"
-    else
+:~ ^ repeated_cons (value : string -> string) (index : i32) (count : i32) : string =
+    ? index >= count ?> "Nil"
+    |:
         "Cons ("
         ++# value ("(k + " ++# int_text index ++# "i32)")
         ++# ", "
         ++# repeated_cons value (index + 1i32) count
         ++# ")"
 
-inl fixed_example (kind : type_kind) (t : string) (fixed : string) : string =
-    match kind with
+:= fixed_example (kind : type_kind) (t : string) (fixed : string) : string =
+    ?= kind ?|
     | KindEnum => "xml.required_value \"" ++# t ++# "\" (" ++# t ++# "_of_string \"" ++# escape_text fixed ++# "\")"
     | _ => "\"" ++# escape_text fixed ++# "\""
 
-inl occurs_example (min : i32) (max : i32) (value : string -> string) : string =
-    if max = 1i32 then (if min = 0i32 then "None" else value "k")
-    else repeated_cons value 0i32 min
+:= occurs_example (min : i32) (max : i32) (value : string -> string) : string =
+    ? max = 1i32 ?> (? min = 0i32 ?> "None" |: value "k")
+    |: repeated_cons value 0i32 min
 
-let rec example_named (kinds : list (string * type_kind)) (name : string) (item : xsd) : list string =
-    match item with
+:~ ^ example_named (kinds : list (string * type_kind)) (name : string) (item : xsd) : list string =
+    ?= item ?|
     | Complex (_, content, attributes) => record_example kinds name content attributes Nil
     | Derived (_, base, content, attributes) =>
-        inl base_line = "        base = " ++# value_example (reference_kind base kinds) (reference_type base) base "k"
+        := base_line = "        base = " ++# value_example (reference_kind base kinds) (reference_type base) base "k"
         record_example kinds name content attributes (base_line :: Nil)
     | Sequence _ => record_example kinds name item Nil Nil
     | _ => Nil
 
-and let record_example
+:& :~ record_example
     (kinds : list (string * type_kind)) (name : string) (content : xsd) (attributes : list xsd)
     (prefix_lines : list string)
     : list string
     =
-    inl (gathered : readers) =
+    := (gathered : readers) =
         attribute_examples kinds name attributes (content_examples kinds name content { lines = Nil; functions = Nil })
-    inl ty = type_name name
-    inl lines = listm.append prefix_lines (reverse gathered.lines Nil)
-    inl body =
-        match lines with
+    := ty = type_name name
+    := lines = listm.append prefix_lines (reverse gathered.lines Nil)
+    := body =
+        ?= lines ?|
         | Nil => "    ()\n"
         | _ => "    {\n" ++# join_lines lines "" ++# "    }\n"
     "and let " ++# ty ++# "_example (k : i32) : " ++# ty ++# " =\n" ++# body :: gathered.functions
 
-and let content_examples (kinds : list (string * type_kind)) (owner : string) (item : xsd) (acc : readers) : readers =
-    match item with
+:& :~ content_examples (kinds : list (string * type_kind)) (owner : string) (item : xsd) (acc : readers) : readers =
+    ?= item ?|
     | Sequence (_, _, items) => items_examples kinds owner items acc
     | Choice (min, max, items) =>
-        inl choice_name = owner ++# "_choice_" ++# first_element_name items
+        := choice_name = owner ++# "_choice_" ++# first_element_name items
         {
             lines =
                 field_assignment
                     (field_name ("choice_" ++# first_element_name items))
-                    (occurs_example min max (fun variant => type_name choice_name ++# "_example " ++# variant))
+                    (occurs_example min max (\ variant => type_name choice_name ++# "_example " ++# variant))
                 :: acc.lines
             functions = listm.append (choice_example kinds choice_name items) acc.functions
         }
     | Element (name, type_reference, min, max, inline) =>
-        match inline with
+        ?= inline ?|
         | Some inner =>
-            inl inner_name = owner ++# "_" ++# name
+            := inner_name = owner ++# "_" ++# name
             {
                 lines =
                     field_assignment
                         (field_name name)
-                        (occurs_example min max (fun variant => type_name inner_name ++# "_example " ++# variant))
+                        (occurs_example min max (\ variant => type_name inner_name ++# "_example " ++# variant))
                     :: acc.lines
                 functions = listm.append (example_named kinds inner_name inner) acc.functions
             }
@@ -1394,23 +1394,23 @@ and let content_examples (kinds : list (string * type_kind)) (owner : string) (i
         }
     | _ => acc
 
-and let items_examples (kinds : list (string * type_kind)) (owner : string) (items : list xsd) (acc : readers) : readers =
-    match items with
+:& :~ items_examples (kinds : list (string * type_kind)) (owner : string) (items : list xsd) (acc : readers) : readers =
+    ?= items ?|
     | item :: rest => items_examples kinds owner rest (content_examples kinds owner item acc)
     | Nil => acc
 
-and let choice_example (kinds : list (string * type_kind)) (choice_name : string) (items : list xsd) : list string =
-    inl ty = type_name choice_name
-    inl header = "and let " ++# ty ++# "_example (k : i32) : " ++# ty ++# " = "
-    match items with
+:& :~ choice_example (kinds : list (string * type_kind)) (choice_name : string) (items : list xsd) : list string =
+    := ty = type_name choice_name
+    := header = "and let " ++# ty ++# "_example (k : i32) : " ++# ty ++# " = "
+    ?= items ?|
     | Element (name, type_reference, min, max, inline) :: _ =>
-        match inline with
+        ?= inline ?|
         | Some inner =>
-            inl inner_name = choice_name ++# "_" ++# name
+            := inner_name = choice_name ++# "_" ++# name
             header
             ++# case_name choice_name name
             ++# " ("
-            ++# occurs_example min max fun variant => type_name inner_name ++# "_example " ++# variant
+            ++# occurs_example min max \ variant => type_name inner_name ++# "_example " ++# variant
             ++# ")\n"
             :: example_named kinds inner_name inner
         | None =>
@@ -1423,26 +1423,26 @@ and let choice_example (kinds : list (string * type_kind)) (choice_name : string
             ++# ")\n"
             :: Nil
     | Sequence (group_min, group_max, group_items) :: _ =>
-        inl first = first_element_name group_items
-        inl group_name = choice_name ++# "_group_" ++# first
+        := first = first_element_name group_items
+        := group_name = choice_name ++# "_group_" ++# first
         header ++# case_name choice_name ("group_" ++# first) ++# " (" ++# type_name group_name ++# "_example k)\n"
         :: example_named kinds group_name (Sequence (group_min, group_max, group_items))
     | _ => header ++# "failwith \"" ++# ty ++# ": no first alternative\"\n" :: Nil
 
-and let attribute_examples
+:& :~ attribute_examples
     (kinds : list (string * type_kind)) (owner : string) (attributes : list xsd) (acc : readers)
     : readers
     =
-    match attributes with
+    ?= attributes ?|
     | Attribute (name, type_reference, required, fixed, inline) :: rest =>
-        inl t, kind = attribute_type kinds owner name type_reference inline
-        inl value =
-            if required = false then "None"
-            elif fixed = "" then
-                match inline with
+        := t, kind = attribute_type kinds owner name type_reference inline
+        := value =
+            ? required = !- ?> "None"
+            |? fixed = "" ?>
+                ?= inline ?|
                 | Some _ => t ++# "_example k"
                 | None => value_example kind t type_reference "k"
-            else fixed_example kind t fixed
+            |: fixed_example kind t fixed
         attribute_examples kinds owner rest {
             lines = (field_assignment (field_name name) value :: acc.lines)
             functions = acc.functions
@@ -1450,37 +1450,37 @@ and let attribute_examples
     | _ :: rest => attribute_examples kinds owner rest acc
     | Nil => acc
 
-inl example_item (kinds : list (string * type_kind)) (item : xsd) : list string =
-    match item with
+:= example_item (kinds : list (string * type_kind)) (item : xsd) : list string =
+    ?= item ?|
     | Complex (name, _, _) => example_named kinds name item
     | Derived (name, _, _, _) => example_named kinds name item
     | Element (name, _, _, _, Some inner) => example_named kinds name inner
     | _ => Nil
 
-let rec examples_of (kinds : list (string * type_kind)) (types : list xsd) (acc : list string) : list string =
-    match types with
+:~ ^ examples_of (kinds : list (string * type_kind)) (types : list xsd) (acc : list string) : list string =
+    ?= types ?|
     | item :: rest => examples_of kinds rest (listm.append (example_item kinds item) acc)
     | Nil => acc
 
-inl function_key (text : string) : string =
-    inl stop = sm'.index_of " (" text
-    if stop < 0i32 then text else sm'.substring 0i32 stop text
+:= function_key (text : string) : string =
+    := stop = sm'.index_of " (" text
+    ? stop < 0i32 ?> text |: sm'.substring 0i32 stop text
 
-let rec unique_texts (items : list string) (seen : list string) (acc : list string) : list string =
-    match items with
+:~ ^ unique_texts (items : list string) (seen : list string) (acc : list string) : list string =
+    ?= items ?|
     | item :: rest =>
-        inl key = function_key item
-        if has_name key seen then unique_texts rest seen acc else unique_texts rest (key :: seen) (item :: acc)
+        := key = function_key item
+        ? has_name key seen ?> unique_texts rest seen acc |: unique_texts rest (key :: seen) (item :: acc)
     | Nil => reverse acc Nil
 
-inl function_texts (kinds : list (string * type_kind)) (complex_types : list xsd) (elements : list xsd) : list string =
-    inl readers = readers_of kinds elements (readers_of kinds complex_types Nil)
-    inl writers = writers_of kinds elements (writers_of kinds complex_types Nil)
-    inl examples = examples_of kinds elements (examples_of kinds complex_types Nil)
+:= function_texts (kinds : list (string * type_kind)) (complex_types : list xsd) (elements : list xsd) : list string =
+    := readers = readers_of kinds elements (readers_of kinds complex_types Nil)
+    := writers = writers_of kinds elements (writers_of kinds complex_types Nil)
+    := examples = examples_of kinds elements (examples_of kinds complex_types Nil)
     unique_texts (listm.append readers (listm.append writers examples)) Nil Nil
 
-inl functions_group (functions : list string) : string =
-    match functions with
+:= functions_group (functions : list string) : string =
+    ?= functions ?|
     | first :: rest =>
         "let rec "
         ++# sm'.substring 8i32 (sm'.length first - 8i32) first
@@ -1489,152 +1489,152 @@ inl functions_group (functions : list string) : string =
         ++# "\n"
     | Nil => ""
 
-inl readers_text (kinds : list (string * type_kind)) (complex_types : list xsd) (elements : list xsd) : string =
+:= readers_text (kinds : list (string * type_kind)) (complex_types : list xsd) (elements : list xsd) : string =
     functions_group (function_texts kinds complex_types elements)
 
-type module_parts = { items : list emitted; functions : list string }
+:== module_parts = { items : list emitted; functions : list string }
 
-inl module_parts (schema : xsd_schema) : module_parts =
-    inl complex_types = dereference_items schema.elements schema.complex_types Nil
-    inl elements = dereference_items schema.elements schema.elements Nil
-    inl all = reverse (emit_types elements (emit_types complex_types (emit_types schema.simple_types Nil))) Nil
-    inl unique = share_unions (unique_emitted all Nil Nil) Nil Nil
-    inl kinds = kinds_of schema.simple_types (kinds_of complex_types Nil)
-    inl known = emitted_names unique Nil
+:= module_parts (schema : xsd_schema) : module_parts =
+    := complex_types = dereference_items schema.elements schema.complex_types Nil
+    := elements = dereference_items schema.elements schema.elements Nil
+    := all = reverse (emit_types elements (emit_types complex_types (emit_types schema.simple_types Nil))) Nil
+    := unique = share_unions (unique_emitted all Nil Nil) Nil Nil
+    := kinds = kinds_of schema.simple_types (kinds_of complex_types Nil)
+    := known = emitted_names unique Nil
     {
         items = order_emitted (with_known_references unique known Nil) known Nil Nil
         functions = function_texts kinds complex_types elements
     }
 
-inl generate_module (schema : xsd_schema) : string =
-    inl parts = module_parts schema
+:= generate_module (schema : xsd_schema) : string =
+    := parts = module_parts schema
     texts_of parts.items ++# functions_group parts.functions
 
-let rec item_text (name : string) (items : list emitted) : option string =
-    match items with
-    | item :: rest => if item.name = name then Some item.text else item_text name rest
+:~ ^ item_text (name : string) (items : list emitted) : option string =
+    ?= items ?|
+    | item :: rest => ? item.name = name ?> Some item.text |: item_text name rest
     | Nil => None
 
-let rec same_in_all (name : string) (text : string) (versions : list module_parts) : bool =
-    match versions with
+:~ ^ same_in_all (name : string) (text : string) (versions : list module_parts) : bool =
+    ?= versions ?|
     | parts :: rest =>
-        (match item_text name parts.items with Some other => other = text | None => false) && same_in_all name text rest
-    | Nil => true
+        (?= item_text name parts.items ?| Some other => other = text | None => !-) && same_in_all name text rest
+    | Nil => !+
 
-let rec identical_names (items : list emitted) (versions : list module_parts) (acc : list string) : list string =
-    match items with
+:~ ^ identical_names (items : list emitted) (versions : list module_parts) (acc : list string) : list string =
+    ?= items ?|
     | item :: rest =>
-        identical_names rest versions (if same_in_all item.name item.text versions then (item.name :: acc) else acc)
+        identical_names rest versions (? same_in_all item.name item.text versions ?> (item.name :: acc) |: acc)
     | Nil => acc
 
-let rec all_shared (references : list string) (shared : list string) : bool =
-    match references with
+:~ ^ all_shared (references : list string) (shared : list string) : bool =
+    ?= references ?|
     | reference :: rest => has_name reference shared && all_shared rest shared
-    | Nil => true
+    | Nil => !+
 
-let rec closed_pass (items : list emitted) (shared : list string) (acc : list string) : list string =
-    match items with
+:~ ^ closed_pass (items : list emitted) (shared : list string) (acc : list string) : list string =
+    ?= items ?|
     | item :: rest =>
         closed_pass rest shared (
-            if has_name item.name shared && all_shared item.references shared then (item.name :: acc) else acc
+            ? has_name item.name shared && all_shared item.references shared ?> (item.name :: acc) |: acc
         )
     | Nil => acc
 
-let rec closed_shared (items : list emitted) (shared : list string) : list string =
-    inl next = closed_pass items shared Nil
-    if count_list next = count_list shared then shared else closed_shared items next
+:~ ^ closed_shared (items : list emitted) (shared : list string) : list string =
+    := next = closed_pass items shared Nil
+    ? count_list next = count_list shared ?> shared |: closed_shared items next
 
-let rec owner_of (key : string) (names : list string) (best : string) : string =
-    match names with
+:~ ^ owner_of (key : string) (names : list string) (best : string) : string =
+    ?= names ?|
     | name :: rest =>
-        inl longer = sm'.starts_with ("and let " ++# name ++# "_") key && (sm'.length name : i32) > sm'.length best
-        owner_of key rest (if longer then name else best)
+        := longer = sm'.starts_with ("and let " ++# name ++# "_") key && (sm'.length name : i32) > sm'.length best
+        owner_of key rest (? longer ?> name |: best)
     | Nil => best
 
-let rec has_text_in (text : string) (functions : list string) : bool =
-    match functions with
+:~ ^ has_text_in (text : string) (functions : list string) : bool =
+    ?= functions ?|
     | f :: rest => f = text || has_text_in text rest
-    | Nil => false
+    | Nil => !-
 
-let rec function_in_all (text : string) (versions : list module_parts) : bool =
-    match versions with
+:~ ^ function_in_all (text : string) (versions : list module_parts) : bool =
+    ?= versions ?|
     | parts :: rest => has_text_in text parts.functions && function_in_all text rest
-    | Nil => true
+    | Nil => !+
 
-let rec split_items
+:~ ^ split_items
     (items : list emitted) (shared : list string) (core : list emitted) (own : list emitted)
     : list emitted * list emitted
     =
-    match items with
+    ?= items ?|
     | item :: rest =>
-        if has_name item.name shared then split_items rest shared (item :: core) own
-        else split_items rest shared core (item :: own)
+        ? has_name item.name shared ?> split_items rest shared (item :: core) own
+        |: split_items rest shared core (item :: own)
     | Nil => reverse core Nil, reverse own Nil
 
-let rec split_functions
+:~ ^ split_functions
     (functions : list string) (names : list string) (shared : list string) (versions : list module_parts)
     (core : list string) (own : list string)
     : list string * list string
     =
-    match functions with
+    ?= functions ?|
     | f :: rest =>
-        inl owner = owner_of (function_key f) names ""
-        if owner <> "" && has_name owner shared && function_in_all f versions
-        then split_functions rest names shared versions (f :: core) own
-        else split_functions rest names shared versions core (f :: own)
+        := owner = owner_of (function_key f) names ""
+        ? owner <> "" && has_name owner shared && function_in_all f versions
+        ?> split_functions rest names shared versions (f :: core) own
+        |: split_functions rest names shared versions core (f :: own)
     | Nil => reverse core Nil, reverse own Nil
 
-let rec functions_outside (functions : list string) (core : list string) (acc : list string) : list string =
-    match functions with
-    | f :: rest => functions_outside rest core (if has_text_in f core then acc else f :: acc)
+:~ ^ functions_outside (functions : list string) (core : list string) (acc : list string) : list string =
+    ?= functions ?|
+    | f :: rest => functions_outside rest core (? has_text_in f core ?> acc |: f :: acc)
     | Nil => reverse acc Nil
 
-inl function_name (text : string) : string =
-    inl key = function_key text
+:= function_name (text : string) : string =
+    := key = function_key text
     sm'.substring 8i32 (sm'.length key - 8i32) key
 
-let rec mentions_any (text : string) (names : list string) : bool =
-    match names with
+:~ ^ mentions_any (text : string) (names : list string) : bool =
+    ?= names ?|
     | name :: rest => sm'.contains name text || mentions_any text rest
-    | Nil => false
+    | Nil => !-
 
-let rec function_names (functions : list string) (acc : list string) : list string =
-    match functions with
+:~ ^ function_names (functions : list string) (acc : list string) : list string =
+    ?= functions ?|
     | f :: rest => function_names rest (function_name f :: acc)
     | Nil => acc
 
-let rec self_contained (core : list string) (outside : list string) (acc : list string) : list string =
-    match core with
-    | f :: rest => self_contained rest outside (if mentions_any f outside then acc else f :: acc)
+:~ ^ self_contained (core : list string) (outside : list string) (acc : list string) : list string =
+    ?= core ?|
+    | f :: rest => self_contained rest outside (? mentions_any f outside ?> acc |: f :: acc)
     | Nil => reverse acc Nil
 
-let rec closed_functions (core : list string) (all : list string) : list string =
-    inl outside = function_names (functions_outside all core Nil) Nil
-    inl next = self_contained core outside Nil
-    if count_list next = count_list core then core else closed_functions next all
+:~ ^ closed_functions (core : list string) (all : list string) : list string =
+    := outside = function_names (functions_outside all core Nil) Nil
+    := next = self_contained core outside Nil
+    ? count_list next = count_list core ?> core |: closed_functions next all
 
-let rec version_texts
+:~ ^ version_texts
     (versions : list module_parts) (shared : list string) (core_functions : list string) (core_module : string)
     (acc : list string)
     : list string
     =
-    match versions with
+    ?= versions ?|
     | parts :: rest =>
-        inl _, own_items = split_items parts.items shared Nil Nil
-        inl own_functions = functions_outside parts.functions core_functions Nil
-        inl text = "open " ++# core_module ++# "\n\n" ++# texts_of own_items ++# functions_group own_functions
+        := _, own_items = split_items parts.items shared Nil Nil
+        := own_functions = functions_outside parts.functions core_functions Nil
+        := text = "open " ++# core_module ++# "\n\n" ++# texts_of own_items ++# functions_group own_functions
         version_texts rest shared core_functions core_module (text :: acc)
     | Nil => reverse acc Nil
 
-type family_split = { shared : list string; core_text : string; version_texts : list string }
+:== family_split = { shared : list string; core_text : string; version_texts : list string }
 
-inl split_family (versions : list module_parts) (core_module : string) : family_split =
-    match versions with
+:= split_family (versions : list module_parts) (core_module : string) : family_split =
+    ?= versions ?|
     | first :: _ =>
-        inl shared = closed_shared first.items (identical_names first.items versions Nil)
-        inl core_items, _ = split_items first.items shared Nil Nil
-        inl candidates, _ = split_functions first.functions (emitted_names first.items Nil) shared versions Nil Nil
-        inl core_functions = closed_functions candidates first.functions
+        := shared = closed_shared first.items (identical_names first.items versions Nil)
+        := core_items, _ = split_items first.items shared Nil Nil
+        := candidates, _ = split_functions first.functions (emitted_names first.items Nil) shared versions Nil Nil
+        := core_functions = closed_functions candidates first.functions
         {
             shared = shared
             core_text = texts_of core_items ++# functions_group core_functions
@@ -1642,76 +1642,76 @@ inl split_family (versions : list module_parts) (core_module : string) : family_
         }
     | Nil => { shared = Nil; core_text = ""; version_texts = Nil }
 
-inl generate_family (schemas : list xsd_schema) (core_module : string) : string * list string =
-    inl split = split_family (listm.map module_parts schemas) core_module
+:= generate_family (schemas : list xsd_schema) (core_module : string) : string * list string =
+    := split = split_family (listm.map module_parts schemas) core_module
     split.core_text, split.version_texts
 
-let rec has_function_key (key : string) (functions : list string) : bool =
-    match functions with
+:~ ^ has_function_key (key : string) (functions : list string) : bool =
+    ?= functions ?|
     | f :: rest => function_key f = key || has_function_key key rest
-    | Nil => false
+    | Nil => !-
 
-let rec read_in_all (name : string) (versions : list module_parts) : bool =
-    match versions with
+:~ ^ read_in_all (name : string) (versions : list module_parts) : bool =
+    ?= versions ?|
     | parts :: rest => has_function_key ("and let " ++# name ++# "_of_xml") parts.functions && read_in_all name rest
-    | Nil => true
+    | Nil => !+
 
-let rec versioned_names
+:~ ^ versioned_names
     (items : list emitted) (shared : list string) (versions : list module_parts) (acc : list string)
     : list string
     =
-    match items with
+    ?= items ?|
     | item :: rest =>
-        inl versioned = has_name item.name shared = false && read_in_all item.name versions
-        versioned_names rest shared versions (if versioned then (item.name :: acc) else acc)
+        := versioned = has_name item.name shared = !- && read_in_all item.name versions
+        versioned_names rest shared versions (? versioned ?> (item.name :: acc) |: acc)
     | Nil => reverse acc Nil
 
-let rec common_prefix_length (a : string) (b : string) (pos : i32) : i32 =
-    if pos < sm'.length a && pos < sm'.length b && sm'.substring pos 1i32 a = sm'.substring pos 1i32 b
-    then common_prefix_length a b (pos + 1i32)
-    else pos
+:~ ^ common_prefix_length (a : string) (b : string) (pos : i32) : i32 =
+    ? pos < sm'.length a && pos < sm'.length b && sm'.substring pos 1i32 a = sm'.substring pos 1i32 b
+    ?> common_prefix_length a b (pos + 1i32)
+    |: pos
 
-let rec shared_prefix (names : list string) (prefix : string) : string =
-    match names with
+:~ ^ shared_prefix (names : list string) (prefix : string) : string =
+    ?= names ?|
     | name :: rest => shared_prefix rest (sm'.substring 0i32 (common_prefix_length prefix name 0i32) prefix)
     | Nil => prefix
 
-let rec past_last_underscore (s : string) (pos : i32) (best : i32) : i32 =
-    if pos >= sm'.length s then best
-    else past_last_underscore s (pos + 1i32) (if sm'.substring pos 1i32 s = "_" then pos + 1i32 else best)
+:~ ^ past_last_underscore (s : string) (pos : i32) (best : i32) : i32 =
+    ? pos >= sm'.length s ?> best
+    |: past_last_underscore s (pos + 1i32) (? sm'.substring pos 1i32 s = "_" ?> pos + 1i32 |: best)
 
-inl version_prefix_length (modules : list string) : i32 =
-    match modules with
+:= version_prefix_length (modules : list string) : i32 =
+    ?= modules ?|
     | first :: _ :: _ => past_last_underscore (shared_prefix modules first) 0i32 0i32
     | _ => 0i32
 
-inl version_tag (prefix_length : i32) (module_name : string) : string =
-    inl tag = sm'.substring prefix_length (sm'.length module_name - prefix_length) module_name
-    if sm'.length tag > 0i32 && is_lower (sm'.substring 0i32 1i32 tag) then tag else "v" ++# tag
+:= version_tag (prefix_length : i32) (module_name : string) : string =
+    := tag = sm'.substring prefix_length (sm'.length module_name - prefix_length) module_name
+    ? sm'.length tag > 0i32 && is_lower (sm'.substring 0i32 1i32 tag) ?> tag |: "v" ++# tag
 
-inl upper_first (s : string) : string =
-    inl at = if sm'.length s > 0i32 then sm'.index_of (sm'.substring 0i32 1i32 s) (lower_letters ()) else 0i32 - 1i32
-    if at < 0i32 then capitalized s
-    else sm'.substring at 1i32 (upper_letters ()) ++# sm'.substring 1i32 (sm'.length s - 1i32) s
+:= upper_first (s : string) : string =
+    := at = ? sm'.length s > 0i32 ?> sm'.index_of (sm'.substring 0i32 1i32 s) (lower_letters ()) |: 0i32 - 1i32
+    ? at < 0i32 ?> capitalized s
+    |: sm'.substring at 1i32 (upper_letters ()) ++# sm'.substring 1i32 (sm'.length s - 1i32) s
 
-inl versioned_case (name : string) (tag : string) : string =
-    upper_first (if sm'.starts_with "x_" name then sm'.substring 2i32 (sm'.length name - 2i32) name else name)
+:= versioned_case (name : string) (tag : string) : string =
+    upper_first (? sm'.starts_with "x_" name ?> sm'.substring 2i32 (sm'.length name - 2i32) name |: name)
     ++# "_"
     ++# tag
 
-let rec version_lines
+:~ ^ version_lines
     (modules : list string) (prefix_length : i32) (line : string -> string -> string) (acc : list string)
     : list string
     =
-    match modules with
+    ?= modules ?|
     | module_name :: rest =>
         version_lines rest prefix_length line (line module_name (version_tag prefix_length module_name) :: acc)
     | Nil => reverse acc Nil
 
-inl versioned_type_text (modules : list string) (prefix_length : i32) (name : string) : string =
-    inl cases =
+:= versioned_type_text (modules : list string) (prefix_length : i32) (name : string) : string =
+    := cases =
         version_lines modules prefix_length
-            fun module_name tag =>
+            \ module_name tag =>
                 "    | "
                 ++# versioned_case name tag
                 ++# " :: "
@@ -1723,9 +1723,9 @@ inl versioned_type_text (modules : list string) (prefix_length : i32) (name : st
                 ++# " "
                 ++# tag
             Nil
-    inl reads =
+    := reads =
         version_lines modules prefix_length
-            fun module_name tag =>
+            \ module_name tag =>
                 "    | "
                 ++# upper_first tag
                 ++# " _ => "
@@ -1748,21 +1748,21 @@ inl versioned_type_text (modules : list string) (prefix_length : i32) (name : st
     ++# join_lines reads ""
     ++# "\n"
 
-let rec versioned_type_texts
+:~ ^ versioned_type_texts
     (modules : list string) (prefix_length : i32) (names : list string) (acc : list string)
     : list string
     =
-    match names with
+    ?= names ?|
     | name :: rest =>
         versioned_type_texts modules prefix_length rest (versioned_type_text modules prefix_length name :: acc)
     | Nil => reverse acc Nil
 
-inl family_text (modules : list string) (names : list string) : string =
-    inl prefix_length = version_prefix_length modules
-    inl nominals = version_lines modules prefix_length (fun _ tag => "nominal " ++# tag ++# " = string") Nil
-    inl witnesses =
+:= family_text (modules : list string) (names : list string) : string =
+    := prefix_length = version_prefix_length modules
+    := nominals = version_lines modules prefix_length (\ _ tag => "nominal " ++# tag ++# " = string") Nil
+    := witnesses =
         version_lines modules prefix_length
-            fun _ tag => "    | " ++# upper_first tag ++# " :: string -> version_witness " ++# tag
+            \ _ tag => "    | " ++# upper_first tag ++# " :: string -> version_witness " ++# tag
             Nil
     join_lines nominals ""
     ++# "\nunion version_witness v =\n"
@@ -1770,123 +1770,123 @@ inl family_text (modules : list string) (names : list string) : string =
     ++# "\n"
     ++# sm'.concat_balanced "" (versioned_type_texts modules prefix_length names Nil)
 
-let rec member_modules (members : list (string * xsd_schema)) (acc : list string) : list string =
-    match members with
+:~ ^ member_modules (members : list (string * xsd_schema)) (acc : list string) : list string =
+    ?= members ?|
     | (module_name, _) :: rest => member_modules rest (module_name :: acc)
     | Nil => reverse acc Nil
 
-let rec member_parts (members : list (string * xsd_schema)) (acc : list module_parts) : list module_parts =
-    match members with
+:~ ^ member_parts (members : list (string * xsd_schema)) (acc : list module_parts) : list module_parts =
+    ?= members ?|
     | (_, schema) :: rest => member_parts rest (module_parts schema :: acc)
     | Nil => reverse acc Nil
 
-inl generate_versioned_family
+:= generate_versioned_family
     (members : list (string * xsd_schema)) (core_module : string)
     : string * list string * string
     =
-    inl versions = member_parts members Nil
-    inl split = split_family versions core_module
-    match versions with
+    := versions = member_parts members Nil
+    := split = split_family versions core_module
+    ?= versions ?|
     | first :: _ =>
         split.core_text,
         split.version_texts,
         family_text (member_modules members Nil) (versioned_names first.items split.shared versions Nil)
     | Nil => split.core_text, split.version_texts, ""
 
-inl generate_enumerations (schema : xsd_schema) : string =
+:= generate_enumerations (schema : xsd_schema) : string =
     texts_of (reverse (emit_types schema.simple_types Nil) Nil)
 
 ///> rust
 test names_follow_spiral_conventions =
-    if type_name "TCodUfIBGE" <> "x_t_cod_uf_ibge" then failwith "snake case type name"
-    if case_name "TCodUfIBGE" "35" <> "TCodUfIBGE_35" then failwith "numeric case name"
-    if case_name "TVerNFe" "1.04" <> "TVerNFe_1_04" then failwith "dotted case name"
-    if case_name "TOrigem" "Não" <> "TOrigem_N_o" then failwith "non-ASCII value becomes an underscore"
-    if case_name "enviNFe_versao" "4.00" <> "XenviNFe_versao_4_00" then failwith "lowercase owner gets a capital prefix"
-    if field_name "type" <> "type_value" then failwith "keyword field"
-    if type_name "TNFe" <> "x_tn_fe" then failwith "an upper run splits before its last capital"
+    ? type_name "TCodUfIBGE" <> "x_t_cod_uf_ibge" ?> failwith "snake case type name"
+    ? case_name "TCodUfIBGE" "35" <> "TCodUfIBGE_35" ?> failwith "numeric case name"
+    ? case_name "TVerNFe" "1.04" <> "TVerNFe_1_04" ?> failwith "dotted case name"
+    ? case_name "TOrigem" "Não" <> "TOrigem_N_o" ?> failwith "non-ASCII value becomes an underscore"
+    ? case_name "enviNFe_versao" "4.00" <> "XenviNFe_versao_4_00" ?> failwith "lowercase owner gets a capital prefix"
+    ? field_name "type" <> "type_value" ?> failwith "keyword field"
+    ? type_name "TNFe" <> "x_tn_fe" ?> failwith "an upper run splits before its last capital"
 
 ///> rust
 test families_share_identical_closed_types_once =
-    inl shared =
+    := shared =
         "<xs:simpleType name=\"Code\"><xs:restriction base=\"xs:string\"><xs:pattern "
         ^^ "value=\"[0-9]{2}\"/></xs:restriction></xs:simpleType>"
-    inl leaf one =
+    := leaf one =
         "<xs:complexType name=\"Leaf\"><xs:sequence><xs:element name=\"c\" type=\"Code\"/>"
         ++# one
         ++# "</xs:sequence></xs:complexType>"
-    inl root =
+    := root =
         "<xs:complexType name=\"Root\"><xs:sequence><xs:element name=\"l\" "
         ^^ "type=\"Leaf\"/></xs:sequence></xs:complexType>"
-    inl v1 = read_schema ("<xs:schema>" ++# shared ++# leaf "" ++# root ++# "</xs:schema>")
-    inl v2 =
+    := v1 = read_schema ("<xs:schema>" ++# shared ++# leaf "" ++# root ++# "</xs:schema>")
+    := v2 =
         read_schema (
             "<xs:schema>" ++# shared ++# leaf "<xs:element name=\"extra\" type=\"Code\"/>" ++# root ++# "</xs:schema>"
         )
-    inl core, versions = generate_family (v1 :: v2 :: Nil) "generated_demo_core"
-    if sm'.contains "type x_code = string" core = false then failwith "the identical leaf type is in the core"
-    if sm'.contains "type x_leaf" core then failwith "the changed type stays per version"
-    if sm'.contains "type x_root" core then failwith "a type over a changed type stays per version"
-    match versions with
+    := core, versions = generate_family (v1 :: v2 :: Nil) "generated_demo_core"
+    ? sm'.contains "type x_code = string" core = !- ?> failwith "the identical leaf type is in the core"
+    ? sm'.contains "type x_leaf" core ?> failwith "the changed type stays per version"
+    ? sm'.contains "type x_root" core ?> failwith "a type over a changed type stays per version"
+    ?= versions ?|
     | first :: second :: Nil =>
-        if sm'.starts_with "open generated_demo_core" first = false then failwith "a version opens its core"
-        if sm'.contains "type x_code" second then failwith "the core type is not repeated"
-        if sm'.contains "extra" first || sm'.contains "extra" second = false
-        then failwith "the version keeps its own shape"
+        ? sm'.starts_with "open generated_demo_core" first = !- ?> failwith "a version opens its core"
+        ? sm'.contains "type x_code" second ?> failwith "the core type is not repeated"
+        ? sm'.contains "extra" first || sm'.contains "extra" second = !-
+        ?> failwith "the version keeps its own shape"
     | _ => failwith "two version modules"
 
 ///> rust
 test versioned_families_read_through_one_witness =
-    inl shared =
+    := shared =
         "<xs:simpleType name=\"Code\"><xs:restriction base=\"xs:string\"><xs:pattern "
         ^^ "value=\"[0-9]{2}\"/></xs:restriction></xs:simpleType>"
-    inl leaf one =
+    := leaf one =
         "<xs:complexType name=\"Leaf\"><xs:sequence><xs:element name=\"c\" type=\"Code\"/>"
         ++# one
         ++# "</xs:sequence></xs:complexType>"
-    inl root =
+    := root =
         "<xs:complexType name=\"Root\"><xs:sequence><xs:element name=\"l\" "
         ^^ "type=\"Leaf\"/></xs:sequence></xs:complexType>"
-    inl v1 = read_schema ("<xs:schema>" ++# shared ++# leaf "" ++# root ++# "</xs:schema>")
-    inl v2 =
+    := v1 = read_schema ("<xs:schema>" ++# shared ++# leaf "" ++# root ++# "</xs:schema>")
+    := v2 =
         read_schema (
             "<xs:schema>" ++# shared ++# leaf "<xs:element name=\"extra\" type=\"Code\"/>" ++# root ++# "</xs:schema>"
         )
-    inl _, _, family =
+    := _, _, family =
         generate_versioned_family (("generated_demo_v1", v1) :: ("generated_demo_v2", v2) :: Nil) "generated_demo_core"
-    if sm'.contains "nominal v1 = string\nnominal v2 = string\n" family = false
-    then failwith "one nominal per version, tagged past the shared prefix"
-    if sm'.contains "    | V2 :: string -> version_witness v2\n" family = false
-    then failwith "the witness indexes each version"
-    if sm'.contains "    | Leaf_v2 :: generated_demo_v2.x_leaf -> x_leaf v2\n" family = false
-    then failwith "a changed type becomes a version-indexed union"
-    if sm'.contains "    | V1 _ => Leaf_v1 (generated_demo_v1.x_leaf_of_xml c)\n" family = false
-    then failwith "the reader matches the witness once"
-    if sm'.contains "union x_root v =" family = false then failwith "a type over a changed type is versioned too"
-    if sm'.contains "x_code" family then failwith "core types are not versioned"
+    ? sm'.contains "nominal v1 = string\nnominal v2 = string\n" family = !-
+    ?> failwith "one nominal per version, tagged past the shared prefix"
+    ? sm'.contains "    | V2 :: string -> version_witness v2\n" family = !-
+    ?> failwith "the witness indexes each version"
+    ? sm'.contains "    | Leaf_v2 :: generated_demo_v2.x_leaf -> x_leaf v2\n" family = !-
+    ?> failwith "a changed type becomes a version-indexed union"
+    ? sm'.contains "    | V1 _ => Leaf_v1 (generated_demo_v1.x_leaf_of_xml c)\n" family = !-
+    ?> failwith "the reader matches the witness once"
+    ? sm'.contains "union x_root v =" family = !- ?> failwith "a type over a changed type is versioned too"
+    ? sm'.contains "x_code" family ?> failwith "core types are not versioned"
 
-type complement_member = { case_name : string; module_name : string; schema : xsd_schema }
+:== complement_member = { case_name : string; module_name : string; schema : xsd_schema }
 
-inl root_reader (member : complement_member) : string * string =
-    match member.schema.elements with
+:= root_reader (member : complement_member) : string * string =
+    ?= member.schema.elements ?|
     | Element (name, _, _, _, Some _) :: _ => xml.local_name name, type_name name
     | Element (name, reference, _, _, None) :: _ => xml.local_name name, type_name (xml.local_name reference)
     | _ => "", ""
 
-let rec complement_case_lines (members : list complement_member) (acc : list string) : list string =
-    match members with
+:~ ^ complement_case_lines (members : list complement_member) (acc : list string) : list string =
+    ?= members ?|
     | member :: rest =>
-        inl _, ty = root_reader member
+        := _, ty = root_reader member
         complement_case_lines rest (
             "    | " ++# member.case_name ++# " : " ++# member.module_name ++# "." ++# ty :: acc
         )
     | Nil => reverse acc Nil
 
-let rec complement_case_dispatch (members : list complement_member) (acc : string) : string =
-    match members with
+:~ ^ complement_case_dispatch (members : list complement_member) (acc : string) : string =
+    ?= members ?|
     | member :: rest =>
-        inl element, ty = root_reader member
-        inl test =
+        := element, ty = root_reader member
+        := test =
             "local = \""
             ++# element
             ++# "\" && (space = \"\" || space = \""
@@ -1906,12 +1906,12 @@ let rec complement_case_dispatch (members : list complement_member) (acc : strin
         )
     | Nil => acc ++# "se Unknown (local, xml.element_children node)\n"
 
-inl generate_complements (members : list complement_member) : string =
-    inl head =
+:= generate_complements (members : list complement_member) : string =
+    := head =
         "union complement =\n"
         ++# join_lines (complement_case_lines members Nil) ""
         ++# "    | Unknown : string * list xml.xml_node\n"
-    inl space =
+    := space =
         "\ninl complement_namespace (node : xml.xml_node) : string =\n"
         ++# "    inl name = xml.node_name node\n"
         ++# "    inl colon = sm'.index_of \":\" name\n"
@@ -1919,7 +1919,7 @@ inl generate_complements (members : list complement_member) : string =
         ++# "    match xml.attribute_of key (xml.element_attributes node) with\n"
         ++# "    | Some uri => uri\n"
         ++# "    | None => \"\"\n"
-    inl reader =
+    := reader =
         "\ninl complement_of_xml (node : xml.xml_node) : complement =\n"
         ++# "    inl local = xml.local_name (xml.node_name node)\n"
         ++# "    inl space = complement_namespace node\n"
@@ -1928,23 +1928,23 @@ inl generate_complements (members : list complement_member) : string =
 
 ///> rust
 test complements_as_one_runtime_union_keep_typed_cases =
-    inl pagos =
+    := pagos =
         read_schema (
             "<xs:schema targetNamespace=\"http://www.sat.gob.mx/Pagos20\"><xs:element "
             ^^ "name=\"Pagos\"><xs:complexType><xs:sequence><xs:element name=\"Monto\" "
             ^^ "type=\"xs:string\"/></xs:sequence></xs:complexType></xs:element></xs:schema>"
         )
-    inl text =
+    := text =
         generate_complements ({ case_name = "Pagos20"; module_name = "generated_cfdi_pagos20"; schema = pagos } :: Nil)
-    if
+    ?
         sm'.contains
             (
                 "union complement =\n    | Pagos20 : generated_cfdi_pagos20.x_pagos\n"
                 ^^ "    | Unknown : string * list xml.xml_node\n"
             )
             text
-        = false
-    then failwith "one typed case per complement plus Unknown"
-    if sm'.contains "then Pagos20 (generated_cfdi_pagos20.x_pagos_of_xml node)" text = false
-    then failwith "the reader builds the typed case"
-    if sm'.contains "exists" text then failwith "no existential in the runtime slot"
+        = !-
+    ?> failwith "one typed case per complement plus Unknown"
+    ? sm'.contains "then Pagos20 (generated_cfdi_pagos20.x_pagos_of_xml node)" text = !-
+    ?> failwith "the reader builds the typed case"
+    ? sm'.contains "exists" text ?> failwith "no existential in the runtime slot"

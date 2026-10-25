@@ -11,8 +11,6 @@ var
   v4: Boolean;
   v3: Boolean;
   v5: Boolean;
-  tmp4: LongInt;
-  tmp5: Boolean;
 begin
   while True do begin
       v2 := v0 - 1;
@@ -27,10 +25,8 @@ begin
           Result := v4;
           Exit;
       end else begin
-          tmp4 := v2;
-          tmp5 := v4;
-          v0 := tmp4;
-          v1 := tmp5;
+          v0 := v2;
+          v1 := v4;
           Continue;
       end;
   end;

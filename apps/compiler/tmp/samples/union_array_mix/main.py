@@ -25,6 +25,7 @@ def spiral_wrap(x, bits, signed):
     return x - (1 << bits) if signed and x >> (bits - 1) else x
 class US0_None(NamedTuple): # None
     tag = 0
+US0_None_shared = US0_None()
 class US0_Held(NamedTuple): # Held
     v0 : cp.ndarray
     v1 : i32
@@ -61,7 +62,7 @@ def main():
     if v3:
         v6 = US0_Held(v2, v1)
     else:
-        v6 = US0_None()
+        v6 = US0_None_shared
     del v1, v2, v3
     return score_0(v6)
 

@@ -1,9 +1,9 @@
 /// # wasm
-open rust
-open rust_operators
+:< rust
+:< rust_operators
 
 /// ### rexie
-nominal rexie =
+:! rexie =
     `(
         rust.rust_type
             `($'rexie_Rexie')
@@ -12,7 +12,7 @@ nominal rexie =
     )
 
 /// ### rexie_store
-nominal rexie_store =
+:! rexie_store =
     `(
         rust.rust_type
             `($'rexie_Store')
@@ -21,7 +21,7 @@ nominal rexie_store =
     )
 
 /// ### rexie_transaction
-nominal rexie_transaction =
+:! rexie_transaction =
     `(
         rust.rust_type
             `($'rexie_Transaction')
@@ -30,7 +30,7 @@ nominal rexie_transaction =
     )
 
 /// ### rexie_error
-nominal rexie_error =
+:! rexie_error =
     `(
         rust.rust_type
             `($'rexie_Error')
@@ -39,7 +39,7 @@ nominal rexie_error =
     )
 
 /// ### js_value
-nominal js_value =
+:! js_value =
     `(
         rust.rust_type
             `($'wasm_bindgen_JsValue')
@@ -48,7 +48,7 @@ nominal js_value =
     )
 
 /// ### closure
-nominal closure t =
+:! closure t =
     `(
         rust.rust_type
             `($'wasm_bindgen_closure_Closure<`t>')
@@ -57,7 +57,7 @@ nominal closure t =
     )
 
 /// ### js_function
-nominal js_function =
+:! js_function =
     `(
         rust.rust_type
             `($'js_sys_Function')
@@ -66,7 +66,7 @@ nominal js_function =
     )
 
 /// ### window
-nominal window =
+:! window =
     `(
         rust.rust_type
             `($'web_sys_Window')
@@ -75,7 +75,7 @@ nominal window =
     )
 
 /// ### document
-nominal document =
+:! document =
     `(
         rust.rust_type
             `($'web_sys_Document')
@@ -84,7 +84,7 @@ nominal document =
     )
 
 /// ### html_element
-nominal html_element =
+:! html_element =
     `(
         rust.rust_type
             `($'web_sys_HtmlElement')
@@ -93,7 +93,7 @@ nominal html_element =
     )
 
 /// ### storage
-nominal storage =
+:! storage =
     `(
         rust.rust_type
             `($'web_sys_Storage')
@@ -102,31 +102,31 @@ nominal storage =
     )
 
 /// ### closure_wrap
-inl closure_wrap forall t. (x : rust.box t) : closure t =
-    inl x = if is_rust () then x else join x
+:= closure_wrap \* t. (x : rust.box t) : closure t =
+    := x = ? is_rust () ?> x |: ~~ x
     !\($'"wasm_bindgen::closure::Closure::wrap(!x)"')
 
 /// ### closure_forget
-inl closure_forget forall t. (closure : closure t) =
+:= closure_forget \* t. (closure : closure t) =
     !\($'"!closure.forget()"') : ()
 
 /// ### closure_as_ref
-inl closure_as_ref forall t. (closure : closure t) : rust.ref js_value =
+:= closure_as_ref \* t. (closure : closure t) : rust.ref js_value =
     !\($'"wasm_bindgen::closure::Closure::as_ref(&!closure)"')
 
 /// ### unchecked_ref
-inl unchecked_ref (ref : rust.ref js_value) : rust.ref js_function =
+:= unchecked_ref (ref : rust.ref js_value) : rust.ref js_function =
     !\($'"wasm_bindgen::JsCast::unchecked_ref(!ref)"')
 
 /// ### set_inner_html
-inl set_inner_html (html : string) (el : html_element) =
-    inl html = join html
-    inl html = html |> sm'.as_str
-    inl el = join el
+:= set_inner_html (html : string) (el : html_element) =
+    := html = ~~ html
+    := html = html |> sm'.as_str
+    := el = ~~ el
     !\\(html, $'"!el.set_inner_html($0)"')
 
 /// ### from_js_value
-inl from_js_value (value : js_value) : resultm.result' (optionm'.option' sm'.json_value) sm'.std_string =
-    inl value = join value
+:= from_js_value (value : js_value) : resultm.result' (optionm'.option' sm'.json_value) sm'.std_string =
+    := value = ~~ value
     !\($'"serde_wasm_bindgen::from_value(!value)"')
-    |> resultm.map_error' fun (x : sm'.serde_wasm_bindgen_error) => x |> sm'.format'
+    |> resultm.map_error' \ (x : sm'.serde_wasm_bindgen_error) => x |> sm'.format'

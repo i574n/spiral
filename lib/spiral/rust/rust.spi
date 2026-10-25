@@ -1,8 +1,8 @@
 /// # rust
 test rust static =
-    open testing
+    :< testing
 
-type rust_type_switch fs rs =
+:== rust_type_switch fs rs =
     {
         Gleam : fs
         Lua : fs
@@ -18,22 +18,22 @@ type rust_type_switch fs rs =
         Rust : rs
     }
 
-inl fsharp_global (text : string) : () =
+:= fsharp_global (text : string) : () =
     backend_switch {
-        Fsharp = fun () => global text
+        Fsharp = \ () => global text
     }
 
-inl rust_type forall fs rs. (fsharp : string) : $'backend_switch `(rust_type_switch fs rs)' =
+:= rust_type \* fs rs. (fsharp : string) : $'backend_switch `(rust_type_switch fs rs)' =
     fsharp_global fsharp
     $'' : $'backend_switch `(rust_type_switch fs rs)'
 
 /// ## rust
 
 /// ### any_base
-type any_base = any
+:== any_base = any
 
 /// ### any
-nominal any =
+:! any =
     `(
         rust_type
             `($'core_any_Any')
@@ -42,7 +42,7 @@ nominal any =
     )
 
 /// ### try
-nominal try t =
+:! try t =
     `(
         rust_type
             `($'core_ops_Try<`t>')
@@ -51,7 +51,7 @@ nominal try t =
     )
 
 /// ### cow
-nominal cow t =
+:! cow t =
     `(
         rust_type
             `($'std_borrow_Cow<`t>')
@@ -60,7 +60,7 @@ nominal cow t =
     )
 
 /// ### ref_cell
-nominal ref_cell t =
+:! ref_cell t =
     `(
         rust_type
             `($'std_cell_RefCell<`t>')
@@ -69,7 +69,7 @@ nominal ref_cell t =
     )
 
 /// ### cell_ref
-nominal cell_ref t =
+:! cell_ref t =
     `(
         rust_type
             `($'std_cell_Ref<`t>')
@@ -78,7 +78,7 @@ nominal cell_ref t =
     )
 
 /// ### rc
-nominal rc t =
+:! rc t =
     `(
         rust_type
             `($'std_rc_Rc<`t>')
@@ -87,7 +87,7 @@ nominal rc t =
     )
 
 /// ### lifetime_ref
-nominal lifetime_ref (t : * -> *) u =
+:! lifetime_ref (t : * -> *) u =
     `(
         rust_type
             `($'LifetimeRef<`(t u)>')
@@ -96,7 +96,7 @@ nominal lifetime_ref (t : * -> *) u =
     )
 
 /// ### lifetime_join
-nominal lifetime_join t u =
+:! lifetime_join t u =
     `(
         rust_type
             `($'LifetimeJoin<`t, `u>')
@@ -105,7 +105,7 @@ nominal lifetime_join t u =
     )
 
 /// ### lifetime
-nominal lifetime t u =
+:! lifetime t u =
     `(
         rust_type
             `($'Lifetime<`t, `u>')
@@ -114,7 +114,7 @@ nominal lifetime t u =
     )
 
 /// ### static_lifetime
-nominal static_lifetime =
+:! static_lifetime =
     `(
         rust_type
             `($'StaticLifetime')
@@ -123,7 +123,7 @@ nominal static_lifetime =
     )
 
 /// ### ref
-nominal ref t =
+:! ref t =
     `(
         rust_type
             `($'Ref<`t>')
@@ -132,10 +132,10 @@ nominal ref t =
     )
 
 /// ### static_ref
-nominal static_ref t = ref (lifetime static_lifetime t)
+:! static_ref t = ref (lifetime static_lifetime t)
 
 /// ### weak_rc
-nominal weak_rc t =
+:! weak_rc t =
     `(
         rust_type
             `($'std_rc_Weak<`t>')
@@ -144,7 +144,7 @@ nominal weak_rc t =
     )
 
 /// ### box
-nominal box t =
+:! box t =
     `(
         rust_type
             `($'Box<`t>')
@@ -153,7 +153,7 @@ nominal box t =
     )
 
 /// ### mut_cell
-nominal mut_cell t =
+:! mut_cell t =
     `(
         rust_type
             `($'MutCell<`t>')
@@ -162,7 +162,7 @@ nominal mut_cell t =
     )
 
 /// ### pin
-nominal pin t =
+:! pin t =
     `(
         rust_type
             `($'std_pin_Pin<`t>')
@@ -171,7 +171,7 @@ nominal pin t =
     )
 
 /// ### dyn'
-nominal dyn' t =
+:! dyn' t =
     `(
         rust_type
             `($'Dyn<`t>')
@@ -180,7 +180,7 @@ nominal dyn' t =
     )
 
 /// ### fn'
-nominal fn' t =
+:! fn' t =
     `(
         rust_type
             `($'Fn<`t>')
@@ -189,7 +189,7 @@ nominal fn' t =
     )
 
 /// ### action_fn
-nominal action_fn t =
+:! action_fn t =
     `(
         rust_type
             `($'ActionFn<`t>')
@@ -198,7 +198,7 @@ nominal action_fn t =
     )
 
 /// ### action_fn2
-nominal action_fn2 t u =
+:! action_fn2 t u =
     `(
         rust_type
             `($'ActionFn2<`t, `u>')
@@ -207,7 +207,7 @@ nominal action_fn2 t u =
     )
 
 /// ### fn_once
-nominal fn_once t =
+:! fn_once t =
     `(
         rust_type
             `($'FnOnce<`t>')
@@ -216,7 +216,7 @@ nominal fn_once t =
     )
 
 /// ### fn_unit
-nominal fn_unit =
+:! fn_unit =
     `(
         rust_type
             `($'FnUnit')
@@ -225,7 +225,7 @@ nominal fn_unit =
     )
 
 /// ### impl
-nominal impl t =
+:! impl t =
     `(
         rust_type
             `($'Impl<`t>')
@@ -234,7 +234,7 @@ nominal impl t =
     )
 
 /// ### mut'
-nominal mut' t =
+:! mut' t =
     `(
         rust_type
             `($'Mut<`t>')
@@ -243,7 +243,7 @@ nominal mut' t =
     )
 
 /// ### ref_mut
-nominal ref_mut t =
+:! ref_mut t =
     `(
         rust_type
             `($'std_cell_RefMut<`t>')
@@ -252,22 +252,22 @@ nominal ref_mut t =
     )
 
 /// ### send
-nominal send t = $'`(t)'
+:! send t = $'`(t)'
 
 /// ### emit_expr
-inl emit_expr forall a t. (args : a) (code : string) : t =
+:= emit_expr \* a t. (args : a) (code : string) : t =
     $'__spiral_emit_rust !args !code '
 
 /// ### (~!\\)
-inl (~!\) forall t. (code : string) : t =
+:= (~!\) \* t. (code : string) : t =
     emit_expr () code
 
 /// ### (~!\\\\)
-inl (~!\\) forall t u. ((args : t), (code : string)) : u =
+:= (~!\\) \* t u. ((args : t), (code : string)) : u =
     emit_expr args code
 
 /// ### ptr
-nominal ptr t =
+:! ptr t =
     `(
         rust_type
             `($'Ptr<`t>')
@@ -276,11 +276,11 @@ nominal ptr t =
     )
 
 /// ### ptr_read
-inl ptr_read forall t. (x : ptr t) : t =
+:= ptr_read \* t. (x : ptr t) : t =
     !\\(x, $'"std::ptr::read($0)"')
 
 /// ### u128
-nominal u128 =
+:! u128 =
     `(
         rust_type
             `($'u128')
@@ -288,246 +288,246 @@ nominal u128 =
             "type u128 = class end"
     )
 
-inl u128 forall t. (x : t) : u128 =
+:= u128 \* t. (x : t) : u128 =
     !\\(x, $'"$0 as u128"')
 
 /// ### f64
-inl f64 forall t. (x : t) : f64 =
+:= f64 \* t. (x : t) : f64 =
     !\\(x, $'"$0 as f64"')
 
 /// ### unwrap_0
-inl unwrap_0 forall (t : * -> *) u. (x : t u) : u =
+:= unwrap_0 \* (t : * -> *) u. (x : t u) : u =
     !\\(x, $'"$0.0"')
 
 /// ### unwrap_0_ref
-inl unwrap_0_ref forall (t : * -> *) u. (x : ref (t u)) : ref u =
+:= unwrap_0_ref \* (t : * -> *) u. (x : ref (t u)) : ref u =
     !\\(x, $'"&$0.0"')
 
 /// ### len
-inl len forall t u {uint; int}. (x : t) : u =
+:= len \* t u {uint; int}. (x : t) : u =
     backend_switch {
-        Rust = fun () => $'((!x).len() as `u)' : u
+        Rust = \ () => $'((!x).len() as `u)' : u
     }
 
 /// ### len'
-inl len' forall t u {uint; int}. (x : t) : u =
+:= len' \* t u {uint; int}. (x : t) : u =
     !\\(x, $'$"$0.len()"')
 
 /// ### emit
-inl emit forall t. (x : t) : t =
+:= emit \* t. (x : t) : t =
     !\\(x, $'"$0"')
 
 /// ### emit'
-inl emit' forall t. (x : t) : t =
+:= emit' \* t. (x : t) : t =
     (!\\(x, $'$"true; let !x = $0"') : bool) |> ignore
     x
 
 /// ### clone
-inl clone forall t. (x : t) : t =
+:= clone \* t. (x : t) : t =
     !\\(x, $'"$0.clone()"')
 
 /// ### clone_rust
-inl clone_rust forall t. (x : t) : t =
+:= clone_rust \* t. (x : t) : t =
     backend_switch {
-        Gleam = fun () => x
-        Lua = fun () => x
-        Fsharp = fun () => x
-        Python = fun () => x
-        TypeScript = fun () => x
-        Cpp = fun () => x
-        CppHost = fun () => x
-        Delphi = fun () => x
-        Cuda = fun () => x
-        Rust = fun () => clone x
+        Gleam = \ () => x
+        Lua = \ () => x
+        Fsharp = \ () => x
+        Python = \ () => x
+        TypeScript = \ () => x
+        Cpp = \ () => x
+        CppHost = \ () => x
+        Delphi = \ () => x
+        Cuda = \ () => x
+        Rust = \ () => clone x
     }
 
 /// ### dbg
-inl dbg forall t. (x : t) : t =
+:= dbg \* t. (x : t) : t =
     !\\(x, $'"dbg\!($0)"')
 
 /// ### new_box
-inl new_box forall t. (x : t) : box t =
+:= new_box \* t. (x : t) : box t =
     !\\(x, $'"Box::new($0)"')
 
 /// ### new_rc
-inl new_rc forall t. (x : t) : rc t =
+:= new_rc \* t. (x : t) : rc t =
     !\\(x, $'"std::rc::Rc::new($0)"')
 
 /// ### rc_clone
-inl rc_clone forall t. (x : rc t) : rc t =
+:= rc_clone \* t. (x : rc t) : rc t =
     !\\(x, $'"std::rc::Rc::clone(&$0)"')
 
 /// ### rc_unwrap_or_clone
-inl rc_unwrap_or_clone forall t. (x : rc t) : t =
+:= rc_unwrap_or_clone \* t. (x : rc t) : t =
     !\\(x, $'"std::rc::Rc::unwrap_or_clone($0)"')
 
 /// ### rc_downgrade
-inl rc_downgrade forall t. (x : rc t) : weak_rc t =
+:= rc_downgrade \* t. (x : rc t) : weak_rc t =
     !\\(x, $'"std::rc::Rc::downgrade(&$0)"')
 
 /// ### new_ref_cell
-inl new_ref_cell forall t. (x : t) : ref_cell t =
+:= new_ref_cell \* t. (x : t) : ref_cell t =
     !\($'"std::cell::RefCell::new(!x)"')
 
 /// ### ref_cell_borrow
-inl ref_cell_borrow forall t. (x : rc (ref_cell t)) : cell_ref t =
+:= ref_cell_borrow \* t. (x : rc (ref_cell t)) : cell_ref t =
     !\\(x, $'"std::cell::RefCell::borrow(&std::rc::Rc::clone(&$0))"')
 
 /// ### ref_cell_borrow_mut
-inl ref_cell_borrow_mut forall t. (x : rc (ref_cell t)) : mut' t =
+:= ref_cell_borrow_mut \* t. (x : rc (ref_cell t)) : mut' t =
     !\\(x, $'"std::cell::RefCell::borrow_mut(&std::rc::Rc::clone(&$0))"')
 
 /// ### ref_leak
-inl ref_leak forall t. (x : cell_ref t) : ref t =
+:= ref_leak \* t. (x : cell_ref t) : ref t =
     !\\(x, $'"std::cell::Ref::leak($0)"')
 
 /// ### to_mut
-inl to_mut forall t. (x : t) : () =
+:= to_mut \* t. (x : t) : () =
     (!\($'"true; // 1"') : bool) |> ignore
     !\($'"let mut !x = !x"') : ()
 
 /// ### to_ref
-inl to_ref forall t. (x : t) : ref t =
+:= to_ref \* t. (x : t) : ref t =
     !\\(x, $'"&$0"')
 
 /// ### to_ref_mut
-inl to_ref_mut forall t. (x : t) : ref (mut' t) =
+:= to_ref_mut \* t. (x : t) : ref (mut' t) =
     backend_switch {
-        Rust = fun () => !\\(x, $'"&mut $0"') : ref (mut' t)
+        Rust = \ () => !\\(x, $'"&mut $0"') : ref (mut' t)
     }
 
 /// ### to_ref_mut'
-inl to_ref_mut' forall t. (x : ref_mut (ref (mut' t))) : ref (mut' t) =
+:= to_ref_mut' \* t. (x : ref_mut (ref (mut' t))) : ref (mut' t) =
     x |> to_mut
     !\\(x, $'"&mut $0"')
 
 /// ### ref_cell_borrow_mut'
-inl ref_cell_borrow_mut' forall t. (x : rc (ref_cell (ref (mut' t)))) : ref (mut' t) =
-    inl x = x |> rc_clone
-    inl x : ref_mut (ref (mut' t)) = !\\(x, $'"std::cell::RefCell::borrow_mut(&$0)"')
+:= ref_cell_borrow_mut' \* t. (x : rc (ref_cell (ref (mut' t)))) : ref (mut' t) =
+    := x = x |> rc_clone
+    := x : ref_mut (ref (mut' t)) = !\\(x, $'"std::cell::RefCell::borrow_mut(&$0)"')
     x |> to_ref_mut'
 
 /// ### ref_map
-inl ref_map forall t u. (fn : t -> u) (x : ref t) : ref u =
+:= ref_map \* t u. (fn : t -> u) (x : ref t) : ref u =
     !\($'"!fn(!x)"')
 
 /// ### ref_eval
-inl ref_eval forall t u. (fn : t -> u) (ref : ref t) : u =
+:= ref_eval \* t u. (fn : t -> u) (ref : ref t) : u =
     !\\(fn, $'"$0(!ref.clone())"')
 
 /// ### cow_as_ref
-inl cow_as_ref forall t. (s : cow t) : ref t =
+:= cow_as_ref \* t. (s : cow t) : ref t =
     !\\(s, $'"$0.as_ref()"')
 
 /// ### from_mut
-inl from_mut forall t. (x : mut' t) : t =
+:= from_mut \* t. (x : mut' t) : t =
     !\\(x, $'"$0"')
 
 /// ### box_fn
-inl box_fn forall t. (x : () -> ()) : box t =
-    inl x = join x
+:= box_fn \* t. (x : () -> ()) : box t =
+    := x = ~~ x
     !\($'"Box::new(move || !x())"')
 
 /// ### box_pin
-inl box_pin forall t. (x : t) : pin (box t) =
+:= box_pin \* t. (x : t) : pin (box t) =
     !\\(x, $'"Box::pin($0)"')
 
 /// ### deref
-inl deref forall t. (ref : ref t) : t =
+:= deref \* t. (ref : ref t) : t =
     !\\(ref, $'"*$0"')
 
 /// ### deref_mut
-inl deref_mut forall t. (x : ref (mut' t)) : t =
+:= deref_mut \* t. (x : ref (mut' t)) : t =
     !\\(x, $'"*$0"')
 
 /// ### clone_deref
-inl clone_deref forall t. (ref : ref t) : t =
+:= clone_deref \* t. (ref : ref t) : t =
     !\\(ref, $'"$0.clone()"')
 
 /// ### from_ref
-inl from_ref forall t. (ref : ref t) : t =
+:= from_ref \* t. (ref : ref t) : t =
     !\($'"!ref"')
 
 /// ### from_ref_mut
-inl from_ref_mut forall t. (ref : ref (mut' t)) : t =
+:= from_ref_mut \* t. (ref : ref (mut' t)) : t =
     !\($'"!ref"')
 
 /// ### reref
-inl reref forall t (u : * -> *). (x : ref (u t)) : ref t =
+:= reref \* t (u : * -> *). (x : ref (u t)) : ref t =
     backend_switch {
-        Rust = fun () => !\\(x, $'"&*$0"') : ref t
+        Rust = \ () => !\\(x, $'"&*$0"') : ref t
     }
 
 /// ### into
-inl into forall t u. (x : t) : u =
+:= into \* t u. (x : t) : u =
     !\($'"!x.into()"')
 
 /// ### ops_deref
-inl ops_deref forall t. (ref : t) : t =
+:= ops_deref \* t. (ref : t) : t =
     !\\(ref, $'"core::ops::Deref::deref(&$0)"')
 
 /// ### one_param_fn
-nominal one_param t = $'(`t)'
-inl one_param_fn forall t u. (fn : t -> u) : one_param t -> u =
-    fun (x : one_param t) =>
-        inl x : t = $'(!x)'
+:! one_param t = $'(`t)'
+:= one_param_fn \* t u. (fn : t -> u) : one_param t -> u =
+    \ (x : one_param t) =>
+        := x : t = $'(!x)'
         fn x
 
 /// ### box_leak
-inl box_leak forall t. (x : box t) : static_ref (mut' t) =
+:= box_leak \* t. (x : box t) : static_ref (mut' t) =
     !\\(x, $'"Box::leak($0)"')
 
 /// ### drop
-inl drop forall t. (x : t) : () =
+:= drop \* t. (x : t) : () =
     (!\\(x, $'"true; drop($0)"') : bool) |> ignore
 
 /// ### break
-inl break x : () =
+:= break x : () =
     (!\($'"true; break !x"') : bool) |> ignore
 
 /// ### fix_closure
-inl fix_closure forall t. (depth : u8 * u8) (x : t) =
+:= fix_closure \* t. (depth : u8 * u8) (x : t) =
     backend_switch {
-        Rust = fun () =>
-            inl is_unit : bool =
-                real
-                    typecase t with
-                    | () => true
-                    | _ => false
-            if is_unit
-            then (!\($'"true; () }); //"') : bool) |> ignore
-            else ($'true; (!x) }); //' : bool) |> ignore
+        Rust = \ () =>
+            := is_unit : bool =
+                ~>
+                    ?: t ?|
+                    | () => !+
+                    | _ => !-
+            ? is_unit
+            ?> (!\($'"true; () }); //"') : bool) |> ignore
+            |: ($'true; (!x) }); //' : bool) |> ignore
     }
 
 /// ### loop
-inl loop (depth : i32) (fn : () -> ()) : () =
+:= loop (depth : i32) (fn : () -> ()) : () =
     (!\($'"true; loop { // rust.loop 1"') : bool) |> ignore
     fn ()
 
     listm.init depth id
-    |> listm.iter fun n =>
+    |> listm.iter \ n =>
         (!\($'"true; } // rust.loop 2 / n: {!n}"') : bool) |> ignore
 
     (!\($'"true; } // rust.loop 3"') : bool) |> ignore
 
     listm.init depth id
-    |> listm.iter fun n =>
+    |> listm.iter \ n =>
         (!\($'"true; { // rust.loop 4 / n: {!n}"') : bool) |> ignore
 
 /// ### capture
-inl capture forall t. (fn : () -> t) : t =
+:= capture \* t. (fn : () -> t) : t =
     (!\($'"true; let _capture = (|| { //"') : bool) |> ignore
     (!\\(fn (), $'"true; $0 })()"') : bool) |> ignore
     !\($'"_capture"')
 
 /// ### capture_move
-inl capture_move forall t. (fn : () -> t) : t =
+:= capture_move \* t. (fn : () -> t) : t =
     (!\($'"true; let _capture_move = (move || { //"') : bool) |> ignore
     (!\\(fn (), $'"true; $0 })()"') : bool) |> ignore
     !\($'"_capture_move"')
 
 /// ### type_emit
-nominal type_emit t =
+:! type_emit t =
     `(
         rust_type
             `($'TypeEmit<`t>')
@@ -536,7 +536,7 @@ nominal type_emit t =
     )
 
 /// ### partial_eq_wrapper
-nominal partial_eq_wrapper t =
+:! partial_eq_wrapper t =
     `(
         rust_type
             `($'PartialEqWrapper<`t>')
@@ -545,7 +545,7 @@ nominal partial_eq_wrapper t =
     )
 
 /// ### new_partial_eq_wrapper
-inl new_partial_eq_wrapper forall t.
+:= new_partial_eq_wrapper \* t.
     (eq_fn : ref (partial_eq_wrapper t) -> ref (partial_eq_wrapper t) -> bool)
     (x : t)
     : partial_eq_wrapper t
@@ -560,7 +560,7 @@ inl new_partial_eq_wrapper forall t.
     $'PartialEqWrapper(!x.clone())' : partial_eq_wrapper t
 
 /// ### concat
-inl concat forall (t : * -> *) u. (x : t (t u)) : t u =
+:= concat \* (t : * -> *) u. (x : t (t u)) : t u =
     backend_switch {
-        Rust = fun () => $'(!x).concat()' : t u
+        Rust = \ () => $'(!x).concat()' : t u
     }

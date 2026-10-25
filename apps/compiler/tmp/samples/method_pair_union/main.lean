@@ -35,12 +35,11 @@ def U0.spiralTag : U0 → Int32
 mutual
 partial def method0 (p0 : Int32) : IO (U0 × U0) := do
     let mut v0 : Int32 := p0
-    let mut v1 : Bool := default
     let mut v2 : U0 := default
     let mut v3 : U0 := default
     let mut v4 : U0 := default
     let mut v5 : U0 := default
-    v1 := (v0 == (0 : Int32))
+    let v1 : Bool := (v0 == (0 : Int32))
     if v1 then
         v2 := U0.None
         v3 := U0.None
@@ -50,16 +49,13 @@ partial def method0 (p0 : Int32) : IO (U0 × U0) := do
         v5 := U0.None
         return (v4, v5)
 partial def spiralMain : IO Int32 := do
-    let mut v0 : Int32 := default
-    let mut v1 : U0 := default
-    let mut v2 : U0 := default
     let mut v3 : Int32 := default
     let mut v4 : Bool := default
     let mut v6 : Int32 := default
-    v0 := (7 : Int32)
+    let v0 : Int32 := (7 : Int32)
     let (r1_0, r1_1) := (← method0 v0)
-    v1 := r1_0
-    v2 := r1_1
+    let v1 : U0 := r1_0
+    let v2 : U0 := r1_1
     match v1 with
     | U0.None =>
         return (1 : Int32)

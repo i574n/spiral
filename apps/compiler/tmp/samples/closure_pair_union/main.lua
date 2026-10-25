@@ -21,21 +21,19 @@ end
 local v0 = 7
 local v1 = f_c0({ v0 })
 local v2, v3 = (table.unpack or unpack)(v1(1))
-local __v = { v2 }
-if __v[1] ~= nil and __v[1].tag == "Us0_None" then
+if v2 ~= nil and v2.tag == "Us0_None" then
     return 1
-elseif __v[1] ~= nil and __v[1].tag == "Us0_Some" then
-    local v4 = __v[1]._1
-    local __v = { v3 }
-    if __v[1] ~= nil and __v[1].tag == "Us0_None" then
+elseif v2 ~= nil and v2.tag == "Us0_Some" then
+    local v4 = v2._1
+    if v3 ~= nil and v3.tag == "Us0_None" then
         local v5 = v4 == 7
         if v5 then
             return 0
         else
             return 1
         end
-    elseif __v[1] ~= nil and __v[1].tag == "Us0_Some" then
-        local v7 = __v[1]._1
+    elseif v3 ~= nil and v3.tag == "Us0_Some" then
+        local v7 = v3._1
         return 1
     end
 end

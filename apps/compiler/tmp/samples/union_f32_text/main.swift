@@ -9,12 +9,10 @@ func sp_score_0(_ p0: US0) -> Int32 {
         case 1:
             var v1: Float = (v0 as! US0_Both).f0
             var v2: String = (v0 as! US0_Both).f1
-            var v3: Bool = false
-            v3 = (v1 == (1.5 as Float))
+            let v3: Bool = (v1 == (1.5 as Float))
             var v5: Bool = false
             if (v3) {
-                var v4: Bool = false
-                v4 = (v2 == "hi")
+                let v4: Bool = (v2 == "hi")
                 v5 = v4
             } else {
                 v5 = false
@@ -31,12 +29,9 @@ func sp_score_0(_ p0: US0) -> Int32 {
     }
 }
 func spiral_main() -> Int32 {
-    var v0: Float = (0.0 as Float)
-    v0 = (1.5 as Float)
-    var v1: String = ""
-    v1 = "hi"
-    var v2: Bool = false
-    v2 = true
+    let v0: Float = (1.5 as Float)
+    let v1: String = "hi"
+    let v2: Bool = true
     var v5: US0 = US0_None()
     if (v2) {
         v5 = US0_Both(f0: v0, f1: v1)

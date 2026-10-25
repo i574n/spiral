@@ -24,26 +24,19 @@ func sp_score_0(_ p0: US0) -> Int32 {
             v5 = v2.items[Int(0)]
             var v6: Int32 = 0
             v6 = (v4 &+ v5)
-            var v7: Int32 = 0
-            v7 = v2.items[Int(1)]
-            var v8: Int32 = 0
-            v8 = (v6 &+ v7)
-            var v9: Int32 = 0
-            v9 = v3.items[Int(0)]
-            var v10: Int32 = 0
-            v10 = (v8 &+ v9)
-            var v11: Int32 = 0
-            v11 = v3.items[Int(1)]
-            var v12: Int32 = 0
-            v12 = (v10 &+ v11)
+            let v7: Int32 = v2.items[Int(1)]
+            let v8: Int32 = (v6 &+ v7)
+            let v9: Int32 = v3.items[Int(0)]
+            let v10: Int32 = (v8 &+ v9)
+            let v11: Int32 = v3.items[Int(1)]
+            let v12: Int32 = (v10 &+ v11)
             return v12
         default:
             fatalError("unreachable union case")
     }
 }
 func spiral_main() -> Int32 {
-    var v0: Int32 = 0
-    v0 = 2
+    let v0: Int32 = 2
     var v1: SpiralArray<SpiralArray<Int32>> = SpiralArray<SpiralArray<Int32>>([])
     v1 = SpiralArray<SpiralArray<Int32>>(Array(repeating: SpiralArray<Int32>([]), count: Int(v0)))
     var v2: SpiralArray<Int32> = SpiralArray<Int32>([])

@@ -31,12 +31,10 @@ func sp_score_0(_ p0: US0) -> Int32 {
             var v6: String = ""
             v5 = v2.l0
             v6 = v2.l1
-            var v7: Bool = false
-            v7 = (v3 == 7)
+            let v7: Bool = (v3 == 7)
             var v9: Bool = false
             if (v7) {
-                var v8: Bool = false
-                v8 = (v4 == "hi")
+                let v8: Bool = (v4 == "hi")
                 v9 = v8
             } else {
                 v9 = false
@@ -51,8 +49,7 @@ func sp_score_0(_ p0: US0) -> Int32 {
             }
             var v13: Bool = false
             if (v11) {
-                var v12: Bool = false
-                v12 = (v6 == "yo")
+                let v12: Bool = (v6 == "yo")
                 v13 = v12
             } else {
                 v13 = false
@@ -69,12 +66,9 @@ func sp_score_0(_ p0: US0) -> Int32 {
     }
 }
 func spiral_main() -> Int32 {
-    var v0: Int32 = 0
-    v0 = 7
-    var v1: String = ""
-    v1 = "hi"
-    var v2: Heap0 = Heap0(l0: 0, l1: "")
-    v2 = Heap0(l0: v0, l1: v1)
+    let v0: Int32 = 7
+    let v1: String = "hi"
+    let v2: Heap0 = Heap0(l0: v0, l1: v1)
     var v3: Int32 = 0
     v3 = 4
     var v4: String = ""

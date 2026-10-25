@@ -7,14 +7,12 @@ fun sp_method0(p0: Int): String {
         v2 = "no"
         return v2
     } else {
-        var v3: String = ""
-        v3 = "hi"
+        val v3: String = "hi"
         return v3
     }
 }
 fun spiral_main(): Int {
-    var v0: Int = 0
-    v0 = 7
+    val v0: Int = 7
     var v1: String = ""
     v1 = sp_method0(v0)
     var v2: Boolean = false

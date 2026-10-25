@@ -31,8 +31,8 @@ function spiral_string_slice(value: string, from: number, to: number): string {
 }
 function closure1(v0: string): ((a0: number) => number) {
     return (v1: number): number => {
-        let v2: number = spiral_string_length(v0);
-        let v3: number = (v2 + v1) | 0;
+        const v2: number = spiral_string_length(v0);
+        const v3: number = (v2 + v1) | 0;
         return v3;
     };
 }
@@ -45,9 +45,9 @@ function method0(v0: ((a0: number) => number)): number {
     return v0(39);
 }
 export function main(): number {
-    let v0: ((a0: string) => ((a0: number) => number)) = make_c0();
-    let v1: string = "abc";
-    let v2: ((a0: number) => number) = v0(v1);
+    const v0: ((a0: string) => ((a0: number) => number)) = make_c0();
+    const v1: string = "abc";
+    const v2: ((a0: number) => number) = v0(v1);
     return method0(v2);
 }
 process.exitCode = main();

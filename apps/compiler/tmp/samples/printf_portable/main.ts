@@ -1,8 +1,8 @@
 export function main(): number {
-    let v0: number = 60;
-    let v1: bigint = (-9000000000n);
-    let v2: number = 200;
-    let v3: string = "cube";
+    const v0: number = 60;
+    const v1: bigint = (-9000000000n);
+    const v2: number = 200;
+    const v3: string = "cube";
     process.stdout.write(v3 + ": " + String(v0) + " frames, checksum " + String(970392) + "\n");
     process.stdout.write("big " + String(v1) + ", small " + String((-5)) + ", byte " + String(v2) + "\n");
     process.stdout.write("100% {braces} \"quoted\" \\ tab\tend\n");

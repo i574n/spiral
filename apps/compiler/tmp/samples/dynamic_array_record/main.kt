@@ -11,16 +11,11 @@ fun sp_method0(): SpiralTuple0 {
 fun sp_method1(p0: Array<Int>, p1: Int): Int {
     var v0: Array<Int> = p0
     var v1: Int = p1
-    var v2: Int = 0
-    v2 = v0[0]
-    var v3: Int = 0
-    v3 = v0[1]
-    var v4: Int = 0
-    v4 = (v2 + v3)
-    var v5: Int = 0
-    v5 = (v4 + v1)
-    var v6: Int = 0
-    v6 = (v5 - 10)
+    val v2: Int = v0[0]
+    val v3: Int = v0[1]
+    val v4: Int = (v2 + v3)
+    val v5: Int = (v4 + v1)
+    val v6: Int = (v5 - 10)
     return v6
 }
 fun spiral_main(): Int {

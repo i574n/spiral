@@ -1,8 +1,8 @@
-open sm'_operators
-open leptos
-open rust
+:< sm'_operators
+:< leptos
+:< rust
 
-type props =
+:== props =
     {
         class : () -> string
         cols_class : () -> string
@@ -10,19 +10,19 @@ type props =
         padding_class : () -> string
     }
 
-inl props () : props =
+:= props () : props =
     {
-        class = fun () => ""
-        padding_class = fun () => "pt-[9px] pr-[10px] pb-[11px] pl-[10px]"
-        cols_class = fun () => "sm:grid-cols-[150px_repeat(2,minmax(0,1fr))]"
-        dd_class = fun () => "[overflow:auto]"
+        class = \ () => ""
+        padding_class = \ () => "pt-[9px] pr-[10px] pb-[11px] pl-[10px]"
+        cols_class = \ () => "sm:grid-cols-[150px_repeat(2,minmax(0,1fr))]"
+        dd_class = \ () => "[overflow:auto]"
     }
 
-inl render props_fn left right : _ (_ dl) =
-    inl props : props = props () |> props_fn
-    inl left = join left
-    inl right = join right
-    inl { cols_class padding_class class } = props
+:= render props_fn left right : _ (_ dl) =
+    := props : props = props () |> props_fn
+    := left = ~~ left
+    := right = ~~ right
+    := { cols_class padding_class class } = props
 
     dl [
         class_fn
@@ -30,9 +30,9 @@ inl render props_fn left right : _ (_ dl) =
                 "grid gap-[1px] flex-1 even:bg-gray-50 [inline-size:max-content] [width:100%] "
                 ^^ "[grid-auto-columns:max-content] "
             )
-            fun () =>
+            \ () =>
                 cols_class () ++# " " ++# padding_class () ++# " " ++# class ()
-    ] fun () =>
+    ] \ () =>
         :>[
             dt [
                 $'"class=\\\"[font-size:12px] text-gray-400\\\""'

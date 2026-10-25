@@ -48,12 +48,9 @@ fun f_c0(v0: Int, v1: Int): (Int) -> SpiralTuple0 {
     return { p0: Int -> body(p0) }
 }
 fun spiral_main(): Int {
-    var v0: Int = 0
-    v0 = 3
-    var v1: Int = 0
-    v1 = 4
-    var v2: (Int) -> SpiralTuple0 = { _: Int -> throw RuntimeException() }
-    v2 = f_c0(v0, v1)
+    val v0: Int = 3
+    val v1: Int = 4
+    val v2: (Int) -> SpiralTuple0 = f_c0(v0, v1)
     var v3: (Int) -> Int = { _: Int -> throw RuntimeException() }
     var v4: (Int) -> Int = { _: Int -> throw RuntimeException() }
     val spiral_tuple325 = v2(1)
@@ -65,8 +62,7 @@ fun spiral_main(): Int {
     v6 = v4(0)
     var v7: Int = 0
     v7 = (v5 + v6)
-    var v8: Boolean = false
-    v8 = (v7 == 7)
+    val v8: Boolean = (v7 == 7)
     if (v8) {
         return 0
     } else {

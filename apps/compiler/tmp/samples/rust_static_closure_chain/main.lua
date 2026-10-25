@@ -1,18 +1,8 @@
-local function spiral_wrap_unsigned(value, bits)
-    return value % (2 ^ bits)
-end
 local function spiral_wrap_signed(value, bits)
     local modulus = 2 ^ bits
     value = value % modulus
     if value >= modulus / 2 then value = value - modulus end
     return value
-end
-local function spiral_mul_mod32(a, b)
-    a = a % 4294967296
-    b = b % 4294967296
-    local a_low = a % 65536
-    local a_high = (a - a_low) / 65536
-    return (a_low * b + ((a_high * b) % 65536) * 65536) % 4294967296
 end
 local function spiral_bit_combine(a, b, keep)
     a = a % 4294967296
@@ -241,9 +231,9 @@ function spiral_w64.tostring(a, s)
     until not more
     return sign .. string.reverse(table.concat(digits))
 end
-local Uh0_Cons, Uh0_Nil, closure79, closure78, closure77, closure76, closure75, closure74, closure73, closure72, closure71, closure70, closure69, closure68, closure67, closure66, closure65, closure64, closure63, closure62, closure61, closure60, closure59, closure58, closure57, closure56, closure55, closure54, closure53, closure52, closure51, closure50, closure49, closure48, closure47, closure46, closure45, closure44, closure43, closure42, closure41, closure40, closure39, closure38, closure37, closure36, closure35, closure34, closure33, closure32, closure31, closure30, closure29, closure28, closure27, closure26, closure25, closure24, closure23, closure22, closure21, closure20, closure19, closure18, closure17, closure16, closure15, closure14, closure13, closure12, closure11, closure10, closure9, closure8, closure7, closure6, closure5, closure4, closure3, closure2, closure1, closure0, loop_0
+local Uh0_Cons, closure79, closure78, closure77, closure76, closure75, closure74, closure73, closure72, closure71, closure70, closure69, closure68, closure67, closure66, closure65, closure64, closure63, closure62, closure61, closure60, closure59, closure58, closure57, closure56, closure55, closure54, closure53, closure52, closure51, closure50, closure49, closure48, closure47, closure46, closure45, closure44, closure43, closure42, closure41, closure40, closure39, closure38, closure37, closure36, closure35, closure34, closure33, closure32, closure31, closure30, closure29, closure28, closure27, closure26, closure25, closure24, closure23, closure22, closure21, closure20, closure19, closure18, closure17, closure16, closure15, closure14, closure13, closure12, closure11, closure10, closure9, closure8, closure7, closure6, closure5, closure4, closure3, closure2, closure1, closure0, loop_0
 function Uh0_Cons(v0, v1) return { tag = "Uh0_Cons",  _1 = v0,  _2 = v1 } end
-function Uh0_Nil() return { tag = "Uh0_Nil" } end
+Uh0_Nil = (function() local shared = { tag = "Uh0_Nil" } return function() return shared end end)()
 
 function closure79(capt)
     return function(dom)
@@ -805,14 +795,13 @@ function closure0(capt)
 end
 
 function loop_0(v0, v1)
-    local __v = { v0 }
-    if __v[1] ~= nil and __v[1].tag == "Uh0_Cons" then
-        local v2 = __v[1]._1
-        local v3 = __v[1]._2
+    if v0 ~= nil and v0.tag == "Uh0_Cons" then
+        local v2 = v0._1
+        local v3 = v0._2
         local v4 = v3(nil)
         local v5 = spiral_w64.add(v1, v2, false)
         return loop_0(v4, v5)
-    elseif __v[1] ~= nil and __v[1].tag == "Uh0_Nil" then
+    elseif v0 ~= nil and v0.tag == "Uh0_Nil" then
         return v1
     end
 end

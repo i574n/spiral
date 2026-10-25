@@ -1,5 +1,5 @@
 sealed interface US0 { val tag: Int }
-class US0_Empty : US0 { override val tag: Int = 0 }
+object US0_Empty : US0 { override val tag: Int = 0 }
 data class US0_Item(val f0: String, val f1: Array<Int>) : US0 { override val tag: Int = 1 }
 fun spiralUtf8(value: String): ByteArray = value.toByteArray(Charsets.UTF_8)
 fun spiralStringLength(value: String): Int = spiralUtf8(value).size
@@ -44,22 +44,17 @@ fun closure1(v0: US0): (Int) -> Int {
                 v4 = spiralStringLength(v2)
                 var v5: Int = 0
                 v5 = v3.size
-                var v6: Int = 0
-                v6 = (v4 + v5)
+                val v6: Int = (v4 + v5)
                 var v7: Int = 0
                 v7 = v3[0]
-                var v8: Int = 0
-                v8 = (v6 + v7)
-                var v9: Int = 0
-                v9 = v3[1]
-                var v10: Int = 0
-                v10 = (v8 + v9)
+                val v8: Int = (v6 + v7)
+                val v9: Int = v3[1]
+                val v10: Int = (v8 + v9)
                 v12 = v10
             }
             else -> throw RuntimeException()
         }
-        var v13: Int = 0
-        v13 = (v12 + v1)
+        val v13: Int = (v12 + v1)
         return v13
     }
     return { p0: Int -> body(p0) }
@@ -74,9 +69,9 @@ fun closure0(): (Int) -> (Int) -> Int {
         v1[1] = v2
         var v3: Boolean = false
         v3 = (v0 == 0)
-        var v7: US0 = US0_Empty()
+        var v7: US0 = US0_Empty
         if (v3) {
-            v7 = US0_Empty()
+            v7 = US0_Empty
         } else {
             var v5: String = ""
             v5 = "hi"
@@ -124,8 +119,7 @@ fun sp_method2(p0: (Int) -> Int, p1: (Int) -> Int): Int {
     return v4
 }
 fun spiral_main(): Int {
-    var v0: (Int) -> (Int) -> Int = { _: Int -> throw RuntimeException() }
-    v0 = closure0()
+    val v0: (Int) -> (Int) -> Int = closure0()
     var v1: (Int) -> Int = { _: Int -> throw RuntimeException() }
     v1 = sp_method0(v0)
     var v2: (Int) -> Int = { _: Int -> throw RuntimeException() }

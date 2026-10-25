@@ -1,4 +1,4 @@
-prototype of_string t : string -> option t
-prototype to_string t : t -> string
-prototype unwrap_format t : t -> string
-prototype show_as t : t -> string
+:? of_string t : string -> option t
+:? to_string t : t -> string
+:? unwrap_format t : t -> string
+:? show_as t : t -> string

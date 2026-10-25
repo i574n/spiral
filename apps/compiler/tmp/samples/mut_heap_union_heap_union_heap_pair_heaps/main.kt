@@ -5,10 +5,10 @@ class Heap3(val l0: US0)
 class Heap4(val l0: US1)
 class Mut5(var l0: Heap4)
 sealed interface US0 { val tag: Int }
-class US0_None : US0 { override val tag: Int = 0 }
+object US0_None : US0 { override val tag: Int = 0 }
 data class US0_Held(val f0: Heap2) : US0 { override val tag: Int = 1 }
 sealed interface US1 { val tag: Int }
-class US1_Absent : US1 { override val tag: Int = 0 }
+object US1_Absent : US1 { override val tag: Int = 0 }
 data class US1_Box(val f0: Heap3) : US1 { override val tag: Int = 1 }
 fun sp_score_0(p0: US1): Int {
     var v0: US1 = p0
@@ -18,7 +18,7 @@ fun sp_score_0(p0: US1): Int {
         }
         1 -> {
             var v1: Heap3 = (v0 as US1_Box).f0
-            var v2: US0 = US0_None()
+            var v2: US0 = US0_None
             v2 = v1.l0
             when (v2.tag) {
                 1 -> {
@@ -51,8 +51,7 @@ fun sp_score_0(p0: US1): Int {
                     }
                     var v16: Boolean = false
                     if (v14) {
-                        var v15: Boolean = false
-                        v15 = (v10 == 4)
+                        val v15: Boolean = (v10 == 4)
                         v16 = v15
                     } else {
                         v16 = false
@@ -89,14 +88,11 @@ fun sp_score_0(p0: US1): Int {
     }
 }
 fun spiral_main(): Int {
-    var v0: Int = 0
-    v0 = 1
-    var v1: String = ""
-    v1 = "no"
+    val v0: Int = 1
+    val v1: String = "no"
     var v2: Heap0 = Heap0(0, "")
     v2 = Heap0(v0, v1)
-    var v3: Int = 0
-    v3 = 2
+    val v3: Int = 2
     var v4: String = ""
     v4 = "zz"
     var v5: Heap0 = Heap0(0, "")
@@ -109,69 +105,55 @@ fun spiral_main(): Int {
     v8 = Heap2(v6, v7)
     var v9: Boolean = false
     v9 = true
-    var v12: US0 = US0_None()
+    var v12: US0 = US0_None
     if (v9) {
         v12 = US0_Held(v8)
     } else {
-        v12 = US0_None()
+        v12 = US0_None
     }
-    var v13: Heap3 = Heap3(US0_None())
+    var v13: Heap3 = Heap3(US0_None)
     v13 = Heap3(v12)
     var v14: Boolean = false
     v14 = true
-    var v17: US1 = US1_Absent()
+    var v17: US1 = US1_Absent
     if (v14) {
         v17 = US1_Box(v13)
     } else {
-        v17 = US1_Absent()
+        v17 = US1_Absent
     }
-    var v18: Heap4 = Heap4(US1_Absent())
+    var v18: Heap4 = Heap4(US1_Absent)
     v18 = Heap4(v17)
-    var v19: Mut5 = Mut5(Heap4(US1_Absent()))
+    var v19: Mut5 = Mut5(Heap4(US1_Absent))
     v19 = Mut5(v18)
     var v20: Int = 0
     v20 = 7
-    var v21: String = ""
-    v21 = "hi"
-    var v22: Heap0 = Heap0(0, "")
-    v22 = Heap0(v20, v21)
-    var v23: Int = 0
-    v23 = 4
-    var v24: String = ""
-    v24 = "yo"
-    var v25: Heap0 = Heap0(0, "")
-    v25 = Heap0(v23, v24)
-    var v26: Heap1 = Heap1(Heap0(0, ""), Heap0(0, ""))
-    v26 = Heap1(v22, v25)
-    var v27: Int = 0
-    v27 = 2
-    var v28: Heap2 = Heap2(Heap1(Heap0(0, ""), Heap0(0, "")), 0)
-    v28 = Heap2(v26, v27)
-    var v29: Boolean = false
-    v29 = true
-    var v32: US0 = US0_None()
+    val v21: String = "hi"
+    val v22: Heap0 = Heap0(v20, v21)
+    val v23: Int = 4
+    val v24: String = "yo"
+    val v25: Heap0 = Heap0(v23, v24)
+    val v26: Heap1 = Heap1(v22, v25)
+    val v27: Int = 2
+    val v28: Heap2 = Heap2(v26, v27)
+    val v29: Boolean = true
+    var v32: US0 = US0_None
     if (v29) {
         v32 = US0_Held(v28)
     } else {
-        v32 = US0_None()
+        v32 = US0_None
     }
-    var v33: Heap3 = Heap3(US0_None())
-    v33 = Heap3(v32)
-    var v34: Boolean = false
-    v34 = true
-    var v37: US1 = US1_Absent()
+    val v33: Heap3 = Heap3(v32)
+    val v34: Boolean = true
+    var v37: US1 = US1_Absent
     if (v34) {
         v37 = US1_Box(v33)
     } else {
-        v37 = US1_Absent()
+        v37 = US1_Absent
     }
-    var v38: Heap4 = Heap4(US1_Absent())
-    v38 = Heap4(v37)
+    val v38: Heap4 = Heap4(v37)
     v19.l0 = v38
-    var v39: Heap4 = Heap4(US1_Absent())
-    v39 = v19.l0
-    var v40: US1 = US1_Absent()
-    v40 = v39.l0
+    val v39: Heap4 = v19.l0
+    val v40: US1 = v39.l0
     return sp_score_0(v40)
 }
 fun main() {

@@ -1,21 +1,16 @@
 class Heap0(val l0: Float, val l1: Int)
 fun spiral_main(): Int {
-    var v0: Float = 0.0f
-    v0 = 1.5f
-    var v1: Int = 0
-    v1 = 7
-    var v2: Heap0 = Heap0(0.0f, 0)
-    v2 = Heap0(v0, v1)
+    val v0: Float = 1.5f
+    val v1: Int = 7
+    val v2: Heap0 = Heap0(v0, v1)
     var v3: Float = 0.0f
     var v4: Int = 0
     v3 = v2.l0
     v4 = v2.l1
-    var v5: Boolean = false
-    v5 = (v3 == 1.5f)
+    val v5: Boolean = (v3 == 1.5f)
     var v7: Boolean = false
     if (v5) {
-        var v6: Boolean = false
-        v6 = (v4 == 7)
+        val v6: Boolean = (v4 == 7)
         v7 = v6
     } else {
         v7 = false

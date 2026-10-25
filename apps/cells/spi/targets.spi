@@ -1,4 +1,4 @@
-union target =
+:| target =
     | RustTarget
     | FsharpTarget
     | TypescriptTarget
@@ -14,24 +14,24 @@ union target =
     | WgslTarget
     | UnknownTarget
 
-inl target_of (tool : string) : target =
-    if tool = "rust" then RustTarget
-    elif tool = "fsharp" then FsharpTarget
-    elif tool = "typescript" then TypescriptTarget
-    elif tool = "python" then PythonTarget
-    elif tool = "cuda" then CudaTarget
-    elif tool = "cpp" then CppTarget
-    elif tool = "gleam" then GleamTarget
-    elif tool = "lua" then LuaTarget
-    elif tool = "c" then CTarget
-    elif tool = "delphi" then DelphiTarget
-    elif tool = "zig" then ZigTarget
-    elif tool = "lean" then LeanTarget
-    elif tool = "wgsl" then WgslTarget
-    else UnknownTarget
+:= target_of (tool : string) : target =
+    ? tool = "rust" ?> RustTarget
+    |? tool = "fsharp" ?> FsharpTarget
+    |? tool = "typescript" ?> TypescriptTarget
+    |? tool = "python" ?> PythonTarget
+    |? tool = "cuda" ?> CudaTarget
+    |? tool = "cpp" ?> CppTarget
+    |? tool = "gleam" ?> GleamTarget
+    |? tool = "lua" ?> LuaTarget
+    |? tool = "c" ?> CTarget
+    |? tool = "delphi" ?> DelphiTarget
+    |? tool = "zig" ?> ZigTarget
+    |? tool = "lean" ?> LeanTarget
+    |? tool = "wgsl" ?> WgslTarget
+    |: UnknownTarget
 
-inl backend (t : target) : string =
-    match t with
+:= backend (t : target) : string =
+    ?= t ?|
     | RustTarget => "Rust"
     | FsharpTarget => "Fsharp"
     | TypescriptTarget => "TypeScript"
@@ -47,8 +47,8 @@ inl backend (t : target) : string =
     | WgslTarget => "Wgsl"
     | UnknownTarget => ""
 
-inl extension (t : target) : string =
-    match t with
+:= extension (t : target) : string =
+    ?= t ?|
     | RustTarget => ".rs"
     | FsharpTarget => ".fsx"
     | TypescriptTarget => ".ts"

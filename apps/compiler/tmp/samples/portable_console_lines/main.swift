@@ -1,23 +1,17 @@
 import CRT
 import WinSDK
 func spiral_main() -> Int32 {
-    var v0: String = ""
-    v0 = "hello"
+    let v0: String = "hello"
     print(v0)
-    var v1: Int32 = 0
-    v1 = 42
+    let v1: Int32 = 42
     print(v1)
-    var v2: String = ""
-    v2 = "a"
+    let v2: String = "a"
     print(v2, terminator: "")
-    var v3: String = ""
-    v3 = "b"
+    let v3: String = "b"
     print(v3, terminator: "")
-    var v4: String = ""
-    v4 = ""
+    let v4: String = ""
     print(v4)
-    var v5: Int64 = (0 as Int64)
-    v5 = (-7 as Int64)
+    let v5: Int64 = (-7 as Int64)
     print(v5)
     return 0
 }

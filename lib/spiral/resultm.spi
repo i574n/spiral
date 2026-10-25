@@ -1,41 +1,41 @@
 /// # resultm
 test resultm static =
-    open testing
+    :< testing
 
-open rust
-open rust_operators
+:< rust
+:< rust_operators
 
 /// ## resultm
 
 /// ### from_option_error
-inl from_option_error error opt =
-    match opt with
+:= from_option_error error opt =
+    ?= opt ?|
     | Some x => Ok x
     | None => Error error
 
 /// ### from_option
-inl from_option opt =
+:= from_option opt =
     opt |> from_option_error "resultm.from_option / Option does not have a value."
 
 /// ### flatten_option
-inl flatten_option forall t u. (x : option (result (option t) u)) : result (option t) u =
-    match x with
+:= flatten_option \* t u. (x : option (result (option t) u)) : result (option t) u =
+    ?= x ?|
     | Some (Error x) => Error x
     | Some (Ok (Some x)) => Ok (Some x)
     | _ => Ok None
 
 /// ### flatten
-inl flatten forall t u. (x : result (result t u) u) : result t u =
-    match x with
+:= flatten \* t u. (x : result (result t u) u) : result t u =
+    ?= x ?|
     | Ok x => x
     | Error x => Error x
 
 /// ### from_try
-inl from_try forall t. (fn : () -> t) (ex_fn : (() -> exn) -> exn) : result t exn =
-    inl ok x = x |> Ok : result t exn
-    inl error (e : exn) = e |> Error : result t exn
+:= from_try \* t. (fn : () -> t) (ex_fn : (() -> exn) -> exn) : result t exn =
+    := ok x = x |> Ok : result t exn
+    := error (e : exn) = e |> Error : result t exn
     backend_switch {
-        Lua = fun () =>
+        Lua = \ () =>
             $'local resultm_fn = !fn '
             $'local resultm_ok = !ok '
             $'local resultm_error = !error '
@@ -48,9 +48,9 @@ inl from_try forall t. (fn : () -> t) (ex_fn : (() -> exn) -> exn) : result t ex
             $'    r = resultm_error(resultm_ex_fn(function() return result end))'
             $'end'
             $'r' : result t exn
-        Fsharp = fun () =>
-            join $'try !fn () |> !ok with ex -> (fun () -> ex) |> !ex_fn |> !error ' : result t exn
-        Python = fun () =>
+        Fsharp = \ () =>
+            ~~ $'try !fn () |> !ok with ex -> (fun () -> ex) |> !ex_fn |> !error ' : result t exn
+        Python = \ () =>
             $'fn = !fn '
             $'ok = !ok '
             $'error = !error '
@@ -58,24 +58,24 @@ inl from_try forall t. (fn : () -> t) (ex_fn : (() -> exn) -> exn) : result t ex
             $'try: x = ok(fn()) '
             $'except Exception as ex: x = error(ex_fn(lambda: ex))'
             $'x' : result t exn
-        TypeScript = fun () =>
+        TypeScript = \ () =>
             $'(() => { try { return !ok(!fn()); } catch (ex) { return !error(!ex_fn(() => ex)); } })()' : result t exn
-        Zig = fun () => fn () |> ok
+        Zig = \ () => fn () |> ok
     }
 
 /// ### get
-inl get forall t e. (source : result t e) : t =
-    match source with
+:= get \* t e. (source : result t e) : t =
+    ?= source ?|
     | Ok x => x
     | Error x =>
         backend_switch {
-            Gleam = fun () =>
+            Gleam = \ () =>
                 global "import gleam/string"
                 $'"resultm.get / Error x: " <> string.inspect(!x)' : string
-            Lua = fun () => $'"resultm.get / Error x: " .. tostring(!x)' : string
-            Fsharp = fun () => $'$"resultm.get / Error x: {!x}"' : string
-            Python = fun () => $'f"resultm.get / Error x: {!x}"' : string
-            TypeScript = fun () => $'"resultm.get / Error x: " + String(!x)' : string
+            Lua = \ () => $'"resultm.get / Error x: " .. tostring(!x)' : string
+            Fsharp = \ () => $'$"resultm.get / Error x: {!x}"' : string
+            Python = \ () => $'f"resultm.get / Error x: {!x}"' : string
+            TypeScript = \ () => $'"resultm.get / Error x: " + String(!x)' : string
             Rust = fun () => $'Rc::<str>::from({ struct SpiralDebug<T>(T); trait SpiralDebugShow { fn show(&self) -> \
                 String; } impl<T: std::fmt::Debug> SpiralDebugShow for SpiralDebug<T> { fn show(&self) -> String { \
                 format\!("{:?}", self.0) } } trait SpiralTypeShow { fn show(&self) -> String; } impl<T> \
@@ -88,21 +88,21 @@ inl get forall t e. (source : result t e) : t =
         |> failwith
 
 /// ### map
-inl map forall t e u. (fn : t -> u) (source : result t e) : result u e =
-    match source with
+:= map \* t e u. (fn : t -> u) (source : result t e) : result u e =
+    ?= source ?|
     | Ok x => x |> fn |> Ok
     | Error x => Error x
 
 /// ### map_error
-inl map_error forall t e u. (fn : e -> u) (source : result t e) : result t u =
-    match source with
+:= map_error \* t e u. (fn : e -> u) (source : result t e) : result t u =
+    ?= source ?|
     | Ok x => Ok x
     | Error x => x |> fn |> Error
 
 /// ### collect_list
-inl collect_list forall t e. (items : list (result t e)) : result (list t) e =
-    let rec collected (items : list (result t e)) (acc : list t) : result (list t) e =
-        match items with
+:= collect_list \* t e. (items : list (result t e)) : result (list t) e =
+    :~ ^ collected (items : list (result t e)) (acc : list t) : result (list t) e =
+        ?= items ?|
         | Nil => Ok (listm.rev acc)
         | Error e :: _ => Error e
         | Ok x :: rest => collected rest (x :: acc)
@@ -111,22 +111,22 @@ inl collect_list forall t e. (items : list (result t e)) : result (list t) e =
 ///> rust
 ///> gleam
 test collect_list_keeps_order_and_stops_at_the_first_error =
-    inl ~bad = "bad"
+    := ~bad = "bad"
     (collect_list ([ Ok 1i32; Ok 2 ] : list (result i32 string)), collect_list [ Ok 1i32; Error bad; Error "later" ])
     |> _assert_eq (Ok [ 1i32; 2 ], Error "bad")
 
 /// ### unwrap_err
-inl unwrap_err forall t u. (x : result t u) : u =
-    match x with
+:= unwrap_err \* t u. (x : result t u) : u =
+    ?= x ?|
     | Ok x =>
         backend_switch {
-            Gleam = fun () =>
+            Gleam = \ () =>
                 global "import gleam/string"
                 $'"resultm.unwrap_err / Ok x: " <> string.inspect(!x)' : string
-            Lua = fun () => $'"resultm.unwrap_err / Ok x: " .. tostring(!x)' : string
-            Fsharp = fun () => $'$"resultm.unwrap_err / Ok x: {!x}"' : string
-            Python = fun () => $'f"resultm.unwrap_err / Ok x: {!x}"' : string
-            TypeScript = fun () => $'"resultm.unwrap_err / Ok x: " + String(!x)' : string
+            Lua = \ () => $'"resultm.unwrap_err / Ok x: " .. tostring(!x)' : string
+            Fsharp = \ () => $'$"resultm.unwrap_err / Ok x: {!x}"' : string
+            Python = \ () => $'f"resultm.unwrap_err / Ok x: {!x}"' : string
+            TypeScript = \ () => $'"resultm.unwrap_err / Ok x: " + String(!x)' : string
             Rust = fun () => $'Rc::<str>::from({ struct SpiralDebug<T>(T); trait SpiralDebugShow { fn show(&self) -> \
                 String; } impl<T: std::fmt::Debug> SpiralDebugShow for SpiralDebug<T> { fn show(&self) -> String { \
                 format\!("{:?}", self.0) } } trait SpiralTypeShow { fn show(&self) -> String; } impl<T> \
@@ -140,19 +140,19 @@ inl unwrap_err forall t u. (x : result t u) : u =
     | Error x => x
 
 /// ### ok
-inl ok forall t. (x : result t _) : option t =
-    match x with
+:= ok \* t. (x : result t _) : option t =
+    ?= x ?|
     | Ok x => Some x
     | Error _ => None
 
 /// ## fsharp
 
 /// ### result'
-inl result'_types () =
+:= result'_types () =
     backend_switch {
-        Gleam = fun () => global "import gleam/result"
+        Gleam = \ () => global "import gleam/result"
     }
-type result'_switch t u =
+:== result'_switch t u =
     {
         Gleam : $'Result(`t, `u)'
         Lua : result t u
@@ -162,73 +162,73 @@ type result'_switch t u =
         TypeScript : result t u
         Zig : result t u
     }
-nominal result' t u = $'backend_switch `(result'_switch t u)'
+:! result' t u = $'backend_switch `(result'_switch t u)'
 
-inl result'_union () : bool =
+:= result'_union () : bool =
     backend_switch {
-        Gleam = fun () => false
-        Lua = fun () => true
-        Fsharp = fun () => false
-        Python = fun () => true
-        TypeScript = fun () => true
-        Cpp = fun () => false
-        CppHost = fun () => false
-        Delphi = fun () => false
-        Cuda = fun () => false
-        Rust = fun () => false
-        Zig = fun () => true
+        Gleam = \ () => !-
+        Lua = \ () => !+
+        Fsharp = \ () => !-
+        Python = \ () => !+
+        TypeScript = \ () => !+
+        Cpp = \ () => !-
+        CppHost = \ () => !-
+        Delphi = \ () => !-
+        Cuda = \ () => !-
+        Rust = \ () => !-
+        Zig = \ () => !+
     }
 
-inl result'_python () : bool =
+:= result'_python () : bool =
     backend_switch {
-        Gleam = fun () => false
-        Lua = fun () => false
-        Fsharp = fun () => false
-        Python = fun () => true
-        TypeScript = fun () => false
-        Cpp = fun () => false
-        CppHost = fun () => false
-        Delphi = fun () => false
-        Cuda = fun () => false
-        Rust = fun () => false
-        Zig = fun () => false
+        Gleam = \ () => !-
+        Lua = \ () => !-
+        Fsharp = \ () => !-
+        Python = \ () => !+
+        TypeScript = \ () => !-
+        Cpp = \ () => !-
+        CppHost = \ () => !-
+        Delphi = \ () => !-
+        Cuda = \ () => !-
+        Rust = \ () => !-
+        Zig = \ () => !-
     }
 
-inl result'_zig () : bool =
+:= result'_zig () : bool =
     backend_switch {
-        Gleam = fun () => false
-        Lua = fun () => false
-        Fsharp = fun () => false
-        Python = fun () => false
-        TypeScript = fun () => false
-        Cpp = fun () => false
-        CppHost = fun () => false
-        Delphi = fun () => false
-        Cuda = fun () => false
-        Rust = fun () => false
-        Zig = fun () => true
-        Lean = fun () => false
-        C = fun () => false
-        Wasm = fun () => false
-        Bend = fun () => false
+        Gleam = \ () => !-
+        Lua = \ () => !-
+        Fsharp = \ () => !-
+        Python = \ () => !-
+        TypeScript = \ () => !-
+        Cpp = \ () => !-
+        CppHost = \ () => !-
+        Delphi = \ () => !-
+        Cuda = \ () => !-
+        Rust = \ () => !-
+        Zig = \ () => !+
+        Lean = \ () => !-
+        C = \ () => !-
+        Wasm = \ () => !-
+        Bend = \ () => !-
     }
 
-inl result'_error_text forall e. (prefix : string) (e : e) : string =
+:= result'_error_text \* e. (prefix : string) (e : e) : string =
     $'(std.fmt.allocPrint(spiral_gpa, "{s}{any}", .{ !prefix, !e }) catch \@panic("out of memory"))'
 
 /// ### unbox
-inl unbox forall t u. (x : result' t u) : result t u =
-    if result'_union ()
-    then $'!x ' : result t u
-    else
-        inl ok x : result t u = Ok x
-        inl error x : result t u = Error x
-        inl ok = join ok
-        inl error = join error
+:= unbox \* t u. (x : result' t u) : result t u =
+    ? result'_union ()
+    ?> $'!x ' : result t u
+    |:
+        := ok x : result t u = Ok x
+        := error x : result t u = Error x
+        := ok = ~~ ok
+        := error = ~~ error
         backend_switch {
-            Gleam = fun () =>
+            Gleam = \ () =>
                 $'case !x { Ok(x) -> !ok(x) Error(x) -> !error(x) }' : result t u
-            Lua = fun () =>
+            Lua = \ () =>
                 $'local resultm_ok = !ok '
                 $'local resultm_error = !error '
                 $'local r = nil'
@@ -238,13 +238,13 @@ inl unbox forall t u. (x : result' t u) : result t u =
                 $'    r = resultm_error(!x)'
                 $'end'
                 $'r' : result t u
-            Fsharp = fun () =>
-                real
-                    typecase t with
+            Fsharp = \ () =>
+                ~>
+                    ?: t ?|
                     | () => $'match !x with Ok () -> !ok () | Error x -> !error x' : result t u
                     | _ => $'match !x with Ok x -> !ok x | Error x -> !error x' : result t u
                 : result t u
-            Python = fun () =>
+            Python = \ () =>
                 $'ok = !ok '
                 $'error = !error '
                 $'r = None'
@@ -253,39 +253,39 @@ inl unbox forall t u. (x : result' t u) : result t u =
                 $'else:'
                 $'    r = error(!x)'
                 $'r' : result t u
-            Rust = fun () =>
-                real
-                    typecase t with
+            Rust = \ () =>
+                ~>
+                    ?: t ?|
                     | () => $'match !x { Ok(()) => !ok(), Err(e) => !error(e) }' : result t u
                     | _ => $'match !x { Ok(x) => !ok(x), Err(e) => !error(e) }' : result t u
                 : result t u
         }
 
 /// ### box
-inl box forall t u. (x : result t u) : result' t u =
-    if result'_union ()
-    then x |> dyn |> fun x => $'!x ' : result' t u
-    else
-        match x with
+:= box \* t u. (x : result t u) : result' t u =
+    ? result'_union ()
+    ?> x |> dyn |> \ x => $'!x ' : result' t u
+    |:
+        ?= x ?|
         | Ok x =>
             backend_switch {
-                Gleam = fun () => $'Ok(!x)' : result' t u
-                Lua = fun () => $'!x ' : result' t u
-                Fsharp = fun () => $'Ok !x ' : result' t u
-                Python = fun () => $'!x ' : result' t u
-                Rust = fun () => $'Ok::<`t, `u>(!x)' : result' t u
+                Gleam = \ () => $'Ok(!x)' : result' t u
+                Lua = \ () => $'!x ' : result' t u
+                Fsharp = \ () => $'Ok !x ' : result' t u
+                Python = \ () => $'!x ' : result' t u
+                Rust = \ () => $'Ok::<`t, `u>(!x)' : result' t u
             }
         | Error err =>
             backend_switch {
-                Gleam = fun () => $'Error(!err)' : result' t u
-                Lua = fun () => $'!err ' : result' t u
-                Fsharp = fun () => $'Error !err ' : result' t u
-                Python = fun () => $'!err ' : result' t u
-                Rust = fun () => $'Err::<`t, `u>(!err)' : result' t u
+                Gleam = \ () => $'Error(!err)' : result' t u
+                Lua = \ () => $'!err ' : result' t u
+                Fsharp = \ () => $'Error !err ' : result' t u
+                Python = \ () => $'!err ' : result' t u
+                Rust = \ () => $'Err::<`t, `u>(!err)' : result' t u
             }
 
 /// ### map'''
-inl map''' forall t u e. (fn : t -> u) (x : result' t e) : result' u e =
+:= map''' \* t u e. (fn : t -> u) (x : result' t e) : result' u e =
     x |> unbox |> map fn |> box
 
 ///> gleam
@@ -295,16 +295,16 @@ inl map''' forall t u e. (fn : t -> u) (x : result' t e) : result' u e =
 ///> rust
 ///> typescript
 test map =
-    inl x : _ _ string = Ok 3i32
-    inl y : _ i32 _ = Error "error1"
-    inl x' = x |> box |> unbox
-    inl y' = y |> box |> map''' id |> unbox
+    := x : _ _ string = Ok 3i32
+    := y : _ i32 _ = Error "error1"
+    := x' = x |> box |> unbox
+    := y' = y |> box |> map''' id |> unbox
     (x', y') |> _assert_eq' (x, y)
 
 /// ## rust
 
 /// ### anyhow_result
-nominal anyhow_result t =
+:! anyhow_result t =
     `(
         rust.rust_type
             `($'anyhow_Result<`t>')
@@ -313,7 +313,7 @@ nominal anyhow_result t =
     )
 
 /// ### anyhow_error
-nominal anyhow_error =
+:! anyhow_error =
     `(
         rust.rust_type
             `($'anyhow_Error')
@@ -321,230 +321,230 @@ nominal anyhow_error =
             "type anyhow_Error = class end"
     )
 
-inl anyhow_error error : anyhow_error =
+:= anyhow_error error : anyhow_error =
     backend_switch {
-        Rust = fun () => !\\(error, $'"anyhow::anyhow\!(\\\"{}\\\", $0)"') : anyhow_error
+        Rust = \ () => !\\(error, $'"anyhow::anyhow\!(\\\"{}\\\", $0)"') : anyhow_error
     }
 
 /// ### try'
-inl try' forall t u. (x : result' t u) : t =
-    inl is_unit =
-        real
-            typecase t with
-            | () => true
-            | _ => false
-    if result'_union () then
-        match unbox x with
+:= try' \* t u. (x : result' t u) : t =
+    := is_unit =
+        ~>
+            ?: t ?|
+            | () => !+
+            | _ => !-
+    ? result'_union () ?>
+        ?= unbox x ?|
         | Ok x => x
         | Error e =>
-            inl msg : string =
-                if result'_zig ()
-                then result'_error_text "resultm.try' / e: " e
-                elif result'_python ()
-                then $'f"resultm.try\' / e: {!e}"'
-                else $'"resultm.try\' / e: " .. tostring(!e)'
+            := msg : string =
+                ? result'_zig ()
+                ?> result'_error_text "resultm.try' / e: " e
+                |? result'_python ()
+                ?> $'f"resultm.try\' / e: {!e}"'
+                |: $'"resultm.try\' / e: " .. tostring(!e)'
             failwith msg
-    elif is_unit
-    then (!\\(x, $'"true; $0?"') : bool) |> fun _ => $''
-    else !\\(x, $'"$0?"')
+    |? is_unit
+    ?> (!\\(x, $'"true; $0?"') : bool) |> \ _ => $''
+    |: !\\(x, $'"$0?"')
 
 /// ### to_try
-inl to_try forall t u. (x : result' t u) : rust.try t =
+:= to_try \* t u. (x : result' t u) : rust.try t =
     !\\(x, $'"$0"')
 
 /// ### unwrap'
-inl unwrap' forall t u. (x : result' t u) : t =
-    if result'_union () then
-        match unbox x with
+:= unwrap' \* t u. (x : result' t u) : t =
+    ? result'_union () ?>
+        ?= unbox x ?|
         | Ok x => x
         | Error e =>
-            inl msg : string =
-                if result'_zig ()
-                then result'_error_text "resultm.unwrap' / e: " e
-                elif result'_python ()
-                then $'f"resultm.unwrap\' / e: {!e}"'
-                else $'"resultm.unwrap\' / e: " .. tostring(!e)'
+            := msg : string =
+                ? result'_zig ()
+                ?> result'_error_text "resultm.unwrap' / e: " e
+                |? result'_python ()
+                ?> $'f"resultm.unwrap\' / e: {!e}"'
+                |: $'"resultm.unwrap\' / e: " .. tostring(!e)'
             failwith msg
-    else !\\(x, $'"$0.unwrap()"')
+    |: !\\(x, $'"$0.unwrap()"')
 
 /// ### unwrap''
-inl unwrap'' forall t u. (x : result' t u) : t =
-    if result'_union () then
-        match unbox x with
+:= unwrap'' \* t u. (x : result' t u) : t =
+    ? result'_union () ?>
+        ?= unbox x ?|
         | Ok x => x
         | Error e =>
-            inl msg : string =
-                if result'_zig ()
-                then result'_error_text "resultm.unwrap'' / e: " e
-                elif result'_python ()
-                then $'f"resultm.unwrap\'\' / e: {!e}"'
-                else $'"resultm.unwrap\'\' / e: " .. tostring(!e)'
+            := msg : string =
+                ? result'_zig ()
+                ?> result'_error_text "resultm.unwrap'' / e: " e
+                |? result'_python ()
+                ?> $'f"resultm.unwrap\'\' / e: {!e}"'
+                |: $'"resultm.unwrap\'\' / e: " .. tostring(!e)'
             failwith msg
-    else
-        run_target function
-            | Rust => fun () => x |> unwrap'
-            | _ => fun () => $'match !x with Ok x -> x | Error e -> failwith $"resultm.unwrap\'\' / e: {e}"'
+    |:
+        run_target \|
+            | Rust => \ () => x |> unwrap'
+            | _ => \ () => $'match !x with Ok x -> x | Error e -> failwith $"resultm.unwrap\'\' / e: {e}"'
 
 /// ### unwrap_err'
-inl unwrap_err' forall t u. (x : result' t u) : u =
-    if result'_union () then
-        match unbox x with
+:= unwrap_err' \* t u. (x : result' t u) : u =
+    ? result'_union () ?>
+        ?= unbox x ?|
         | Ok x =>
-            inl msg : string =
-                if result'_zig ()
-                then result'_error_text "resultm.unwrap_err' / x: " x
-                elif result'_python ()
-                then $'f"resultm.unwrap_err\' / x: {!x}"'
-                else $'"resultm.unwrap_err\' / x: " .. tostring(!x)'
+            := msg : string =
+                ? result'_zig ()
+                ?> result'_error_text "resultm.unwrap_err' / x: " x
+                |? result'_python ()
+                ?> $'f"resultm.unwrap_err\' / x: {!x}"'
+                |: $'"resultm.unwrap_err\' / x: " .. tostring(!x)'
             failwith msg
         | Error x => x
-    else $'match !x with Ok x -> failwith $"resultm.unwrap_err\' / x: %A{x}" | Error x -> x'
+    |: $'match !x with Ok x -> failwith $"resultm.unwrap_err\' / x: %A{x}" | Error x -> x'
 
 /// ### unbox'
-inl unbox' forall t u. (x : result' t u) : result t u =
+:= unbox' \* t u. (x : result' t u) : result t u =
     unbox x
 
 /// ### map'
-inl map' forall t e u. (fn : t -> u) (source : result' t e) : result' u e =
-    if result'_union ()
-    then source |> unbox |> map fn |> box
-    else
+:= map' \* t e u. (fn : t -> u) (source : result' t e) : result' u e =
+    ? result'_union ()
+    ?> source |> unbox |> map fn |> box
+    |:
         (!\\(source, $'"true; let _result_map_ = $0.map(|x| { //"') : bool) |> ignore
         (!\\(fn !\($'"x"'), $'"true; $0 })"') : bool) |> ignore
         !\($'"_result_map_"')
 
 /// ### map''
-inl map'' forall t e u. (fn : t -> u) (source : result' t e) : result' u e =
-    if result'_union ()
-    then source |> unbox |> map fn |> box
-    else
-        inl fn = join fn
-        inl source = join source
+:= map'' \* t e u. (fn : t -> u) (source : result' t e) : result' u e =
+    ? result'_union ()
+    ?> source |> unbox |> map fn |> box
+    |:
+        := fn = ~~ fn
+        := source = ~~ source
         !\($'"!source.map(|x| !fn(x))"')
 
 /// ### map_error'
-inl map_error' forall t e u. (fn : e -> u) (source : result' t e) : result' t u =
-    if is_rust () then
-        inl fn = join fn
+:= map_error' \* t e u. (fn : e -> u) (source : result' t e) : result' t u =
+    ? is_rust () ?>
+        := fn = ~~ fn
         !\\((source, fn), $'"$0.map_err(|x| $1(x))"')
-    else source |> unbox |> map_error fn |> box
+    |: source |> unbox |> map_error fn |> box
 
 /// ### map_error''
-inl map_error'' forall t e u. (fn : e -> u) (source : result' t e) : result' t u =
-    if result'_union ()
-    then source |> unbox |> map_error fn |> box
-    else
+:= map_error'' \* t e u. (fn : e -> u) (source : result' t e) : result' t u =
+    ? result'_union ()
+    ?> source |> unbox |> map_error fn |> box
+    |:
         (!\\(source, $'"true; let _result_map_error__ = $0.map_err(|x| { //"') : bool) |> ignore
         (!\\(fn !\($'"x"'), $'"true; $0 })"') : bool) |> ignore
         !\($'"_result_map_error__"')
 
 /// ### map_error'''
-inl map_error''' forall t e u. (fn : e -> u) (source : result' t e) : result' t u =
-    if result'_union ()
-    then source |> unbox |> map_error fn |> box
-    else !\\((source, fn), $'"$0.map_err(|x| $1(x))"')
+:= map_error''' \* t e u. (fn : e -> u) (source : result' t e) : result' t u =
+    ? result'_union ()
+    ?> source |> unbox |> map_error fn |> box
+    |: !\\((source, fn), $'"$0.map_err(|x| $1(x))"')
 
 /// ### option_ok_or
-inl option_ok_or forall t e. (e : e) (source : optionm'.option' t) : result' t e =
-    if result'_union ()
-    then source |> optionm'.unbox |> from_option_error e |> box
-    else !\\(source, $'"$0.ok_or(!e)"')
+:= option_ok_or \* t e. (e : e) (source : optionm'.option' t) : result' t e =
+    ? result'_union ()
+    ?> source |> optionm'.unbox |> from_option_error e |> box
+    |: !\\(source, $'"$0.ok_or(!e)"')
 
 /// ### unwrap_or_else
-inl unwrap_or_else forall t e u. (fn : e -> u) (source : result' t e) : u =
+:= unwrap_or_else \* t e u. (fn : e -> u) (source : result' t e) : u =
     (!\\(source, $'"true; let _result_unwrap_or_else = $0.unwrap_or_else(|x| { //"') : bool) |> ignore
     (!\\(fn !\($'"x"'), $'"true; $0 })"') : bool) |> ignore
     !\($'"_result_unwrap_or_else"')
 
 /// ### map_or_else
-inl map_or_else forall t e u v. (fn : e -> v) (fn2 : u -> v) (source : result' t e) : v =
+:= map_or_else \* t e u v. (fn : e -> v) (fn2 : u -> v) (source : result' t e) : v =
     (!\\(source, $'"true; let _result_map_or_else = $0.map_or_else(|x| { //"') : bool) |> ignore
     (!\\(fn !\($'"x"'), $'"true; $0 }, |x| { //"') : bool) |> ignore
     (!\\(fn2 !\($'"x"'), $'"true; $0 })"') : bool) |> ignore
     !\($'"_result_map_or_else"')
 
 /// ### as_ref
-inl as_ref forall t e. (source : result' t e) : result' (rust.ref t) (rust.ref e) =
+:= as_ref \* t e. (source : result' t e) : result' (rust.ref t) (rust.ref e) =
     !\($'"!source.as_ref()"')
 
 /// ### as_ref'
-inl as_ref' forall t e. (source : rust.ref (result' t e)) : result' (rust.ref t) (rust.ref e) =
+:= as_ref' \* t e. (source : rust.ref (result' t e)) : result' (rust.ref t) (rust.ref e) =
     !\($'"!source.as_ref()"')
 
 /// ### unwrap_or'
-inl unwrap_or' forall t u. (default : t) (x : result' t u) : t =
-    if result'_union () then
-        match unbox x with
+:= unwrap_or' \* t u. (default : t) (x : result' t u) : t =
+    ? result'_union () ?>
+        ?= unbox x ?|
         | Ok x => x
         | Error _ => default
-    else !\\((x, default), $'"$0.unwrap_or($1)"')
+    |: !\\((x, default), $'"$0.unwrap_or($1)"')
 
 /// ### expect
-inl expect forall t u. (error : rust.ref string) (x : result' t u) : t =
+:= expect \* t u. (error : rust.ref string) (x : result' t u) : t =
     !\($'"!x.expect(&!error)"')
 
 /// ### is_err
-inl is_err forall t u. (x : result' t u) : bool =
-    if is_rust ()
-    then !\\(x, $'"$0.is_err()"')
-    else
-        match unbox x with
-        | Ok _ => false
-        | Error _ => true
+:= is_err \* t u. (x : result' t u) : bool =
+    ? is_rust ()
+    ?> !\\(x, $'"$0.is_err()"')
+    |:
+        ?= unbox x ?|
+        | Ok _ => !-
+        | Error _ => !+
 
 /// ### ok'
-inl ok' forall t. (x : result' t _) : optionm'.option' t =
-    if is_rust ()
-    then !\\(x, $'"$0.ok()"')
-    else x |> unbox |> ok |> optionm'.box
+:= ok' \* t. (x : result' t _) : optionm'.option' t =
+    ? is_rust ()
+    ?> !\\(x, $'"$0.ok()"')
+    |: x |> unbox |> ok |> optionm'.box
 
 /// ### err
-inl err forall t u. (x : u) : result' t u =
-    if is_rust ()
-    then !\\(x, $'"Err($0)"')
-    else (Error x : result t u) |> box
+:= err \* t u. (x : u) : result' t u =
+    ? is_rust ()
+    ?> !\\(x, $'"Err($0)"')
+    |: (Error x : result t u) |> box
 
 /// ### ok''
-inl ok'' forall t u. (x : t) : result' t u =
-    if is_rust ()
-    then !\\(x, $'"Ok($0)"')
-    else (Ok x : result t u) |> box
+:= ok'' \* t u. (x : t) : result' t u =
+    ? is_rust ()
+    ?> !\\(x, $'"Ok($0)"')
+    |: (Ok x : result t u) |> box
 
 /// ### transpose
-inl transpose forall t u. (x : optionm'.option' (result' t u)) : result' (optionm'.option' t) u =
-    if result'_union () then
-        inl r : result (optionm'.option' t) u =
-            match optionm'.unbox x with
+:= transpose \* t u. (x : optionm'.option' (result' t u)) : result' (optionm'.option' t) u =
+    ? result'_union () ?>
+        := r : result (optionm'.option' t) u =
+            ?= optionm'.unbox x ?|
             | Some x =>
-                match unbox x with
+                ?= unbox x ?|
                 | Ok x => Ok (optionm'.some' x)
                 | Error e => Error e
             | None => Ok (optionm'.none' ())
         box r
-    else !\\(x, $'"$0.transpose()"')
+    |: !\\(x, $'"$0.transpose()"')
 
 /// ### rc_try_unwrap
-inl rc_try_unwrap forall t. (x : rust.rc t) : result' t (rust.rc t) =
+:= rc_try_unwrap \* t. (x : rust.rc t) : result' t (rust.rc t) =
     !\\(x, $'"std::rc::Rc::try_unwrap($0)"')
 
 ///> rust
 test rc_try_unwrap =
-    rust.new_rc true
+    rust.new_rc !+
     |> rc_try_unwrap
     |> unbox
-    |> _assert_eq (Ok true)
+    |> _assert_eq (Ok !+)
 
 /// ### bind
-inl bind forall a b e. (f : a -> result b e) (r : result a e) : result b e =
-    match r with
+:= bind \* a b e. (f : a -> result b e) (r : result a e) : result b e =
+    ?= r ?|
     | Ok x => f x
     | Error e => Error e
 
-inl resultm_halved (n : i32) : result i32 string = if n % 2i32 = 0i32 then Ok (n / 2i32) else Error "odd"
+:= resultm_halved (n : i32) : result i32 string = ? n % 2i32 = 0i32 ?> Ok (n / 2i32) |: Error "odd"
 
 ///> rust
 ///> gleam
 test bind_chains_until_the_first_error =
-    inl ~n = 8i32
+    := ~n = 8i32
     (Ok n |> bind resultm_halved |> bind resultm_halved, Ok 6i32 |> bind resultm_halved |> bind resultm_halved)
     |> _assert_eq (Ok 2i32, Error "odd")

@@ -1,6 +1,6 @@
 class Heap0(val l0: Int, val l1: String)
 sealed interface US0 { val tag: Int }
-class US0_None : US0 { override val tag: Int = 0 }
+object US0_None : US0 { override val tag: Int = 0 }
 data class US0_Held(val f0: Heap0, val f1: Heap0, val f2: Heap0) : US0 { override val tag: Int = 1 }
 fun sp_score_0(p0: US0): Int {
     var v0: US0 = p0
@@ -25,8 +25,7 @@ fun sp_score_0(p0: US0): Int {
             v10 = (v4 == 7)
             var v12: Boolean = false
             if (v10) {
-                var v11: Boolean = false
-                v11 = (v5 == "hi")
+                val v11: Boolean = (v5 == "hi")
                 v12 = v11
             } else {
                 v12 = false
@@ -41,24 +40,21 @@ fun sp_score_0(p0: US0): Int {
             }
             var v16: Boolean = false
             if (v14) {
-                var v15: Boolean = false
-                v15 = (v7 == "yo")
+                val v15: Boolean = (v7 == "yo")
                 v16 = v15
             } else {
                 v16 = false
             }
             var v18: Boolean = false
             if (v16) {
-                var v17: Boolean = false
-                v17 = (v8 == 9)
+                val v17: Boolean = (v8 == 9)
                 v18 = v17
             } else {
                 v18 = false
             }
             var v20: Boolean = false
             if (v18) {
-                var v19: Boolean = false
-                v19 = (v9 == "ok")
+                val v19: Boolean = (v9 == "ok")
                 v20 = v19
             } else {
                 v20 = false
@@ -76,14 +72,10 @@ fun sp_score_0(p0: US0): Int {
     }
 }
 fun spiral_main(): Int {
-    var v0: Int = 0
-    v0 = 7
-    var v1: String = ""
-    v1 = "hi"
-    var v2: Heap0 = Heap0(0, "")
-    v2 = Heap0(v0, v1)
-    var v3: Int = 0
-    v3 = 4
+    val v0: Int = 7
+    val v1: String = "hi"
+    val v2: Heap0 = Heap0(v0, v1)
+    val v3: Int = 4
     var v4: String = ""
     v4 = "yo"
     var v5: Heap0 = Heap0(0, "")
@@ -95,17 +87,17 @@ fun spiral_main(): Int {
     var v8: Heap0 = Heap0(0, "")
     v8 = Heap0(v6, v7)
     var v9: Array<US0> = emptyArray<US0>()
-    v9 = Array(1) { US0_None() }
+    v9 = Array(1) { US0_None }
     var v10: Boolean = false
     v10 = true
-    var v13: US0 = US0_None()
+    var v13: US0 = US0_None
     if (v10) {
         v13 = US0_Held(v2, v5, v8)
     } else {
-        v13 = US0_None()
+        v13 = US0_None
     }
     v9[0] = v13
-    var v14: US0 = US0_None()
+    var v14: US0 = US0_None
     v14 = v9[0]
     return sp_score_0(v14)
 }

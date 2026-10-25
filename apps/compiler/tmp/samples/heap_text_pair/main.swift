@@ -9,22 +9,17 @@ class Heap0 {
     }
 }
 func spiral_main() -> Int32 {
-    var v0: String = ""
-    v0 = "hi"
-    var v1: String = ""
-    v1 = "yo"
-    var v2: Heap0 = Heap0(l0: "", l1: "")
-    v2 = Heap0(l0: v0, l1: v1)
+    let v0: String = "hi"
+    let v1: String = "yo"
+    let v2: Heap0 = Heap0(l0: v0, l1: v1)
     var v3: String = ""
     var v4: String = ""
     v3 = v2.l0
     v4 = v2.l1
-    var v5: Bool = false
-    v5 = (v3 == "hi")
+    let v5: Bool = (v3 == "hi")
     var v7: Bool = false
     if (v5) {
-        var v6: Bool = false
-        v6 = (v4 == "yo")
+        let v6: Bool = (v4 == "yo")
         v7 = v6
     } else {
         v7 = false

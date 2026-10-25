@@ -1,17 +1,17 @@
 /// # testing
 
 /// ## testing
-open sm'_operators
+:< sm'_operators
 
 /// ### testing_trace
-union testing_trace =
+:| testing_trace =
     | Console
     | Trace
     | TraceRaw
     | Silent
 
 /// ### __expect
-inl rec __expect
+:= ^ __expect
     (fn : _ -> _ -> bool)
     (trace' : testing_trace)
     (name : string)
@@ -19,41 +19,41 @@ inl rec __expect
     (a : _)
     : ()
     =
-    inl result = fn a b
-    inl get_data () =
-        if result
-        then sm'.show { expected = b }
-        else sm'.show { actual = a; expected = b }
-    inl get_raw_text () =
-        inl data = get_data ()
+    := result = fn a b
+    := get_data () =
+        ? result
+        ?> sm'.show { expected = b }
+        |: sm'.show { actual = a; expected = b }
+    := get_raw_text () =
+        := data = get_data ()
         name ++# " " ++# get_data ()
-    inl result =
-        result || join result
-    match trace' with
+    := result =
+        result || ~~ result
+    ?= trace' ?|
     | Console =>
-        inl text = get_raw_text ()
+        := text = get_raw_text ()
         text |> console.write_line
         text
     | Trace =>
-        trace Info (fun () => name) get_data
+        trace Info (\ () => name) get_data
         get_raw_text ()
     | TraceRaw =>
-        inl text = get_raw_text ()
-        trace_raw Info fun () => text
+        := text = get_raw_text ()
+        trace_raw Info \ () => text
         text
     | Silent => reflection.nameof { __expect }
     |> assert result
 
 /// ### __assert_approx_eq
-inl rec __assert_approx_eq trace e b a =
+:= ^ __assert_approx_eq trace e b a =
     __expect
-        (fun a b => abs (b - a) < (e |> optionm.defaultWith 0.00000001))
+        (\ a b => abs (b - a) < (e |> optionm.defaultWith 0.00000001))
         trace
         (reflection.nameof { __assert_approx_eq })
         b
         a
 
-inl _assert_approx_eq e b a =
+:= _assert_approx_eq e b a =
     __assert_approx_eq Console e b a
 
 ///> gleam
@@ -76,112 +76,112 @@ test assert_approx_eq_3 print_code =
     |> _assert_approx_eq (Some 3) 2
 
 /// ### __assert_eq
-inl rec __assert_eq trace b a =
+:= ^ __assert_eq trace b a =
     __expect (=) trace (reflection.nameof { __assert_eq }) b a
 
-inl _assert_eq b a =
+:= _assert_eq b a =
     __assert_eq Console b a
 
 /// ### __assert_eq'
-inl rec __assert_eq' forall t. (trace : testing_trace) (b : t) (a : t) : () =
+:= ^ __assert_eq' \* t. (trace : testing_trace) (b : t) (a : t) : () =
     __expect
-        (fun a b => #?a = #?b)
+        (\ a b => #?a = #?b)
         trace
         (reflection.nameof { __assert_eq' = __assert_eq' : _ -> t -> t -> () })
         b
         a
 
-inl _assert_eq' b a =
+:= _assert_eq' b a =
     __assert_eq' Console b a
 
 /// ### __assert_eq''
-inl rec __assert_eq'' trace b a =
+:= ^ __assert_eq'' trace b a =
     __expect (=.) trace (reflection.nameof { __assert_eq'' }) b a
 
-inl _assert_eq'' b a =
+:= _assert_eq'' b a =
     __assert_eq'' Console b a
 
 /// ### __assert_ne
-inl rec __assert_ne trace b a =
+:= ^ __assert_ne trace b a =
     __expect (<>.) trace (reflection.nameof { __assert_ne }) b a
 
-inl _assert_ne b a =
+:= _assert_ne b a =
     __assert_ne Console b a
 
 /// ### __assert_gt
-inl rec __assert_gt trace b a =
+:= ^ __assert_gt trace b a =
     __expect (>) trace (reflection.nameof { __assert_gt }) b a
 
-inl _assert_gt b a =
+:= _assert_gt b a =
     __assert_gt Console b a
 
 /// ### __assert_ge
-inl rec __assert_ge trace b a =
+:= ^ __assert_ge trace b a =
     __expect (>=) trace (reflection.nameof { __assert_ge }) b a
 
-inl _assert_ge b a =
+:= _assert_ge b a =
     __assert_ge Console b a
 
 /// ### __assert_lt
-inl rec __assert_lt trace b a =
+:= ^ __assert_lt trace b a =
     __expect (<) trace (reflection.nameof { __assert_lt }) b a
 
-inl _assert_lt b a =
+:= _assert_lt b a =
     __assert_lt Console b a
 
 /// ### __assert_le
-inl rec __assert_le trace b a =
+:= ^ __assert_le trace b a =
     __expect (<=) trace (reflection.nameof { __assert_le }) b a
 
-inl _assert_le b a =
+:= _assert_le b a =
     __assert_le Console b a
 
 /// ### __assert
-inl rec __assert fn trace b a =
+:= ^ __assert fn trace b a =
     __expect fn trace (reflection.nameof { __assert }) a b
 
-inl _assert fn b a =
+:= _assert fn b a =
     __assert fn Console b a
 
 /// ### __assert_between
-inl rec __assert_between trace a b actual =
-    inl assert_between actual (a, b) =
+:= ^ __assert_between trace a b actual =
+    := assert_between actual (a, b) =
         __assert_ge Silent a actual
         __assert_le Silent b actual
-        true
+        !+
     __expect assert_between trace (reflection.nameof { __assert_between }) (a, b) actual
 
-inl _assert_between a b actual =
+:= _assert_between a b actual =
     __assert_between Console a b actual
 
 /// ### _assert_fn
-inl rec _assert_fn fn list =
+:= ^ _assert_fn fn list =
     list
     |> listm.rev
-    |> listm.map fun input, expected => join
+    |> listm.map \ input, expected => ~~
         input
         |> fn
         |> resultm.get
-        |> fun x =>
-            inl expected' = join expected
-            inl name = reflection.nameof { _assert_fn }
+        |> \ x =>
+            := expected' = ~~ expected
+            := name = reflection.nameof { _assert_fn }
             try
-                fun () =>
+                \ () =>
                     console.write_line ""
                     trace Verbose
-                        fun () => name
-                        fun () => { input }
+                        \ () => name
+                        \ () => { input }
                     sm'.show x
                     |> _assert_eq (sm'.show expected')
-                    true
-                fun ex =>
+                    !+
+                \ ex =>
                     trace Critical
-                        fun () => name ++# " / error"
-                        fun () => { ex expected }
-                    Some false
+                        \ () => name ++# " / error"
+                        \ () => { ex expected }
+                    Some !-
             |> optionm.value
     |> listm'.filter not
-    |> function
+    |> \|
         | [] => ()
         | x => #?*x |> failwith
 
@@ -198,24 +198,24 @@ test assert_fn =
         2,
         1
     ]
-    |> _assert_fn fun x =>
+    |> _assert_fn \ x =>
         x - 1
         |> Ok
-        |> fun x => x : _ _ ()
+        |> \ x => x : _ _ ()
 
 /// ### _assert_in
-inl _assert_in items x =
+:= _assert_in items x =
     (None, items)
-    ||> listm.fold fun acc x' =>
-        match acc with
+    ||> listm.fold \ acc x' =>
+        ?= acc ?|
         | Some x => Some x
         | None =>
-            if x' <>. x
-            then None
-            else
-                trace Debug (fun () => "_assert_in") fun () => { x x' }
+            ? x' <>. x
+            ?> None
+            |:
+                trace Debug (\ () => "_assert_in") \ () => { x x' }
                 Some ()
-    |> function
+    |> \|
         | Some _ => ()
         | None =>
             "_assert_in / " ++#? { x items } |> failwith
@@ -223,48 +223,48 @@ inl _assert_in items x =
 /// ## fsharp
 
 /// ### __assert_contains
-inl rec __assert_contains forall t u. (trace : testing_trace) (b : t) (a : u) : () =
+:= ^ __assert_contains \* t u. (trace : testing_trace) (b : t) (a : u) : () =
     __expect
-        fun a b =>
-            run_target function
-                | Rust => fun () =>
-                    inl found : bool =
-                        real
-                            typecase u with
+        \ a b =>
+            run_target \|
+                | Rust => \ () =>
+                    := found : bool =
+                        ~>
+                            ?: u ?|
                             | string =>
-                                typecase t with
+                                ?: t ?|
                                 | char => $'!a.contains(!b as char)' : bool
                                 | _ => $'!a.contains(&*!b)' : bool
                             | array_base _ => $'!a.borrow().contains(&!b)' : bool
                             | _ => $'!a.iter().any(|x| *x == !b)' : bool
                     found
-                | Zig => fun () =>
-                    inl found : bool =
-                        real
-                            typecase u with
+                | Zig => \ () =>
+                    := found : bool =
+                        ~>
+                            ?: u ?|
                             | string =>
-                                typecase t with
+                                ?: t ?|
                                 | char => $'(std.mem.indexOfScalar(u8, !a, !b) \!= null)' : bool
                                 | _ => $'(std.mem.indexOf(u8, !a, !b) \!= null)' : bool
                             | _ =>
-                                typecase t with
+                                ?: t ?|
                                 | string =>
                                     $'(for (!a) |x| { if (std.mem.eql(u8, x, !b)) break true; } else false)' : bool
                                 | _ => $'(for (!a) |x| { if (x == !b) break true; } else false)' : bool
                     found
-                | _ => fun () =>
+                | _ => \ () =>
                     a
                     |> $'List.ofSeq'
-                    |> fun x => x : listm'.list' t
+                    |> \ x => x : listm'.list' t
                     |> $'List.tryFind' ((=) b)
                     |> optionm'.unbox
-                    |> fun (x : option t) => x <> None
+                    |> \ (x : option t) => x <> None
         trace
         "__assert_contains"
         b
         a
 
-inl _assert_contains b a =
+:= _assert_contains b a =
     __assert_contains Console b a
 
 ///> zig
@@ -278,60 +278,60 @@ test assert_contains_2 =
     |> _assert_contains 'b'
 
 /// ### _throws
-inl _throws (fn : () -> ()) : option exn =
-    inl none = None : option exn
-    inl some (s : exn) = Some s
-    if is_rust () then
+:= _throws (fn : () -> ()) : option exn =
+    := none = None : option exn
+    := some (s : exn) = Some s
+    ? is_rust () ?>
         catch_unwind_rust
-            fun () =>
+            \ () =>
                 fn ()
                 none
             some
-    else
+    |:
         backend_switch {
-            Fsharp = fun () =>
+            Fsharp = \ () =>
                 $'try !fn (); !none with ex -> ex |> !some ' : option exn
-            Python = fun () =>
+            Python = \ () =>
                 $'fn = !fn '
                 $'none = !none '
                 $'some = !some '
                 $'try: fn(); x = none '
                 $'except Exception as ex: x = some(ex)'
                 $'x' : option exn
-            TypeScript = fun () =>
+            TypeScript = \ () =>
                 $'(() => { try { !fn(); return !none; } catch (ex) { return !some(ex); } })()' : option exn
-            Zig = fun () =>
+            Zig = \ () =>
                 fn ()
                 none
         }
 
 /// ### print_and_return
-inl rec print_and_return x =
-    inl name = reflection.nameof { print_and_return }
+:= ^ print_and_return x =
+    := name = reflection.nameof { print_and_return }
     name ++#? { x }
     |> console.write_line
     x
 
 /// ### counterexamples
-inl counterexamples (limit : i32) (lo : i64) (hi : i64) (reference : i64 -> i64) (candidate : i64 -> i64) : list i64 =
-    let rec go (x : i64) (left : i32) (found : list i64) : list i64 =
-        if x > hi then found
-        elif left <= 0i32 then found
-        elif reference x = candidate x then go (x + 1i64) left found
-        else go (x + 1i64) (left - 1i32) (x :: found)
+:= counterexamples (limit : i32) (lo : i64) (hi : i64) (reference : i64 -> i64) (candidate : i64 -> i64) : list i64 =
+    :~ ^ go (x : i64) (left : i32) (found : list i64) : list i64 =
+        ? x > hi ?> found
+        |? left <= 0i32 ?> found
+        |? reference x = candidate x ?> go (x + 1i64) left found
+        |: go (x + 1i64) (left - 1i32) (x :: found)
     go lo limit Nil |> listm.rev
 
 ///> zig
 test counterexamples_find_where_multiply_shift_stops_dividing_by_three =
-    inl divide (x : i64) : i64 = x / 3i64
-    inl multiply_shift (x : i64) : i64 = (x * 43691i64) >>> 17i32
+    := divide (x : i64) : i64 = x / 3i64
+    := multiply_shift (x : i64) : i64 = (x * 43691i64) >>> 17i32
     counterexamples 3i32 0i64 65535i64 divide multiply_shift |> listm.length |> _assert_eq 0i32
     counterexamples 2i32 0i64 200000i64 divide multiply_shift
-    |> listm.fold (fun packed x => packed * 1000000i64 + x) 0i64
-    |> fun packed => (packed = 131072131075i64) |> _assert_eq true
+    |> listm.fold (\ packed x => packed * 1000000i64 + x) 0i64
+    |> \ packed => (packed = 131072131075i64) |> _assert_eq !+
 
 /// ### expect
-inl expect (condition : bool) (detail : string) : () = if condition then () else failwith detail
+:= expect (condition : bool) (detail : string) : () = ? condition ?> () |: failwith detail
 
 ///> rust
 ///> fsharp

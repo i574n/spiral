@@ -41,70 +41,11 @@ fn spiralFlush() void {
     spiralWrite(1, spiral_out_buffer[0..spiral_out_len]);
     spiral_out_len = 0;
 }
-fn spiralPrint(s: []const u8) void {
-    if (s.len > spiral_out_buffer.len - spiral_out_len) spiralFlush();
-    if (s.len > spiral_out_buffer.len) {
-        spiralWrite(1, s);
-        return;
-    }
-    @memcpy(spiral_out_buffer[spiral_out_len..][0..s.len], s);
-    spiral_out_len += s.len;
-}
-fn spiralFloatText(x: anytype) []u8 {
-    var buffer: [std.fmt.float.bufferSize(.decimal, @TypeOf(x))]u8 = undefined;
-    const text = std.fmt.float.render(&buffer, x, .{ .mode = .decimal }) catch unreachable;
-    return spiral_gpa.dupe(u8, text) catch @panic("out of memory");
-}
-fn spiralPrintAny(x: anytype) void {
-    const T = @TypeOf(x);
-    if (T == []const u8) return spiralPrint(x);
-    if (@typeInfo(T) == .float) return spiralPrint(spiralFloatText(x));
-    const s = switch (@typeInfo(T)) {
-        .bool => std.fmt.allocPrint(spiral_gpa, "{}", .{x}),
-        else => std.fmt.allocPrint(spiral_gpa, "{d}", .{x}),
-    } catch @panic("out of memory");
-    spiralPrint(s);
-}
 fn spiralFail(s: []const u8) noreturn {
     spiralFlush();
     spiralWrite(2, s);
     spiralWrite(2, "\n");
     std.process.exit(1);
-}
-fn spiralConv(comptime T: type, x: anytype) T {
-    const S = @TypeOf(x);
-    if (@typeInfo(T) == .float) {
-        if (@typeInfo(S) == .float) return @floatCast(x) else return @floatFromInt(x);
-    }
-    if (@typeInfo(S) == .float) return @intFromFloat(x);
-    const U = @Int(.unsigned, @bitSizeOf(T));
-    const wide: i128 = x;
-    return @bitCast(@as(U, @truncate(@as(u128, @bitCast(wide)))));
-}
-fn spiralConcat(a: []const u8, b: []const u8) []const u8 {
-    return std.mem.concat(spiral_gpa, u8, &.{ a, b }) catch @panic("out of memory");
-}
-fn spiralStringSlice(s: []const u8, from: i64, upto: i64) []const u8 {
-    const len: i64 = @intCast(s.len);
-    if (from < 0 or from > len or upto < from - 1 or upto >= len) std.process.exit(3);
-    if (upto < from) return "";
-    const a: usize = @intCast(from);
-    const b: usize = @intCast(upto + 1);
-    if ((s[a] & 0xC0) == 0x80 or (b < s.len and (s[b] & 0xC0) == 0x80)) std.process.exit(3);
-    return s[a..b];
-}
-fn spiralIndex(len: usize, i: anytype) usize {
-    if (i < 0 or i >= len) std.process.exit(3);
-    return @intCast(i);
-}
-fn spiralNewArray(comptime T: type, n: anytype) []T {
-    const len: usize = @intCast(n);
-    const a = spiral_gpa.alloc(T, len) catch @panic("out of memory");
-    switch (@typeInfo(T)) {
-        .int, .float, .bool => @memset(a, std.mem.zeroes(T)),
-        else => if (T == []const u8) @memset(a, ""),
-    }
-    return a;
 }
 fn spiralCreate(comptime T: type, v: T) *T {
     const p = spiral_gpa.create(T) catch @panic("out of memory");
@@ -127,10 +68,16 @@ fn US0_BitOne() US0 {
     return US0{ .tag = 1 };
 }
 fn UH0_RegexEmpty() *UH0 {
-    return spiralCreate(UH0, UH0{ .tag = 0 });
+    const shared = struct {
+        var value: UH0 = UH0{ .tag = 0 };
+    };
+    return &shared.value;
 }
 fn UH0_RegexEpsilon() *UH0 {
-    return spiralCreate(UH0, UH0{ .tag = 1 });
+    const shared = struct {
+        var value: UH0 = UH0{ .tag = 1 };
+    };
+    return &shared.value;
 }
 fn UH0_RegexChar(a0: US0) *UH0 {
     return spiralCreate(UH0, UH0{ .tag = 2, .c2_0 = a0 });
@@ -145,7 +92,10 @@ fn UH0_RegexStar(a0: *UH0) *UH0 {
     return spiralCreate(UH0, UH0{ .tag = 5, .c5_0 = a0 });
 }
 fn UH1_InputEmpty() *UH1 {
-    return spiralCreate(UH1, UH1{ .tag = 0 });
+    const shared = struct {
+        var value: UH1 = UH1{ .tag = 0 };
+    };
+    return &shared.value;
 }
 fn UH1_InputCons(a0: US0, a1: *UH1) *UH1 {
     return spiralCreate(UH1, UH1{ .tag = 1, .c1_0 = a0, .c1_1 = a1 });
@@ -166,9 +116,6 @@ fn random_bit_input_1(p0: u64, p1: i32, p2: *UH1) Tuple0 {
     var v11: US0 = undefined; _ = &v11;
     var v12: US0 = undefined; _ = &v12;
     var v14: *UH1 = undefined; _ = &v14;
-    var tmp12: u64 = undefined; _ = &tmp12;
-    var tmp13: i32 = undefined; _ = &tmp13;
-    var tmp14: *UH1 = undefined; _ = &tmp14;
     while (true) {
         v3 = @as(i32, 0) < v1;
         if (v3) {
@@ -187,12 +134,9 @@ fn random_bit_input_1(p0: u64, p1: i32, p2: *UH1) Tuple0 {
                 v13 = v12;
             }
             v14 = UH1_InputCons(v13, v2);
-            tmp12 = v6;
-            tmp13 = v7;
-            tmp14 = v14;
-            v0 = tmp12;
-            v1 = tmp13;
-            v2 = tmp14;
+            v0 = v6;
+            v1 = v7;
+            v2 = v14;
             continue;
         } else {
             return Tuple0{ .f0 = v2, .f1 = v0 };
@@ -219,8 +163,6 @@ fn run_2(p0: i32, p1: *UH1) bool {
     var v11: bool = undefined; _ = &v11;
     var v16: US1 = undefined; _ = &v16;
     var v17: bool = undefined; _ = &v17;
-    var tmp8: i32 = undefined; _ = &tmp8;
-    var tmp9: *UH1 = undefined; _ = &tmp9;
     var v2: bool = undefined; _ = &v2;
     var v3: bool = undefined; _ = &v3;
     while (true) {
@@ -276,10 +218,8 @@ fn run_2(p0: i32, p1: *UH1) bool {
                         v19 = @as(i32, 0);
                     }
                 }
-                tmp8 = v19;
-                tmp9 = v5;
-                v0 = tmp8;
-                v1 = tmp9;
+                v0 = v19;
+                v1 = v5;
                 continue;
             },
             0 => {
@@ -299,15 +239,11 @@ fn regex_compare_8(p0: *UH0, p1: *UH0) US1 {
     var v55: *UH0 = undefined; _ = &v55;
     var v56: *UH0 = undefined; _ = &v56;
     var v57: US1 = undefined; _ = &v57;
-    var tmp5: *UH0 = undefined; _ = &tmp5;
-    var tmp6: *UH0 = undefined; _ = &tmp6;
     var v28: *UH0 = undefined; _ = &v28;
     var v29: *UH0 = undefined; _ = &v29;
     var v34: *UH0 = undefined; _ = &v34;
     var v35: *UH0 = undefined; _ = &v35;
     var v36: US1 = undefined; _ = &v36;
-    var tmp12: *UH0 = undefined; _ = &tmp12;
-    var tmp13: *UH0 = undefined; _ = &tmp13;
     var v32: US0 = undefined; _ = &v32;
     var v10: US0 = undefined; _ = &v10;
     var v13: US0 = undefined; _ = &v13;
@@ -315,8 +251,6 @@ fn regex_compare_8(p0: *UH0, p1: *UH0) US1 {
     var v45: *UH0 = undefined; _ = &v45;
     var v46: *UH0 = undefined; _ = &v46;
     var v48: *UH0 = undefined; _ = &v48;
-    var tmp21: *UH0 = undefined; _ = &tmp21;
-    var tmp22: *UH0 = undefined; _ = &tmp22;
     while (true) {
         switch (v0.tag) {
             3 => {
@@ -329,10 +263,8 @@ fn regex_compare_8(p0: *UH0, p1: *UH0) US1 {
                         v57 = regex_compare_8(v53, v55);
                         switch (v57.tag) {
                             1 => {
-                                tmp5 = v54;
-                                tmp6 = v56;
-                                v0 = tmp5;
-                                v1 = tmp6;
+                                v0 = v54;
+                                v1 = v56;
                                 continue;
                             },
                             else => {
@@ -355,10 +287,8 @@ fn regex_compare_8(p0: *UH0, p1: *UH0) US1 {
                         v36 = regex_compare_8(v28, v34);
                         switch (v36.tag) {
                             1 => {
-                                tmp12 = v29;
-                                tmp13 = v35;
-                                v0 = tmp12;
-                                v1 = tmp13;
+                                v0 = v29;
+                                v1 = v35;
                                 continue;
                             },
                             else => {
@@ -456,10 +386,8 @@ fn regex_compare_8(p0: *UH0, p1: *UH0) US1 {
                     },
                     5 => {
                         v48 = v1.c5_0;
-                        tmp21 = v44;
-                        tmp22 = v48;
-                        v0 = tmp21;
-                        v1 = tmp22;
+                        v0 = v44;
+                        v1 = v48;
                         continue;
                     },
                     else => {
@@ -524,18 +452,14 @@ fn make_alt_6(p0: *UH0, p1: *UH0) *UH0 {
     var v2: *UH0 = undefined; _ = &v2;
     var v3: *UH0 = undefined; _ = &v3;
     var v4: *UH0 = undefined; _ = &v4;
-    var tmp3: *UH0 = undefined; _ = &tmp3;
-    var tmp4: *UH0 = undefined; _ = &tmp4;
     while (true) {
         switch (v0.tag) {
             3 => {
                 v2 = v0.c3_0;
                 v3 = v0.c3_1;
                 v4 = alt_insert_sorted_7(v2, v1);
-                tmp3 = v3;
-                tmp4 = v4;
-                v0 = tmp3;
-                v1 = tmp4;
+                v0 = v3;
+                v1 = v4;
                 continue;
             },
             0 => {
@@ -555,22 +479,16 @@ fn regex_equal_10(p0: *UH0, p1: *UH0) bool {
     var v20: *UH0 = undefined; _ = &v20;
     var v21: *UH0 = undefined; _ = &v21;
     var v22: bool = undefined; _ = &v22;
-    var tmp5: *UH0 = undefined; _ = &tmp5;
-    var tmp6: *UH0 = undefined; _ = &tmp6;
     var v26: *UH0 = undefined; _ = &v26;
     var v27: *UH0 = undefined; _ = &v27;
     var v28: *UH0 = undefined; _ = &v28;
     var v29: *UH0 = undefined; _ = &v29;
     var v30: bool = undefined; _ = &v30;
-    var tmp12: *UH0 = undefined; _ = &tmp12;
-    var tmp13: *UH0 = undefined; _ = &tmp13;
     var v4: US0 = undefined; _ = &v4;
     var v5: US0 = undefined; _ = &v5;
     var v15: US1 = undefined; _ = &v15;
     var v34: *UH0 = undefined; _ = &v34;
     var v35: *UH0 = undefined; _ = &v35;
-    var tmp19: *UH0 = undefined; _ = &tmp19;
-    var tmp20: *UH0 = undefined; _ = &tmp20;
     while (true) {
         switch (v0.tag) {
             3 => {
@@ -582,10 +500,8 @@ fn regex_equal_10(p0: *UH0, p1: *UH0) bool {
                         v21 = v1.c3_1;
                         v22 = regex_equal_10(v18, v20);
                         if (v22) {
-                            tmp5 = v19;
-                            tmp6 = v21;
-                            v0 = tmp5;
-                            v1 = tmp6;
+                            v0 = v19;
+                            v1 = v21;
                             continue;
                         } else {
                             return false;
@@ -605,10 +521,8 @@ fn regex_equal_10(p0: *UH0, p1: *UH0) bool {
                         v29 = v1.c4_1;
                         v30 = regex_equal_10(v26, v28);
                         if (v30) {
-                            tmp12 = v27;
-                            tmp13 = v29;
-                            v0 = tmp12;
-                            v1 = tmp13;
+                            v0 = v27;
+                            v1 = v29;
                             continue;
                         } else {
                             return false;
@@ -688,10 +602,8 @@ fn regex_equal_10(p0: *UH0, p1: *UH0) bool {
                 switch (v1.tag) {
                     5 => {
                         v35 = v1.c5_0;
-                        tmp19 = v34;
-                        tmp20 = v35;
-                        v0 = tmp19;
-                        v1 = tmp20;
+                        v0 = v34;
+                        v1 = v35;
                         continue;
                     },
                     else => {
@@ -1027,10 +939,8 @@ fn derivative_12(p0: *UH0, p1: US0) *UH0 {
 fn canonical_derivative_4(p0: *UH0, p1: US0) *UH0 {
     var v0: *UH0 = p0; _ = &v0;
     var v1: US0 = p1; _ = &v1;
-    var v2: *UH0 = undefined; _ = &v2;
-    var v3: *UH0 = undefined; _ = &v3;
-    v2 = normalize_5(v0);
-    v3 = derivative_12(v2, v1);
+    const v2: *UH0 = normalize_5(v0);
+    const v3: *UH0 = derivative_12(v2, v1);
     return normalize_5(v3);
 }
 fn accepts_3(p0: *UH0, p1: *UH1) bool {
@@ -1039,8 +949,6 @@ fn accepts_3(p0: *UH0, p1: *UH1) bool {
     var v6: US0 = undefined; _ = &v6;
     var v7: *UH1 = undefined; _ = &v7;
     var v8: *UH0 = undefined; _ = &v8;
-    var tmp3: *UH0 = undefined; _ = &tmp3;
-    var tmp4: *UH1 = undefined; _ = &tmp4;
     var v2: *UH0 = undefined; _ = &v2;
     var v3: US2 = undefined; _ = &v3;
     while (true) {
@@ -1049,10 +957,8 @@ fn accepts_3(p0: *UH0, p1: *UH1) bool {
                 v6 = v1.c1_0;
                 v7 = v1.c1_1;
                 v8 = canonical_derivative_4(v0, v6);
-                tmp3 = v8;
-                tmp4 = v7;
-                v0 = tmp3;
-                v1 = tmp4;
+                v0 = v8;
+                v1 = v7;
                 continue;
             },
             0 => {
@@ -1091,11 +997,6 @@ fn loop_0(p0: i32, p1: *UH0, p2: i32, p3: u64, p4: i32) i32 {
     var v14: i32 = undefined; _ = &v14;
     var v16: i32 = undefined; _ = &v16;
     var v15: i32 = undefined; _ = &v15;
-    var tmp13: i32 = undefined; _ = &tmp13;
-    var tmp14: *UH0 = undefined; _ = &tmp14;
-    var tmp15: i32 = undefined; _ = &tmp15;
-    var tmp16: u64 = undefined; _ = &tmp16;
-    var tmp17: i32 = undefined; _ = &tmp17;
     while (true) {
         v5 = @as(i32, 0) < v2;
         if (v5) {
@@ -1120,16 +1021,9 @@ fn loop_0(p0: i32, p1: *UH0, p2: i32, p3: u64, p4: i32) i32 {
                 } else {
                     v16 = v4;
                 }
-                tmp13 = v0;
-                tmp14 = v1;
-                tmp15 = v14;
-                tmp16 = v8;
-                tmp17 = v16;
-                v0 = tmp13;
-                v1 = tmp14;
-                v2 = tmp15;
-                v3 = tmp16;
-                v4 = tmp17;
+                v2 = v14;
+                v3 = v8;
+                v4 = v16;
                 continue;
             } else {
                 spiralFail("brzozowski-compiled-core-disagrees-on-random-input");
@@ -1146,18 +1040,14 @@ fn zeros_input_15(p0: i32, p1: *UH1) *UH1 {
     var v3: i32 = undefined; _ = &v3;
     var v4: US0 = undefined; _ = &v4;
     var v5: *UH1 = undefined; _ = &v5;
-    var tmp4: i32 = undefined; _ = &tmp4;
-    var tmp5: *UH1 = undefined; _ = &tmp5;
     while (true) {
         v2 = @as(i32, 0) < v0;
         if (v2) {
             v3 = v0 -% @as(i32, 1);
             v4 = US0_BitZero();
             v5 = UH1_InputCons(v4, v1);
-            tmp4 = v3;
-            tmp5 = v5;
-            v0 = tmp4;
-            v1 = tmp5;
+            v0 = v3;
+            v1 = v5;
             continue;
         } else {
             return v1;
@@ -1174,8 +1064,6 @@ fn run_16(p0: i32, p1: *UH1) bool {
     var v13: bool = undefined; _ = &v13;
     var v22: US1 = undefined; _ = &v22;
     var v23: bool = undefined; _ = &v23;
-    var tmp7: i32 = undefined; _ = &tmp7;
-    var tmp8: *UH1 = undefined; _ = &tmp8;
     var v2: bool = undefined; _ = &v2;
     while (true) {
         switch (v1.tag) {
@@ -1214,10 +1102,8 @@ fn run_16(p0: i32, p1: *UH1) bool {
                         }
                     }
                 }
-                tmp7 = v26;
-                tmp8 = v6;
-                v0 = tmp7;
-                v1 = tmp8;
+                v0 = v26;
+                v1 = v6;
                 continue;
             },
             0 => {
@@ -1259,10 +1145,6 @@ fn loop_14(p0: i32, p1: *UH0, p2: i32, p3: i32) i32 {
     var v28: i32 = undefined; _ = &v28;
     var v25: i32 = undefined; _ = &v25;
     var v29: i32 = undefined; _ = &v29;
-    var tmp22: i32 = undefined; _ = &tmp22;
-    var tmp23: *UH0 = undefined; _ = &tmp23;
-    var tmp24: i32 = undefined; _ = &tmp24;
-    var tmp25: i32 = undefined; _ = &tmp25;
     while (true) {
         v4 = v0 < v2;
         if (v4) {
@@ -1313,14 +1195,8 @@ fn loop_14(p0: i32, p1: *UH0, p2: i32, p3: i32) i32 {
                 if (spiral_true) spiralFail("brzozowski-compiled-core-disagrees-on-zero-run");
             }
             v29 = v2 +% @as(i32, 1);
-            tmp22 = v0;
-            tmp23 = v1;
-            tmp24 = v29;
-            tmp25 = v28;
-            v0 = tmp22;
-            v1 = tmp23;
-            v2 = tmp24;
-            v3 = tmp25;
+            v2 = v29;
+            v3 = v28;
             continue;
         }
     }
@@ -1335,10 +1211,16 @@ fn US3_TriC() US3 {
     return US3{ .tag = 2 };
 }
 fn UH2_RegexEmpty() *UH2 {
-    return spiralCreate(UH2, UH2{ .tag = 0 });
+    const shared = struct {
+        var value: UH2 = UH2{ .tag = 0 };
+    };
+    return &shared.value;
 }
 fn UH2_RegexEpsilon() *UH2 {
-    return spiralCreate(UH2, UH2{ .tag = 1 });
+    const shared = struct {
+        var value: UH2 = UH2{ .tag = 1 };
+    };
+    return &shared.value;
 }
 fn UH2_RegexChar(a0: US3) *UH2 {
     return spiralCreate(UH2, UH2{ .tag = 2, .c2_0 = a0 });
@@ -1353,7 +1235,10 @@ fn UH2_RegexStar(a0: *UH2) *UH2 {
     return spiralCreate(UH2, UH2{ .tag = 5, .c5_0 = a0 });
 }
 fn UH3_InputEmpty() *UH3 {
-    return spiralCreate(UH3, UH3{ .tag = 0 });
+    const shared = struct {
+        var value: UH3 = UH3{ .tag = 0 };
+    };
+    return &shared.value;
 }
 fn UH3_InputCons(a0: US3, a1: *UH3) *UH3 {
     return spiralCreate(UH3, UH3{ .tag = 1, .c1_0 = a0, .c1_1 = a1 });
@@ -1374,8 +1259,6 @@ fn run_17(p0: i32, p1: *UH3) bool {
     var v25: bool = undefined; _ = &v25;
     var v36: US1 = undefined; _ = &v36;
     var v37: bool = undefined; _ = &v37;
-    var tmp13: i32 = undefined; _ = &tmp13;
-    var tmp14: *UH3 = undefined; _ = &tmp14;
     var v2: bool = undefined; _ = &v2;
     var v3: bool = undefined; _ = &v3;
     while (true) {
@@ -1478,10 +1361,8 @@ fn run_17(p0: i32, p1: *UH3) bool {
                         }
                     }
                 }
-                tmp13 = v47;
-                tmp14 = v6;
-                v0 = tmp13;
-                v1 = tmp14;
+                v0 = v47;
+                v1 = v6;
                 continue;
             },
             0 => {
@@ -1505,15 +1386,11 @@ fn regex_compare_23(p0: *UH2, p1: *UH2) US1 {
     var v61: *UH2 = undefined; _ = &v61;
     var v62: *UH2 = undefined; _ = &v62;
     var v63: US1 = undefined; _ = &v63;
-    var tmp5: *UH2 = undefined; _ = &tmp5;
-    var tmp6: *UH2 = undefined; _ = &tmp6;
     var v34: *UH2 = undefined; _ = &v34;
     var v35: *UH2 = undefined; _ = &v35;
     var v40: *UH2 = undefined; _ = &v40;
     var v41: *UH2 = undefined; _ = &v41;
     var v42: US1 = undefined; _ = &v42;
-    var tmp12: *UH2 = undefined; _ = &tmp12;
-    var tmp13: *UH2 = undefined; _ = &tmp13;
     var v38: US3 = undefined; _ = &v38;
     var v10: US3 = undefined; _ = &v10;
     var v13: US3 = undefined; _ = &v13;
@@ -1521,8 +1398,6 @@ fn regex_compare_23(p0: *UH2, p1: *UH2) US1 {
     var v51: *UH2 = undefined; _ = &v51;
     var v52: *UH2 = undefined; _ = &v52;
     var v54: *UH2 = undefined; _ = &v54;
-    var tmp21: *UH2 = undefined; _ = &tmp21;
-    var tmp22: *UH2 = undefined; _ = &tmp22;
     while (true) {
         switch (v0.tag) {
             3 => {
@@ -1535,10 +1410,8 @@ fn regex_compare_23(p0: *UH2, p1: *UH2) US1 {
                         v63 = regex_compare_23(v59, v61);
                         switch (v63.tag) {
                             1 => {
-                                tmp5 = v60;
-                                tmp6 = v62;
-                                v0 = tmp5;
-                                v1 = tmp6;
+                                v0 = v60;
+                                v1 = v62;
                                 continue;
                             },
                             else => {
@@ -1561,10 +1434,8 @@ fn regex_compare_23(p0: *UH2, p1: *UH2) US1 {
                         v42 = regex_compare_23(v34, v40);
                         switch (v42.tag) {
                             1 => {
-                                tmp12 = v35;
-                                tmp13 = v41;
-                                v0 = tmp12;
-                                v1 = tmp13;
+                                v0 = v35;
+                                v1 = v41;
                                 continue;
                             },
                             else => {
@@ -1683,10 +1554,8 @@ fn regex_compare_23(p0: *UH2, p1: *UH2) US1 {
                     },
                     5 => {
                         v54 = v1.c5_0;
-                        tmp21 = v50;
-                        tmp22 = v54;
-                        v0 = tmp21;
-                        v1 = tmp22;
+                        v0 = v50;
+                        v1 = v54;
                         continue;
                     },
                     else => {
@@ -1751,18 +1620,14 @@ fn make_alt_21(p0: *UH2, p1: *UH2) *UH2 {
     var v2: *UH2 = undefined; _ = &v2;
     var v3: *UH2 = undefined; _ = &v3;
     var v4: *UH2 = undefined; _ = &v4;
-    var tmp3: *UH2 = undefined; _ = &tmp3;
-    var tmp4: *UH2 = undefined; _ = &tmp4;
     while (true) {
         switch (v0.tag) {
             3 => {
                 v2 = v0.c3_0;
                 v3 = v0.c3_1;
                 v4 = alt_insert_sorted_22(v2, v1);
-                tmp3 = v3;
-                tmp4 = v4;
-                v0 = tmp3;
-                v1 = tmp4;
+                v0 = v3;
+                v1 = v4;
                 continue;
             },
             0 => {
@@ -1782,22 +1647,16 @@ fn regex_equal_25(p0: *UH2, p1: *UH2) bool {
     var v26: *UH2 = undefined; _ = &v26;
     var v27: *UH2 = undefined; _ = &v27;
     var v28: bool = undefined; _ = &v28;
-    var tmp5: *UH2 = undefined; _ = &tmp5;
-    var tmp6: *UH2 = undefined; _ = &tmp6;
     var v32: *UH2 = undefined; _ = &v32;
     var v33: *UH2 = undefined; _ = &v33;
     var v34: *UH2 = undefined; _ = &v34;
     var v35: *UH2 = undefined; _ = &v35;
     var v36: bool = undefined; _ = &v36;
-    var tmp12: *UH2 = undefined; _ = &tmp12;
-    var tmp13: *UH2 = undefined; _ = &tmp13;
     var v4: US3 = undefined; _ = &v4;
     var v5: US3 = undefined; _ = &v5;
     var v21: US1 = undefined; _ = &v21;
     var v40: *UH2 = undefined; _ = &v40;
     var v41: *UH2 = undefined; _ = &v41;
-    var tmp19: *UH2 = undefined; _ = &tmp19;
-    var tmp20: *UH2 = undefined; _ = &tmp20;
     while (true) {
         switch (v0.tag) {
             3 => {
@@ -1809,10 +1668,8 @@ fn regex_equal_25(p0: *UH2, p1: *UH2) bool {
                         v27 = v1.c3_1;
                         v28 = regex_equal_25(v24, v26);
                         if (v28) {
-                            tmp5 = v25;
-                            tmp6 = v27;
-                            v0 = tmp5;
-                            v1 = tmp6;
+                            v0 = v25;
+                            v1 = v27;
                             continue;
                         } else {
                             return false;
@@ -1832,10 +1689,8 @@ fn regex_equal_25(p0: *UH2, p1: *UH2) bool {
                         v35 = v1.c4_1;
                         v36 = regex_equal_25(v32, v34);
                         if (v36) {
-                            tmp12 = v33;
-                            tmp13 = v35;
-                            v0 = tmp12;
-                            v1 = tmp13;
+                            v0 = v33;
+                            v1 = v35;
                             continue;
                         } else {
                             return false;
@@ -1936,10 +1791,8 @@ fn regex_equal_25(p0: *UH2, p1: *UH2) bool {
                 switch (v1.tag) {
                     5 => {
                         v41 = v1.c5_0;
-                        tmp19 = v40;
-                        tmp20 = v41;
-                        v0 = tmp19;
-                        v1 = tmp20;
+                        v0 = v40;
+                        v1 = v41;
                         continue;
                     },
                     else => {
@@ -2290,10 +2143,8 @@ fn derivative_27(p0: *UH2, p1: US3) *UH2 {
 fn canonical_derivative_19(p0: *UH2, p1: US3) *UH2 {
     var v0: *UH2 = p0; _ = &v0;
     var v1: US3 = p1; _ = &v1;
-    var v2: *UH2 = undefined; _ = &v2;
-    var v3: *UH2 = undefined; _ = &v3;
-    v2 = normalize_20(v0);
-    v3 = derivative_27(v2, v1);
+    const v2: *UH2 = normalize_20(v0);
+    const v3: *UH2 = derivative_27(v2, v1);
     return normalize_20(v3);
 }
 fn accepts_18(p0: *UH2, p1: *UH3) bool {
@@ -2302,8 +2153,6 @@ fn accepts_18(p0: *UH2, p1: *UH3) bool {
     var v6: US3 = undefined; _ = &v6;
     var v7: *UH3 = undefined; _ = &v7;
     var v8: *UH2 = undefined; _ = &v8;
-    var tmp3: *UH2 = undefined; _ = &tmp3;
-    var tmp4: *UH3 = undefined; _ = &tmp4;
     var v2: *UH2 = undefined; _ = &v2;
     var v3: US2 = undefined; _ = &v3;
     while (true) {
@@ -2312,10 +2161,8 @@ fn accepts_18(p0: *UH2, p1: *UH3) bool {
                 v6 = v1.c1_0;
                 v7 = v1.c1_1;
                 v8 = canonical_derivative_19(v0, v6);
-                tmp3 = v8;
-                tmp4 = v7;
-                v0 = tmp3;
-                v1 = tmp4;
+                v0 = v8;
+                v1 = v7;
                 continue;
             },
             0 => {
@@ -2336,142 +2183,81 @@ fn accepts_18(p0: *UH2, p1: *UH3) bool {
     }
 }
 fn spiralMain() i32 {
-    var v0: i32 = undefined; _ = &v0;
-    var v1: i32 = undefined; _ = &v1;
-    var v2: i32 = undefined; _ = &v2;
-    var v3: US0 = undefined; _ = &v3;
-    var v4: *UH0 = undefined; _ = &v4;
-    var v5: US0 = undefined; _ = &v5;
-    var v6: *UH0 = undefined; _ = &v6;
-    var v7: *UH0 = undefined; _ = &v7;
-    var v8: *UH0 = undefined; _ = &v8;
-    var v9: US0 = undefined; _ = &v9;
-    var v10: *UH0 = undefined; _ = &v10;
-    var v11: *UH0 = undefined; _ = &v11;
-    var v12: u64 = undefined; _ = &v12;
-    var v13: i32 = undefined; _ = &v13;
-    var v14: i32 = undefined; _ = &v14;
-    var v15: bool = undefined; _ = &v15;
-    var v16: US0 = undefined; _ = &v16;
-    var v17: *UH0 = undefined; _ = &v17;
-    var v18: US0 = undefined; _ = &v18;
-    var v19: *UH0 = undefined; _ = &v19;
-    var v20: US0 = undefined; _ = &v20;
-    var v21: *UH0 = undefined; _ = &v21;
-    var v22: *UH0 = undefined; _ = &v22;
-    var v23: *UH0 = undefined; _ = &v23;
-    var v24: *UH0 = undefined; _ = &v24;
-    var v25: US0 = undefined; _ = &v25;
-    var v26: *UH0 = undefined; _ = &v26;
-    var v27: *UH0 = undefined; _ = &v27;
-    var v28: i32 = undefined; _ = &v28;
-    var v29: i32 = undefined; _ = &v29;
-    var v30: i32 = undefined; _ = &v30;
-    var v31: bool = undefined; _ = &v31;
-    var v32: US3 = undefined; _ = &v32;
-    var v33: *UH2 = undefined; _ = &v33;
-    var v34: US3 = undefined; _ = &v34;
-    var v35: *UH2 = undefined; _ = &v35;
-    var v36: *UH2 = undefined; _ = &v36;
-    var v37: *UH2 = undefined; _ = &v37;
-    var v38: US3 = undefined; _ = &v38;
-    var v39: *UH2 = undefined; _ = &v39;
-    var v40: *UH2 = undefined; _ = &v40;
-    var v41: US3 = undefined; _ = &v41;
-    var v42: US3 = undefined; _ = &v42;
-    var v43: US3 = undefined; _ = &v43;
-    var v44: US3 = undefined; _ = &v44;
-    var v45: *UH3 = undefined; _ = &v45;
-    var v46: *UH3 = undefined; _ = &v46;
-    var v47: *UH3 = undefined; _ = &v47;
-    var v48: *UH3 = undefined; _ = &v48;
-    var v49: *UH3 = undefined; _ = &v49;
-    var v50: US3 = undefined; _ = &v50;
-    var v51: US3 = undefined; _ = &v51;
-    var v52: US3 = undefined; _ = &v52;
-    var v53: US3 = undefined; _ = &v53;
-    var v54: *UH3 = undefined; _ = &v54;
-    var v55: *UH3 = undefined; _ = &v55;
-    var v56: *UH3 = undefined; _ = &v56;
-    var v57: *UH3 = undefined; _ = &v57;
-    var v58: *UH3 = undefined; _ = &v58;
-    var v59: i32 = undefined; _ = &v59;
-    var v60: bool = undefined; _ = &v60;
     var v62: bool = undefined; _ = &v62;
     var v68: bool = undefined; _ = &v68;
     var v63: i32 = undefined; _ = &v63;
     var v64: bool = undefined; _ = &v64;
     var v65: bool = undefined; _ = &v65;
     var v66: bool = undefined; _ = &v66;
-    v0 = @as(i32, 200);
-    v1 = @as(i32, 32);
-    v2 = @as(i32, 16);
-    v3 = US0_BitZero();
-    v4 = UH0_RegexChar(v3);
-    v5 = US0_BitOne();
-    v6 = UH0_RegexChar(v5);
-    v7 = UH0_RegexAlt(v4, v6);
-    v8 = UH0_RegexStar(v7);
-    v9 = US0_BitZero();
-    v10 = UH0_RegexChar(v9);
-    v11 = UH0_RegexCat(v8, v10);
-    v12 = @as(u64, 1);
-    v13 = @as(i32, 0);
-    v14 = loop_0(v1, v11, v0, v12, v13);
-    v15 = v14 == @as(i32, 93);
+    const v0: i32 = @as(i32, 200);
+    const v1: i32 = @as(i32, 32);
+    const v2: i32 = @as(i32, 16);
+    const v3: US0 = US0_BitZero();
+    const v4: *UH0 = UH0_RegexChar(v3);
+    const v5: US0 = US0_BitOne();
+    const v6: *UH0 = UH0_RegexChar(v5);
+    const v7: *UH0 = UH0_RegexAlt(v4, v6);
+    const v8: *UH0 = UH0_RegexStar(v7);
+    const v9: US0 = US0_BitZero();
+    const v10: *UH0 = UH0_RegexChar(v9);
+    const v11: *UH0 = UH0_RegexCat(v8, v10);
+    const v12: u64 = @as(u64, 1);
+    const v13: i32 = @as(i32, 0);
+    const v14: i32 = loop_0(v1, v11, v0, v12, v13);
+    const v15: bool = v14 == @as(i32, 93);
     if (v15) {
     } else {
         if (spiral_true) spiralFail("brzozowski-compiled-ends-with-zero-count");
     }
-    v16 = US0_BitZero();
-    v17 = UH0_RegexChar(v16);
-    v18 = US0_BitZero();
-    v19 = UH0_RegexChar(v18);
-    v20 = US0_BitZero();
-    v21 = UH0_RegexChar(v20);
-    v22 = UH0_RegexCat(v19, v21);
-    v23 = UH0_RegexAlt(v17, v22);
-    v24 = UH0_RegexStar(v23);
-    v25 = US0_BitOne();
-    v26 = UH0_RegexChar(v25);
-    v27 = UH0_RegexCat(v24, v26);
-    v28 = @as(i32, 1);
-    v29 = @as(i32, 0);
-    v30 = loop_14(v2, v27, v28, v29);
-    v31 = v30 == @as(i32, 16);
+    const v16: US0 = US0_BitZero();
+    const v17: *UH0 = UH0_RegexChar(v16);
+    const v18: US0 = US0_BitZero();
+    const v19: *UH0 = UH0_RegexChar(v18);
+    const v20: US0 = US0_BitZero();
+    const v21: *UH0 = UH0_RegexChar(v20);
+    const v22: *UH0 = UH0_RegexCat(v19, v21);
+    const v23: *UH0 = UH0_RegexAlt(v17, v22);
+    const v24: *UH0 = UH0_RegexStar(v23);
+    const v25: US0 = US0_BitOne();
+    const v26: *UH0 = UH0_RegexChar(v25);
+    const v27: *UH0 = UH0_RegexCat(v24, v26);
+    const v28: i32 = @as(i32, 1);
+    const v29: i32 = @as(i32, 0);
+    const v30: i32 = loop_14(v2, v27, v28, v29);
+    const v31: bool = v30 == @as(i32, 16);
     if (v31) {
     } else {
         if (spiral_true) spiralFail("brzozowski-compiled-zero-runs-count");
     }
-    v32 = US3_TriA();
-    v33 = UH2_RegexChar(v32);
-    v34 = US3_TriB();
-    v35 = UH2_RegexChar(v34);
-    v36 = UH2_RegexAlt(v33, v35);
-    v37 = UH2_RegexStar(v36);
-    v38 = US3_TriC();
-    v39 = UH2_RegexChar(v38);
-    v40 = UH2_RegexCat(v37, v39);
-    v41 = US3_TriA();
-    v42 = US3_TriB();
-    v43 = US3_TriA();
-    v44 = US3_TriC();
-    v45 = UH3_InputEmpty();
-    v46 = UH3_InputCons(v44, v45);
-    v47 = UH3_InputCons(v43, v46);
-    v48 = UH3_InputCons(v42, v47);
-    v49 = UH3_InputCons(v41, v48);
-    v50 = US3_TriA();
-    v51 = US3_TriB();
-    v52 = US3_TriA();
-    v53 = US3_TriB();
-    v54 = UH3_InputEmpty();
-    v55 = UH3_InputCons(v53, v54);
-    v56 = UH3_InputCons(v52, v55);
-    v57 = UH3_InputCons(v51, v56);
-    v58 = UH3_InputCons(v50, v57);
-    v59 = @as(i32, 0);
-    v60 = run_17(v59, v49);
+    const v32: US3 = US3_TriA();
+    const v33: *UH2 = UH2_RegexChar(v32);
+    const v34: US3 = US3_TriB();
+    const v35: *UH2 = UH2_RegexChar(v34);
+    const v36: *UH2 = UH2_RegexAlt(v33, v35);
+    const v37: *UH2 = UH2_RegexStar(v36);
+    const v38: US3 = US3_TriC();
+    const v39: *UH2 = UH2_RegexChar(v38);
+    const v40: *UH2 = UH2_RegexCat(v37, v39);
+    const v41: US3 = US3_TriA();
+    const v42: US3 = US3_TriB();
+    const v43: US3 = US3_TriA();
+    const v44: US3 = US3_TriC();
+    const v45: *UH3 = UH3_InputEmpty();
+    const v46: *UH3 = UH3_InputCons(v44, v45);
+    const v47: *UH3 = UH3_InputCons(v43, v46);
+    const v48: *UH3 = UH3_InputCons(v42, v47);
+    const v49: *UH3 = UH3_InputCons(v41, v48);
+    const v50: US3 = US3_TriA();
+    const v51: US3 = US3_TriB();
+    const v52: US3 = US3_TriA();
+    const v53: US3 = US3_TriB();
+    const v54: *UH3 = UH3_InputEmpty();
+    const v55: *UH3 = UH3_InputCons(v53, v54);
+    const v56: *UH3 = UH3_InputCons(v52, v55);
+    const v57: *UH3 = UH3_InputCons(v51, v56);
+    const v58: *UH3 = UH3_InputCons(v50, v57);
+    const v59: i32 = @as(i32, 0);
+    const v60: bool = run_17(v59, v49);
     if (v60) {
         v62 = accepts_18(v40, v49);
     } else {

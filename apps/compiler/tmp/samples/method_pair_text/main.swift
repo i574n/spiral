@@ -17,8 +17,7 @@ func sp_method0(_ p0: Int32) -> (String, String) {
     }
 }
 func spiral_main() -> Int32 {
-    var v0: Int32 = 0
-    v0 = 7
+    let v0: Int32 = 7
     var v1: String = ""
     var v2: String = ""
     let spiral_tuple116 = sp_method0(v0)

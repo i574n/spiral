@@ -28,10 +28,10 @@ struct Closure1 {
 static inline void ArrayDecrefBody0(Array0 * x){
     (void)x;
 }
-void ArrayDecref0(Array0 * x){
+static void ArrayDecref0(Array0 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody0(x); free(x); }
 }
-Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
+static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     uint32_t size = sizeof(Array0) + sizeof(char) * len;
     Array0 * x = malloc(size);
     if (init_at_zero) { memset(x,0,size); }
@@ -39,7 +39,7 @@ Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     x->len = len;
     return x;
 }
-Array0 * ArrayLit0(uint32_t len, char * ptr){
+static Array0 * ArrayLit0(uint32_t len, char * ptr){
     Array0 * x = ArrayCreate0(len, false);
     memcpy(x->ptr, ptr, sizeof(char) * len);
     return x;
@@ -53,28 +53,21 @@ static inline String * StringLit(uint32_t len, char * ptr){
 static inline void ClosureDecrefBody0(Closure0 * x){
     StringDecref(x->v0);
 }
-void ClosureDecref0(Fun0 * self){
+static void ClosureDecref0(Fun0 * self){
     Closure0 * x = (Closure0 *) self;
     if (x != NULL && --(x->base.refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
-int32_t left_c0(Fun0 * self, int32_t v1){
+static int32_t left_c0(Fun0 * self, int32_t v1){
     Closure0 * x = (Closure0 *) self;
     String * v0 = x->v0;
     (v0)->refc++;
     ClosureDecref0(self);
-    
-    
-    int32_t v2;
-    v2 = v0->len-1;
-    
+    int32_t v2 = v0->len-1;
     StringDecref(v0);
-    int32_t v3;
-    v3 = v2 + v1;
-    
-    
+    int32_t v3 = v2 + v1;
     return v3;
 }
-Fun0 * ClosureCreate0(String * v0){
+static Fun0 * ClosureCreate0(String * v0){
     Closure0 * x = malloc(sizeof(Closure0));
     x->base.refc = 1;
     x->base.decref_fptr = ClosureDecref0;
@@ -85,32 +78,22 @@ Fun0 * ClosureCreate0(String * v0){
 static inline void ClosureDecrefBody1(Closure1 * x){
     StringDecref(x->v0);
 }
-void ClosureDecref1(Fun0 * self){
+static void ClosureDecref1(Fun0 * self){
     Closure1 * x = (Closure1 *) self;
     if (x != NULL && --(x->base.refc) == 0) { ClosureDecrefBody1(x); free(x); }
 }
-int32_t right_c1(Fun0 * self, int32_t v1){
+static int32_t right_c1(Fun0 * self, int32_t v1){
     Closure1 * x = (Closure1 *) self;
     String * v0 = x->v0;
     (v0)->refc++;
     ClosureDecref1(self);
-    
-    
-    int32_t v2;
-    v2 = v0->len-1;
-    
+    int32_t v2 = v0->len-1;
     StringDecref(v0);
-    int32_t v3;
-    v3 = v2 + v1;
-    
-    
-    int32_t v4;
-    v4 = v3 - 1l;
-    
-    
+    int32_t v3 = v2 + v1;
+    int32_t v4 = v3 - 1l;
     return v4;
 }
-Fun0 * ClosureCreate1(String * v0){
+static Fun0 * ClosureCreate1(String * v0){
     Closure1 * x = malloc(sizeof(Closure1));
     x->base.refc = 1;
     x->base.decref_fptr = ClosureDecref1;
@@ -118,37 +101,21 @@ Fun0 * ClosureCreate1(String * v0){
     x->v0 = v0;
     return &x->base;
 }
-int32_t method0(Fun0 * v0){
-    
-    
+static int32_t method0(Fun0 * v0){
     return v0->fptr(v0, 39l);
 }
 int32_t main(){
-    
-    
-    String * v0;
-    v0 = StringLit(4, "abc");
-    
-    
-    String * v1;
-    v1 = StringLit(5, "wxyz");
-    
-    
-    bool v2;
-    v2 = true;
-    
-    
+    String * v0 = StringLit(4, "abc");
+    String * v1 = StringLit(5, "wxyz");
+    bool v2 = true;
     Fun0 * v5;
     if (v2){
         (v0)->refc++;
-        
         v5 = ClosureCreate0(v0);
     } else {
         (v1)->refc++;
-        
         v5 = ClosureCreate1(v1);
     }
-    
     StringDecref(v0); StringDecref(v1);
     return method0(v5);
 }

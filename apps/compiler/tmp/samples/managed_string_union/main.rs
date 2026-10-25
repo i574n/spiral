@@ -9,28 +9,28 @@ enum US0 {
 fn score_0(mut v0: US0) -> i32 {
     match &v0 {
         US0::US0_Number(v3) => {
-            let mut v3: i32 = *v3;
+            let v3: i32 = *v3;
             v3
         }
         US0::US0_Text(v1) => {
-            let mut v1: Rc<str> = v1.clone();
-            let mut v2: i32 = (v1.clone().len() as i32);
+            let v1: Rc<str> = v1.clone();
+            let v2: i32 = (v1.len() as i32);
             v2
         }
     }
 }
 fn spiral_main() -> i32 {
-    let mut v0: bool = false;
-    let mut v4: US0 = if v0 {
+    let v0: bool = false;
+    let v4: US0 = if v0 {
         US0::US0_Number(7i32)
     } else {
-        let mut v2: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("qwe"); } LIT.with(|lit| lit.clone()) };
-        US0::US0_Text(v2.clone())
+        let v2: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("qwe"); } LIT.with(|lit| lit.clone()) };
+        US0::US0_Text(v2)
     };
-    let mut v5: i32 = score_0(v4.clone());
-    let mut v6: i32 = score_0(v4.clone());
-    let mut v7: i32 = v5.wrapping_add(v6);
-    let mut v8: i32 = v7.wrapping_sub(6i32);
+    let v5: i32 = score_0(v4.clone());
+    let v6: i32 = score_0(v4);
+    let v7: i32 = v5.wrapping_add(v6);
+    let v8: i32 = v7.wrapping_sub(6i32);
     v8
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }

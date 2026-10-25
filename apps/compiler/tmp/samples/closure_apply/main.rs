@@ -3,14 +3,14 @@ use std::cell::RefCell;
 use std::rc::Rc;
 fn f_c0() -> Rc<dyn Fn(i32) -> i32> {
     thread_local!{ static CLOSURE: Rc<dyn Fn(i32) -> i32> = Rc::new(move |mut v0: i32| -> i32 {
-        let mut v1: i32 = v0.wrapping_add(1i32);
+        let v1: i32 = v0.wrapping_add(1i32);
         v1
     }); } CLOSURE.with(|closure| closure.clone())
 }
 fn spiral_main() -> i32 {
     let mut v0: Rc<dyn Fn(i32) -> i32> = f_c0();
-    let mut v1: i32 = v0(6i32);
-    let mut v2: bool = v1 == 7i32;
+    let v1: i32 = v0(6i32);
+    let v2: bool = v1 == 7i32;
     if v2 {
         0i32
     } else {

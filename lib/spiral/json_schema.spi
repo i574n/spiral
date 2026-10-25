@@ -1,8 +1,8 @@
 ///- --package .
-open sm'_operators
-open xsd
+:< sm'_operators
+:< xsd
 
-union rec json_value =
+:| ^ json_value =
     | JsonNull
     | JsonBool : bool
     | JsonNumber : string
@@ -10,220 +10,220 @@ union rec json_value =
     | JsonArray : list json_value
     | JsonObject : list (string * json_value)
 
-inl char_at (s : string) (pos : i32) : string = if pos < sm'.length s then sm'.substring pos 1i32 s else ""
+:= char_at (s : string) (pos : i32) : string = ? pos < sm'.length s ?> sm'.substring pos 1i32 s |: ""
 
-inl is_json_space (c : string) : bool = c = " " || c = "\n" || c = "\r" || c = "\t"
+:= is_json_space (c : string) : bool = c = " " || c = "\n" || c = "\r" || c = "\t"
 
-let rec skip_json_spaces (s : string) (pos : i32) : i32 =
-    if is_json_space (char_at s pos) then skip_json_spaces s (pos + 1i32) else pos
+:~ ^ skip_json_spaces (s : string) (pos : i32) : i32 =
+    ? is_json_space (char_at s pos) ?> skip_json_spaces s (pos + 1i32) |: pos
 
-inl hex_digit (c : string) : i32 =
-    inl lower = sm'.index_of c "0123456789abcdef"
-    if lower >= 0i32 then lower else sm'.index_of c "0123456789ABCDEF"
+:= hex_digit (c : string) : i32 =
+    := lower = sm'.index_of c "0123456789abcdef"
+    ? lower >= 0i32 ?> lower |: sm'.index_of c "0123456789ABCDEF"
 
-let rec hex_value (s : string) (pos : i32) (count : i32) (acc : i32) : i32 =
-    if count = 0i32 then acc else hex_value s (pos + 1i32) (count - 1i32) (acc * 16i32 + hex_digit (char_at s pos))
+:~ ^ hex_value (s : string) (pos : i32) (count : i32) (acc : i32) : i32 =
+    ? count = 0i32 ?> acc |: hex_value s (pos + 1i32) (count - 1i32) (acc * 16i32 + hex_digit (char_at s pos))
 
-inl escaped (c : string) : string =
-    if c = "n" then "\n"
-    elif c = "t" then "\t"
-    elif c = "r" then "\r"
-    elif c = "b" then xml.code_point_string 8u32
-    elif c = "f" then xml.code_point_string 12u32
-    else c
+:= escaped (c : string) : string =
+    ? c = "n" ?> "\n"
+    |? c = "t" ?> "\t"
+    |? c = "r" ?> "\r"
+    |? c = "b" ?> xml.code_point_string 8u32
+    |? c = "f" ?> xml.code_point_string 12u32
+    |: c
 
-let rec json_string_from (s : string) (pos : i32) (acc : string) : string * i32 =
-    inl c = char_at s pos
-    if c = "" then acc, pos
-    elif c = "\"" then acc, pos + 1i32
-    elif c = "\\" then
-        inl e = char_at s (pos + 1i32)
-        if e = "u" then
+:~ ^ json_string_from (s : string) (pos : i32) (acc : string) : string * i32 =
+    := c = char_at s pos
+    ? c = "" ?> acc, pos
+    |? c = "\"" ?> acc, pos + 1i32
+    |? c = "\\" ?>
+        := e = char_at s (pos + 1i32)
+        ? e = "u" ?>
             json_string_from s
                 (pos + 6i32)
                 (acc ++# xml.code_point_string (conv (hex_value s (pos + 2i32) 4i32 0i32) : u32))
-        else json_string_from s (pos + 2i32) (acc ++# escaped e)
-    else
-        inl width = xml.code_point_width s pos
+        |: json_string_from s (pos + 2i32) (acc ++# escaped e)
+    |:
+        := width = xml.code_point_width s pos
         json_string_from s (pos + width) (acc ++# sm'.substring pos width s)
 
-inl is_number_char (c : string) : bool = c <> "" && sm'.index_of c "+-0123456789.eE" >= 0i32
+:= is_number_char (c : string) : bool = c <> "" && sm'.index_of c "+-0123456789.eE" >= 0i32
 
-inl word_at (s : string) (pos : i32) (word : string) : bool =
+:= word_at (s : string) (pos : i32) (word : string) : bool =
     pos + sm'.length word <= sm'.length s && sm'.substring pos (sm'.length word) s = word
 
-let rec number_end (s : string) (pos : i32) : i32 =
-    if is_number_char (char_at s pos) then number_end s (pos + 1i32) else pos
+:~ ^ number_end (s : string) (pos : i32) : i32 =
+    ? is_number_char (char_at s pos) ?> number_end s (pos + 1i32) |: pos
 
-let rec json_value_at (s : string) (start : i32) : json_value * i32 =
-    inl pos = skip_json_spaces s start
-    inl c = char_at s pos
-    if c = "{" then json_members s (pos + 1i32) Nil
-    elif c = "[" then json_items s (pos + 1i32) Nil
-    elif c = "\"" then
-        inl text, next = json_string_from s (pos + 1i32) ""
+:~ ^ json_value_at (s : string) (start : i32) : json_value * i32 =
+    := pos = skip_json_spaces s start
+    := c = char_at s pos
+    ? c = "{" ?> json_members s (pos + 1i32) Nil
+    |? c = "[" ?> json_items s (pos + 1i32) Nil
+    |? c = "\"" ?>
+        := text, next = json_string_from s (pos + 1i32) ""
         JsonText text, next
-    elif word_at s pos "true" then JsonBool true, pos + 4i32
-    elif word_at s pos "false" then JsonBool false, pos + 5i32
-    elif word_at s pos "null" then JsonNull, pos + 4i32
-    else
-        inl stop = number_end s pos
+    |? word_at s pos "true" ?> JsonBool !+, pos + 4i32
+    |? word_at s pos "false" ?> JsonBool !-, pos + 5i32
+    |? word_at s pos "null" ?> JsonNull, pos + 4i32
+    |:
+        := stop = number_end s pos
         JsonNumber (sm'.substring pos (stop - pos) s), stop
 
-and let json_members (s : string) (start : i32) (acc : list (string * json_value)) : json_value * i32 =
-    inl pos = skip_json_spaces s start
-    inl c = char_at s pos
-    if c = "}" || c = "" then JsonObject (reverse acc Nil), pos + 1i32
-    elif c = "," then json_members s (pos + 1i32) acc
-    else
-        inl key, after_key = json_string_from s (pos + 1i32) ""
-        inl colon = skip_json_spaces s after_key
-        inl value, next = json_value_at s (colon + 1i32)
+:& :~ json_members (s : string) (start : i32) (acc : list (string * json_value)) : json_value * i32 =
+    := pos = skip_json_spaces s start
+    := c = char_at s pos
+    ? c = "}" || c = "" ?> JsonObject (reverse acc Nil), pos + 1i32
+    |? c = "," ?> json_members s (pos + 1i32) acc
+    |:
+        := key, after_key = json_string_from s (pos + 1i32) ""
+        := colon = skip_json_spaces s after_key
+        := value, next = json_value_at s (colon + 1i32)
         json_members s next ((key, value) :: acc)
 
-and let json_items (s : string) (start : i32) (acc : list json_value) : json_value * i32 =
-    inl pos = skip_json_spaces s start
-    inl c = char_at s pos
-    if c = "]" || c = "" then JsonArray (reverse acc Nil), pos + 1i32
-    elif c = "," then json_items s (pos + 1i32) acc
-    else
-        inl value, next = json_value_at s pos
+:& :~ json_items (s : string) (start : i32) (acc : list json_value) : json_value * i32 =
+    := pos = skip_json_spaces s start
+    := c = char_at s pos
+    ? c = "]" || c = "" ?> JsonArray (reverse acc Nil), pos + 1i32
+    |? c = "," ?> json_items s (pos + 1i32) acc
+    |:
+        := value, next = json_value_at s pos
         json_items s next (value :: acc)
 
-inl read_json (s : string) : json_value =
-    inl value, _ = json_value_at s 0i32
+:= read_json (s : string) : json_value =
+    := value, _ = json_value_at s 0i32
     value
 
-let rec member (key : string) (members : list (string * json_value)) : option json_value =
-    match members with
-    | (name, value) :: rest => if name = key then Some value else member key rest
+:~ ^ member (key : string) (members : list (string * json_value)) : option json_value =
+    ?= members ?|
+    | (name, value) :: rest => ? name = key ?> Some value |: member key rest
     | Nil => None
 
-inl field (key : string) (value : json_value) : option json_value =
-    match value with
+:= field (key : string) (value : json_value) : option json_value =
+    ?= value ?|
     | JsonObject members => member key members
     | _ => None
 
-inl text_field (key : string) (value : json_value) : string =
-    match field key value with
+:= text_field (key : string) (value : json_value) : string =
+    ?= field key value ?|
     | Some (JsonText text) => text
     | _ => ""
 
-inl count_field (key : string) (value : json_value) (otherwise : i32) : i32 =
-    match field key value with
+:= count_field (key : string) (value : json_value) (otherwise : i32) : i32 =
+    ?= field key value ?|
     | Some (JsonNumber digits) => xsd.parse_count digits
     | _ => otherwise
 
-let rec texts_of (items : list json_value) (acc : list string) : list string =
-    match items with
+:~ ^ texts_of (items : list json_value) (acc : list string) : list string =
+    ?= items ?|
     | JsonText text :: rest => texts_of rest (text :: acc)
     | JsonNumber digits :: rest => texts_of rest (digits :: acc)
     | _ :: rest => texts_of rest acc
     | Nil => reverse acc Nil
 
-inl text_list (key : string) (value : json_value) : list string =
-    match field key value with
+:= text_list (key : string) (value : json_value) : list string =
+    ?= field key value ?|
     | Some (JsonArray items) => texts_of items Nil
     | _ => Nil
 
-inl unanchored (pattern : string) : string =
-    inl head = if sm'.starts_with "^" pattern then sm'.substring 1i32 (sm'.length pattern - 1i32) pattern else pattern
-    if sm'.ends_with "$" head then sm'.substring 0i32 (sm'.length head - 1i32) head else head
+:= unanchored (pattern : string) : string =
+    := head = ? sm'.starts_with "^" pattern ?> sm'.substring 1i32 (sm'.length pattern - 1i32) pattern |: pattern
+    ? sm'.ends_with "$" head ?> sm'.substring 0i32 (sm'.length head - 1i32) head |: head
 
-let rec enumeration_facets (values : list string) (acc : list xsd_facet) : list xsd_facet =
-    match values with
+:~ ^ enumeration_facets (values : list string) (acc : list xsd_facet) : list xsd_facet =
+    ?= values ?|
     | value :: rest => enumeration_facets rest (Enumeration value :: acc)
     | Nil => acc
 
-inl string_facets (schema : json_value) : list xsd_facet =
-    inl pattern = text_field "pattern" schema
-    inl with_pattern = if pattern = "" then Nil else Pattern (unanchored pattern) :: Nil
-    inl min_length = count_field "minLength" schema (0i32 - 1i32)
-    inl max_length = count_field "maxLength" schema (0i32 - 1i32)
-    inl with_min = if min_length >= 0i32 then (MinLength min_length :: with_pattern) else with_pattern
-    inl with_max = if max_length >= 0i32 then (MaxLength max_length :: with_min) else with_min
+:= string_facets (schema : json_value) : list xsd_facet =
+    := pattern = text_field "pattern" schema
+    := with_pattern = ? pattern = "" ?> Nil |: Pattern (unanchored pattern) :: Nil
+    := min_length = count_field "minLength" schema (0i32 - 1i32)
+    := max_length = count_field "maxLength" schema (0i32 - 1i32)
+    := with_min = ? min_length >= 0i32 ?> (MinLength min_length :: with_pattern) |: with_pattern
+    := with_max = ? max_length >= 0i32 ?> (MaxLength max_length :: with_min) |: with_min
     reverse (enumeration_facets (text_list "enum" schema) Nil) with_max
 
-inl reference_name (reference : string) : string =
-    inl slash = sm'.last_index_of "/" reference
-    if slash >= 0i32 then sm'.substring (slash + 1i32) (sm'.length reference - slash - 1i32) reference else reference
+:= reference_name (reference : string) : string =
+    := slash = sm'.last_index_of "/" reference
+    ? slash >= 0i32 ?> sm'.substring (slash + 1i32) (sm'.length reference - slash - 1i32) reference |: reference
 
-inl builtin_of (kind : string) : string =
-    if kind = "integer" then "xs:integer"
-    elif kind = "number" then "xs:decimal"
-    elif kind = "boolean" then "xs:boolean"
-    else "xs:string"
+:= builtin_of (kind : string) : string =
+    ? kind = "integer" ?> "xs:integer"
+    |? kind = "number" ?> "xs:decimal"
+    |? kind = "boolean" ?> "xs:boolean"
+    |: "xs:string"
 
-let rec has_text (target : string) (items : list string) : bool =
-    match items with
+:~ ^ has_text (target : string) (items : list string) : bool =
+    ?= items ?|
     | item :: rest => item = target || has_text target rest
-    | Nil => false
+    | Nil => !-
 
-let rec object_type (name : string) (schema : json_value) : xsd =
-    inl required = text_list "required" schema
-    inl properties =
-        match field "properties" schema with
+:~ ^ object_type (name : string) (schema : json_value) : xsd =
+    := required = text_list "required" schema
+    := properties =
+        ?= field "properties" schema ?|
         | Some (JsonObject members) => members
         | _ => Nil
     Complex (name, Sequence (1i32, 1i32, property_elements name properties required Nil), Nil)
 
-and let property_elements
+:& :~ property_elements
     (owner : string) (properties : list (string * json_value)) (required : list string) (acc : list xsd)
     : list xsd
     =
-    match properties with
+    ?= properties ?|
     | (key, schema) :: rest =>
-        inl min = if has_text key required then 1i32 else 0i32
+        := min = ? has_text key required ?> 1i32 |: 0i32
         property_elements owner rest required (property_element owner key schema min :: acc)
     | Nil => reverse acc Nil
 
-and let property_element (owner : string) (key : string) (schema : json_value) (min : i32) : xsd =
-    inl reference = text_field "$ref" schema
-    inl kind = text_field "type" schema
-    if reference <> "" then Element (key, reference_name reference, min, 1i32, None)
-    elif kind = "array" then
-        inl items =
-            match field "items" schema with
+:& :~ property_element (owner : string) (key : string) (schema : json_value) (min : i32) : xsd =
+    := reference = text_field "$ref" schema
+    := kind = text_field "type" schema
+    ? reference <> "" ?> Element (key, reference_name reference, min, 1i32, None)
+    |? kind = "array" ?>
+        := items =
+            ?= field "items" schema ?|
             | Some item => item
             | None => JsonObject Nil
-        inl least = count_field "minItems" schema min
-        inl most = count_field "maxItems" schema (0i32 - 1i32)
-        match property_element owner key items least with
+        := least = count_field "minItems" schema min
+        := most = count_field "maxItems" schema (0i32 - 1i32)
+        ?= property_element owner key items least ?|
         | Element (name, type_reference, _, _, inline) => Element (name, type_reference, least, most, inline)
         | other => other
-    elif kind = "object" then Element (key, "", min, 1i32, Some (object_type "" schema))
-    else
-        inl facets = string_facets schema
-        match facets with
+    |? kind = "object" ?> Element (key, "", min, 1i32, Some (object_type "" schema))
+    |:
+        := facets = string_facets schema
+        ?= facets ?|
         | Nil => Element (key, builtin_of kind, min, 1i32, None)
         | _ => Element (key, "", min, 1i32, Some (Simple ("", builtin_of kind, facets)))
 
-let rec definition_types
+:~ ^ definition_types
     (definitions : list (string * json_value)) (simple : list xsd) (complex : list xsd)
     : list xsd * list xsd
     =
-    match definitions with
+    ?= definitions ?|
     | (name, schema) :: rest =>
-        inl has_properties = match field "properties" schema with Some _ => true | None => false
-        if text_field "type" schema = "object" || has_properties
-        then definition_types rest simple (object_type name schema :: complex)
-        else
+        := has_properties = ?= field "properties" schema ?| Some _ => !+ | None => !-
+        ? text_field "type" schema = "object" || has_properties
+        ?> definition_types rest simple (object_type name schema :: complex)
+        |:
             definition_types rest
                 (Simple (name, builtin_of (text_field "type" schema), string_facets schema) :: simple)
                 complex
     | Nil => reverse simple Nil, reverse complex Nil
 
-inl definitions_of (schema : json_value) : list (string * json_value) =
-    match field "$defs" schema with
+:= definitions_of (schema : json_value) : list (string * json_value) =
+    ?= field "$defs" schema ?|
     | Some (JsonObject members) => members
     | _ =>
-        match field "definitions" schema with
+        ?= field "definitions" schema ?|
         | Some (JsonObject members) => members
         | _ => Nil
 
-inl schema_of_json_schema (root_name : string) (text : string) : xsd_schema =
-    inl schema = read_json text
-    inl simple, complex = definition_types (definitions_of schema) Nil Nil
+:= schema_of_json_schema (root_name : string) (text : string) : xsd_schema =
+    := schema = read_json text
+    := simple, complex = definition_types (definitions_of schema) Nil Nil
     {
         target_namespace = text_field "$id" schema
         includes = Nil
@@ -232,69 +232,69 @@ inl schema_of_json_schema (root_name : string) (text : string) : xsd_schema =
         elements = Element (root_name, root_name, 1i32, 1i32, None) :: Nil
     }
 
-let rec prepend_reversed forall t. (items : list t) (acc : list t) : list t =
-    match items with
+:~ ^ prepend_reversed \* t. (items : list t) (acc : list t) : list t =
+    ?= items ?|
     | item :: rest => prepend_reversed rest (item :: acc)
     | Nil => acc
 
-let rec json_nodes (name : string) (value : json_value) : list xml.xml_node =
-    match value with
+:~ ^ json_nodes (name : string) (value : json_value) : list xml.xml_node =
+    ?= value ?|
     | JsonNull => Nil
-    | JsonBool flag => xml.element name Nil (xml.text_children (if flag then "true" else "false")) :: Nil
+    | JsonBool flag => xml.element name Nil (xml.text_children (? flag ?> "true" |: "false")) :: Nil
     | JsonNumber digits => xml.element name Nil (xml.text_children digits) :: Nil
     | JsonText text => xml.element name Nil (xml.text_children text) :: Nil
     | JsonArray items => array_nodes name items Nil
     | JsonObject members => xml.element name Nil (member_nodes members Nil) :: Nil
 
-and let array_nodes (name : string) (items : list json_value) (acc : list xml.xml_node) : list xml.xml_node =
-    match items with
+:& :~ array_nodes (name : string) (items : list json_value) (acc : list xml.xml_node) : list xml.xml_node =
+    ?= items ?|
     | item :: rest => array_nodes name rest (prepend_reversed (json_nodes name item) acc)
     | Nil => reverse acc Nil
 
-and let member_nodes (members : list (string * json_value)) (acc : list xml.xml_node) : list xml.xml_node =
-    match members with
+:& :~ member_nodes (members : list (string * json_value)) (acc : list xml.xml_node) : list xml.xml_node =
+    ?= members ?|
     | (key, value) :: rest => member_nodes rest (prepend_reversed (json_nodes key value) acc)
     | Nil => reverse acc Nil
 
-inl json_document (root_name : string) (text : string) : list xml.xml_node = json_nodes root_name (read_json text)
+:= json_document (root_name : string) (text : string) : list xml.xml_node = json_nodes root_name (read_json text)
 
 ///> rust
 test json_values_parse_with_escapes_and_nesting =
-    inl value = read_json "{ \"a\": [1, -2.5e3, true, null], \"b\": { \"c\": \"x\\\"y\\u00e9\\n\" } }"
-    match field "a" value with
+    := value = read_json "{ \"a\": [1, -2.5e3, true, null], \"b\": { \"c\": \"x\\\"y\\u00e9\\n\" } }"
+    ?= field "a" value ?|
     | Some (JsonArray items) =>
-        if listm.length items <> 4i32 then failwith "the array keeps its four items"
-        match items with
+        ? listm.length items <> 4i32 ?> failwith "the array keeps its four items"
+        ?= items ?|
         | JsonNumber first :: JsonNumber second :: _ =>
-            if first <> "1" || second <> "-2.5e3" then failwith "numbers keep their text"
+            ? first <> "1" || second <> "-2.5e3" ?> failwith "numbers keep their text"
         | _ => failwith "numbers parse as numbers"
     | _ => failwith "a is an array"
-    match field "b" value with
+    ?= field "b" value ?|
     | Some inner =>
-        if text_field "c" inner <> ("x\"y" ++# xml.code_point_string 233u32 ++# "\n")
-        then failwith "string escapes decode"
+        ? text_field "c" inner <> ("x\"y" ++# xml.code_point_string 233u32 ++# "\n")
+        ?> failwith "string escapes decode"
     | None => failwith "b is an object"
 ///> rust
 test json_documents_become_element_trees_the_xsd_readers_already_read =
-    match
+    ?=
         json_document
             "Invoice"
             "{ \"Version\": \"1.1\", \"ItemList\": [ { \"SlNo\": \"1\" }, { \"SlNo\": \"2\" } ], \"Note\": null }"
-    with
+    ?|
     | root :: Nil =>
-        inl children = xml.element_children root
-        if xml.node_name root <> "Invoice" then failwith "the root element takes the document name"
-        if xml.count_named "ItemList" children <> 2i32 then failwith "an array repeats its element"
-        if xml.has_child "Note" children then failwith "null is an absent element"
-        match xml.first_child "Version" children with
+        := children = xml.element_children root
+        ? xml.node_name root <> "Invoice" ?> failwith "the root element takes the document name"
+        ? xml.count_named "ItemList" children <> 2i32 ?> failwith "an array repeats its element"
+        ? xml.has_child "Note" children ?> failwith "null is an absent element"
+        ?= xml.first_child "Version" children ?|
         | Some version =>
-            if xml.text_in (xml.element_children version) <> "1.1" then failwith "a scalar is the element text"
+            ? xml.text_in (xml.element_children version) <> "1.1" ?> failwith "a scalar is the element text"
         | None => failwith "a scalar member is an element"
     | _ => failwith "one root"
 
 ///> rust
 test json_schemas_map_onto_the_xsd_model_and_generate =
-    inl schema =
+    := schema =
         "{ \"$id\": \"urn:gst:einvoice\", \"type\": \"object\", \"required\": [\"Version\", \"DocDtls\", "
         ^^ "\"ItemList\"], \"properties\": { \"Version\": { \"type\": \"string\", \"maxLength\": 6 }, \"DocDtls\": { "
         ^^ "\"$ref\": \"#/definitions/doc\" }, \"ItemList\": { \"type\": \"array\", \"minItems\": 1, \"maxItems\": "
@@ -303,10 +303,10 @@ test json_schemas_map_onto_the_xsd_model_and_generate =
         ^^ "[\"INV\", \"CRN\", \"DBN\"] }, \"No\": { \"type\": \"string\", \"pattern\": "
         ^^ "\"^[a-zA-Z1-9][a-zA-Z0-9/-]{0,15}$\" } } }, \"item\": { \"type\": \"object\", \"required\": [\"SlNo\"], "
         ^^ "\"properties\": { \"SlNo\": { \"type\": \"string\" }, \"Qty\": { \"type\": \"number\" } } } } }"
-    inl model = schema_of_json_schema "Invoice" schema
-    if model.target_namespace <> "urn:gst:einvoice" then failwith "$id is the namespace"
-    if listm.length model.complex_types <> 3i32 then failwith "doc, item and the root are complex types"
-    inl text = xsd_emit.generate_module model
-    if sm'.contains "type x_invoice" text = false then failwith "the root type is emitted"
-    if sm'.contains "x_doc" text = false || sm'.contains "x_item" text = false then failwith "definitions are emitted"
-    if sm'.contains "INV" text = false then failwith "an enum becomes a coded type"
+    := model = schema_of_json_schema "Invoice" schema
+    ? model.target_namespace <> "urn:gst:einvoice" ?> failwith "$id is the namespace"
+    ? listm.length model.complex_types <> 3i32 ?> failwith "doc, item and the root are complex types"
+    := text = xsd_emit.generate_module model
+    ? sm'.contains "type x_invoice" text = !- ?> failwith "the root type is emitted"
+    ? sm'.contains "x_doc" text = !- || sm'.contains "x_item" text = !- ?> failwith "definitions are emitted"
+    ? sm'.contains "INV" text = !- ?> failwith "an enum becomes a coded type"

@@ -13,10 +13,8 @@ func sp_method1(_ p0: Int32, _ p1: Int32) -> Int32 {
         if (v4) {
             return v3
         } else {
-            let t336_2: Int32 = v2
-            let t372_3: Int32 = v3
-            v0 = t336_2
-            v1 = t372_3
+            v0 = v2
+            v1 = v3
             continue
         }
     }
@@ -47,10 +45,8 @@ func sp_method3(_ p0: Int32, _ p1: Int32) -> Int32 {
         if (v4) {
             return v3
         } else {
-            let t336_2: Int32 = v2
-            let t372_3: Int32 = v3
-            v0 = t336_2
-            v1 = t372_3
+            v0 = v2
+            v1 = v3
             continue
         }
     }

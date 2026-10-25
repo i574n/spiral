@@ -1,13 +1,13 @@
-open sm'_operators
-open leptos
-open rust
+:< sm'_operators
+:< leptos
+:< rust
 
-inl render icon (class : () -> string) props : _ (_ button) =
+:= render icon (class : () -> string) props : _ (_ button) =
     button
         ([
             class_fn "inline-flex shrink-0 items-center [justify-content:center] pb-[8px] pt-[8px] px-[12px] " class
         ] ++ props)
-        fun () =>
+        \ () =>
             :>[
                 icon |> element_to_view
             ]

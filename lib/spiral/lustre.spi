@@ -3,71 +3,71 @@
 /// ## lustre
 
 /// ### attribute
-nominal attribute t =
+:! attribute t =
     `(
         backend_switch `(()) `({}) {
-            Gleam = (fun () => global "import lustre/internals/vdom") : () -> ()
+            Gleam = (\ () => global "import lustre/internals/vdom") : () -> ()
         }
         $'' : $'vdom.Attribute(`t)'
     )
 
 /// ### element
-nominal element t =
+:! element t =
     `(
         backend_switch `(()) `({}) {
-            Gleam = (fun () => global "import lustre/element") : () -> ()
+            Gleam = (\ () => global "import lustre/element") : () -> ()
         }
         $'' : $'element.Element(`t)'
     )
 
 /// ### text
-inl text forall t. (text : string) : element t =
+:= text \* t. (text : string) : element t =
     global "import lustre/element/html"
     $'element.text(!text)'
 
 /// ### on_click
-inl on_click forall t. (msg : t) : attribute t =
+:= on_click \* t. (msg : t) : attribute t =
     global "import lustre/event"
     $'event.on_click(!msg)'
 
 /// ### style
-inl style forall t. (styles : list (string * string)) : attribute t =
+:= style \* t. (styles : list (string * string)) : attribute t =
     global "import lustre/attribute"
-    inl styles = styles |> listm'.box
+    := styles = styles |> listm'.box
     $'attribute.style(!styles)'
 
 /// ### div
-inl div forall t. (attributes : list (attribute t)) (children : list (element t)) : element t =
+:= div \* t. (attributes : list (attribute t)) (children : list (element t)) : element t =
     global "import lustre/element/html"
-    inl attributes = attributes |> listm'.box
-    inl children = children |> listm'.box
+    := attributes = attributes |> listm'.box
+    := children = children |> listm'.box
     $'html.div(!attributes, !children)'
 
 /// ### p
-inl p forall t. (attributes : list (attribute t)) (children : list (element t)) : element t =
+:= p \* t. (attributes : list (attribute t)) (children : list (element t)) : element t =
     global "import lustre/element/html"
-    inl attributes = attributes |> listm'.box
-    inl children = children |> listm'.box
+    := attributes = attributes |> listm'.box
+    := children = children |> listm'.box
     $'html.p(!attributes, !children)'
 
 /// ### button
-inl button forall t. (attributes : list (attribute t)) (children : list (element t)) : element t =
+:= button \* t. (attributes : list (attribute t)) (children : list (element t)) : element t =
     global "import lustre/ui/button"
-    inl attributes = attributes |> listm'.box
-    inl children = children |> listm'.box
+    := attributes = attributes |> listm'.box
+    := children = children |> listm'.box
     $'button.button(!attributes, !children)'
 
 /// ### centre
-inl centre forall t. (attributes : list (attribute t)) (children : element t) : element t =
+:= centre \* t. (attributes : list (attribute t)) (children : element t) : element t =
     global "import lustre/ui/centre"
-    inl attributes = attributes |> listm'.box
+    := attributes = attributes |> listm'.box
     $'centre.centre(!attributes, !children)'
 
 /// ### app
-nominal app model msg = $'lustre.App(`model, `model, `msg)'
+:! app model msg = $'lustre.App(`model, `model, `msg)'
 
 /// ### simple
-inl simple forall model msg.
+:= simple \* model msg.
     (init : model -> model)
     (update : model * msg -> model)
     (view : model -> element msg)
@@ -77,37 +77,37 @@ inl simple forall model msg.
     $'lustre.simple(!init, fn (a, b) { !update(\#(a, b)) }, !view)'
 
 /// ### to_html
-inl to_html forall t. (element : element t) : string =
+:= to_html \* t. (element : element t) : string =
     $'element.to_string(!element)'
 
 /// ### start
-inl start id app =
+:= start id app =
     $'let assert Ok(_) = lustre.start(!app, !id, 0)' : ()
 
 /// ## counter
 
 /// ### model
-type model = int
+:== model = int
 
 /// ### init
-inl init initial_count : model =
-    if initial_count < 0
-    then 0
-    else initial_count
+:= init initial_count : model =
+    ? initial_count < 0
+    ?> 0
+    |: initial_count
 
 /// ### msg
-union msg =
+:| msg =
     | Incr
     | Decr
 
 /// ### update
-inl update n (model, msg) =
-    match msg with
+:= update n (model, msg) =
+    ?= msg ?|
     | Incr => model + n
     | Decr => model - n
 
 /// ### view
-inl view model =
+:= view model =
     div [
         style [
             "display", "flex"
@@ -140,19 +140,19 @@ inl view model =
     ]
 
 /// ## tests
-open sm'_operators
+:< sm'_operators
 
 /// ### expect_html
-inl expect_html (expected : string) (actual : string) : () =
-    if actual <> expected
-    then failwith ("__assert_eq { actual = " ++# actual ++# "; expected = " ++# expected ++# " }")
+:= expect_html (expected : string) (actual : string) : () =
+    ? actual <> expected
+    ?> failwith ("__assert_eq { actual = " ++# actual ++# "; expected = " ++# expected ++# " }")
 
 ///> gleam -t javascript -d lustre=\">=4.6.0\" lustre_ui=\"1.0.0-rc.1\" gleam_json=\">=2.0.0\"
 test tests =
-    inl model = init (dyn -3i32)
-    inl model = update 1i32 (model, Incr)
-    inl model = update 1i32 (model, Incr)
-    inl model = update 1i32 (model, Decr)
+    := model = init (dyn -3i32)
+    := model = update 1i32 (model, Incr)
+    := model = update 1i32 (model, Incr)
+    := model = update 1i32 (model, Decr)
     model
     |> view
     |> to_html
@@ -165,8 +165,8 @@ test tests =
 
 ///> gleam -t javascript -d lustre=\">=4.6.0\" lustre_ui=\"1.0.0-rc.1\" gleam_json=\">=2.0.0\"
 test tests_2 =
-    inl model = init (dyn 5i32)
-    inl model = update 2i32 (model, Decr)
+    := model = init (dyn 5i32)
+    := model = update 2i32 (model, Decr)
     model
     |> view
     |> to_html

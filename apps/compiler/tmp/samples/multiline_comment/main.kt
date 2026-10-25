@@ -1,10 +1,7 @@
 fun spiral_main(): Int {
-    var v0: Int = 0
-    v0 = 7
-    var v1: Int = 0
-    v1 = (v0 * 2)
-    var v2: Boolean = false
-    v2 = (v1 != 14)
+    val v0: Int = 7
+    val v1: Int = (v0 * 2)
+    val v2: Boolean = (v1 != 14)
     if (v2) {
         return 1
     } else {

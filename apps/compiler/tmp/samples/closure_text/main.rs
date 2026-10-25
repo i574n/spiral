@@ -3,9 +3,9 @@ use std::cell::RefCell;
 use std::rc::Rc;
 fn f_c0(mut v0: Rc<str>) -> Rc<dyn Fn(i32) -> Rc<str>> {
     Rc::new(move |mut v1: i32| -> Rc<str> {
-        let mut v2: bool = v1 == 0i32;
+        let v2: bool = v1 == 0i32;
         if v2 {
-            let mut v3: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("no"); } LIT.with(|lit| lit.clone()) };
+            let v3: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("no"); } LIT.with(|lit| lit.clone()) };
             v3.clone()
         } else {
             v0.clone()
@@ -13,10 +13,10 @@ fn f_c0(mut v0: Rc<str>) -> Rc<dyn Fn(i32) -> Rc<str>> {
     })
 }
 fn spiral_main() -> i32 {
-    let mut v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
-    let mut v1: Rc<dyn Fn(i32) -> Rc<str>> = f_c0(v0.clone());
-    let mut v2: Rc<str> = v1(1i32);
-    let mut v3: bool = v2.clone() == { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
+    let v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
+    let mut v1: Rc<dyn Fn(i32) -> Rc<str>> = f_c0(v0);
+    let v2: Rc<str> = v1(1i32);
+    let v3: bool = &*v2 == "hi";
     if v3 {
         0i32
     } else {

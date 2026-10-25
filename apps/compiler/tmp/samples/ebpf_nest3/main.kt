@@ -16,20 +16,17 @@ fun sp_method0(p0: Int, p1: UInt, p2: Float): Int {
     v3 = spiral_tuple192.v0
     v4 = spiral_tuple192.v1
     v5 = spiral_tuple192.v2
-    var v6: Boolean = false
-    v6 = (v3 == 2)
+    val v6: Boolean = (v3 == 2)
     var v8: Boolean = false
     if (v6) {
-        var v7: Boolean = false
-        v7 = (v4 == 3u)
+        val v7: Boolean = (v4 == 3u)
         v8 = v7
     } else {
         v8 = false
     }
     var v10: Boolean = false
     if (v8) {
-        var v9: Boolean = false
-        v9 = (v5 == 1.5f)
+        val v9: Boolean = (v5 == 1.5f)
         v10 = v9
     } else {
         v10 = false
@@ -41,12 +38,9 @@ fun sp_method0(p0: Int, p1: UInt, p2: Float): Int {
     }
 }
 fun spiral_main(): Int {
-    var v0: Int = 0
-    v0 = 2
-    var v1: UInt = 0u
-    v1 = 3u
-    var v2: Float = 0.0f
-    v2 = 1.5f
+    val v0: Int = 2
+    val v1: UInt = 3u
+    val v2: Float = 1.5f
     return sp_method0(v0, v1, v2)
 }
 fun main() {

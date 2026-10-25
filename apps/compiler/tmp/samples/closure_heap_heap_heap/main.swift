@@ -30,24 +30,15 @@ func f_c0(_ v0: Heap2) -> (Int32) -> Heap2 {
     }
 }
 func spiral_main() -> Int32 {
-    var v0: Int32 = 0
-    v0 = 7
-    var v1: String = ""
-    v1 = "hi"
-    var v2: Heap0 = Heap0(l0: 0, l1: "")
-    v2 = Heap0(l0: v0, l1: v1)
-    var v3: Int32 = 0
-    v3 = 1
-    var v4: Heap1 = Heap1(l0: Heap0(l0: 0, l1: ""), l1: 0)
-    v4 = Heap1(l0: v2, l1: v3)
-    var v5: Int32 = 0
-    v5 = 2
-    var v6: Heap2 = Heap2(l0: Heap1(l0: Heap0(l0: 0, l1: ""), l1: 0), l1: 0)
-    v6 = Heap2(l0: v4, l1: v5)
-    var v7: (Int32) -> Heap2 = { (_: Int32) -> Heap2 in fatalError("unreachable closure") }
-    v7 = f_c0(v6)
-    var v8: Heap2 = Heap2(l0: Heap1(l0: Heap0(l0: 0, l1: ""), l1: 0), l1: 0)
-    v8 = v7(1)
+    let v0: Int32 = 7
+    let v1: String = "hi"
+    let v2: Heap0 = Heap0(l0: v0, l1: v1)
+    let v3: Int32 = 1
+    let v4: Heap1 = Heap1(l0: v2, l1: v3)
+    let v5: Int32 = 2
+    let v6: Heap2 = Heap2(l0: v4, l1: v5)
+    let v7: (Int32) -> Heap2 = f_c0(v6)
+    let v8: Heap2 = v7(1)
     var v9: Heap1 = Heap1(l0: Heap0(l0: 0, l1: ""), l1: 0)
     var v10: Int32 = 0
     v9 = v8.l0
@@ -60,28 +51,24 @@ func spiral_main() -> Int32 {
     var v14: String = ""
     v13 = v11.l0
     v14 = v11.l1
-    var v15: Bool = false
-    v15 = (v13 == 7)
+    let v15: Bool = (v13 == 7)
     var v17: Bool = false
     if (v15) {
-        var v16: Bool = false
-        v16 = (v14 == "hi")
+        let v16: Bool = (v14 == "hi")
         v17 = v16
     } else {
         v17 = false
     }
     var v19: Bool = false
     if (v17) {
-        var v18: Bool = false
-        v18 = (v12 == 1)
+        let v18: Bool = (v12 == 1)
         v19 = v18
     } else {
         v19 = false
     }
     var v21: Bool = false
     if (v19) {
-        var v20: Bool = false
-        v20 = (v10 == 2)
+        let v20: Bool = (v10 == 2)
         v21 = v20
     } else {
         v21 = false

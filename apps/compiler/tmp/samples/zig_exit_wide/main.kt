@@ -1,6 +1,5 @@
 fun spiral_main(): Int {
-    var v0: Int = 0
-    v0 = 305
+    val v0: Int = 305
     return v0
 }
 fun main() {

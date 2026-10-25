@@ -35,13 +35,11 @@ partial def method0 (p0 : (IO.Ref M0)) : IO (IO.Ref M0) := do
 partial def spiralMain : IO Int32 := do
     let mut v0 : (IO.Ref M0) ← IO.mkRef default
     let mut v1 : (IO.Ref M0) ← IO.mkRef default
-    let mut v2 : Int32 := default
-    let mut v3 : Bool := default
     v0 := (← IO.mkRef (M0.mk (1 : Int32)))
     v1 := (← method0 v0)
     v1.modify (fun r => { r with l0 := (7 : Int32) })
-    v2 := (← v1.get).l0
-    v3 := (v2 == (7 : Int32))
+    let v2 : Int32 := (← v1.get).l0
+    let v3 : Bool := (v2 == (7 : Int32))
     if v3 then
         return (0 : Int32)
     else

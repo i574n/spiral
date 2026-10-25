@@ -41,89 +41,26 @@ fn spiralFlush() void {
     spiralWrite(1, spiral_out_buffer[0..spiral_out_len]);
     spiral_out_len = 0;
 }
-fn spiralPrint(s: []const u8) void {
-    if (s.len > spiral_out_buffer.len - spiral_out_len) spiralFlush();
-    if (s.len > spiral_out_buffer.len) {
-        spiralWrite(1, s);
-        return;
-    }
-    @memcpy(spiral_out_buffer[spiral_out_len..][0..s.len], s);
-    spiral_out_len += s.len;
-}
-fn spiralFloatText(x: anytype) []u8 {
-    var buffer: [std.fmt.float.bufferSize(.decimal, @TypeOf(x))]u8 = undefined;
-    const text = std.fmt.float.render(&buffer, x, .{ .mode = .decimal }) catch unreachable;
-    return spiral_gpa.dupe(u8, text) catch @panic("out of memory");
-}
-fn spiralPrintAny(x: anytype) void {
-    const T = @TypeOf(x);
-    if (T == []const u8) return spiralPrint(x);
-    if (@typeInfo(T) == .float) return spiralPrint(spiralFloatText(x));
-    const s = switch (@typeInfo(T)) {
-        .bool => std.fmt.allocPrint(spiral_gpa, "{}", .{x}),
-        else => std.fmt.allocPrint(spiral_gpa, "{d}", .{x}),
-    } catch @panic("out of memory");
-    spiralPrint(s);
-}
 fn spiralFail(s: []const u8) noreturn {
     spiralFlush();
     spiralWrite(2, s);
     spiralWrite(2, "\n");
     std.process.exit(1);
 }
-fn spiralConv(comptime T: type, x: anytype) T {
-    const S = @TypeOf(x);
-    if (@typeInfo(T) == .float) {
-        if (@typeInfo(S) == .float) return @floatCast(x) else return @floatFromInt(x);
-    }
-    if (@typeInfo(S) == .float) return @intFromFloat(x);
-    const U = @Int(.unsigned, @bitSizeOf(T));
-    const wide: i128 = x;
-    return @bitCast(@as(U, @truncate(@as(u128, @bitCast(wide)))));
-}
-fn spiralConcat(a: []const u8, b: []const u8) []const u8 {
-    return std.mem.concat(spiral_gpa, u8, &.{ a, b }) catch @panic("out of memory");
-}
-fn spiralStringSlice(s: []const u8, from: i64, upto: i64) []const u8 {
-    const len: i64 = @intCast(s.len);
-    if (from < 0 or from > len or upto < from - 1 or upto >= len) std.process.exit(3);
-    if (upto < from) return "";
-    const a: usize = @intCast(from);
-    const b: usize = @intCast(upto + 1);
-    if ((s[a] & 0xC0) == 0x80 or (b < s.len and (s[b] & 0xC0) == 0x80)) std.process.exit(3);
-    return s[a..b];
-}
 fn spiralIndex(len: usize, i: anytype) usize {
     if (i < 0 or i >= len) std.process.exit(3);
     return @intCast(i);
-}
-fn spiralNewArray(comptime T: type, n: anytype) []T {
-    const len: usize = @intCast(n);
-    const a = spiral_gpa.alloc(T, len) catch @panic("out of memory");
-    switch (@typeInfo(T)) {
-        .int, .float, .bool => @memset(a, std.mem.zeroes(T)),
-        else => if (T == []const u8) @memset(a, ""),
-    }
-    return a;
-}
-fn spiralCreate(comptime T: type, v: T) *T {
-    const p = spiral_gpa.create(T) catch @panic("out of memory");
-    p.* = v;
-    return p;
 }
 const Tuple0 = struct { f0: i32, f1: i32 };
 fn runtime_byte_2(p0: []const u8, p1: i32) u8 {
     var v0: []const u8 = p0; _ = &v0;
     var v1: i32 = p1; _ = &v1;
-    var v2: u8 = undefined; _ = &v2;
-    v2 = v0[spiralIndex(v0.len, v1)];
+    const v2: u8 = v0[spiralIndex(v0.len, v1)];
     return v2;
 }
 fn utf8_scalar_at_byte_offset_1(p0: []const u8, p1: i32) i32 {
     var v0: []const u8 = p0; _ = &v0;
     var v1: i32 = p1; _ = &v1;
-    var v2: i32 = undefined; _ = &v2;
-    var v3: bool = undefined; _ = &v3;
     var v5: bool = undefined; _ = &v5;
     var v7: u8 = undefined; _ = &v7;
     var v8: i32 = undefined; _ = &v8;
@@ -197,8 +134,8 @@ fn utf8_scalar_at_byte_offset_1(p0: []const u8, p1: i32) i32 {
     var v93: i32 = undefined; _ = &v93;
     var v94: bool = undefined; _ = &v94;
     var v96: bool = undefined; _ = &v96;
-    v2 = @as(i32, @intCast(v0.len));
-    v3 = v1 < @as(i32, 0);
+    const v2: i32 = @as(i32, @intCast(v0.len));
+    const v3: bool = v1 < @as(i32, 0);
     if (v3) {
         spiralFail("UTF-8 byte offset is negative.");
     } else {
@@ -399,9 +336,6 @@ fn loop_0(p0: i32, p1: i32, p2: i32) Tuple0 {
     var v17: i32 = undefined; _ = &v17;
     var v18: i32 = undefined; _ = &v18;
     var v19: i32 = undefined; _ = &v19;
-    var tmp13: i32 = undefined; _ = &tmp13;
-    var tmp14: i32 = undefined; _ = &tmp14;
-    var tmp15: i32 = undefined; _ = &tmp15;
     while (true) {
         v3 = v0 == @as(i32, 10);
         if (v3) {
@@ -434,12 +368,9 @@ fn loop_0(p0: i32, p1: i32, p2: i32) Tuple0 {
                 v17 = v2 *% @as(i32, 3);
                 v18 = @rem(v8, @as(i32, 17));
                 v19 = v17 +% v18;
-                tmp13 = v15;
-                tmp14 = v16;
-                tmp15 = v19;
-                v0 = tmp13;
-                v1 = tmp14;
-                v2 = tmp15;
+                v0 = v15;
+                v1 = v16;
+                v2 = v19;
                 continue;
             }
         }
@@ -462,9 +393,6 @@ fn loop_3(p0: i32, p1: i32, p2: i32) Tuple0 {
     var v17: i32 = undefined; _ = &v17;
     var v18: i32 = undefined; _ = &v18;
     var v19: i32 = undefined; _ = &v19;
-    var tmp13: i32 = undefined; _ = &tmp13;
-    var tmp14: i32 = undefined; _ = &tmp14;
-    var tmp15: i32 = undefined; _ = &tmp15;
     while (true) {
         v3 = v0 == @as(i32, 0);
         if (v3) {
@@ -497,61 +425,42 @@ fn loop_3(p0: i32, p1: i32, p2: i32) Tuple0 {
                 v17 = v2 *% @as(i32, 3);
                 v18 = @rem(v8, @as(i32, 17));
                 v19 = v17 +% v18;
-                tmp13 = v15;
-                tmp14 = v16;
-                tmp15 = v19;
-                v0 = tmp13;
-                v1 = tmp14;
-                v2 = tmp15;
+                v0 = v15;
+                v1 = v16;
+                v2 = v19;
                 continue;
             }
         }
     }
 }
 fn spiralMain() i32 {
-    var v0: i32 = undefined; _ = &v0;
-    var v1: i32 = undefined; _ = &v1;
-    var v2: i32 = undefined; _ = &v2;
-    var v3: i32 = undefined; _ = &v3;
-    var v4: i32 = undefined; _ = &v4;
     var tmp5: Tuple0 = undefined; _ = &tmp5;
-    var v5: i32 = undefined; _ = &v5;
-    var v6: i32 = undefined; _ = &v6;
-    var v7: i32 = undefined; _ = &v7;
-    var v8: i32 = undefined; _ = &v8;
-    var v9: i32 = undefined; _ = &v9;
     var tmp11: Tuple0 = undefined; _ = &tmp11;
-    var v10: i32 = undefined; _ = &v10;
-    var v11: i32 = undefined; _ = &v11;
-    var v12: i32 = undefined; _ = &v12;
-    var v13: i32 = undefined; _ = &v13;
-    var v14: i32 = undefined; _ = &v14;
     var tmp17: Tuple0 = undefined; _ = &tmp17;
-    var v15: bool = undefined; _ = &v15;
     var v16: bool = undefined; _ = &v16;
     var v17: bool = undefined; _ = &v17;
     var v18: bool = undefined; _ = &v18;
     var v19: bool = undefined; _ = &v19;
     var v20: bool = undefined; _ = &v20;
-    v0 = @as(i32, 0);
-    v1 = @as(i32, 0);
-    v2 = @as(i32, 0);
+    const v0: i32 = @as(i32, 0);
+    const v1: i32 = @as(i32, 0);
+    const v2: i32 = @as(i32, 0);
     tmp5 = loop_0(v0, v1, v2);
-    v3 = tmp5.f0;
-    v4 = tmp5.f1;
-    v5 = @as(i32, 0);
-    v6 = @as(i32, 0);
-    v7 = @as(i32, 0);
+    const v3: i32 = tmp5.f0;
+    const v4: i32 = tmp5.f1;
+    const v5: i32 = @as(i32, 0);
+    const v6: i32 = @as(i32, 0);
+    const v7: i32 = @as(i32, 0);
     tmp11 = loop_3(v5, v6, v7);
-    v8 = tmp11.f0;
-    v9 = tmp11.f1;
-    v10 = @as(i32, 5);
-    v11 = @as(i32, 0);
-    v12 = @as(i32, 0);
+    const v8: i32 = tmp11.f0;
+    const v9: i32 = tmp11.f1;
+    const v10: i32 = @as(i32, 5);
+    const v11: i32 = @as(i32, 0);
+    const v12: i32 = @as(i32, 0);
     tmp17 = loop_0(v10, v11, v12);
-    v13 = tmp17.f0;
-    v14 = tmp17.f1;
-    v15 = v3 == @as(i32, 5);
+    const v13: i32 = tmp17.f0;
+    const v14: i32 = tmp17.f1;
+    const v15: bool = v3 == @as(i32, 5);
     if (v15) {
         v16 = v4 == @as(i32, 1511);
         if (v16) {

@@ -24,10 +24,10 @@ typedef struct {
 static inline void ArrayDecrefBody0(Array0 * x){
     (void)x;
 }
-void ArrayDecref0(Array0 * x){
+static void ArrayDecref0(Array0 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody0(x); free(x); }
 }
-Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
+static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     uint32_t size = sizeof(Array0) + sizeof(char) * len;
     Array0 * x = malloc(size);
     if (init_at_zero) { memset(x,0,size); }
@@ -35,7 +35,7 @@ Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     x->len = len;
     return x;
 }
-Array0 * ArrayLit0(uint32_t len, char * ptr){
+static Array0 * ArrayLit0(uint32_t len, char * ptr){
     Array0 * x = ArrayCreate0(len, false);
     memcpy(x->ptr, ptr, sizeof(char) * len);
     return x;
@@ -76,48 +76,30 @@ US0 US0_Both(int32_t v0, String * v1) { // Both
     x.case1.v0 = v0; x.case1.v1 = v1;
     return x;
 }
-int32_t score0(US0 v0){
-    
-    
+static int32_t score0(US0 v0){
     switch (v0.tag) {
         case 1: { // Both
             int32_t v2 = v0.case1.v0; String * v3 = v0.case1.v1;
             (v3)->refc++;
             USDecref0(&(v0));
-            bool v4;
-            v4 = v2 == 3l;
-            
-            
+            bool v4 = v2 == 3l;
             bool v6;
             if (v4){
-                
-                
-                bool v5;
-                v5 = strcmp(v3->ptr, "hi") == 0;
-                
-                
+                bool v5 = strcmp(v3->ptr, "hi") == 0;
                 v6 = v5;
             } else {
-                
-                
                 v6 = false;
             }
-            
             StringDecref(v3);
             if (v6){
-                
-                
                 return 0l;
             } else {
-                
-                
                 return 1l;
             }
             break;
         }
         default: { // One
             int32_t v1 = v0.case0.v0;
-            
             USDecref0(&(v0));
             return v1;
             break;
@@ -125,31 +107,16 @@ int32_t score0(US0 v0){
     }
 }
 int32_t main(){
-    
-    
-    bool v0;
-    v0 = true;
-    
-    
-    int32_t v1;
-    v1 = 3l;
-    
-    
-    String * v2;
-    v2 = StringLit(3, "hi");
-    
-    
+    bool v0 = true;
+    int32_t v1 = 3l;
+    String * v2 = StringLit(3, "hi");
     US0 v5;
     if (v0){
         (v2)->refc++;
-        
         v5 = US0_Both(v1, v2);
     } else {
-        
-        
         v5 = US0_One(1l);
     }
-    
     StringDecref(v2);
     return score0(v5);
 }

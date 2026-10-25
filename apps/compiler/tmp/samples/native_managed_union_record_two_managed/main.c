@@ -36,10 +36,10 @@ struct Closure0 {
 static inline void ArrayDecrefBody0(Array0 * x){
     (void)x;
 }
-void ArrayDecref0(Array0 * x){
+static void ArrayDecref0(Array0 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody0(x); free(x); }
 }
-Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
+static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     uint32_t size = sizeof(Array0) + sizeof(char) * len;
     Array0 * x = malloc(size);
     if (init_at_zero) { memset(x,0,size); }
@@ -47,7 +47,7 @@ Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     x->len = len;
     return x;
 }
-Array0 * ArrayLit0(uint32_t len, char * ptr){
+static Array0 * ArrayLit0(uint32_t len, char * ptr){
     Array0 * x = ArrayCreate0(len, false);
     memcpy(x->ptr, ptr, sizeof(char) * len);
     return x;
@@ -61,10 +61,10 @@ static inline String * StringLit(uint32_t len, char * ptr){
 static inline void ArrayDecrefBody1(Array1 * x){
     (void)x;
 }
-void ArrayDecref1(Array1 * x){
+static void ArrayDecref1(Array1 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody1(x); free(x); }
 }
-Array1 * ArrayCreate1(uint32_t len, bool init_at_zero){
+static Array1 * ArrayCreate1(uint32_t len, bool init_at_zero){
     uint32_t size = sizeof(Array1) + sizeof(int32_t) * len;
     Array1 * x = malloc(size);
     if (init_at_zero) { memset(x,0,size); }
@@ -72,7 +72,7 @@ Array1 * ArrayCreate1(uint32_t len, bool init_at_zero){
     x->len = len;
     return x;
 }
-Array1 * ArrayLit1(uint32_t len, int32_t * ptr){
+static Array1 * ArrayLit1(uint32_t len, int32_t * ptr){
     Array1 * x = ArrayCreate1(len, false);
     memcpy(x->ptr, ptr, sizeof(int32_t) * len);
     return x;
@@ -107,191 +107,96 @@ US0 US0_Item(String * v0, Array1 * v1) { // Item
     return x;
 }
 static inline void AssignArray0(int32_t * a, int32_t b){
-    
-    
     *a = b;
 }
 static inline void ClosureDecrefBody0(Closure0 * x){
     (void)x;
 }
-void ClosureDecref0(Fun0 * self){
+static void ClosureDecref0(Fun0 * self){
     Closure0 * x = (Closure0 *) self;
     if (x != NULL && --(x->base.refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
-US0 closure0(Fun0 * self, int32_t v0){
-    
-    
+static US0 closure0(Fun0 * self, int32_t v0){
     ClosureDecref0(self);
-    
-    
-    bool v1;
-    v1 = v0 == 0l;
-    
-    
+    bool v1 = v0 == 0l;
     if (v1){
-        
-        
         return US0_Empty();
     } else {
-        
-        
-        Array1 * v3;
-        v3 = ArrayCreate1(2l, true);
-        
-        
-        
+        Array1 * v3 = ArrayCreate1(2l, true);
         AssignArray0(&(v3->ptr[0l]), v0);
-        
-        
-        int32_t v4;
-        v4 = v0 + 1l;
-        
-        
-        
+        int32_t v4 = v0 + 1l;
         AssignArray0(&(v3->ptr[1l]), v4);
-        
-        
-        String * v5;
-        v5 = StringLit(3, "hi");
-        
-        
+        String * v5 = StringLit(3, "hi");
         return US0_Item(v5, v3);
     }
 }
-Fun0 * ClosureCreate0(){
+static Fun0 * ClosureCreate0(){
     Closure0 * x = malloc(sizeof(Closure0));
     x->base.refc = 1;
     x->base.decref_fptr = ClosureDecref0;
     x->base.fptr = closure0;
-    
     return &x->base;
 }
-US0 method0(Fun0 * v0){
-    
-    
+static US0 method0(Fun0 * v0){
     return v0->fptr(v0, 0l);
 }
-US0 method1(Fun0 * v0){
-    
-    
+static US0 method1(Fun0 * v0){
     return v0->fptr(v0, 4l);
 }
 int32_t main(){
-    
-    
-    Fun0 * v0;
-    v0 = ClosureCreate0();
+    Fun0 * v0 = ClosureCreate0();
     (v0)->refc++;
-    
-    US0 v1;
-    v1 = method0(v0);
-    
-    
+    US0 v1 = method0(v0);
     int32_t v12;
     switch (v1.tag) {
         case 0: { // Empty
-            
-            
-            
             v12 = 3l;
             break;
         }
         default: { // Item
             String * v2 = v1.case1.v0; Array1 * v3 = v1.case1.v1;
             (v2)->refc++; (v3)->refc++;
-            
-            int32_t v4;
-            v4 = v2->len-1;
-            
+            int32_t v4 = v2->len-1;
             StringDecref(v2);
-            int32_t v5;
-            v5 = v3->len;
-            
-            
-            int32_t v6;
-            v6 = v4 + v5;
-            
-            
-            int32_t v7;
-            v7 = v3->ptr[0l];
-            
-            
-            int32_t v8;
-            v8 = v6 + v7;
-            
-            
-            int32_t v9;
-            v9 = v3->ptr[1l];
-            
+            int32_t v5 = v3->len;
+            int32_t v6 = v4 + v5;
+            int32_t v7 = v3->ptr[0l];
+            int32_t v8 = v6 + v7;
+            int32_t v9 = v3->ptr[1l];
             ArrayDecref1(v3);
-            int32_t v10;
-            v10 = v8 + v9;
-            
-            
+            int32_t v10 = v8 + v9;
             v12 = v10;
             break;
         }
     }
     (v0)->refc++;
     USDecref0(&(v1));
-    US0 v13;
-    v13 = method1(v0);
-    
+    US0 v13 = method1(v0);
     (v0)->decref_fptr(v0);
     int32_t v24;
     switch (v13.tag) {
         case 0: { // Empty
-            
-            
-            
             v24 = 3l;
             break;
         }
         default: { // Item
             String * v14 = v13.case1.v0; Array1 * v15 = v13.case1.v1;
             (v14)->refc++; (v15)->refc++;
-            
-            int32_t v16;
-            v16 = v14->len-1;
-            
+            int32_t v16 = v14->len-1;
             StringDecref(v14);
-            int32_t v17;
-            v17 = v15->len;
-            
-            
-            int32_t v18;
-            v18 = v16 + v17;
-            
-            
-            int32_t v19;
-            v19 = v15->ptr[0l];
-            
-            
-            int32_t v20;
-            v20 = v18 + v19;
-            
-            
-            int32_t v21;
-            v21 = v15->ptr[1l];
-            
+            int32_t v17 = v15->len;
+            int32_t v18 = v16 + v17;
+            int32_t v19 = v15->ptr[0l];
+            int32_t v20 = v18 + v19;
+            int32_t v21 = v15->ptr[1l];
             ArrayDecref1(v15);
-            int32_t v22;
-            v22 = v20 + v21;
-            
-            
+            int32_t v22 = v20 + v21;
             v24 = v22;
             break;
         }
     }
-    
     USDecref0(&(v13));
-    int32_t v25;
-    v25 = v12 + v24;
-    
-    
-    int32_t v26;
-    v26 = v25 + 26l;
-    
-    
+    int32_t v25 = v12 + v24;
+    int32_t v26 = v25 + 26l;
     return v26;
 }

@@ -18,10 +18,9 @@ local v0 = 3
 local v1 = "hi"
 local v2 = f_c0({ v0, v1 })
 local v3 = v2(1)
-local __v = { v3 }
-if __v[1] ~= nil and __v[1].tag == "Us0_Both" then
-    local v5 = __v[1]._1
-    local v6 = __v[1]._2
+if v3 ~= nil and v3.tag == "Us0_Both" then
+    local v5 = v3._1
+    local v6 = v3._2
     local v7 = v5 == 3
     local getv9 = function()
         if v7 then
@@ -37,7 +36,7 @@ if __v[1] ~= nil and __v[1].tag == "Us0_Both" then
     else
         return 1
     end
-elseif __v[1] ~= nil and __v[1].tag == "Us0_One" then
-    local v4 = __v[1]._1
+elseif v3 ~= nil and v3.tag == "Us0_One" then
+    local v4 = v3._1
     return 1
 end

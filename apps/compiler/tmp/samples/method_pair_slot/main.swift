@@ -12,14 +12,12 @@ func sp_method0(_ p0: Int32) -> (US0, Int32) {
         v2 = US0_None()
         return (v2, 0)
     } else {
-        var v3: US0 = US0_None()
-        v3 = US0_Some(f0: v0)
+        let v3: US0 = US0_Some(f0: v0)
         return (v3, v0)
     }
 }
 func spiral_main() -> Int32 {
-    var v0: Int32 = 0
-    v0 = 7
+    let v0: Int32 = 7
     var v1: US0 = US0_None()
     var v2: Int32 = 0
     let spiral_tuple119 = sp_method0(v0)
@@ -30,12 +28,10 @@ func spiral_main() -> Int32 {
             return 1
         case 1:
             var v3: Int32 = (v1 as! US0_Some).f0
-            var v4: Bool = false
-            v4 = (v3 == 7)
+            let v4: Bool = (v3 == 7)
             var v6: Bool = false
             if (v4) {
-                var v5: Bool = false
-                v5 = (v2 == 7)
+                let v5: Bool = (v2 == 7)
                 v6 = v5
             } else {
                 v6 = false

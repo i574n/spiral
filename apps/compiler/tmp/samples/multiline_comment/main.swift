@@ -1,12 +1,9 @@
 import CRT
 import WinSDK
 func spiral_main() -> Int32 {
-    var v0: Int32 = 0
-    v0 = 7
-    var v1: Int32 = 0
-    v1 = (v0 &* 2)
-    var v2: Bool = false
-    v2 = (v1 != 14)
+    let v0: Int32 = 7
+    let v1: Int32 = (v0 &* 2)
+    let v2: Bool = (v1 != 14)
     if (v2) {
         return 1
     } else {

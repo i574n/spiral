@@ -5,12 +5,9 @@ fun spiral_main(): Int {
     v0[1] = 3
     v0[2] = 5
     v0[3] = 7
-    var v1: Int = 0
-    v1 = 2
-    var v2: Int = 0
-    v2 = v0[v1]
-    var v3: Int = 0
-    v3 = (v2 - 5)
+    val v1: Int = 2
+    val v2: Int = v0[v1]
+    val v3: Int = (v2 - 5)
     return v3
 }
 fun main() {

@@ -69,15 +69,12 @@ func sp_method0(_ p0: Int32, _ p1: String) -> Int32 {
     } else {
         v5 = sp_method1(v0, v1)
     }
-    var v6: Int32 = 0
-    v6 = (v5 &- 2)
+    let v6: Int32 = (v5 &- 2)
     return v6
 }
 func spiral_main() -> Int32 {
-    var v0: Int32 = 0
-    v0 = 1000000
-    var v1: Int32 = 0
-    v1 = (v0 % 2)
+    let v0: Int32 = 1000000
+    let v1: Int32 = (v0 % 2)
     var v2: Bool = false
     v2 = (v1 == 0)
     var v5: String = ""

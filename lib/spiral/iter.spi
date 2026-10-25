@@ -1,66 +1,66 @@
 /// # iter
-open rust
-open rust_operators
+:< rust
+:< rust_operators
 
 test iter static =
-    open testing
+    :< testing
 
 /// ## rust
 
 /// ### enumerate
-inl enumerate forall t. (iter : into_iterator t) : into_iterator (pair convert.unativeint t) =
+:= enumerate \* t. (iter : into_iterator t) : into_iterator (pair convert.unativeint t) =
     !\($'"!iter.enumerate()"')
 
 /// ### into_iter
-inl into_iter forall (t : * -> *) u. (x : t u) : into_iterator u =
+:= into_iter \* (t : * -> *) u. (x : t u) : into_iterator u =
     !\($'"!x.into_iter()"')
 
 /// ### iter
-inl iter forall (t : * -> *) u. (x : t u) : into_iterator u =
+:= iter \* (t : * -> *) u. (x : t u) : into_iterator u =
     !\\(x, $'"$0.iter()"')
 
 /// ### iter_ref
-inl iter_ref forall (t : * -> *) u. (x : t u) : into_iterator (rust.ref u) =
+:= iter_ref \* (t : * -> *) u. (x : t u) : into_iterator (rust.ref u) =
     !\\(x, $'"$0.iter()"')
 
 /// ### iter_ref'
-inl iter_ref' forall (t : * -> *) u. (x : rust.ref (t u)) : into_iterator (rust.ref u) =
+:= iter_ref' \* (t : * -> *) u. (x : rust.ref (t u)) : into_iterator (rust.ref u) =
     !\\(x, $'"$0.iter()"')
 
 /// ### iter_ref''
-inl iter_ref'' forall (t : * -> *) u (v : * -> *). (x : v (t u)) : into_iterator (rust.ref u) =
+:= iter_ref'' \* (t : * -> *) u (v : * -> *). (x : v (t u)) : into_iterator (rust.ref u) =
     !\\(x, $'"$0.iter()"')
 
 /// ### iter_ref'''
-inl iter_ref''' forall (t : * -> *) u (v : * -> *) (w : * -> *). (x : w (v (t u))) : into_iterator (rust.ref u) =
+:= iter_ref''' \* (t : * -> *) u (v : * -> *) (w : * -> *). (x : w (v (t u))) : into_iterator (rust.ref u) =
     !\\(x, $'"$0.iter()"')
 
 /// ### map
-inl map forall t u. (fn : t -> u) (iter : into_iterator t) : into_iterator u =
+:= map \* t u. (fn : t -> u) (iter : into_iterator t) : into_iterator u =
     !\\(fn, $'"!iter.map(|x| $0(x))"')
 
 /// ### cloned
-inl cloned forall t. (iter : into_iterator (rust.ref t)) : into_iterator t =
+:= cloned \* t. (iter : into_iterator (rust.ref t)) : into_iterator t =
     !\($'"!iter.cloned()"')
 
 /// ### for_each
-inl for_each forall t. (fn : t -> ()) (iter : into_iterator t) : () =
+:= for_each \* t. (fn : t -> ()) (iter : into_iterator t) : () =
     (!\\(fn, $'"true; !iter.for_each(|x| $0(x))"') : bool) |> ignore
 
 /// ### try_for_each
-inl try_for_each forall t. (fn : t -> rust.try ()) x : resultm.result' () string =
+:= try_for_each \* t. (fn : t -> rust.try ()) x : resultm.result' () string =
     (!\($'"true; let mut !x = !x; let _iter_try_for_each = !x.try_for_each(|x| { //"') : bool) |> ignore
     (!\\(fn !\($'"x"'), $'"true; $0 }); //"') : bool) |> ignore
     !\($'"_iter_try_for_each.map_err(|x| x.into())"')
 
 /// ### all
-inl all forall t. (fn : t -> bool) (x : rust.mut' (into_iterator t)) : bool =
+:= all \* t. (fn : t -> bool) (x : rust.mut' (into_iterator t)) : bool =
     x |> rust.to_mut
     !\\(fn, $'$"!x.all(|x| $0(x))"')
 
 /// ### enumerate
-inl enumerate forall t. (ar : array t) : array (convert.unativeint * t) =
-    inl (array ar) = ar
+:= enumerate \* t. (ar : array t) : array (convert.unativeint * t) =
+    := (array ar) = ar
     ar
     |> am'.to_vec
     |> into_iter
@@ -72,7 +72,7 @@ inl enumerate forall t. (ar : array t) : array (convert.unativeint * t) =
 ///> rust
 test enumerate =
     am'.init_series 0i32 2 1
-    |> fun x => array x : array _
+    |> \ x => array x : array _
     |> enumerate
-    |> fun (array x : array _) => x
+    |> \ (array x : array _) => x
     |> _assert_eq' (am'.base ;[ convert.convert 0i32, 0; convert.convert 1i32, 1; convert.convert 2i32, 2 ])

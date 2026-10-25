@@ -2,7 +2,7 @@ class Heap0(val l0: Int, val l1: String)
 class Heap1(val l0: Heap0, val l1: Heap0)
 class Heap2(val l0: Heap1, val l1: Int)
 sealed interface US0 { val tag: Int }
-class US0_None : US0 { override val tag: Int = 0 }
+object US0_None : US0 { override val tag: Int = 0 }
 data class US0_Held(val f0: Heap2) : US0 { override val tag: Int = 1 }
 fun sp_score_0(p0: US0): Int {
     var v0: US0 = p0
@@ -29,8 +29,7 @@ fun sp_score_0(p0: US0): Int {
             v10 = (v6 == 7)
             var v12: Boolean = false
             if (v10) {
-                var v11: Boolean = false
-                v11 = (v7 == "hi")
+                val v11: Boolean = (v7 == "hi")
                 v12 = v11
             } else {
                 v12 = false
@@ -45,16 +44,14 @@ fun sp_score_0(p0: US0): Int {
             }
             var v16: Boolean = false
             if (v14) {
-                var v15: Boolean = false
-                v15 = (v9 == "yo")
+                val v15: Boolean = (v9 == "yo")
                 v16 = v15
             } else {
                 v16 = false
             }
             var v18: Boolean = false
             if (v16) {
-                var v17: Boolean = false
-                v17 = (v3 == 2)
+                val v17: Boolean = (v3 == 2)
                 v18 = v17
             } else {
                 v18 = false
@@ -72,10 +69,8 @@ fun sp_score_0(p0: US0): Int {
     }
 }
 fun spiral_main(): Int {
-    var v0: Int = 0
-    v0 = 7
-    var v1: String = ""
-    v1 = "hi"
+    val v0: Int = 7
+    val v1: String = "hi"
     var v2: Heap0 = Heap0(0, "")
     v2 = Heap0(v0, v1)
     var v3: Int = 0
@@ -91,17 +86,17 @@ fun spiral_main(): Int {
     var v8: Heap2 = Heap2(Heap1(Heap0(0, ""), Heap0(0, "")), 0)
     v8 = Heap2(v6, v7)
     var v9: Array<US0> = emptyArray<US0>()
-    v9 = Array(1) { US0_None() }
+    v9 = Array(1) { US0_None }
     var v10: Boolean = false
     v10 = true
-    var v13: US0 = US0_None()
+    var v13: US0 = US0_None
     if (v10) {
         v13 = US0_Held(v8)
     } else {
-        v13 = US0_None()
+        v13 = US0_None
     }
     v9[0] = v13
-    var v14: US0 = US0_None()
+    var v14: US0 = US0_None
     v14 = v9[0]
     return sp_score_0(v14)
 }

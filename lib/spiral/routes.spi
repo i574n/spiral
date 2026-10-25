@@ -2,13 +2,13 @@
 ///> c
 ///> rust
 test routes static =
-    open testing
+    :< testing
 
 /// ### route
-inl route forall t. (path : string) (_ : t) : string =
-    real routes_real.route path `t
+:= route \* t. (path : string) (_ : t) : string =
+    ~> routes_real.route path `t
 
-type comment_params = { slug : string; id : i32 }
+:== comment_params = { slug : string; id : i32 }
 
 test route_names_exactly_the_handler_fields =
     route "/articles/:slug/comments/:id" ({ slug = ""; id = 0i32 } : comment_params)

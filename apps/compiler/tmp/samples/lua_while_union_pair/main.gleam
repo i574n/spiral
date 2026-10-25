@@ -24,21 +24,12 @@ pub fn spiral_array_from_storage(storage: gary.ErlangArray(option.Option(a)), si
   SpiralArray(key: key, size: size)
 }
 
-pub fn spiral_array_create(size: Int) -> SpiralArray(a) {
-  list.repeat(option.None, size) |> array.from_list(option.None) |> spiral_array_from_storage(size)
-}
 
 pub fn spiral_array_create_filled(size: Int, value: a) -> SpiralArray(a) {
   list.repeat(option.Some(value), size) |> array.from_list(option.None) |> spiral_array_from_storage(size)
 }
 
-pub fn spiral_array_from_list(values: List(a)) -> SpiralArray(a) {
-  values |> list.map(option.Some) |> array.from_list(option.None) |> spiral_array_from_storage(list.length(values))
-}
 
-pub fn spiral_array_to_list(xs: SpiralArray(a)) -> List(a) {
-  list.repeat(Nil, xs.size) |> list.index_map(fn(_, i) { spiral_array_get(xs, i) })
-}
 
 pub fn spiral_array_get(xs: SpiralArray(a), i: Int) -> a {
   case i >= 0 && i < xs.size {
@@ -92,9 +83,6 @@ pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
   int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
 }
 
-pub fn spiral_wrap_unsigned(value: Int, bits: Int) -> Int {
-  int.bitwise_and(value, int.bitwise_shift_left(1, bits) - 1)
-}
 
 pub type Mut0 { Mut0(l0 : Int) }
 pub type Mut1 { Mut1(l0 : Int) }
@@ -154,63 +142,63 @@ pub fn loop1 (v6: SpiralRef(Mut1), v7: SpiralRef(Mut1), v9: SpiralRef(Mut2)) {
     }
 }
 pub fn main() {
-let v0 = spiral_array_create_filled(3, 0)
-let v1 = spiral_ref_new(Mut0(l0: 0))
-let #(v0, v1) = loop0(v0, v1)
-let v6 = spiral_ref_new(Mut1(l0: 0))
-let v7 = spiral_ref_new(Mut1(l0: 0))
-let v8 = Uh0Nil
-let v9 = spiral_ref_new(Mut2(l0: v8))
-let #(v6, v7, v9) = loop1(v6, v7, v9)
-let v19 = spiral_ref_get(v9).l0
-let v38 =
-    case v19  {
-        Uh0Cons(v20, v21) -> {
-            case v21  {
-                Uh0Cons(v22, v23) -> {
-                    case v23  {
-                        Uh0Cons(v24, v25) -> {
-                            case v25  {
-                                Uh0Cons(v26, v27) -> {
-                                    case v27  {
-                                        Uh0Nil -> {
-                                            let v28 = spiral_wrap_signed(v20 * 64, 32)
-                                            let v29 = spiral_wrap_signed(v22 * 16, 32)
-                                            let v30 = spiral_wrap_signed(v28 + v29, 32)
-                                            let v31 = spiral_wrap_signed(v24 * 4, 32)
-                                            let v32 = spiral_wrap_signed(v30 + v31, 32)
-                                            let v33 = spiral_wrap_signed(v32 + v26, 32)
-                                            v33
-                                        }
-                                        _ -> {
-                                            -1
+    let v0 = spiral_array_create_filled(3, 0)
+    let v1 = spiral_ref_new(Mut0(l0: 0))
+    let #(v0, v1) = loop0(v0, v1)
+    let v6 = spiral_ref_new(Mut1(l0: 0))
+    let v7 = spiral_ref_new(Mut1(l0: 0))
+    let v8 = Uh0Nil
+    let v9 = spiral_ref_new(Mut2(l0: v8))
+    let #(v6, v7, v9) = loop1(v6, v7, v9)
+    let v19 = spiral_ref_get(v9).l0
+    let v38 =
+        case v19  {
+            Uh0Cons(v20, v21) -> {
+                case v21  {
+                    Uh0Cons(v22, v23) -> {
+                        case v23  {
+                            Uh0Cons(v24, v25) -> {
+                                case v25  {
+                                    Uh0Cons(v26, v27) -> {
+                                        case v27  {
+                                            Uh0Nil -> {
+                                                let v28 = spiral_wrap_signed(v20 * 64, 32)
+                                                let v29 = spiral_wrap_signed(v22 * 16, 32)
+                                                let v30 = spiral_wrap_signed(v28 + v29, 32)
+                                                let v31 = spiral_wrap_signed(v24 * 4, 32)
+                                                let v32 = spiral_wrap_signed(v30 + v31, 32)
+                                                let v33 = spiral_wrap_signed(v32 + v26, 32)
+                                                v33
+                                            }
+                                            _ -> {
+                                                -1
+                                            }
                                         }
                                     }
-                                }
-                                _ -> {
-                                    -1
+                                    _ -> {
+                                        -1
+                                    }
                                 }
                             }
-                        }
-                        _ -> {
-                            -1
+                            _ -> {
+                                -1
+                            }
                         }
                     }
-                }
-                _ -> {
-                    -1
+                    _ -> {
+                        -1
+                    }
                 }
             }
+            _ -> {
+                -1
+            }
         }
-        _ -> {
-            -1
-        }
-    }
-let v39 = spiral_ref_get(v7).l0
-let v40 = spiral_wrap_signed(v38 + v39, 32)
-let v41 = spiral_array_get(v0, 2)
-let v42 = spiral_wrap_signed(v40 + v41, 32)
-let v43 = spiral_array_get(v0, 1)
-let v44 = spiral_wrap_signed(v42 - v43, 32)
-v44
+    let v39 = spiral_ref_get(v7).l0
+    let v40 = spiral_wrap_signed(v38 + v39, 32)
+    let v41 = spiral_array_get(v0, 2)
+    let v42 = spiral_wrap_signed(v40 + v41, 32)
+    let v43 = spiral_array_get(v0, 1)
+    let v44 = spiral_wrap_signed(v42 - v43, 32)
+    v44
 }

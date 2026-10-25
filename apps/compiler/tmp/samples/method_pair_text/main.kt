@@ -16,8 +16,7 @@ fun sp_method0(p0: Int): SpiralTuple0 {
     }
 }
 fun spiral_main(): Int {
-    var v0: Int = 0
-    v0 = 7
+    val v0: Int = 7
     var v1: String = ""
     var v2: String = ""
     val spiral_tuple109 = sp_method0(v0)

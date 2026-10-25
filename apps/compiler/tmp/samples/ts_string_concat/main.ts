@@ -31,36 +31,36 @@ function spiral_string_slice(value: string, from: number, to: number): string {
 }
 function choose_left_0(v0: boolean): string {
     if (v0) {
-        let v1: string = "spi";
+        const v1: string = "spi";
         return v1;
     } else {
-        let v2: string = "bad";
+        const v2: string = "bad";
         return v2;
     }
 }
 function choose_right_1(v0: boolean): string {
     if (v0) {
-        let v1: string = "bad";
+        const v1: string = "bad";
         return v1;
     } else {
-        let v2: string = "ral";
+        const v2: string = "ral";
         return v2;
     }
 }
 export function main(): number {
-    let v0: boolean = true;
-    let v1: string = choose_left_0(v0);
-    let v2: boolean = false;
-    let v3: string = choose_right_1(v2);
-    let v4: string = v1 + v3;
-    let v5: number = spiral_string_length(v4);
-    let v6: boolean = v5 === 6;
+    const v0: boolean = true;
+    const v1: string = choose_left_0(v0);
+    const v2: boolean = false;
+    const v3: string = choose_right_1(v2);
+    const v4: string = v1 + v3;
+    const v5: number = spiral_string_length(v4);
+    const v6: boolean = v5 === 6;
     if (v6) {
-        let v7: number = spiral_string_index(v4, 0);
-        let v8: boolean = v7 === 115;
+        const v7: number = spiral_string_index(v4, 0);
+        const v8: boolean = v7 === 115;
         if (v8) {
-            let v9: number = spiral_string_index(v4, 5);
-            let v10: boolean = v9 === 108;
+            const v9: number = spiral_string_index(v4, 5);
+            const v10: boolean = v9 === 108;
             if (v10) {
                 return 0;
             } else {

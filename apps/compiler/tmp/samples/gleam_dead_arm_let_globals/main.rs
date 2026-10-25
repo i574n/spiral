@@ -8,9 +8,9 @@ fn picked_0(mut v0: i32) -> i32 {
     gleam_marked_1(v0)
 }
 fn spiral_main() -> i32 {
-    let mut v0: i32 = 5i32;
-    let mut v1: i32 = picked_0(v0);
-    let mut v2: i32 = v1.wrapping_add(1i32);
+    let v0: i32 = 5i32;
+    let v1: i32 = picked_0(v0);
+    let v2: i32 = v1.wrapping_add(1i32);
     v2
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }

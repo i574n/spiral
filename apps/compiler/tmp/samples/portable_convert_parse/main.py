@@ -2,15 +2,6 @@ kernels_main = r"""
 """
 from main_auto import *
 kernels = kernels_aux + kernels_main
-import os
-try: # CuPy when a CUDA device answers, otherwise numpy under the same name (SPIRAL_CUDA=0 forces numpy).
-    if os.environ.get('SPIRAL_CUDA', '1') == '0': raise ImportError('SPIRAL_CUDA=0')
-    import cupy as cp
-    if cp.cuda.runtime.getDeviceCount() < 1: raise RuntimeError('no CUDA device')
-    cuda = True
-except Exception:
-    import numpy as cp
-    cuda = False
 from dataclasses import dataclass
 from typing import NamedTuple, Union, Callable, Tuple
 i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 = int; f32 = float; f64 = float; char = str; string = str
@@ -49,28 +40,21 @@ class US1_Some(NamedTuple): # Some
     tag = 0
 class US1_None(NamedTuple): # None
     tag = 1
+US1_None_shared = US1_None()
 US1 = Union[US1_Some, US1_None]
 def main():
     v0 = "ff"
     v1 = int (v0, 16)
-    del v0
     print(v1)
-    del v1
     v2 = "1011"
     v3 = int (v2, 2)
-    del v2
     print(v3)
-    del v3
     v4 = "-42"
     v5 = int (v4, 10)
-    del v4
     print(v5)
-    del v5
     v6 = " 123 "
     v7 = closure0(v6)
-    del v6
     fn = v7 
-    del v7
     v8 = ok_c1()
     ok = v8 
     v9 = error_c2()
@@ -82,28 +66,22 @@ def main():
     v11 = x
     match v11:
         case US0_Error(_): # Error
-            v17 = US1_None()
+            v17 = US1_None_shared
         case US0_Ok(v12): # Ok
             v17 = US1_Some(v12)
         case t:
             raise Exception(f'Pattern matching miss. Got: {t}')
-    del v11
     match v17:
         case US1_None(): # None
             v19 = "none"
             print(v19)
-            del v19
         case US1_Some(v18): # Some
             print(v18)
-            del v18
         case t:
             raise Exception(f'Pattern matching miss. Got: {t}')
-    del v17
     v20 = "12x"
     v21 = closure0(v20)
-    del v20
     fn = v21 
-    del v21
     ok = v8 
     error = v9 
     ex_fn = v10 
@@ -112,28 +90,22 @@ def main():
     v22 = x
     match v22:
         case US0_Error(_): # Error
-            v28 = US1_None()
+            v28 = US1_None_shared
         case US0_Ok(v23): # Ok
             v28 = US1_Some(v23)
         case t:
             raise Exception(f'Pattern matching miss. Got: {t}')
-    del v22
     match v28:
         case US1_None(): # None
             v30 = "none"
             print(v30)
-            del v30
         case US1_Some(v29): # Some
             print(v29)
-            del v29
         case t:
             raise Exception(f'Pattern matching miss. Got: {t}')
-    del v28
     v31 = ""
     v32 = closure0(v31)
-    del v31
     fn = v32 
-    del v32
     ok = v8 
     error = v9 
     ex_fn = v10 
@@ -142,56 +114,43 @@ def main():
     v33 = x
     match v33:
         case US0_Error(_): # Error
-            v39 = US1_None()
+            v39 = US1_None_shared
         case US0_Ok(v34): # Ok
             v39 = US1_Some(v34)
         case t:
             raise Exception(f'Pattern matching miss. Got: {t}')
-    del v33
     match v39:
         case US1_None(): # None
             v41 = "none"
             print(v41)
-            del v41
         case US1_Some(v40): # Some
             print(v40)
-            del v40
         case t:
             raise Exception(f'Pattern matching miss. Got: {t}')
-    del v39
     v42 = "+7"
     v43 = closure0(v42)
-    del v42
     fn = v43 
-    del v43
     ok = v8 
-    del v8
     error = v9 
-    del v9
     ex_fn = v10 
-    del v10
     try: x = ok(fn()) 
     except Exception as ex: x = error(ex_fn(lambda: ex))
     v44 = x
     match v44:
         case US0_Error(_): # Error
-            v50 = US1_None()
+            v50 = US1_None_shared
         case US0_Ok(v45): # Ok
             v50 = US1_Some(v45)
         case t:
             raise Exception(f'Pattern matching miss. Got: {t}')
-    del v44
     match v50:
         case US1_None(): # None
             v52 = "none"
             print(v52)
-            del v52
         case US1_Some(v51): # Some
             print(v51)
-            del v51
         case t:
             raise Exception(f'Pattern matching miss. Got: {t}')
-    del v50
     return 0
 
 if __name__ == '__main__': sys.exit(main())

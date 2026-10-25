@@ -1,8 +1,6 @@
 fun spiral_main(): Int {
-    var v0: Long = 0L
-    v0 = 3000000000L
-    var v1: Boolean = false
-    v1 = (v0 > 2999999999L)
+    val v0: Long = 3000000000L
+    val v1: Boolean = (v0 > 2999999999L)
     if (v1) {
         return 7
     } else {

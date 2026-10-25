@@ -19,45 +19,45 @@ pub fn score_0(v0: Us0) -> Int {
     }
 }
 pub fn main() {
-let v0 = True
-let v1 = 1.5
-let v4 =
-    case v0 {
+    let v0 = True
+    let v1 = 1.5
+    let v4 =
+        case v0 {
+            True -> {
+                Us0Real(v1)
+            }
+            False -> {
+                Us0Whole(1)
+            }
+        }
+    let v7 =
+        case v0 {
+            True -> {
+                Us0Whole(5)
+            }
+            False -> {
+                Us0Real(v1)
+            }
+        }
+    let v8 = score_0(v4)
+    let v9 = v8 == 3
+    let v12 =
+        case v9 {
+            True -> {
+                let v10 = score_0(v7)
+                let v11 = v10 == 5
+                v11
+            }
+            False -> {
+                False
+            }
+        }
+    case v12 {
         True -> {
-            Us0Real(v1)
+            0
         }
         False -> {
-            Us0Whole(1)
+            1
         }
     }
-let v7 =
-    case v0 {
-        True -> {
-            Us0Whole(5)
-        }
-        False -> {
-            Us0Real(v1)
-        }
-    }
-let v8 = score_0(v4)
-let v9 = v8 == 3
-let v12 =
-    case v9 {
-        True -> {
-            let v10 = score_0(v7)
-            let v11 = v10 == 5
-            v11
-        }
-        False -> {
-            False
-        }
-    }
-case v12 {
-    True -> {
-        0
-    }
-    False -> {
-        1
-    }
-}
 }

@@ -77,7 +77,8 @@ while ((Test-Path $holderPath) -and (Get-Process -Id $holder -ErrorAction Ignore
     $script = Join-Path $script:HeavyQueue 'watchdog.ps1'
     if (-not (Test-Path $script) -or (Get-Content $script -Raw) -ne $watch) { [IO.File]::WriteAllText($script, $watch) }
     $deadline = (Get-Date).AddMinutes($MaxMinutes).ToString('o')
-    Start-Process pwsh -WindowStyle Hidden -ArgumentList @('-NoProfile', '-File', $script, $PID, $HolderPath, $deadline) | Out-Null
+    try { $null = Start-ThreadJob -ScriptBlock ([scriptblock]::Create($watch)) -ArgumentList $PID, $HolderPath, $deadline -ErrorAction Stop }
+    catch { Start-Process pwsh -WindowStyle Hidden -ArgumentList @('-NoProfile', '-File', $script, $PID, $HolderPath, $deadline) | Out-Null }
 }
 
 function Wait-HeavySlot($slots, [string] $ticket) {
@@ -149,7 +150,7 @@ function Invoke-Heavy([Parameter(Mandatory)] [scriptblock] $Command, [switch] $W
     if ($Wsl) { New-Item -ItemType File -Force $wslMarker | Out-Null; Wait-WslReady }
     $self = [System.Diagnostics.Process]::GetCurrentProcess()
     $priority = $self.PriorityClass
-    try { $self.PriorityClass = [System.Diagnostics.ProcessPriorityClass]::BelowNormal } catch { }
+    try { $self.PriorityClass = [System.Diagnostics.ProcessPriorityClass]::Normal } catch { }
     $ledgerStarted = Get-Date
     $ledgerOutcome = 'ok'
     $global:LASTEXITCODE = 0

@@ -25,19 +25,6 @@ def spiralStringSlice (s : String) (a b : Int) : IO String := do
   else pure (String.Pos.Raw.extract s ⟨a.toNat⟩ ⟨(b + 1).toNat⟩)
 mutual
 partial def spiralMain : IO Int32 := do
-    let mut v0 : Int32 := default
-    let mut v1 : String := default
-    let mut v2 : String := default
-    let mut v3 : String := default
-    let mut v4 : String := default
-    let mut v5 : String := default
-    let mut v6 : String := default
-    let mut v7 : String := default
-    let mut v8 : String := default
-    let mut v9 : String := default
-    let mut v10 : String := default
-    let mut v11 : Int32 := default
-    let mut v12 : Bool := default
     let mut v13 : Char := default
     let mut v14 : Bool := default
     let mut v15 : Int32 := default
@@ -91,19 +78,19 @@ partial def spiralMain : IO Int32 := do
     let mut v63 : Bool := default
     let mut v64 : Char := default
     let mut v65 : Bool := default
-    v0 := (16 : Int32)
-    v1 := "x\ny"
-    v2 := "say \"hi\""
-    v3 := "a \"\"\" b"
-    v4 := "first\n    second\n\nthird"
-    v5 := "ab\ncd"
-    v6 := "a \"b\" c"
-    v7 := ""
-    v8 := "a\\nb"
-    v9 := "first\n(* not a comment *)\n// nor this\n\n$\"not a macro\" !x\ninl fake () = 1\n  indented"
-    v10 := "\ntop\n\nlevel"
-    v11 := (Int32.ofNat v6.utf8ByteSize)
-    v12 := (v11 != (7 : Int32))
+    let v0 : Int32 := (16 : Int32)
+    let v1 : String := "x\ny"
+    let v2 : String := "say \"hi\""
+    let v3 : String := "a \"\"\" b"
+    let v4 : String := "first\n    second\n\nthird"
+    let v5 : String := "ab\ncd"
+    let v6 : String := "a \"b\" c"
+    let v7 : String := ""
+    let v8 : String := "a\\nb"
+    let v9 : String := "first\n(* not a comment *)\n// nor this\n\n$\"not a macro\" !x\ninl fake () = 1\n  indented"
+    let v10 : String := "\ntop\n\nlevel"
+    let v11 : Int32 := (Int32.ofNat v6.utf8ByteSize)
+    let v12 : Bool := (v11 != (7 : Int32))
     if v12 then
         return (1 : Int32)
     else

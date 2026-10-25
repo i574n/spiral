@@ -1,42 +1,42 @@
 /// # date_time
 test date_time static =
-    open testing
+    :< testing
 
-open rust.rust_operators
-open sm'_operators
+:< rust.rust_operators
+:< sm'_operators
 
 /// ## date_time
 
 /// ### timestamp
-nominal timestamp_gleam =
+:! timestamp_gleam =
     `(
         backend_switch `(()) `({}) {
-            Gleam = (fun () => global "import gleam/time/timestamp") : () -> ()
+            Gleam = (\ () => global "import gleam/time/timestamp") : () -> ()
         }
         $'' : $'timestamp.Timestamp'
     )
-nominal timestamp = i64
+:! timestamp = i64
 
-inl timestamp forall t {int}. (x : t) : timestamp =
+:= timestamp \* t {int}. (x : t) : timestamp =
     timestamp (convert.convert x : i64)
 
-inl timestamp_gleam_of ((timestamp x) : timestamp) : timestamp_gleam =
+:= timestamp_gleam_of ((timestamp x) : timestamp) : timestamp_gleam =
     global "import gleam/time/timestamp"
     $'timestamp.from_unix_seconds_and_nanoseconds(!x / 1000000, !x % 1000000 * 1000)'
 
 /// ### timestamp_guid
-type timestamp_guid = guid.guid
+:== timestamp_guid = guid.guid
 
 /// ### date_time_guid
-type date_time_guid = guid.guid
+:== date_time_guid = guid.guid
 
 /// ### test_guid
 test test_guid static =
-    inl test_guid () =
+    := test_guid () =
         "6543210F-EDCB-A987-6543-210FEDCBA987" |> guid.new_guid
 
 /// ## day_of_week
-union day_of_week =
+:| day_of_week =
     | Sunday
     | Monday
     | Tuesday
@@ -46,7 +46,7 @@ union day_of_week =
     | Saturday
 
 /// ## month
-union month =
+:| month =
     | January
     | February
     | March
@@ -61,53 +61,53 @@ union month =
     | December
 
 /// ## day
-nominal day = int
+:! day = int
 
 /// ## year
-nominal year = int
+:! year = int
 
 /// ## fsharp
 
 /// ### date_time
-nominal date_gleam =
+:! date_gleam =
     `(
         backend_switch `(()) `({}) {
-            Gleam = (fun () =>
+            Gleam = (\ () =>
                 global "import gleam/time/calendar"
                         ) : () -> ()
         }
         $'' : $'calendar.Date'
     )
-nominal time_of_day_gleam =
+:! time_of_day_gleam =
     `(
         backend_switch `(()) `({}) {
-            Gleam = (fun () =>
+            Gleam = (\ () =>
                 global "import gleam/time/calendar"
                         ) : () -> ()
         }
         $'' : $'calendar.TimeOfDay'
     )
-nominal duration_gleam =
+:! duration_gleam =
     `(
         backend_switch `(()) `({}) {
-            Gleam = (fun () =>
+            Gleam = (\ () =>
                 global "import gleam/time/duration"
                         ) : () -> ()
         }
         $'' : $'duration.Duration'
     )
 
-nominal date_time_python =
+:! date_time_python =
     `(
         backend_switch `(()) `({}) {
-            Python = (fun () => global "import datetime") : () -> ()
+            Python = (\ () => global "import datetime") : () -> ()
         }
         $'' : $'datetime.datetime'
     )
 // TODO: DATE-TIME-PORTABLE a Zig date_time: i64 micros since the Unix epoch, now from the platform clock, calendar
 //     fields and format in plain Spiral through civil_of_days; the guid pair then needs no backend chain (micros, not
 //     100 ns ticks)
-type date_time_switch =
+:== date_time_switch =
     {
         Gleam : date_gleam * time_of_day_gleam * duration_gleam
         Lua : i64
@@ -117,13 +117,13 @@ type date_time_switch =
         TypeScript : $'Date'
         Zig : i64
     }
-nominal date_time = $'backend_switch `(date_time_switch)'
+:! date_time = $'backend_switch `(date_time_switch)'
 
 /// ### calendar_month
-nominal calendar_month =
+:! calendar_month =
     `(
         backend_switch `(()) `({}) {
-            Gleam = (fun () =>
+            Gleam = (\ () =>
                 global "import gleam/time/calendar"
                         ) : () -> ()
         }
@@ -131,10 +131,10 @@ nominal calendar_month =
     )
 
 /// ### tempo_date_time
-nominal tempo_date_time =
+:! tempo_date_time =
     `(
         backend_switch `(()) `({}) {
-            Gleam = (fun () =>
+            Gleam = (\ () =>
                 global "import tempo"
                         ) : () -> ()
         }
@@ -143,11 +143,11 @@ nominal tempo_date_time =
 
 /// ### year
 /// ### zig_civil
-inl zig_micros_of (date_time : date_time) : i64 = $'!date_time' : i64
+:= zig_micros_of (date_time : date_time) : i64 = $'!date_time' : i64
 
-inl zig_date_time_of (micros : i64) : date_time = $'!micros' : date_time
+:= zig_date_time_of (micros : i64) : date_time = $'!micros' : date_time
 
-inl zig_micros_now () : i64 =
+:= zig_micros_now () : i64 =
     global """
         fn spiralMicrosNow() i64 {
             if (@import("builtin").os.tag == .windows) return @divFloor(std.os.windows.ntdll.RtlGetSystemTimePrecise() - 116444736000000000, 10);
@@ -158,157 +158,157 @@ inl zig_micros_now () : i64 =
         """
     $'spiralMicrosNow()' : i64
 
-inl floor_div (a : i64) (b : i64) : i64 =
-    inl q = a / b
-    if a % b <> 0 && (a < 0) <> (b < 0) then q - 1 else q
+:= floor_div (a : i64) (b : i64) : i64 =
+    := q = a / b
+    ? a % b <> 0 && (a < 0) <> (b < 0) ?> q - 1 |: q
 
-inl civil_of_micros (micros : i64) : i64 * i64 * i64 * i64 * i64 * i64 * i64 =
-    inl micros_per_day = 86400000000i64
-    inl days = floor_div micros micros_per_day
-    inl of_day = micros - days * micros_per_day
-    inl z = days + 719468
-    inl era = floor_div z 146097
-    inl day_of_era = z - era * 146097
-    inl year_of_era = (day_of_era - day_of_era / 1460 + day_of_era / 36524 - day_of_era / 146096) / 365
-    inl day_of_year = day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100)
-    inl month_from_march = (5 * day_of_year + 2) / 153
-    inl day = day_of_year - (153 * month_from_march + 2) / 5 + 1
-    inl month = if month_from_march < 10 then month_from_march + 3 else month_from_march - 9
-    inl year = year_of_era + era * 400 + (if month <= 2 then 1 else 0)
-    inl seconds = of_day / 1000000
+:= civil_of_micros (micros : i64) : i64 * i64 * i64 * i64 * i64 * i64 * i64 =
+    := micros_per_day = 86400000000i64
+    := days = floor_div micros micros_per_day
+    := of_day = micros - days * micros_per_day
+    := z = days + 719468
+    := era = floor_div z 146097
+    := day_of_era = z - era * 146097
+    := year_of_era = (day_of_era - day_of_era / 1460 + day_of_era / 36524 - day_of_era / 146096) / 365
+    := day_of_year = day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100)
+    := month_from_march = (5 * day_of_year + 2) / 153
+    := day = day_of_year - (153 * month_from_march + 2) / 5 + 1
+    := month = ? month_from_march < 10 ?> month_from_march + 3 |: month_from_march - 9
+    := year = year_of_era + era * 400 + (? month <= 2 ?> 1 |: 0)
+    := seconds = of_day / 1000000
     year, month, day, seconds / 3600, seconds % 3600 / 60, seconds % 60, of_day % 1000000
 
-inl pad_digits (width : i32) (n : i64) : string = n |> sm'.obj_to_string |> sm'.pad_left width '0'
+:= pad_digits (width : i32) (n : i64) : string = n |> sm'.obj_to_string |> sm'.pad_left width '0'
 
-let rec zig_format_from (pattern : string) (i : i32) (fields : i64 * i64 * i64 * i64 * i64 * i64 * i64) : string =
-    inl year, month, day, hour, minute, second, micros = fields
-    if i >= sm'.length pattern then ""
-    else
-        inl c = sm'.index i pattern
-        let rec run (j : i32) : i32 = if j < sm'.length pattern && sm'.index j pattern = c then run (j + 1) else j
-        inl stop = run i
-        inl width = stop - i
-        inl piece =
-            if c = 'y' then pad_digits width year
-            elif c = 'M' then pad_digits width month
-            elif c = 'd' then pad_digits width day
-            elif c = 'H' then pad_digits width hour
-            elif c = 'm' then pad_digits width minute
-            elif c = 's' then pad_digits width second
-            elif c = 'f' then pad_digits 7i32 (micros * 10) |> sm'.slice 0i32 (width - 1)
-            else sm'.slice i (stop - 1) pattern
+:~ ^ zig_format_from (pattern : string) (i : i32) (fields : i64 * i64 * i64 * i64 * i64 * i64 * i64) : string =
+    := year, month, day, hour, minute, second, micros = fields
+    ? i >= sm'.length pattern ?> ""
+    |:
+        := c = sm'.index i pattern
+        :~ ^ run (j : i32) : i32 = ? j < sm'.length pattern && sm'.index j pattern = c ?> run (j + 1) |: j
+        := stop = run i
+        := width = stop - i
+        := piece =
+            ? c = 'y' ?> pad_digits width year
+            |? c = 'M' ?> pad_digits width month
+            |? c = 'd' ?> pad_digits width day
+            |? c = 'H' ?> pad_digits width hour
+            |? c = 'm' ?> pad_digits width minute
+            |? c = 's' ?> pad_digits width second
+            |? c = 'f' ?> pad_digits 7i32 (micros * 10) |> sm'.slice 0i32 (width - 1)
+            |: sm'.slice i (stop - 1) pattern
         piece ++# zig_format_from pattern stop fields
 
-inl get_year (date_time : date_time) : i32 =
+:= get_year (date_time : date_time) : i32 =
     backend_switch {
-        Gleam = fun () => $'0' : i32
-        Lua = fun () => $'0' : i32
-        Fsharp = fun () => date_time |> $'_.Year' : i32
-        Python = fun () => $'!date_time.year' : i32
-        Rust = fun () => $'chrono::Datelike::year(&!date_time)' : i32
-        Zig = fun () =>
+        Gleam = \ () => $'0' : i32
+        Lua = \ () => $'0' : i32
+        Fsharp = \ () => date_time |> $'_.Year' : i32
+        Python = \ () => $'!date_time.year' : i32
+        Rust = \ () => $'chrono::Datelike::year(&!date_time)' : i32
+        Zig = \ () =>
             date_time
             |> zig_micros_of
             |> civil_of_micros
-            |> fun (year, _, _, _, _, _, _) => conv year : i32
+            |> \ (year, _, _, _, _, _, _) => conv year : i32
     }
 
 /// ### split_date_time
-inl split_date_time (date_time : date_time) : date_gleam * time_of_day_gleam * duration_gleam =
+:= split_date_time (date_time : date_time) : date_gleam * time_of_day_gleam * duration_gleam =
     $'!date_time.0', $'!date_time.1', $'!date_time.2'
 
 /// ### new_timestamp_gleam
-inl new_timestamp_gleam
+:= new_timestamp_gleam
     (date, time_of_day, duration : date_gleam * time_of_day_gleam * duration_gleam)
     : timestamp_gleam
     =
     global "import gleam/time/timestamp"
-    inl result : timestamp_gleam = $'timestamp.from_calendar(!date, !time_of_day, !duration)'
+    := result : timestamp_gleam = $'timestamp.from_calendar(!date, !time_of_day, !duration)'
 
     global "import tempo/datetime"
-    inl tempo_date_time : tempo_date_time =
+    := tempo_date_time : tempo_date_time =
         result |> $'datetime.from_timestamp'
-    inl tempo_date_time : tempo_date_time = $'!tempo_date_time |> datetime.add(!duration)'
+    := tempo_date_time : tempo_date_time = $'!tempo_date_time |> datetime.add(!duration)'
     tempo_date_time |> $'datetime.to_timestamp'
 
 /// ### format
-inl format (format : string) (date_time : date_time) : string =
+:= format (format : string) (date_time : date_time) : string =
     backend_switch {
-        Gleam = fun () =>
+        Gleam = \ () =>
             global "import tempo/datetime"
-            inl tempo_date_time : tempo_date_time =
+            := tempo_date_time : tempo_date_time =
                 date_time |> split_date_time |> new_timestamp_gleam |> $'datetime.from_timestamp'
-            inl format =
-                if format = ""
-                then "M-D-YY hh:mm:ss A"
-                else format
+            := format =
+                ? format = ""
+                ?> "M-D-YY hh:mm:ss A"
+                |: format
             $'!tempo_date_time |> datetime.format(tempo.Custom(!format))' : string
-        Lua = fun () =>
-            inl date_time = join date_time
-            if format <> ""
-            then $'os.date(!format, !date_time)' : string
-            else
-                inl date =
-                    if get_year date_time < 1000
-                    then $'(os.date("%m-%d-%y", !date_time) or ""):gsub("0(%d)", "%1")' : string
-                    else $'(os.date("%m-%d-%Y", !date_time) or ""):gsub("0(%d)", "%1")' : string
-                inl time =
+        Lua = \ () =>
+            := date_time = ~~ date_time
+            ? format <> ""
+            ?> $'os.date(!format, !date_time)' : string
+            |:
+                := date =
+                    ? get_year date_time < 1000
+                    ?> $'(os.date("%m-%d-%y", !date_time) or ""):gsub("0(%d)", "%1")' : string
+                    |: $'(os.date("%m-%d-%Y", !date_time) or ""):gsub("0(%d)", "%1")' : string
+                := time =
                     $'os.date("%I:%M:%S %p", !date_time) or ""' : string
                 date ++# " " ++# time
-        Fsharp = fun () =>
-            inl format =
-                if format = ""
-                then "M-d-y hh:mm:ss tt"
-                else format
+        Fsharp = \ () =>
+            := format =
+                ? format = ""
+                ?> "M-d-y hh:mm:ss tt"
+                |: format
             $'!date_time.ToString' format : string
-        Python = fun () =>
-            inl date_time = join date_time
-            if format <> ""
-            then $'!date_time.strftime(!format)' : string
-            elif get_year date_time < 1000
-            then $'\'{dt.month}-{dt.day}-{dt.year} {dt:%I}:{dt:%M}:{dt:%S} {dt:%p}\'.format(dt=!date_time)' : string
-            else $'\'{dt.month}-{dt.day}-{dt:%y} {dt:%I}:{dt:%M}:{dt:%S} {dt:%p}\'.format(dt=!date_time)' : string
-        Rust = fun () =>
-            inl format =
-                if format = ""
-                then "%-m-%-d-%-y %I:%M:%S %p"
-                else format
+        Python = \ () =>
+            := date_time = ~~ date_time
+            ? format <> ""
+            ?> $'!date_time.strftime(!format)' : string
+            |? get_year date_time < 1000
+            ?> $'\'{dt.month}-{dt.day}-{dt.year} {dt:%I}:{dt:%M}:{dt:%S} {dt:%p}\'.format(dt=!date_time)' : string
+            |: $'\'{dt.month}-{dt.day}-{dt:%y} {dt:%I}:{dt:%M}:{dt:%S} {dt:%p}\'.format(dt=!date_time)' : string
+        Rust = \ () =>
+            := format =
+                ? format = ""
+                ?> "%-m-%-d-%-y %I:%M:%S %p"
+                |: format
             $'Rc::<str>::from(!date_time.format(&*!format).to_string())' : string
-        Zig = fun () =>
+        Zig = \ () =>
             date_time
             |> zig_micros_of
             |> civil_of_micros
-            |> zig_format_from (if format = "" then "MM-dd-yyyy HH:mm:ss" else format) 0i32
+            |> zig_format_from (? format = "" ?> "MM-dd-yyyy HH:mm:ss" |: format) 0i32
     }
 
 /// ### format_iso8601
-inl format_iso8601 (date_time : date_time) : string =
+:= format_iso8601 (date_time : date_time) : string =
     backend_switch {
-        Gleam = fun () => date_time |> format "YYYY-MM-DDTHH-mm-ss.SSS" : string
-        Lua = fun () => date_time |> format "%Y-%m-%dT%H-%M-%S.%f" : string
-        Fsharp = fun () => date_time |> format "yyyy-MM-ddTHH-mm-ss.fff" : string
-        Python = fun () => date_time |> format "%Y-%m-%dT%H-%M-%S.%f" : string
-        Rust = fun () => date_time |> format "%Y-%m-%dT%H-%M-%S.%3f" : string
-        Zig = fun () => date_time |> format "yyyy-MM-ddTHH-mm-ss.fff" : string
+        Gleam = \ () => date_time |> format "YYYY-MM-DDTHH-mm-ss.SSS" : string
+        Lua = \ () => date_time |> format "%Y-%m-%dT%H-%M-%S.%f" : string
+        Fsharp = \ () => date_time |> format "yyyy-MM-ddTHH-mm-ss.fff" : string
+        Python = \ () => date_time |> format "%Y-%m-%dT%H-%M-%S.%f" : string
+        Rust = \ () => date_time |> format "%Y-%m-%dT%H-%M-%S.%3f" : string
+        Zig = \ () => date_time |> format "yyyy-MM-ddTHH-mm-ss.fff" : string
     }
 
 /// ### min_value
-inl min_value () : date_time =
+:= min_value () : date_time =
     backend_switch {
-        Gleam = fun () =>
-            inl date : date_gleam = $'calendar.Date(1, calendar.January, 1)' : date_gleam
-            inl time_of_day : time_of_day_gleam = $'calendar.TimeOfDay(0, 0, 0, 0)' : time_of_day_gleam
-            inl duration : duration_gleam = $'duration.seconds(0) ' : duration_gleam
+        Gleam = \ () =>
+            := date : date_gleam = $'calendar.Date(1, calendar.January, 1)' : date_gleam
+            := time_of_day : time_of_day_gleam = $'calendar.TimeOfDay(0, 0, 0, 0)' : time_of_day_gleam
+            := duration : duration_gleam = $'duration.seconds(0) ' : duration_gleam
             (date, time_of_day, duration) |> convert.to : date_time
-        Lua = fun () =>
-            inl date_time = $'os.time{year=1, month=1, day=1, hour=0, min=0, sec=0} or -62135596800' : date_time
+        Lua = \ () =>
+            := date_time = $'os.time{year=1, month=1, day=1, hour=0, min=0, sec=0} or -62135596800' : date_time
             date_time
-        Fsharp = fun () => $'System.DateTime.MinValue' : date_time
-        Python = fun () =>
+        Fsharp = \ () => $'System.DateTime.MinValue' : date_time
+        Python = \ () =>
             global "import datetime"
             $'datetime.datetime.min' : date_time
-        Rust = fun () => $'chrono::NaiveDate::from_ymd_opt(1, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap()' : date_time
-        Zig = fun () => -62135596800000000i64 |> zig_date_time_of
+        Rust = \ () => $'chrono::NaiveDate::from_ymd_opt(1, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap()' : date_time
+        Zig = \ () => -62135596800000000i64 |> zig_date_time_of
     }
 
 ///> fsharp
@@ -319,23 +319,23 @@ test min_value =
     |> _assert_eq "1-1-1 12:00:00 AM"
 
 /// ### max_value
-inl max_value () : date_time =
+:= max_value () : date_time =
     backend_switch {
-        Gleam = fun () =>
-            inl date : date_gleam = $'calendar.Date(9999, calendar.December, 31)' : date_gleam
-            inl time_of_day : time_of_day_gleam = $'calendar.TimeOfDay(23, 59, 59, 999)' : time_of_day_gleam
-            inl duration : duration_gleam = $'duration.seconds(0)  ' : duration_gleam
+        Gleam = \ () =>
+            := date : date_gleam = $'calendar.Date(9999, calendar.December, 31)' : date_gleam
+            := time_of_day : time_of_day_gleam = $'calendar.TimeOfDay(23, 59, 59, 999)' : time_of_day_gleam
+            := duration : duration_gleam = $'duration.seconds(0)  ' : duration_gleam
             (date, time_of_day, duration) |> convert.to : date_time
-        Lua = fun () =>
-            inl date_time = $'os.time{year=9999, month=12, day=31, hour=23, min=59, sec=59} or 253402300799' : date_time
+        Lua = \ () =>
+            := date_time = $'os.time{year=9999, month=12, day=31, hour=23, min=59, sec=59} or 253402300799' : date_time
             date_time
-        Fsharp = fun () => $'System.DateTime.MaxValue' : date_time
-        Python = fun () =>
+        Fsharp = \ () => $'System.DateTime.MaxValue' : date_time
+        Python = \ () =>
             global "import datetime"
             $'datetime.datetime.max' : date_time
         Rust = fun () => $'chrono::NaiveDate::from_ymd_opt(9999, 12, 31).unwrap().and_hms_nano_opt(23, 59, 59, \
             999999900).unwrap()' : date_time
-        Zig = fun () => 253402300799999999i64 |> zig_date_time_of
+        Zig = \ () => 253402300799999999i64 |> zig_date_time_of
     }
 
 ///> fsharp
@@ -346,33 +346,33 @@ test max_value =
     |> _assert_eq "12-31-99 11:59:59 PM"
 
 /// ### to_calendar_utc
-inl to_calendar_utc_gleam (timestamp : timestamp_gleam) : date_time =
+:= to_calendar_utc_gleam (timestamp : timestamp_gleam) : date_time =
     backend_switch {
-        Gleam = fun () =>
+        Gleam = \ () =>
             global "import gleam/time/calendar"
             global "import gleam/time/timestamp"
     }
-    inl duration = $'calendar.utc_offset' : duration_gleam
-    inl (date : date_gleam), (time_of_day : time_of_day_gleam) = $'!timestamp |> timestamp.to_calendar(!duration)'
+    := duration = $'calendar.utc_offset' : duration_gleam
+    := (date : date_gleam), (time_of_day : time_of_day_gleam) = $'!timestamp |> timestamp.to_calendar(!duration)'
     (date, time_of_day, duration) |> convert.to
 
-inl to_calendar_utc ((timestamp micros) as timestamp : timestamp) : date_time =
+:= to_calendar_utc ((timestamp micros) &= timestamp : timestamp) : date_time =
     backend_switch {
-        Gleam = fun () => timestamp |> timestamp_gleam_of |> to_calendar_utc_gleam
-        Lua = fun () => $'math.floor(!micros / 1000000)' : date_time
-        Fsharp = fun () => $'System.DateTime.UnixEpoch.AddTicks(!micros * 10L)' : date_time
-        Python = fun () =>
+        Gleam = \ () => timestamp |> timestamp_gleam_of |> to_calendar_utc_gleam
+        Lua = \ () => $'math.floor(!micros / 1000000)' : date_time
+        Fsharp = \ () => $'System.DateTime.UnixEpoch.AddTicks(!micros * 10L)' : date_time
+        Python = \ () =>
             global "import datetime"
             $'datetime.datetime(1970, 1, 1) + datetime.timedelta(microseconds=!micros)' : date_time
-        Rust = fun () => $'chrono::DateTime::from_timestamp_micros(!micros).unwrap().naive_utc()' : date_time
-        Zig = fun () => micros |> zig_date_time_of
+        Rust = \ () => $'chrono::DateTime::from_timestamp_micros(!micros).unwrap().naive_utc()' : date_time
+        Zig = \ () => micros |> zig_date_time_of
     }
 
 /// ### tempo_date_time
-nominal time_zone_provider =
+:! time_zone_provider =
     `(
         backend_switch `(()) `({}) {
-            Gleam = (fun () =>
+            Gleam = (\ () =>
                 global "import tempo"
                         ) : () -> ()
         }
@@ -380,20 +380,20 @@ nominal time_zone_provider =
     )
 
 /// ### unix_epoch
-inl unix_epoch () : date_time =
+:= unix_epoch () : date_time =
     backend_switch {
-        Gleam = fun () =>
+        Gleam = \ () =>
             0i32 |> timestamp |> to_calendar_utc : date_time
-        Lua = fun () =>
-            inl date_time = $'os.time{year=1970, month=1, day=1, hour=0, min=0, sec=0} or 0' : date_time
+        Lua = \ () =>
+            := date_time = $'os.time{year=1970, month=1, day=1, hour=0, min=0, sec=0} or 0' : date_time
             date_time
-        Fsharp = fun () => $'System.DateTime.UnixEpoch' : date_time
-        Python = fun () =>
+        Fsharp = \ () => $'System.DateTime.UnixEpoch' : date_time
+        Python = \ () =>
             global "import datetime"
             $'datetime.datetime(1970, 1, 1)' : date_time
-        Rust = fun () =>
+        Rust = \ () =>
             $'chrono::NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap()' : date_time
-        Zig = fun () => 0i64 |> zig_date_time_of
+        Zig = \ () => 0i64 |> zig_date_time_of
     }
 
 ///> lua
@@ -406,37 +406,37 @@ test unix_epoch =
     |> _assert_eq "1-1-70 12:00:00 AM"
 
 /// ### date_time_milliseconds
-inl date_time_milliseconds
+:= date_time_milliseconds
     (year : int) (month : int) (day : int) (hour : int) (minute : int) (second : int) (millisecond : int)
     : date_time
     =
     backend_switch {
-        Gleam = fun () =>
+        Gleam = \ () =>
             global "import gleam/time/calendar"
             global "import gleam/time/duration"
             global "import gleam/time/timestamp"
             global "import tempo/month"
-            inl calendar_month : resultm.result' calendar_month () =
+            := calendar_month : resultm.result' calendar_month () =
                 $"!month |> month.from_int"
-            inl calendar_month = calendar_month |> resultm.unbox |> resultm.get
-            inl date : date_gleam = $'calendar.Date(#year, #calendar_month, #day)'
-            inl nanoseconds = millisecond * 1000000
-            inl time_of_day : time_of_day_gleam = $'calendar.TimeOfDay(#hour, #minute, #second, #nanoseconds)'
-            inl duration : duration_gleam = $'duration.milliseconds(#millisecond)'
+            := calendar_month = calendar_month |> resultm.unbox |> resultm.get
+            := date : date_gleam = $'calendar.Date(#year, #calendar_month, #day)'
+            := nanoseconds = millisecond * 1000000
+            := time_of_day : time_of_day_gleam = $'calendar.TimeOfDay(#hour, #minute, #second, #nanoseconds)'
+            := duration : duration_gleam = $'duration.milliseconds(#millisecond)'
             (date, time_of_day, duration) |> convert.to : date_time
-        Lua = fun () =>
-            inl total_seconds = second + (minute * 60) + (hour * 3600)
-            inl date_time = $'os.time{year=!year, month=!month, day=!day, hour=0, min=0, sec=0} or 0' : int
+        Lua = \ () =>
+            := total_seconds = second + (minute * 60) + (hour * 3600)
+            := date_time = $'os.time{year=!year, month=!month, day=!day, hour=0, min=0, sec=0} or 0' : int
             date_time + (total_seconds + (millisecond / 1000)) |> convert.unbox : date_time
-        Fsharp = fun () =>
+        Fsharp = \ () =>
             $'System.DateTime (!year, !month, !day, !hour, !minute, !second, !millisecond)' : date_time
-        Python = fun () =>
+        Python = \ () =>
             global "import datetime"
             $'datetime.datetime(!year, !month, !day, !hour, !minute, !second, !millisecond * 1000)' : date_time
-        Rust = fun () =>
+        Rust = \ () =>
             $'chrono::NaiveDate::from_ymd_opt(!year, !month as u32, !day as u32).unwrap().and_hms_milli_opt(!hour as \
                 u32, !minute as u32, !second as u32, !millisecond as u32).unwrap()' : date_time
-        TypeScript = fun () => $'new Date(!year, !month - 1, !day, !hour, !minute, !second, !millisecond)' : date_time
+        TypeScript = \ () => $'new Date(!year, !month - 1, !day, !hour, !minute, !second, !millisecond)' : date_time
     }
 
 ///> gleam
@@ -449,33 +449,33 @@ test date_time_milliseconds =
     |> _assert_eq "1-1-70 12:00:00 AM"
 
 /// ### date_time_utc
-inl date_time_utc
+:= date_time_utc
     (year : int) (month : int) (day : int) (hour : int) (minute : int) (second : int)
     : date_time
     =
     backend_switch {
-        Gleam = fun () =>
+        Gleam = \ () =>
             global "import gleam/time/calendar"
             global "import gleam/time/duration"
             global "import gleam/time/timestamp"
             global "import tempo/month"
-            inl calendar_month : resultm.result' calendar_month () =
+            := calendar_month : resultm.result' calendar_month () =
                 $"!month |> month.from_int"
-            inl calendar_month = calendar_month |> resultm.unbox |> resultm.get
-            inl date : date_gleam = $'calendar.Date(#year, #calendar_month, #day)'
-            inl time_of_day : time_of_day_gleam = $'calendar.TimeOfDay(#hour, #minute, #second, 0)'
-            inl duration : duration_gleam = $'duration.seconds(0)   ' : duration_gleam
+            := calendar_month = calendar_month |> resultm.unbox |> resultm.get
+            := date : date_gleam = $'calendar.Date(#year, #calendar_month, #day)'
+            := time_of_day : time_of_day_gleam = $'calendar.TimeOfDay(#hour, #minute, #second, 0)'
+            := duration : duration_gleam = $'duration.seconds(0)   ' : duration_gleam
             (date, time_of_day, duration) |> convert.to : date_time
-        Lua = fun () =>
-            inl total_seconds = second + (minute * 60) + (hour * 3600)
-            inl date_time = $'os.time{year=!year, month=!month, day=!day, hour=0, min=0, sec=0} or 0' : int
+        Lua = \ () =>
+            := total_seconds = second + (minute * 60) + (hour * 3600)
+            := date_time = $'os.time{year=!year, month=!month, day=!day, hour=0, min=0, sec=0} or 0' : int
             date_time + total_seconds |> convert.unbox : date_time
-        Fsharp = fun () =>
+        Fsharp = \ () =>
             $'System.DateTime (!year, !month, !day, !hour, !minute, !second, System.DateTimeKind.Utc)' : date_time
-        Python = fun () =>
+        Python = \ () =>
             global "import datetime"
             $'datetime.datetime(!year, !month, !day, !hour, !minute, !second, tzinfo=datetime.timezone.utc)' : date_time
-        Rust = fun () =>
+        Rust = \ () =>
             $'chrono::NaiveDate::from_ymd_opt(!year, !month as u32, !day as u32).unwrap().and_hms_opt(!hour as u32, \
                 !minute as u32, !second as u32).unwrap()' : date_time
     }
@@ -489,39 +489,39 @@ test date_time_utc =
     |> _assert_eq "1-1-70 12:00:00 AM"
 
 /// ### date_time_kind
-union date_time_kind =
+:| date_time_kind =
     | Unspecified
     | Utc
     | Local
 
 /// ### specify_date_kind
-inl specify_date_kind (kind : date_time_kind) (date_time : date_time) : date_time =
+:= specify_date_kind (kind : date_time_kind) (date_time : date_time) : date_time =
     backend_switch {
-        Gleam = fun () => date_time
-        Lua = fun () => date_time
-        Fsharp = fun () =>
-            inl kind : $'System.DateTimeKind' =
-                match kind with
+        Gleam = \ () => date_time
+        Lua = \ () => date_time
+        Fsharp = \ () =>
+            := kind : $'System.DateTimeKind' =
+                ?= kind ?|
                 | Unspecified => $'System.DateTimeKind.Unspecified'
                 | Utc => $'System.DateTimeKind.Utc'
                 | Local => $'System.DateTimeKind.Local'
             $'System.DateTime.SpecifyKind (!date_time, !kind)' : date_time
-        Python = fun () => $'!date_time.replace(tzinfo=None)' : date_time
-        Rust = fun () => date_time
-        Zig = fun () => date_time
+        Python = \ () => $'!date_time.replace(tzinfo=None)' : date_time
+        Rust = \ () => date_time
+        Zig = \ () => date_time
     }
 
 /// ### to_universal_time
-inl to_universal_time (date_time : date_time) : date_time =
+:= to_universal_time (date_time : date_time) : date_time =
     backend_switch {
-        Gleam = fun () => date_time
-        Lua = fun () => date_time
-        Fsharp = fun () => date_time |> $'_.ToUniversalTime()' : date_time
-        Python = fun () =>
+        Gleam = \ () => date_time
+        Lua = \ () => date_time
+        Fsharp = \ () => date_time |> $'_.ToUniversalTime()' : date_time
+        Python = \ () =>
             global "import datetime"
             $'!date_time.replace(tzinfo=datetime.timezone.utc)' : date_time
-        Rust = fun () => date_time
-        Zig = fun () => date_time
+        Rust = \ () => date_time
+        Zig = \ () => date_time
     }
 
 ///> lua
@@ -562,14 +562,14 @@ test to_universal_time_4 =
     |> _assert_eq "1-1-70 12:00:00 AM"
 
 /// ### time_span
-nominal time_span_python =
+:! time_span_python =
     `(
         backend_switch `(()) `({}) {
-            Python = (fun () => global "import datetime") : () -> ()
+            Python = (\ () => global "import datetime") : () -> ()
         }
         $'' : $'datetime.timedelta'
     )
-type time_span_switch =
+:== time_span_switch =
     {
         Gleam : $'duration.Duration'
         Lua : $'number'
@@ -578,101 +578,101 @@ type time_span_switch =
         Rust : $'chrono::TimeDelta'
         TypeScript : $'number'
     }
-nominal time_span = $'backend_switch `(time_span_switch)'
+:! time_span = $'backend_switch `(time_span_switch)'
 
-inl time_span x : time_span =
+:= time_span x : time_span =
     backend_switch {
-        Gleam = fun () => x |> convert.unbox : time_span
-        Lua = fun () => x |> convert.unbox : time_span
-        Fsharp = fun () => $'!x |> `time_span ' : time_span
-        Python = fun () =>
+        Gleam = \ () => x |> convert.unbox : time_span
+        Lua = \ () => x |> convert.unbox : time_span
+        Fsharp = \ () => $'!x |> `time_span ' : time_span
+        Python = \ () =>
             global "import datetime"
             $'datetime.timedelta(!x)' : time_span
-        Rust = fun () =>
+        Rust = \ () =>
             $'(chrono::TimeDelta::microseconds((!x as i64) / 10) + chrono::TimeDelta::nanoseconds(((!x as i64) % 10) \
                 * 100))' : time_span
     }
 
 /// ### new_time_span
-inl new_time_span (a : date_time) (b : date_time) : time_span =
-    run_target function
-        | Gleam => fun () =>
-            inl timestamp : timestamp_gleam = a |> split_date_time |> new_timestamp_gleam
-            inl timestamp' : timestamp_gleam = b |> split_date_time |> new_timestamp_gleam
-            inl duration : duration_gleam = $'!timestamp |> timestamp.difference(!timestamp')'
+:= new_time_span (a : date_time) (b : date_time) : time_span =
+    run_target \|
+        | Gleam => \ () =>
+            := timestamp : timestamp_gleam = a |> split_date_time |> new_timestamp_gleam
+            := timestamp' : timestamp_gleam = b |> split_date_time |> new_timestamp_gleam
+            := duration : duration_gleam = $'!timestamp |> timestamp.difference(!timestamp')'
             ($'duration.to_seconds(!duration)' : float)
             |> convert.convert
-            |> fun x => x : int
+            |> \ x => x : int
             |> convert.convert
-        | _ => fun () => $'!b - !a '
+        | _ => \ () => $'!b - !a '
 
 /// ### rust_std_duration
-nominal rust_std_duration = $'std::time::Duration'
+:! rust_std_duration = $'std::time::Duration'
 
 /// ### rust_time_delta_ticks
-inl rust_time_delta_ticks (time_span : time_span) : i64 =
-    inl seconds : i64 = $'!time_span.num_seconds()'
-    inl nanos : i32 = $'!time_span.subsec_nanos()'
+:= rust_time_delta_ticks (time_span : time_span) : i64 =
+    := seconds : i64 = $'!time_span.num_seconds()'
+    := nanos : i32 = $'!time_span.subsec_nanos()'
     seconds * 10000000i64 + (conv nanos : i64) / 100i64
 
 /// ### total_seconds
-inl total_seconds (time_span : time_span) : f64 =
-    inl n : i64 =
-        run_target function
-            | Gleam => fun () =>
+:= total_seconds (time_span : time_span) : f64 =
+    := n : i64 =
+        run_target \|
+            | Gleam => \ () =>
                 backend_switch {
-                    Gleam = fun () => global "import gleam/time/duration"
+                    Gleam = \ () => global "import gleam/time/duration"
                 }
-                inl duration : duration_gleam = time_span |> $'duration.seconds'
+                := duration : duration_gleam = time_span |> $'duration.seconds'
                 duration
                 |> $'duration.to_seconds'
                 |> (*) 10000000f64
                 |> convert.convert
-            | Lua => fun () =>
-                inl seconds = time_span |> convert.unbox : f64
+            | Lua => \ () =>
+                := seconds = time_span |> convert.unbox : f64
                 seconds * 10000000 |> convert.convert : i64
-            | Cuda => fun () => $'!time_span.total_seconds() * 10000000' : i64
-            | Rust => fun () => rust_time_delta_ticks time_span
-            | _ => fun () => time_span |> $'_.Ticks' : i64
+            | Cuda => \ () => $'!time_span.total_seconds() * 10000000' : i64
+            | Rust => \ () => rust_time_delta_ticks time_span
+            | _ => \ () => time_span |> $'_.Ticks' : i64
     (conv n : f64) / 10000000f64
 
 /// ### days
-inl days (time_span : time_span) : f64 =
+:= days (time_span : time_span) : f64 =
     backend_switch {
-        Gleam = fun () =>
+        Gleam = \ () =>
             backend_switch {
-                Gleam = fun () => global "import gleam/time/duration"
+                Gleam = \ () => global "import gleam/time/duration"
             }
-            inl duration : duration_gleam = time_span |> $'duration.seconds'
+            := duration : duration_gleam = time_span |> $'duration.seconds'
             duration
             |> $'duration.to_seconds'
             |> (/) 86400f64
-        Lua = fun () =>
-            inl seconds = time_span |> convert.unbox : f64
+        Lua = \ () =>
+            := seconds = time_span |> convert.unbox : f64
             seconds / 86400 |> convert.convert : f64
-        Fsharp = fun () => time_span |> $'_.TotalDays' : f64
-        Python = fun () => $'!time_span.days' : f64
-        Rust = fun () => (conv (rust_time_delta_ticks time_span) : f64) / 864000000000f64
+        Fsharp = \ () => time_span |> $'_.TotalDays' : f64
+        Python = \ () => $'!time_span.days' : f64
+        Rust = \ () => (conv (rust_time_delta_ticks time_span) : f64) / 864000000000f64
     }
 
 /// ### to_timestamp
-inl to_timestamp (date_time : date_time) : timestamp =
+:= to_timestamp (date_time : date_time) : timestamp =
     backend_switch {
-        Gleam = fun () =>
+        Gleam = \ () =>
             global "import gleam/time/timestamp"
-            inl t : timestamp_gleam = date_time |> split_date_time |> new_timestamp_gleam
+            := t : timestamp_gleam = date_time |> split_date_time |> new_timestamp_gleam
             ($'timestamp.to_unix_seconds_and_nanoseconds(!t).0 * 1000000 + \
                 timestamp.to_unix_seconds_and_nanoseconds(!t).1 / 1000' : i64) |> timestamp
-        Lua = fun () => ($'!date_time * 1000000' : i64) |> timestamp
-        Fsharp = fun () =>
-            inl ticks : i64 = $'!date_time.Ticks'
+        Lua = \ () => ($'!date_time * 1000000' : i64) |> timestamp
+        Fsharp = \ () =>
+            := ticks : i64 = $'!date_time.Ticks'
             (ticks - 621355968000000000i64) / 10i64 |> timestamp
-        Python = fun () =>
+        Python = \ () =>
             global "import datetime"
             ($'(!date_time.replace(tzinfo=None) - datetime.datetime(1970, 1, 1)) // \
                 datetime.timedelta(microseconds=1)' : i64) |> timestamp
-        Rust = fun () => ($'!date_time.and_utc().timestamp_micros()' : i64) |> timestamp
-        Zig = fun () => date_time |> zig_micros_of |> timestamp
+        Rust = \ () => ($'!date_time.and_utc().timestamp_micros()' : i64) |> timestamp
+        Zig = \ () => date_time |> zig_micros_of |> timestamp
     }
 
 ///> gleam
@@ -709,17 +709,17 @@ test timestamp_round_trip =
     |> _assert_eq' (1791892800123456i64 |> timestamp)
 
 /// ### time_span_of_micros
-inl time_span_of_micros (micros : i64) : time_span =
+:= time_span_of_micros (micros : i64) : time_span =
     backend_switch {
-        Gleam = fun () => micros / 1000000 |> convert.unbox : time_span
-        Lua = fun () => $'!micros / 1000000' : time_span
-        Fsharp = fun () =>
-            inl ticks = micros * 10i64
+        Gleam = \ () => micros / 1000000 |> convert.unbox : time_span
+        Lua = \ () => $'!micros / 1000000' : time_span
+        Fsharp = \ () =>
+            := ticks = micros * 10i64
             $'System.TimeSpan.FromTicks(!ticks)' : time_span
-        Python = fun () =>
+        Python = \ () =>
             global "import datetime"
             $'datetime.timedelta(microseconds=!micros)' : time_span
-        Rust = fun () => $'chrono::TimeDelta::microseconds(!micros)' : time_span
+        Rust = \ () => $'chrono::TimeDelta::microseconds(!micros)' : time_span
     }
 
 ///> fsharp
@@ -729,21 +729,21 @@ test spans_convert_to_seconds_and_days =
     |> _assert_eq (1.5, 1.0)
 
 /// ### hours
-inl hours (time_span : time_span) : i32 =
+:= hours (time_span : time_span) : i32 =
     backend_switch {
-        Gleam = fun () =>
-            inl total_seconds = (time_span |> convert.to : i32) |> convert.convert : f64
+        Gleam = \ () =>
+            := total_seconds = (time_span |> convert.to : i32) |> convert.convert : f64
             ((total_seconds / 3600.0) |> math.floor |> convert.unbox : i32) % 24
-        Lua = fun () =>
-            inl total_seconds = (time_span |> convert.to : i32) |> convert.convert : f64
+        Lua = \ () =>
+            := total_seconds = (time_span |> convert.to : i32) |> convert.convert : f64
             ((total_seconds / 3600.0) |> math.floor |> convert.unbox : i32) % 24
-        Fsharp = fun () => time_span |> $'_.Hours' : i32
-        Python = fun () => ($'!time_span.seconds' : i32) / 3600i32
-        Rust = fun () =>
-            inl total : i64 = $'!time_span.num_hours()'
+        Fsharp = \ () => time_span |> $'_.Hours' : i32
+        Python = \ () => ($'!time_span.seconds' : i32) / 3600i32
+        Rust = \ () =>
+            := total : i64 = $'!time_span.num_hours()'
             conv (total % 24i64) : i32
-        TypeScript = fun () =>
-            inl total : f64 = $'!time_span'
+        TypeScript = \ () =>
+            := total : f64 = $'!time_span'
             (conv (total / 3600000f64) : i32) % 24i32
     }
 
@@ -754,27 +754,27 @@ inl hours (time_span : time_span) : i32 =
 ///> rust -d chrono
 ///> typescript
 test hours =
-    join date_time_milliseconds 2002 2 2 20 22 24 26
+    ~~ date_time_milliseconds 2002 2 2 20 22 24 26
     |> new_time_span (date_time_milliseconds 2001 1 1 10 11 12 13)
     |> hours
     |> _assert_eq 10
 
 /// ### minutes
-inl minutes (time_span : time_span) : i32 =
+:= minutes (time_span : time_span) : i32 =
     backend_switch {
-        Gleam = fun () =>
-            inl total_seconds = (time_span |> convert.to : i32) |> convert.convert : f64
+        Gleam = \ () =>
+            := total_seconds = (time_span |> convert.to : i32) |> convert.convert : f64
             ((total_seconds / 60.0) |> math.floor |> convert.unbox : i32) % 60
-        Lua = fun () =>
-            inl total_seconds = (time_span |> convert.to : i32) |> convert.convert : f64
+        Lua = \ () =>
+            := total_seconds = (time_span |> convert.to : i32) |> convert.convert : f64
             ((total_seconds / 60.0) |> math.floor |> convert.unbox : i32) % 60
-        Fsharp = fun () => time_span |> $'_.Minutes' : i32
-        Python = fun () => (($'!time_span.seconds' : i32) / 60i32) % 60i32
-        Rust = fun () =>
-            inl total : i64 = $'!time_span.num_minutes()'
+        Fsharp = \ () => time_span |> $'_.Minutes' : i32
+        Python = \ () => (($'!time_span.seconds' : i32) / 60i32) % 60i32
+        Rust = \ () =>
+            := total : i64 = $'!time_span.num_minutes()'
             conv (total % 60i64) : i32
-        TypeScript = fun () =>
-            inl total : f64 = $'!time_span'
+        TypeScript = \ () =>
+            := total : f64 = $'!time_span'
             (conv (total / 60000f64) : i32) % 60i32
     }
 
@@ -785,27 +785,27 @@ inl minutes (time_span : time_span) : i32 =
 ///> rust -d chrono
 ///> typescript
 test minutes =
-    join date_time_milliseconds 2002 2 2 20 22 24 26
+    ~~ date_time_milliseconds 2002 2 2 20 22 24 26
     |> new_time_span (date_time_milliseconds 2001 1 1 10 11 12 13)
     |> minutes
     |> _assert_eq 11
 
 /// ### seconds
-inl seconds (time_span : time_span) : i32 =
+:= seconds (time_span : time_span) : i32 =
     backend_switch {
-        Gleam = fun () =>
-            inl total_seconds = (time_span |> convert.to : i32) |> convert.convert : f64
+        Gleam = \ () =>
+            := total_seconds = (time_span |> convert.to : i32) |> convert.convert : f64
             (total_seconds |> math.floor |> convert.unbox : i32) % 60
-        Lua = fun () =>
-            inl total_seconds = (time_span |> convert.to : i32) |> convert.convert : f64
+        Lua = \ () =>
+            := total_seconds = (time_span |> convert.to : i32) |> convert.convert : f64
             (total_seconds |> math.floor |> convert.unbox : i32) % 60
-        Fsharp = fun () => time_span |> $'_.Seconds' : i32
-        Python = fun () => ($'!time_span.seconds' : i32) % 60i32
-        Rust = fun () =>
-            inl total : i64 = $'!time_span.num_seconds()'
+        Fsharp = \ () => time_span |> $'_.Seconds' : i32
+        Python = \ () => ($'!time_span.seconds' : i32) % 60i32
+        Rust = \ () =>
+            := total : i64 = $'!time_span.num_seconds()'
             conv (total % 60i64) : i32
-        TypeScript = fun () =>
-            inl total : f64 = $'!time_span'
+        TypeScript = \ () =>
+            := total : f64 = $'!time_span'
             (conv (total / 1000f64) : i32) % 60i32
     }
 
@@ -816,28 +816,28 @@ inl seconds (time_span : time_span) : i32 =
 ///> rust -d chrono
 ///> typescript
 test seconds =
-    join date_time_milliseconds 2002 2 2 20 22 24 26
+    ~~ date_time_milliseconds 2002 2 2 20 22 24 26
     |> new_time_span (date_time_milliseconds 2001 1 1 10 11 12 13)
     |> seconds
     |> _assert_eq 12
 
 /// ### milliseconds
-inl milliseconds (time_span : time_span) : i32 =
+:= milliseconds (time_span : time_span) : i32 =
     backend_switch {
-        Gleam = fun () =>
-            inl total_seconds = (time_span |> convert.to : i32) |> convert.convert : f64
+        Gleam = \ () =>
+            := total_seconds = (time_span |> convert.to : i32) |> convert.convert : f64
             ((total_seconds * 1000.0) |> math.floor |> convert.unbox : i32) % 1000
-        Lua = fun () =>
-            inl total_seconds = (time_span |> convert.to : i32) |> convert.convert : f64
+        Lua = \ () =>
+            := total_seconds = (time_span |> convert.to : i32) |> convert.convert : f64
             ((total_seconds * 1000.0) |> math.floor |> convert.unbox : i32) % 1000
-        Fsharp = fun () => time_span |> $'_.Milliseconds' : i32
-        Python = fun () => ($'!time_span.microseconds' : i32) / 1000i32
-        Rust = fun () =>
-            inl total : i64 = $'!time_span.num_milliseconds()'
+        Fsharp = \ () => time_span |> $'_.Milliseconds' : i32
+        Python = \ () => ($'!time_span.microseconds' : i32) / 1000i32
+        Rust = \ () =>
+            := total : i64 = $'!time_span.num_milliseconds()'
             conv (total % 1000i64) : i32
-        TypeScript = fun () =>
-            inl total : f64 = $'!time_span'
-            inl whole : i64 = conv total
+        TypeScript = \ () =>
+            := total : f64 = $'!time_span'
+            := whole : i64 = conv total
             conv (whole % 1000i64) : i32
     }
 
@@ -846,22 +846,22 @@ inl milliseconds (time_span : time_span) : i32 =
 ///> rust -d chrono
 ///> typescript
 test milliseconds =
-    join date_time_milliseconds 2002 2 2 20 22 24 26
+    ~~ date_time_milliseconds 2002 2 2 20 22 24 26
     |> new_time_span (date_time_milliseconds 2001 1 1 10 11 12 13)
     |> milliseconds
     |> _assert_eq 13
 
 /// ### time_span_format
-inl time_span_format (format : string) (time_span : time_span) : string =
-    run_target_args (fun () => format, time_span) function
-        | TypeScript => fun format, time_span =>
+:= time_span_format (format : string) (time_span : time_span) : string =
+    run_target_args (\ () => format, time_span) \|
+        | TypeScript => \ format, time_span =>
             $'(() => { const t = !time_span; const f = !format; const neg = t < 0; const a = Math.abs(t); const d = \
                 Math.floor(a / 86400000); const h = Math.floor(a / 3600000) % 24; const m = Math.floor(a / 60000) % \
                 60; const s = Math.floor(a / 1000) % 60; const ms = Math.round(a % 1000); const p = (n: number) => \
                 String(n).padStart(2, "0"); if (f === "" || f === "c") return (neg ? "-" : "") + (d > 0 ? d + "." : \
                 "") + p(h) + ":" + p(m) + ":" + p(s) + (ms > 0 ? "." + String(ms * 10000).padStart(7, "0") : ""); \
                 return f.replace("hh", p(h)).replace("mm", p(m)).replace("ss", p(s)); })()' : string
-        | Rust => fun format, time_span =>
+        | Rust => \ format, time_span =>
             $'{ let t = !time_span; let f: &str = &(!format); let neg = t < chrono::TimeDelta::zero(); let a = if neg \
                 { -t } else { t }; let n = a.num_seconds() * 10000000 + (a - \
                 chrono::TimeDelta::seconds(a.num_seconds())).num_nanoseconds().unwrap() / 100; let (d, h, m, s, x) = \
@@ -871,54 +871,54 @@ inl time_span_format (format : string) (time_span : time_span) : string =
                 format\!(".{:07}", x) } else { std::string::String::new() })) } else { \
                 Rc::<str>::from(f.replace("hh", &format\!("{:02}", h)).replace("mm", &format\!("{:02}", \
                 m)).replace("ss", &format\!("{:02}", s))) } }' : string
-        | _ => fun format, time_span =>
+        | _ => \ format, time_span =>
             backend_switch {
-                Gleam = fun () =>
+                Gleam = \ () =>
                     global "import tempo/datetime"
-                    inl tempo_date_time : tempo_date_time =
+                    := tempo_date_time : tempo_date_time =
                         time_span
                         |> $'duration.seconds'
-                        |> fun x => x : duration_gleam
+                        |> \ x => x : duration_gleam
                         |> $'datetime.from_duration'
-                    inl format =
-                        if format = ""
-                        then "c"
-                        else format
+                    := format =
+                        ? format = ""
+                        ?> "c"
+                        |: format
                     $'!tempo_date_time |> datetime.format(tempo.Custom(!format))' : string
-                Lua = fun () =>
-                    inl total_seconds = time_span |> convert.unbox : f64
-                    inl hours = total_seconds / 3600
-                    inl minutes = (total_seconds % 3600) / 60
-                    inl seconds = total_seconds % 60
-                    inl result =
+                Lua = \ () =>
+                    := total_seconds = time_span |> convert.unbox : f64
+                    := hours = total_seconds / 3600
+                    := minutes = (total_seconds % 3600) / 60
+                    := seconds = total_seconds % 60
+                    := result =
                         sm'.pad_left 2 '0' #?hours
                         ++# ":"
                         ++# sm'.pad_left 2 '0' #?minutes
                         ++# ":"
                         ++# sm'.pad_left 2 '0' #?seconds
-                    inl ms = time_span |> milliseconds
-                    if ms <= 0
-                    then result
-                    else
-                        inl ms =
+                    := ms = time_span |> milliseconds
+                    ? ms <= 0
+                    ?> result
+                    |:
+                        := ms =
                             #?**ms
                             |> sm'.pad_left 3 '0'
                             |> sm'.pad_right 7 '0'
                         result ++# "." ++# ms
-                Fsharp = fun () => $'!time_span.ToString !format ' : string
-                Python = fun () =>
-                    inl date = $'!time_span + !(min_value ())' : date_time
-                    inl time = $'!date.strftime("%H:%M:%S")' : string
-                    inl days = time_span |> days
-                    inl result =
-                        if days <= 0
-                        then time
-                        else #?**days ++# "." ++# time
-                    inl ms = time_span |> milliseconds
-                    if ms <= 0
-                    then result
-                    else
-                        inl ms =
+                Fsharp = \ () => $'!time_span.ToString !format ' : string
+                Python = \ () =>
+                    := date = $'!time_span + !(min_value ())' : date_time
+                    := time = $'!date.strftime("%H:%M:%S")' : string
+                    := days = time_span |> days
+                    := result =
+                        ? days <= 0
+                        ?> time
+                        |: #?**days ++# "." ++# time
+                    := ms = time_span |> milliseconds
+                    ? ms <= 0
+                    ?> result
+                    |:
+                        := ms =
                             #?**ms
                             |> sm'.pad_left 3 '0'
                             |> sm'.pad_right 7 '0'
@@ -930,7 +930,7 @@ inl time_span_format (format : string) (time_span : time_span) : string =
 ///> rust -d chrono
 ///> typescript
 test time_span_format =
-    join date_time_milliseconds 2002 2 2 20 22 24 26
+    ~~ date_time_milliseconds 2002 2 2 20 22 24 26
     |> new_time_span (date_time_milliseconds 2001 1 1 10 11 12 13)
     |> time_span_format "c"
     |> _assert_eq "397.10:11:12.0130000"
@@ -940,7 +940,7 @@ test time_span_format =
 ///> rust -d chrono
 ///> typescript
 test time_span_format_2 =
-    join date_time_milliseconds 2002 2 2 20 22 24 26
+    ~~ date_time_milliseconds 2002 2 2 20 22 24 26
     |> new_time_span (date_time_milliseconds 2002 2 2 10 11 12 26)
     |> time_span_format "c"
     |> _assert_eq "10:11:12"
@@ -950,13 +950,13 @@ test time_span_format_2 =
 ///> rust -d chrono
 ///> typescript
 test time_span_format_3 =
-    join date_time_milliseconds 2002 2 2 20 22 24 999
+    ~~ date_time_milliseconds 2002 2 2 20 22 24 999
     |> new_time_span (date_time_milliseconds 2002 2 2 10 11 12 0)
     |> time_span_format "c"
     |> _assert_eq "10:11:12.9990000"
 
 /// ### time_zone_info
-type time_zone_info_switch =
+:== time_zone_info_switch =
     {
         Gleam : $'System.TimeZoneInfo'
         Lua : $'System.TimeZoneInfo'
@@ -964,31 +964,31 @@ type time_zone_info_switch =
         Python : $'System.TimeZoneInfo'
         Rust : $'chrono::FixedOffset'
     }
-nominal time_zone_info = $'backend_switch `(time_zone_info_switch)'
+:! time_zone_info = $'backend_switch `(time_zone_info_switch)'
 
 /// ### add_days
-inl add_days (days : i32) (date_time : date_time) : date_time =
+:= add_days (days : i32) (date_time : date_time) : date_time =
     backend_switch {
-        Gleam = fun () =>
+        Gleam = \ () =>
             global "import gleam/time/duration"
-            inl duration : duration_gleam = $'duration.days(#days)' : duration_gleam
-            inl (date : date_gleam), (time_of_day : time_of_day_gleam), (existing_duration : duration_gleam) =
+            := duration : duration_gleam = $'duration.days(#days)' : duration_gleam
+            := (date : date_gleam), (time_of_day : time_of_day_gleam), (existing_duration : duration_gleam) =
                 date_time |> split_date_time
-            inl new_duration : duration_gleam = $'!existing_duration + !duration '
+            := new_duration : duration_gleam = $'!existing_duration + !duration '
             (date, time_of_day, new_duration) |> convert.to : date_time
-        Lua = fun () =>
-            inl seconds = days * 86400
+        Lua = \ () =>
+            := seconds = days * 86400
             (date_time |> convert.unbox) + seconds |> convert.unbox : date_time
-        Fsharp = fun () =>
+        Fsharp = \ () =>
             $'!date_time.AddDays' days : date_time
-        Python = fun () =>
+        Python = \ () =>
             global "import datetime"
             $'!date_time + datetime.timedelta(days=!days)' : date_time
-        Rust = fun () =>
-            inl days' : i64 = conv days
-            inl delta = $'chrono::TimeDelta::days(!days')' : time_span
+        Rust = \ () =>
+            := days' : i64 = conv days
+            := delta = $'chrono::TimeDelta::days(!days')' : time_span
             $'!date_time + !delta' : date_time
-        Zig = fun () =>
+        Zig = \ () =>
             (date_time |> zig_micros_of) + (days |> convert.convert : i64) * 86400000000i64 |> zig_date_time_of
     }
 
@@ -1001,93 +1001,93 @@ test add_days_moves_the_timestamp =
     |> _assert_eq' (1792152000000000i64 |> timestamp)
 
 /// ### to_calendar
-inl to_calendar_gleam (timestamp : timestamp_gleam) : date_time =
+:= to_calendar_gleam (timestamp : timestamp_gleam) : date_time =
     backend_switch {
-        Gleam = fun () =>
+        Gleam = \ () =>
             global "import gleam/time/timestamp"
             global "import gleam/time/calendar"
     }
-    inl duration = $'calendar.local_offset()' : duration_gleam
-    inl (date : date_gleam), (time_of_day : time_of_day_gleam) = $'!timestamp |> timestamp.to_calendar(!duration)'
+    := duration = $'calendar.local_offset()' : duration_gleam
+    := (date : date_gleam), (time_of_day : time_of_day_gleam) = $'!timestamp |> timestamp.to_calendar(!duration)'
     (date, time_of_day, duration) |> convert.to
 
-inl to_calendar (timestamp : timestamp) : date_time =
+:= to_calendar (timestamp : timestamp) : date_time =
     timestamp |> timestamp_gleam_of |> to_calendar_gleam
 
 /// ### now
-inl now () : date_time =
+:= now () : date_time =
     backend_switch {
-        Gleam = fun () =>
-            inl timestamp = $'timestamp.system_time ()' : timestamp_gleam
+        Gleam = \ () =>
+            := timestamp = $'timestamp.system_time ()' : timestamp_gleam
             timestamp |> to_calendar_gleam
-        Lua = fun () =>
-            inl date_time = $'os.time()' : date_time
+        Lua = \ () =>
+            := date_time = $'os.time()' : date_time
             date_time
-        Fsharp = fun () =>
-            run_target function
-                | _ => fun () => $'System.DateTime.Now'
+        Fsharp = \ () =>
+            run_target \|
+                | _ => \ () => $'System.DateTime.Now'
             : date_time
-        Python = fun () =>
+        Python = \ () =>
             global "import datetime"
             $'datetime.datetime.now()' : date_time
-        Rust = fun () => $'chrono::Local::now().naive_local()' : date_time
-        Zig = fun () => zig_micros_now () |> zig_date_time_of
+        Rust = \ () => $'chrono::Local::now().naive_local()' : date_time
+        Zig = \ () => zig_micros_now () |> zig_date_time_of
     }
 
 /// ### utc_now
-inl utc_now () : date_time =
+:= utc_now () : date_time =
     backend_switch {
-        Gleam = fun () =>
-            inl timestamp = $'timestamp.system_time ()' : timestamp_gleam
+        Gleam = \ () =>
+            := timestamp = $'timestamp.system_time ()' : timestamp_gleam
             timestamp |> to_calendar_utc_gleam
-        Lua = fun () =>
-            inl date_time = $'os.time()' : date_time
+        Lua = \ () =>
+            := date_time = $'os.time()' : date_time
             date_time
-        Fsharp = fun () => $'System.DateTime.UtcNow' : date_time
-        Python = fun () =>
+        Fsharp = \ () => $'System.DateTime.UtcNow' : date_time
+        Python = \ () =>
             global "import datetime"
             $'datetime.datetime.utcnow()' : date_time
-        Rust = fun () => $'chrono::Utc::now().naive_utc()' : date_time
-        Zig = fun () => zig_micros_now () |> zig_date_time_of
+        Rust = \ () => $'chrono::Utc::now().naive_utc()' : date_time
+        Zig = \ () => zig_micros_now () |> zig_date_time_of
     }
 
 /// ### stopwatch
-nominal stopwatch_python =
+:! stopwatch_python =
     `(
         global "import timeit"
         $'' : $'timeit.default_timer'
     )
-type stopwatch_switch =
+:== stopwatch_switch =
     {
         Fsharp : $'System.Diagnostics.Stopwatch'
         Python : stopwatch_python
         Rust : $'std::time::Instant'
     }
-nominal stopwatch = $'backend_switch `(stopwatch_switch)'
+:! stopwatch = $'backend_switch `(stopwatch_switch)'
 
-inl stopwatch () : stopwatch =
+:= stopwatch () : stopwatch =
     backend_switch {
-        Fsharp = fun () => $'`stopwatch ()' : stopwatch
-        Python = fun () => $'`stopwatch ' : stopwatch
-        Rust = fun () => $'std::time::Instant::now()' : stopwatch
+        Fsharp = \ () => $'`stopwatch ()' : stopwatch
+        Python = \ () => $'`stopwatch ' : stopwatch
+        Rust = \ () => $'std::time::Instant::now()' : stopwatch
     }
 
-inl stopwatch_elapsed_milliseconds (stopwatch : stopwatch) : i64 =
-    if is_rust () then
-        inl elapsed = $'!stopwatch.elapsed()' : rust_std_duration
-        inl seconds : u64 = $'!elapsed.as_secs()'
-        inl millis : u32 = $'!elapsed.subsec_millis()'
+:= stopwatch_elapsed_milliseconds (stopwatch : stopwatch) : i64 =
+    ? is_rust () ?>
+        := elapsed = $'!stopwatch.elapsed()' : rust_std_duration
+        := seconds : u64 = $'!elapsed.as_secs()'
+        := millis : u32 = $'!elapsed.subsec_millis()'
         (conv seconds : i64) * 1000i64 + conv millis
-    else $'!stopwatch.ElapsedMilliseconds'
+    |: $'!stopwatch.ElapsedMilliseconds'
 
-inl stopwatch_start (stopwatch : stopwatch) : () =
-    if is_rust () |> not
-    then $'!stopwatch.Start' ()
+:= stopwatch_start (stopwatch : stopwatch) : () =
+    ? is_rust () |> not
+    ?> $'!stopwatch.Start' ()
 
 /// ## rust
 
 /// ### duration'
-nominal duration' =
+:! duration' =
     `(
         rust.rust_type
             `($'std_time_Duration')
@@ -1096,7 +1096,7 @@ nominal duration' =
     )
 
 /// ### date_time'
-nominal date_time' t =
+:! date_time' t =
     `(
         rust.rust_type
             `($'chrono_DateTime<`t>')
@@ -1105,7 +1105,7 @@ nominal date_time' t =
     )
 
 /// ### local
-nominal local =
+:! local =
     `(
         rust.rust_type
             `($'chrono_Local')
@@ -1114,7 +1114,7 @@ nominal local =
     )
 
 /// ### naive_date_time
-nominal naive_date_time =
+:! naive_date_time =
     `(
         rust.rust_type
             `($'chrono_NaiveDateTime')
@@ -1123,7 +1123,7 @@ nominal naive_date_time =
     )
 
 /// ## utc
-nominal utc =
+:! utc =
     `(
         rust.rust_type
             `($'chrono_Utc')
@@ -1132,34 +1132,34 @@ nominal utc =
     )
 
 /// ### naive_utc
-inl naive_utc (date_time : date_time' utc) : naive_date_time =
+:= naive_utc (date_time : date_time' utc) : naive_date_time =
     !\\(date_time, $'"$0.naive_utc()"')
 
 /// ### to_local
-inl to_local (date_time : date_time' utc) : date_time' local =
-    inl naive_date_time = date_time |> naive_utc
+:= to_local (date_time : date_time' utc) : date_time' local =
+    := naive_date_time = date_time |> naive_utc
     !\\(naive_date_time, $'"chrono::offset::TimeZone::from_utc_datetime(&chrono::Local, &$0)"')
 
 /// ### from_timestamp_micros
-inl from_timestamp_micros forall t {number; int}. (timestamp : t) : option (date_time' utc) =
-    inl result : optionm'.option' (date_time' utc) =
+:= from_timestamp_micros \* t {number; int}. (timestamp : t) : option (date_time' utc) =
+    := result : optionm'.option' (date_time' utc) =
         !\\(timestamp, $'"chrono::DateTime::from_timestamp_micros($0)"')
     result |> optionm'.unbox
 
 /// ### format'
-inl format' (format : string) (date_time : date_time' utc) : sm'.std_string =
+:= format' (format : string) (date_time : date_time' utc) : sm'.std_string =
     !\\((date_time, #format), $'"$0.format($1).to_string()"')
 
 /// ### format''
-inl format'' (format : string) (date_time : date_time' _) : sm'.std_string =
+:= format'' (format : string) (date_time : date_time' _) : sm'.std_string =
     !\\((date_time, #format), $'"$0.format($1).to_string()"')
 
 /// ### format_timestamp
-inl format_timestamp forall t {number; int}. (timestamp : t) =
-    inl timestamp = join timestamp
+:= format_timestamp \* t {number; int}. (timestamp : t) =
+    := timestamp = ~~ timestamp
     (timestamp / 1000)
     |> from_timestamp_micros
-    |> optionm.map fun x =>
+    |> optionm.map \ x =>
         x
         |> to_local
         |> format'' "%Y-%m-%d %H:%M:%S"
@@ -1167,65 +1167,65 @@ inl format_timestamp forall t {number; int}. (timestamp : t) =
     |> resultm.from_option
 
 /// ### duration_from_millis
-inl duration_from_millis (ms : u64) : duration' =
-    inl ms = join ms
+:= duration_from_millis (ms : u64) : duration' =
+    := ms = ~~ ms
     !\($'"std::time::Duration::from_millis(!ms)"')
 
 /// ## date_time
 
 /// ### time_zone_local
-inl time_zone_local () : time_zone_info =
-    run_target function
-        | Fsharp _ => fun () =>
+:= time_zone_local () : time_zone_info =
+    run_target \|
+        | Fsharp _ => \ () =>
             $'System.TimeZoneInfo.Local'
-        | Rust => fun () => $'*chrono::Local::now().offset()' : time_zone_info
-        | _ => fun () => null ()
+        | Rust => \ () => $'*chrono::Local::now().offset()' : time_zone_info
+        | _ => \ () => null ()
 
 /// ### get_utc_offset
-inl get_utc_offset (time_zone_info : time_zone_info) (date_time : date_time) : time_span =
-    run_target function
-        | Fsharp _ => fun () => date_time |> $'_.GetUtcOffset' (time_zone_local ())
-        | Rust => fun () =>
+:= get_utc_offset (time_zone_info : time_zone_info) (date_time : date_time) : time_span =
+    run_target \|
+        | Fsharp _ => \ () => date_time |> $'_.GetUtcOffset' (time_zone_local ())
+        | Rust => \ () =>
             $'chrono::TimeDelta::seconds(chrono::TimeZone::offset_from_local_datetime(&chrono::Local, \
                 &!date_time).earliest().map(|o| o.local_minus_utc()).unwrap_or(0) as i64)' : time_span
-        | target => fun () =>
+        | target => \ () =>
             backend_switch {
-                Gleam = fun () =>
+                Gleam = \ () =>
                     global "import gleam/time/duration"
-                    inl duration : duration_gleam = $'calendar.utc_offset()' : duration_gleam
+                    := duration : duration_gleam = $'calendar.utc_offset()' : duration_gleam
                     duration
                     |> $'duration.to_seconds'
                     |> ((*) 10000000i32)
                     |> convert.convert
-                    |> fun x => x : int
+                    |> \ x => x : int
                     |> convert.unbox
                     : time_span
-                Lua = fun () =>
-                    inl date_time = date_time |> convert.unbox : int
-                    inl offset = 5i32 * 3600i32
+                Lua = \ () =>
+                    := date_time = date_time |> convert.unbox : int
+                    := offset = 5i32 * 3600i32
                     offset * 10000000 |> convert.convert : time_span
-                Fsharp = fun () => failwith $'$"date_time.get_utc_offset / target: {!target}"' : time_span
-                Python = fun () => $'!date_time.utcoffset()' : time_span
+                Fsharp = \ () => failwith $'$"date_time.get_utc_offset / target: {!target}"' : time_span
+                Python = \ () => $'!date_time.utcoffset()' : time_span
             }
 
 /// ### guid_sub_micro_digit
-inl guid_sub_micro_digit (date_time : date_time) : i64 =
-    run_target function
-        | Fsharp => fun () => $'(!date_time.Ticks % 10L)' : i64
-        | Rust => fun () => $'((!date_time.and_utc().timestamp_subsec_nanos() / 100 % 10) as i64)' : i64
-        | _ => fun () => 0i64
+:= guid_sub_micro_digit (date_time : date_time) : i64 =
+    run_target \|
+        | Fsharp => \ () => $'(!date_time.Ticks % 10L)' : i64
+        | Rust => \ () => $'((!date_time.and_utc().timestamp_subsec_nanos() / 100 % 10) as i64)' : i64
+        | _ => \ () => 0i64
 
 /// ### with_guid_sub_micro_digit
-inl with_guid_sub_micro_digit (digit : i64) (date_time : date_time) : date_time =
-    run_target function
-        | Fsharp => fun () => $'!date_time.AddTicks(!digit)' : date_time
-        | Rust => fun () => $'(!date_time + chrono::TimeDelta::nanoseconds(!digit * 100))' : date_time
-        | _ => fun () => date_time
+:= with_guid_sub_micro_digit (digit : i64) (date_time : date_time) : date_time =
+    run_target \|
+        | Fsharp => \ () => $'!date_time.AddTicks(!digit)' : date_time
+        | Rust => \ () => $'(!date_time + chrono::TimeDelta::nanoseconds(!digit * 100))' : date_time
+        | _ => \ () => date_time
 
 /// ### guid_prefix_of_micros
-inl guid_prefix_of_micros (micros : i64) (sub_micro : i64) : string =
-    inl year, month, day, hour, minute, second, fraction_micros = civil_of_micros micros
-    inl fraction = pad_digits 7i32 (fraction_micros * 10 + sub_micro)
+:= guid_prefix_of_micros (micros : i64) (sub_micro : i64) : string =
+    := year, month, day, hour, minute, second, fraction_micros = civil_of_micros micros
+    := fraction = pad_digits 7i32 (fraction_micros * 10 + sub_micro)
     pad_digits 4i32 year ++# pad_digits 2i32 month ++# pad_digits 2i32 day
     ++# "-" ++# pad_digits 2i32 hour ++# pad_digits 2i32 minute
     ++# "-" ++# pad_digits 2i32 second ++# (fraction |> sm'.slice 0i32 1i32)
@@ -1233,70 +1233,70 @@ inl guid_prefix_of_micros (micros : i64) (sub_micro : i64) : string =
     ++# "-" ++# (fraction |> sm'.slice 6i32 6i32)
 
 /// ### guid_time_zone
-inl guid_time_zone (date_time : date_time) : string =
-    run_target function
-        | Zig => fun () => "00000"
-        | _ => fun () =>
-            inl time_zone = date_time |> get_utc_offset (time_zone_local ())
-            inl time_zone_signal = if hours time_zone > 0 then 1u8 else 0
-            inl time_zone_value = time_zone |> time_span_format (join "hhmm")
+:= guid_time_zone (date_time : date_time) : string =
+    run_target \|
+        | Zig => \ () => "00000"
+        | _ => \ () =>
+            := time_zone = date_time |> get_utc_offset (time_zone_local ())
+            := time_zone_signal = ? hours time_zone > 0 ?> 1u8 |: 0
+            := time_zone_value = time_zone |> time_span_format (~~ "hhmm")
             #?time_zone_signal ++# time_zone_value
 
 /// ### date_time_guid_from_date_time
-let date_time_guid_from_date_time (guid' : guid.guid) (date_time : date_time) =
-    inl create prefix time_zone : date_time_guid =
-        inl guid_range =
+:~ date_time_guid_from_date_time (guid' : guid.guid) (date_time : date_time) =
+    := create prefix time_zone : date_time_guid =
+        := guid_range =
             guid'
             |> guid.to_string
             |> sm'.range
                 (am'.Start (##prefix + ##time_zone))
                 (am'.End eval)
         prefix ++# time_zone ++# guid_range |> guid.new_guid
-    inl micros = date_time |> to_timestamp |> fun (timestamp micros) => micros
+    := micros = date_time |> to_timestamp |> \ (timestamp micros) => micros
     create (guid_prefix_of_micros micros (guid_sub_micro_digit date_time)) (guid_time_zone date_time)
 
 ///> fsharp
 ///> rust -d chrono
 test date_time_guid_from_date_time =
-    inl suffix = test_guid () |> sm'.obj_to_string |> sm'.range (am'.End fun x => x () - 6i32) (am'.End eval)
+    := suffix = test_guid () |> sm'.obj_to_string |> sm'.range (am'.End \ x => x () - 6i32) (am'.End eval)
     unix_epoch ()
     |> specify_date_kind Utc
     |> to_universal_time
     |> date_time_guid_from_date_time (test_guid ())
     |> sm'.obj_to_string
-    |> fun s => s |> _assert_eq' ((s |> sm'.slice 0i32 29) ++# suffix)
+    |> \ s => s |> _assert_eq' ((s |> sm'.slice 0i32 29) ++# suffix)
 
 ///> fsharp
 ///> rust -d chrono
 test date_time_guid_from_date_time_2 no_agree "local UTC offset in year 1 is implementation-defined" =
-    inl suffix = test_guid () |> sm'.obj_to_string |> sm'.range (am'.End fun x => x () - 6i32) (am'.End eval)
+    := suffix = test_guid () |> sm'.obj_to_string |> sm'.range (am'.End \ x => x () - 6i32) (am'.End eval)
     min_value ()
     |> specify_date_kind Local
     |> date_time_guid_from_date_time (test_guid ())
     |> sm'.obj_to_string
-    |> fun s => s |> _assert_eq' $'$"00010101-0000-0000-0000-0{!(s |> sm'.slice 25i32 29)}{!suffix}"'
+    |> \ s => s |> _assert_eq' $'$"00010101-0000-0000-0000-0{!(s |> sm'.slice 25i32 29)}{!suffix}"'
 
 ///> fsharp
 ///> rust -d chrono
 test date_time_guid_from_date_time_3 =
-    inl suffix = test_guid () |> sm'.obj_to_string |> sm'.range (am'.End fun x => x () - 6i32) (am'.End eval)
+    := suffix = test_guid () |> sm'.obj_to_string |> sm'.range (am'.End \ x => x () - 6i32) (am'.End eval)
     max_value ()
     |> specify_date_kind Utc
     |> add_days -1
     |> date_time_guid_from_date_time (test_guid ())
     |> sm'.obj_to_string
-    |> fun s => s |> _assert_eq ("99991230-2359-5999-9999-9" ++# (s |> sm'.slice 25i32 29) ++# suffix)
+    |> \ s => s |> _assert_eq ("99991230-2359-5999-9999-9" ++# (s |> sm'.slice 25i32 29) ++# suffix)
 
 ///> fsharp
 ///> rust -d chrono
 test date_time_guid_from_date_time_4 =
-    inl suffix = test_guid () |> sm'.obj_to_string |> sm'.range (am'.End fun x => x () - 6i32) (am'.End eval)
+    := suffix = test_guid () |> sm'.obj_to_string |> sm'.range (am'.End \ x => x () - 6i32) (am'.End eval)
     unix_epoch ()
     |> specify_date_kind Utc
     |> add_days 1
     |> date_time_guid_from_date_time (test_guid ())
     |> sm'.obj_to_string
-    |> fun s => s |> _assert_eq ("19700102-0000-0000-0000-0" ++# (s |> sm'.slice 25i32 29) ++# suffix)
+    |> \ s => s |> _assert_eq ("19700102-0000-0000-0000-0" ++# (s |> sm'.slice 25i32 29) ++# suffix)
 
 ///> zig
 test zig_date_time_guid_writes_seven_contiguous_fraction_digits =
@@ -1323,26 +1323,26 @@ test date_time_guid_fraction_digits_are_contiguous =
     |> _assert_eq "19700101-0000-0112-3000-0"
 
 /// ### days_from_civil
-inl days_from_civil (year : i64) (month : i64) (day : i64) : i64 =
-    inl y = if month <= 2 then year - 1 else year
-    inl era = floor_div y 400
-    inl year_of_era = y - era * 400
-    inl month_from_march = if month > 2 then month - 3 else month + 9
-    inl day_of_year = (153 * month_from_march + 2) / 5 + day - 1
-    inl day_of_era = year_of_era * 365 + year_of_era / 4 - year_of_era / 100 + day_of_year
+:= days_from_civil (year : i64) (month : i64) (day : i64) : i64 =
+    := y = ? month <= 2 ?> year - 1 |: year
+    := era = floor_div y 400
+    := year_of_era = y - era * 400
+    := month_from_march = ? month > 2 ?> month - 3 |: month + 9
+    := day_of_year = (153 * month_from_march + 2) / 5 + day - 1
+    := day_of_era = year_of_era * 365 + year_of_era / 4 - year_of_era / 100 + day_of_year
     era * 146097 + day_of_era - 719468
 
 /// ### micros_of_guid_prefix
-inl micros_of_guid_prefix (text : string) : i64 * i64 =
-    inl field first last : i64 = text |> sm'.slice first last |> convert.try_convert |> optionm.value
-    inl days = days_from_civil (field 0i32 3i32) (field 4i32 5i32) (field 6i32 7i32)
-    inl seconds = days * 86400 + field 9i32 10i32 * 3600 + field 11i32 12i32 * 60 + field 14i32 15i32
-    inl fraction = field 16i32 17i32 * 100000 + field 19i32 22i32 * 10 + field 24i32 24i32
+:= micros_of_guid_prefix (text : string) : i64 * i64 =
+    := field first last : i64 = text |> sm'.slice first last |> convert.try_convert |> optionm.value
+    := days = days_from_civil (field 0i32 3i32) (field 4i32 5i32) (field 6i32 7i32)
+    := seconds = days * 86400 + field 9i32 10i32 * 3600 + field 11i32 12i32 * 60 + field 14i32 15i32
+    := fraction = field 16i32 17i32 * 100000 + field 19i32 22i32 * 10 + field 24i32 24i32
     seconds * 1000000 + fraction / 10, fraction % 10
 
 /// ### date_time_from_guid
-inl date_time_from_guid (date_time_guid : date_time_guid) : date_time =
-    inl micros, sub_micro = date_time_guid |> guid.to_string |> micros_of_guid_prefix
+:= date_time_from_guid (date_time_guid : date_time_guid) : date_time =
+    := micros, sub_micro = date_time_guid |> guid.to_string |> micros_of_guid_prefix
     micros |> timestamp |> to_calendar_utc |> with_guid_sub_micro_digit sub_micro
 
 ///> fsharp
@@ -1355,7 +1355,7 @@ test date_time_guid_round_trips_through_the_prefix =
     |> date_time_guid_from_date_time (test_guid ())
     |> date_time_from_guid
     |> to_timestamp
-    |> fun (timestamp micros) => micros
+    |> \ (timestamp micros) => micros
     |> _assert_eq 1791892800123456i64
 
 ///> fsharp
@@ -1376,9 +1376,9 @@ test date_time_from_guid_3 =
     |> _assert_eq' $'System.DateTime.UnixEpoch'
 
 /// ### timestamp_guid_from_timestamp
-inl timestamp_guid_from_timestamp (source : guid.guid) ((timestamp micros) : timestamp) : timestamp_guid =
-    inl digits = micros |> sm'.obj_to_string |> sm'.pad_left 18i32 '0'
-    inl piece first last = digits |> sm'.slice first last
+:= timestamp_guid_from_timestamp (source : guid.guid) ((timestamp micros) : timestamp) : timestamp_guid =
+    := digits = micros |> sm'.obj_to_string |> sm'.pad_left 18i32 '0'
+    := piece first last = digits |> sm'.slice first last
     piece 0i32 7i32 ++# "-" ++# piece 8i32 11i32 ++# "-" ++# piece 12i32 15i32 ++# "-" ++# piece 16i32 17i32
     ++# (source |> guid.to_string |> sm'.range (am'.Start 21i32) (am'.End eval))
     |> guid.new_guid
@@ -1401,13 +1401,13 @@ test timestamp_guid_from_timestamp_2 =
         (s.Length - 11))}"')
 
 /// ### timestamp_from_guid
-inl timestamp_from_guid (source : date_time_guid) : timestamp =
-    inl text = source |> guid.to_string
-    inl piece first last = text |> sm'.slice first last
+:= timestamp_from_guid (source : date_time_guid) : timestamp =
+    := text = source |> guid.to_string
+    := piece first last = text |> sm'.slice first last
     piece 0i32 7i32 ++# piece 9i32 12i32 ++# piece 14i32 17i32 ++# piece 19i32 20i32
     |> convert.try_convert
     |> optionm.value
-    |> fun (micros : i64) => micros |> timestamp
+    |> \ (micros : i64) => micros |> timestamp
 
 ///> fsharp
 ///> rust
@@ -1417,7 +1417,7 @@ inl timestamp_from_guid (source : date_time_guid) : timestamp =
 ///> lua
 test timestamp_from_guid =
     timestamp_from_guid (guid.new_guid "00000000-0000-0000-00dc-ba9876543210")
-    |> fun (timestamp micros) => micros
+    |> \ (timestamp micros) => micros
     |> _assert_eq 0i64
 
 ///> fsharp
@@ -1427,8 +1427,8 @@ test timestamp_from_guid_2 =
     |> _assert_eq' (999999999999999999i64 |> timestamp)
 
 /// ### new_guid_from_date_time
-inl new_guid_from_date_time (date_time : date_time) =
-    inl guid = guid.new_raw_guid ()
+:= new_guid_from_date_time (date_time : date_time) =
+    := guid = guid.new_raw_guid ()
     date_time |> date_time_guid_from_date_time guid
 
 ///> fsharp
@@ -1436,12 +1436,12 @@ test new_guid_from_date_time =
     utc_now ()
     |> new_guid_from_date_time
     |> date_time_from_guid
-    |> fun date_time => new_time_span date_time (utc_now ()) |> total_seconds |> convert.i32
+    |> \ date_time => new_time_span date_time (utc_now ()) |> total_seconds |> convert.i32
     |> _assert_eq 0
 
 /// ### new_guid_from_timestamp
-inl new_guid_from_timestamp (timestamp : timestamp) =
-    inl guid = guid.new_raw_guid ()
+:= new_guid_from_timestamp (timestamp : timestamp) =
+    := guid = guid.new_raw_guid ()
     timestamp |> timestamp_guid_from_timestamp guid
 
 ///> fsharp
@@ -1450,14 +1450,14 @@ test new_guid_from_timestamp =
     |> to_timestamp
     |> new_guid_from_timestamp
     |> timestamp_from_guid
-    |> fun (timestamp t) =>
-        (convert.convert t - (utc_now () |> to_timestamp |> fun (timestamp x) => convert.convert x)) / 100000i64
+    |> \ (timestamp t) =>
+        (convert.convert t - (utc_now () |> to_timestamp |> \ (timestamp x) => convert.convert x)) / 100000i64
     |> _assert_eq 0i64
 
 /// ## main
 ///> fsharp
 
-inl main () =
+:= main () =
     $'let date_time_guid_from_date_time x = !date_time_guid_from_date_time x' : ()
     $'let date_time_from_guid x = !date_time_from_guid x' : ()
     $'let timestamp_guid_from_timestamp x = !timestamp_guid_from_timestamp x' : ()

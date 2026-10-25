@@ -12,28 +12,28 @@ fn pick_0(mut v0: US0) -> i32 {
             0i32
         }
         US0::US0_Full(v1) => {
-            let mut v1: i32 = *v1;
+            let v1: i32 = *v1;
             v1
         }
     }
 }
 fn spiral_main() -> i32 {
-    let mut v0: bool = true;
-    let mut v3: US0 = if v0 {
+    let v0: bool = true;
+    let v3: US0 = if v0 {
         US0::US0_Full(7i32)
     } else {
         US0::US0_Empty
     };
-    let mut v6: US0 = if v0 {
+    let v6: US0 = if v0 {
         US0::US0_Empty
     } else {
         US0::US0_Full(1i32)
     };
-    let mut v7: i32 = pick_0(v3.clone());
-    let mut v8: bool = v7 == 7i32;
-    let mut v11: bool = if v8 {
-        let mut v9: i32 = pick_0(v6.clone());
-        let mut v10: bool = v9 == 0i32;
+    let v7: i32 = pick_0(v3);
+    let v8: bool = v7 == 7i32;
+    let v11: bool = if v8 {
+        let v9: i32 = pick_0(v6);
+        let v10: bool = v9 == 0i32;
         v10
     } else {
         false

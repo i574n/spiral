@@ -38,20 +38,15 @@ fun f_c0(v0: String): (Int) -> Int {
     return { p0: Int -> body(p0) }
 }
 fun spiral_main(): Int {
-    var v0: String = ""
-    v0 = "abc"
-    var v1: (Int) -> Int = { _: Int -> throw RuntimeException() }
-    v1 = f_c0(v0)
+    val v0: String = "abc"
+    val v1: (Int) -> Int = f_c0(v0)
     var v2: Int = 0
     v2 = v1(10)
     var v3: Int = 0
     v3 = v1(20)
-    var v4: Int = 0
-    v4 = v1(3)
-    var v5: Int = 0
-    v5 = (v2 + v3)
-    var v6: Int = 0
-    v6 = (v5 + v4)
+    val v4: Int = v1(3)
+    val v5: Int = (v2 + v3)
+    val v6: Int = (v5 + v4)
     return v6
 }
 fun main() {

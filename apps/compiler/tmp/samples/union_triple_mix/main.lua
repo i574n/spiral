@@ -3,11 +3,10 @@ function Us0_One(v0) return { tag = "Us0_One",  _1 = v0 } end
 function Us0_All(v0, v1, v2) return { tag = "Us0_All",  _1 = v0,  _2 = v1,  _3 = v2 } end
 
 function score_0(v0)
-    local __v = { v0 }
-    if __v[1] ~= nil and __v[1].tag == "Us0_All" then
-        local v2 = __v[1]._1
-        local v3 = __v[1]._2
-        local v4 = __v[1]._3
+    if v0 ~= nil and v0.tag == "Us0_All" then
+        local v2 = v0._1
+        local v3 = v0._2
+        local v4 = v0._3
         local v5 = v2 == 7
         local getv7 = function()
             if v5 then
@@ -24,8 +23,8 @@ function score_0(v0)
         else
             return 1
         end
-    elseif __v[1] ~= nil and __v[1].tag == "Us0_One" then
-        local v1 = __v[1]._1
+    elseif v0 ~= nil and v0.tag == "Us0_One" then
+        local v1 = v0._1
         return v1
     end
 end

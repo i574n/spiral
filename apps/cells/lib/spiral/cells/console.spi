@@ -1,9 +1,9 @@
-inl (~!\\) forall t u. ((args : t), (code : string)) : u =
+:= (~!\\) \* t u. ((args : t), (code : string)) : u =
     $'__spiral_emit_rust !args !code '
 
-inl show_value forall t. (value : t) : () =
-    inl rust () : () =
-        inl _ : () =
+:= show_value \* t. (value : t) : () =
+    := rust () : () =
+        := _ : () =
             !\\(value, $'"{ struct SpiralKinoShow<T>(T); trait SpiralKinoDebug { fn spiral_cells_show(&self) -> \
                 String; } impl<T: std::fmt::Debug> SpiralKinoDebug for SpiralKinoShow<T> { fn \
                 spiral_cells_show(&self) -> String { format\!(\\\"{:?}\\\", self.0) } } trait SpiralKinoOther { fn \
@@ -14,73 +14,73 @@ inl show_value forall t. (value : t) : () =
                 let _ = <std::io::Stdout as std::io::Write>::write_all(&mut out, &[10u8]); let _ = <std::io::Stdout \
                 as std::io::Write>::flush(&mut out); }"')
         ()
-    inl gleam () : () =
+    := gleam () : () =
         global "import gleam/io"
         global "import gleam/string"
         $'io.println(string.inspect(!value))' : ()
-    inl cpp () : () =
+    := cpp () : () =
         global "#include <iostream>"
         $'std::cout << !value << std::endl' : ()
     !!!!BackendSwitch({
-        Rust = fun () => rust ()
+        Rust = \ () => rust ()
         Fsharp = fun () => $'System.Console.WriteLine(match box !value with :? string as s -> s | v -> sprintf "%A" \
             v)' : ()
-        TypeScript = fun () => $'console.log(!value)' : ()
-        Python = fun () => $'print(!value)' : ()
-        Lua = fun () =>
-            real
-                typecase t with
+        TypeScript = \ () => $'console.log(!value)' : ()
+        Python = \ () => $'print(!value)' : ()
+        Lua = \ () =>
+            ~>
+                ?: t ?|
                 | i64 => $'print(spiral_w64.tostring(!value, true))' : ()
                 | u64 => $'print(spiral_w64.tostring(!value, false))' : ()
                 | _ => $'print(!value)' : ()
-        Gleam = fun () => gleam ()
-        Cpp = fun () => cpp ()
-        Zig = fun () => $'{ spiralPrintAny(!value); spiralPrint(&[_]u8{10}); }' : ()
-        Lean = fun () => $'IO.println (toString !value)' : ()
-        CppHost = fun () => cpp ()
-        C = fun () => $'backend_switch_has_no_C_arm_in_cells_console' : ()
-        Delphi = fun () => $'backend_switch_has_no_Delphi_arm_in_cells_console' : ()
-        Wasm = fun () => $'backend_switch_has_no_Wasm_arm_in_cells_console' : ()
-        Bend = fun () => $'backend_switch_has_no_Bend_arm_in_cells_console' : ()
+        Gleam = \ () => gleam ()
+        Cpp = \ () => cpp ()
+        Zig = \ () => $'{ spiralPrintAny(!value); spiralPrint(&[_]u8{10}); }' : ()
+        Lean = \ () => $'IO.println (toString !value)' : ()
+        CppHost = \ () => cpp ()
+        C = \ () => $'backend_switch_has_no_C_arm_in_cells_console' : ()
+        Delphi = \ () => $'backend_switch_has_no_Delphi_arm_in_cells_console' : ()
+        Wasm = \ () => $'backend_switch_has_no_Wasm_arm_in_cells_console' : ()
+        Bend = \ () => $'backend_switch_has_no_Bend_arm_in_cells_console' : ()
     })
 
-inl write_line forall t. (text : t) : () =
-    inl rust () : () =
-        inl _ : () =
+:= write_line \* t. (text : t) : () =
+    := rust () : () =
+        := _ : () =
             !\\(text, $'"{ let mut out = std::io::stdout(); let _ = <std::io::Stdout as \
                 std::io::Write>::write_all(&mut out, ToString::to_string(&$0).as_bytes()); let _ = <std::io::Stdout \
                 as std::io::Write>::write_all(&mut out, &[10u8]); let _ = <std::io::Stdout as \
                 std::io::Write>::flush(&mut out); }"')
         ()
-    inl gleam () : () =
+    := gleam () : () =
         global "import gleam/io"
         $'io.println(!text)' : ()
-    inl cpp () : () =
+    := cpp () : () =
         global "#include <iostream>"
         $'std::cout << !text << std::endl' : ()
     !!!!BackendSwitch({
-        Rust = fun () => rust ()
-        Fsharp = fun () => $'System.Console.WriteLine(!text)' : ()
-        TypeScript = fun () => $'console.log(!text)' : ()
-        Python = fun () => $'print(!text)' : ()
-        Lua = fun () =>
-            real
-                typecase t with
+        Rust = \ () => rust ()
+        Fsharp = \ () => $'System.Console.WriteLine(!text)' : ()
+        TypeScript = \ () => $'console.log(!text)' : ()
+        Python = \ () => $'print(!text)' : ()
+        Lua = \ () =>
+            ~>
+                ?: t ?|
                 | i64 => $'print(spiral_w64.tostring(!text, true))' : ()
                 | u64 => $'print(spiral_w64.tostring(!text, false))' : ()
                 | _ => $'print(!text)' : ()
-        Gleam = fun () => gleam ()
-        Cpp = fun () => cpp ()
-        Zig = fun () => $'{ spiralPrintAny(!text); spiralPrint(&[_]u8{10}); }' : ()
-        Lean = fun () => $'IO.println (toString !text)' : ()
-        CppHost = fun () => cpp ()
-        C = fun () => $'backend_switch_has_no_C_arm_in_cells_console' : ()
-        Delphi = fun () => $'backend_switch_has_no_Delphi_arm_in_cells_console' : ()
-        Wasm = fun () => $'backend_switch_has_no_Wasm_arm_in_cells_console' : ()
-        Bend = fun () => $'backend_switch_has_no_Bend_arm_in_cells_console' : ()
+        Gleam = \ () => gleam ()
+        Cpp = \ () => cpp ()
+        Zig = \ () => $'{ spiralPrintAny(!text); spiralPrint(&[_]u8{10}); }' : ()
+        Lean = \ () => $'IO.println (toString !text)' : ()
+        CppHost = \ () => cpp ()
+        C = \ () => $'backend_switch_has_no_C_arm_in_cells_console' : ()
+        Delphi = \ () => $'backend_switch_has_no_Delphi_arm_in_cells_console' : ()
+        Wasm = \ () => $'backend_switch_has_no_Wasm_arm_in_cells_console' : ()
+        Bend = \ () => $'backend_switch_has_no_Bend_arm_in_cells_console' : ()
     })
 
-inl display (mime : string) (data : string) : () =
+:= display (mime : string) (data : string) : () =
     write_line "SPIRAL_CELLS_DISPLAY_BEGIN"
     write_line mime
     write_line data

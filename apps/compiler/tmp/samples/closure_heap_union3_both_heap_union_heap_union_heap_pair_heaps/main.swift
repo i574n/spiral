@@ -92,8 +92,7 @@ func sp_score_0(_ p0: US1) -> Int32 {
                     v14 = (v10 == 7)
                     var v16: Bool = false
                     if (v14) {
-                        var v15: Bool = false
-                        v15 = (v11 == "hi")
+                        let v15: Bool = (v11 == "hi")
                         v16 = v15
                     } else {
                         v16 = false
@@ -140,18 +139,14 @@ func sp_score_0(_ p0: US1) -> Int32 {
     }
 }
 func spiral_main() -> Int32 {
-    var v0: Int32 = 0
-    v0 = 7
-    var v1: String = ""
-    v1 = "hi"
-    var v2: Heap0 = Heap0(l0: 0, l1: "")
-    v2 = Heap0(l0: v0, l1: v1)
+    let v0: Int32 = 7
+    let v1: String = "hi"
+    let v2: Heap0 = Heap0(l0: v0, l1: v1)
     var v3: Int32 = 0
     v3 = 4
     var v4: String = ""
     v4 = "yo"
-    var v5: Heap0 = Heap0(l0: 0, l1: "")
-    v5 = Heap0(l0: v3, l1: v4)
+    let v5: Heap0 = Heap0(l0: v3, l1: v4)
     var v6: Heap1 = Heap1(l0: Heap0(l0: 0, l1: ""), l1: Heap0(l0: 0, l1: ""))
     v6 = Heap1(l0: v2, l1: v5)
     var v7: Int32 = 0
@@ -186,31 +181,21 @@ func spiral_main() -> Int32 {
     v21 = Heap4(l0: v20)
     var v22: (Int32) -> Heap4 = { (_: Int32) -> Heap4 in fatalError("unreachable closure") }
     v22 = f_c0(v19, v21)
-    var v23: Heap4 = Heap4(l0: US1_Absent())
-    v23 = v22(1)
+    let v23: Heap4 = v22(1)
     var v24: Mut5 = Mut5(l0: Heap4(l0: US1_Absent()))
     v24 = Mut5(l0: v23)
-    var v25: Heap4 = Heap4(l0: US1_Absent())
-    v25 = v24.l0
-    var v26: US1 = US1_Absent()
-    v26 = v25.l0
-    var v27: Int32 = 0
-    v27 = sp_score_0(v26)
-    var v28: Heap4 = Heap4(l0: US1_Absent())
-    v28 = v22(0)
+    let v25: Heap4 = v24.l0
+    let v26: US1 = v25.l0
+    let v27: Int32 = sp_score_0(v26)
+    let v28: Heap4 = v22(0)
     v24.l0 = v28
-    var v29: Heap4 = Heap4(l0: US1_Absent())
-    v29 = v24.l0
-    var v30: US1 = US1_Absent()
-    v30 = v29.l0
-    var v31: Int32 = 0
-    v31 = sp_score_0(v30)
-    var v32: Bool = false
-    v32 = (v27 == 0)
+    let v29: Heap4 = v24.l0
+    let v30: US1 = v29.l0
+    let v31: Int32 = sp_score_0(v30)
+    let v32: Bool = (v27 == 0)
     var v34: Bool = false
     if (v32) {
-        var v33: Bool = false
-        v33 = (v31 == 1)
+        let v33: Bool = (v31 == 1)
         v34 = v33
     } else {
         v34 = false

@@ -1,38 +1,21 @@
 fun spiral_main(): Int {
-    var v0: Int = 0
-    v0 = -3
-    var v1: Int = 0
-    v1 = -4
-    var v2: Int = 0
-    v2 = -3
-    var v3: UInt = 0u
-    v3 = 4294967295u
-    var v4: UInt = 0u
-    v4 = 0u
-    var v5: UInt = 0u
-    v5 = 4294967295u
-    var v6: Float = 0.0f
-    v6 = -1.5f
-    var v7: Float = 0.0f
-    v7 = -0.5f
-    var v8: Float = 0.0f
-    v8 = -1.5f
-    var v9: Boolean = false
-    v9 = (v0 != v1)
-    var v10: Boolean = false
-    v10 = (v0 != v2)
-    var v11: Boolean = false
-    v11 = (v3 != v4)
-    var v12: Boolean = false
-    v12 = (v3 != v5)
-    var v13: Boolean = false
-    v13 = (v6 != v7)
-    var v14: Boolean = false
-    v14 = (v6 != v8)
-    var v15: Boolean = false
-    v15 = (v9 && v11)
-    var v16: Boolean = false
-    v16 = (v15 && v13)
+    val v0: Int = -3
+    val v1: Int = -4
+    val v2: Int = -3
+    val v3: UInt = 4294967295u
+    val v4: UInt = 0u
+    val v5: UInt = 4294967295u
+    val v6: Float = -1.5f
+    val v7: Float = -0.5f
+    val v8: Float = -1.5f
+    val v9: Boolean = (v0 != v1)
+    val v10: Boolean = (v0 != v2)
+    val v11: Boolean = (v3 != v4)
+    val v12: Boolean = (v3 != v5)
+    val v13: Boolean = (v6 != v7)
+    val v14: Boolean = (v6 != v8)
+    val v15: Boolean = (v9 && v11)
+    val v16: Boolean = (v15 && v13)
     if (v16) {
         if (v10) {
             return 1

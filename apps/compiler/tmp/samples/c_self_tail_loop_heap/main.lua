@@ -1,6 +1,3 @@
-local function spiral_wrap_unsigned(value, bits)
-    return value % (2 ^ bits)
-end
 local function spiral_wrap_signed(value, bits)
     local modulus = 2 ^ bits
     value = value % modulus

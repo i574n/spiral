@@ -16,10 +16,8 @@ fun sp_method0(p0: (Int, Int) -> SpiralTuple0): SpiralTuple0 {
     return v0(10, 20)
 }
 fun spiral_main(): Int {
-    var v0: Int = 0
-    v0 = 1
-    var v1: (Int, Int) -> SpiralTuple0 = { _: Int, _: Int -> throw RuntimeException() }
-    v1 = closure0(v0)
+    val v0: Int = 1
+    val v1: (Int, Int) -> SpiralTuple0 = closure0(v0)
     var v2: Int = 0
     var v3: Int = 0
     val spiral_tuple213 = sp_method0(v1)
@@ -29,10 +27,8 @@ fun spiral_main(): Int {
     v4 = (10 + v2)
     var v5: Int = 0
     v5 = (20 + v3)
-    var v6: Int = 0
-    v6 = (v4 + v5)
-    var v7: Int = 0
-    v7 = (v6 + 7)
+    val v6: Int = (v4 + v5)
+    val v7: Int = (v6 + 7)
     return v7
 }
 fun main() {

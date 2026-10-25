@@ -149,12 +149,9 @@ partial def random_bit_input_1 (p0 : UInt64) (p1 : Int32) (p2 : U2) : IO (U2 × 
                 v12 := U0.BitOne
                 v13 := v12
             v14 := (U2.InputCons v13 v2)
-            let t6 := v6
-            let t7 := v7
-            let t14 := v14
-            v0 := t6
-            v1 := t7
-            v2 := t14
+            v0 := v6
+            v1 := v7
+            v2 := v14
             continue
         else
             return (v2, v0)
@@ -689,10 +686,8 @@ partial def derivative_12 (p0 : U1) (p1 : U0) : IO U1 := do
 partial def canonical_derivative_4 (p0 : U1) (p1 : U0) : IO U1 := do
     let mut v0 : U1 := p0
     let mut v1 : U0 := p1
-    let mut v2 : U1 := default
-    let mut v3 : U1 := default
-    v2 := (← normalize_5 v0)
-    v3 := (← derivative_12 v2 v1)
+    let v2 : U1 := (← normalize_5 v0)
+    let v3 : U1 := (← derivative_12 v2 v1)
     return (← normalize_5 v3)
 partial def accepts_3 (p0 : U1) (p1 : U2) : IO Bool := do
     let mut v0 : U1 := p0
@@ -756,16 +751,9 @@ partial def loop_0 (p0 : Int32) (p1 : U1) (p2 : Int32) (p3 : UInt64) (p4 : Int32
                     v16 := v15
                 else
                     v16 := v4
-                let t0 := v0
-                let t1 := v1
-                let t14 := v14
-                let t8 := v8
-                let t16 := v16
-                v0 := t0
-                v1 := t1
-                v2 := t14
-                v3 := t8
-                v4 := t16
+                v2 := v14
+                v3 := v8
+                v4 := v16
                 continue
             else
                 spiralFail "brzozowski-compiled-core-disagrees-on-random-input"
@@ -784,10 +772,8 @@ partial def zeros_input_15 (p0 : Int32) (p1 : U2) : IO U2 := do
             v3 := (v0 - (1 : Int32))
             v4 := U0.BitZero
             v5 := (U2.InputCons v4 v1)
-            let t3 := v3
-            let t5 := v5
-            v0 := t3
-            v1 := t5
+            v0 := v3
+            v1 := v5
             continue
         else
             return v1
@@ -906,14 +892,8 @@ partial def loop_14 (p0 : Int32) (p1 : U1) (p2 : Int32) (p3 : Int32) : IO Int32 
             else
                 spiralFail "brzozowski-compiled-core-disagrees-on-zero-run"
             v29 := (v2 + (1 : Int32))
-            let t0 := v0
-            let t1 := v1
-            let t29 := v29
-            let t28 := v28
-            v0 := t0
-            v1 := t1
-            v2 := t29
-            v3 := t28
+            v2 := v29
+            v3 := v28
             continue
 partial def run_17 (p0 : Int32) (p1 : U7) : IO Bool := do
     let mut v0 : Int32 := p0
@@ -1540,10 +1520,8 @@ partial def derivative_27 (p0 : U6) (p1 : U5) : IO U6 := do
 partial def canonical_derivative_19 (p0 : U6) (p1 : U5) : IO U6 := do
     let mut v0 : U6 := p0
     let mut v1 : U5 := p1
-    let mut v2 : U6 := default
-    let mut v3 : U6 := default
-    v2 := (← normalize_20 v0)
-    v3 := (← derivative_27 v2 v1)
+    let v2 : U6 := (← normalize_20 v0)
+    let v3 : U6 := (← derivative_27 v2 v1)
     return (← normalize_20 v3)
 partial def accepts_18 (p0 : U6) (p1 : U7) : IO Bool := do
     let mut v0 : U6 := p0
@@ -1568,142 +1546,81 @@ partial def accepts_18 (p0 : U6) (p1 : U7) : IO Bool := do
         | U4.Nullable =>
             return true
 partial def spiralMain : IO Int32 := do
-    let mut v0 : Int32 := default
-    let mut v1 : Int32 := default
-    let mut v2 : Int32 := default
-    let mut v3 : U0 := default
-    let mut v4 : U1 := default
-    let mut v5 : U0 := default
-    let mut v6 : U1 := default
-    let mut v7 : U1 := default
-    let mut v8 : U1 := default
-    let mut v9 : U0 := default
-    let mut v10 : U1 := default
-    let mut v11 : U1 := default
-    let mut v12 : UInt64 := default
-    let mut v13 : Int32 := default
-    let mut v14 : Int32 := default
-    let mut v15 : Bool := default
-    let mut v16 : U0 := default
-    let mut v17 : U1 := default
-    let mut v18 : U0 := default
-    let mut v19 : U1 := default
-    let mut v20 : U0 := default
-    let mut v21 : U1 := default
-    let mut v22 : U1 := default
-    let mut v23 : U1 := default
-    let mut v24 : U1 := default
-    let mut v25 : U0 := default
-    let mut v26 : U1 := default
-    let mut v27 : U1 := default
-    let mut v28 : Int32 := default
-    let mut v29 : Int32 := default
-    let mut v30 : Int32 := default
-    let mut v31 : Bool := default
-    let mut v32 : U5 := default
-    let mut v33 : U6 := default
-    let mut v34 : U5 := default
-    let mut v35 : U6 := default
-    let mut v36 : U6 := default
-    let mut v37 : U6 := default
-    let mut v38 : U5 := default
-    let mut v39 : U6 := default
-    let mut v40 : U6 := default
-    let mut v41 : U5 := default
-    let mut v42 : U5 := default
-    let mut v43 : U5 := default
-    let mut v44 : U5 := default
-    let mut v45 : U7 := default
-    let mut v46 : U7 := default
-    let mut v47 : U7 := default
-    let mut v48 : U7 := default
-    let mut v49 : U7 := default
-    let mut v50 : U5 := default
-    let mut v51 : U5 := default
-    let mut v52 : U5 := default
-    let mut v53 : U5 := default
-    let mut v54 : U7 := default
-    let mut v55 : U7 := default
-    let mut v56 : U7 := default
-    let mut v57 : U7 := default
-    let mut v58 : U7 := default
-    let mut v59 : Int32 := default
-    let mut v60 : Bool := default
     let mut v62 : Bool := default
     let mut v68 : Bool := default
     let mut v63 : Int32 := default
     let mut v64 : Bool := default
     let mut v65 : Bool := default
     let mut v66 : Bool := default
-    v0 := (200 : Int32)
-    v1 := (32 : Int32)
-    v2 := (16 : Int32)
-    v3 := U0.BitZero
-    v4 := (U1.RegexChar v3)
-    v5 := U0.BitOne
-    v6 := (U1.RegexChar v5)
-    v7 := (U1.RegexAlt v4 v6)
-    v8 := (U1.RegexStar v7)
-    v9 := U0.BitZero
-    v10 := (U1.RegexChar v9)
-    v11 := (U1.RegexCat v8 v10)
-    v12 := (1 : UInt64)
-    v13 := (0 : Int32)
-    v14 := (← loop_0 v1 v11 v0 v12 v13)
-    v15 := (v14 == (93 : Int32))
+    let v0 : Int32 := (200 : Int32)
+    let v1 : Int32 := (32 : Int32)
+    let v2 : Int32 := (16 : Int32)
+    let v3 : U0 := U0.BitZero
+    let v4 : U1 := (U1.RegexChar v3)
+    let v5 : U0 := U0.BitOne
+    let v6 : U1 := (U1.RegexChar v5)
+    let v7 : U1 := (U1.RegexAlt v4 v6)
+    let v8 : U1 := (U1.RegexStar v7)
+    let v9 : U0 := U0.BitZero
+    let v10 : U1 := (U1.RegexChar v9)
+    let v11 : U1 := (U1.RegexCat v8 v10)
+    let v12 : UInt64 := (1 : UInt64)
+    let v13 : Int32 := (0 : Int32)
+    let v14 : Int32 := (← loop_0 v1 v11 v0 v12 v13)
+    let v15 : Bool := (v14 == (93 : Int32))
     if v15 then
         pure ()
     else
         spiralFail "brzozowski-compiled-ends-with-zero-count"
-    v16 := U0.BitZero
-    v17 := (U1.RegexChar v16)
-    v18 := U0.BitZero
-    v19 := (U1.RegexChar v18)
-    v20 := U0.BitZero
-    v21 := (U1.RegexChar v20)
-    v22 := (U1.RegexCat v19 v21)
-    v23 := (U1.RegexAlt v17 v22)
-    v24 := (U1.RegexStar v23)
-    v25 := U0.BitOne
-    v26 := (U1.RegexChar v25)
-    v27 := (U1.RegexCat v24 v26)
-    v28 := (1 : Int32)
-    v29 := (0 : Int32)
-    v30 := (← loop_14 v2 v27 v28 v29)
-    v31 := (v30 == (16 : Int32))
+    let v16 : U0 := U0.BitZero
+    let v17 : U1 := (U1.RegexChar v16)
+    let v18 : U0 := U0.BitZero
+    let v19 : U1 := (U1.RegexChar v18)
+    let v20 : U0 := U0.BitZero
+    let v21 : U1 := (U1.RegexChar v20)
+    let v22 : U1 := (U1.RegexCat v19 v21)
+    let v23 : U1 := (U1.RegexAlt v17 v22)
+    let v24 : U1 := (U1.RegexStar v23)
+    let v25 : U0 := U0.BitOne
+    let v26 : U1 := (U1.RegexChar v25)
+    let v27 : U1 := (U1.RegexCat v24 v26)
+    let v28 : Int32 := (1 : Int32)
+    let v29 : Int32 := (0 : Int32)
+    let v30 : Int32 := (← loop_14 v2 v27 v28 v29)
+    let v31 : Bool := (v30 == (16 : Int32))
     if v31 then
         pure ()
     else
         spiralFail "brzozowski-compiled-zero-runs-count"
-    v32 := U5.TriA
-    v33 := (U6.RegexChar v32)
-    v34 := U5.TriB
-    v35 := (U6.RegexChar v34)
-    v36 := (U6.RegexAlt v33 v35)
-    v37 := (U6.RegexStar v36)
-    v38 := U5.TriC
-    v39 := (U6.RegexChar v38)
-    v40 := (U6.RegexCat v37 v39)
-    v41 := U5.TriA
-    v42 := U5.TriB
-    v43 := U5.TriA
-    v44 := U5.TriC
-    v45 := U7.InputEmpty
-    v46 := (U7.InputCons v44 v45)
-    v47 := (U7.InputCons v43 v46)
-    v48 := (U7.InputCons v42 v47)
-    v49 := (U7.InputCons v41 v48)
-    v50 := U5.TriA
-    v51 := U5.TriB
-    v52 := U5.TriA
-    v53 := U5.TriB
-    v54 := U7.InputEmpty
-    v55 := (U7.InputCons v53 v54)
-    v56 := (U7.InputCons v52 v55)
-    v57 := (U7.InputCons v51 v56)
-    v58 := (U7.InputCons v50 v57)
-    v59 := (0 : Int32)
-    v60 := (← run_17 v59 v49)
+    let v32 : U5 := U5.TriA
+    let v33 : U6 := (U6.RegexChar v32)
+    let v34 : U5 := U5.TriB
+    let v35 : U6 := (U6.RegexChar v34)
+    let v36 : U6 := (U6.RegexAlt v33 v35)
+    let v37 : U6 := (U6.RegexStar v36)
+    let v38 : U5 := U5.TriC
+    let v39 : U6 := (U6.RegexChar v38)
+    let v40 : U6 := (U6.RegexCat v37 v39)
+    let v41 : U5 := U5.TriA
+    let v42 : U5 := U5.TriB
+    let v43 : U5 := U5.TriA
+    let v44 : U5 := U5.TriC
+    let v45 : U7 := U7.InputEmpty
+    let v46 : U7 := (U7.InputCons v44 v45)
+    let v47 : U7 := (U7.InputCons v43 v46)
+    let v48 : U7 := (U7.InputCons v42 v47)
+    let v49 : U7 := (U7.InputCons v41 v48)
+    let v50 : U5 := U5.TriA
+    let v51 : U5 := U5.TriB
+    let v52 : U5 := U5.TriA
+    let v53 : U5 := U5.TriB
+    let v54 : U7 := U7.InputEmpty
+    let v55 : U7 := (U7.InputCons v53 v54)
+    let v56 : U7 := (U7.InputCons v52 v55)
+    let v57 : U7 := (U7.InputCons v51 v56)
+    let v58 : U7 := (U7.InputCons v50 v57)
+    let v59 : Int32 := (0 : Int32)
+    let v60 : Bool := (← run_17 v59 v49)
     if v60 then
         v62 := (← accepts_18 v40 v49)
     else

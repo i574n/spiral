@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 typedef struct UH0 UH0;
-void UHDecref0(UH0 * x);
+static void UHDecref0(UH0 * x);
 struct UH0 {
     int refc;
     int tag;
@@ -35,7 +35,7 @@ static inline void UHDecrefBody0(UH0 * x){
         }
     }
 }
-void UHDecref0(UH0 * x){
+static void UHDecref0(UH0 * x){
     while (x != NULL && --(x->refc) == 0) {
         UH0 * next = NULL;
         switch (x->tag) {
@@ -50,10 +50,8 @@ void UHDecref0(UH0 * x){
     }
 }
 UH0 * UH0_Leaf() { // Leaf
-    UH0 * x = malloc(sizeof(UH0));
-    x->tag = 0;
-    x->refc = 1;
-    return x;
+    static UH0 x = { .refc = 1073741823, .tag = 0 };
+    return &x;
 }
 UH0 * UH0_Node(int32_t v0, UH0 * v1, UH0 * v2) { // Node
     UH0 * x = malloc(sizeof(UH0));
@@ -62,13 +60,9 @@ UH0 * UH0_Node(int32_t v0, UH0 * v1, UH0 * v2) { // Node
     x->case1.v0 = v0; x->case1.v1 = v1; x->case1.v2 = v2;
     return x;
 }
-int32_t sum0(UH0 * v0){
-    
-    
+static int32_t sum0(UH0 * v0){
     switch (v0->tag) {
         case 0: { // Leaf
-            
-            
             UHDecref0(v0);
             return 0l;
             break;
@@ -77,22 +71,13 @@ int32_t sum0(UH0 * v0){
             int32_t v1 = v0->case1.v0; UH0 * v2 = v0->case1.v1; UH0 * v3 = v0->case1.v2;
             (v2)->refc += 2; (v3)->refc++;
             UHDecref0(v0);
-            int32_t v4;
-            v4 = sum0(v2);
+            int32_t v4 = sum0(v2);
             (v3)->refc++;
             UHDecref0(v2);
-            int32_t v5;
-            v5 = sum0(v3);
-            
+            int32_t v5 = sum0(v3);
             UHDecref0(v3);
-            int32_t v6;
-            v6 = v4 + v5;
-            
-            
-            int32_t v7;
-            v7 = v1 + v6;
-            
-            
+            int32_t v6 = v4 + v5;
+            int32_t v7 = v1 + v6;
             return v7;
             break;
         }
@@ -101,28 +86,22 @@ int32_t sum0(UH0 * v0){
 static inline void ClosureDecrefBody0(Closure0 * x){
     UHDecref0(x->v0);
 }
-void ClosureDecref0(Fun0 * self){
+static void ClosureDecref0(Fun0 * self){
     Closure0 * x = (Closure0 *) self;
     if (x != NULL && --(x->base.refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
-int32_t f_c0(Fun0 * self, int32_t v1){
+static int32_t f_c0(Fun0 * self, int32_t v1){
     Closure0 * x = (Closure0 *) self;
     UH0 * v0 = x->v0;
     (v0)->refc++;
     ClosureDecref0(self);
     (v0)->refc++;
-    
-    int32_t v2;
-    v2 = sum0(v0);
-    
+    int32_t v2 = sum0(v0);
     UHDecref0(v0);
-    int32_t v3;
-    v3 = v2 + v1;
-    
-    
+    int32_t v3 = v2 + v1;
     return v3;
 }
-Fun0 * ClosureCreate0(UH0 * v0){
+static Fun0 * ClosureCreate0(UH0 * v0){
     Closure0 * x = malloc(sizeof(Closure0));
     x->base.refc = 1;
     x->base.decref_fptr = ClosureDecref0;
@@ -131,35 +110,19 @@ Fun0 * ClosureCreate0(UH0 * v0){
     return &x->base;
 }
 int32_t main(){
-    
-    
-    UH0 * v0;
-    v0 = UH0_Leaf();
-    
-    
-    int32_t v1;
-    v1 = 2l;
+    UH0 * v0 = UH0_Leaf();
+    int32_t v1 = 2l;
     (v0)->refc += 2;
-    
-    UH0 * v2;
-    v2 = UH0_Node(v1, v0, v0);
+    UH0 * v2 = UH0_Node(v1, v0, v0);
     (v2)->refc++;
     UHDecref0(v0);
-    Fun0 * v3;
-    v3 = ClosureCreate0(v2);
+    Fun0 * v3 = ClosureCreate0(v2);
     (v3)->refc++;
     UHDecref0(v2);
-    int32_t v4;
-    v4 = v3->fptr(v3, 19l);
+    int32_t v4 = v3->fptr(v3, 19l);
     (v3)->refc++;
-    
-    int32_t v5;
-    v5 = v3->fptr(v3, 19l);
-    
+    int32_t v5 = v3->fptr(v3, 19l);
     (v3)->decref_fptr(v3);
-    int32_t v6;
-    v6 = v4 + v5;
-    
-    
+    int32_t v6 = v4 + v5;
     return v6;
 }

@@ -26,21 +26,12 @@ pub fn spiral_array_from_storage(storage: gary.ErlangArray(option.Option(a)), si
   SpiralArray(key: key, size: size)
 }
 
-pub fn spiral_array_create(size: Int) -> SpiralArray(a) {
-  list.repeat(option.None, size) |> array.from_list(option.None) |> spiral_array_from_storage(size)
-}
 
 pub fn spiral_array_create_filled(size: Int, value: a) -> SpiralArray(a) {
   list.repeat(option.Some(value), size) |> array.from_list(option.None) |> spiral_array_from_storage(size)
 }
 
-pub fn spiral_array_from_list(values: List(a)) -> SpiralArray(a) {
-  values |> list.map(option.Some) |> array.from_list(option.None) |> spiral_array_from_storage(list.length(values))
-}
 
-pub fn spiral_array_to_list(xs: SpiralArray(a)) -> List(a) {
-  list.repeat(Nil, xs.size) |> list.index_map(fn(_, i) { spiral_array_get(xs, i) })
-}
 
 pub fn spiral_array_get(xs: SpiralArray(a), i: Int) -> a {
   case i >= 0 && i < xs.size {
@@ -73,21 +64,18 @@ pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
   int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
 }
 
-pub fn spiral_wrap_unsigned(value: Int, bits: Int) -> Int {
-  int.bitwise_and(value, int.bitwise_shift_left(1, bits) - 1)
-}
 
 pub fn main() {
-let v0 = spiral_array_create_filled(2, "")
-let v1 = "ab"
-spiral_array_set(v0, 0, v1)
-let v2 = "cde"
-spiral_array_set(v0, 1, v2)
-let v3 = spiral_array_get(v0, 0)
-let v4 = spiral_array_get(v0, 1)
-let v5 = spiral_string_length(v3)
-let v6 = spiral_string_length(v4)
-let v7 = spiral_wrap_signed(v5 + v6, 32)
-let v8 = spiral_wrap_signed(v7 - 5, 32)
-v8
+    let v0 = spiral_array_create_filled(2, "")
+    let v1 = "ab"
+    spiral_array_set(v0, 0, v1)
+    let v2 = "cde"
+    spiral_array_set(v0, 1, v2)
+    let v3 = spiral_array_get(v0, 0)
+    let v4 = spiral_array_get(v0, 1)
+    let v5 = spiral_string_length(v3)
+    let v6 = spiral_string_length(v4)
+    let v7 = spiral_wrap_signed(v5 + v6, 32)
+    let v8 = spiral_wrap_signed(v7 - 5, 32)
+    v8
 }

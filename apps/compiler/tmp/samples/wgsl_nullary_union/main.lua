@@ -1,6 +1,3 @@
-local function spiral_wrap_unsigned(value, bits)
-    return value % (2 ^ bits)
-end
 local function spiral_wrap_signed(value, bits)
     local modulus = 2 ^ bits
     value = value % modulus
@@ -22,27 +19,25 @@ function Us0_West() return { tag = "Us0_West" } end
 
 local v0 = Us0_North()
 local getv8 = function()
-    local __v = { v0 }
-    if __v[1] ~= nil and __v[1].tag == "Us0_East" then
+    if v0 ~= nil and v0.tag == "Us0_East" then
         return Us0_South()
-    elseif __v[1] ~= nil and __v[1].tag == "Us0_North" then
+    elseif v0 ~= nil and v0.tag == "Us0_North" then
         return Us0_East()
-    elseif __v[1] ~= nil and __v[1].tag == "Us0_South" then
+    elseif v0 ~= nil and v0.tag == "Us0_South" then
         return Us0_West()
-    elseif __v[1] ~= nil and __v[1].tag == "Us0_West" then
+    elseif v0 ~= nil and v0.tag == "Us0_West" then
         return Us0_North()
     end
 end
 local v8 = getv8()
 local getv16 = function()
-    local __v = { v8 }
-    if __v[1] ~= nil and __v[1].tag == "Us0_East" then
+    if v8 ~= nil and v8.tag == "Us0_East" then
         return Us0_South()
-    elseif __v[1] ~= nil and __v[1].tag == "Us0_North" then
+    elseif v8 ~= nil and v8.tag == "Us0_North" then
         return Us0_East()
-    elseif __v[1] ~= nil and __v[1].tag == "Us0_South" then
+    elseif v8 ~= nil and v8.tag == "Us0_South" then
         return Us0_West()
-    elseif __v[1] ~= nil and __v[1].tag == "Us0_West" then
+    elseif v8 ~= nil and v8.tag == "Us0_West" then
         return Us0_North()
     end
 end
@@ -72,10 +67,9 @@ local getv19 = function()
 end
 local v19 = getv19()
 local getv21 = function()
-    local __v = { v0 }
-    if __v[1] ~= nil and __v[1].tag == "Us0_East" then
+    if v0 ~= nil and v0.tag == "Us0_East" then
         return 2
-    elseif __v[1] ~= nil and __v[1].tag == "Us0_North" then
+    elseif v0 ~= nil and v0.tag == "Us0_North" then
         return 1
     else
         return 7
@@ -83,10 +77,9 @@ local getv21 = function()
 end
 local v21 = getv21()
 local getv23 = function()
-    local __v = { v8 }
-    if __v[1] ~= nil and __v[1].tag == "Us0_East" then
+    if v8 ~= nil and v8.tag == "Us0_East" then
         return 2
-    elseif __v[1] ~= nil and __v[1].tag == "Us0_North" then
+    elseif v8 ~= nil and v8.tag == "Us0_North" then
         return 1
     else
         return 7
@@ -96,10 +89,9 @@ local v23 = getv23()
 local v24 = spiral_wrap_signed(spiral_mul_mod32(v23, 3), 32)
 local v25 = spiral_wrap_signed((v21 + v24), 32)
 local getv27 = function()
-    local __v = { v16 }
-    if __v[1] ~= nil and __v[1].tag == "Us0_East" then
+    if v16 ~= nil and v16.tag == "Us0_East" then
         return 2
-    elseif __v[1] ~= nil and __v[1].tag == "Us0_North" then
+    elseif v16 ~= nil and v16.tag == "Us0_North" then
         return 1
     else
         return 7

@@ -26,30 +26,17 @@ def spiralStringSlice (s : String) (a b : Int) : IO String := do
 mutual
 partial def empty_middle_0 (p0 : String) : IO String := do
     let mut v0 : String := p0
-    let mut v1 : String := default
-    v1 := (← spiralStringSlice v0 (SpiralToInt.toI (2 : Int32)) (SpiralToInt.toI (1 : Int32)))
+    let v1 : String := (← spiralStringSlice v0 (SpiralToInt.toI (2 : Int32)) (SpiralToInt.toI (1 : Int32)))
     return v1
 partial def empty_end_1 (p0 : String) : IO String := do
     let mut v0 : String := p0
-    let mut v1 : String := default
-    v1 := (← spiralStringSlice v0 (SpiralToInt.toI (5 : Int32)) (SpiralToInt.toI (4 : Int32)))
+    let v1 : String := (← spiralStringSlice v0 (SpiralToInt.toI (5 : Int32)) (SpiralToInt.toI (4 : Int32)))
     return v1
 partial def empty_source_2 (p0 : String) : IO String := do
     let mut v0 : String := p0
-    let mut v1 : String := default
-    v1 := (← spiralStringSlice v0 (SpiralToInt.toI (0 : Int32)) (SpiralToInt.toI (-1 : Int32)))
+    let v1 : String := (← spiralStringSlice v0 (SpiralToInt.toI (0 : Int32)) (SpiralToInt.toI (-1 : Int32)))
     return v1
 partial def spiralMain : IO Int32 := do
-    let mut v0 : String := default
-    let mut v1 : String := default
-    let mut v2 : String := default
-    let mut v3 : String := default
-    let mut v4 : String := default
-    let mut v5 : String := default
-    let mut v6 : String := default
-    let mut v7 : String := default
-    let mut v8 : Int32 := default
-    let mut v9 : Bool := default
     let mut v10 : Int32 := default
     let mut v11 : Bool := default
     let mut v12 : Int32 := default
@@ -60,16 +47,16 @@ partial def spiralMain : IO Int32 := do
     let mut v17 : Bool := default
     let mut v18 : Char := default
     let mut v19 : Bool := default
-    v0 := "alpha"
-    v1 := (← empty_middle_0 v0)
-    v2 := (← empty_end_1 v0)
-    v3 := ""
-    v4 := (← empty_source_2 v3)
-    v5 := (v1 ++ v2)
-    v6 := (v4 ++ "ok")
-    v7 := (v5 ++ v6)
-    v8 := (Int32.ofNat v1.utf8ByteSize)
-    v9 := (v8 == (0 : Int32))
+    let v0 : String := "alpha"
+    let v1 : String := (← empty_middle_0 v0)
+    let v2 : String := (← empty_end_1 v0)
+    let v3 : String := ""
+    let v4 : String := (← empty_source_2 v3)
+    let v5 : String := (v1 ++ v2)
+    let v6 : String := (v4 ++ "ok")
+    let v7 : String := (v5 ++ v6)
+    let v8 : Int32 := (Int32.ofNat v1.utf8ByteSize)
+    let v9 : Bool := (v8 == (0 : Int32))
     if v9 then
         v10 := (Int32.ofNat v2.utf8ByteSize)
         v11 := (v10 == (0 : Int32))

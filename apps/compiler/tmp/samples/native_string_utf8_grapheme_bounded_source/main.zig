@@ -41,88 +41,25 @@ fn spiralFlush() void {
     spiralWrite(1, spiral_out_buffer[0..spiral_out_len]);
     spiral_out_len = 0;
 }
-fn spiralPrint(s: []const u8) void {
-    if (s.len > spiral_out_buffer.len - spiral_out_len) spiralFlush();
-    if (s.len > spiral_out_buffer.len) {
-        spiralWrite(1, s);
-        return;
-    }
-    @memcpy(spiral_out_buffer[spiral_out_len..][0..s.len], s);
-    spiral_out_len += s.len;
-}
-fn spiralFloatText(x: anytype) []u8 {
-    var buffer: [std.fmt.float.bufferSize(.decimal, @TypeOf(x))]u8 = undefined;
-    const text = std.fmt.float.render(&buffer, x, .{ .mode = .decimal }) catch unreachable;
-    return spiral_gpa.dupe(u8, text) catch @panic("out of memory");
-}
-fn spiralPrintAny(x: anytype) void {
-    const T = @TypeOf(x);
-    if (T == []const u8) return spiralPrint(x);
-    if (@typeInfo(T) == .float) return spiralPrint(spiralFloatText(x));
-    const s = switch (@typeInfo(T)) {
-        .bool => std.fmt.allocPrint(spiral_gpa, "{}", .{x}),
-        else => std.fmt.allocPrint(spiral_gpa, "{d}", .{x}),
-    } catch @panic("out of memory");
-    spiralPrint(s);
-}
 fn spiralFail(s: []const u8) noreturn {
     spiralFlush();
     spiralWrite(2, s);
     spiralWrite(2, "\n");
     std.process.exit(1);
 }
-fn spiralConv(comptime T: type, x: anytype) T {
-    const S = @TypeOf(x);
-    if (@typeInfo(T) == .float) {
-        if (@typeInfo(S) == .float) return @floatCast(x) else return @floatFromInt(x);
-    }
-    if (@typeInfo(S) == .float) return @intFromFloat(x);
-    const U = @Int(.unsigned, @bitSizeOf(T));
-    const wide: i128 = x;
-    return @bitCast(@as(U, @truncate(@as(u128, @bitCast(wide)))));
-}
-fn spiralConcat(a: []const u8, b: []const u8) []const u8 {
-    return std.mem.concat(spiral_gpa, u8, &.{ a, b }) catch @panic("out of memory");
-}
-fn spiralStringSlice(s: []const u8, from: i64, upto: i64) []const u8 {
-    const len: i64 = @intCast(s.len);
-    if (from < 0 or from > len or upto < from - 1 or upto >= len) std.process.exit(3);
-    if (upto < from) return "";
-    const a: usize = @intCast(from);
-    const b: usize = @intCast(upto + 1);
-    if ((s[a] & 0xC0) == 0x80 or (b < s.len and (s[b] & 0xC0) == 0x80)) std.process.exit(3);
-    return s[a..b];
-}
 fn spiralIndex(len: usize, i: anytype) usize {
     if (i < 0 or i >= len) std.process.exit(3);
     return @intCast(i);
 }
-fn spiralNewArray(comptime T: type, n: anytype) []T {
-    const len: usize = @intCast(n);
-    const a = spiral_gpa.alloc(T, len) catch @panic("out of memory");
-    switch (@typeInfo(T)) {
-        .int, .float, .bool => @memset(a, std.mem.zeroes(T)),
-        else => if (T == []const u8) @memset(a, ""),
-    }
-    return a;
-}
-fn spiralCreate(comptime T: type, v: T) *T {
-    const p = spiral_gpa.create(T) catch @panic("out of memory");
-    p.* = v;
-    return p;
-}
 fn runtime_byte_2(p0: []const u8, p1: i32) u8 {
     var v0: []const u8 = p0; _ = &v0;
     var v1: i32 = p1; _ = &v1;
-    var v2: u8 = undefined; _ = &v2;
-    v2 = v0[spiralIndex(v0.len, v1)];
+    const v2: u8 = v0[spiralIndex(v0.len, v1)];
     return v2;
 }
 fn utf8_scalar_at_byte_offset_1(p0: []const u8, p1: i32) i32 {
     var v0: []const u8 = p0; _ = &v0;
     var v1: i32 = p1; _ = &v1;
-    var v2: i32 = undefined; _ = &v2;
-    var v3: bool = undefined; _ = &v3;
     var v5: bool = undefined; _ = &v5;
     var v7: u8 = undefined; _ = &v7;
     var v8: i32 = undefined; _ = &v8;
@@ -196,8 +133,8 @@ fn utf8_scalar_at_byte_offset_1(p0: []const u8, p1: i32) i32 {
     var v93: i32 = undefined; _ = &v93;
     var v94: bool = undefined; _ = &v94;
     var v96: bool = undefined; _ = &v96;
-    v2 = @as(i32, @intCast(v0.len));
-    v3 = v1 < @as(i32, 0);
+    const v2: i32 = @as(i32, @intCast(v0.len));
+    const v3: bool = v1 < @as(i32, 0);
     if (v3) {
         spiralFail("UTF-8 byte offset is negative.");
     } else {
@@ -414,10 +351,6 @@ fn utf8_grapheme_count_bounded_loop_0(p0: []const u8, p1: i32, p2: i32, p3: i32)
     var v45: bool = undefined; _ = &v45;
     var v47: i32 = undefined; _ = &v47;
     var v49: i32 = undefined; _ = &v49;
-    var tmp28: []const u8 = undefined; _ = &tmp28;
-    var tmp29: i32 = undefined; _ = &tmp29;
-    var tmp30: i32 = undefined; _ = &tmp30;
-    var tmp31: i32 = undefined; _ = &tmp31;
     while (true) {
         v4 = v1 == v3;
         if (v4) {
@@ -533,34 +466,14 @@ fn utf8_grapheme_count_bounded_loop_0(p0: []const u8, p1: i32, p2: i32, p3: i32)
                     v48 = v47;
                 }
                 v49 = v1 +% v13;
-                tmp28 = v0;
-                tmp29 = v49;
-                tmp30 = v48;
-                tmp31 = v3;
-                v0 = tmp28;
-                v1 = tmp29;
-                v2 = tmp30;
-                v3 = tmp31;
+                v1 = v49;
+                v2 = v48;
                 continue;
             }
         }
     }
 }
 fn spiralMain() i32 {
-    var v0: []const u8 = undefined; _ = &v0;
-    var v1: i32 = undefined; _ = &v1;
-    var v2: i32 = undefined; _ = &v2;
-    var v3: i32 = undefined; _ = &v3;
-    var v4: i32 = undefined; _ = &v4;
-    var v5: []const u8 = undefined; _ = &v5;
-    var v6: i32 = undefined; _ = &v6;
-    var v7: i32 = undefined; _ = &v7;
-    var v8: i32 = undefined; _ = &v8;
-    var v9: i32 = undefined; _ = &v9;
-    var v10: []const u8 = undefined; _ = &v10;
-    var v11: i32 = undefined; _ = &v11;
-    var v12: i32 = undefined; _ = &v12;
-    var v13: bool = undefined; _ = &v13;
     var v43: bool = undefined; _ = &v43;
     var v14: bool = undefined; _ = &v14;
     var v15: bool = undefined; _ = &v15;
@@ -581,23 +494,22 @@ fn spiralMain() i32 {
     var v45: i32 = undefined; _ = &v45;
     var v46: i32 = undefined; _ = &v46;
     var v47: i32 = undefined; _ = &v47;
-    var v50: bool = undefined; _ = &v50;
     var v51: bool = undefined; _ = &v51;
     var v52: bool = undefined; _ = &v52;
-    v0 = "Ae\xcc\x81\xc3\xa9\xe2\x98\x95\xef\xb8\x8f\xf0\x9f\x91\x8d\xf0\x9f\x8f\xbdZ";
-    v1 = @as(i32, 0);
-    v2 = @as(i32, 0);
-    v3 = @as(i32, 21);
-    v4 = utf8_grapheme_count_bounded_loop_0(v0, v1, v2, v3);
-    v5 = "\xcc\x81\xcc\x88A";
-    v6 = @as(i32, 0);
-    v7 = @as(i32, 0);
-    v8 = @as(i32, 5);
-    v9 = utf8_grapheme_count_bounded_loop_0(v5, v6, v7, v8);
-    v10 = "Ae\xcc\x81\xf0\x9f\x99\x82Z";
-    v11 = @as(i32, 4);
-    v12 = utf8_scalar_at_byte_offset_1(v10, v11);
-    v13 = v12 >= @as(i32, 768);
+    const v0: []const u8 = "Ae\xcc\x81\xc3\xa9\xe2\x98\x95\xef\xb8\x8f\xf0\x9f\x91\x8d\xf0\x9f\x8f\xbdZ";
+    const v1: i32 = @as(i32, 0);
+    const v2: i32 = @as(i32, 0);
+    const v3: i32 = @as(i32, 21);
+    const v4: i32 = utf8_grapheme_count_bounded_loop_0(v0, v1, v2, v3);
+    const v5: []const u8 = "\xcc\x81\xcc\x88A";
+    const v6: i32 = @as(i32, 0);
+    const v7: i32 = @as(i32, 0);
+    const v8: i32 = @as(i32, 5);
+    const v9: i32 = utf8_grapheme_count_bounded_loop_0(v5, v6, v7, v8);
+    const v10: []const u8 = "Ae\xcc\x81\xf0\x9f\x99\x82Z";
+    const v11: i32 = @as(i32, 4);
+    const v12: i32 = utf8_scalar_at_byte_offset_1(v10, v11);
+    const v13: bool = v12 >= @as(i32, 768);
     if (v13) {
         v14 = v12 <= @as(i32, 879);
         if (v14) {
@@ -682,7 +594,7 @@ fn spiralMain() i32 {
         v47 = @as(i32, 9);
         v49 = utf8_grapheme_count_bounded_loop_0(v10, v45, v46, v47);
     }
-    v50 = v4 == @as(i32, 6);
+    const v50: bool = v4 == @as(i32, 6);
     if (v50) {
         v51 = v9 == @as(i32, 2);
         if (v51) {

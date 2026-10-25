@@ -1,5 +1,5 @@
 sealed interface UH0 { val tag: Int }
-class UH0_Empty : UH0 { override val tag: Int = 0 }
+object UH0_Empty : UH0 { override val tag: Int = 0 }
 data class UH0_Box(val f0: Int, val f1: UH0) : UH0 { override val tag: Int = 1 }
 fun sp_method2(p0: Int): UH0 {
     var v0: Int = p0
@@ -8,8 +8,8 @@ fun sp_method2(p0: Int): UH0 {
     var v2: Boolean = false
     v2 = (v1 == 0)
     if (v2) {
-        var v3: UH0 = UH0_Empty()
-        v3 = UH0_Empty()
+        var v3: UH0 = UH0_Empty
+        v3 = UH0_Empty
         return UH0_Box(7, v3)
     } else {
         return sp_method1(v1)
@@ -22,8 +22,8 @@ fun sp_method1(p0: Int): UH0 {
     var v2: Boolean = false
     v2 = (v1 == 0)
     if (v2) {
-        var v3: UH0 = UH0_Empty()
-        v3 = UH0_Empty()
+        var v3: UH0 = UH0_Empty
+        v3 = UH0_Empty
         return UH0_Box(11, v3)
     } else {
         return sp_method2(v1)
@@ -35,15 +35,15 @@ fun sp_method0(): UH0 {
     var v1: Boolean = false
     v1 = (v0 == 0)
     if (v1) {
-        var v2: UH0 = UH0_Empty()
-        v2 = UH0_Empty()
+        var v2: UH0 = UH0_Empty
+        v2 = UH0_Empty
         return UH0_Box(7, v2)
     } else {
         return sp_method1(v0)
     }
 }
 fun spiral_main(): Int {
-    var v0: UH0 = UH0_Empty()
+    var v0: UH0 = UH0_Empty
     v0 = sp_method0()
     when (v0.tag) {
         1 -> {

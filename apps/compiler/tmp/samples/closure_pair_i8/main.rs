@@ -3,7 +3,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 fn f_c0(mut v0: i8) -> Rc<dyn Fn(i32) -> (i8, i8)> {
     Rc::new(move |mut v1: i32| -> (i8, i8) {
-        let mut v2: bool = v1 == 0i32;
+        let v2: bool = v1 == 0i32;
         if v2 {
             (0i8, 0i8)
         } else {
@@ -12,12 +12,12 @@ fn f_c0(mut v0: i8) -> Rc<dyn Fn(i32) -> (i8, i8)> {
     })
 }
 fn spiral_main() -> i32 {
-    let mut v0: i8 = 100i8;
+    let v0: i8 = 100i8;
     let mut v1: Rc<dyn Fn(i32) -> (i8, i8)> = f_c0(v0);
     let (mut v2, mut v3): (i8, i8) = v1(1i32);
-    let mut v4: bool = v2 == 100i8;
-    let mut v6: bool = if v4 {
-        let mut v5: bool = v3 == 7i8;
+    let v4: bool = v2 == 100i8;
+    let v6: bool = if v4 {
+        let v5: bool = v3 == 7i8;
         v5
     } else {
         false

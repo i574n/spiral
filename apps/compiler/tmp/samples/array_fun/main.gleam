@@ -8,9 +8,6 @@ pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
   int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
 }
 
-pub fn spiral_wrap_unsigned(value: Int, bits: Int) -> Int {
-  int.bitwise_and(value, int.bitwise_shift_left(1, bits) - 1)
-}
 
 pub type SpiralArrayKey
 
@@ -37,17 +34,8 @@ pub fn spiral_array_create(size: Int) -> SpiralArray(a) {
   list.repeat(option.None, size) |> array.from_list(option.None) |> spiral_array_from_storage(size)
 }
 
-pub fn spiral_array_create_filled(size: Int, value: a) -> SpiralArray(a) {
-  list.repeat(option.Some(value), size) |> array.from_list(option.None) |> spiral_array_from_storage(size)
-}
 
-pub fn spiral_array_from_list(values: List(a)) -> SpiralArray(a) {
-  values |> list.map(option.Some) |> array.from_list(option.None) |> spiral_array_from_storage(list.length(values))
-}
 
-pub fn spiral_array_to_list(xs: SpiralArray(a)) -> List(a) {
-  list.repeat(Nil, xs.size) |> list.index_map(fn(_, i) { spiral_array_get(xs, i) })
-}
 
 pub fn spiral_array_get(xs: SpiralArray(a), i: Int) -> a {
   case i >= 0 && i < xs.size {
@@ -79,20 +67,20 @@ pub fn f_c0(capt: #(Int)) -> fn(Int) -> Int {
     }
 }
 pub fn main() {
-let v0 = 3
-let v1 = f_c0(#(v0))
-let v2 = 1
-let v3 = spiral_array_create(v2)
-spiral_array_set(v3, 0, v1)
-let v4 = spiral_array_get(v3, 0)
-let v5 = v4( 4  )
-let v6 = v5 == 7
-case v6 {
-    True -> {
-        0
+    let v0 = 3
+    let v1 = f_c0(#(v0))
+    let v2 = 1
+    let v3 = spiral_array_create(v2)
+    spiral_array_set(v3, 0, v1)
+    let v4 = spiral_array_get(v3, 0)
+    let v5 = v4(4)
+    let v6 = v5 == 7
+    case v6 {
+        True -> {
+            0
+        }
+        False -> {
+            1
+        }
     }
-    False -> {
-        1
-    }
-}
 }

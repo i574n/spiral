@@ -12,10 +12,10 @@ typedef Array0 String;
 static inline void ArrayDecrefBody0(Array0 * x){
     (void)x;
 }
-void ArrayDecref0(Array0 * x){
+static void ArrayDecref0(Array0 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody0(x); free(x); }
 }
-Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
+static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     uint32_t size = sizeof(Array0) + sizeof(char) * len;
     Array0 * x = malloc(size);
     if (init_at_zero) { memset(x,0,size); }
@@ -23,7 +23,7 @@ Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     x->len = len;
     return x;
 }
-Array0 * ArrayLit0(uint32_t len, char * ptr){
+static Array0 * ArrayLit0(uint32_t len, char * ptr){
     Array0 * x = ArrayCreate0(len, false);
     memcpy(x->ptr, ptr, sizeof(char) * len);
     return x;
@@ -44,72 +44,35 @@ static inline String * StringSlice(String * value, int32_t from, int32_t to){
     result->ptr[slice_len] = '\0';
     return result;
 }
-String * middle0(String * v0){
-    
-    
-    String * v1;
-    v1 = StringSlice(v0, 1l, 3l);
-    
+static String * middle0(String * v0){
+    String * v1 = StringSlice(v0, 1l, 3l);
     StringDecref(v0);
     return v1;
 }
 int32_t main(){
-    
-    
-    String * v0;
-    v0 = StringLit(6, "alpha");
+    String * v0 = StringLit(6, "alpha");
     (v0)->refc++;
-    
-    String * v1;
-    v1 = middle0(v0);
-    
+    String * v1 = middle0(v0);
     StringDecref(v0);
-    int32_t v2;
-    v2 = v1->len-1;
-    
-    
-    bool v3;
-    v3 = v2 == 3l;
-    
-    
+    int32_t v2 = v1->len-1;
+    bool v3 = v2 == 3l;
     if (v3){
-        
-        
-        char v4;
-        v4 = v1->ptr[0l];
-        
-        
-        bool v5;
-        v5 = v4 == 'l';
-        
-        
+        char v4 = v1->ptr[0l];
+        bool v5 = v4 == 'l';
         if (v5){
-            
-            
-            char v6;
-            v6 = v1->ptr[2l];
-            
+            char v6 = v1->ptr[2l];
             StringDecref(v1);
-            bool v7;
-            v7 = v6 == 'h';
-            
-            
+            bool v7 = v6 == 'h';
             if (v7){
-                
-                
                 return 0l;
             } else {
-                
-                
                 return 1l;
             }
         } else {
-            
             StringDecref(v1);
             return 2l;
         }
     } else {
-        
         StringDecref(v1);
         return 3l;
     }

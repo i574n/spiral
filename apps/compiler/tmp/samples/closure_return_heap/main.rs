@@ -5,7 +5,7 @@ struct Heap0 { l0: i32 }
 fn g_c1(mut v0: Rc<Heap0>, mut v1: i32) -> Rc<dyn Fn(i32) -> i32> {
     Rc::new(move |mut v2: i32| -> i32 {
         let mut v3: i32 = v0.l0.clone();
-        let mut v4: bool = v1 == 0i32;
+        let v4: bool = v1 == 0i32;
         if v4 {
             0i32
         } else {
@@ -19,12 +19,12 @@ fn f_c0(mut v0: Rc<Heap0>) -> Rc<dyn Fn(i32) -> Rc<dyn Fn(i32) -> i32>> {
     })
 }
 fn spiral_main() -> i32 {
-    let mut v0: i32 = 7i32;
-    let mut v1: Rc<Heap0> = Rc::new(Heap0 { l0: v0 });
-    let mut v2: Rc<dyn Fn(i32) -> Rc<dyn Fn(i32) -> i32>> = f_c0(v1.clone());
+    let v0: i32 = 7i32;
+    let v1: Rc<Heap0> = Rc::new(Heap0 { l0: v0 });
+    let mut v2: Rc<dyn Fn(i32) -> Rc<dyn Fn(i32) -> i32>> = f_c0(v1);
     let mut v3: Rc<dyn Fn(i32) -> i32> = v2(1i32);
-    let mut v4: i32 = v3(0i32);
-    let mut v5: bool = v4 == 7i32;
+    let v4: i32 = v3(0i32);
+    let v5: bool = v4 == 7i32;
     if v5 {
         0i32
     } else {

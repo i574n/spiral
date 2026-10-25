@@ -29,38 +29,21 @@ US0 US0_One() { // One
     return x;
 }
 int32_t main(){
-    
-    
-    US0 v0;
-    v0 = US0_Zero();
-    
-    
+    US0 v0 = US0_Zero();
     bool v2;
     switch (v0.tag) {
         case 1: { // One
-            
-            
-            
             v2 = false;
             break;
         }
         default: { // Zero
-            
-            
-            
             v2 = true;
             break;
         }
     }
-    
-    
     if (v2){
-        
-        
         return 0l;
     } else {
-        
-        
         return 1l;
     }
 }

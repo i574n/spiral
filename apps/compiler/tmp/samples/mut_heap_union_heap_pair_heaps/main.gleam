@@ -11,55 +11,14 @@ pub type SpiralArray(a) {
 @external(erlang, "erlang", "make_ref")
 pub fn spiral_array_new_key() -> SpiralArrayKey
 
-@external(erlang, "erlang", "put")
-pub fn spiral_array_store(key: SpiralArrayKey, storage: gary.ErlangArray(option.Option(a))) -> b
 
-@external(erlang, "erlang", "get")
-pub fn spiral_array_load(key: SpiralArrayKey) -> gary.ErlangArray(option.Option(a))
 
-pub fn spiral_array_from_storage(storage: gary.ErlangArray(option.Option(a)), size: Int) -> SpiralArray(a) {
-  let key = spiral_array_new_key()
-  let _ = spiral_array_store(key, storage)
-  SpiralArray(key: key, size: size)
-}
 
-pub fn spiral_array_create(size: Int) -> SpiralArray(a) {
-  list.repeat(option.None, size) |> array.from_list(option.None) |> spiral_array_from_storage(size)
-}
 
-pub fn spiral_array_create_filled(size: Int, value: a) -> SpiralArray(a) {
-  list.repeat(option.Some(value), size) |> array.from_list(option.None) |> spiral_array_from_storage(size)
-}
 
-pub fn spiral_array_from_list(values: List(a)) -> SpiralArray(a) {
-  values |> list.map(option.Some) |> array.from_list(option.None) |> spiral_array_from_storage(list.length(values))
-}
 
-pub fn spiral_array_to_list(xs: SpiralArray(a)) -> List(a) {
-  list.repeat(Nil, xs.size) |> list.index_map(fn(_, i) { spiral_array_get(xs, i) })
-}
 
-pub fn spiral_array_get(xs: SpiralArray(a), i: Int) -> a {
-  case i >= 0 && i < xs.size {
-    True ->
-      case spiral_array_load(xs.key) |> array.get(i) {
-        Ok(option.Some(x)) -> x
-        _ -> panic as "spiral array: read of an element that was never set"
-      }
-    False -> panic as "spiral array: index out of bounds"
-  }
-}
 
-pub fn spiral_array_set(xs: SpiralArray(a), i: Int, value: a) -> Nil {
-  case i >= 0 && i < xs.size {
-    True -> {
-      let assert Ok(storage) = spiral_array_load(xs.key) |> array.set(i, option.Some(value))
-      let _ = spiral_array_store(xs.key, storage)
-      Nil
-    }
-    False -> panic as "spiral array: index out of bounds"
-  }
-}
 
 pub type SpiralRef(a) {
   SpiralRef(key: SpiralArrayKey)
@@ -158,49 +117,49 @@ pub fn score_0(v0: Us0) -> Int {
     }
 }
 pub fn main() {
-let v0 = 1
-let v1 = "no"
-let v2 = Heap0(l0: v0, l1: v1)
-let v3 = 2
-let v4 = "zz"
-let v5 = Heap0(l0: v3, l1: v4)
-let v6 = Heap1(l0: v2, l1: v5)
-let v7 = 3
-let v8 = Heap2(l0: v6, l1: v7)
-let v9 = True
-let v12 =
-    case v9 {
-        True -> {
-            Us0Held(v8)
+    let v0 = 1
+    let v1 = "no"
+    let v2 = Heap0(l0: v0, l1: v1)
+    let v3 = 2
+    let v4 = "zz"
+    let v5 = Heap0(l0: v3, l1: v4)
+    let v6 = Heap1(l0: v2, l1: v5)
+    let v7 = 3
+    let v8 = Heap2(l0: v6, l1: v7)
+    let v9 = True
+    let v12 =
+        case v9 {
+            True -> {
+                Us0Held(v8)
+            }
+            False -> {
+                Us0None
+            }
         }
-        False -> {
-            Us0None
+    let v13 = Heap3(l0: v12)
+    let v14 = spiral_ref_new(Mut0(l0: v13))
+    let v15 = 7
+    let v16 = "hi"
+    let v17 = Heap0(l0: v15, l1: v16)
+    let v18 = 4
+    let v19 = "yo"
+    let v20 = Heap0(l0: v18, l1: v19)
+    let v21 = Heap1(l0: v17, l1: v20)
+    let v22 = 2
+    let v23 = Heap2(l0: v21, l1: v22)
+    let v24 = True
+    let v27 =
+        case v24 {
+            True -> {
+                Us0Held(v23)
+            }
+            False -> {
+                Us0None
+            }
         }
-    }
-let v13 = Heap3(l0: v12)
-let v14 = spiral_ref_new(Mut0(l0: v13))
-let v15 = 7
-let v16 = "hi"
-let v17 = Heap0(l0: v15, l1: v16)
-let v18 = 4
-let v19 = "yo"
-let v20 = Heap0(l0: v18, l1: v19)
-let v21 = Heap1(l0: v17, l1: v20)
-let v22 = 2
-let v23 = Heap2(l0: v21, l1: v22)
-let v24 = True
-let v27 =
-    case v24 {
-        True -> {
-            Us0Held(v23)
-        }
-        False -> {
-            Us0None
-        }
-    }
-let v28 = Heap3(l0: v27)
-spiral_ref_set(v14, Mut0(l0: v28))
-let v29 = spiral_ref_get(v14).l0
-let v30 = v29.l0
-score_0(v30)
+    let v28 = Heap3(l0: v27)
+    spiral_ref_set(v14, Mut0(l0: v28))
+    let v29 = spiral_ref_get(v14).l0
+    let v30 = v29.l0
+    score_0(v30)
 }

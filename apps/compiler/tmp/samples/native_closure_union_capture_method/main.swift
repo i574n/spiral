@@ -25,8 +25,7 @@ func sp_score_0(_ p0: US0) -> Int32 {
 }
 func closure0(_ v0: US0) -> (Int32) -> Int32 {
     return { (v1: Int32) -> Int32 in
-        var v2: Int32 = 0
-        v2 = sp_score_0(v0)
+        let v2: Int32 = sp_score_0(v0)
         var v3: Int32 = 0
         v3 = (v2 &+ v1)
         return v3
@@ -37,10 +36,8 @@ func sp_method1(_ p0: @escaping (Int32) -> Int32) -> Int32 {
     return v0(31)
 }
 func spiral_main() -> Int32 {
-    var v0: Int32 = 0
-    v0 = 2
-    var v1: Bool = false
-    v1 = (v0 == 0)
+    let v0: Int32 = 2
+    let v1: Bool = (v0 == 0)
     var v7: US0 = US0_Idle()
     if (v1) {
         v7 = US0_Idle()
@@ -53,8 +50,7 @@ func spiral_main() -> Int32 {
             v7 = US0_Flag(f0: true)
         }
     }
-    var v8: (Int32) -> Int32 = { (_: Int32) -> Int32 in fatalError("unreachable closure") }
-    v8 = closure0(v7)
+    let v8: (Int32) -> Int32 = closure0(v7)
     return sp_method1(v8)
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

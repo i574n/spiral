@@ -229,6 +229,13 @@ foreach ($memoStore in @(@('compile-memo', 2), @('native-memo', 14))) {
 }
 $compiled = @{}
 $compileMemoDir = Join-Path $cache 'compile-memo'
+function Get-OutputParts([string]$output) {
+    $directory = Split-Path $output
+    if (-not (Test-Path -LiteralPath $directory)) { return @() }
+    $stem = [IO.Path]::GetFileNameWithoutExtension($output)
+    $extension = [IO.Path]::GetExtension($output)
+    @(Get-ChildItem -LiteralPath $directory -File | Where-Object { ($_.Name.StartsWith("${stem}_") -and $_.Extension -eq $extension) -or $_.Name -eq "$stem.spiral-parts" } | Sort-Object Name)
+}
 New-Item -ItemType Directory -Force $compileMemoDir | Out-Null
 $compileSignatureLines = [Collections.Generic.List[string]]::new()
 foreach ($binary in @(Get-ChildItem (Split-Path $compiler) -Filter '*.dll' -File | Sort-Object Name)) { $compileSignatureLines.Add("$($binary.Name)=$([Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([IO.File]::ReadAllBytes($binary.FullName))))") }
@@ -267,6 +274,8 @@ $jobsToCompile = @(foreach ($job in $jobs) {
             $bytes = [IO.File]::ReadAllBytes($outputPath)
             $current = if (Test-Path -LiteralPath $job.Output) { [IO.File]::ReadAllBytes($job.Output) } else { $null }
             if ($null -eq $current -or -not [Linq.Enumerable]::SequenceEqual([byte[]]$current, [byte[]]$bytes)) { New-Item -ItemType Directory -Force (Split-Path $job.Output) | Out-Null; [IO.File]::WriteAllBytes($job.Output, $bytes) }
+            $partsDir = Join-Path $compileMemoDir "$memoKey.parts"
+            if (Test-Path -LiteralPath $partsDir) { foreach ($part in Get-ChildItem -LiteralPath $partsDir -File) { [IO.File]::Copy($part.FullName, (Join-Path (Split-Path $job.Output) $part.Name), $true) } }
         }
         foreach ($used in $memoPath, $outputPath) { if (Test-Path -LiteralPath $used) { [IO.File]::SetLastWriteTime($used, (Get-Date)) } }
         $compiled[$job.Key] = [pscustomobject]@{ Status = $stored.Status; Ms = [int64]$stored.Ms; Detail = ("$($stored.Detail) compile-reused").Trim(); Log = '' }
@@ -320,7 +329,13 @@ foreach ($job in $jobsToCompile) {
     if (-not $c -or $c.Status -notin 'ok', 'error') { continue }
     $memoKey = $compileMemoKeys[$job.Key]
     try {
-        if ($c.Status -eq 'ok') { [IO.File]::Copy($job.Output, (Join-Path $compileMemoDir "$memoKey.out"), $true) }
+        if ($c.Status -eq 'ok') {
+            [IO.File]::Copy($job.Output, (Join-Path $compileMemoDir "$memoKey.out"), $true)
+            $partsDir = Join-Path $compileMemoDir "$memoKey.parts"
+            if (Test-Path -LiteralPath $partsDir) { Remove-Item -LiteralPath $partsDir -Recurse -Force }
+            $parts = Get-OutputParts $job.Output
+            if ($parts.Count) { New-Item -ItemType Directory -Force $partsDir | Out-Null; foreach ($part in $parts) { [IO.File]::Copy($part.FullName, (Join-Path $partsDir $part.Name), $true) } }
+        }
         [IO.File]::WriteAllText((Join-Path $compileMemoDir "$memoKey.json"), ([ordered]@{ Status = $c.Status; Ms = [int64]$c.Ms; Detail = "$($c.Detail)" } | ConvertTo-Json -Compress))
     } catch { }
 }
@@ -459,7 +474,8 @@ function Get-NativeMemoKey($job, [string]$signature) {
     $ownShim = Join-Path (Split-Path $job.Input) 'c-shim.h'
     $ownShimHash = if ($job.Backend -eq 'C' -and (Test-Path -LiteralPath $ownShim)) { Get-FileSha256 $ownShim } else { '' }
     $backendSignature = if ($signature -is [hashtable]) { if ($signature.ContainsKey($job.Backend)) { $signature[$job.Backend] } else { $signature['*'] } } else { $signature }
-    Get-TextKey "$backendSignature`n$($job.Backend)`n$(Get-ShimKey $job.Backend)`n$(Get-FileSha256 $job.Output)`n$flags`n$ownShimHash"
+    $partsKey = (Get-OutputParts $job.Output | ForEach-Object { "$($_.Name)=$(Get-FileSha256 $_.FullName)" }) -join ';'
+    Get-TextKey "$backendSignature`n$($job.Backend)`n$(Get-ShimKey $job.Backend)`n$(Get-FileSha256 $job.Output)`n$flags`n$ownShimHash$(if ($partsKey) { "`n$partsKey" })"
 }
 function Invoke-Native([string]$exe, [string[]]$arguments, [string]$workDir, [int]$timeoutSec, [string]$PathPrefix) {
     $info = [Diagnostics.ProcessStartInfo]::new($exe)
@@ -697,6 +713,13 @@ function Build-And-Run($job) {
         $project = Join-Path $scratch "gleam-native-$nativeLane"
         if (-not (Test-Path (Join-Path $project 'gleam.toml'))) { Copy-Item (Join-Path $shimDir 'gleam') $project -Recurse -Force }
         $programFile = Join-Path $project 'src/main.gleam'
+        Get-ChildItem (Join-Path $project 'src') -File -Filter 'main_*.gleam' | Remove-Item -Force
+        $partStem = [IO.Path]::GetFileNameWithoutExtension($job.Output)
+        foreach ($part in Get-ChildItem -LiteralPath (Split-Path $job.Output) -File -Filter "${partStem}_*.gleam") {
+            $partFile = Join-Path $project "src/$($part.Name)"
+            Copy-Item -LiteralPath $part.FullName $partFile -Force
+            (Get-Item $partFile).LastWriteTime = Get-Date
+        }
         Copy-Item $job.Output $programFile -Force
         (Get-Item $programFile).LastWriteTime = Get-Date
         $build = Invoke-Native $tools.Gleam @('build', '--no-print-progress') $project 180
@@ -886,7 +909,7 @@ if ($Native) {
         Write-Host ("== swift batch: {0} of {1} programs built in {2} chunks of {3} in {4:N1}s; the rest build on their own" -f $swiftBatch.Count, $swiftJobs.Count, @($swiftChunks).Count, $swiftChunkSize, $swiftWatch.Elapsed.TotalSeconds)
     }
     $gleamBuilds = @{}
-    $gleamJobs = @($nativeJobs | Where-Object Backend -eq 'Gleam')
+    $gleamJobs = @($nativeJobs | Where-Object { $_.Backend -eq 'Gleam' -and -not @(Get-OutputParts $_.Output | Where-Object Extension -eq '.gleam').Count })
     if ($gleamJobs.Count -and $tools.Gleam -and $tools.Erl) {
         $gleamWatch = [Diagnostics.Stopwatch]::StartNew()
         $erlBin = Split-Path $tools.Erl

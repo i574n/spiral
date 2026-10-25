@@ -22,24 +22,18 @@ struct Closure1 {
 static inline void ClosureDecrefBody0(Closure0 * x){
     (void)x;
 }
-void ClosureDecref0(Fun0 * self){
+static void ClosureDecref0(Fun0 * self){
     Closure0 * x = (Closure0 *) self;
     if (x != NULL && --(x->base.refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
-int32_t a_c0(Fun0 * self, int32_t v1){
+static int32_t a_c0(Fun0 * self, int32_t v1){
     Closure0 * x = (Closure0 *) self;
     int32_t v0 = x->v0;
-    
     ClosureDecref0(self);
-    
-    
-    int32_t v2;
-    v2 = v1 + v0;
-    
-    
+    int32_t v2 = v1 + v0;
     return v2;
 }
-Fun0 * ClosureCreate0(int32_t v0){
+static Fun0 * ClosureCreate0(int32_t v0){
     Closure0 * x = malloc(sizeof(Closure0));
     x->base.refc = 1;
     x->base.decref_fptr = ClosureDecref0;
@@ -50,24 +44,18 @@ Fun0 * ClosureCreate0(int32_t v0){
 static inline void ClosureDecrefBody1(Closure1 * x){
     (void)x;
 }
-void ClosureDecref1(Fun0 * self){
+static void ClosureDecref1(Fun0 * self){
     Closure1 * x = (Closure1 *) self;
     if (x != NULL && --(x->base.refc) == 0) { ClosureDecrefBody1(x); free(x); }
 }
-int32_t b_c1(Fun0 * self, int32_t v1){
+static int32_t b_c1(Fun0 * self, int32_t v1){
     Closure1 * x = (Closure1 *) self;
     int32_t v0 = x->v0;
-    
     ClosureDecref1(self);
-    
-    
-    int32_t v2;
-    v2 = v1 + v0;
-    
-    
+    int32_t v2 = v1 + v0;
     return v2;
 }
-Fun0 * ClosureCreate1(int32_t v0){
+static Fun0 * ClosureCreate1(int32_t v0){
     Closure1 * x = malloc(sizeof(Closure1));
     x->base.refc = 1;
     x->base.decref_fptr = ClosureDecref1;
@@ -75,37 +63,18 @@ Fun0 * ClosureCreate1(int32_t v0){
     x->v0 = v0;
     return &x->base;
 }
-int32_t method0(Fun0 * v0){
-    
-    
+static int32_t method0(Fun0 * v0){
     return v0->fptr(v0, 40l);
 }
 int32_t main(){
-    
-    
-    int32_t v0;
-    v0 = 2l;
-    
-    
-    int32_t v1;
-    v1 = 3l;
-    
-    
-    bool v2;
-    v2 = true;
-    
-    
+    int32_t v0 = 2l;
+    int32_t v1 = 3l;
+    bool v2 = true;
     Fun0 * v5;
     if (v2){
-        
-        
         v5 = ClosureCreate0(v0);
     } else {
-        
-        
         v5 = ClosureCreate1(v1);
     }
-    
-    
     return method0(v5);
 }

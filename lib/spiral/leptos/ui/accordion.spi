@@ -1,9 +1,9 @@
-open sm'_operators
-open svg
-open leptos
-open rust
+:< sm'_operators
+:< svg
+:< leptos
+:< rust
 
-type props =
+:== props =
     {
         title : () -> string
         open' : () -> bool
@@ -12,30 +12,30 @@ type props =
         summary_class : () -> string
     }
 
-inl props () : props =
+:= props () : props =
     {
-        title = fun () => ""
-        open' = fun () => true
+        title = \ () => ""
+        open' = \ () => !+
         right_element = None
-        details_class = fun () => ""
-        summary_class = fun () => ""
+        details_class = \ () => ""
+        summary_class = \ () => ""
     }
 
-inl render props_fn children : _ (_ div) =
-    inl props : props = props () |> props_fn
-    inl right_element_none = props.right_element = None
-    inl summary_class = props.summary_class
-    inl right_element' =
+:= render props_fn children : _ (_ div) =
+    := props : props = props () |> props_fn
+    := right_element_none = props.right_element = None
+    := summary_class = props.summary_class
+    := right_element' =
         props.right_element
         |> optionm'.default_value ([] |> view_list_to_view)
 
     div [
         $'"class=\\\"flex flex-col [position:relative]\\\""'
-    ] fun () =>
+    ] \ () =>
         :>[
             div [
                 $'"class=\\\"[position:absolute] [right:0] [top:0]\\\""'
-            ] fun () =>
+            ] \ () =>
                 right_element'
                 |> view_to_fragment
             |> element_to_view
@@ -44,7 +44,7 @@ inl render props_fn children : _ (_ div) =
                     "flex flex-1 [&_summary::-webkit-details-marker]:hidden [&>summary>span]:open:-rotate-180 "
                     props.details_class
                 attr_fn "open" props.open'
-            ] fun () =>
+            ] \ () =>
                 :>[
                     summary [
                         class_fn
@@ -52,22 +52,22 @@ inl render props_fn children : _ (_ div) =
                                 "flex flex-1 items-center justify-between px-4 cursor-pointer text-gray-600 "
                                 ^^ "hover:text-gray-700 bg-gray-300 hover:bg-gray-200 "
                             )
-                            fun () =>
-                                if right_element_none
-                                then ""
-                                else "[margin-right:40px]"
+                            \ () =>
+                                ? right_element_none
+                                ?> ""
+                                |: "[margin-right:40px]"
                                 ++# " "
                                 ++# summary_class ()
-                    ] fun () =>
+                    ] \ () =>
                         :>[
                             div [
                                 $'"class=\\\"flex items-center gap-2\\\""'
-                            ] fun () =>
-                                inl title = props.title
+                            ] \ () =>
+                                := title = props.title
                                 span [
                                     $'"class=\\\"[font-size:14px] [line-height:21px] [padding-right:11px]\\\""'
-                                ] fun () =>
-                                    leptos.reactive_fragment fun () =>
+                                ] \ () =>
+                                    leptos.reactive_fragment \ () =>
                                         title ()
                                         |> text_fragment
                                 |> element_to_fragment
@@ -75,15 +75,15 @@ inl render props_fn children : _ (_ div) =
 
                             span [
                                 $'"class=\\\"shrink-0 transition duration-300 pt-[2px]\\\""'
-                            ] fun () =>
-                                arrow_down.render (fun () => "h-5 w-5") []
+                            ] \ () =>
+                                arrow_down.render (\ () => "h-5 w-5") []
                                 |> element_to_fragment
                             |> element_to_view
                         ]
                     |> element_to_view
                     div [
                         $'"class=\\\"flex flex-1 flex-col\\\""'
-                    ] fun () =>
+                    ] \ () =>
                         children ()
                     |> element_to_view
                 ]

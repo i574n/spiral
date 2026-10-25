@@ -31,49 +31,44 @@ function spiral_string_slice(value: string, from: number, to: number): string {
 }
 function method2(v0: number, v1: string, v2: string): string {
     tail: while (true) {
-        let v3: number = (v0 - 1) | 0;
-        let v4: string = v1 + v2;
-        let v5: boolean = v3 === 0;
+        const v3: number = (v0 - 1) | 0;
+        const v4: string = v1 + v2;
+        const v5: boolean = v3 === 0;
         if (v5) {
             return v4;
         } else {
-            let v6: number = (v3 % 2) | 0;
+            const v6: number = (v3 % 2) | 0;
             let v7: boolean = v6 === 0;
             let v10: string;
             if (v7) {
-                let v8: string = "ab";
+                const v8: string = "ab";
                 v10 = v8;
             } else {
                 let v9: string = "c";
                 v10 = v9;
             }
-            {
-                let t0 = v3;
-                let t1 = v4;
-                let t2 = v10;
-                v0 = t0;
-                v1 = t1;
-                v2 = t2;
-            }
+            v0 = v3;
+            v1 = v4;
+            v2 = v10;
             continue tail;
         }
     }
 }
 function method1(v0: number, v1: string): string {
     let v2: number = (v0 - 1) | 0;
-    let v3: string = "" + v1;
-    let v4: boolean = v2 === 0;
+    const v3: string = "" + v1;
+    const v4: boolean = v2 === 0;
     if (v4) {
         return v3;
     } else {
-        let v5: number = (v2 % 2) | 0;
-        let v6: boolean = v5 === 0;
+        const v5: number = (v2 % 2) | 0;
+        const v6: boolean = v5 === 0;
         let v9: string;
         if (v6) {
             let v7: string = "ab";
             v9 = v7;
         } else {
-            let v8: string = "c";
+            const v8: string = "c";
             v9 = v8;
         }
         return method2(v2, v3, v9);
@@ -86,14 +81,14 @@ function method0(): string {
         let v2: string = "";
         return v2;
     } else {
-        let v3: number = (v0 % 2) | 0;
-        let v4: boolean = v3 === 0;
+        const v3: number = (v0 % 2) | 0;
+        const v4: boolean = v3 === 0;
         let v7: string;
         if (v4) {
-            let v5: string = "ab";
+            const v5: string = "ab";
             v7 = v5;
         } else {
-            let v6: string = "c";
+            const v6: string = "c";
             v7 = v6;
         }
         return method1(v0, v7);
@@ -104,11 +99,11 @@ export function main(): number {
     let v1: number = spiral_string_length(v0);
     let v2: boolean = v1 === 6;
     if (v2) {
-        let v3: number = spiral_string_index(v0, 0);
-        let v4: boolean = v3 === 97;
+        const v3: number = spiral_string_index(v0, 0);
+        const v4: boolean = v3 === 97;
         if (v4) {
-            let v5: number = spiral_string_index(v0, 5);
-            let v6: boolean = v5 === 99;
+            const v5: number = spiral_string_index(v0, 5);
+            const v6: boolean = v5 === 99;
             if (v6) {
                 return 0;
             } else {

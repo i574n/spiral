@@ -69,12 +69,9 @@ func sp_method0(_ p0: @escaping (Int32) -> Int32) -> Int32 {
     return v0(37)
 }
 func spiral_main() -> Int32 {
-    var v0: String = ""
-    v0 = "abc"
-    var v1: String = ""
-    v1 = "wxyz"
-    var v2: Int32 = 0
-    v2 = 2
+    let v0: String = "abc"
+    let v1: String = "wxyz"
+    let v2: Int32 = 2
     var v3: Int32 = 0
     v3 = 2
     var v4: Bool = false

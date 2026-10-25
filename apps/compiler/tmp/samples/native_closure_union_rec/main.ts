@@ -2,7 +2,7 @@ type UH0_Cons = { readonly tag: 0, readonly f0: bigint, readonly f1: (() => UH0)
 type UH0_Nil = { readonly tag: 1 };
 type UH0 = UH0_Cons | UH0_Nil;
 function UH0_Cons(f0: bigint, f1: (() => UH0)): UH0 { return { tag: 0, f0: f0, f1: f1 }; }
-function UH0_Nil(): UH0 { return { tag: 1 }; }
+const UH0_Nil_shared: UH0 = { tag: 1 }; function UH0_Nil(): UH0 { return UH0_Nil_shared; }
 function closure0(v0: bigint): (() => UH0) {
     return (): UH0 => {
         let v1: bigint = BigInt.asUintN(64, v0 - 1n);
@@ -14,7 +14,7 @@ function build_0(v0: bigint): UH0 {
     if (v1) {
         return UH0_Nil();
     } else {
-        let v3: (() => UH0) = closure0(v0);
+        const v3: (() => UH0) = closure0(v0);
         return UH0_Cons(v0, v3);
     }
 }
@@ -22,22 +22,16 @@ function sum_1(v0: UH0, v1: bigint): bigint {
     tail: while (true) {
         switch (v0.tag) {
             case 0: {
-                let v2: bigint = v0.f0;
-                let v3: (() => UH0) = v0.f1;
-                let v4: UH0 = v3();
-                let v5: bigint = BigInt.asUintN(64, v1 + v2);
-                {
-                    let t0 = v4;
-                    let t1 = v5;
-                    v0 = t0;
-                    v1 = t1;
-                }
+                const v2: bigint = v0.f0;
+                const v3: (() => UH0) = v0.f1;
+                const v4: UH0 = v3();
+                const v5: bigint = BigInt.asUintN(64, v1 + v2);
+                v0 = v4;
+                v1 = v5;
                 continue tail;
-                break;
             }
             case 1: {
                 return v1;
-                break;
             }
             default: throw new Error("Compiler error: unreachable union case.");
         }
@@ -46,13 +40,13 @@ function sum_1(v0: UH0, v1: bigint): bigint {
 export function main(): number {
     let v0: bigint = 10n;
     let v1: UH0 = build_0(v0);
-    let v2: bigint = 0n;
-    let v3: bigint = sum_1(v1, v2);
-    let v4: number = 5;
-    let v5: number = Number(BigInt.asIntN(32, v3));
-    let v6: number = Math.imul(v4, 2);
-    let v7: number = (v4 + v6) | 0;
-    let v8: number = (v5 + v7) | 0;
+    const v2: bigint = 0n;
+    const v3: bigint = sum_1(v1, v2);
+    const v4: number = 5;
+    const v5: number = Number(BigInt.asIntN(32, v3));
+    const v6: number = Math.imul(v4, 2);
+    const v7: number = (v4 + v6) | 0;
+    const v8: number = (v5 + v7) | 0;
     return v8;
 }
 process.exitCode = main();

@@ -8,10 +8,10 @@ enum US0 {
     US0_Held(Rc<RefCell<Mut0>>),
 }
 fn spiral_main() -> i32 {
-    let mut v0: Rc<RefCell<Mut0>> = Rc::new(RefCell::new(Mut0 { l0: 1i32 }));
-    let mut v1: bool = true;
-    let mut v4: US0 = if v1 {
-        US0::US0_Held(v0.clone())
+    let v0: Rc<RefCell<Mut0>> = Rc::new(RefCell::new(Mut0 { l0: 1i32 }));
+    let v1: bool = true;
+    let v4: US0 = if v1 {
+        US0::US0_Held(v0)
     } else {
         US0::US0_Missing
     };
@@ -19,8 +19,8 @@ fn spiral_main() -> i32 {
         US0::US0_Held(v5) => {
             let mut v5: Rc<RefCell<Mut0>> = v5.clone();
             v5.borrow_mut().l0 = 7i32;
-            let mut v6: i32 = v5.borrow().l0.clone();
-            let mut v7: bool = v6 == 7i32;
+            let v6: i32 = v5.borrow().l0.clone();
+            let v7: bool = v6 == 7i32;
             if v7 {
                 0i32
             } else {

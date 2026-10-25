@@ -1,18 +1,18 @@
 type Mut0 = { l0: string, l1: string };
 export function main(): number {
-    let v0: string = "no";
-    let v1: string = "nay";
+    const v0: string = "no";
+    const v1: string = "nay";
     let v2: Mut0 = { l0: v0, l1: v1 };
-    let v3: string = "hi";
-    let v4: string = "yo";
+    const v3: string = "hi";
+    const v4: string = "yo";
     v2.l0 = v3;
     v2.l1 = v4;
-    let v5: string = v2.l0;
-    let v6: string = v2.l1;
-    let v7: boolean = v5 === "hi";
+    const v5: string = v2.l0;
+    const v6: string = v2.l1;
+    const v7: boolean = v5 === "hi";
     let v9: boolean;
     if (v7) {
-        let v8: boolean = v6 === "yo";
+        const v8: boolean = v6 === "yo";
         v9 = v8;
     } else {
         v9 = false;

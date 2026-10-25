@@ -18,10 +18,10 @@ typedef struct {
 static inline void HeapDecrefBody0(Heap0 * x){
     (void)x;
 }
-void HeapDecref0(Heap0 * x){
+static void HeapDecref0(Heap0 * x){
     if (x != NULL && --(x->refc) == 0) { HeapDecrefBody0(x); free(x); }
 }
-Heap0 * HeapCreate0(int32_t v0){
+static Heap0 * HeapCreate0(int32_t v0){
     Heap0 * x = malloc(sizeof(Heap0));
     x->refc = 1;
     x->v0 = v0;
@@ -57,59 +57,33 @@ US0 US0_Box(Heap0 * v0) { // Box
     return x;
 }
 int32_t main(){
-    
-    
-    int32_t v0;
-    v0 = 7l;
-    
-    
-    Heap0 * v1;
-    v1 = HeapCreate0(v0);
-    
-    
-    bool v2;
-    v2 = true;
-    
-    
+    int32_t v0 = 7l;
+    Heap0 * v1 = HeapCreate0(v0);
+    bool v2 = true;
     US0 v5;
     if (v2){
         (v1)->refc++;
-        
         v5 = US0_Box(v1);
     } else {
-        
-        
         v5 = US0_Missing();
     }
-    
     HeapDecref0(v1);
     switch (v5.tag) {
         case 1: { // Box
             Heap0 * v6 = v5.case1.v0;
             (v6)->refc++;
             USDecref0(&(v5));
-            int32_t v7;
-            v7 = v6->v0;
-            
+            int32_t v7 = v6->v0;
             HeapDecref0(v6);
-            bool v8;
-            v8 = v7 == 7l;
-            
-            
+            bool v8 = v7 == 7l;
             if (v8){
-                
-                
                 return 0l;
             } else {
-                
-                
                 return 1l;
             }
             break;
         }
         default: { // Missing
-            
-            
             USDecref0(&(v5));
             return 1l;
             break;

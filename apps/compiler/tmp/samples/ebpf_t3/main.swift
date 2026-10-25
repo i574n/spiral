@@ -19,14 +19,10 @@ func sp_method2(_ p0: Int32, _ p1: Int32, _ p2: Int32, _ p3: Int32) -> (Int32, I
         if (v8) {
             return (v5, v6, v7)
         } else {
-            let t538_4: Int32 = v4
-            let t574_5: Int32 = v5
-            let t610_6: Int32 = v6
-            let t646_7: Int32 = v7
-            v0 = t538_4
-            v1 = t574_5
-            v2 = t610_6
-            v3 = t646_7
+            v0 = v4
+            v1 = v5
+            v2 = v6
+            v3 = v7
             continue
         }
     }

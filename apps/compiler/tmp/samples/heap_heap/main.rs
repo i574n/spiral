@@ -4,22 +4,22 @@ use std::rc::Rc;
 struct Heap0 { l0: i32, l1: Rc<str> }
 struct Heap1 { l0: Rc<Heap0>, l1: i32 }
 fn spiral_main() -> i32 {
-    let mut v0: i32 = 7i32;
-    let mut v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
-    let mut v2: Rc<Heap0> = Rc::new(Heap0 { l0: v0, l1: v1.clone() });
-    let mut v3: i32 = 1i32;
-    let mut v4: Rc<Heap1> = Rc::new(Heap1 { l0: v2.clone(), l1: v3 });
+    let v0: i32 = 7i32;
+    let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
+    let v2: Rc<Heap0> = Rc::new(Heap0 { l0: v0, l1: v1 });
+    let v3: i32 = 1i32;
+    let v4: Rc<Heap1> = Rc::new(Heap1 { l0: v2, l1: v3 });
     let (mut v5, mut v6): (Rc<Heap0>, i32) = (v4.l0.clone(), v4.l1.clone());
     let (mut v7, mut v8): (i32, Rc<str>) = (v5.l0.clone(), v5.l1.clone());
-    let mut v9: bool = v7 == 7i32;
-    let mut v11: bool = if v9 {
-        let mut v10: bool = v8.clone() == { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
+    let v9: bool = v7 == 7i32;
+    let v11: bool = if v9 {
+        let v10: bool = &*v8 == "hi";
         v10
     } else {
         false
     };
-    let mut v13: bool = if v11 {
-        let mut v12: bool = v6 == 1i32;
+    let v13: bool = if v11 {
+        let v12: bool = v6 == 1i32;
         v12
     } else {
         false

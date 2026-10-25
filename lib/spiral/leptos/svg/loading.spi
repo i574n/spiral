@@ -1,8 +1,8 @@
-open sm'_operators
-open leptos
-open rust
+:< sm'_operators
+:< leptos
+:< rust
 
-inl render (class : () -> string) : _ (_ svg) =
+:= render (class : () -> string) : _ (_ svg) =
     svg [
         $'"version=\\\"1.1\\\""'
         $'"xmlns=\\\"http://www.w3.org/2000/svg\\\""'
@@ -13,7 +13,7 @@ inl render (class : () -> string) : _ (_ svg) =
         $'"style=\\\"enable-background:new 0 0 50 50;\\\""'
         $'"xml:space=\\\"preserve\\\""'
         class_fn " " class
-    ] fun () =>
+    ] \ () =>
         :>[
             rect [
                 $'"x=\\\"0\\\""'
@@ -22,7 +22,7 @@ inl render (class : () -> string) : _ (_ svg) =
                 $'"height=\\\"10\\\""'
                 $'"fill=\\\"\#333\\\""'
                 $'"opacity=\\\"0.2\\\""'
-            ] fun () =>
+            ] \ () =>
                 :>[
                     animate [
                         $'"attributeName=\\\"opacity\\\""'
@@ -60,7 +60,7 @@ inl render (class : () -> string) : _ (_ svg) =
                 $'"height=\\\"10\\\""'
                 $'"fill=\\\"\#333\\\""'
                 $'"opacity=\\\"0.2\\\""'
-            ] fun () =>
+            ] \ () =>
                 :>[
                     animate [
                         $'"attributeName=\\\"opacity\\\""'
@@ -98,7 +98,7 @@ inl render (class : () -> string) : _ (_ svg) =
                 $'"height=\\\"10\\\""'
                 $'"fill=\\\"\#333\\\""'
                 $'"opacity=\\\"0.2\\\""'
-            ] fun () =>
+            ] \ () =>
                 :>[
                     animate [
                         $'"attributeName=\\\"opacity\\\""'

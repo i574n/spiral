@@ -70,12 +70,9 @@ fun sp_method0(p0: (Int) -> Int): Int {
     return v0(37)
 }
 fun spiral_main(): Int {
-    var v0: String = ""
-    v0 = "abc"
-    var v1: String = ""
-    v1 = "wxyz"
-    var v2: Int = 0
-    v2 = 2
+    val v0: String = "abc"
+    val v1: String = "wxyz"
+    val v2: Int = 2
     var v3: Int = 0
     v3 = 2
     var v4: Boolean = false

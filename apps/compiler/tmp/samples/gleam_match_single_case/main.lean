@@ -33,7 +33,6 @@ def U0.spiralTag : U0 → Int32
 mutual
 partial def walk_0 (p0 : Int32) : IO Int32 := do
     let mut v0 : Int32 := p0
-    let mut v1 : Bool := default
     let mut v6 : U0 := default
     let mut v2 : Int32 := default
     let mut v3 : Int32 := default
@@ -42,7 +41,7 @@ partial def walk_0 (p0 : Int32) : IO Int32 := do
     let mut v9 : Int32 := default
     let mut v10 : Int32 := default
     let mut v11 : Int32 := default
-    v1 := (decide (v0 > (2 : Int32)))
+    let v1 : Bool := (decide (v0 > (2 : Int32)))
     if v1 then
         v2 := (v0 + (1 : Int32))
         v3 := (v0 + (2 : Int32))
@@ -58,16 +57,11 @@ partial def walk_0 (p0 : Int32) : IO Int32 := do
         v11 := (v7 + v10)
         return v11
 partial def spiralMain : IO Int32 := do
-    let mut v0 : Int32 := default
-    let mut v1 : Int32 := default
-    let mut v2 : Int32 := default
-    let mut v3 : Int32 := default
-    let mut v4 : Int32 := default
-    v0 := (5 : Int32)
-    v1 := (← walk_0 v0)
-    v2 := (v0 - (4 : Int32))
-    v3 := (← walk_0 v2)
-    v4 := (v1 + v3)
+    let v0 : Int32 := (5 : Int32)
+    let v1 : Int32 := (← walk_0 v0)
+    let v2 : Int32 := (v0 - (4 : Int32))
+    let v3 : Int32 := (← walk_0 v2)
+    let v4 : Int32 := (v1 + v3)
     return v4
 end
 def main : IO UInt32 := do

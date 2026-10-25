@@ -31,20 +31,14 @@ end
 deriving instance Inhabited for H0
 mutual
 partial def spiralMain : IO Int32 := do
-    let mut v0 : UInt8 := default
-    let mut v1 : String := default
-    let mut v2 : H0 := default
-    let mut v3 : UInt8 := default
-    let mut v4 : String := default
-    let mut v5 : Bool := default
     let mut v7 : Bool := default
     let mut v6 : Bool := default
-    v0 := (200 : UInt8)
-    v1 := "hi"
-    v2 := (H0.mk v0 v1)
-    v3 := v2.l0
-    v4 := v2.l1
-    v5 := (v3 == (200 : UInt8))
+    let v0 : UInt8 := (200 : UInt8)
+    let v1 : String := "hi"
+    let v2 : H0 := (H0.mk v0 v1)
+    let v3 : UInt8 := v2.l0
+    let v4 : String := v2.l1
+    let v5 : Bool := (v3 == (200 : UInt8))
     if v5 then
         v6 := (v4 == "hi")
         v7 := v6

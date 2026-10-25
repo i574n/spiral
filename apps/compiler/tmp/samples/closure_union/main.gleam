@@ -17,23 +17,23 @@ pub fn f_c0(capt: #(Int)) -> fn(Int) -> Us0 {
     }
 }
 pub fn main() {
-let v0 = 7
-let v1 = f_c0(#(v0))
-let v2 = v1( 1  )
-case v2  {
-    Us0None -> {
-        1
-    }
-    Us0Some(v3) -> {
-        let v4 = v3 == 7
-        case v4 {
-            True -> {
-                0
-            }
-            False -> {
-                1
+    let v0 = 7
+    let v1 = f_c0(#(v0))
+    let v2 = v1(1)
+    case v2  {
+        Us0None -> {
+            1
+        }
+        Us0Some(v3) -> {
+            let v4 = v3 == 7
+            case v4 {
+                True -> {
+                    0
+                }
+                False -> {
+                    1
+                }
             }
         }
     }
-}
 }

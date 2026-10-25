@@ -56,12 +56,9 @@ func sp_method2(_ p0: Int32, _ p1: String, _ p2: String) -> String {
                 v9 = "c"
                 v10 = v9
             }
-            let t773_3: Int32 = v3
-            let t809_4: String = v4
-            let t846_10: String = v10
-            v0 = t773_3
-            v1 = t809_4
-            v2 = t846_10
+            v0 = v3
+            v1 = v4
+            v2 = v10
             continue
         }
     }

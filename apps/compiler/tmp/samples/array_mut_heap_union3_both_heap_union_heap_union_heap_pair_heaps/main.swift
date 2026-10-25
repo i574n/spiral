@@ -85,8 +85,7 @@ func sp_score_0(_ p0: US1) -> Int32 {
                     v14 = (v10 == 7)
                     var v16: Bool = false
                     if (v14) {
-                        var v15: Bool = false
-                        v15 = (v11 == "hi")
+                        let v15: Bool = (v11 == "hi")
                         v16 = v15
                     } else {
                         v16 = false
@@ -133,18 +132,13 @@ func sp_score_0(_ p0: US1) -> Int32 {
     }
 }
 func spiral_main() -> Int32 {
-    var v0: Int32 = 0
-    v0 = 7
-    var v1: String = ""
-    v1 = "hi"
-    var v2: Heap0 = Heap0(l0: 0, l1: "")
-    v2 = Heap0(l0: v0, l1: v1)
-    var v3: Int32 = 0
-    v3 = 4
+    let v0: Int32 = 7
+    let v1: String = "hi"
+    let v2: Heap0 = Heap0(l0: v0, l1: v1)
+    let v3: Int32 = 4
     var v4: String = ""
     v4 = "yo"
-    var v5: Heap0 = Heap0(l0: 0, l1: "")
-    v5 = Heap0(l0: v3, l1: v4)
+    let v5: Heap0 = Heap0(l0: v3, l1: v4)
     var v6: Heap1 = Heap1(l0: Heap0(l0: 0, l1: ""), l1: Heap0(l0: 0, l1: ""))
     v6 = Heap1(l0: v2, l1: v5)
     var v7: Int32 = 0
@@ -184,25 +178,17 @@ func spiral_main() -> Int32 {
     v23.items[Int(0)] = v22
     var v24: Mut5 = Mut5(l0: Heap4(l0: US1_Absent()))
     v24 = v23.items[Int(0)]
-    var v25: Heap4 = Heap4(l0: US1_Absent())
-    v25 = v24.l0
-    var v26: US1 = US1_Absent()
-    v26 = v25.l0
-    var v27: Int32 = 0
-    v27 = sp_score_0(v26)
+    let v25: Heap4 = v24.l0
+    let v26: US1 = v25.l0
+    let v27: Int32 = sp_score_0(v26)
     v24.l0 = v21
-    var v28: Heap4 = Heap4(l0: US1_Absent())
-    v28 = v24.l0
-    var v29: US1 = US1_Absent()
-    v29 = v28.l0
-    var v30: Int32 = 0
-    v30 = sp_score_0(v29)
-    var v31: Bool = false
-    v31 = (v27 == 0)
+    let v28: Heap4 = v24.l0
+    let v29: US1 = v28.l0
+    let v30: Int32 = sp_score_0(v29)
+    let v31: Bool = (v27 == 0)
     var v33: Bool = false
     if (v31) {
-        var v32: Bool = false
-        v32 = (v30 == 1)
+        let v32: Bool = (v30 == 1)
         v33 = v32
     } else {
         v33 = false

@@ -36,21 +36,17 @@ mutual
 partial def f_c0 (p0 : Int32) (p1 : Int32) : IO U0 := do
     let mut v0 : Int32 := p0
     let mut v1 : Int32 := p1
-    let mut v2 : Bool := default
-    v2 := (v1 == (0 : Int32))
+    let v2 : Bool := (v1 == (0 : Int32))
     if v2 then
         return U0.None
     else
         return (U0.Some v0)
 partial def spiralMain : IO Int32 := do
-    let mut v0 : Int32 := default
-    let mut v1 : (Int32 → IO U0) := default
-    let mut v2 : U0 := default
     let mut v3 : Int32 := default
     let mut v4 : Bool := default
-    v0 := (7 : Int32)
-    v1 := (f_c0 v0)
-    v2 := (← v1 (1 : Int32))
+    let v0 : Int32 := (7 : Int32)
+    let v1 : (Int32 → IO U0) := (f_c0 v0)
+    let v2 : U0 := (← v1 (1 : Int32))
     match v2 with
     | U0.None =>
         return (1 : Int32)

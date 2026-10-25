@@ -1,45 +1,43 @@
 sealed interface US0 { val tag: Int }
-class US0_North : US0 { override val tag: Int = 0 }
-class US0_East : US0 { override val tag: Int = 1 }
-class US0_South : US0 { override val tag: Int = 2 }
-class US0_West : US0 { override val tag: Int = 3 }
+object US0_North : US0 { override val tag: Int = 0 }
+object US0_East : US0 { override val tag: Int = 1 }
+object US0_South : US0 { override val tag: Int = 2 }
+object US0_West : US0 { override val tag: Int = 3 }
 fun spiral_main(): Int {
-    var v0: US0 = US0_North()
-    v0 = US0_North()
-    var v8: US0 = US0_North()
+    val v0: US0 = US0_North
+    var v8: US0 = US0_North
     when (v0.tag) {
         1 -> {
-            v8 = US0_South()
+            v8 = US0_South
         }
         0 -> {
-            v8 = US0_East()
+            v8 = US0_East
         }
         2 -> {
-            v8 = US0_West()
+            v8 = US0_West
         }
         3 -> {
-            v8 = US0_North()
+            v8 = US0_North
         }
         else -> throw RuntimeException()
     }
-    var v16: US0 = US0_North()
+    var v16: US0 = US0_North
     when (v8.tag) {
         1 -> {
-            v16 = US0_South()
+            v16 = US0_South
         }
         0 -> {
-            v16 = US0_East()
+            v16 = US0_East
         }
         2 -> {
-            v16 = US0_West()
+            v16 = US0_West
         }
         3 -> {
-            v16 = US0_North()
+            v16 = US0_North
         }
         else -> throw RuntimeException()
     }
-    var v17: US0 = US0_North()
-    v17 = US0_South()
+    val v17: US0 = US0_South
     var v18: Boolean = false
     when (if (v16.tag == v17.tag) v16.tag else -1) {
         1 -> {
@@ -88,10 +86,8 @@ fun spiral_main(): Int {
             v23 = 7
         }
     }
-    var v24: Int = 0
-    v24 = (v23 * 3)
-    var v25: Int = 0
-    v25 = (v21 + v24)
+    val v24: Int = (v23 * 3)
+    val v25: Int = (v21 + v24)
     var v27: Int = 0
     when (v16.tag) {
         1 -> {
@@ -104,12 +100,9 @@ fun spiral_main(): Int {
             v27 = 7
         }
     }
-    var v28: Int = 0
-    v28 = (v27 * 9)
-    var v29: Int = 0
-    v29 = (v25 + v28)
-    var v30: Int = 0
-    v30 = (v29 + v19)
+    val v28: Int = (v27 * 9)
+    val v29: Int = (v25 + v28)
+    val v30: Int = (v29 + v19)
     return v30
 }
 fun main() {

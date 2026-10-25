@@ -1,65 +1,65 @@
-open rust.rust_operators
-open rust
-open svg
-open leptos
+:< rust.rust_operators
+:< rust
+:< svg
+:< leptos
 
-type props =
+:== props =
     {
         data : optionm'.option' (leptos.arc_memo (am'.vec (i32 * (leptos.read_signal sm'.std_string))))
         item : optionm'.option' (arc_memo (option string))
         select : i32 * string -> ()
     }
 
-inl props () : props =
+:= props () : props =
     {
         data = None |> optionm'.box
         item = None |> optionm'.box
-        select = fun _ => ()
+        select = \ _ => ()
     }
 
-inl render props_fn : _ _ =
-    inl props : props = props () |> props_fn
+:= render props_fn : _ _ =
+    := props : props = props () |> props_fn
 
     accordion.render
-        fun props' => { props' with
-            title = fun () =>
+        \ props' => { props' ?|
+            title = \ () =>
                 props.item
                 |> optionm'.unbox
                 |> optionm.map leptos.signal_get
                 |> optionm'.flatten
                 |> optionm'.default_value "Select..."
-            details_class = fun () => "[align-self:flex-start]"
-            summary_class = fun () => "py-[4px]"
-            open' = fun () => false
+            details_class = \ () => "[align-self:flex-start]"
+            summary_class = \ () => "py-[4px]"
+            open' = \ () => !-
         }
-        fun () =>
+        \ () =>
             leptos.div [
                 $'"class=\\\"flex flex-1 flex-col p-[10px] gap-[7px] [border-left-width:1px] \
                     [border-bottom-width:1px] border-gray-200 bg-gray-100\\\""'
-            ] fun () =>
-                inl data =
+            ] \ () =>
+                := data =
                     props.data
                     |> optionm'.unbox
                     |> optionm.map leptos.signal_get
                     |> optionm'.default_value (;[] |> am'.base |> am'.to_vec)
-                match data |> am'.from_vec with
+                ?= data |> am'.from_vec ?|
                 | (array ;[] : array _) =>
                     "No data"
                     |> error_label.render
                     |> leptos.element_to_fragment
                 | _ =>
-                    match props.data |> optionm'.unbox with
+                    ?= props.data |> optionm'.unbox ?|
                     | Some data =>
                         leptos.for
                             data
-                            fun i, _ => i
-                            fun i, item =>
-                                inl item =
+                            \ i, _ => i
+                            \ i, item =>
+                                := item =
                                     item
                                     |> leptos.signal_get
-                                inl item' = join item
-                                inl on_click = fun () =>
-                                    inl item = item |> sm'.from_std_string
+                                := item' = ~~ item
+                                := on_click = \ () =>
+                                    := item = item |> sm'.from_std_string
                                     props.select (i, item)
                                 :>[
                                     leptos.button [
@@ -70,19 +70,19 @@ inl render props_fn : _ _ =
                                             active:text-gray-500\\\""'
                                         leptos.on_click on_click
                                         $'"aria-label=!item'"'
-                                    ] fun () =>
-                                        inl item = item |> sm'.from_std_string
+                                    ] \ () =>
+                                        := item = item |> sm'.from_std_string
                                         :>[
-                                            leptos.reactive_view fun () =>
-                                                match
+                                            leptos.reactive_view \ () =>
+                                                ?=
                                                     item,
                                                     props.item
                                                     |> optionm'.unbox
                                                     |> optionm.map leptos.signal_get
                                                     |> optionm'.flatten
-                                                with
-                                                | item, Some account when item = account =>
-                                                    check.render (fun () => "h-5 w-5") []
+                                                ?|
+                                                | item, Some account ?& item = account =>
+                                                    check.render (\ () => "h-5 w-5") []
                                                     |> leptos.element_to_view
                                                 | _ => [] |> leptos.view_list_to_view
 

@@ -27,16 +27,13 @@ mutual
 partial def f_c0 (p0 : (IO.Ref (Array Int32))) (p1 : Int32) : IO Int32 := do
     let mut v0 : (IO.Ref (Array Int32)) := p0
     let mut v1 : Int32 := p1
-    let mut v2 : Int32 := default
-    let mut v3 : Int32 := default
-    v2 := (Int32.ofNat (← v0.get).size)
-    v3 := (v2 + v1)
+    let v2 : Int32 := (Int32.ofNat (← v0.get).size)
+    let v3 : Int32 := (v2 + v1)
     return v3
 partial def spiralMain : IO Int32 := do
     let mut v0 : (IO.Ref (Array Int32)) ← IO.mkRef #[]
-    let mut v1 : (Int32 → IO Int32) := default
     v0 := (← IO.mkRef (Array.replicate (spiralIdx (2 : Int32)) (default : Int32)))
-    v1 := (f_c0 v0)
+    let v1 : (Int32 → IO Int32) := (f_c0 v0)
     return (← v1 (40 : Int32))
 end
 def main : IO UInt32 := do

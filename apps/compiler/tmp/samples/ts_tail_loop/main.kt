@@ -4,17 +4,14 @@ fun sp_method1(p0: Int, p1: Int): Int {
     while (true) {
         var v2: Int = 0
         v2 = (v0 - 1)
-        var v3: Int = 0
-        v3 = (v1 + v0)
+        val v3: Int = (v1 + v0)
         var v4: Boolean = false
         v4 = (v2 == 0)
         if (v4) {
             return v3
         } else {
-            val t319_2: Int = v2
-            val t353_3: Int = v3
-            v0 = t319_2
-            v1 = t353_3
+            v0 = v2
+            v1 = v3
             continue
         }
     }
@@ -32,8 +29,7 @@ fun sp_method0(p0: Int): Int {
     } else {
         v4 = sp_method1(v0, v1)
     }
-    var v5: Int = 0
-    v5 = (v4 - 55)
+    val v5: Int = (v4 - 55)
     return v5
 }
 fun spiral_main(): Int {

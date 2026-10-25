@@ -1,38 +1,38 @@
 ///- --package .
-open sm'_operators
-open xml
-open xpath
-open xpath_eval
+:< sm'_operators
+:< xml
+:< xpath
+:< xpath_eval
 
-type identity_constraint = { name : string; is_key : bool; element : string; selector : xpath; fields : list xpath }
+:== identity_constraint = { name : string; is_key : bool; element : string; selector : xpath; fields : list xpath }
 
-inl attribute_text (key : string) (attributes : list (string * string)) : string =
-    match attribute_of key attributes with
+:= attribute_text (key : string) (attributes : list (string * string)) : string =
+    ?= attribute_of key attributes ?|
     | Some value => value
     | None => ""
 
-let rec field_paths (nodes : list xml_node) (acc : list xpath) : list xpath =
-    match nodes with
-    | XmlElement (name, attributes, _) :: rest when local_name name = "field" =>
+:~ ^ field_paths (nodes : list xml_node) (acc : list xpath) : list xpath =
+    ?= nodes ?|
+    | XmlElement (name, attributes, _) :: rest ?& local_name name = "field" =>
         field_paths rest (parse (attribute_text "xpath" attributes) :: acc)
     | _ :: rest => field_paths rest acc
     | Nil => listm.rev acc
 
-inl selector_path (nodes : list xml_node) : xpath =
-    match first_child "selector" nodes with
+:= selector_path (nodes : list xml_node) : xpath =
+    ?= first_child "selector" nodes ?|
     | Some (XmlElement (_, attributes, _)) => parse (attribute_text "xpath" attributes)
     | _ => XInvalid "no selector"
 
-let rec constraints_of
+:~ ^ constraints_of
     (element : string) (nodes : list xml_node) (acc : list identity_constraint)
     : list identity_constraint
     =
-    match nodes with
+    ?= nodes ?|
     | XmlElement (name, attributes, children) :: rest =>
-        inl local = local_name name
-        inl acc =
-            if local = "unique" || local = "key" then
-                inl found =
+        := local = local_name name
+        := acc =
+            ? local = "unique" || local = "key" ?>
+                := found =
                     {
                         name = attribute_text "name" attributes
                         is_key = local = "key"
@@ -41,96 +41,96 @@ let rec constraints_of
                         fields = field_paths children Nil
                     }
                 found :: acc
-            else acc
-        inl inner = if local = "element" then attribute_text "name" attributes else element
+            |: acc
+        := inner = ? local = "element" ?> attribute_text "name" attributes |: element
         constraints_of element rest (constraints_of inner children acc)
     | _ :: rest => constraints_of element rest acc
     | Nil => acc
 
-inl read_constraints (text : string) : list identity_constraint = listm.rev (constraints_of "" (read_xml text) Nil)
+:= read_constraints (text : string) : list identity_constraint = listm.rev (constraints_of "" (read_xml text) Nil)
 
-let rec field_values (s : scope) (fields : list xpath) (acc : list string) (complete : bool) : list string * bool =
-    match fields with
+:~ ^ field_values (s : scope) (fields : list xpath) (acc : list string) (complete : bool) : list string * bool =
+    ?= fields ?|
     | field :: rest =>
-        match eval s field with
-        | VNodes (Nil) => field_values s rest acc false
+        ?= eval s field ?|
+        | VNodes (Nil) => field_values s rest acc !-
         | value => field_values s rest (atom_text value :: acc) complete
     | Nil => listm.rev acc, complete
 
-let rec joined_key (values : list string) (acc : string) : string =
-    match values with
-    | value :: rest => joined_key rest (if acc = "" then value else acc ++# "\n" ++# value)
+:~ ^ joined_key (values : list string) (acc : string) : string =
+    ?= values ?|
+    | value :: rest => joined_key rest (? acc = "" ?> value |: acc ++# "\n" ++# value)
     | Nil => acc
 
-let rec has_key (key : string) (seen : list string) : bool =
-    match seen with
+:~ ^ has_key (key : string) (seen : list string) : bool =
+    ?= seen ?|
     | x :: rest => x = key || has_key key rest
-    | Nil => false
+    | Nil => !-
 
-let rec selected_violations
+:~ ^ selected_violations
     (c : identity_constraint) (s : scope) (items : list located) (seen : list string) (acc : list string)
     : list string
     =
-    match items with
+    ?= items ?|
     | item :: rest =>
-        inl values, complete = field_values { s with context = item } c.fields Nil true
-        if complete = false
-        then selected_violations c s rest seen (if c.is_key then (c.name ++# ": missing key field" :: acc) else acc)
-        else
-            inl key = joined_key values ""
-            if has_key key seen then selected_violations c s rest seen (c.name ++# ": duplicate " ++# key :: acc)
-            else selected_violations c s rest (key :: seen) acc
+        := values, complete = field_values { s ?| context = item } c.fields Nil !+
+        ? complete = !-
+        ?> selected_violations c s rest seen (? c.is_key ?> (c.name ++# ": missing key field" :: acc) |: acc)
+        |:
+            := key = joined_key values ""
+            ? has_key key seen ?> selected_violations c s rest seen (c.name ++# ": duplicate " ++# key :: acc)
+            |: selected_violations c s rest (key :: seen) acc
     | Nil => acc
 
-let rec owner_violations
+:~ ^ owner_violations
     (c : identity_constraint) (s : scope) (owners : list located) (acc : list string)
     : list string
     =
-    match owners with
+    ?= owners ?|
     | owner :: rest =>
-        match eval { s with context = owner } c.selector with
+        ?= eval { s ?| context = owner } c.selector ?|
         | VNodes selected => owner_violations c s rest (selected_violations c s selected Nil acc)
         | _ => owner_violations c s rest (c.name ++# ": selector did not select nodes" :: acc)
     | Nil => acc
 
-let rec owners_named (name : string) (items : list located) (acc : list located) : list located =
-    match items with
+:~ ^ owners_named (name : string) (items : list located) (acc : list located) : list located =
+    ?= items ?|
     | item :: rest =>
-        inl matches = match item.node with XmlElement (n, _, _) => local_name n = name | XmlText _ => false
-        owners_named name rest (if matches then (item :: acc) else acc)
+        := matches = ?= item.node ?| XmlElement (n, _, _) => local_name n = name | XmlText _ => !-
+        owners_named name rest (? matches ?> (item :: acc) |: acc)
     | Nil => listm.rev acc
 
-let rec constraint_violations
+:~ ^ constraint_violations
     (constraints : list identity_constraint) (s : scope) (everything : list located) (acc : list string)
     : list string
     =
-    match constraints with
+    ?= constraints ?|
     | c :: rest =>
         constraint_violations rest s everything (owner_violations c s (owners_named c.element everything Nil) acc)
     | Nil => listm.rev acc
 
-inl validate_constraints (constraints : list identity_constraint) (document : xml_node) : list string =
-    inl root = document_root document
+:= validate_constraints (constraints : list identity_constraint) (document : xml_node) : list string =
+    := root = document_root document
     constraint_violations constraints
         { context = root; root = root; variables = Nil }
         (listm.rev (descendants_of (root :: Nil) Nil))
         Nil
 ///> rust
 test unique_items_are_checked_per_owner =
-    inl schema =
+    := schema =
         "<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"><xs:element name=\"det\">"
         ++# "<xs:unique name=\"pk_nItem\"><xs:selector xpath=\"./*\"/><xs:field xpath=\"@nItem\"/></xs:unique>"
         ++# "</xs:element></xs:schema>"
-    inl constraints = read_constraints schema
-    match constraints with
-    | c :: Nil => if c.name <> "pk_nItem" || c.element <> "det" || c.is_key then failwith "one unique on det"
+    := constraints = read_constraints schema
+    ?= constraints ?|
+    | c :: Nil => ? c.name <> "pk_nItem" || c.element <> "det" || c.is_key ?> failwith "one unique on det"
     | _ => failwith "one constraint"
-    inl check (document : string) =
-        match read_xml document with
+    := check (document : string) =
+        ?= read_xml document ?|
         | root :: Nil => listm.length (validate_constraints constraints root)
         | _ => -1i32
-    if check "<det><i nItem=\"1\"/><i nItem=\"2\"/></det>" <> 0i32 then failwith "distinct items pass"
-    if check "<det><i nItem=\"1\"/><i nItem=\"1\"/></det>" <> 1i32 then failwith "a repeated nItem is one violation"
-    if check "<x><det><i nItem=\"1\"/></det><det><i nItem=\"1\"/></det></x>" <> 0i32
-    then failwith "uniqueness is per owner element"
-    if check "<det><i/><i/></det>" <> 0i32 then failwith "unique ignores items without the field"
+    ? check "<det><i nItem=\"1\"/><i nItem=\"2\"/></det>" <> 0i32 ?> failwith "distinct items pass"
+    ? check "<det><i nItem=\"1\"/><i nItem=\"1\"/></det>" <> 1i32 ?> failwith "a repeated nItem is one violation"
+    ? check "<x><det><i nItem=\"1\"/></det><det><i nItem=\"1\"/></det></x>" <> 0i32
+    ?> failwith "uniqueness is per owner element"
+    ? check "<det><i/><i/></det>" <> 0i32 ?> failwith "unique ignores items without the field"

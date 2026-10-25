@@ -1,15 +1,15 @@
 /// # math
 test math static =
-    open testing
+    :< testing
 
 /// ## math
 
 /// ### e
-inl e () =
+:= e () =
     exp 1f64
 
 /// ## square
-inl square x =
+:= square x =
     x ** 2
 
 test square =
@@ -45,7 +45,7 @@ test square_7 =
 test square_8 =
     pi
     |> cos
-    |> fun n => n / 2f64
+    |> \ n => n / 2f64
     |> _assert_approx_eq None -0.5
 
 test square_9 =
@@ -55,33 +55,33 @@ test square_9 =
 /// ## fsharp
 
 /// ### atan2
-inl atan2 (y : f64) (x : f64) : f64 =
+:= atan2 (y : f64) (x : f64) : f64 =
     backend_switch {
-        Gleam = fun () =>
+        Gleam = \ () =>
             global """
                 @external(erlang, "math", "atan2")
                 fn spiral_math_atan2(y: Float, x: Float) -> Float
                 """
             $'spiral_math_atan2(!y, !x)' : float
-        Lua = fun () => $'math.atan2(!y, !x)' : float
-        Fsharp = fun () => $'System.Math.Atan2 (!y, !x)' : float
-        Python = fun () =>
+        Lua = \ () => $'math.atan2(!y, !x)' : float
+        Fsharp = \ () => $'System.Math.Atan2 (!y, !x)' : float
+        Python = \ () =>
             global "import math"
             $'math.atan2(!y, !x)' : float
-        Rust = fun () => $'(!y).atan2(!x)' : float
-        Zig = fun () => $'std.math.atan2(!y, !x)' : float
-        Lean = fun () => $'Float.atan2 !y !x ' : float
-        C = fun () =>
+        Rust = \ () => $'(!y).atan2(!x)' : float
+        Zig = \ () => $'std.math.atan2(!y, !x)' : float
+        Lean = \ () => $'Float.atan2 !y !x ' : float
+        C = \ () =>
             global "#include <tgmath.h>"
             $'atan2(!y, !x)' : float
-        Cpp = fun () =>
+        Cpp = \ () =>
             global "#include <cmath>"
             $'std::atan2(!y, !x)' : float
-        Delphi = fun () => $'ArcTan2(!y, !x)' : float
-        Wasm = fun () => $'(call $math_atan2 !y !x)' : float
-        TypeScript = fun () => $'Math.atan2(!y, !x)' : float
-        Kotlin = fun () => $'kotlin.math.atan2(!y, !x)' : float
-        Swift = fun () => $'atan2(!y, !x)' : float
+        Delphi = \ () => $'ArcTan2(!y, !x)' : float
+        Wasm = \ () => $'(call $math_atan2 !y !x)' : float
+        TypeScript = \ () => $'Math.atan2(!y, !x)' : float
+        Kotlin = \ () => $'kotlin.math.atan2(!y, !x)' : float
+        Swift = \ () => $'atan2(!y, !x)' : float
     }
 
 ///> gleam
@@ -93,30 +93,30 @@ test atan2 =
     |> _assert_eq 1.5707963267948966
 
 /// ## floor
-inl floor forall t {float}. (n : t) : t =
+:= floor \* t {float}. (n : t) : t =
     backend_switch {
-        Gleam = fun () =>
+        Gleam = \ () =>
             global "import gleam/float"
             n |> $'float.floor' : t
-        Lua = fun () => n |> $'math.floor' : t
-        Fsharp = fun () => n |> $'floor' : t
-        Python = fun () =>
+        Lua = \ () => n |> $'math.floor' : t
+        Fsharp = \ () => n |> $'floor' : t
+        Python = \ () =>
             global "import math"
             $'math.floor(!n)' : t
-        Rust = fun () => $'!n.floor()' : t
-        Zig = fun () => $'\@floor(!n)' : t
-        Lean = fun () => $'(!n).floor' : t
-        C = fun () =>
+        Rust = \ () => $'!n.floor()' : t
+        Zig = \ () => $'\@floor(!n)' : t
+        Lean = \ () => $'(!n).floor' : t
+        C = \ () =>
             global "#include <tgmath.h>"
             $'floor(!n)' : t
-        Cpp = fun () =>
+        Cpp = \ () =>
             global "#include <cmath>"
             $'std::floor(!n)' : t
-        Delphi = fun () => $'Int(!n) - Ord(Frac(!n) < 0)' : t
-        Wasm = fun () => $'(`t.floor !n)' : t
-        TypeScript = fun () => $'Math.floor(!n)' : t
-        Kotlin = fun () => $'kotlin.math.floor(!n)' : t
-        Swift = fun () => $'(!n).rounded(.down)' : t
+        Delphi = \ () => $'Int(!n) - Ord(Frac(!n) < 0)' : t
+        Wasm = \ () => $'(`t.floor !n)' : t
+        TypeScript = \ () => $'Math.floor(!n)' : t
+        Kotlin = \ () => $'kotlin.math.floor(!n)' : t
+        Swift = \ () => $'(!n).rounded(.down)' : t
     }
 
 ///> gleam
@@ -128,30 +128,30 @@ test floor =
     |> _assert_eq 0f64
 
 /// ## ceil
-inl ceil forall t {float}. (n : t) : t =
+:= ceil \* t {float}. (n : t) : t =
     backend_switch {
-        Gleam = fun () =>
+        Gleam = \ () =>
             global "import gleam/float"
             n |> $'float.ceiling' : t
-        Lua = fun () => n |> $'math.ceil' : t
-        Fsharp = fun () => n |> $'ceil' : t
-        Python = fun () =>
+        Lua = \ () => n |> $'math.ceil' : t
+        Fsharp = \ () => n |> $'ceil' : t
+        Python = \ () =>
             global "import math"
             n |> $'math.ceil' : t
-        Rust = fun () => $'!n.ceil()' : t
-        Zig = fun () => $'\@ceil(!n)' : t
-        Lean = fun () => $'(!n).ceil' : t
-        C = fun () =>
+        Rust = \ () => $'!n.ceil()' : t
+        Zig = \ () => $'\@ceil(!n)' : t
+        Lean = \ () => $'(!n).ceil' : t
+        C = \ () =>
             global "#include <tgmath.h>"
             $'ceil(!n)' : t
-        Cpp = fun () =>
+        Cpp = \ () =>
             global "#include <cmath>"
             $'std::ceil(!n)' : t
-        Delphi = fun () => $'Int(!n) + Ord(Frac(!n) > 0)' : t
-        Wasm = fun () => $'(`t.ceil !n)' : t
-        TypeScript = fun () => $'Math.ceil(!n)' : t
-        Kotlin = fun () => $'kotlin.math.ceil(!n)' : t
-        Swift = fun () => $'(!n).rounded(.up)' : t
+        Delphi = \ () => $'Int(!n) + Ord(Frac(!n) > 0)' : t
+        Wasm = \ () => $'(`t.ceil !n)' : t
+        TypeScript = \ () => $'Math.ceil(!n)' : t
+        Kotlin = \ () => $'kotlin.math.ceil(!n)' : t
+        Swift = \ () => $'(!n).rounded(.up)' : t
     }
 
 ///> gleam
@@ -163,29 +163,29 @@ test ceil =
     |> _assert_eq 1f64
 
 /// ## round
-inl round forall t {number; float}. (x : t) : t =
-    inl round_half_to_even () =
-        inl lower = floor x
-        inl difference = x - lower
-        if difference > 0.5 then lower + 1
-        elif difference < 0.5 then lower
-        elif floor (lower / 2) * 2 = lower then lower
-        else lower + 1
+:= round \* t {number; float}. (x : t) : t =
+    := round_half_to_even () =
+        := lower = floor x
+        := difference = x - lower
+        ? difference > 0.5 ?> lower + 1
+        |? difference < 0.5 ?> lower
+        |? floor (lower / 2) * 2 = lower ?> lower
+        |: lower + 1
     backend_switch {
         Gleam = round_half_to_even
         Lua = round_half_to_even
-        Fsharp = fun () => x |> $'round' : t
-        Python = fun () => x |> $'round' : t
-        Rust = fun () => $'(!x).round_ties_even()' : t
+        Fsharp = \ () => x |> $'round' : t
+        Python = \ () => x |> $'round' : t
+        Rust = \ () => $'(!x).round_ties_even()' : t
         Zig = round_half_to_even
         Lean = round_half_to_even
         C = round_half_to_even
         Cpp = round_half_to_even
         Delphi = round_half_to_even
         TypeScript = round_half_to_even
-        Wasm = fun () => $'(`t.nearest !x)' : t
-        Kotlin = fun () => $'kotlin.math.round(!x)' : t
-        Swift = fun () => $'(!x).rounded(.toNearestOrEven)' : t
+        Wasm = \ () => $'(`t.nearest !x)' : t
+        Kotlin = \ () => $'kotlin.math.round(!x)' : t
+        Swift = \ () => $'(!x).rounded(.toNearestOrEven)' : t
     }
 
 ///> gleam
@@ -209,18 +209,18 @@ test round =
     |> _assert_eq 4f64
 
 /// ## log_base
-inl log_base (new_base : f64) (a : f64) : f64 =
+:= log_base (new_base : f64) (a : f64) : f64 =
     backend_switch {
-        Gleam = fun () => log a / log new_base
-        Lua = fun () => log a / log new_base
-        Fsharp = fun () => $'System.Math.Log (!a, !new_base)' : f64
-        Python = fun () => log a / log new_base
-        Rust = fun () => $'(!a).log(!new_base)' : f64
-        TypeScript = fun () => log a / log new_base
-        Zig = fun () => log a / log new_base
-        Lean = fun () => log a / log new_base
-        Kotlin = fun () => log a / log new_base
-        Swift = fun () => log a / log new_base
+        Gleam = \ () => log a / log new_base
+        Lua = \ () => log a / log new_base
+        Fsharp = \ () => $'System.Math.Log (!a, !new_base)' : f64
+        Python = \ () => log a / log new_base
+        Rust = \ () => $'(!a).log(!new_base)' : f64
+        TypeScript = \ () => log a / log new_base
+        Zig = \ () => log a / log new_base
+        Lean = \ () => log a / log new_base
+        Kotlin = \ () => log a / log new_base
+        Swift = \ () => log a / log new_base
     }
 
 test log_base =

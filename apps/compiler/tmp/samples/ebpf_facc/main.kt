@@ -6,15 +6,12 @@ fun sp_method1(p0: Int, p1: Float): Float {
         v2 = (v0 - 1)
         var v3: Float = 0.0f
         v3 = (v1 + 1.5f)
-        var v4: Boolean = false
-        v4 = (v2 == 0)
+        val v4: Boolean = (v2 == 0)
         if (v4) {
             return v3
         } else {
-            val t332_2: Int = v2
-            val t366_3: Float = v3
-            v0 = t332_2
-            v1 = t366_3
+            v0 = v2
+            v1 = v3
             continue
         }
     }

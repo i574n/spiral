@@ -1,178 +1,178 @@
 ///- --package .
 test dictm static =
-    open testing
+    :< testing
 
 /// # dictm
 
-open sm'_operators
+:< sm'_operators
 
 /// ## dict
 
-inl dict_types () =
+:= dict_types () =
     backend_switch {
-        Gleam = fun () => global "import gleam/dict"
-        Rust = fun () => ()
+        Gleam = \ () => global "import gleam/dict"
+        Rust = \ () => ()
     }
 
-type dict_switch k v =
+:== dict_switch k v =
     {
         Gleam : $'dict.Dict(`k, `v)'
         Rust : $'std::rc::Rc<std::collections::BTreeMap<`k, `v>>'
     }
 
-nominal dict k v = $'backend_switch `(dict_switch k v)'
+:! dict k v = $'backend_switch `(dict_switch k v)'
 
-inl rust_new_rc forall k v. (m : mapm.b_tree_map k v) : dict k v = $'std::rc::Rc::new(!m)'
+:= rust_new_rc \* k v. (m : mapm.b_tree_map k v) : dict k v = $'std::rc::Rc::new(!m)'
 
-inl rust_owned forall k v. (d : dict k v) : mapm.b_tree_map k v = $'std::rc::Rc::unwrap_or_clone(!d)'
+:= rust_owned \* k v. (d : dict k v) : mapm.b_tree_map k v = $'std::rc::Rc::unwrap_or_clone(!d)'
 
-inl empty forall k v. () : dict k v =
+:= empty \* k v. () : dict k v =
     dict_types ()
     backend_switch {
-        Gleam = fun () => $'dict.new()' : dict k v
-        Rust = fun () => (mapm.new_b_tree_map () : mapm.b_tree_map k v) |> rust_new_rc
+        Gleam = \ () => $'dict.new()' : dict k v
+        Rust = \ () => (mapm.new_b_tree_map () : mapm.b_tree_map k v) |> rust_new_rc
     }
 
-inl insert forall k v. (key : k) (value : v) (d : dict k v) : dict k v =
+:= insert \* k v. (key : k) (value : v) (d : dict k v) : dict k v =
     dict_types ()
     backend_switch {
-        Gleam = fun () => $'dict.insert(!d, !key, !value)' : dict k v
-        Rust = fun () =>
-            inl m = rust_owned d
+        Gleam = \ () => $'dict.insert(!d, !key, !value)' : dict k v
+        Rust = \ () =>
+            := m = rust_owned d
             rust.to_mut m
             ($'!m.insert(!key, !value)' : optionm'.option' v) |> ignore
             rust_new_rc m
     }
 
-inl remove forall k v. (key : k) (d : dict k v) : dict k v =
+:= remove \* k v. (key : k) (d : dict k v) : dict k v =
     dict_types ()
     backend_switch {
-        Gleam = fun () => $'dict.delete(!d, !key)' : dict k v
-        Rust = fun () =>
-            inl m = rust_owned d
+        Gleam = \ () => $'dict.delete(!d, !key)' : dict k v
+        Rust = \ () =>
+            := m = rust_owned d
             rust.to_mut m
             ($'!m.remove(&!key)' : optionm'.option' v) |> ignore
             rust_new_rc m
     }
 
-inl has forall k v. (key : k) (d : dict k v) : bool =
+:= has \* k v. (key : k) (d : dict k v) : bool =
     dict_types ()
     backend_switch {
-        Gleam = fun () => $'dict.has_key(!d, !key)' : bool
-        Rust = fun () => $'!d.contains_key(&!key)' : bool
+        Gleam = \ () => $'dict.has_key(!d, !key)' : bool
+        Rust = \ () => $'!d.contains_key(&!key)' : bool
     }
 
-inl find forall k v. (key : k) (d : dict k v) : option v =
+:= find \* k v. (key : k) (d : dict k v) : option v =
     dict_types ()
     backend_switch {
-        Gleam = fun () =>
-            match ($'dict.get(!d, !key)' : resultm.result' v ()) |> resultm.unbox with
+        Gleam = \ () =>
+            ?= ($'dict.get(!d, !key)' : resultm.result' v ()) |> resultm.unbox ?|
             | Ok x => Some x
             | Error _ => None
-        Rust = fun () => ($'!d.get(&!key).cloned()' : optionm'.option' v) |> optionm'.unbox
+        Rust = \ () => ($'!d.get(&!key).cloned()' : optionm'.option' v) |> optionm'.unbox
     }
 
-inl present forall k v. (key : k) (d : dict k v) : v =
-    match find key d with
+:= present \* k v. (key : k) (d : dict k v) : v =
+    ?= find key d ?|
     | Some x => x
     | None => failwith "dictm.present: the key is not in the dict"
 
-inl size forall k v. (d : dict k v) : i32 =
+:= size \* k v. (d : dict k v) : i32 =
     dict_types ()
     backend_switch {
-        Gleam = fun () => $'dict.size(!d)' : i32
-        Rust = fun () => ($'!d.len()' : convert.unativeint) |> convert.convert : i32
+        Gleam = \ () => $'dict.size(!d)' : i32
+        Rust = \ () => ($'!d.len()' : convert.unativeint) |> convert.convert : i32
     }
 
-inl updated forall k v. (key : k) (fallback : v) (g : v -> v) (d : dict k v) : dict k v =
-    insert key (g (match find key d with Some x => x | None => fallback)) d
+:= updated \* k v. (key : k) (fallback : v) (g : v -> v) (d : dict k v) : dict k v =
+    insert key (g (?= find key d ?| Some x => x | None => fallback)) d
 
-inl gleam_sorted_keys forall k v. (d : dict k v) : listm'.list' k =
+:= gleam_sorted_keys \* k v. (d : dict k v) : listm'.list' k =
     global "@ external(erlang, \"lists\", \"sort\") fn dictm_term_sorted(items: List(a)) -> List(a)"
-    inl unsorted : listm'.list' k = $'dict.keys(!d)'
+    := unsorted : listm'.list' k = $'dict.keys(!d)'
     $'dictm_term_sorted(!unsorted)' : listm'.list' k
 
-inl keys forall k v. (d : dict k v) : list k =
+:= keys \* k v. (d : dict k v) : list k =
     dict_types ()
     backend_switch {
-        Gleam = fun () =>
+        Gleam = \ () =>
             global "import gleam/list"
             gleam_sorted_keys d |> listm'.fold' id Nil
-        Rust = fun () =>
+        Rust = \ () =>
             ($'!d.keys().cloned().collect::<Vec<_>>()' : am'.vec k)
-            |> am'.vec_fold' (fun (acc : list k) (key : k) => Cons (key, acc)) Nil
+            |> am'.vec_fold' (\ (acc : list k) (key : k) => Cons (key, acc)) Nil
     }
 
-inl fold forall k v a. (f : a -> k -> v -> a) (init : a) (d : dict k v) : a =
-    keys d |> listm.rev |> listm.fold (fun acc key => f acc key (present key d)) init
+:= fold \* k v a. (f : a -> k -> v -> a) (init : a) (d : dict k v) : a =
+    keys d |> listm.rev |> listm.fold (\ acc key => f acc key (present key d)) init
 
 /// ## set
 
-nominal set k = dict k ()
+:! set k = dict k ()
 
-inl set_empty forall k. () : set k = set (empty ())
+:= set_empty \* k. () : set k = set (empty ())
 
-inl set_add forall k. (key : k) (s : set k) : set k =
-    match s with
+:= set_add \* k. (key : k) (s : set k) : set k =
+    ?= s ?|
     | set d => set (insert key () d)
 
-inl set_drop forall k. (key : k) (s : set k) : set k =
-    match s with
+:= set_drop \* k. (key : k) (s : set k) : set k =
+    ?= s ?|
     | set d => set (remove key d)
 
-inl set_has forall k. (key : k) (s : set k) : bool =
-    match s with
+:= set_has \* k. (key : k) (s : set k) : bool =
+    ?= s ?|
     | set d => has key d
 
-inl set_size forall k. (s : set k) : i32 =
-    match s with
+:= set_size \* k. (s : set k) : i32 =
+    ?= s ?|
     | set d => size d
 
-inl set_items forall k. (s : set k) : list k =
-    match s with
+:= set_items \* k. (s : set k) : list k =
+    ?= s ?|
     | set d => keys d
 
 ///> rust
 ///> gleam
 test dict_insert_find_remove =
-    inl ~k = "a"
-    inl d = empty () |> insert k 1i32 |> insert "b" 2i32 |> insert k 3i32
+    := ~k = "a"
+    := d = empty () |> insert k 1i32 |> insert "b" 2i32 |> insert k 3i32
     (find k d, find "c" d, size d, size (remove k d), has "b" (remove k d))
-    |> _assert_eq (Some 3i32, None, 2i32, 1i32, true)
+    |> _assert_eq (Some 3i32, None, 2i32, 1i32, !+)
 
 ///> rust
 ///> gleam
 test dict_fold_is_order_free =
-    inl ~n = 4i32
-    inl d = listm.init n id |> listm.fold (fun d i => insert i (i * 10i32) d) (empty ())
-    fold (fun acc _ v => acc + v) 0i32 d |> _assert_eq 60i32
+    := ~n = 4i32
+    := d = listm.init n id |> listm.fold (\ d i => insert i (i * 10i32) d) (empty ())
+    fold (\ acc _ v => acc + v) 0i32 d |> _assert_eq 60i32
 
 ///> rust
 ///> gleam
 test set_add_drop =
-    inl ~k = "x"
-    inl s = set_empty () |> set_add k |> set_add k |> set_add "y"
+    := ~k = "x"
+    := s = set_empty () |> set_add k |> set_add k |> set_add "y"
     (set_size s, set_has k s, set_has k (set_drop k s), (listm.length (set_items s) : i32))
-    |> _assert_eq (2i32, true, false, 2i32)
+    |> _assert_eq (2i32, !+, !-, 2i32)
 
 ///> rust
 ///> gleam
 test an_old_version_survives_an_insert =
-    inl ~k = "a"
-    inl before = empty () |> insert k 1i32
-    inl after = before |> insert k 2i32
+    := ~k = "a"
+    := before = empty () |> insert k 1i32
+    := after = before |> insert k 2i32
     (find k before, find k after) |> _assert_eq (Some 1i32, Some 2i32)
 
-inl dictm_first (l : list string) : string =
-    match l with
+:= dictm_first (l : list string) : string =
+    ?= l ?|
     | Cons (k, _) => k
     | Nil => ""
 
-inl dictm_last (l : list string) : string = listm.fold (fun _ s => s) "" l
+:= dictm_last (l : list string) : string = listm.fold (\ _ s => s) "" l
 
 ///> rust
 ///> gleam
 test keys_are_sorted_past_32_entries =
-    inl d = listm.init 40i32 id |> listm.fold (fun acc i => insert (sm'.obj_to_string (1000i32 + i)) i acc) (empty ())
-    inl ks = keys d
+    := d = listm.init 40i32 id |> listm.fold (\ acc i => insert (sm'.obj_to_string (1000i32 + i)) i acc) (empty ())
+    := ks = keys d
     ((listm.length ks : i32), dictm_first ks, dictm_last ks) |> _assert_eq (40i32, "1039", "1000")

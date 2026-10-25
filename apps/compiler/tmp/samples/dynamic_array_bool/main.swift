@@ -5,16 +5,13 @@ final class SpiralArray<T> {
     init(_ items: [T]) { self.items = items }
 }
 func spiral_main() -> Int32 {
-    var v0: Int32 = 0
-    v0 = 2
+    let v0: Int32 = 2
     var v1: SpiralArray<Bool> = SpiralArray<Bool>([])
     v1 = SpiralArray<Bool>(Array(repeating: false, count: Int(v0)))
     v1.items[Int(0)] = true
     v1.items[Int(1)] = false
-    var v2: Int32 = 0
-    v2 = 0
-    var v3: Bool = false
-    v3 = v1.items[Int(v2)]
+    let v2: Int32 = 0
+    let v3: Bool = v1.items[Int(v2)]
     if (v3) {
         return 0
     } else {

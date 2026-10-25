@@ -11,16 +11,16 @@ fn leaf_c_1() -> i32 {
     0i32
 }
 fn slow_a_0() -> i32 {
-    let mut v0: i32 = leaf_c_1();
+    let v0: i32 = leaf_c_1();
     v0
 }
 fn fast_b_2() -> i32 {
     0i32
 }
 fn spiral_main() -> i32 {
-    let mut v0: i32 = slow_a_0();
-    let mut v1: i32 = fast_b_2();
-    let mut v2: i32 = v0.wrapping_add(v1);
+    let v0: i32 = slow_a_0();
+    let v1: i32 = fast_b_2();
+    let v2: i32 = v0.wrapping_add(v1);
     v2
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }

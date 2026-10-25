@@ -30,38 +30,38 @@ function spiral_string_slice(value: string, from: number, to: number): string {
     return spiral_utf8_decoder.decode(bytes.subarray(from, to + 1));
 }
 export function main(): number {
-    let v0: string = "é";
-    let v1: string = "x";
-    let v2: string = v0 + v1;
-    let v3: string = "éx";
-    let v4: string = "éy";
-    let v5: string = "";
-    let v6: string = spiral_string_slice(v3, 1, 0);
-    let v7: boolean = v2 === v3;
+    const v0: string = "é";
+    const v1: string = "x";
+    const v2: string = v0 + v1;
+    const v3: string = "éx";
+    const v4: string = "éy";
+    const v5: string = "";
+    const v6: string = spiral_string_slice(v3, 1, 0);
+    const v7: boolean = v2 === v3;
     let v9: boolean;
     if (v7) {
-        let v8: boolean = v2 !== v4;
+        const v8: boolean = v2 !== v4;
         v9 = v8;
     } else {
         v9 = false;
     }
     let v11: boolean;
     if (v9) {
-        let v10: boolean = v0 !== v3;
+        const v10: boolean = v0 !== v3;
         v11 = v10;
     } else {
         v11 = false;
     }
     let v13: boolean;
     if (v11) {
-        let v12: boolean = v5 === v6;
+        const v12: boolean = v5 === v6;
         v13 = v12;
     } else {
         v13 = false;
     }
     let v15: boolean;
     if (v13) {
-        let v14: boolean = v5 !== v0;
+        const v14: boolean = v5 !== v0;
         v15 = v14;
     } else {
         v15 = false;

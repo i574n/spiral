@@ -3,12 +3,11 @@ function Us0_Text(v0) return { tag = "Us0_Text",  _1 = v0 } end
 function Us0_Code(v0) return { tag = "Us0_Code",  _1 = v0 } end
 
 function score_0(v0)
-    local __v = { v0 }
-    if __v[1] ~= nil and __v[1].tag == "Us0_Code" then
-        local v4 = __v[1]._1
+    if v0 ~= nil and v0.tag == "Us0_Code" then
+        local v4 = v0._1
         return v4
-    elseif __v[1] ~= nil and __v[1].tag == "Us0_Text" then
-        local v1 = __v[1]._1
+    elseif v0 ~= nil and v0.tag == "Us0_Text" then
+        local v1 = v0._1
         local v2 = v1 == "hi"
         if v2 then
             return 2

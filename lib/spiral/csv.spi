@@ -1,22 +1,22 @@
 /// # csv
 test csv static =
-    open testing
+    :< testing
 
-open sm'_operators
+:< sm'_operators
 
 /// ### csv_line_as_tsv
-let rec quoted_as_tsv (segments : array string) (at : i32) (count : i32) (acc : string) : string =
-    if at >= count then acc
-    else
-        inl segment = am'.index at segments
-        inl piece =
-            if at % 2i32 = 1i32 then segment |> sm'.replace "\t" " " |> sm'.replace "\r" " " |> sm'.replace "\n" " "
-            elif segment = "" && at > 0i32 && at < count - 1i32 then "\""
-            else segment |> sm'.replace "\t" " " |> sm'.replace "," "\t"
+:~ ^ quoted_as_tsv (segments : array string) (at : i32) (count : i32) (acc : string) : string =
+    ? at >= count ?> acc
+    |:
+        := segment = am'.index at segments
+        := piece =
+            ? at % 2i32 = 1i32 ?> segment |> sm'.replace "\t" " " |> sm'.replace "\r" " " |> sm'.replace "\n" " "
+            |? segment = "" && at > 0i32 && at < count - 1i32 ?> "\""
+            |: segment |> sm'.replace "\t" " " |> sm'.replace "," "\t"
         quoted_as_tsv segments (at + 1i32) count (acc ++# piece)
 
-let csv_line_as_tsv (line : string) : string =
-    inl segments = sm'.split "\"" line |> array
+:~ csv_line_as_tsv (line : string) : string =
+    := segments = sm'.split "\"" line |> array
     quoted_as_tsv segments 0i32 (am'.length segments) ""
 
 ///> rust

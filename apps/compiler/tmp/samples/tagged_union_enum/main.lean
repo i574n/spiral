@@ -49,15 +49,11 @@ partial def score_0 (p0 : U0) : IO Int32 := do
     | U0.Warm =>
         return (2 : Int32)
 partial def spiralMain : IO Int32 := do
-    let mut v0 : Int32 := default
-    let mut v1 : Bool := default
     let mut v10 : U0 := default
     let mut v3 : Bool := default
     let mut v5 : Bool := default
-    let mut v11 : Int32 := default
-    let mut v12 : Int32 := default
-    v0 := (3 : Int32)
-    v1 := (v0 == (0 : Int32))
+    let v0 : Int32 := (3 : Int32)
+    let v1 : Bool := (v0 == (0 : Int32))
     if v1 then
         v10 := U0.Cold
     else
@@ -70,8 +66,8 @@ partial def spiralMain : IO Int32 := do
                 v10 := U0.Hot
             else
                 v10 := U0.Done
-    v11 := (← score_0 v10)
-    v12 := (v11 - (4 : Int32))
+    let v11 : Int32 := (← score_0 v10)
+    let v12 : Int32 := (v11 - (4 : Int32))
     return v12
 end
 def main : IO UInt32 := do

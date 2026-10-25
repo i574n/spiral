@@ -47,8 +47,7 @@ func sp_score_0(_ p0: US0) -> Int32 {
     }
 }
 func spiral_main() -> Int32 {
-    var v0: Bool = false
-    v0 = false
+    let v0: Bool = false
     var v4: US0 = US0_Text(f0: "")
     if (v0) {
         v4 = US0_Number(f0: 7)
@@ -57,14 +56,10 @@ func spiral_main() -> Int32 {
         v2 = "qwe"
         v4 = US0_Text(f0: v2)
     }
-    var v5: Int32 = 0
-    v5 = sp_score_0(v4)
-    var v6: Int32 = 0
-    v6 = sp_score_0(v4)
-    var v7: Int32 = 0
-    v7 = (v5 &+ v6)
-    var v8: Int32 = 0
-    v8 = (v7 &- 6)
+    let v5: Int32 = sp_score_0(v4)
+    let v6: Int32 = sp_score_0(v4)
+    let v7: Int32 = (v5 &+ v6)
+    let v8: Int32 = (v7 &- 6)
     return v8
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

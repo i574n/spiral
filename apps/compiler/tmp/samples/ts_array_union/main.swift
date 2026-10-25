@@ -20,18 +20,15 @@ func sp_score_0(_ p0: US0) -> Int32 {
             v3 = v1.items[Int(0)]
             var v4: Int32 = 0
             v4 = (v2 &+ v3)
-            var v5: Int32 = 0
-            v5 = v1.items[Int(1)]
-            var v6: Int32 = 0
-            v6 = (v4 &+ v5)
+            let v5: Int32 = v1.items[Int(1)]
+            let v6: Int32 = (v4 &+ v5)
             return v6
         default:
             fatalError("unreachable union case")
     }
 }
 func spiral_main() -> Int32 {
-    var v0: Int32 = 0
-    v0 = 2
+    let v0: Int32 = 2
     var v1: SpiralArray<Int32> = SpiralArray<Int32>([])
     v1 = SpiralArray<Int32>(Array(repeating: 0, count: Int(v0)))
     v1.items[Int(0)] = 4

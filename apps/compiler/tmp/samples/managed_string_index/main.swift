@@ -29,12 +29,9 @@ func spiralStringSlice(_ value: String, _ from: Int32, _ to: Int32) -> String {
     return String(decoding: bytes[f...t], as: UTF8.self)
 }
 func spiral_main() -> Int32 {
-    var v0: String = ""
-    v0 = "qwe"
-    var v1: Int32 = 0
-    v1 = spiralStringIndex(v0, 1)
-    var v2: Bool = false
-    v2 = (v1 == 119)
+    let v0: String = "qwe"
+    let v1: Int32 = spiralStringIndex(v0, 1)
+    let v2: Bool = (v1 == 119)
     if (v2) {
         return 0
     } else {

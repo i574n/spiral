@@ -23,8 +23,7 @@ fun sp_is_even_0(p0: Int): Boolean {
     }
 }
 fun spiral_main(): Int {
-    var v0: Int = 0
-    v0 = 10
+    val v0: Int = 10
     var v1: Boolean = false
     v1 = sp_is_even_0(v0)
     if (v1) {

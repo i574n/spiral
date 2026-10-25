@@ -27,16 +27,12 @@ mutual
 partial def method2 : IO Int32 := do
     return (14 : Int32)
 partial def method1 : IO Int32 := do
-    let mut v0 : Int32 := default
-    let mut v1 : Int32 := default
-    v0 := (← method2)
-    v1 := ((14 : Int32) + v0)
+    let v0 : Int32 := (← method2)
+    let v1 : Int32 := ((14 : Int32) + v0)
     return v1
 partial def method0 : IO Int32 := do
-    let mut v0 : Int32 := default
-    let mut v1 : Int32 := default
-    v0 := (← method1)
-    v1 := ((14 : Int32) + v0)
+    let v0 : Int32 := (← method1)
+    let v1 : Int32 := ((14 : Int32) + v0)
     return v1
 partial def spiralMain : IO Int32 := do
     return (← method0)

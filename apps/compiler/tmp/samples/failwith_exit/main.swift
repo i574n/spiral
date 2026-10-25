@@ -1,10 +1,8 @@
 import CRT
 import WinSDK
 func spiral_main() -> Int32 {
-    var v0: Int32 = 0
-    v0 = 1
-    var v1: Bool = false
-    v1 = (v0 == 1)
+    let v0: Int32 = 1
+    let v1: Bool = (v0 == 1)
     if (v1) {
         "bo$om".withCString { ptr in _ = fputs(ptr, stderr) }
         fputs("\n", stderr)

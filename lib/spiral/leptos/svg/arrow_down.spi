@@ -1,14 +1,14 @@
-open sm'_operators
-open leptos
-open rust
+:< sm'_operators
+:< leptos
+:< rust
 
-inl render (class : () -> string) props : _ (_ svg) =
+:= render (class : () -> string) props : _ (_ svg) =
     svg ([
         $'"xmlns=\\\"http://www.w3.org/2000/svg\\\""'
         $'"viewBox=\\\"0 0 20 20\\\""'
         $'"fill=\\\"currentColor\\\""'
         class_fn " " class
-        ] ++ props) fun () =>
+        ] ++ props) \ () =>
         :>[
             path [
                 $'"fill-rule=\\\"evenodd\\\""'

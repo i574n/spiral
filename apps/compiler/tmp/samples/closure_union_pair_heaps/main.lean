@@ -43,8 +43,7 @@ partial def f_c0 (p0 : H0) (p1 : H0) (p2 : Int32) : IO U0 := do
     let mut v0 : H0 := p0
     let mut v1 : H0 := p1
     let mut v2 : Int32 := p2
-    let mut v3 : Bool := default
-    v3 := (v2 == (0 : Int32))
+    let v3 : Bool := (v2 == (0 : Int32))
     if v3 then
         return U0.None
     else
@@ -95,22 +94,14 @@ partial def score_0 (p0 : U0) : IO Int32 := do
     | U0.None =>
         return (1 : Int32)
 partial def spiralMain : IO Int32 := do
-    let mut v0 : Int32 := default
-    let mut v1 : String := default
-    let mut v2 : H0 := default
-    let mut v3 : Int32 := default
-    let mut v4 : String := default
-    let mut v5 : H0 := default
-    let mut v6 : (Int32 → IO U0) := default
-    let mut v7 : U0 := default
-    v0 := (7 : Int32)
-    v1 := "hi"
-    v2 := (H0.mk v0 v1)
-    v3 := (4 : Int32)
-    v4 := "yo"
-    v5 := (H0.mk v3 v4)
-    v6 := (f_c0 v2 v5)
-    v7 := (← v6 (1 : Int32))
+    let v0 : Int32 := (7 : Int32)
+    let v1 : String := "hi"
+    let v2 : H0 := (H0.mk v0 v1)
+    let v3 : Int32 := (4 : Int32)
+    let v4 : String := "yo"
+    let v5 : H0 := (H0.mk v3 v4)
+    let v6 : (Int32 → IO U0) := (f_c0 v2 v5)
+    let v7 : U0 := (← v6 (1 : Int32))
     return (← score_0 v7)
 end
 def main : IO UInt32 := do

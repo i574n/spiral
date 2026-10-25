@@ -90,8 +90,7 @@ func sp_score_0(_ p0: US1) -> Int32 {
                     v14 = (v10 == 7)
                     var v16: Bool = false
                     if (v14) {
-                        var v15: Bool = false
-                        v15 = (v11 == "hi")
+                        let v15: Bool = (v11 == "hi")
                         v16 = v15
                     } else {
                         v16 = false
@@ -138,12 +137,9 @@ func sp_score_0(_ p0: US1) -> Int32 {
     }
 }
 func spiral_main() -> Int32 {
-    var v0: Int32 = 0
-    v0 = 7
-    var v1: String = ""
-    v1 = "hi"
-    var v2: Heap0 = Heap0(l0: 0, l1: "")
-    v2 = Heap0(l0: v0, l1: v1)
+    let v0: Int32 = 7
+    let v1: String = "hi"
+    let v2: Heap0 = Heap0(l0: v0, l1: v1)
     var v3: Int32 = 0
     v3 = 4
     var v4: String = ""
@@ -186,35 +182,25 @@ func spiral_main() -> Int32 {
     var v22: US1 = US1_Absent()
     v22 = v19(2)
     v20.items[Int(1)] = v22
-    var v23: US1 = US1_Absent()
-    v23 = v19(0)
+    let v23: US1 = v19(0)
     v20.items[Int(2)] = v23
-    var v24: US1 = US1_Absent()
-    v24 = v20.items[Int(0)]
-    var v25: Int32 = 0
-    v25 = sp_score_0(v24)
-    var v26: US1 = US1_Absent()
-    v26 = v20.items[Int(1)]
-    var v27: Int32 = 0
-    v27 = sp_score_0(v26)
-    var v28: US1 = US1_Absent()
-    v28 = v20.items[Int(2)]
-    var v29: Int32 = 0
-    v29 = sp_score_0(v28)
-    var v30: Bool = false
-    v30 = (v25 == 0)
+    let v24: US1 = v20.items[Int(0)]
+    let v25: Int32 = sp_score_0(v24)
+    let v26: US1 = v20.items[Int(1)]
+    let v27: Int32 = sp_score_0(v26)
+    let v28: US1 = v20.items[Int(2)]
+    let v29: Int32 = sp_score_0(v28)
+    let v30: Bool = (v25 == 0)
     var v32: Bool = false
     if (v30) {
-        var v31: Bool = false
-        v31 = (v27 == 1)
+        let v31: Bool = (v27 == 1)
         v32 = v31
     } else {
         v32 = false
     }
     var v34: Bool = false
     if (v32) {
-        var v33: Bool = false
-        v33 = (v29 == 1)
+        let v33: Bool = (v29 == 1)
         v34 = v33
     } else {
         v34 = false

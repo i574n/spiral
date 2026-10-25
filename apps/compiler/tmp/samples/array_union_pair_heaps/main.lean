@@ -85,30 +85,22 @@ partial def score_0 (p0 : U0) : IO Int32 := do
     | U0.None =>
         return (1 : Int32)
 partial def spiralMain : IO Int32 := do
-    let mut v0 : Int32 := default
-    let mut v1 : String := default
-    let mut v2 : H0 := default
-    let mut v3 : Int32 := default
-    let mut v4 : String := default
-    let mut v5 : H0 := default
     let mut v6 : (IO.Ref (Array U0)) ← IO.mkRef #[]
-    let mut v7 : Bool := default
     let mut v10 : U0 := default
-    let mut v11 : U0 := default
-    v0 := (7 : Int32)
-    v1 := "hi"
-    v2 := (H0.mk v0 v1)
-    v3 := (4 : Int32)
-    v4 := "yo"
-    v5 := (H0.mk v3 v4)
+    let v0 : Int32 := (7 : Int32)
+    let v1 : String := "hi"
+    let v2 : H0 := (H0.mk v0 v1)
+    let v3 : Int32 := (4 : Int32)
+    let v4 : String := "yo"
+    let v5 : H0 := (H0.mk v3 v4)
     v6 := (← IO.mkRef (Array.replicate (spiralIdx (1 : Int32)) (default : U0)))
-    v7 := true
+    let v7 : Bool := true
     if v7 then
         v10 := (U0.Held v2 v5)
     else
         v10 := U0.None
     v6.modify (fun xs => xs.set! (spiralIdx (0 : Int32)) v10)
-    v11 := (← spiralIndex (← v6.get) (spiralIdx (0 : Int32)))
+    let v11 : U0 := (← spiralIndex (← v6.get) (spiralIdx (0 : Int32)))
     return (← score_0 v11)
 end
 def main : IO UInt32 := do

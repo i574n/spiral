@@ -1,18 +1,18 @@
 /// # async
 test async static =
-    open testing
+    :< testing
 
-open rust
-open rust_operators
+:< rust
+:< rust_operators
 
 /// ### base_let'
-inl base_let' x =
+:= base_let' x =
     let' x
 
 /// ## rust
 
 /// ### future
-nominal future t =
+:! future t =
     `(
         rust.rust_type
             `($'std_future_Future<`t>')
@@ -21,23 +21,23 @@ nominal future t =
     )
 
 /// ### future_pin
-type future_pin t = rust.pin (rust.box (rust.dyn' (future t)))
+:== future_pin t = rust.pin (rust.box (rust.dyn' (future t)))
 
 /// ### future_pin_send
-type future_pin_send t = rust.pin (rust.box (rust.send (rust.dyn' (future t))))
+:== future_pin_send t = rust.pin (rust.box (rust.send (rust.dyn' (future t))))
 
 /// ### block_on_tokio
-inl block_on_tokio forall t. (fn : future_pin t) : t =
-    inl runtime : infer =
+:= block_on_tokio \* t. (fn : future_pin t) : t =
+    := runtime : infer =
         !\($'$"tokio::runtime::Builder::new_multi_thread().enable_all().build().unwrap()"')
     !\\(fn, $'"!runtime.handle().block_on($0)"')
 
 /// ### block_on_futures
-inl block_on_futures forall t. (fn : future_pin t) : t =
+:= block_on_futures \* t. (fn : future_pin t) : t =
     !\\(fn, $'"futures::executor::block_on($0)"')
 
 /// ### stream_ext_tokio
-nominal stream_ext_tokio =
+:! stream_ext_tokio =
     `(
         rust.rust_type
             `($'tokio_stream_StreamExt')
@@ -46,7 +46,7 @@ nominal stream_ext_tokio =
     )
 
 /// ### join_handle_tokio
-nominal join_handle_tokio t =
+:! join_handle_tokio t =
     `(
         rust.rust_type
             `($'tokio_task_JoinHandle<`t>')
@@ -55,23 +55,23 @@ nominal join_handle_tokio t =
     )
 
 /// ### stream_collect_futures
-inl stream_collect_futures forall t u.
+:= stream_collect_futures \* t u.
     (stream : t)
     : future_pin (am'.vec u)
     =
     !\($'"Box::pin(futures::stream::StreamExt::collect(!stream))"')
 
 /// ### stream_filter_map_futures
-inl stream_filter_map_futures forall t u v.
+:= stream_filter_map_futures \* t u v.
     (fn : u -> optionm'.option' v)
     (stream : t)
     : infer' v
     =
-    inl fn = join fn
+    := fn = ~~ fn
     !\($'"futures::stream::StreamExt::filter_map(!stream, |x| async { !fn(x) })"')
 
 /// ### try_join_all
-nominal try_join_all t =
+:! try_join_all t =
     `(
         rust.rust_type
             `($'futures_future_TryJoinAll<`t>')
@@ -79,15 +79,15 @@ nominal try_join_all t =
             "type futures_future_TryJoinAll<'T> = class end"
     )
 
-inl try_join_all forall t.
+:= try_join_all \* t.
     (x : am'.vec (future_pin (resultm.result' t sm'.std_string)))
     : try_join_all (future_pin (resultm.result' t sm'.std_string))
     =
-    inl x = join x
+    := x = ~~ x
     !\($'"futures::future::try_join_all(!x)"')
 
 /// ### fuse_tokio
-nominal fuse_tokio t =
+:! fuse_tokio t =
     `(
         rust.rust_type
             `($'tokio_prelude_stream_Fuse<`t>')
@@ -96,10 +96,10 @@ nominal fuse_tokio t =
     )
 
 /// ### fuse'
-type fuse' t = fuse_tokio t
+:== fuse' t = fuse_tokio t
 
 /// ### join_all
-nominal join_all t =
+:! join_all t =
     `(
         rust.rust_type
             `($'futures_future_JoinAll<`t>')
@@ -107,139 +107,139 @@ nominal join_all t =
             "type futures_future_JoinAll<'T> = class end"
     )
 
-inl join_all forall t. (x : am'.vec (future_pin t)) : join_all (future_pin t) =
-    inl x = join x
+:= join_all \* t. (x : am'.vec (future_pin t)) : join_all (future_pin t) =
+    := x = ~~ x
     !\($'"futures::future::join_all(!x)"')
 
 /// ### join_handle'
-type join_handle' t = join_handle_tokio t
+:== join_handle' t = join_handle_tokio t
 
 /// ### try_await_all
-inl try_await_all forall t.
+:= try_await_all \* t.
     (x : try_join_all (future_pin (resultm.result' t sm'.std_string)))
     : resultm.result' (am'.vec t) sm'.std_string
     =
     !\($'"!x.await"')
 
 /// ### await
-inl await forall t. (x : future_pin t) : t =
+:= await \* t. (x : future_pin t) : t =
     !\($'"!x.await"')
 
 /// ### await
-inl await_send forall t. (x : future_pin_send t) : t =
+:= await_send \* t. (x : future_pin_send t) : t =
     !\($'"!x.await"')
 
 /// ### into_iter
-type into_iter t = array_base t
+:== into_iter t = array_base t
 
 /// ### into_par_iter
-inl into_par_iter forall t. (x : am'.vec t) : into_iter t =
+:= into_par_iter \* t. (x : am'.vec t) : into_iter t =
     x |> am'.from_vec_base
 
 /// ### par_map
-inl par_map forall t u. (fn : t -> u) (ar : into_iter t) : into_iter u =
-    inl n : i32 = $'(!ar.borrow().len() as i32)'
-    let rec loop (i : i32) (acc : am'.vec u) : am'.vec u =
-        if i < n then loop (i + 1) (acc |> am'.vec_push (fn (am'.index_base i ar))) else acc
+:= par_map \* t u. (fn : t -> u) (ar : into_iter t) : into_iter u =
+    := n : i32 = $'(!ar.borrow().len() as i32)'
+    :~ ^ loop (i : i32) (acc : am'.vec u) : am'.vec u =
+        ? i < n ?> loop (i + 1) (acc |> am'.vec_push (fn (am'.index_base i ar))) |: acc
     loop 0 (am'.new_vec []) |> am'.from_vec_base
 
 /// ### par_collect
-inl par_collect forall t. (iter : into_iter t) : am'.vec t =
+:= par_collect \* t. (iter : into_iter t) : am'.vec t =
     iter |> am'.to_vec
 
 /// ### future_init
-inl future_init forall t. (move : bool) (x : () -> t) : infer' t =
+:= future_init \* t. (move : bool) (x : () -> t) : infer' t =
     (!\($'"true; let __future_init = Box::pin(/*"') : bool) |> ignore
-    if move
-    then (!\($'"*/ async move { /*"') : bool) |> ignore
-    else (!\($'"*/ async { /*"') : bool) |> ignore
+    ? move
+    ?> (!\($'"*/ async move { /*"') : bool) |> ignore
+    |: (!\($'"*/ async { /*"') : bool) |> ignore
     (!\($'"*/ ()"') : bool) |> ignore
 
-    inl x' = x ()
+    := x' = x ()
 
-    inl depth = 1, 0
+    := depth = 1, 0
 
     x' |> rust.fix_closure depth
 
     !\($'"__future_init"')
 
 /// ### new_future
-inl new_future forall t. (x : () -> t) : future_pin t =
-    inl result = future_init false x
+:= new_future \* t. (x : () -> t) : future_pin t =
+    := result = future_init !- x
     !\($'"!result"')
 
 /// ### new_future_move
-inl new_future_move forall t. (x : () -> t) : future_pin t =
-    inl result = future_init true x
+:= new_future_move \* t. (x : () -> t) : future_pin t =
+    := result = future_init !+ x
     !\($'"!result"')
 
 /// ### new_future_send
-inl new_future_send forall t. (x : () -> t) : future_pin_send t =
-    inl result = future_init false x
+:= new_future_send \* t. (x : () -> t) : future_pin_send t =
+    := result = future_init !- x
     !\($'"!result"')
 
 /// ### new_future_move_send
-inl new_future_move_send forall t. (x : () -> t) : future_pin_send t =
-    inl result = future_init true x
+:= new_future_move_send \* t. (x : () -> t) : future_pin_send t =
+    := result = future_init !+ x
     !\($'"!result"')
 
 /// ## fsharp
 
 /// ### async
-nominal async_python t =
+:! async_python t =
     `(
         backend_switch `(()) `({}) {
-            Python = (fun () => global "import asyncio") : () -> ()
+            Python = (\ () => global "import asyncio") : () -> ()
         }
         $'' : $'any'
     )
-type async_switch t =
+:== async_switch t =
     {
         Fsharp : $'Async<`t>'
         Python : async_python t
         Rust : $'std::pin::Pin<Box<dyn std::future::Future<Output = `t>>>'
     }
-nominal async t = $'backend_switch `(async_switch t)'
+:! async t = $'backend_switch `(async_switch t)'
 
 /// ### task
-nominal task t =
+:! task t =
     `(
-        typecase t with
+        ?: t ?|
         | () => $'' : $'System.Threading.Tasks.Task'
         | _ => $'' : $'System.Threading.Tasks.Task<`t>'
     )
 
 /// ### new_task
-inl new_task forall t. (fn : () -> t) : task t =
-    run_target_args' fn function
-        | Fsharp _ => fun fn =>
-            inl result : optionm'.option' (task t) = optionm'.none' ()
+:= new_task \* t. (fn : () -> t) : task t =
+    run_target_args' fn \|
+        | Fsharp _ => \ fn =>
+            := result : optionm'.option' (task t) = optionm'.none' ()
             $'let mutable _new_task_!result = !result '
             $'task {'
             fn () |> ignore
             $'}'
             $'|> fun x -> _new_task_!result <- Some x'
             $'match _new_task_!result with Some x -> x | None -> failwith "async.new_task / _new_task_!result=None"'
-        | _ => fun _ => null ()
+        | _ => \ _ => null ()
 
 /// ### await_task
-inl await_task forall t. (a : task t) : async t =
-    run_target function
+:= await_task \* t. (a : task t) : async t =
+    run_target \|
         | Fsharp _
-        | TypeScript _ => fun () =>
+        | TypeScript _ => \ () =>
             a |> $'Async.AwaitTask'
-        | _ => fun () => null ()
+        | _ => \ () => null ()
 
 /// ### future_of_async
-inl future_of_async forall t. (a : async t) : future_pin t =
+:= future_of_async \* t. (a : async t) : future_pin t =
     $'!a' : future_pin t
 
 /// ### async_of_future
-inl async_of_future forall t. (f : future_pin t) : async t =
+:= async_of_future \* t. (f : future_pin t) : async t =
     $'!f' : async t
 
 /// ### poll
-nominal poll t =
+:! poll t =
     `(
         rust.rust_type
             `($'std_task_Poll<`t>')
@@ -248,7 +248,7 @@ nominal poll t =
     )
 
 /// ### context
-nominal context =
+:! context =
     `(
         rust.rust_type
             `($'std_task_Context')
@@ -257,7 +257,7 @@ nominal context =
     )
 
 /// ### waker
-nominal waker =
+:! waker =
     `(
         rust.rust_type
             `($'std_task_Waker')
@@ -266,7 +266,7 @@ nominal waker =
     )
 
 /// ### thread_handle
-nominal thread_handle =
+:! thread_handle =
     `(
         rust.rust_type
             `($'std_thread_Thread')
@@ -275,52 +275,52 @@ nominal thread_handle =
     )
 
 /// ### current_thread
-inl current_thread () : thread_handle =
+:= current_thread () : thread_handle =
     $'std::thread::current()' : thread_handle
 
 /// ### thread_park
-inl thread_park () : () =
+:= thread_park () : () =
     $'std::thread::park()' : ()
 
 /// ### thread_waker_types
-inl thread_waker_types () =
+:= thread_waker_types () =
     global "struct SpiralThreadWaker(std::thread::Thread);"
     global "impl std::task::Wake for SpiralThreadWaker { fn wake(self: std::sync::Arc<Self>) { self.0.unpark() } }"
 
 /// ### thread_waker
-inl thread_waker (thread : thread_handle) : waker =
+:= thread_waker (thread : thread_handle) : waker =
     thread_waker_types ()
     $'std::task::Waker::from(std::sync::Arc::new(SpiralThreadWaker(!thread)))' : waker
 
 /// ### context_of_waker
-inl context_of_waker (w : rust.ref waker) : context =
+:= context_of_waker (w : rust.ref waker) : context =
     $'std::task::Context::from_waker(!w)' : context
 
 /// ### poll_once
-inl poll_once forall t. (f : rust.ref (rust.mut' (future_pin t))) (cx : rust.ref (rust.mut' context)) : poll t =
+:= poll_once \* t. (f : rust.ref (rust.mut' (future_pin t))) (cx : rust.ref (rust.mut' context)) : poll t =
     $'std::future::Future::poll((!f).as_mut(), !cx)' : poll t
 
 /// ### poll_ready
-inl poll_ready forall t. (x : t) : poll t =
+:= poll_ready \* t. (x : t) : poll t =
     $'std::task::Poll::Ready(!x)' : poll t
 
 /// ### poll_pending
-inl poll_pending forall t. () : poll t =
+:= poll_pending \* t. () : poll t =
     $'std::task::Poll::Pending' : poll t
 
 /// ### poll_option
-inl poll_option forall t. (p : poll t) : optionm'.option' t =
+:= poll_option \* t. (p : poll t) : optionm'.option' t =
     $'match !p { std::task::Poll::Ready(v) => Some(v), std::task::Poll::Pending => None }' : optionm'.option' t
 
 /// ### poll_fn
-inl poll_fn forall t. (body : rust.ref (rust.mut' context) -> poll t) : future_pin t =
+:= poll_fn \* t. (body : rust.ref (rust.mut' context) -> poll t) : future_pin t =
     (!\($'"true; let __poll_fn = Box::pin(std::future::poll_fn(move |__poll_cx: &mut std::task::Context| { //"') : bool)
     |> ignore
     (!\\(body ($'__poll_cx' : rust.ref (rust.mut' context)), $'"true; $0 }))"') : bool) |> ignore
     !\($'"__poll_fn"')
 
 /// ### catch_unwind_poll
-inl catch_unwind_poll forall t.
+:= catch_unwind_poll \* t.
     (f : rust.ref (rust.mut' (future_pin t)))
     (cx : rust.ref (rust.mut' context))
     : rust_caught (poll t)
@@ -329,157 +329,157 @@ inl catch_unwind_poll forall t.
     : rust_caught (poll t)
 
 /// ### run_synchronously_rust
-inl run_synchronously_rust forall t. (a : async t) : t =
-    inl waker = current_thread () |> thread_waker
-    inl context = waker |> rust.to_ref |> context_of_waker
-    inl future = a |> future_of_async
+:= run_synchronously_rust \* t. (a : async t) : t =
+    := waker = current_thread () |> thread_waker
+    := context = waker |> rust.to_ref |> context_of_waker
+    := future = a |> future_of_async
     future |> rust.to_mut
     context |> rust.to_mut
-    inl result = mut (optionm'.none' ())
-    rust.loop 0 fun () =>
-        inl polled = poll_once (rust.to_ref_mut future) (rust.to_ref_mut context) |> poll_option
+    := result = mut (optionm'.none' ())
+    rust.loop 0 \ () =>
+        := polled = poll_once (rust.to_ref_mut future) (rust.to_ref_mut context) |> poll_option
         result <- polled
-        inl _ =
-            if optionm'.is_none' polled then
+        := _ =
+            ? optionm'.is_none' polled ?>
                 thread_park ()
-                false
-            else
+                !-
+            |:
                 rust.break ()
-                true
+                !+
         ()
     *result |> optionm'.unwrap
 
 /// ### caught_poll
-inl caught_poll forall t. (caught : rust_caught (poll t)) : poll (resultm.result' t exn) =
-    if rust_caught_ok caught then
-        inl polled = caught |> rust_caught_value |> poll_option
-        if optionm'.is_none' polled then poll_pending () else polled |> optionm'.unwrap |> resultm.ok'' |> poll_ready
-    else caught |> rust_caught_payload |> rust_panic_text |> rust_exn_of_text |> resultm.err |> poll_ready
+:= caught_poll \* t. (caught : rust_caught (poll t)) : poll (resultm.result' t exn) =
+    ? rust_caught_ok caught ?>
+        := polled = caught |> rust_caught_value |> poll_option
+        ? optionm'.is_none' polled ?> poll_pending () |: polled |> optionm'.unwrap |> resultm.ok'' |> poll_ready
+    |: caught |> rust_caught_payload |> rust_panic_text |> rust_exn_of_text |> resultm.err |> poll_ready
 
 /// ### ignore
-inl ignore forall t. (a : async t) : async () =
-    if is_rust ()
-    then new_future_move (fun () => a |> future_of_async |> await |> ignore) |> async_of_future
-    else
-        run_target function
+:= ignore \* t. (a : async t) : async () =
+    ? is_rust ()
+    ?> new_future_move (\ () => a |> future_of_async |> await |> ignore) |> async_of_future
+    |:
+        run_target \|
             | Fsharp _
-            | TypeScript _ => fun () =>
+            | TypeScript _ => \ () =>
                 a |> $'Async.Ignore'
-            | _ => fun () => null ()
+            | _ => \ () => null ()
 
 /// ### run_synchronously
-inl run_synchronously forall t. (a : async t) : t =
-    run_target function
-        | Fsharp _ => fun () =>
+:= run_synchronously \* t. (a : async t) : t =
+    run_target \|
+        | Fsharp _ => \ () =>
             a |> $'Async.RunSynchronously'
-        | Cuda => fun () =>
+        | Cuda => \ () =>
             $'asyncio.run(!a())'
-        | Rust => fun () => run_synchronously_rust a
-        | _ => fun () => null ()
+        | Rust => \ () => run_synchronously_rust a
+        | _ => \ () => null ()
 
-inl catch_rust forall t. (a : async t) : async (resultm.result' t exn) =
-    inl future = a |> future_of_async
+:= catch_rust \* t. (a : async t) : async (resultm.result' t exn) =
+    := future = a |> future_of_async
     future |> rust.to_mut
-    poll_fn (fun cx => rust_quietly (fun () => catch_unwind_poll (rust.to_ref_mut future) cx |> caught_poll))
+    poll_fn (\ cx => rust_quietly (\ () => catch_unwind_poll (rust.to_ref_mut future) cx |> caught_poll))
     |> async_of_future
 
 /// ### start
-inl start (a : async ()) : () =
-    if is_rust ()
-    then a |> run_synchronously
-    else
-        run_target function
+:= start (a : async ()) : () =
+    ? is_rust ()
+    ?> a |> run_synchronously
+    |:
+        run_target \|
             | Fsharp _
-            | TypeScript _ => fun () =>
+            | TypeScript _ => \ () =>
                 a |> $'Async.Start'
-            | _ => fun () => null ()
+            | _ => \ () => null ()
 
 /// ### task_canceled_exception
-nominal task_canceled_exception = $'System.Threading.Tasks.TaskCanceledException'
+:! task_canceled_exception = $'System.Threading.Tasks.TaskCanceledException'
 
 /// ### sleep
-inl sleep (ms : i32) : async () =
-    run_target function
+:= sleep (ms : i32) : async () =
+    run_target \|
         | Fsharp _
-        | TypeScript _ => fun () =>
+        | TypeScript _ => \ () =>
             ms |> $'Async.Sleep'
-        | Cuda _ => fun () =>
+        | Cuda _ => \ () =>
             $'asyncio.sleep(!ms / 1000)'
-        | Rust => fun () =>
-            new_future_move (fun () => threading.sleep ms) |> async_of_future
-        | _ => fun () => null ()
+        | Rust => \ () =>
+            new_future_move (\ () => threading.sleep ms) |> async_of_future
+        | _ => \ () => null ()
 
 /// ### do
-inl do (a : async ()) : () =
+:= do (a : async ()) : () =
     backend_switch {
-        Fsharp = fun () => $'do\! !a ' : ()
-        Python = fun () => $'await !a ' : ()
+        Fsharp = \ () => $'do\! !a ' : ()
+        Python = \ () => $'await !a ' : ()
     }
 
 /// ### let'
-inl let' forall t. (a : async t) : t =
+:= let' \* t. (a : async t) : t =
     $'let\! !a = !a '
     $'!a '
 
 /// ### return_await'
-inl return_await' forall t. (a : async t) : t =
+:= return_await' \* t. (a : async t) : t =
     backend_switch {
-        Fsharp = fun () => $'return\! !a ' : ()
-        Python = fun () => $'await !a()' : ()
+        Fsharp = \ () => $'return\! !a ' : ()
+        Python = \ () => $'await !a()' : ()
     }
 
 /// ### catch'
-inl catch' forall t e. (a : async t) : async (choice2' t e) =
-    if is_rust ()
-    then
-        inl r = a |> catch_rust
+:= catch' \* t e. (a : async t) : async (choice2' t e) =
+    ? is_rust ()
+    ?>
+        := r = a |> catch_rust
         $'(!r)' : async (choice2' t e)
-    else
-        run_target function
+    |:
+        run_target \|
             | Fsharp _
-            | TypeScript _ => fun () =>
+            | TypeScript _ => \ () =>
                 a |> $'Async.Catch'
-            | _ => fun () => null ()
+            | _ => \ () => null ()
 
 /// ### cancellation_token
-inl cancellation_token () : async threading.cancellation_token =
+:= cancellation_token () : async threading.cancellation_token =
     $'Async.CancellationToken'
 
 /// ### value_task
-nominal value_task = $'System.Threading.Tasks.ValueTask'
+:! value_task = $'System.Threading.Tasks.ValueTask'
 
 /// ### value_task_as_task
-inl value_task_as_task (task : value_task) : task () =
-    run_target function
-        | Fsharp => fun () => $'!task.AsTask' ()
-        | _ => fun () => null ()
+:= value_task_as_task (task : value_task) : task () =
+    run_target \|
+        | Fsharp => \ () => $'!task.AsTask' ()
+        | _ => \ () => null ()
 
 /// ## main
-inl main () =
+:= main () =
     ()
 
 ///> rust
 test run_synchronously_drives_a_future_to_its_value =
-    inl ~n = 41i32
-    new_future_move (fun () => n + 1i32) |> async_of_future |> run_synchronously |> _assert_eq 42i32
+    := ~n = 41i32
+    new_future_move (\ () => n + 1i32) |> async_of_future |> run_synchronously |> _assert_eq 42i32
 
 ///> rust
 test sleep_then_ignore_completes =
-    inl ~ms = 1i32
-    inl ~n = 3i32
+    := ~ms = 1i32
+    := ~n = 3i32
     sleep ms |> ignore |> run_synchronously
     n |> _assert_eq 3i32
 
-inl async_outcome (r : resultm.result' i32 exn) : string =
-    match r |> resultm.unbox with
+:= async_outcome (r : resultm.result' i32 exn) : string =
+    ?= r |> resultm.unbox ?|
     | Ok v => sm'.obj_to_string v
     | Error _ => "error"
 
 ///> rust
 test catch_rust_turns_a_panic_into_an_error =
-    inl ~ok = 7i32
-    inl ~message = "boom"
-    inl fine = new_future_move (fun () => ok) |> async_of_future |> catch_rust |> run_synchronously
-    inl failed =
-        new_future_move (fun () => failwith message : i32) |> async_of_future |> catch_rust |> run_synchronously
+    := ~ok = 7i32
+    := ~message = "boom"
+    := fine = new_future_move (\ () => ok) |> async_of_future |> catch_rust |> run_synchronously
+    := failed =
+        new_future_move (\ () => failwith message : i32) |> async_of_future |> catch_rust |> run_synchronously
     (async_outcome fine, async_outcome failed) |> _assert_eq ("7", "error")

@@ -32,8 +32,7 @@ func f_c0(_ v0: String) -> (Int32) -> Int32 {
     return { (v1: Int32) -> Int32 in
         var v2: Int32 = 0
         v2 = spiralStringLength(v0)
-        var v3: Int32 = 0
-        v3 = (v2 &+ v1)
+        let v3: Int32 = (v2 &+ v1)
         return v3
     }
 }
@@ -43,10 +42,8 @@ func sp_apply_0(_ p0: @escaping (Int32) -> Int32, _ p1: Int32) -> Int32 {
     return v0(v1)
 }
 func spiral_main() -> Int32 {
-    var v0: String = ""
-    v0 = "abc"
-    var v1: (Int32) -> Int32 = { (_: Int32) -> Int32 in fatalError("unreachable closure") }
-    v1 = f_c0(v0)
+    let v0: String = "abc"
+    let v1: (Int32) -> Int32 = f_c0(v0)
     var v2: Int32 = 0
     v2 = 39
     return sp_apply_0(v1, v2)

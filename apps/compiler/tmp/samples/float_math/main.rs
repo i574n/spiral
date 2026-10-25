@@ -2,15 +2,15 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 fn method0(mut v0: f32, mut v1: f32) -> f32 {
-    let mut v2: f32 = v0 * v1;
-    let mut v3: f32 = v2 + 0.5f32;
+    let v2: f32 = v0 * v1;
+    let v3: f32 = v2 + 0.5f32;
     v3
 }
 fn spiral_main() -> i32 {
-    let mut v0: f32 = 1.5f32;
-    let mut v1: f32 = 2.0f32;
-    let mut v2: f32 = method0(v0, v1);
-    let mut v3: bool = v2 >= 3.5f32;
+    let v0: f32 = 1.5f32;
+    let v1: f32 = 2.0f32;
+    let v2: f32 = method0(v0, v1);
+    let v3: bool = v2 >= 3.5f32;
     if v3 {
         0i32
     } else {

@@ -3,18 +3,18 @@ use std::cell::RefCell;
 use std::rc::Rc;
 fn method1(mut v0: i32, mut v1: Rc<str>) -> Rc<str> {
     loop {
-        let mut v2: i32 = v0.wrapping_sub(1i32);
-        let mut v3: bool = v2 == 0i32;
+        let v2: i32 = v0.wrapping_sub(1i32);
+        let v3: bool = v2 == 0i32;
         if v3 {
             return v1.clone();
         } else {
-            let mut v4: i32 = v2.wrapping_rem(2i32);
-            let mut v5: bool = v4 == 0i32;
-            let mut v8: Rc<str> = if v5 {
-                let mut v6: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("ok"); } LIT.with(|lit| lit.clone()) };
+            let v4: i32 = v2.wrapping_rem(2i32);
+            let v5: bool = v4 == 0i32;
+            let v8: Rc<str> = if v5 {
+                let v6: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("ok"); } LIT.with(|lit| lit.clone()) };
                 v6.clone()
             } else {
-                let mut v7: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("go"); } LIT.with(|lit| lit.clone()) };
+                let v7: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("go"); } LIT.with(|lit| lit.clone()) };
                 v7.clone()
             };
             (v0, v1) = (v2, v8.clone());
@@ -23,28 +23,28 @@ fn method1(mut v0: i32, mut v1: Rc<str>) -> Rc<str> {
     }
 }
 fn method0() -> Rc<str> {
-    let mut v0: i32 = 1000000i32;
-    let mut v1: bool = v0 == 0i32;
+    let v0: i32 = 1000000i32;
+    let v1: bool = v0 == 0i32;
     if v1 {
-        let mut v2: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("seed"); } LIT.with(|lit| lit.clone()) };
-        v2.clone()
+        let v2: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("seed"); } LIT.with(|lit| lit.clone()) };
+        v2
     } else {
-        let mut v3: i32 = v0.wrapping_rem(2i32);
-        let mut v4: bool = v3 == 0i32;
-        let mut v7: Rc<str> = if v4 {
-            let mut v5: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("ok"); } LIT.with(|lit| lit.clone()) };
-            v5.clone()
+        let v3: i32 = v0.wrapping_rem(2i32);
+        let v4: bool = v3 == 0i32;
+        let v7: Rc<str> = if v4 {
+            let v5: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("ok"); } LIT.with(|lit| lit.clone()) };
+            v5
         } else {
-            let mut v6: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("go"); } LIT.with(|lit| lit.clone()) };
-            v6.clone()
+            let v6: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("go"); } LIT.with(|lit| lit.clone()) };
+            v6
         };
-        method1(v0, v7.clone())
+        method1(v0, v7)
     }
 }
 fn spiral_main() -> i32 {
-    let mut v0: Rc<str> = method0();
-    let mut v1: i32 = (v0.clone().len() as i32);
-    let mut v2: bool = v1 == 2i32;
+    let v0: Rc<str> = method0();
+    let v1: i32 = (v0.len() as i32);
+    let v2: bool = v1 == 2i32;
     if v2 {
         0i32
     } else {

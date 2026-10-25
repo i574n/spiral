@@ -8,28 +8,17 @@ fun f_c0(v0: Heap2): (Int) -> Heap2 {
     return { p0: Int -> body(p0) }
 }
 fun spiral_main(): Int {
-    var v0: Int = 0
-    v0 = 7
-    var v1: String = ""
-    v1 = "hi"
-    var v2: Heap0 = Heap0(0, "")
-    v2 = Heap0(v0, v1)
-    var v3: Int = 0
-    v3 = 4
-    var v4: String = ""
-    v4 = "yo"
-    var v5: Heap0 = Heap0(0, "")
-    v5 = Heap0(v3, v4)
-    var v6: Heap1 = Heap1(Heap0(0, ""), Heap0(0, ""))
-    v6 = Heap1(v2, v5)
-    var v7: Int = 0
-    v7 = 2
-    var v8: Heap2 = Heap2(Heap1(Heap0(0, ""), Heap0(0, "")), 0)
-    v8 = Heap2(v6, v7)
-    var v9: (Int) -> Heap2 = { _: Int -> throw RuntimeException() }
-    v9 = f_c0(v8)
-    var v10: Heap2 = Heap2(Heap1(Heap0(0, ""), Heap0(0, "")), 0)
-    v10 = v9(1)
+    val v0: Int = 7
+    val v1: String = "hi"
+    val v2: Heap0 = Heap0(v0, v1)
+    val v3: Int = 4
+    val v4: String = "yo"
+    val v5: Heap0 = Heap0(v3, v4)
+    val v6: Heap1 = Heap1(v2, v5)
+    val v7: Int = 2
+    val v8: Heap2 = Heap2(v6, v7)
+    val v9: (Int) -> Heap2 = f_c0(v8)
+    val v10: Heap2 = v9(1)
     var v11: Heap1 = Heap1(Heap0(0, ""), Heap0(0, ""))
     var v12: Int = 0
     v11 = v10.l0
@@ -46,36 +35,31 @@ fun spiral_main(): Int {
     var v18: String = ""
     v17 = v14.l0
     v18 = v14.l1
-    var v19: Boolean = false
-    v19 = (v15 == 7)
+    val v19: Boolean = (v15 == 7)
     var v21: Boolean = false
     if (v19) {
-        var v20: Boolean = false
-        v20 = (v16 == "hi")
+        val v20: Boolean = (v16 == "hi")
         v21 = v20
     } else {
         v21 = false
     }
     var v23: Boolean = false
     if (v21) {
-        var v22: Boolean = false
-        v22 = (v17 == 4)
+        val v22: Boolean = (v17 == 4)
         v23 = v22
     } else {
         v23 = false
     }
     var v25: Boolean = false
     if (v23) {
-        var v24: Boolean = false
-        v24 = (v18 == "yo")
+        val v24: Boolean = (v18 == "yo")
         v25 = v24
     } else {
         v25 = false
     }
     var v27: Boolean = false
     if (v25) {
-        var v26: Boolean = false
-        v26 = (v12 == 2)
+        val v26: Boolean = (v12 == 2)
         v27 = v26
     } else {
         v27 = false

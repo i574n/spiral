@@ -1,152 +1,152 @@
 /// # unicode
-open sm'_operators
+:< sm'_operators
 
 test unicode static =
-    open testing
+    :< testing
 
 /// ## unicode
 
 /// ### unicode_types
-inl unicode_types () =
+:= unicode_types () =
     backend_switch {
-        Gleam = fun () =>
+        Gleam = \ () =>
             global "import gleam/list"
             global "import gleam/string"
             global "import gleam/result"
-        Rust = fun () => ()
+        Rust = \ () => ()
     }
 
 /// ### is_scalar_value
-inl is_scalar_value (n : i32) : bool = n >= 0i32 && n <= 1114111i32 && (n < 55296i32 || n > 57343i32)
+:= is_scalar_value (n : i32) : bool = n >= 0i32 && n <= 1114111i32 && (n < 55296i32 || n > 57343i32)
 
 /// ### utf8_lead
-inl utf8_lead (byte_text : u8 -> string) (mark : u32) (shift : i32) (c : u32) : string =
+:= utf8_lead (byte_text : u8 -> string) (mark : u32) (shift : i32) (c : u32) : string =
     byte_text (conv (mark ||| (c >>> shift)))
 
 /// ### utf8_continuation
-inl utf8_continuation (byte_text : u8 -> string) (shift : i32) (c : u32) : string =
+:= utf8_continuation (byte_text : u8 -> string) (shift : i32) (c : u32) : string =
     byte_text (conv (128u32 ||| ((c >>> shift) &&& 63u32)))
 
 /// ### utf8_text
-inl utf8_text (byte_text : u8 -> string) (n : i32) : string =
-    inl c : u32 = conv n
-    inl lead mark shift = utf8_lead byte_text mark shift c
-    inl continuation shift = utf8_continuation byte_text shift c
-    if c < 128u32 then byte_text (conv c)
-    elif c < 2048u32 then lead 192u32 6i32 ++# continuation 0i32
-    elif c < 65536u32 then lead 224u32 12i32 ++# continuation 6i32 ++# continuation 0i32
-    else lead 240u32 18i32 ++# continuation 12i32 ++# continuation 6i32 ++# continuation 0i32
+:= utf8_text (byte_text : u8 -> string) (n : i32) : string =
+    := c : u32 = conv n
+    := lead mark shift = utf8_lead byte_text mark shift c
+    := continuation shift = utf8_continuation byte_text shift c
+    ? c < 128u32 ?> byte_text (conv c)
+    |? c < 2048u32 ?> lead 192u32 6i32 ++# continuation 0i32
+    |? c < 65536u32 ?> lead 224u32 12i32 ++# continuation 6i32 ++# continuation 0i32
+    |: lead 240u32 18i32 ++# continuation 12i32 ++# continuation 6i32 ++# continuation 0i32
 
 /// ### c_byte_text
-inl c_byte_text (b : u8) : string =
+:= c_byte_text (b : u8) : string =
     $'StringLit(2, (char[]){ !b, 0 })' : string
 
 /// ### rust_scalar
-nominal rust_scalar = $'char'
+:! rust_scalar = $'char'
 
 /// ### rust_char_of_u32
-inl rust_char_of_u32 (c : u32) : optionm'.option' rust_scalar =
+:= rust_char_of_u32 (c : u32) : optionm'.option' rust_scalar =
     $'char::from_u32(!c)' : optionm'.option' rust_scalar
 
 /// ### rust_char_code
-inl rust_char_code (c : rust_scalar) : u32 =
+:= rust_char_code (c : rust_scalar) : u32 =
     $'u32::from(!c)' : u32
 
 /// ### gleam_erlang_characters
-inl gleam_erlang_characters () =
+:= gleam_erlang_characters () =
     global """
         @ external(erlang, "unicode", "characters_to_binary")
         fn unicode_erlang_characters_to_binary(chars: List(Int)) -> String
         """
 
 /// ### scalar_text
-inl scalar_text (n : i32) : string =
-    run_target function
-        | Gleam => fun () =>
+:= scalar_text (n : i32) : string =
+    run_target \|
+        | Gleam => \ () =>
             gleam_erlang_characters ()
             $'unicode_erlang_characters_to_binary([!n])' : string
-        | Rust => fun () => (conv n : u32) |> rust_char_of_u32 |> optionm'.unwrap |> sm'.obj_to_string
-        | C => fun () => utf8_text c_byte_text n
-        | Fsharp => fun () => $'System.Char.ConvertFromUtf32 !n' : string
-        | TypeScript => fun () => $'String.fromCodePoint(!n)' : string
-        | _ => fun () => failwith "unicode.scalar_text: no arm for this backend"
+        | Rust => \ () => (conv n : u32) |> rust_char_of_u32 |> optionm'.unwrap |> sm'.obj_to_string
+        | C => \ () => utf8_text c_byte_text n
+        | Fsharp => \ () => $'System.Char.ConvertFromUtf32 !n' : string
+        | TypeScript => \ () => $'String.fromCodePoint(!n)' : string
+        | _ => \ () => failwith "unicode.scalar_text: no arm for this backend"
 
 /// ### char_of
-inl char_of (n : i32) : string =
-    if is_scalar_value n then scalar_text n else ""
+:= char_of (n : i32) : string =
+    ? is_scalar_value n ?> scalar_text n |: ""
 
 /// ### grapheme_list
-inl grapheme_list (s : string) : listm'.list' string =
+:= grapheme_list (s : string) : listm'.list' string =
     unicode_types ()
     backend_switch {
-        Gleam = fun () => $'string.to_graphemes(!s)' : listm'.list' string
-        Rust = fun () =>
+        Gleam = \ () => $'string.to_graphemes(!s)' : listm'.list' string
+        Rust = \ () =>
             $'Rc::new(unicode_segmentation::UnicodeSegmentation::graphemes(&*!s, true).map(Rc::<str>::from).collect())'
             : listm'.list' string
     }
 
 /// ### graphemes
-inl graphemes (s : string) : list string =
+:= graphemes (s : string) : list string =
     s |> grapheme_list |> listm'.rev' |> listm'.fold' id Nil
 
 /// ### first_scalar
-inl first_scalar (s : string) : optionm'.option' u32 =
+:= first_scalar (s : string) : optionm'.option' u32 =
     unicode_types ()
     backend_switch {
-        Gleam = fun () =>
+        Gleam = \ () =>
             $'option.from_result(result.map(list.first(string.to_utf_codepoints(!s)), string.utf_codepoint_to_int))'
             : optionm'.option' u32
-        Rust = fun () => ($'(&*!s).chars().next()' : optionm'.option' rust_scalar) |> optionm'.map rust_char_code
+        Rust = \ () => ($'(&*!s).chars().next()' : optionm'.option' rust_scalar) |> optionm'.map rust_char_code
     }
 
 /// ### first_code_point
-inl first_code_point (s : string) : i32 =
-    s |> first_scalar |> optionm'.map (fun c => conv c) |> optionm'.default_value' 0i32
+:= first_code_point (s : string) : i32 =
+    s |> first_scalar |> optionm'.map (\ c => conv c) |> optionm'.default_value' 0i32
 
 /// ### code_point_count
-inl code_point_count (s : string) : i32 =
+:= code_point_count (s : string) : i32 =
     unicode_types ()
     backend_switch {
-        Gleam = fun () => $'list.length(string.to_utf_codepoints(!s))' : i32
-        Rust = fun () => ($'(&*!s).chars().count()' : convert.unativeint) |> convert.convert : i32
-        Zig = fun () =>
-            inl count : u64 = $'std.unicode.utf8CountCodepoints(!s) catch 0'
+        Gleam = \ () => $'list.length(string.to_utf_codepoints(!s))' : i32
+        Rust = \ () => ($'(&*!s).chars().count()' : convert.unativeint) |> convert.convert : i32
+        Zig = \ () =>
+            := count : u64 = $'std.unicode.utf8CountCodepoints(!s) catch 0'
             conv count : i32
     }
 
 /// ### nfc
-inl nfc (s : string) : string =
+:= nfc (s : string) : string =
     backend_switch {
-        Gleam = fun () =>
+        Gleam = \ () =>
             global """
                 @ external(erlang, "unicode", "characters_to_nfc_binary")
                 fn unicode_erlang_nfc(s: String) -> String
                 """
             $'unicode_erlang_nfc(!s)' : string
-        Rust = fun () =>
+        Rust = \ () =>
             $'Rc::<str>::from(unicode_normalization::UnicodeNormalization::nfc(&*!s).collect::<String>())' : string
     }
 
-inl unicode_decomposed_e () : string = "e" ++# char_of 769i32
+:= unicode_decomposed_e () : string = "e" ++# char_of 769i32
 
-inl unicode_thumb_with_tone () : string = char_of 128077i32 ++# char_of 127997i32
+:= unicode_thumb_with_tone () : string = char_of 128077i32 ++# char_of 127997i32
 
-inl unicode_first (l : list string) : string =
-    match l with
+:= unicode_first (l : list string) : string =
+    ?= l ?|
     | Cons (g, _) => g
     | Nil => ""
 
 ///> rust -d unicode-segmentation
 ///> gleam
 test graphemes_hold_clusters =
-    inl ~s = "a" ++# unicode_decomposed_e () ++# " " ++# unicode_thumb_with_tone () ++# "."
+    := ~s = "a" ++# unicode_decomposed_e () ++# " " ++# unicode_thumb_with_tone () ++# "."
     ((listm.length (graphemes s) : i32), (listm.length (graphemes "") : i32), unicode_first (graphemes s))
     |> _assert_eq (5i32, 0i32, "a")
 
 ///> rust
 ///> gleam
 test code_points_count_scalars_not_bytes =
-    inl ~s = unicode_thumb_with_tone ()
+    := ~s = unicode_thumb_with_tone ()
     (code_point_count s, first_code_point s, code_point_count (unicode_decomposed_e ()), first_code_point "")
     |> _assert_eq (2i32, 128077i32, 2i32, 0i32)
 
@@ -154,7 +154,7 @@ test code_points_count_scalars_not_bytes =
 ///> gleam
 ///> c
 test char_of_encodes_utf8_and_rejects_surrogates =
-    inl ~e = 233i32
+    := ~e = 233i32
     (sm.length (char_of e), sm.length (char_of 128512i32), sm.length (char_of 55296i32))
     |> _assert_eq (2i32, 4i32, 0i32)
 
@@ -162,12 +162,12 @@ test char_of_encodes_utf8_and_rejects_surrogates =
 ///> gleam
 ///> c
 test char_of_covers_every_utf8_width =
-    inl ~a = 65i32
+    := ~a = 65i32
     (sm.length (char_of a), sm.length (char_of 2047i32), sm.length (char_of 65535i32), sm.length (char_of 1114111i32))
     |> _assert_eq (1i32, 2i32, 3i32, 4i32)
 
 ///> rust -d unicode-normalization
 ///> gleam
 test nfc_composes =
-    inl ~s = unicode_decomposed_e ()
+    := ~s = unicode_decomposed_e ()
     nfc s |> _assert_eq (char_of 233i32)

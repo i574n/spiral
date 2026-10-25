@@ -23,35 +23,35 @@ fn score_0(mut v0: US1) -> i32 {
             1i32
         }
         US1::US1_Box(v1) => {
-            let mut v1: Rc<Heap3> = v1.clone();
-            let mut v2: US0 = v1.l0.clone();
+            let v1: Rc<Heap3> = v1.clone();
+            let v2: US0 = v1.l0.clone();
             match &v2 {
                 US0::US0_Held(v3) => {
-                    let mut v3: Rc<Heap2> = v3.clone();
+                    let v3: Rc<Heap2> = v3.clone();
                     let (mut v4, mut v5): (Rc<Heap1>, i32) = (v3.l0.clone(), v3.l1.clone());
                     let (mut v6, mut v7): (Rc<Heap0>, Rc<Heap0>) = (v4.l0.clone(), v4.l1.clone());
                     let (mut v8, mut v9): (i32, Rc<str>) = (v6.l0.clone(), v6.l1.clone());
                     let (mut v10, mut v11): (i32, Rc<str>) = (v7.l0.clone(), v7.l1.clone());
-                    let mut v12: bool = v8 == 7i32;
-                    let mut v14: bool = if v12 {
-                        let mut v13: bool = v9.clone() == { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
+                    let v12: bool = v8 == 7i32;
+                    let v14: bool = if v12 {
+                        let v13: bool = &*v9 == "hi";
                         v13
                     } else {
                         false
                     };
-                    let mut v16: bool = if v14 {
-                        let mut v15: bool = v10 == 4i32;
+                    let v16: bool = if v14 {
+                        let v15: bool = v10 == 4i32;
                         v15
                     } else {
                         false
                     };
-                    let mut v18: bool = if v16 {
-                        let mut v17: bool = v11.clone() == { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("yo"); } LIT.with(|lit| lit.clone()) };
+                    let v18: bool = if v16 {
+                        let v17: bool = &*v11 == "yo";
                         v17
                     } else {
                         false
                     };
-                    let mut v20: bool = if v18 {
+                    let v20: bool = if v18 {
                         let mut v19: bool = v5 == 2i32;
                         v19
                     } else {
@@ -71,57 +71,57 @@ fn score_0(mut v0: US1) -> i32 {
     }
 }
 fn spiral_main() -> i32 {
-    let mut v0: i32 = 1i32;
-    let mut v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("no"); } LIT.with(|lit| lit.clone()) };
-    let mut v2: Rc<Heap0> = Rc::new(Heap0 { l0: v0, l1: v1.clone() });
-    let mut v3: i32 = 2i32;
-    let mut v4: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("zz"); } LIT.with(|lit| lit.clone()) };
-    let mut v5: Rc<Heap0> = Rc::new(Heap0 { l0: v3, l1: v4.clone() });
-    let mut v6: Rc<Heap1> = Rc::new(Heap1 { l0: v2.clone(), l1: v5.clone() });
-    let mut v7: i32 = 3i32;
-    let mut v8: Rc<Heap2> = Rc::new(Heap2 { l0: v6.clone(), l1: v7 });
-    let mut v9: bool = true;
-    let mut v12: US0 = if v9 {
-        US0::US0_Held(v8.clone())
+    let v0: i32 = 1i32;
+    let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("no"); } LIT.with(|lit| lit.clone()) };
+    let v2: Rc<Heap0> = Rc::new(Heap0 { l0: v0, l1: v1 });
+    let v3: i32 = 2i32;
+    let v4: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("zz"); } LIT.with(|lit| lit.clone()) };
+    let v5: Rc<Heap0> = Rc::new(Heap0 { l0: v3, l1: v4 });
+    let v6: Rc<Heap1> = Rc::new(Heap1 { l0: v2, l1: v5 });
+    let v7: i32 = 3i32;
+    let v8: Rc<Heap2> = Rc::new(Heap2 { l0: v6, l1: v7 });
+    let v9: bool = true;
+    let v12: US0 = if v9 {
+        US0::US0_Held(v8)
     } else {
         US0::US0_None
     };
-    let mut v13: Rc<Heap3> = Rc::new(Heap3 { l0: v12.clone() });
-    let mut v14: bool = true;
-    let mut v17: US1 = if v14 {
-        US1::US1_Box(v13.clone())
+    let v13: Rc<Heap3> = Rc::new(Heap3 { l0: v12 });
+    let v14: bool = true;
+    let v17: US1 = if v14 {
+        US1::US1_Box(v13)
     } else {
         US1::US1_Absent
     };
-    let mut v18: Rc<Heap4> = Rc::new(Heap4 { l0: v17.clone() });
-    let mut v19: Rc<RefCell<Mut0>> = Rc::new(RefCell::new(Mut0 { l0: v18.clone() }));
-    let mut v20: i32 = 7i32;
-    let mut v21: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
-    let mut v22: Rc<Heap0> = Rc::new(Heap0 { l0: v20, l1: v21.clone() });
-    let mut v23: i32 = 4i32;
-    let mut v24: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("yo"); } LIT.with(|lit| lit.clone()) };
-    let mut v25: Rc<Heap0> = Rc::new(Heap0 { l0: v23, l1: v24.clone() });
-    let mut v26: Rc<Heap1> = Rc::new(Heap1 { l0: v22.clone(), l1: v25.clone() });
-    let mut v27: i32 = 2i32;
-    let mut v28: Rc<Heap2> = Rc::new(Heap2 { l0: v26.clone(), l1: v27 });
-    let mut v29: bool = true;
-    let mut v32: US0 = if v29 {
-        US0::US0_Held(v28.clone())
+    let v18: Rc<Heap4> = Rc::new(Heap4 { l0: v17 });
+    let mut v19: Rc<RefCell<Mut0>> = Rc::new(RefCell::new(Mut0 { l0: v18 }));
+    let v20: i32 = 7i32;
+    let v21: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
+    let v22: Rc<Heap0> = Rc::new(Heap0 { l0: v20, l1: v21 });
+    let v23: i32 = 4i32;
+    let v24: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("yo"); } LIT.with(|lit| lit.clone()) };
+    let v25: Rc<Heap0> = Rc::new(Heap0 { l0: v23, l1: v24 });
+    let v26: Rc<Heap1> = Rc::new(Heap1 { l0: v22, l1: v25 });
+    let v27: i32 = 2i32;
+    let v28: Rc<Heap2> = Rc::new(Heap2 { l0: v26, l1: v27 });
+    let v29: bool = true;
+    let v32: US0 = if v29 {
+        US0::US0_Held(v28)
     } else {
         US0::US0_None
     };
-    let mut v33: Rc<Heap3> = Rc::new(Heap3 { l0: v32.clone() });
-    let mut v34: bool = true;
-    let mut v37: US1 = if v34 {
-        US1::US1_Box(v33.clone())
+    let v33: Rc<Heap3> = Rc::new(Heap3 { l0: v32 });
+    let v34: bool = true;
+    let v37: US1 = if v34 {
+        US1::US1_Box(v33)
     } else {
         US1::US1_Absent
     };
-    let mut v38: Rc<Heap4> = Rc::new(Heap4 { l0: v37.clone() });
-    v19.borrow_mut().l0 = v38.clone();
-    let mut v39: Rc<Heap4> = v19.borrow().l0.clone();
-    let mut v40: US1 = v39.l0.clone();
-    score_0(v40.clone())
+    let v38: Rc<Heap4> = Rc::new(Heap4 { l0: v37 });
+    v19.borrow_mut().l0 = v38;
+    let v39: Rc<Heap4> = v19.borrow().l0.clone();
+    let v40: US1 = v39.l0.clone();
+    score_0(v40)
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();

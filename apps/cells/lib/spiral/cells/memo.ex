@@ -529,23 +529,23 @@ defmodule Spiral.Cells.Memo do
       {kind, names, operators} = block_shape(header, code)
       tokens = @identifier |> Regex.scan(code) |> List.flatten() |> Enum.uniq() |> Enum.reject(&(&1 in names))
       {unqualified, qualified} = references(code, names)
-      %{text: Enum.join(block_lines, "\n"), code: code, kind: kind, names: names, operators: operators, tokens: tokens, unqualified: unqualified, qualified: qualified, instance: Regex.match?(~r/^instance\s/, header)}
+      %{text: Enum.join(block_lines, "\n"), code: code, kind: kind, names: names, operators: operators, tokens: tokens, unqualified: unqualified, qualified: qualified, instance: Regex.match?(~r/^(?:instance|:\+)\s/, header)}
     end)
   end
 
   defp block_shape(header, code) do
     cond do
-      match = Regex.run(~r/^(?:and\s+)?(?:inl|let|inm|inb)(?:\s+rec)?\s+\(([^)\s]+)\)/, header) ->
+      match = Regex.run(~r/^(?:(?:and|:&)\s+)?(?:inl|let|inm|inb|:=|:~)(?:\s+(?:rec|\^))?\s+\(([^)\s]+)\)/, header) ->
         {:definition, ["(" <> Enum.at(match, 1) <> ")"], [Enum.at(match, 1)]}
 
-      match = Regex.run(~r/^(?:and\s+)?(?:inl|let|inm|inb)(?:\s+rec)?\s+([^\s(:=]+)/u, header) ->
+      match = Regex.run(~r/^(?:(?:and|:&)\s+)?(?:inl|let|inm|inb|:=|:~)(?:\s+(?:rec|\^))?\s+([^\s(:=]+)/u, header) ->
         if Enum.at(match, 1) in ["_", "()"], do: {:other, [], []}, else: {:definition, [Enum.at(match, 1)], []}
 
-      match = Regex.run(~r/^(?:and\s+)?(?:type|union|nominal|prototype)(?:\s+rec)?\s+([^\s=]+)/u, header) ->
+      match = Regex.run(~r/^(?:(?:and|:&)\s+)?(?:type|union|nominal|prototype|:==|:\||:!|:\?)(?:\s+(?:rec|\^))?\s+([^\s=]+)/u, header) ->
         cases = ~r/\|\s*([A-Z][\w']*)/u |> Regex.scan(code, capture: :all_but_first) |> List.flatten()
         {:definition, [Enum.at(match, 1) | cases], []}
 
-      match = Regex.run(~r/^instance\s+(\S+)/u, header) ->
+      match = Regex.run(~r/^(?:instance|:\+)\s+(\S+)/u, header) ->
         {:definition, [Enum.at(match, 1)], []}
 
       true ->

@@ -12,10 +12,10 @@ typedef Array0 String;
 static inline void ArrayDecrefBody0(Array0 * x){
     (void)x;
 }
-void ArrayDecref0(Array0 * x){
+static void ArrayDecref0(Array0 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody0(x); free(x); }
 }
-Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
+static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     uint32_t size = sizeof(Array0) + sizeof(char) * len;
     Array0 * x = malloc(size);
     if (init_at_zero) { memset(x,0,size); }
@@ -23,7 +23,7 @@ Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     x->len = len;
     return x;
 }
-Array0 * ArrayLit0(uint32_t len, char * ptr){
+static Array0 * ArrayLit0(uint32_t len, char * ptr){
     Array0 * x = ArrayCreate0(len, false);
     memcpy(x->ptr, ptr, sizeof(char) * len);
     return x;
@@ -44,21 +44,13 @@ static inline String * StringSlice(String * value, int32_t from, int32_t to){
     result->ptr[slice_len] = '\0';
     return result;
 }
-String * first_codepoint0(String * v0){
-    
-    
-    String * v1;
-    v1 = StringSlice(v0, 0l, 1l);
-    
+static String * first_codepoint0(String * v0){
+    String * v1 = StringSlice(v0, 0l, 1l);
     StringDecref(v0);
     return v1;
 }
-String * second_codepoint1(String * v0){
-    
-    
-    String * v1;
-    v1 = StringSlice(v0, 2l, 3l);
-    
+static String * second_codepoint1(String * v0){
+    String * v1 = StringSlice(v0, 2l, 3l);
     StringDecref(v0);
     return v1;
 }
@@ -71,70 +63,34 @@ static inline String * StringConcat(String * left, String * right){
     return result;
 }
 int32_t main(){
-    
-    
-    String * v0;
-    v0 = StringLit(5, "éλ");
+    String * v0 = StringLit(5, "éλ");
     (v0)->refc++;
-    
-    String * v1;
-    v1 = first_codepoint0(v0);
+    String * v1 = first_codepoint0(v0);
     (v0)->refc++;
-    
-    String * v2;
-    v2 = second_codepoint1(v0);
-    
+    String * v2 = second_codepoint1(v0);
     StringDecref(v0);
-    String * v3;
-    v3 = StringConcat(v1, v2);
-    
-    
-    int32_t v4;
-    v4 = v1->len-1;
-    
+    String * v3 = StringConcat(v1, v2);
+    int32_t v4 = v1->len-1;
     StringDecref(v1);
-    bool v5;
-    v5 = v4 == 2l;
-    
-    
+    bool v5 = v4 == 2l;
     if (v5){
-        
-        
-        int32_t v6;
-        v6 = v2->len-1;
-        
+        int32_t v6 = v2->len-1;
         StringDecref(v2);
-        bool v7;
-        v7 = v6 == 2l;
-        
-        
+        bool v7 = v6 == 2l;
         if (v7){
-            
-            
-            int32_t v8;
-            v8 = v3->len-1;
-            
+            int32_t v8 = v3->len-1;
             StringDecref(v3);
-            bool v9;
-            v9 = v8 == 4l;
-            
-            
+            bool v9 = v8 == 4l;
             if (v9){
-                
-                
                 return 0l;
             } else {
-                
-                
                 return 1l;
             }
         } else {
-            
             StringDecref(v3);
             return 2l;
         }
     } else {
-        
         StringDecref(v2); StringDecref(v3);
         return 3l;
     }

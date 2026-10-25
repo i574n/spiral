@@ -28,8 +28,7 @@ partial def target_global_0 (p0 : String) : IO Unit := do
     let mut v0 : String := p0
     return ()
 partial def spiralMain : IO Int32 := do
-    let mut v0 : String := default
-    v0 := "SPIRAL_ITEM_METADATA_TEST_missing-item"
+    let v0 : String := "SPIRAL_ITEM_METADATA_TEST_missing-item"
     let _ := (← target_global_0 v0)
     return (0 : Int32)
 end

@@ -3,11 +3,11 @@ use std::cell::RefCell;
 use std::rc::Rc;
 fn g_c0(mut v0: i32) -> Rc<dyn Fn(i32) -> i32> {
     Rc::new(move |mut v1: i32| -> i32 {
-        let mut v2: bool = v0 == 0i32;
+        let v2: bool = v0 == 0i32;
         if v2 {
             0i32
         } else {
-            let mut v3: i32 = v1.wrapping_add(v0);
+            let v3: i32 = v1.wrapping_add(v0);
             v3
         }
     })
@@ -16,10 +16,10 @@ fn method0(mut v0: i32) -> Rc<dyn Fn(i32) -> i32> {
     g_c0(v0)
 }
 fn spiral_main() -> i32 {
-    let mut v0: i32 = 7i32;
+    let v0: i32 = 7i32;
     let mut v1: Rc<dyn Fn(i32) -> i32> = method0(v0);
-    let mut v2: i32 = v1(0i32);
-    let mut v3: bool = v2 == 7i32;
+    let v2: i32 = v1(0i32);
+    let v3: bool = v2 == 7i32;
     if v3 {
         0i32
     } else {

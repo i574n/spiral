@@ -1,18 +1,18 @@
 /// # guid
-open sm'_operators
+:< sm'_operators
 
 test guid static =
-    open testing
+    :< testing
 
 /// ## guid
 
 /// ### guid
-nominal guid_python =
+:! guid_python =
     `(
         global "import uuid"
         $'' : $'uuid.UUID'
     )
-type guid_switch =
+:== guid_switch =
     {
         Gleam : string
         Lua : string
@@ -22,34 +22,34 @@ type guid_switch =
         TypeScript : string
         Zig : string
     }
-nominal guid = $'backend_switch `(guid_switch)'
+:! guid = $'backend_switch `(guid_switch)'
 
 /// ### new_guid
-inl new_guid (x : string) : guid =
-    run_target_args (fun () => x) function
-        | Zig => fun _ => $'(std.ascii.allocLowerString(spiral_gpa, !x) catch \@panic("out of memory"))' : guid
-        | Gleam => fun x =>
-            inl lower = sm'.to_lower x
+:= new_guid (x : string) : guid =
+    run_target_args (\ () => x) \|
+        | Zig => \ _ => $'(std.ascii.allocLowerString(spiral_gpa, !x) catch \@panic("out of memory"))' : guid
+        | Gleam => \ x =>
+            := lower = sm'.to_lower x
             $'!lower '
-        | Lua => fun x =>
-            inl lower = sm'.to_lower x
+        | Lua => \ x =>
+            := lower = sm'.to_lower x
             $'!lower '
-        | Cuda => fun x =>
+        | Cuda => \ x =>
             global "import uuid"
-            inl lower = sm'.to_lower x
+            := lower = sm'.to_lower x
             $'!lower '
-        | Rust => fun x => $'Rc::<str>::from(!x.to_lowercase())'
-        | TypeScript => fun x => $'!x.toLowerCase()'
-        | _ => fun x => $'!x |> `guid '
+        | Rust => \ x => $'Rc::<str>::from(!x.to_lowercase())'
+        | TypeScript => \ x => $'!x.toLowerCase()'
+        | _ => \ x => $'!x |> `guid '
 
 /// ### to_string
-inl to_string (x : guid) : string =
-    run_target_args (fun () => x) function
-        | Fsharp => fun x => $'!x.ToString()' : string
-        | _ => fun x => $'!x ' : string
+:= to_string (x : guid) : string =
+    run_target_args (\ () => x) \|
+        | Fsharp => \ x => $'!x.ToString()' : string
+        | _ => \ x => $'!x ' : string
 
 /// ### zig_random_u64
-inl zig_random_u64 () : u64 =
+:= zig_random_u64 () : u64 =
     global """extern "kernel32" fn QueryPerformanceCounter(count: *i64) callconv(.winapi) c_int;"""
     global """
         var spiral_random_state: u64 = 0;
@@ -78,16 +78,16 @@ inl zig_random_u64 () : u64 =
     $'spiralRandomU64()' : u64
 
 /// ### guid_hex
-inl guid_hex (width : i32) (n : u64) : string =
-    let rec go (left : i32) (rest : u64) (acc : string) : string =
-        if left <= 0i32 then acc
-        else
-            inl digit : i32 = conv (rest &&& 15u64)
+:= guid_hex (width : i32) (n : u64) : string =
+    :~ ^ go (left : i32) (rest : u64) (acc : string) : string =
+        ? left <= 0i32 ?> acc
+        |:
+            := digit : i32 = conv (rest &&& 15u64)
             go (left - 1i32) (rest >>> 4i32) (sm'.slice digit digit "0123456789abcdef" ++# acc)
     go width n ""
 
 /// ### guid_v4_text
-inl guid_v4_text (a : u64) (b : u64) : string =
+:= guid_v4_text (a : u64) (b : u64) : string =
     guid_hex 8i32 (a &&& 4294967295u64)
     ++# "-" ++# guid_hex 4i32 ((a >>> 32i32) &&& 65535u64)
     ++# "-4" ++# guid_hex 3i32 ((a >>> 48i32) &&& 4095u64)
@@ -95,61 +95,61 @@ inl guid_v4_text (a : u64) (b : u64) : string =
     ++# "-" ++# guid_hex 12i32 ((b >>> 16i32) &&& 281474976710655u64)
 
 /// ### rust_hasher
-nominal rust_hasher = $'std::collections::hash_map::DefaultHasher'
+:! rust_hasher = $'std::collections::hash_map::DefaultHasher'
 
 /// ### rust_unix_nanos
-inl rust_unix_nanos () : rust.u128 =
+:= rust_unix_nanos () : rust.u128 =
     $'std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_nanos()'
 
 /// ### rust_random_pair
-inl rust_random_pair () : u64 * u64 =
-    inl hasher = $'std::hash::BuildHasher::build_hasher(&std::collections::hash_map::RandomState::new())' : rust_hasher
+:= rust_random_pair () : u64 * u64 =
+    := hasher = $'std::hash::BuildHasher::build_hasher(&std::collections::hash_map::RandomState::new())' : rust_hasher
     hasher |> rust.to_mut
-    inl nanos = rust_unix_nanos ()
+    := nanos = rust_unix_nanos ()
     $'std::hash::Hasher::write_u128(&mut !hasher, !nanos)' : ()
-    inl a = $'std::hash::Hasher::finish(&!hasher)' : u64
+    := a = $'std::hash::Hasher::finish(&!hasher)' : u64
     $'std::hash::Hasher::write_u64(&mut !hasher, !a)' : ()
-    inl b = $'std::hash::Hasher::finish(&!hasher)' : u64
+    := b = $'std::hash::Hasher::finish(&!hasher)' : u64
     a, b
 
 /// ### new_raw_guid
-inl new_raw_guid () : guid =
+:= new_raw_guid () : guid =
     backend_switch {
-        Gleam = fun () =>
+        Gleam = \ () =>
             global "import gleam_uuid"
             $'gleam_uuid.v4_string ()' : guid
-        Lua = fun () => $'""' : guid
-        Fsharp = fun () => $'System.Guid.NewGuid' () : guid
-        TypeScript = fun () => $'globalThis.crypto.randomUUID()' : guid
-        Python = fun () =>
+        Lua = \ () => $'""' : guid
+        Fsharp = \ () => $'System.Guid.NewGuid' () : guid
+        TypeScript = \ () => $'globalThis.crypto.randomUUID()' : guid
+        Python = \ () =>
             global "import uuid"
             $'uuid.uuid4()' : guid
-        Zig = fun () =>
-            inl a = zig_random_u64 ()
-            inl b = zig_random_u64 ()
+        Zig = \ () =>
+            := a = zig_random_u64 ()
+            := b = zig_random_u64 ()
             guid_v4_text a b |> new_guid
-        Rust = fun () =>
-            inl a, b = rust_random_pair ()
+        Rust = \ () =>
+            := a, b = rust_random_pair ()
             guid_v4_text a b |> new_guid
     }
 
 /// ### hash_guid
-type hash_guid = guid
+:== hash_guid = guid
 
-let hash_guid (hash : string) : hash_guid =
-    inl body () =
-        inl dash = "-"
-        join
-            inl hash = hash |> sm'.pad_left 32i32 '0'
-            inl a = hash |> sm'.range (am'.Start 0i32) (am'.End fun _ => 8)
-            inl b = hash |> sm'.range (am'.Start 8i32) (am'.End fun _ => 12)
-            inl c = hash |> sm'.range (am'.Start 12i32) (am'.End fun _ => 16)
-            inl d = hash |> sm'.range (am'.Start 16i32) (am'.End fun _ => 20)
-            inl e = hash |> sm'.range (am'.Start 20i32) (am'.End fun _ => 32)
+:~ hash_guid (hash : string) : hash_guid =
+    := body () =
+        := dash = "-"
+        ~~
+            := hash = hash |> sm'.pad_left 32i32 '0'
+            := a = hash |> sm'.range (am'.Start 0i32) (am'.End \ _ => 8)
+            := b = hash |> sm'.range (am'.Start 8i32) (am'.End \ _ => 12)
+            := c = hash |> sm'.range (am'.Start 12i32) (am'.End \ _ => 16)
+            := d = hash |> sm'.range (am'.Start 16i32) (am'.End \ _ => 20)
+            := e = hash |> sm'.range (am'.Start 20i32) (am'.End \ _ => 32)
             a ++# dash ++# b ++# dash ++# c ++# dash ++# d ++# dash ++# e
             |> new_guid
-    run_target function
-        | Zig => fun () => body ()
+    run_target \|
+        | Zig => \ () => body ()
         | _ => body
 
 ///> gleam
@@ -181,7 +181,7 @@ test to_string_is_lowercase_text =
 /// ## main
 ///> fsharp
 
-inl main () =
+:= main () =
     $'let new_guid x = !new_guid x' : ()
     $'let hash_guid x = !hash_guid x' : ()
     $'let new_raw_guid x = !new_raw_guid x' : ()

@@ -53,30 +53,21 @@ func sp_choose_right_1(_ p0: Bool) -> String {
     }
 }
 func spiral_main() -> Int32 {
-    var v0: Bool = false
-    v0 = true
+    let v0: Bool = true
     var v1: String = ""
     v1 = sp_choose_left_0(v0)
     var v2: Bool = false
     v2 = false
-    var v3: String = ""
-    v3 = sp_choose_right_1(v2)
-    var v4: String = ""
-    v4 = (v1 + v3)
-    var v5: Int32 = 0
-    v5 = spiralStringLength(v4)
-    var v6: Bool = false
-    v6 = (v5 == 6)
+    let v3: String = sp_choose_right_1(v2)
+    let v4: String = (v1 + v3)
+    let v5: Int32 = spiralStringLength(v4)
+    let v6: Bool = (v5 == 6)
     if (v6) {
-        var v7: Int32 = 0
-        v7 = spiralStringIndex(v4, 0)
-        var v8: Bool = false
-        v8 = (v7 == 115)
+        let v7: Int32 = spiralStringIndex(v4, 0)
+        let v8: Bool = (v7 == 115)
         if (v8) {
-            var v9: Int32 = 0
-            v9 = spiralStringIndex(v4, 5)
-            var v10: Bool = false
-            v10 = (v9 == 108)
+            let v9: Int32 = spiralStringIndex(v4, 5)
+            let v10: Bool = (v9 == 108)
             if (v10) {
                 return 0
             } else {

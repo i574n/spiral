@@ -7,8 +7,7 @@ fun sp_score_0(p0: US0): Int {
         1 -> {
             var v2: Int = (v0 as US0_Both).f0
             var v3: String = (v0 as US0_Both).f1
-            var v4: Boolean = false
-            v4 = (v2 == 3)
+            val v4: Boolean = (v2 == 3)
             var v6: Boolean = false
             if (v4) {
                 var v5: Boolean = false
@@ -31,12 +30,9 @@ fun sp_score_0(p0: US0): Int {
     }
 }
 fun spiral_main(): Int {
-    var v0: Boolean = false
-    v0 = true
-    var v1: Int = 0
-    v1 = 3
-    var v2: String = ""
-    v2 = "hi"
+    val v0: Boolean = true
+    val v1: Int = 3
+    val v2: String = "hi"
     var v5: US0 = US0_One(0)
     if (v0) {
         v5 = US0_Both(v1, v2)

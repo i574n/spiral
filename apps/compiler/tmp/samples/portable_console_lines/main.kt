@@ -1,21 +1,15 @@
 fun spiral_main(): Int {
-    var v0: String = ""
-    v0 = "hello"
+    val v0: String = "hello"
     run { System.out.write((v0.toString() + "\n").toByteArray(Charsets.UTF_8)); System.out.flush() }
-    var v1: Int = 0
-    v1 = 42
+    val v1: Int = 42
     run { System.out.write((v1.toString() + "\n").toByteArray(Charsets.UTF_8)); System.out.flush() }
-    var v2: String = ""
-    v2 = "a"
+    val v2: String = "a"
     run { System.out.write(v2.toString().toByteArray(Charsets.UTF_8)); System.out.flush() }
-    var v3: String = ""
-    v3 = "b"
+    val v3: String = "b"
     run { System.out.write(v3.toString().toByteArray(Charsets.UTF_8)); System.out.flush() }
-    var v4: String = ""
-    v4 = ""
+    val v4: String = ""
     run { System.out.write((v4.toString() + "\n").toByteArray(Charsets.UTF_8)); System.out.flush() }
-    var v5: Long = 0L
-    v5 = -7L
+    val v5: Long = -7L
     run { System.out.write((v5.toString() + "\n").toByteArray(Charsets.UTF_8)); System.out.flush() }
     return 0
 }

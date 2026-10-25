@@ -8,13 +8,13 @@ function spiral_array_set<T>(array: T[], index: number, value: T): void {
 }
 type Heap0 = { readonly l0: Array<string> };
 export function main(): number {
-    let v0: Array<string> = new Array<string>(1).fill("");
-    let v1: string = "hi";
+    const v0: Array<string> = new Array<string>(1).fill("");
+    const v1: string = "hi";
     spiral_array_set(v0, 0, v1);
-    let v2: Heap0 = { l0: v0 };
-    let v3: Array<string> = v2.l0;
-    let v4: string = spiral_array_index(v3, 0);
-    let v5: boolean = v4 === "hi";
+    const v2: Heap0 = { l0: v0 };
+    const v3: Array<string> = v2.l0;
+    const v4: string = spiral_array_index(v3, 0);
+    const v5: boolean = v4 === "hi";
     if (v5) {
         return 0;
     } else {

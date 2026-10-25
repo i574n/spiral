@@ -9,12 +9,9 @@ func sp_count_down_0(_ p0: Int32, _ p1: Int32) -> Int32 {
         if (v2) {
             var v3: Int32 = 0
             v3 = (v0 &- 1)
-            var v4: Int32 = 0
-            v4 = (v1 &+ 1)
-            let t315_3: Int32 = v3
-            let t351_4: Int32 = v4
-            v0 = t315_3
-            v1 = t351_4
+            let v4: Int32 = (v1 &+ 1)
+            v0 = v3
+            v1 = v4
             continue
         } else {
             return v1

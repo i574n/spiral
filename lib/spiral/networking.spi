@@ -1,13 +1,13 @@
 /// # networking
 test networking static =
-    open testing
+    :< testing
 
-open rust.rust_operators
+:< rust.rust_operators
 
 /// ## rust
 
 /// ### reqwest_response
-nominal reqwest_response =
+:! reqwest_response =
     `(
         rust.rust_type
             `($'reqwest_Response')
@@ -16,7 +16,7 @@ nominal reqwest_response =
     )
 
 /// ### reqwest_error
-nominal reqwest_error =
+:! reqwest_error =
     `(
         rust.rust_type
             `($'reqwest_Error')
@@ -25,7 +25,7 @@ nominal reqwest_error =
     )
 
 /// ### request_builder
-type request_builder_switch =
+:== request_builder_switch =
     {
         Gleam : $'reqwest_RequestBuilder'
         Lua : $'reqwest_RequestBuilder'
@@ -39,19 +39,19 @@ type request_builder_switch =
         C : $'reqwest_RequestBuilder'
         Rust : $'reqwest_wasm::RequestBuilder'
     }
-nominal request_builder =
+:! request_builder =
     `(
         rust.fsharp_global "type reqwest_RequestBuilder = class end"
         $'' : $'backend_switch `(request_builder_switch)'
     )
 
 /// ### request_type
-union request_type =
+:| request_type =
     | Get
     | Post
 
 /// ### request
-type request =
+:== request =
     {
         url : string
         request_type : request_type
@@ -61,51 +61,51 @@ type request =
     }
 
 /// ### new_request_get
-inl new_request_get (url : string) : request_builder =
-    inl url = join url
-    inl url = url |> sm'.to_std_string
-    inl url = join url
+:= new_request_get (url : string) : request_builder =
+    := url = ~~ url
+    := url = url |> sm'.to_std_string
+    := url = ~~ url
     !\($'"reqwest_wasm::Client::builder().build().map_err(|err| err.to_string())?.get(!url)"')
 
 /// ### new_request_post
-inl new_request_post (url : string) : request_builder =
-    inl url = join url
-    inl url = url |> sm'.to_std_string
-    inl url = join url
+:= new_request_post (url : string) : request_builder =
+    := url = ~~ url
+    := url = url |> sm'.to_std_string
+    := url = ~~ url
     !\($'"reqwest_wasm::Client::builder().build().map_err(|err| err.to_string())?.post(!url)"')
 
 /// ### request_send
-inl request_send (request : request_builder) : async.future_pin (resultm.result' reqwest_response reqwest_error) =
-    inl request = join request
+:= request_send (request : request_builder) : async.future_pin (resultm.result' reqwest_response reqwest_error) =
+    := request = ~~ request
     !\($'"Box::pin(reqwest_wasm::RequestBuilder::send(!request))"')
 
 /// ### request_body
-inl request_body (body : string) (request : request_builder) : request_builder =
-    inl body = body |> sm'.to_std_string
+:= request_body (body : string) (request : request_builder) : request_builder =
+    := body = body |> sm'.to_std_string
     !\\(body, $'"reqwest_wasm::RequestBuilder::body(!request, $0)"')
 
 /// ### request_header
-inl request_header (key : string) (value : string) (request : request_builder) : request_builder =
-    inl request = join request
-    inl key = key |> sm'.to_std_string
-    inl value = value |> sm'.to_std_string
+:= request_header (key : string) (value : string) (request : request_builder) : request_builder =
+    := request = ~~ request
+    := key = key |> sm'.to_std_string
+    := value = value |> sm'.to_std_string
     !\\((key, value), $'"reqwest_wasm::RequestBuilder::header(!request, $0, $1)"')
 
 /// ### request_json
-inl request_json forall t. (obj : t) (request : request_builder) : request_builder =
+:= request_json \* t. (obj : t) (request : request_builder) : request_builder =
     !\($'"reqwest_wasm::RequestBuilder::json(!request, &!obj)"')
 
 /// ### response_text
-inl response_text (response : reqwest_response) : async.future_pin (resultm.result' sm'.std_string reqwest_error) =
+:= response_text (response : reqwest_response) : async.future_pin (resultm.result' sm'.std_string reqwest_error) =
     !\($'"Box::pin(reqwest_wasm::Response::text(!response))"')
 
 /// ## fsharp
 
 /// ### tcp_client
-nominal tcp_client =
+:! tcp_client =
     `(
         backend_switch `(()) `({}) {
-            Fsharp = (fun () =>
+            Fsharp = (\ () =>
                 global """
                     type System_Net_Sockets_TcpClient = System.Net.Sockets.TcpClient
 
@@ -116,45 +116,45 @@ nominal tcp_client =
     )
 
 /// ### new_tcp_client
-inl new_tcp_client () : tcp_client =
-    run_target function
-        | Fsharp => fun () => $'new `tcp_client ()'
-        | _ => fun () => null ()
+:= new_tcp_client () : tcp_client =
+    run_target \|
+        | Fsharp => \ () => $'new `tcp_client ()'
+        | _ => \ () => null ()
 
 /// ### ip_address
-nominal ip_address = $'System.Net.IPAddress'
+:! ip_address = $'System.Net.IPAddress'
 
 /// ### ip_address_parse
-inl ip_address_parse (s : string) : ip_address =
+:= ip_address_parse (s : string) : ip_address =
     s |> $'`ip_address.Parse'
 
 /// ### tcp_listener
-nominal tcp_listener = $'System.Net.Sockets.TcpListener'
+:! tcp_listener = $'System.Net.Sockets.TcpListener'
 
 /// ### new_tcp_listener
-inl new_tcp_listener (ip_address : ip_address) (port : i32) : tcp_listener =
+:= new_tcp_listener (ip_address : ip_address) (port : i32) : tcp_listener =
     $'new `tcp_listener (!ip_address, !port)'
 
 /// ### listener_start
-inl listener_start (listener : tcp_listener) : () =
+:= listener_start (listener : tcp_listener) : () =
     listener |> $'_.Start()'
 
 /// ### listener_stop
-inl listener_stop (listener : tcp_listener) : () =
+:= listener_stop (listener : tcp_listener) : () =
     listener |> $'_.Stop()'
 
 /// ### client_connect_async
-inl client_connect_async
+:= client_connect_async
     (host : string)
     (port : i32)
     (ct : threading.cancellation_token)
     (client : tcp_client)
     : async.value_task
     =
-    run_target function
-        | Fsharp => fun () => $'!client.ConnectAsync (!host, !port, !ct)'
-        | _ => fun () => null ()
+    run_target \|
+        | Fsharp => \ () => $'!client.ConnectAsync (!host, !port, !ct)'
+        | _ => \ () => null ()
 
 /// ## main
-inl main () =
+:= main () =
     init_trace_state None

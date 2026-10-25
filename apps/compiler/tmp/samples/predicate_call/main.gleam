@@ -6,14 +6,14 @@ pub fn method0(v0: Int) -> Bool {
     is_answer_1(v0)
 }
 pub fn main() {
-let v0 = 42
-let v1 = method0(v0)
-case v1 {
-    True -> {
-        0
+    let v0 = 42
+    let v1 = method0(v0)
+    case v1 {
+        True -> {
+            0
+        }
+        False -> {
+            1
+        }
     }
-    False -> {
-        1
-    }
-}
 }

@@ -7,11 +7,9 @@ final class SpiralArray<T> {
 func spiral_main() -> Int32 {
     var v0: SpiralArray<Bool> = SpiralArray<Bool>([])
     v0 = SpiralArray<Bool>(Array(repeating: false, count: Int(1)))
-    var v1: Bool = false
-    v1 = true
+    let v1: Bool = true
     v0.items[Int(0)] = v1
-    var v2: Bool = false
-    v2 = v0.items[Int(0)]
+    let v2: Bool = v0.items[Int(0)]
     if (v2) {
         return 0
     } else {

@@ -32,40 +32,31 @@ fun sp_method2(p0: Boolean): Int {
     }
 }
 fun spiral_main(): Int {
-    var v0: Boolean = false
-    v0 = true
-    var v1: Boolean = false
-    v1 = false
+    val v0: Boolean = true
+    val v1: Boolean = false
     var v2: Int = 0
     v2 = sp_method0(v0)
     var v3: Int = 0
     v3 = sp_method1(v0, v1)
-    var v4: Int = 0
-    v4 = sp_method2(v1)
-    var v5: Boolean = false
-    v5 = (v0 == v1)
-    var v6: Boolean = false
-    v6 = (v5 == false)
-    var v7: Boolean = false
-    v7 = (v2 == 1)
+    val v4: Int = sp_method2(v1)
+    val v5: Boolean = (v0 == v1)
+    val v6: Boolean = (v5 == false)
+    val v7: Boolean = (v2 == 1)
     var v9: Boolean = false
     if (v7) {
-        var v8: Boolean = false
-        v8 = (v3 == 2)
+        val v8: Boolean = (v3 == 2)
         v9 = v8
     } else {
         v9 = false
     }
     var v11: Boolean = false
     if (v9) {
-        var v10: Boolean = false
-        v10 = (v4 == 3)
+        val v10: Boolean = (v4 == 3)
         v11 = v10
     } else {
         v11 = false
     }
-    var v12: Boolean = false
-    v12 = (v11 && v6)
+    val v12: Boolean = (v11 && v6)
     if (v12) {
         return 0
     } else {

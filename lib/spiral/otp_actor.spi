@@ -1,32 +1,32 @@
 /// # otp_actor
-open sm'_operators
+:< sm'_operators
 
 test otp_actor static =
-    open testing
+    :< testing
 
-inl otp_actor_imports () =
+:= otp_actor_imports () =
     global "import gleam/erlang/process"
     global "import gleam/otp/actor"
     global "import gleam/result"
 
-nominal builder s m r = $'actor.Builder(`s, `m, `r)'
-nominal next s m = $'actor.Next(`s, `m)'
-nominal started d = $'actor.Started(`d)'
-nominal start_result d = $'Result(actor.Started(`d), actor.StartError)'
+:! builder s m r = $'actor.Builder(`s, `m, `r)'
+:! next s m = $'actor.Next(`s, `m)'
+:! started d = $'actor.Started(`d)'
+:! start_result d = $'Result(actor.Started(`d), actor.StartError)'
 
 /// ### new
-inl new forall s m. (state : s) : builder s m (erlang_process.subject m) =
+:= new \* s m. (state : s) : builder s m (erlang_process.subject m) =
     otp_actor_imports ()
     $'actor.new(!state)'
 
 /// ### new_with_init
-inl new_with_init forall s m. (timeout_ms : i32) (init : () -> s) : builder s m (erlang_process.subject m) =
+:= new_with_init \* s m. (timeout_ms : i32) (init : () -> s) : builder s m (erlang_process.subject m) =
     otp_actor_imports ()
     $'actor.new_with_initialiser(!timeout_ms, fn(subject) { Ok(actor.initialised(!init(Nil)) |> \
         actor.returning(subject)) })'
 
 /// ### new_with_self
-inl new_with_self forall s m.
+:= new_with_self \* s m.
     (timeout_ms : i32) (init : erlang_process.subject m -> s)
     : builder s m (erlang_process.subject m)
     =
@@ -35,38 +35,38 @@ inl new_with_self forall s m.
         actor.returning(subject)) })'
 
 /// ### on_message
-inl on_message forall s m r. (handler : s -> m -> next s m) (spec : builder s m r) : builder s m r =
+:= on_message \* s m r. (handler : s -> m -> next s m) (spec : builder s m r) : builder s m r =
     otp_actor_imports ()
     $'actor.on_message(!spec, fn(state, message) { !handler(state)(message) })'
 
 /// ### continue
-inl continue forall s m. (state : s) : next s m =
+:= continue \* s m. (state : s) : next s m =
     otp_actor_imports ()
     $'actor.continue(!state)'
 
 /// ### stop
-inl stop forall s m. () : next s m =
+:= stop \* s m. () : next s m =
     otp_actor_imports ()
     $'actor.stop()'
 
 /// ### stop_abnormal
-inl stop_abnormal forall s m. (reason : string) : next s m =
+:= stop_abnormal \* s m. (reason : string) : next s m =
     otp_actor_imports ()
     $'actor.stop_abnormal(!reason)'
 
 /// ### start
-inl start forall s m r. (spec : builder s m r) : start_result r =
+:= start \* s m r. (spec : builder s m r) : start_result r =
     otp_actor_imports ()
     $'actor.start(!spec)'
 
 /// ### started_data
-inl started_data forall d. (outcome : start_result d) : option d =
-    if $'result.is_ok(!outcome)' : bool
-    then Some ($'result.lazy_unwrap(!outcome, fn() { panic }).data' : d)
-    else None
+:= started_data \* d. (outcome : start_result d) : option d =
+    ? $'result.is_ok(!outcome)' : bool
+    ?> Some ($'result.lazy_unwrap(!outcome, fn() { panic }).data' : d)
+    |: None
 
 /// ### call
-inl call forall m reply.
+:= call \* m reply.
     (to : erlang_process.subject m) (timeout_ms : i32) (request : erlang_process.subject reply -> m)
     : reply
     =
@@ -74,27 +74,27 @@ inl call forall m reply.
     $'actor.call(!to, !timeout_ms, !request)'
 
 /// ### send
-inl send forall m. (to : erlang_process.subject m) (message : m) : () =
+:= send \* m. (to : erlang_process.subject m) (message : m) : () =
     otp_actor_imports ()
     $'actor.send(!to, !message)'
 
-union counter_message =
+:| counter_message =
     | Add : i32
     | Read : erlang_process.subject i32
 
 ///> gleam
 test counter_actor_counts =
-    inl counter =
+    := counter =
         new 0i32
-        |> on_message fun total message =>
-            match message with
+        |> on_message \ total message =>
+            ?= message ?|
             | Add n => continue (total + n)
             | Read reply =>
                 erlang_process.send reply total
                 continue total
         |> start
         |> started_data
-    match counter with
+    ?= counter ?|
     | Some inbox =>
         send inbox (Add 3i32)
         send inbox (Add 4i32)
@@ -104,27 +104,27 @@ test counter_actor_counts =
 
 ///> gleam
 test array_state_is_built_inside_the_actor =
-    inl started =
-        new_with_init 10000i32 (fun () => ;[ 4i32; 5; 6 ])
-        |> on_message (fun (items : array i32) (reply_to : erlang_process.subject i32) =>
+    := started =
+        new_with_init 10000i32 (\ () => ;[ 4i32; 5; 6 ])
+        |> on_message (\ (items : array i32) (reply_to : erlang_process.subject i32) =>
             erlang_process.send reply_to (length items : i32)
             continue items)
         |> start
         |> started_data
-    match started with
-    | Some subject => call subject 10000i32 (fun (reply_to : erlang_process.subject i32) => reply_to) |> _assert_eq 3i32
+    ?= started ?|
+    | Some subject => call subject 10000i32 (\ (reply_to : erlang_process.subject i32) => reply_to) |> _assert_eq 3i32
     | None => failwith "the actor did not start"
 
 ///> gleam
 test the_initialiser_receives_the_actors_own_subject =
-    inl started =
-        new_with_self 10000i32 (fun (me : erlang_process.subject (erlang_process.subject i32)) => me)
+    := started =
+        new_with_self 10000i32 (\ (me : erlang_process.subject (erlang_process.subject i32)) => me)
         |> on_message
-            fun (me : erlang_process.subject (erlang_process.subject i32)) (reply_to : erlang_process.subject i32) =>
+            \ (me : erlang_process.subject (erlang_process.subject i32)) (reply_to : erlang_process.subject i32) =>
                 erlang_process.send reply_to 9i32
                 continue me
         |> start
         |> started_data
-    match started with
-    | Some subject => call subject 10000i32 (fun (reply_to : erlang_process.subject i32) => reply_to) |> _assert_eq 9i32
+    ?= started ?|
+    | Some subject => call subject 10000i32 (\ (reply_to : erlang_process.subject i32) => reply_to) |> _assert_eq 9i32
     | None => failwith "the actor did not start"

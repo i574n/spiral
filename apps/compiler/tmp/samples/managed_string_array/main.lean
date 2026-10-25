@@ -26,25 +26,17 @@ def spiralStringSlice (s : String) (a b : Int) : IO String := do
 mutual
 partial def spiralMain : IO Int32 := do
     let mut v0 : (IO.Ref (Array String)) ← IO.mkRef #[]
-    let mut v1 : String := default
-    let mut v2 : String := default
-    let mut v3 : String := default
-    let mut v4 : String := default
-    let mut v5 : Int32 := default
-    let mut v6 : Int32 := default
-    let mut v7 : Int32 := default
-    let mut v8 : Int32 := default
     v0 := (← IO.mkRef (Array.replicate (spiralIdx (2 : Int32)) (default : String)))
-    v1 := "ab"
+    let v1 : String := "ab"
     v0.modify (fun xs => xs.set! (spiralIdx (0 : Int32)) v1)
-    v2 := "cde"
+    let v2 : String := "cde"
     v0.modify (fun xs => xs.set! (spiralIdx (1 : Int32)) v2)
-    v3 := (← spiralIndex (← v0.get) (spiralIdx (0 : Int32)))
-    v4 := (← spiralIndex (← v0.get) (spiralIdx (1 : Int32)))
-    v5 := (Int32.ofNat v3.utf8ByteSize)
-    v6 := (Int32.ofNat v4.utf8ByteSize)
-    v7 := (v5 + v6)
-    v8 := (v7 - (5 : Int32))
+    let v3 : String := (← spiralIndex (← v0.get) (spiralIdx (0 : Int32)))
+    let v4 : String := (← spiralIndex (← v0.get) (spiralIdx (1 : Int32)))
+    let v5 : Int32 := (Int32.ofNat v3.utf8ByteSize)
+    let v6 : Int32 := (Int32.ofNat v4.utf8ByteSize)
+    let v7 : Int32 := (v5 + v6)
+    let v8 : Int32 := (v7 - (5 : Int32))
     return v8
 end
 def main : IO UInt32 := do

@@ -11,17 +11,13 @@ func sp_method2(_ p0: Int32, _ p1: Int32, _ p2: Int32) -> (Int32, Int32) {
         v4 = (v1 &+ 1)
         var v5: Int32 = 0
         v5 = (v2 &+ 2)
-        var v6: Bool = false
-        v6 = (v3 == 0)
+        let v6: Bool = (v3 == 0)
         if (v6) {
             return (v4, v5)
         } else {
-            let t439_3: Int32 = v3
-            let t475_4: Int32 = v4
-            let t511_5: Int32 = v5
-            v0 = t439_3
-            v1 = t475_4
-            v2 = t511_5
+            v0 = v3
+            v1 = v4
+            v2 = v5
             continue
         }
     }

@@ -30,25 +30,17 @@ end
 deriving instance Inhabited for M0
 mutual
 partial def spiralMain : IO Int32 := do
-    let mut v0 : String := default
     let mut v1 : (IO.Ref M0) ← IO.mkRef default
-    let mut v2 : Int32 := default
-    let mut v3 : String := default
-    let mut v4 : String := default
-    let mut v5 : Bool := default
     let mut v7 : Int32 := default
     let mut v6 : Int32 := default
-    let mut v8 : Int32 := default
-    let mut v9 : Bool := default
     let mut v10 : Int32 := default
-    let mut v11 : Bool := default
-    v0 := "deref"
+    let v0 : String := "deref"
     v1 := (← IO.mkRef (M0.mk v0))
-    v2 := (3 : Int32)
-    v3 := "deref!"
+    let v2 : Int32 := (3 : Int32)
+    let v3 : String := "deref!"
     v1.modify (fun r => { r with l0 := v3 })
-    v4 := (← v1.get).l0
-    v5 := (v2 == (3 : Int32))
+    let v4 : String := (← v1.get).l0
+    let v5 : Bool := (v2 == (3 : Int32))
     if v5 then
         v6 := (v2 + (1 : Int32))
         v7 := v6
@@ -58,13 +50,13 @@ partial def spiralMain : IO Int32 := do
     IO.print " "
     IO.print (toString v7)
     IO.print "\n"
-    v8 := (v2 * (2 : Int32))
-    v9 := (decide (v2 > (0 : Int32)))
+    let v8 : Int32 := (v2 * (2 : Int32))
+    let v9 : Bool := (decide (v2 > (0 : Int32)))
     if v9 then
         v10 := (6 : Int32)
     else
         v10 := (0 : Int32)
-    v11 := (v8 == v10)
+    let v11 : Bool := (v8 == v10)
     if v11 then
         return (0 : Int32)
     else

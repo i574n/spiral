@@ -8,12 +8,12 @@ fn f_c0(mut v0: Rc<Heap0>) -> Rc<dyn Fn(i32) -> Rc<Heap0>> {
     })
 }
 fn spiral_main() -> i32 {
-    let mut v0: i32 = 7i32;
-    let mut v1: Rc<Heap0> = Rc::new(Heap0 { l0: v0 });
-    let mut v2: Rc<dyn Fn(i32) -> Rc<Heap0>> = f_c0(v1.clone());
-    let mut v3: Rc<Heap0> = v2(1i32);
-    let mut v4: i32 = v3.l0.clone();
-    let mut v5: bool = v4 == 7i32;
+    let v0: i32 = 7i32;
+    let v1: Rc<Heap0> = Rc::new(Heap0 { l0: v0 });
+    let mut v2: Rc<dyn Fn(i32) -> Rc<Heap0>> = f_c0(v1);
+    let v3: Rc<Heap0> = v2(1i32);
+    let v4: i32 = v3.l0.clone();
+    let v5: bool = v4 == 7i32;
     if v5 {
         0i32
     } else {

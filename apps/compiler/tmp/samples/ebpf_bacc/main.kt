@@ -6,21 +6,17 @@ fun sp_method1(p0: Int, p1: Boolean): Boolean {
         v2 = (v0 - 1)
         var v4: Boolean = false
         if (v1) {
-            var v3: Boolean = false
-            v3 = (v0 > 0)
+            val v3: Boolean = (v0 > 0)
             v4 = v3
         } else {
             v4 = false
         }
-        var v5: Boolean = false
-        v5 = (v2 == 0)
+        val v5: Boolean = (v2 == 0)
         if (v5) {
             return v4
         } else {
-            val t472_2: Int = v2
-            val t506_4: Boolean = v4
-            v0 = t472_2
-            v1 = t506_4
+            v0 = v2
+            v1 = v4
             continue
         }
     }

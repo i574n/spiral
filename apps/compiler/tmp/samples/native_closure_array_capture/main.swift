@@ -6,18 +6,14 @@ final class SpiralArray<T> {
 }
 func f_c0(_ v0: SpiralArray<Int32>) -> (Int32) -> Int32 {
     return { (v1: Int32) -> Int32 in
-        var v2: Int32 = 0
-        v2 = Int32(v0.items.count)
-        var v3: Int32 = 0
-        v3 = (v2 &+ v1)
+        let v2: Int32 = Int32(v0.items.count)
+        let v3: Int32 = (v2 &+ v1)
         return v3
     }
 }
 func spiral_main() -> Int32 {
-    var v0: SpiralArray<Int32> = SpiralArray<Int32>([])
-    v0 = SpiralArray<Int32>(Array(repeating: 0, count: Int(2)))
-    var v1: (Int32) -> Int32 = { (_: Int32) -> Int32 in fatalError("unreachable closure") }
-    v1 = f_c0(v0)
+    let v0: SpiralArray<Int32> = SpiralArray<Int32>(Array(repeating: 0, count: Int(2)))
+    let v1: (Int32) -> Int32 = f_c0(v0)
     return v1(40)
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

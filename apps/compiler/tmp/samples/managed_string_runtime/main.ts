@@ -30,10 +30,10 @@ function spiral_string_slice(value: string, from: number, to: number): string {
     return spiral_utf8_decoder.decode(bytes.subarray(from, to + 1));
 }
 export function main(): number {
-    let v0: string = "qwe";
-    let v1: number = spiral_string_length(v0);
-    let v2: number = (v1 + v1) | 0;
-    let v3: number = (v2 - 6) | 0;
+    const v0: string = "qwe";
+    const v1: number = spiral_string_length(v0);
+    const v2: number = (v1 + v1) | 0;
+    const v3: number = (v2 - 6) | 0;
     return v3;
 }
 process.exitCode = main();

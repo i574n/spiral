@@ -35,6 +35,7 @@ class Mut1:
     v0 : i32
 class UH0_Nil(NamedTuple): # Nil
     tag = 0
+UH0_Nil_shared = UH0_Nil()
 class UH0_Cons(NamedTuple): # Cons
     v0 : i32
     v1 : UH0
@@ -69,7 +70,7 @@ def main():
     del v1
     v6 = Mut1(0)
     v7 = Mut1(0)
-    v8 = UH0_Nil()
+    v8 = UH0_Nil_shared
     v9 = Mut2(v8)
     del v8
     while method1(v6):

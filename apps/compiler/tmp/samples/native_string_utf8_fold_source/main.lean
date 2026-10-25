@@ -27,14 +27,11 @@ mutual
 partial def runtime_byte_2 (p0 : String) (p1 : Int32) : IO Char := do
     let mut v0 : String := p0
     let mut v1 : Int32 := p1
-    let mut v2 : Char := default
-    v2 := (Char.ofNat (v0.toUTF8.get! (spiralIdx v1)).toNat)
+    let v2 : Char := (Char.ofNat (v0.toUTF8.get! (spiralIdx v1)).toNat)
     return v2
 partial def utf8_scalar_at_byte_offset_1 (p0 : String) (p1 : Int32) : IO Int32 := do
     let mut v0 : String := p0
     let mut v1 : Int32 := p1
-    let mut v2 : Int32 := default
-    let mut v3 : Bool := default
     let mut v5 : Bool := default
     let mut v7 : Char := default
     let mut v8 : Int32 := default
@@ -108,8 +105,8 @@ partial def utf8_scalar_at_byte_offset_1 (p0 : String) (p1 : Int32) : IO Int32 :
     let mut v93 : Int32 := default
     let mut v94 : Bool := default
     let mut v96 : Bool := default
-    v2 := (Int32.ofNat v0.utf8ByteSize)
-    v3 := (decide (v1 < (0 : Int32)))
+    let v2 : Int32 := (Int32.ofNat v0.utf8ByteSize)
+    let v3 : Bool := (decide (v1 < (0 : Int32)))
     if v3 then
         spiralFail "UTF-8 byte offset is negative."
     else
@@ -311,12 +308,9 @@ partial def loop_0 (p0 : Int32) (p1 : Int32) (p2 : Int32) : IO (Int32 × Int32) 
                 v17 := (v2 * (3 : Int32))
                 v18 := (v8 % (17 : Int32))
                 v19 := (v17 + v18)
-                let t15 := v15
-                let t16 := v16
-                let t19 := v19
-                v0 := t15
-                v1 := t16
-                v2 := t19
+                v0 := v15
+                v1 := v16
+                v2 := v19
                 continue
 partial def loop_3 (p0 : Int32) (p1 : Int32) (p2 : Int32) : IO (Int32 × Int32) := do
     let mut v0 : Int32 := p0
@@ -364,54 +358,35 @@ partial def loop_3 (p0 : Int32) (p1 : Int32) (p2 : Int32) : IO (Int32 × Int32) 
                 v17 := (v2 * (3 : Int32))
                 v18 := (v8 % (17 : Int32))
                 v19 := (v17 + v18)
-                let t15 := v15
-                let t16 := v16
-                let t19 := v19
-                v0 := t15
-                v1 := t16
-                v2 := t19
+                v0 := v15
+                v1 := v16
+                v2 := v19
                 continue
 partial def spiralMain : IO Int32 := do
-    let mut v0 : Int32 := default
-    let mut v1 : Int32 := default
-    let mut v2 : Int32 := default
-    let mut v3 : Int32 := default
-    let mut v4 : Int32 := default
-    let mut v5 : Int32 := default
-    let mut v6 : Int32 := default
-    let mut v7 : Int32 := default
-    let mut v8 : Int32 := default
-    let mut v9 : Int32 := default
-    let mut v10 : Int32 := default
-    let mut v11 : Int32 := default
-    let mut v12 : Int32 := default
-    let mut v13 : Int32 := default
-    let mut v14 : Int32 := default
-    let mut v15 : Bool := default
     let mut v16 : Bool := default
     let mut v17 : Bool := default
     let mut v18 : Bool := default
     let mut v19 : Bool := default
     let mut v20 : Bool := default
-    v0 := (0 : Int32)
-    v1 := (0 : Int32)
-    v2 := (0 : Int32)
+    let v0 : Int32 := (0 : Int32)
+    let v1 : Int32 := (0 : Int32)
+    let v2 : Int32 := (0 : Int32)
     let (r1_0, r1_1) := (← loop_0 v0 v1 v2)
-    v3 := r1_0
-    v4 := r1_1
-    v5 := (0 : Int32)
-    v6 := (0 : Int32)
-    v7 := (0 : Int32)
+    let v3 : Int32 := r1_0
+    let v4 : Int32 := r1_1
+    let v5 : Int32 := (0 : Int32)
+    let v6 : Int32 := (0 : Int32)
+    let v7 : Int32 := (0 : Int32)
     let (r2_0, r2_1) := (← loop_3 v5 v6 v7)
-    v8 := r2_0
-    v9 := r2_1
-    v10 := (5 : Int32)
-    v11 := (0 : Int32)
-    v12 := (0 : Int32)
+    let v8 : Int32 := r2_0
+    let v9 : Int32 := r2_1
+    let v10 : Int32 := (5 : Int32)
+    let v11 : Int32 := (0 : Int32)
+    let v12 : Int32 := (0 : Int32)
     let (r3_0, r3_1) := (← loop_0 v10 v11 v12)
-    v13 := r3_0
-    v14 := r3_1
-    v15 := (v3 == (5 : Int32))
+    let v13 : Int32 := r3_0
+    let v14 : Int32 := r3_1
+    let v15 : Bool := (v3 == (5 : Int32))
     if v15 then
         v16 := (v4 == (1511 : Int32))
         if v16 then

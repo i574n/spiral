@@ -30,10 +30,9 @@ partial def f_c0 (p0 : Int32) (p1 : Int32) (p2 : Int32) : IO ((IO.Ref (Array Int
     let mut v2 : Int32 := p2
     let mut v3 : (IO.Ref (Array Int32)) ← IO.mkRef #[]
     let mut v4 : (IO.Ref (Array Int32)) ← IO.mkRef #[]
-    let mut v5 : Bool := default
     v3 := (← IO.mkRef (Array.replicate (spiralIdx (1 : Int32)) (default : Int32)))
     v4 := (← IO.mkRef (Array.replicate (spiralIdx (1 : Int32)) (default : Int32)))
-    v5 := (v2 == (0 : Int32))
+    let v5 : Bool := (v2 == (0 : Int32))
     if v5 then
         v3.modify (fun xs => xs.set! (spiralIdx (0 : Int32)) (0 : Int32))
         v4.modify (fun xs => xs.set! (spiralIdx (0 : Int32)) (0 : Int32))
@@ -43,25 +42,18 @@ partial def f_c0 (p0 : Int32) (p1 : Int32) (p2 : Int32) : IO ((IO.Ref (Array Int
         v4.modify (fun xs => xs.set! (spiralIdx (0 : Int32)) v1)
         return (v3, v4)
 partial def spiralMain : IO Int32 := do
-    let mut v0 : Int32 := default
-    let mut v1 : Int32 := default
-    let mut v2 : (Int32 → IO ((IO.Ref (Array Int32)) × (IO.Ref (Array Int32)))) := default
     let mut v3 : (IO.Ref (Array Int32)) ← IO.mkRef #[]
     let mut v4 : (IO.Ref (Array Int32)) ← IO.mkRef #[]
-    let mut v5 : Int32 := default
-    let mut v6 : Int32 := default
-    let mut v7 : Int32 := default
-    let mut v8 : Bool := default
-    v0 := (3 : Int32)
-    v1 := (4 : Int32)
-    v2 := (f_c0 v0 v1)
+    let v0 : Int32 := (3 : Int32)
+    let v1 : Int32 := (4 : Int32)
+    let v2 : (Int32 → IO ((IO.Ref (Array Int32)) × (IO.Ref (Array Int32)))) := (f_c0 v0 v1)
     let (r1_0, r1_1) := (← v2 (1 : Int32))
     v3 := r1_0
     v4 := r1_1
-    v5 := (← spiralIndex (← v3.get) (spiralIdx (0 : Int32)))
-    v6 := (← spiralIndex (← v4.get) (spiralIdx (0 : Int32)))
-    v7 := (v5 + v6)
-    v8 := (v7 == (7 : Int32))
+    let v5 : Int32 := (← spiralIndex (← v3.get) (spiralIdx (0 : Int32)))
+    let v6 : Int32 := (← spiralIndex (← v4.get) (spiralIdx (0 : Int32)))
+    let v7 : Int32 := (v5 + v6)
+    let v8 : Bool := (v7 == (7 : Int32))
     if v8 then
         return (0 : Int32)
     else

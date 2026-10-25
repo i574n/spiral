@@ -3,11 +3,11 @@
 /// ## float_native
 
 /// ### float_native_types
-inl float_native_types () =
+:= float_native_types () =
     backend_switch {
-        Lua = fun () => ()
-        Python = fun () => global "import math"
-        C = fun () =>
+        Lua = \ () => ()
+        Python = \ () => global "import math"
+        C = \ () =>
             global "#include <stdio.h>"
             global "#include <stdlib.h>"
             global "#include <math.h>"
@@ -15,176 +15,176 @@ inl float_native_types () =
     }
 
 /// ### is_nan
-inl is_nan forall t. (v : t) : bool =
+:= is_nan \* t. (v : t) : bool =
     float_native_types ()
     backend_switch {
-        Gleam = fun () => false
-        Lua = fun () => $'!v ~= !v' : bool
-        Fsharp = fun () => $'System.Double.IsNaN(float !v)' : bool
-        Python = fun () => $'math.isnan(!v)' : bool
-        Rust = fun () => $'!v.is_nan()' : bool
-        TypeScript = fun () => $'Number.isNaN(!v)' : bool
-        Zig = fun () => $'std.math.isNan(!v)' : bool
-        Lean = fun () => $'(!v).isNaN' : bool
-        Kotlin = fun () => $'(!v).isNaN()' : bool
-        Swift = fun () => $'(!v).isNaN' : bool
-        C = fun () => $'isnan(!v)' : bool
-        Delphi = fun () => $'IsNan(!v)' : bool
+        Gleam = \ () => !-
+        Lua = \ () => $'!v ~= !v' : bool
+        Fsharp = \ () => $'System.Double.IsNaN(float !v)' : bool
+        Python = \ () => $'math.isnan(!v)' : bool
+        Rust = \ () => $'!v.is_nan()' : bool
+        TypeScript = \ () => $'Number.isNaN(!v)' : bool
+        Zig = \ () => $'std.math.isNan(!v)' : bool
+        Lean = \ () => $'(!v).isNaN' : bool
+        Kotlin = \ () => $'(!v).isNaN()' : bool
+        Swift = \ () => $'(!v).isNaN' : bool
+        C = \ () => $'isnan(!v)' : bool
+        Delphi = \ () => $'IsNan(!v)' : bool
     }
 
 /// ### is_infinite
-inl is_infinite forall t. (v : t) : bool =
+:= is_infinite \* t. (v : t) : bool =
     float_native_types ()
     backend_switch {
-        Gleam = fun () => false
-        Lua = fun () => $'math.abs(!v) == math.huge' : bool
-        Fsharp = fun () => $'System.Double.IsInfinity(float !v)' : bool
-        Python = fun () => $'math.isinf(!v)' : bool
-        Rust = fun () => $'!v.is_infinite()' : bool
-        TypeScript = fun () => $'Math.abs(!v) === Infinity' : bool
-        Zig = fun () => $'std.math.isInf(!v)' : bool
-        Lean = fun () => $'(!v).isInf' : bool
-        Kotlin = fun () => $'(!v).isInfinite()' : bool
-        Swift = fun () => $'(!v).isInfinite' : bool
-        C = fun () => $'isinf(!v)' : bool
-        Delphi = fun () => $'IsInfinite(!v)' : bool
+        Gleam = \ () => !-
+        Lua = \ () => $'math.abs(!v) == math.huge' : bool
+        Fsharp = \ () => $'System.Double.IsInfinity(float !v)' : bool
+        Python = \ () => $'math.isinf(!v)' : bool
+        Rust = \ () => $'!v.is_infinite()' : bool
+        TypeScript = \ () => $'Math.abs(!v) === Infinity' : bool
+        Zig = \ () => $'std.math.isInf(!v)' : bool
+        Lean = \ () => $'(!v).isInf' : bool
+        Kotlin = \ () => $'(!v).isInfinite()' : bool
+        Swift = \ () => $'(!v).isInfinite' : bool
+        C = \ () => $'isinf(!v)' : bool
+        Delphi = \ () => $'IsInfinite(!v)' : bool
     }
 
 /// ### precision_format
-inl precision_format (p : i32) : string =
+:= precision_format (p : i32) : string =
     float_text.concat "%." (float_text.concat (float_text.digits_text p "") "g")
 
 /// ### shortest_by_precision
-inl shortest_by_precision forall t. (format_g : i32 -> string) (parse : string -> t) (v : t) : string =
-    let rec search (p : i32) : string =
-        inl s = format_g p
-        if p >= 17i32 || parse s = v then s else search (p + 1i32)
+:= shortest_by_precision \* t. (format_g : i32 -> string) (parse : string -> t) (v : t) : string =
+    :~ ^ search (p : i32) : string =
+        := s = format_g p
+        ? p >= 17i32 || parse s = v ?> s |: search (p + 1i32)
     search 1i32
 
 /// ### lua_format_g
-inl lua_format_g forall t. (v : t) (p : i32) : string =
-    inl format = precision_format p
+:= lua_format_g \* t. (v : t) (p : i32) : string =
+    := format = precision_format p
     $'string.format(!format, !v)' : string
 
 /// ### lua_parse
-inl lua_parse forall t. (s : string) : t =
+:= lua_parse \* t. (s : string) : t =
     $'tonumber(!s)' : t
 
 /// ### c_format_g
-inl c_format_g forall t. (v : t) (p : i32) : string =
+:= c_format_g \* t. (v : t) (p : i32) : string =
     float_native_types ()
-    inl count = $'snprintf(spiral_format_buffer, sizeof spiral_format_buffer, "%.*g", !p, !v)' : i32
-    inl size = count + 1i32
+    := count = $'snprintf(spiral_format_buffer, sizeof spiral_format_buffer, "%.*g", !p, !v)' : i32
+    := size = count + 1i32
     $'StringLit(!size, spiral_format_buffer)' : string
 
 /// ### c_parse
-inl c_parse forall t. (s : string) : t =
+:= c_parse \* t. (s : string) : t =
     float_native_types ()
-    real
-        typecase t with
+    ~>
+        ?: t ?|
         | f32 => $'strtof((!s)->ptr, NULL)' : f32
         | f64 => $'strtod((!s)->ptr, NULL)' : f64
 
 /// ### delphi_format_g
-inl delphi_format_g forall t. (v : t) (p : i32) : string =
+:= delphi_format_g \* t. (v : t) (p : i32) : string =
     $'FloatToStrF(!v, ffGeneral, !p, 0)' : string
 
 /// ### delphi_parse
-inl delphi_parse forall t. (s : string) : t =
+:= delphi_parse \* t. (s : string) : t =
     $'StrToFloat(!s)' : t
 
 /// ### decimal_point
-inl decimal_point (s : string) : string =
-    inl comma = float_text.position_of ',' s 0i32
-    if comma < 0i32 then s
-    else
-        inl after = float_text.text_length s - comma - 1i32
-        inl before = float_text.part s 0i32 comma
+:= decimal_point (s : string) : string =
+    := comma = float_text.position_of ',' s 0i32
+    ? comma < 0i32 ?> s
+    |:
+        := after = float_text.text_length s - comma - 1i32
+        := before = float_text.part s 0i32 comma
         float_text.concat before (float_text.concat "." (float_text.part s (comma + 1i32) after))
 
 /// ### lean_widen
-inl lean_widen forall t. (v : t) : f64 =
-    real
-        typecase t with
+:= lean_widen \* t. (v : t) : f64 =
+    ~>
+        ?: t ?|
         | f32 => $'Float32.toFloat !v' : f64
         | f64 => v
 
 /// ### lean_same
-inl lean_narrowed forall t. (candidate : f64) (precision : t) : f64 =
-    real
-        typecase t with
+:= lean_narrowed \* t. (candidate : f64) (precision : t) : f64 =
+    ~>
+        ?: t ?|
         | f32 => $'Float32.toFloat (!candidate).toFloat32' : f64
         | f64 => candidate
 
 /// ### lean_same
-inl lean_same forall t. (candidate : f64) (v : t) : bool = lean_narrowed candidate v = lean_widen v
+:= lean_same \* t. (candidate : f64) (v : t) : bool = lean_narrowed candidate v = lean_widen v
 
 /// ### lean_floor_log10
-inl lean_floor_log10 (a : f64) : i64 =
+:= lean_floor_log10 (a : f64) : i64 =
     $'(Float.floor (Float.log10 !a)).toInt64' : i64
 
 /// ### lean_pow10
-inl lean_pow10 (k : i64) : f64 =
+:= lean_pow10 (k : i64) : f64 =
     $'Float.pow 10 (Float.ofInt (!k).toInt)' : f64
 
 /// ### lean_round
-inl lean_round (x : f64) : u64 =
+:= lean_round (x : f64) : u64 =
     $'(Float.round !x).toUInt64' : u64
 
 /// ### lean_of_scientific
-inl lean_of_scientific (n : u64) (negative : bool) (magnitude : i64) : f64 =
+:= lean_of_scientific (n : u64) (negative : bool) (magnitude : i64) : f64 =
     $'Float.ofScientific (!n).toNat !negative (!magnitude).toInt.natAbs' : f64
 
 /// ### lean_abs
-inl lean_abs (a : f64) : f64 =
+:= lean_abs (a : f64) : f64 =
     $'Float.abs !a' : f64
 
 /// ### lean_digits
-inl lean_digits forall t. (n : t) : string =
+:= lean_digits \* t. (n : t) : string =
     $'toString !n' : string
 
 /// ### lean_scaled
-inl lean_scaled (a : f64) (k : i64) : u64 =
-    if k >= 0i64 then lean_round (a / lean_pow10 k) else lean_round (a * lean_pow10 (0i64 - k))
+:= lean_scaled (a : f64) (k : i64) : u64 =
+    ? k >= 0i64 ?> lean_round (a / lean_pow10 k) |: lean_round (a * lean_pow10 (0i64 - k))
 
 /// ### lean_shortest
-inl lean_shortest forall t. (v : t) : string =
-    inl wide = lean_widen v
-    inl sign = if wide < 0f64 then "-" else ""
-    inl a = lean_abs wide
-    if a = 0f64 then (if 1f64 / wide < 0f64 then "-0.0" else "0.0")
-    else
-        inl e = lean_floor_log10 a
-        let rec search (p : i64) : string =
-            inl k = e - p + 1i64
-            inl n = lean_scaled a k
-            inl magnitude = if k < 0i64 then 0i64 - k else k
-            if p >= 17i64 || lean_same (lean_of_scientific n (k < 0i64) magnitude) v
-            then float_text.concat (lean_digits n) (float_text.concat "e" (lean_digits k))
-            else search (p + 1i64)
+:= lean_shortest \* t. (v : t) : string =
+    := wide = lean_widen v
+    := sign = ? wide < 0f64 ?> "-" |: ""
+    := a = lean_abs wide
+    ? a = 0f64 ?> (? 1f64 / wide < 0f64 ?> "-0.0" |: "0.0")
+    |:
+        := e = lean_floor_log10 a
+        :~ ^ search (p : i64) : string =
+            := k = e - p + 1i64
+            := n = lean_scaled a k
+            := magnitude = ? k < 0i64 ?> 0i64 - k |: k
+            ? p >= 17i64 || lean_same (lean_of_scientific n (k < 0i64) magnitude) v
+            ?> float_text.concat (lean_digits n) (float_text.concat "e" (lean_digits k))
+            |: search (p + 1i64)
         float_text.concat sign (search 1i64)
 
 /// ### native_shortest
-inl native_shortest forall t. (v : t) : string =
+:= native_shortest \* t. (v : t) : string =
     backend_switch {
-        Lua = fun () => shortest_by_precision (lua_format_g v) lua_parse v
-        Fsharp = fun () => $'(!v).ToString("R", System.Globalization.CultureInfo.InvariantCulture)' : string
-        Python = fun () => $'repr(float(!v))' : string
-        Rust = fun () => $'Rc::<str>::from(format\!("{:?}", !v))' : string
-        TypeScript = fun () => $'String(!v)' : string
-        Zig = fun () => $'spiralFloatText(!v)' : string
-        Lean = fun () => lean_shortest v
-        Kotlin = fun () => $'(!v).toString()' : string
-        Swift = fun () => $'(!v).description' : string
-        C = fun () => shortest_by_precision (c_format_g v) c_parse v
-        Delphi = fun () => shortest_by_precision (delphi_format_g v) delphi_parse v |> decimal_point
+        Lua = \ () => shortest_by_precision (lua_format_g v) lua_parse v
+        Fsharp = \ () => $'(!v).ToString("R", System.Globalization.CultureInfo.InvariantCulture)' : string
+        Python = \ () => $'repr(float(!v))' : string
+        Rust = \ () => $'Rc::<str>::from(format\!("{:?}", !v))' : string
+        TypeScript = \ () => $'String(!v)' : string
+        Zig = \ () => $'spiralFloatText(!v)' : string
+        Lean = \ () => lean_shortest v
+        Kotlin = \ () => $'(!v).toString()' : string
+        Swift = \ () => $'(!v).description' : string
+        C = \ () => shortest_by_precision (c_format_g v) c_parse v
+        Delphi = \ () => shortest_by_precision (delphi_format_g v) delphi_parse v |> decimal_point
     }
 
 /// ### is_positive
-inl is_positive forall t {number}. (v : t) : bool = v > -v
+:= is_positive \* t {number}. (v : t) : bool = v > -v
 
 /// ### shortest
-inl shortest forall t {number}. (v : t) : string =
-    if is_nan v then "NaN"
-    elif is_infinite v then (if is_positive v then "Infinity" else "-Infinity")
-    else native_shortest v
+:= shortest \* t {number}. (v : t) : string =
+    ? is_nan v ?> "NaN"
+    |? is_infinite v ?> (? is_positive v ?> "Infinity" |: "-Infinity")
+    |: native_shortest v

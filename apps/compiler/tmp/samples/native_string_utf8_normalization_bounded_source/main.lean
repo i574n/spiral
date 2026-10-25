@@ -28,14 +28,11 @@ mutual
 partial def runtime_byte_1 (p0 : String) (p1 : Int32) : IO Char := do
     let mut v0 : String := p0
     let mut v1 : Int32 := p1
-    let mut v2 : Char := default
-    v2 := (Char.ofNat (v0.toUTF8.get! (spiralIdx v1)).toNat)
+    let v2 : Char := (Char.ofNat (v0.toUTF8.get! (spiralIdx v1)).toNat)
     return v2
 partial def utf8_scalar_at_byte_offset_0 (p0 : String) (p1 : Int32) : IO Int32 := do
     let mut v0 : String := p0
     let mut v1 : Int32 := p1
-    let mut v2 : Int32 := default
-    let mut v3 : Bool := default
     let mut v5 : Bool := default
     let mut v7 : Char := default
     let mut v8 : Int32 := default
@@ -109,8 +106,8 @@ partial def utf8_scalar_at_byte_offset_0 (p0 : String) (p1 : Int32) : IO Int32 :
     let mut v93 : Int32 := default
     let mut v94 : Bool := default
     let mut v96 : Bool := default
-    v2 := (Int32.ofNat v0.utf8ByteSize)
-    v3 := (decide (v1 < (0 : Int32)))
+    let v2 : Int32 := (Int32.ofNat v0.utf8ByteSize)
+    let v3 : Bool := (decide (v1 < (0 : Int32)))
     if v3 then
         spiralFail "UTF-8 byte offset is negative."
     else
@@ -267,25 +264,6 @@ partial def utf8_scalar_at_byte_offset_0 (p0 : String) (p1 : Int32) : IO Int32 :
                             else
                                 spiralFail "UTF-8 scalar starts with an invalid lead byte."
 partial def spiralMain : IO Int32 := do
-    let mut v0 : String := default
-    let mut v1 : Int32 := default
-    let mut v2 : Int32 := default
-    let mut v3 : String := default
-    let mut v4 : Int32 := default
-    let mut v5 : Int32 := default
-    let mut v6 : String := default
-    let mut v7 : Int32 := default
-    let mut v8 : Int32 := default
-    let mut v9 : String := default
-    let mut v10 : Int32 := default
-    let mut v11 : Int32 := default
-    let mut v12 : String := default
-    let mut v13 : Int32 := default
-    let mut v14 : Int32 := default
-    let mut v15 : String := default
-    let mut v16 : Int32 := default
-    let mut v17 : Int32 := default
-    let mut v18 : Bool := default
     let mut v64 : Int32 := default
     let mut v65 : Int32 := default
     let mut v19 : Bool := default
@@ -303,7 +281,6 @@ partial def spiralMain : IO Int32 := do
     let mut v31 : Bool := default
     let mut v32 : Bool := default
     let mut v33 : Bool := default
-    let mut v66 : Bool := default
     let mut v112 : Int32 := default
     let mut v113 : Int32 := default
     let mut v67 : Bool := default
@@ -321,7 +298,6 @@ partial def spiralMain : IO Int32 := do
     let mut v79 : Bool := default
     let mut v80 : Bool := default
     let mut v81 : Bool := default
-    let mut v114 : Bool := default
     let mut v160 : Int32 := default
     let mut v161 : Int32 := default
     let mut v115 : Bool := default
@@ -339,23 +315,16 @@ partial def spiralMain : IO Int32 := do
     let mut v127 : Bool := default
     let mut v128 : Bool := default
     let mut v129 : Bool := default
-    let mut v162 : Bool := default
     let mut v163 : Int32 := default
-    let mut v164 : Bool := default
     let mut v165 : Int32 := default
     let mut v166 : Int32 := default
-    let mut v167 : Bool := default
     let mut v170 : Int32 := default
     let mut v168 : Bool := default
-    let mut v171 : Bool := default
     let mut v172 : Int32 := default
     let mut v173 : Int32 := default
-    let mut v174 : Bool := default
     let mut v175 : Int32 := default
-    let mut v176 : Bool := default
     let mut v177 : Int32 := default
     let mut v178 : Int32 := default
-    let mut v179 : Bool := default
     let mut v181 : Bool := default
     let mut v180 : Bool := default
     let mut v182 : Bool := default
@@ -373,25 +342,25 @@ partial def spiralMain : IO Int32 := do
     let mut v194 : Bool := default
     let mut v196 : Bool := default
     let mut v195 : Bool := default
-    v0 := "é"
-    v1 := (0 : Int32)
-    v2 := (← utf8_scalar_at_byte_offset_0 v0 v1)
-    v3 := "õ"
-    v4 := (0 : Int32)
-    v5 := (← utf8_scalar_at_byte_offset_0 v3 v4)
-    v6 := "ç"
-    v7 := (0 : Int32)
-    v8 := (← utf8_scalar_at_byte_offset_0 v6 v7)
-    v9 := "́"
-    v10 := (0 : Int32)
-    v11 := (← utf8_scalar_at_byte_offset_0 v9 v10)
-    v12 := "̃"
-    v13 := (0 : Int32)
-    v14 := (← utf8_scalar_at_byte_offset_0 v12 v13)
-    v15 := "̧"
-    v16 := (0 : Int32)
-    v17 := (← utf8_scalar_at_byte_offset_0 v15 v16)
-    v18 := (v2 == (192 : Int32))
+    let v0 : String := "é"
+    let v1 : Int32 := (0 : Int32)
+    let v2 : Int32 := (← utf8_scalar_at_byte_offset_0 v0 v1)
+    let v3 : String := "õ"
+    let v4 : Int32 := (0 : Int32)
+    let v5 : Int32 := (← utf8_scalar_at_byte_offset_0 v3 v4)
+    let v6 : String := "ç"
+    let v7 : Int32 := (0 : Int32)
+    let v8 : Int32 := (← utf8_scalar_at_byte_offset_0 v6 v7)
+    let v9 : String := "́"
+    let v10 : Int32 := (0 : Int32)
+    let v11 : Int32 := (← utf8_scalar_at_byte_offset_0 v9 v10)
+    let v12 : String := "̃"
+    let v13 : Int32 := (0 : Int32)
+    let v14 : Int32 := (← utf8_scalar_at_byte_offset_0 v12 v13)
+    let v15 : String := "̧"
+    let v16 : Int32 := (0 : Int32)
+    let v17 : Int32 := (← utf8_scalar_at_byte_offset_0 v15 v16)
+    let v18 : Bool := (v2 == (192 : Int32))
     if v18 then
         v64 := (65 : Int32)
         v65 := (768 : Int32)
@@ -473,7 +442,7 @@ partial def spiralMain : IO Int32 := do
                                                                 else
                                                                     v64 := v2
                                                                     v65 := (-1 : Int32)
-    v66 := (v5 == (192 : Int32))
+    let v66 : Bool := (v5 == (192 : Int32))
     if v66 then
         v112 := (65 : Int32)
         v113 := (768 : Int32)
@@ -555,7 +524,7 @@ partial def spiralMain : IO Int32 := do
                                                                 else
                                                                     v112 := v5
                                                                     v113 := (-1 : Int32)
-    v114 := (v8 == (192 : Int32))
+    let v114 : Bool := (v8 == (192 : Int32))
     if v114 then
         v160 := (65 : Int32)
         v161 := (768 : Int32)
@@ -637,19 +606,19 @@ partial def spiralMain : IO Int32 := do
                                                                 else
                                                                     v160 := v8
                                                                     v161 := (-1 : Int32)
-    v162 := (v11 == (769 : Int32))
+    let v162 : Bool := (v11 == (769 : Int32))
     if v162 then
         v163 := (233 : Int32)
     else
         v163 := (-1 : Int32)
-    v164 := (decide (v163 < (0 : Int32)))
+    let v164 : Bool := (decide (v163 < (0 : Int32)))
     if v164 then
         v165 := (101 : Int32)
         v166 := v11
     else
         v165 := v163
         v166 := (-1 : Int32)
-    v167 := (v14 == (769 : Int32))
+    let v167 : Bool := (v14 == (769 : Int32))
     if v167 then
         v170 := (243 : Int32)
     else
@@ -658,26 +627,26 @@ partial def spiralMain : IO Int32 := do
             v170 := (245 : Int32)
         else
             v170 := (-1 : Int32)
-    v171 := (decide (v170 < (0 : Int32)))
+    let v171 : Bool := (decide (v170 < (0 : Int32)))
     if v171 then
         v172 := (111 : Int32)
         v173 := v14
     else
         v172 := v170
         v173 := (-1 : Int32)
-    v174 := (v17 == (807 : Int32))
+    let v174 : Bool := (v17 == (807 : Int32))
     if v174 then
         v175 := (231 : Int32)
     else
         v175 := (-1 : Int32)
-    v176 := (decide (v175 < (0 : Int32)))
+    let v176 : Bool := (decide (v175 < (0 : Int32)))
     if v176 then
         v177 := (99 : Int32)
         v178 := v17
     else
         v177 := v175
         v178 := (-1 : Int32)
-    v179 := (v64 == (101 : Int32))
+    let v179 : Bool := (v64 == (101 : Int32))
     if v179 then
         v180 := (v65 == v11)
         v181 := v180

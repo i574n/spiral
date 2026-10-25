@@ -35,16 +35,12 @@ func sp_measure_0(_ p0: String) -> Int32 {
     return v1
 }
 func spiral_main() -> Int32 {
-    var v0: String = ""
-    v0 = "qwe"
+    let v0: String = "qwe"
     var v1: Int32 = 0
     v1 = sp_measure_0(v0)
-    var v2: Int32 = 0
-    v2 = sp_measure_0(v0)
-    var v3: Int32 = 0
-    v3 = (v1 &+ v2)
-    var v4: Int32 = 0
-    v4 = (v3 &- 6)
+    let v2: Int32 = sp_measure_0(v0)
+    let v3: Int32 = (v1 &+ v2)
+    let v4: Int32 = (v3 &- 6)
     return v4
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

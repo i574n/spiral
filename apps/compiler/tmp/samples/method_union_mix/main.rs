@@ -7,24 +7,24 @@ enum US0 {
     US0_Both(i32, Rc<str>),
 }
 fn method0(mut v0: i32, mut v1: Rc<str>) -> US0 {
-    let mut v2: bool = v0 == 0i32;
+    let v2: bool = v0 == 0i32;
     if v2 {
         US0::US0_One(0i32)
     } else {
-        US0::US0_Both(v0, v1.clone())
+        US0::US0_Both(v0, v1)
     }
 }
 fn spiral_main() -> i32 {
-    let mut v0: i32 = 3i32;
-    let mut v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
-    let mut v2: US0 = method0(v0, v1.clone());
+    let v0: i32 = 3i32;
+    let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
+    let v2: US0 = method0(v0, v1);
     match &v2 {
         US0::US0_Both(v4, v5) => {
-            let mut v4: i32 = *v4;
-            let mut v5: Rc<str> = v5.clone();
-            let mut v6: bool = v4 == 3i32;
-            let mut v8: bool = if v6 {
-                let mut v7: bool = v5.clone() == { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
+            let v4: i32 = *v4;
+            let v5: Rc<str> = v5.clone();
+            let v6: bool = v4 == 3i32;
+            let v8: bool = if v6 {
+                let v7: bool = &*v5 == "hi";
                 v7
             } else {
                 false
@@ -36,7 +36,7 @@ fn spiral_main() -> i32 {
             }
         }
         US0::US0_One(v3) => {
-            let mut v3: i32 = *v3;
+            let v3: i32 = *v3;
             1i32
         }
     }

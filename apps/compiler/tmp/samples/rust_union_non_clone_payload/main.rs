@@ -10,41 +10,41 @@ enum UH0 {
     UH0_HEmpty,
 }
 fn spiral_main() -> i32 {
-    let mut v0: i32 = 7i32;
-    let mut v1: bool = true;
-    let mut v2: Box<dyn Fn() -> i32> = Box::new(move || v0 * 6) as Box<dyn Fn() -> i32>;
-    let mut v5: US0 = if v1 {
+    let v0: i32 = 7i32;
+    let v1: bool = true;
+    let v2: Box<dyn Fn() -> i32> = Box::new(move || v0 * 6) as Box<dyn Fn() -> i32>;
+    let v5: US0 = if v1 {
         US0::US0_SBoxed(v2)
     } else {
         US0::US0_SEmpty
     };
-    let mut v9: i32 = match v5 {
+    let v9: i32 = match v5 {
         US0::US0_SBoxed(v6) => {
-            let mut v6: Box<dyn Fn() -> i32> = v6;
-            let mut v7: i32 = (v6)();
+            let v6: Box<dyn Fn() -> i32> = v6;
+            let v7: i32 = (v6)();
             v7
         }
         US0::US0_SEmpty => {
             0i32
         }
     };
-    let mut v10: Box<dyn Fn() -> i32> = Box::new(|| 7i32) as Box<dyn Fn() -> i32>;
-    let mut v13: Rc<UH0> = if v1 {
+    let v10: Box<dyn Fn() -> i32> = Box::new(|| 7i32) as Box<dyn Fn() -> i32>;
+    let v13: Rc<UH0> = if v1 {
         Rc::new(UH0::UH0_HBoxed(v10))
     } else {
         { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_HEmpty); } CASE.with(|case| case.clone()) }
     };
-    let mut v17: i32 = match &*v13 {
+    let v17: i32 = match &*v13 {
         UH0::UH0_HBoxed(v14) => {
-            let mut v14 = v14;
-            let mut v15: i32 = (v14)();
+            let v14 = v14;
+            let v15: i32 = (v14)();
             v15
         }
         UH0::UH0_HEmpty => {
             0i32
         }
     };
-    let mut v18: i32 = v9.wrapping_add(v17);
+    let v18: i32 = v9.wrapping_add(v17);
     v18
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }

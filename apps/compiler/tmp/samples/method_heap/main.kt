@@ -4,16 +4,11 @@ fun sp_method0(p0: Heap0): Heap0 {
     return v0
 }
 fun spiral_main(): Int {
-    var v0: Int = 0
-    v0 = 7
-    var v1: Heap0 = Heap0(0)
-    v1 = Heap0(v0)
-    var v2: Heap0 = Heap0(0)
-    v2 = sp_method0(v1)
-    var v3: Int = 0
-    v3 = v2.l0
-    var v4: Boolean = false
-    v4 = (v3 == 7)
+    val v0: Int = 7
+    val v1: Heap0 = Heap0(v0)
+    val v2: Heap0 = sp_method0(v1)
+    val v3: Int = v2.l0
+    val v4: Boolean = (v3 == 7)
     if (v4) {
         return 0
     } else {

@@ -1,18 +1,8 @@
-local function spiral_wrap_unsigned(value, bits)
-    return value % (2 ^ bits)
-end
 local function spiral_wrap_signed(value, bits)
     local modulus = 2 ^ bits
     value = value % modulus
     if value >= modulus / 2 then value = value - modulus end
     return value
-end
-local function spiral_mul_mod32(a, b)
-    a = a % 4294967296
-    b = b % 4294967296
-    local a_low = a % 65536
-    local a_high = (a - a_low) / 65536
-    return (a_low * b + ((a_high * b) % 65536) * 65536) % 4294967296
 end
 local function spiral_bit_combine(a, b, keep)
     a = a % 4294967296
@@ -241,18 +231,18 @@ function spiral_w64.tostring(a, s)
     until not more
     return sign .. string.reverse(table.concat(digits))
 end
-local Us0_BitZero, Us0_BitOne, Uh0_RegexEmpty, Uh0_RegexEpsilon, Uh0_RegexChar, Uh0_RegexAlt, Uh0_RegexCat, Uh0_RegexStar, Uh1_InputEmpty, Uh1_InputCons, Us1_SymbolLess, Us1_SymbolSame, Us1_SymbolGreater, Us2_Nullable, Us2_NonNullable, Us3_TriA, Us3_TriB, Us3_TriC, Uh2_RegexEmpty, Uh2_RegexEpsilon, Uh2_RegexChar, Uh2_RegexAlt, Uh2_RegexCat, Uh2_RegexStar, Uh3_InputEmpty, Uh3_InputCons, random_bit_input_1, run_2, regex_compare_8, alt_insert_sorted_7, make_alt_6, regex_equal_10, make_cat_9, make_star_11, normalize_5, nullable_13, derivative_12, canonical_derivative_4, accepts_3, loop_0, zeros_input_15, run_16, loop_14, run_17, regex_compare_23, alt_insert_sorted_22, make_alt_21, regex_equal_25, make_cat_24, make_star_26, normalize_20, nullable_28, derivative_27, canonical_derivative_19, accepts_18
+local Us0_BitZero, Us0_BitOne, Uh0_RegexChar, Uh0_RegexAlt, Uh0_RegexCat, Uh0_RegexStar, Uh1_InputCons, Us1_SymbolLess, Us1_SymbolSame, Us1_SymbolGreater, Us2_Nullable, Us2_NonNullable, Us3_TriA, Us3_TriB, Us3_TriC, Uh2_RegexChar, Uh2_RegexAlt, Uh2_RegexCat, Uh2_RegexStar, Uh3_InputCons, random_bit_input_1, run_2, regex_compare_8, alt_insert_sorted_7, make_alt_6, regex_equal_10, make_cat_9, make_star_11, normalize_5, nullable_13, derivative_12, canonical_derivative_4, accepts_3, loop_0, zeros_input_15, run_16, loop_14, run_17, regex_compare_23, alt_insert_sorted_22, make_alt_21, regex_equal_25, make_cat_24, make_star_26, normalize_20, nullable_28, derivative_27, canonical_derivative_19, accepts_18
 function Us0_BitZero() return { tag = "Us0_BitZero" } end
 function Us0_BitOne() return { tag = "Us0_BitOne" } end
 
-function Uh0_RegexEmpty() return { tag = "Uh0_RegexEmpty" } end
-function Uh0_RegexEpsilon() return { tag = "Uh0_RegexEpsilon" } end
+Uh0_RegexEmpty = (function() local shared = { tag = "Uh0_RegexEmpty" } return function() return shared end end)()
+Uh0_RegexEpsilon = (function() local shared = { tag = "Uh0_RegexEpsilon" } return function() return shared end end)()
 function Uh0_RegexChar(v0) return { tag = "Uh0_RegexChar",  _1 = v0 } end
 function Uh0_RegexAlt(v0, v1) return { tag = "Uh0_RegexAlt",  _1 = v0,  _2 = v1 } end
 function Uh0_RegexCat(v0, v1) return { tag = "Uh0_RegexCat",  _1 = v0,  _2 = v1 } end
 function Uh0_RegexStar(v0) return { tag = "Uh0_RegexStar",  _1 = v0 } end
 
-function Uh1_InputEmpty() return { tag = "Uh1_InputEmpty" } end
+Uh1_InputEmpty = (function() local shared = { tag = "Uh1_InputEmpty" } return function() return shared end end)()
 function Uh1_InputCons(v0, v1) return { tag = "Uh1_InputCons",  _1 = v0,  _2 = v1 } end
 
 function Us1_SymbolLess() return { tag = "Us1_SymbolLess" } end
@@ -266,14 +256,14 @@ function Us3_TriA() return { tag = "Us3_TriA" } end
 function Us3_TriB() return { tag = "Us3_TriB" } end
 function Us3_TriC() return { tag = "Us3_TriC" } end
 
-function Uh2_RegexEmpty() return { tag = "Uh2_RegexEmpty" } end
-function Uh2_RegexEpsilon() return { tag = "Uh2_RegexEpsilon" } end
+Uh2_RegexEmpty = (function() local shared = { tag = "Uh2_RegexEmpty" } return function() return shared end end)()
+Uh2_RegexEpsilon = (function() local shared = { tag = "Uh2_RegexEpsilon" } return function() return shared end end)()
 function Uh2_RegexChar(v0) return { tag = "Uh2_RegexChar",  _1 = v0 } end
 function Uh2_RegexAlt(v0, v1) return { tag = "Uh2_RegexAlt",  _1 = v0,  _2 = v1 } end
 function Uh2_RegexCat(v0, v1) return { tag = "Uh2_RegexCat",  _1 = v0,  _2 = v1 } end
 function Uh2_RegexStar(v0) return { tag = "Uh2_RegexStar",  _1 = v0 } end
 
-function Uh3_InputEmpty() return { tag = "Uh3_InputEmpty" } end
+Uh3_InputEmpty = (function() local shared = { tag = "Uh3_InputEmpty" } return function() return shared end end)()
 function Uh3_InputCons(v0, v1) return { tag = "Uh3_InputCons",  _1 = v0,  _2 = v1 } end
 
 function random_bit_input_1(v0, v1, v2)
@@ -304,25 +294,22 @@ function random_bit_input_1(v0, v1, v2)
 end
 
 function run_2(v0, v1)
-    local __v = { v1 }
-    if __v[1] ~= nil and __v[1].tag == "Uh1_InputCons" then
-        local v4 = __v[1]._1
-        local v5 = __v[1]._2
+    if v1 ~= nil and v1.tag == "Uh1_InputCons" then
+        local v4 = v1._1
+        local v5 = v1._2
         local v6 = v0 == 0
         local getv19 = function()
             if v6 then
                 local getv10 = function()
-                    local __v = { v4 }
-                    if __v[1] ~= nil and __v[1].tag == "Us0_BitOne" then
+                    if v4 ~= nil and v4.tag == "Us0_BitOne" then
                         return Us1_SymbolGreater()
-                    elseif __v[1] ~= nil and __v[1].tag == "Us0_BitZero" then
+                    elseif v4 ~= nil and v4.tag == "Us0_BitZero" then
                         return Us1_SymbolSame()
                     end
                 end
                 local v10 = getv10()
                 local getv11 = function()
-                    local __v = { v10 }
-                    if __v[1] ~= nil and __v[1].tag == "Us1_SymbolSame" then
+                    if v10 ~= nil and v10.tag == "Us1_SymbolSame" then
                         return true
                     else
                         return false
@@ -336,17 +323,15 @@ function run_2(v0, v1)
                 end
             else
                 local getv16 = function()
-                    local __v = { v4 }
-                    if __v[1] ~= nil and __v[1].tag == "Us0_BitOne" then
+                    if v4 ~= nil and v4.tag == "Us0_BitOne" then
                         return Us1_SymbolGreater()
-                    elseif __v[1] ~= nil and __v[1].tag == "Us0_BitZero" then
+                    elseif v4 ~= nil and v4.tag == "Us0_BitZero" then
                         return Us1_SymbolSame()
                     end
                 end
                 local v16 = getv16()
                 local getv17 = function()
-                    local __v = { v16 }
-                    if __v[1] ~= nil and __v[1].tag == "Us1_SymbolSame" then
+                    if v16 ~= nil and v16.tag == "Us1_SymbolSame" then
                         return true
                     else
                         return false
@@ -362,7 +347,7 @@ function run_2(v0, v1)
         end
         local v19 = getv19()
         return run_2(v19, v5)
-    elseif __v[1] ~= nil and __v[1].tag == "Uh1_InputEmpty" then
+    elseif v1 ~= nil and v1.tag == "Uh1_InputEmpty" then
         local v2 = v0 == 0
         local v3 = v2 == false
         return v3
@@ -370,17 +355,14 @@ function run_2(v0, v1)
 end
 
 function regex_compare_8(v0, v1)
-    local __v = { v0 }
-    if __v[1] ~= nil and __v[1].tag == "Uh0_RegexAlt" then
-        local v53 = __v[1]._1
-        local v54 = __v[1]._2
-        local __v = { v1 }
-        if __v[1] ~= nil and __v[1].tag == "Uh0_RegexAlt" then
-            local v55 = __v[1]._1
-            local v56 = __v[1]._2
+    if v0 ~= nil and v0.tag == "Uh0_RegexAlt" then
+        local v53 = v0._1
+        local v54 = v0._2
+        if v1 ~= nil and v1.tag == "Uh0_RegexAlt" then
+            local v55 = v1._1
+            local v56 = v1._2
             local v57 = regex_compare_8(v53, v55)
-            local __v = { v57 }
-            if __v[1] ~= nil and __v[1].tag == "Us1_SymbolSame" then
+            if v57 ~= nil and v57.tag == "Us1_SymbolSame" then
                 return regex_compare_8(v54, v56)
             else
                 return v57
@@ -388,83 +370,74 @@ function regex_compare_8(v0, v1)
         else
             return Us1_SymbolGreater()
         end
-    elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexCat" then
-        local v28 = __v[1]._1
-        local v29 = __v[1]._2
-        local __v = { v1 }
-        if __v[1] ~= nil and __v[1].tag == "Uh0_RegexCat" then
-            local v34 = __v[1]._1
-            local v35 = __v[1]._2
+    elseif v0 ~= nil and v0.tag == "Uh0_RegexCat" then
+        local v28 = v0._1
+        local v29 = v0._2
+        if v1 ~= nil and v1.tag == "Uh0_RegexCat" then
+            local v34 = v1._1
+            local v35 = v1._2
             local v36 = regex_compare_8(v28, v34)
-            local __v = { v36 }
-            if __v[1] ~= nil and __v[1].tag == "Us1_SymbolSame" then
+            if v36 ~= nil and v36.tag == "Us1_SymbolSame" then
                 return regex_compare_8(v29, v35)
             else
                 return v36
             end
-        elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexChar" then
-            local v32 = __v[1]._1
+        elseif v1 ~= nil and v1.tag == "Uh0_RegexChar" then
+            local v32 = v1._1
             return Us1_SymbolGreater()
-        elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexEmpty" then
+        elseif v1 ~= nil and v1.tag == "Uh0_RegexEmpty" then
             return Us1_SymbolGreater()
-        elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexEpsilon" then
+        elseif v1 ~= nil and v1.tag == "Uh0_RegexEpsilon" then
             return Us1_SymbolGreater()
         else
             return Us1_SymbolLess()
         end
-    elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexChar" then
-        local v10 = __v[1]._1
-        local __v = { v1 }
-        if __v[1] ~= nil and __v[1].tag == "Uh0_RegexChar" then
-            local v13 = __v[1]._1
-            local __v = { v10 }
-            if __v[1] ~= nil and __v[1].tag == "Us0_BitOne" then
-                local __v = { v13 }
-                if __v[1] ~= nil and __v[1].tag == "Us0_BitOne" then
+    elseif v0 ~= nil and v0.tag == "Uh0_RegexChar" then
+        local v10 = v0._1
+        if v1 ~= nil and v1.tag == "Uh0_RegexChar" then
+            local v13 = v1._1
+            if v10 ~= nil and v10.tag == "Us0_BitOne" then
+                if v13 ~= nil and v13.tag == "Us0_BitOne" then
                     return Us1_SymbolSame()
-                elseif __v[1] ~= nil and __v[1].tag == "Us0_BitZero" then
+                elseif v13 ~= nil and v13.tag == "Us0_BitZero" then
                     return Us1_SymbolGreater()
                 end
-            elseif __v[1] ~= nil and __v[1].tag == "Us0_BitZero" then
-                local __v = { v13 }
-                if __v[1] ~= nil and __v[1].tag == "Us0_BitOne" then
+            elseif v10 ~= nil and v10.tag == "Us0_BitZero" then
+                if v13 ~= nil and v13.tag == "Us0_BitOne" then
                     return Us1_SymbolLess()
-                elseif __v[1] ~= nil and __v[1].tag == "Us0_BitZero" then
+                elseif v13 ~= nil and v13.tag == "Us0_BitZero" then
                     return Us1_SymbolSame()
                 end
             end
-        elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexEmpty" then
+        elseif v1 ~= nil and v1.tag == "Uh0_RegexEmpty" then
             return Us1_SymbolGreater()
-        elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexEpsilon" then
+        elseif v1 ~= nil and v1.tag == "Uh0_RegexEpsilon" then
             return Us1_SymbolGreater()
         else
             return Us1_SymbolLess()
         end
-    elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexEmpty" then
-        local __v = { v1 }
-        if __v[1] ~= nil and __v[1].tag == "Uh0_RegexEmpty" then
+    elseif v0 ~= nil and v0.tag == "Uh0_RegexEmpty" then
+        if v1 ~= nil and v1.tag == "Uh0_RegexEmpty" then
             return Us1_SymbolSame()
         else
             return Us1_SymbolLess()
         end
-    elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexEpsilon" then
-        local __v = { v1 }
-        if __v[1] ~= nil and __v[1].tag == "Uh0_RegexEmpty" then
+    elseif v0 ~= nil and v0.tag == "Uh0_RegexEpsilon" then
+        if v1 ~= nil and v1.tag == "Uh0_RegexEmpty" then
             return Us1_SymbolGreater()
-        elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexEpsilon" then
+        elseif v1 ~= nil and v1.tag == "Uh0_RegexEpsilon" then
             return Us1_SymbolSame()
         else
             return Us1_SymbolLess()
         end
-    elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexStar" then
-        local v44 = __v[1]._1
-        local __v = { v1 }
-        if __v[1] ~= nil and __v[1].tag == "Uh0_RegexAlt" then
-            local v45 = __v[1]._1
-            local v46 = __v[1]._2
+    elseif v0 ~= nil and v0.tag == "Uh0_RegexStar" then
+        local v44 = v0._1
+        if v1 ~= nil and v1.tag == "Uh0_RegexAlt" then
+            local v45 = v1._1
+            local v46 = v1._2
             return Us1_SymbolLess()
-        elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexStar" then
-            local v48 = __v[1]._1
+        elseif v1 ~= nil and v1.tag == "Uh0_RegexStar" then
+            local v48 = v1._1
             return regex_compare_8(v44, v48)
         else
             return Us1_SymbolGreater()
@@ -473,43 +446,39 @@ function regex_compare_8(v0, v1)
 end
 
 function alt_insert_sorted_7(v0, v1)
-    local __v = { v1 }
-    if __v[1] ~= nil and __v[1].tag == "Uh0_RegexAlt" then
-        local v2 = __v[1]._1
-        local v3 = __v[1]._2
+    if v1 ~= nil and v1.tag == "Uh0_RegexAlt" then
+        local v2 = v1._1
+        local v3 = v1._2
         local v4 = regex_compare_8(v0, v2)
-        local __v = { v4 }
-        if __v[1] ~= nil and __v[1].tag == "Us1_SymbolGreater" then
+        if v4 ~= nil and v4.tag == "Us1_SymbolGreater" then
             local v6 = alt_insert_sorted_7(v0, v3)
             return Uh0_RegexAlt(v2, v6)
-        elseif __v[1] ~= nil and __v[1].tag == "Us1_SymbolLess" then
+        elseif v4 ~= nil and v4.tag == "Us1_SymbolLess" then
             return Uh0_RegexAlt(v0, v1)
-        elseif __v[1] ~= nil and __v[1].tag == "Us1_SymbolSame" then
+        elseif v4 ~= nil and v4.tag == "Us1_SymbolSame" then
             return v1
         end
-    elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexEmpty" then
+    elseif v1 ~= nil and v1.tag == "Uh0_RegexEmpty" then
         return v0
     else
         local v11 = regex_compare_8(v0, v1)
-        local __v = { v11 }
-        if __v[1] ~= nil and __v[1].tag == "Us1_SymbolGreater" then
+        if v11 ~= nil and v11.tag == "Us1_SymbolGreater" then
             return Uh0_RegexAlt(v1, v0)
-        elseif __v[1] ~= nil and __v[1].tag == "Us1_SymbolLess" then
+        elseif v11 ~= nil and v11.tag == "Us1_SymbolLess" then
             return Uh0_RegexAlt(v0, v1)
-        elseif __v[1] ~= nil and __v[1].tag == "Us1_SymbolSame" then
+        elseif v11 ~= nil and v11.tag == "Us1_SymbolSame" then
             return v1
         end
     end
 end
 
 function make_alt_6(v0, v1)
-    local __v = { v0 }
-    if __v[1] ~= nil and __v[1].tag == "Uh0_RegexAlt" then
-        local v2 = __v[1]._1
-        local v3 = __v[1]._2
+    if v0 ~= nil and v0.tag == "Uh0_RegexAlt" then
+        local v2 = v0._1
+        local v3 = v0._2
         local v4 = alt_insert_sorted_7(v2, v1)
         return make_alt_6(v3, v4)
-    elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexEmpty" then
+    elseif v0 ~= nil and v0.tag == "Uh0_RegexEmpty" then
         return v1
     else
         return alt_insert_sorted_7(v0, v1)
@@ -517,14 +486,12 @@ function make_alt_6(v0, v1)
 end
 
 function regex_equal_10(v0, v1)
-    local __v = { v0 }
-    if __v[1] ~= nil and __v[1].tag == "Uh0_RegexAlt" then
-        local v18 = __v[1]._1
-        local v19 = __v[1]._2
-        local __v = { v1 }
-        if __v[1] ~= nil and __v[1].tag == "Uh0_RegexAlt" then
-            local v20 = __v[1]._1
-            local v21 = __v[1]._2
+    if v0 ~= nil and v0.tag == "Uh0_RegexAlt" then
+        local v18 = v0._1
+        local v19 = v0._2
+        if v1 ~= nil and v1.tag == "Uh0_RegexAlt" then
+            local v20 = v1._1
+            local v21 = v1._2
             local v22 = regex_equal_10(v18, v20)
             if v22 then
                 return regex_equal_10(v19, v21)
@@ -534,13 +501,12 @@ function regex_equal_10(v0, v1)
         else
             return false
         end
-    elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexCat" then
-        local v26 = __v[1]._1
-        local v27 = __v[1]._2
-        local __v = { v1 }
-        if __v[1] ~= nil and __v[1].tag == "Uh0_RegexCat" then
-            local v28 = __v[1]._1
-            local v29 = __v[1]._2
+    elseif v0 ~= nil and v0.tag == "Uh0_RegexCat" then
+        local v26 = v0._1
+        local v27 = v0._2
+        if v1 ~= nil and v1.tag == "Uh0_RegexCat" then
+            local v28 = v1._1
+            local v29 = v1._2
             local v30 = regex_equal_10(v26, v28)
             if v30 then
                 return regex_equal_10(v27, v29)
@@ -550,32 +516,27 @@ function regex_equal_10(v0, v1)
         else
             return false
         end
-    elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexChar" then
-        local v4 = __v[1]._1
-        local __v = { v1 }
-        if __v[1] ~= nil and __v[1].tag == "Uh0_RegexChar" then
-            local v5 = __v[1]._1
+    elseif v0 ~= nil and v0.tag == "Uh0_RegexChar" then
+        local v4 = v0._1
+        if v1 ~= nil and v1.tag == "Uh0_RegexChar" then
+            local v5 = v1._1
             local getv15 = function()
-                local __v = { v4 }
-                if __v[1] ~= nil and __v[1].tag == "Us0_BitOne" then
-                    local __v = { v5 }
-                    if __v[1] ~= nil and __v[1].tag == "Us0_BitOne" then
+                if v4 ~= nil and v4.tag == "Us0_BitOne" then
+                    if v5 ~= nil and v5.tag == "Us0_BitOne" then
                         return Us1_SymbolSame()
-                    elseif __v[1] ~= nil and __v[1].tag == "Us0_BitZero" then
+                    elseif v5 ~= nil and v5.tag == "Us0_BitZero" then
                         return Us1_SymbolGreater()
                     end
-                elseif __v[1] ~= nil and __v[1].tag == "Us0_BitZero" then
-                    local __v = { v5 }
-                    if __v[1] ~= nil and __v[1].tag == "Us0_BitOne" then
+                elseif v4 ~= nil and v4.tag == "Us0_BitZero" then
+                    if v5 ~= nil and v5.tag == "Us0_BitOne" then
                         return Us1_SymbolLess()
-                    elseif __v[1] ~= nil and __v[1].tag == "Us0_BitZero" then
+                    elseif v5 ~= nil and v5.tag == "Us0_BitZero" then
                         return Us1_SymbolSame()
                     end
                 end
             end
             local v15 = getv15()
-            local __v = { v15 }
-            if __v[1] ~= nil and __v[1].tag == "Us1_SymbolSame" then
+            if v15 ~= nil and v15.tag == "Us1_SymbolSame" then
                 return true
             else
                 return false
@@ -583,25 +544,22 @@ function regex_equal_10(v0, v1)
         else
             return false
         end
-    elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexEmpty" then
-        local __v = { v1 }
-        if __v[1] ~= nil and __v[1].tag == "Uh0_RegexEmpty" then
+    elseif v0 ~= nil and v0.tag == "Uh0_RegexEmpty" then
+        if v1 ~= nil and v1.tag == "Uh0_RegexEmpty" then
             return true
         else
             return false
         end
-    elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexEpsilon" then
-        local __v = { v1 }
-        if __v[1] ~= nil and __v[1].tag == "Uh0_RegexEpsilon" then
+    elseif v0 ~= nil and v0.tag == "Uh0_RegexEpsilon" then
+        if v1 ~= nil and v1.tag == "Uh0_RegexEpsilon" then
             return true
         else
             return false
         end
-    elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexStar" then
-        local v34 = __v[1]._1
-        local __v = { v1 }
-        if __v[1] ~= nil and __v[1].tag == "Uh0_RegexStar" then
-            local v35 = __v[1]._1
+    elseif v0 ~= nil and v0.tag == "Uh0_RegexStar" then
+        local v34 = v0._1
+        if v1 ~= nil and v1.tag == "Uh0_RegexStar" then
+            local v35 = v1._1
             return regex_equal_10(v34, v35)
         else
             return false
@@ -610,33 +568,27 @@ function regex_equal_10(v0, v1)
 end
 
 function make_cat_9(v0, v1)
-    local __v = { v0 }
-    if __v[1] ~= nil and __v[1].tag == "Uh0_RegexEmpty" then
+    if v0 ~= nil and v0.tag == "Uh0_RegexEmpty" then
         return Uh0_RegexEmpty()
     else
-        local __v = { v1 }
-        if __v[1] ~= nil and __v[1].tag == "Uh0_RegexEmpty" then
+        if v1 ~= nil and v1.tag == "Uh0_RegexEmpty" then
             return Uh0_RegexEmpty()
         else
-            local __v = { v0 }
-            if __v[1] ~= nil and __v[1].tag == "Uh0_RegexEpsilon" then
+            if v0 ~= nil and v0.tag == "Uh0_RegexEpsilon" then
                 return v1
             else
-                local __v = { v1 }
-                if __v[1] ~= nil and __v[1].tag == "Uh0_RegexEpsilon" then
+                if v1 ~= nil and v1.tag == "Uh0_RegexEpsilon" then
                     return v0
                 else
-                    local __v = { v0 }
-                    if __v[1] ~= nil and __v[1].tag == "Uh0_RegexCat" then
-                        local v12 = __v[1]._1
-                        local v13 = __v[1]._2
+                    if v0 ~= nil and v0.tag == "Uh0_RegexCat" then
+                        local v12 = v0._1
+                        local v13 = v0._2
                         local v14 = make_cat_9(v13, v1)
                         return Uh0_RegexCat(v12, v14)
-                    elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexStar" then
-                        local v4 = __v[1]._1
-                        local __v = { v1 }
-                        if __v[1] ~= nil and __v[1].tag == "Uh0_RegexStar" then
-                            local v5 = __v[1]._1
+                    elseif v0 ~= nil and v0.tag == "Uh0_RegexStar" then
+                        local v4 = v0._1
+                        if v1 ~= nil and v1.tag == "Uh0_RegexStar" then
+                            local v5 = v1._1
                             local v6 = regex_equal_10(v4, v5)
                             if v6 then
                                 return Uh0_RegexStar(v4)
@@ -656,13 +608,12 @@ function make_cat_9(v0, v1)
 end
 
 function make_star_11(v0)
-    local __v = { v0 }
-    if __v[1] ~= nil and __v[1].tag == "Uh0_RegexEmpty" then
+    if v0 ~= nil and v0.tag == "Uh0_RegexEmpty" then
         return Uh0_RegexEpsilon()
-    elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexEpsilon" then
+    elseif v0 ~= nil and v0.tag == "Uh0_RegexEpsilon" then
         return Uh0_RegexEpsilon()
-    elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexStar" then
-        local v3 = __v[1]._1
+    elseif v0 ~= nil and v0.tag == "Uh0_RegexStar" then
+        local v3 = v0._1
         return Uh0_RegexStar(v3)
     else
         return Uh0_RegexStar(v0)
@@ -670,66 +621,58 @@ function make_star_11(v0)
 end
 
 function normalize_5(v0)
-    local __v = { v0 }
-    if __v[1] ~= nil and __v[1].tag == "Uh0_RegexAlt" then
-        local v5 = __v[1]._1
-        local v6 = __v[1]._2
+    if v0 ~= nil and v0.tag == "Uh0_RegexAlt" then
+        local v5 = v0._1
+        local v6 = v0._2
         local v7 = normalize_5(v5)
         local v8 = normalize_5(v6)
         return make_alt_6(v7, v8)
-    elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexCat" then
-        local v10 = __v[1]._1
-        local v11 = __v[1]._2
+    elseif v0 ~= nil and v0.tag == "Uh0_RegexCat" then
+        local v10 = v0._1
+        local v11 = v0._2
         local v12 = normalize_5(v10)
         local v13 = normalize_5(v11)
         return make_cat_9(v12, v13)
-    elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexChar" then
-        local v3 = __v[1]._1
+    elseif v0 ~= nil and v0.tag == "Uh0_RegexChar" then
+        local v3 = v0._1
         return Uh0_RegexChar(v3)
-    elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexEmpty" then
+    elseif v0 ~= nil and v0.tag == "Uh0_RegexEmpty" then
         return Uh0_RegexEmpty()
-    elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexEpsilon" then
+    elseif v0 ~= nil and v0.tag == "Uh0_RegexEpsilon" then
         return Uh0_RegexEpsilon()
-    elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexStar" then
-        local v15 = __v[1]._1
+    elseif v0 ~= nil and v0.tag == "Uh0_RegexStar" then
+        local v15 = v0._1
         local v16 = normalize_5(v15)
         return make_star_11(v16)
     end
 end
 
 function nullable_13(v0)
-    local __v = { v0 }
-    if __v[1] ~= nil and __v[1].tag == "Uh0_RegexAlt" then
-        local v5 = __v[1]._1
-        local v6 = __v[1]._2
+    if v0 ~= nil and v0.tag == "Uh0_RegexAlt" then
+        local v5 = v0._1
+        local v6 = v0._2
         local v7 = nullable_13(v5)
         local v8 = nullable_13(v6)
-        local __v = { v7 }
-        if __v[1] ~= nil and __v[1].tag == "Us2_Nullable" then
+        if v7 ~= nil and v7.tag == "Us2_Nullable" then
             return Us2_Nullable()
         else
-            local __v = { v8 }
-            if __v[1] ~= nil and __v[1].tag == "Us2_Nullable" then
+            if v8 ~= nil and v8.tag == "Us2_Nullable" then
                 return Us2_Nullable()
             else
-                local __v = { v7 }
-                if __v[1] ~= nil and __v[1].tag == "Us2_NonNullable" then
-                    local __v = { v8 }
-                    if __v[1] ~= nil and __v[1].tag == "Us2_NonNullable" then
+                if v7 ~= nil and v7.tag == "Us2_NonNullable" then
+                    if v8 ~= nil and v8.tag == "Us2_NonNullable" then
                         return Us2_NonNullable()
                     end
                 end
             end
         end
-    elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexCat" then
-        local v16 = __v[1]._1
-        local v17 = __v[1]._2
+    elseif v0 ~= nil and v0.tag == "Uh0_RegexCat" then
+        local v16 = v0._1
+        local v17 = v0._2
         local v18 = nullable_13(v16)
         local v19 = nullable_13(v17)
-        local __v = { v18 }
-        if __v[1] ~= nil and __v[1].tag == "Us2_Nullable" then
-            local __v = { v19 }
-            if __v[1] ~= nil and __v[1].tag == "Us2_Nullable" then
+        if v18 ~= nil and v18.tag == "Us2_Nullable" then
+            if v19 ~= nil and v19.tag == "Us2_Nullable" then
                 return Us2_Nullable()
             else
                 return Us2_NonNullable()
@@ -737,65 +680,59 @@ function nullable_13(v0)
         else
             return Us2_NonNullable()
         end
-    elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexChar" then
-        local v3 = __v[1]._1
+    elseif v0 ~= nil and v0.tag == "Uh0_RegexChar" then
+        local v3 = v0._1
         return Us2_NonNullable()
-    elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexEmpty" then
+    elseif v0 ~= nil and v0.tag == "Uh0_RegexEmpty" then
         return Us2_NonNullable()
-    elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexEpsilon" then
+    elseif v0 ~= nil and v0.tag == "Uh0_RegexEpsilon" then
         return Us2_Nullable()
-    elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexStar" then
-        local v25 = __v[1]._1
+    elseif v0 ~= nil and v0.tag == "Uh0_RegexStar" then
+        local v25 = v0._1
         return Us2_Nullable()
     end
 end
 
 function derivative_12(v0, v1)
-    local __v = { v0 }
-    if __v[1] ~= nil and __v[1].tag == "Uh0_RegexAlt" then
-        local v19 = __v[1]._1
-        local v20 = __v[1]._2
+    if v0 ~= nil and v0.tag == "Uh0_RegexAlt" then
+        local v19 = v0._1
+        local v20 = v0._2
         local v21 = derivative_12(v19, v1)
         local v22 = derivative_12(v20, v1)
         return make_alt_6(v21, v22)
-    elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexCat" then
-        local v24 = __v[1]._1
-        local v25 = __v[1]._2
+    elseif v0 ~= nil and v0.tag == "Uh0_RegexCat" then
+        local v24 = v0._1
+        local v25 = v0._2
         local v26 = nullable_13(v24)
-        local __v = { v26 }
-        if __v[1] ~= nil and __v[1].tag == "Us2_NonNullable" then
+        if v26 ~= nil and v26.tag == "Us2_NonNullable" then
             local v31 = derivative_12(v24, v1)
             return make_cat_9(v31, v25)
-        elseif __v[1] ~= nil and __v[1].tag == "Us2_Nullable" then
+        elseif v26 ~= nil and v26.tag == "Us2_Nullable" then
             local v27 = derivative_12(v24, v1)
             local v28 = make_cat_9(v27, v25)
             local v29 = derivative_12(v25, v1)
             return make_alt_6(v28, v29)
         end
-    elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexChar" then
-        local v4 = __v[1]._1
+    elseif v0 ~= nil and v0.tag == "Uh0_RegexChar" then
+        local v4 = v0._1
         local getv14 = function()
-            local __v = { v4 }
-            if __v[1] ~= nil and __v[1].tag == "Us0_BitOne" then
-                local __v = { v1 }
-                if __v[1] ~= nil and __v[1].tag == "Us0_BitOne" then
+            if v4 ~= nil and v4.tag == "Us0_BitOne" then
+                if v1 ~= nil and v1.tag == "Us0_BitOne" then
                     return Us1_SymbolSame()
-                elseif __v[1] ~= nil and __v[1].tag == "Us0_BitZero" then
+                elseif v1 ~= nil and v1.tag == "Us0_BitZero" then
                     return Us1_SymbolGreater()
                 end
-            elseif __v[1] ~= nil and __v[1].tag == "Us0_BitZero" then
-                local __v = { v1 }
-                if __v[1] ~= nil and __v[1].tag == "Us0_BitOne" then
+            elseif v4 ~= nil and v4.tag == "Us0_BitZero" then
+                if v1 ~= nil and v1.tag == "Us0_BitOne" then
                     return Us1_SymbolLess()
-                elseif __v[1] ~= nil and __v[1].tag == "Us0_BitZero" then
+                elseif v1 ~= nil and v1.tag == "Us0_BitZero" then
                     return Us1_SymbolSame()
                 end
             end
         end
         local v14 = getv14()
         local getv15 = function()
-            local __v = { v14 }
-            if __v[1] ~= nil and __v[1].tag == "Us1_SymbolSame" then
+            if v14 ~= nil and v14.tag == "Us1_SymbolSame" then
                 return true
             else
                 return false
@@ -807,12 +744,12 @@ function derivative_12(v0, v1)
         else
             return Uh0_RegexEmpty()
         end
-    elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexEmpty" then
+    elseif v0 ~= nil and v0.tag == "Uh0_RegexEmpty" then
         return Uh0_RegexEmpty()
-    elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexEpsilon" then
+    elseif v0 ~= nil and v0.tag == "Uh0_RegexEpsilon" then
         return Uh0_RegexEmpty()
-    elseif __v[1] ~= nil and __v[1].tag == "Uh0_RegexStar" then
-        local v35 = __v[1]._1
+    elseif v0 ~= nil and v0.tag == "Uh0_RegexStar" then
+        local v35 = v0._1
         local v36 = derivative_12(v35, v1)
         local v37 = make_star_11(v35)
         return make_cat_9(v36, v37)
@@ -826,19 +763,17 @@ function canonical_derivative_4(v0, v1)
 end
 
 function accepts_3(v0, v1)
-    local __v = { v1 }
-    if __v[1] ~= nil and __v[1].tag == "Uh1_InputCons" then
-        local v6 = __v[1]._1
-        local v7 = __v[1]._2
+    if v1 ~= nil and v1.tag == "Uh1_InputCons" then
+        local v6 = v1._1
+        local v7 = v1._2
         local v8 = canonical_derivative_4(v0, v6)
         return accepts_3(v8, v7)
-    elseif __v[1] ~= nil and __v[1].tag == "Uh1_InputEmpty" then
+    elseif v1 ~= nil and v1.tag == "Uh1_InputEmpty" then
         local v2 = normalize_5(v0)
         local v3 = nullable_13(v2)
-        local __v = { v3 }
-        if __v[1] ~= nil and __v[1].tag == "Us2_NonNullable" then
+        if v3 ~= nil and v3.tag == "Us2_NonNullable" then
             return false
-        elseif __v[1] ~= nil and __v[1].tag == "Us2_Nullable" then
+        elseif v3 ~= nil and v3.tag == "Us2_Nullable" then
             return true
         end
     end
@@ -894,10 +829,9 @@ function zeros_input_15(v0, v1)
 end
 
 function run_16(v0, v1)
-    local __v = { v1 }
-    if __v[1] ~= nil and __v[1].tag == "Uh1_InputCons" then
-        local v5 = __v[1]._1
-        local v6 = __v[1]._2
+    if v1 ~= nil and v1.tag == "Uh1_InputCons" then
+        local v5 = v1._1
+        local v6 = v1._2
         local v7 = v0 == 0
         local getv26 = function()
             if v7 then
@@ -908,17 +842,15 @@ function run_16(v0, v1)
                     return 1
                 else
                     local getv22 = function()
-                        local __v = { v5 }
-                        if __v[1] ~= nil and __v[1].tag == "Us0_BitOne" then
+                        if v5 ~= nil and v5.tag == "Us0_BitOne" then
                             return Us1_SymbolGreater()
-                        elseif __v[1] ~= nil and __v[1].tag == "Us0_BitZero" then
+                        elseif v5 ~= nil and v5.tag == "Us0_BitZero" then
                             return Us1_SymbolSame()
                         end
                     end
                     local v22 = getv22()
                     local getv23 = function()
-                        local __v = { v22 }
-                        if __v[1] ~= nil and __v[1].tag == "Us1_SymbolSame" then
+                        if v22 ~= nil and v22.tag == "Us1_SymbolSame" then
                             return true
                         else
                             return false
@@ -935,7 +867,7 @@ function run_16(v0, v1)
         end
         local v26 = getv26()
         return run_16(v26, v6)
-    elseif __v[1] ~= nil and __v[1].tag == "Uh1_InputEmpty" then
+    elseif v1 ~= nil and v1.tag == "Uh1_InputEmpty" then
         local v2 = v0 == 0
         if v2 then
             return true
@@ -1012,16 +944,14 @@ function loop_14(v0, v1, v2, v3)
 end
 
 function run_17(v0, v1)
-    local __v = { v1 }
-    if __v[1] ~= nil and __v[1].tag == "Uh3_InputCons" then
-        local v5 = __v[1]._1
-        local v6 = __v[1]._2
+    if v1 ~= nil and v1.tag == "Uh3_InputCons" then
+        local v5 = v1._1
+        local v6 = v1._2
         local v7 = v0 == 0
         local getv47 = function()
             if v7 then
                 local getv10 = function()
-                    local __v = { v5 }
-                    if __v[1] ~= nil and __v[1].tag == "Us3_TriA" then
+                    if v5 ~= nil and v5.tag == "Us3_TriA" then
                         return Us1_SymbolSame()
                     else
                         return Us1_SymbolGreater()
@@ -1029,8 +959,7 @@ function run_17(v0, v1)
                 end
                 local v10 = getv10()
                 local getv11 = function()
-                    local __v = { v10 }
-                    if __v[1] ~= nil and __v[1].tag == "Us1_SymbolSame" then
+                    if v10 ~= nil and v10.tag == "Us1_SymbolSame" then
                         return true
                     else
                         return false
@@ -1041,19 +970,17 @@ function run_17(v0, v1)
                     return 0
                 else
                     local getv17 = function()
-                        local __v = { v5 }
-                        if __v[1] ~= nil and __v[1].tag == "Us3_TriA" then
+                        if v5 ~= nil and v5.tag == "Us3_TriA" then
                             return Us1_SymbolLess()
-                        elseif __v[1] ~= nil and __v[1].tag == "Us3_TriB" then
+                        elseif v5 ~= nil and v5.tag == "Us3_TriB" then
                             return Us1_SymbolSame()
-                        elseif __v[1] ~= nil and __v[1].tag == "Us3_TriC" then
+                        elseif v5 ~= nil and v5.tag == "Us3_TriC" then
                             return Us1_SymbolGreater()
                         end
                     end
                     local v17 = getv17()
                     local getv18 = function()
-                        local __v = { v17 }
-                        if __v[1] ~= nil and __v[1].tag == "Us1_SymbolSame" then
+                        if v17 ~= nil and v17.tag == "Us1_SymbolSame" then
                             return true
                         else
                             return false
@@ -1070,8 +997,7 @@ function run_17(v0, v1)
                 local v21 = v0 == 1
                 if v21 then
                     local getv24 = function()
-                        local __v = { v5 }
-                        if __v[1] ~= nil and __v[1].tag == "Us3_TriA" then
+                        if v5 ~= nil and v5.tag == "Us3_TriA" then
                             return Us1_SymbolSame()
                         else
                             return Us1_SymbolGreater()
@@ -1079,8 +1005,7 @@ function run_17(v0, v1)
                     end
                     local v24 = getv24()
                     local getv25 = function()
-                        local __v = { v24 }
-                        if __v[1] ~= nil and __v[1].tag == "Us1_SymbolSame" then
+                        if v24 ~= nil and v24.tag == "Us1_SymbolSame" then
                             return true
                         else
                             return false
@@ -1094,8 +1019,7 @@ function run_17(v0, v1)
                     end
                 else
                     local getv36 = function()
-                        local __v = { v5 }
-                        if __v[1] ~= nil and __v[1].tag == "Us3_TriA" then
+                        if v5 ~= nil and v5.tag == "Us3_TriA" then
                             return Us1_SymbolSame()
                         else
                             return Us1_SymbolGreater()
@@ -1103,8 +1027,7 @@ function run_17(v0, v1)
                     end
                     local v36 = getv36()
                     local getv37 = function()
-                        local __v = { v36 }
-                        if __v[1] ~= nil and __v[1].tag == "Us1_SymbolSame" then
+                        if v36 ~= nil and v36.tag == "Us1_SymbolSame" then
                             return true
                         else
                             return false
@@ -1121,7 +1044,7 @@ function run_17(v0, v1)
         end
         local v47 = getv47()
         return run_17(v47, v6)
-    elseif __v[1] ~= nil and __v[1].tag == "Uh3_InputEmpty" then
+    elseif v1 ~= nil and v1.tag == "Uh3_InputEmpty" then
         local v2 = v0 == 0
         if v2 then
             return false
@@ -1133,17 +1056,14 @@ function run_17(v0, v1)
 end
 
 function regex_compare_23(v0, v1)
-    local __v = { v0 }
-    if __v[1] ~= nil and __v[1].tag == "Uh2_RegexAlt" then
-        local v59 = __v[1]._1
-        local v60 = __v[1]._2
-        local __v = { v1 }
-        if __v[1] ~= nil and __v[1].tag == "Uh2_RegexAlt" then
-            local v61 = __v[1]._1
-            local v62 = __v[1]._2
+    if v0 ~= nil and v0.tag == "Uh2_RegexAlt" then
+        local v59 = v0._1
+        local v60 = v0._2
+        if v1 ~= nil and v1.tag == "Uh2_RegexAlt" then
+            local v61 = v1._1
+            local v62 = v1._2
             local v63 = regex_compare_23(v59, v61)
-            local __v = { v63 }
-            if __v[1] ~= nil and __v[1].tag == "Us1_SymbolSame" then
+            if v63 ~= nil and v63.tag == "Us1_SymbolSame" then
                 return regex_compare_23(v60, v62)
             else
                 return v63
@@ -1151,98 +1071,86 @@ function regex_compare_23(v0, v1)
         else
             return Us1_SymbolGreater()
         end
-    elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexCat" then
-        local v34 = __v[1]._1
-        local v35 = __v[1]._2
-        local __v = { v1 }
-        if __v[1] ~= nil and __v[1].tag == "Uh2_RegexCat" then
-            local v40 = __v[1]._1
-            local v41 = __v[1]._2
+    elseif v0 ~= nil and v0.tag == "Uh2_RegexCat" then
+        local v34 = v0._1
+        local v35 = v0._2
+        if v1 ~= nil and v1.tag == "Uh2_RegexCat" then
+            local v40 = v1._1
+            local v41 = v1._2
             local v42 = regex_compare_23(v34, v40)
-            local __v = { v42 }
-            if __v[1] ~= nil and __v[1].tag == "Us1_SymbolSame" then
+            if v42 ~= nil and v42.tag == "Us1_SymbolSame" then
                 return regex_compare_23(v35, v41)
             else
                 return v42
             end
-        elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexChar" then
-            local v38 = __v[1]._1
+        elseif v1 ~= nil and v1.tag == "Uh2_RegexChar" then
+            local v38 = v1._1
             return Us1_SymbolGreater()
-        elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexEmpty" then
+        elseif v1 ~= nil and v1.tag == "Uh2_RegexEmpty" then
             return Us1_SymbolGreater()
-        elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexEpsilon" then
+        elseif v1 ~= nil and v1.tag == "Uh2_RegexEpsilon" then
             return Us1_SymbolGreater()
         else
             return Us1_SymbolLess()
         end
-    elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexChar" then
-        local v10 = __v[1]._1
-        local __v = { v1 }
-        if __v[1] ~= nil and __v[1].tag == "Uh2_RegexChar" then
-            local v13 = __v[1]._1
-            local __v = { v10 }
-            if __v[1] ~= nil and __v[1].tag == "Us3_TriA" then
-                local __v = { v13 }
-                if __v[1] ~= nil and __v[1].tag == "Us3_TriA" then
+    elseif v0 ~= nil and v0.tag == "Uh2_RegexChar" then
+        local v10 = v0._1
+        if v1 ~= nil and v1.tag == "Uh2_RegexChar" then
+            local v13 = v1._1
+            if v10 ~= nil and v10.tag == "Us3_TriA" then
+                if v13 ~= nil and v13.tag == "Us3_TriA" then
                     return Us1_SymbolSame()
                 else
                     return Us1_SymbolLess()
                 end
             else
-                local __v = { v13 }
-                if __v[1] ~= nil and __v[1].tag == "Us3_TriA" then
+                if v13 ~= nil and v13.tag == "Us3_TriA" then
                     return Us1_SymbolGreater()
                 else
-                    local __v = { v10 }
-                    if __v[1] ~= nil and __v[1].tag == "Us3_TriB" then
-                        local __v = { v13 }
-                        if __v[1] ~= nil and __v[1].tag == "Us3_TriB" then
+                    if v10 ~= nil and v10.tag == "Us3_TriB" then
+                        if v13 ~= nil and v13.tag == "Us3_TriB" then
                             return Us1_SymbolSame()
-                        elseif __v[1] ~= nil and __v[1].tag == "Us3_TriC" then
+                        elseif v13 ~= nil and v13.tag == "Us3_TriC" then
                             return Us1_SymbolLess()
                         end
-                    elseif __v[1] ~= nil and __v[1].tag == "Us3_TriC" then
-                        local __v = { v13 }
-                        if __v[1] ~= nil and __v[1].tag == "Us3_TriB" then
+                    elseif v10 ~= nil and v10.tag == "Us3_TriC" then
+                        if v13 ~= nil and v13.tag == "Us3_TriB" then
                             return Us1_SymbolGreater()
-                        elseif __v[1] ~= nil and __v[1].tag == "Us3_TriC" then
+                        elseif v13 ~= nil and v13.tag == "Us3_TriC" then
                             return Us1_SymbolSame()
                         end
                     end
                 end
             end
-        elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexEmpty" then
+        elseif v1 ~= nil and v1.tag == "Uh2_RegexEmpty" then
             return Us1_SymbolGreater()
-        elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexEpsilon" then
+        elseif v1 ~= nil and v1.tag == "Uh2_RegexEpsilon" then
             return Us1_SymbolGreater()
         else
             return Us1_SymbolLess()
         end
-    elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexEmpty" then
-        local __v = { v1 }
-        if __v[1] ~= nil and __v[1].tag == "Uh2_RegexEmpty" then
+    elseif v0 ~= nil and v0.tag == "Uh2_RegexEmpty" then
+        if v1 ~= nil and v1.tag == "Uh2_RegexEmpty" then
             return Us1_SymbolSame()
         else
             return Us1_SymbolLess()
         end
-    elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexEpsilon" then
-        local __v = { v1 }
-        if __v[1] ~= nil and __v[1].tag == "Uh2_RegexEmpty" then
+    elseif v0 ~= nil and v0.tag == "Uh2_RegexEpsilon" then
+        if v1 ~= nil and v1.tag == "Uh2_RegexEmpty" then
             return Us1_SymbolGreater()
-        elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexEpsilon" then
+        elseif v1 ~= nil and v1.tag == "Uh2_RegexEpsilon" then
             return Us1_SymbolSame()
         else
             return Us1_SymbolLess()
         end
-    elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexStar" then
-        local v50 = __v[1]._1
-        local __v = { v1 }
-        if __v[1] ~= nil and __v[1].tag == "Uh2_RegexAlt" then
-            local v51 = __v[1]._1
-            local v52 = __v[1]._2
+    elseif v0 ~= nil and v0.tag == "Uh2_RegexStar" then
+        local v50 = v0._1
+        if v1 ~= nil and v1.tag == "Uh2_RegexAlt" then
+            local v51 = v1._1
+            local v52 = v1._2
             return Us1_SymbolLess()
-        elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexStar" then
-            local v54 = __v[1]._1
+        elseif v1 ~= nil and v1.tag == "Uh2_RegexStar" then
+            local v54 = v1._1
             return regex_compare_23(v50, v54)
         else
             return Us1_SymbolGreater()
@@ -1251,43 +1159,39 @@ function regex_compare_23(v0, v1)
 end
 
 function alt_insert_sorted_22(v0, v1)
-    local __v = { v1 }
-    if __v[1] ~= nil and __v[1].tag == "Uh2_RegexAlt" then
-        local v2 = __v[1]._1
-        local v3 = __v[1]._2
+    if v1 ~= nil and v1.tag == "Uh2_RegexAlt" then
+        local v2 = v1._1
+        local v3 = v1._2
         local v4 = regex_compare_23(v0, v2)
-        local __v = { v4 }
-        if __v[1] ~= nil and __v[1].tag == "Us1_SymbolGreater" then
+        if v4 ~= nil and v4.tag == "Us1_SymbolGreater" then
             local v6 = alt_insert_sorted_22(v0, v3)
             return Uh2_RegexAlt(v2, v6)
-        elseif __v[1] ~= nil and __v[1].tag == "Us1_SymbolLess" then
+        elseif v4 ~= nil and v4.tag == "Us1_SymbolLess" then
             return Uh2_RegexAlt(v0, v1)
-        elseif __v[1] ~= nil and __v[1].tag == "Us1_SymbolSame" then
+        elseif v4 ~= nil and v4.tag == "Us1_SymbolSame" then
             return v1
         end
-    elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexEmpty" then
+    elseif v1 ~= nil and v1.tag == "Uh2_RegexEmpty" then
         return v0
     else
         local v11 = regex_compare_23(v0, v1)
-        local __v = { v11 }
-        if __v[1] ~= nil and __v[1].tag == "Us1_SymbolGreater" then
+        if v11 ~= nil and v11.tag == "Us1_SymbolGreater" then
             return Uh2_RegexAlt(v1, v0)
-        elseif __v[1] ~= nil and __v[1].tag == "Us1_SymbolLess" then
+        elseif v11 ~= nil and v11.tag == "Us1_SymbolLess" then
             return Uh2_RegexAlt(v0, v1)
-        elseif __v[1] ~= nil and __v[1].tag == "Us1_SymbolSame" then
+        elseif v11 ~= nil and v11.tag == "Us1_SymbolSame" then
             return v1
         end
     end
 end
 
 function make_alt_21(v0, v1)
-    local __v = { v0 }
-    if __v[1] ~= nil and __v[1].tag == "Uh2_RegexAlt" then
-        local v2 = __v[1]._1
-        local v3 = __v[1]._2
+    if v0 ~= nil and v0.tag == "Uh2_RegexAlt" then
+        local v2 = v0._1
+        local v3 = v0._2
         local v4 = alt_insert_sorted_22(v2, v1)
         return make_alt_21(v3, v4)
-    elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexEmpty" then
+    elseif v0 ~= nil and v0.tag == "Uh2_RegexEmpty" then
         return v1
     else
         return alt_insert_sorted_22(v0, v1)
@@ -1295,14 +1199,12 @@ function make_alt_21(v0, v1)
 end
 
 function regex_equal_25(v0, v1)
-    local __v = { v0 }
-    if __v[1] ~= nil and __v[1].tag == "Uh2_RegexAlt" then
-        local v24 = __v[1]._1
-        local v25 = __v[1]._2
-        local __v = { v1 }
-        if __v[1] ~= nil and __v[1].tag == "Uh2_RegexAlt" then
-            local v26 = __v[1]._1
-            local v27 = __v[1]._2
+    if v0 ~= nil and v0.tag == "Uh2_RegexAlt" then
+        local v24 = v0._1
+        local v25 = v0._2
+        if v1 ~= nil and v1.tag == "Uh2_RegexAlt" then
+            local v26 = v1._1
+            local v27 = v1._2
             local v28 = regex_equal_25(v24, v26)
             if v28 then
                 return regex_equal_25(v25, v27)
@@ -1312,13 +1214,12 @@ function regex_equal_25(v0, v1)
         else
             return false
         end
-    elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexCat" then
-        local v32 = __v[1]._1
-        local v33 = __v[1]._2
-        local __v = { v1 }
-        if __v[1] ~= nil and __v[1].tag == "Uh2_RegexCat" then
-            local v34 = __v[1]._1
-            local v35 = __v[1]._2
+    elseif v0 ~= nil and v0.tag == "Uh2_RegexCat" then
+        local v32 = v0._1
+        local v33 = v0._2
+        if v1 ~= nil and v1.tag == "Uh2_RegexCat" then
+            local v34 = v1._1
+            local v35 = v1._2
             local v36 = regex_equal_25(v32, v34)
             if v36 then
                 return regex_equal_25(v33, v35)
@@ -1328,38 +1229,31 @@ function regex_equal_25(v0, v1)
         else
             return false
         end
-    elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexChar" then
-        local v4 = __v[1]._1
-        local __v = { v1 }
-        if __v[1] ~= nil and __v[1].tag == "Uh2_RegexChar" then
-            local v5 = __v[1]._1
+    elseif v0 ~= nil and v0.tag == "Uh2_RegexChar" then
+        local v4 = v0._1
+        if v1 ~= nil and v1.tag == "Uh2_RegexChar" then
+            local v5 = v1._1
             local getv21 = function()
-                local __v = { v4 }
-                if __v[1] ~= nil and __v[1].tag == "Us3_TriA" then
-                    local __v = { v5 }
-                    if __v[1] ~= nil and __v[1].tag == "Us3_TriA" then
+                if v4 ~= nil and v4.tag == "Us3_TriA" then
+                    if v5 ~= nil and v5.tag == "Us3_TriA" then
                         return Us1_SymbolSame()
                     else
                         return Us1_SymbolLess()
                     end
                 else
-                    local __v = { v5 }
-                    if __v[1] ~= nil and __v[1].tag == "Us3_TriA" then
+                    if v5 ~= nil and v5.tag == "Us3_TriA" then
                         return Us1_SymbolGreater()
                     else
-                        local __v = { v4 }
-                        if __v[1] ~= nil and __v[1].tag == "Us3_TriB" then
-                            local __v = { v5 }
-                            if __v[1] ~= nil and __v[1].tag == "Us3_TriB" then
+                        if v4 ~= nil and v4.tag == "Us3_TriB" then
+                            if v5 ~= nil and v5.tag == "Us3_TriB" then
                                 return Us1_SymbolSame()
-                            elseif __v[1] ~= nil and __v[1].tag == "Us3_TriC" then
+                            elseif v5 ~= nil and v5.tag == "Us3_TriC" then
                                 return Us1_SymbolLess()
                             end
-                        elseif __v[1] ~= nil and __v[1].tag == "Us3_TriC" then
-                            local __v = { v5 }
-                            if __v[1] ~= nil and __v[1].tag == "Us3_TriB" then
+                        elseif v4 ~= nil and v4.tag == "Us3_TriC" then
+                            if v5 ~= nil and v5.tag == "Us3_TriB" then
                                 return Us1_SymbolGreater()
-                            elseif __v[1] ~= nil and __v[1].tag == "Us3_TriC" then
+                            elseif v5 ~= nil and v5.tag == "Us3_TriC" then
                                 return Us1_SymbolSame()
                             end
                         end
@@ -1367,8 +1261,7 @@ function regex_equal_25(v0, v1)
                 end
             end
             local v21 = getv21()
-            local __v = { v21 }
-            if __v[1] ~= nil and __v[1].tag == "Us1_SymbolSame" then
+            if v21 ~= nil and v21.tag == "Us1_SymbolSame" then
                 return true
             else
                 return false
@@ -1376,25 +1269,22 @@ function regex_equal_25(v0, v1)
         else
             return false
         end
-    elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexEmpty" then
-        local __v = { v1 }
-        if __v[1] ~= nil and __v[1].tag == "Uh2_RegexEmpty" then
+    elseif v0 ~= nil and v0.tag == "Uh2_RegexEmpty" then
+        if v1 ~= nil and v1.tag == "Uh2_RegexEmpty" then
             return true
         else
             return false
         end
-    elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexEpsilon" then
-        local __v = { v1 }
-        if __v[1] ~= nil and __v[1].tag == "Uh2_RegexEpsilon" then
+    elseif v0 ~= nil and v0.tag == "Uh2_RegexEpsilon" then
+        if v1 ~= nil and v1.tag == "Uh2_RegexEpsilon" then
             return true
         else
             return false
         end
-    elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexStar" then
-        local v40 = __v[1]._1
-        local __v = { v1 }
-        if __v[1] ~= nil and __v[1].tag == "Uh2_RegexStar" then
-            local v41 = __v[1]._1
+    elseif v0 ~= nil and v0.tag == "Uh2_RegexStar" then
+        local v40 = v0._1
+        if v1 ~= nil and v1.tag == "Uh2_RegexStar" then
+            local v41 = v1._1
             return regex_equal_25(v40, v41)
         else
             return false
@@ -1403,33 +1293,27 @@ function regex_equal_25(v0, v1)
 end
 
 function make_cat_24(v0, v1)
-    local __v = { v0 }
-    if __v[1] ~= nil and __v[1].tag == "Uh2_RegexEmpty" then
+    if v0 ~= nil and v0.tag == "Uh2_RegexEmpty" then
         return Uh2_RegexEmpty()
     else
-        local __v = { v1 }
-        if __v[1] ~= nil and __v[1].tag == "Uh2_RegexEmpty" then
+        if v1 ~= nil and v1.tag == "Uh2_RegexEmpty" then
             return Uh2_RegexEmpty()
         else
-            local __v = { v0 }
-            if __v[1] ~= nil and __v[1].tag == "Uh2_RegexEpsilon" then
+            if v0 ~= nil and v0.tag == "Uh2_RegexEpsilon" then
                 return v1
             else
-                local __v = { v1 }
-                if __v[1] ~= nil and __v[1].tag == "Uh2_RegexEpsilon" then
+                if v1 ~= nil and v1.tag == "Uh2_RegexEpsilon" then
                     return v0
                 else
-                    local __v = { v0 }
-                    if __v[1] ~= nil and __v[1].tag == "Uh2_RegexCat" then
-                        local v12 = __v[1]._1
-                        local v13 = __v[1]._2
+                    if v0 ~= nil and v0.tag == "Uh2_RegexCat" then
+                        local v12 = v0._1
+                        local v13 = v0._2
                         local v14 = make_cat_24(v13, v1)
                         return Uh2_RegexCat(v12, v14)
-                    elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexStar" then
-                        local v4 = __v[1]._1
-                        local __v = { v1 }
-                        if __v[1] ~= nil and __v[1].tag == "Uh2_RegexStar" then
-                            local v5 = __v[1]._1
+                    elseif v0 ~= nil and v0.tag == "Uh2_RegexStar" then
+                        local v4 = v0._1
+                        if v1 ~= nil and v1.tag == "Uh2_RegexStar" then
+                            local v5 = v1._1
                             local v6 = regex_equal_25(v4, v5)
                             if v6 then
                                 return Uh2_RegexStar(v4)
@@ -1449,13 +1333,12 @@ function make_cat_24(v0, v1)
 end
 
 function make_star_26(v0)
-    local __v = { v0 }
-    if __v[1] ~= nil and __v[1].tag == "Uh2_RegexEmpty" then
+    if v0 ~= nil and v0.tag == "Uh2_RegexEmpty" then
         return Uh2_RegexEpsilon()
-    elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexEpsilon" then
+    elseif v0 ~= nil and v0.tag == "Uh2_RegexEpsilon" then
         return Uh2_RegexEpsilon()
-    elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexStar" then
-        local v3 = __v[1]._1
+    elseif v0 ~= nil and v0.tag == "Uh2_RegexStar" then
+        local v3 = v0._1
         return Uh2_RegexStar(v3)
     else
         return Uh2_RegexStar(v0)
@@ -1463,66 +1346,58 @@ function make_star_26(v0)
 end
 
 function normalize_20(v0)
-    local __v = { v0 }
-    if __v[1] ~= nil and __v[1].tag == "Uh2_RegexAlt" then
-        local v5 = __v[1]._1
-        local v6 = __v[1]._2
+    if v0 ~= nil and v0.tag == "Uh2_RegexAlt" then
+        local v5 = v0._1
+        local v6 = v0._2
         local v7 = normalize_20(v5)
         local v8 = normalize_20(v6)
         return make_alt_21(v7, v8)
-    elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexCat" then
-        local v10 = __v[1]._1
-        local v11 = __v[1]._2
+    elseif v0 ~= nil and v0.tag == "Uh2_RegexCat" then
+        local v10 = v0._1
+        local v11 = v0._2
         local v12 = normalize_20(v10)
         local v13 = normalize_20(v11)
         return make_cat_24(v12, v13)
-    elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexChar" then
-        local v3 = __v[1]._1
+    elseif v0 ~= nil and v0.tag == "Uh2_RegexChar" then
+        local v3 = v0._1
         return Uh2_RegexChar(v3)
-    elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexEmpty" then
+    elseif v0 ~= nil and v0.tag == "Uh2_RegexEmpty" then
         return Uh2_RegexEmpty()
-    elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexEpsilon" then
+    elseif v0 ~= nil and v0.tag == "Uh2_RegexEpsilon" then
         return Uh2_RegexEpsilon()
-    elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexStar" then
-        local v15 = __v[1]._1
+    elseif v0 ~= nil and v0.tag == "Uh2_RegexStar" then
+        local v15 = v0._1
         local v16 = normalize_20(v15)
         return make_star_26(v16)
     end
 end
 
 function nullable_28(v0)
-    local __v = { v0 }
-    if __v[1] ~= nil and __v[1].tag == "Uh2_RegexAlt" then
-        local v5 = __v[1]._1
-        local v6 = __v[1]._2
+    if v0 ~= nil and v0.tag == "Uh2_RegexAlt" then
+        local v5 = v0._1
+        local v6 = v0._2
         local v7 = nullable_28(v5)
         local v8 = nullable_28(v6)
-        local __v = { v7 }
-        if __v[1] ~= nil and __v[1].tag == "Us2_Nullable" then
+        if v7 ~= nil and v7.tag == "Us2_Nullable" then
             return Us2_Nullable()
         else
-            local __v = { v8 }
-            if __v[1] ~= nil and __v[1].tag == "Us2_Nullable" then
+            if v8 ~= nil and v8.tag == "Us2_Nullable" then
                 return Us2_Nullable()
             else
-                local __v = { v7 }
-                if __v[1] ~= nil and __v[1].tag == "Us2_NonNullable" then
-                    local __v = { v8 }
-                    if __v[1] ~= nil and __v[1].tag == "Us2_NonNullable" then
+                if v7 ~= nil and v7.tag == "Us2_NonNullable" then
+                    if v8 ~= nil and v8.tag == "Us2_NonNullable" then
                         return Us2_NonNullable()
                     end
                 end
             end
         end
-    elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexCat" then
-        local v16 = __v[1]._1
-        local v17 = __v[1]._2
+    elseif v0 ~= nil and v0.tag == "Uh2_RegexCat" then
+        local v16 = v0._1
+        local v17 = v0._2
         local v18 = nullable_28(v16)
         local v19 = nullable_28(v17)
-        local __v = { v18 }
-        if __v[1] ~= nil and __v[1].tag == "Us2_Nullable" then
-            local __v = { v19 }
-            if __v[1] ~= nil and __v[1].tag == "Us2_Nullable" then
+        if v18 ~= nil and v18.tag == "Us2_Nullable" then
+            if v19 ~= nil and v19.tag == "Us2_Nullable" then
                 return Us2_Nullable()
             else
                 return Us2_NonNullable()
@@ -1530,70 +1405,62 @@ function nullable_28(v0)
         else
             return Us2_NonNullable()
         end
-    elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexChar" then
-        local v3 = __v[1]._1
+    elseif v0 ~= nil and v0.tag == "Uh2_RegexChar" then
+        local v3 = v0._1
         return Us2_NonNullable()
-    elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexEmpty" then
+    elseif v0 ~= nil and v0.tag == "Uh2_RegexEmpty" then
         return Us2_NonNullable()
-    elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexEpsilon" then
+    elseif v0 ~= nil and v0.tag == "Uh2_RegexEpsilon" then
         return Us2_Nullable()
-    elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexStar" then
-        local v25 = __v[1]._1
+    elseif v0 ~= nil and v0.tag == "Uh2_RegexStar" then
+        local v25 = v0._1
         return Us2_Nullable()
     end
 end
 
 function derivative_27(v0, v1)
-    local __v = { v0 }
-    if __v[1] ~= nil and __v[1].tag == "Uh2_RegexAlt" then
-        local v25 = __v[1]._1
-        local v26 = __v[1]._2
+    if v0 ~= nil and v0.tag == "Uh2_RegexAlt" then
+        local v25 = v0._1
+        local v26 = v0._2
         local v27 = derivative_27(v25, v1)
         local v28 = derivative_27(v26, v1)
         return make_alt_21(v27, v28)
-    elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexCat" then
-        local v30 = __v[1]._1
-        local v31 = __v[1]._2
+    elseif v0 ~= nil and v0.tag == "Uh2_RegexCat" then
+        local v30 = v0._1
+        local v31 = v0._2
         local v32 = nullable_28(v30)
-        local __v = { v32 }
-        if __v[1] ~= nil and __v[1].tag == "Us2_NonNullable" then
+        if v32 ~= nil and v32.tag == "Us2_NonNullable" then
             local v37 = derivative_27(v30, v1)
             return make_cat_24(v37, v31)
-        elseif __v[1] ~= nil and __v[1].tag == "Us2_Nullable" then
+        elseif v32 ~= nil and v32.tag == "Us2_Nullable" then
             local v33 = derivative_27(v30, v1)
             local v34 = make_cat_24(v33, v31)
             local v35 = derivative_27(v31, v1)
             return make_alt_21(v34, v35)
         end
-    elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexChar" then
-        local v4 = __v[1]._1
+    elseif v0 ~= nil and v0.tag == "Uh2_RegexChar" then
+        local v4 = v0._1
         local getv20 = function()
-            local __v = { v4 }
-            if __v[1] ~= nil and __v[1].tag == "Us3_TriA" then
-                local __v = { v1 }
-                if __v[1] ~= nil and __v[1].tag == "Us3_TriA" then
+            if v4 ~= nil and v4.tag == "Us3_TriA" then
+                if v1 ~= nil and v1.tag == "Us3_TriA" then
                     return Us1_SymbolSame()
                 else
                     return Us1_SymbolLess()
                 end
             else
-                local __v = { v1 }
-                if __v[1] ~= nil and __v[1].tag == "Us3_TriA" then
+                if v1 ~= nil and v1.tag == "Us3_TriA" then
                     return Us1_SymbolGreater()
                 else
-                    local __v = { v4 }
-                    if __v[1] ~= nil and __v[1].tag == "Us3_TriB" then
-                        local __v = { v1 }
-                        if __v[1] ~= nil and __v[1].tag == "Us3_TriB" then
+                    if v4 ~= nil and v4.tag == "Us3_TriB" then
+                        if v1 ~= nil and v1.tag == "Us3_TriB" then
                             return Us1_SymbolSame()
-                        elseif __v[1] ~= nil and __v[1].tag == "Us3_TriC" then
+                        elseif v1 ~= nil and v1.tag == "Us3_TriC" then
                             return Us1_SymbolLess()
                         end
-                    elseif __v[1] ~= nil and __v[1].tag == "Us3_TriC" then
-                        local __v = { v1 }
-                        if __v[1] ~= nil and __v[1].tag == "Us3_TriB" then
+                    elseif v4 ~= nil and v4.tag == "Us3_TriC" then
+                        if v1 ~= nil and v1.tag == "Us3_TriB" then
                             return Us1_SymbolGreater()
-                        elseif __v[1] ~= nil and __v[1].tag == "Us3_TriC" then
+                        elseif v1 ~= nil and v1.tag == "Us3_TriC" then
                             return Us1_SymbolSame()
                         end
                     end
@@ -1602,8 +1469,7 @@ function derivative_27(v0, v1)
         end
         local v20 = getv20()
         local getv21 = function()
-            local __v = { v20 }
-            if __v[1] ~= nil and __v[1].tag == "Us1_SymbolSame" then
+            if v20 ~= nil and v20.tag == "Us1_SymbolSame" then
                 return true
             else
                 return false
@@ -1615,12 +1481,12 @@ function derivative_27(v0, v1)
         else
             return Uh2_RegexEmpty()
         end
-    elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexEmpty" then
+    elseif v0 ~= nil and v0.tag == "Uh2_RegexEmpty" then
         return Uh2_RegexEmpty()
-    elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexEpsilon" then
+    elseif v0 ~= nil and v0.tag == "Uh2_RegexEpsilon" then
         return Uh2_RegexEmpty()
-    elseif __v[1] ~= nil and __v[1].tag == "Uh2_RegexStar" then
-        local v41 = __v[1]._1
+    elseif v0 ~= nil and v0.tag == "Uh2_RegexStar" then
+        local v41 = v0._1
         local v42 = derivative_27(v41, v1)
         local v43 = make_star_26(v41)
         return make_cat_24(v42, v43)
@@ -1634,19 +1500,17 @@ function canonical_derivative_19(v0, v1)
 end
 
 function accepts_18(v0, v1)
-    local __v = { v1 }
-    if __v[1] ~= nil and __v[1].tag == "Uh3_InputCons" then
-        local v6 = __v[1]._1
-        local v7 = __v[1]._2
+    if v1 ~= nil and v1.tag == "Uh3_InputCons" then
+        local v6 = v1._1
+        local v7 = v1._2
         local v8 = canonical_derivative_19(v0, v6)
         return accepts_18(v8, v7)
-    elseif __v[1] ~= nil and __v[1].tag == "Uh3_InputEmpty" then
+    elseif v1 ~= nil and v1.tag == "Uh3_InputEmpty" then
         local v2 = normalize_20(v0)
         local v3 = nullable_28(v2)
-        local __v = { v3 }
-        if __v[1] ~= nil and __v[1].tag == "Us2_NonNullable" then
+        if v3 ~= nil and v3.tag == "Us2_NonNullable" then
             return false
-        elseif __v[1] ~= nil and __v[1].tag == "Us2_Nullable" then
+        elseif v3 ~= nil and v3.tag == "Us2_Nullable" then
             return true
         end
     end

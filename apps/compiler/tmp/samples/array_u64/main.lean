@@ -26,14 +26,11 @@ def spiralStringSlice (s : String) (a b : Int) : IO String := do
 mutual
 partial def spiralMain : IO Int32 := do
     let mut v0 : (IO.Ref (Array UInt64)) ← IO.mkRef #[]
-    let mut v1 : UInt64 := default
-    let mut v2 : UInt64 := default
-    let mut v3 : Bool := default
     v0 := (← IO.mkRef (Array.replicate (spiralIdx (1 : Int32)) (default : UInt64)))
-    v1 := (4294967297 : UInt64)
+    let v1 : UInt64 := (4294967297 : UInt64)
     v0.modify (fun xs => xs.set! (spiralIdx (0 : Int32)) v1)
-    v2 := (← spiralIndex (← v0.get) (spiralIdx (0 : Int32)))
-    v3 := (v2 == (4294967297 : UInt64))
+    let v2 : UInt64 := (← spiralIndex (← v0.get) (spiralIdx (0 : Int32)))
+    let v3 : Bool := (v2 == (4294967297 : UInt64))
     if v3 then
         return (0 : Int32)
     else

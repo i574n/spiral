@@ -1,17 +1,17 @@
 /// # file_system
-open sm'_operators
-open rust
-open rust_operators
+:< sm'_operators
+:< rust
+:< rust_operators
 
 test file_system static =
-    open testing
+    :< testing
 
 /// ## fsharp
 
 /// ### file_mode
-nominal file_mode' = $'System.IO.FileMode'
+:! file_mode' = $'System.IO.FileMode'
 
-union file_mode =
+:| file_mode =
     | ModeCreateNew
     | ModeCreate
     | ModeOpen
@@ -19,7 +19,7 @@ union file_mode =
     | Truncate
     | Append
 
-inl file_mode = function
+:= file_mode = \|
     | ModeCreateNew => $'System.IO.FileMode.CreateNew' : file_mode'
     | ModeCreate => $'System.IO.FileMode.Create' : file_mode'
     | ModeOpen => $'System.IO.FileMode.Open' : file_mode'
@@ -28,29 +28,29 @@ inl file_mode = function
     | Append => $'System.IO.FileMode.Append' : file_mode'
 
 /// ### file_access
-nominal file_access' = $'System.IO.FileAccess'
+:! file_access' = $'System.IO.FileAccess'
 
-union file_access =
+:| file_access =
     | AccessRead
     | AccessWrite
     | AccessReadWrite
 
-inl file_access = function
+:= file_access = \|
     | AccessRead => $'System.IO.FileAccess.Read' : file_access'
     | AccessWrite => $'System.IO.FileAccess.ReadWrite' : file_access'
     | AccessReadWrite => $'System.IO.FileAccess.ReadWrite' : file_access'
 
 /// ### file_share
-nominal file_share' = $'System.IO.FileShare'
+:! file_share' = $'System.IO.FileShare'
 
-union file_share =
+:| file_share =
     | ShareNone
     | ShareRead
     | ShareWrite
     | ShareReadWrite
     | ShareDelete
 
-inl file_share = function
+:= file_share = \|
     | ShareNone => $'System.IO.FileShare.None' : file_share'
     | ShareRead => $'System.IO.FileShare.Read' : file_share'
     | ShareWrite => $'System.IO.FileShare.Write' : file_share'
@@ -58,10 +58,10 @@ inl file_share = function
     | ShareDelete => $'System.IO.FileShare.Delete' : file_share'
 
 /// ### file_info
-nominal file_info =
+:! file_info =
     `(
         backend_switch `(()) `({}) {
-            Fsharp = (fun () =>
+            Fsharp = (\ () =>
                 global """
                     type System_IO_FileInfo = System.IO.FileInfo
 
@@ -71,16 +71,16 @@ nominal file_info =
         $'' : $'System_IO_FileInfo'
     )
 
-inl file_info (path : string) : file_info =
-    run_target function
-        | Fsharp => fun () => $'!path |> `file_info '
-        | _ => fun () => null ()
+:= file_info (path : string) : file_info =
+    run_target \|
+        | Fsharp => \ () => $'!path |> `file_info '
+        | _ => \ () => null ()
 
 /// ### directory_info
-nominal directory_info =
+:! directory_info =
     `(
         backend_switch `(()) `({}) {
-            Fsharp = (fun () =>
+            Fsharp = (\ () =>
                 global """
                     type System_IO_DirectoryInfo = System.IO.DirectoryInfo
 
@@ -90,70 +90,70 @@ nominal directory_info =
         $'' : $'System_IO_DirectoryInfo'
     )
 
-inl directory_info (path : string) : directory_info =
-    run_target function
-        | Fsharp => fun () => $'!path |> `directory_info '
-        | _ => fun () => null ()
+:= directory_info (path : string) : directory_info =
+    run_target \|
+        | Fsharp => \ () => $'!path |> `directory_info '
+        | _ => \ () => null ()
 
 /// ### directory_info_name
-inl directory_info_name (info : directory_info) : string =
-    run_target function
-        | Fsharp => fun () => info |> $'_.Name'
-        | _ => fun () => null ()
+:= directory_info_name (info : directory_info) : string =
+    run_target \|
+        | Fsharp => \ () => info |> $'_.Name'
+        | _ => \ () => null ()
 
 /// ### directory_info_full_name
-inl directory_info_full_name (info : directory_info) : string =
-    run_target function
-        | Fsharp => fun () => info |> $'_.FullName'
-        | _ => fun () => null ()
+:= directory_info_full_name (info : directory_info) : string =
+    run_target \|
+        | Fsharp => \ () => info |> $'_.FullName'
+        | _ => \ () => null ()
 
 /// ### file_attributes
-nominal file_attributes = $'System.IO.FileAttributes'
+:! file_attributes = $'System.IO.FileAttributes'
 
 /// ### directory_info_attributes
-let directory_info_attributes (info : directory_info) : file_attributes =
-    run_target function
-        | Fsharp => fun () => info |> $'_.Attributes'
-        | _ => fun () => null ()
+:~ directory_info_attributes (info : directory_info) : file_attributes =
+    run_target \|
+        | Fsharp => \ () => info |> $'_.Attributes'
+        | _ => \ () => null ()
 
 /// ### file_attributes_reparse_point
-let file_attributes_reparse_point () : file_attributes =
-    run_target function
-        | Fsharp => fun () => $'`file_attributes.ReparsePoint'
-        | _ => fun () => null ()
+:~ file_attributes_reparse_point () : file_attributes =
+    run_target \|
+        | Fsharp => \ () => $'`file_attributes.ReparsePoint'
+        | _ => \ () => null ()
 
 /// ### file_attributes_has_flag
-let file_attributes_has_flag (flag : file_attributes) (file_attributes : file_attributes) : bool =
-    run_target function
-        | Fsharp => fun () => $'!file_attributes.HasFlag !flag '
-        | _ => fun () => null ()
+:~ file_attributes_has_flag (flag : file_attributes) (file_attributes : file_attributes) : bool =
+    run_target \|
+        | Fsharp => \ () => $'!file_attributes.HasFlag !flag '
+        | _ => \ () => null ()
 
 /// ### create_directory
-let create_directory (path : string) : directory_info =
-    run_target function
-        | Fsharp => fun () => path |> $'System.IO.Directory.CreateDirectory'
-        | _ => fun () => null ()
+:~ create_directory (path : string) : directory_info =
+    run_target \|
+        | Fsharp => \ () => path |> $'System.IO.Directory.CreateDirectory'
+        | _ => \ () => null ()
 
 /// ### directory_get_files
-let directory_get_files (path : string) : array_base string =
-    run_target function
-        | Fsharp => fun () => path |> $'System.IO.Directory.GetFiles'
-        | _ => fun () => null ()
+:~ directory_get_files (path : string) : array_base string =
+    run_target \|
+        | Fsharp => \ () => path |> $'System.IO.Directory.GetFiles'
+        | _ => \ () => null ()
 
 /// ### write_all_text_async
-let write_all_text_async (path : string) (text : string) : _ () =
-    run_target function
-        | Fsharp => fun () => $'System.IO.File.WriteAllTextAsync (!path, !text)' |> async.await_task
-        | _ => fun () => null ()
+:~ write_all_text_async (path : string) (text : string) : _ () =
+    run_target \|
+        | Fsharp => \ () => $'System.IO.File.WriteAllTextAsync (!path, !text)' |> async.await_task
+        | _ => \ () => null ()
 
 /// ### file_system_info
-nominal file_system_info = $'System.IO.FileSystemInfo'
+:! file_system_info = $'System.IO.FileSystemInfo'
 
 /// ### get_source_directory
-inl get_source_directory () =
-    run_target function
-        | Rust => fun () => $'Rc::<str>::from(env\!("CARGO_MANIFEST_DIR"))' : string
-        | _ => fun () => $'__SOURCE_DIRECTORY__' : string
+:= get_source_directory () =
+    run_target \|
+        | Rust => \ () => $'Rc::<str>::from(env\!("CARGO_MANIFEST_DIR"))' : string
+        | _ => \ () => $'__SOURCE_DIRECTORY__' : string
 
 ///> fsharp
 test get_source_directory =
@@ -165,7 +165,7 @@ test get_source_directory =
 /// ## rust
 
 /// ### display
-nominal display =
+:! display =
     `(
         rust.rust_type
             `($'std_path_Display')
@@ -174,7 +174,7 @@ nominal display =
     )
 
 /// ### path
-nominal path =
+:! path =
     `(
         rust.rust_type
             `($'std_path_Path')
@@ -183,7 +183,7 @@ nominal path =
     )
 
 /// ### path_buf
-nominal path_buf =
+:! path_buf =
     `(
         rust.rust_type
             `($'std_path_PathBuf')
@@ -192,45 +192,45 @@ nominal path_buf =
     )
 
 /// ### new_path_buf
-inl new_path_buf (path : sm'.std_string) : path_buf =
-    run_target function
-        | Rust => fun () => !\\(path, $'"std::path::PathBuf::from($0)"')
-        | _ => fun () => path |> convert.unbox
+:= new_path_buf (path : sm'.std_string) : path_buf =
+    run_target \|
+        | Rust => \ () => !\\(path, $'"std::path::PathBuf::from($0)"')
+        | _ => \ () => path |> convert.unbox
 
 /// ### path_buf_join
-inl path_buf_join (s : string) (path_buf : path_buf) : path_buf =
+:= path_buf_join (s : string) (path_buf : path_buf) : path_buf =
     !\\((path_buf, s |> sm'.to_std_string), $'"$0.join($1)"')
 
 /// ### path_buf_display
-inl path_buf_display (path_buf : path_buf) : display =
-    run_target_args (fun () => path_buf) function
-        | Rust => fun path_buf =>
-            inl path_buf = join path_buf
+:= path_buf_display (path_buf : path_buf) : display =
+    run_target_args (\ () => path_buf) \|
+        | Rust => \ path_buf =>
+            := path_buf = ~~ path_buf
             !\($'"!path_buf.display()"')
-        | _ => fun path_buf => path_buf |> convert.unbox
+        | _ => \ path_buf => path_buf |> convert.unbox
 
 /// ### path_buf_file_name
-inl path_buf_file_name (path : path_buf) : optionm'.option' (rust.ref sm'.os_str) =
+:= path_buf_file_name (path : path_buf) : optionm'.option' (rust.ref sm'.os_str) =
     !\\(path, $'"$0.file_name()"')
 
 /// ### path_buf_exists
-inl path_buf_exists (path_buf : path_buf) : bool =
+:= path_buf_exists (path_buf : path_buf) : bool =
     !\\(path_buf, $'"$0.exists()"')
 
 /// ### path_buf_is_dir
-inl path_buf_is_dir (path_buf : path_buf) : bool =
+:= path_buf_is_dir (path_buf : path_buf) : bool =
     !\\(path_buf, $'"$0.is_dir()"')
 
 /// ### path_buf_is_file
-inl path_buf_is_file (path_buf : path_buf) : bool =
+:= path_buf_is_file (path_buf : path_buf) : bool =
     !\\(path_buf, $'"$0.is_file()"')
 
 /// ### path_buf_parent
-inl path_buf_parent (path_buf : path_buf) : optionm'.option' path_buf =
+:= path_buf_parent (path_buf : path_buf) : optionm'.option' path_buf =
     !\\(path_buf, $'"$0.parent().map(std::path::PathBuf::from)"')
 
 /// ### dir_entry
-nominal dir_entry =
+:! dir_entry =
     `(
         rust.rust_type
             `($'async_walkdir_DirEntry')
@@ -239,7 +239,7 @@ nominal dir_entry =
     )
 
 /// ### walk_dir
-nominal walk_dir =
+:! walk_dir =
     `(
         rust.rust_type
             `($'async_walkdir_WalkDir')
@@ -248,7 +248,7 @@ nominal walk_dir =
     )
 
 /// ### async_walkdir_filtering
-nominal async_walkdir_filtering =
+:! async_walkdir_filtering =
     `(
         rust.rust_type
             `($'async_walkdir_Filtering')
@@ -257,13 +257,13 @@ nominal async_walkdir_filtering =
     )
 
 /// ### filtering
-union filtering =
+:| filtering =
     | Ignore
     | IgnoreDir
     | Continue
 
 /// ### async_walkdir_error
-nominal async_walkdir_error =
+:! async_walkdir_error =
     `(
         rust.rust_type
             `($'async_walkdir_Error')
@@ -272,12 +272,12 @@ nominal async_walkdir_error =
     )
 
 /// ### new_walk_dir
-inl new_walk_dir (dir : string) : walk_dir =
+:= new_walk_dir (dir : string) : walk_dir =
     !\\(dir, $'"async_walkdir::WalkDir::new(&*$0)"')
 
 /// ### walk_dir_filter
-inl walk_dir_filter (fn : dir_entry -> async.future_pin_send filtering) (walk_dir : walk_dir) : walk_dir =
-    if is_rust () then
+:= walk_dir_filter (fn : dir_entry -> async.future_pin_send filtering) (walk_dir : walk_dir) : walk_dir =
+    ? is_rust () ?>
         global """
             struct SpiralAssertSend<T>(T);
             unsafe impl<T> Send for SpiralAssertSend<T> {}
@@ -286,22 +286,22 @@ inl walk_dir_filter (fn : dir_entry -> async.future_pin_send filtering) (walk_di
                 fn poll(mut self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<T::Output> { std::pin::Pin::new(&mut self.0).poll(cx) }
             }
             """
-        inl fn entry =
-            inl future = fn entry
-            async.new_future_move_send fun () =>
-                inl result = future |> async.await_send
-                inl filtering : async_walkdir_filtering =
-                    match result with
+        := fn entry =
+            := future = fn entry
+            async.new_future_move_send \ () =>
+                := result = future |> async.await_send
+                := filtering : async_walkdir_filtering =
+                    ?= result ?|
                     | Ignore => !\($'"async_walkdir::Filtering::Ignore"')
                     | IgnoreDir => !\($'"async_walkdir::Filtering::IgnoreDir"')
                     | Continue => !\($'"async_walkdir::Filtering::Continue"')
                 filtering
         !\\((walk_dir, fn), $'"{ let f = SpiralAssertSend($1); async_walkdir::WalkDir::filter($0, move |x| { let f = &f; SpiralAssertSend((f.0)(x)) }) }"')
-    else
-        inl fn entry = async.new_future_send fun () =>
-            inl result = fn entry |> async.await_send
-            inl filtering : async_walkdir_filtering =
-                match result with
+    |:
+        := fn entry = async.new_future_send \ () =>
+            := result = fn entry |> async.await_send
+            := filtering : async_walkdir_filtering =
+                ?= result ?|
                 | Ignore => !\($'"async_walkdir::Filtering::Ignore"')
                 | IgnoreDir => !\($'"async_walkdir::Filtering::IgnoreDir"')
                 | Continue => !\($'"async_walkdir::Filtering::Continue"')
@@ -309,7 +309,7 @@ inl walk_dir_filter (fn : dir_entry -> async.future_pin_send filtering) (walk_di
         !\\((walk_dir, fn), $'"async_walkdir::WalkDir::filter($0, move |x| $1(x))"')
 
 /// ### file_type
-nominal file_type =
+:! file_type =
     `(
         rust.rust_type
             `($'std_fs_FileType')
@@ -318,16 +318,16 @@ nominal file_type =
     )
 
 /// ### dir_entry_file_type
-inl dir_entry_file_type (dir_entry : dir_entry) : async.future_pin_send (resultm.result' file_type stream.io_error) =
-    inl dir_entry = dir_entry |> rust.emit
+:= dir_entry_file_type (dir_entry : dir_entry) : async.future_pin_send (resultm.result' file_type stream.io_error) =
+    := dir_entry = dir_entry |> rust.emit
     !\($'"Box::pin(async_walkdir::DirEntry::file_type(&!dir_entry))"')
 
 /// ### file_type_is_dir
-inl file_type_is_dir (file_type : file_type) : bool =
+:= file_type_is_dir (file_type : file_type) : bool =
     !\\(file_type, $'"std::fs::FileType::is_dir(&$0)"')
 
 /// ### file
-nominal file =
+:! file =
     `(
         rust.rust_type
             `($'std_fs_File')
@@ -336,45 +336,45 @@ nominal file =
     )
 
 /// ### file_open
-inl file_open (path : string) : resultm.result' file stream.io_error =
+:= file_open (path : string) : resultm.result' file stream.io_error =
     !\($'"std::fs::File::open(&*!path)"')
 
 /// ### rename
-inl rename (to : string) (path : string) : resultm.result' () stream.io_error =
+:= rename (to : string) (path : string) : resultm.result' () stream.io_error =
     !\($'"std::fs::rename(&*!path, &*!to)"')
 
 /// ### dir_entry_path
-inl dir_entry_path (dir_entry : dir_entry) : path_buf =
+:= dir_entry_path (dir_entry : dir_entry) : path_buf =
     !\\(dir_entry, $'"async_walkdir::DirEntry::path(&$0)"')
 
 /// ### create_dir_all
-inl create_dir_all (path : string) : resultm.result' () stream.io_error =
+:= create_dir_all (path : string) : resultm.result' () stream.io_error =
     !\\(path, $'"std::fs::create_dir_all(&*$0)"')
 
 /// ### file_info_link_target
-inl file_info_link_target (file_info : file_info) : string =
-    run_target function
-        | Fsharp => fun () =>
+:= file_info_link_target (file_info : file_info) : string =
+    run_target \|
+        | Fsharp => \ () =>
             file_info |> $'_.LinkTarget'
-        | _ => fun () => null ()
+        | _ => \ () => null ()
 
 /// ### read
-inl read (path : string) : resultm.result' (am'.vec u8) stream.io_error =
+:= read (path : string) : resultm.result' (am'.vec u8) stream.io_error =
     !\\(path, $'"std::fs::read(&*$0)"')
 
 /// ## typescript
 
 /// ### ts_path_join
-inl ts_path_join (b : string) (a : string) : string =
+:= ts_path_join (b : string) (a : string) : string =
     global "import * as spiral_node_path from 'node:path';"
     $'spiral_node_path.join(!a, !b)' : string
 
 /// ## file_system
 
 /// ### (< />)
-let (</>) (a : string) (b : string) : string =
-    run_target_args (fun () => a, b) function
-        | Rust => fun a, b =>
+:~ (</>) (a : string) (b : string) : string =
+    run_target_args (\ () => a, b) \|
+        | Rust => \ a, b =>
             a
             |> sm'.to_std_string
             |> new_path_buf
@@ -382,14 +382,14 @@ let (</>) (a : string) (b : string) : string =
             |> path_buf_display
             |> sm'.format'
             |> sm'.from_std_string
-        | TypeScript => fun a, b =>
+        | TypeScript => \ a, b =>
             a |> ts_path_join b
-        | Fsharp => fun a, b =>
+        | Fsharp => \ a, b =>
             $'System.IO.Path.Combine (!a, !b)'
-        | _ => fun a, b =>
-            if a = "" then b
-            elif (a |> sm'.ends_with "/") || (a |> sm'.ends_with "\\") then a ++# b
-            else a ++# "/" ++# b
+        | _ => \ a, b =>
+            ? a = "" ?> b
+            |? (a |> sm'.ends_with "/") || (a |> sm'.ends_with "\\") ?> a ++# b
+            |: a ++# "/" ++# b
 
 ///> gleam
 ///> zig
@@ -400,18 +400,18 @@ test path_join_without_a_native_arm =
     "" </> "file" |> _assert_eq "file"
 
 /// ### get_temp_path
-inl without_trailing_separator (path : string) : string =
-    if sm'.length path > 1i32 && (sm'.ends_with "/" path || sm'.ends_with "\\" path)
-    then sm'.substring 0i32 (sm'.length path - 1i32) path
-    else path
+:= without_trailing_separator (path : string) : string =
+    ? sm'.length path > 1i32 && (sm'.ends_with "/" path || sm'.ends_with "\\" path)
+    ?> sm'.substring 0i32 (sm'.length path - 1i32) path
+    |: path
 
-nominal gleam_dynamic = $'Dynamic'
+:! gleam_dynamic = $'Dynamic'
 
-nominal gleam_atom = $'atom.Atom'
+:! gleam_atom = $'atom.Atom'
 
-nominal gleam_charlist = $'charlist.Charlist'
+:! gleam_charlist = $'charlist.Charlist'
 
-inl file_system_gleam_env () =
+:= file_system_gleam_env () =
     global "import gleam/dynamic.{type Dynamic}"
     global "import gleam/erlang/charlist"
     global """
@@ -423,45 +423,45 @@ inl file_system_gleam_env () =
 
         """
 
-inl gleam_env_value (name : string) : gleam_dynamic =
+:= gleam_env_value (name : string) : gleam_dynamic =
     file_system_gleam_env ()
-    inl chars : gleam_charlist = $'charlist.from_string(!name)'
+    := chars : gleam_charlist = $'charlist.from_string(!name)'
     $'spiral_fs_os_getenv(!chars)'
 
-inl gleam_env_unset (value : gleam_dynamic) : bool =
-    inl unset : gleam_dynamic = $'spiral_fs_env_coerce(False)'
+:= gleam_env_unset (value : gleam_dynamic) : bool =
+    := unset : gleam_dynamic = $'spiral_fs_env_coerce(False)'
     $'!value == !unset'
 
-inl gleam_env_text (value : gleam_dynamic) : string =
-    inl chars : gleam_charlist = $'spiral_fs_env_coerce(!value)'
+:= gleam_env_text (value : gleam_dynamic) : string =
+    := chars : gleam_charlist = $'spiral_fs_env_coerce(!value)'
     $'charlist.to_string(!chars)'
 
-let rec gleam_temp_dir_from (names : list string) : string =
-    match names with
+:~ ^ gleam_temp_dir_from (names : list string) : string =
+    ?= names ?|
     | Nil => "/tmp"
     | Cons (name, rest) =>
-        inl value = gleam_env_value name
-        if gleam_env_unset value then gleam_temp_dir_from rest
-        else
-            inl dir = gleam_env_text value
-            if dir = "" then gleam_temp_dir_from rest else dir
+        := value = gleam_env_value name
+        ? gleam_env_unset value ?> gleam_temp_dir_from rest
+        |:
+            := dir = gleam_env_text value
+            ? dir = "" ?> gleam_temp_dir_from rest |: dir
 
-let get_temp_path () : string =
-    run_target function
-        | Rust => fun () =>
+:~ get_temp_path () : string =
+    run_target \|
+        | Rust => \ () =>
             !\($'"std::env::temp_dir()"')
             |> path_buf_display
             |> sm'.format'
             |> sm'.from_std_string
             |> without_trailing_separator
-        | Fsharp => fun () =>
+        | Fsharp => \ () =>
             $'System.IO.Path.GetTempPath' () |> without_trailing_separator
-        | Gleam => fun () =>
+        | Gleam => \ () =>
             file_system_gleam_env ()
-            gleam_temp_dir_from ["TMPDIR"; "TEMP"; "TMP"] |> without_trailing_separator
-        | target => fun () => join "file_system.get_temp_path / target: " ++#? target |> failwith
+            gleam_temp_dir_from [ "TMPDIR"; "TEMP"; "TMP" ] |> without_trailing_separator
+        | target => \ () => ~~ "file_system.get_temp_path / target: " ++#? target |> failwith
 
-inl file_system_gleam_paths () =
+:= file_system_gleam_paths () =
     global "import gleam/dynamic.{type Dynamic}"
     global "import gleam/erlang/atom"
     global "import gleam/string"
@@ -491,49 +491,51 @@ inl file_system_gleam_paths () =
 
 
 
-inl gleam_atom_named (name : string) : gleam_atom = $'atom.create(!name)'
+:= gleam_atom_named (name : string) : gleam_atom = $'atom.create(!name)'
 
-inl gleam_atoms_of (a : gleam_atom) : listm'.list' gleam_atom = $'[!a]'
+:= gleam_atoms_of (a : gleam_atom) : listm'.list' gleam_atom = $'[!a]'
 
-inl gleam_atom_of_dynamic (d : gleam_dynamic) : gleam_atom = $'spiral_fs_path_coerce(!d)'
+:= gleam_atom_of_dynamic (d : gleam_dynamic) : gleam_atom = $'spiral_fs_path_coerce(!d)'
 
-inl gleam_atoms_equal (a : gleam_atom) (b : gleam_atom) : bool = $'!a == !b'
+:= gleam_atoms_equal (a : gleam_atom) (b : gleam_atom) : bool = $'!a == !b'
 
-inl gleam_written (path : string) (text : string) (modes : listm'.list' gleam_atom) : gleam_dynamic =
+:= gleam_written (path : string) (text : string) (modes : listm'.list' gleam_atom) : gleam_dynamic =
     $'spiral_fs_write_file_modes(!path, !text, !modes)'
 
-inl gleam_segment_step (acc : list string) (segment : string) : list string =
-    if segment = "" || segment = "." then acc
-    elif segment = ".." then
-        match acc with
+:= gleam_segment_step (acc : list string) (segment : string) : list string =
+    ? segment = "" || segment = "." ?> acc
+    |? segment = ".." ?>
+        ?= acc ?|
         | Cons (_, up) => up
         | Nil => Nil
-    else Cons (segment, acc)
+    |: Cons (segment, acc)
 
-inl gleam_lexical_full_path (path : string) : string =
+:= gleam_lexical_full_path (path : string) : string =
     file_system_gleam_paths ()
-    inl absolute : string = $'spiral_fs_absname(!path)'
-    match sm'.split_list "/" absolute with
-    | Cons (root, segments) => root ++# "/" ++# (segments |> listm.fold gleam_segment_step Nil |> listm.rev |> sm'.concat_list "/")
+    := absolute : string = $'spiral_fs_absname(!path)'
+    ?= sm'.split_list "/" absolute ?|
+    | Cons (root, segments) =>
+        root ++# "/" ++# (segments |> listm.fold gleam_segment_step Nil |> listm.rev |> sm'.concat_list "/")
     | Nil => path
 
-inl gleam_dotted_extension (path : string) : string =
+:= gleam_dotted_extension (path : string) : string =
     file_system_gleam_paths ()
-    inl base : string = $'spiral_fs_basename(!path)'
-    inl rest = if sm'.starts_with "." base then sm'.substring 1i32 (sm'.length base - 1i32) base else base
+    := base : string = $'spiral_fs_basename(!path)'
+    := rest = ? sm'.starts_with "." base ?> sm'.substring 1i32 (sm'.length base - 1i32) base |: base
     $'spiral_fs_extension(!rest)' : string
 
-inl gleam_append_text (path : string) (text : string) : () =
+:= gleam_append_text (path : string) (text : string) : () =
     file_system_gleam_paths ()
-    inl written = gleam_written path text (gleam_atoms_of (gleam_atom_named "append")) |> gleam_atom_of_dynamic
-    if gleam_atoms_equal written (gleam_atom_named "ok") |> not then failwith "file_system.append_all_text: the append failed"
+    := written = gleam_written path text (gleam_atoms_of (gleam_atom_named "append")) |> gleam_atom_of_dynamic
+    ? gleam_atoms_equal written (gleam_atom_named "ok") |> not
+    ?> failwith "file_system.append_all_text: the append failed"
 
 /// ### get_file_name
-let get_file_name (path : string) : string =
-    run_target_args' path function
-        | Fsharp => fun path =>
+:~ get_file_name (path : string) : string =
+    run_target_args' path \|
+        | Fsharp => \ path =>
             path |> $'System.IO.Path.GetFileName'
-        | Rust => fun path =>
+        | Rust => \ path =>
             path
             |> sm'.to_std_string
             |> new_path_buf
@@ -541,53 +543,53 @@ let get_file_name (path : string) : string =
             |> optionm'.map' sm'.from_os_str_ref
             |> optionm'.unbox
             |> optionm'.default_value ""
-        | TypeScript => fun path =>
+        | TypeScript => \ path =>
             global "import * as spiral_node_path from 'node:path';"
             $'spiral_node_path.basename(!path)' : string
-        | Gleam => fun path =>
+        | Gleam => \ path =>
             file_system_gleam_paths ()
             $'spiral_fs_basename(!path)' : string
         | target =>
-            fun path => join "file_system.get_file_name / target: " ++#? target ++# " / path: " ++# path |> failwith
+            \ path => ~~ "file_system.get_file_name / target: " ++#? target ++# " / path: " ++# path |> failwith
 
 /// ### get_file_name_without_extension
-let get_file_name_without_extension (path : string) : string =
-    run_target_args' path function
-        | Rust => fun path =>
-            inl path_buf = path |> sm'.to_std_string |> new_path_buf
-            inl file_stem = !\\(path_buf, $'"$0.file_stem()"')
-            match file_stem |> optionm'.map' sm'.from_os_str_ref |> optionm'.unbox with
+:~ get_file_name_without_extension (path : string) : string =
+    run_target_args' path \|
+        | Rust => \ path =>
+            := path_buf = path |> sm'.to_std_string |> new_path_buf
+            := file_stem = !\\(path_buf, $'"$0.file_stem()"')
+            ?= file_stem |> optionm'.map' sm'.from_os_str_ref |> optionm'.unbox ?|
             | Some file_stem => file_stem
             | None => ""
-        | _ => fun path =>
+        | _ => \ path =>
             path |> $'System.IO.Path.GetFileNameWithoutExtension'
 
 /// ### get_extension
-let get_extension (path : string) : string =
-    run_target_args' path function
-        | Rust => fun path =>
+:~ get_extension (path : string) : string =
+    run_target_args' path \|
+        | Rust => \ path =>
             $'Rc::<str>::from(std::path::Path::new(&*!path).extension().map_or(String::new(), |e| \
                 format\!(".{}", e.to_string_lossy())))' : string
-        | Gleam => fun path =>
+        | Gleam => \ path =>
             file_system_gleam_paths ()
             gleam_dotted_extension path
-        | Fsharp => fun path =>
+        | Fsharp => \ path =>
             $'(let name = System.IO.Path.GetFileName (!path : string) in if name.StartsWith "." && name.IndexOf(\
                 ".", 1, System.StringComparison.Ordinal) < 0 then "" else System.IO.Path.GetExtension (!path : string))'
             : string
-        | _ => fun path =>
+        | _ => \ path =>
             path |> $'System.IO.Path.GetExtension'
 
 /// ### directory_separator_char
-let directory_separator_char () : char =
-    run_target function
-        | Rust => fun () => $'(std::path::MAIN_SEPARATOR as u8)' : char
-        | TypeScript _ => fun () => '/'
-        | Zig => fun () => $'std.fs.path.sep' : char
-        | _ => fun () => $'System.IO.Path.DirectorySeparatorChar'
+:~ directory_separator_char () : char =
+    run_target \|
+        | Rust => \ () => $'(std::path::MAIN_SEPARATOR as u8)' : char
+        | TypeScript _ => \ () => '/'
+        | Zig => \ () => $'std.fs.path.sep' : char
+        | _ => \ () => $'System.IO.Path.DirectorySeparatorChar'
 
 /// ### get_current_directory
-inl file_system_gleam_stat () =
+:= file_system_gleam_stat () =
     global "import gleam/dynamic.{type Dynamic}"
     global "import gleam/erlang/atom"
     global "import gleam/erlang/charlist"
@@ -603,98 +605,98 @@ inl file_system_gleam_stat () =
 
         """
 
-inl gleam_cwd () : string =
+:= gleam_cwd () : string =
     file_system_gleam_stat ()
-    match ($'spiral_fs_get_cwd()' : resultm.result' gleam_charlist gleam_dynamic) |> resultm.unbox with
+    ?= ($'spiral_fs_get_cwd()' : resultm.result' gleam_charlist gleam_dynamic) |> resultm.unbox ?|
     | Ok chars => $'charlist.to_string(!chars)' : string
     | Error _ => failwith "file_system.get_current_directory: file:get_cwd failed"
 
-inl gleam_mtime_ms (path : string) : u64 =
+:= gleam_mtime_ms (path : string) : u64 =
     file_system_gleam_stat ()
-    inl time = gleam_atom_named "time"
-    inl posix = gleam_atom_named "posix"
-    inl option : gleam_dynamic = $'##(!time, !posix)'
-    inl options : listm'.list' gleam_dynamic = $'[!option]'
-    match ($'spiral_fs_read_file_info(!path, !options)' : resultm.result' gleam_dynamic gleam_dynamic) |> resultm.unbox with
+    := time = gleam_atom_named "time"
+    := posix = gleam_atom_named "posix"
+    := option : gleam_dynamic = $'##(!time, !posix)'
+    := options : listm'.list' gleam_dynamic = $'[!option]'
+    ?= ($'spiral_fs_read_file_info(!path, !options)' : resultm.result' gleam_dynamic gleam_dynamic) |> resultm.unbox ?|
     | Ok info => ($'spiral_fs_stat_element(6, !info)' : u64) * 1000u64
     | Error _ => 0u64
 
-let get_current_directory () : string =
-    run_target function
-        | Rust => fun () =>
-            inl current_dir = !\($'"std::env::current_dir()"') : resultm.result' path_buf stream.io_error
+:~ get_current_directory () : string =
+    run_target \|
+        | Rust => \ () =>
+            := current_dir = !\($'"std::env::current_dir()"') : resultm.result' path_buf stream.io_error
             current_dir
             |> resultm.unwrap'
             |> path_buf_display
             |> sm'.format'
             |> sm'.from_std_string
-        | Fsharp => fun () =>
+        | Fsharp => \ () =>
             $'System.IO.Directory.GetCurrentDirectory' ()
-        | TypeScript _ => fun () =>
+        | TypeScript _ => \ () =>
             global "import * as spiral_node_fs from 'node:fs';"
             $'spiral_node_fs.realpathSync(".")' : string
-        | Zig => fun () =>
+        | Zig => \ () =>
             global "var spiral_io_threaded: std.Io.Threaded = .init_single_threaded;"
             $'(std.process.currentPathAlloc(spiral_io_threaded.io(), spiral_gpa) catch \
                 \@panic("file_system.get_current_directory failed"))' : string
-        | Gleam => fun () =>
+        | Gleam => \ () =>
             file_system_gleam_stat ()
             gleam_cwd ()
-        | _ => fun () => null ()
+        | _ => \ () => null ()
 
 test get_current_directory =
     get_current_directory ()
     |> _assert_contains (directory_separator_char ())
 
 /// ### directory_exists
-let directory_exists (path : string) : bool =
-    run_target_args' path function
-        | Zig => fun _ =>
+:~ directory_exists (path : string) : bool =
+    run_target_args' path \|
+        | Zig => \ _ =>
             global "var spiral_io_threaded: std.Io.Threaded = .init_single_threaded;"
             $'(if (std.Io.Dir.cwd().statFile(spiral_io_threaded.io(), !path, .{})) |s| s.kind == .directory else |_| \
                 false)' : bool
-        | Fsharp => fun path =>
+        | Fsharp => \ path =>
             path |> $'System.IO.Directory.Exists'
-        | Rust => fun path =>
-            inl path = path |> sm'.to_std_string |> new_path_buf
+        | Rust => \ path =>
+            := path = path |> sm'.to_std_string |> new_path_buf
             path_buf_exists path && path_buf_is_dir path
-        | TypeScript => fun path =>
+        | TypeScript => \ path =>
             global "import * as spiral_node_fs from 'node:fs';"
             $'(spiral_node_fs.existsSync(!path) && spiral_node_fs.statSync(!path).isDirectory())' : bool
-        | Gleam => fun path =>
+        | Gleam => \ path =>
             file_system_gleam_paths ()
             $'spiral_fs_is_dir(!path)' : bool
-        | _ => fun _ => null ()
+        | _ => \ _ => null ()
 
 /// ### directory_get_parent
-let directory_get_parent (path : string) : optionm'.option' string =
-    run_target_args' path function
-        | Fsharp => fun path =>
-            inl parent : directory_info = path |> $'System.IO.Directory.GetParent'
-            if parent =. null ()
-            then None
-            else parent |> directory_info_full_name |> Some
+:~ directory_get_parent (path : string) : optionm'.option' string =
+    run_target_args' path \|
+        | Fsharp => \ path =>
+            := parent : directory_info = path |> $'System.IO.Directory.GetParent'
+            ? parent =. null ()
+            ?> None
+            |: parent |> directory_info_full_name |> Some
             |> optionm'.box
-        | Rust => fun path =>
-            inl path_buf = path |> sm'.to_std_string |> new_path_buf
-            inl parent = path_buf |> path_buf_parent
+        | Rust => \ path =>
+            := path_buf = path |> sm'.to_std_string |> new_path_buf
+            := parent = path_buf |> path_buf_parent
             parent
             |> optionm'.map' (path_buf_display >> sm'.format' >> sm'.from_std_string)
-        | TypeScript _ => fun path =>
+        | TypeScript _ => \ path =>
             global "import * as spiral_node_path from 'node:path';"
-            inl parent = $'spiral_node_path.dirname(!path)' : string
-            if parent = path
-            then None
-            else parent |> Some
+            := parent = $'spiral_node_path.dirname(!path)' : string
+            ? parent = path
+            ?> None
+            |: parent |> Some
             |> optionm'.box
-        | _ => fun _ => optionm'.none' ()
+        | _ => \ _ => optionm'.none' ()
 
 /// ### create_temp_path'
-let create_temp_path' (guid : guid.guid) =
-    run_target_args' guid function
-        | _ => fun guid =>
+:~ create_temp_path' (guid : guid.guid) =
+    run_target_args' guid \|
+        | _ => \ guid =>
             get_temp_path ()
-            </> join "!create_temp_path_"
+            </> ~~ "!create_temp_path_"
             </> (env.get_entry_assembly_name ())
             </> (guid |> sm'.obj_to_string)
 
@@ -706,32 +708,32 @@ test create_temp_path =
     |> _assert_contains (directory_separator_char ())
 
 /// ### create_temp_path
-let create_temp_path () =
-    run_target function
-        | _ => fun () =>
+:~ create_temp_path () =
+    run_target \|
+        | _ => \ () =>
             date_time.now ()
             |> date_time.new_guid_from_date_time
             |> create_temp_path'
 
 /// ### file_copy
-let file_copy (new_path : string) (old_path : string) : () =
-    run_target_args' (old_path, new_path) function
-        | Fsharp => fun old_path, new_path =>
+:~ file_copy (new_path : string) (old_path : string) : () =
+    run_target_args' (old_path, new_path) \|
+        | Fsharp => \ old_path, new_path =>
             $'System.IO.File.Copy (!old_path, !new_path, true)'
-        | Rust => fun old_path, new_path =>
-            inl result : _ _ stream.io_error = !\\((old_path, new_path), $'"std::fs::copy(&*$0, &*$1)"')
-            match result |> resultm.map_error' sm'.format' |> resultm.unbox with
+        | Rust => \ old_path, new_path =>
+            := result : _ _ stream.io_error = !\\((old_path, new_path), $'"std::fs::copy(&*$0, &*$1)"')
+            ?= result |> resultm.map_error' sm'.format' |> resultm.unbox ?|
             | Ok (result : u64) =>
                 trace Debug
-                    fun () => "file_system.file_copy"
-                    fun () => { old_path new_path result }
+                    \ () => "file_system.file_copy"
+                    \ () => { old_path new_path result }
             | Error error =>
                 trace Warning
-                    fun () => "file_system.file_copy"
-                    fun () => { old_path new_path error }
-        | _ => fun _ => ()
+                    \ () => "file_system.file_copy"
+                    \ () => { old_path new_path error }
+        | _ => \ _ => ()
 
-inl file_system_gleam_files () =
+:= file_system_gleam_files () =
     global "import gleam/bit_array"
     global "import gleam/dynamic.{type Dynamic}"
     global "import gleam/erlang/atom"
@@ -750,118 +752,149 @@ inl file_system_gleam_files () =
 
         """
 
-nominal gleam_bytes = $'BitArray'
+:! gleam_bytes = $'BitArray'
 
-inl gleam_read_text (path : string) : string =
+:= gleam_read_text (path : string) : string =
     file_system_gleam_files ()
-    match ($'spiral_fs_read_file(!path)' : resultm.result' gleam_bytes gleam_dynamic) |> resultm.unbox with
+    ?= ($'spiral_fs_read_file(!path)' : resultm.result' gleam_bytes gleam_dynamic) |> resultm.unbox ?|
     | Ok bytes =>
-        match ($'bit_array.to_string(!bytes)' : resultm.result' string ()) |> resultm.unbox with
+        ?= ($'bit_array.to_string(!bytes)' : resultm.result' string ()) |> resultm.unbox ?|
         | Ok text => text
         | Error _ => failwith "file_system.read_all_text: the file is not UTF-8"
     | Error _ => failwith "file_system.read_all_text: file:read_file failed"
 
-inl gleam_write_text (path : string) (text : string) : () =
+:= gleam_write_text (path : string) (text : string) : () =
     file_system_gleam_files ()
-    inl raw : gleam_dynamic = $'spiral_fs_write_file(!path, !text)'
-    inl written : gleam_atom = $'spiral_fs_coerce(!raw)'
-    if gleam_atoms_equal written (gleam_atom_named "ok") |> not then failwith "file_system.write_all_text: the write failed"
+    := raw : gleam_dynamic = $'spiral_fs_write_file(!path, !text)'
+    := written : gleam_atom = $'spiral_fs_coerce(!raw)'
+    ? gleam_atoms_equal written (gleam_atom_named "ok") |> not
+    ?> failwith "file_system.write_all_text: the write failed"
+
+/// ### lua_file
+:! lua_file = $'any'
+
+:= lua_file_open (path : string) (mode : string) : lua_file = $'io.open(!path, !mode)' : lua_file
+
+:= lua_file_present (file : lua_file) : bool = $'(!file) ~= nil' : bool
+
+:= lua_file_write (file : lua_file) (text : string) : () = $'(!file):write(!text)' : ()
+
+:= lua_file_read_all (file : lua_file) : string = $'(!file):read("*a")' : string
+
+:= lua_file_close (file : lua_file) : () = $'(!file):close()' : ()
+
+:= lua_file_remove (path : string) : () = $'os.remove(!path)' : ()
 
 /// ### file_exists
-let file_exists (path : string) : bool =
-    run_target_args' path function
-        | Zig => fun _ =>
+:~ file_exists (path : string) : bool =
+    run_target_args' path \|
+        | Zig => \ _ =>
             global "var spiral_io_threaded: std.Io.Threaded = .init_single_threaded;"
             $'(if (std.Io.Dir.cwd().statFile(spiral_io_threaded.io(), !path, .{})) |s| s.kind == .file else |_| false)' : bool
-        | Fsharp => fun path =>
+        | Fsharp => \ path =>
             path |> $'System.IO.File.Exists'
-        | Rust => fun path =>
-            inl path_buf = path |> sm'.to_std_string |> new_path_buf
+        | Rust => \ path =>
+            := path_buf = path |> sm'.to_std_string |> new_path_buf
             path_buf_exists path_buf && path_buf_is_file path_buf
-        | Gleam => fun path =>
+        | Gleam => \ path =>
             file_system_gleam_files ()
             $'spiral_fs_is_regular(!path)' : bool
-        | TypeScript => fun path =>
+        | TypeScript => \ path =>
             global "import * as spiral_node_fs from 'node:fs';"
             $'(spiral_node_fs.existsSync(!path) && spiral_node_fs.statSync(!path).isFile())' : bool
-        | Gleam _ => fun path =>
+        | Gleam _ => \ path =>
             global """
                 @external(erlang, "filelib", "is_regular")
                 fn spiral_filelib_is_regular(path: String) -> Bool
                 """
             $'spiral_filelib_is_regular(!path)' : bool
-        | _ => fun _ => null ()
+        | Lua => \ path =>
+            := file = lua_file_open path "r"
+            ? lua_file_present file ?>
+                lua_file_close file
+                !+
+            |: !-
+        | _ => \ _ => null ()
 
 ///> gleam
 test file_exists_on_gleam_tells_files_from_missing_paths =
-    file_exists "gleam.toml" |> _assert_eq true
-    file_exists "spiral-no-such-file.txt" |> _assert_eq false
+    file_exists "gleam.toml" |> _assert_eq !+
+    file_exists "spiral-no-such-file.txt" |> _assert_eq !-
 
 /// ### directory_delete
-let directory_delete recursive (path : string) : () =
-    run_target_args' (path, recursive) function
-        | Fsharp => fun path, recursive =>
+:~ directory_delete recursive (path : string) : () =
+    run_target_args' (path, recursive) \|
+        | Fsharp => \ path, recursive =>
             $'System.IO.Directory.Delete (!path, !recursive)'
-        | Rust => fun path, recursive =>
-            if path |> directory_exists then
-                if recursive
-                then !\\(path, $'"std::fs::remove_dir_all(&*$0).unwrap()"')
-                else !\\(path, $'"std::fs::remove_dir(&*$0).unwrap()"')
-        | _ => fun _ => ()
+        | Rust => \ path, recursive =>
+            ? path |> directory_exists ?>
+                ? recursive
+                ?> !\\(path, $'"std::fs::remove_dir_all(&*$0).unwrap()"')
+                |: !\\(path, $'"std::fs::remove_dir(&*$0).unwrap()"')
+        | _ => \ _ => ()
 
 /// ### write_all_text
-inl write_all_text (path : string) (text : string) : () =
-    run_target_args' (path, text) function
-        | Zig => fun _ =>
+:= write_all_text (path : string) (text : string) : () =
+    run_target_args' (path, text) \|
+        | Zig => \ _ =>
             global "var spiral_io_threaded: std.Io.Threaded = .init_single_threaded;"
             $'std.Io.Dir.cwd().writeFile(spiral_io_threaded.io(), .{ .sub_path = !path, .data = !text }) catch \
                 \@panic("file_system.write_all_text failed")' : ()
-        | Fsharp => fun path, text =>
+        | Fsharp => \ path, text =>
             $'System.IO.File.WriteAllText (!path, !text)'
-        | Rust => fun path, text =>
+        | Rust => \ path, text =>
             !\\((path, text), $'"std::fs::write(&*$0, &*$1).unwrap()"')
-        | Gleam => fun path, text =>
+        | Gleam => \ path, text =>
             file_system_gleam_files ()
             gleam_write_text path text
-        | _ => fun _ => ()
+        | Lua => \ path, text =>
+            := file = lua_file_open path "w"
+            lua_file_write file text
+            lua_file_close file
+        | _ => \ _ => ()
 
 /// ### read_all_bytes
-inl read_all_bytes (path : string) : am'.vec u8 =
-    run_target function
-        | Fsharp => fun () =>
+:= read_all_bytes (path : string) : am'.vec u8 =
+    run_target \|
+        | Fsharp => \ () =>
             $'!path |> System.IO.File.ReadAllBytes'
             |> am'.to_vec
-        | Rust => fun () =>
+        | Rust => \ () =>
             path |> read |> resultm.unwrap'
-        | _ => fun () => null ()
+        | _ => \ () => null ()
 
 /// ### read_all_text
-inl read_all_text (path : string) : string =
-    run_target function
-        | Zig => fun () =>
+:= read_all_text (path : string) : string =
+    run_target \|
+        | Zig => \ () =>
             global "var spiral_io_threaded: std.Io.Threaded = .init_single_threaded;"
             $'(std.Io.Dir.cwd().readFileAlloc(spiral_io_threaded.io(), !path, spiral_gpa, .unlimited) catch \
                 \@panic("file_system.read_all_text failed"))' : string
-        | Fsharp => fun () =>
+        | Fsharp => \ () =>
             $'!path |> System.IO.File.ReadAllText'
-        | Gleam => fun () =>
+        | Gleam => \ () =>
             file_system_gleam_files ()
             gleam_read_text path
-        | Rust => fun () =>
+        | Rust => \ () =>
             path
             |> read_all_bytes
             |> sm'.string_from_utf8
             |> resultm.unwrap'
             |> sm'.from_std_string
-        | _ => fun () => null ()
+        | Lua => \ () =>
+            := file = lua_file_open path "r"
+            := text = lua_file_read_all file
+            lua_file_close file
+            text
+        | _ => \ () => null ()
 
 /// ### directory_create_symbolic_link
-inl directory_create_symbolic_link (target : string) (path : string) : () =
-    run_target function
-        | Fsharp => fun () =>
+:= directory_create_symbolic_link (target : string) (path : string) : () =
+    run_target \|
+        | Fsharp => \ () =>
             ($'System.IO.Directory.CreateSymbolicLink (!path, !target)' : file_system_info)
             |> ignore
-        | Rust => fun () =>
+        | Rust => \ () =>
             (
                 !\\((target, path), $'"true; \#[cfg(windows)] std::os::windows::fs::symlink_dir(&*$0, &*$1).unwrap()"')
                 : bool
@@ -869,15 +902,15 @@ inl directory_create_symbolic_link (target : string) (path : string) : () =
             |> ignore
             (!\\((target, path), $'"true; \#[cfg(unix)] std::os::unix::fs::symlink(&*$0, &*$1).unwrap()"') : bool)
             |> ignore
-        | _ => fun () => ()
+        | _ => \ () => ()
 
 /// ### file_create_symbolic_link
-inl file_create_symbolic_link (target : string) (path : string) : () =
-    run_target function
-        | Fsharp => fun () =>
+:= file_create_symbolic_link (target : string) (path : string) : () =
+    run_target \|
+        | Fsharp => \ () =>
             ($'System.IO.File.CreateSymbolicLink (!path, !target)' : file_system_info)
             |> ignore
-        | Rust => fun () =>
+        | Rust => \ () =>
             (
                 !\\((target, path), $'"true; \#[cfg(windows)] std::os::windows::fs::symlink_file(&*$0, &*$1).unwrap()"')
                 : bool
@@ -885,35 +918,35 @@ inl file_create_symbolic_link (target : string) (path : string) : () =
             |> ignore
             (!\\((target, path), $'"true; \#[cfg(unix)] std::os::unix::fs::symlink(&*$0, &*$1).unwrap()"') : bool)
             |> ignore
-        | _ => fun () => ()
+        | _ => \ () => ()
 
 /// ### file_type
-union file_type =
+:| file_type =
     | File
     | Directory
 
 /// ### find_parent
-let find_parent file_type name root_dir =
-    inl is_file = file_type = File
-    inl exists_fn = if is_file then file_exists else directory_exists
-    let rec 루프 dir =
-        if dir </> name |> exists_fn
-        then dir |> Ok
-        else
-            inl parent = dir |> directory_get_parent
-            match parent |> optionm'.unbox with
+:~ find_parent file_type name root_dir =
+    := is_file = file_type = File
+    := exists_fn = ? is_file ?> file_exists |: directory_exists
+    :~ ^ 루프 dir =
+        ? dir </> name |> exists_fn
+        ?> dir |> Ok
+        |:
+            := parent = dir |> directory_get_parent
+            ?= parent |> optionm'.unbox ?|
             | Some parent => parent |> 루프
             | None =>
-                sm'.(++#) "file_system.find_parent / No parent for " (if is_file then "file" else "dir")
+                sm'.(++#) "file_system.find_parent / No parent for " (? is_file ?> "file" |: "dir")
                 ++# $'$" \'{!name}\' at \'{!root_dir}\' (until \'{!dir}\')"'
-                |> fun x => x : string
+                |> \ x => x : string
                 |> Error
     root_dir |> 루프
 
 ///> fsharp
 test find_parent =
     ;[ Directory, "workspace"; File, "README.md" ]
-    |> arraym.map fun file_type, file =>
+    |> arraym.map \ file_type, file =>
         get_source_directory ()
         |> find_parent file_type file
         |> resultm.get
@@ -925,9 +958,9 @@ test find_parent =
 ///> rust
 test find_parent_2 =
     ;[ Directory, "workspace"; File, "README.md" ]
-    |> arraym.map fun file_type, file =>
-        fun () =>
-            join
+    |> arraym.map \ file_type, file =>
+        \ () =>
+            ~~
                 get_current_directory ()
                 |> find_parent file_type file
                 |> resultm.get
@@ -938,48 +971,49 @@ test find_parent_2 =
                 |> sm'.from_os_str_ref
                 |> Some
                 |> optionm'.box
-        |> fun x => x () |> optionm'.unbox
+        |> \ x => x () |> optionm'.unbox
         |> optionm'.default_value ""
     |> am'.distinct
-    |> fun result =>
+    |> \ result =>
         result |> am'.length |> _assert_eq 1i32
         index result 0i32 |> _assert_eq "spiral"
 
 /// ### file_delete
-inl file_delete (path : string) : () =
-    run_target function
-        | Zig => fun () =>
+:= file_delete (path : string) : () =
+    run_target \|
+        | Zig => \ () =>
             global "var spiral_io_threaded: std.Io.Threaded = .init_single_threaded;"
             $'std.Io.Dir.cwd().deleteFile(spiral_io_threaded.io(), !path) catch {}' : ()
-        | Fsharp => fun () =>
+        | Fsharp => \ () =>
             path |> $'System.IO.File.Delete'
-        | Rust => fun () =>
-            inl result : resultm.result' () stream.io_error =
-                if path |> file_exists
-                then !\\(path, $'"std::fs::remove_file(&*$0)"')
-                else Ok () |> resultm.box
-            match result |> resultm.map_error' sm'.format |> resultm.unbox with
+        | Rust => \ () =>
+            := result : resultm.result' () stream.io_error =
+                ? path |> file_exists
+                ?> !\\(path, $'"std::fs::remove_file(&*$0)"')
+                |: Ok () |> resultm.box
+            ?= result |> resultm.map_error' sm'.format |> resultm.unbox ?|
             | Ok () => ()
-            | Error error' => trace Critical (fun () => "file_system.file_delete") fun () => { error' }
-        | Gleam => fun () =>
+            | Error error' => trace Critical (\ () => "file_system.file_delete") \ () => { error' }
+        | Gleam => \ () =>
             file_system_gleam_paths ()
             $'spiral_fs_delete(!path)' : ()
-        | _ => fun () => ()
+        | Lua => \ () => lua_file_remove path
+        | _ => \ () => ()
 
 /// ### read_link
-let read_link (path : string) : resultm.result' path_buf stream.io_error =
-    let run 루프 n error path' =
-        inl name = path' |> get_file_name
-        inl parent = path' |> directory_get_parent |> optionm'.unbox
-        inl error'' = #?error
-        match parent with
-        | _ when n >= 11 =>
+:~ read_link (path : string) : resultm.result' path_buf stream.io_error =
+    :~ run 루프 n error path' =
+        := name = path' |> get_file_name
+        := parent = path' |> directory_get_parent |> optionm'.unbox
+        := error'' = #?error
+        ?= parent ?|
+        | _ ?& n >= 11 =>
             ($'$"file_system.read_link / "' : string)
             ++# $'$"path: {!path} / n: {!n} / path\': {!path'} / name: {!name}"'
             |> stream.new_io_error
             |> resultm.err
-        | Some parent when path' <>. "" =>
-            match 루프 (n + 1) parent |> resultm.map_error' sm'.format |> resultm.unbox with
+        | Some parent ?& path' <>. "" =>
+            ?= 루프 (n + 1) parent |> resultm.map_error' sm'.format |> resultm.unbox ?|
             | Ok parent' =>
                 (parent' |> path_buf_display |> convert.convert) </> name
                 |> sm'.to_std_string
@@ -996,76 +1030,76 @@ let read_link (path : string) : resultm.result' path_buf stream.io_error =
             |> stream.new_io_error
             |> resultm.err
 
-    run_target function
-        | Rust => fun () =>
-            if path |> directory_exists
-            then !\\(path, $'"std::fs::read_link(&*$0)"')
-            else
-                let rec 루프 forall t {number}.
+    run_target \|
+        | Rust => \ () =>
+            ? path |> directory_exists
+            ?> !\\(path, $'"std::fs::read_link(&*$0)"')
+            |:
+                :~ ^ 루프 \* t {number}.
                     (n : t)
                     (path' : string)
                     : resultm.result' path_buf stream.io_error
                     =
-                    run_target function
-                        | Rust => fun () =>
-                            inl result : _ _ stream.io_error = !\\(path', $'"std::fs::read_link(&*$0)"')
-                            inl result = result |> resultm.map_error' sm'.format |> resultm.unbox
-                            match result with
+                    run_target \|
+                        | Rust => \ () =>
+                            := result : _ _ stream.io_error = !\\(path', $'"std::fs::read_link(&*$0)"')
+                            := result = result |> resultm.map_error' sm'.format |> resultm.unbox
+                            ?= result ?|
                             | Ok x => x |> resultm.ok''
                             | Error error => path' |> run 루프 n error
-                        | _ => fun () => null ()
+                        | _ => \ () => null ()
                 path |> 루프 0u8
         | Fsharp _
-        | TypeScript _ => fun () =>
-            let rec 루프 forall t {number}.
+        | TypeScript _ => \ () =>
+            :~ ^ 루프 \* t {number}.
                 (n : t)
                 (path' : string)
                 : resultm.result' path_buf stream.io_error
                 =
-                inl result =
+                := result =
                     path'
                     |> directory_info
                     |> directory_info_attributes
                     |> file_attributes_has_flag (file_attributes_reparse_point ())
-                if result then
+                ? result ?>
                     path'
                     |> file_info
                     |> file_info_link_target
                     |> convert.unbox
                     |> resultm.ok''
-                else
-                    inl error =
+                |:
+                    := error =
                         ($'$"file_system.read_link / Fsharp / "' : string)
                         ++# $'$"The file or directory is not a reparse point. / "'
                         ++# $'$"path: {!path} / result: {!result} / path\': {!path'} / n: {!n}"'
                         |> stream.new_io_error
                     path' |> run 루프 n error
             path |> 루프 0u8
-        | _ => fun () => $'Unchecked.defaultof<_>'
+        | _ => \ () => $'Unchecked.defaultof<_>'
 
 /// ### normalize_path
-let normalize_path (path : string) : string =
-    if path = ""
-    then ""
-    else
-        inl result =
-            match path |> read_link |> resultm.ok' |> optionm'.unbox with
+:~ normalize_path (path : string) : string =
+    ? path = ""
+    ?> ""
+    |:
+        := result =
+            ?= path |> read_link |> resultm.ok' |> optionm'.unbox ?|
             | Some path_buf =>
                 path_buf
                 |> path_buf_display
                 |> convert.convert
             | None => path
-        inl result =
-            if result = ""
-            then path
-            else result
-        inl result' =
-            if result |> sm'.starts_with "\\\\?\\"
-            then result |> sm'.substring 4i32 ((sm'.length result : i32) - 4i32)
-            else result
-        if ##result' < 2
-        then path
-        else
+        := result =
+            ? result = ""
+            ?> path
+            |: result
+        := result' =
+            ? result |> sm'.starts_with "\\\\?\\"
+            ?> result |> sm'.substring 4i32 ((sm'.length result : i32) - 4i32)
+            |: result
+        ? ##result' < 2
+        ?> path
+        |:
             sm'.(++#)
                 (result' |> sm'.slice 0i32 0i32 |> sm'.to_lower)
                 (result' |> sm'.slice 1i32 ((sm'.length result' : i32) - 1i32))
@@ -1073,36 +1107,36 @@ let normalize_path (path : string) : string =
 
 ///> rust
 test normalize_path_drops_the_verbatim_prefix =
-    inl ~path = "\\\\?\\C:\\x"
+    := ~path = "\\\\?\\C:\\x"
     path |> normalize_path |> _assert_eq "c:/x"
 
 /// ### get_workspace_root
-inl get_workspace_root () =
-    inl repo_root = env.get_environment_variable "SPIRAL_REPO_ROOT"
-    if repo_root <> ""
-    then repo_root |> normalize_path
-    else
-        inl dirs =
-            [ get_current_directory; get_source_directory; fun () => "/workspaces" ]
-        let run dir =
+:= get_workspace_root () =
+    := repo_root = env.get_environment_variable "SPIRAL_REPO_ROOT"
+    ? repo_root <> ""
+    ?> repo_root |> normalize_path
+    |:
+        := dirs =
+            [ get_current_directory; get_source_directory; \ () => "/workspaces" ]
+        :~ run dir =
             dir
             |> find_parent Directory ("spiral" </> "workspace")
-            |> function
+            |> \|
                 | Ok dir => dir |> normalize_path |> Some
                 | Error error =>
                     trace Warning
-                        fun () => "file_system.get_workspace_root"
-                        fun () => { dir error }
+                        \ () => "file_system.get_workspace_root"
+                        \ () => { dir error }
                     None
-        inl root =
+        := root =
             (None, dirs)
-            ||> listm.fold fun acc dir =>
-                match acc with
+            ||> listm.fold \ acc dir =>
+                ?= acc ?|
                 | Some dir => Some dir
                 | None => dir () |> run
             |> optionm.value
-        inl root =
-            match root |> get_file_name with
+        := root =
+            ?= root |> get_file_name ?|
             | "deps" =>
                 root
                 |> directory_get_parent
@@ -1113,49 +1147,49 @@ inl get_workspace_root () =
         root </> "spiral"
 
 /// ### get_workspace_root_external
-inl get_workspace_root_external () =
-    inl workspace_root = get_workspace_root ()
-    inl current_dir = get_current_directory () |> sm'.to_lower
-    inl workspace_root = workspace_root |> sm'.to_lower
-    if current_dir |> sm'.starts_with workspace_root
-    then Error workspace_root
-    else Ok workspace_root
+:= get_workspace_root_external () =
+    := workspace_root = get_workspace_root ()
+    := current_dir = get_current_directory () |> sm'.to_lower
+    := workspace_root = workspace_root |> sm'.to_lower
+    ? current_dir |> sm'.starts_with workspace_root
+    ?> Error workspace_root
+    |: Ok workspace_root
 
 ///> rust -d regex
 test get_workspace_root_external =
-    match get_workspace_root_external () with
+    ?= get_workspace_root_external () ?|
     | Ok root => root
     | Error root => root
     |> get_file_name
     |> _assert_eq "spiral"
 
 /// ### get_full_path
-let get_full_path (path : string) : string =
-    run_target_args (fun () => path) function
-        | Fsharp => fun path =>
+:~ get_full_path (path : string) : string =
+    run_target_args (\ () => path) \|
+        | Fsharp => \ path =>
             path |> $'System.IO.Path.GetFullPath'
-        | Rust => fun path =>
-            inl current_dir = get_current_directory ()
+        | Rust => \ path =>
+            := current_dir = get_current_directory ()
             current_dir </> path
             |> normalize_path
             |> sm'.split "/"
-            |> fun x =>
-                   ((array x : array _), (0i32, (;[] : array _)))
-                   ||> arraym.foldBack fun x level, acc =>
-                       match x, level with
-                       | "..", _ => level + 1, acc
-                       | ".", _ => level, acc
-                       | _, 0 when x |> sm'.ends_with ":" =>
-                           0, ;[ sm'.(++#) (current_dir |> sm'.slice 0i32 0i32) ":" ] ++ acc
-                       | _, 0 => 0, ;[ x ] ++ acc
-                       | _ => level - 1, acc
+            |> \ x =>
+                ((array x : array _), (0i32, (;[] : array _)))
+                ||> arraym.foldBack \ x level, acc =>
+                    ?= x, level ?|
+                    | "..", _ => level + 1, acc
+                    | ".", _ => level, acc
+                    | _, 0 ?& x |> sm'.ends_with ":" =>
+                        0, ;[ sm'.(++#) (current_dir |> sm'.slice 0i32 0i32) ":" ] ++ acc
+                    | _, 0 => 0, ;[ x ] ++ acc
+                    | _ => level - 1, acc
             |> snd
             |> seq.of_array'
             |> sm'.concat (directory_separator_char () |> sm'.obj_to_string)
-        | Gleam => fun path =>
+        | Gleam => \ path =>
             file_system_gleam_paths ()
             gleam_lexical_full_path path
-        | _ => fun _ => null ()
+        | _ => \ _ => null ()
 
 ///> fsharp
 test get_full_path =
@@ -1173,7 +1207,7 @@ test get_full_path_2 =
 
 ///> rust -d regex
 test get_full_path_3 =
-    inl directory_name path =
+    := directory_name path =
         path
         |> sm'.to_std_string
         |> new_path_buf
@@ -1193,17 +1227,17 @@ test get_full_path_4 =
     |> _assert_eq (get_current_directory () </> "._file" |> normalize_path)
 
 /// ### standardize_path
-let standardize_path path =
+:~ standardize_path path =
     path |> get_full_path |> normalize_path
 
 /// ### absolute_path
-let absolute_path path =
-    inl current_dir = get_current_directory ()
+:~ absolute_path path =
+    := current_dir = get_current_directory ()
     current_dir </> path |> standardize_path
 
 /// ### new_file_uri
-inl new_file_uri (path : string) : string =
-    inl path = path |> sm'.trim_start [ '/' ]
+:= new_file_uri (path : string) : string =
+    := path = path |> sm'.trim_start [ '/' ]
     $'$"file:///{!path}"'
 
 ///> rust -d regex
@@ -1223,39 +1257,39 @@ test new_file_uri_2 =
 /// ## fsharp
 
 /// ### trace_file
-let rec trace_file text : () =
-    run_target function
-    | Fsharp => fun () =>
+:~ ^ trace_file text : () =
+    run_target \|
+    | Fsharp => \ () =>
         resultm.from_try
-            fun () =>
-                inl assembly_name = env.get_entry_assembly_name ()
-                inl guid = date_time.now () |> date_time.new_guid_from_date_time
-                inl file_name = $'$"{!assembly_name}_{!guid}.txt"'
+            \ () =>
+                := assembly_name = env.get_entry_assembly_name ()
+                := guid = date_time.now () |> date_time.new_guid_from_date_time
+                := file_name = $'$"{!assembly_name}_{!guid}.txt"'
 
-                inl workspace_root = get_workspace_root ()
-                inl trace_dir = workspace_root </> "target/trace"
+                := workspace_root = get_workspace_root ()
+                := trace_dir = workspace_root </> "target/trace"
                 trace_dir |> create_directory |> ignore
-                inl path = trace_dir </> file_name
+                := path = trace_dir </> file_name
                 text |> write_all_text_async path |> async.run_synchronously
-            fun ex =>
-                inl ex = ex ()
-                inl text = $'$"file_system.trace_file / ex: %A{!ex}"'
+            \ ex =>
+                := ex = ex ()
+                := text = $'$"file_system.trace_file / ex: %A{!ex}"'
                 text |> console.write_line
                 text |> trace_file
                 ex
         |> resultm.get
-    | _ => fun () => ()
+    | _ => \ () => ()
 
 ///> fsharp
 test trace_file =
-    inl get_count dir : i64 =
-        inl files = dir |> directory_get_files
+    := get_count dir : i64 =
+        := files = dir |> directory_get_files
         array files |> am'.length |> conv
 
-    inl trace_dir = get_workspace_root () </> "target/trace"
+    := trace_dir = get_workspace_root () </> "target/trace"
     trace_dir |> create_directory |> ignore
 
-    inl count = get_count trace_dir
+    := count = get_count trace_dir
 
     trace_file "test"
 
@@ -1265,104 +1299,104 @@ test trace_file =
 /// ## file_system
 
 /// ### create_dir
-let create_dir dir =
-    run_target_args' dir function
-        | Rust => fun dir =>
-            match dir |> create_dir_all |> resultm.map_error' sm'.format' |> resultm.unbox with
+:~ create_dir dir =
+    run_target_args' dir \|
+        | Rust => \ dir =>
+            ?= dir |> create_dir_all |> resultm.map_error' sm'.format' |> resultm.unbox ?|
             | Ok () =>
                 trace Verbose
-                    fun () => "file_system.create_dir"
-                    fun () => { dir }
+                    \ () => "file_system.create_dir"
+                    \ () => { dir }
             | Error error =>
                 trace Critical
-                    fun () => "file_system.create_dir"
-                    fun () => { dir error }
-            inl disposable : _ () = new_disposable fun () =>
+                    \ () => "file_system.create_dir"
+                    \ () => { dir error }
+            := disposable : _ () = new_disposable \ () =>
                 dir
-                |> directory_delete true
+                |> directory_delete !+
             disposable
-        | _ => fun _ => null ()
+        | _ => \ _ => null ()
 
 /// ### create_temp_dir
-inl create_temp_dir () =
-    inl dir = create_temp_path ()
+:= create_temp_dir () =
+    := dir = create_temp_path ()
     dir, dir |> create_dir
 
 ///> rust -d chrono
 test create_temp_dir =
-    inl path, disposable = create_temp_dir ()
-    join
+    := path, disposable = create_temp_dir ()
+    ~~
         path
         |> directory_exists
-        |> _assert_eq true
+        |> _assert_eq !+
         disposable |> use |> ignore
         path
         |> directory_exists
-        |> _assert_eq true
+        |> _assert_eq !+
     path
     |> directory_exists
-    |> _assert_eq false
+    |> _assert_eq !-
 
 /// ### create_temp_dir'
-inl create_temp_dir' (hash : string) =
-    inl dir = hash |> guid.hash_guid |> create_temp_path'
+:= create_temp_dir' (hash : string) =
+    := dir = hash |> guid.hash_guid |> create_temp_path'
     dir, dir |> create_dir
 
 /// ### link_directory
-let link_directory target_path path =
-    if target_path |> directory_exists |> not
-    then target_path |> create_dir |> ignore
+:~ link_directory target_path path =
+    ? target_path |> directory_exists |> not
+    ?> target_path |> create_dir |> ignore
 
-    inl lib_dir_path = path |> directory_get_parent |> optionm'.default_value' ""
-    if lib_dir_path |> directory_exists |> not
-    then lib_dir_path |> create_dir |> ignore
+    := lib_dir_path = path |> directory_get_parent |> optionm'.default_value' ""
+    ? lib_dir_path |> directory_exists |> not
+    ?> lib_dir_path |> create_dir |> ignore
 
-    if (path |> directory_exists)
+    ? (path |> directory_exists)
         && (path |> read_link |> resultm.is_err)
-    then path |> directory_delete true
+    ?> path |> directory_delete !+
 
-    if path |> directory_exists |> not
-    then path |> directory_create_symbolic_link target_path
+    ? path |> directory_exists |> not
+    ?> path |> directory_create_symbolic_link target_path
 
 /// ### link_file
-let link_file target_path path =
-    if (path |> file_exists)
+:~ link_file target_path path =
+    ? (path |> file_exists)
         && (path |> read_link |> resultm.is_err)
-    then path |> file_delete
+    ?> path |> file_delete
 
-    if path |> file_exists |> not
-    then path |> file_create_symbolic_link target_path
+    ? path |> file_exists |> not
+    ?> path |> file_create_symbolic_link target_path
 
 ///> rust -d sha2 regex
 test link_file =
-    inl file_name = "LICENSE"
-    inl text = file_name
+    := file_name = "LICENSE"
+    := text = file_name
 
-    inl test_hash =
+    := test_hash =
         #?*(file_name, text)
         |> crypto.hash_text
 
-    inl workspace_root = get_workspace_root ()
-    inl test_dir = workspace_root </> "target/test/file_system" </> test_hash
+    := workspace_root = get_workspace_root ()
+    := test_dir = workspace_root </> "target/test/file_system" </> test_hash
 
-    inl disposable = test_dir |> create_dir
+    := disposable = test_dir |> create_dir
     disposable |> use |> ignore
 
-    inl dir_path = test_dir </> "dir1"
+    := dir_path = test_dir </> "dir1"
 
-    if dir_path |> directory_exists
-    then dir_path |> directory_delete true
+    ? dir_path |> directory_exists
+    ?> dir_path |> directory_delete !+
 
     dir_path |> create_dir |> ignore
 
-    inl path = dir_path </> file_name
+    := path = dir_path </> file_name
     text |> write_all_text path
 
-    inl dir_link_path = test_dir </> "link1"
+    := dir_link_path = test_dir </> "link1"
 
     dir_link_path |> link_directory dir_path
 
-    inl link_path = dir_link_path </> file_name
+    := link_path = dir_link_path </> file_name
 
     link_path
     |> read_all_text
@@ -1382,13 +1416,13 @@ test link_file =
     |> convert.convert
     |> _assert sm'.ends_with "LICENSE"
 
-    inl link_name = "LICENSE_"
+    := link_name = "LICENSE_"
 
-    inl link_path = dir_path </> link_name
+    := link_path = dir_path </> link_name
 
     link_path |> link_file path
 
-    inl link_path' = dir_link_path </> link_name
+    := link_path' = dir_link_path </> link_name
 
     link_path'
     |> read_all_text
@@ -1411,29 +1445,29 @@ test link_file =
 /// ## rust
 
 /// ### file_exists_content
-let file_exists_content path content : bool =
-    run_target function
-        | Rust => fun () =>
-            if path |> file_exists |> not
-            then false
-            else
-                inl existing_content = path |> read_all_text
+:~ file_exists_content path content : bool =
+    run_target \|
+        | Rust => \ () =>
+            ? path |> file_exists |> not
+            ?> !-
+            |:
+                := existing_content = path |> read_all_text
                 content = existing_content
-        | _ => fun () => null ()
+        | _ => \ () => null ()
 
 /// ### write_all_text_exists
-let write_all_text_exists path contents =
-    inl exists' = contents |> file_exists_content path
-    if not exists' then
-        inl dir = path |> directory_get_parent |> optionm'.default_value' ""
-        if dir |> directory_exists |> not
-        then dir |> create_dir |> ignore
+:~ write_all_text_exists path contents =
+    := exists' = contents |> file_exists_content path
+    ? not exists' ?>
+        := dir = path |> directory_get_parent |> optionm'.default_value' ""
+        ? dir |> directory_exists |> not
+        ?> dir |> create_dir |> ignore
         contents |> write_all_text path
 
 /// ## main
 ///> fsharp
 
-inl main () =
+:= main () =
     init_trace_state None
     $'let file_exists_content x = !file_exists_content x' : ()
     $'let write_all_text_async x = !write_all_text_async x' : ()
@@ -1447,147 +1481,167 @@ inl main () =
     $'let new_file_uri x = !new_file_uri x' : ()
     $'let get_workspace_root () = !get_workspace_root ()' : ()
     $'let link_directory x = !link_directory x' : ()
-    inl combine x = (</>) x
+    := combine x = (</>) x
     $'let (</>) x = !combine x' : ()
 
 
 /// ### remove_dir_all
-inl remove_dir_all (path : string) : resultm.result' () stream.io_error =
+:= remove_dir_all (path : string) : resultm.result' () stream.io_error =
     !\\(path, $'"std::fs::remove_dir_all(&*$0)"')
 
 /// ### copy_file
-inl copy_file (to : string) (path : string) : resultm.result' u64 stream.io_error =
+:= copy_file (to : string) (path : string) : resultm.result' u64 stream.io_error =
     !\($'"std::fs::copy(&*!path, &*!to)"')
 
 /// ### canonicalize
-inl canonicalize (path : string) : resultm.result' path_buf stream.io_error =
+:= canonicalize (path : string) : resultm.result' path_buf stream.io_error =
     !\\(path, $'"std::fs::canonicalize(&*$0)"')
 
 /// ### set_current_dir
-inl set_current_dir (path : string) : resultm.result' () stream.io_error =
+:= set_current_dir (path : string) : resultm.result' () stream.io_error =
     !\\(path, $'"std::env::set_current_dir(&*$0)"')
 
 /// ### get_current_dir
-inl get_current_dir () : resultm.result' path_buf stream.io_error =
+:= get_current_dir () : resultm.result' path_buf stream.io_error =
     !\($'"std::env::current_dir()"')
 
 /// ### read_dir_names
-inl read_dir_names (path : string) : resultm.result' (am'.vec sm'.std_string) stream.io_error =
+:= read_dir_names (path : string) : resultm.result' (am'.vec sm'.std_string) stream.io_error =
     !\\(path, $'"std::fs::read_dir(&*$0).map(|entries| entries.filter_map(|entry| entry.ok().map(|entry| \
         entry.file_name().to_string_lossy().into_owned())).collect::<Vec<std::string::String>>())"')
 
 ///> rust -d chrono
 test copy_list_canonicalize_and_remove_a_tree =
-    inl root, disposable = create_temp_dir ()
-    join
-        inl tree = root </> "tree"
+    := root, disposable = create_temp_dir ()
+    ~~
+        := tree = root </> "tree"
         tree |> create_dir_all |> resultm.unwrap'
         "x" |> write_all_text (tree </> "a.txt")
-        inl copied = tree </> "a.txt" |> copy_file (tree </> "b.txt") |> resultm.unwrap'
-        inl names = tree |> read_dir_names |> resultm.unwrap' |> am'.vec_len |> convert.i32
-        inl canonical_ok = match tree |> canonicalize |> resultm.unbox with Ok _ => true | Error _ => false
+        := copied = tree </> "a.txt" |> copy_file (tree </> "b.txt") |> resultm.unwrap'
+        := names = tree |> read_dir_names |> resultm.unwrap' |> am'.vec_len |> convert.i32
+        := canonical_ok = ?= tree |> canonicalize |> resultm.unbox ?| Ok _ => !+ | Error _ => !-
         tree |> remove_dir_all |> resultm.unwrap'
-        (copied, names, canonical_ok, tree |> directory_exists) |> _assert_eq (1u64, 2i32, true, false)
+        (copied, names, canonical_ok, tree |> directory_exists) |> _assert_eq (1u64, 2i32, !+, !-)
         disposable |> use |> ignore
 
-nominal rust_metadata_found = $'std::io::Result<std::fs::Metadata>'
+:! rust_metadata_found = $'std::io::Result<std::fs::Metadata>'
 
-nominal rust_metadata = $'std::fs::Metadata'
+:! rust_metadata = $'std::fs::Metadata'
 
-nominal rust_modified_found = $'std::io::Result<std::time::SystemTime>'
+:! rust_modified_found = $'std::io::Result<std::time::SystemTime>'
 
-nominal rust_system_time = $'std::time::SystemTime'
+:! rust_system_time = $'std::time::SystemTime'
 
-nominal rust_elapsed = $'std::time::Duration'
+:! rust_elapsed = $'std::time::Duration'
 
-nominal rust_file_opened = $'std::io::Result<std::fs::File>'
+:! rust_file_opened = $'std::io::Result<std::fs::File>'
 
-nominal rust_open_file = $'std::fs::File'
+:! rust_open_file = $'std::fs::File'
 
-nominal rust_io_done = $'std::io::Result<()>'
+:! rust_io_done = $'std::io::Result<()>'
 
-inl rust_metadata_of (path : string) : rust_metadata_found = $'std::fs::metadata(&*!path)'
+:= rust_metadata_of (path : string) : rust_metadata_found = $'std::fs::metadata(&*!path)'
 
-inl rust_metadata_ok (r : rust_metadata_found) : bool = $'!r.is_ok()'
+:= rust_metadata_ok (r : rust_metadata_found) : bool = $'!r.is_ok()'
 
-inl rust_metadata_value (r : rust_metadata_found) : rust_metadata = $'!r.unwrap()'
+:= rust_metadata_value (r : rust_metadata_found) : rust_metadata = $'!r.unwrap()'
 
-inl rust_modified_of (m : rust_metadata) : rust_modified_found = $'!m.modified()'
+:= rust_modified_of (m : rust_metadata) : rust_modified_found = $'!m.modified()'
 
-inl rust_modified_ok (r : rust_modified_found) : bool = $'!r.is_ok()'
+:= rust_modified_ok (r : rust_modified_found) : bool = $'!r.is_ok()'
 
-inl rust_modified_value (r : rust_modified_found) : rust_system_time = $'!r.unwrap()'
+:= rust_modified_value (r : rust_modified_found) : rust_system_time = $'!r.unwrap()'
 
-inl rust_since_epoch (t : rust_system_time) : rust_elapsed = $'!t.duration_since(std::time::UNIX_EPOCH).unwrap_or_default()'
+:= rust_since_epoch (t : rust_system_time) : rust_elapsed = $'!t.duration_since(std::time::UNIX_EPOCH).unwrap_or_defau\
+    lt()'
 
-inl rust_elapsed_ms (d : rust_elapsed) : u64 = ($'!d.as_secs()' : u64) * 1000u64 + conv ($'!d.subsec_millis()' : u32)
+:= rust_elapsed_ms (d : rust_elapsed) : u64 = ($'!d.as_secs()' : u64) * 1000u64 + conv ($'!d.subsec_millis()' : u32)
 
-inl rust_last_write_ms (path : string) : u64 =
-    inl found = rust_metadata_of path
-    if rust_metadata_ok found |> not then 0u64
-    else
-        inl modified = found |> rust_metadata_value |> rust_modified_of
-        if rust_modified_ok modified then modified |> rust_modified_value |> rust_since_epoch |> rust_elapsed_ms else 0u64
+:= rust_last_write_ms (path : string) : u64 =
+    := found = rust_metadata_of path
+    ? rust_metadata_ok found |> not ?> 0u64
+    |:
+        := modified = found |> rust_metadata_value |> rust_modified_of
+        ? rust_modified_ok modified ?> modified |> rust_modified_value |> rust_since_epoch |> rust_elapsed_ms |: 0u64
 
-inl rust_append_opened (path : string) : rust_file_opened = $'std::fs::OpenOptions::new().create(true).append(true).open(&*!path)'
+:= rust_append_opened (path : string) : rust_file_opened = $'std::fs::OpenOptions::new().create(true).append(true).ope\
+    n(&*!path)'
 
-inl rust_file_opened_ok (r : rust_file_opened) : bool = $'!r.is_ok()'
+:= rust_file_opened_ok (r : rust_file_opened) : bool = $'!r.is_ok()'
 
-inl rust_file_of (r : rust_file_opened) : rust_open_file = $'!r.unwrap()'
+:= rust_file_of (r : rust_file_opened) : rust_open_file = $'!r.unwrap()'
 
-inl rust_written_all (f : rust_open_file) (text : string) : rust_io_done = $'std::io::Write::write_all(&mut !f, (!text).as_bytes())'
+:= rust_written_all (f : rust_open_file) (text : string) : rust_io_done = $'std::io::Write::write_all(&mut !f, \
+    (!text).as_bytes())'
 
-inl rust_io_ok (r : rust_io_done) : bool = $'!r.is_ok()'
+:= rust_io_ok (r : rust_io_done) : bool = $'!r.is_ok()'
 
-inl rust_append_text (path : string) (text : string) : () =
-    inl opened = rust_append_opened path
-    if rust_file_opened_ok opened |> not then failwith "file_system.append_all_text: the file could not be opened"
-    inl file = rust_file_of opened
-    if rust_written_all file text |> rust_io_ok |> not then failwith "file_system.append_all_text: the write failed"
+:= rust_append_text (path : string) (text : string) : () =
+    := opened = rust_append_opened path
+    ? rust_file_opened_ok opened |> not ?> failwith "file_system.append_all_text: the file could not be opened"
+    := file = rust_file_of opened
+    ? rust_written_all file text |> rust_io_ok |> not ?> failwith "file_system.append_all_text: the write failed"
 
 /// ### last_write_ms
-let last_write_ms (path : string) : u64 =
-    run_target_args' path function
-        | Fsharp => fun path =>
-            $'(if System.IO.File.Exists !path then uint64 ((System.IO.File.GetLastWriteTimeUtc !path) - System.DateTime.UnixEpoch).TotalMilliseconds else 0UL)' : u64
-        | Rust => fun path =>
+:~ last_write_ms (path : string) : u64 =
+    run_target_args' path \|
+        | Fsharp => \ path =>
+            $'(if System.IO.File.Exists !path then uint64 ((System.IO.File.GetLastWriteTimeUtc !path) - \
+                System.DateTime.UnixEpoch).TotalMilliseconds else 0UL)' : u64
+        | Rust => \ path =>
             rust_last_write_ms path
-        | TypeScript => fun path =>
+        | TypeScript => \ path =>
             global "import * as spiral_node_fs from 'node:fs';"
             $'(spiral_node_fs.existsSync(!path) ? Math.trunc(spiral_node_fs.statSync(!path).mtimeMs) : 0)' : u64
-        | Gleam => fun path =>
+        | Gleam => \ path =>
             file_system_gleam_stat ()
             gleam_mtime_ms path
-        | _ => fun _ => null ()
+        | _ => \ _ => null ()
 
 ///> rust
 ///> fsharp
 test last_write_ms_is_zero_for_a_missing_path_and_positive_for_a_written_file =
-    inl missing = get_temp_path () </> "spiral-last-write-missing.txt"
-    inl probe = get_temp_path () </> "spiral-last-write-probe.txt"
+    := missing = get_temp_path () </> "spiral-last-write-missing.txt"
+    := probe = get_temp_path () </> "spiral-last-write-probe.txt"
     file_delete missing
     last_write_ms missing |> _assert_eq 0u64
     write_all_text probe "x"
-    (last_write_ms probe > 0u64) |> _assert_eq true
+    (last_write_ms probe > 0u64) |> _assert_eq !+
     file_delete probe
 
 /// ### append_all_text
-inl append_all_text (path : string) (text : string) : () =
-    run_target_args' (path, text) function
-        | Fsharp => fun path, text =>
+:= append_all_text (path : string) (text : string) : () =
+    run_target_args' (path, text) \|
+        | Fsharp => \ path, text =>
             $'System.IO.File.AppendAllText (!path, !text)'
-        | Rust => fun path, text =>
+        | Rust => \ path, text =>
             rust_append_text path text
-        | Gleam => fun path, text =>
+        | Gleam => \ path, text =>
             file_system_gleam_paths ()
             gleam_append_text path text
-        | _ => fun _ => ()
+        | Lua => \ path, text =>
+            := file = lua_file_open path "a"
+            lua_file_write file text
+            lua_file_close file
+        | _ => \ _ => ()
 ///> rust
 ///> fsharp
 test append_all_text_adds_to_the_end_of_a_file =
-    inl probe = get_temp_path () </> "spiral-append-probe.txt"
+    := probe = get_temp_path () </> "spiral-append-probe.txt"
     file_delete probe
     append_all_text probe "a"
     append_all_text probe "b"
     read_all_text probe |> _assert_eq "ab"
     file_delete probe
+
+///> lua
+test lua_files_write_read_append_and_delete =
+    := path = "spiral-lua-file-probe.txt"
+    file_delete path
+    path |> file_exists |> _assert_eq !-
+    write_all_text path "ab"
+    path |> file_exists |> _assert_eq !+
+    append_all_text path "c"
+    path |> read_all_text |> _assert_eq "abc"
+    file_delete path
+    path |> file_exists |> _assert_eq !-

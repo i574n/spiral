@@ -4,20 +4,17 @@ pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
   int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
 }
 
-pub fn spiral_wrap_unsigned(value: Int, bits: Int) -> Int {
-  int.bitwise_and(value, int.bitwise_shift_left(1, bits) - 1)
-}
 
 pub fn main() {
-let v0 = 7
-let v1 = spiral_wrap_signed(v0 * 2, 32)
-let v2 = v1 != 14
-case v2 {
-    True -> {
-        1
+    let v0 = 7
+    let v1 = spiral_wrap_signed(v0 * 2, 32)
+    let v2 = v1 != 14
+    case v2 {
+        True -> {
+            1
+        }
+        False -> {
+            0
+        }
     }
-    False -> {
-        0
-    }
-}
 }

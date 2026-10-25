@@ -9,7 +9,7 @@ enum US0 {
 }
 fn f_c0(mut v0: Rc<Heap0>, mut v1: Rc<Heap0>) -> Rc<dyn Fn(i32) -> US0> {
     Rc::new(move |mut v2: i32| -> US0 {
-        let mut v3: bool = v2 == 0i32;
+        let v3: bool = v2 == 0i32;
         if v3 {
             US0::US0_None
         } else {
@@ -20,25 +20,25 @@ fn f_c0(mut v0: Rc<Heap0>, mut v1: Rc<Heap0>) -> Rc<dyn Fn(i32) -> US0> {
 fn score_0(mut v0: US0) -> i32 {
     match &v0 {
         US0::US0_Held(v1, v2) => {
-            let mut v1: Rc<Heap0> = v1.clone();
-            let mut v2: Rc<Heap0> = v2.clone();
+            let v1: Rc<Heap0> = v1.clone();
+            let v2: Rc<Heap0> = v2.clone();
             let (mut v3, mut v4): (i32, Rc<str>) = (v1.l0.clone(), v1.l1.clone());
             let (mut v5, mut v6): (i32, Rc<str>) = (v2.l0.clone(), v2.l1.clone());
-            let mut v7: bool = v3 == 7i32;
-            let mut v9: bool = if v7 {
-                let mut v8: bool = v4.clone() == { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
+            let v7: bool = v3 == 7i32;
+            let v9: bool = if v7 {
+                let v8: bool = &*v4 == "hi";
                 v8
             } else {
                 false
             };
-            let mut v11: bool = if v9 {
-                let mut v10: bool = v5 == 4i32;
+            let v11: bool = if v9 {
+                let v10: bool = v5 == 4i32;
                 v10
             } else {
                 false
             };
-            let mut v13: bool = if v11 {
-                let mut v12: bool = v6.clone() == { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("yo"); } LIT.with(|lit| lit.clone()) };
+            let v13: bool = if v11 {
+                let v12: bool = &*v6 == "yo";
                 v12
             } else {
                 false
@@ -55,15 +55,15 @@ fn score_0(mut v0: US0) -> i32 {
     }
 }
 fn spiral_main() -> i32 {
-    let mut v0: i32 = 7i32;
-    let mut v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
-    let mut v2: Rc<Heap0> = Rc::new(Heap0 { l0: v0, l1: v1.clone() });
-    let mut v3: i32 = 4i32;
-    let mut v4: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("yo"); } LIT.with(|lit| lit.clone()) };
-    let mut v5: Rc<Heap0> = Rc::new(Heap0 { l0: v3, l1: v4.clone() });
-    let mut v6: Rc<dyn Fn(i32) -> US0> = f_c0(v2.clone(), v5.clone());
-    let mut v7: US0 = v6(1i32);
-    score_0(v7.clone())
+    let v0: i32 = 7i32;
+    let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
+    let v2: Rc<Heap0> = Rc::new(Heap0 { l0: v0, l1: v1 });
+    let v3: i32 = 4i32;
+    let v4: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("yo"); } LIT.with(|lit| lit.clone()) };
+    let v5: Rc<Heap0> = Rc::new(Heap0 { l0: v3, l1: v4 });
+    let mut v6: Rc<dyn Fn(i32) -> US0> = f_c0(v2, v5);
+    let v7: US0 = v6(1i32);
+    score_0(v7)
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();

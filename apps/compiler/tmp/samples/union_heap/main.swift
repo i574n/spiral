@@ -10,12 +10,9 @@ protocol US0 { var tag: Int32 { get } }
 struct US0_Missing: US0 { var tag: Int32 { 0 } }
 struct US0_Box: US0 { var f0: Heap0; var tag: Int32 { 1 } }
 func spiral_main() -> Int32 {
-    var v0: Int32 = 0
-    v0 = 7
-    var v1: Heap0 = Heap0(l0: 0)
-    v1 = Heap0(l0: v0)
-    var v2: Bool = false
-    v2 = true
+    let v0: Int32 = 7
+    let v1: Heap0 = Heap0(l0: v0)
+    let v2: Bool = true
     var v5: US0 = US0_Missing()
     if (v2) {
         v5 = US0_Box(f0: v1)
@@ -25,10 +22,8 @@ func spiral_main() -> Int32 {
     switch v5.tag {
         case 1:
             var v6: Heap0 = (v5 as! US0_Box).f0
-            var v7: Int32 = 0
-            v7 = v6.l0
-            var v8: Bool = false
-            v8 = (v7 == 7)
+            let v7: Int32 = v6.l0
+            let v8: Bool = (v7 == 7)
             if (v8) {
                 return 0
             } else {

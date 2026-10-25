@@ -1,59 +1,59 @@
 /// # runtime
-open rust
-open rust_operators
-open sm'_operators
+:< rust
+:< rust_operators
+:< sm'_operators
 
 test runtime static =
-    open testing
-    open file_system_operators
+    :< testing
+    :< file_system_operators
 
 /// ## runtime
 
 /// ### split_args
-let split_args (args : string) : result (array_base string) _ =
-    open parsing
-    inl esc = [ '\\'; '`' ]
-    inl quotes = [ '"' ]
-    inl special = esc ++ quotes
-    inl p_esc_pair (p : parser _) : parser string = fun t, i, s =>
-        match p (t, i, s) with
+:~ split_args (args : string) : result (array_base string) _ =
+    :< parsing
+    := esc = [ '\\'; '`' ]
+    := quotes = [ '"' ]
+    := special = esc ++ quotes
+    := p_esc_pair (p : parser _) : parser string = \ t, i, s =>
+        ?= p (t, i, s) ?|
         | Ok (_, i', s') => Ok (t |> slice i i', i', s')
         | Error e => Error e
-    inl p_esc_char c = p_char c >>. any_char () |> p_esc_pair
-    inl p_word = special |> none_of |>> fun c => fun () => c () |> sm'.obj_to_string
-    inl p_plain = special ++ [ ' ' ] |> many1_none_of
-    inl p_esc = esc |> listm.map p_esc_char |> choice
-    inl p_chunk = special |> many1_none_of
-    inl p_quoted = (p_chunk <|> p_esc) |> many_strings
-    inl p_quoted_all = p_quoted |> between (p_char '"') (p_char '"')
-    inl p_esc_root = p_esc >>% "" >>. p_word |> many |>> fun s => fun () => s () |> sm'.concat_list ""
-    inl p_esc_quote_delim =
+    := p_esc_char c = p_char c >>. any_char () |> p_esc_pair
+    := p_word = special |> none_of |>> \ c => \ () => c () |> sm'.obj_to_string
+    := p_plain = special ++ [ ' ' ] |> many1_none_of
+    := p_esc = esc |> listm.map p_esc_char |> choice
+    := p_chunk = special |> many1_none_of
+    := p_quoted = (p_chunk <|> p_esc) |> many_strings
+    := p_quoted_all = p_quoted |> between (p_char '"') (p_char '"')
+    := p_esc_root = p_esc >>% "" >>. p_word |> many |>> \ s => \ () => s () |> sm'.concat_list ""
+    := p_esc_quote_delim =
         esc
-        |> listm.map fun c => p_char c >>. p_char '"' >>% '"'
+        |> listm.map \ c => p_char c >>. p_char '"' >>% '"'
         |> choice
-    inl p_esc_char_noquote c = p_char c >>. none_of [ '"' ] |> p_esc_pair
-    inl p_esc_noquote = esc |> listm.map p_esc_char_noquote |> choice
-    inl p_quoted_esc = (p_chunk <|> p_esc_noquote) |> many_strings
-    inl p_quoted_all_esc = p_quoted_esc |> between p_esc_quote_delim p_esc_quote_delim
-    inl ensure_progress p : parser _ = fun input, i, s =>
-        match p (input, i, s) with
-        | Ok (r, i', s') when i' = i =>
-            fail (fun _ => "runtime.split_args / segment zero-length success") i s
+    := p_esc_char_noquote c = p_char c >>. none_of [ '"' ] |> p_esc_pair
+    := p_esc_noquote = esc |> listm.map p_esc_char_noquote |> choice
+    := p_quoted_esc = (p_chunk <|> p_esc_noquote) |> many_strings
+    := p_quoted_all_esc = p_quoted_esc |> between p_esc_quote_delim p_esc_quote_delim
+    := ensure_progress p : parser _ = \ input, i, s =>
+        ?= p (input, i, s) ?|
+        | Ok (r, i', s') ?& i' = i =>
+            fail (\ _ => "runtime.split_args / segment zero-length success") i s
         | other => other
-    inl p_segment = ensure_progress (p_quoted_all_esc <|> p_quoted_all <|> p_plain <|> p_esc_root)
-    inl p_content = p_segment |> many1_strings
-    inl p_args = spaces1 () |> sep_by p_content
+    := p_segment = ensure_progress (p_quoted_all_esc <|> p_quoted_all <|> p_plain <|> p_esc_root)
+    := p_content = p_segment |> many1_strings
+    := p_args = spaces1 () |> sep_by p_content
     args
     |> run_parser p_args
-    |> resultm.map (fst >> fun (args : list string) =>
-        if is_rust () then
-            inl n = (0i32, args) ||> listm.fold fun n _ => n + 1
-            inl acc : array_base string = $'Rc::new(RefCell::new(Vec::with_capacity(!n as usize)))'
-            inl _ : i32 = (0i32, args) ||> listm.fold fun n (x : string) =>
+    |> resultm.map (fst >> \ (args : list string) =>
+        ? is_rust () ?>
+            := n = (0i32, args) ||> listm.fold \ n _ => n + 1
+            := acc : array_base string = $'Rc::new(RefCell::new(Vec::with_capacity(!n as usize)))'
+            := _ : i32 = (0i32, args) ||> listm.fold \ n (x : string) =>
                 $'!acc.borrow_mut().push(!x)' : ()
                 n + 1
             acc
-        else args |> listm'.box |> listm'.to_array'
+        |: args |> listm'.box |> listm'.to_array'
     )
     |> resultm.map_error eval
 
@@ -106,19 +106,19 @@ test split_args =
     |> _assert_fn split_args
 
 /// ### split_command
-let split_command (command : string) : result (string * option string) _ =
-    open parsing
-    inl quotes = [ '"'; '\'' ]
-    inl p_quoted_char = quotes |> listm.map p_char |> choice
-    inl normalize = fun s => fun () => s () |> sm'.replace "\\" "/"
-    inl p_quoted = quotes |> none_of |> many_chars |> between p_quoted_char p_quoted_char |>> normalize
-    inl p_unquoted = quotes ++ [ ' ' ] |> none_of |> many1_chars |>> normalize
-    inl p_path = p_quoted <|> p_unquoted <|> (eof () >>% "")
-    inl p_args = spaces1 () >>. rest_of_line ()
-    inl p_command = p_path .>>. (p_args |> opt)
+:~ split_command (command : string) : result (string * option string) _ =
+    :< parsing
+    := quotes = [ '"'; '\'' ]
+    := p_quoted_char = quotes |> listm.map p_char |> choice
+    := normalize = \ s => \ () => s () |> sm'.replace "\\" "/"
+    := p_quoted = quotes |> none_of |> many_chars |> between p_quoted_char p_quoted_char |>> normalize
+    := p_unquoted = quotes ++ [ ' ' ] |> none_of |> many1_chars |>> normalize
+    := p_path = p_quoted <|> p_unquoted <|> (eof () >>% "")
+    := p_args = spaces1 () >>. rest_of_line ()
+    := p_command = p_path .>>. (p_args |> opt)
     command
     |> run_parser p_command
-    |> resultm.map (fst >> fun path, args => path (), args () |> optionm.map eval)
+    |> resultm.map (fst >> \ path, args => path (), args () |> optionm.map eval)
     |> resultm.map_error eval
 
 ///> gleam
@@ -156,7 +156,7 @@ test split_command =
     |> _assert_fn split_command
 
 /// ### execution_line
-type execution_line =
+:== execution_line =
     {
         process_id : int
         line : string
@@ -166,7 +166,7 @@ type execution_line =
 /// ## rust
 
 /// ### process_child
-nominal process_child =
+:! process_child =
     `(
         rust.rust_type
             `($'std_process_Child')
@@ -175,7 +175,7 @@ nominal process_child =
     )
 
 /// ### process_child_stdin
-nominal process_child_stdin =
+:! process_child_stdin =
     `(
         rust.rust_type
             `($'std_process_ChildStdin')
@@ -183,7 +183,7 @@ nominal process_child_stdin =
             "type std_process_ChildStdin = class end"
     )
 
-inl process_child_stdin
+:= process_child_stdin
     (child : rust.ref (rust.mut' process_child))
     : rust.ref (rust.mut' (optionm'.option' process_child_stdin))
     =
@@ -192,7 +192,7 @@ inl process_child_stdin
 /// ## runtime
 
 /// ### execution_options
-type execution_options =
+:== execution_options =
     {
         command : string
         cancellation_token : optionm'.option' threading.cancellation_token
@@ -204,23 +204,23 @@ type execution_options =
         stderr : bool
     }
 
-inl execution_options (fn : execution_options -> execution_options) : execution_options =
+:= execution_options (fn : execution_options -> execution_options) : execution_options =
     {
         command = ""
         cancellation_token = None |> optionm'.box
         environment_variables = am'.base ;[]
         on_line = None |> optionm'.box
         stdin = None |> optionm'.box
-        trace = true
+        trace = !+
         working_directory = None |> optionm'.box
-        stderr = true
+        stderr = !+
     }
     |> fn
 
 /// ## rust
 
 /// ### process_child_stderr
-nominal process_child_stderr =
+:! process_child_stderr =
     `(
         rust.rust_type
             `($'std_process_ChildStderr')
@@ -228,14 +228,14 @@ nominal process_child_stderr =
             "type std_process_ChildStderr = class end"
     )
 
-inl process_child_stderr
+:= process_child_stderr
     (child : rust.ref (rust.mut' process_child))
     : rust.ref (rust.mut' (optionm'.option' process_child_stderr))
     =
     !\\(child, $'"&mut $0.stderr"')
 
 /// ### process_child_stdout
-nominal process_child_stdout =
+:! process_child_stdout =
     `(
         rust.rust_type
             `($'std_process_ChildStdout')
@@ -243,14 +243,14 @@ nominal process_child_stdout =
             "type std_process_ChildStdout = class end"
     )
 
-inl process_child_stdout
+:= process_child_stdout
     (child : rust.ref (rust.mut' process_child))
     : rust.ref (rust.mut' (optionm'.option' process_child_stdout))
     =
     !\\(child, $'"&mut $0.stdout"')
 
 /// ### process_command
-nominal process_command =
+:! process_command =
     `(
         rust.rust_type
             `($'std_process_Command')
@@ -259,7 +259,7 @@ nominal process_command =
     )
 
 /// ### process_stdio
-nominal process_stdio =
+:! process_stdio =
     `(
         rust.rust_type
             `($'std_process_Stdio')
@@ -268,7 +268,7 @@ nominal process_stdio =
     )
 
 /// ### process_output
-nominal process_output =
+:! process_output =
     `(
         rust.rust_type
             `($'std_process_Output')
@@ -277,7 +277,7 @@ nominal process_output =
     )
 
 /// ### process_exit_status
-nominal process_exit_status =
+:! process_exit_status =
     `(
         rust.rust_type
             `($'std_process_ExitStatus')
@@ -286,91 +286,91 @@ nominal process_exit_status =
     )
 
 /// ### process_output_status
-inl process_output_status (output : process_output) : process_exit_status =
+:= process_output_status (output : process_output) : process_exit_status =
     !\\(output, $'"$0.status"')
 
 /// ### process_output_stdout
-inl process_output_stdout (output : process_output) : am'.vec u8 =
+:= process_output_stdout (output : process_output) : am'.vec u8 =
     !\\(output, $'"$0.stdout"')
 
 /// ### process_output_stderr
-inl process_output_stderr (output : process_output) : am'.vec u8 =
+:= process_output_stderr (output : process_output) : am'.vec u8 =
     !\\(output, $'"$0.stderr"')
 
 /// ### process_exit_status_code
-inl process_exit_status_code (status : process_exit_status) : optionm'.option' i32 =
+:= process_exit_status_code (status : process_exit_status) : optionm'.option' i32 =
     !\\(status, $'"$0.code()"')
 
 /// ### stdin_write_all
-inl stdin_write_all (stdin : threading.mutex_guard process_child_stdin) (text : string) : () =
+:= stdin_write_all (stdin : threading.mutex_guard process_child_stdin) (text : string) : () =
     backend_switch {
-        Fsharp = fun () =>
-            inl stream = text |> sm'.as_bytes
-            inl stdin = join stdin
+        Fsharp = \ () =>
+            := stream = text |> sm'.as_bytes
+            := stdin = ~~ stdin
             (!\($'"true; let mut !stdin = !stdin"') : bool) |> ignore
             (!\\(stdin, $'"true; std::io::Write::write_all(&mut *$0, !stream).unwrap()"') : bool) |> ignore
-        Rust = fun () =>
-            inl stream = text |> sm'.as_bytes
+        Rust = \ () =>
+            := stream = text |> sm'.as_bytes
             (!\\((stdin, stream), $'"true; std::io::Write::write_all(&mut *$0, $1).unwrap()"') : bool) |> ignore
     }
 
 /// ### stdin_flush
-inl stdin_flush (stdin : threading.mutex_guard process_child_stdin) : () =
+:= stdin_flush (stdin : threading.mutex_guard process_child_stdin) : () =
     backend_switch {
-        Fsharp = fun () =>
-            inl stdin = join stdin
+        Fsharp = \ () =>
+            := stdin = ~~ stdin
             (!\($'"true; let mut !stdin = !stdin"') : bool) |> ignore
             (!\\(stdin, $'"true; std::io::Write::flush(&mut *$0).unwrap()"') : bool) |> ignore
-        Rust = fun () =>
+        Rust = \ () =>
             (!\\(stdin, $'"true; std::io::Write::flush(&mut *$0).unwrap()"') : bool) |> ignore
     }
 
 /// ### new_process_command
-inl new_process_command (file_name : string) : process_command =
+:= new_process_command (file_name : string) : process_command =
     !\\(file_name, $'"std::process::Command::new(&*$0)"')
 
 /// ### process_stdio_piped
-inl process_stdio_piped () : process_stdio =
+:= process_stdio_piped () : process_stdio =
     !\($'"std::process::Stdio::piped()"')
 
 /// ### process_command_args
-inl process_command_args (args : am'.vec sm'.std_string) (c : process_command) : process_command =
+:= process_command_args (args : am'.vec sm'.std_string) (c : process_command) : process_command =
     (!\($'"true; let mut !c = !c"') : bool) |> ignore
     (!\\(args, $'"true; std::process::Command::args(&mut !c, &*$0)"') : bool) |> ignore
     c |> rust.emit
 
 /// ### process_command_stdout
-inl process_command_stdout (stdio : process_stdio) (c : process_command) : process_command =
+:= process_command_stdout (stdio : process_stdio) (c : process_command) : process_command =
     (!\($'"true; let mut !c = !c"') : bool) |> ignore
     (!\($'"true; std::process::Command::stdout(&mut !c, std::process::Stdio::piped())"') : bool) |> ignore
     c |> rust.emit
 
 /// ### process_command_stderr
-inl process_command_stderr (stdio : process_stdio) (c : process_command) : process_command =
+:= process_command_stderr (stdio : process_stdio) (c : process_command) : process_command =
     (!\($'"true; let mut !c = !c"') : bool) |> ignore
     (!\($'"true; std::process::Command::stderr(&mut !c, std::process::Stdio::piped())"') : bool) |> ignore
     c |> rust.emit
 
 /// ### process_command_stdin
-inl process_command_stdin (stdio : process_stdio) (c : process_command) : process_command =
+:= process_command_stdin (stdio : process_stdio) (c : process_command) : process_command =
     (!\($'"true; let mut !c = !c"') : bool) |> ignore
     (!\($'"true; std::process::Command::stdin(&mut !c, std::process::Stdio::piped())"') : bool) |> ignore
     c |> rust.emit
 
 /// ### process_command_current_dir
-inl process_command_current_dir (dir : string) (c : process_command) : process_command =
+:= process_command_current_dir (dir : string) (c : process_command) : process_command =
     (!\($'"true; let mut !c = !c"') : bool) |> ignore
     (!\\(dir, $'"true; std::process::Command::current_dir(&mut !c, &*$0)"') : bool) |> ignore
     !\($'$"!c"')
 
 /// ### process_command_env
-inl process_command_env (key : string) (value : string) (c : process_command) : process_command =
+:= process_command_env (key : string) (value : string) (c : process_command) : process_command =
     (!\($'"true; let mut !c = !c"') : bool) |> ignore
     (!\\((key, value), $'"true; std::process::Command::env(&mut !c, &*$0, &*$1)"') : bool) |> ignore
     c |> rust.emit
 
 /// ### process_command_spawn
-inl process_command_spawn
+:= process_command_spawn
     (c : process_command)
     : resultm.result' process_child stream.io_error
     =
@@ -378,30 +378,30 @@ inl process_command_spawn
     !\($'"std::process::Command::spawn(&mut !c)"')
 
 /// ### child_wait_with_output
-inl child_wait_with_output
+:= child_wait_with_output
     (child : process_child)
     : resultm.result' process_output stream.io_error
     =
     !\\(child, $'"$0.wait_with_output()"')
 
 /// ### stdio_line
-inl stdio_line
+:= stdio_line
     (stdio : result () ())
     (trace' : bool)
     (channel_sender : threading.arc (threading.mutex (threading.channel_sender sm'.std_string)))
     (line : resultm.result' sm'.std_string stream.io_error)
     : resultm.result' () sm'.std_string
     =
-    inl highlight text =
+    := highlight text =
         $'$"\\u001b[4;7m{!text}\\u001b[0m"'
-    inl line =
-        match
+    := line =
+        ?=
             line
             |> resultm.map_error'' sm'.format'
             |> resultm.unbox'
-        with
+        ?|
         | Ok line =>
-            inl line =
+            := line =
                 line
                 |> sm'.from_std_string
                 |> sm'.encoding_encode' (sm'.encoding_utf8' ())
@@ -409,21 +409,21 @@ inl stdio_line
                 |> sm'.str_from_utf8
                 |> resultm.unwrap'
                 |> sm'.ref_to_std_string
-            inl line_log = line |> sm'.from_std_string
-            inl text =
-                match stdio with
+            := line_log = line |> sm'.from_std_string
+            := text =
+                ?= stdio ?|
                 | Ok () => $'$"> {!line_log}"'
                 | Error () => $'$"\! {!line_log}"'
-            if trace'
-            then trace Verbose (fun () => text) id
-            else text |> console.write_line
-            match stdio with
+            ? trace'
+            ?> trace Verbose (\ () => text) id
+            |: text |> console.write_line
+            ?= stdio ?|
             | Ok () => line
             | Error () => line |> highlight |> sm'.to_std_string
         | Error e =>
             trace Critical
-                fun () => "runtime.stdio_line"
-                fun () => { trace' e }
+                \ () => "runtime.stdio_line"
+                \ () => { trace' e }
             e |> highlight |> sm'.to_std_string
     channel_sender
     |> threading.arc_mutex_lock
@@ -433,35 +433,35 @@ inl stdio_line
     |> resultm.map_error'' sm'.format'
 
 /// ### stdio_line_rust
-inl stdio_line_rust
+:= stdio_line_rust
     (stdio : result () ())
     (trace' : bool)
     (line : resultm.result' sm'.std_string sm'.std_string)
     : sm'.std_string
     =
-    inl highlight text =
+    := highlight text =
         $'$"\\u001b[4;7m{!text}\\u001b[0m"'
-    match line |> resultm.unbox' with
+    ?= line |> resultm.unbox' ?|
     | Ok line =>
-        inl line_log = line |> rust.clone |> sm'.from_std_string
-        inl text =
-            match stdio with
+        := line_log = line |> rust.clone |> sm'.from_std_string
+        := text =
+            ?= stdio ?|
             | Ok () => $'$"> {!line_log}"'
             | Error () => $'$"\! {!line_log}"'
-        if trace'
-        then trace Verbose (fun () => text) id
-        else text |> console.write_line
-        match stdio with
+        ? trace'
+        ?> trace Verbose (\ () => text) id
+        |: text |> console.write_line
+        ?= stdio ?|
         | Ok () => line
         | Error () => line |> highlight |> sm'.to_std_string
     | Error e =>
         trace Critical
-            fun () => "runtime.stdio_line"
-            fun () => { trace' e }
+            \ () => "runtime.stdio_line"
+            \ () => { trace' e }
         e |> highlight |> sm'.to_std_string
 
 /// ### command
-nominal command =
+:! command =
     `(
         rust.rust_type
             `($'clap_Command')
@@ -470,7 +470,7 @@ nominal command =
     )
 
 /// ### new_command
-inl new_command (s : rust.static_ref sm'.str) : command =
+:= new_command (s : rust.static_ref sm'.str) : command =
     !\\(s, $'"clap::Command::new($0)"')
 
 ///> rust -d clap
@@ -481,7 +481,7 @@ test new_command =
     |> _assert sm'.contains "\"command\""
 
 /// ### arg
-nominal arg =
+:! arg =
     `(
         rust.rust_type
             `($'clap_Arg')
@@ -490,7 +490,7 @@ nominal arg =
     )
 
 /// ### new_arg
-inl new_arg (s : rust.static_ref sm'.str) : arg =
+:= new_arg (s : rust.static_ref sm'.str) : arg =
     !\\(s, $'"clap::Arg::new($0)"')
 
 ///> rust -d clap
@@ -501,45 +501,45 @@ test new_arg =
     |> _assert sm'.contains "\"arg\""
 
 /// ### command_arg
-inl command_arg (arg : arg) (command : command) : command =
+:= command_arg (arg : arg) (command : command) : command =
     !\\((command, arg), $'"clap::Command::arg($0, $1)"')
 
 /// ### arg_required
-inl arg_required (value : bool) (arg : arg) : arg =
+:= arg_required (value : bool) (arg : arg) : arg =
     !\\((arg, value), $'"$0.required($1)"')
 
 /// ### arg_require_equals
-inl arg_require_equals (value : bool) (arg : arg) : arg =
+:= arg_require_equals (value : bool) (arg : arg) : arg =
     !\\((arg, value), $'"$0.require_equals($1)"')
 
 /// ### arg_default_value
-inl arg_default_value (value : string) (arg : arg) : arg =
-    inl value = #value
+:= arg_default_value (value : string) (arg : arg) : arg =
+    := value = #value
     !\\((arg, value), $'"$0.default_value(&*Box::leak(String::from($1).into_boxed_str()))"')
 
 /// ### arg_default_missing_value
-inl arg_default_missing_value (value : string) (arg : arg) : arg =
-    inl value = #value
+:= arg_default_missing_value (value : string) (arg : arg) : arg =
+    := value = #value
     backend_switch {
         Rust = fun () => !\\((arg, value), $'"$0.default_missing_value(&*Box::leak(String::from($1).into_boxed_str()))\
             "') : arg
     }
 
 /// ### arg_short
-inl arg_short (value : char) (arg : arg) : arg =
+:= arg_short (value : char) (arg : arg) : arg =
     !\\((arg, value), $'"$0.short($1 as char)"')
 
 /// ### arg_long
-inl arg_long (value : rust.static_ref sm'.str) (arg : arg) : arg =
+:= arg_long (value : rust.static_ref sm'.str) (arg : arg) : arg =
     !\\((arg, value), $'"$0.long($1)"')
 
 /// ### arg_value_names
-inl arg_value_names (values : array_base (rust.static_ref sm'.str)) (arg : arg) : arg =
-    inl values = values |> am'.to_vec
+:= arg_value_names (values : array_base (rust.static_ref sm'.str)) (arg : arg) : arg =
+    := values = values |> am'.to_vec
     !\\((arg, values), $'"$0.value_names($1)"')
 
 /// ### value_range
-nominal value_range =
+:! value_range =
     `(
         rust.rust_type
             `($'clap_builder_ValueRange')
@@ -548,30 +548,30 @@ nominal value_range =
     )
 
 /// ### new_value_range
-inl new_value_range forall t. inclusive (start : _ t) (end : _ t) : value_range =
-    inl len () =
+:= new_value_range \* t. inclusive (start : _ t) (end : _ t) : value_range =
+    := len () =
         0i32 |> convert.convert
-    inl start, end =
-        open am'
-        match start, end with
+    := start, end =
+        :< am'
+        ?= start, end ?|
         | Start start, End fn =>
             start, len |> fn
         | End start_fn, End end_fn =>
             start_fn len, end_fn len
-    inl inclusive =
-        if inclusive
-        then "="
-        else ""
-    match start, end with
-    | start, end when end =. len () => !\\(start, $'"clap::builder::ValueRange::new($0..)"')
+    := inclusive =
+        ? inclusive
+        ?> "="
+        |: ""
+    ?= start, end ?|
+    | start, end ?& end =. len () => !\\(start, $'"clap::builder::ValueRange::new($0..)"')
     | start, end => !\\((start, end), $'"clap::builder::ValueRange::new($0.." + !inclusive + "$1)"')
 
 /// ### arg_num_args_range
-inl arg_num_args_range (value : value_range) (arg : arg) : arg =
+:= arg_num_args_range (value : value_range) (arg : arg) : arg =
     !\\((arg, value), $'"$0.num_args($1)"')
 
 /// ### value_parser
-nominal value_parser =
+:! value_parser =
     `(
         rust.rust_type
             `($'clap_builder_ValueParser')
@@ -580,7 +580,7 @@ nominal value_parser =
     )
 
 /// ### possible_value
-nominal possible_value =
+:! possible_value =
     `(
         rust.rust_type
             `($'clap_builder_PossibleValue')
@@ -589,15 +589,15 @@ nominal possible_value =
     )
 
 /// ### new_possible_value
-inl new_possible_value forall t. (x : t) : possible_value =
+:= new_possible_value \* t. (x : t) : possible_value =
     !\\(x, $'"clap::builder::PossibleValue::new(&**$0)"')
 
 /// ### arg_value_parser
-inl arg_value_parser (values : value_parser) (arg : arg) : arg =
+:= arg_value_parser (values : value_parser) (arg : arg) : arg =
     !\\((arg, values), $'"$0.value_parser($1)"')
 
 /// ### arg_action
-nominal arg_action' =
+:! arg_action' =
     `(
         rust.rust_type
             `($'clap_ArgAction')
@@ -605,7 +605,7 @@ nominal arg_action' =
             "type clap_ArgAction = class end"
     )
 
-union arg_action =
+:| arg_action =
     | Set
     | Append
     | SetTrue
@@ -616,7 +616,7 @@ union arg_action =
     | HelpLong
     | Version
 
-inl arg_action = function
+:= arg_action = \|
     | Set => !\($'"clap::ArgAction::Set"') : arg_action'
     | Append => !\($'"clap::ArgAction::Append"') : arg_action'
     | SetTrue => !\($'"clap::ArgAction::SetTrue"') : arg_action'
@@ -627,20 +627,20 @@ inl arg_action = function
     | HelpLong => !\($'"clap::ArgAction::HelpLong"') : arg_action'
     | Version => !\($'"clap::ArgAction::Version"') : arg_action'
 
-inl arg_action (value : arg_action) (arg : arg) : arg =
-    inl value = value |> arg_action
+:= arg_action (value : arg_action) (arg : arg) : arg =
+    := value = value |> arg_action
     !\\((arg, value), $'"$0.action($1)"')
 
 /// ### arg_index
-inl arg_index (value : i32) (arg : arg) : arg =
-    inl index : convert.unativeint =
-        if is_rust ()
-        then $'(!value as usize)'
-        else $'!value |> `(convert.unativeint) '
+:= arg_index (value : i32) (arg : arg) : arg =
+    := index : convert.unativeint =
+        ? is_rust ()
+        ?> $'(!value as usize)'
+        |: $'!value |> `(convert.unativeint) '
     !\\((arg, index), $'"$0.index($1)"')
 
 /// ### arg_matches
-nominal arg_matches =
+:! arg_matches =
     `(
         rust.rust_type
             `($'clap_ArgMatches')
@@ -649,20 +649,20 @@ nominal arg_matches =
     )
 
 /// ### command_get_matches
-inl command_get_matches (command : command) : arg_matches =
+:= command_get_matches (command : command) : arg_matches =
     !\\(command, $'"clap::Command::get_matches($0)"')
 
 /// ### command_get_matches_from
-inl command_get_matches_from (args : array_base string) (command : command) : arg_matches =
-    inl args = args |> am'.to_vec |> am'.vec_map sm'.to_std_string
+:= command_get_matches_from (args : array_base string) (command : command) : arg_matches =
+    := args = args |> am'.to_vec |> am'.vec_map sm'.to_std_string
     !\\(command, $'"clap::Command::get_matches_from($0, !args)"')
 
 /// ### command_args_override_self
-inl command_args_override_self (yes : bool) (command : command) : command =
+:= command_args_override_self (yes : bool) (command : command) : command =
     !\\(command, $'"clap::Command::args_override_self($0, !yes)"')
 
 /// ### command_init_arg
-inl command_init_arg (long, short) fn command =
+:= command_init_arg (long, short) fn command =
     command
     |> command_arg (
         ###long
@@ -673,50 +673,50 @@ inl command_init_arg (long, short) fn command =
     )
 
 /// ### matches_get_one
-inl matches_get_one forall t. (x : string) (matches : arg_matches) : optionm'.option' t =
-    inl x = join x
-    inl x = x |> sm'.as_str
+:= matches_get_one \* t. (x : string) (matches : arg_matches) : optionm'.option' t =
+    := x = ~~ x
+    := x = x |> sm'.as_str
     !\\((matches, x), $'"clap::ArgMatches::get_one(&$0, $1).cloned()"')
 
 /// ### matches_get_flag
-inl matches_get_flag (x : string) (matches : arg_matches) : bool =
-    inl x = join x
-    inl x = x |> sm'.as_str
+:= matches_get_flag (x : string) (matches : arg_matches) : bool =
+    := x = ~~ x
+    := x = x |> sm'.as_str
     !\\((matches, x), $'"clap::ArgMatches::get_flag(&$0, $1)"')
 
 /// ### matches_get_many
-inl matches_get_many forall t. (x : string) (matches : arg_matches) : optionm'.option' (am'.vec t) =
-    inl x = join x
-    inl x = x |> sm'.as_str
+:= matches_get_many \* t. (x : string) (matches : arg_matches) : optionm'.option' (am'.vec t) =
+    := x = ~~ x
+    := x = x |> sm'.as_str
     !\\((matches, x), $'"clap::ArgMatches::get_many(&$0, $1).map(|x| x.cloned().into_iter().collect())"')
 
 /// ### matches_subcommand
-inl matches_subcommand (matches : arg_matches) : optionm'.option' (sm'.std_string * arg_matches) =
+:= matches_subcommand (matches : arg_matches) : optionm'.option' (sm'.std_string * arg_matches) =
     !\\((matches, sm'.ref_to_std_string), $'"clap::ArgMatches::subcommand(Box::leak(Box::new($0))).map(|(a, b)| \
         ($1(a), b.clone()))"')
 
 /// ### command_subcommand_required
-inl command_subcommand_required (value : bool) (command : command) : command =
+:= command_subcommand_required (value : bool) (command : command) : command =
     !\\(command, $'"clap::Command::subcommand_required($0, !value)"')
 
 /// ### command_subcommand
-inl command_subcommand (subcommand : command) (command : command) : command =
+:= command_subcommand (subcommand : command) (command : command) : command =
     !\\(command, $'"clap::Command::subcommand($0, !subcommand)"')
 
 /// ### value_parser_possible_values
-inl value_parser_possible_values (values : array_base string) : value_parser =
-    inl values =
+:= value_parser_possible_values (values : array_base string) : value_parser =
+    := values =
         values
         |> am'.to_vec
         |> am'.vec_map (sm'.to_std_string >> rust.new_box >> rust.box_leak >> new_possible_value)
     !\\(values, $'"Into::<clap::builder::ValueParser>::into(clap::builder::PossibleValuesParser::new($0))"')
 
 /// ### arg_union
-inl arg_union forall union_type. (fn : union_type -> ()) (arg : arg) : arg =
+:= arg_union \* union_type. (fn : union_type -> ()) (arg : arg) : arg =
     arg
     |> arg_value_parser (
-        real reflection.get_union_fields_untag `union_type ()
-        |> fun x => x : _ (string * union_type)
+        ~> reflection.get_union_fields_untag `union_type ()
+        |> \ x => x : _ (string * union_type)
         |> listm.map (fst >> sm'.to_lower)
         |> listm'.box
         |> listm'.to_array'
@@ -728,7 +728,7 @@ test arg_union =
     ###"command"
     |> new_command
     |> command_init_arg ("trace-level", 't') (
-        real arg_union `trace_level ignore
+        ~> arg_union `trace_level ignore
     )
     |> command_get_matches_from (am'.base ;[ "_"; "--trace-level"; "critical" ])
     |> matches_get_one "trace-level"
@@ -739,59 +739,59 @@ test arg_union =
     |> _assert_eq Critical
 
 /// ### command_debug_assert
-inl command_debug_assert (command : command) : () =
+:= command_debug_assert (command : command) : () =
     !\\(command, $'"clap::Command::debug_assert($0)"')
 
 /// ## fsharp
 
 /// ### process
-nominal process = $'System.Diagnostics.Process'
+:! process = $'System.Diagnostics.Process'
 
 /// ### process_start_info
-nominal process_start_info = $'System.Diagnostics.ProcessStartInfo'
+:! process_start_info = $'System.Diagnostics.ProcessStartInfo'
 
 /// ### data_received_event_args
-nominal data_received_event_args = $'System.Diagnostics.DataReceivedEventArgs'
+:! data_received_event_args = $'System.Diagnostics.DataReceivedEventArgs'
 
 /// ### process_id
-let process_id (process : process) : i32 =
-    run_target function
-        | Fsharp => fun () => process |> $'_.Id'
-        | _ => fun () => null ()
+:~ process_id (process : process) : i32 =
+    run_target \|
+        | Fsharp => \ () => process |> $'_.Id'
+        | _ => \ () => null ()
 
 /// ### current_process_kill
-let current_process_kill () =
-    run_target function
-        | Fsharp => fun () =>
-            inl fn () =
-                run_target function
-                    | Fsharp => fun () =>
-                        trace Warning (fun () => "runtime.current_process_kill / exiting... 3") id
+:~ current_process_kill () =
+    run_target \|
+        | Fsharp => \ () =>
+            := fn () =
+                run_target \|
+                    | Fsharp => \ () =>
+                        trace Warning (\ () => "runtime.current_process_kill / exiting... 3") id
                         $'System.Threading.Thread.Sleep 500'
-                        trace Warning (fun () => "runtime.current_process_kill / exiting... 2") id
+                        trace Warning (\ () => "runtime.current_process_kill / exiting... 2") id
                         $'System.Console.Out.Flush ()'
                         $'System.Threading.Thread.Sleep 1000'
-                        trace Warning (fun () => "runtime.current_process_kill / exiting... 1") id
+                        trace Warning (\ () => "runtime.current_process_kill / exiting... 1") id
                         $'System.Console.Error.Flush ()'
                         $'System.Environment.Exit 1' : ()
-                    | _ => fun () => ()
-            inl thread : threading.thread = $'new System.Threading.Thread (!fn)'
+                    | _ => \ () => ()
+            := thread : threading.thread = $'new System.Threading.Thread (!fn)'
             thread |> $'_.Start()' : ()
-        | _ => fun () => ()
+        | _ => \ () => ()
 
 /// ### gc_collect
-inl gc_collect () =
-    run_target function
-        | Fsharp _ => fun () => $'System.GC.Collect' () : ()
-        | _ => fun () => ()
+:= gc_collect () =
+    run_target \|
+        | Fsharp _ => \ () => $'System.GC.Collect' () : ()
+        | _ => \ () => ()
 
 /// ## runtime
 
 /// ### execute_with_options_fsharp
-inl execute_with_options_fsharp (options : execution_options) : i32 * string =
-    inl command = join options.command
-    inl file_name, arguments = command |> split_command |> resultm.get
-    inl arguments =
+:= execute_with_options_fsharp (options : execution_options) : i32 * string =
+    := command = ~~ options.command
+    := file_name, arguments = command |> split_command |> resultm.get
+    := arguments =
         arguments
         |> optionm'.default_value ""
         |> split_args
@@ -799,35 +799,35 @@ inl execute_with_options_fsharp (options : execution_options) : i32 * string =
         |> am'.to_vec
         |> am'.vec_map sm'.to_std_string
     trace Debug
-        fun () => "runtime.execute_with_options"
-        fun () => { file_name arguments = #?*arguments; options }
-    fun () =>
-        fun () =>
+        \ () => "runtime.execute_with_options"
+        \ () => { file_name arguments = #?*arguments; options }
+    \ () =>
+        \ () =>
             file_name
             |> new_process_command
             |> process_command_args arguments
             |> process_command_stdout (process_stdio_piped ())
             |> process_command_stderr (process_stdio_piped ())
             |> process_command_stdin (process_stdio_piped ())
-            |> fun command =>
-                match options.working_directory |> optionm'.unbox with
+            |> \ command =>
+                ?= options.working_directory |> optionm'.unbox ?|
                 | Some working_directory => command |> process_command_current_dir working_directory
                 | None => !\($'$"!command"') |> rust.emit
-            |> fun command =>
-                match options.environment_variables with
+            |> \ command =>
+                ?= options.environment_variables ?|
                 | ;[] => command
                 | vars =>
                     (command, vars |> am'.to_vec)
-                    ||> am'.vec_fold' fun command (key, value) =>
+                    ||> am'.vec_fold' \ command (key, value) =>
                         command |> process_command_env key value
             |> process_command_spawn
             |> resultm.map_error'' sm'.format'
             |> resultm.map' (rust.emit >> optionm'.some' >> rust.emit >> threading.new_arc_mutex)
             |> resultm.unbox'
-            |> function
+            |> \|
                 | Ok child =>
-                    inl stdout =
-                        fun () =>
+                    := stdout =
+                        \ () =>
                             child
                             |> threading.arc_mutex_lock
                             |> resultm.unwrap'
@@ -838,8 +838,8 @@ inl execute_with_options_fsharp (options : execution_options) : i32 * string =
                             |> optionm'.take_ref_mut
                             |> optionm'.unwrap
                         |> rust.capture
-                    inl stderr =
-                        fun () =>
+                    := stderr =
+                        \ () =>
                             child
                             |> threading.arc_mutex_lock
                             |> resultm.unwrap'
@@ -850,8 +850,8 @@ inl execute_with_options_fsharp (options : execution_options) : i32 * string =
                             |> optionm'.take_ref_mut
                             |> optionm'.unwrap
                         |> rust.capture
-                    inl stdin =
-                        fun () =>
+                    := stdin =
+                        \ () =>
                             child
                             |> threading.arc_mutex_lock
                             |> resultm.unwrap'
@@ -865,38 +865,38 @@ inl execute_with_options_fsharp (options : execution_options) : i32 * string =
                             |> rust.emit
                             |> threading.new_arc_mutex
                         |> rust.capture
-                    inl channel_sender, channel_receiver = threading.new_channel ()
-                    inl channel_sender'' = channel_sender |> rust.emit |> threading.new_arc_mutex
-                    inl channel_sender' = channel_sender |> rust.emit |> threading.new_arc_mutex
-                    inl channel_receiver' = channel_receiver |> rust.emit |> threading.new_arc_mutex
-                    inl stdout_handle =
-                        fun () =>
+                    := channel_sender, channel_receiver = threading.new_channel ()
+                    := channel_sender'' = channel_sender |> rust.emit |> threading.new_arc_mutex
+                    := channel_sender' = channel_sender |> rust.emit |> threading.new_arc_mutex
+                    := channel_receiver' = channel_receiver |> rust.emit |> threading.new_arc_mutex
+                    := stdout_handle =
+                        \ () =>
                             stdout
                             |> stream.decode_reader_bytes_build
                             |> stream.new_buf_reader
                             |> stream.buf_read_lines
-                            |> iter.try_for_each fun lines =>
-                                inl channel_sender'' = channel_sender'' |> rust.clone
+                            |> iter.try_for_each \ lines =>
+                                := channel_sender'' = channel_sender'' |> rust.clone
                                 lines
                                 |> stdio_line (Ok ()) options.trace channel_sender''
                                 |> resultm.to_try
                         |> threading.spawn (1, 0) 1
-                    inl stderr_handle =
-                        fun () =>
+                    := stderr_handle =
+                        \ () =>
                             stderr
                             |> stream.decode_reader_bytes_build
                             |> stream.new_buf_reader
                             |> stream.buf_read_lines
-                            |> iter.try_for_each fun lines =>
-                                if options.stderr |> not
-                                then Ok () |> resultm.box
-                                else
-                                    inl channel_sender' = channel_sender' |> rust.clone
+                            |> iter.try_for_each \ lines =>
+                                ? options.stderr |> not
+                                ?> Ok () |> resultm.box
+                                |:
+                                    := channel_sender' = channel_sender' |> rust.clone
                                     lines
                                     |> stdio_line (Error ()) options.trace channel_sender'
                                 |> resultm.to_try
                         |> threading.spawn (1, 0) 1
-                    match options.stdin |> optionm'.unbox with
+                    ?= options.stdin |> optionm'.unbox ?|
                     | Some stdin' =>
                         stdin
                         |> threading.arc_mutex_lock
@@ -905,7 +905,7 @@ inl execute_with_options_fsharp (options : execution_options) : i32 * string =
                         |> optionm'.take_ref_mut
                         |> optionm'.map' threading.new_arc_mutex
                         |> optionm'.unbox
-                        |> function
+                        |> \|
                             | Some stdin =>
                                 stdin |> stdin'
                                 stdin
@@ -914,7 +914,7 @@ inl execute_with_options_fsharp (options : execution_options) : i32 * string =
                                 |> stdin_flush
                             | None => ()
                     | None => ()
-                    inl output =
+                    := output =
                         child
                         |> threading.arc_mutex_lock'
                         |> resultm.unwrap'
@@ -926,26 +926,26 @@ inl execute_with_options_fsharp (options : execution_options) : i32 * string =
                     [ stdout_handle; stderr_handle ]
                     |> am'.new_vec
                     |> am'.vec_for_each' (threading.join' >> resultm.unwrap' >> resultm.unwrap')
-                    match output |> resultm.unbox with
+                    ?= output |> resultm.unbox ?|
                     | Ok output =>
-                        inl exit_code =
+                        := exit_code =
                             output
                             |> process_output_status
                             |> process_exit_status_code
                             |> optionm'.unbox
-                        match exit_code with
+                        ?= exit_code ?|
                         | Some exit_code =>
-                            inl stdout =
+                            := stdout =
                                 output
                                 |> process_output_stdout
                                 |> sm'.string_from_utf8
                                 |> resultm.unwrap'
-                            inl stderr =
+                            := stderr =
                                 output
                                 |> process_output_stderr
                                 |> sm'.string_from_utf8
                                 |> resultm.unwrap'
-                            inl output =
+                            := output =
                                 [ stdout; stderr ]
                                 |> listm.map (sm'.from_std_string >> sm'.trim)
                                 |> listm'.filter (sm'.is_empty >> not)
@@ -961,20 +961,20 @@ inl execute_with_options_fsharp (options : execution_options) : i32 * string =
                             Some channel_receiver'
                     | Error error =>
                         trace Critical
-                            fun () => "runtime.execute_with_options / output error"
-                            fun () => { error file_name arguments = #?*arguments; options }
+                            \ () => "runtime.execute_with_options / output error"
+                            \ () => { error file_name arguments = #?*arguments; options }
                         -2i32, error |> Some, None
                 | Error error =>
                     trace Critical
-                        fun () => "runtime.execute_with_options / child error"
-                        fun () => { error file_name arguments = #?*arguments; options }
+                        \ () => "runtime.execute_with_options / child error"
+                        \ () => { error file_name arguments = #?*arguments; options }
                     -1i32, error |> Some, None
-            |> function
+            |> \|
                 | exit_code, std_trace, channel_receiver =>
-                    inl std_trace =
+                    := std_trace =
                         channel_receiver
                         |> optionm'.box
-                        |> optionm'.map' fun channel_receiver =>
+                        |> optionm'.map' \ channel_receiver =>
                             channel_receiver
                             |> threading.arc_mutex_lock'
                             |> resultm.unwrap'
@@ -982,7 +982,7 @@ inl execute_with_options_fsharp (options : execution_options) : i32 * string =
                             |> iter_collect''
                             |> am'.vec_map sm'.from_std_string
                             |> am'.from_vec
-                            |> fun x => x : array _
+                            |> \ x => x : array _
                             |> seq.of_array
                             |> sm'.concat "\n"
                         |> optionm'.unbox
@@ -994,18 +994,18 @@ inl execute_with_options_fsharp (options : execution_options) : i32 * string =
                             |> optionm'.default_value ""
                         )
                     trace Verbose
-                        fun () => "runtime.execute_with_options / result"
-                        fun () => { file_name exit_code std_trace_len = ##std_trace }
+                        \ () => "runtime.execute_with_options / result"
+                        \ () => { file_name exit_code std_trace_len = ##std_trace }
                     new_pair exit_code std_trace
         |> capture
-    |> fun x => x ()
+    |> \ x => x ()
     |> from_pair
 
 /// ### execute_with_options_rust
-inl execute_with_options_rust (options : execution_options) : i32 * string =
-    inl command = join options.command
-    inl file_name, arguments = command |> split_command |> resultm.get
-    inl arguments =
+:= execute_with_options_rust (options : execution_options) : i32 * string =
+    := command = ~~ options.command
+    := file_name, arguments = command |> split_command |> resultm.get
+    := arguments =
         arguments
         |> optionm'.default_value ""
         |> split_args
@@ -1013,14 +1013,14 @@ inl execute_with_options_rust (options : execution_options) : i32 * string =
         |> am'.to_vec
         |> am'.vec_map sm'.to_std_string
     trace Debug
-        fun () => "runtime.execute_with_options"
-        fun () => { file_name arguments = #?*arguments }
-    inl trace' = options.trace
-    inl on_stdout (line : resultm.result' sm'.std_string sm'.std_string) : sm'.std_string =
+        \ () => "runtime.execute_with_options"
+        \ () => { file_name arguments = #?*arguments }
+    := trace' = options.trace
+    := on_stdout (line : resultm.result' sm'.std_string sm'.std_string) : sm'.std_string =
         line |> stdio_line_rust (Ok ()) trace'
-    inl on_stderr (line : resultm.result' sm'.std_string sm'.std_string) : sm'.std_string =
+    := on_stderr (line : resultm.result' sm'.std_string sm'.std_string) : sm'.std_string =
         line |> stdio_line_rust (Error ()) trace'
-    inl kind, exit_code, error, lines =
+    := kind, exit_code, error, lines =
         !\\(
             (
                 file_name,
@@ -1059,47 +1059,47 @@ inl execute_with_options_rust (options : execution_options) : i32 * string =
                 let _ = h2.join(); } match child.wait() { Ok(s) => (0i32, s.code(), None, lines), Err(e) => (2i32, \
                 None, Some(format\!(\\\"{}\\\", e)), lines) } } } }"'
         ) : i32 * optionm'.option' i32 * optionm'.option' sm'.std_string * am'.vec sm'.std_string
-    inl error = error |> optionm'.default_value' (sm'.to_std_string "") |> sm'.from_std_string
-    inl exit_code, std_trace =
-        if kind = 1 then
+    := error = error |> optionm'.default_value' (sm'.to_std_string "") |> sm'.from_std_string
+    := exit_code, std_trace =
+        ? kind = 1 ?>
             trace Critical
-                fun () => "runtime.execute_with_options / child error"
-                fun () => { error file_name arguments = #?*arguments }
+                \ () => "runtime.execute_with_options / child error"
+                \ () => { error file_name arguments = #?*arguments }
             -1i32, error
-        elif kind = 2 then
+        |? kind = 2 ?>
             trace Critical
-                fun () => "runtime.execute_with_options / output error"
-                fun () => { error file_name arguments = #?*arguments }
+                \ () => "runtime.execute_with_options / output error"
+                \ () => { error file_name arguments = #?*arguments }
             -2i32, error
-        else
-            inl exit_code, fallback =
-                match exit_code |> optionm'.unbox with
+        |:
+            := exit_code, fallback =
+                ?= exit_code |> optionm'.unbox ?|
                 | Some exit_code => exit_code, ""
                 | None => -1i32, "runtime.execute_with_options / exit_code=None"
-            inl text =
+            := text =
                 lines
                 |> am'.vec_map sm'.from_std_string
                 |> am'.from_vec
-                |> fun x => x : array _
+                |> \ x => x : array _
                 |> seq.of_array
                 |> sm'.concat "\n"
                 |> sm'.trim
-            exit_code, (if text = "" then fallback else text)
+            exit_code, (? text = "" ?> fallback |: text)
     trace Verbose
-        fun () => "runtime.execute_with_options / result"
-        fun () => { file_name exit_code std_trace_len = ##std_trace }
+        \ () => "runtime.execute_with_options / result"
+        \ () => { file_name exit_code std_trace_len = ##std_trace }
     exit_code, std_trace
 
 /// ### execute_with_options
-let execute_with_options (options : execution_options) : i32 * string =
+:~ execute_with_options (options : execution_options) : i32 * string =
     backend_switch {
-        Fsharp = fun () => execute_with_options_fsharp options
-        Rust = fun () => execute_with_options_rust options
+        Fsharp = \ () => execute_with_options_fsharp options
+        Rust = \ () => execute_with_options_rust options
     }
 
 /// #### execute
-let execute command =
-    execution_options fun x => { x with
+:~ execute command =
+    execution_options \ x => { x ?|
         command = command
     }
     |> execute_with_options
@@ -1107,25 +1107,25 @@ let execute command =
 /// #### tests
 ///> rust -d chrono encoding_rs encoding_rs_io regex sha2
 test tests =
-    inl content = "╭─[ 你好，世界！こんにちは世界！ ]─╮"
+    := content = "╭─[ 你好，世界！こんにちは世界！ ]─╮"
 
-    inl file_name = join "test.txt"
-    inl temp_dir, disposable =
+    := file_name = ~~ "test.txt"
+    := temp_dir, disposable =
         #?*(file_name, content)
         |> crypto.hash_text
         |> file_system.create_temp_dir'
     disposable |> use |> ignore
-    inl path = temp_dir </> file_name |> file_system.normalize_path
-    inl exit_code, result =
+    := path = temp_dir </> file_name |> file_system.normalize_path
+    := exit_code, result =
         execute ("pwsh -c \"[IO.File]::ReadAllText('" ++# path ++# "')\"")
     exit_code |> _assert_eq 1
     result |> _assert sm'.contains "not find file"
 
     content |> file_system.write_all_text path
 
-    inl exit_code, output =
-        execution_options fun x =>
-            { x with
+    := exit_code, output =
+        execution_options \ x =>
+            { x ?|
                 command =
                     (
                         "pwsh -c \"[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8; "
@@ -1142,9 +1142,9 @@ test tests =
 
 ///> rust -d chrono encoding_rs encoding_rs_io regex sha2
 test tests_2 =
-    inl exit_code, output =
-        execution_options fun x =>
-            { x with
+    := exit_code, output =
+        execution_options \ x =>
+            { x ?|
                 command =
                     "pwsh -c \"[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8; for ($i = 0; $i "
                     ^^ "-lt 5; $i++) { Write-Output `\"Line$i`\"; Start-Sleep -Milliseconds 200 }\""
@@ -1156,15 +1156,15 @@ test tests_2 =
 /// ## main
 ///> fsharp
 
-inl main () =
+:= main () =
     init_trace_state None
     $'let current_process_kill () = !current_process_kill ()' : ()
-    inl execution_options fn =
-        execution_options fun x =>
+    := execution_options fn =
+        execution_options \ x =>
             x
             |> heap
             |> fn
-            |> fun x => !x
+            |> \ x => !x
     $'let execution_options x = !execution_options x' : ()
-    inl split_args x = x |> split_args |> resultm.box
+    := split_args x = x |> split_args |> resultm.box
     $'let split_args x = !split_args x' : ()

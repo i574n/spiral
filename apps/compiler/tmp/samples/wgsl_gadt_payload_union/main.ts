@@ -10,29 +10,28 @@ type US0 = US0_Survived | US0_Slain;
 function US0_Survived(f0: US1): US0 { return { tag: 0, f0: f0 }; }
 function US0_Slain(f0: US2): US0 { return { tag: 1, f0: f0 }; }
 export function main(): number {
-    let v0: number = 60;
-    let v1: boolean = v0 > 0;
+    const v0: number = 60;
+    const v1: boolean = v0 > 0;
     let v6: US0;
     if (v1) {
-        let v2: US1 = US1_Living(v0, 100);
+        const v2: US1 = US1_Living(v0, 100);
         v6 = US0_Survived(v2);
     } else {
-        let v4: US2 = US2_Fallen(100);
+        const v4: US2 = US2_Fallen(100);
         v6 = US0_Slain(v4);
     }
     switch (v6.tag) {
         case 1: {
-            let v13: US2 = v6.f0;
+            const v13: US2 = v6.f0;
             return 2;
-            break;
         }
         case 0: {
-            let v7: US1 = v6.f0;
+            const v7: US1 = v6.f0;
             switch (v7.tag) {
                 case 0: {
-                    let v8: number = v7.f0;
-                    let v9: number = v7.f1;
-                    let v10: boolean = v8 === 60;
+                    const v8: number = v7.f0;
+                    const v9: number = v7.f1;
+                    const v10: boolean = v8 === 60;
                     if (v10) {
                         return 0;
                     } else {

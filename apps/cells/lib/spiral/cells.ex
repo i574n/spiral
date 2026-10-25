@@ -647,7 +647,7 @@ defmodule Spiral.Cells do
 
   @doc false
   def own_main(%{generated_main: false, code: code} = prepared) do
-    case Regex.run(~r/^(?:let|inl) main \(\) =[ \t]*$/m, code, return: :index)
+    case Regex.run(~r/^(?:let|inl|:=|:~) main \(\) =[ \t]*$/m, code, return: :index)
          |> last_main(code) do
       nil ->
         prepared
@@ -673,7 +673,7 @@ defmodule Spiral.Cells do
 
   defp last_main(_first, code) do
     [{at, len} | _] =
-      ~r/^(?:let|inl) main \(\) =[ \t]*$/m |> Regex.scan(code, return: :index) |> List.last()
+      ~r/^(?:let|inl|:=|:~) main \(\) =[ \t]*$/m |> Regex.scan(code, return: :index) |> List.last()
 
     rest = binary_part(code, at + len, byte_size(code) - at - len)
 

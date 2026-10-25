@@ -1,20 +1,20 @@
-open sm'_operators
-open leptos
+:< sm'_operators
+:< leptos
 
-inl render children : _ (_ span) =
+:= render children : _ (_ span) =
     span [
         $'"class=\\\"flex items-center pb-[6px]\\\""'
-    ] fun () =>
+    ] \ () =>
         :>[
             span [
                 $'"class=\\\"pr-[15px] [font-size:13px]\\\""'
-            ] fun () =>
+            ] \ () =>
                 children ()
             |> element_to_view
 
             span [
                 $'"class=\\\"h-px flex-1 bg-gray-300\\\""'
-            ] fun () =>
+            ] \ () =>
                 [] |> view_list_to_fragment
             |> element_to_view
         ]

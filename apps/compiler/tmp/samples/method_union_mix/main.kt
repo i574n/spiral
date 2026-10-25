@@ -13,22 +13,18 @@ fun sp_method0(p0: Int, p1: String): US0 {
     }
 }
 fun spiral_main(): Int {
-    var v0: Int = 0
-    v0 = 3
-    var v1: String = ""
-    v1 = "hi"
+    val v0: Int = 3
+    val v1: String = "hi"
     var v2: US0 = US0_One(0)
     v2 = sp_method0(v0, v1)
     when (v2.tag) {
         1 -> {
             var v4: Int = (v2 as US0_Both).f0
             var v5: String = (v2 as US0_Both).f1
-            var v6: Boolean = false
-            v6 = (v4 == 3)
+            val v6: Boolean = (v4 == 3)
             var v8: Boolean = false
             if (v6) {
-                var v7: Boolean = false
-                v7 = (v5 == "hi")
+                val v7: Boolean = (v5 == "hi")
                 v8 = v7
             } else {
                 v8 = false

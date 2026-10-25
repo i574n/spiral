@@ -1,9 +1,5 @@
 (module
-  (import "wasi_snapshot_preview1" "fd_write" (func $fd_write (param i32 i32 i32 i32) (result i32)))
   (import "wasi_snapshot_preview1" "proc_exit" (func $proc_exit (param i32)))
-  (data (i32.const 48) "\04\00\00\00true")
-  (data (i32.const 56) "\05\00\00\00false")
-  (data (i32.const 64) "\01\00\00\00-")
   (func $alloc (param $n i32) (result i32) (local $p i32) (local $limit i32)
     (local.set $p (global.get $hp))
     (global.set $hp (i32.and (i32.add (i32.add (local.get $p) (local.get $n)) (i32.const 7)) (i32.const -8)))
@@ -14,7 +10,7 @@
           (then (unreachable)))))
     (local.get $p))
   (memory (export "memory") 2)
-  (global $hp (mut i32) (i32.const 72))
+  (global $hp (mut i32) (i32.const 80))
   (func $spiralMain (result i32)
     (local $v0 i32)
     (local $v1 i32)
@@ -24,12 +20,11 @@
     (local $v4 i32)
     (local $t6 i32)
     (local $v5 i32)
-    (local $t8 i32)
     (local $v6 i32)
     (local $v7 i32)
-    (local $t11 i32)
+    (local $t10 i32)
     (local $v18 i32)
-    (local $t13 i32)
+    (local $t12 i32)
     (local $v8 i32)
     (local $v9 i32)
     (local $v10 i32)
@@ -41,7 +36,7 @@
     (local $v16 i32)
     (local $v19 i32)
     (local $v28 i32)
-    (local $t25 i32)
+    (local $t24 i32)
     (local $v20 i32)
     (local $v21 i32)
     (local $v22 i32)
@@ -49,7 +44,7 @@
     (local $v24 i32)
     (local $v25 i32)
     (local $v37 i32)
-    (local $t33 i32)
+    (local $t32 i32)
     (local $v29 i32)
     (local $v30 i32)
     (local $v31 i32)
@@ -58,7 +53,7 @@
     (local $v34 i32)
     (local $v38 i32)
     (local $v47 i32)
-    (local $t42 i32)
+    (local $t41 i32)
     (local $v39 i32)
     (local $v40 i32)
     (local $v41 i32)
@@ -79,17 +74,15 @@
     (i32.store offset=8 (local.get $t6) (local.get $v2))
     (i32.store offset=16 (local.get $t6) (local.get $v3))
     (local.set $v4 (local.get $t6))
-    (local.set $t8 (call $alloc (i32.const 8)))
-    (i32.store (local.get $t8) (i32.const 2))
-    (local.set $v5 (local.get $t8))
+    (local.set $v5 (i32.const 72))
     (local.set $v6 (i32.const 2))
-    (local.set $t11 (call $alloc (i32.const 16)))
-    (i32.store (local.get $t11) (i32.const 0))
-    (i32.store offset=8 (local.get $t11) (local.get $v6))
-    (local.set $v7 (local.get $t11))
-    (local.set $t13 (i32.load (local.get $v1)))
-    (if (i32.ne (local.get $t13) (i32.load (local.get $v7))) (then (local.set $t13 (i32.const -1))))
-    (if (i32.eq (local.get $t13) (i32.const 0))
+    (local.set $t10 (call $alloc (i32.const 16)))
+    (i32.store (local.get $t10) (i32.const 0))
+    (i32.store offset=8 (local.get $t10) (local.get $v6))
+    (local.set $v7 (local.get $t10))
+    (local.set $t12 (i32.load (local.get $v1)))
+    (if (i32.ne (local.get $t12) (i32.load (local.get $v7))) (then (local.set $t12 (i32.const -1))))
+    (if (i32.eq (local.get $t12) (i32.const 0))
         (then
             (local.set $v8 (i32.load offset=8 (local.get $v1)))
             (local.set $v9 (i32.load offset=8 (local.get $v7)))
@@ -97,12 +90,12 @@
             (local.set $v18 (local.get $v10))
         )
         (else
-    (if (i32.eq (local.get $t13) (i32.const 2))
+    (if (i32.eq (local.get $t12) (i32.const 2))
         (then
             (local.set $v18 (i32.const 1))
         )
         (else
-    (if (i32.eq (local.get $t13) (i32.const 1))
+    (if (i32.eq (local.get $t12) (i32.const 1))
         (then
             (local.set $v11 (i32.load offset=8 (local.get $v1)))
             (local.set $v12 (i32.load offset=16 (local.get $v1)))
@@ -130,8 +123,8 @@
         (else
             (local.set $v19 (i32.const 0))
         ))
-    (local.set $t25 (i32.load (local.get $v1)))
-    (if (i32.eq (local.get $t25) (i32.const 0))
+    (local.set $t24 (i32.load (local.get $v1)))
+    (if (i32.eq (local.get $t24) (i32.const 0))
         (then
             (local.set $v20 (i32.load offset=8 (local.get $v1)))
             (local.set $v21 (i32.mul (i32.const 3) (local.get $v20)))
@@ -139,12 +132,12 @@
             (local.set $v28 (local.get $v22))
         )
         (else
-    (if (i32.eq (local.get $t25) (i32.const 2))
+    (if (i32.eq (local.get $t24) (i32.const 2))
         (then
             (local.set $v28 (i32.const 0))
         )
         (else
-    (if (i32.eq (local.get $t25) (i32.const 1))
+    (if (i32.eq (local.get $t24) (i32.const 1))
         (then
             (local.set $v23 (i32.load offset=8 (local.get $v1)))
             (local.set $v24 (i32.load offset=16 (local.get $v1)))
@@ -156,8 +149,8 @@
         ))
         ))
         ))
-    (local.set $t33 (i32.load (local.get $v4)))
-    (if (i32.eq (local.get $t33) (i32.const 0))
+    (local.set $t32 (i32.load (local.get $v4)))
+    (if (i32.eq (local.get $t32) (i32.const 0))
         (then
             (local.set $v29 (i32.load offset=8 (local.get $v4)))
             (local.set $v30 (i32.mul (i32.const 3) (local.get $v29)))
@@ -165,12 +158,12 @@
             (local.set $v37 (local.get $v31))
         )
         (else
-    (if (i32.eq (local.get $t33) (i32.const 2))
+    (if (i32.eq (local.get $t32) (i32.const 2))
         (then
             (local.set $v37 (i32.const 0))
         )
         (else
-    (if (i32.eq (local.get $t33) (i32.const 1))
+    (if (i32.eq (local.get $t32) (i32.const 1))
         (then
             (local.set $v32 (i32.load offset=8 (local.get $v4)))
             (local.set $v33 (i32.load offset=16 (local.get $v4)))
@@ -183,8 +176,8 @@
         ))
         ))
     (local.set $v38 (i32.add (local.get $v28) (local.get $v37)))
-    (local.set $t42 (i32.load (local.get $v5)))
-    (if (i32.eq (local.get $t42) (i32.const 0))
+    (local.set $t41 (i32.load (local.get $v5)))
+    (if (i32.eq (local.get $t41) (i32.const 0))
         (then
             (local.set $v39 (i32.load offset=8 (local.get $v5)))
             (local.set $v40 (i32.mul (i32.const 3) (local.get $v39)))
@@ -192,12 +185,12 @@
             (local.set $v47 (local.get $v41))
         )
         (else
-    (if (i32.eq (local.get $t42) (i32.const 2))
+    (if (i32.eq (local.get $t41) (i32.const 2))
         (then
             (local.set $v47 (i32.const 0))
         )
         (else
-    (if (i32.eq (local.get $t42) (i32.const 1))
+    (if (i32.eq (local.get $t41) (i32.const 1))
         (then
             (local.set $v42 (i32.load offset=8 (local.get $v5)))
             (local.set $v43 (i32.load offset=16 (local.get $v5)))
@@ -214,6 +207,7 @@
     (return (local.get $v49))
     (unreachable)
   )
+  (data (i32.const 72) "\02\00\00\00")
   (func $_start (export "_start")
     (call $proc_exit (call $spiralMain)))
 )

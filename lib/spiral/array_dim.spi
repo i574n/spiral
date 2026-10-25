@@ -1,25 +1,25 @@
 /// ## array_dim
 test array_dim static =
-    open testing
+    :< testing
 
-nominal a dim el = array_base el
+:! a dim el = array_base el
 
-inl create forall dim {int} el. (size : dim) : a dim el = a !!!!ArrayCreate(`el, size)
+:= create \* dim {int} el. (size : dim) : a dim el = a !!!!ArrayCreate(`el, size)
 
-inl index forall dim {int} el. ((a ar) : a dim el) (i : dim) : el = !!!!ArrayIndex(ar, i)
+:= index \* dim {int} el. ((a ar) : a dim el) (i : dim) : el = !!!!ArrayIndex(ar, i)
 
-inl set forall dim {int} el. ((a ar) : a dim el) (i : dim) (v : el) : () = !!!!ArrayIndexSet(ar, i, v)
+:= set \* dim {int} el. ((a ar) : a dim el) (i : dim) (v : el) : () = !!!!ArrayIndexSet(ar, i, v)
 
-inl length forall dim {int} el. ((a ar) : a dim el) : dim = !!!!ArrayLength(`dim, ar)
+:= length \* dim {int} el. ((a ar) : a dim el) : dim = !!!!ArrayLength(`dim, ar)
 
-inl of_array forall dim {int} el. ((array ar) : array el) : a dim el = a ar
+:= of_array \* dim {int} el. ((array ar) : array el) : a dim el = a ar
 
-inl to_array forall dim {int} el. ((a ar) : a dim el) : array el = array ar
+:= to_array \* dim {int} el. ((a ar) : a dim el) : array el = array ar
 
 ///> c
 ///> rust
 test a_u64_indexed_array_round_trips =
-    inl ar : a u64 i32 = create 3u64
+    := ar : a u64 i32 = create 3u64
     set ar 0u64 7i32
     set ar 2u64 9i32
     (index ar 0u64, index ar 2u64, length ar) |> _assert_eq (7i32, 9i32, 3u64)

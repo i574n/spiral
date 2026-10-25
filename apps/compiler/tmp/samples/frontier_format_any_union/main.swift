@@ -39,12 +39,9 @@ func sp_method0() -> String {
     v3 = 1
     var v4: String = ""
     v4 = sp_format_real_1(v3)
-    var v5: String = ""
-    v5 = v2 + v4 
-    var v6: String = ""
-    v6 = ")"
-    var v7: String = ""
-    v7 = v5 + v6 
+    let v5: String = v2 + v4 
+    let v6: String = ")"
+    let v7: String = v5 + v6 
     return v7
 }
 func spiral_main() -> Int32 {

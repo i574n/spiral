@@ -30,24 +30,16 @@ fun spiralStringSlice(value: String, from: Int, to: Int): String {
 fun spiral_main(): Int {
     var v0: Array<String> = emptyArray<String>()
     v0 = Array(2) { "" }
-    var v1: String = ""
-    v1 = "ab"
+    val v1: String = "ab"
     v0[0] = v1
-    var v2: String = ""
-    v2 = "cde"
+    val v2: String = "cde"
     v0[1] = v2
-    var v3: String = ""
-    v3 = v0[0]
-    var v4: String = ""
-    v4 = v0[1]
-    var v5: Int = 0
-    v5 = spiralStringLength(v3)
-    var v6: Int = 0
-    v6 = spiralStringLength(v4)
-    var v7: Int = 0
-    v7 = (v5 + v6)
-    var v8: Int = 0
-    v8 = (v7 - 5)
+    val v3: String = v0[0]
+    val v4: String = v0[1]
+    val v5: Int = spiralStringLength(v3)
+    val v6: Int = spiralStringLength(v4)
+    val v7: Int = (v5 + v6)
+    val v8: Int = (v7 - 5)
     return v8
 }
 fun main() {

@@ -9,8 +9,7 @@ fun sp_method0(p0: Int): Boolean {
     return sp_is_answer_1(v0)
 }
 fun spiral_main(): Int {
-    var v0: Int = 0
-    v0 = 42
+    val v0: Int = 42
     var v1: Boolean = false
     v1 = sp_method0(v0)
     if (v1) {

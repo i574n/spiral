@@ -34,12 +34,10 @@ partial def count_0 (p0 : Int32) : IO Int32 := do
             return (0 : Int32)
         else
             v2 := (v0 - (1 : Int32))
-            let t2 := v2
-            v0 := t2
+            v0 := v2
             continue
 partial def spiralMain : IO Int32 := do
-    let mut v0 : Int32 := default
-    v0 := (5 : Int32)
+    let v0 : Int32 := (5 : Int32)
     return (← count_0 v0)
 end
 def main : IO UInt32 := do

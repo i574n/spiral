@@ -4,17 +4,17 @@ use std::rc::Rc;
 struct Heap0 { l0: Rc<dyn Fn(i32) -> i32> }
 fn f_c0(mut v0: i32) -> Rc<dyn Fn(i32) -> i32> {
     Rc::new(move |mut v1: i32| -> i32 {
-        let mut v2: i32 = v1.wrapping_add(v0);
+        let v2: i32 = v1.wrapping_add(v0);
         v2
     })
 }
 fn spiral_main() -> i32 {
-    let mut v0: i32 = 3i32;
-    let mut v1: Rc<dyn Fn(i32) -> i32> = f_c0(v0);
-    let mut v2: Rc<Heap0> = Rc::new(Heap0 { l0: v1.clone() });
+    let v0: i32 = 3i32;
+    let v1: Rc<dyn Fn(i32) -> i32> = f_c0(v0);
+    let v2: Rc<Heap0> = Rc::new(Heap0 { l0: v1 });
     let mut v3: Rc<dyn Fn(i32) -> i32> = v2.l0.clone();
-    let mut v4: i32 = v3(4i32);
-    let mut v5: bool = v4 == 7i32;
+    let v4: i32 = v3(4i32);
+    let v5: bool = v4 == 7i32;
     if v5 {
         0i32
     } else {

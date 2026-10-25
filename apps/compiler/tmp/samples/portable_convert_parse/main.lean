@@ -51,65 +51,43 @@ def U0.spiralTag : U0 → Int32
   | .None .. => 1
 mutual
 partial def spiralMain : IO Int32 := do
-    let mut v0 : String := default
-    let mut v1 : Int32 := default
-    let mut v2 : String := default
-    let mut v3 : Int32 := default
-    let mut v4 : String := default
-    let mut v5 : Int32 := default
-    let mut v6 : String := default
-    let mut v7 : Bool := default
-    let mut v8 : Int64 := default
-    let mut v9 : Int32 := default
     let mut v13 : Bool := default
     let mut v10 : Bool := default
     let mut v11 : Bool := default
     let mut v16 : U0 := default
     let mut v18 : String := default
     let mut v17 : Int32 := default
-    let mut v19 : String := default
-    let mut v20 : Bool := default
-    let mut v21 : Int64 := default
-    let mut v22 : Int32 := default
     let mut v26 : Bool := default
     let mut v23 : Bool := default
     let mut v24 : Bool := default
     let mut v29 : U0 := default
     let mut v31 : String := default
     let mut v30 : Int32 := default
-    let mut v32 : String := default
-    let mut v33 : Bool := default
-    let mut v34 : Int64 := default
-    let mut v35 : Int32 := default
     let mut v39 : Bool := default
     let mut v36 : Bool := default
     let mut v37 : Bool := default
     let mut v42 : U0 := default
     let mut v44 : String := default
     let mut v43 : Int32 := default
-    let mut v45 : String := default
-    let mut v46 : Bool := default
-    let mut v47 : Int64 := default
-    let mut v48 : Int32 := default
     let mut v52 : Bool := default
     let mut v49 : Bool := default
     let mut v50 : Bool := default
     let mut v55 : U0 := default
     let mut v57 : String := default
     let mut v56 : Int32 := default
-    v0 := "ff"
-    v1 := (spiralParseIntBase v0 (16 : Int32))
+    let v0 : String := "ff"
+    let v1 : Int32 := (spiralParseIntBase v0 (16 : Int32))
     IO.println (toString v1)
-    v2 := "1011"
-    v3 := (spiralParseIntBase v2 (2 : Int32))
+    let v2 : String := "1011"
+    let v3 : Int32 := (spiralParseIntBase v2 (2 : Int32))
     IO.println (toString v3)
-    v4 := "-42"
-    v5 := (spiralParseIntBase v4 (10 : Int32))
+    let v4 : String := "-42"
+    let v5 : Int32 := (spiralParseIntBase v4 (10 : Int32))
     IO.println (toString v5)
-    v6 := " 123 "
-    v7 := (spiralParseInt? v6).isSome
-    v8 := (Int64.ofInt ((spiralParseInt? v6).getD 0))
-    v9 := (Int32.ofInt (SpiralToInt.toI v8))
+    let v6 : String := " 123 "
+    let v7 : Bool := (spiralParseInt? v6).isSome
+    let v8 : Int64 := (Int64.ofInt ((spiralParseInt? v6).getD 0))
+    let v9 : Int32 := (Int32.ofInt (SpiralToInt.toI v8))
     if v7 then
         v10 := (decide (v8 >= (-2147483648 : Int64)))
         if v10 then
@@ -130,10 +108,10 @@ partial def spiralMain : IO Int32 := do
     | U0.Some f17 =>
         v17 := f17
         IO.println (toString v17)
-    v19 := "12x"
-    v20 := (spiralParseInt? v19).isSome
-    v21 := (Int64.ofInt ((spiralParseInt? v19).getD 0))
-    v22 := (Int32.ofInt (SpiralToInt.toI v21))
+    let v19 : String := "12x"
+    let v20 : Bool := (spiralParseInt? v19).isSome
+    let v21 : Int64 := (Int64.ofInt ((spiralParseInt? v19).getD 0))
+    let v22 : Int32 := (Int32.ofInt (SpiralToInt.toI v21))
     if v20 then
         v23 := (decide (v21 >= (-2147483648 : Int64)))
         if v23 then
@@ -154,10 +132,10 @@ partial def spiralMain : IO Int32 := do
     | U0.Some f30 =>
         v30 := f30
         IO.println (toString v30)
-    v32 := ""
-    v33 := (spiralParseInt? v32).isSome
-    v34 := (Int64.ofInt ((spiralParseInt? v32).getD 0))
-    v35 := (Int32.ofInt (SpiralToInt.toI v34))
+    let v32 : String := ""
+    let v33 : Bool := (spiralParseInt? v32).isSome
+    let v34 : Int64 := (Int64.ofInt ((spiralParseInt? v32).getD 0))
+    let v35 : Int32 := (Int32.ofInt (SpiralToInt.toI v34))
     if v33 then
         v36 := (decide (v34 >= (-2147483648 : Int64)))
         if v36 then
@@ -178,10 +156,10 @@ partial def spiralMain : IO Int32 := do
     | U0.Some f43 =>
         v43 := f43
         IO.println (toString v43)
-    v45 := "+7"
-    v46 := (spiralParseInt? v45).isSome
-    v47 := (Int64.ofInt ((spiralParseInt? v45).getD 0))
-    v48 := (Int32.ofInt (SpiralToInt.toI v47))
+    let v45 : String := "+7"
+    let v46 : Bool := (spiralParseInt? v45).isSome
+    let v47 : Int64 := (Int64.ofInt ((spiralParseInt? v45).getD 0))
+    let v48 : Int32 := (Int32.ofInt (SpiralToInt.toI v47))
     if v46 then
         v49 := (decide (v47 >= (-2147483648 : Int64)))
         if v49 then

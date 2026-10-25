@@ -1,8 +1,8 @@
-open sm'_operators
-open leptos
-open rust
+:< sm'_operators
+:< leptos
+:< rust
 
-inl render (class : () -> string) (props : list _) : _ (_ svg) =
+:= render (class : () -> string) (props : list _) : _ (_ svg) =
     svg
         ([
             $'"xmlns=\\\"http://www.w3.org/2000/svg\\\""'
@@ -13,7 +13,7 @@ inl render (class : () -> string) (props : list _) : _ (_ svg) =
             $'"stroke=\\\"currentColor\\\""'
             class_fn "text-gray-700 " class
         ] ++ props)
-        fun () => :>[
+        \ () => :>[
             path [
                 $'"stroke-linecap=\\\"round\\\""'
                 $'"stroke-linejoin=\\\"round\\\""'

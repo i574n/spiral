@@ -28,13 +28,17 @@ UH1 = Union["UH1_InputEmpty", "UH1_InputCons"]
 UH2 = Union["UH2_RegexListNil", "UH2_RegexListCons"]
 class US0_BitZero(NamedTuple): # BitZero
     tag = 0
+US0_BitZero_shared = US0_BitZero()
 class US0_BitOne(NamedTuple): # BitOne
     tag = 1
+US0_BitOne_shared = US0_BitOne()
 US0 = Union[US0_BitZero, US0_BitOne]
 class UH0_RegexEmpty(NamedTuple): # RegexEmpty
     tag = 0
+UH0_RegexEmpty_shared = UH0_RegexEmpty()
 class UH0_RegexEpsilon(NamedTuple): # RegexEpsilon
     tag = 1
+UH0_RegexEpsilon_shared = UH0_RegexEpsilon()
 class UH0_RegexChar(NamedTuple): # RegexChar
     v0 : US0
     tag = 2
@@ -51,24 +55,31 @@ class UH0_RegexStar(NamedTuple): # RegexStar
     tag = 5
 class UH1_InputEmpty(NamedTuple): # InputEmpty
     tag = 0
+UH1_InputEmpty_shared = UH1_InputEmpty()
 class UH1_InputCons(NamedTuple): # InputCons
     v0 : US0
     v1 : UH1
     tag = 1
 class US1_SymbolLess(NamedTuple): # SymbolLess
     tag = 0
+US1_SymbolLess_shared = US1_SymbolLess()
 class US1_SymbolSame(NamedTuple): # SymbolSame
     tag = 1
+US1_SymbolSame_shared = US1_SymbolSame()
 class US1_SymbolGreater(NamedTuple): # SymbolGreater
     tag = 2
+US1_SymbolGreater_shared = US1_SymbolGreater()
 US1 = Union[US1_SymbolLess, US1_SymbolSame, US1_SymbolGreater]
 class US2_Nullable(NamedTuple): # Nullable
     tag = 0
+US2_Nullable_shared = US2_Nullable()
 class US2_NonNullable(NamedTuple): # NonNullable
     tag = 1
+US2_NonNullable_shared = US2_NonNullable()
 US2 = Union[US2_Nullable, US2_NonNullable]
 class UH2_RegexListNil(NamedTuple): # RegexListNil
     tag = 0
+UH2_RegexListNil_shared = UH2_RegexListNil()
 class UH2_RegexListCons(NamedTuple): # RegexListCons
     v0 : UH0
     v1 : UH2
@@ -92,10 +103,10 @@ def random_bit_input_1(v0 : u64, v1 : i32, v2 : UH1) -> Tuple[UH1, u64]:
             v10 = v9 == 0
             del v9
             if v10:
-                v11 = US0_BitZero()
+                v11 = US0_BitZero_shared
                 v13 = v11
             else:
-                v12 = US0_BitOne()
+                v12 = US0_BitOne_shared
                 v13 = v12
             del v10
             v14 = UH1_InputCons(v13, v2)
@@ -125,7 +136,7 @@ def regex_compare_7(v0 : UH0, v1 : UH0) -> US1:
                                 return v57
                     case t:
                         del v1, v53, v54
-                        return US1_SymbolGreater()
+                        return US1_SymbolGreater_shared
             case UH0_RegexCat(v28, v29): # RegexCat
                 del v0
                 match v1:
@@ -143,16 +154,16 @@ def regex_compare_7(v0 : UH0, v1 : UH0) -> US1:
                                 return v36
                     case UH0_RegexChar(_): # RegexChar
                         del v1, v28, v29
-                        return US1_SymbolGreater()
+                        return US1_SymbolGreater_shared
                     case UH0_RegexEmpty(): # RegexEmpty
                         del v1, v28, v29
-                        return US1_SymbolGreater()
+                        return US1_SymbolGreater_shared
                     case UH0_RegexEpsilon(): # RegexEpsilon
                         del v1, v28, v29
-                        return US1_SymbolGreater()
+                        return US1_SymbolGreater_shared
                     case t:
                         del v1, v28, v29
-                        return US1_SymbolLess()
+                        return US1_SymbolLess_shared
             case UH0_RegexChar(v10): # RegexChar
                 del v0
                 match v1:
@@ -164,10 +175,10 @@ def regex_compare_7(v0 : UH0, v1 : UH0) -> US1:
                                 match v13:
                                     case US0_BitOne(): # BitOne
                                         del v13
-                                        return US1_SymbolSame()
+                                        return US1_SymbolSame_shared
                                     case US0_BitZero(): # BitZero
                                         del v13
-                                        return US1_SymbolGreater()
+                                        return US1_SymbolGreater_shared
                                     case t:
                                         raise Exception(f'Pattern matching miss. Got: {t}')
                             case US0_BitZero(): # BitZero
@@ -175,57 +186,57 @@ def regex_compare_7(v0 : UH0, v1 : UH0) -> US1:
                                 match v13:
                                     case US0_BitOne(): # BitOne
                                         del v13
-                                        return US1_SymbolLess()
+                                        return US1_SymbolLess_shared
                                     case US0_BitZero(): # BitZero
                                         del v13
-                                        return US1_SymbolSame()
+                                        return US1_SymbolSame_shared
                                     case t:
                                         raise Exception(f'Pattern matching miss. Got: {t}')
                             case t:
                                 raise Exception(f'Pattern matching miss. Got: {t}')
                     case UH0_RegexEmpty(): # RegexEmpty
                         del v1, v10
-                        return US1_SymbolGreater()
+                        return US1_SymbolGreater_shared
                     case UH0_RegexEpsilon(): # RegexEpsilon
                         del v1, v10
-                        return US1_SymbolGreater()
+                        return US1_SymbolGreater_shared
                     case t:
                         del v1, v10
-                        return US1_SymbolLess()
+                        return US1_SymbolLess_shared
             case UH0_RegexEmpty(): # RegexEmpty
                 del v0
                 match v1:
                     case UH0_RegexEmpty(): # RegexEmpty
                         del v1
-                        return US1_SymbolSame()
+                        return US1_SymbolSame_shared
                     case t:
                         del v1
-                        return US1_SymbolLess()
+                        return US1_SymbolLess_shared
             case UH0_RegexEpsilon(): # RegexEpsilon
                 del v0
                 match v1:
                     case UH0_RegexEmpty(): # RegexEmpty
                         del v1
-                        return US1_SymbolGreater()
+                        return US1_SymbolGreater_shared
                     case UH0_RegexEpsilon(): # RegexEpsilon
                         del v1
-                        return US1_SymbolSame()
+                        return US1_SymbolSame_shared
                     case t:
                         del v1
-                        return US1_SymbolLess()
+                        return US1_SymbolLess_shared
             case UH0_RegexStar(v44): # RegexStar
                 del v0
                 match v1:
                     case UH0_RegexAlt(_, _): # RegexAlt
                         del v1, v44
-                        return US1_SymbolLess()
+                        return US1_SymbolLess_shared
                     case UH0_RegexStar(v48): # RegexStar
                         del v1
                         v0, v1 = v44, v48
                         continue
                     case t:
                         del v1, v44
-                        return US1_SymbolGreater()
+                        return US1_SymbolGreater_shared
             case t:
                 raise Exception(f'Pattern matching miss. Got: {t}')
 def alt_insert_sorted_6(v0 : UH0, v1 : UH0) -> UH0:
@@ -323,17 +334,17 @@ def regex_equal_9(v0 : UH0, v1 : UH0) -> bool:
                             case US0_BitOne(): # BitOne
                                 match v5:
                                     case US0_BitOne(): # BitOne
-                                        v15 = US1_SymbolSame()
+                                        v15 = US1_SymbolSame_shared
                                     case US0_BitZero(): # BitZero
-                                        v15 = US1_SymbolGreater()
+                                        v15 = US1_SymbolGreater_shared
                                     case t:
                                         raise Exception(f'Pattern matching miss. Got: {t}')
                             case US0_BitZero(): # BitZero
                                 match v5:
                                     case US0_BitOne(): # BitOne
-                                        v15 = US1_SymbolLess()
+                                        v15 = US1_SymbolLess_shared
                                     case US0_BitZero(): # BitZero
-                                        v15 = US1_SymbolSame()
+                                        v15 = US1_SymbolSame_shared
                                     case t:
                                         raise Exception(f'Pattern matching miss. Got: {t}')
                             case t:
@@ -383,12 +394,12 @@ def make_cat_8(v0 : UH0, v1 : UH0) -> UH0:
     match v0:
         case UH0_RegexEmpty(): # RegexEmpty
             del v0, v1
-            return UH0_RegexEmpty()
+            return UH0_RegexEmpty_shared
         case t:
             match v1:
                 case UH0_RegexEmpty(): # RegexEmpty
                     del v0, v1
-                    return UH0_RegexEmpty()
+                    return UH0_RegexEmpty_shared
                 case t:
                     match v0:
                         case UH0_RegexEpsilon(): # RegexEpsilon
@@ -426,10 +437,10 @@ def make_star_10(v0 : UH0) -> UH0:
     match v0:
         case UH0_RegexEmpty(): # RegexEmpty
             del v0
-            return UH0_RegexEpsilon()
+            return UH0_RegexEpsilon_shared
         case UH0_RegexEpsilon(): # RegexEpsilon
             del v0
-            return UH0_RegexEpsilon()
+            return UH0_RegexEpsilon_shared
         case UH0_RegexStar(v3): # RegexStar
             del v0
             return UH0_RegexStar(v3)
@@ -456,10 +467,10 @@ def normalize_4(v0 : UH0) -> UH0:
             return UH0_RegexChar(v3)
         case UH0_RegexEmpty(): # RegexEmpty
             del v0
-            return UH0_RegexEmpty()
+            return UH0_RegexEmpty_shared
         case UH0_RegexEpsilon(): # RegexEpsilon
             del v0
-            return UH0_RegexEpsilon()
+            return UH0_RegexEpsilon_shared
         case UH0_RegexStar(v15): # RegexStar
             del v0
             v16 = normalize_4(v15)
@@ -478,12 +489,12 @@ def nullable_12(v0 : UH0) -> US2:
             match v7:
                 case US2_Nullable(): # Nullable
                     del v7, v8
-                    return US2_Nullable()
+                    return US2_Nullable_shared
                 case t:
                     match v8:
                         case US2_Nullable(): # Nullable
                             del v7, v8
-                            return US2_Nullable()
+                            return US2_Nullable_shared
                         case t:
                             match v7:
                                 case US2_NonNullable(): # NonNullable
@@ -491,7 +502,7 @@ def nullable_12(v0 : UH0) -> US2:
                                     match v8:
                                         case US2_NonNullable(): # NonNullable
                                             del v8
-                                            return US2_NonNullable()
+                                            return US2_NonNullable_shared
                                         case t:
                                             raise Exception(f'Pattern matching miss. Got: {t}')
                                 case t:
@@ -508,25 +519,25 @@ def nullable_12(v0 : UH0) -> US2:
                     match v19:
                         case US2_Nullable(): # Nullable
                             del v19
-                            return US2_Nullable()
+                            return US2_Nullable_shared
                         case t:
                             del v19
-                            return US2_NonNullable()
+                            return US2_NonNullable_shared
                 case t:
                     del v18, v19
-                    return US2_NonNullable()
+                    return US2_NonNullable_shared
         case UH0_RegexChar(_): # RegexChar
             del v0
-            return US2_NonNullable()
+            return US2_NonNullable_shared
         case UH0_RegexEmpty(): # RegexEmpty
             del v0
-            return US2_NonNullable()
+            return US2_NonNullable_shared
         case UH0_RegexEpsilon(): # RegexEpsilon
             del v0
-            return US2_Nullable()
+            return US2_Nullable_shared
         case UH0_RegexStar(_): # RegexStar
             del v0
-            return US2_Nullable()
+            return US2_Nullable_shared
         case t:
             raise Exception(f'Pattern matching miss. Got: {t}')
 def derivative_11(v0 : UH0, v1 : US0) -> UH0:
@@ -564,17 +575,17 @@ def derivative_11(v0 : UH0, v1 : US0) -> UH0:
                 case US0_BitOne(): # BitOne
                     match v1:
                         case US0_BitOne(): # BitOne
-                            v14 = US1_SymbolSame()
+                            v14 = US1_SymbolSame_shared
                         case US0_BitZero(): # BitZero
-                            v14 = US1_SymbolGreater()
+                            v14 = US1_SymbolGreater_shared
                         case t:
                             raise Exception(f'Pattern matching miss. Got: {t}')
                 case US0_BitZero(): # BitZero
                     match v1:
                         case US0_BitOne(): # BitOne
-                            v14 = US1_SymbolLess()
+                            v14 = US1_SymbolLess_shared
                         case US0_BitZero(): # BitZero
-                            v14 = US1_SymbolSame()
+                            v14 = US1_SymbolSame_shared
                         case t:
                             raise Exception(f'Pattern matching miss. Got: {t}')
                 case t:
@@ -588,16 +599,16 @@ def derivative_11(v0 : UH0, v1 : US0) -> UH0:
             del v14
             if v15:
                 del v15
-                return UH0_RegexEpsilon()
+                return UH0_RegexEpsilon_shared
             else:
                 del v15
-                return UH0_RegexEmpty()
+                return UH0_RegexEmpty_shared
         case UH0_RegexEmpty(): # RegexEmpty
             del v0, v1
-            return UH0_RegexEmpty()
+            return UH0_RegexEmpty_shared
         case UH0_RegexEpsilon(): # RegexEpsilon
             del v0, v1
-            return UH0_RegexEmpty()
+            return UH0_RegexEmpty_shared
         case UH0_RegexStar(v35): # RegexStar
             del v0
             v36 = derivative_11(v35, v1)
@@ -644,7 +655,7 @@ def loop_0(v0 : UH0, v1 : i32, v2 : i32, v3 : u64, v4 : i32) -> i32:
         v5 = 0 < v2
         if v5:
             del v5
-            v6 = UH1_InputEmpty()
+            v6 = UH1_InputEmpty_shared
             v7, v8 = random_bit_input_1(v3, v1, v6)
             del v3, v6
             v9 = accepts_2(v0, v7)
@@ -669,7 +680,7 @@ def zeros_input_14(v0 : i32, v1 : UH1) -> UH1:
             del v2
             v3 = spiral_wrap(v0 - 1, 32, True)
             del v0
-            v4 = US0_BitZero()
+            v4 = US0_BitZero_shared
             v5 = UH1_InputCons(v4, v1)
             del v1, v4
             v0, v1 = v3, v5
@@ -685,7 +696,7 @@ def loop_13(v0 : UH0, v1 : i32, v2 : i32, v3 : i32) -> i32:
             return v3
         else:
             del v4
-            v5 = UH1_InputEmpty()
+            v5 = UH1_InputEmpty_shared
             v6 = zeros_input_14(v2, v5)
             del v5
             v7 = accepts_2(v0, v6)
@@ -696,8 +707,8 @@ def loop_13(v0 : UH0, v1 : i32, v2 : i32, v3 : i32) -> i32:
             else:
                 v9 = v3
             del v3, v7
-            v10 = US0_BitOne()
-            v11 = UH1_InputEmpty()
+            v10 = US0_BitOne_shared
+            v11 = UH1_InputEmpty_shared
             v12 = UH1_InputCons(v10, v11)
             del v10, v11
             v13 = zeros_input_14(v2, v12)
@@ -751,17 +762,17 @@ def backtrack_stack_16(v0 : UH2, v1 : UH1) -> bool:
                                     case US0_BitOne(): # BitOne
                                         match v10:
                                             case US0_BitOne(): # BitOne
-                                                v21 = US1_SymbolSame()
+                                                v21 = US1_SymbolSame_shared
                                             case US0_BitZero(): # BitZero
-                                                v21 = US1_SymbolGreater()
+                                                v21 = US1_SymbolGreater_shared
                                             case t:
                                                 raise Exception(f'Pattern matching miss. Got: {t}')
                                     case US0_BitZero(): # BitZero
                                         match v10:
                                             case US0_BitOne(): # BitOne
-                                                v21 = US1_SymbolLess()
+                                                v21 = US1_SymbolLess_shared
                                             case US0_BitZero(): # BitZero
-                                                v21 = US1_SymbolSame()
+                                                v21 = US1_SymbolSame_shared
                                             case t:
                                                 raise Exception(f'Pattern matching miss. Got: {t}')
                                     case t:
@@ -825,10 +836,10 @@ def loop_15(v0 : UH0, v1 : i32, v2 : i32, v3 : u64, v4 : i32) -> i32:
         v5 = 0 < v2
         if v5:
             del v5
-            v6 = UH1_InputEmpty()
+            v6 = UH1_InputEmpty_shared
             v7, v8 = random_bit_input_1(v3, v1, v6)
             del v3, v6
-            v9 = UH2_RegexListNil()
+            v9 = UH2_RegexListNil_shared
             v10 = UH2_RegexListCons(v0, v9)
             del v9
             v11 = backtrack_stack_16(v10, v7)
@@ -854,10 +865,10 @@ def loop_17(v0 : UH0, v1 : i32, v2 : i32, v3 : i32) -> i32:
             return v3
         else:
             del v4
-            v5 = UH1_InputEmpty()
+            v5 = UH1_InputEmpty_shared
             v6 = zeros_input_14(v2, v5)
             del v5
-            v7 = UH2_RegexListNil()
+            v7 = UH2_RegexListNil_shared
             v8 = UH2_RegexListCons(v0, v7)
             del v7
             v9 = backtrack_stack_16(v8, v6)
@@ -868,13 +879,13 @@ def loop_17(v0 : UH0, v1 : i32, v2 : i32, v3 : i32) -> i32:
             else:
                 v11 = v3
             del v3, v9
-            v12 = US0_BitOne()
-            v13 = UH1_InputEmpty()
+            v12 = US0_BitOne_shared
+            v13 = UH1_InputEmpty_shared
             v14 = UH1_InputCons(v12, v13)
             del v12, v13
             v15 = zeros_input_14(v2, v14)
             del v14
-            v16 = UH2_RegexListNil()
+            v16 = UH2_RegexListNil_shared
             v17 = UH2_RegexListCons(v0, v16)
             del v16
             v18 = backtrack_stack_16(v17, v15)
@@ -919,7 +930,7 @@ def loop_18(v0 : i32, v1 : i32, v2 : u64, v3 : i32) -> i32:
         v4 = 0 < v1
         if v4:
             del v4
-            v5 = UH1_InputEmpty()
+            v5 = UH1_InputEmpty_shared
             v6, v7 = random_bit_input_1(v2, v0, v5)
             del v2, v5
             v8 = 0
@@ -1188,7 +1199,7 @@ def loop_20(v0 : i32, v1 : i32, v2 : u64, v3 : i32) -> i32:
         v4 = 0 < v1
         if v4:
             del v4
-            v5 = UH1_InputEmpty()
+            v5 = UH1_InputEmpty_shared
             v6, v7 = random_bit_input_1(v2, v0, v5)
             del v2, v5
             v8 = 0
@@ -1274,7 +1285,7 @@ def loop_22(v0 : i32, v1 : i32, v2 : i32) -> i32:
             return v2
         else:
             del v3
-            v4 = UH1_InputEmpty()
+            v4 = UH1_InputEmpty_shared
             v5 = zeros_input_14(v1, v4)
             del v4
             v6 = 0
@@ -1286,8 +1297,8 @@ def loop_22(v0 : i32, v1 : i32, v2 : i32) -> i32:
             else:
                 v9 = v2
             del v2, v7
-            v10 = US0_BitOne()
-            v11 = UH1_InputEmpty()
+            v10 = US0_BitOne_shared
+            v11 = UH1_InputEmpty_shared
             v12 = UH1_InputCons(v10, v11)
             del v10, v11
             v13 = zeros_input_14(v1, v12)
@@ -1765,7 +1776,7 @@ def loop_32(v0 : cp.ndarray, v1 : cp.ndarray, v2 : cp.ndarray, v3 : cp.ndarray, 
         v12 = 0 < v9
         if v12:
             del v12
-            v13 = UH1_InputEmpty()
+            v13 = UH1_InputEmpty_shared
             v14, v15 = random_bit_input_1(v10, v7, v13)
             del v10, v13
             v16 = interned_accepts_33(v0, v1, v2, v3, v4, v5, v6, v8, v14)
@@ -1791,7 +1802,7 @@ def loop_36(v0 : cp.ndarray, v1 : cp.ndarray, v2 : cp.ndarray, v3 : cp.ndarray, 
             return v10
         else:
             del v11
-            v12 = UH1_InputEmpty()
+            v12 = UH1_InputEmpty_shared
             v13 = zeros_input_14(v9, v12)
             del v12
             v14 = interned_accepts_33(v0, v1, v2, v3, v4, v5, v6, v8, v13)
@@ -1802,8 +1813,8 @@ def loop_36(v0 : cp.ndarray, v1 : cp.ndarray, v2 : cp.ndarray, v3 : cp.ndarray, 
             else:
                 v16 = v10
             del v10, v14
-            v17 = US0_BitOne()
-            v18 = UH1_InputEmpty()
+            v17 = US0_BitOne_shared
+            v18 = UH1_InputEmpty_shared
             v19 = UH1_InputCons(v17, v18)
             del v17, v18
             v20 = zeros_input_14(v9, v19)
@@ -1823,54 +1834,54 @@ def loop_36(v0 : cp.ndarray, v1 : cp.ndarray, v2 : cp.ndarray, v3 : cp.ndarray, 
 def main():
     v0 = 200
     v1 = 32
-    v2 = US0_BitZero()
+    v2 = US0_BitZero_shared
     v3 = UH0_RegexChar(v2)
     del v2
-    v4 = US0_BitOne()
+    v4 = US0_BitOne_shared
     v5 = UH0_RegexChar(v4)
     del v4
     v6 = UH0_RegexAlt(v3, v5)
     del v3, v5
     v7 = UH0_RegexStar(v6)
     del v6
-    v8 = US0_BitZero()
+    v8 = US0_BitZero_shared
     v9 = UH0_RegexChar(v8)
     del v8
     v10 = UH0_RegexCat(v7, v9)
     del v7, v9
-    v11 = US0_BitZero()
+    v11 = US0_BitZero_shared
     v12 = UH0_RegexChar(v11)
     del v11
-    v13 = US0_BitOne()
+    v13 = US0_BitOne_shared
     v14 = UH0_RegexChar(v13)
     del v13
     v15 = UH0_RegexAlt(v12, v14)
     del v12, v14
     v16 = UH0_RegexStar(v15)
     del v15
-    v17 = US0_BitOne()
+    v17 = US0_BitOne_shared
     v18 = UH0_RegexChar(v17)
     del v17
-    v19 = US0_BitZero()
+    v19 = US0_BitZero_shared
     v20 = UH0_RegexChar(v19)
     del v19
-    v21 = US0_BitOne()
+    v21 = US0_BitOne_shared
     v22 = UH0_RegexChar(v21)
     del v21
     v23 = UH0_RegexAlt(v20, v22)
     del v20, v22
-    v24 = US0_BitZero()
+    v24 = US0_BitZero_shared
     v25 = UH0_RegexChar(v24)
     del v24
-    v26 = US0_BitOne()
+    v26 = US0_BitOne_shared
     v27 = UH0_RegexChar(v26)
     del v26
     v28 = UH0_RegexAlt(v25, v27)
     del v25, v27
-    v29 = US0_BitZero()
+    v29 = US0_BitZero_shared
     v30 = UH0_RegexChar(v29)
     del v29
-    v31 = US0_BitOne()
+    v31 = US0_BitOne_shared
     v32 = UH0_RegexChar(v31)
     del v31
     v33 = UH0_RegexAlt(v30, v32)
@@ -1890,13 +1901,13 @@ def main():
     v41 = loop_0(v37, v1, v0, v38, v39)
     del v0, v1, v37, v38, v39
     v42 = 16
-    v43 = US0_BitZero()
+    v43 = US0_BitZero_shared
     v44 = UH0_RegexChar(v43)
     del v43
-    v45 = US0_BitZero()
+    v45 = US0_BitZero_shared
     v46 = UH0_RegexChar(v45)
     del v45
-    v47 = US0_BitZero()
+    v47 = US0_BitZero_shared
     v48 = UH0_RegexChar(v47)
     del v47
     v49 = UH0_RegexCat(v46, v48)
@@ -1905,7 +1916,7 @@ def main():
     del v44, v49
     v51 = UH0_RegexStar(v50)
     del v50
-    v52 = US0_BitOne()
+    v52 = US0_BitOne_shared
     v53 = UH0_RegexChar(v52)
     del v52
     v54 = UH0_RegexCat(v51, v53)
@@ -1916,54 +1927,54 @@ def main():
     del v42, v54, v55, v56
     v58 = 200
     v59 = 32
-    v60 = US0_BitZero()
+    v60 = US0_BitZero_shared
     v61 = UH0_RegexChar(v60)
     del v60
-    v62 = US0_BitOne()
+    v62 = US0_BitOne_shared
     v63 = UH0_RegexChar(v62)
     del v62
     v64 = UH0_RegexAlt(v61, v63)
     del v61, v63
     v65 = UH0_RegexStar(v64)
     del v64
-    v66 = US0_BitZero()
+    v66 = US0_BitZero_shared
     v67 = UH0_RegexChar(v66)
     del v66
     v68 = UH0_RegexCat(v65, v67)
     del v65, v67
-    v69 = US0_BitZero()
+    v69 = US0_BitZero_shared
     v70 = UH0_RegexChar(v69)
     del v69
-    v71 = US0_BitOne()
+    v71 = US0_BitOne_shared
     v72 = UH0_RegexChar(v71)
     del v71
     v73 = UH0_RegexAlt(v70, v72)
     del v70, v72
     v74 = UH0_RegexStar(v73)
     del v73
-    v75 = US0_BitOne()
+    v75 = US0_BitOne_shared
     v76 = UH0_RegexChar(v75)
     del v75
-    v77 = US0_BitZero()
+    v77 = US0_BitZero_shared
     v78 = UH0_RegexChar(v77)
     del v77
-    v79 = US0_BitOne()
+    v79 = US0_BitOne_shared
     v80 = UH0_RegexChar(v79)
     del v79
     v81 = UH0_RegexAlt(v78, v80)
     del v78, v80
-    v82 = US0_BitZero()
+    v82 = US0_BitZero_shared
     v83 = UH0_RegexChar(v82)
     del v82
-    v84 = US0_BitOne()
+    v84 = US0_BitOne_shared
     v85 = UH0_RegexChar(v84)
     del v84
     v86 = UH0_RegexAlt(v83, v85)
     del v83, v85
-    v87 = US0_BitZero()
+    v87 = US0_BitZero_shared
     v88 = UH0_RegexChar(v87)
     del v87
-    v89 = US0_BitOne()
+    v89 = US0_BitOne_shared
     v90 = UH0_RegexChar(v89)
     del v89
     v91 = UH0_RegexAlt(v88, v90)
@@ -1983,13 +1994,13 @@ def main():
     v99 = loop_15(v95, v59, v58, v96, v97)
     del v58, v59, v95, v96, v97
     v100 = 16
-    v101 = US0_BitZero()
+    v101 = US0_BitZero_shared
     v102 = UH0_RegexChar(v101)
     del v101
-    v103 = US0_BitZero()
+    v103 = US0_BitZero_shared
     v104 = UH0_RegexChar(v103)
     del v103
-    v105 = US0_BitZero()
+    v105 = US0_BitZero_shared
     v106 = UH0_RegexChar(v105)
     del v105
     v107 = UH0_RegexCat(v104, v106)
@@ -1998,7 +2009,7 @@ def main():
     del v102, v107
     v109 = UH0_RegexStar(v108)
     del v108
-    v110 = US0_BitOne()
+    v110 = US0_BitOne_shared
     v111 = UH0_RegexChar(v110)
     del v110
     v112 = UH0_RegexCat(v109, v111)
@@ -2098,17 +2109,17 @@ def main():
     else:
         raise Exception("brzozowski-interned-store-init")
     del v138, v139, v140, v141, v142, v143, v144, v158
-    v173 = US0_BitZero()
+    v173 = US0_BitZero_shared
     v174 = UH0_RegexChar(v173)
     del v173
-    v175 = US0_BitOne()
+    v175 = US0_BitOne_shared
     v176 = UH0_RegexChar(v175)
     del v175
     v177 = UH0_RegexAlt(v174, v176)
     del v174, v176
     v178 = UH0_RegexStar(v177)
     del v177
-    v179 = US0_BitZero()
+    v179 = US0_BitZero_shared
     v180 = UH0_RegexChar(v179)
     del v179
     v181 = UH0_RegexCat(v178, v180)
@@ -2119,39 +2130,39 @@ def main():
     v184 = 0
     v185 = loop_32(v166, v167, v168, v169, v170, v171, v172, v137, v182, v136, v183, v184)
     del v182, v183, v184
-    v186 = US0_BitZero()
+    v186 = US0_BitZero_shared
     v187 = UH0_RegexChar(v186)
     del v186
-    v188 = US0_BitOne()
+    v188 = US0_BitOne_shared
     v189 = UH0_RegexChar(v188)
     del v188
     v190 = UH0_RegexAlt(v187, v189)
     del v187, v189
     v191 = UH0_RegexStar(v190)
     del v190
-    v192 = US0_BitOne()
+    v192 = US0_BitOne_shared
     v193 = UH0_RegexChar(v192)
     del v192
-    v194 = US0_BitZero()
+    v194 = US0_BitZero_shared
     v195 = UH0_RegexChar(v194)
     del v194
-    v196 = US0_BitOne()
+    v196 = US0_BitOne_shared
     v197 = UH0_RegexChar(v196)
     del v196
     v198 = UH0_RegexAlt(v195, v197)
     del v195, v197
-    v199 = US0_BitZero()
+    v199 = US0_BitZero_shared
     v200 = UH0_RegexChar(v199)
     del v199
-    v201 = US0_BitOne()
+    v201 = US0_BitOne_shared
     v202 = UH0_RegexChar(v201)
     del v201
     v203 = UH0_RegexAlt(v200, v202)
     del v200, v202
-    v204 = US0_BitZero()
+    v204 = US0_BitZero_shared
     v205 = UH0_RegexChar(v204)
     del v204
-    v206 = US0_BitOne()
+    v206 = US0_BitOne_shared
     v207 = UH0_RegexChar(v206)
     del v206
     v208 = UH0_RegexAlt(v205, v207)
@@ -2210,13 +2221,13 @@ def main():
     else:
         raise Exception("brzozowski-interned-store-init")
     del v218, v219, v220, v221, v222, v223, v224, v238
-    v253 = US0_BitZero()
+    v253 = US0_BitZero_shared
     v254 = UH0_RegexChar(v253)
     del v253
-    v255 = US0_BitZero()
+    v255 = US0_BitZero_shared
     v256 = UH0_RegexChar(v255)
     del v255
-    v257 = US0_BitZero()
+    v257 = US0_BitZero_shared
     v258 = UH0_RegexChar(v257)
     del v257
     v259 = UH0_RegexCat(v256, v258)
@@ -2225,7 +2236,7 @@ def main():
     del v254, v259
     v261 = UH0_RegexStar(v260)
     del v260
-    v262 = US0_BitOne()
+    v262 = US0_BitOne_shared
     v263 = UH0_RegexChar(v262)
     del v262
     v264 = UH0_RegexCat(v261, v263)

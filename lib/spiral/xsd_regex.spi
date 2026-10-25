@@ -1,6 +1,6 @@
 ///- --package .
-open sm'_operators
-union rec rx =
+:< sm'_operators
+:| ^ rx =
     | RxNone
     | RxEps
     | RxClass : bool * list (u32 * u32)
@@ -8,12 +8,12 @@ union rec rx =
     | RxAlt : rx * rx
     | RxStar : rx
 
-inl cp_at (s : string) (i : i32) : u32 = xml.code_point_at s i
+:= cp_at (s : string) (i : i32) : u32 = xml.code_point_at s i
 
-inl cp_width (s : string) (i : i32) : i32 = xml.code_point_width s i
+:= cp_width (s : string) (i : i32) : i32 = xml.code_point_width s i
 
-inl rx_tag (r : rx) : i32 =
-    match r with
+:= rx_tag (r : rx) : i32 =
+    ?= r ?|
     | RxNone => 0i32
     | RxEps => 1i32
     | RxClass _ => 2i32
@@ -21,252 +21,252 @@ inl rx_tag (r : rx) : i32 =
     | RxAlt _ => 4i32
     | RxStar _ => 5i32
 
-let rec ranges_compare (a : list (u32 * u32)) (b : list (u32 * u32)) : i32 =
-    match a with
-    | Nil => match b with Nil => 0i32 | _ => -1i32
+:~ ^ ranges_compare (a : list (u32 * u32)) (b : list (u32 * u32)) : i32 =
+    ?= a ?|
+    | Nil => ?= b ?| Nil => 0i32 | _ => -1i32
     | (a_low, a_high) :: a_rest =>
-        match b with
+        ?= b ?|
         | Nil => 1i32
         | (b_low, b_high) :: b_rest =>
-            if a_low < b_low then -1i32
-            elif a_low > b_low then 1i32
-            elif a_high < b_high then -1i32
-            elif a_high > b_high then 1i32
-            else ranges_compare a_rest b_rest
+            ? a_low < b_low ?> -1i32
+            |? a_low > b_low ?> 1i32
+            |? a_high < b_high ?> -1i32
+            |? a_high > b_high ?> 1i32
+            |: ranges_compare a_rest b_rest
 
-let rec rx_compare (a : rx) (b : rx) : i32 =
-    inl a_tag = rx_tag a
-    inl b_tag = rx_tag b
-    if a_tag < b_tag then -1i32
-    elif a_tag > b_tag then 1i32
-    else
-        match a with
+:~ ^ rx_compare (a : rx) (b : rx) : i32 =
+    := a_tag = rx_tag a
+    := b_tag = rx_tag b
+    ? a_tag < b_tag ?> -1i32
+    |? a_tag > b_tag ?> 1i32
+    |:
+        ?= a ?|
         | RxClass (a_negated, a_ranges) =>
-            match b with
+            ?= b ?|
             | RxClass (b_negated, b_ranges) =>
-                if a_negated = b_negated then ranges_compare a_ranges b_ranges
-                elif a_negated then 1i32
-                else -1i32
+                ? a_negated = b_negated ?> ranges_compare a_ranges b_ranges
+                |? a_negated ?> 1i32
+                |: -1i32
             | _ => 0i32
         | RxSeq (a_head, a_tail) =>
-            match b with
+            ?= b ?|
             | RxSeq (b_head, b_tail) =>
-                inl head_order = rx_compare a_head b_head
-                if head_order <> 0i32 then head_order else rx_compare a_tail b_tail
+                := head_order = rx_compare a_head b_head
+                ? head_order <> 0i32 ?> head_order |: rx_compare a_tail b_tail
             | _ => 0i32
         | RxAlt (a_first, a_rest) =>
-            match b with
+            ?= b ?|
             | RxAlt (b_first, b_rest) =>
-                inl first_order = rx_compare a_first b_first
-                if first_order <> 0i32 then first_order else rx_compare a_rest b_rest
+                := first_order = rx_compare a_first b_first
+                ? first_order <> 0i32 ?> first_order |: rx_compare a_rest b_rest
             | _ => 0i32
-        | RxStar a_inner => match b with RxStar b_inner => rx_compare a_inner b_inner | _ => 0i32
+        | RxStar a_inner => ?= b ?| RxStar b_inner => rx_compare a_inner b_inner | _ => 0i32
         | _ => 0i32
 
-inl seq (a : rx) (b : rx) : rx =
-    match a with
+:= seq (a : rx) (b : rx) : rx =
+    ?= a ?|
     | RxNone => RxNone
     | RxEps => b
     | _ =>
-        match b with
+        ?= b ?|
         | RxNone => RxNone
         | RxEps => a
         | _ => RxSeq (a, b)
 
-let rec seq_similar (a : rx) (b : rx) : rx =
-    match a with
+:~ ^ seq_similar (a : rx) (b : rx) : rx =
+    ?= a ?|
     | RxSeq (head, tail) => seq_similar head (seq_similar tail b)
     | _ => seq a b
 
-inl alt_written (a : rx) (b : rx) : rx =
-    match a with
+:= alt_written (a : rx) (b : rx) : rx =
+    ?= a ?|
     | RxNone => b
     | _ =>
-        match b with
+        ?= b ?|
         | RxNone => a
         | _ => RxAlt (a, b)
 
-let rec alt_leaves (r : rx) (leaves : list rx) : list rx =
-    match r with
+:~ ^ alt_leaves (r : rx) (leaves : list rx) : list rx =
+    ?= r ?|
     | RxAlt (first, rest) => alt_leaves first (alt_leaves rest leaves)
     | RxNone => leaves
     | _ => r :: leaves
 
-let rec insert_leaf (leaf : rx) (sorted : list rx) : list rx =
-    match sorted with
+:~ ^ insert_leaf (leaf : rx) (sorted : list rx) : list rx =
+    ?= sorted ?|
     | head :: rest =>
-        inl order = rx_compare leaf head
-        if order = 0i32 then sorted
-        elif order < 0i32 then leaf :: sorted
-        else head :: insert_leaf leaf rest
+        := order = rx_compare leaf head
+        ? order = 0i32 ?> sorted
+        |? order < 0i32 ?> leaf :: sorted
+        |: head :: insert_leaf leaf rest
     | Nil => [ leaf ]
 
-let rec sort_leaves (leaves : list rx) (sorted : list rx) : list rx =
-    match leaves with
+:~ ^ sort_leaves (leaves : list rx) (sorted : list rx) : list rx =
+    ?= leaves ?|
     | leaf :: rest => sort_leaves rest (insert_leaf leaf sorted)
     | Nil => sorted
 
-let rec alt_of_sorted (leaves : list rx) : rx =
-    match leaves with
+:~ ^ alt_of_sorted (leaves : list rx) : rx =
+    ?= leaves ?|
     | leaf :: rest =>
-        match rest with
+        ?= rest ?|
         | Nil => leaf
         | _ => RxAlt (leaf, alt_of_sorted rest)
     | Nil => RxNone
 
-inl alt (a : rx) (b : rx) : rx = alt_of_sorted (sort_leaves (alt_leaves a (alt_leaves b Nil)) Nil)
+:= alt (a : rx) (b : rx) : rx = alt_of_sorted (sort_leaves (alt_leaves a (alt_leaves b Nil)) Nil)
 
-inl star (a : rx) : rx =
-    match a with
+:= star (a : rx) : rx =
+    ?= a ?|
     | RxNone => RxEps
     | RxEps => RxEps
     | RxStar _ => a
     | _ => RxStar a
 
-let rec nullable (r : rx) : bool =
-    match r with
-    | RxNone => false
-    | RxEps => true
-    | RxClass _ => false
+:~ ^ nullable (r : rx) : bool =
+    ?= r ?|
+    | RxNone => !-
+    | RxEps => !+
+    | RxClass _ => !-
     | RxSeq (a, b) => nullable a && nullable b
     | RxAlt (a, b) => nullable a || nullable b
-    | RxStar _ => true
+    | RxStar _ => !+
 
-let rec in_ranges (c : u32) (ranges : list (u32 * u32)) : bool =
-    match ranges with
+:~ ^ in_ranges (c : u32) (ranges : list (u32 * u32)) : bool =
+    ?= ranges ?|
     | (low, high) :: rest => (low <= c && c <= high) || in_ranges c rest
-    | Nil => false
+    | Nil => !-
 
-union derivative_form =
+:| derivative_form =
     | AsWritten
     | Similar
 
-inl alt_by (form : derivative_form) (a : rx) (b : rx) : rx =
-    match form with
+:= alt_by (form : derivative_form) (a : rx) (b : rx) : rx =
+    ?= form ?|
     | AsWritten => alt_written a b
     | Similar => alt a b
 
-inl seq_by (form : derivative_form) (a : rx) (b : rx) : rx =
-    match form with
+:= seq_by (form : derivative_form) (a : rx) (b : rx) : rx =
+    ?= form ?|
     | AsWritten => seq a b
     | Similar => seq_similar a b
 
-let rec derive_by (form : derivative_form) (c : u32) (r : rx) : rx =
-    match r with
+:~ ^ derive_by (form : derivative_form) (c : u32) (r : rx) : rx =
+    ?= r ?|
     | RxNone => RxNone
     | RxEps => RxNone
-    | RxClass (negated, ranges) => if in_ranges c ranges <> negated then RxEps else RxNone
+    | RxClass (negated, ranges) => ? in_ranges c ranges <> negated ?> RxEps |: RxNone
     | RxSeq (a, b) =>
-        inl first = seq_by form (derive_by form c a) b
-        if nullable a then alt_by form first (derive_by form c b) else first
+        := first = seq_by form (derive_by form c a) b
+        ? nullable a ?> alt_by form first (derive_by form c b) |: first
     | RxAlt (a, b) => alt_by form (derive_by form c a) (derive_by form c b)
     | RxStar a => seq_by form (derive_by form c a) r
 
-inl derive (c : u32) (r : rx) : rx = derive_by AsWritten c r
+:= derive (c : u32) (r : rx) : rx = derive_by AsWritten c r
 
-inl derive_similar (c : u32) (r : rx) : rx = derive_by Similar c r
+:= derive_similar (c : u32) (r : rx) : rx = derive_by Similar c r
 
-inl single (c : u32) : rx = RxClass (false, [ (c, c) ])
+:= single (c : u32) : rx = RxClass (!-, [ (c, c) ])
 
-inl escape_ranges (c : u32) : list (u32 * u32) =
-    if c = 100u32 then [ (48u32, 57u32) ]
-    elif c = 115u32 then [ (32u32, 32u32); (9u32, 10u32); (13u32, 13u32) ]
-    elif c = 119u32 then [ (48u32, 57u32); (65u32, 90u32); (97u32, 122u32); (95u32, 95u32) ]
-    elif c = 110u32 then [ (10u32, 10u32) ]
-    elif c = 114u32 then [ (13u32, 13u32) ]
-    elif c = 116u32 then [ (9u32, 9u32) ]
-    else [ (c, c) ]
+:= escape_ranges (c : u32) : list (u32 * u32) =
+    ? c = 100u32 ?> [ (48u32, 57u32) ]
+    |? c = 115u32 ?> [ (32u32, 32u32); (9u32, 10u32); (13u32, 13u32) ]
+    |? c = 119u32 ?> [ (48u32, 57u32); (65u32, 90u32); (97u32, 122u32); (95u32, 95u32) ]
+    |? c = 110u32 ?> [ (10u32, 10u32) ]
+    |? c = 114u32 ?> [ (13u32, 13u32) ]
+    |? c = 116u32 ?> [ (9u32, 9u32) ]
+    |: [ (c, c) ]
 
-let rec repeat_n (atom : rx) (n : i32) : rx = if n <= 0i32 then RxEps else seq atom (repeat_n atom (n - 1i32))
+:~ ^ repeat_n (atom : rx) (n : i32) : rx = ? n <= 0i32 ?> RxEps |: seq atom (repeat_n atom (n - 1i32))
 
-let rec optional_chain (atom : rx) (k : i32) : rx =
-    if k <= 0i32 then RxEps else alt_written RxEps (seq atom (optional_chain atom (k - 1i32)))
+:~ ^ optional_chain (atom : rx) (k : i32) : rx =
+    ? k <= 0i32 ?> RxEps |: alt_written RxEps (seq atom (optional_chain atom (k - 1i32)))
 
-let rec read_number (p : string) (i : i32) (acc : i32) : i32 * i32 =
-    inl c = cp_at p i
-    if i < sm'.length p && 48u32 <= c && c <= 57u32
-    then read_number p (i + 1i32) (acc * 10i32 + (conv (c - 48u32) : i32))
-    else acc, i
+:~ ^ read_number (p : string) (i : i32) (acc : i32) : i32 * i32 =
+    := c = cp_at p i
+    ? i < sm'.length p && 48u32 <= c && c <= 57u32
+    ?> read_number p (i + 1i32) (acc * 10i32 + (conv (c - 48u32) : i32))
+    |: acc, i
 
-let rec class_items (p : string) (i : i32) (acc : list (u32 * u32)) : list (u32 * u32) * i32 =
-    if i >= sm'.length p || cp_at p i = 93u32 then acc, i + 1i32
-    else
-        inl c = cp_at p i
-        if c = 92u32 then
-            inl e = cp_at p (i + 1i32)
+:~ ^ class_items (p : string) (i : i32) (acc : list (u32 * u32)) : list (u32 * u32) * i32 =
+    ? i >= sm'.length p || cp_at p i = 93u32 ?> acc, i + 1i32
+    |:
+        := c = cp_at p i
+        ? c = 92u32 ?>
+            := e = cp_at p (i + 1i32)
             class_items p (i + 1i32 + cp_width p (i + 1i32)) (listm.append (escape_ranges e) acc)
-        else
-            inl next = i + cp_width p i
-            if cp_at p next = 45u32 && cp_at p (next + 1i32) <> 93u32 && next + 1i32 < sm'.length p then
-                inl high = cp_at p (next + 1i32)
+        |:
+            := next = i + cp_width p i
+            ? cp_at p next = 45u32 && cp_at p (next + 1i32) <> 93u32 && next + 1i32 < sm'.length p ?>
+                := high = cp_at p (next + 1i32)
                 class_items p (next + 1i32 + cp_width p (next + 1i32)) ((c, high) :: acc)
-            else class_items p next ((c, c) :: acc)
+            |: class_items p next ((c, c) :: acc)
 
-let rec parse_alt (p : string) (i : i32) : rx * i32 =
-    inl left, after_left = parse_seq p i RxEps
-    if after_left < sm'.length p && cp_at p after_left = 124u32 then
-        inl right, after_right = parse_alt p (after_left + 1i32)
+:~ ^ parse_alt (p : string) (i : i32) : rx * i32 =
+    := left, after_left = parse_seq p i RxEps
+    ? after_left < sm'.length p && cp_at p after_left = 124u32 ?>
+        := right, after_right = parse_alt p (after_left + 1i32)
         alt_written left right, after_right
-    else left, after_left
+    |: left, after_left
 
-and let parse_seq (p : string) (i : i32) (acc : rx) : rx * i32 =
-    if i >= sm'.length p || cp_at p i = 124u32 || cp_at p i = 41u32 then acc, i
-    else
-        inl atom, after_atom = parse_atom p i
-        inl quantified, after_quant = parse_quant p after_atom atom
+:& :~ parse_seq (p : string) (i : i32) (acc : rx) : rx * i32 =
+    ? i >= sm'.length p || cp_at p i = 124u32 || cp_at p i = 41u32 ?> acc, i
+    |:
+        := atom, after_atom = parse_atom p i
+        := quantified, after_quant = parse_quant p after_atom atom
         parse_seq p after_quant (seq acc quantified)
 
-and let parse_atom (p : string) (i : i32) : rx * i32 =
-    inl c = cp_at p i
-    if c = 40u32 then
-        inl inner, after_inner = parse_alt p (i + 1i32)
+:& :~ parse_atom (p : string) (i : i32) : rx * i32 =
+    := c = cp_at p i
+    ? c = 40u32 ?>
+        := inner, after_inner = parse_alt p (i + 1i32)
         inner, after_inner + 1i32
-    elif c = 91u32 then
-        if cp_at p (i + 1i32) = 94u32 then
-            inl ranges, after = class_items p (i + 2i32) Nil
-            RxClass (true, ranges), after
-        else
-            inl ranges, after = class_items p (i + 1i32) Nil
-            RxClass (false, ranges), after
-    elif c = 46u32 then RxClass (true, [ (10u32, 10u32); (13u32, 13u32) ]), i + 1i32
-    elif c = 92u32 then RxClass (false, escape_ranges (cp_at p (i + 1i32))), i + 1i32 + cp_width p (i + 1i32)
-    else single c, i + cp_width p i
+    |? c = 91u32 ?>
+        ? cp_at p (i + 1i32) = 94u32 ?>
+            := ranges, after = class_items p (i + 2i32) Nil
+            RxClass (!+, ranges), after
+        |:
+            := ranges, after = class_items p (i + 1i32) Nil
+            RxClass (!-, ranges), after
+    |? c = 46u32 ?> RxClass (!+, [ (10u32, 10u32); (13u32, 13u32) ]), i + 1i32
+    |? c = 92u32 ?> RxClass (!-, escape_ranges (cp_at p (i + 1i32))), i + 1i32 + cp_width p (i + 1i32)
+    |: single c, i + cp_width p i
 
-and let parse_quant (p : string) (i : i32) (atom : rx) : rx * i32 =
-    if i >= sm'.length p then atom, i
-    else
-        inl c = cp_at p i
-        if c = 63u32 then alt_written RxEps atom, i + 1i32
-        elif c = 42u32 then star atom, i + 1i32
-        elif c = 43u32 then seq atom (star atom), i + 1i32
-        elif c = 123u32 then
-            inl n, after_n = read_number p (i + 1i32) 0i32
-            if cp_at p after_n = 125u32 then repeat_n atom n, after_n + 1i32
-            else
-                inl after_comma = after_n + 1i32
-                if cp_at p after_comma = 125u32 then seq (repeat_n atom n) (star atom), after_comma + 1i32
-                else
-                    inl m, after_m = read_number p after_comma 0i32
+:& :~ parse_quant (p : string) (i : i32) (atom : rx) : rx * i32 =
+    ? i >= sm'.length p ?> atom, i
+    |:
+        := c = cp_at p i
+        ? c = 63u32 ?> alt_written RxEps atom, i + 1i32
+        |? c = 42u32 ?> star atom, i + 1i32
+        |? c = 43u32 ?> seq atom (star atom), i + 1i32
+        |? c = 123u32 ?>
+            := n, after_n = read_number p (i + 1i32) 0i32
+            ? cp_at p after_n = 125u32 ?> repeat_n atom n, after_n + 1i32
+            |:
+                := after_comma = after_n + 1i32
+                ? cp_at p after_comma = 125u32 ?> seq (repeat_n atom n) (star atom), after_comma + 1i32
+                |:
+                    := m, after_m = read_number p after_comma 0i32
                     seq (repeat_n atom n) (optional_chain atom (m - n)), after_m + 1i32
-        else atom, i
+        |: atom, i
 
-let rec first_outside (ranges : list (u32 * u32)) (candidates : list u32) : u32 =
-    match candidates with
-    | c :: rest => if in_ranges c ranges then first_outside ranges rest else c
+:~ ^ first_outside (ranges : list (u32 * u32)) (candidates : list u32) : u32 =
+    ?= candidates ?|
+    | c :: rest => ? in_ranges c ranges ?> first_outside ranges rest |: c
     | Nil => 126u32
 
-let rec repeated (text : string) (count : i32) : string =
-    if count <= 0i32 then "" else text ++# repeated text (count - 1i32)
+:~ ^ repeated (text : string) (count : i32) : string =
+    ? count <= 0i32 ?> "" |: text ++# repeated text (count - 1i32)
 
-inl class_example (negated : bool) (ranges : list (u32 * u32)) : string =
-    if negated then xml.code_point_string (first_outside ranges [ 65u32; 97u32; 49u32; 90u32; 122u32 ])
-    else
-        match ranges with
+:= class_example (negated : bool) (ranges : list (u32 * u32)) : string =
+    ? negated ?> xml.code_point_string (first_outside ranges [ 65u32; 97u32; 49u32; 90u32; 122u32 ])
+    |:
+        ?= ranges ?|
         | (low, _) :: _ => xml.code_point_string low
         | Nil => ""
 
-let rec example_with (stars : i32) (r : rx) : string =
-    match r with
+:~ ^ example_with (stars : i32) (r : rx) : string =
+    ?= r ?|
     | RxNone => ""
     | RxEps => ""
     | RxClass (negated, ranges) => class_example negated ranges
@@ -274,41 +274,41 @@ let rec example_with (stars : i32) (r : rx) : string =
     | RxAlt (a, _) => example_with stars a
     | RxStar a => repeated (example_with stars a) stars
 
-inl compile_pattern (p : string) : option rx =
-    inl r, stop = parse_alt p 0i32
-    if stop = sm'.length p then Some r else None
+:= compile_pattern (p : string) : option rx =
+    := r, stop = parse_alt p 0i32
+    ? stop = sm'.length p ?> Some r |: None
 
-let rec matches_from (r : rx) (s : string) (i : i32) : bool =
-    if i >= sm'.length s then nullable r
-    else
-        match r with
-        | RxNone => false
+:~ ^ matches_from (r : rx) (s : string) (i : i32) : bool =
+    ? i >= sm'.length s ?> nullable r
+    |:
+        ?= r ?|
+        | RxNone => !-
         | _ => matches_from (derive (cp_at s i) r) s (i + cp_width s i)
 
-inl pattern_matches (p : string) (s : string) : bool =
-    match compile_pattern p with
+:= pattern_matches (p : string) (s : string) : bool =
+    ?= compile_pattern p ?|
     | Some r => matches_from r s 0i32
-    | None => false
+    | None => !-
 
-inl last_code_point () : u32 = 1114111u32
+:= last_code_point () : u32 = 1114111u32
 
-let rec insert_point (point : u32) (sorted : list u32) : list u32 =
-    match sorted with
+:~ ^ insert_point (point : u32) (sorted : list u32) : list u32 =
+    ?= sorted ?|
     | head :: rest =>
-        if point = head then sorted
-        elif point < head then point :: sorted
-        else head :: insert_point point rest
+        ? point = head ?> sorted
+        |? point < head ?> point :: sorted
+        |: head :: insert_point point rest
     | Nil => [ point ]
 
-let rec range_points (ranges : list (u32 * u32)) (points : list u32) : list u32 =
-    match ranges with
+:~ ^ range_points (ranges : list (u32 * u32)) (points : list u32) : list u32 =
+    ?= ranges ?|
     | (low, high) :: rest =>
-        inl points = insert_point low points
-        range_points rest (if high < last_code_point () then insert_point (high + 1u32) points else points)
+        := points = insert_point low points
+        range_points rest (? high < last_code_point () ?> insert_point (high + 1u32) points |: points)
     | Nil => points
 
-let rec interval_starts (r : rx) (points : list u32) : list u32 =
-    match r with
+:~ ^ interval_starts (r : rx) (points : list u32) : list u32 =
+    ?= r ?|
     | RxClass (_, ranges) => range_points ranges points
     | RxSeq (a, b) => interval_starts a (interval_starts b points)
     | RxAlt (a, b) => interval_starts a (interval_starts b points)
@@ -316,183 +316,183 @@ let rec interval_starts (r : rx) (points : list u32) : list u32 =
     | RxNone => points
     | RxEps => points
 
-type dfa_move = { low : u32; high : u32; target : i32 }
+:== dfa_move = { low : u32; high : u32; target : i32 }
 
-type dfa_state = { accepting : bool; moves : list dfa_move }
+:== dfa_state = { accepting : bool; moves : list dfa_move }
 
-let rec state_index (r : rx) (states : list rx) (index : i32) : i32 =
-    match states with
-    | head :: rest => if rx_compare r head = 0i32 then index else state_index r rest (index + 1i32)
+:~ ^ state_index (r : rx) (states : list rx) (index : i32) : i32 =
+    ?= states ?|
+    | head :: rest => ? rx_compare r head = 0i32 ?> index |: state_index r rest (index + 1i32)
     | Nil => -1i32
 
-let rec with_state (r : rx) (states : list rx) : list rx =
-    match states with
+:~ ^ with_state (r : rx) (states : list rx) : list rx =
+    ?= states ?|
     | head :: rest => head :: with_state r rest
     | Nil => [ r ]
 
-let rec state_rx (states : list rx) (index : i32) : rx =
-    match states with
-    | head :: rest => if index = 0i32 then head else state_rx rest (index - 1i32)
+:~ ^ state_rx (states : list rx) (index : i32) : rx =
+    ?= states ?|
+    | head :: rest => ? index = 0i32 ?> head |: state_rx rest (index - 1i32)
     | Nil => RxNone
 
-let rec add_move (move : dfa_move) (moves : list dfa_move) : list dfa_move =
-    match moves with
+:~ ^ add_move (move : dfa_move) (moves : list dfa_move) : list dfa_move =
+    ?= moves ?|
     | last :: rest =>
-        if last.target = move.target && last.high + 1u32 = move.low then { last with high = move.high } :: rest
-        else move :: moves
+        ? last.target = move.target && last.high + 1u32 = move.low ?> { last ?| high = move.high } :: rest
+        |: move :: moves
     | Nil => [ move ]
 
-let rec reverse_moves (moves : list dfa_move) (reversed : list dfa_move) : list dfa_move =
-    match moves with
+:~ ^ reverse_moves (moves : list dfa_move) (reversed : list dfa_move) : list dfa_move =
+    ?= moves ?|
     | move :: rest => reverse_moves rest (move :: reversed)
     | Nil => reversed
 
-let rec state_moves
+:~ ^ state_moves
     (r : rx) (starts : list u32) (states : list rx) (count : i32) (moves : list dfa_move)
     : list rx * i32 * list dfa_move
     =
-    match starts with
+    ?= starts ?|
     | low :: rest =>
-        inl high = match rest with (next :: _) => next - 1u32 | Nil => last_code_point ()
-        inl next_rx = derive_similar low r
-        match next_rx with
+        := high = ?= rest ?| (next :: _) => next - 1u32 | Nil => last_code_point ()
+        := next_rx = derive_similar low r
+        ?= next_rx ?|
         | RxNone => state_moves r rest states count moves
         | _ =>
-            inl known = state_index next_rx states 0i32
-            if known >= 0i32
-            then state_moves r rest states count (add_move { low = low; high = high; target = known } moves)
-            else
+            := known = state_index next_rx states 0i32
+            ? known >= 0i32
+            ?> state_moves r rest states count (add_move { low = low; high = high; target = known } moves)
+            |:
                 state_moves r rest
                     (with_state next_rx states)
                     (count + 1i32)
                     (add_move { low = low; high = high; target = count } moves)
     | Nil => states, count, reverse_moves moves Nil
 
-let rec reverse_states (rows : list dfa_state) (reversed : list dfa_state) : list dfa_state =
-    match rows with
+:~ ^ reverse_states (rows : list dfa_state) (reversed : list dfa_state) : list dfa_state =
+    ?= rows ?|
     | row :: rest => reverse_states rest (row :: reversed)
     | Nil => reversed
 
-let rec build_states
+:~ ^ build_states
     (index : i32) (states : list rx) (count : i32) (limit : i32) (rows : list dfa_state)
     : option (list dfa_state)
     =
-    if index >= count then Some (reverse_states rows Nil)
-    elif count > limit then None
-    else
-        inl r = state_rx states index
-        inl states, count, moves = state_moves r (interval_starts r [ 0u32 ]) states count Nil
+    ? index >= count ?> Some (reverse_states rows Nil)
+    |? count > limit ?> None
+    |:
+        := r = state_rx states index
+        := states, count, moves = state_moves r (interval_starts r [ 0u32 ]) states count Nil
         build_states (index + 1i32) states count limit ({ accepting = nullable r; moves = moves } :: rows)
 
-inl dfa_state_limit () : i32 = 4096i32
+:= dfa_state_limit () : i32 = 4096i32
 
-inl dfa_of_pattern_within (limit : i32) (p : string) : option (list dfa_state) =
-    match compile_pattern p with
+:= dfa_of_pattern_within (limit : i32) (p : string) : option (list dfa_state) =
+    ?= compile_pattern p ?|
     | Some r => build_states 0i32 [ r ] 1i32 limit Nil
     | None => None
 
-inl dfa_of_pattern (p : string) : option (list dfa_state) = dfa_of_pattern_within (dfa_state_limit ()) p
+:= dfa_of_pattern (p : string) : option (list dfa_state) = dfa_of_pattern_within (dfa_state_limit ()) p
 
-let rec move_target (c : u32) (moves : list dfa_move) : i32 =
-    match moves with
-    | move :: rest => if c < move.low then -1i32 elif c <= move.high then move.target else move_target c rest
+:~ ^ move_target (c : u32) (moves : list dfa_move) : i32 =
+    ?= moves ?|
+    | move :: rest => ? c < move.low ?> -1i32 |? c <= move.high ?> move.target |: move_target c rest
     | Nil => -1i32
 
-let rec dfa_row (rows : list dfa_state) (index : i32) : dfa_state =
-    match rows with
-    | row :: rest => if index = 0i32 then row else dfa_row rest (index - 1i32)
-    | Nil => { accepting = false; moves = Nil }
+:~ ^ dfa_row (rows : list dfa_state) (index : i32) : dfa_state =
+    ?= rows ?|
+    | row :: rest => ? index = 0i32 ?> row |: dfa_row rest (index - 1i32)
+    | Nil => { accepting = !-; moves = Nil }
 
-let rec dfa_run (rows : list dfa_state) (state : i32) (s : string) (i : i32) : bool =
-    if state < 0i32 then false
-    else
-        inl row = dfa_row rows state
-        if i >= sm'.length s then row.accepting
-        else dfa_run rows (move_target (cp_at s i) row.moves) s (i + cp_width s i)
+:~ ^ dfa_run (rows : list dfa_state) (state : i32) (s : string) (i : i32) : bool =
+    ? state < 0i32 ?> !-
+    |:
+        := row = dfa_row rows state
+        ? i >= sm'.length s ?> row.accepting
+        |: dfa_run rows (move_target (cp_at s i) row.moves) s (i + cp_width s i)
 
-inl dfa_matches (rows : list dfa_state) (s : string) : bool = dfa_run rows 0i32 s 0i32
+:= dfa_matches (rows : list dfa_state) (s : string) : bool = dfa_run rows 0i32 s 0i32
 
-let rec states_in (rows : list dfa_state) (count : i32) : i32 =
-    match rows with
+:~ ^ states_in (rows : list dfa_state) (count : i32) : i32 =
+    ?= rows ?|
     | _ :: rest => states_in rest (count + 1i32)
     | Nil => count
 
-let rec count_compiled (text : string) (pos : i32) (acc : i32 * i32) : i32 * i32 =
-    if pos >= sm'.length text then acc
-    else
-        inl stop = xml.find_from "\n" text pos
-        inl stop = if stop < 0i32 then sm'.length text else stop
-        inl line = sm'.substring pos (stop - pos) text |> sm'.trim
-        inl ok, failed = acc
-        inl acc =
-            if line = "" then acc
-            else
-                match compile_pattern line with
+:~ ^ count_compiled (text : string) (pos : i32) (acc : i32 * i32) : i32 * i32 =
+    ? pos >= sm'.length text ?> acc
+    |:
+        := stop = xml.find_from "\n" text pos
+        := stop = ? stop < 0i32 ?> sm'.length text |: stop
+        := line = sm'.substring pos (stop - pos) text |> sm'.trim
+        := ok, failed = acc
+        := acc =
+            ? line = "" ?> acc
+            |:
+                ?= compile_pattern line ?|
                 | Some _ => ok + 1i32, failed
                 | None => ok, failed + 1i32
         count_compiled text (stop + 1i32) acc
 
-let rec lines_of (text : string) (pos : i32) (acc : list string) : list string =
-    if pos >= sm'.length text then listm.rev acc
-    else
-        inl stop = xml.find_from "\n" text pos
-        inl stop = if stop < 0i32 then sm'.length text else stop
+:~ ^ lines_of (text : string) (pos : i32) (acc : list string) : list string =
+    ? pos >= sm'.length text ?> listm.rev acc
+    |:
+        := stop = xml.find_from "\n" text pos
+        := stop = ? stop < 0i32 ?> sm'.length text |: stop
         lines_of text (stop + 1i32) (sm'.substring pos (stop - pos) text :: acc)
 
-type disagreement = { count : i32; first : string }
+:== disagreement = { count : i32; first : string }
 
-let rec row_disagreements
+:~ ^ row_disagreements
     (pattern : string) (matches : string -> bool) (probes : list string) (row : string) (j : i32) (acc : disagreement)
     : disagreement
     =
-    match probes with
+    ?= probes ?|
     | probe :: rest =>
-        inl expected = sm'.substring j 1i32 row = "1"
-        inl actual = matches probe
-        inl acc =
-            if expected = actual then acc
-            else
+        := expected = sm'.substring j 1i32 row = "1"
+        := actual = matches probe
+        := acc =
+            ? expected = actual ?> acc
+            |:
                 {
                     count = acc.count + 1i32
-                    first = if acc.first = "" then pattern ++# " on [" ++# probe ++# "]" else acc.first
+                    first = ? acc.first = "" ?> pattern ++# " on [" ++# probe ++# "]" |: acc.first
                 }
         row_disagreements pattern matches rest row (j + 1i32) acc
     | Nil => acc
 
-inl failed_pattern (reason : string) (pattern : string) (acc : disagreement) : disagreement =
-    { count = acc.count + 1000000i32; first = if acc.first = "" then reason ++# pattern else acc.first }
+:= failed_pattern (reason : string) (pattern : string) (acc : disagreement) : disagreement =
+    { count = acc.count + 1000000i32; first = ? acc.first = "" ?> reason ++# pattern |: acc.first }
 
-inl derivative_disagreements
+:= derivative_disagreements
     (pattern : string) (row : string) (probes : list string) (acc : disagreement)
     : disagreement
     =
-    match compile_pattern pattern with
-    | Some r => row_disagreements pattern (fun probe => matches_from r probe 0i32) probes row 0i32 acc
+    ?= compile_pattern pattern ?|
+    | Some r => row_disagreements pattern (\ probe => matches_from r probe 0i32) probes row 0i32 acc
     | None => failed_pattern "does not compile: " pattern acc
 
-inl dfa_disagreements (pattern : string) (row : string) (probes : list string) (acc : disagreement) : disagreement =
-    match dfa_of_pattern pattern with
+:= dfa_disagreements (pattern : string) (row : string) (probes : list string) (acc : disagreement) : disagreement =
+    ?= dfa_of_pattern pattern ?|
     | Some rows => row_disagreements pattern (dfa_matches rows) probes row 0i32 acc
     | None => failed_pattern "no DFA within the state limit: " pattern acc
 
-let rec all_disagreements
+:~ ^ all_disagreements
     (check : string -> string -> list string -> disagreement -> disagreement) (patterns : list string)
     (rows : list string) (probes : list string) (acc : disagreement)
     : disagreement
     =
-    match patterns with
+    ?= patterns ?|
     | pattern :: rest =>
-        match rows with
+        ?= rows ?|
         | row :: more_rows => all_disagreements check rest more_rows probes (check pattern row probes acc)
-        | Nil => { acc with count = acc.count + 1000000i32 }
+        | Nil => { acc ?| count = acc.count + 1000000i32 }
     | Nil => acc
 
-inl digit_text (d : i32) : string = sm'.substring d 1i32 "0123456789"
+:= digit_text (d : i32) : string = sm'.substring d 1i32 "0123456789"
 
-let rec count_text (n : i32) (acc : string) : string =
-    if n < 10i32 then digit_text n ++# acc else count_text (n / 10i32) (digit_text (n % 10i32) ++# acc)
+:~ ^ count_text (n : i32) (acc : string) : string =
+    ? n < 10i32 ?> digit_text n ++# acc |: count_text (n / 10i32) (digit_text (n % 10i32) ++# acc)
 
-type state_census =
+:== state_census =
     {
         patterns : i32
         without_dfa : i32
@@ -502,75 +502,75 @@ type state_census =
         lines : string
     }
 
-let rec census_of (patterns : list string) (acc : state_census) : state_census =
-    match patterns with
+:~ ^ census_of (patterns : list string) (acc : state_census) : state_census =
+    ?= patterns ?|
     | pattern :: rest =>
-        if pattern = "" then census_of rest acc
-        else
-            inl states = match dfa_of_pattern pattern with Some rows => states_in rows 0i32 | None => 0i32
-            inl larger = states > acc.largest
-            inl line = count_text states "" ++# "\t" ++# pattern ++# "\n"
-            inl acc =
-                { acc with
+        ? pattern = "" ?> census_of rest acc
+        |:
+            := states = ?= dfa_of_pattern pattern ?| Some rows => states_in rows 0i32 | None => 0i32
+            := larger = states > acc.largest
+            := line = count_text states "" ++# "\t" ++# pattern ++# "\n"
+            := acc =
+                { acc ?|
                     patterns = (acc.patterns + 1i32)
                     states = (acc.states + states)
                     lines = (acc.lines ++# line)
                 }
-            inl acc = if states = 0i32 then { acc with without_dfa = acc.without_dfa + 1i32 } else acc
-            census_of rest (if larger then { acc with largest = states; largest_pattern = pattern } else acc)
+            := acc = ? states = 0i32 ?> { acc ?| without_dfa = acc.without_dfa + 1i32 } |: acc
+            census_of rest (? larger ?> { acc ?| largest = states; largest_pattern = pattern } |: acc)
     | Nil => acc
 
-let rec first_points (values : list string) (points : list u32) : list u32 =
-    match values with
+:~ ^ first_points (values : list string) (points : list u32) : list u32 =
+    ?= values ?|
     | value :: rest =>
-        first_points rest (if sm'.length value = 0i32 then points else insert_point (cp_at value 0i32) points)
+        first_points rest (? sm'.length value = 0i32 ?> points |: insert_point (cp_at value 0i32) points)
     | Nil => points
 
-let rec tails_after (point : u32) (values : list string) (acc : list string) : list string =
-    match values with
+:~ ^ tails_after (point : u32) (values : list string) (acc : list string) : list string =
+    ?= values ?|
     | value :: rest =>
-        if sm'.length value > 0i32 && cp_at value 0i32 = point then
-            inl width = cp_width value 0i32
+        ? sm'.length value > 0i32 && cp_at value 0i32 = point ?>
+            := width = cp_width value 0i32
             tails_after point rest (sm'.substring width (sm'.length value - width) value :: acc)
-        else tails_after point rest acc
+        |: tails_after point rest acc
     | Nil => acc
 
-let rec has_empty (values : list string) : bool =
-    match values with
+:~ ^ has_empty (values : list string) : bool =
+    ?= values ?|
     | value :: rest => sm'.length value = 0i32 || has_empty rest
-    | Nil => false
+    | Nil => !-
 
-let rec moves_equal (a : list dfa_move) (b : list dfa_move) : bool =
-    match a with
+:~ ^ moves_equal (a : list dfa_move) (b : list dfa_move) : bool =
+    ?= a ?|
     | x :: a_rest =>
-        match b with
+        ?= b ?|
         | y :: b_rest => x.low = y.low && x.high = y.high && x.target = y.target && moves_equal a_rest b_rest
-        | Nil => false
-    | Nil => match b with Nil => true | _ => false
+        | Nil => !-
+    | Nil => ?= b ?| Nil => !+ | _ => !-
 
-let rec registered (row : dfa_state) (register : list (dfa_state * i32)) : i32 =
-    match register with
+:~ ^ registered (row : dfa_state) (register : list (dfa_state * i32)) : i32 =
+    ?= register ?|
     | (known, id) :: rest =>
-        if known.accepting = row.accepting && moves_equal known.moves row.moves then id else registered row rest
+        ? known.accepting = row.accepting && moves_equal known.moves row.moves ?> id |: registered row rest
     | Nil => -1i32
 
-type value_dfa = { register : list (dfa_state * i32); rows : list dfa_state; count : i32 }
+:== value_dfa = { register : list (dfa_state * i32); rows : list dfa_state; count : i32 }
 
-let rec value_state (values : list string) (built : value_dfa) : i32 * value_dfa =
+:~ ^ value_state (values : list string) (built : value_dfa) : i32 * value_dfa =
     value_moves (first_points values Nil) values Nil (has_empty values) built
-and let value_moves
+:& :~ value_moves
     (points : list u32) (values : list string) (moves : list dfa_move) (accepting : bool) (built : value_dfa)
     : i32 * value_dfa
     =
-    match points with
+    ?= points ?|
     | point :: rest =>
-        inl target, built = value_state (tails_after point values Nil) built
+        := target, built = value_state (tails_after point values Nil) built
         value_moves rest values (add_move { low = point; high = point; target = target } moves) accepting built
     | Nil =>
-        inl row = { accepting = accepting; moves = reverse_moves moves Nil }
-        inl known = registered row built.register
-        if known >= 0i32 then known, built
-        else
+        := row = { accepting = accepting; moves = reverse_moves moves Nil }
+        := known = registered row built.register
+        ? known >= 0i32 ?> known, built
+        |:
             built.count,
             {
                 register = (row, built.count) :: built.register
@@ -578,124 +578,124 @@ and let value_moves
                 count = built.count + 1i32
             }
 
-let rec renumbered_moves (last : i32) (moves : list dfa_move) (acc : list dfa_move) : list dfa_move =
-    match moves with
-    | move :: rest => renumbered_moves last rest ({ move with target = last - move.target } :: acc)
+:~ ^ renumbered_moves (last : i32) (moves : list dfa_move) (acc : list dfa_move) : list dfa_move =
+    ?= moves ?|
+    | move :: rest => renumbered_moves last rest ({ move ?| target = last - move.target } :: acc)
     | Nil => reverse_moves acc Nil
 
-let rec renumbered_rows (last : i32) (rows : list dfa_state) (acc : list dfa_state) : list dfa_state =
-    match rows with
+:~ ^ renumbered_rows (last : i32) (rows : list dfa_state) (acc : list dfa_state) : list dfa_state =
+    ?= rows ?|
     | row :: rest =>
-        renumbered_rows last rest ({ row with moves = renumbered_moves last row.moves Nil } :: acc)
+        renumbered_rows last rest ({ row ?| moves = renumbered_moves last row.moves Nil } :: acc)
     | Nil => reverse_states acc Nil
 
-inl dfa_of_values (values : list string) : list dfa_state =
-    inl _, built = value_state values { register = Nil; rows = Nil; count = 0i32 }
+:= dfa_of_values (values : list string) : list dfa_state =
+    := _, built = value_state values { register = Nil; rows = Nil; count = 0i32 }
     renumbered_rows (built.count - 1i32) built.rows Nil
 
-let rec zeros (count : i32) (acc : string) : string = if count <= 0i32 then acc else zeros (count - 1i32) ("0" ++# acc)
+:~ ^ zeros (count : i32) (acc : string) : string = ? count <= 0i32 ?> acc |: zeros (count - 1i32) ("0" ++# acc)
 
-inl padded (n : i32) (width : i32) : string =
-    inl text = count_text n ""
+:= padded (n : i32) (width : i32) : string =
+    := text = count_text n ""
     zeros (width - sm'.length text) "" ++# text
 
-inl move_prefix (move : dfa_move) : string =
+:= move_prefix (move : dfa_move) : string =
     " " ++# count_text (conv move.low : i32) "" ++# "-" ++# count_text (conv move.high : i32) "" ++# ">"
 
-let rec row_length (moves : list dfa_move) (width : i32) (acc : i32) : i32 =
-    match moves with
+:~ ^ row_length (moves : list dfa_move) (width : i32) (acc : i32) : i32 =
+    ?= moves ?|
     | move :: rest => row_length rest width (acc + sm'.length (move_prefix move) + width)
     | Nil => acc + 2i32
 
-let rec row_offsets (rows : list dfa_state) (width : i32) (offset : i32) (acc : list i32) : list i32 * i32 =
-    match rows with
+:~ ^ row_offsets (rows : list dfa_state) (width : i32) (offset : i32) (acc : list i32) : list i32 * i32 =
+    ?= rows ?|
     | row :: rest => row_offsets rest width (offset + row_length row.moves width 0i32) (offset :: acc)
     | Nil => listm.rev acc, offset
 
-let rec fitting_width (rows : list dfa_state) (width : i32) (limit : i32) : i32 * list i32 =
-    inl offsets, total = row_offsets rows width 0i32 Nil
-    if total < limit || width >= 9i32 then width, offsets else fitting_width rows (width + 1i32) (limit * 10i32)
+:~ ^ fitting_width (rows : list dfa_state) (width : i32) (limit : i32) : i32 * list i32 =
+    := offsets, total = row_offsets rows width 0i32 Nil
+    ? total < limit || width >= 9i32 ?> width, offsets |: fitting_width rows (width + 1i32) (limit * 10i32)
 
-let rec offset_at (offsets : list i32) (index : i32) : i32 =
-    match offsets with
-    | offset :: rest => if index = 0i32 then offset else offset_at rest (index - 1i32)
+:~ ^ offset_at (offsets : list i32) (index : i32) : i32 =
+    ?= offsets ?|
+    | offset :: rest => ? index = 0i32 ?> offset |: offset_at rest (index - 1i32)
     | Nil => -1i32
 
-let rec offset_moves (moves : list dfa_move) (offsets : list i32) (width : i32) (acc : string) : string =
-    match moves with
+:~ ^ offset_moves (moves : list dfa_move) (offsets : list i32) (width : i32) (acc : string) : string =
+    ?= moves ?|
     | move :: rest =>
         offset_moves rest offsets width (acc ++# move_prefix move ++# padded (offset_at offsets move.target) width)
     | Nil => acc
 
-let rec offset_lines (rows : list dfa_state) (offsets : list i32) (width : i32) (acc : string) : string =
-    match rows with
+:~ ^ offset_lines (rows : list dfa_state) (offsets : list i32) (width : i32) (acc : string) : string =
+    ?= rows ?|
     | row :: rest =>
         offset_lines rest offsets width (
-            acc ++# (if row.accepting then "1" else "0") ++# offset_moves row.moves offsets width "" ++# "\n"
+            acc ++# (? row.accepting ?> "1" |: "0") ++# offset_moves row.moves offsets width "" ++# "\n"
         )
     | Nil => acc
 
-inl dfa_table_text (rows : list dfa_state) : string =
-    inl width, offsets = fitting_width rows 1i32 10i32
+:= dfa_table_text (rows : list dfa_state) : string =
+    := width, offsets = fitting_width rows 1i32 10i32
     offset_lines rows offsets width ""
 
-let rec table_step (table : string) (c : u32) (i : i32) : i32 =
-    if i >= sm'.length table || cp_at table i <> 32u32 then -1i32
-    else
-        inl low, i = read_number table (i + 1i32) 0i32
-        inl high, i = read_number table (i + 1i32) 0i32
-        inl target, i = read_number table (i + 1i32) 0i32
-        if c < (conv low : u32) then -1i32 elif c <= (conv high : u32) then target else table_step table c i
+:~ ^ table_step (table : string) (c : u32) (i : i32) : i32 =
+    ? i >= sm'.length table || cp_at table i <> 32u32 ?> -1i32
+    |:
+        := low, i = read_number table (i + 1i32) 0i32
+        := high, i = read_number table (i + 1i32) 0i32
+        := target, i = read_number table (i + 1i32) 0i32
+        ? c < (conv low : u32) ?> -1i32 |? c <= (conv high : u32) ?> target |: table_step table c i
 
-let rec table_run (table : string) (line : i32) (s : string) (i : i32) : bool =
-    if i >= sm'.length s then cp_at table line = 49u32
-    else
-        inl next = table_step table (cp_at s i) (line + 1i32)
-        if next < 0i32 then false else table_run table next s (i + cp_width s i)
+:~ ^ table_run (table : string) (line : i32) (s : string) (i : i32) : bool =
+    ? i >= sm'.length s ?> cp_at table line = 49u32
+    |:
+        := next = table_step table (cp_at s i) (line + 1i32)
+        ? next < 0i32 ?> !- |: table_run table next s (i + cp_width s i)
 
-inl table_matches (table : string) (s : string) : bool = table_run table 0i32 s 0i32
+:= table_matches (table : string) (s : string) : bool = table_run table 0i32 s 0i32
 ///> rust
 test patterns_match_like_xsd =
-    if pattern_matches "[0-9]{8}" "12345678" = false then failwith "eight digits"
-    if pattern_matches "[0-9]{8}" "1234567" then failwith "seven digits rejected"
-    if pattern_matches "1\\.04" "1.04" = false then failwith "escaped dot"
-    if pattern_matches "1\\.04" "1x04" then failwith "escaped dot is literal"
-    if pattern_matches "[1-9]{1}[0-9]{0,10}" "123" = false then failwith "bounded repeat"
-    if pattern_matches "[1-9]{1}[0-9]{0,10}" "0123" then failwith "leading zero rejected"
-    if pattern_matches "[^@]+@[^\\.]+\\..+" "a@b.c" = false then failwith "negated classes"
-    if pattern_matches "[^@]+@[^\\.]+\\..+" "ab.c" then failwith "missing at rejected"
-    if pattern_matches "[!-ÿ]{1}[ -ÿ]{0,}[!-ÿ]{1}|[!-ÿ]{1}" "Ação Ltda" = false then failwith "latin-1 text"
-    if pattern_matches "[!-ÿ]{1}[ -ÿ]{0,}[!-ÿ]{1}|[!-ÿ]{1}" " leading" then failwith "leading space rejected"
+    ? pattern_matches "[0-9]{8}" "12345678" = !- ?> failwith "eight digits"
+    ? pattern_matches "[0-9]{8}" "1234567" ?> failwith "seven digits rejected"
+    ? pattern_matches "1\\.04" "1.04" = !- ?> failwith "escaped dot"
+    ? pattern_matches "1\\.04" "1x04" ?> failwith "escaped dot is literal"
+    ? pattern_matches "[1-9]{1}[0-9]{0,10}" "123" = !- ?> failwith "bounded repeat"
+    ? pattern_matches "[1-9]{1}[0-9]{0,10}" "0123" ?> failwith "leading zero rejected"
+    ? pattern_matches "[^@]+@[^\\.]+\\..+" "a@b.c" = !- ?> failwith "negated classes"
+    ? pattern_matches "[^@]+@[^\\.]+\\..+" "ab.c" ?> failwith "missing at rejected"
+    ? pattern_matches "[!-ÿ]{1}[ -ÿ]{0,}[!-ÿ]{1}|[!-ÿ]{1}" "Ação Ltda" = !- ?> failwith "latin-1 text"
+    ? pattern_matches "[!-ÿ]{1}[ -ÿ]{0,}[!-ÿ]{1}|[!-ÿ]{1}" " leading" ?> failwith "leading space rejected"
 
 ///> rust
 test dfa_keeps_xsd_semantics =
-    match dfa_of_pattern "[0-9]{2,4}|[A-Z]+" with
+    ?= dfa_of_pattern "[0-9]{2,4}|[A-Z]+" ?|
     | Some rows =>
-        if dfa_matches rows "12" = false then failwith "two digits"
-        if dfa_matches rows "1234" = false then failwith "four digits"
-        if dfa_matches rows "12345" then failwith "five digits rejected"
-        if dfa_matches rows "ABC" = false then failwith "letters"
-        if dfa_matches rows "" then failwith "empty rejected"
-        if dfa_matches rows "A1" then failwith "mixed rejected"
+        ? dfa_matches rows "12" = !- ?> failwith "two digits"
+        ? dfa_matches rows "1234" = !- ?> failwith "four digits"
+        ? dfa_matches rows "12345" ?> failwith "five digits rejected"
+        ? dfa_matches rows "ABC" = !- ?> failwith "letters"
+        ? dfa_matches rows "" ?> failwith "empty rejected"
+        ? dfa_matches rows "A1" ?> failwith "mixed rejected"
     | None => failwith "small pattern builds a DFA"
 
 ///> rust
 test value_sets_become_minimal_dfas =
-    inl rows = dfa_of_values ("01001" :: "01002" :: "02001" :: "02002" :: "A" :: Nil)
-    if states_in rows 0i32 <> 6i32 then failwith "shared suffixes merge into six states"
-    if dfa_matches rows "02002" = false then failwith "listed code"
-    if dfa_matches rows "A" = false then failwith "short code"
-    if dfa_matches rows "01003" then failwith "unlisted code rejected"
-    if dfa_matches rows "0100" then failwith "prefix rejected"
-    if dfa_matches rows "" then failwith "empty rejected"
+    := rows = dfa_of_values ("01001" :: "01002" :: "02001" :: "02002" :: "A" :: Nil)
+    ? states_in rows 0i32 <> 6i32 ?> failwith "shared suffixes merge into six states"
+    ? dfa_matches rows "02002" = !- ?> failwith "listed code"
+    ? dfa_matches rows "A" = !- ?> failwith "short code"
+    ? dfa_matches rows "01003" ?> failwith "unlisted code rejected"
+    ? dfa_matches rows "0100" ?> failwith "prefix rejected"
+    ? dfa_matches rows "" ?> failwith "empty rejected"
 
 ///> rust
 test dfa_tables_match_in_place =
-    inl rows = dfa_of_values ("01001" :: "01002" :: "02001" :: "A" :: Nil)
-    inl table = dfa_table_text rows
-    if table_matches table "02001" = false then failwith "listed code"
-    if table_matches table "A" = false then failwith "short code"
-    if table_matches table "02002" then failwith "unlisted code rejected"
-    if table_matches table "0200" then failwith "prefix rejected"
-    if table_matches table "A0" then failwith "longer code rejected"
-    if table_matches table "" then failwith "empty rejected"
+    := rows = dfa_of_values ("01001" :: "01002" :: "02001" :: "A" :: Nil)
+    := table = dfa_table_text rows
+    ? table_matches table "02001" = !- ?> failwith "listed code"
+    ? table_matches table "A" = !- ?> failwith "short code"
+    ? table_matches table "02002" ?> failwith "unlisted code rejected"
+    ? table_matches table "0200" ?> failwith "prefix rejected"
+    ? table_matches table "A0" ?> failwith "longer code rejected"
+    ? table_matches table "" ?> failwith "empty rejected"

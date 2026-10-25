@@ -1,10 +1,10 @@
-open sm'_operators
-open leptos
-open rust
+:< sm'_operators
+:< leptos
+:< rust
 
-inl render (class : () -> string) text =
+:= render (class : () -> string) text =
     pre [
         class_fn "[padding:1px] [font-size:12px] [line-height:12px] [text-wrap:pretty] " class
-    ] fun () =>
+    ] \ () =>
         text
         |> text_fragment

@@ -22,10 +22,10 @@ struct Closure0 {
 static inline void ArrayDecrefBody0(Array0 * x){
     (void)x;
 }
-void ArrayDecref0(Array0 * x){
+static void ArrayDecref0(Array0 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody0(x); free(x); }
 }
-Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
+static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     uint32_t size = sizeof(Array0) + sizeof(int32_t) * len;
     Array0 * x = malloc(size);
     if (init_at_zero) { memset(x,0,size); }
@@ -33,7 +33,7 @@ Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     x->len = len;
     return x;
 }
-Array0 * ArrayLit0(uint32_t len, int32_t * ptr){
+static Array0 * ArrayLit0(uint32_t len, int32_t * ptr){
     Array0 * x = ArrayCreate0(len, false);
     memcpy(x->ptr, ptr, sizeof(int32_t) * len);
     return x;
@@ -41,28 +41,21 @@ Array0 * ArrayLit0(uint32_t len, int32_t * ptr){
 static inline void ClosureDecrefBody0(Closure0 * x){
     ArrayDecref0(x->v0);
 }
-void ClosureDecref0(Fun0 * self){
+static void ClosureDecref0(Fun0 * self){
     Closure0 * x = (Closure0 *) self;
     if (x != NULL && --(x->base.refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
-int32_t f_c0(Fun0 * self, int32_t v1){
+static int32_t f_c0(Fun0 * self, int32_t v1){
     Closure0 * x = (Closure0 *) self;
     Array0 * v0 = x->v0;
     (v0)->refc++;
     ClosureDecref0(self);
-    
-    
-    int32_t v2;
-    v2 = v0->len;
-    
+    int32_t v2 = v0->len;
     ArrayDecref0(v0);
-    int32_t v3;
-    v3 = v2 + v1;
-    
-    
+    int32_t v3 = v2 + v1;
     return v3;
 }
-Fun0 * ClosureCreate0(Array0 * v0){
+static Fun0 * ClosureCreate0(Array0 * v0){
     Closure0 * x = malloc(sizeof(Closure0));
     x->base.refc = 1;
     x->base.decref_fptr = ClosureDecref0;
@@ -71,15 +64,9 @@ Fun0 * ClosureCreate0(Array0 * v0){
     return &x->base;
 }
 int32_t main(){
-    
-    
-    Array0 * v0;
-    v0 = ArrayCreate0(2l, true);
+    Array0 * v0 = ArrayCreate0(2l, true);
     (v0)->refc++;
-    
-    Fun0 * v1;
-    v1 = ClosureCreate0(v0);
-    
+    Fun0 * v1 = ClosureCreate0(v0);
     ArrayDecref0(v0);
     return v1->fptr(v1, 40l);
 }

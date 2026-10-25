@@ -2,7 +2,7 @@ class Mut0(var l0: Int)
 class Mut1(var l0: Int)
 class Mut2(var l0: UH0)
 sealed interface UH0 { val tag: Int }
-class UH0_Nil : UH0 { override val tag: Int = 0 }
+object UH0_Nil : UH0 { override val tag: Int = 0 }
 data class UH0_Cons(val f0: Int, val f1: UH0) : UH0 { override val tag: Int = 1 }
 fun sp_method0(p0: Mut0): Boolean {
     var v0: Mut0 = p0
@@ -27,50 +27,37 @@ fun spiral_main(): Int {
     v1 = Mut0(0)
     while (true) {
         if (!(sp_method0(v1))) break
-        var v3: Int = 0
-        v3 = v1.l0
-        var v4: Int = 0
-        v4 = (v3 * 5)
+        val v3: Int = v1.l0
+        val v4: Int = (v3 * 5)
         v0[v3] = v4
-        var v5: Int = 0
-        v5 = (v3 + 1)
+        val v5: Int = (v3 + 1)
         v1.l0 = v5
     }
     var v6: Mut1 = Mut1(0)
     v6 = Mut1(0)
     var v7: Mut1 = Mut1(0)
     v7 = Mut1(0)
-    var v8: UH0 = UH0_Nil()
-    v8 = UH0_Nil()
-    var v9: Mut2 = Mut2(UH0_Nil())
+    val v8: UH0 = UH0_Nil
+    var v9: Mut2 = Mut2(UH0_Nil)
     v9 = Mut2(v8)
     while (true) {
         if (!(sp_method1(v6))) break
-        var v11: Int = 0
-        v11 = v6.l0
-        var v12: Int = 0
-        v12 = (v11 % 2)
-        var v13: Boolean = false
-        v13 = (v12 == 1)
+        val v11: Int = v6.l0
+        val v12: Int = (v11 % 2)
+        val v13: Boolean = (v12 == 1)
         if (v13) {
-            var v14: Int = 0
-            v14 = v7.l0
-            var v15: Int = 0
-            v15 = (v14 + 1)
+            val v14: Int = v7.l0
+            val v15: Int = (v14 + 1)
             v7.l0 = v15
         } else {
         }
-        var v16: UH0 = UH0_Nil()
-        v16 = v9.l0
-        var v17: UH0 = UH0_Nil()
-        v17 = UH0_Cons(v11, v16)
+        val v16: UH0 = v9.l0
+        val v17: UH0 = UH0_Cons(v11, v16)
         v9.l0 = v17
-        var v18: Int = 0
-        v18 = (v11 + 1)
+        val v18: Int = (v11 + 1)
         v6.l0 = v18
     }
-    var v19: UH0 = UH0_Nil()
-    v19 = v9.l0
+    val v19: UH0 = v9.l0
     var v38: Int = 0
     when (v19.tag) {
         1 -> {
@@ -90,18 +77,12 @@ fun spiral_main(): Int {
                                     var v27: UH0 = (v25 as UH0_Cons).f1
                                     when (v27.tag) {
                                         0 -> {
-                                            var v28: Int = 0
-                                            v28 = (v20 * 64)
-                                            var v29: Int = 0
-                                            v29 = (v22 * 16)
-                                            var v30: Int = 0
-                                            v30 = (v28 + v29)
-                                            var v31: Int = 0
-                                            v31 = (v24 * 4)
-                                            var v32: Int = 0
-                                            v32 = (v30 + v31)
-                                            var v33: Int = 0
-                                            v33 = (v32 + v26)
+                                            val v28: Int = (v20 * 64)
+                                            val v29: Int = (v22 * 16)
+                                            val v30: Int = (v28 + v29)
+                                            val v31: Int = (v24 * 4)
+                                            val v32: Int = (v30 + v31)
+                                            val v33: Int = (v32 + v26)
                                             v38 = v33
                                         }
                                         else -> {
@@ -128,18 +109,12 @@ fun spiral_main(): Int {
             v38 = -1
         }
     }
-    var v39: Int = 0
-    v39 = v7.l0
-    var v40: Int = 0
-    v40 = (v38 + v39)
-    var v41: Int = 0
-    v41 = v0[2]
-    var v42: Int = 0
-    v42 = (v40 + v41)
-    var v43: Int = 0
-    v43 = v0[1]
-    var v44: Int = 0
-    v44 = (v42 - v43)
+    val v39: Int = v7.l0
+    val v40: Int = (v38 + v39)
+    val v41: Int = v0[2]
+    val v42: Int = (v40 + v41)
+    val v43: Int = v0[1]
+    val v44: Int = (v42 - v43)
     return v44
 }
 fun main() {

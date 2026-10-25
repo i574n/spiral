@@ -30,21 +30,21 @@ function spiral_string_slice(value: string, from: number, to: number): string {
     return spiral_utf8_decoder.decode(bytes.subarray(from, to + 1));
 }
 function method0(v0: string): [string, number] {
-    let v1: number = spiral_string_length(v0);
+    const v1: number = spiral_string_length(v0);
     return [v0, v1];
 }
 function score_1(v0: number, v1: string): number {
-    let v2: number = spiral_string_length(v1);
-    let v3: number = (v2 + v0) | 0;
+    const v2: number = spiral_string_length(v1);
+    const v3: number = (v2 + v0) | 0;
     return v3;
 }
 export function main(): number {
-    let v0: string = "qwe";
+    const v0: string = "qwe";
     let [v1, v2]: [string, number] = method0(v0);
-    let v3: number = score_1(v2, v1);
-    let v4: number = score_1(v2, v1);
-    let v5: number = (v3 + v4) | 0;
-    let v6: number = (v5 - 12) | 0;
+    const v3: number = score_1(v2, v1);
+    const v4: number = score_1(v2, v1);
+    const v5: number = (v3 + v4) | 0;
+    const v6: number = (v5 - 12) | 0;
     return v6;
 }
 process.exitCode = main();

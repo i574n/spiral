@@ -31,25 +31,18 @@ end
 deriving instance Inhabited for H0
 mutual
 partial def spiralMain : IO Int32 := do
-    let mut v0 : Int32 := default
-    let mut v1 : String := default
-    let mut v2 : H0 := default
     let mut v3 : (IO.Ref (Array H0)) ← IO.mkRef #[]
-    let mut v4 : H0 := default
-    let mut v5 : Int32 := default
-    let mut v6 : String := default
-    let mut v7 : Bool := default
     let mut v9 : Bool := default
     let mut v8 : Bool := default
-    v0 := (7 : Int32)
-    v1 := "hi"
-    v2 := (H0.mk v0 v1)
+    let v0 : Int32 := (7 : Int32)
+    let v1 : String := "hi"
+    let v2 : H0 := (H0.mk v0 v1)
     v3 := (← IO.mkRef (Array.replicate (spiralIdx (1 : Int32)) (default : H0)))
     v3.modify (fun xs => xs.set! (spiralIdx (0 : Int32)) v2)
-    v4 := (← spiralIndex (← v3.get) (spiralIdx (0 : Int32)))
-    v5 := v4.l0
-    v6 := v4.l1
-    v7 := (v5 == (7 : Int32))
+    let v4 : H0 := (← spiralIndex (← v3.get) (spiralIdx (0 : Int32)))
+    let v5 : Int32 := v4.l0
+    let v6 : String := v4.l1
+    let v7 : Bool := (v5 == (7 : Int32))
     if v7 then
         v8 := (v6 == "hi")
         v9 := v8

@@ -1,12 +1,9 @@
 import CRT
 import WinSDK
 func spiral_main() -> Int32 {
-    var v0: Int32 = 0
-    v0 = 6
-    var v1: Int32 = 0
-    v1 = 7
-    var v2: Int32 = 0
-    v2 = (v0 &+ v1)
+    let v0: Int32 = 6
+    let v1: Int32 = 7
+    let v2: Int32 = (v0 &+ v1)
     return v2
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

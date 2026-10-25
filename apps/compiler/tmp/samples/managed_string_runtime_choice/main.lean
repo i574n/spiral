@@ -36,30 +36,19 @@ partial def choose_0 (p0 : Bool) : IO String := do
         return v2
 partial def measure_1 (p0 : String) : IO Int32 := do
     let mut v0 : String := p0
-    let mut v1 : Int32 := default
-    v1 := (Int32.ofNat v0.utf8ByteSize)
+    let v1 : Int32 := (Int32.ofNat v0.utf8ByteSize)
     return v1
 partial def spiralMain : IO Int32 := do
-    let mut v0 : Bool := default
-    let mut v1 : String := default
-    let mut v2 : Bool := default
-    let mut v3 : String := default
-    let mut v4 : Int32 := default
-    let mut v5 : Int32 := default
-    let mut v6 : Int32 := default
-    let mut v7 : Int32 := default
-    let mut v8 : Int32 := default
-    let mut v9 : Int32 := default
-    v0 := true
-    v1 := (← choose_0 v0)
-    v2 := false
-    v3 := (← choose_0 v2)
-    v4 := (← measure_1 v1)
-    v5 := (← measure_1 v1)
-    v6 := (v4 + v5)
-    v7 := (← measure_1 v3)
-    v8 := (v6 + v7)
-    v9 := (v8 - (14 : Int32))
+    let v0 : Bool := true
+    let v1 : String := (← choose_0 v0)
+    let v2 : Bool := false
+    let v3 : String := (← choose_0 v2)
+    let v4 : Int32 := (← measure_1 v1)
+    let v5 : Int32 := (← measure_1 v1)
+    let v6 : Int32 := (v4 + v5)
+    let v7 : Int32 := (← measure_1 v3)
+    let v8 : Int32 := (v6 + v7)
+    let v9 : Int32 := (v8 - (14 : Int32))
     return v9
 end
 def main : IO UInt32 := do

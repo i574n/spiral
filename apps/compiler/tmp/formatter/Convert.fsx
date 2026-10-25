@@ -81,29 +81,37 @@ type LineConversion =
 
 let convertLine (target : Spelling) (line : Line<'phase>) =
     match line.Shape with
+    | Code (_, lexemes, _) when lexemes.Length > 0 && lexemes.[0].Span.From = 0 && lexemes.[0].Text.Text = "test" -> Unchanged
     | Code (_, lexemes, tail) ->
         let pieces = lexemes |> Array.map (fun lexeme -> lexeme, respell target lexeme)
         if pieces |> Array.forall (fun (_, spelled) -> spelled.IsNone) then Unchanged
         else
-            let builder = System.Text.StringBuilder ()
-            pieces
-            |> Array.iteri (fun index (lexeme, spelled) ->
-                let text = defaultArg spelled lexeme.Text.Text
-                if index = 0 then builder.Append (' ', lexeme.Span.From) |> ignore
-                else
-                    let previousEnd = (fst pieces.[index - 1]).Span.NearTo
-                    let gap = lexeme.Span.From - previousEnd
-                    let previousText = match snd pieces.[index - 1] with Some t -> t | None -> (fst pieces.[index - 1]).Text.Text
-                    let needsSpace = gap = 0 && (spelled.IsSome || (snd pieces.[index - 1]).IsSome) && fuses previousText text
-                    match lexeme.Before with
-                    | Embedded embedded -> builder.Append embedded.Text |> ignore
-                    | Whitespace width -> builder.Append (' ', (if needsSpace then max 1 width else width)) |> ignore
-                builder.Append text |> ignore)
-            builder.Append tail.Text |> ignore
-            let attempted = builder.ToString ()
-            match lexLine lex_state_init attempted with
-            | Code (_, relexed, _), _ when (relexed |> Array.map (fun l -> tokenIdentity l.Token)) = (lexemes |> Array.map (fun l -> tokenIdentity l.Token)) -> Converted attempted
-            | _ -> Rejected attempted
+            let spell (guarded : bool) =
+                let builder = System.Text.StringBuilder ()
+                pieces
+                |> Array.iteri (fun index (lexeme, spelled) ->
+                    let text = defaultArg spelled lexeme.Text.Text
+                    if index = 0 then builder.Append (' ', lexeme.Span.From) |> ignore
+                    else
+                        let previousEnd = (fst pieces.[index - 1]).Span.NearTo
+                        let gap = lexeme.Span.From - previousEnd
+                        let previousText = match snd pieces.[index - 1] with Some t -> t | None -> (fst pieces.[index - 1]).Text.Text
+                        let needsSpace = guarded && gap = 0 && (spelled.IsSome || (snd pieces.[index - 1]).IsSome) && fuses previousText text
+                        match lexeme.Before with
+                        | Embedded embedded -> builder.Append embedded.Text |> ignore
+                        | Whitespace width -> builder.Append (' ', (if needsSpace then max 1 width else width)) |> ignore
+                    builder.Append text |> ignore)
+                builder.Append tail.Text |> ignore
+                builder.ToString ()
+            let keepsTokens (attempted : string) =
+                match lexLine lex_state_init attempted with
+                | Code (_, relexed, _), _ -> (relexed |> Array.map (fun l -> tokenIdentity l.Token)) = (lexemes |> Array.map (fun l -> tokenIdentity l.Token))
+                | _ -> false
+            let tight = spell false
+            if keepsTokens tight then Converted tight
+            else
+                let spaced = spell true
+                if keepsTokens spaced then Converted spaced else Rejected spaced
     | _ -> Unchanged
 
 let convert (target : Spelling) (source : Source<'phase>) =

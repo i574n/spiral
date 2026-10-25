@@ -12,10 +12,10 @@ typedef Array0 String;
 static inline void ArrayDecrefBody0(Array0 * x){
     (void)x;
 }
-void ArrayDecref0(Array0 * x){
+static void ArrayDecref0(Array0 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody0(x); free(x); }
 }
-Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
+static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     uint32_t size = sizeof(Array0) + sizeof(char) * len;
     Array0 * x = malloc(size);
     if (init_at_zero) { memset(x,0,size); }
@@ -23,7 +23,7 @@ Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     x->len = len;
     return x;
 }
-Array0 * ArrayLit0(uint32_t len, char * ptr){
+static Array0 * ArrayLit0(uint32_t len, char * ptr){
     Array0 * x = ArrayCreate0(len, false);
     memcpy(x->ptr, ptr, sizeof(char) * len);
     return x;
@@ -34,53 +34,24 @@ static inline void StringDecref(String * x){
 static inline String * StringLit(uint32_t len, char * ptr){
     return ArrayLit0(len, ptr);
 }
-String * method0(int32_t v0){
-    
-    
-    bool v1;
-    v1 = v0 == 0l;
-    
-    
+static String * method0(int32_t v0){
+    bool v1 = v0 == 0l;
     if (v1){
-        
-        
-        String * v2;
-        v2 = StringLit(3, "no");
-        
-        
+        String * v2 = StringLit(3, "no");
         return v2;
     } else {
-        
-        
-        String * v3;
-        v3 = StringLit(3, "hi");
-        
-        
+        String * v3 = StringLit(3, "hi");
         return v3;
     }
 }
 int32_t main(){
-    
-    
-    int32_t v0;
-    v0 = 7l;
-    
-    
-    String * v1;
-    v1 = method0(v0);
-    
-    
-    bool v2;
-    v2 = strcmp(v1->ptr, "hi") == 0;
-    
+    int32_t v0 = 7l;
+    String * v1 = method0(v0);
+    bool v2 = strcmp(v1->ptr, "hi") == 0;
     StringDecref(v1);
     if (v2){
-        
-        
         return 0l;
     } else {
-        
-        
         return 1l;
     }
 }

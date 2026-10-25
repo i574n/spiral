@@ -17,21 +17,19 @@ end
 
 local v0 = 7
 local v1, v2 = (table.unpack or unpack)(method0(v0))
-local __v = { v1 }
-if __v[1] ~= nil and __v[1].tag == "Us0_None" then
+if v1 ~= nil and v1.tag == "Us0_None" then
     return 1
-elseif __v[1] ~= nil and __v[1].tag == "Us0_Some" then
-    local v3 = __v[1]._1
-    local __v = { v2 }
-    if __v[1] ~= nil and __v[1].tag == "Us0_None" then
+elseif v1 ~= nil and v1.tag == "Us0_Some" then
+    local v3 = v1._1
+    if v2 ~= nil and v2.tag == "Us0_None" then
         local v4 = v3 == 7
         if v4 then
             return 0
         else
             return 1
         end
-    elseif __v[1] ~= nil and __v[1].tag == "Us0_Some" then
-        local v6 = __v[1]._1
+    elseif v2 ~= nil and v2.tag == "Us0_Some" then
+        local v6 = v2._1
         return 1
     end
 end

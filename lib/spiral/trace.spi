@@ -1,13 +1,13 @@
 /// # trace
 test trace static =
-    open testing
+    :< testing
 
-open sm'_operators
+:< sm'_operators
 
 /// ## trace
 
 /// ### trace_level
-union trace_level =
+:| trace_level =
     | Verbose
     | Debug
     | Info
@@ -15,7 +15,7 @@ union trace_level =
     | Critical
 
 /// ### severity
-inl severity = function
+:= severity = \|
     | Verbose => 10
     | Debug => 20
     | Info => 30
@@ -23,51 +23,51 @@ inl severity = function
     | Critical => 50
 
 /// ### read_state
-inl read_state () =
-    run_target function
-        | Zig => fun () =>
+:= read_state () =
+    run_target \|
+        | Zig => \ () =>
             {
                 trace_level =
                     "TRACE_LEVEL" |> env.get_environment_variable |> reflection.union_try_pick : option trace_level
                 repl_start = None : option i64
             }
-        | Rust => fun () =>
+        | Rust => \ () =>
             {
                 trace_level = "TRACE_LEVEL" |> env.get_environment_variable |> reflection.union_try_pick
                 repl_start = None
             }
-        | TypeScript => fun () =>
+        | TypeScript => \ () =>
             {
                 trace_level = "TRACE_LEVEL" |> env.get_environment_variable |> reflection.union_try_pick'
                 repl_start = None
             }
-        | _ => fun () =>
-            join
+        | _ => \ () =>
+            ~~
                 {
                     trace_level =
-                        inl get_result () =
+                        := get_result () =
                             "TRACE_LEVEL"
                             |> env.get_environment_variable
                             |> reflection.union_try_pick
                         backend_switch {
                             Gleam = get_result : () -> option trace_level
-                            Lua = fun () => None : option trace_level
+                            Lua = \ () => None : option trace_level
                             Fsharp = get_result : () -> option trace_level
                             Python = get_result : () -> option trace_level
                         }
                     repl_start =
-                        inl automation = env.get_environment_variable "AUTOMATION"
-                        if automation <>. "True"
-                        then None
-                        else
+                        := automation = env.get_environment_variable "AUTOMATION"
+                        ? automation <>. "True"
+                        ?> None
+                        |:
                             date_time.now ()
                             |> date_time.to_timestamp
-                            |> fun (date_time.timestamp x) => x
+                            |> \ (date_time.timestamp x) => x
                             |> Some
                 }
 
 /// ### trace_state
-type trace_state =
+:== trace_state =
     {
         count : mut i64
         trace_file : mut (string -> ())
@@ -78,22 +78,22 @@ type trace_state =
     }
 
 /// ### new_trace_state
-let new_trace_state trace_level' =
-    inl { repl_start trace_level } = read_state ()
+:~ new_trace_state trace_level' =
+    := { repl_start trace_level } = read_state ()
     {
         count = mut 1i64
         trace_file = mut ignore
-        enabled = mut true
+        enabled = mut !+
         acc = mut ""
         level = trace_level |> optionm'.default_value trace_level' |> mut
         repl_start = repl_start |> optionm'.box
     } : trace_state
 
 /// ### init_trace_state
-inl init_trace_state trace_level : () =
-    inl trace_level = trace_level |> optionm'.default_value Verbose
+:= init_trace_state trace_level : () =
+    := trace_level = trace_level |> optionm'.default_value Verbose
     backend_switch {
-        Gleam = fun () =>
+        Gleam = \ () =>
             global "fn trace_state () { option.None }"
             $'let new_trace_state = !new_trace_state ' : ()
             $'let trace_level = !trace_level ' : ()
@@ -103,26 +103,26 @@ inl init_trace_state trace_level : () =
             $'    x -> x' : ()
             $'  }' : ()
             $'}' : ()
-        Lua = fun () =>
+        Lua = \ () =>
             global "_G.trace_state = nil"
             $'if _G.trace_state == nil then _G.trace_state = !new_trace_state(!trace_level) end' : ()
-        Fsharp = fun () =>
+        Fsharp = \ () =>
             backend_switch {
-                Fsharp = fun () =>
+                Fsharp = \ () =>
                     global "module TraceState = let mutable trace_state = None"
             }
-            fun () =>
-                if $'TraceState.trace_state.IsNone' then
-                    inl trace_state = new_trace_state trace_level |> optionm'.some'
+            \ () =>
+                ? $'TraceState.trace_state.IsNone' ?>
+                    := trace_state = new_trace_state trace_level |> optionm'.some'
                     $'TraceState.trace_state <- !trace_state ' : ()
             |> exec_unit
-        Python = fun () =>
+        Python = \ () =>
             global "class TraceState: trace_state = None"
             $'if TraceState.trace_state is None: TraceState.trace_state = !new_trace_state(!trace_level)' : ()
-        TypeScript = fun () =>
+        TypeScript = \ () =>
             global "let spiral_trace_state: any = undefined;"
             $'if (spiral_trace_state === undefined) spiral_trace_state = !new_trace_state(!trace_level)' : ()
-        Rust = fun () =>
+        Rust = \ () =>
             global """
                 fn spiral_trace_hold<T: Clone>(fresh: &std::rc::Rc<dyn Fn() -> T>) -> T {
                     use std::sync::OnceLock;
@@ -131,28 +131,28 @@ inl init_trace_state trace_level : () =
                     unsafe { (*(raw as *const T)).clone() }
                 }
                 """
-            inl fresh = fun () => new_trace_state trace_level
-            open rust.rust_operators
+            := fresh = \ () => new_trace_state trace_level
+            :< rust.rust_operators
             !\\(fresh, $'"{ let _ = spiral_trace_hold(&$0); }"') : ()
-        Zig = fun () => ()
+        Zig = \ () => ()
     }
 
 /// ### get_trace_state_or_init
-inl get_trace_state_or_init trace_level : trace_state =
+:= get_trace_state_or_init trace_level : trace_state =
     init_trace_state trace_level
     backend_switch {
-        Gleam = fun () =>
-            inl trace_level = trace_level |> optionm'.default_value Verbose
+        Gleam = \ () =>
+            := trace_level = trace_level |> optionm'.default_value Verbose
             $'trace_state () |> option.lazy_unwrap(fn () { !new_trace_state(!trace_level) })' : trace_state
-        Lua = fun () =>
+        Lua = \ () =>
             $'_G.trace_state' : trace_state
-        Fsharp = fun () =>
+        Fsharp = \ () =>
             $'TraceState.trace_state.Value' : trace_state
-        Python = fun () =>
+        Python = \ () =>
             $'TraceState.trace_state' : trace_state
-        TypeScript = fun () =>
+        TypeScript = \ () =>
             $'spiral_trace_state' : trace_state
-        Rust = fun () =>
+        Rust = \ () =>
             global """
                 fn spiral_trace_hold<T: Clone>(fresh: &std::rc::Rc<dyn Fn() -> T>) -> T {
                     use std::sync::OnceLock;
@@ -161,11 +161,11 @@ inl get_trace_state_or_init trace_level : trace_state =
                     unsafe { (*(raw as *const T)).clone() }
                 }
                 """
-            inl level' = trace_level |> optionm'.default_value Verbose
-            inl fresh = fun () => new_trace_state level'
-            open rust.rust_operators
+            := level' = trace_level |> optionm'.default_value Verbose
+            := fresh = \ () => new_trace_state level'
+            :< rust.rust_operators
             !\\(fresh, $'"{ spiral_trace_hold(&$0) }"') : trace_state
-        Zig = fun () =>
+        Zig = \ () =>
             global """
                 fn spiralHold(comptime T: type, fresh: anytype) T {
                     const S = struct {
@@ -175,17 +175,17 @@ inl get_trace_state_or_init trace_level : trace_state =
                     return S.slot.?;
                 }
                 """
-            inl level' = trace_level |> optionm'.default_value Verbose
-            inl fresh = dyn (fun () => new_trace_state level')
+            := level' = trace_level |> optionm'.default_value Verbose
+            := fresh = dyn (\ () => new_trace_state level')
             $'spiralHold(`trace_state, !fresh)' : trace_state
     }
 
 /// ### set_trace_level
-inl set_trace_level new_level =
-    inl ({ level } & trace_state) = get_trace_state_or_init None
+:= set_trace_level new_level =
+    := ({ level } & trace_state) = get_trace_state_or_init None
     level <- new_level
     backend_switch {
-        Gleam = fun () => $'let trace_state = fn () { !(trace_state |> optionm'.some') }' : ()
+        Gleam = \ () => $'let trace_state = fn () { !(trace_state |> optionm'.some') }' : ()
         Lua = id : () -> ()
         Fsharp = id : () -> ()
         Python = id : () -> ()
@@ -195,14 +195,14 @@ inl set_trace_level new_level =
     }
 
 /// ### test_trace_level
-inl test_trace_level level : bool =
-    inl state = get_trace_state_or_init None
-    inl level' = *state.level
-    inl a : int = level |> severity
-    inl b : int = level' |> severity
-    if *state.enabled |> not
-    then false
-    else a >= b
+:= test_trace_level level : bool =
+    := state = get_trace_state_or_init None
+    := level' = *state.level
+    := a : int = level |> severity
+    := b : int = level' |> severity
+    ? *state.enabled |> not
+    ?> !-
+    |: a >= b
 
 ///> lua
 ///> gleam
@@ -211,30 +211,30 @@ inl test_trace_level level : bool =
 ///> rust
 ///> typescript
 test test_trace_level =
-    test_trace_level Critical |> _assert_eq true
-    test_trace_level Verbose |> _assert_eq true
+    test_trace_level Critical |> _assert_eq !+
+    test_trace_level Verbose |> _assert_eq !+
     Debug |> set_trace_level
-    test_trace_level Verbose |> _assert_eq false
+    test_trace_level Verbose |> _assert_eq !-
     Verbose |> set_trace_level
-    test_trace_level Verbose |> _assert_eq true
+    test_trace_level Verbose |> _assert_eq !+
 
 /// ### trace_raw
-inl trace_raw level fn =
-    fun () =>
-        inl trace_state =
-            if level |> test_trace_level |> not
-            then None
-            else
-                inl text = fn ()
-                inl ({ count acc } & trace_state) = get_trace_state_or_init None
-                fun () =>
+:= trace_raw level fn =
+    \ () =>
+        := trace_state =
+            ? level |> test_trace_level |> not
+            ?> None
+            |:
+                := text = fn ()
+                := ({ count acc } & trace_state) = get_trace_state_or_init None
+                \ () =>
                     count <- *count + 1
                 |> exec_unit
-                open rust
-                open rust.rust_operators
-                run_target_args (fun () => text, console.write_line) function
-                    | Zig => fun _ => text |> console.write_line
-                    | Rust => fun text, _ =>
+                :< rust
+                :< rust.rust_operators
+                run_target_args (\ () => text, console.write_line) \|
+                    | Zig => \ _ => text |> console.write_line
+                    | Rust => \ text, _ =>
                         global """
                             #[cfg(target_arch = "wasm32")]
                             fn spiral_trace_near_log(text: &str) {
@@ -262,28 +262,28 @@ inl trace_raw level fn =
                                 }
                             }
                             """
-                        if $'cfg\!(target_arch = "wasm32")' : bool
-                        then
-                            inl new_acc =
-                                if *acc = ""
-                                then text
-                                elif text = ""
-                                then *acc
-                                else *acc ++\# text
-                            inl char_count : convert.unativeint = !\\(new_acc, $'"$0.chars().count()"')
-                            inl chunks_len : i32 = ((convert.convert char_count : i32) + 14999i32) / 15000i32
-                            if text <>. "" && chunks_len <= 1i32
-                            then acc <- new_acc
-                            else
+                        ? $'cfg\!(target_arch = "wasm32")' : bool
+                        ?>
+                            := new_acc =
+                                ? *acc = ""
+                                ?> text
+                                |? text = ""
+                                ?> *acc
+                                |: *acc ++\# text
+                            := char_count : convert.unativeint = !\\(new_acc, $'"$0.chars().count()"')
+                            := chunks_len : i32 = ((convert.convert char_count : i32) + 14999i32) / 15000i32
+                            ? text <>. "" && chunks_len <= 1i32
+                            ?> acc <- new_acc
+                            |:
                                 acc <- ""
                                 !\\(new_acc, $'"{ \#[cfg(target_arch = \\\"wasm32\\\")] spiral_trace_near_log(&$0); }"')
-                        else !\\(text, $'"println\!(\\\"{}\\\", $0)"')
-                    | _ => fun text, write_line =>
+                        |: !\\(text, $'"println\!(\\\"{}\\\", $0)"')
+                    | _ => \ text, write_line =>
                         text |> write_line
                 text |> *trace_state.trace_file
                 trace_state |> Some
         backend_switch {
-            Gleam = fun () => $'let trace_state = fn () { !(trace_state |> optionm'.box) }' : ()
+            Gleam = \ () => $'let trace_state = fn () { !(trace_state |> optionm'.box) }' : ()
             Lua = id : () -> ()
             Fsharp = id : () -> ()
             Python = id : () -> ()
@@ -294,17 +294,17 @@ inl trace_raw level fn =
     |> exec_unit
 
 /// ### clock_two_digits
-inl clock_two_digits (n : i32) : string =
-    (if n < 10i32 then "0" else "") ++# sm'.obj_to_string n
+:= clock_two_digits (n : i32) : string =
+    (? n < 10i32 ?> "0" |: "") ++# sm'.obj_to_string n
 
 /// ### trace
-inl trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
-    fun () =>
-        inl trace_state = get_trace_state_or_init None
-        inl time =
-            join
-                run_target function
-                    | Zig => fun () =>
+:= trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
+    \ () =>
+        := trace_state = get_trace_state_or_init None
+        := time =
+            ~~
+                run_target \|
+                    | Zig => \ () =>
                         global """extern "kernel32" fn GetLocalTime(t: *[8]u16) callconv(.winapi) void;"""
                         global """fn spiralClock() []const u8 {
     var secs: u64 = 0;
@@ -320,28 +320,28 @@ inl trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
     return std.fmt.allocPrint(spiral_gpa, "{d:0>2}:{d:0>2}:{d:0>2}", .{ (secs / 3600) % 24, (secs / 60) % 60, secs % 60 }) catch @panic("out of memory");
 }"""
                         $'spiralClock()' : string
-                    | _ => fun () =>
-                        run_target fun target =>
-                            match target with
-                            | Rust => fun () =>
-                                open rust.rust_operators
-                                inl seconds_of_day : u64 = $'{ \#[cfg(target_arch = "wasm32")] let (h, m, s) = { let secs = near_sdk::env::block_timestamp() / 1_000_000_000; ((secs / 3600) % 24, (secs / 60) % 60, secs % 60) }; \#[cfg(all(windows, not(target_arch = "wasm32")))] let (h, m, s) = { \#[repr(C)] struct St([u16; 8]); unsafe extern "system" { fn GetLocalTime(t: *mut St); } let mut t = St([0; 8]); unsafe { GetLocalTime(&mut t) }; (t.0[4] as u64, t.0[5] as u64, t.0[6] as u64) }; \#[cfg(all(unix, not(target_arch = "wasm32")))] let (h, m, s) = { \#[repr(C, align(8))] struct Tm([i32; 16]); unsafe extern "C" { fn localtime_r(t: *const std::os::raw::c_long, tm: *mut Tm) -> *mut Tm; } let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0) as std::os::raw::c_long; let mut tm = Tm([0; 16]); unsafe { localtime_r(&secs, &mut tm) }; (tm.0[2] as u64, tm.0[1] as u64, tm.0[0] as u64) }; \#[cfg(not(any(windows, unix, target_arch = "wasm32")))] let (h, m, s) = { let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0); ((secs / 3600) % 24, (secs / 60) % 60, secs % 60) }; h * 3600 + m * 60 + s }'
-                                inl two_digits (n : u64) : string = (if n < 10u64 then "0" else "") ++# sm'.obj_to_string n
+                    | _ => \ () =>
+                        run_target \ target =>
+                            ?= target ?|
+                            | Rust => \ () =>
+                                :< rust.rust_operators
+                                := seconds_of_day : u64 = $'{ \#[cfg(target_arch = "wasm32")] let (h, m, s) = { let secs = near_sdk::env::block_timestamp() / 1_000_000_000; ((secs / 3600) % 24, (secs / 60) % 60, secs % 60) }; \#[cfg(all(windows, not(target_arch = "wasm32")))] let (h, m, s) = { \#[repr(C)] struct St([u16; 8]); unsafe extern "system" { fn GetLocalTime(t: *mut St); } let mut t = St([0; 8]); unsafe { GetLocalTime(&mut t) }; (t.0[4] as u64, t.0[5] as u64, t.0[6] as u64) }; \#[cfg(all(unix, not(target_arch = "wasm32")))] let (h, m, s) = { \#[repr(C, align(8))] struct Tm([i32; 16]); unsafe extern "C" { fn localtime_r(t: *const std::os::raw::c_long, tm: *mut Tm) -> *mut Tm; } let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0) as std::os::raw::c_long; let mut tm = Tm([0; 16]); unsafe { localtime_r(&secs, &mut tm) }; (tm.0[2] as u64, tm.0[1] as u64, tm.0[0] as u64) }; \#[cfg(not(any(windows, unix, target_arch = "wasm32")))] let (h, m, s) = { let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0); ((secs / 3600) % 24, (secs / 60) % 60, secs % 60) }; h * 3600 + m * 60 + s }'
+                                := two_digits (n : u64) : string = (? n < 10u64 ?> "0" |: "") ++# sm'.obj_to_string n
                                 two_digits (seconds_of_day / 3600u64) ++# ":" ++# two_digits ((seconds_of_day / 60u64) % 60u64) ++# ":" ++# two_digits (seconds_of_day % 60u64)
-                            | TypeScript => fun () =>
-                                inl now = $'new Date()' : $'Date'
-                                inl hours = $'!now.getHours()' : i32
-                                inl minutes = $'!now.getMinutes()' : i32
-                                inl seconds = $'!now.getSeconds()' : i32
-                                inl hours_minutes = clock_two_digits hours ++# ":" ++# clock_two_digits minutes
+                            | TypeScript => \ () =>
+                                := now = $'new Date()' : $'Date'
+                                := hours = $'!now.getHours()' : i32
+                                := minutes = $'!now.getMinutes()' : i32
+                                := seconds = $'!now.getSeconds()' : i32
+                                := hours_minutes = clock_two_digits hours ++# ":" ++# clock_two_digits minutes
                                 hours_minutes ++# ":" ++# clock_two_digits seconds
-                            | _ => fun () =>
-                                match trace_state.repl_start |> optionm'.unbox with
+                            | _ => \ () =>
+                                ?= trace_state.repl_start |> optionm'.unbox ?|
                                 | Some repl_start =>
-                                    inl t =
+                                    := t =
                                         date_time.now ()
                                         |> date_time.to_timestamp
-                                        |> fun (date_time.timestamp x) => x
+                                        |> \ (date_time.timestamp x) => x
                                         |> flip (-) repl_start
                                         |> date_time.time_span_of_micros
                                     date_time.date_time_milliseconds
@@ -353,41 +353,41 @@ inl trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
                                 | None => date_time.now ()
                                 |> date_time.format (
                                     backend_switch {
-                                        Gleam = fun () => "HH:mm:ss"
-                                        Lua = fun () => "%H:%M:%S"
-                                        Fsharp = fun () =>
-                                            match target with
-                                            | Rust => join "hh:mm:ss"
-                                            | _ => join "HH:mm:ss"
-                                        Python = fun () => "%H:%M:%S"
+                                        Gleam = \ () => "HH:mm:ss"
+                                        Lua = \ () => "%H:%M:%S"
+                                        Fsharp = \ () =>
+                                            ?= target ?|
+                                            | Rust => ~~ "hh:mm:ss"
+                                            | _ => ~~ "HH:mm:ss"
+                                        Python = \ () => "%H:%M:%S"
                                     }
                                 )
-        inl level_str =
-            join
-                inl color =
-                    match level with
+        := level_str =
+            ~~
+                := color =
+                    ?= level ?|
                     | Verbose => console.color_bright_black ()
                     | Debug => console.color_bright_blue ()
                     | Info => console.color_bright_green ()
                     | Warning => console.color_yellow ()
                     | Critical => console.color_bright_red ()
-                inl level_str =
+                := level_str =
                     level
                     |> reflection.union_to_string
                     |> sm'.to_lower
                     |> sm'.index 0i32
                     |> sm'.format
                 color ++# level_str ++# console.color_reset ()
-        inl text = text_fn ()
-        if text = ""
-        then ""
-        else
-            inl locals = locals ()
-            join
-                inl count = *trace_state.count
+        := text = text_fn ()
+        ? text = ""
+        ?> ""
+        |:
+            := locals = locals ()
+            ~~
+                := count = *trace_state.count
                 time ++# " " ++#? count ++# level_str ++# " " ++# text ++# " / " ++#? locals
-                |> fun x =>
-                    join
+                |> \ x =>
+                    ~~
                         x
                         |> sm'.trim_start []
                         |> sm'.trim_end [ ' '; '/' ]
@@ -400,23 +400,23 @@ inl trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
 ///> rust
 ///> typescript
 test trace_2 =
-    trace Debug (fun () => "test1") id
-    trace Debug (fun () => "test2") id
+    trace Debug (\ () => "test1") id
+    trace Debug (\ () => "test2") id
     get_trace_state_or_init None .count
-    |> fun x => *x
+    |> \ x => *x
     |> _assert_eq 3
 
 /// ### trace_format
-inl trace_format level fn obj =
-    inl text, locals = fn obj
-    inl locals = #?locals |> sm'.ellipsis_end 200
-    trace level (fun () => text) (fun () => locals)
+:= trace_format level fn obj =
+    := text, locals = fn obj
+    := locals = #?locals |> sm'.ellipsis_end 200
+    trace level (\ () => text) (\ () => locals)
     obj
 
 /// ## main
 ///> fsharp
 
-inl main () =
+:= main () =
     init_trace_state None
-    inl trace level text_fn (locals : () -> string) = trace level text_fn locals
+    := trace level text_fn (locals : () -> string) = trace level text_fn locals
     $'let trace x = !trace x' : ()

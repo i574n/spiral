@@ -25,40 +25,26 @@ def spiralStringSlice (s : String) (a b : Int) : IO String := do
   else pure (String.Pos.Raw.extract s ⟨a.toNat⟩ ⟨(b + 1).toNat⟩)
 mutual
 partial def spiralMain : IO Int32 := do
-    let mut v0 : Int32 := default
     let mut v1 : (IO.Ref (Array (Int32 × Bool))) ← IO.mkRef #[]
-    let mut v2 : Int32 := default
-    let mut v3 : Int32 := default
-    let mut v4 : Bool := default
-    let mut v5 : Int32 := default
-    let mut v6 : Bool := default
-    let mut v7 : Int32 := default
-    let mut v8 : Int32 := default
-    let mut v9 : Bool := default
     let mut v10 : Int32 := default
     let mut v11 : Int32 := default
     let mut v12 : Int32 := default
-    let mut v13 : Int32 := default
-    let mut v14 : Int32 := default
-    let mut v15 : Int32 := default
-    let mut v16 : Int32 := default
-    let mut v17 : Int32 := default
-    v0 := (3 : Int32)
+    let v0 : Int32 := (3 : Int32)
     v1 := (← IO.mkRef (Array.replicate (spiralIdx v0) (default : (Int32 × Bool))))
-    v2 := (4 : Int32)
+    let v2 : Int32 := (4 : Int32)
     v1.modify (fun xs => xs.set! (spiralIdx (0 : Int32)) (v2, true))
     v1.modify (fun xs => xs.set! (spiralIdx (1 : Int32)) ((7 : Int32), false))
     v1.modify (fun xs => xs.set! (spiralIdx (2 : Int32)) ((9 : Int32), true))
     let (r1_0, r1_1) := (← spiralIndex (← v1.get) (spiralIdx (0 : Int32)))
-    v3 := r1_0
-    v4 := r1_1
+    let v3 : Int32 := r1_0
+    let v4 : Bool := r1_1
     let (r2_0, r2_1) := (← spiralIndex (← v1.get) (spiralIdx (1 : Int32)))
-    v5 := r2_0
-    v6 := r2_1
-    v7 := (2 : Int32)
+    let v5 : Int32 := r2_0
+    let v6 : Bool := r2_1
+    let v7 : Int32 := (2 : Int32)
     let (r3_0, r3_1) := (← spiralIndex (← v1.get) (spiralIdx v7))
-    v8 := r3_0
-    v9 := r3_1
+    let v8 : Int32 := r3_0
+    let v9 : Bool := r3_1
     if v4 then
         v10 := (1 : Int32)
     else
@@ -71,11 +57,11 @@ partial def spiralMain : IO Int32 := do
         v12 := (100 : Int32)
     else
         v12 := (0 : Int32)
-    v13 := (v3 + v5)
-    v14 := (v13 + v8)
-    v15 := (v14 + v10)
-    v16 := (v15 + v11)
-    v17 := (v16 + v12)
+    let v13 : Int32 := (v3 + v5)
+    let v14 : Int32 := (v13 + v8)
+    let v15 : Int32 := (v14 + v10)
+    let v16 : Int32 := (v15 + v11)
+    let v17 : Int32 := (v16 + v12)
     return v17
 end
 def main : IO UInt32 := do

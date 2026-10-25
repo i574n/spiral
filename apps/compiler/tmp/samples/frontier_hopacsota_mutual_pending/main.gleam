@@ -4,9 +4,6 @@ pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
   int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
 }
 
-pub fn spiral_wrap_unsigned(value: Int, bits: Int) -> Int {
-  int.bitwise_and(value, int.bitwise_shift_left(1, bits) - 1)
-}
 
 pub fn is_odd_1(v0: Int) -> Bool {
     let v1 = v0 == 0
@@ -33,14 +30,14 @@ pub fn is_even_0(v0: Int) -> Bool {
     }
 }
 pub fn main() {
-let v0 = 10
-let v1 = is_even_0(v0)
-case v1 {
-    True -> {
-        0
+    let v0 = 10
+    let v1 = is_even_0(v0)
+    case v1 {
+        True -> {
+            0
+        }
+        False -> {
+            1
+        }
     }
-    False -> {
-        1
-    }
-}
 }

@@ -35,96 +35,96 @@ function runtime_byte_1(v0: string, v1: number): number {
 }
 function utf8_scalar_at_byte_offset_0(v0: string, v1: number): number {
     let v2: number = spiral_string_length(v0);
-    let v3: boolean = v1 < 0;
+    const v3: boolean = v1 < 0;
     if (v3) {
         throw new Error("UTF-8 byte offset is negative.");
     } else {
-        let v5: boolean = v1 >= v2;
+        const v5: boolean = v1 >= v2;
         if (v5) {
             throw new Error("UTF-8 byte offset is outside the string.");
         } else {
-            let v7: number = runtime_byte_1(v0, v1);
-            let v8: number = v7;
-            let v9: boolean = v8 < 128;
+            const v7: number = runtime_byte_1(v0, v1);
+            const v8: number = v7;
+            const v9: boolean = v8 < 128;
             if (v9) {
                 return v8;
             } else {
-                let v10: boolean = v8 < 194;
+                const v10: boolean = v8 < 194;
                 if (v10) {
                     throw new Error("UTF-8 scalar starts with an invalid lead byte.");
                 } else {
-                    let v12: boolean = v8 < 224;
+                    const v12: boolean = v8 < 224;
                     if (v12) {
                         let v13: number = (v1 + 1) | 0;
-                        let v14: boolean = v13 >= v2;
+                        const v14: boolean = v13 >= v2;
                         if (v14) {
                             throw new Error("UTF-8 sequence is truncated.");
                         } else {
-                            let v16: number = runtime_byte_1(v0, v13);
-                            let v17: number = v16;
-                            let v18: boolean = v17 < 128;
+                            const v16: number = runtime_byte_1(v0, v13);
+                            const v17: number = v16;
+                            const v18: boolean = v17 < 128;
                             let v20: boolean;
                             if (v18) {
                                 v20 = false;
                             } else {
-                                let v19: boolean = v17 < 192;
+                                const v19: boolean = v17 < 192;
                                 v20 = v19;
                             }
                             if (v20) {
-                                let v21: number = (v8 - 192) | 0;
-                                let v22: number = Math.imul(v21, 64);
-                                let v23: number = (v17 - 128) | 0;
-                                let v24: number = (v22 + v23) | 0;
+                                const v21: number = (v8 - 192) | 0;
+                                const v22: number = Math.imul(v21, 64);
+                                const v23: number = (v17 - 128) | 0;
+                                const v24: number = (v22 + v23) | 0;
                                 return v24;
                             } else {
                                 throw new Error("UTF-8 sequence has an invalid continuation byte.");
                             }
                         }
                     } else {
-                        let v28: boolean = v8 < 240;
+                        const v28: boolean = v8 < 240;
                         if (v28) {
-                            let v29: number = (v1 + 2) | 0;
-                            let v30: boolean = v29 >= v2;
+                            const v29: number = (v1 + 2) | 0;
+                            const v30: boolean = v29 >= v2;
                             if (v30) {
                                 throw new Error("UTF-8 sequence is truncated.");
                             } else {
-                                let v32: number = (v1 + 1) | 0;
+                                const v32: number = (v1 + 1) | 0;
                                 let v33: number = runtime_byte_1(v0, v32);
-                                let v34: number = v33;
-                                let v35: number = runtime_byte_1(v0, v29);
-                                let v36: number = v35;
-                                let v37: boolean = v34 < 128;
+                                const v34: number = v33;
+                                const v35: number = runtime_byte_1(v0, v29);
+                                const v36: number = v35;
+                                const v37: boolean = v34 < 128;
                                 let v39: boolean;
                                 if (v37) {
                                     v39 = false;
                                 } else {
-                                    let v38: boolean = v34 < 192;
+                                    const v38: boolean = v34 < 192;
                                     v39 = v38;
                                 }
                                 if (v39) {
-                                    let v40: boolean = v36 < 128;
+                                    const v40: boolean = v36 < 128;
                                     let v42: boolean;
                                     if (v40) {
                                         v42 = false;
                                     } else {
-                                        let v41: boolean = v36 < 192;
+                                        const v41: boolean = v36 < 192;
                                         v42 = v41;
                                     }
                                     if (v42) {
-                                        let v43: number = (v8 - 224) | 0;
+                                        const v43: number = (v8 - 224) | 0;
                                         let v44: number = Math.imul(v43, 4096);
-                                        let v45: number = (v34 - 128) | 0;
-                                        let v46: number = Math.imul(v45, 64);
-                                        let v47: number = (v44 + v46) | 0;
+                                        const v45: number = (v34 - 128) | 0;
+                                        const v46: number = Math.imul(v45, 64);
+                                        const v47: number = (v44 + v46) | 0;
                                         let v48: number = (v36 - 128) | 0;
-                                        let v49: number = (v47 + v48) | 0;
-                                        let v50: boolean = v49 < 2048;
+                                        const v49: number = (v47 + v48) | 0;
+                                        const v50: boolean = v49 < 2048;
                                         if (v50) {
                                             throw new Error("UTF-8 sequence is overlong.");
                                         } else {
-                                            let v52: boolean = v49 >= 55296;
+                                            const v52: boolean = v49 >= 55296;
                                             if (v52) {
-                                                let v53: boolean = v49 <= 57343;
+                                                const v53: boolean = v49 <= 57343;
                                                 if (v53) {
                                                     throw new Error("UTF-8 sequence encodes a surrogate.");
                                                 } else {
@@ -142,63 +142,63 @@ function utf8_scalar_at_byte_offset_0(v0: string, v1: number): number {
                                 }
                             }
                         } else {
-                            let v63: boolean = v8 < 245;
+                            const v63: boolean = v8 < 245;
                             if (v63) {
-                                let v64: number = (v1 + 3) | 0;
-                                let v65: boolean = v64 >= v2;
+                                const v64: number = (v1 + 3) | 0;
+                                const v65: boolean = v64 >= v2;
                                 if (v65) {
                                     throw new Error("UTF-8 sequence is truncated.");
                                 } else {
-                                    let v67: number = (v1 + 1) | 0;
-                                    let v68: number = runtime_byte_1(v0, v67);
-                                    let v69: number = v68;
-                                    let v70: number = (v1 + 2) | 0;
-                                    let v71: number = runtime_byte_1(v0, v70);
-                                    let v72: number = v71;
-                                    let v73: number = runtime_byte_1(v0, v64);
-                                    let v74: number = v73;
-                                    let v75: boolean = v69 < 128;
+                                    const v67: number = (v1 + 1) | 0;
+                                    const v68: number = runtime_byte_1(v0, v67);
+                                    const v69: number = v68;
+                                    const v70: number = (v1 + 2) | 0;
+                                    const v71: number = runtime_byte_1(v0, v70);
+                                    const v72: number = v71;
+                                    const v73: number = runtime_byte_1(v0, v64);
+                                    const v74: number = v73;
+                                    const v75: boolean = v69 < 128;
                                     let v77: boolean;
                                     if (v75) {
                                         v77 = false;
                                     } else {
-                                        let v76: boolean = v69 < 192;
+                                        const v76: boolean = v69 < 192;
                                         v77 = v76;
                                     }
                                     if (v77) {
-                                        let v78: boolean = v72 < 128;
+                                        const v78: boolean = v72 < 128;
                                         let v80: boolean;
                                         if (v78) {
                                             v80 = false;
                                         } else {
-                                            let v79: boolean = v72 < 192;
+                                            const v79: boolean = v72 < 192;
                                             v80 = v79;
                                         }
                                         if (v80) {
-                                            let v81: boolean = v74 < 128;
+                                            const v81: boolean = v74 < 128;
                                             let v83: boolean;
                                             if (v81) {
                                                 v83 = false;
                                             } else {
-                                                let v82: boolean = v74 < 192;
+                                                const v82: boolean = v74 < 192;
                                                 v83 = v82;
                                             }
                                             if (v83) {
-                                                let v84: number = (v8 - 240) | 0;
-                                                let v85: number = Math.imul(v84, 262144);
-                                                let v86: number = (v69 - 128) | 0;
-                                                let v87: number = Math.imul(v86, 4096);
-                                                let v88: number = (v85 + v87) | 0;
-                                                let v89: number = (v72 - 128) | 0;
-                                                let v90: number = Math.imul(v89, 64);
-                                                let v91: number = (v88 + v90) | 0;
-                                                let v92: number = (v74 - 128) | 0;
-                                                let v93: number = (v91 + v92) | 0;
-                                                let v94: boolean = v93 < 65536;
+                                                const v84: number = (v8 - 240) | 0;
+                                                const v85: number = Math.imul(v84, 262144);
+                                                const v86: number = (v69 - 128) | 0;
+                                                const v87: number = Math.imul(v86, 4096);
+                                                const v88: number = (v85 + v87) | 0;
+                                                const v89: number = (v72 - 128) | 0;
+                                                const v90: number = Math.imul(v89, 64);
+                                                const v91: number = (v88 + v90) | 0;
+                                                const v92: number = (v74 - 128) | 0;
+                                                const v93: number = (v91 + v92) | 0;
+                                                const v94: boolean = v93 < 65536;
                                                 if (v94) {
                                                     throw new Error("UTF-8 sequence is overlong.");
                                                 } else {
-                                                    let v96: boolean = v93 > 1114111;
+                                                    const v96: boolean = v93 > 1114111;
                                                     if (v96) {
                                                         throw new Error("UTF-8 scalar is above U+10FFFF.");
                                                     } else {
@@ -227,25 +227,25 @@ function utf8_scalar_at_byte_offset_0(v0: string, v1: number): number {
 }
 function utf8_grapheme_count_bounded_loop_2(v0: string, v1: number, v2: number, v3: number): number {
     tail: while (true) {
-        let v4: boolean = v1 === v3;
+        const v4: boolean = v1 === v3;
         if (v4) {
             return v2;
         } else {
-            let v5: boolean = v1 > v3;
+            const v5: boolean = v1 > v3;
             if (v5) {
                 throw new Error("UTF-8 scalar width exceeds the string.");
             } else {
-                let v7: number = utf8_scalar_at_byte_offset_0(v0, v1);
-                let v8: boolean = v7 < 128;
+                const v7: number = utf8_scalar_at_byte_offset_0(v0, v1);
+                const v8: boolean = v7 < 128;
                 let v13: number;
                 if (v8) {
                     v13 = 1;
                 } else {
-                    let v9: boolean = v7 < 2048;
+                    const v9: boolean = v7 < 2048;
                     if (v9) {
                         v13 = 2;
                     } else {
-                        let v10: boolean = v7 < 65536;
+                        const v10: boolean = v7 < 65536;
                         if (v10) {
                             v13 = 3;
                         } else {
@@ -253,52 +253,52 @@ function utf8_grapheme_count_bounded_loop_2(v0: string, v1: number, v2: number, 
                         }
                     }
                 }
-                let v14: boolean = v7 >= 768;
+                const v14: boolean = v7 >= 768;
                 let v44: boolean;
                 if (v14) {
-                    let v15: boolean = v7 <= 879;
+                    const v15: boolean = v7 <= 879;
                     if (v15) {
                         v44 = true;
                     } else {
-                        let v16: boolean = v7 >= 6832;
+                        const v16: boolean = v7 >= 6832;
                         if (v16) {
-                            let v17: boolean = v7 <= 6911;
+                            const v17: boolean = v7 <= 6911;
                             if (v17) {
                                 v44 = true;
                             } else {
-                                let v18: boolean = v7 >= 7616;
+                                const v18: boolean = v7 >= 7616;
                                 if (v18) {
-                                    let v19: boolean = v7 <= 7679;
+                                    const v19: boolean = v7 <= 7679;
                                     if (v19) {
                                         v44 = true;
                                     } else {
                                         let v20: boolean = v7 >= 8400;
                                         if (v20) {
-                                            let v21: boolean = v7 <= 8447;
+                                            const v21: boolean = v7 <= 8447;
                                             if (v21) {
                                                 v44 = true;
                                             } else {
-                                                let v22: boolean = v7 >= 65024;
+                                                const v22: boolean = v7 >= 65024;
                                                 if (v22) {
-                                                    let v23: boolean = v7 <= 65039;
+                                                    const v23: boolean = v7 <= 65039;
                                                     if (v23) {
                                                         v44 = true;
                                                     } else {
-                                                        let v24: boolean = v7 >= 65056;
+                                                        const v24: boolean = v7 >= 65056;
                                                         if (v24) {
-                                                            let v25: boolean = v7 <= 65071;
+                                                            const v25: boolean = v7 <= 65071;
                                                             if (v25) {
                                                                 v44 = true;
                                                             } else {
-                                                                let v26: boolean = v7 >= 127995;
+                                                                const v26: boolean = v7 >= 127995;
                                                                 if (v26) {
-                                                                    let v27: boolean = v7 <= 127999;
+                                                                    const v27: boolean = v7 <= 127999;
                                                                     if (v27) {
                                                                         v44 = true;
                                                                     } else {
-                                                                        let v28: boolean = v7 >= 917760;
+                                                                        const v28: boolean = v7 >= 917760;
                                                                         if (v28) {
-                                                                            let v29: boolean = v7 <= 917999;
+                                                                            const v29: boolean = v7 <= 917999;
                                                                             v44 = v29;
                                                                         } else {
                                                                             v44 = false;
@@ -333,82 +333,74 @@ function utf8_grapheme_count_bounded_loop_2(v0: string, v1: number, v2: number, 
                 }
                 let v48: number;
                 if (v44) {
-                    let v45: boolean = v2 === 0;
+                    const v45: boolean = v2 === 0;
                     if (v45) {
                         v48 = 1;
                     } else {
                         v48 = v2;
                     }
                 } else {
-                    let v47: number = (v2 + 1) | 0;
+                    const v47: number = (v2 + 1) | 0;
                     v48 = v47;
                 }
-                let v49: number = (v1 + v13) | 0;
-                {
-                    let t0 = v0;
-                    let t1 = v49;
-                    let t2 = v48;
-                    let t3 = v3;
-                    v0 = t0;
-                    v1 = t1;
-                    v2 = t2;
-                    v3 = t3;
-                }
+                const v49: number = (v1 + v13) | 0;
+                v1 = v49;
+                v2 = v48;
                 continue tail;
             }
         }
     }
 }
 export function main(): number {
-    let v0: string = "éZ";
+    const v0: string = "éZ";
     let v1: number = 1;
     let v2: number = utf8_scalar_at_byte_offset_0(v0, v1);
-    let v3: boolean = v2 >= 768;
+    const v3: boolean = v2 >= 768;
     let v33: boolean;
     if (v3) {
-        let v4: boolean = v2 <= 879;
+        const v4: boolean = v2 <= 879;
         if (v4) {
             v33 = true;
         } else {
-            let v5: boolean = v2 >= 6832;
+            const v5: boolean = v2 >= 6832;
             if (v5) {
-                let v6: boolean = v2 <= 6911;
+                const v6: boolean = v2 <= 6911;
                 if (v6) {
                     v33 = true;
                 } else {
-                    let v7: boolean = v2 >= 7616;
+                    const v7: boolean = v2 >= 7616;
                     if (v7) {
-                        let v8: boolean = v2 <= 7679;
+                        const v8: boolean = v2 <= 7679;
                         if (v8) {
                             v33 = true;
                         } else {
-                            let v9: boolean = v2 >= 8400;
+                            const v9: boolean = v2 >= 8400;
                             if (v9) {
-                                let v10: boolean = v2 <= 8447;
+                                const v10: boolean = v2 <= 8447;
                                 if (v10) {
                                     v33 = true;
                                 } else {
-                                    let v11: boolean = v2 >= 65024;
+                                    const v11: boolean = v2 >= 65024;
                                     if (v11) {
-                                        let v12: boolean = v2 <= 65039;
+                                        const v12: boolean = v2 <= 65039;
                                         if (v12) {
                                             v33 = true;
                                         } else {
                                             let v13: boolean = v2 >= 65056;
                                             if (v13) {
-                                                let v14: boolean = v2 <= 65071;
+                                                const v14: boolean = v2 <= 65071;
                                                 if (v14) {
                                                     v33 = true;
                                                 } else {
-                                                    let v15: boolean = v2 >= 127995;
+                                                    const v15: boolean = v2 >= 127995;
                                                     if (v15) {
-                                                        let v16: boolean = v2 <= 127999;
+                                                        const v16: boolean = v2 <= 127999;
                                                         if (v16) {
                                                             v33 = true;
                                                         } else {
-                                                            let v17: boolean = v2 >= 917760;
+                                                            const v17: boolean = v2 >= 917760;
                                                             if (v17) {
-                                                                let v18: boolean = v2 <= 917999;
+                                                                const v18: boolean = v2 <= 917999;
                                                                 v33 = v18;
                                                             } else {
                                                                 v33 = false;
@@ -444,9 +436,9 @@ export function main(): number {
     if (v33) {
         throw new Error("UTF-8 grapheme byte offset is inside a bounded grapheme cluster.");
     } else {
-        let v35: number = 1;
-        let v36: number = 0;
-        let v37: number = 4;
+        const v35: number = 1;
+        const v36: number = 0;
+        const v37: number = 4;
         return utf8_grapheme_count_bounded_loop_2(v0, v35, v36, v37);
     }
 }

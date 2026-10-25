@@ -11,8 +11,8 @@ impl Default for US0 {
     }
 }
 fn spiral_main() -> i32 {
-    let mut v0: i32 = 3i32;
-    let mut v1: Rc<RefCell<Vec<US0>>> = Rc::new(RefCell::new(vec![<US0>::default(); v0 as usize]));
+    let v0: i32 = 3i32;
+    let v1: Rc<RefCell<Vec<US0>>> = Rc::new(RefCell::new(vec![<US0>::default(); v0 as usize]));
     0i32
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }

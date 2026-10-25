@@ -6,18 +6,14 @@ sealed interface US0 { val tag: Int }
 data class US0_Survived(val f0: US1) : US0 { override val tag: Int = 0 }
 data class US0_Slain(val f0: US2) : US0 { override val tag: Int = 1 }
 fun spiral_main(): Int {
-    var v0: Int = 0
-    v0 = 60
-    var v1: Boolean = false
-    v1 = (v0 > 0)
+    val v0: Int = 60
+    val v1: Boolean = (v0 > 0)
     var v6: US0 = US0_Survived(US1_Living(0, 0))
     if (v1) {
-        var v2: US1 = US1_Living(0, 0)
-        v2 = US1_Living(v0, 100)
+        val v2: US1 = US1_Living(v0, 100)
         v6 = US0_Survived(v2)
     } else {
-        var v4: US2 = US2_Fallen(0)
-        v4 = US2_Fallen(100)
+        val v4: US2 = US2_Fallen(100)
         v6 = US0_Slain(v4)
     }
     when (v6.tag) {
@@ -31,8 +27,7 @@ fun spiral_main(): Int {
                 0 -> {
                     var v8: Int = (v7 as US1_Living).f0
                     var v9: Int = (v7 as US1_Living).f1
-                    var v10: Boolean = false
-                    v10 = (v8 == 60)
+                    val v10: Boolean = (v8 == 60)
                     if (v10) {
                         return 0
                     } else {

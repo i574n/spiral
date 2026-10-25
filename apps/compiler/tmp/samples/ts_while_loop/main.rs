@@ -9,13 +9,13 @@ fn spiral_main() -> i32 {
     let mut v0: i32 = 0i32;
     let mut v1: i32 = 0i32;
     while method0(v0) {
-        let mut v3: i32 = v1.wrapping_add(v0);
+        let v3: i32 = v1.wrapping_add(v0);
         v1 = v3;
-        let mut v4: i32 = v0.wrapping_add(1i32);
+        let v4: i32 = v0.wrapping_add(1i32);
         v0 = v4;
         ()
     };
-    let mut v5: i32 = v1.wrapping_sub(45i32);
+    let v5: i32 = v1.wrapping_sub(45i32);
     v5
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }

@@ -10,37 +10,23 @@ typedef struct {
 static inline void HeapDecrefBody0(Heap0 * x){
     (void)x;
 }
-void HeapDecref0(Heap0 * x){
+static void HeapDecref0(Heap0 * x){
     if (x != NULL && --(x->refc) == 0) { HeapDecrefBody0(x); free(x); }
 }
-Heap0 * HeapCreate0(bool v0){
+static Heap0 * HeapCreate0(bool v0){
     Heap0 * x = malloc(sizeof(Heap0));
     x->refc = 1;
     x->v0 = v0;
     return x;
 }
 int32_t main(){
-    
-    
-    bool v0;
-    v0 = true;
-    
-    
-    Heap0 * v1;
-    v1 = HeapCreate0(v0);
-    
-    
-    bool v2;
-    v2 = v1->v0;
-    
+    bool v0 = true;
+    Heap0 * v1 = HeapCreate0(v0);
+    bool v2 = v1->v0;
     HeapDecref0(v1);
     if (v2){
-        
-        
         return 0l;
     } else {
-        
-        
         return 1l;
     }
 }

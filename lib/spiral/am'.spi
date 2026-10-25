@@ -1,87 +1,87 @@
 /// # am'
 test am static =
-    open testing
+    :< testing
 
-open rust
-open rust_operators
+:< rust
+:< rust_operators
 
 /// ## am'
 
 /// ### length
-inl length forall el. (a : array el) : int =
+:= length \* el. (a : array el) : int =
     a |> length
 
 /// ### index
-inl index forall el. (i : int) (a : array el) : el =
+:= index \* el. (i : int) (a : array el) : el =
     backend_switch {
-        Gleam = fun () => index a i
-        Lua = fun () => index a i
-        Fsharp = fun () => index a i
-        Python = fun () => $'!a[!i]' : el
-        Rust = fun () => index a i
-        TypeScript = fun () => index a i
-        Zig = fun () => index a i
-        Lean = fun () => index a i
-        C = fun () => index a i
+        Gleam = \ () => index a i
+        Lua = \ () => index a i
+        Fsharp = \ () => index a i
+        Python = \ () => $'!a[!i]' : el
+        Rust = \ () => index a i
+        TypeScript = \ () => index a i
+        Zig = \ () => index a i
+        Lean = \ () => index a i
+        C = \ () => index a i
     }
 
 /// ### index_base
-inl index_base forall el. (i : int) (ar : array_base el) : el =
+:= index_base \* el. (i : int) (ar : array_base el) : el =
     ar |> array |> index i
 
 /// ### base
-inl base forall el. ((array a) : array el) : array_base el =
+:= base \* el. ((array a) : array el) : array_base el =
     a
 
 /// ### base'
-inl base' forall el. ((array a) : array el) : array_base el =
+:= base' \* el. ((array a) : array el) : array_base el =
     a
 
 /// ### generic_equable
-inl generic_equable x1 x2 =
-    if length x1 <>.. length x2
-    then false
-    else
-        let rec 루프 i =
-            if i < length x1
-            then index i x1 = index i x2 && 루프 (i + 1)
-            else true
+:= generic_equable x1 x2 =
+    ? length x1 <>.. length x2
+    ?> !-
+    |:
+        :~ ^ 루프 i =
+            ? i < length x1
+            ?> index i x1 = index i x2 && 루프 (i + 1)
+            |: !+
         루프 0
 
 /// ### equable
 
 /// ### append
-instance append array t = arraym.append
+:+ append array t = arraym.append
 
 test append =
     ()
 
 /// ### map_base
-inl map_base forall t u. (fn : t -> u) (x : array_base t) : array_base u =
+:= map_base \* t u. (fn : t -> u) (x : array_base t) : array_base u =
     array x
     |> arraym.map fn
-    |> fun (array x : array _) => x
+    |> \ (array x : array _) => x
 
 /// ### collect
-inl collect forall t r. (fn : t -> array r) (items : array t) : array r =
+:= collect \* t r. (fn : t -> array r) (items : array t) : array r =
     items
     |> arraym.map fn
     |> arraym.fold (++) (;[])
 
 /// ### init_base
-inl init_base n fn : array_base _ =
+:= init_base n fn : array_base _ =
     arraym.init n fn
-    |> fun (array x : array _) => x
+    |> \ (array x : array _) => x
 
 /// ### init
-inl init n : array_base _ =
+:= init n : array_base _ =
     init_base n id
 
 /// ### choose
-inl choose f l =
+:= choose f l =
     (l, [])
-    ||> arraym.foldBack fun x acc =>
-        match f x with
+    ||> arraym.foldBack \ x acc =>
+        ?= f x ?|
         | Some y => y :: acc
         | None => acc
     |> arraym.fromList
@@ -93,12 +93,12 @@ inl choose f l =
 test choose =
     10
     |> init
-    |> fun x => array x : array _
-    |> choose (fun x => if x % 2 = 0 then Some x else None)
+    |> \ x => array x : array _
+    |> choose (\ x => ? x % 2 = 0 ?> Some x |: None)
     |> _assert_eq (;[ 0; 2; 4; 6; 8 ])
 
 /// ### sum
-inl sum a =
+:= sum a =
     a |> arraym.fold (+) 0
 
 ///> fsharp
@@ -108,15 +108,15 @@ inl sum a =
 test sum =
     10
     |> init
-    |> fun x => array x : array _
+    |> \ x => array x : array _
     |> sum
     |> _assert_eq 45
 
 /// ### init_series
-inl init_series start end inc : array_base _ =
-    inl total = conv ((end - start) / inc) + 1
+:= init_series start end inc : array_base _ =
+    := total = conv ((end - start) / inc) + 1
     arraym.init total (conv >> (*) inc >> (+) start)
-    |> fun (array x : array _) => x
+    |> \ (array x : array _) => x
 
 ///> fsharp
 ///> cuda
@@ -125,21 +125,21 @@ inl init_series start end inc : array_base _ =
 test init_series =
     init_series 0i32 6 2
     |> array
-    |> fun x => x : array _
+    |> \ x => x : array _
     |> _assert_eq (;[ 0i32; 2; 4; 6 ])
 
 /// ### head
-inl head (ar : array _) =
-    if var_is ar || length ar > 0
-    then ar |> index 0
-    else error_type "The length of the array should be greater than 0."
+:= head (ar : array _) =
+    ? var_is ar || length ar > 0
+    ?> ar |> index 0
+    |: error_type "The length of the array should be greater than 0."
 
 /// ### last
-inl last (ar : array _) =
-    inl len = length ar
-    if var_is ar || len > 0
-    then ar |> index (len - 1)
-    else error_type "The length of the array should be greater than 0."
+:= last (ar : array _) =
+    := len = length ar
+    ? var_is ar || len > 0
+    ?> ar |> index (len - 1)
+    |: error_type "The length of the array should be greater than 0."
 
 ///> fsharp
 ///> cuda
@@ -148,15 +148,15 @@ inl last (ar : array _) =
 test last =
     10
     |> init
-    |> fun x => array x : array _
+    |> \ x => array x : array _
     |> last
     |> _assert_eq 9
 
 /// ### try_pick
-inl try_pick forall t u. (fn : t -> option u) (array : array t) : option u =
+:= try_pick \* t u. (fn : t -> option u) (array : array t) : option u =
     (array, None)
-    ||> arraym.foldBack fun x acc =>
-        match acc with
+    ||> arraym.foldBack \ x acc =>
+        ?= acc ?|
         | Some _ => acc
         | None => x |> fn
 
@@ -167,17 +167,17 @@ inl try_pick forall t u. (fn : t -> option u) (array : array t) : option u =
 test try_pick =
     10
     |> init
-    |> fun x => array x : array _
-    |> try_pick (fun x => if x = 5i32 then Some x else None)
+    |> \ x => array x : array _
+    |> try_pick (\ x => ? x = 5i32 ?> Some x |: None)
     |> _assert_eq (Some 5i32)
 
 /// ### indexed
-inl indexed forall t u {number}. (ar : array_base t) : array_base (u * t) =
+:= indexed \* t u {number}. (ar : array_base t) : array_base (u * t) =
     ((0, ;[]), (array ar : array _))
-    ||> arraym.fold fun (i, acc) x =>
+    ||> arraym.fold \ (i, acc) x =>
         i + 1, acc ++ ;[i, x]
     |> snd
-    |> fun (array x : array _) => x
+    |> \ (array x : array _) => x
 
 ///> fsharp
 ///> rust
@@ -185,12 +185,12 @@ inl indexed forall t u {number}. (ar : array_base t) : array_base (u * t) =
 ///> cuda
 test indexed =
     arraym.init 3i32 ((*) 2)
-    |> fun (array x : array _) => x
+    |> \ (array x : array _) => x
     |> indexed
     |> _assert_eq' (base ;[0i32, 0; 1, 2; 2, 4])
 
 /// ### slice
-inl slice forall el. from nearTo s : array el =
+:= slice \* el. from nearTo s : array el =
     arraym.slice { from nearTo } s
 
 ///> fsharp
@@ -198,7 +198,7 @@ inl slice forall el. from nearTo s : array el =
 ///> rust
 ///> typescript
 test slice =
-    inl x : array _ = ;[ 1i32; 2; 3 ]
+    := x : array _ = ;[ 1i32; 2; 3 ]
     x |> slice 0 0 |> _assert_eq (;[])
     x |> slice 0 1 |> _assert_eq (;[ 1 ])
     x |> slice 1 1 |> _assert_eq (;[])
@@ -207,15 +207,15 @@ test slice =
     x |> slice 0 2 |> _assert_eq (;[ 1; 2 ])
 
 /// ### range
-union range dim =
+:| range dim =
     | Start : dim
     | End : (() -> dim) -> dim
 
-inl range start end s =
-    inl start, end =
-        inl len () =
+:= range start end s =
+    := start, end =
+        := len () =
             s |> length |> conv
-        match start, end with
+        ?= start, end ?|
         | Start start, End fn =>
             start, fn len
         | End start_fn, End end_fn =>
@@ -225,7 +225,7 @@ inl range start end s =
 /// ## rust
 
 /// ### vec
-nominal vec t =
+:! vec t =
     `(
         rust.rust_type
             `($'Vec<`t>')
@@ -234,145 +234,145 @@ nominal vec t =
     )
 
 /// ### from_vec
-inl from_vec forall el. (vec : vec el) : array el =
+:= from_vec \* el. (vec : vec el) : array el =
     backend_switch {
-        Rust = fun () =>
-            inl vec = join vec
+        Rust = \ () =>
+            := vec = ~~ vec
             $'Rc::new(RefCell::new(!vec))' : array el
     }
 
 /// ### from_vec_base
-inl from_vec_base forall el. (vec : vec el) : array_base el =
+:= from_vec_base \* el. (vec : vec el) : array_base el =
     backend_switch {
-        Rust = fun () =>
-            inl vec = join vec
+        Rust = \ () =>
+            := vec = ~~ vec
             $'Rc::new(RefCell::new(!vec))' : array_base el
     }
 
 /// ### to_vec
-inl to_vec forall t. (ab : array_base t) : vec t =
+:= to_vec \* t. (ab : array_base t) : vec t =
     backend_switch {
-        Rust = fun () => $'(!ab).borrow().clone()' : vec t
+        Rust = \ () => $'(!ab).borrow().clone()' : vec t
     }
 
 /// ### to_vec'
-inl to_vec' forall (t : * -> * -> *) u v. (x : t u v) : vec u =
+:= to_vec' \* (t : * -> * -> *) u v. (x : t u v) : vec u =
     backend_switch {
-        Rust = fun () => $'(!x).clone()' : vec u
+        Rust = \ () => $'(!x).clone()' : vec u
     }
 
 /// ### to_vec''
-inl to_vec'' forall (t : * -> *) (u : * -> *) v. (x : t (u v)) : vec v =
+:= to_vec'' \* (t : * -> *) (u : * -> *) v. (x : t (u v)) : vec v =
     backend_switch {
-        Rust = fun () => $'(!x).to_vec()' : vec v
+        Rust = \ () => $'(!x).to_vec()' : vec v
     }
 
 /// ### to_vec'''
-inl to_vec''' forall t. (ab : array_base t) : vec t =
+:= to_vec''' \* t. (ab : array_base t) : vec t =
     !\\(ab, $'"to_vec($0)"')
 
 /// ### vec_push
-inl vec_push forall el. (el : el) (vec : vec el) : vec el =
-    inl el = join el
-    inl vec = join vec
+:= vec_push \* el. (el : el) (vec : vec el) : vec el =
+    := el = ~~ el
+    := vec = ~~ vec
     (!\($'"true; let mut !vec = !vec"') : bool) |> ignore
     (!\($'"true; !vec.push(!el)"') : bool) |> ignore
     !\($'"!vec"')
 
 /// ### vec_reverse
-inl vec_reverse forall el. (vec : vec el) : vec el =
-    inl vec = join vec
+:= vec_reverse \* el. (vec : vec el) : vec el =
+    := vec = ~~ vec
     (!\($'"true; let mut !vec = !vec"') : bool) |> ignore
     (!\($'"true; !vec.reverse()"') : bool) |> ignore
     !\($'"!vec"')
 
 /// ### vec_retain
-inl vec_retain forall el. (fn : el -> bool) (vec : vec el) : vec el =
-    inl vec = join vec
-    inl fn = join fn
+:= vec_retain \* el. (fn : el -> bool) (vec : vec el) : vec el =
+    := vec = ~~ vec
+    := fn = ~~ fn
     (!\($'"true; let mut !vec = !vec"') : bool) |> ignore
     (!\($'"true; !vec.retain(|x| !fn(x.clone()))"') : bool) |> ignore
     !\($'"!vec"')
 
 /// ### vec_sort_by_key
-inl vec_sort_by_key forall el t. (fn : el -> t) (vec : vec el) : vec el =
-    inl vec = join vec
-    inl fn = rust.one_param_fn fn
-    inl fn = join fn
+:= vec_sort_by_key \* el t. (fn : el -> t) (vec : vec el) : vec el =
+    := vec = ~~ vec
+    := fn = rust.one_param_fn fn
+    := fn = ~~ fn
     (!\($'"true; let mut !vec = !vec"') : bool) |> ignore
     (!\($'"true; !vec.sort_by_key(|x| !fn(x.clone()))"') : bool) |> ignore
     !\($'"!vec"')
 
 /// ### vec_extend
-inl vec_extend forall el. (el : vec el) (vec : vec el) : vec el =
-    inl el = join el
-    inl vec = join vec
+:= vec_extend \* el. (el : vec el) (vec : vec el) : vec el =
+    := el = ~~ el
+    := vec = ~~ vec
     (!\($'"true; let mut !vec = !vec"') : bool) |> ignore
     (!\($'"true; !vec.extend(!el)"') : bool) |> ignore
     !\($'"!vec"')
 
 /// ### vec_mapi
-inl vec_mapi forall dim t u. (fn : dim -> t -> u) (ar : vec t) : vec u =
-    inl fn i = rust.one_param_fn (fn i)
-    inl fn = join fn
-    inl ar = join ar
+:= vec_mapi \* dim t u. (fn : dim -> t -> u) (ar : vec t) : vec u =
+    := fn i = rust.one_param_fn (fn i)
+    := fn = ~~ fn
+    := ar = ~~ ar
     !\($'"!ar.iter().enumerate().map(|(i, x)| !fn(i.try_into().unwrap())(x.clone())).collect::<Vec<_>>()"')
 
 /// ### vec_map
-inl vec_map forall t u. (fn : t -> u) (ar : vec t) : vec u =
-    inl fn = rust.one_param_fn fn
+:= vec_map \* t u. (fn : t -> u) (ar : vec t) : vec u =
+    := fn = rust.one_param_fn fn
     !\\((ar, fn), $'"$0.iter().map(|x| $1(x.clone())).collect::<Vec<_>>()"')
 
 /// ### vec_map'
-inl vec_map' forall t u. (fn : t -> u) (ar : vec t) : vec u =
-    inl fn = rust.one_param_fn fn
+:= vec_map' \* t u. (fn : t -> u) (ar : vec t) : vec u =
+    := fn = rust.one_param_fn fn
     !\\((ar, fn), $'"$0.iter().map(|x| $1(x.clone())).collect::<Vec<_>>()"')
 
 /// ### vec_fold'
-inl vec_fold' forall t u. (fn : u -> t -> u) (init : u) (ar : vec t) : u =
+:= vec_fold' \* t u. (fn : u -> t -> u) (init : u) (ar : vec t) : u =
     (!\\(ar, $'"true; let _vec_fold_ = $0.into_iter().fold(!init, |acc, x| { //"') : bool) |> ignore
     (!\\(fn !\($'"acc"') !\($'"x"'), $'"true; $0 })"') : bool) |> ignore
     !\($'"_vec_fold_"')
 
 /// ### vec_for_each
-inl vec_for_each forall t. (fn : t -> ()) (ar : vec t) : () =
+:= vec_for_each \* t. (fn : t -> ()) (ar : vec t) : () =
     (!\\((ar, fn), $'"true; $0.iter().for_each(|x| { $1(x.clone()); }); //"') : bool) |> ignore
 
 /// ### vec_for_each'
-inl vec_for_each' forall t. (fn : t -> ()) (ar : vec t) : () =
+:= vec_for_each' \* t. (fn : t -> ()) (ar : vec t) : () =
     (!\\(ar, $'"true; $0.into_iter().for_each(|x| { //"') : bool) |> ignore
     (!\\(fn !\($'"x"'), $'$"true"') : bool) |> ignore
     (!\($'"true; }}); //"') : bool) |> ignore
 
 /// ### vec_for_each''
-inl vec_for_each'' forall t. (fn : t -> ()) (ar : vec t) : () =
+:= vec_for_each'' \* t. (fn : t -> ()) (ar : vec t) : () =
     (!\\(ar, $'"true; $0.into_iter().for_each(|x| { //"') : bool) |> ignore
     (!\\(fn !\($'"x"'), $'$"true"') : bool) |> ignore
     (!\($'"true; }}); //"') : bool) |> ignore
 
 /// ### vec_for_each'''
-inl vec_for_each''' forall t. (fn : t -> ()) (ar : vec t) : () =
+:= vec_for_each''' \* t. (fn : t -> ()) (ar : vec t) : () =
     (!\\(ar, $'"true; $0.into_iter().for_each(|x| { //"') : bool) |> ignore
     (!\\(fn !\($'"x"'), $'$"true"') : bool) |> ignore
     (!\($'"true; }); //"') : bool) |> ignore
 
 /// ### vec_filter
-inl vec_filter forall t. (fn : t -> bool) (ar : vec t) : vec t =
-    inl fn = rust.one_param_fn fn
+:= vec_filter \* t. (fn : t -> bool) (ar : vec t) : vec t =
+    := fn = rust.one_param_fn fn
     !\\((ar, fn), $'"$0.iter().filter(|x| $1((*x).clone())).cloned().collect::<Vec<_>>()"')
 
 /// ### vec_len
-inl vec_len forall t. (vec : vec t) : convert.unativeint =
+:= vec_len \* t. (vec : vec t) : convert.unativeint =
     backend_switch {
-        Rust = fun () => $'((!vec).len() as usize)' : convert.unativeint
+        Rust = \ () => $'((!vec).len() as usize)' : convert.unativeint
     }
 
 /// ### vec_chunks
-inl vec_chunks forall t. (n : i32) (vec : vec t) : vec (vec t) =
+:= vec_chunks \* t. (n : i32) (vec : vec t) : vec (vec t) =
     !\\(vec, $'"$0.chunks(!n).map(|x| x.into_iter().map(|x| x.clone()).collect::<Vec<_>>()).collect::<Vec<_>>()"')
 
 /// ### slice
-nominal slice t =
+:! slice t =
     `(
         rust.rust_type
             `($'Slice<`t>')
@@ -381,7 +381,7 @@ nominal slice t =
     )
 
 /// ### slice'
-type slice'_switch el =
+:== slice'_switch el =
     {
         Gleam : $'Slice\'<`el>'
         Lua : $'Slice\'<`el>'
@@ -394,14 +394,14 @@ type slice'_switch el =
         Cuda : $'Slice\'<`el>'
         Rust : $'_'
     }
-nominal slice' el dim =
+:! slice' el dim =
     `(
         rust.fsharp_global "type Slice'<'T> = class end"
         $'' : $'backend_switch `(slice'_switch el)'
     )
 
 /// ### slice''
-nominal slice'' el dim =
+:! slice'' el dim =
     `(
         rust.rust_type
             `($'Slice\'_<`el>')
@@ -410,85 +410,85 @@ nominal slice'' el dim =
     )
 
 /// ### slice_singleton
-inl slice_singleton forall dim el. (x : option el) : slice' el dim =
-    match x with
+:= slice_singleton \* dim el. (x : option el) : slice' el dim =
+    ?= x ?|
     | Some x => !\($'"[!x]"')
     | None =>
         !\($'"[\\\"\\\".to_string()]"') : slice' el dim
 
 /// ### slice_length
-inl slice_length forall t dim. (x : slice' t dim) : convert.unativeint =
+:= slice_length \* t dim. (x : slice' t dim) : convert.unativeint =
     !\($'"!x.len()"')
 
 /// ### slice_range
-inl slice_range forall t dim.
+:= slice_range \* t dim.
     (start : range t) (end : range t) (s : slice' t dim) : rust.ref (slice' t dim)
     =
-    inl len () =
+    := len () =
         s |> slice_length
-    inl start, (end : convert.unativeint) =
-        match start, end with
+    := start, (end : convert.unativeint) =
+        ?= start, end ?|
         | Start start, End fn => start, (len >> convert.convert) |> fn |> convert.convert
         | End start_fn, End end_fn =>
             (len >> convert.convert) |> start_fn, (len >> convert.convert) |> end_fn |> convert.convert
-    match start, end with
-    | start, end when end |> convert.unbox =. len () => !\($'"&!s[!start..]"')
+    ?= start, end ?|
+    | start, end ?& end |> convert.unbox =. len () => !\($'"&!s[!start..]"')
     | start, end => !\\((start, end), $'"&!s[$0..$1]"')
 
 /// ### new_slice
-inl new_slice forall el dim. (el : el) : slice' el dim =
+:= new_slice \* el dim. (el : el) : slice' el dim =
     !\\(el, $'"[$0; @dim as usize]"')
 
 /// ### as_slice
-inl as_slice forall t. (x : array_base t) : rust.ref (slice t) =
-    inl x = x |> to_vec
+:= as_slice \* t. (x : array_base t) : rust.ref (slice t) =
+    := x = x |> to_vec
     !\($'"!x.as_slice()"')
 
 /// ### slice_to_vec
-inl slice_to_vec forall t. (slice : rust.ref (slice t)) : vec t =
+:= slice_to_vec \* t. (slice : rust.ref (slice t)) : vec t =
     !\\(slice, $'"$0.iter().map(|x| *x).collect::<Vec<_>>()"')
 
 /// ### to_le_bytes
-inl to_le_bytes forall t. (x : t) : slice' u8 8 =
+:= to_le_bytes \* t. (x : t) : slice' u8 8 =
     backend_switch {
-        Rust = fun () => $'(!x).to_le_bytes().to_vec()' : slice' u8 8
+        Rust = \ () => $'(!x).to_le_bytes().to_vec()' : slice' u8 8
     }
 
 /// ### as_bytes
-inl as_bytes forall t. (x : t) : rust.ref (slice u8) =
+:= as_bytes \* t. (x : t) : rust.ref (slice u8) =
     backend_switch {
-        Rust = fun () => $'(!x).as_bytes()' : rust.ref (slice u8)
+        Rust = \ () => $'(!x).as_bytes()' : rust.ref (slice u8)
     }
 
 /// ### any
-inl any forall t. (fn : t -> bool) (source : array_base t) : bool =
-    inl n = source |> array |> length
-    let rec loop i =
-        if i >= n then false
-        elif source |> index_base i |> fn then true
-        else loop (i + 1)
+:= any \* t. (fn : t -> bool) (source : array_base t) : bool =
+    := n = source |> array |> length
+    :~ ^ loop i =
+        ? i >= n ?> !-
+        |? source |> index_base i |> fn ?> !+
+        |: loop (i + 1)
     loop 0
 
 ///> rust
 ///> fsharp
 ///> typescript
 test any =
-    inl source = init 5
-    (source |> any (fun x => x = 3), source |> any (fun x => x > 10)) |> _assert_eq (true, false)
+    := source = init 5
+    (source |> any (\ x => x = 3), source |> any (\ x => x > 10)) |> _assert_eq (!+, !-)
 
 /// ### iter_collect vec
-instance iter_collect vec = fun (iter : into_iterator u) =>
+:+ iter_collect vec = \ (iter : into_iterator u) =>
     !\\(iter, $'"$0.collect::<Vec<_>>()"')
 
-instance iter_collect'' vec = fun (iter : into_iterator (t (u v))) =>
+:+ iter_collect'' vec = \ (iter : into_iterator (t (u v))) =>
     !\\(iter, $'"$0.collect::<Vec<_>>()"')
 
 /// ### new_vec
-inl new_vec forall t. (items : list t) : vec t =
+:= new_vec \* t. (items : list t) : vec t =
     backend_switch {
-        Rust = fun () =>
-            inl v : vec t = $'Vec::new()'
-            items |> listm.iter fun x => $'!v.push(!x)' : ()
+        Rust = \ () =>
+            := v : vec t = $'Vec::new()'
+            items |> listm.iter \ x => $'!v.push(!x)' : ()
             v
     }
 
@@ -503,62 +503,62 @@ test new_vec =
 /// ## fsharp
 
 /// ### average
-inl average forall el {number}. (a : array el) : el =
+:= average \* el {number}. (a : array el) : el =
     $'!a |> Array.average'
 
 /// ### distinct
-inl distinct forall el. (a : array el) : array el =
-    if is_rust () then
-        inl a = $'!a ' : array el
-        inl r = $'Rc::new(RefCell::new(Vec::with_capacity(!a.borrow().len())))' : array el
-        loop.for' { from = 0; nearTo = length a } fun i =>
-            inl x = index i a
-            inl n = length r
-            inl s = mut { j = 0 }
-            loop.while' (fun () => s.j < n && index s.j r <> x) fun () =>
+:= distinct \* el. (a : array el) : array el =
+    ? is_rust () ?>
+        := a = $'!a ' : array el
+        := r = $'Rc::new(RefCell::new(Vec::with_capacity(!a.borrow().len())))' : array el
+        loop.for' { from = 0; nearTo = length a } \ i =>
+            := x = index i a
+            := n = length r
+            := s = mut { j = 0 }
+            loop.while' (\ () => s.j < n && index s.j r <> x) \ () =>
                 s <- { j = s.j + 1 }
-            if s.j = n then $'!r.borrow_mut().push(!x)' : ()
+            ? s.j = n ?> $'!r.borrow_mut().push(!x)' : ()
         $'!r ' : array el
-    else $'!a |> Array.distinct'
+    |: $'!a |> Array.distinct'
 
-inl growable forall el. () : array el =
-    run_target function
-        | Rust => fun () => $'Rc::new(RefCell::new(Vec::new()))' : array el
-        | _ => fun () => failwith "growable: no arm for this backend"
+:= growable \* el. () : array el =
+    run_target \|
+        | Rust => \ () => $'Rc::new(RefCell::new(Vec::new()))' : array el
+        | _ => \ () => failwith "growable: no arm for this backend"
 
-inl push_back forall el. (item : el) (items : array el) : () =
-    run_target function
-        | Rust => fun () => $'(!items).borrow_mut().push(!item)' : ()
-        | _ => fun () => failwith "push_back: no arm for this backend"
+:= push_back \* el. (item : el) (items : array el) : () =
+    run_target \|
+        | Rust => \ () => $'(!items).borrow_mut().push(!item)' : ()
+        | _ => \ () => failwith "push_back: no arm for this backend"
 
 /// ### skip
-inl skip forall el. (n : int) (a : array el) : array el =
-    run_target function
+:= skip \* el. (n : int) (a : array el) : array el =
+    run_target \|
         | Rust => fun () => $'Rc::new(RefCell::new((!a).borrow().iter().skip((!n) as \
             usize).cloned().collect::<Vec<_>>()))' : array el
-        | Zig => fun () => $'(spiral_gpa.dupe(`el, (!a)[\@intCast(!n)..]) catch \@panic("out of memory"))' : array el
-        | _ => fun () => $'!a |> Array.skip !n '
+        | Zig => \ () => $'(spiral_gpa.dupe(`el, (!a)[\@intCast(!n)..]) catch \@panic("out of memory"))' : array el
+        | _ => \ () => $'!a |> Array.skip !n '
 
 /// ### skip_while
-inl skip_while forall el. (fn : el -> bool) (a : array el) : array el =
-    if is_rust ()
-    then $'Rc::new(RefCell::new((!a).borrow().iter().skip_while(|x| (!fn)((*x).clone())).cloned().collect::<Vec<_>>()))'
-    else $'!a |> Array.skipWhile !fn '
+:= skip_while \* el. (fn : el -> bool) (a : array el) : array el =
+    ? is_rust ()
+    ?> $'Rc::new(RefCell::new((!a).borrow().iter().skip_while(|x| (!fn)((*x).clone())).cloned().collect::<Vec<_>>()))'
+    |: $'!a |> Array.skipWhile !fn '
 
 /// ### to_list_base'
-inl to_list_base' forall t. (items : array_base t) : listm'.list' t =
+:= to_list_base' \* t. (items : array_base t) : listm'.list' t =
     backend_switch {
-        Gleam = fun () => $'!items |> spiral_array_to_list' : listm'.list' t
-        Lua = fun () => items |> convert.to : listm'.list' t
-        Fsharp = fun () => $'!items |> Array.toList' : listm'.list' t
-        Python = fun () => items |> convert.to : listm'.list' t
-        Rust = fun () => $'Rc::new((!items).borrow().clone())' : listm'.list' t
-        TypeScript = fun () => $'[...!items]' : listm'.list' t
-        Zig = fun () => $'!items ' : listm'.list' t
+        Gleam = \ () => $'!items |> spiral_array_to_list' : listm'.list' t
+        Lua = \ () => items |> convert.to : listm'.list' t
+        Fsharp = \ () => $'!items |> Array.toList' : listm'.list' t
+        Python = \ () => items |> convert.to : listm'.list' t
+        Rust = \ () => $'Rc::new((!items).borrow().clone())' : listm'.list' t
+        TypeScript = \ () => $'[...!items]' : listm'.list' t
+        Zig = \ () => $'!items ' : listm'.list' t
     }
 
 /// ### to_list'
-inl to_list' forall t. (items : array t) : listm'.list' t =
+:= to_list' \* t. (items : array t) : listm'.list' t =
     items |> base |> to_list_base'
 
 ///> fsharp
@@ -572,50 +572,50 @@ test to_list =
     |> _assert_eq [ -3; 6 ]
 
 /// ### vec_collect
-inl vec_collect fn vec =
+:= vec_collect fn vec =
     ((;[] |> base |> to_vec), ((vec |> from_vec : array _) |> to_list' |> listm'.unbox))
-    ||> listm.fold fun acc x =>
+    ||> listm.fold \ acc x =>
         acc |> vec_extend (fn x)
 
 /// ### vec_collect_option
-inl vec_collect_option vec =
+:= vec_collect_option vec =
     ((;[] |> base |> to_vec |> Ok), ((vec |> from_vec : array _) |> arraym.toList))
-    ||> listm.fold fun acc x =>
+    ||> listm.fold \ acc x =>
         x
         |> resultm.unbox
-        |> fun x =>
-            match acc, x |> resultm.map optionm'.unbox with
+        |> \ x =>
+            ?= acc, x |> resultm.map optionm'.unbox ?|
             | Ok acc, Ok (Some x) => acc |> vec_extend x |> Ok
             | _, Error error => error |> Error
             | _ => acc
 
 /// ### vec_collect_into
-inl vec_collect_into forall (c : * -> * -> *) t e.
+:= vec_collect_into \* (c : * -> * -> *) t e.
     (x : vec (c t e))
     : c (vec t) e
     =
     !\($'"!x.into_iter().collect()"')
 
 /// ### parallel_map
-inl parallel_map forall el el'. (fn : el -> el') (a : array el) : array el' =
+:= parallel_map \* el el'. (fn : el -> el') (a : array el) : array el' =
     $'!a |> Array.Parallel.map !fn '
 
 /// ### map'
-inl map' forall el el'. (fn : el -> el') (a : array el) : array el' =
+:= map' \* el el'. (fn : el -> el') (a : array el) : array el' =
     $'!a |> Array.map !fn '
 
 /// ### sort_by
-inl sort_by forall el key. (fn : el -> key) (a : array el) : array el =
-    inl fsharp () = $'!a |> Array.sortBy !fn ' : array el
-    inl insertion_sort () =
-        inl r = arraym.map id ($'!a ' : array el)
-        inl keys = arraym.map fn ($'!a ' : array el)
-        loop.for' { from = 1; nearTo = length r } fun i =>
-            inl x = index i r
-            inl k = index i keys
-            inl s = mut { j = i }
-            loop.while' (fun () => s.j > 0 && gt_is (comp (index (s.j - 1) keys) k)) fun () =>
-                inl j = s.j
+:= sort_by \* el key. (fn : el -> key) (a : array el) : array el =
+    := fsharp () = $'!a |> Array.sortBy !fn ' : array el
+    := insertion_sort () =
+        := r = arraym.map id ($'!a ' : array el)
+        := keys = arraym.map fn ($'!a ' : array el)
+        loop.for' { from = 1; nearTo = length r } \ i =>
+            := x = index i r
+            := k = index i keys
+            := s = mut { j = i }
+            loop.while' (\ () => s.j > 0 && gt_is (comp (index (s.j - 1) keys) k)) \ () =>
+                := j = s.j
                 set r j (index (j - 1) r)
                 set keys j (index (j - 1) keys)
                 s <- { j = j - 1 }
@@ -623,15 +623,15 @@ inl sort_by forall el key. (fn : el -> key) (a : array el) : array el =
             set keys s.j k
         $'!r ' : array el
     backend_switch {
-        Gleam = fun () => fsharp ()
+        Gleam = \ () => fsharp ()
         Lua = insertion_sort
-        Fsharp = fun () => fsharp ()
-        Python = fun () =>
-            inl keys = arraym.map fn ($'!a ' : array el)
+        Fsharp = \ () => fsharp ()
+        Python = \ () =>
+            := keys = arraym.map fn ($'!a ' : array el)
             $'!a[sorted(range(len(!a)), key=lambda __i: (lambda __k: (__k.tag, __k) if hasattr(__k, "tag") else \
                 __k)(!keys[__i]))]' : array el
-        TypeScript = fun () =>
-            inl keys = arraym.map fn ($'!a ' : array el)
+        TypeScript = \ () =>
+            := keys = arraym.map fn ($'!a ' : array el)
             global (
                 "function spiral_compare(a: any, b: any): number { if (typeof a === 'object' && a !== null && "
                 ^^ "typeof b === 'object' && b !== null) { if (Array.isArray(a)) { for (let i = 0; i < "
@@ -642,24 +642,24 @@ inl sort_by forall el key. (fn : el -> key) (a : array el) : array el =
             )
             $'!a.map((_x: any, i: number) => i).sort((i: number, j: number) => spiral_compare(!keys[i], \
                 !keys[j])).map((i: number) => !a[i])' : array el
-        Cpp = fun () => fsharp ()
-        CppHost = fun () => fsharp ()
-        Delphi = fun () => fsharp ()
-        Cuda = fun () => fsharp ()
+        Cpp = \ () => fsharp ()
+        CppHost = \ () => fsharp ()
+        Delphi = \ () => fsharp ()
+        Cuda = \ () => fsharp ()
         Zig = insertion_sort
         Lean = insertion_sort
-        Rust = fun () =>
-            inl a = $'!a ' : array el
-            inl key_fn = join (rust.one_param_fn fn)
-            inl r = $'Rc::new(RefCell::new(!a.borrow().clone()))' : array el
-            inl keys =
+        Rust = \ () =>
+            := a = $'!a ' : array el
+            := key_fn = ~~ (rust.one_param_fn fn)
+            := r = $'Rc::new(RefCell::new(!a.borrow().clone()))' : array el
+            := keys =
                 $'Rc::new(RefCell::new(!a.borrow().iter().map(|x| !key_fn(x.clone())).collect::<Vec<_>>()))' : array key
-            loop.for' { from = 1; nearTo = length a } fun i =>
-                inl x = index i r
-                inl k = index i keys
-                inl s = mut { j = i }
-                loop.while' (fun () => s.j > 0 && gt_is (comp (index (s.j - 1) keys) k)) fun () =>
-                    inl j = s.j
+            loop.for' { from = 1; nearTo = length a } \ i =>
+                := x = index i r
+                := k = index i keys
+                := s = mut { j = i }
+                loop.while' (\ () => s.j > 0 && gt_is (comp (index (s.j - 1) keys) k)) \ () =>
+                    := j = s.j
                     set r j (index (j - 1) r)
                     set keys j (index (j - 1) keys)
                     s <- { j = j - 1 }
@@ -669,19 +669,19 @@ inl sort_by forall el key. (fn : el -> key) (a : array el) : array el =
     }
 
 /// ### sort
-inl sort forall el. (a : array el) : array el =
-    run_target function
-        | Fsharp => fun () => $'!a |> Array.sort'
-        | _ => fun () => sort_by id a
+:= sort \* el. (a : array el) : array el =
+    run_target \|
+        | Fsharp => \ () => $'!a |> Array.sort'
+        | _ => \ () => sort_by id a
 
 /// ### sort_descending
-inl sort_descending forall el. (a : array el) : array el =
-    run_target function
-        | Fsharp => fun () => $'!a |> Array.sortDescending'
-        | _ => fun () =>
-            inl ascending = sort a
-            inl n = length ascending
-            arraym.init n fun i => index (n - 1 - i) ascending
+:= sort_descending \* el. (a : array el) : array el =
+    run_target \|
+        | Fsharp => \ () => $'!a |> Array.sortDescending'
+        | _ => \ () =>
+            := ascending = sort a
+            := n = length ascending
+            arraym.init n \ i => index (n - 1 - i) ascending
 
 ///> rust
 ///> fsharp
@@ -689,22 +689,22 @@ inl sort_descending forall el. (a : array el) : array el =
 ///> typescript
 ///> lua
 test sort_orders_on_every_backend =
-    inl a = ;[ 3i32; 1i32; 2i32 ]
-    inl ascending = sort a
-    if index 0 ascending <> 1i32 || index 2 ascending <> 3i32 then failwith "ascending"
-    inl descending = sort_descending a
-    if index 0 descending <> 3i32 || index 2 descending <> 1i32 then failwith "descending"
+    := a = ;[ 3i32; 1i32; 2i32 ]
+    := ascending = sort a
+    ? index 0 ascending <> 1i32 || index 2 ascending <> 3i32 ?> failwith "ascending"
+    := descending = sort_descending a
+    ? index 0 descending <> 3i32 || index 2 descending <> 1i32 ?> failwith "descending"
 
 /// ### transpose
-inl transpose forall el. (a : array_base (array_base el)) : array_base (array_base el) =
+:= transpose \* el. (a : array_base (array_base el)) : array_base (array_base el) =
     $'!a |> Array.transpose'
 
 /// ### try_item
-inl try_item forall el. (i : i32) (a : array el) : option el =
-    inl fsharp () : option el = $'!a |> Array.tryItem !i ' |> optionm'.unbox
-    inl in_bounds_item () : option el =
-        inl a = $'!a ' : array el
-        if i >= 0 && i < length a then Some (index i a) else None
+:= try_item \* el. (i : i32) (a : array el) : option el =
+    := fsharp () : option el = $'!a |> Array.tryItem !i ' |> optionm'.unbox
+    := in_bounds_item () : option el =
+        := a = $'!a ' : array el
+        ? i >= 0 && i < length a ?> Some (index i a) |: None
     backend_switch {
         Gleam = fsharp
         Lua = fsharp
@@ -717,7 +717,7 @@ inl try_item forall el. (i : i32) (a : array el) : option el =
         Cuda = fsharp
         Zig = in_bounds_item
         Lean = in_bounds_item
-        Rust = fun () =>
-            inl x : optionm'.option' el = $'(if !i < 0 { None } else { !a.borrow().get(!i as usize).cloned() })'
+        Rust = \ () =>
+            := x : optionm'.option' el = $'(if !i < 0 { None } else { !a.borrow().get(!i as usize).cloned() })'
             x |> optionm'.unbox
     }

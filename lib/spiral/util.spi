@@ -1,16 +1,16 @@
 /// # util
 test util static =
-    open testing
+    :< testing
 
 /// ### ski
-union rec ski =
+:| ^ ski =
     | I
     | K
     | S
     | App : ski * ski
 
-inl rec eval ski =
-    match ski with
+:= ^ eval ski =
+    ?= ski ?|
     | App (App (K, x), y) => x |> eval
     | App (App (App (S, x), y), z) => App (App (x, z), App (y, z)) |> eval
     | App (I, x) => x |> eval

@@ -41,84 +41,12 @@ fn spiralFlush() void {
     spiralWrite(1, spiral_out_buffer[0..spiral_out_len]);
     spiral_out_len = 0;
 }
-fn spiralPrint(s: []const u8) void {
-    if (s.len > spiral_out_buffer.len - spiral_out_len) spiralFlush();
-    if (s.len > spiral_out_buffer.len) {
-        spiralWrite(1, s);
-        return;
-    }
-    @memcpy(spiral_out_buffer[spiral_out_len..][0..s.len], s);
-    spiral_out_len += s.len;
-}
-fn spiralFloatText(x: anytype) []u8 {
-    var buffer: [std.fmt.float.bufferSize(.decimal, @TypeOf(x))]u8 = undefined;
-    const text = std.fmt.float.render(&buffer, x, .{ .mode = .decimal }) catch unreachable;
-    return spiral_gpa.dupe(u8, text) catch @panic("out of memory");
-}
-fn spiralPrintAny(x: anytype) void {
-    const T = @TypeOf(x);
-    if (T == []const u8) return spiralPrint(x);
-    if (@typeInfo(T) == .float) return spiralPrint(spiralFloatText(x));
-    const s = switch (@typeInfo(T)) {
-        .bool => std.fmt.allocPrint(spiral_gpa, "{}", .{x}),
-        else => std.fmt.allocPrint(spiral_gpa, "{d}", .{x}),
-    } catch @panic("out of memory");
-    spiralPrint(s);
-}
-fn spiralFail(s: []const u8) noreturn {
-    spiralFlush();
-    spiralWrite(2, s);
-    spiralWrite(2, "\n");
-    std.process.exit(1);
-}
-fn spiralConv(comptime T: type, x: anytype) T {
-    const S = @TypeOf(x);
-    if (@typeInfo(T) == .float) {
-        if (@typeInfo(S) == .float) return @floatCast(x) else return @floatFromInt(x);
-    }
-    if (@typeInfo(S) == .float) return @intFromFloat(x);
-    const U = @Int(.unsigned, @bitSizeOf(T));
-    const wide: i128 = x;
-    return @bitCast(@as(U, @truncate(@as(u128, @bitCast(wide)))));
-}
-fn spiralConcat(a: []const u8, b: []const u8) []const u8 {
-    return std.mem.concat(spiral_gpa, u8, &.{ a, b }) catch @panic("out of memory");
-}
-fn spiralStringSlice(s: []const u8, from: i64, upto: i64) []const u8 {
-    const len: i64 = @intCast(s.len);
-    if (from < 0 or from > len or upto < from - 1 or upto >= len) std.process.exit(3);
-    if (upto < from) return "";
-    const a: usize = @intCast(from);
-    const b: usize = @intCast(upto + 1);
-    if ((s[a] & 0xC0) == 0x80 or (b < s.len and (s[b] & 0xC0) == 0x80)) std.process.exit(3);
-    return s[a..b];
-}
-fn spiralIndex(len: usize, i: anytype) usize {
-    if (i < 0 or i >= len) std.process.exit(3);
-    return @intCast(i);
-}
-fn spiralNewArray(comptime T: type, n: anytype) []T {
-    const len: usize = @intCast(n);
-    const a = spiral_gpa.alloc(T, len) catch @panic("out of memory");
-    switch (@typeInfo(T)) {
-        .int, .float, .bool => @memset(a, std.mem.zeroes(T)),
-        else => if (T == []const u8) @memset(a, ""),
-    }
-    return a;
-}
-fn spiralCreate(comptime T: type, v: T) *T {
-    const p = spiral_gpa.create(T) catch @panic("out of memory");
-    p.* = v;
-    return p;
-}
 fn method1(p0: i32, p1: u32) u32 {
     var v0: i32 = p0; _ = &v0;
     var v1: u32 = p1; _ = &v1;
     var v2: i32 = undefined; _ = &v2;
     var v3: u32 = undefined; _ = &v3;
     var v4: bool = undefined; _ = &v4;
-    var tmp3: i32 = undefined; _ = &tmp3;
-    var tmp4: u32 = undefined; _ = &tmp4;
     while (true) {
         v2 = v0 -% @as(i32, 1);
         v3 = v1 +% @as(u32, 3000000000);
@@ -126,10 +54,8 @@ fn method1(p0: i32, p1: u32) u32 {
         if (v4) {
             return v3;
         } else {
-            tmp3 = v2;
-            tmp4 = v3;
-            v0 = tmp3;
-            v1 = tmp4;
+            v0 = v2;
+            v1 = v3;
             continue;
         }
     }
@@ -137,8 +63,7 @@ fn method1(p0: i32, p1: u32) u32 {
 fn method0(p0: i32, p1: u32) u32 {
     var v0: i32 = p0; _ = &v0;
     var v1: u32 = p1; _ = &v1;
-    var v2: bool = undefined; _ = &v2;
-    v2 = v0 == @as(i32, 0);
+    const v2: bool = v0 == @as(i32, 0);
     if (v2) {
         return v1;
     } else {
@@ -146,14 +71,10 @@ fn method0(p0: i32, p1: u32) u32 {
     }
 }
 fn spiralMain() i32 {
-    var v0: i32 = undefined; _ = &v0;
-    var v1: u32 = undefined; _ = &v1;
-    var v2: u32 = undefined; _ = &v2;
-    var v3: bool = undefined; _ = &v3;
-    v0 = @as(i32, 2);
-    v1 = @as(u32, 0);
-    v2 = method0(v0, v1);
-    v3 = v2 == @as(u32, 1705032704);
+    const v0: i32 = @as(i32, 2);
+    const v1: u32 = @as(u32, 0);
+    const v2: u32 = method0(v0, v1);
+    const v3: bool = v2 == @as(u32, 1705032704);
     if (v3) {
         return @as(i32, 0);
     } else {

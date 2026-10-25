@@ -11,43 +11,43 @@ fn string_slice(value: &str, from: i64, to: i64) -> Rc<str> {
     match std::str::from_utf8(slice) { Ok(text) => Rc::<str>::from(text), Err(error) => Rc::<str>::from(std::str::from_utf8(&slice[..error.valid_up_to()]).unwrap_or("")) }
 }
 fn empty_middle_0(mut v0: Rc<str>) -> Rc<str> {
-    let mut v1: Rc<str> = string_slice(&v0.clone(), 2i32 as i64, 1i32 as i64);
-    v1.clone()
+    let v1: Rc<str> = string_slice(&v0, 2i32 as i64, 1i32 as i64);
+    v1
 }
 fn empty_end_1(mut v0: Rc<str>) -> Rc<str> {
-    let mut v1: Rc<str> = string_slice(&v0.clone(), 5i32 as i64, 4i32 as i64);
-    v1.clone()
+    let v1: Rc<str> = string_slice(&v0, 5i32 as i64, 4i32 as i64);
+    v1
 }
 fn empty_source_2(mut v0: Rc<str>) -> Rc<str> {
-    let mut v1: Rc<str> = string_slice(&v0.clone(), 0i32 as i64, -1i32 as i64);
-    v1.clone()
+    let v1: Rc<str> = string_slice(&v0, 0i32 as i64, -1i32 as i64);
+    v1
 }
 fn spiral_main() -> i32 {
-    let mut v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("alpha"); } LIT.with(|lit| lit.clone()) };
-    let mut v1: Rc<str> = empty_middle_0(v0.clone());
-    let mut v2: Rc<str> = empty_end_1(v0.clone());
-    let mut v3: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
-    let mut v4: Rc<str> = empty_source_2(v3.clone());
-    let mut v5: Rc<str> = Rc::<str>::from(format!("{}{}", v1.clone(), v2.clone()));
-    let mut v6: Rc<str> = Rc::<str>::from(format!("{}{}", v4.clone(), { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("ok"); } LIT.with(|lit| lit.clone()) }));
-    let mut v7: Rc<str> = Rc::<str>::from(format!("{}{}", v5.clone(), v6.clone()));
-    let mut v8: i32 = (v1.clone().len() as i32);
-    let mut v9: bool = v8 == 0i32;
+    let v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("alpha"); } LIT.with(|lit| lit.clone()) };
+    let v1: Rc<str> = empty_middle_0(v0.clone());
+    let v2: Rc<str> = empty_end_1(v0);
+    let v3: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
+    let v4: Rc<str> = empty_source_2(v3);
+    let v5: Rc<str> = Rc::<str>::from(format!("{}{}", v1.clone(), v2.clone()));
+    let v6: Rc<str> = Rc::<str>::from(format!("{}{}", v4.clone(), { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("ok"); } LIT.with(|lit| lit.clone()) }));
+    let v7: Rc<str> = Rc::<str>::from(format!("{}{}", v5, v6));
+    let v8: i32 = (v1.len() as i32);
+    let v9: bool = v8 == 0i32;
     if v9 {
-        let mut v10: i32 = (v2.clone().len() as i32);
-        let mut v11: bool = v10 == 0i32;
+        let v10: i32 = (v2.len() as i32);
+        let v11: bool = v10 == 0i32;
         if v11 {
-            let mut v12: i32 = (v4.clone().len() as i32);
-            let mut v13: bool = v12 == 0i32;
+            let v12: i32 = (v4.len() as i32);
+            let v13: bool = v12 == 0i32;
             if v13 {
-                let mut v14: i32 = (v7.clone().len() as i32);
-                let mut v15: bool = v14 == 2i32;
+                let v14: i32 = (v7.clone().len() as i32);
+                let v15: bool = v14 == 2i32;
                 if v15 {
-                    let mut v16: u8 = v7.clone().as_bytes()[0i32 as usize];
-                    let mut v17: bool = v16 == b'o';
+                    let v16: u8 = v7.clone().as_bytes()[0i32 as usize];
+                    let v17: bool = v16 == b'o';
                     if v17 {
-                        let mut v18: u8 = v7.clone().as_bytes()[1i32 as usize];
-                        let mut v19: bool = v18 == b'k';
+                        let v18: u8 = v7.as_bytes()[1i32 as usize];
+                        let v19: bool = v18 == b'k';
                         if v19 {
                             0i32
                         } else {

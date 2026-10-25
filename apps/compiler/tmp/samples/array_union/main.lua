@@ -10,22 +10,20 @@ v1[(0)+1] = v3
 local v4 = Us0_None()
 v1[(1)+1] = v4
 local v5 = (v1)[(0)+1]
-local __v = { v5 }
-if __v[1] ~= nil and __v[1].tag == "Us0_None" then
+if v5 ~= nil and v5.tag == "Us0_None" then
     return 1
-elseif __v[1] ~= nil and __v[1].tag == "Us0_Some" then
-    local v6 = __v[1]._1
+elseif v5 ~= nil and v5.tag == "Us0_Some" then
+    local v6 = v5._1
     local v7 = (v1)[(1)+1]
-    local __v = { v7 }
-    if __v[1] ~= nil and __v[1].tag == "Us0_None" then
+    if v7 ~= nil and v7.tag == "Us0_None" then
         local v8 = v6 == 7
         if v8 then
             return 0
         else
             return 1
         end
-    elseif __v[1] ~= nil and __v[1].tag == "Us0_Some" then
-        local v10 = __v[1]._1
+    elseif v7 ~= nil and v7.tag == "Us0_Some" then
+        local v10 = v7._1
         return 1
     end
 end

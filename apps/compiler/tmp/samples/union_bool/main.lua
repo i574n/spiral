@@ -3,16 +3,15 @@ function Us0_No(v0) return { tag = "Us0_No",  _1 = v0 } end
 function Us0_Yes(v0) return { tag = "Us0_Yes",  _1 = v0 } end
 
 function score_0(v0)
-    local __v = { v0 }
-    if __v[1] ~= nil and __v[1].tag == "Us0_No" then
-        local v1 = __v[1]._1
+    if v0 ~= nil and v0.tag == "Us0_No" then
+        local v1 = v0._1
         if v1 then
             return 1
         else
             return 2
         end
-    elseif __v[1] ~= nil and __v[1].tag == "Us0_Yes" then
-        local v3 = __v[1]._1
+    elseif v0 ~= nil and v0.tag == "Us0_Yes" then
+        local v3 = v0._1
         return v3
     end
 end

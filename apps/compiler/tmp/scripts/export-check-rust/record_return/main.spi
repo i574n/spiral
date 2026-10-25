@@ -1,0 +1,7 @@
+:! span = { start : i32; stop : i32 }
+
+:= make (n : i32) : span = span { start = 0i32; stop = n }
+
+:= main () : i32 =
+    !!!!Export("xc_make", ((\ n => make n) : i32 -> span))
+    0i32

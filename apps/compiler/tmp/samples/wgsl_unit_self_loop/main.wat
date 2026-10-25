@@ -1,9 +1,5 @@
 (module
-  (import "wasi_snapshot_preview1" "fd_write" (func $fd_write (param i32 i32 i32 i32) (result i32)))
   (import "wasi_snapshot_preview1" "proc_exit" (func $proc_exit (param i32)))
-  (data (i32.const 48) "\04\00\00\00true")
-  (data (i32.const 56) "\05\00\00\00false")
-  (data (i32.const 64) "\01\00\00\00-")
   (func $alloc (param $n i32) (result i32) (local $p i32) (local $limit i32)
     (local.set $p (global.get $hp))
     (global.set $hp (i32.and (i32.add (i32.add (local.get $p) (local.get $n)) (i32.const 7)) (i32.const -8)))
@@ -18,21 +14,13 @@
   (func $fill_0 (param $v0 i32) (param $v1 i32) (param $v2 i32)
     (local $v3 i32)
     (local $v4 i32)
-    (local $t2 i32)
-    (local $t3 i32)
-    (local $t4 i32)
     (loop $self
         (local.set $v3 (i32.lt_s (local.get $v2) (local.get $v0)))
         (if (local.get $v3)
             (then
                 (i32.store offset=8 (i32.add (local.get $v1) (i32.mul (local.get $v2) (i32.const 8))) (local.get $v2))
                 (local.set $v4 (i32.add (local.get $v2) (i32.const 1)))
-                (local.set $t2 (local.get $v0))
-                (local.set $t3 (local.get $v1))
-                (local.set $t4 (local.get $v4))
-                (local.set $v0 (local.get $t2))
-                (local.set $v1 (local.get $t3))
-                (local.set $v2 (local.get $t4))
+                (local.set $v2 (local.get $v4))
                 (br $self)
             )
             (else

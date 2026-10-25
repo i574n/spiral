@@ -2,21 +2,21 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 fn spiral_main() -> i32 {
-    let mut v0: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); 4i32 as usize]));
+    let v0: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); 4i32 as usize]));
     v0.clone().borrow_mut()[0i32 as usize] = 2i32;
     v0.clone().borrow_mut()[1i32 as usize] = 3i32;
     v0.clone().borrow_mut()[2i32 as usize] = 5i32;
     v0.clone().borrow_mut()[3i32 as usize] = 7i32;
-    let mut v1: i32 = 1i32;
+    let v1: i32 = 1i32;
     v0.clone().borrow_mut()[v1 as usize] = 11i32;
-    let mut v2: i32 = v0.clone().borrow()[0i32 as usize].clone();
-    let mut v3: i32 = v0.clone().borrow()[1i32 as usize].clone();
-    let mut v4: i32 = v0.clone().borrow()[2i32 as usize].clone();
-    let mut v5: i32 = v0.clone().borrow()[3i32 as usize].clone();
-    let mut v6: i32 = v2.wrapping_add(v3);
-    let mut v7: i32 = v6.wrapping_add(v4);
-    let mut v8: i32 = v7.wrapping_add(v5);
-    let mut v9: i32 = v8.wrapping_sub(25i32);
+    let v2: i32 = v0.clone().borrow()[0i32 as usize].clone();
+    let v3: i32 = v0.clone().borrow()[1i32 as usize].clone();
+    let v4: i32 = v0.clone().borrow()[2i32 as usize].clone();
+    let v5: i32 = v0.borrow()[3i32 as usize].clone();
+    let v6: i32 = v2.wrapping_add(v3);
+    let v7: i32 = v6.wrapping_add(v4);
+    let v8: i32 = v7.wrapping_add(v5);
+    let v9: i32 = v8.wrapping_sub(25i32);
     v9
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }

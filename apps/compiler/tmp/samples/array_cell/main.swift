@@ -11,32 +11,21 @@ final class SpiralArray<T> {
     init(_ items: [T]) { self.items = items }
 }
 func spiral_main() -> Int32 {
-    var v0: Int32 = 0
-    v0 = 2
+    let v0: Int32 = 2
     var v1: SpiralArray<Heap0> = SpiralArray<Heap0>([])
     v1 = SpiralArray<Heap0>(Array(repeating: Heap0(l0: 0), count: Int(v0)))
-    var v2: Int32 = 0
-    v2 = 4
-    var v3: Int32 = 0
-    v3 = 6
-    var v4: Heap0 = Heap0(l0: 0)
-    v4 = Heap0(l0: v2)
+    let v2: Int32 = 4
+    let v3: Int32 = 6
+    let v4: Heap0 = Heap0(l0: v2)
     v1.items[Int(0)] = v4
-    var v5: Heap0 = Heap0(l0: 0)
-    v5 = Heap0(l0: v3)
+    let v5: Heap0 = Heap0(l0: v3)
     v1.items[Int(1)] = v5
-    var v6: Heap0 = Heap0(l0: 0)
-    v6 = v1.items[Int(0)]
-    var v7: Int32 = 0
-    v7 = v6.l0
-    var v8: Heap0 = Heap0(l0: 0)
-    v8 = v1.items[Int(1)]
-    var v9: Int32 = 0
-    v9 = v8.l0
-    var v10: Int32 = 0
-    v10 = (v7 &+ v9)
-    var v11: Bool = false
-    v11 = (v10 == 10)
+    let v6: Heap0 = v1.items[Int(0)]
+    let v7: Int32 = v6.l0
+    let v8: Heap0 = v1.items[Int(1)]
+    let v9: Int32 = v8.l0
+    let v10: Int32 = (v7 &+ v9)
+    let v11: Bool = (v10 == 10)
     if (v11) {
         return 0
     } else {

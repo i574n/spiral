@@ -1,14 +1,14 @@
 /// # near
 test near static =
-    open testing
+    :< testing
 
-open rust
-open rust.rust_operators
+:< rust
+:< rust.rust_operators
 
 /// ## near
 
 /// ### vector
-type vector_switch t =
+:== vector_switch t =
     {
         Gleam : $'near_sdk_store_vec_Vector<`t>'
         Lua : $'near_sdk_store_vec_Vector<`t>'
@@ -21,7 +21,7 @@ type vector_switch t =
         Cuda : $'near_sdk_store_vec_Vector<`t>'
         Rust : $'SpiralNearVec<`t>'
     }
-nominal vector t =
+:! vector t =
     `(
         rust.fsharp_global "type near_sdk_store_vec_Vector<'T> = class end"
         backend_switch `(()) `({}) {
@@ -41,21 +41,21 @@ nominal vector t =
                 }
 
                 """) : () -> ()
-            Gleam = (fun () => ()) : () -> ()
-            Lua = (fun () => ()) : () -> ()
-            Fsharp = (fun () => ()) : () -> ()
-            Python = (fun () => ()) : () -> ()
-            TypeScript = (fun () => ()) : () -> ()
-            Cpp = (fun () => ()) : () -> ()
-            CppHost = (fun () => ()) : () -> ()
-            Delphi = (fun () => ()) : () -> ()
-            Cuda = (fun () => ()) : () -> ()
+            Gleam = (\ () => ()) : () -> ()
+            Lua = (\ () => ()) : () -> ()
+            Fsharp = (\ () => ()) : () -> ()
+            Python = (\ () => ()) : () -> ()
+            TypeScript = (\ () => ()) : () -> ()
+            Cpp = (\ () => ()) : () -> ()
+            CppHost = (\ () => ()) : () -> ()
+            Delphi = (\ () => ()) : () -> ()
+            Cuda = (\ () => ()) : () -> ()
         }
         $'' : $'backend_switch `(vector_switch t)'
     )
 
 /// ### lookup_map
-nominal lookup_map k v =
+:! lookup_map k v =
     `(
         rust.rust_type
             `($'near_sdk_store_LookupMap<`k, `v>')
@@ -64,7 +64,7 @@ nominal lookup_map k v =
     )
 
 /// ### iterable_set
-nominal iterable_set t =
+:! iterable_set t =
     `(
         rust.rust_type
             `($'near_sdk_store_IterableSet<`t>')
@@ -73,7 +73,7 @@ nominal iterable_set t =
     )
 
 /// ### account_id
-type account_id_switch =
+:== account_id_switch =
     {
         Gleam : $'near_sdk_AccountId'
         Lua : $'near_sdk_AccountId'
@@ -86,56 +86,56 @@ type account_id_switch =
         Cuda : $'near_sdk_AccountId'
         Rust : $'String'
     }
-nominal account_id =
+:! account_id =
     `(
         rust.fsharp_global "type near_sdk_AccountId = class end"
         $'' : $'backend_switch `(account_id_switch)'
     )
 
 /// ### new_lookup_map
-inl new_lookup_map prefix =
+:= new_lookup_map prefix =
     !\($'"near_sdk::store::LookupMap::new(!prefix)"')
 
 /// ### new_iterable_set
-inl new_iterable_set prefix =
+:= new_iterable_set prefix =
     !\($'"near_sdk::store::IterableSet::new(!prefix)"')
 
 /// ### new_vector
-inl new_vector (prefix : rust.ref (am'.slice u8)) : vector u8 =
+:= new_vector (prefix : rust.ref (am'.slice u8)) : vector u8 =
     backend_switch {
         Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::store::vec::Vector::new(!prefix); \
             \#[cfg(not(target_arch = "wasm32"))] let v = SpiralNearVec(<std::vec::Vec<u8>>::new()); v }' : vector u8
     }
 
 /// ### vector_extend
-inl vector_extend forall t. (vec : am'.vec t) (vector : rust.ref (rust.mut' (vector t))) : () =
+:= vector_extend \* t. (vec : am'.vec t) (vector : rust.ref (rust.mut' (vector t))) : () =
     backend_switch {
-        Rust = fun () => $'{ (!vector).extend((!vec).clone()); }' : ()
+        Rust = \ () => $'{ (!vector).extend((!vec).clone()); }' : ()
     }
 
 /// ### vector_to_vec
-inl vector_to_vec forall (t : * -> *) u. (vector : t (vector u)) : am'.vec u =
+:= vector_to_vec \* (t : * -> *) u. (vector : t (vector u)) : am'.vec u =
     backend_switch {
-        Rust = fun () => $'(!vector).iter().cloned().collect::<std::vec::Vec<_>>()' : am'.vec u
+        Rust = \ () => $'(!vector).iter().cloned().collect::<std::vec::Vec<_>>()' : am'.vec u
     }
 
 /// ### keccak512
-inl keccak512 (entropy : am'.vec u8) : am'.vec u8 =
+:= keccak512 (entropy : am'.vec u8) : am'.vec u8 =
     backend_switch {
         Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::keccak512(&(!entropy)); \
             \#[cfg(not(target_arch = "wasm32"))] let v = <std::vec::Vec<u8>>::from([1u8, 5, 4, 4, 5]); v }' : am'.vec u8
     }
 
 /// ### log
-inl log text : () =
+:= log text : () =
     (!\\(text, $'$"true; near_sdk::log\!(\\\"{{}}\\\", $0)"') : bool) |> ignore
 
 /// ### panic_str
-inl panic_str (text : string) : () =
+:= panic_str (text : string) : () =
     (!\\(text, $'$"true; near_sdk::env::panic_str(&*$0); //"') : bool) |> ignore
 
 /// ### lookup_get
-inl lookup_get forall k v.
+:= lookup_get \* k v.
     (key : k)
     (map : rust.ref (rust.mut' (lookup_map k v)))
     : optionm'.option' (rust.ref v)
@@ -143,7 +143,7 @@ inl lookup_get forall k v.
     !\\(key, $'$"!map.get(&$0)"')
 
 /// ### lookup_insert
-inl lookup_insert forall k v.
+:= lookup_insert \* k v.
     (key : k)
     (value : v)
     (map : rust.ref (rust.mut' (lookup_map k v)))
@@ -152,7 +152,7 @@ inl lookup_insert forall k v.
     (!\\((key, value), $'$"true; !map.insert(&$0, $1); //"') : bool) |> ignore
 
 /// ### iterable_set_insert
-inl iterable_set_insert forall t.
+:= iterable_set_insert \* t.
     (x : t)
     (set : rust.ref (rust.mut' (iterable_set t)))
     : bool
@@ -160,7 +160,7 @@ inl iterable_set_insert forall t.
     !\\(x, $'$"!set.insert($0)"')
 
 /// ### iterable_set_remove
-inl iterable_set_remove forall t.
+:= iterable_set_remove \* t.
     (x : rust.ref t)
     (set : rust.ref (rust.mut' (iterable_set t)))
     : bool
@@ -168,7 +168,7 @@ inl iterable_set_remove forall t.
     !\\(x, $'$"!set.remove($0)"')
 
 /// ### iterable_set_contains
-inl iterable_set_contains forall t.
+:= iterable_set_contains \* t.
     (x : rust.ref t)
     (set : rust.ref (rust.mut' (iterable_set t)))
     : bool
@@ -176,7 +176,7 @@ inl iterable_set_contains forall t.
     !\\(x, $'$"!set.contains($0)"')
 
 /// ### near_token
-type near_token_switch =
+:== near_token_switch =
     {
         Gleam : $'near_token_NearToken'
         Lua : $'near_token_NearToken'
@@ -189,14 +189,14 @@ type near_token_switch =
         Cuda : $'near_token_NearToken'
         Rust : $'u128'
     }
-nominal near_token =
+:! near_token =
     `(
         rust.fsharp_global "type near_token_NearToken = class end"
         $'' : $'backend_switch `(near_token_switch)'
     )
 
 /// ### near_token_sdk
-nominal near_token_sdk =
+:! near_token_sdk =
     `(
         rust.rust_type
             `($'near_sdk_NearToken')
@@ -205,68 +205,68 @@ nominal near_token_sdk =
     )
 
 /// ### random_seed
-inl random_seed () : am'.vec u8 =
+:= random_seed () : am'.vec u8 =
     backend_switch {
         Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::random_seed(); \
             \#[cfg(not(target_arch = "wasm32"))] let v = <std::vec::Vec<u8>>::from([1u8, 5, 4, 4, 5]); v }' : am'.vec u8
     }
 
 /// ### block_timestamp
-inl block_timestamp () : u64 =
+:= block_timestamp () : u64 =
     backend_switch {
         Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::block_timestamp(); \
             \#[cfg(not(target_arch = "wasm32"))] let v = 1u64; v }' : u64
     }
 
 /// ### block_height
-inl block_height () : u64 =
+:= block_height () : u64 =
     backend_switch {
         Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::block_height(); \
             \#[cfg(not(target_arch = "wasm32"))] let v = 1u64; v }' : u64
     }
 
 /// ### epoch_height
-inl epoch_height () : u64 =
+:= epoch_height () : u64 =
     backend_switch {
         Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::epoch_height(); \
             \#[cfg(not(target_arch = "wasm32"))] let v = 1u64; v }' : u64
     }
 
 /// ### account_balance
-inl account_balance () : near_token =
+:= account_balance () : near_token =
     backend_switch {
         Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::account_balance().as_yoctonear(); \
             \#[cfg(not(target_arch = "wasm32"))] let v = 1u128; v }' : near_token
     }
 
 /// ### predecessor_account_id
-inl predecessor_account_id () : account_id =
+:= predecessor_account_id () : account_id =
     backend_switch {
         Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::predecessor_account_id().to_string\
             (); \#[cfg(not(target_arch = "wasm32"))] let v = String::from("a"); v }' : account_id
     }
 
 /// ### signer_account_id
-inl signer_account_id () : account_id =
+:= signer_account_id () : account_id =
     backend_switch {
         Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::signer_account_id().to_string(); \
             \#[cfg(not(target_arch = "wasm32"))] let v = String::from("a"); v }' : account_id
     }
 
 /// ### as_yoctonear
-inl as_yoctonear forall t. (gas : t) : rust.u128 =
+:= as_yoctonear \* t. (gas : t) : rust.u128 =
     backend_switch {
-        Rust = fun () => $'(!gas)' : rust.u128
+        Rust = \ () => $'(!gas)' : rust.u128
     }
 
 /// ### near_price_in_usd
-inl near_price_in_usd () =
+:= near_price_in_usd () =
     6.68f64
 
 /// ### gas_to_usd
-inl gas_to_usd (gas : u64) =
+:= gas_to_usd (gas : u64) =
     (gas |> convert.f64) / 10_000_000_000_000_000 * near_price_in_usd ()
 
 /// ### tokens_to_usd
-inl tokens_to_usd (tokens : rust.u128) =
+:= tokens_to_usd (tokens : rust.u128) =
     (tokens |> rust.f64) / 1_000_000_000_000_000_000_000_000 * near_price_in_usd ()

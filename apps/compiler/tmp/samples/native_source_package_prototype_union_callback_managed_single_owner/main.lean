@@ -35,27 +35,23 @@ def U0.spiralTag : U0 → Int32
 mutual
 partial def closure0 (p0 : Int32) : IO U0 := do
     let mut v0 : Int32 := p0
-    let mut v1 : String := default
-    v1 := "managed"
+    let v1 : String := "managed"
     return (U0.Text v1)
 partial def method0 (p0 : (Int32 → IO U0)) : IO U0 := do
     let mut v0 : (Int32 → IO U0) := p0
     return (← v0 (2 : Int32))
 partial def spiralMain : IO Int32 := do
-    let mut v0 : (Int32 → IO U0) := default
-    let mut v1 : U0 := default
     let mut v4 : Int32 := default
     let mut v2 : String := default
-    let mut v5 : Int32 := default
-    v0 := closure0
-    v1 := (← method0 v0)
+    let v0 : (Int32 → IO U0) := closure0
+    let v1 : U0 := (← method0 v0)
     match v1 with
     | U0.Idle =>
         v4 := (3 : Int32)
     | U0.Text f2 =>
         v2 := f2
         v4 := (11 : Int32)
-    v5 := (v4 + (31 : Int32))
+    let v5 : Int32 := (v4 + (31 : Int32))
     return v5
 end
 def main : IO UInt32 := do

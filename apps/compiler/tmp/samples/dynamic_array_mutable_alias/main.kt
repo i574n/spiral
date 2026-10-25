@@ -32,12 +32,9 @@ fun spiral_main(): Int {
     sp_method0(v1)
     var v2: Int = 0
     v2 = sp_method1(v1)
-    var v3: Int = 0
-    v3 = sp_method2(v1)
-    var v4: Int = 0
-    v4 = (v2 + v3)
-    var v5: Int = 0
-    v5 = (v4 - 10)
+    val v3: Int = sp_method2(v1)
+    val v4: Int = (v2 + v3)
+    val v5: Int = (v4 - 10)
     return v5
 }
 fun main() {

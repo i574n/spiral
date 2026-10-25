@@ -68,15 +68,12 @@ fun sp_method0(p0: Int, p1: String): Int {
     } else {
         v5 = sp_method1(v0, v1)
     }
-    var v6: Int = 0
-    v6 = (v5 - 2)
+    val v6: Int = (v5 - 2)
     return v6
 }
 fun spiral_main(): Int {
-    var v0: Int = 0
-    v0 = 1000000
-    var v1: Int = 0
-    v1 = (v0 % 2)
+    val v0: Int = 1000000
+    val v1: Int = (v0 % 2)
     var v2: Boolean = false
     v2 = (v1 == 0)
     var v5: String = ""

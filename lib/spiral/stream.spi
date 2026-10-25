@@ -1,49 +1,49 @@
 /// # stream
 test stream static =
-    open testing
+    :< testing
 
-open rust.rust_operators
+:< rust.rust_operators
 
 /// ## stream
 
 /// ### stream
-union rec stream t =
+:| ^ stream t =
     | StreamCons : t * (() -> stream t)
     | StreamNil
 
 /// ### fold
-inl fold fn init s =
-    inl rec body acc = function
+:= fold fn init s =
+    := ^ body acc = \|
         | StreamCons (st, fn') => 루프 (fn acc st) (fn' ())
         | StreamNil => acc
-    and inl 루프 acc = join_body body acc
+    :& := 루프 acc = join_body body acc
     루프 init s
 
 /// ### fold_back
-inl fold_back fn s init =
-    inl rec body acc = function
+:= fold_back fn s init =
+    := ^ body acc = \|
         | StreamCons (st, fn') => fn st (루프 acc (fn' ()))
         | StreamNil => acc
-    and inl 루프 acc = join_body body acc
+    :& := 루프 acc = join_body body acc
     루프 init s
 
 /// ### to_list
-inl to_list s =
+:= to_list s =
     (s, [])
-    ||> fold_back fun x acc =>
+    ||> fold_back \ x acc =>
         x :: acc
 
 /// ### rev
-inl rev s =
+:= rev s =
     (StreamNil, s)
-    ||> fold fun s x =>
-        StreamCons (x, fun () => s)
+    ||> fold \ s x =>
+        StreamCons (x, \ () => s)
 
 /// ### from_list
-inl from_list list =
+:= from_list list =
     (list, StreamNil)
-    ||> listm.foldBack fun x acc =>
-        StreamCons (x, fun () => acc)
+    ||> listm.foldBack \ x acc =>
+        StreamCons (x, \ () => acc)
 
 test from_list =
     listm.init 3i32 id
@@ -53,21 +53,21 @@ test from_list =
     |> _assert_eq [ 2; 1; 0 ]
 
 /// ### try_item
-inl try_item i s =
-    inl rec body forall a {number} b. (i : a) : stream b -> option b = function
-        | StreamCons (x, _) when i <= 0 => Some x
+:= try_item i s =
+    := ^ body \* a {number} b. (i : a) : stream b -> option b = \|
+        | StreamCons (x, _) ?& i <= 0 => Some x
         | StreamCons (_, fn) => 루프 (i - 1) (fn ())
         | StreamNil => None
-    and inl 루프 forall a {number} b. (acc : a) (s' : stream b) : option b =
-        match var_is acc, var_is s' with
-        | false, false => body acc s'
+    :& := 루프 \* a {number} b. (acc : a) (s' : stream b) : option b =
+        ?= var_is acc, var_is s' ?|
+        | !-, !- => body acc s'
         | _ =>
-            inl acc = dyn acc
-            inl s' = dyn s'
-            join body acc s'
+            := acc = dyn acc
+            := s' = dyn s'
+            ~~ body acc s'
     루프 i s
 
-inl item i =
+:= item i =
     try_item i >> optionm.value
 
 test try_item =
@@ -77,14 +77,14 @@ test try_item =
     |> _assert_eq 9
 
 /// ### new_infinite_stream
-inl new_infinite_stream fn =
-    inl rec 루프 n =
-        StreamCons (fn n, fun () => 루프 (n + 1))
+:= new_infinite_stream fn =
+    := ^ 루프 n =
+        StreamCons (fn n, \ () => 루프 (n + 1))
     루프 0
 
-inl new_infinite_stream_ fn =
-    let rec 루프 n =
-        StreamCons (fn n, fun () => 루프 (n + 1))
+:= new_infinite_stream_ fn =
+    :~ ^ 루프 n =
+        StreamCons (fn n, \ () => 루프 (n + 1))
     루프 0
 
 test new_infinite_stream =
@@ -93,37 +93,37 @@ test new_infinite_stream =
     |> _assert_eq 4i32
 
 /// ### new_finite_stream
-inl new_finite_stream fn max =
-    inl rec 루프 n =
-        if n >= max
-        then StreamNil
-        else StreamCons (fn n, fun () => 루프 (n + 1))
+:= new_finite_stream fn max =
+    := ^ 루프 n =
+        ? n >= max
+        ?> StreamNil
+        |: StreamCons (fn n, \ () => 루프 (n + 1))
     루프 0
 
 /// ### memoize
-union memoized_stream t =
+:| memoized_stream t =
     | NotComputed : () -> stream t
     | Computed : stream t
 
-inl memoize s =
-    inl rec body forall t. (s : () -> stream t) : () -> stream t =
-        inl state = mut (NotComputed s)
-        fun () =>
-            match *state with
+:= memoize s =
+    := ^ body \* t. (s : () -> stream t) : () -> stream t =
+        := state = mut (NotComputed s)
+        \ () =>
+            ?= *state ?|
             | Computed x => x
             | NotComputed fn =>
-                inl new_state =
-                    match fn () with
+                := new_state =
+                    ?= fn () ?|
                     | StreamNil => StreamNil
                     | StreamCons (x, fn) => StreamCons (x, 루프 fn)
                 state <- Computed new_state
                 new_state
-    and inl 루프 forall t. (s' : () -> stream t) : () -> stream t =
+    :& := 루프 \* t. (s' : () -> stream t) : () -> stream t =
         join_body_unit body s s'
-    루프 (fun () => s)
+    루프 (\ () => s)
 
 test memoize =
-    inl memo_stream = new_finite_stream print_and_return 10 |> memoize
+    := memo_stream = new_finite_stream print_and_return 10 |> memoize
 
     memo_stream ()
     |> item 3i32
@@ -134,7 +134,7 @@ test memoize =
     |> _assert_eq 5i32
 
 test memoize_2 =
-    inl memo_stream = new_infinite_stream_ print_and_return |> memoize
+    := memo_stream = new_infinite_stream_ print_and_return |> memoize
 
     memo_stream ()
     |> item 3i32
@@ -145,17 +145,17 @@ test memoize_2 =
     |> _assert_eq 5i32
 
 /// ### unfold
-inl unfold f x0 =
-    inl rec body x =
-        match f x with
-        | Some (x', y) => StreamCons (x', fun () => 루프 y)
+:= unfold f x0 =
+    := ^ body x =
+        ?= f x ?|
+        | Some (x', y) => StreamCons (x', \ () => 루프 y)
         | None => StreamNil
-    and inl 루프 x = join_body_unit body x0 x
+    :& := 루프 x = join_body_unit body x0 x
     루프 x0
 
 /// ### iterate
-inl iterate f =
-    fun x => Some (x, f x)
+:= iterate f =
+    \ x => Some (x, f x)
     |> unfold
 
 test iterate =
@@ -164,10 +164,10 @@ test iterate =
     |> _assert_eq 1024
 
 /// ### iterate'
-inl iterate_map f m =
-    fun x =>
+:= iterate_map f m =
+    \ x =>
         m x
-        |> optionm.map fun x =>
+        |> optionm.map \ x =>
             x, f x
     |> unfold
 
@@ -177,15 +177,15 @@ test iterate_2 =
     |> _assert_eq 1024
 
 /// ### take_while
-inl take_while cond s =
-    inl rec body i = function
-        | StreamCons (st, fn) when cond st i => StreamCons (st, fun () => 루프 (i + 1) (fn ()))
+:= take_while cond s =
+    := ^ body i = \|
+        | StreamCons (st, fn) ?& cond st i => StreamCons (st, \ () => 루프 (i + 1) (fn ()))
         | _ => StreamNil
-    and inl 루프 i = join_body body i
+    :& := 루프 i = join_body body i
     루프 0 s
 
 /// ### sum
-inl sum seq =
+:= sum seq =
     seq |> fold (+) 0
 
 test sum =
@@ -196,27 +196,27 @@ test sum =
 
 test sum_2 =
     new_finite_stream print_and_return 10i32
-    |> take_while (fun n (_ : i32) => n < 5)
+    |> take_while (\ n (_ : i32) => n < 5)
     |> sum
     |> _assert_eq 10
 
 test sum_3 =
     new_infinite_stream print_and_return
-    |> take_while (fun n (_ : i32) => n < 5i32)
+    |> take_while (\ n (_ : i32) => n < 5i32)
     |> sum
     |> _assert_eq 10
 
 test sum_4 =
     iterate ((*) 6) 1i32
-    |> take_while (fun _ i => i <= 7i32)
+    |> take_while (\ _ i => i <= 7i32)
     |> to_list
     |> _assert_eq [ 1i32; 6; 36; 216; 1296; 7776; 46656; 279936 ]
 
 /// ### indexed
-inl indexed s =
+:= indexed s =
     ((StreamNil, 0), s)
-    ||> fold fun (acc, i) x =>
-        StreamCons ((i, x), fun () => acc), i + 1
+    ||> fold \ (acc, i) x =>
+        StreamCons ((i, x), \ () => acc), i + 1
     |> fst
     |> rev
 
@@ -228,10 +228,10 @@ test indexed =
     |> _assert_eq (5i32, 10i32)
 
 /// ### map
-inl map fn s =
+:= map fn s =
     (s, StreamNil)
-    ||> fold_back fun x acc =>
-        StreamCons (fn x, fun () => acc)
+    ||> fold_back \ x acc =>
+        StreamCons (fn x, \ () => acc)
 
 test map =
     listm.init 10i32 id
@@ -241,19 +241,19 @@ test map =
     |> _assert_eq 10i32
 
 /// ### zip_with
-inl zip_with fn s1 s2 =
-    inl rec 루프 s1 s2 =
-        match s1, s2 with
+:= zip_with fn s1 s2 =
+    := ^ 루프 s1 s2 =
+        ?= s1, s2 ?|
         | StreamCons (st1, fn1), StreamCons (st2, fn2) =>
-            StreamCons (fn st1 st2, fun () => 루프 (fn1 ()) (fn2 ()))
+            StreamCons (fn st1 st2, \ () => 루프 (fn1 ()) (fn2 ()))
         | StreamNil, _ | _, StreamNil => StreamNil
     루프 s1 s2
 
-inl zip_with_ fn s1 s2 =
-    let rec 루프 s1 s2 =
-        match s1, s2 with
+:= zip_with_ fn s1 s2 =
+    :~ ^ 루프 s1 s2 =
+        ?= s1, s2 ?|
         | StreamCons (st1, fn1), StreamCons (st2, fn2) =>
-            StreamCons (fn st1 st2, fun () => 루프 (fn1 ()) (fn2 ()))
+            StreamCons (fn st1 st2, \ () => 루프 (fn1 ()) (fn2 ()))
         | StreamNil, _ | _, StreamNil => StreamNil
     루프 s1 s2
 
@@ -264,10 +264,10 @@ test zip_with =
     |> _assert_eq 6
 
 /// ### zip
-inl zip s1 s2 =
+:= zip s1 s2 =
     zip_with pair s1 s2
 
-inl zip_ s1 s2 =
+:= zip_ s1 s2 =
     zip_with_ pair s1 s2
 
 test zip =
@@ -277,27 +277,27 @@ test zip =
     |> _assert_eq (5, 10)
 
 /// ### unzip
-inl unzip s =
-    inl rec body forall a b. (s : stream (a * b)) : stream a * stream b =
-        match s with
+:= unzip s =
+    := ^ body \* a b. (s : stream (a * b)) : stream a * stream b =
+        ?= s ?|
         | StreamCons ((x, y), fn) =>
-            inl xs, ys = 루프 (fn ())
-            StreamCons (x, fun () => xs), StreamCons (y, fun () => ys)
+            := xs, ys = 루프 (fn ())
+            StreamCons (x, \ () => xs), StreamCons (y, \ () => ys)
         | StreamNil => pair StreamNil StreamNil
-    and inl 루프 forall a b. (x : stream (a * b)) : stream a * stream b =
-        if var_is x |> not
-        then body x
-        else
-            inl x = dyn x
-            join body x
+    :& := 루프 \* a b. (x : stream (a * b)) : stream a * stream b =
+        ? var_is x |> not
+        ?> body x
+        |:
+            := x = dyn x
+            ~~ body x
     루프 s
 
 test unzip =
     listm.init 10i32 id
-    |> listm.map (fun x => x, x)
+    |> listm.map (\ x => x, x)
     |> from_list
     |> unzip
-    |> fun x, y =>
+    |> \ x, y =>
         x |> sum
         |> _assert_eq 45
 
@@ -307,7 +307,7 @@ test unzip =
 /// ## rust
 
 /// ### io_error
-nominal io_error =
+:! io_error =
     `(
         rust.rust_type
             `($'std_io_Error')
@@ -316,14 +316,14 @@ nominal io_error =
     )
 
 /// ### new_io_error
-inl new_io_error (text : string) : io_error =
-    run_target_args (fun () => text) function
-        | Rust => fun text =>
+:= new_io_error (text : string) : io_error =
+    run_target_args (\ () => text) \|
+        | Rust => \ text =>
             !\\(text, $'"std::io::Error::new(std::io::ErrorKind::Other, &*$0)"')
-        | _ => fun text => text |> convert.unbox
+        | _ => \ text => text |> convert.unbox
 
 /// ### buf_reader
-nominal buf_reader t =
+:! buf_reader t =
     `(
         rust.rust_type
             `($'std_io_BufReader<`t>')
@@ -332,7 +332,7 @@ nominal buf_reader t =
     )
 
 /// ### cursor
-nominal cursor t =
+:! cursor t =
     `(
         rust.rust_type
             `($'std_io_Cursor<`t>')
@@ -341,7 +341,7 @@ nominal cursor t =
     )
 
 /// ### buf_reader_tokio
-nominal buf_reader_tokio t =
+:! buf_reader_tokio t =
     `(
         rust.rust_type
             `($'tokio_io_BufReader<`t>')
@@ -350,15 +350,15 @@ nominal buf_reader_tokio t =
     )
 
 /// ### new_buf_reader
-inl new_buf_reader forall t. (x : t) : buf_reader t =
+:= new_buf_reader \* t. (x : t) : buf_reader t =
     !\\(x, $'"std::io::BufReader::new($0)"')
 
 /// ### new_cursor
-inl new_cursor forall t. (x : t) : cursor t =
+:= new_cursor \* t. (x : t) : cursor t =
     !\($'"std::io::Cursor::new(!x)"')
 
 /// ### lines
-nominal lines t =
+:! lines t =
     `(
         rust.rust_type
             `($'std_io_Lines<`t>')
@@ -367,11 +367,11 @@ nominal lines t =
     )
 
 /// ### buf_read_lines
-inl buf_read_lines forall t. (buf_reader : buf_reader t) : lines (buf_reader t) =
+:= buf_read_lines \* t. (buf_reader : buf_reader t) : lines (buf_reader t) =
     !\($'"std::io::BufRead::lines(!buf_reader)"')
 
 /// ### decode_reader_bytes
-nominal decode_reader_bytes t u =
+:! decode_reader_bytes t u =
     `(
         rust.rust_type
             `($'encoding_rs_io_DecodeReaderBytes<`t, `u>')
@@ -380,16 +380,16 @@ nominal decode_reader_bytes t u =
     )
 
 /// ### decode_reader_bytes_build
-inl decode_reader_bytes_build forall t. (x : t) : decode_reader_bytes t (am'.vec u8) =
+:= decode_reader_bytes_build \* t. (x : t) : decode_reader_bytes t (am'.vec u8) =
     !\\(x, $'"encoding_rs_io::DecodeReaderBytesBuilder::new().utf8_passthru(true).build($0)"')
 
 /// ### buf_reader_read
-inl buf_reader_read forall el dim.
+:= buf_reader_read \* el dim.
     (slice : am'.slice' el dim) (buf_reader : buf_reader el) : resultm.result' convert.unativeint io_error
     =
     (!\($'"true; let mut !slice = !slice"') : bool) |> ignore
     !\($'"std::io::Read::read(&mut !buf_reader, &mut !slice)"')
 
 /// ### io_read_by_ref
-inl io_read_by_ref forall t. (lines : lines t) : lines t =
+:= io_read_by_ref \* t. (lines : lines t) : lines t =
     !\\(lines, $'"std::io::Read::by_ref($0)"')

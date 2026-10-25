@@ -48,17 +48,14 @@ partial def score_0 (p0 : U0) : IO Int32 := do
         v1 := f1
         return v1
 partial def spiralMain : IO Int32 := do
-    let mut v0 : Bool := default
     let mut v3 : U0 := default
-    let mut v4 : Int32 := default
-    let mut v5 : Int32 := default
-    v0 := false
+    let v0 : Bool := false
     if v0 then
         v3 := (U0.Hit (7 : Int32))
     else
         v3 := (U0.Flag true)
-    v4 := (← score_0 v3)
-    v5 := (v4 - (9 : Int32))
+    let v4 : Int32 := (← score_0 v3)
+    let v5 : Int32 := (v4 - (9 : Int32))
     return v5
 end
 def main : IO UInt32 := do

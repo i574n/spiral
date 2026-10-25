@@ -1,14 +1,14 @@
-open rust.rust_operators
-open rust
-open sm'_operators
-open leptos
+:< rust.rust_operators
+:< rust
+:< sm'_operators
+:< leptos
 
-inl render (id : () -> string) (get_value : () -> bool) (on_change : event -> ()) : _ (_ label) =
-    inl id () = id () |> sm'.to_std_string
+:= render (id : () -> string) (get_value : () -> bool) (on_change : event -> ()) : _ (_ label) =
+    := id () = id () |> sm'.to_std_string
     label [
         attr_fn "for" id
         $'"class=\\\"block relative h-8 w-14 cursor-pointer [-webkit-tap-highlight-color:_transparent]\\\""'
-    ] fun () =>
+    ] \ () =>
         :>[
             input [
                 $'"class=\\\"peer sr-only [&:checked_+_span_svg[data-checked-icon]]:block \
@@ -24,7 +24,7 @@ inl render (id : () -> string) (get_value : () -> bool) (on_change : event -> ()
                 $'"class=\\\"absolute inset-y-0 start-0 z-10 m-1 inline-flex h-6 w-6 items-center justify-center \
                     rounded-full bg-white dark:bg-gray-400 peer-checked:bg-white text-gray-200 transition-all \
                     peer-checked:start-6 peer-checked:text-gray-400\\\""'
-            ] fun () =>
+            ] \ () =>
                 :>[
                     svg [
                         $'"data-unchecked-icon"'
@@ -32,7 +32,7 @@ inl render (id : () -> string) (get_value : () -> bool) (on_change : event -> ()
                         $'"class=\\\"h-4 w-4\\\""'
                         $'"viewBox=\\\"0 0 20 20\\\""'
                         $'"fill=\\\"currentColor\\\""'
-                    ] fun () =>
+                    ] \ () =>
                         :>[
                             path [
                                 $'"fill-rule=\\\"evenodd\\\""'
@@ -49,7 +49,7 @@ inl render (id : () -> string) (get_value : () -> bool) (on_change : event -> ()
                         $'"class=\\\"hidden h-4 w-4\\\""'
                         $'"viewBox=\\\"0 0 20 20\\\""'
                         $'"fill=\\\"currentColor\\\""'
-                    ] fun () =>
+                    ] \ () =>
                         :>[
                             path [
                                 $'"fill-rule=\\\"evenodd\\\""'
@@ -64,7 +64,7 @@ inl render (id : () -> string) (get_value : () -> bool) (on_change : event -> ()
             span [
                 $'"class=\\\"absolute inset-0 rounded-full bg-gray-200 dark:bg-gray-200 transition \
                     peer-checked:bg-gray-300\\\""'
-            ] fun () =>
+            ] \ () =>
                 [] |> view_list_to_fragment
             |> element_to_view
         ]

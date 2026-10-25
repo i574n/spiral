@@ -48,59 +48,37 @@ end
 deriving instance Inhabited for M3
 mutual
 partial def spiralMain : IO Int32 := do
-    let mut v0 : Int32 := default
-    let mut v1 : String := default
-    let mut v2 : H0 := default
-    let mut v3 : Int32 := default
-    let mut v4 : H1 := default
-    let mut v5 : Int32 := default
-    let mut v6 : H2 := default
     let mut v7 : (IO.Ref M3) ← IO.mkRef default
-    let mut v8 : Int32 := default
-    let mut v9 : String := default
-    let mut v10 : H0 := default
-    let mut v11 : Int32 := default
-    let mut v12 : H1 := default
-    let mut v13 : Int32 := default
-    let mut v14 : H2 := default
-    let mut v15 : H2 := default
-    let mut v16 : H1 := default
-    let mut v17 : Int32 := default
-    let mut v18 : H0 := default
-    let mut v19 : Int32 := default
-    let mut v20 : Int32 := default
-    let mut v21 : String := default
-    let mut v22 : Bool := default
     let mut v24 : Bool := default
     let mut v23 : Bool := default
     let mut v26 : Bool := default
     let mut v25 : Bool := default
     let mut v28 : Bool := default
     let mut v27 : Bool := default
-    v0 := (3 : Int32)
-    v1 := "no"
-    v2 := (H0.mk v0 v1)
-    v3 := (1 : Int32)
-    v4 := (H1.mk v2 v3)
-    v5 := (2 : Int32)
-    v6 := (H2.mk v4 v5)
+    let v0 : Int32 := (3 : Int32)
+    let v1 : String := "no"
+    let v2 : H0 := (H0.mk v0 v1)
+    let v3 : Int32 := (1 : Int32)
+    let v4 : H1 := (H1.mk v2 v3)
+    let v5 : Int32 := (2 : Int32)
+    let v6 : H2 := (H2.mk v4 v5)
     v7 := (← IO.mkRef (M3.mk v6))
-    v8 := (7 : Int32)
-    v9 := "hi"
-    v10 := (H0.mk v8 v9)
-    v11 := (4 : Int32)
-    v12 := (H1.mk v10 v11)
-    v13 := (5 : Int32)
-    v14 := (H2.mk v12 v13)
+    let v8 : Int32 := (7 : Int32)
+    let v9 : String := "hi"
+    let v10 : H0 := (H0.mk v8 v9)
+    let v11 : Int32 := (4 : Int32)
+    let v12 : H1 := (H1.mk v10 v11)
+    let v13 : Int32 := (5 : Int32)
+    let v14 : H2 := (H2.mk v12 v13)
     v7.modify (fun r => { r with l0 := v14 })
-    v15 := (← v7.get).l0
-    v16 := v15.l0
-    v17 := v15.l1
-    v18 := v16.l0
-    v19 := v16.l1
-    v20 := v18.l0
-    v21 := v18.l1
-    v22 := (v20 == (7 : Int32))
+    let v15 : H2 := (← v7.get).l0
+    let v16 : H1 := v15.l0
+    let v17 : Int32 := v15.l1
+    let v18 : H0 := v16.l0
+    let v19 : Int32 := v16.l1
+    let v20 : Int32 := v18.l0
+    let v21 : String := v18.l1
+    let v22 : Bool := (v20 == (7 : Int32))
     if v22 then
         v23 := (v21 == "hi")
         v24 := v23

@@ -31,8 +31,8 @@ function spiral_string_slice(value: string, from: number, to: number): string {
 }
 function f_c0(v0: string): ((a0: number) => number) {
     return (v1: number): number => {
-        let v2: number = spiral_string_length(v0);
-        let v3: number = (v2 + v1) | 0;
+        const v2: number = spiral_string_length(v0);
+        const v3: number = (v2 + v1) | 0;
         return v3;
     };
 }
@@ -40,23 +40,23 @@ function apply_1(v0: ((a0: number) => number), v1: number): number {
     return v0(v1);
 }
 function method0(v0: ((a0: number) => number), v1: number): number {
-    let v2: number = apply_1(v0, v1);
-    let v3: number = (v2 + 1) | 0;
+    const v2: number = apply_1(v0, v1);
+    const v3: number = (v2 + 1) | 0;
     return v3;
 }
 function method2(v0: ((a0: number) => number), v1: number): number {
-    let v2: number = apply_1(v0, v1);
-    let v3: number = (v2 + 2) | 0;
+    const v2: number = apply_1(v0, v1);
+    const v3: number = (v2 + 2) | 0;
     return v3;
 }
 export function main(): number {
-    let v0: string = "abc";
-    let v1: ((a0: number) => number) = f_c0(v0);
-    let v2: number = 16;
-    let v3: number = method0(v1, v2);
-    let v4: number = 17;
-    let v5: number = method2(v1, v4);
-    let v6: number = (v3 + v5) | 0;
+    const v0: string = "abc";
+    const v1: ((a0: number) => number) = f_c0(v0);
+    const v2: number = 16;
+    const v3: number = method0(v1, v2);
+    const v4: number = 17;
+    const v5: number = method2(v1, v4);
+    const v6: number = (v3 + v5) | 0;
     return v6;
 }
 process.exitCode = main();

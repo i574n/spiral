@@ -1,16 +1,16 @@
 /// # step_runtime
-open sm'_operators
+:< sm'_operators
 
 test step_runtime static =
-    open testing
+    :< testing
 
-union step s =
+:| step s =
     | Continue : s
     | Stop
 
-type actor s m = { init : () -> s; handle : s -> m -> step s }
+:== actor s m = { init : () -> s; handle : s -> m -> step s }
 
-type step_handle s m =
+:== step_handle s m =
     {
         state : mut (option s)
         mailbox : mut (list m)
@@ -18,88 +18,88 @@ type step_handle s m =
         handle : s -> m -> step s
     }
 
-type reply_cell t = mut (option t)
+:== reply_cell t = mut (option t)
 
 /// ### spawn
-inl spawn forall s m. (spec : actor s m) : step_handle s m =
-    { state = mut (Some (spec.init ())); mailbox = mut []; draining = mut false; handle = spec.handle }
+:= spawn \* s m. (spec : actor s m) : step_handle s m =
+    { state = mut (Some (spec.init ())); mailbox = mut []; draining = mut !-; handle = spec.handle }
 
 /// ### drain
-inl drain forall s m. (target : step_handle s m) : () =
-    inl draining = target.draining
-    inl mailbox = target.mailbox
-    inl state = target.state
-    if *draining |> not then
-        draining <- true
-        let rec 루프 () : () =
-            match *mailbox with
+:= drain \* s m. (target : step_handle s m) : () =
+    := draining = target.draining
+    := mailbox = target.mailbox
+    := state = target.state
+    ? *draining |> not ?>
+        draining <- !+
+        :~ ^ 루프 () : () =
+            ?= *mailbox ?|
             | [] => ()
             | message :: rest =>
                 mailbox <- rest
-                match *state with
+                ?= *state ?|
                 | Some current =>
-                    match target.handle current message with
+                    ?= target.handle current message ?|
                     | Continue next => state <- Some next
                     | Stop => state <- None
                 | None => ()
                 루프 ()
         루프 ()
-        draining <- false
+        draining <- !-
 
 /// ### send
-inl send forall s m. (target : step_handle s m) (message : m) : () =
-    inl mailbox = target.mailbox
+:= send \* s m. (target : step_handle s m) (message : m) : () =
+    := mailbox = target.mailbox
     mailbox <- *mailbox ++ [ message ]
     drain target
 
 /// ### reply
-inl reply forall t. (cell : reply_cell t) (value : t) : () =
+:= reply \* t. (cell : reply_cell t) (value : t) : () =
     cell <- Some value
 
 /// ### call
-inl call forall s m t. (target : step_handle s m) (request : reply_cell t -> m) : t =
-    inl cell : reply_cell t = mut None
+:= call \* s m t. (target : step_handle s m) (request : reply_cell t -> m) : t =
+    := cell : reply_cell t = mut None
     send target (request cell)
-    match *cell with
+    ?= *cell ?|
     | Some value => value
     | None => failwith "step_runtime.call: the actor stopped without replying"
 
-union counter_message r =
+:| counter_message r =
     | Add : i32
     | Read : r
 
-inl counter_actor forall r. (answer : r -> i32 -> ()) : actor i32 (counter_message r) =
+:= counter_actor \* r. (answer : r -> i32 -> ()) : actor i32 (counter_message r) =
     {
-        init = fun () => 0i32
-        handle = fun total message =>
-            match message with
+        init = \ () => 0i32
+        handle = \ total message =>
+            ?= message ?|
             | Add n => Continue (total + n)
             | Read to =>
                 answer to total
                 Continue total
     }
 
-inl counter_total forall h r.
+:= counter_total \* h r.
     (start : actor i32 (counter_message r) -> h)
     (post : h -> counter_message r -> ())
     (ask : h -> (r -> counter_message r) -> i32)
     (answer : r -> i32 -> ())
     : i32
     =
-    inl counter = start (counter_actor answer)
+    := counter = start (counter_actor answer)
     post counter (Add 3i32)
     post counter (Add 4i32)
     ask counter Read
 
-inl otp_start forall s m. (spec : actor s m) : erlang_process.subject m =
+:= otp_start \* s m. (spec : actor s m) : erlang_process.subject m =
     otp_actor.new_with_init 10000i32 spec.init
-    |> otp_actor.on_message fun state message =>
-        match spec.handle state message with
+    |> otp_actor.on_message \ state message =>
+        ?= spec.handle state message ?|
         | Continue next => otp_actor.continue next
         | Stop => otp_actor.stop ()
     |> otp_actor.start
     |> otp_actor.started_data
-    |> function
+    |> \|
         | Some inbox => inbox
         | None => failwith "step_runtime.otp_start: the actor did not start"
 
@@ -107,19 +107,19 @@ inl otp_start forall s m. (spec : actor s m) : erlang_process.subject m =
 ///> rust
 ///> c
 test counter_counts_on_every_backend =
-    run_target function
-        | Gleam => fun () =>
+    run_target \|
+        | Gleam => \ () =>
             counter_total otp_start otp_actor.send
-                fun inbox request => otp_actor.call inbox 10000i32 request
+                \ inbox request => otp_actor.call inbox 10000i32 request
                 erlang_process.send
-        | _ => fun () => counter_total spawn send call reply
+        | _ => \ () => counter_total spawn send call reply
     |> _assert_eq 7i32
 
 test stopped_actor_ignores_later_messages =
-    inl counter =
+    := counter =
         spawn {
-            init = fun () => 0i32
-            handle = fun total n => if n < 0i32 then Stop else Continue (total + n)
+            init = \ () => 0i32
+            handle = \ total n => ? n < 0i32 ?> Stop |: Continue (total + n)
         }
     send counter 5i32
     send counter -1i32
@@ -128,23 +128,23 @@ test stopped_actor_ignores_later_messages =
     |> _assert_eq None
 
 /// ### reactor_actor
-inl reactor_actor forall s i o. (program : reactors.reactor s i o) (clock : () -> i64) (emit : o -> ()) : actor s i =
-    inl react_once (state : s) (message : i) : step s =
-        inl next, out = program.react state { time = clock (); micro = 0i32 } message
+:= reactor_actor \* s i o. (program : reactors.reactor s i o) (clock : () -> i64) (emit : o -> ()) : actor s i =
+    := react_once (state : s) (message : i) : step s =
+        := next, out = program.react state { time = clock (); micro = 0i32 } message
         emit out
         Continue next
-    { init = fun () => program.init; handle = react_once }
+    { init = \ () => program.init; handle = react_once }
 
 ///> c
 ///> rust
 test reactor_actor_steps_each_message_at_the_clock_tag =
-    open reactors
-    inl last = mut (-1i64)
-    inl emit (out : signal i64) : () =
-        match out with
+    :< reactors
+    := last = mut (-1i64)
+    := emit (out : signal i64) : () =
+        ?= out ?|
         | Present v => last <- v
         | Absent => ()
-    inl counter = spawn (reactor_actor (sink ()) (fun () => 0i64) emit)
+    := counter = spawn (reactor_actor (sink ()) (\ () => 0i64) emit)
     send counter (Present 3i64)
     send counter Absent
     send counter (Present 4i64)

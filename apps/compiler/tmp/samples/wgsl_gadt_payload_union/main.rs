@@ -15,27 +15,27 @@ enum US0 {
     US0_Slain(US2),
 }
 fn spiral_main() -> i32 {
-    let mut v0: i32 = 60i32;
-    let mut v1: bool = v0 > 0i32;
-    let mut v6: US0 = if v1 {
-        let mut v2: US1 = US1::US1_Living(v0, 100i32);
-        US0::US0_Survived(v2.clone())
+    let v0: i32 = 60i32;
+    let v1: bool = v0 > 0i32;
+    let v6: US0 = if v1 {
+        let v2: US1 = US1::US1_Living(v0, 100i32);
+        US0::US0_Survived(v2)
     } else {
-        let mut v4: US2 = US2::US2_Fallen(100i32);
-        US0::US0_Slain(v4.clone())
+        let v4: US2 = US2::US2_Fallen(100i32);
+        US0::US0_Slain(v4)
     };
     match &v6 {
         US0::US0_Slain(v13) => {
-            let mut v13: US2 = v13.clone();
+            let v13: US2 = v13.clone();
             2i32
         }
         US0::US0_Survived(v7) => {
-            let mut v7: US1 = v7.clone();
+            let v7: US1 = v7.clone();
             match &v7 {
                 US1::US1_Living(v8, v9) => {
-                    let mut v8: i32 = *v8;
-                    let mut v9: i32 = *v9;
-                    let mut v10: bool = v8 == 60i32;
+                    let v8: i32 = *v8;
+                    let v9: i32 = *v9;
+                    let v10: bool = v8 == 60i32;
                     if v10 {
                         0i32
                     } else {

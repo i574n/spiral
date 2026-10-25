@@ -14,23 +14,18 @@ fun f_c0(v0: Float, v1: String): (Int) -> SpiralTuple0 {
     return { p0: Int -> body(p0) }
 }
 fun spiral_main(): Int {
-    var v0: Float = 0.0f
-    v0 = 1.5f
-    var v1: String = ""
-    v1 = "hi"
-    var v2: (Int) -> SpiralTuple0 = { _: Int -> throw RuntimeException() }
-    v2 = f_c0(v0, v1)
+    val v0: Float = 1.5f
+    val v1: String = "hi"
+    val v2: (Int) -> SpiralTuple0 = f_c0(v0, v1)
     var v3: Float = 0.0f
     var v4: String = ""
     val spiral_tuple257 = v2(1)
     v3 = spiral_tuple257.v0
     v4 = spiral_tuple257.v1
-    var v5: Boolean = false
-    v5 = (v3 == 1.5f)
+    val v5: Boolean = (v3 == 1.5f)
     var v7: Boolean = false
     if (v5) {
-        var v6: Boolean = false
-        v6 = (v4 == "hi")
+        val v6: Boolean = (v4 == "hi")
         v7 = v6
     } else {
         v7 = false

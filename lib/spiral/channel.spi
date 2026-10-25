@@ -1,99 +1,99 @@
 /// # channel
-open sm'_operators
+:< sm'_operators
 
 test channel static =
-    open testing
+    :< testing
 
 /// ## channel
 
 /// ### sender
-type sender_switch t =
+:== sender_switch t =
     {
         Gleam : $'process.Subject(`t)'
         Rust : $'std::sync::mpsc::Sender<`t>'
     }
-nominal sender t = $'backend_switch `(sender_switch t)'
+:! sender t = $'backend_switch `(sender_switch t)'
 
 /// ### receiver
-type receiver_switch t =
+:== receiver_switch t =
     {
         Gleam : $'process.Subject(`t)'
         Rust : $'std::sync::mpsc::Receiver<`t>'
     }
-nominal receiver t = $'backend_switch `(receiver_switch t)'
+:! receiver t = $'backend_switch `(receiver_switch t)'
 
 /// ### rust_waited
-nominal rust_waited t = $'Result<`t, std::sync::mpsc::RecvTimeoutError>'
+:! rust_waited t = $'Result<`t, std::sync::mpsc::RecvTimeoutError>'
 
 /// ### rust_sent
-nominal rust_sent t = $'Result<(), std::sync::mpsc::SendError<`t>>'
+:! rust_sent t = $'Result<(), std::sync::mpsc::SendError<`t>>'
 
 /// ### gleam_subject_of_sender
-inl gleam_subject_of_sender forall t. (to : sender t) : erlang_process.subject t =
+:= gleam_subject_of_sender \* t. (to : sender t) : erlang_process.subject t =
     $'!to' : erlang_process.subject t
 
 /// ### gleam_subject_of_receiver
-inl gleam_subject_of_receiver forall t. (from : receiver t) : erlang_process.subject t =
+:= gleam_subject_of_receiver \* t. (from : receiver t) : erlang_process.subject t =
     $'!from' : erlang_process.subject t
 
 /// ### rust_recv_timeout
-inl rust_recv_timeout forall t. (from : receiver t) (ms : u64) : rust_waited t =
+:= rust_recv_timeout \* t. (from : receiver t) (ms : u64) : rust_waited t =
     $'!from.recv_timeout(std::time::Duration::from_millis(!ms))' : rust_waited t
 
 /// ### rust_waited_ok
-inl rust_waited_ok forall t. (waited : rust_waited t) : bool =
+:= rust_waited_ok \* t. (waited : rust_waited t) : bool =
     $'!waited.is_ok()' : bool
 
 /// ### rust_waited_value
-inl rust_waited_value forall t. (waited : rust_waited t) : t =
+:= rust_waited_value \* t. (waited : rust_waited t) : t =
     $'!waited.unwrap()' : t
 
 /// ### channel
-inl channel forall t. () : sender t * receiver t =
+:= channel \* t. () : sender t * receiver t =
     backend_switch {
-        Gleam = fun () =>
-            inl subject : erlang_process.subject t = erlang_process.new_subject ()
-            inl to : sender t = $'!subject'
-            inl from : receiver t = $'!subject'
+        Gleam = \ () =>
+            := subject : erlang_process.subject t = erlang_process.new_subject ()
+            := to : sender t = $'!subject'
+            := from : receiver t = $'!subject'
             to, from
-        Rust = fun () => $'std::sync::mpsc::channel()' : sender t * receiver t
+        Rust = \ () => $'std::sync::mpsc::channel()' : sender t * receiver t
     }
 
 /// ### send
-inl send forall t. (to : sender t) (message : t) : () =
+:= send \* t. (to : sender t) (message : t) : () =
     backend_switch {
-        Gleam = fun () => erlang_process.send (gleam_subject_of_sender to) message
-        Rust = fun () => ($'!to.send(!message)' : rust_sent t) |> ignore
+        Gleam = \ () => erlang_process.send (gleam_subject_of_sender to) message
+        Rust = \ () => ($'!to.send(!message)' : rust_sent t) |> ignore
     }
 
 /// ### receive_within
-inl receive_within forall t. (from : receiver t) (timeout_ms : i32) : erlang_process.receipt t =
+:= receive_within \* t. (from : receiver t) (timeout_ms : i32) : erlang_process.receipt t =
     backend_switch {
-        Gleam = fun () => erlang_process.receive_within (gleam_subject_of_receiver from) timeout_ms
-        Rust = fun () =>
-            inl waited = rust_recv_timeout from (conv timeout_ms)
-            if rust_waited_ok waited then erlang_process.Got (rust_waited_value waited) else erlang_process.TimedOut
+        Gleam = \ () => erlang_process.receive_within (gleam_subject_of_receiver from) timeout_ms
+        Rust = \ () =>
+            := waited = rust_recv_timeout from (conv timeout_ms)
+            ? rust_waited_ok waited ?> erlang_process.Got (rust_waited_value waited) |: erlang_process.TimedOut
     }
 
 ///> rust
 ///> gleam
 test a_sent_message_is_received_and_an_empty_channel_times_out =
-    inl to, from = channel ()
+    := to, from = channel ()
     send to 42i32
-    inl got = receive_within from 1000i32 |> erlang_process.receipt_value
-    inl none = receive_within from 10i32 |> erlang_process.receipt_value
+    := got = receive_within from 1000i32 |> erlang_process.receipt_value
+    := none = receive_within from 10i32 |> erlang_process.receipt_value
     (got, none) |> _assert_eq (Some 42i32, None)
 
 /// ### spawn
-inl spawn (work : () -> ()) : () =
+:= spawn (work : () -> ()) : () =
     backend_switch {
-        Gleam = fun () => erlang_process.spawn work |> ignore
-        Rust = fun () => work |> threading.spawn (1, 0) 1 |> ignore
+        Gleam = \ () => erlang_process.spawn work |> ignore
+        Rust = \ () => work |> threading.spawn (1, 0) 1 |> ignore
     }
 
 ///> rust
 ///> gleam
 test a_spawned_worker_sends_across_threads =
-    inl to, from = channel ()
-    spawn fun () => send to 7i32
+    := to, from = channel ()
+    spawn \ () => send to 7i32
     receive_within from 2000i32 |> erlang_process.receipt_value |> _assert_eq (Some 7i32)

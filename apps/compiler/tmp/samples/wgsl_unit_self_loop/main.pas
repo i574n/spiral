@@ -9,21 +9,13 @@ procedure fill_0(v0: LongInt; v1: TArray0; v2: LongInt);
 var
   v3: Boolean;
   v4: LongInt;
-  tmp2: LongInt;
-  tmp3: TArray0;
-  tmp4: LongInt;
 begin
   while True do begin
       v3 := v2 < v0;
       if v3 then begin
           v1[v2] := v2;
           v4 := v2 + 1;
-          tmp2 := v0;
-          tmp3 := v1;
-          tmp4 := v4;
-          v0 := tmp2;
-          v1 := tmp3;
-          v2 := tmp4;
+          v2 := v4;
           Continue;
       end else begin
           Exit;

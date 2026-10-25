@@ -10,11 +10,9 @@ final class SpiralArray<T> {
 func spiral_main() -> Int32 {
     var v0: SpiralArray<Double> = SpiralArray<Double>([])
     v0 = SpiralArray<Double>(Array(repeating: (0.0 as Double), count: Int(1)))
-    var v1: Double = (0.0 as Double)
-    v1 = (1.5 as Double)
+    let v1: Double = (1.5 as Double)
     v0.items[Int(0)] = v1
-    var v2: Bool = false
-    v2 = true
+    let v2: Bool = true
     var v5: US0 = US0_Missing()
     if (v2) {
         v5 = US0_Held(f0: v0)
@@ -24,10 +22,8 @@ func spiral_main() -> Int32 {
     switch v5.tag {
         case 1:
             var v6: SpiralArray<Double> = (v5 as! US0_Held).f0
-            var v7: Double = (0.0 as Double)
-            v7 = v6.items[Int(0)]
-            var v8: Bool = false
-            v8 = (v7 == (1.5 as Double))
+            let v7: Double = v6.items[Int(0)]
+            let v8: Bool = (v7 == (1.5 as Double))
             if (v8) {
                 return 0
             } else {

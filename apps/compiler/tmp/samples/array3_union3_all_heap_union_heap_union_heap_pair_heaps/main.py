@@ -31,6 +31,7 @@ class Heap2(NamedTuple):
     v1 : i32
 class US0_None(NamedTuple): # None
     tag = 0
+US0_None_shared = US0_None()
 class US0_Held(NamedTuple): # Held
     v0 : Heap2
     tag = 1
@@ -39,6 +40,7 @@ class Heap3(NamedTuple):
     v0 : US0
 class US1_Absent(NamedTuple): # Absent
     tag = 0
+US1_Absent_shared = US1_Absent()
 class US1_Box(NamedTuple): # Box
     v0 : Heap3
     tag = 1
@@ -126,7 +128,7 @@ def main():
     if v9:
         v12 = US0_Held(v8)
     else:
-        v12 = US0_None()
+        v12 = US0_None_shared
     del v8, v9
     v13 = Heap3(v12)
     del v12
@@ -144,7 +146,7 @@ def main():
     del v18
     v19[1] = v20
     del v20
-    v21 = US1_Absent()
+    v21 = US1_Absent_shared
     v19[2] = v21
     del v21
     v22 = spiral_array_index(v19, 0)

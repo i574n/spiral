@@ -267,8 +267,7 @@ func sp_utf8_scalar_at_byte_offset_1(_ p0: String, _ p1: Int32) -> Int32 {
                                                 v83 = v82
                                             }
                                             if (v83) {
-                                                var v84: Int32 = 0
-                                                v84 = (v8 &- 240)
+                                                let v84: Int32 = (v8 &- 240)
                                                 var v85: Int32 = 0
                                                 v85 = (v84 &* 262144)
                                                 var v86: Int32 = 0
@@ -277,10 +276,8 @@ func sp_utf8_scalar_at_byte_offset_1(_ p0: String, _ p1: Int32) -> Int32 {
                                                 v87 = (v86 &* 4096)
                                                 var v88: Int32 = 0
                                                 v88 = (v85 &+ v87)
-                                                var v89: Int32 = 0
-                                                v89 = (v72 &- 128)
-                                                var v90: Int32 = 0
-                                                v90 = (v89 &* 64)
+                                                let v89: Int32 = (v72 &- 128)
+                                                let v90: Int32 = (v89 &* 64)
                                                 var v91: Int32 = 0
                                                 v91 = (v88 &+ v90)
                                                 var v92: Int32 = 0
@@ -578,8 +575,7 @@ func sp_utf8_canonical_equal_bounded_loop_0(_ p0: String, _ p1: String, _ p2: In
                                 v138 = 65
                                 v139 = 771
                             } else {
-                                var v95: Bool = false
-                                v95 = (v85 == 196)
+                                let v95: Bool = (v85 == 196)
                                 if (v95) {
                                     v138 = 65
                                     v139 = 776
@@ -590,68 +586,57 @@ func sp_utf8_canonical_equal_bounded_loop_0(_ p0: String, _ p1: String, _ p2: In
                                         v138 = 67
                                         v139 = 807
                                     } else {
-                                        var v97: Bool = false
-                                        v97 = (v85 == 201)
+                                        let v97: Bool = (v85 == 201)
                                         if (v97) {
                                             v138 = 69
                                             v139 = 769
                                         } else {
-                                            var v98: Bool = false
-                                            v98 = (v85 == 211)
+                                            let v98: Bool = (v85 == 211)
                                             if (v98) {
                                                 v138 = 79
                                                 v139 = 769
                                             } else {
-                                                var v99: Bool = false
-                                                v99 = (v85 == 213)
+                                                let v99: Bool = (v85 == 213)
                                                 if (v99) {
                                                     v138 = 79
                                                     v139 = 771
                                                 } else {
-                                                    var v100: Bool = false
-                                                    v100 = (v85 == 224)
+                                                    let v100: Bool = (v85 == 224)
                                                     if (v100) {
                                                         v138 = 97
                                                         v139 = 768
                                                     } else {
-                                                        var v101: Bool = false
-                                                        v101 = (v85 == 225)
+                                                        let v101: Bool = (v85 == 225)
                                                         if (v101) {
                                                             v138 = 97
                                                             v139 = 769
                                                         } else {
-                                                            var v102: Bool = false
-                                                            v102 = (v85 == 227)
+                                                            let v102: Bool = (v85 == 227)
                                                             if (v102) {
                                                                 v138 = 97
                                                                 v139 = 771
                                                             } else {
-                                                                var v103: Bool = false
-                                                                v103 = (v85 == 228)
+                                                                let v103: Bool = (v85 == 228)
                                                                 if (v103) {
                                                                     v138 = 97
                                                                     v139 = 776
                                                                 } else {
-                                                                    var v104: Bool = false
-                                                                    v104 = (v85 == 231)
+                                                                    let v104: Bool = (v85 == 231)
                                                                     if (v104) {
                                                                         v138 = 99
                                                                         v139 = 807
                                                                     } else {
-                                                                        var v105: Bool = false
-                                                                        v105 = (v85 == 233)
+                                                                        let v105: Bool = (v85 == 233)
                                                                         if (v105) {
                                                                             v138 = 101
                                                                             v139 = 769
                                                                         } else {
-                                                                            var v106: Bool = false
-                                                                            v106 = (v85 == 243)
+                                                                            let v106: Bool = (v85 == 243)
                                                                             if (v106) {
                                                                                 v138 = 111
                                                                                 v139 = 769
                                                                             } else {
-                                                                                var v107: Bool = false
-                                                                                v107 = (v85 == 245)
+                                                                                let v107: Bool = (v85 == 245)
                                                                                 if (v107) {
                                                                                     v138 = 111
                                                                                     v139 = 771
@@ -674,45 +659,28 @@ func sp_utf8_canonical_equal_bounded_loop_0(_ p0: String, _ p1: String, _ p2: In
                             }
                         }
                     }
-                    var v140: Int32 = 0
-                    v140 = (v3 &+ v91)
+                    let v140: Int32 = (v3 &+ v91)
                     v147 = v138
                     v148 = v140
                     v149 = v139
                 }
             }
         }
-        var v150: Bool = false
-        v150 = (v76 < 0)
+        let v150: Bool = (v76 < 0)
         if (v150) {
-            var v151: Bool = false
-            v151 = (v147 == -1)
+            let v151: Bool = (v147 == -1)
             return v151
         } else {
-            var v152: Bool = false
-            v152 = (v147 < 0)
+            let v152: Bool = (v147 < 0)
             if (v152) {
                 return false
             } else {
-                var v153: Bool = false
-                v153 = (v76 == v147)
+                let v153: Bool = (v76 == v147)
                 if (v153) {
-                    let t19390_0: String = v0
-                    let t19437_1: String = v1
-                    let t19484_77: Int32 = v77
-                    let t19532_148: Int32 = v148
-                    let t19582_78: Int32 = v78
-                    let t19630_149: Int32 = v149
-                    let t19680_6: Int32 = v6
-                    let t19726_7: Int32 = v7
-                    v0 = t19390_0
-                    v1 = t19437_1
-                    v2 = t19484_77
-                    v3 = t19532_148
-                    v4 = t19582_78
-                    v5 = t19630_149
-                    v6 = t19680_6
-                    v7 = t19726_7
+                    v2 = v77
+                    v3 = v148
+                    v4 = v78
+                    v5 = v149
                     continue
                 } else {
                     return false
@@ -723,10 +691,8 @@ func sp_utf8_canonical_equal_bounded_loop_0(_ p0: String, _ p1: String, _ p2: In
     return false
 }
 func spiral_main() -> Int32 {
-    var v0: String = ""
-    v0 = "plain"
-    var v1: Int32 = 0
-    v1 = 0
+    let v0: String = "plain"
+    let v1: Int32 = 0
     var v2: Int32 = 0
     v2 = 0
     var v3: Int32 = 0
@@ -735,8 +701,7 @@ func spiral_main() -> Int32 {
     v4 = -1
     var v5: Int32 = 0
     v5 = 5
-    var v6: Int32 = 0
-    v6 = 5
+    let v6: Int32 = 5
     var v7: Bool = false
     v7 = sp_utf8_canonical_equal_bounded_loop_0(v0, v0, v1, v2, v3, v4, v5, v6)
     var v8: String = ""
@@ -745,8 +710,7 @@ func spiral_main() -> Int32 {
     v9 = 0
     var v10: Int32 = 0
     v10 = 0
-    var v11: Int32 = 0
-    v11 = -1
+    let v11: Int32 = -1
     var v12: Int32 = 0
     v12 = -1
     var v13: Int32 = 0
@@ -825,38 +789,27 @@ func spiral_main() -> Int32 {
     v49 = 2
     var v50: Bool = false
     v50 = sp_utf8_canonical_equal_bounded_loop_0(v43, v43, v44, v45, v46, v47, v48, v49)
-    var v51: String = ""
-    v51 = "ẽ́"
+    let v51: String = "ẽ́"
     var v52: Int32 = 0
     v52 = 0
     var v53: Int32 = 0
     v53 = 0
-    var v54: Int32 = 0
-    v54 = -1
-    var v55: Int32 = 0
-    v55 = -1
-    var v56: Int32 = 0
-    v56 = 5
-    var v57: Int32 = 0
-    v57 = 5
-    var v58: Bool = false
-    v58 = sp_utf8_canonical_equal_bounded_loop_0(v26, v51, v52, v53, v54, v55, v56, v57)
-    var v59: String = ""
-    v59 = "é"
-    var v60: String = ""
-    v60 = "á"
-    var v61: Int32 = 0
-    v61 = 0
-    var v62: Int32 = 0
-    v62 = 0
+    let v54: Int32 = -1
+    let v55: Int32 = -1
+    let v56: Int32 = 5
+    let v57: Int32 = 5
+    let v58: Bool = sp_utf8_canonical_equal_bounded_loop_0(v26, v51, v52, v53, v54, v55, v56, v57)
+    let v59: String = "é"
+    let v60: String = "á"
+    let v61: Int32 = 0
+    let v62: Int32 = 0
     var v63: Int32 = 0
     v63 = -1
     var v64: Int32 = 0
     v64 = -1
     var v65: Int32 = 0
     v65 = 2
-    var v66: Int32 = 0
-    v66 = 2
+    let v66: Int32 = 2
     var v67: Bool = false
     v67 = sp_utf8_canonical_equal_bounded_loop_0(v59, v60, v61, v62, v63, v64, v65, v66)
     var v68: String = ""

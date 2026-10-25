@@ -4,9 +4,6 @@ pub fn spiral_string_length(text: String) -> Int {
   bit_array.byte_size(bit_array.from_string(text))
 }
 
-@external(erlang, "erlang", "halt")
-@external(javascript, "node:process", "exit")
-pub fn spiral_halt(code: Int) -> a
 
 pub fn spiral_string_index(text: String, index: Int) -> String {
   case bit_array.slice(bit_array.from_string(text), index, 1) {
@@ -60,34 +57,34 @@ pub fn middle_0(v0: String) -> String {
     v1
 }
 pub fn main() {
-let v0 = "alpha"
-let v1 = middle_0(v0)
-let v2 = spiral_string_length(v1)
-let v3 = v2 == 3
-case v3 {
-    True -> {
-        let v4 = spiral_string_index(v1, 0)
-        let v5 = v4 == "l"
-        case v5 {
-            True -> {
-                let v6 = spiral_string_index(v1, 2)
-                let v7 = v6 == "h"
-                case v7 {
-                    True -> {
-                        0
-                    }
-                    False -> {
-                        1
+    let v0 = "alpha"
+    let v1 = middle_0(v0)
+    let v2 = spiral_string_length(v1)
+    let v3 = v2 == 3
+    case v3 {
+        True -> {
+            let v4 = spiral_string_index(v1, 0)
+            let v5 = v4 == "l"
+            case v5 {
+                True -> {
+                    let v6 = spiral_string_index(v1, 2)
+                    let v7 = v6 == "h"
+                    case v7 {
+                        True -> {
+                            0
+                        }
+                        False -> {
+                            1
+                        }
                     }
                 }
-            }
-            False -> {
-                2
+                False -> {
+                    2
+                }
             }
         }
+        False -> {
+            3
+        }
     }
-    False -> {
-        3
-    }
-}
 }

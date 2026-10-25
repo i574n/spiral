@@ -10,10 +10,8 @@ func sp_method0(_ p0: Float, _ p1: Float) -> Float {
     return v3
 }
 func spiral_main() -> Int32 {
-    var v0: Float = (0.0 as Float)
-    v0 = (1.5 as Float)
-    var v1: Float = (0.0 as Float)
-    v1 = (2.0 as Float)
+    let v0: Float = (1.5 as Float)
+    let v1: Float = (2.0 as Float)
     var v2: Float = (0.0 as Float)
     v2 = sp_method0(v0, v1)
     var v3: Bool = false

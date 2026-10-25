@@ -1,80 +1,80 @@
 /// # erlang_process
-open sm'_operators
+:< sm'_operators
 
 test erlang_process static =
-    open testing
+    :< testing
 
-inl erlang_process_imports () =
+:= erlang_process_imports () =
     global "import gleam/erlang/process"
     global "import gleam/result"
 
-nominal subject t = $'process.Subject(`t)'
-nominal pid = $'process.Pid'
-nominal monitor = $'process.Monitor'
-nominal selector t = $'process.Selector(`t)'
-nominal timer = $'process.Timer'
-nominal down = $'process.Down'
-nominal exit_reason = $'process.ExitReason'
-nominal host_received t = $'Result(`t, Nil)'
-nominal name t = $'process.Name(`t)'
+:! subject t = $'process.Subject(`t)'
+:! pid = $'process.Pid'
+:! monitor = $'process.Monitor'
+:! selector t = $'process.Selector(`t)'
+:! timer = $'process.Timer'
+:! down = $'process.Down'
+:! exit_reason = $'process.ExitReason'
+:! host_received t = $'Result(`t, Nil)'
+:! name t = $'process.Name(`t)'
 
 /// ## receipt
 
 /// ### receipt
-union receipt t =
+:| receipt t =
     | Got : t
     | TimedOut
 
 /// ### host_received_is_ok
-inl host_received_is_ok forall t. (outcome : host_received t) : bool =
+:= host_received_is_ok \* t. (outcome : host_received t) : bool =
     erlang_process_imports ()
     $'result.is_ok(!outcome)' : bool
 
 /// ### host_received_value
-inl host_received_value forall t. (outcome : host_received t) : t =
+:= host_received_value \* t. (outcome : host_received t) : t =
     erlang_process_imports ()
     $'result.lazy_unwrap(!outcome, fn() { panic })' : t
 
 /// ### receipt_of
-inl receipt_of forall t. (outcome : host_received t) : receipt t =
-    if host_received_is_ok outcome then Got (host_received_value outcome) else TimedOut
+:= receipt_of \* t. (outcome : host_received t) : receipt t =
+    ? host_received_is_ok outcome ?> Got (host_received_value outcome) |: TimedOut
 
 /// ### receipt_value
-inl receipt_value forall t. (outcome : receipt t) : option t =
-    match outcome with
+:= receipt_value \* t. (outcome : receipt t) : option t =
+    ?= outcome ?|
     | Got value => Some value
     | TimedOut => None
 
 /// ## processes
 
 /// ### self
-inl self () : pid =
+:= self () : pid =
     erlang_process_imports ()
     $'process.self()'
 
 /// ### new_subject
-inl new_subject forall t. () : subject t =
+:= new_subject \* t. () : subject t =
     erlang_process_imports ()
     $'process.new_subject()'
 
 /// ### send
-inl send forall t. (to : subject t) (message : t) : () =
+:= send \* t. (to : subject t) (message : t) : () =
     erlang_process_imports ()
     $'process.send(!to, !message)'
 
 /// ### receive_within
-inl receive_within forall t. (from : subject t) (timeout_ms : i32) : receipt t =
+:= receive_within \* t. (from : subject t) (timeout_ms : i32) : receipt t =
     erlang_process_imports ()
     ($'process.receive(!from, !timeout_ms)' : host_received t) |> receipt_of
 
 /// ### receive_forever
-inl receive_forever forall t. (from : subject t) : t =
+:= receive_forever \* t. (from : subject t) : t =
     erlang_process_imports ()
     $'process.receive_forever(!from)'
 
 ///> gleam
 test send_then_receive =
-    inl inbox : subject i32 = new_subject ()
+    := inbox : subject i32 = new_subject ()
     send inbox 42i32
     receive_within inbox 1000i32
     |> receipt_value
@@ -82,106 +82,106 @@ test send_then_receive =
 
 ///> gleam
 test receive_times_out =
-    inl inbox : subject i32 = new_subject ()
+    := inbox : subject i32 = new_subject ()
     receive_within inbox 10i32
     |> receipt_value
     |> _assert_eq None
 
 /// ### spawn
-inl spawn (work : () -> ()) : pid =
+:= spawn (work : () -> ()) : pid =
     erlang_process_imports ()
     $'process.spawn(fn() { !work(Nil) })'
 
 /// ### spawn_unlinked
-inl spawn_unlinked (work : () -> ()) : pid =
+:= spawn_unlinked (work : () -> ()) : pid =
     erlang_process_imports ()
     $'process.spawn_unlinked(fn() { !work(Nil) })'
 
 ///> gleam
 test spawned_reply =
-    inl inbox : subject i32 = new_subject ()
-    spawn (fun () => send inbox 7i32) |> ignore
+    := inbox : subject i32 = new_subject ()
+    spawn (\ () => send inbox 7i32) |> ignore
     receive_forever inbox
     |> _assert_eq 7i32
 
 /// ## names
 
 /// ### new_name
-inl new_name forall t. (prefix : string) : name t =
+:= new_name \* t. (prefix : string) : name t =
     erlang_process_imports ()
     $'process.new_name(!prefix)'
 
 /// ### named_subject
-inl named_subject forall t. (address : name t) : subject t =
+:= named_subject \* t. (address : name t) : subject t =
     erlang_process_imports ()
     $'process.named_subject(!address)'
 
 /// ### register
-inl register forall t. (owner : pid) (address : name t) : bool =
+:= register \* t. (owner : pid) (address : name t) : bool =
     erlang_process_imports ()
     ($'process.register(!owner, !address)' : host_received ()) |> host_received_is_ok
 
 ///> gleam
 test a_named_subject_reaches_the_registered_process =
-    inl address : name i32 = new_name "lib_erlang_process_test"
-    inl registered = register (self ()) address
+    := address : name i32 = new_name "lib_erlang_process_test"
+    := registered = register (self ()) address
     send (named_subject address) 5i32
     (registered, receive_within (named_subject address) 1000i32 |> receipt_value)
-    |> _assert_eq (true, Some 5i32)
+    |> _assert_eq (!+, Some 5i32)
 
 /// ## calls
 
 /// ### call_forever
-inl call_forever forall m reply. (to : subject m) (request : subject reply -> m) : reply =
-    inl reply_to : subject reply = new_subject ()
+:= call_forever \* m reply. (to : subject m) (request : subject reply -> m) : reply =
+    := reply_to : subject reply = new_subject ()
     send to (request reply_to)
     receive_forever reply_to
 
 /// ### call_within
-inl call_within forall m reply.
+:= call_within \* m reply.
     (to : subject m) (timeout_ms : i32) (request : subject reply -> m)
     : receipt reply
     =
-    inl reply_to : subject reply = new_subject ()
+    := reply_to : subject reply = new_subject ()
     send to (request reply_to)
     receive_within reply_to timeout_ms
 
-union erlang_process_query r =
+:| erlang_process_query r =
     | ErlangProcessCount :: () -> erlang_process_query i32
     | ErlangProcessLabel :: () -> erlang_process_query string
 
-union erlang_process_ask =
+:| erlang_process_ask =
     | ErlangProcessAskCount : subject i32
     | ErlangProcessAskLabel : subject string
 
-inl erlang_process_wrap forall r. (q : erlang_process_query r) (reply : subject r) : erlang_process_ask =
-    match q with
+:= erlang_process_wrap \* r. (q : erlang_process_query r) (reply : subject r) : erlang_process_ask =
+    ?= q ?|
     | ErlangProcessCount () => ErlangProcessAskCount reply
     | ErlangProcessLabel () => ErlangProcessAskLabel reply
 
-inl erlang_process_answer (count : i32) (name : string) (request : erlang_process_ask) : () =
-    match request with
+:= erlang_process_answer (count : i32) (name : string) (request : erlang_process_ask) : () =
+    ?= request ?|
     | ErlangProcessAskCount reply => send reply count
     | ErlangProcessAskLabel reply => send reply name
 
 ///> gleam
 test a_typed_query_fixes_its_reply_type =
-    inl ready : subject (subject erlang_process_ask) = new_subject ()
-    spawn (fun () =>
-        inl inbox : subject erlang_process_ask = new_subject ()
+    := ready : subject (subject erlang_process_ask) = new_subject ()
+    spawn (\ () =>
+        := inbox : subject erlang_process_ask = new_subject ()
         send ready inbox
         inbox |> receive_forever |> erlang_process_answer 41i32 "x"
         inbox |> receive_forever |> erlang_process_answer 41i32 "x"
     )
     |> ignore
-    inl server = receive_forever ready
-    inl n : i32 = call_forever server (erlang_process_wrap (ErlangProcessCount ()))
-    inl s : string = call_forever server (erlang_process_wrap (ErlangProcessLabel ()))
+    := server = receive_forever ready
+    := n : i32 = call_forever server (erlang_process_wrap (ErlangProcessCount ()))
+    := s : string = call_forever server (erlang_process_wrap (ErlangProcessLabel ()))
     (n, s) |> _assert_eq (41i32, "x")
 
 ///> gleam
 test a_call_without_an_answer_times_out =
-    inl silent : subject erlang_process_ask = new_subject ()
+    := silent : subject erlang_process_ask = new_subject ()
     call_within silent 10i32 (erlang_process_wrap (ErlangProcessCount ()))
     |> receipt_value
     |> _assert_eq None
@@ -189,91 +189,91 @@ test a_call_without_an_answer_times_out =
 /// ## monitors
 
 /// ### monitor
-inl monitor (watched : pid) : monitor =
+:= monitor (watched : pid) : monitor =
     erlang_process_imports ()
     $'process.monitor(!watched)'
 
 /// ### demonitor
-inl demonitor (watch : monitor) : () =
+:= demonitor (watch : monitor) : () =
     erlang_process_imports ()
     $'process.demonitor_process(!watch)'
 
 /// ### new_selector
-inl new_selector forall t. () : selector t =
+:= new_selector \* t. () : selector t =
     erlang_process_imports ()
     $'process.new_selector()'
 
 /// ### select_map
-inl select_map forall t u. (from : subject t) (mapping : t -> u) (choices : selector u) : selector u =
+:= select_map \* t u. (from : subject t) (mapping : t -> u) (choices : selector u) : selector u =
     erlang_process_imports ()
     $'process.select_map(!choices, !from, !mapping)'
 
 /// ### select_specific_monitor
-inl select_specific_monitor forall u. (watch : monitor) (mapping : down -> u) (choices : selector u) : selector u =
+:= select_specific_monitor \* u. (watch : monitor) (mapping : down -> u) (choices : selector u) : selector u =
     erlang_process_imports ()
     $'process.select_specific_monitor(!choices, !watch, !mapping)'
 
 /// ### selector_receive_within
-inl selector_receive_within forall t. (choices : selector t) (timeout_ms : i32) : receipt t =
+:= selector_receive_within \* t. (choices : selector t) (timeout_ms : i32) : receipt t =
     erlang_process_imports ()
     ($'process.selector_receive(!choices, !timeout_ms)' : host_received t) |> receipt_of
 
 /// ### selector_receive_forever
-inl selector_receive_forever forall t. (choices : selector t) : t =
+:= selector_receive_forever \* t. (choices : selector t) : t =
     erlang_process_imports ()
     $'process.selector_receive_forever(!choices)'
 
 /// ### down_reason
-let down_reason (event : down) : exit_reason =
+:~ down_reason (event : down) : exit_reason =
     erlang_process_imports ()
     $'!event.reason'
 
 /// ### exited_normally
-inl exited_normally (reason : exit_reason) : bool =
+:= exited_normally (reason : exit_reason) : bool =
     erlang_process_imports ()
     $'!reason == process.Normal'
 
 ///> gleam
 test monitor_sees_normal_exit =
-    inl ready : subject (subject ()) = new_subject ()
-    inl worker =
-        spawn_unlinked fun () =>
-            inl go : subject () = new_subject ()
+    := ready : subject (subject ()) = new_subject ()
+    := worker =
+        spawn_unlinked \ () =>
+            := go : subject () = new_subject ()
             send ready go
             receive_forever go
-    inl go = receive_forever ready
-    inl watch = monitor worker
+    := go = receive_forever ready
+    := watch = monitor worker
     send go ()
-    inl choices : selector bool = new_selector () |> select_specific_monitor watch (down_reason >> exited_normally)
+    := choices : selector bool = new_selector () |> select_specific_monitor watch (down_reason >> exited_normally)
     selector_receive_forever choices
-    |> _assert_eq true
+    |> _assert_eq !+
 
 /// ## timers
 
 /// ### send_after
-inl send_after forall t. (to : subject t) (delay_ms : i32) (message : t) : timer =
+:= send_after \* t. (to : subject t) (delay_ms : i32) (message : t) : timer =
     erlang_process_imports ()
     $'process.send_after(!to, !delay_ms, !message)'
 
 /// ### cancel_timer
-inl cancel_timer (pending : timer) : () =
+:= cancel_timer (pending : timer) : () =
     erlang_process_imports ()
     $'process.cancel_timer(!pending)' : ()
 
 /// ## runtime
 
 /// ### kill
-inl kill (target : pid) : () =
+:= kill (target : pid) : () =
     erlang_process_imports ()
     $'process.kill(!target)'
 
 /// ### is_alive
-inl is_alive (target : pid) : bool =
+:= is_alive (target : pid) : bool =
     erlang_process_imports ()
     $'process.is_alive(!target)'
 
 /// ### schedulers_online
-inl schedulers_online () : i32 =
+:= schedulers_online () : i32 =
     global "import gleam/erlang/atom"
     global "@external(erlang, \"erlang\", \"system_info\") fn erlang_process_system_info(item: atom.Atom) -> Int"
     $'erlang_process_system_info(atom.create("schedulers_online"))'

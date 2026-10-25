@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 typedef struct UH0 UH0;
-void UHDecref0(UH0 * x);
+static void UHDecref0(UH0 * x);
 typedef struct Fun0 Fun0;
 struct Fun0{
     int refc;
@@ -34,7 +34,7 @@ static inline void UHDecrefBody0(UH0 * x){
         }
     }
 }
-void UHDecref0(UH0 * x){
+static void UHDecref0(UH0 * x){
     if (x != NULL && --(x->refc) == 0) { UHDecrefBody0(x); free(x); }
 }
 UH0 * UH0_Cons(uint64_t v0, Fun0 * v1) { // Cons
@@ -45,33 +45,25 @@ UH0 * UH0_Cons(uint64_t v0, Fun0 * v1) { // Cons
     return x;
 }
 UH0 * UH0_Nil() { // Nil
-    UH0 * x = malloc(sizeof(UH0));
-    x->tag = 1;
-    x->refc = 1;
-    return x;
+    static UH0 x = { .refc = 1073741823, .tag = 1 };
+    return &x;
 }
-UH0 * build0(uint64_t v0);
+static UH0 * build0(uint64_t v0);
 static inline void ClosureDecrefBody0(Closure0 * x){
     (void)x;
 }
-void ClosureDecref0(Fun0 * self){
+static void ClosureDecref0(Fun0 * self){
     Closure0 * x = (Closure0 *) self;
     if (x != NULL && --(x->base.refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
-UH0 * closure0(Fun0 * self){
+static UH0 * closure0(Fun0 * self){
     Closure0 * x = (Closure0 *) self;
     uint64_t v0 = x->v0;
-    
     ClosureDecref0(self);
-    
-    
-    uint64_t v1;
-    v1 = v0 - 1ull;
-    
-    
+    uint64_t v1 = v0 - 1ull;
     return build0(v1);
 }
-Fun0 * ClosureCreate0(uint64_t v0){
+static Fun0 * ClosureCreate0(uint64_t v0){
     Closure0 * x = malloc(sizeof(Closure0));
     x->base.refc = 1;
     x->base.decref_fptr = ClosureDecref0;
@@ -79,44 +71,25 @@ Fun0 * ClosureCreate0(uint64_t v0){
     x->v0 = v0;
     return &x->base;
 }
-UH0 * build0(uint64_t v0){
-    
-    
-    bool v1;
-    v1 = v0 == 0ull;
-    
-    
+static UH0 * build0(uint64_t v0){
+    bool v1 = v0 == 0ull;
     if (v1){
-        
-        
         return UH0_Nil();
     } else {
-        
-        
-        Fun0 * v3;
-        v3 = ClosureCreate0(v0);
-        
-        
+        Fun0 * v3 = ClosureCreate0(v0);
         return UH0_Cons(v0, v3);
     }
 }
-uint64_t sum1(UH0 * v0, uint64_t v1){
+static uint64_t sum1(UH0 * v0, uint64_t v1){
     while (1) {
-        
-        
         switch (v0->tag) {
             case 0: { // Cons
                 uint64_t v2 = v0->case0.v0; Fun0 * v3 = v0->case0.v1;
                 (v3)->refc += 2;
                 UHDecref0(v0);
-                UH0 * v4;
-                v4 = v3->fptr(v3);
-                
+                UH0 * v4 = v3->fptr(v3);
                 (v3)->decref_fptr(v3);
-                uint64_t v5;
-                v5 = v1 + v2;
-                
-                
+                uint64_t v5 = v1 + v2;
                 {
                     UH0 * tmp0 = v4;
                     uint64_t tmp1 = v5;
@@ -127,8 +100,6 @@ uint64_t sum1(UH0 * v0, uint64_t v1){
                 break;
             }
             default: { // Nil
-                
-                
                 UHDecref0(v0);
                 return v1;
                 break;
@@ -137,43 +108,16 @@ uint64_t sum1(UH0 * v0, uint64_t v1){
     }
 }
 int32_t main(){
-    
-    
-    uint64_t v0;
-    v0 = 10ull;
-    
-    
-    UH0 * v1;
-    v1 = build0(v0);
-    
-    
-    uint64_t v2;
-    v2 = 0ull;
+    uint64_t v0 = 10ull;
+    UH0 * v1 = build0(v0);
+    uint64_t v2 = 0ull;
     (v1)->refc++;
-    
-    uint64_t v3;
-    v3 = sum1(v1, v2);
-    
+    uint64_t v3 = sum1(v1, v2);
     UHDecref0(v1);
-    int32_t v4;
-    v4 = 5l;
-    
-    
-    int32_t v5;
-    v5 = (int32_t)v3;
-    
-    
-    int32_t v6;
-    v6 = v4 * 2l;
-    
-    
-    int32_t v7;
-    v7 = v4 + v6;
-    
-    
-    int32_t v8;
-    v8 = v5 + v7;
-    
-    
+    int32_t v4 = 5l;
+    int32_t v5 = (int32_t)v3;
+    int32_t v6 = v4 * 2l;
+    int32_t v7 = v4 + v6;
+    int32_t v8 = v5 + v7;
     return v8;
 }

@@ -12,17 +12,13 @@ func f_c0(_ v0: Mut0) -> (Int32) -> Mut0 {
     }
 }
 func spiral_main() -> Int32 {
-    var v0: Mut0 = Mut0(l0: 0)
-    v0 = Mut0(l0: 1)
-    var v1: (Int32) -> Mut0 = { (_: Int32) -> Mut0 in fatalError("unreachable closure") }
-    v1 = f_c0(v0)
+    let v0: Mut0 = Mut0(l0: 1)
+    let v1: (Int32) -> Mut0 = f_c0(v0)
     var v2: Mut0 = Mut0(l0: 0)
     v2 = v1(1)
     v2.l0 = 7
-    var v3: Int32 = 0
-    v3 = v2.l0
-    var v4: Bool = false
-    v4 = (v3 == 7)
+    let v3: Int32 = v2.l0
+    let v4: Bool = (v3 == 7)
     if (v4) {
         return 0
     } else {

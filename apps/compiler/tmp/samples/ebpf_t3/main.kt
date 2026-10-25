@@ -18,14 +18,10 @@ fun sp_method2(p0: Int, p1: Int, p2: Int, p3: Int): SpiralTuple0 {
         if (v8) {
             return SpiralTuple0(v5, v6, v7)
         } else {
-            val t507_4: Int = v4
-            val t541_5: Int = v5
-            val t575_6: Int = v6
-            val t609_7: Int = v7
-            v0 = t507_4
-            v1 = t541_5
-            v2 = t575_6
-            v3 = t609_7
+            v0 = v4
+            v1 = v5
+            v2 = v6
+            v3 = v7
             continue
         }
     }

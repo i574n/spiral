@@ -1,29 +1,29 @@
-inl export forall t. (name : string) (f : t) : () = !!!!Export(name, f)
+:= export \* t. (name : string) (f : t) : () = !!!!Export(name, f)
 
-inl main () : i32 =
-    export "prepare" ((fun code => directives.prepare code) : string -> string)
+:= main () : i32 =
+    export "prepare" ((\ code => directives.prepare code) : string -> string)
     export
         "patch_rust"
-        ((fun (rust : string), (show : string) => cell.patch_rust rust show) : string * string -> string)
-    export "split_output" ((fun output => cell.split_output output) : string -> string)
-    export "unit_result" ((fun output => cell.unit_result output) : string -> string)
-    export "package_project" ((fun includes => cell.package_project includes) : string -> string)
-    export "parse_dib" ((fun text => document.parse_dib text) : string -> string)
-    export "to_spi" ((fun text => document.to_spi text) : string -> string)
-    export "to_spir" ((fun text => document.to_spir text) : string -> string)
-    export "to_spi_tested" ((fun text => document.to_spi_tested text) : string -> string)
-    export "to_spir_tested" ((fun text => document.to_spir_tested text) : string -> string)
-    export "from_spi" ((fun (spi : string), (spir : string) => document.from_spi spi spir) : string * string -> string)
+        ((\ (rust : string), (show : string) => cell.patch_rust rust show) : string * string -> string)
+    export "split_output" ((\ output => cell.split_output output) : string -> string)
+    export "unit_result" ((\ output => cell.unit_result output) : string -> string)
+    export "package_project" ((\ includes => cell.package_project includes) : string -> string)
+    export "parse_dib" ((\ text => document.parse_dib text) : string -> string)
+    export "to_spi" ((\ text => document.to_spi text) : string -> string)
+    export "to_spir" ((\ text => document.to_spir text) : string -> string)
+    export "to_spi_tested" ((\ text => document.to_spi_tested text) : string -> string)
+    export "to_spir_tested" ((\ text => document.to_spir_tested text) : string -> string)
+    export "from_spi" ((\ (spi : string), (spir : string) => document.from_spi spi spir) : string * string -> string)
     export
         "from_spi_bounded"
         (
-            fun (spi : string), (spir : string), (spi_bounds : string), (spir_bounds : string) =>
+            \ (spi : string), (spir : string), (spi_bounds : string), (spir_bounds : string) =>
                 document.from_spi_bounded spi spir spi_bounds spir_bounds
             : string * string * string * string -> string
         )
-    export "test_index" ((fun text => document.test_index text) : string -> string)
-    export "target_backend" ((fun tool => targets.backend (targets.target_of tool)) : string -> string)
-    export "target_extension" ((fun tool => targets.extension (targets.target_of tool)) : string -> string)
-    export "plan" ((fun text => notebook.plan text) : string -> string)
-    export "plan_tests" ((fun text => notebook.plan_tests text) : string -> string)
+    export "test_index" ((\ text => document.test_index text) : string -> string)
+    export "target_backend" ((\ tool => targets.backend (targets.target_of tool)) : string -> string)
+    export "target_extension" ((\ tool => targets.extension (targets.target_of tool)) : string -> string)
+    export "plan" ((\ text => notebook.plan text) : string -> string)
+    export "plan_tests" ((\ text => notebook.plan_tests text) : string -> string)
     0i32

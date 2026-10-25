@@ -18,10 +18,10 @@ typedef struct {
 static inline void MutDecrefBody0(Mut0 * x){
     (void)x;
 }
-void MutDecref0(Mut0 * x){
+static void MutDecref0(Mut0 * x){
     if (x != NULL && --(x->refc) == 0) { MutDecrefBody0(x); free(x); }
 }
-Mut0 * MutCreate0(int32_t v0){
+static Mut0 * MutCreate0(int32_t v0){
     Mut0 * x = malloc(sizeof(Mut0));
     x->refc = 1;
     x->v0 = v0;
@@ -57,64 +57,36 @@ US0 US0_Held(Mut0 * v0) { // Held
     return x;
 }
 static inline void AssignMut0(int32_t * a0, int32_t b0){
-    
-    
     *a0 = b0;
 }
 int32_t main(){
-    
-    
-    Mut0 * v0;
-    v0 = MutCreate0(1l);
-    
-    
-    bool v1;
-    v1 = true;
-    
-    
+    Mut0 * v0 = MutCreate0(1l);
+    bool v1 = true;
     US0 v4;
     if (v1){
         (v0)->refc++;
-        
         v4 = US0_Held(v0);
     } else {
-        
-        
         v4 = US0_Missing();
     }
-    
     MutDecref0(v0);
     switch (v4.tag) {
         case 1: { // Held
             Mut0 * v5 = v4.case1.v0;
             (v5)->refc++;
             USDecref0(&(v4));
-            
             AssignMut0(&(v5->v0), 7l);
-            
-            
-            int32_t v6;
-            v6 = v5->v0;
-            
+            int32_t v6 = v5->v0;
             MutDecref0(v5);
-            bool v7;
-            v7 = v6 == 7l;
-            
-            
+            bool v7 = v6 == 7l;
             if (v7){
-                
-                
                 return 0l;
             } else {
-                
-                
                 return 1l;
             }
             break;
         }
         default: { // Missing
-            
-            
             USDecref0(&(v4));
             return 1l;
             break;

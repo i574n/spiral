@@ -1,6 +1,3 @@
-local function spiral_wrap_unsigned(value, bits)
-    return value % (2 ^ bits)
-end
 local function spiral_wrap_signed(value, bits)
     local modulus = 2 ^ bits
     value = value % modulus
@@ -29,11 +26,10 @@ function walk_0(v0)
         end
     end
     local v6 = getv6()
-    local __v = { v6 }
-    if __v[1] ~= nil and __v[1].tag == "Us0_Step" then
-        local v7 = __v[1]._1
-        local v8 = __v[1]._2
-        local v9 = __v[1]._3
+    if v6 ~= nil and v6.tag == "Us0_Step" then
+        local v7 = v6._1
+        local v8 = v6._2
+        local v9 = v6._3
         local v10 = spiral_wrap_signed(spiral_mul_mod32(v8, v9), 32)
         local v11 = spiral_wrap_signed((v7 + v10), 32)
         return v11

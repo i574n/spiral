@@ -9,10 +9,8 @@ func sp_sum_0(_ p0: US0) -> Int32 {
         case 1:
             var v2: Int32 = (v0 as! US0_Both).f0
             var v3: Int32 = (v0 as! US0_Both).f1
-            var v4: Int32 = 0
-            v4 = (v2 &* 10)
-            var v5: Int32 = 0
-            v5 = (v4 &+ v3)
+            let v4: Int32 = (v2 &* 10)
+            let v5: Int32 = (v4 &+ v3)
             return v5
         case 0:
             var v1: Int32 = (v0 as! US0_One).f0
@@ -22,8 +20,7 @@ func sp_sum_0(_ p0: US0) -> Int32 {
     }
 }
 func spiral_main() -> Int32 {
-    var v0: Bool = false
-    v0 = true
+    let v0: Bool = true
     var v3: US0 = US0_One(f0: 0)
     if (v0) {
         v3 = US0_Both(f0: 3, f1: 4)
@@ -36,16 +33,12 @@ func spiral_main() -> Int32 {
     } else {
         v6 = US0_Both(f0: 1, f1: 1)
     }
-    var v7: Int32 = 0
-    v7 = sp_sum_0(v3)
-    var v8: Bool = false
-    v8 = (v7 == 34)
+    let v7: Int32 = sp_sum_0(v3)
+    let v8: Bool = (v7 == 34)
     var v11: Bool = false
     if (v8) {
-        var v9: Int32 = 0
-        v9 = sp_sum_0(v6)
-        var v10: Bool = false
-        v10 = (v9 == 5)
+        let v9: Int32 = sp_sum_0(v6)
+        let v10: Bool = (v9 == 5)
         v11 = v10
     } else {
         v11 = false

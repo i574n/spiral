@@ -26,32 +26,20 @@ static inline Tuple0 TupleCreate0(int32_t v0, int32_t v1){
 static inline void ClosureDecrefBody0(Closure0 * x){
     (void)x;
 }
-void ClosureDecref0(Fun0 * self){
+static void ClosureDecref0(Fun0 * self){
     Closure0 * x = (Closure0 *) self;
     if (x != NULL && --(x->base.refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
-Tuple0 closure0(Fun0 * self, int32_t v1, int32_t v2){
+static Tuple0 closure0(Fun0 * self, int32_t v1, int32_t v2){
     Closure0 * x = (Closure0 *) self;
     int32_t v0 = x->v0;
-    
     ClosureDecref0(self);
-    
-    
-    int32_t v3;
-    v3 = v1 - 8l;
-    
-    
-    int32_t v4;
-    v4 = v3 + v0;
-    
-    
-    int32_t v5;
-    v5 = v2 - 18l;
-    
-    
+    int32_t v3 = v1 - 8l;
+    int32_t v4 = v3 + v0;
+    int32_t v5 = v2 - 18l;
     return TupleCreate0(v4, v5);
 }
-Fun0 * ClosureCreate0(int32_t v0){
+static Fun0 * ClosureCreate0(int32_t v0){
     Closure0 * x = malloc(sizeof(Closure0));
     x->base.refc = 1;
     x->base.decref_fptr = ClosureDecref0;
@@ -59,42 +47,20 @@ Fun0 * ClosureCreate0(int32_t v0){
     x->v0 = v0;
     return &x->base;
 }
-Tuple0 method0(Fun0 * v0){
-    
-    
+static Tuple0 method0(Fun0 * v0){
     return v0->fptr(v0, 10l, 20l);
 }
 int32_t main(){
-    
-    
-    int32_t v0;
-    v0 = 1l;
-    
-    
-    Fun0 * v1;
-    v1 = ClosureCreate0(v0);
+    int32_t v0 = 1l;
+    Fun0 * v1 = ClosureCreate0(v0);
     (v1)->refc++;
-    
     int32_t v2; int32_t v3;
     Tuple0 tmp0 = method0(v1);
     v2 = tmp0.v0; v3 = tmp0.v1;
-    
     (v1)->decref_fptr(v1);
-    int32_t v4;
-    v4 = 10l + v2;
-    
-    
-    int32_t v5;
-    v5 = 20l + v3;
-    
-    
-    int32_t v6;
-    v6 = v4 + v5;
-    
-    
-    int32_t v7;
-    v7 = v6 + 7l;
-    
-    
+    int32_t v4 = 10l + v2;
+    int32_t v5 = 20l + v3;
+    int32_t v6 = v4 + v5;
+    int32_t v7 = v6 + 7l;
     return v7;
 }

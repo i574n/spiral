@@ -6,15 +6,15 @@ fn method1(mut v0: i32, mut v1: u32, mut v2: f32) -> (i32, u32, f32) {
 }
 fn method0(mut v0: i32, mut v1: u32, mut v2: f32) -> i32 {
     let (mut v3, mut v4, mut v5): (i32, u32, f32) = method1(v0, v1, v2);
-    let mut v6: bool = v3 == 2i32;
-    let mut v8: bool = if v6 {
-        let mut v7: bool = v4 == 3u32;
+    let v6: bool = v3 == 2i32;
+    let v8: bool = if v6 {
+        let v7: bool = v4 == 3u32;
         v7
     } else {
         false
     };
-    let mut v10: bool = if v8 {
-        let mut v9: bool = v5 == 1.5f32;
+    let v10: bool = if v8 {
+        let v9: bool = v5 == 1.5f32;
         v9
     } else {
         false
@@ -26,9 +26,9 @@ fn method0(mut v0: i32, mut v1: u32, mut v2: f32) -> i32 {
     }
 }
 fn spiral_main() -> i32 {
-    let mut v0: i32 = 2i32;
-    let mut v1: u32 = 3u32;
-    let mut v2: f32 = 1.5f32;
+    let v0: i32 = 2i32;
+    let v1: u32 = 3u32;
+    let v2: f32 = 1.5f32;
     method0(v0, v1, v2)
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }

@@ -26,16 +26,12 @@ def spiralStringSlice (s : String) (a b : Int) : IO String := do
 mutual
 partial def invalid_middle_0 (p0 : String) : IO String := do
     let mut v0 : String := p0
-    let mut v1 : String := default
-    v1 := (← spiralStringSlice v0 (SpiralToInt.toI (1 : Int32)) (SpiralToInt.toI (1 : Int32)))
+    let v1 : String := (← spiralStringSlice v0 (SpiralToInt.toI (1 : Int32)) (SpiralToInt.toI (1 : Int32)))
     return v1
 partial def spiralMain : IO Int32 := do
-    let mut v0 : String := default
-    let mut v1 : String := default
-    let mut v2 : Int32 := default
-    v0 := "é"
-    v1 := (← invalid_middle_0 v0)
-    v2 := (Int32.ofNat v1.utf8ByteSize)
+    let v0 : String := "é"
+    let v1 : String := (← invalid_middle_0 v0)
+    let v2 : Int32 := (Int32.ofNat v1.utf8ByteSize)
     return v2
 end
 def main : IO UInt32 := do

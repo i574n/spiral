@@ -46,51 +46,32 @@ fun sp_empty_source_2(p0: String): String {
     return v1
 }
 fun spiral_main(): Int {
-    var v0: String = ""
-    v0 = "alpha"
+    val v0: String = "alpha"
     var v1: String = ""
     v1 = sp_empty_middle_0(v0)
-    var v2: String = ""
-    v2 = sp_empty_end_1(v0)
-    var v3: String = ""
-    v3 = ""
-    var v4: String = ""
-    v4 = sp_empty_source_2(v3)
-    var v5: String = ""
-    v5 = (v1 + v2)
-    var v6: String = ""
-    v6 = (v4 + "ok")
-    var v7: String = ""
-    v7 = (v5 + v6)
-    var v8: Int = 0
-    v8 = spiralStringLength(v1)
-    var v9: Boolean = false
-    v9 = (v8 == 0)
+    val v2: String = sp_empty_end_1(v0)
+    val v3: String = ""
+    val v4: String = sp_empty_source_2(v3)
+    val v5: String = (v1 + v2)
+    val v6: String = (v4 + "ok")
+    val v7: String = (v5 + v6)
+    val v8: Int = spiralStringLength(v1)
+    val v9: Boolean = (v8 == 0)
     if (v9) {
-        var v10: Int = 0
-        v10 = spiralStringLength(v2)
-        var v11: Boolean = false
-        v11 = (v10 == 0)
+        val v10: Int = spiralStringLength(v2)
+        val v11: Boolean = (v10 == 0)
         if (v11) {
-            var v12: Int = 0
-            v12 = spiralStringLength(v4)
-            var v13: Boolean = false
-            v13 = (v12 == 0)
+            val v12: Int = spiralStringLength(v4)
+            val v13: Boolean = (v12 == 0)
             if (v13) {
-                var v14: Int = 0
-                v14 = spiralStringLength(v7)
-                var v15: Boolean = false
-                v15 = (v14 == 2)
+                val v14: Int = spiralStringLength(v7)
+                val v15: Boolean = (v14 == 2)
                 if (v15) {
-                    var v16: Int = 0
-                    v16 = spiralStringIndex(v7, 0)
-                    var v17: Boolean = false
-                    v17 = (v16 == 111)
+                    val v16: Int = spiralStringIndex(v7, 0)
+                    val v17: Boolean = (v16 == 111)
                     if (v17) {
-                        var v18: Int = 0
-                        v18 = spiralStringIndex(v7, 1)
-                        var v19: Boolean = false
-                        v19 = (v18 == 107)
+                        val v18: Int = spiralStringIndex(v7, 1)
+                        val v19: Boolean = (v18 == 107)
                         if (v19) {
                             return 0
                         } else {

@@ -1,29 +1,29 @@
 /// # platform
 test platform static =
-    open testing
+    :< testing
 
-open rust.rust_operators
+:< rust.rust_operators
 
 /// ## fsharp
 
 /// ### os_platform
-nominal os_platform' = $'System.Runtime.InteropServices.OSPlatform'
+:! os_platform' = $'System.Runtime.InteropServices.OSPlatform'
 
-union os_platform =
+:| os_platform =
     | FreeBSD
     | Linux
     | OSX
     | Windows
 
-inl os_platform = function
+:= os_platform = \|
     | FreeBSD => $'`os_platform'.FreeBSD' : os_platform'
     | Linux => $'`os_platform'.Linux' : os_platform'
     | OSX => $'`os_platform'.OSX' : os_platform'
     | Windows => $'`os_platform'.Windows' : os_platform'
 
 /// ### run_platform
-inl run_platform forall t. (fn : os_platform -> (() -> t)) : t =
-    inl result = dyn true
+:= run_platform \* t. (fn : os_platform -> (() -> t)) : t =
+    := result = dyn !+
     $'let mutable _run_platform_!result : `t option = None '
     $'\n\#if _FREEBSD'
     fn FreeBSD () |> emit_unit
@@ -39,37 +39,37 @@ inl run_platform forall t. (fn : os_platform -> (() -> t)) : t =
         _run_platform_!result=None"'
 
 /// ### is_os_platform
-inl is_os_platform (x : os_platform') : bool =
+:= is_os_platform (x : os_platform') : bool =
     x |> $'System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform'
 
 /// ### is_windows'
-inl is_windows' () : bool =
-    run_platform function
-        | Windows => fun () => true
-        | _ => fun () => false
+:= is_windows' () : bool =
+    run_platform \|
+        | Windows => \ () => !+
+        | _ => \ () => !-
 
 /// ## platform
 
 /// ### is_windows
-inl is_windows () : bool =
-    run_target function
-        | Rust => fun () => $'cfg\!(windows)' : bool
-        | Fsharp => fun () => Windows |> os_platform |> is_os_platform
-        | Gleam => fun () =>
+:= is_windows () : bool =
+    run_target \|
+        | Rust => \ () => $'cfg\!(windows)' : bool
+        | Fsharp => \ () => Windows |> os_platform |> is_os_platform
+        | Gleam => \ () =>
             backend_switch {
-                Gleam = fun () =>
+                Gleam = \ () =>
                     global "import gleam/erlang/atom"
                     global "@external(erlang, \"os\", \"type\") fn platform_os_type() -> #(atom.Atom, atom.Atom)"
             }
             $'atom.to_string(platform_os_type().0) == "win32"' : bool
-        | Zig => fun () => $'(\@import("builtin").os.tag == .windows)' : bool
-        | _ => fun () => failwith "platform.is_windows / no arm for this target"
+        | Zig => \ () => $'(\@import("builtin").os.tag == .windows)' : bool
+        | _ => \ () => failwith "platform.is_windows / no arm for this target"
 
 /// ### get_executable_suffix
-inl get_executable_suffix () =
-    if is_windows ()
-    then ".exe"
-    else ""
+:= get_executable_suffix () =
+    ? is_windows ()
+    ?> ".exe"
+    |: ""
 
 test get_executable_suffix =
     get_executable_suffix ()
@@ -77,6 +77,6 @@ test get_executable_suffix =
 /// ## main
 ///> fsharp
 
-inl main () =
+:= main () =
     $'let is_windows () = !is_windows ()' : ()
     $'let get_executable_suffix () = !get_executable_suffix ()' : ()

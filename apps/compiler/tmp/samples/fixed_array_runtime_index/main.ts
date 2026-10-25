@@ -7,14 +7,14 @@ function spiral_array_set<T>(array: T[], index: number, value: T): void {
     array[index] = value;
 }
 export function main(): number {
-    let v0: Array<number> = new Array<number>(4).fill(0);
+    const v0: Array<number> = new Array<number>(4).fill(0);
     spiral_array_set(v0, 0, 2);
     spiral_array_set(v0, 1, 3);
     spiral_array_set(v0, 2, 5);
     spiral_array_set(v0, 3, 7);
-    let v1: number = 2;
-    let v2: number = spiral_array_index(v0, v1);
-    let v3: number = (v2 - 5) | 0;
+    const v1: number = 2;
+    const v2: number = spiral_array_index(v0, v1);
+    const v3: number = (v2 - 5) | 0;
     return v3;
 }
 process.exitCode = main();

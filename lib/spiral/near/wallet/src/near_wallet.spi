@@ -1,30 +1,30 @@
 /// # near_wallet
 
 /// ## near_wallet
-open lustre
+:< lustre
 
 /// ### model
-type model = int
+:== model = int
 
 /// ### init
-inl init initial_count : model =
-    if initial_count < 0
-    then 0
-    else initial_count
+:= init initial_count : model =
+    ? initial_count < 0
+    ?> 0
+    |: initial_count
 
 /// ### msg
-union msg =
+:| msg =
     | Incr
     | Decr
 
 /// ### update
-inl update n (model, msg) =
-    match msg with
+:= update n (model, msg) =
+    ?= msg ?|
     | Incr => model + n
     | Decr => model - n
 
 /// ### view
-inl view model =
+:= view model =
     div [
         style [
             "display", "flex"
@@ -59,10 +59,10 @@ inl view model =
 /// ## tests
 ///> gleam -t javascript -d lustre=\">=4.6.0\" lustre_ui=\"1.0.0-rc.1\" gleam_json=\">=2.0.0\"
 test tests =
-    inl model = init (dyn -3i32)
-    inl model = update 1i32 (model, Incr)
-    inl model = update 1i32 (model, Incr)
-    inl model = update 1i32 (model, Decr)
+    := model = init (dyn -3i32)
+    := model = update 1i32 (model, Incr)
+    := model = update 1i32 (model, Incr)
+    := model = update 1i32 (model, Decr)
     model
     |> view
     |> to_html
@@ -75,8 +75,8 @@ test tests =
 
 ///> gleam -t javascript -d lustre=\">=4.6.0\" lustre_ui=\"1.0.0-rc.1\" gleam_json=\">=2.0.0\"
 test tests_2 =
-    inl model = init (dyn 5i32)
-    inl model = update 2i32 (model, Decr)
+    := model = init (dyn 5i32)
+    := model = update 2i32 (model, Decr)
     model
     |> view
     |> to_html
@@ -90,9 +90,9 @@ test tests_2 =
 /// ## main
 ///> _
 
-inl main' (n : int) =
+:= main' (n : int) =
     simple init (update 1) view
     |> start "#app_"
 
-inl main () =
+:= main () =
     $'!main' (0)' : ()

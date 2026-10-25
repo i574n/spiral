@@ -19,18 +19,15 @@ func sp_score_0(_ p0: US0) -> Int32 {
     }
 }
 func spiral_main() -> Int32 {
-    var v0: Bool = false
-    v0 = true
+    let v0: Bool = true
     var v3: US0 = US0_Hit(f0: 0)
     if (v0) {
         v3 = US0_Hit(f0: 7)
     } else {
         v3 = US0_Miss(f0: 3)
     }
-    var v4: Int32 = 0
-    v4 = sp_score_0(v3)
-    var v5: Int32 = 0
-    v5 = (v4 &- 7)
+    let v4: Int32 = sp_score_0(v3)
+    let v5: Int32 = (v4 &- 7)
     return v5
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

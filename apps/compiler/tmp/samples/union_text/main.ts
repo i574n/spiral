@@ -8,11 +8,10 @@ function score_0(v0: US0): number {
         case 1: {
             let v4: number = v0.f0;
             return v4;
-            break;
         }
         case 0: {
-            let v1: string = v0.f0;
-            let v2: boolean = v1 === "hi";
+            const v1: string = v0.f0;
+            const v2: boolean = v1 === "hi";
             if (v2) {
                 return 2;
             } else {
@@ -24,8 +23,8 @@ function score_0(v0: US0): number {
     }
 }
 export function main(): number {
-    let v0: boolean = true;
-    let v1: string = "hi";
+    const v0: boolean = true;
+    const v1: string = "hi";
     let v4: US0;
     if (v0) {
         v4 = US0_Text(v1);
@@ -38,12 +37,12 @@ export function main(): number {
     } else {
         v7 = US0_Text(v1);
     }
-    let v8: number = score_0(v4);
-    let v9: boolean = v8 === 2;
+    const v8: number = score_0(v4);
+    const v9: boolean = v8 === 2;
     let v12: boolean;
     if (v9) {
-        let v10: number = score_0(v7);
-        let v11: boolean = v10 === 5;
+        const v10: number = score_0(v7);
+        const v11: boolean = v10 === 5;
         v12 = v11;
     } else {
         v12 = false;

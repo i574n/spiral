@@ -4,11 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 int32_t main(){
-    
-    
-    int32_t v0;
-    v0 = 0;
-    
-    
+    int32_t v0 = 0;
     return 0l;
 }

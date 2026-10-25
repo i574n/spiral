@@ -27,26 +27,20 @@ mutual
 partial def f_c0 (p0 : Int8) (p1 : Int32) : IO (Int8 × Int8) := do
     let mut v0 : Int8 := p0
     let mut v1 : Int32 := p1
-    let mut v2 : Bool := default
-    v2 := (v1 == (0 : Int32))
+    let v2 : Bool := (v1 == (0 : Int32))
     if v2 then
         return ((0 : Int8), (0 : Int8))
     else
         return (v0, (7 : Int8))
 partial def spiralMain : IO Int32 := do
-    let mut v0 : Int8 := default
-    let mut v1 : (Int32 → IO (Int8 × Int8)) := default
-    let mut v2 : Int8 := default
-    let mut v3 : Int8 := default
-    let mut v4 : Bool := default
     let mut v6 : Bool := default
     let mut v5 : Bool := default
-    v0 := (100 : Int8)
-    v1 := (f_c0 v0)
+    let v0 : Int8 := (100 : Int8)
+    let v1 : (Int32 → IO (Int8 × Int8)) := (f_c0 v0)
     let (r1_0, r1_1) := (← v1 (1 : Int32))
-    v2 := r1_0
-    v3 := r1_1
-    v4 := (v2 == (100 : Int8))
+    let v2 : Int8 := r1_0
+    let v3 : Int8 := r1_1
+    let v4 : Bool := (v2 == (100 : Int8))
     if v4 then
         v5 := (v3 == (7 : Int8))
         v6 := v5
