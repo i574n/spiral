@@ -99,15 +99,20 @@ defmodule Spiral.Cells.Html do
         File.write!(path, source)
 
         try do
-          case System.cmd(dotnet, [dll, "tokens", path], stderr_to_stdout: false) do
-            {out, 0} -> parse_tokens(out)
-            _ -> []
+          case System.cmd(dotnet, [dll, "tokens", path], stderr_to_stdout: true) do
+            {out, 0} ->
+              parse_tokens(out)
+
+            {out, code} ->
+              IO.puts(:stderr, "spiral.html: no colors, '#{dotnet} #{dll} tokens' exited #{code}: #{out |> String.slice(0, 300) |> String.trim()}")
+              []
           end
         after
           File.rm(path)
         end
       end
     else
+      IO.puts(:stderr, "spiral.html: no colors, dotnet=#{inspect(dotnet)} compiler=#{dll} (exists: #{File.regular?(dll)})")
       fn _ -> [] end
     end
   end

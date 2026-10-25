@@ -1,0 +1,23 @@
+==================
+edition 3 test header symbol
+==================
+
+:# adds_two =
+    1i32
+
+test adds_three =
+    1i32
+
+---
+
+(source_file
+  (test_header
+    (test_keyword)
+    name: (test_name)
+    (test_signature))
+  (indented_line)
+  (test_header
+    (test_keyword)
+    name: (test_name)
+    (test_signature))
+  (indented_line))

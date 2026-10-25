@@ -1,5 +1,6 @@
 ///- --package .
 :< sm'_operators
+
 :| ^ rx =
     | RxNone
     | RxEps
@@ -7,6 +8,7 @@
     | RxSeq : rx * rx
     | RxAlt : rx * rx
     | RxStar : rx
+    | RxRepeat : rx * i32 * i32
 
 := cp_at (s : string) (i : i32) : u32 = xml.code_point_at s i
 
@@ -20,6 +22,7 @@
     | RxSeq _ => 3i32
     | RxAlt _ => 4i32
     | RxStar _ => 5i32
+    | RxRepeat _ => 6i32
 
 :~ ^ ranges_compare (a : list (u32 * u32)) (b : list (u32 * u32)) : i32 =
     ?= a ?|
@@ -61,6 +64,15 @@
                 ? first_order <> 0i32 ?> first_order |: rx_compare a_rest b_rest
             | _ => 0i32
         | RxStar a_inner => ?= b ?| RxStar b_inner => rx_compare a_inner b_inner | _ => 0i32
+        | RxRepeat (a_inner, a_low, a_high) =>
+            ?= b ?|
+            | RxRepeat (b_inner, b_low, b_high) =>
+                ? a_low < b_low ?> -1i32
+                |? a_low > b_low ?> 1i32
+                |? a_high < b_high ?> -1i32
+                |? a_high > b_high ?> 1i32
+                |: rx_compare a_inner b_inner
+            | _ => 0i32
         | _ => 0i32
 
 := seq (a : rx) (b : rx) : rx =
@@ -131,6 +143,17 @@
     | RxSeq (a, b) => nullable a && nullable b
     | RxAlt (a, b) => nullable a || nullable b
     | RxStar _ => !+
+    | RxRepeat (a, low, _) => low <= 0i32 || nullable a
+
+:= counted (atom : rx) (low : i32) (high : i32) : rx =
+    := low = ? low < 0i32 ?> 0i32 |: low
+    ? high <= 0i32 ?> RxEps
+    |? low = 1i32 && high = 1i32 ?> atom
+    |:
+        ?= atom ?|
+        | RxNone => ? low = 0i32 ?> RxEps |: RxNone
+        | RxEps => RxEps
+        | _ => RxRepeat (atom, low, high)
 
 :~ ^ in_ranges (c : u32) (ranges : list (u32 * u32)) : bool =
     ?= ranges ?|
@@ -161,6 +184,7 @@
         ? nullable a ?> alt_by form first (derive_by form c b) |: first
     | RxAlt (a, b) => alt_by form (derive_by form c a) (derive_by form c b)
     | RxStar a => seq_by form (derive_by form c a) r
+    | RxRepeat (a, low, high) => seq_by form (derive_by form c a) (counted a (low - 1i32) (high - 1i32))
 
 := derive (c : u32) (r : rx) : rx = derive_by AsWritten c r
 
@@ -177,10 +201,30 @@
     |? c = 116u32 ?> [ (9u32, 9u32) ]
     |: [ (c, c) ]
 
-:~ ^ repeat_n (atom : rx) (n : i32) : rx = ? n <= 0i32 ?> RxEps |: seq atom (repeat_n atom (n - 1i32))
+:= last_code_point () : u32 = 1114111u32
 
-:~ ^ optional_chain (atom : rx) (k : i32) : rx =
-    ? k <= 0i32 ?> RxEps |: alt_written RxEps (seq atom (optional_chain atom (k - 1i32)))
+:= block_range (name : string) : option (u32 * u32) =
+    ? name = "IsBasicLatin" ?> Some (0u32, 127u32)
+    |? name = "IsLatin-1Supplement" ?> Some (128u32, 255u32)
+    |? name = "IsLatinExtended-A" ?> Some (256u32, 383u32)
+    |? name = "IsLatinExtended-B" ?> Some (384u32, 591u32)
+    |: None
+
+:= outside_range (low : u32) (high : u32) : list (u32 * u32) =
+    := above = ? high < last_code_point () ?> [ (high + 1u32, last_code_point ()) ] |: Nil
+    ? low > 0u32 ?> (0u32, low - 1u32) :: above |: above
+
+:= unparsable (p : string) : i32 = sm'.length p + 1i32
+
+:= property_at (p : string) (i : i32) : option (list (u32 * u32) * i32) =
+    := kind = cp_at p (i + 1i32)
+    ? (kind = 112u32 || kind = 80u32) && cp_at p (i + 2i32) = 123u32 ?>
+        := close = xml.find_from "}" p (i + 3i32)
+        := block = ? close < 0i32 ?> None |: block_range (sm'.substring (i + 3i32) (close - i - 3i32) p)
+        ?= block ?|
+        | Some (low, high) => Some ((? kind = 80u32 ?> outside_range low high |: [ (low, high) ]), close + 1i32)
+        | None => Some (Nil, unparsable p)
+    |: None
 
 :~ ^ read_number (p : string) (i : i32) (acc : i32) : i32 * i32 =
     := c = cp_at p i
@@ -193,8 +237,11 @@
     |:
         := c = cp_at p i
         ? c = 92u32 ?>
-            := e = cp_at p (i + 1i32)
-            class_items p (i + 1i32 + cp_width p (i + 1i32)) (listm.append (escape_ranges e) acc)
+            ?= property_at p i ?|
+            | Some (ranges, next) => class_items p next (listm.append ranges acc)
+            | None =>
+                := e = cp_at p (i + 1i32)
+                class_items p (i + 1i32 + cp_width p (i + 1i32)) (listm.append (escape_ranges e) acc)
         |:
             := next = i + cp_width p i
             ? cp_at p next = 45u32 && cp_at p (next + 1i32) <> 93u32 && next + 1i32 < sm'.length p ?>
@@ -229,7 +276,10 @@
             := ranges, after = class_items p (i + 1i32) Nil
             RxClass (!-, ranges), after
     |? c = 46u32 ?> RxClass (!+, [ (10u32, 10u32); (13u32, 13u32) ]), i + 1i32
-    |? c = 92u32 ?> RxClass (!-, escape_ranges (cp_at p (i + 1i32))), i + 1i32 + cp_width p (i + 1i32)
+    |? c = 92u32 ?>
+        ?= property_at p i ?|
+        | Some (ranges, next) => RxClass (!-, ranges), next
+        | None => RxClass (!-, escape_ranges (cp_at p (i + 1i32))), i + 1i32 + cp_width p (i + 1i32)
     |: single c, i + cp_width p i
 
 :& :~ parse_quant (p : string) (i : i32) (atom : rx) : rx * i32 =
@@ -241,13 +291,13 @@
         |? c = 43u32 ?> seq atom (star atom), i + 1i32
         |? c = 123u32 ?>
             := n, after_n = read_number p (i + 1i32) 0i32
-            ? cp_at p after_n = 125u32 ?> repeat_n atom n, after_n + 1i32
+            ? cp_at p after_n = 125u32 ?> counted atom n n, after_n + 1i32
             |:
                 := after_comma = after_n + 1i32
-                ? cp_at p after_comma = 125u32 ?> seq (repeat_n atom n) (star atom), after_comma + 1i32
+                ? cp_at p after_comma = 125u32 ?> seq (counted atom n n) (star atom), after_comma + 1i32
                 |:
                     := m, after_m = read_number p after_comma 0i32
-                    seq (repeat_n atom n) (optional_chain atom (m - n)), after_m + 1i32
+                    counted atom n m, after_m + 1i32
         |: atom, i
 
 :~ ^ first_outside (ranges : list (u32 * u32)) (candidates : list u32) : u32 =
@@ -273,6 +323,7 @@
     | RxSeq (a, b) => example_with stars a ++# example_with stars b
     | RxAlt (a, _) => example_with stars a
     | RxStar a => repeated (example_with stars a) stars
+    | RxRepeat (a, low, _) => repeated (example_with stars a) low
 
 := compile_pattern (p : string) : option rx =
     := r, stop = parse_alt p 0i32
@@ -290,7 +341,30 @@
     | Some r => matches_from r s 0i32
     | None => !-
 
-:= last_code_point () : u32 = 1114111u32
+///> rust
+test patterns_match_like_xsd =
+    ? pattern_matches "[0-9]{8}" "12345678" = !- ?> failwith "eight digits"
+    ? pattern_matches "[0-9]{8}" "1234567" ?> failwith "seven digits rejected"
+    ? pattern_matches "1\\.04" "1.04" = !- ?> failwith "escaped dot"
+    ? pattern_matches "1\\.04" "1x04" ?> failwith "escaped dot is literal"
+    ? pattern_matches "[1-9]{1}[0-9]{0,10}" "123" = !- ?> failwith "bounded repeat"
+    ? pattern_matches "[1-9]{1}[0-9]{0,10}" "0123" ?> failwith "leading zero rejected"
+    ? pattern_matches "[^@]+@[^\\.]+\\..+" "a@b.c" = !- ?> failwith "negated classes"
+    ? pattern_matches "[^@]+@[^\\.]+\\..+" "ab.c" ?> failwith "missing at rejected"
+    ? pattern_matches "[!-ÿ]{1}[ -ÿ]{0,}[!-ÿ]{1}|[!-ÿ]{1}" "Ação Ltda" = !- ?> failwith "latin-1 text"
+    ? pattern_matches "[!-ÿ]{1}[ -ÿ]{0,}[!-ÿ]{1}|[!-ÿ]{1}" " leading" ?> failwith "leading space rejected"
+
+///> rust
+test block_escapes_read_code_point_ranges =
+    := latin = "[\\p{IsBasicLatin}\\p{IsLatin-1Supplement}]{1,60}"
+    ? pattern_matches latin "Mario Rossi S.p.A. 12" = !- ?> failwith "basic latin letters, digits, dots and spaces"
+    ? pattern_matches latin "Società à r.l." = !- ?> failwith "latin-1 supplement letters"
+    ? pattern_matches latin "Łódź" ?> failwith "latin extended-a is outside both blocks"
+    ? pattern_matches "(\\p{IsBasicLatin}{1,10})" "ABC-123" = !- ?> failwith "a block outside a class"
+    ? pattern_matches "(\\p{IsBasicLatin}{1,10})" "ABC-1234567" ?> failwith "the count still bounds a block"
+    ? pattern_matches "\\P{IsBasicLatin}" "à" = !- ?> failwith "a negated block"
+    ? pattern_matches "\\P{IsBasicLatin}" "a" ?> failwith "a negated block rejects its own range"
+    ?= compile_pattern "\\p{IsKlingon}" ?| Some _ => failwith "an unknown block does not compile" | None => ()
 
 :~ ^ insert_point (point : u32) (sorted : list u32) : list u32 =
     ?= sorted ?|
@@ -313,6 +387,7 @@
     | RxSeq (a, b) => interval_starts a (interval_starts b points)
     | RxAlt (a, b) => interval_starts a (interval_starts b points)
     | RxStar a => interval_starts a points
+    | RxRepeat (a, _, _) => interval_starts a points
     | RxNone => points
     | RxEps => points
 
@@ -412,10 +487,32 @@
 
 := dfa_matches (rows : list dfa_state) (s : string) : bool = dfa_run rows 0i32 s 0i32
 
+///> rust
+test dfa_keeps_xsd_semantics =
+    ?= dfa_of_pattern "[0-9]{2,4}|[A-Z]+" ?|
+    | Some rows =>
+        ? dfa_matches rows "12" = !- ?> failwith "two digits"
+        ? dfa_matches rows "1234" = !- ?> failwith "four digits"
+        ? dfa_matches rows "12345" ?> failwith "five digits rejected"
+        ? dfa_matches rows "ABC" = !- ?> failwith "letters"
+        ? dfa_matches rows "" ?> failwith "empty rejected"
+        ? dfa_matches rows "A1" ?> failwith "mixed rejected"
+    | None => failwith "small pattern builds a DFA"
+
 :~ ^ states_in (rows : list dfa_state) (count : i32) : i32 =
     ?= rows ?|
     | _ :: rest => states_in rest (count + 1i32)
     | Nil => count
+
+///> rust
+test bounded_repeats_build_one_state_per_count =
+    ?= dfa_of_pattern "[\\p{IsBasicLatin}\\p{IsLatin-1Supplement}]{1,1000}" ?|
+    | Some rows =>
+        ? states_in rows 0i32 <> 1001i32 ?> failwith "one state per remaining count"
+        ? dfa_matches rows (repeated "é" 1000i32) = !- ?> failwith "a thousand latin-1 letters"
+        ? dfa_matches rows (repeated "a" 1001i32) ?> failwith "a thousand and one rejected"
+        ? dfa_matches rows "" ?> failwith "empty rejected"
+    | None => failwith "a counted repeat stays within the state limit"
 
 :~ ^ count_compiled (text : string) (pos : i32) (acc : i32 * i32) : i32 * i32 =
     ? pos >= sm'.length text ?> acc
@@ -593,6 +690,16 @@
     := _, built = value_state values { register = Nil; rows = Nil; count = 0i32 }
     renumbered_rows (built.count - 1i32) built.rows Nil
 
+///> rust
+test value_sets_become_minimal_dfas =
+    := rows = dfa_of_values ("01001" :: "01002" :: "02001" :: "02002" :: "A" :: Nil)
+    ? states_in rows 0i32 <> 6i32 ?> failwith "shared suffixes merge into six states"
+    ? dfa_matches rows "02002" = !- ?> failwith "listed code"
+    ? dfa_matches rows "A" = !- ?> failwith "short code"
+    ? dfa_matches rows "01003" ?> failwith "unlisted code rejected"
+    ? dfa_matches rows "0100" ?> failwith "prefix rejected"
+    ? dfa_matches rows "" ?> failwith "empty rejected"
+
 :~ ^ zeros (count : i32) (acc : string) : string = ? count <= 0i32 ?> acc |: zeros (count - 1i32) ("0" ++# acc)
 
 := padded (n : i32) (width : i32) : string =
@@ -654,40 +761,6 @@
         ? next < 0i32 ?> !- |: table_run table next s (i + cp_width s i)
 
 := table_matches (table : string) (s : string) : bool = table_run table 0i32 s 0i32
-///> rust
-test patterns_match_like_xsd =
-    ? pattern_matches "[0-9]{8}" "12345678" = !- ?> failwith "eight digits"
-    ? pattern_matches "[0-9]{8}" "1234567" ?> failwith "seven digits rejected"
-    ? pattern_matches "1\\.04" "1.04" = !- ?> failwith "escaped dot"
-    ? pattern_matches "1\\.04" "1x04" ?> failwith "escaped dot is literal"
-    ? pattern_matches "[1-9]{1}[0-9]{0,10}" "123" = !- ?> failwith "bounded repeat"
-    ? pattern_matches "[1-9]{1}[0-9]{0,10}" "0123" ?> failwith "leading zero rejected"
-    ? pattern_matches "[^@]+@[^\\.]+\\..+" "a@b.c" = !- ?> failwith "negated classes"
-    ? pattern_matches "[^@]+@[^\\.]+\\..+" "ab.c" ?> failwith "missing at rejected"
-    ? pattern_matches "[!-ÿ]{1}[ -ÿ]{0,}[!-ÿ]{1}|[!-ÿ]{1}" "Ação Ltda" = !- ?> failwith "latin-1 text"
-    ? pattern_matches "[!-ÿ]{1}[ -ÿ]{0,}[!-ÿ]{1}|[!-ÿ]{1}" " leading" ?> failwith "leading space rejected"
-
-///> rust
-test dfa_keeps_xsd_semantics =
-    ?= dfa_of_pattern "[0-9]{2,4}|[A-Z]+" ?|
-    | Some rows =>
-        ? dfa_matches rows "12" = !- ?> failwith "two digits"
-        ? dfa_matches rows "1234" = !- ?> failwith "four digits"
-        ? dfa_matches rows "12345" ?> failwith "five digits rejected"
-        ? dfa_matches rows "ABC" = !- ?> failwith "letters"
-        ? dfa_matches rows "" ?> failwith "empty rejected"
-        ? dfa_matches rows "A1" ?> failwith "mixed rejected"
-    | None => failwith "small pattern builds a DFA"
-
-///> rust
-test value_sets_become_minimal_dfas =
-    := rows = dfa_of_values ("01001" :: "01002" :: "02001" :: "02002" :: "A" :: Nil)
-    ? states_in rows 0i32 <> 6i32 ?> failwith "shared suffixes merge into six states"
-    ? dfa_matches rows "02002" = !- ?> failwith "listed code"
-    ? dfa_matches rows "A" = !- ?> failwith "short code"
-    ? dfa_matches rows "01003" ?> failwith "unlisted code rejected"
-    ? dfa_matches rows "0100" ?> failwith "prefix rejected"
-    ? dfa_matches rows "" ?> failwith "empty rejected"
 
 ///> rust
 test dfa_tables_match_in_place =

@@ -1187,21 +1187,26 @@ module Program =
                 elif File.Exists path then [| path |]
                 else [||])
             |> Array.distinct
+        let profiled = files |> Array.map (fun file -> file, postabilityProfileFor file)
+        let unprofiled = profiled |> Array.choose (fun (file, profile) -> if profile.IsNone then Some file else None)
         let findings =
-            [ for file in files do
-                match postabilityProfileFor file with
+            [ for file, profile in profiled do
+                match profile with
                 | Some profile ->
                     for finding in xCompatFindings profile (File.ReadAllText file) do yield file, finding
                 | None -> () ]
         for file, finding in findings do printfn "%s" (xCompatReportLine file finding)
+        for file in unprofiled do
+            printfn "%s: no postability profile (no postability/*.json in an ancestor directory and SPIRAL_POSTABILITY_PROFILE unset)" file
         let byKind =
             findings
             |> List.countBy (fun (_, finding) -> xCompatKindName finding.kind)
             |> List.sortBy fst
             |> List.map (fun (kind, count) -> $"{kind} {count}")
             |> String.concat ", "
-        printfn "x-compat report: %d finding(s) in %d file(s)%s" findings.Length files.Length (if byKind = "" then "" else $" ({byKind})")
-        0
+        let unchecked = if unprofiled.Length = 0 then "" else $", {unprofiled.Length} unchecked without a profile"
+        printfn "x-compat report: %d finding(s) in %d file(s)%s%s" findings.Length files.Length (if byKind = "" then "" else $" ({byKind})") unchecked
+        if unprofiled.Length = 0 then 0 else 2
 
     [<EntryPoint>]
     let main rawArgv =

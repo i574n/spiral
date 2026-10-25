@@ -17,7 +17,7 @@ experiment.
 **Update 2026-10-01 06:50 (fix 54):** `runs/hopac-20261001-051209`: frontier 20/20 (with
 `frontier_static_list_eq` on four backends), contracts 606 + 1 no-oracle, examples 453/453, mega 5/5,
 DISAGREE 0; the single-flight restore run after it matches. apps/spiral on gpt5parallel: past every semantic wall,
-attempt 14 then ground in the declared-body resume-snapshot pruning (NEXT.md); attempt 15 runs with
+attempt 14 then ground in the declared-body resume-snapshot pruning (NEXT.md@47d1e562); attempt 15 runs with
 `SPIRAL_HOPAC_INLINE_JP=1` (`$CLAUDE_JOB_DIR/tmp/apps_spiral_hopac15_inline.txt`).
 
 **Status 2026-10-01 04:00 (fixes 21-53):** `runs/hopac-20261001-025722` (`-Suite all -Native`, 2 workers)
@@ -35,7 +35,7 @@ Native: 359 ran, DISAGREE 0. Every oracle row is reproduced. The single-flight r
 (`single-flight-20261001-035430`) matches it row for row.
 
 **apps/spiral.** Single-flight builds it again (exit 0, 738 s, 2.79 MB of F#; the committed `spiral.fsx`
-from 2025-12-30 is 2.79 MB too): the wall was a library bug, not either core (`sm'.span_from`, NEXT.md).
+from 2025-12-30 is 2.79 MB too): the wall was a library bug, not either core (`sm'.span_from`, NEXT.md@47d1e562).
 gpt5parallel still fails on it (attempt 12: `EJP0011` at `listm'.try_item`, 1,025 re-entries). Reduced to
 `samples/frontier_static_list_eq` (accepted from single-flight, 4 backends): gpt5parallel does not fold `=` between
 two static lists. `if [ ' '; '/' ] = [] then 1 else 0` is `0` in single-flight; gpt5parallel emits a join point
@@ -64,8 +64,8 @@ Fixes 45-47 (`runs/hopac-20260930-193524`, 21:10): 61 rows `missing` with `Build
 (`runs/hopac-20260930-212855`): 113/113 ok, 0 verdict changes against 17:16. So 44-47 change no verdict;
 suite timings are only meaningful on a quiet machine.
 Compile phase 2,053 s, median job 4.1 s. Native: 359 ran, DISAGREE 0. The 21 UNEXPECTED-OUTPUT rows
-are single-flight-identical "(expression)" outputs awaiting the next accept run (NEXT.md). `apps/spiral`: see
-fix 44 (2 pending join points left, then a codegen wait on an unfilled cell; NEXT.md).
+are single-flight-identical "(expression)" outputs awaiting the next accept run (NEXT.md@47d1e562). `apps/spiral`: see
+fix 44 (2 pending join points left, then a codegen wait on an unfilled cell; NEXT.md@47d1e562).
 
 **Status 2026-09-30 (fixes 21-37):** `pwsh scripts/test.ps1 -Mode gpt5parallel -Suite all -Native`
 (`<cache>/runs/hopac-20260930-050954`, 3 workers, `SPIRAL_DIAG_QUIET=1` from the matrix):
@@ -80,7 +80,7 @@ fix 44 (2 pending join points left, then a codegen wait on an unfilled cell; NEX
 No `missing` row. The 21 UNEXPECTED-OUTPUT rows are F# outputs that end in an expression, which the host
 now accepts. They need single-flight rebuilt with the same host and the oracle re-accepted. Native: 359
 ran, 1 DISAGREE (Rust `managed_string_invalid_utf8_slice`, a shared `codegenRust` issue, fixed right after
-this run: both lanes now DISAGREE 0). The NATIVE-DIFF rows are translator-era oracle values (NEXT.md). Compile phase 2,390 s, median job 4.2 s (`frontier_hello`
+this run: both lanes now DISAGREE 0). The NATIVE-DIFF rows are translator-era oracle values (NEXT.md@47d1e562). Compile phase 2,390 s, median job 4.2 s (`frontier_hello`
 ~3 s). Two known races can still flip a row: 34 (replay values per AST node) and 38 (multi-package
 type checking).
 
@@ -673,7 +673,7 @@ against 28 KB) and `native_cube_direct`, which used to stall, finishing with sta
     from the dependency. Five mega brzozowski rows recorded that program as their oracle. Both cores now
     fail the build (`Cannot find main ...: the file does not define it, and it has errors`, then
     `path:line:col` per error) when the entry does not define `main` itself and has tokenizer or parser
-    errors; gpt5parallel reads the bundles without blocking (fix 33). NEXT.md item 1 for the oracle side.
+    errors; gpt5parallel reads the bundles without blocking (fix 33). NEXT.md@47d1e562 item 1 for the oracle side.
 
 **apps/spiral attempt 7 (21:00, split Debug build, fixes 44-48): evaluation reached the root.** At 2,041 s
 the heartbeat recorded `progress_pct=100`, `root_complete_receipts=1`, `terminal_signals=2`; then nothing

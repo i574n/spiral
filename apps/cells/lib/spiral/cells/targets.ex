@@ -376,7 +376,7 @@ defmodule Spiral.Cells.Targets do
 
   defp build_and_run_gleam(package, manifest, target, opts, timeout, deadline) do
     with {:ok, _built} <- gleam_build(package, manifest, opts, timeout, deadline) do
-      run_gleam_program(package, target, opts, Keyword.put(opts, :cwd, package), timeout, deadline)
+      run_gleam_program(package, target, opts, Keyword.put(opts, :cwd, opts[:root] || package), timeout, deadline)
     end
   end
 

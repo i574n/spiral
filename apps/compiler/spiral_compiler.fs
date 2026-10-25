@@ -43193,6 +43193,7 @@ module spiral_compiler =
         | ":<" -> Some (TokKeyword SpecOpen) | "~>" -> Some (TokKeyword SpecReal)
         | "~~" -> Some (TokKeyword SpecJoin) | "~~>" -> Some (TokKeyword SpecJoinBackend)
         | "!+" -> Some (TokValue (LitBool true)) | "!-" -> Some (TokValue (LitBool false))
+        | ":#" -> Some (TokVar ("test", SemanticTokenLegend.variable))
         | _ -> None
 
     /// ### operator
@@ -43706,6 +43707,7 @@ module spiral_compiler =
         | StringIndex
         | StringSlice
         | StaticStringConcat
+        | PrimToString
         | Printf // Cuda specific
         | StdoutFlush // Portable explicit stdout flush
         | MonotonicDelayMs // Portable bounded monotonic delay in milliseconds
@@ -44526,6 +44528,57 @@ module spiral_compiler =
         | RawForall _ | RawFun _ as x -> adjust_join_point is_let name x
         | x -> x
 
+    /// ### OrPatternJoin
+    module OrPatternJoin =
+        let rec private boundVars (pattern : Pattern) : string list =
+            match pattern with
+            | PatVar(_,x) -> [ x ]
+            | PatDyn(_,x) | PatAnnot(_,x,_) | PatNominal(_,_,_,x) | PatUnbox(_,_,x) | PatWhen(_,x,_) | PatExists(_,_,x) -> boundVars x
+            | PatPair(_,x,y) | PatAnd(_,x,y) -> boundVars x @ boundVars y
+            | PatOr(_,x,_) -> boundVars x
+            | PatArray(_,l) -> List.collect boundVars l
+            | PatRecordMembers(_,l) -> l |> List.collect (function PatRecordMembersSymbol(_,x) | PatRecordMembersInjectVar(_,x) -> boundVars x)
+            | PatB _ | PatE _ | PatSymbol _ | PatValue _ | PatDefaultValue _ | PatFilledDefaultValue _ -> []
+
+        let rec private typeDirected (pattern : Pattern) : bool =
+            match pattern with
+            | PatAnnot _ | PatExists _ | PatFilledDefaultValue _ | PatDefaultValue _ | PatNominal _ -> true
+            | PatDyn(_,x) | PatUnbox(_,_,x) | PatWhen(_,x,_) -> typeDirected x
+            | PatPair(_,x,y) | PatOr(_,x,y) | PatAnd(_,x,y) -> typeDirected x || typeDirected y
+            | PatRecordMembers(_,l) -> l |> List.exists (function PatRecordMembersSymbol(_,x) | PatRecordMembersInjectVar(_,x) -> typeDirected x)
+            | PatArray(_,l) -> List.exists typeDirected l
+            | PatB _ | PatE _ | PatVar _ | PatSymbol _ | PatValue _ -> false
+
+        let private trivial (body : RawExpr) =
+            match body with
+            | RawLit _ | RawV _ | RawSymbol _ | RawB _ -> true
+            | _ -> false
+
+        let private lifted (pattern : Pattern) (body : RawExpr) =
+            match pattern with
+            | PatOr _ -> not (trivial body) && not (typeDirected pattern)
+            | _ -> false
+
+        let private parameters (r : VSCRange) (vars : string list) : Pattern * RawExpr =
+            match vars with
+            | [] -> PatB r, RawB r
+            | [ x ] -> PatVar(r, x), rawv (r, x)
+            | x :: rest -> List.fold (fun (pattern, argument) y -> PatPair(r, pattern, PatVar(r, y)), RawPair(r, argument, rawv (r, y))) (PatVar(r, x), rawv (r, x)) rest
+
+        let lift (r : VSCRange) (scrutinee : RawExpr) (clauses : (Pattern * RawExpr) list) : RawExpr =
+            if not (clauses |> List.exists (fun (pattern, body) -> lifted pattern body)) then RawMatch(r, scrutinee, clauses)
+            else
+                let joins = ResizeArray<string * RawExpr> ()
+                let clauses =
+                    clauses |> List.map (fun (pattern, body) ->
+                        if lifted pattern body then
+                            let name = unintern $" or {joins.Count}"
+                            let parameter, argument = parameters r (boundVars pattern |> List.distinct)
+                            joins.Add (name, RawFun(r, [ parameter, RawJoinPoint(r, None, body, None) ]))
+                            pattern, RawApply(r, rawv (r, name), argument)
+                        else pattern, body)
+                Seq.foldBack (fun (name, join) inner -> RawMatch(r, join, [ PatVar(r, name), inner ])) joins (RawMatch(r, scrutinee, clauses))
+
     /// ### inl_or_let_process
     let inl_or_let_process (r, (is_let, is_rec, name, foralls, pats, body)) _ =
         match is_rec, name, foralls, pats with
@@ -45128,7 +45181,7 @@ module spiral_compiler =
                 <|> (fun d ->
                         let match_column = col d
                         let scrutinee d = next {d with continuation_column = Some match_column}
-                        (blockParsingRange ((skip_keyword SpecMatch >>. scrutinee .>> skip_keyword SpecWith) .>>. clauses) |>> fun (a,(b,c)) -> RawMatch(a,b,c)) d)
+                        (blockParsingRange ((skip_keyword SpecMatch >>. scrutinee .>> skip_keyword SpecWith) .>>. clauses) |>> fun (a,(b,c)) -> OrPatternJoin.lift a b c) d)
 
             let case_typecase d =
                 let clauses d =
@@ -45696,6 +45749,7 @@ module spiral_compiler =
         | StringIndex -> "StringIndex"
         | StringSlice -> "StringSlice"
         | StaticStringConcat -> "StaticStringConcat"
+        | PrimToString -> "PrimToString"
         | Printf -> "Printf"
         | StdoutFlush -> "StdoutFlush"
         | MonotonicDelayMs -> "MonotonicDelayMs"
@@ -50147,14 +50201,11 @@ module spiral_compiler =
     module RecordWithRetypeCensus =
         let output = System.Environment.GetEnvironmentVariable "SPIRAL_RECORD_WITH_CENSUS_OUT"
         let enabled = not (System.String.IsNullOrEmpty output)
-        let pending = System.Collections.Concurrent.ConcurrentQueue<unit -> string>()
-        let flushAtExit =
-            lazy (System.AppDomain.CurrentDomain.ProcessExit.Add(fun _ ->
-                let rows = pending |> Seq.map (fun row -> try row () with e -> "error\t" + e.Message) |> Seq.distinct |> Seq.toArray
-                try System.IO.File.AppendAllLines(output, rows) with _ -> ()))
-        let record (row : unit -> string) =
-            flushAtExit.Force()
-            pending.Enqueue row
+        let appendLock = obj ()
+        let append (rows : ResizeArray<unit -> string>) =
+            if rows.Count > 0 then
+                let text = rows |> Seq.map (fun row -> try row () with e -> "error\t" + e.Message) |> Seq.distinct |> Seq.toArray
+                lock appendLock (fun () -> try System.IO.File.AppendAllLines(output, text) with _ -> ())
 
     /// ### show_t
     let show_t (env : TopEnv) x =
@@ -50504,6 +50555,7 @@ module spiral_compiler =
         let at_tag i = {package_id=package_id; module_id=module_id; tag=i}
         let mutable top_env = top_env' // Is mutated only in two places at the top level. During actual inference can otherwise be thought of as immutable.
         let errors = ResizeArray()
+        let census_rows = ResizeArray<unit -> string>()
         let generalized_statements = Dictionary(HashIdentity.Reference)
         let type_apply_args = Dictionary(HashIdentity.Reference)
         let module_type_apply_args = Dictionary(HashIdentity.Reference)
@@ -51140,7 +51192,7 @@ module spiral_compiler =
                                 |> Option.iter (fun before ->
                                     let position : VSCPos = fst x.range
                                     let after = x.var
-                                    RecordWithRetypeCensus.record (fun () ->
+                                    census_rows.Add(fun () ->
                                         let a, b = show_t top_env before, show_t top_env after
                                         sprintf "%s\t%d\t%d\t%s\t%s\t%s" (if a = b then "same" else "retyped") (position.line + 1) (position.character + 1) x.symbol a b))
                             Map.add (i, x.symbol) x.var m
@@ -51243,7 +51295,7 @@ module spiral_compiler =
                         match visit_t s with TyRecord s -> bind s | _ -> ()
                         eval Map.empty
                     | _ :: l ->
-                        match with_base.Value, visit_t s with
+                        match visit_t with_base.Value, visit_t s with
                         | TyRecord m, TyRecord s -> tail (m,s) l
                         | TyRecord m, _ -> tail' m l
                         | TyMetavar _, _ -> errors.Add(range_of_expr x, MetavarsNotAllowedInRecordWith); eval Map.empty
@@ -51920,6 +51972,7 @@ module spiral_compiler =
                         elif m.constraints = Set.singleton CFloat then default_numeric "float" |> Option.iter (fun t -> link.Value <- Some t)
                     | _ -> ())
                 annotations |> Seq.iter (fun (KeyValue(_,(r,x))) -> if has_metavars x then errors.Add(r, ValueRestriction x))
+            RecordWithRetypeCensus.append census_rows
             {
             filled_top = filled_top
             top_env_additions = top_env_additions
@@ -53929,6 +53982,12 @@ module spiral_compiler =
             let seeded = match policy with Seeded seed -> System.Random(seed) | _ -> null
             let mutable active = true
             let mutable engine : PartEvalEngine.Engine = null
+            let census_out = System.Environment.GetEnvironmentVariable "SPIRAL_HOPACSOTA_CENSUS_OUT"
+            let census = if System.String.IsNullOrEmpty census_out then null else ResizeArray<string>()
+            let census_started = Dictionary<int, int64>()
+            let mutable census_running = 0
+            let mutable census_issued = 0
+            let census_us (ticks : int64) = ticks * 1000000L / System.TimeProvider.System.TimestampFrequency
             let marks () = if isNull engine then own else engine.Context.Marks
             let fail (list : ResizeArray<string>) (error : exn) =
                 let marks = marks ()
@@ -53944,9 +54003,19 @@ module spiral_compiler =
                     marks.Children.[marker] <- child
                     (adapter.globals s).Add marker
                     let body_env = adapter.with_globals relative child
+                    let census_id, census_parent, census_offset =
+                        if isNull census || not (isNull engine) then 0, 0, 0L
+                        else
+                            census_issued <- census_issued + 1
+                            census_issued, census_running, System.TimeProvider.System.GetTimestamp() - census_started.[census_running]
                     let body () =
                         let saved_if = adapter.dynamic_if ()
                         let saved_validating = adapter.validating ()
+                        let saved_running = census_running
+                        let began = System.TimeProvider.System.GetTimestamp()
+                        if census_id > 0 then
+                            census_running <- census_id
+                            census_started.[census_id] <- began
                         adapter.set_dynamic_if 0
                         adapter.set_validating 0
                         try
@@ -53955,6 +54024,9 @@ module spiral_compiler =
                         finally
                             adapter.set_dynamic_if saved_if
                             adapter.set_validating saved_validating
+                            if census_id > 0 then
+                                census.Add (sprintf "%d\t%d\t%d\t%d" census_id census_parent (census_us census_offset) (census_us (System.TimeProvider.System.GetTimestamp() - began)))
+                                census_running <- saved_running
                     if isNull engine then queue.Add body else engine.Spawn body
                     result
                 | _ -> evaluate s
@@ -54037,9 +54109,13 @@ module spiral_compiler =
                 | Parallel -> engine <- PartEvalEngine.Engine(PartEvalEngine.evaluating_threads)
                 | _ -> ()
                 try
+                    let root_began = System.TimeProvider.System.GetTimestamp()
+                    if not (isNull census) then census_started.[0] <- root_began
                     let result = try Some (f ()) with error -> fail root error; None
+                    if not (isNull census) then census.Add (sprintf "0\t-1\t0\t%d" (census_us (System.TimeProvider.System.GetTimestamp() - root_began)))
                     if not (isNull engine) then engine.Finished()
                     this.Drain()
+                    if not (isNull census) then System.IO.File.AppendAllLines(census_out, Seq.append [ "body\tparent\tspawn_at_us\tself_us" ] census)
                     active <- false
                     if not (isNull engine) then engine.Check()
                     match this.Finish root with
@@ -137753,6 +137829,9 @@ module spiral_compiler =
         let depth = new System.Threading.ThreadLocal<int>(fun () -> 0)
         let hint = sprintf "keep the recursion static, or erase the growing type index at runtime with an existential; if the nesting is legitimate, raise SPIRAL_UNION_NESTING_LIMIT=<n> (now %d)"
         let headline (case : string) = sprintf "laying out union case %s nested more than %d union types: a type index that grows at every level (term n -> term (succ n)) has no finite layout" case
+        let indexHeadline = sprintf "specializing a join point at a type index nested more than %d levels: a type index that grows at every level (term n -> term (succ n)) has no finite layout"
+        let rec applicationDepth (t : Ty) = match t with YApply (a, b) -> 1 + max (applicationDepth a) (applicationDepth b) | _ -> 0
+        let tooDeep (types : Ty seq) = types |> Seq.exists (fun t -> applicationDepth t > limit)
     /// What a stalled build waits on in partial evaluation, for the BuildFile stall message: `peval` installs a
     /// probe over its join-point tables (join points whose specialization is still pending, by name).
     module PevalStallProbe =
@@ -137798,6 +137877,7 @@ module spiral_compiler =
                 raise (PartEvalTypeError([], sprintf "[spiral_compiler] EJP0014: codegen JP body cell still pending after %d ms with the join-point graph quiescent (orphaned cell, no producer left): %s" codegenPendingCellWaitMs (describe ())))
 
     let peval (env : PartEvalTopEnv) (x : E) : (TypedBind [] * Ty) * PartEvalResult =
+        let validation_root_globals = ref None
         // Emit effective runtime knobs once per process; diagnostics are not execution authority.
         DiagSidecar.emitEnvSnapshotOnce()
         try
@@ -153573,7 +153653,8 @@ module spiral_compiler =
                                                 match backend_switch_validated_type key with
                                                 | Some t' -> validate_type t'
                                                 | None ->
-                                                    let s = {s with seq=ResizeArray(); cse=System.Collections.Concurrent.ConcurrentDictionary(HashIdentity.Structural) :: s.cse; backend=lock backend_strings_lock (fun () -> backend_strings.Add backend); i=backend_switch_validation_tags ()}
+                                                    let globals, globals_lock, globals_seen = match validation_root_globals.Value with Some root when backend = env.backend -> root | _ -> ResizeArray(), obj(), System.Collections.Concurrent.ConcurrentDictionary<GlobalNameId, byte>()
+                                                    let s = {s with seq=ResizeArray(); cse=System.Collections.Concurrent.ConcurrentDictionary(HashIdentity.Structural) :: s.cse; backend=lock backend_strings_lock (fun () -> backend_strings.Add backend); i=backend_switch_validation_tags (); globals=globals; globals_lock=globals_lock; globals_seen=globals_seen}
                                                     let d' = apply s (b, DB)
                                                     if CacheGeneration.isStale gen0 then
                                                         DiagSidecar.emit (sprintf "BACKEND_SWITCH_REPLAY: Generation changed during backend_switch replay validation for '%s' - skipping type check" backend)
@@ -155387,7 +155468,8 @@ module spiral_compiler =
                                             match backend_switch_validated_type key with
                                             | Some t' -> validate_type t'
                                             | None ->
-                                                let s = {s with seq=ResizeArray(); cse=System.Collections.Concurrent.ConcurrentDictionary(HashIdentity.Structural) :: s.cse; backend=lock backend_strings_lock (fun () -> backend_strings.Add backend); i=backend_switch_validation_tags ()}
+                                                let globals, globals_lock, globals_seen = match validation_root_globals.Value with Some root when backend = env.backend -> root | _ -> ResizeArray(), obj(), System.Collections.Concurrent.ConcurrentDictionary<GlobalNameId, byte>()
+                                                let s = {s with seq=ResizeArray(); cse=System.Collections.Concurrent.ConcurrentDictionary(HashIdentity.Structural) :: s.cse; backend=lock backend_strings_lock (fun () -> backend_strings.Add backend); i=backend_switch_validation_tags (); globals=globals; globals_lock=globals_lock; globals_seen=globals_seen}
                                                 let d' = apply s (b, DB)
                                                 if CacheGeneration.isStale gen0 then
                                                     DiagSidecar.emit (sprintf "BACKEND_SWITCH_VALIDATION: Generation changed during backend_switch validation for '%s' - skipping type check" backend)
@@ -156814,6 +156896,11 @@ module spiral_compiler =
                         then k |> h.GetValueOrDefault
                         else DSymbol "null"
                     | h, _ -> raise_type_error s $"Expected a compile time HashMap.\nGot: {show_data h}"
+                | EOp(_,PrimToString,[a]) ->
+                    let a = term s a
+                    match data_to_ty s a with
+                    | YPrim (Int8T | Int16T | Int32T | Int64T | UInt8T | UInt16T | UInt32T | UInt64T | BoolT | CharT) -> push_op s PrimToString a (YPrim StringT)
+                    | t -> raise_type_error s $"PrimToString expects an integer, bool or char.\nGot: {show_ty t}"
                 | EOp(_,StaticStringConcat,[a;b]) ->
                     match term2 s a b with
                     | a,b when data_to_ty s a = YPrim StringT && data_to_ty s b = YPrim StringT ->
@@ -156892,6 +156979,9 @@ module spiral_compiler =
                 let rec termArmEJoinPointQ1 () =
                     let env_global_type = HopacExtensions.S.map (vt s) scope.ty.free_vars
                     let env_global_term = HopacExtensions.S.map (v s) scope.term.free_vars
+                    if UnionNesting.tooDeep env_global_type then
+                        let frames = s.trace |> List.map (fun (r: Range) -> r.path, (fst r.range).line, (fst r.range).character)
+                        raise (partEvalTypeError [] (RunawayUnrollDiagnostic.render "EJP0041" (UnionNesting.indexHeadline UnionNesting.limit) frames (UnionNesting.hint UnionNesting.limit)))
     
 
                     let backend' = match backend with None -> s.backend | Some (_,backend) -> lock backend_strings_lock (fun () -> backend_strings.Add backend)
@@ -158807,6 +158897,7 @@ module spiral_compiler =
             jp_closure_stack = System.Collections.Generic.HashSet<ConsedNode<RData [] * Ty [] * Ty>>(HashIdentity.Reference)
             jp_type_stack = System.Collections.Generic.HashSet<ConsedNode<Ty []>>(jp_type_key_comparer)
             }
+        validation_root_globals.Value <- Some (s.globals, s.globals_lock, s.globals_seen)
         let ty_to_data x = ty_to_data {s with i = ref 0} x
         let nominal_apply x = nominal_type_apply {s with i = ref 0} x
     
@@ -159666,6 +159757,9 @@ module spiral_compiler =
         let depth = new System.Threading.ThreadLocal<int>(fun () -> 0)
         let hint = sprintf "keep the recursion static, or erase the growing type index at runtime with an existential; if the nesting is legitimate, raise SPIRAL_UNION_NESTING_LIMIT=<n> (now %d)"
         let headline (case : string) = sprintf "laying out union case %s nested more than %d union types: a type index that grows at every level (term n -> term (succ n)) has no finite layout" case
+        let indexHeadline = sprintf "specializing a join point at a type index nested more than %d levels: a type index that grows at every level (term n -> term (succ n)) has no finite layout"
+        let rec applicationDepth (t : Ty) = match t with YApply (a, b) -> 1 + max (applicationDepth a) (applicationDepth b) | _ -> 0
+        let tooDeep (types : Ty seq) = types |> Seq.exists (fun t -> applicationDepth t > limit)
     /// ### GlobalsIndex
     /// The membership set of a PartEval globals list (`global'` adds to both), kept per list instance.
     module GlobalsIndex =
@@ -159693,6 +159787,7 @@ module spiral_compiler =
                 if seen.Add frames then eprintfn "RUST-GAP %s | %s" text frames
 
     let peval (env : PartEvalTopEnv) (x : E) =
+        let validation_root_globals = ref None
         let hopacsota = PartEvalSeams.start { globals = (fun (s : LangEnv) -> s.globals); with_globals = (fun s globals -> { s with globals = globals }); dynamic_if = (fun () -> DynamicIfNesting.depth.Value); set_dynamic_if = (fun depth -> DynamicIfNesting.depth.Value <- depth); validating = (fun () -> RustGapTrace.validating.Value); set_validating = (fun depth -> RustGapTrace.validating.Value <- depth); rebuild_index = (fun root -> let index = GlobalsIndex.get root in index.Clear(); index.UnionWith root) }
         let join_point_method = Dictionary(HashIdentity.Structural)
         let join_point_closure = Dictionary(HashIdentity.Structural)
@@ -160356,6 +160451,9 @@ module spiral_compiler =
             | EJoinPoint'(r,scope,body,annot,backend,jp_name) ->
                 let env_global_type = Array.map (vt s) scope.ty.free_vars
                 let env_global_term = Array.map (v s) scope.term.free_vars
+                if UnionNesting.tooDeep env_global_type then
+                    let frames = s.trace |> List.map (fun (r: Range) -> r.path, (fst r.range).line, (fst r.range).character)
+                    raise_type_error { s with trace = [] } (RunawayUnrollDiagnostic.render "EJP0041" (UnionNesting.indexHeadline UnionNesting.limit) frames (UnionNesting.hint UnionNesting.limit))
 
                 let backend' = match backend with None -> s.backend | Some (_,backend) -> backend_strings.Add backend
                 let dict, hc_table = PartEvalSeams.family hopacsota join_point_method (fun _ -> Dictionary(HashIdentity.Structural), HashConsTable()) (backend', body)
@@ -160816,7 +160914,7 @@ module spiral_compiler =
                             | Some key when PartEvalSeams.validated hopacsota backend_switch_validated key -> PartEvalSeams.key_hit hopacsota (box key) s; validate_type (PartEvalSeams.read hopacsota backend_switch_validated key)
                             | _ ->
                                 let s = match key with Some key -> PartEvalSeams.key_body hopacsota (box key) "bsv" s | None -> s
-                                let s = {s with seq=ResizeArray(); cse=Dictionary HashIdentity.Structural :: s.cse; backend=backend_strings.Add backend; i=backend_switch_validation_tags ()}
+                                let s = {s with seq=ResizeArray(); cse=Dictionary HashIdentity.Structural :: s.cse; backend=backend_strings.Add backend; i=backend_switch_validation_tags (); globals=(match validation_root_globals.Value with Some root when backend = env.backend -> root | _ -> ResizeArray())}
                                 RustGapTrace.validating.Value <- RustGapTrace.validating.Value + 1
                                 try
                                     let t' = data_to_ty s (apply s (b, DB))
@@ -161896,6 +161994,11 @@ module spiral_compiler =
                     then k |> h.GetValueOrDefault
                     else DSymbol "null"
                 | h, _ -> raise_type_error s $"Expected a compile time HashMap.\nGot: {show_data h}"
+            | EOp(_,PrimToString,[a]) ->
+                let a = term s a
+                match data_to_ty s a with
+                | YPrim (Int8T | Int16T | Int32T | Int64T | UInt8T | UInt16T | UInt32T | UInt64T | BoolT | CharT) -> push_op s PrimToString a (YPrim StringT)
+                | t -> raise_type_error s $"PrimToString expects an integer, bool or char.\nGot: {show_ty t}"
             | EOp(_,StaticStringConcat,[a;b]) ->
                 match term2 s a b with
                 | a,b when data_to_ty s a = YPrim StringT && data_to_ty s b = YPrim StringT ->
@@ -161958,6 +162061,7 @@ module spiral_compiler =
             backend = backend_strings.Add env.backend
             globals = ResizeArray ()
             }
+        validation_root_globals.Value <- Some s.globals
         let ty_to_data x = ty_to_data {s with i = ref 0} x
         let nominal_apply x = nominal_type_apply {s with i = ref 0} x
 
@@ -163744,6 +163848,9 @@ module spiral_compiler =
     /// ### rustEmitMarkers
     let rustEmitMarkers = [ "__spiral_emit_rust" ]
 
+    /// ### rustClosureFactoryMarker
+    let rustClosureFactoryMarker = "__spiral_closure_factory"
+
     /// ### translateFsharpInterpolations
     let translateFsharpInterpolations (generated : string) =
         if not (generated.Contains("= $\"", System.StringComparison.Ordinal)) then generated
@@ -163935,6 +164042,71 @@ module spiral_compiler =
             else not (rest.StartsWith "(" || rest.StartsWith "[" || rest.StartsWith "?")
         else n = "" || n.StartsWith ")" || n.StartsWith "," || n.StartsWith ";" || n.StartsWith "}" || n.StartsWith "]"
 
+    /// ### immutableRustLets
+    let immutableRustLets (generated : string) =
+        if not (generated.Contains("let mut v", System.StringComparison.Ordinal)) then generated
+        else
+            let binding = System.Text.RegularExpressions.Regex(@"\blet mut (v[0-9]+)\b")
+            let target = @"(v[0-9]+)(?:\s*(?:\.\s*\w+|\[[^\]\n]*\]))*"
+            let assignment = System.Text.RegularExpressions.Regex(@"(?<![\w.])" + target + @"\s*(?:=(?![=>])|\+=|-=|\*=|/=|%=|<<=|>>=|&=|\|=|\^=)")
+            let mutableBorrow = System.Text.RegularExpressions.Regex(@"&\s*mut\s+(v[0-9]+)\b")
+            let directCall = System.Text.RegularExpressions.Regex(@"(?<![\w.])(v[0-9]+)\s*\(")
+            let methodCall = System.Text.RegularExpressions.Regex(@"(?<![\w.])(v[0-9]+)(?:\s*\.\s*\w+)*?\s*\.\s*(\w+)\s*(?:::<[^>]*>)?\s*\(")
+            let readOnly =
+                HashSet<string>(
+                    [ "clone"; "borrow"; "len"; "is_empty"; "as_str"; "as_ref"; "as_ptr"; "chars"; "bytes"; "get"; "iter"; "contains"; "starts_with"; "ends_with"
+                      "to_string"; "to_owned"; "eq"; "ne"; "cmp"; "partial_cmp"; "lt"; "le"; "gt"; "ge"; "abs"; "pow"; "powf"; "powi"; "sqrt"; "exp"; "ln"; "log"; "log10"
+                      "sin"; "cos"; "tan"; "tanh"; "atan2"; "floor"; "ceil"; "round"; "trunc"; "is_nan"; "is_infinite"; "to_bits"; "count_ones"; "leading_zeros"; "trailing_zeros"
+                      "wrapping_add"; "wrapping_sub"; "wrapping_mul"; "wrapping_div"; "wrapping_rem"; "wrapping_neg"; "wrapping_shl"; "wrapping_shr"; "wrapping_pow"
+                      "checked_add"; "checked_sub"; "checked_mul"; "checked_div"; "checked_rem"; "overflowing_add"; "overflowing_sub"; "overflowing_mul"
+                      "find"; "split"; "trim"; "parse"; "char_indices"; "is_char_boundary"; "repeat"; "replace"; "to_lowercase"; "to_uppercase"; "lines"
+                      "unwrap"; "expect"; "is_some"; "is_none"; "copied"; "cloned"; "map"; "tag"; "hash"; "fmt"; "as_bytes"; "into" ],
+                    System.StringComparer.Ordinal)
+            let body = binding.Replace(generated, "let BOUND")
+            let mutated = HashSet<string>(System.StringComparer.Ordinal)
+            for found in assignment.Matches body do mutated.Add found.Groups.[1].Value |> ignore
+            for found in mutableBorrow.Matches body do mutated.Add found.Groups.[1].Value |> ignore
+            for found in directCall.Matches body do mutated.Add found.Groups.[1].Value |> ignore
+            for found in methodCall.Matches body do
+                if not (readOnly.Contains found.Groups.[2].Value) then mutated.Add found.Groups.[1].Value |> ignore
+            binding.Replace(generated, fun (found : System.Text.RegularExpressions.Match) ->
+                if mutated.Contains found.Groups.[1].Value then found.Value else "let " + found.Groups.[1].Value)
+    /// ### rustMoveOnLastUse
+    let rustMoveOnLastUse (generated : string) =
+        if not (generated.Contains(".clone()", System.StringComparison.Ordinal)) then generated
+        else
+            let lines = generated.Replace("\r\n", "\n").Split('\n')
+            let word = System.Text.RegularExpressions.Regex(@"(?<![\w.])(v[0-9]+)\b")
+            let fnHead = System.Text.RegularExpressions.Regex(@"^(?:pub )?fn \w+")
+            let selfRebind = System.Text.RegularExpressions.Regex(@"^\s*let (?:mut )?(v[0-9]+): [^=]+ = \1\.clone\(\);\s*$")
+            let spans = ResizeArray<int * int>()
+            let mutable start = -1
+            for i = 0 to lines.Length - 1 do
+                if fnHead.IsMatch lines.[i] then start <- i
+                elif lines.[i] = "}" && start >= 0 then
+                    spans.Add((start, i))
+                    start <- -1
+            for (s, e) in spans do
+                let closure = System.Text.RegularExpressions.Regex(@"\|[^|\n]*\|\s*[{\w(&*!\-\[]|\|\|\s*[{\w(]")
+                let loops = seq { s .. e } |> Seq.exists (fun l -> lines.[l].Contains "loop {" || lines.[l].Contains "while " || closure.IsMatch lines.[l])
+                if not loops then
+                    let positions = ResizeArray<int * int * string>()
+                    for li = s to e do
+                        for found in word.Matches lines.[li] do
+                            positions.Add((li, found.Index + found.Length, found.Groups.[1].Value))
+                    let cuts = ResizeArray<int * int>()
+                    for idx = 0 to positions.Count - 1 do
+                        let li, b, name = positions.[idx]
+                        if lines.[li].Substring(b).StartsWith(".clone()", System.StringComparison.Ordinal) && not (selfRebind.IsMatch lines.[li]) then
+                            let mutable later = false
+                            for next = idx + 1 to positions.Count - 1 do
+                                let _, _, other = positions.[next]
+                                if other = name then later <- true
+                            if not later then cuts.Add((li, b))
+                    for (li, b) in cuts |> Seq.sortDescending do
+                        lines.[li] <- lines.[li].Substring(0, b) + lines.[li].Substring(b + ".clone()".Length)
+            System.String.Join("\n", lines)
+
     /// ### inlineRustEmits
     let inlineRustEmits (generated : string) =
         if not (rustEmitMarkers |> List.exists (fun (m : string) -> generated.Contains(m, System.StringComparison.Ordinal))) then generated
@@ -163963,7 +164135,7 @@ module spiral_compiler =
                 text.ToString()
             let splitArgs (value : string) =
                 let value = value.Trim()
-                if value = "()" then []
+                if value = "()" then [ "()" ]
                 else
                     let body = if value.Length >= 2 && value.[0] = '(' && value.[value.Length - 1] = ')' then value.Substring(1, value.Length - 2) else value
                     let parts = ResizeArray<string>()
@@ -164167,6 +164339,77 @@ module spiral_compiler =
         let tags_of_data (d : Data) = data_free_vars d |> Array.fold (fun s (L(i,_)) -> Set.add i s) Set.empty
         let tags_of_vars (x : TyV seq) = x |> Seq.fold (fun s (L(i,_)) -> Set.add i s) Set.empty
         let outer_none = fun (_ : int) -> false
+        let concatPrefix = "Rc::<str>::from(format!(\""
+        let isConcat parts = match parts with CMText t :: _ -> t.StartsWith concatPrefix | _ -> false
+        let fuseConcat (body : TypedBind []) : TypedBind [] =
+            let uses = Dictionary<int, int>()
+            let mutable opaque = false
+            let bump i = uses.[i] <- (match uses.TryGetValue i with | true, n -> n + 1 | _ -> 1)
+            let useData (d : Data) = for L(i,_) in data_free_vars d do bump i
+            let useVar (L(i,_) : TyV) = bump i
+            let rec countBlock (x : TypedBind []) = for b in x do countBind b
+            and countBind b =
+                match b with
+                | TyLet(_,_,o) -> countOp o
+                | TyLocalReturnOp(_,o,d) -> countOp o; useData d
+                | TyLocalReturnData(d,_) -> useData d
+            and countOp o =
+                match o with
+                | TyMacro parts -> for part in parts do (match part with CMTerm(d,_) -> useData d | _ -> ())
+                | TyOp(_, args) | TyArrayLiteral(_, args) -> for d in args do useData d
+                | TyUnionBox(_, d, _) | TyToLayout(d, _) | TyFailwith(_, d) | TyConv(_, d)
+                | TyArrayCreate(_, d) | TyArrayLength(_, d) | TyStringLength(_, d) -> useData d
+                | TyUnionUnbox(vs, _, on_succs, on_fail) ->
+                    for v in vs do useVar v
+                    for KeyValue(_, (bound, block)) in on_succs do
+                        for d in bound do useData d
+                        countBlock block
+                    on_fail |> Option.iter countBlock
+                | TyIntSwitch(v, cases, on_fail) -> useVar v; (for block in cases do countBlock block); countBlock on_fail
+                | TyLayoutIndexAll v | TyLayoutIndexByKey(v, _) -> useVar v
+                | TyLayoutMutableSet(v, _, d) | TyApply(v, d) -> useVar v; useData d
+                | TyIf(cond, tr, fl) -> useData cond; countBlock tr; countBlock fl
+                | TyWhile((_, args), block) -> (for v in args do useVar v); countBlock block
+                | TyDo block | TyIndent block -> countBlock block
+                | TyJoinPoint(_, args) -> for v in args do useVar v
+                | TySizeOf _ | TyBackend _ -> ()
+                | _ -> opaque <- true
+            countBlock body
+            let usedOnce i = (match uses.TryGetValue i with | true, n -> n = 1 | _ -> false)
+            let tryFuse (prev : TypedBind) (next : TypedBind) =
+                match prev, next with
+                | TyLet(d1, _, TyMacro p1), TyLet(d2, trace2, TyMacro p2) when isConcat p1 && isConcat p2 && (data_free_vars d1).Length = 1 ->
+                    let (L(i,_)) = (data_free_vars d1).[0]
+                    let direct = p2 |> List.sumBy (function CMTerm(DV(L(j,_)),_) when j = i -> 1 | _ -> 0)
+                    let nested = p2 |> List.exists (function CMTerm(DV _,_) -> false | CMTerm(d,_) -> data_free_vars d |> Array.exists (fun (L(j,_)) -> j = i) | _ -> false)
+                    if usedOnce i && direct = 1 && not nested then
+                        Some (TyLet(d2, trace2, TyMacro (p2 |> List.collect (function CMTerm(DV(L(j,_)),_) when j = i -> p1 | part -> [ part ]))))
+                    else None
+                | _ -> None
+            let rec fuseBlock (x : TypedBind []) : TypedBind [] =
+                let out = ResizeArray<TypedBind>(x.Length)
+                for b in x do
+                    let b = fuseBind b
+                    let fused = if out.Count > 0 then tryFuse out.[out.Count - 1] b else None
+                    match fused with
+                    | Some f -> out.[out.Count - 1] <- f
+                    | None -> out.Add b
+                out.ToArray()
+            and fuseBind b =
+                match b with
+                | TyLet(d, t, o) -> TyLet(d, t, fuseOp o)
+                | TyLocalReturnOp(t, o, d) -> TyLocalReturnOp(t, fuseOp o, d)
+                | x -> x
+            and fuseOp o =
+                match o with
+                | TyIf(c, tr, fl) -> TyIf(c, fuseBlock tr, fuseBlock fl)
+                | TyWhile(c, block) -> TyWhile(c, fuseBlock block)
+                | TyDo block -> TyDo (fuseBlock block)
+                | TyIndent block -> TyIndent (fuseBlock block)
+                | TyUnionUnbox(vs, u, on_succs, on_fail) -> TyUnionUnbox(vs, u, on_succs |> Map.map (fun _ (bound, block) -> bound, fuseBlock block), on_fail |> Option.map fuseBlock)
+                | TyIntSwitch(v, cases, on_fail) -> TyIntSwitch(v, cases |> Array.map fuseBlock, fuseBlock on_fail)
+                | x -> x
+            if opaque then body else fuseBlock body
         let rec live_binds (outer : int -> bool) (x : TypedBind []) : Set<int> =
             let mutable rest = Set.empty
             for k = x.Length - 1 downto 0 do
@@ -164327,10 +164570,17 @@ module spiral_compiler =
                 let tags = a |> Array.map (function CMTerm (x,_) -> data_term_vars x |> Array.choose (function WV (L(i,_)) -> Some i | WLit _ -> None) | _ -> [||])
                 let again k i = (tags.[k] |> Array.filter ((=) i)).Length > 1 || Seq.exists (fun j -> Array.contains i tags.[j]) (seq { k + 1 .. a.Length - 1 })
                 let sb = StringBuilder()
+                let factoryMarked k = (text (k-1)).EndsWith (rustClosureFactoryMarker + " ")
                 a |> Array.iteri (fun k part ->
                     let s : string =
                       match part with
+                      | CMText x when x.EndsWith (rustClosureFactoryMarker + " ") && (match Array.tryItem (k + 1) a with Some (CMTerm _) -> true | _ -> false) ->
+                          x.Substring (0, x.Length - rustClosureFactoryMarker.Length - 1)
                       | CMText x -> x
+                      | CMTerm (x,false) when factoryMarked k ->
+                          match data_term_vars x with
+                          | [| WV (L (i, _)) |] when closure_of_var.ContainsKey i -> closure_names.[closure_of_var.[i]]
+                          | _ -> raise_codegen_error "A closure that crosses threads must capture nothing: its factory runs once per worker thread, so captured Rc values would be shared between threads."
                       | CMTerm (x,false) when (let t = text (k-1) in rustEmitMarkers |> List.exists (fun m -> t.EndsWith (m + " "))) -> emit_args (again k) x
                       | CMTerm (x,inl) ->
                           let name w = match w with WV (L(i,_)) when rustSpliceConsumes (sb.ToString()) (text (k+1)) -> clone_or_name (again k i) w | _ -> macro_var w
@@ -164555,6 +164805,16 @@ module spiral_compiler =
                 | Div, [a;b] -> $"{tup a} / {tup b}"
                 | Mod, [a;b] -> $"{tup a} %% {tup b}"
                 | Pow, [a;b] -> $"{tup a}.powf({tup b})"
+                | (EQ | NEQ | LT | LTE | GT | GTE), [a;b] when (match data_term_vars a with [|WV(L(_,YPrim StringT))|] | [|WLit (LitString _)|] -> true | _ -> false) ->
+                    let borrowed_str (d : Data) =
+                        match data_term_vars d with
+                        | [|WV(L(i,_))|] -> $"&*v{i}"
+                        | [|WLit (LitString _ as l)|] ->
+                            let owned = litRust l
+                            if owned.StartsWith "Rc::<str>::from(" && owned.EndsWith ")" then owned.Substring(16, owned.Length - 17) else owned
+                        | _ -> tup d
+                    let symbol = match op with EQ -> "==" | NEQ -> "!=" | LT -> "<" | LTE -> "<=" | GT -> ">" | _ -> ">="
+                    $"{borrowed_str a} {symbol} {borrowed_str b}"
                 | LT, [a;b] -> $"{tup a} < {tup b}"
                 | LTE, [a;b] -> $"{tup a} <= {tup b}"
                 | EQ, [a;b] -> $"{tup a} == {tup b}"
@@ -164742,6 +165002,7 @@ module spiral_compiler =
                 let args = codegenMethodKeyArgs key
                 match codegenMethodBody env "Rust" jp_body key with
                 | a, range, name ->
+                    let a = fuseConcat a
                     method_names.[i] <- generatedMethodName name i
                     {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
                 ) (fun s x ->
@@ -164775,6 +165036,7 @@ module spiral_compiler =
                 | YFun(domain,range,_) ->
                     match codegenClosureBody env "Rust" jp_body key with
                     | domain_args, body, sourceName ->
+                        let body = fuseConcat body
                         closure_names.[i] <- generatedClosureName sourceName i
                         {tag=i; free_vars=rdata_free_vars args; domain_args=data_free_vars domain_args; range=range; body=body}
                 | _ -> raise_codegen_error "Compiler error: Unexpected type in the closure join point."
@@ -164796,6 +165058,7 @@ module spiral_compiler =
                 )
 
         let main = StringBuilder()
+        let x = fuseConcat x
         live_binds outer_none x |> ignore
         binds {text=main; indent=4} x
 
@@ -164856,6 +165119,35 @@ module spiral_compiler =
         program.ToString() |> translateFsharpInterpolations |> foldStringBindings |> inlineRustEmits
         |> rename_exported_unions
         |> cacheRustStringLiterals
+        |> immutableRustLets
+        |> rustMoveOnLastUse
+
+    /// ### ParallelMove
+    type ParallelMove =
+        | MoveVar of target : int * source : int
+        | SaveTemp of slot : int * source : int
+        | MoveTemp of target : int * slot : int
+
+    /// ### parallelMoves
+    let parallelMoves (moves : (int * int) []) =
+        let steps = ResizeArray<ParallelMove> ()
+        let pending = moves |> Array.filter (fun (target, source) -> target <> source) |> Array.map (fun (target, source) -> target, Choice1Of2 source) |> ResizeArray
+        let mutable slots = 0
+        while pending.Count > 0 do
+            let reads (target : int) = pending |> Seq.exists (fun (_, source) -> source = Choice1Of2 target)
+            match pending |> Seq.tryFindIndex (fun (target, _) -> not (reads target)) with
+            | Some index ->
+                let target, source = pending.[index]
+                steps.Add (match source with Choice1Of2 variable -> MoveVar (target, variable) | Choice2Of2 slot -> MoveTemp (target, slot))
+                pending.RemoveAt index
+            | None ->
+                let target, _ = pending.[0]
+                steps.Add (SaveTemp (slots, target))
+                for index = 0 to pending.Count - 1 do
+                    let moveTarget, source = pending.[index]
+                    if source = Choice1Of2 target then pending.[index] <- (moveTarget, Choice2Of2 slots)
+                slots <- slots + 1
+        List.ofSeq steps
 
     /// ## CodegenDelphi
 
@@ -165094,9 +165386,15 @@ module spiral_compiler =
                 line s "end;"
             | TyJoinPoint(JPMethod(a,c),args) when (match ret, self_loop with DTail _, Some (tag, _) -> (method (a,c)).tag = tag | _ -> false) ->
                 let parameters = snd self_loop.Value
-                let temps = parameters |> Array.map (fun (L(_,t)) -> temp locals (tyv t))
-                Array.iter2 (fun tmp (L(i,_)) -> line s $"{tmp} := v{i};") temps args
-                Array.iter2 (fun (L(i,_)) tmp -> line s $"v{i} := {tmp};") parameters temps
+                let types = parameters |> Array.map (fun (L(i,t)) -> i, t) |> dict
+                let temps = System.Collections.Generic.Dictionary<int, string> ()
+                for step in parallelMoves (Array.map2 (fun (L(target,_)) (L(source,_)) -> target, source) parameters args) do
+                    match step with
+                    | MoveVar (target, source) -> line s $"v{target} := v{source};"
+                    | SaveTemp (slot, source) ->
+                        temps.[slot] <- temp locals (tyv types.[source])
+                        line s $"{temps.[slot]} := v{source};"
+                    | MoveTemp (target, slot) -> line s $"v{target} := {temps.[slot]};"
                 line s "Continue;"
             | TyJoinPoint(a,args) -> return' (jp (a, args))
             | TyBackend(_,_,r) -> raise_codegen_error_backend r "The Delphi backend does not support nesting other backends."
@@ -165309,7 +165607,11 @@ module spiral_compiler =
                 let ps = if ps = "" then "" else $"({ps})"
                 let create = if heap then $"Result := {name}.Create; " else ""
                 let assigns = vars |> Array.mapi (fun f _ -> $"Result.c{c}_{f} := a{f};") |> String.concat " "
-                bodies.Add($"function {prefix}_{suffixes.[c]}{ps}: {name};\nbegin\n  {create}Result.tag := {c}; {assigns}\nend;")))
+                if heap && vars.Length = 0 then
+                    let shared = $"{prefix}_{suffixes.[c]}_shared"
+                    bodies.Add($"var {shared}: {name} = nil;\nfunction {prefix}_{suffixes.[c]}: {name};\nbegin\n  if {shared} = nil then begin {shared} := {name}.Create; {shared}.tag := {c}; end;\n  Result := {shared};\nend;")
+                else
+                    bodies.Add($"function {prefix}_{suffixes.[c]}{ps}: {name};\nbegin\n  {create}Result.tag := {c}; {assigns}\nend;")))
         and uheap_memo = lazy (union_type true)
         and ustack_memo = lazy (union_type false)
         and uheap x = uheap_memo.Force() x
@@ -165551,6 +165853,28 @@ fn spiralCreate(comptime T: type, v: T) *T {
 }
 """
 
+    /// ### zigUsedPrelude
+    let zigUsedPrelude (program : string) =
+        let chunks = ResizeArray<string>()
+        let current = StringBuilder()
+        for line in zigPrelude.TrimEnd('\n').Split('\n') do
+            if current.Length > 0 && line.Length > 0 && not (System.Char.IsWhiteSpace line.[0]) && line <> "}" then
+                chunks.Add(current.ToString())
+                current.Clear() |> ignore
+            current.Append(line).Append('\n') |> ignore
+        if current.Length > 0 then chunks.Add(current.ToString())
+        let helperName (chunk : string) =
+            let m = System.Text.RegularExpressions.Regex.Match(chunk, @"^fn (\w+)\(")
+            if m.Success then Some m.Groups.[1].Value else None
+        let rec settle (kept : string []) =
+            let reached (index : int) (name : string) =
+                let pattern = @"\b" + name + @"\b"
+                System.Text.RegularExpressions.Regex.IsMatch(program, pattern)
+                || (kept |> Array.indexed |> Array.exists (fun (other, chunk) -> other <> index && System.Text.RegularExpressions.Regex.IsMatch(chunk, pattern)))
+            let next = kept |> Array.indexed |> Array.filter (fun (index, chunk) -> match helperName chunk with Some name -> reached index name | None -> true) |> Array.map snd
+            if next.Length = kept.Length then kept else settle next
+        settle (chunks.ToArray()) |> String.concat ""
+
     /// ### BindsReturnZig
     type BindsReturnZig = ZLocal of TyV [] | ZTail of Ty
 
@@ -165558,6 +165882,63 @@ fn spiralCreate(comptime T: type, v: T) *T {
     type ZigLayoutRec = {tag : int; data : Data; free_vars : TyV[]; free_vars_by_key : Map<int * string, TyV[]>}
 
     /// ### codegenZig
+    /// ### zigConstLocals
+    let zigConstLocals (generated : string) =
+        if not (generated.Contains("= undefined; _ = &v", System.StringComparison.Ordinal)) then generated
+        else
+            let lines = generated.Replace("\r\n", "\n").Split('\n')
+            let hoisted = System.Text.RegularExpressions.Regex(@"^(?<indent>[ \t]+)var (?<name>v[0-9]+): (?<type>[^=]+?) = undefined; _ = &\k<name>;$")
+            let functionHead = System.Text.RegularExpressions.Regex(@"^(pub )?fn \w+\(.*\{$")
+            let word = System.Text.RegularExpressions.Regex(@"(?<![\w.])v[0-9]+\b")
+            let compound = System.Text.RegularExpressions.Regex(@"^(?:\s*(?:\.\w+|\[[^\]\n]*\]))+\s*(?:=(?!=)|\+=|-=|\*=|/=|%=|<<=|>>=|&=|\|=|\^=|\+%=|-%=|\*%=)|^\s*(?:\+=|-=|\*=|/=|%=|<<=|>>=|&=|\|=|\^=|\+%=|-%=|\*%=)")
+            let dropped = HashSet<int>()
+            let replaced = Dictionary<int, string>()
+            let mutable start = -1
+            for index = 0 to lines.Length - 1 do
+                if functionHead.IsMatch lines.[index] then start <- index
+                elif lines.[index] = "}" && start >= 0 then
+                    let occurrences = Dictionary<string, ResizeArray<int>>()
+                    for at = start + 1 to index - 1 do
+                        for found in word.Matches lines.[at] do
+                            match occurrences.TryGetValue found.Value with
+                            | true, rows -> if rows.Count = 0 || rows.[rows.Count - 1] <> at then rows.Add at
+                            | _ -> occurrences.[found.Value] <- ResizeArray [ at ]
+                    for at = start + 1 to index - 1 do
+                        let declared = hoisted.Match lines.[at]
+                        if declared.Success then
+                            let name = declared.Groups.["name"].Value
+                            let indent = declared.Groups.["indent"].Value
+                            let prefix = indent + name + " = "
+                            let others = occurrences.[name] |> Seq.filter (fun row -> row <> at) |> List.ofSeq
+                            let assignments = others |> List.filter (fun row -> lines.[row].TrimStart().StartsWith(name + " = ", System.StringComparison.Ordinal))
+                            match assignments with
+                            | [ assigned ] when assigned > at && lines.[assigned].StartsWith(prefix, System.StringComparison.Ordinal) && lines.[assigned].EndsWith(";", System.StringComparison.Ordinal) ->
+                                let rest = lines.[assigned].Substring prefix.Length
+                                let readsEarly = others |> List.exists (fun row -> row < assigned && not (dropped.Contains row))
+                                let selfReference = System.Text.RegularExpressions.Regex.IsMatch(rest, @"(?<![\w.])" + name + @"\b")
+                                let mutated =
+                                    others
+                                    |> List.filter (fun row -> row <> assigned)
+                                    |> List.exists (fun row ->
+                                        let text = lines.[row]
+                                        text.Contains("&" + name) ||
+                                        (System.Text.RegularExpressions.Regex.Matches(text, @"(?<![\w.])" + name + @"\b")
+                                         |> Seq.exists (fun found -> compound.IsMatch(text.Substring(found.Index + found.Length)))))
+                                if not readsEarly && not selfReference && not mutated then
+                                    let used = others |> List.exists (fun row -> row <> assigned)
+                                    dropped.Add at |> ignore
+                                    replaced.[assigned] <- indent + "const " + name + ": " + declared.Groups.["type"].Value + " = " + rest + (if used then "" else " _ = &" + name + ";")
+                            | _ -> ()
+                    start <- -1
+            let output = System.Text.StringBuilder(generated.Length)
+            let mutable first = true
+            for index = 0 to lines.Length - 1 do
+                if not (dropped.Contains index) then
+                    if not first then output.Append('\n') |> ignore
+                    first <- false
+                    output.Append(match replaced.TryGetValue index with | true, text -> text | _ -> lines.[index]) |> ignore
+            output.ToString()
+
     let codegenZig (env : PartEvalResult) (x : TypedBind []) =
         let method_names = Dictionary<int, string>()
         let closure_names = Dictionary<int, string>()
@@ -165732,9 +166113,15 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 line s "}"
             | TyJoinPoint(JPMethod(a,c),b) when (match ret, self_loop.Value with ZTail _, Some (tag, _) -> (method (a,c)).tag = tag | _ -> false) ->
                 let parameters = snd self_loop.Value.Value
-                let temps = parameters |> Array.map (fun (L(_,t)) -> temp locals (tyv t))
-                Array.iter2 (fun tmp (L(i,_)) -> line s $"{tmp} = v{i};") temps b
-                Array.iter2 (fun (L(i,_)) tmp -> line s $"v{i} = {tmp};") parameters temps
+                let types = parameters |> Array.map (fun (L(i,t)) -> i, t) |> dict
+                let temps = System.Collections.Generic.Dictionary<int, string> ()
+                for step in parallelMoves (Array.map2 (fun (L(target,_)) (L(source,_)) -> target, source) parameters b) do
+                    match step with
+                    | MoveVar (target, source) -> line s $"v{target} = v{source};"
+                    | SaveTemp (slot, source) ->
+                        temps.[slot] <- temp locals (tyv types.[source])
+                        line s $"{temps.[slot]} = v{source};"
+                    | MoveTemp (target, slot) -> line s $"v{target} = {temps.[slot]};"
                 line s "continue;"
             | TyJoinPoint(a,args) -> return' (jp (a, args))
             | TyBackend(_,_,r) -> raise_codegen_error_backend r "The Zig backend does not support nesting other backends."
@@ -165935,7 +166322,8 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 let ps = vars |> Array.mapi (fun f (L(_,t)) -> $"a{f}: {tyv t}") |> String.concat ", "
                 let inits = vars |> Array.mapi (fun f _ -> $", .c{c}_{f} = a{f}") |> String.concat ""
                 let value = $"{name}{{ .tag = {c}{inits} }}"
-                if heap then bodies.Add($"fn {name}_{suffixes.[c]}({ps}) *{name} {{\n    return spiralCreate({name}, {value});\n}}\n")
+                if heap && vars.Length = 0 then bodies.Add($"fn {name}_{suffixes.[c]}() *{name} {{\n    const shared = struct {{\n        var value: {name} = {value};\n    }};\n    return &shared.value;\n}}\n")
+                elif heap then bodies.Add($"fn {name}_{suffixes.[c]}({ps}) *{name} {{\n    return spiralCreate({name}, {value});\n}}\n")
                 else bodies.Add($"fn {name}_{suffixes.[c]}({ps}) {name} {{\n    return {value};\n}}\n")))
         and uheap_memo = lazy (union_type true)
         and ustack_memo = lazy (union_type false)
@@ -165998,8 +166386,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
             emit_function "spiralMainValue" None [||] "" value x ""
             bodies.Add("fn spiralMain() i32 {\n    _ = spiralMainValue();\n    return 0;\n}\n")
         let program = StringBuilder()
-        ()
-        program.Append(zigPrelude) |> ignore
         env.globals |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
         globals |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
         types |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
@@ -166013,7 +166399,8 @@ fn spiralCreate(comptime T: type, v: T) *T {
         program.AppendLine("    spiral_gpa = spiral_arena.allocator();").AppendLine("    spiral_environ = init.environ;") |> ignore
         program.AppendLine("    if (@import(\"builtin\").os.tag == .windows) {").AppendLine("        const handle = CreateThread(null, 1 << 30, spiralMainThreadReserved, null, 0x00010000, null) orelse @panic(\"spiral: could not start the main thread\");").AppendLine("        _ = WaitForSingleObject(handle, 0xFFFFFFFF);").AppendLine("    } else {").AppendLine("        const thread = std.Thread.spawn(.{ .stack_size = 1 << 30 }, spiralMainThread, .{}) catch @panic(\"spiral: could not start the main thread\");").AppendLine("        thread.join();").AppendLine("    }").AppendLine("    spiralFlush();") |> ignore
         program.AppendLine("    if (@import(\"builtin\").os.tag == .windows) ExitProcess(@bitCast(spiral_exit_code)) else std.process.exit(@truncate(@as(u32, @bitCast(spiral_exit_code))));").AppendLine("}") |> ignore
-        program.ToString()
+        let body = program.ToString() |> zigConstLocals
+        zigUsedPrelude body + body
 
     /// ## CodegenLean
 
@@ -166093,6 +166480,61 @@ fn spiralCreate(comptime T: type, v: T) *T {
         "def spiralStringSlice (s : String) (a b : Int) : IO String := do\n  let bytes := s.toUTF8\n  let length : Int := bytes.size\n  if a < 0 || a > length || b < a - 1 || b >= length then spiralAbort\n  else if b >= a && (spiralIsContinuation (bytes.get! a.toNat) || (b + 1 < length && spiralIsContinuation (bytes.get! (b + 1).toNat))) then spiralAbort\n  else pure (String.Pos.Raw.extract s ⟨a.toNat⟩ ⟨(b + 1).toNat⟩)\n"
 
     /// ### codegenLean
+    /// ### leanLetAtAssignment
+    let leanLetAtAssignment (generated : string) =
+        if not (generated.Contains(":= default", System.StringComparison.Ordinal)) then generated
+        else
+            let lines = generated.Replace("\r\n", "\n").Split('\n')
+            let hoisted = System.Text.RegularExpressions.Regex(@"^(?<indent>[ \t]+)let mut (?<name>v[0-9]+) : (?<type>.+?) := default$")
+            let functionHead = System.Text.RegularExpressions.Regex(@"^(partial )?def \w+.*:= do$")
+            let word = System.Text.RegularExpressions.Regex(@"(?<![\w.])(v[0-9]+)\b")
+            let dropped = HashSet<int>()
+            let replaced = Dictionary<int, string>()
+            let closeFunction (start : int) (stop : int) =
+                let seen = Dictionary<string, ResizeArray<int>>()
+                for at = start + 1 to stop - 1 do
+                    for found in word.Matches lines.[at] do
+                        let name = found.Groups.[1].Value
+                        match seen.TryGetValue name with
+                        | true, rows -> if rows.[rows.Count - 1] <> at then rows.Add at
+                        | _ -> seen.[name] <- ResizeArray [ at ]
+                for at = start + 1 to stop - 1 do
+                    let found = hoisted.Match lines.[at]
+                    if found.Success then
+                        let name = found.Groups.["name"].Value
+                        let indent = found.Groups.["indent"].Value
+                        let others = match seen.TryGetValue name with | true, rows -> rows |> Seq.filter (fun row -> row <> at) |> List.ofSeq | _ -> []
+                        let assigns =
+                            others |> List.filter (fun row ->
+                                System.Text.RegularExpressions.Regex.IsMatch(lines.[row], @"^\s*" + name + " :=")
+                                || System.Text.RegularExpressions.Regex.IsMatch(lines.[row], @"^\s*" + name + " ←"))
+                        match assigns with
+                        | [ row ] ->
+                            let prefix = indent + name + " := "
+                            if lines.[row].StartsWith(prefix, System.StringComparison.Ordinal) then
+                                let rest = lines.[row].Substring prefix.Length
+                                let selfReference = word.Matches rest |> Seq.exists (fun found -> found.Groups.[1].Value = name)
+                                if not selfReference && not (others |> List.exists (fun other -> other < row)) then
+                                    dropped.Add at |> ignore
+                                    replaced.[row] <- indent + "let " + name + " : " + found.Groups.["type"].Value + " := " + rest
+                        | _ -> ()
+            let mutable start = -1
+            for index = 0 to lines.Length do
+                let isHead = index < lines.Length && functionHead.IsMatch lines.[index]
+                let ends = index = lines.Length || (start >= 0 && lines.[index] <> "" && not (lines.[index].StartsWith " " || lines.[index].StartsWith "\t"))
+                if start >= 0 && (ends || isHead) then
+                    closeFunction start index
+                    start <- -1
+                if isHead then start <- index
+            let output = System.Text.StringBuilder(generated.Length)
+            let mutable first = true
+            for index = 0 to lines.Length - 1 do
+                if not (dropped.Contains index) then
+                    if not first then output.Append('\n') |> ignore
+                    first <- false
+                    output.Append(match replaced.TryGetValue index with | true, text -> text | _ -> lines.[index]) |> ignore
+            output.ToString()
+
     let codegenLean (env : PartEvalResult) (x : TypedBind []) =
         let method_names = Dictionary<int, string>()
         let closure_names = Dictionary<int, string>()
@@ -166296,9 +166738,14 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 binds (indent s) ret fl
             | TyJoinPoint(JPMethod(a,c),b) when (match ret, self_loop.Value with ZTail _, Some (tag, _) -> (method (a,c)).tag = tag | _ -> false) ->
                 let parameters = snd self_loop.Value.Value
-                let temps = b |> Array.map (fun (L(i,_)) -> $"t{i}")
-                Array.iter2 (fun tmp (L(i,_)) -> line s $"let {tmp} := v{i}") temps b
-                Array.iter2 (fun (L(i,_)) tmp -> line s $"v{i} := {tmp}") parameters temps
+                let temps = System.Collections.Generic.Dictionary<int, string> ()
+                for step in parallelMoves (Array.map2 (fun (L(target,_)) (L(source,_)) -> target, source) parameters b) do
+                    match step with
+                    | MoveVar (target, source) -> line s $"v{target} := v{source}"
+                    | SaveTemp (slot, source) ->
+                        temps.[slot] <- $"t{source}"
+                        line s $"let t{source} := v{source}"
+                    | MoveTemp (target, slot) -> line s $"v{target} := {temps.[slot]}"
                 line s "continue"
             | TyJoinPoint(a,args) -> return' (jp (a, args))
             | TyBackend(_,_,r) -> raise_codegen_error_backend r "The Lean backend does not support nesting other backends."
@@ -166526,7 +166973,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
         program.AppendLine("def main : IO UInt32 := do") |> ignore
         if unitMain then program.AppendLine("  spiralMain").AppendLine("  return 0") |> ignore
         else program.AppendLine("  let code ← spiralMain").AppendLine("  return code.toUInt32") |> ignore
-        program.ToString()
+        program.ToString() |> leanLetAtAssignment
 
     /// ## CodegenBend
 
@@ -166718,6 +167165,31 @@ def spiral_array_depth(+wanted: U32) -> U32:
   spiral_array_depth_go(wanted, 1, 0, U32.is_le(wanted, 1))
 
 """
+
+    /// ### bendUsedPrelude
+    let bendUsedPrelude (program : string) =
+        let chunks = ResizeArray<string>()
+        let current = StringBuilder()
+        let mutable decorated = false
+        for line in bendPrelude.TrimEnd('\n').Split('\n') do
+            let top = line.Length > 0 && not (System.Char.IsWhiteSpace line.[0])
+            if current.Length > 0 && top && not decorated then
+                chunks.Add(current.ToString())
+                current.Clear() |> ignore
+            decorated <- top && line.StartsWith "@"
+            current.Append(line).Append('\n') |> ignore
+        if current.Length > 0 then chunks.Add(current.ToString())
+        let defName (chunk : string) =
+            let m = System.Text.RegularExpressions.Regex.Match(chunk, @"^(?:@\w+\n)*def (\w+)\(")
+            if m.Success then Some m.Groups.[1].Value else None
+        let rec settle (kept : string []) =
+            let reached (index : int) (name : string) =
+                let pattern = @"\b" + name + @"\b"
+                System.Text.RegularExpressions.Regex.IsMatch(program, pattern)
+                || (kept |> Array.indexed |> Array.exists (fun (other, chunk) -> other <> index && System.Text.RegularExpressions.Regex.IsMatch(chunk, pattern)))
+            let next = kept |> Array.indexed |> Array.filter (fun (index, chunk) -> match defName chunk with Some name -> reached index name | None -> true) |> Array.map snd
+            if next.Length = kept.Length then kept else settle next
+        settle (chunks.ToArray()) |> String.concat ""
 
     /// ### bendArrayHelpers
     let bendArrayHelpers = """@unsafe
@@ -167053,6 +167525,86 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
   (U32.xor(ah, bh), U32.xor(al, bl))
 """
 
+    /// ### bendPruneIfParameters
+    let bendPruneIfParameters (generated : string) =
+        let head = System.Text.RegularExpressions.Regex(@"^def (?<name>\w+_if\d+)\((?<params>(?:[^()]|(?<o>\()|(?<-o>\)))*(?(o)(?!)))\) -> (?<ret>.*):$")
+        let calls = System.Text.RegularExpressions.Regex(@"(?<![\w.])(\w+_if\d+)\(")
+        let paramName = System.Text.RegularExpressions.Regex(@"^\+?(\w+)\s*:")
+        let splitTop (text : string) =
+            let parts = ResizeArray<string>()
+            let mutable depth = 0
+            let mutable start = 0
+            for index = 0 to text.Length - 1 do
+                match text.[index] with
+                | '(' | '[' | '{' -> depth <- depth + 1
+                | ')' | ']' | '}' -> depth <- depth - 1
+                | ',' when depth = 0 ->
+                    parts.Add(text.Substring(start, index - start).Trim())
+                    start <- index + 1
+                | _ -> ()
+            let tail = text.Substring(start).Trim()
+            if tail <> "" then parts.Add tail
+            List.ofSeq parts
+        let nameOf (part : string) = let found = paramName.Match part in if found.Success then found.Groups.[1].Value else ""
+        let mutable text = generated.Replace("\r\n", "\n")
+        let mutable rounds = 0
+        let mutable changed = true
+        while changed && rounds < 20 do
+            rounds <- rounds + 1
+            let lines = text.Split('\n')
+            let heads = Dictionary<string, int * string list * Set<int>>()
+            for index = 0 to lines.Length - 1 do
+                let found = head.Match lines.[index]
+                if found.Success then
+                    let body = System.Text.StringBuilder()
+                    let mutable next = index + 1
+                    while next < lines.Length && (lines.[next] = "" || lines.[next].StartsWith " " || lines.[next].StartsWith "\t") do
+                        body.Append(lines.[next]).Append('\n') |> ignore
+                        next <- next + 1
+                    let bodyText = body.ToString().TrimEnd('\n')
+                    let parts = splitTop found.Groups.["params"].Value
+                    let drop =
+                        parts
+                        |> List.indexed
+                        |> List.filter (fun (_, part) ->
+                            let name = nameOf part
+                            name <> "" && name <> "c" && not (System.Text.RegularExpressions.Regex.IsMatch(bodyText, @"(?<![\w.])" + System.Text.RegularExpressions.Regex.Escape name + @"\b")))
+                        |> List.map fst
+                        |> Set.ofList
+                    if not drop.IsEmpty then heads.[found.Groups.["name"].Value] <- (index, parts, drop)
+            if heads.Count = 0 then changed <- false
+            else
+                for KeyValue(name, (index, parts, drop)) in heads do
+                    let found = head.Match lines.[index]
+                    let kept = parts |> List.indexed |> List.filter (fun (i, _) -> not (drop.Contains i)) |> List.map snd
+                    lines.[index] <- "def " + name + "(" + String.concat ", " kept + ") -> " + found.Groups.["ret"].Value + ":"
+                text <- System.String.Join("\n", lines)
+                let pieces = System.Text.StringBuilder()
+                let mutable last = 0
+                for found in calls.Matches text do
+                    let name = found.Groups.[1].Value
+                    let isDef = found.Index >= 4 && text.Substring(found.Index - 4, 4) = "def "
+                    if heads.ContainsKey name && not isDef && found.Index + found.Length >= last then
+                        let openAt = found.Index + found.Length
+                        let mutable depth = 1
+                        let mutable index = openAt
+                        while index < text.Length && depth > 0 do
+                            match text.[index] with
+                            | '(' | '[' | '{' -> depth <- depth + 1
+                            | ')' | ']' | '}' -> depth <- depth - 1
+                            | _ -> ()
+                            index <- index + 1
+                        let closeAt = index - 1
+                        let _, parts, drop = heads.[name]
+                        let args = splitTop (text.Substring(openAt, closeAt - openAt))
+                        if args.Length = parts.Length then
+                            let kept = args |> List.indexed |> List.filter (fun (i, _) -> not (drop.Contains i)) |> List.map snd
+                            pieces.Append(text.Substring(last, openAt - last)).Append(String.concat ", " kept) |> ignore
+                            last <- closeAt
+                pieces.Append(text.Substring last) |> ignore
+                text <- pieces.ToString()
+        text
+
     let codegenBend (env : PartEvalResult) (x : TypedBind []) =
 
         let method_names = Dictionary<int, string>()
@@ -167121,7 +167673,7 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
                     let field_types = cases |> Map.toArray |> Array.map (fun (_, t) -> env.ty_to_data t |> data_free_vars |> Array.map (fun (L(_,t)) -> t))
                     let ctors =
                         field_types |> Array.mapi (fun c fields ->
-                            let fields = fields |> Array.mapi (fun j t -> $"f{j}: {tyv t}") |> String.concat ", "
+                            let fields = fields |> Array.mapi (fun j t -> match t with YPrim (Int64T | UInt64T) -> $"f{j}_hi: U32, f{j}_lo: U32" | _ -> $"f{j}: {tyv t}") |> String.concat ", "
                             let case_name = generatedCaseName (sprintf "U%i" tag) cases c
                             $"  {case_name}{{{fields}}}")
                     let linear = field_types |> Array.exists (Array.exists linear_ty)
@@ -167219,7 +167771,7 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
                 let field_types (_, t) = env.ty_to_data t |> data_free_vars |> Array.map (fun (L(_,t)) -> t)
                 let indexed = cases |> Map.toArray |> Array.mapi (fun c case -> c, field_types case)
                 let c, fields = indexed |> Array.minBy (fun (_, fields) -> fields.Length)
-                let values = fields |> Array.map (default_value (depth + 1)) |> String.concat ", "
+                let values = fields |> Array.map (fun t -> match t with YPrim (Int64T | UInt64T) -> "{0 : U32}, {0 : U32}" | _ -> default_value (depth + 1) t) |> String.concat ", "
                 let case_name = generatedCaseName (sprintf "U%i" tag) cases c
                 $"{case_name}{{{values}}}"
             | YLayout(_, Heap) ->
@@ -167312,13 +167864,20 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
                         match handled with
                         | Some (payloads, b) when same_case ->
                             let fields = data_free_vars (List.item k payloads)
-                            let binders = fields |> Array.map (fun (L(j,_)) -> $"+v{j}") |> String.concat ", "
+                            let binders = fields |> Array.map (fun (L(j,t)) -> match t with YPrim (Int64T | UInt64T) -> $"+v{j}_hi, +v{j}_lo" | _ -> $"+v{j}") |> String.concat ", "
                             text.Append($"{case_pad}case {case_name}{{{binders}}}:\n") |> ignore
                             let bound = Array.append bound fields
-                            if k = last then binds name body_pad result text (ResizeArray(Array.append captured bound)) b
+                            if k = last then
+                                let arm = text.Length
+                                binds name body_pad result text (ResizeArray(Array.append captured bound)) b
+                                let rebuilt =
+                                    bound
+                                    |> Array.choose (fun (L(j,t)) -> match t with YPrim (Int64T | UInt64T) -> Some $"{body_pad}  +v{j} : (U32 & U32) <- IO.pure((U32 & U32), (v{j}_hi, v{j}_lo))\n" | _ -> None)
+                                    |> String.concat ""
+                                if rebuilt <> "" then text.Insert(arm + text.ToString(arm, text.Length - arm).IndexOf('\n') + 1, rebuilt) |> ignore
                             else level (k + 1) bound (Some c)
                         | _ ->
-                            let width = env.ty_to_data t |> data_free_vars |> Array.length
+                            let width = env.ty_to_data t |> data_free_vars |> Array.sumBy (fun (L(_,t)) -> match t with YPrim (Int64T | UInt64T) -> 2 | _ -> 1)
                             let ignored = Array.init width (fun j -> $"unused{j}") |> String.concat ", "
                             text.Append($"{case_pad}case {case_name}{{{ignored}}}:\n") |> ignore
                             ruled_out body_pad)
@@ -167331,7 +167890,8 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
                 let c = c.Item
                 let tag = union_tag c.cases
                 let i = union_case_index c.cases a
-                let values = data_term_vars b |> Array.map show_w |> String.concat ", "
+                let wide = function WV (L(_, YPrim (Int64T | UInt64T))) -> true | WLit a -> (match lit_to_primitive_type a with Int64T | UInt64T -> true | _ -> false) | _ -> false
+                let values = data_term_vars b |> Array.map (fun w -> if wide w then $"w64_hi({show_w w}), w64_lo({show_w w})" else show_w w) |> String.concat ", "
                 let case_name = generatedCaseName (sprintf "U%i" tag) c.cases i
                 $"IO.pure({result}, {case_name}{{{values}}})"
             | TyJoinPoint(JPMethod(a,c), arguments) ->
@@ -167587,14 +168147,15 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
             | _ -> true
         emit_def "spiral_main" [||] (if unitMain then YB else YPrim Int32T) x
         let program = StringBuilder()
-        program.Append(bendPrelude) |> ignore
         let emittedDefs = String.concat "\n" defs
         if emittedDefs.Contains "w64_" then program.Append(bendW64Prelude) |> ignore
         if emittedDefs.Contains "spiral_narrow_i8(" then program.Append("def spiral_narrow_i8(+x: U32) -> U32:\n  U32.sub(U32.xor(U32.and(x, 255), 128), 128)\n\n") |> ignore
         if emittedDefs.Contains "spiral_narrow_i16(" then program.Append("def spiral_narrow_i16(+x: U32) -> U32:\n  U32.sub(U32.xor(U32.and(x, 65535), 32768), 32768)\n\n") |> ignore
         types |> Seq.iter (fun x -> program.Append(x).Append('\n') |> ignore)
         defs |> Seq.iter (fun x -> program.Append(x).Append('\n') |> ignore)
-        program.Append(if unitMain then "@unsafe\ndef main() -> IO(Unit):\n  do IO<Unit>:\n    spiral_main()\n    return Unit{}\n" else "@unsafe\ndef main() -> IO(Unit):\n  do IO<Unit>:\n    +code : U32 <- spiral_main()\n    IO.die(Unit, code, \"\")\n").ToString()
+        let body = program.Append(if unitMain then "@unsafe\ndef main() -> IO(Unit):\n  do IO<Unit>:\n    spiral_main()\n    return Unit{}\n" else "@unsafe\ndef main() -> IO(Unit):\n  do IO<Unit>:\n    +code : U32 <- spiral_main()\n    IO.die(Unit, code, \"\")\n").ToString()
+        let body = bendPruneIfParameters body
+        bendUsedPrelude body + body
     /// ## CodegenGleam
 
     /// ### backend_nameGleam
@@ -168168,10 +168729,10 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
                       if arg_code |> SpiralSm.trim = "Nil" then
                         if domain_is_nil then sprintf "v%i(Nil)" i else sprintf "v%i " i
                       else
-                        if domain_is_nil then $"v%i{i}( {arg_code}(      Nil)  ) "
-                        else sprintf "v%i( %s  )" i arg_code
+                        if domain_is_nil then $"v%i{i}({arg_code}(Nil)) "
+                        else sprintf "v%i(%s)" i arg_code
                   | _ ->
-                      sprintf "v%i( %s  )" i arg_code
+                      sprintf "v%i(%s)" i arg_code
                 call
                 |> fun code ->
                     call
@@ -168428,7 +168989,30 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
                 if unused.IsEmpty then chunk
                 else names.Replace(chunk, fun m -> if unused.Contains m.Value then "_" + m.Value else m.Value))
             |> String.concat ""
-        program.Append($"pub fn main() {{\n{main}}}\n").ToString() |> silenceUnusedBindings
+        let gleamUsedHelpers (code : string) =
+            let definition = System.Text.RegularExpressions.Regex(@"(?m)^(?:@external\([^\n]*\)\n)*pub fn (spiral_\w+)\(")
+            let rec prune (text : string) =
+                let without (found : System.Text.RegularExpressions.Match) =
+                    let lineEnd = text.IndexOf('\n', found.Index + found.Length)
+                    if lineEnd < 0 then None
+                    else
+                        let stop =
+                            if text.Substring(found.Index, lineEnd - found.Index).TrimEnd().EndsWith "{" then
+                                let close = text.IndexOf("\n}\n", found.Index)
+                                if close >= 0 then close + 3 else lineEnd + 1
+                            else lineEnd + 1
+                        let rest = text.Remove(found.Index, stop - found.Index)
+                        if System.Text.RegularExpressions.Regex.IsMatch(rest, @"(?<![\w.])" + found.Groups.[1].Value + @"\b") then None else Some rest
+                match definition.Matches(text) |> Seq.tryPick without with
+                | Some rest -> prune rest
+                | None -> text
+            prune (code.Replace("\r\n", "\n"))
+        let gleamIndentedMain (body : string) =
+            let lines = body.Replace("\r\n", "\n").Split('\n')
+            let oddQuotes (line : string) = (line.Replace("\\\\", "").Replace("\\\"", "") |> Seq.filter (fun c -> c = '"') |> Seq.length) % 2 = 1
+            if lines |> Array.exists oddQuotes then body
+            else lines |> Array.map (fun line -> if line = "" then line else "    " + line) |> String.concat "\n"
+        program.Append($"pub fn main() {{\n{gleamIndentedMain (string main)}}}\n").ToString() |> silenceUnusedBindings |> gleamUsedHelpers
 
     /// ## CodegenLua
 
@@ -168522,6 +169106,34 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
         let closure_names = Dictionary<int, string>()
         let luaHelpers = System.Collections.Generic.List<string>()
         let useLuaHelper (text : string) = if not (luaHelpers.Contains text) then luaHelpers.Add text
+        let luaUsedHelpers (code : string) =
+            let blocks =
+                luaHelpers
+                |> Seq.collect (fun (x : string) -> System.Text.RegularExpressions.Regex.Split(x, @"(?m)^(?=local )"))
+                |> Seq.filter (fun block -> block <> "")
+                |> Array.ofSeq
+            let nameOf (block : string) =
+                let found = System.Text.RegularExpressions.Regex.Match(block, @"^local function (spiral_\w+)\(")
+                if found.Success then Some found.Groups.[1].Value else None
+            let kept = Array.create blocks.Length true
+            let mutable changed = true
+            while changed do
+                changed <- false
+                for index = 0 to blocks.Length - 1 do
+                    match nameOf blocks.[index] with
+                    | Some name when kept.[index] ->
+                        let others =
+                            blocks
+                            |> Seq.indexed
+                            |> Seq.filter (fun (other, _) -> other <> index && kept.[other])
+                            |> Seq.map snd
+                            |> Seq.append [code]
+                            |> String.concat "\n"
+                        if not (System.Text.RegularExpressions.Regex.IsMatch(others, @"(?<![\w.])" + name + @"\b")) then
+                            kept.[index] <- false
+                            changed <- true
+                    | _ -> ()
+            blocks |> Array.indexed |> Array.filter (fun (index, _) -> kept.[index]) |> Array.map snd
         let luaWrapHelpers =
             "local function spiral_wrap_unsigned(value, bits)\n    return value % (2 ^ bits)\nend\nlocal function spiral_wrap_signed(value, bits)\n    local modulus = 2 ^ bits\n    value = value % modulus\n    if value >= modulus / 2 then value = value - modulus end\n    return value\nend\nlocal function spiral_mul_mod32(a, b)\n    a = a % 4294967296\n    b = b % 4294967296\n    local a_low = a % 65536\n    local a_high = (a - a_low) / 65536\n    return (a_low * b + ((a_high * b) % 65536) * 65536) % 4294967296\nend\n"
         let luaBitHelpers =
@@ -169013,7 +169625,13 @@ end
                     is
                     |> List.map (fun (L(i,_)) -> sprintf "v%i" i)
                     |> String.concat ", "
-                line s (sprintf "local __v = { %s }" vs)
+                let scrutinee (idx : int) =
+                    match is with
+                    | [L(i,_)] -> sprintf "v%i" i
+                    | _ -> sprintf "__v[%i]" (idx + 1)
+                match is with
+                | [_] -> ()
+                | _ -> line s (sprintf "local __v = { %s }" vs)
 
                 let xUnion = x.Item
                 let unionRec, prefix =
@@ -169031,7 +169649,7 @@ end
                     let guard =
                         is
                         |> List.mapi (fun idx _ ->
-                            sprintf "__v[%i] ~= nil and __v[%i].tag == \"%s\"" (idx + 1) (idx + 1) (generatedCaseName prefix x.Item.cases i)
+                            sprintf "%s ~= nil and %s.tag == \"%s\"" (scrutinee idx) (scrutinee idx) (generatedCaseName prefix x.Item.cases i)
                         )
                         |> String.concat " and "
 
@@ -169053,7 +169671,7 @@ end
                     if payloadArity > 0 then
                         a |> List.iteri (fun idx pat ->
                             data_free_vars pat |> Array.iteri (fun k (L(j,_)) ->
-                                line body (sprintf "local v%i = __v[%i]._%i" j (idx + 1) (k + 1))))
+                                line body (sprintf "local v%i = %s._%i" j (scrutinee idx) (k + 1))))
 
                     binds body bnds
 
@@ -169291,7 +169909,7 @@ end
             let mutable i = 0
             x.free_vars |> Map.iter (fun _ a ->
                 match a with
-                | [||] -> line s (sprintf "function %s() return { tag = \"%s\" } end" (generatedCaseName $"Uh{tag}" x.free_vars i) (generatedCaseName $"Uh{tag}" x.free_vars i))
+                | [||] -> line s (sprintf "%s = (function() local shared = { tag = \"%s\" } return function() return shared end end)()" (generatedCaseName $"Uh{tag}" x.free_vars i) (generatedCaseName $"Uh{tag}" x.free_vars i))
                 | a ->
                     let params' = a |> Array.mapi (fun j _ -> sprintf "v%i" j) |> String.concat ", "
                     let fields = a |> Array.mapi (fun j _ -> sprintf " _%i = v%i" (j+1) j) |> String.concat ", "
@@ -169368,7 +169986,8 @@ end
 
         let program = StringBuilder()
 
-        luaHelpers |> Seq.iter (fun (x : string) -> program.Append(x) |> ignore)
+        let usedHelpers = luaUsedHelpers (String.concat "\n" types + String.concat "\n" functions + main.ToString())
+        usedHelpers |> Seq.iter (fun (x : string) -> program.Append(x) |> ignore)
         let definitions =
             Seq.append types functions
             |> Seq.collect (fun (text : string) ->
@@ -169377,7 +169996,7 @@ end
             |> Seq.distinct
             |> Array.ofSeq
         let chunkLocals = System.Text.RegularExpressions.Regex.Matches(main.ToString(), @"(?m)^local\s").Count
-        let helperLocals = luaHelpers |> Seq.sumBy (fun (x : string) -> System.Text.RegularExpressions.Regex.Matches(x, @"(?m)^local\s").Count)
+        let helperLocals = usedHelpers |> Seq.sumBy (fun (x : string) -> System.Text.RegularExpressions.Regex.Matches(x, @"(?m)^local\s").Count)
         if definitions.Length > 0 && definitions.Length + chunkLocals + helperLocals < 190 then
             program.Append("local ").Append(String.concat ", " definitions).Append("\n") |> ignore
         types |> Seq.iteri (fun i x -> program.Append(x).Append("\n") |> ignore)
@@ -169767,6 +170386,18 @@ end
                 interned.[text] <- at
                 at
 
+        let nullary_objects = Dictionary<int, int>()
+        let nullary_object (k : int) =
+            match nullary_objects.TryGetValue k with
+            | true, at -> at
+            | _ ->
+                let at = data_end
+                let escaped = [| k &&& 0xff; (k >>> 8) &&& 0xff; (k >>> 16) &&& 0xff; (k >>> 24) &&& 0xff |] |> Array.map (sprintf "\\%02x") |> String.concat ""
+                data.Add $"  (data (i32.const {at}) \"{escaped}\")"
+                data_end <- at + 8
+                nullary_objects.[k] <- at
+                at
+
         let memo (f : 'k -> int -> unit) =
             let dict = Dictionary<'k, int>(HashIdentity.Structural)
             fun (k : 'k) ->
@@ -169955,9 +170586,15 @@ end
                 line (indent s) "))"
             | TyJoinPoint(JPMethod(a,c),b) when (match ret, self_loop.Value with WasmTail _, Some (tag, _) -> (method (a,c)).tag = tag | _ -> false) ->
                 let parameters = snd self_loop.Value.Value
-                let temps = parameters |> Array.map (fun (L(_,t)) -> temp locals (tyv t))
-                Array.iter2 (fun tmp (L(i,_)) -> line s $"(local.set ${tmp} (local.get $v{i}))") temps b
-                Array.iter2 (fun (L(i,_)) tmp -> line s $"(local.set $v{i} (local.get ${tmp}))") parameters temps
+                let types = parameters |> Array.map (fun (L(i,t)) -> i, t) |> dict
+                let temps = System.Collections.Generic.Dictionary<int, string> ()
+                for step in parallelMoves (Array.map2 (fun (L(target,_)) (L(source,_)) -> target, source) parameters b) do
+                    match step with
+                    | MoveVar (target, source) -> line s $"(local.set $v{target} (local.get $v{source}))"
+                    | SaveTemp (slot, source) ->
+                        temps.[slot] <- temp locals (tyv types.[source])
+                        line s $"(local.set ${temps.[slot]} (local.get $v{source}))"
+                    | MoveTemp (target, slot) -> line s $"(local.set $v{target} (local.get ${temps.[slot]}))"
                 line s "(br $self)"
             | TyJoinPoint(a,args) -> return' (jp (a, args))
             | TyBackend(_,_,r) -> raise_codegen_error_backend r "The Wasm backend does not support nesting other backends."
@@ -170016,11 +170653,13 @@ end
                 let c = c.Item
                 let k = case_index c.cases a
                 let fields = data_term_vars b
-                let p = temp locals "i32"
-                line s $"(local.set ${p} (call $alloc (i32.const {8 + 8 * fields.Length})))"
-                line s $"(i32.store (local.get ${p}) (i32.const {k}))"
-                fields |> Array.iteri (fun f w -> line s (slot_store (term_type w) $"(local.get ${p})" f (show_w w)))
-                return' $"(local.get ${p})"
+                if fields.Length = 0 then return' $"(i32.const {nullary_object k})"
+                else
+                    let p = temp locals "i32"
+                    line s $"(local.set ${p} (call $alloc (i32.const {8 + 8 * fields.Length})))"
+                    line s $"(i32.store (local.get ${p}) (i32.const {k}))"
+                    fields |> Array.iteri (fun f w -> line s (slot_store (term_type w) $"(local.get ${p})" f (show_w w)))
+                    return' $"(local.get ${p})"
             | TyUnionUnbox(is,x,on_succs,on_fail) ->
                 let x' = x.Item
                 let tag = temp locals "i32"
@@ -170274,7 +170913,16 @@ end
             | _ -> ()
         let program = StringBuilder()
         program.AppendLine("(module") |> ignore
-        prelude_fields |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
+        let emitted_text =
+            Seq.concat [seq env.globals; seq globals; seq functions; prelude_helpers |> Seq.filter (fun (name, _) -> needed.Contains name) |> Seq.map snd]
+            |> String.concat "\n"
+        let prelude_field_needed (field : string) =
+            let import = Text.RegularExpressions.Regex.Match(field, @"^  \(import ""[^""]+"" ""[^""]+"" \(func \$([A-Za-z0-9_]+)")
+            let segment = Text.RegularExpressions.Regex.Match(field, @"^  \(data \(i32\.const ([0-9]+)\)")
+            if import.Success then import.Groups.[1].Value = "proc_exit" || needed.Contains import.Groups.[1].Value
+            elif segment.Success then Text.RegularExpressions.Regex.IsMatch(emitted_text, @"i32\.const " + segment.Groups.[1].Value + @"\b")
+            else true
+        prelude_fields |> Seq.iter (fun x -> if prelude_field_needed x then program.AppendLine(x) |> ignore)
         prelude_helpers |> Seq.iter (fun (name, text) -> if needed.Contains name then program.Append(text) |> ignore)
         program.AppendLine($"  (memory (export \"memory\") {pages})") |> ignore
         program.AppendLine($"  (global $hp (mut i32) (i32.const {heap_start}))") |> ignore
@@ -170299,6 +170947,95 @@ end
         | WgslLocal of TyV []
         | WgslTail of Ty
 
+    /// ### spiralWgslW64Helpers
+    let spiralWgslW64Helpers = """struct SpiralW64DivMod {
+  q: vec2<u32>,
+  r: vec2<u32>,
+}
+fn spiral_w64_add(a: vec2<u32>, b: vec2<u32>) -> vec2<u32> {
+  let lo = a.x + b.x;
+  return vec2<u32>(lo, a.y + b.y + select(0u, 1u, lo < a.x));
+}
+fn spiral_w64_neg(a: vec2<u32>) -> vec2<u32> { return spiral_w64_add(~a, vec2<u32>(1u, 0u)); }
+fn spiral_w64_sub(a: vec2<u32>, b: vec2<u32>) -> vec2<u32> { return spiral_w64_add(a, spiral_w64_neg(b)); }
+fn spiral_w32_wide_mul(a: u32, b: u32) -> vec2<u32> {
+  let a0 = a & 0xFFFFu;
+  let a1 = a >> 16u;
+  let b0 = b & 0xFFFFu;
+  let b1 = b >> 16u;
+  let p00 = a0 * b0;
+  let p01 = a0 * b1;
+  let p10 = a1 * b0;
+  let mid = (p00 >> 16u) + (p01 & 0xFFFFu) + (p10 & 0xFFFFu);
+  return vec2<u32>((p00 & 0xFFFFu) | (mid << 16u), a1 * b1 + (p01 >> 16u) + (p10 >> 16u) + (mid >> 16u));
+}
+fn spiral_w64_mul(a: vec2<u32>, b: vec2<u32>) -> vec2<u32> {
+  let low = spiral_w32_wide_mul(a.x, b.x);
+  return vec2<u32>(low.x, low.y + a.x * b.y + a.y * b.x);
+}
+fn spiral_u64_lt(a: vec2<u32>, b: vec2<u32>) -> bool { return a.y < b.y || (a.y == b.y && a.x < b.x); }
+fn spiral_i64_lt(a: vec2<u32>, b: vec2<u32>) -> bool {
+  let sa = bitcast<i32>(a.y);
+  let sb = bitcast<i32>(b.y);
+  return sa < sb || (sa == sb && a.x < b.x);
+}
+fn spiral_w64_shl(a: vec2<u32>, n: u32) -> vec2<u32> {
+  let k = n & 63u;
+  if (k == 0u) { return a; }
+  if (k >= 32u) { return vec2<u32>(0u, a.x << (k - 32u)); }
+  return vec2<u32>(a.x << k, (a.y << k) | (a.x >> (32u - k)));
+}
+fn spiral_u64_shr(a: vec2<u32>, n: u32) -> vec2<u32> {
+  let k = n & 63u;
+  if (k == 0u) { return a; }
+  if (k >= 32u) { return vec2<u32>(a.y >> (k - 32u), 0u); }
+  return vec2<u32>((a.x >> k) | (a.y << (32u - k)), a.y >> k);
+}
+fn spiral_i64_shr(a: vec2<u32>, n: u32) -> vec2<u32> {
+  let k = n & 63u;
+  let high = bitcast<i32>(a.y);
+  if (k == 0u) { return a; }
+  if (k >= 32u) { return vec2<u32>(bitcast<u32>(high >> (k - 32u)), select(0u, 0xFFFFFFFFu, high < 0i)); }
+  return vec2<u32>((a.x >> k) | (a.y << (32u - k)), bitcast<u32>(high >> k));
+}
+fn spiral_u64_divmod(a: vec2<u32>, b: vec2<u32>) -> SpiralW64DivMod {
+  var q = vec2<u32>(0u, 0u);
+  var r = vec2<u32>(0u, 0u);
+  for (var i = 63i; i >= 0i; i = i - 1i) {
+    r = spiral_w64_shl(r, 1u);
+    let word = select(a.x, a.y, i >= 32i);
+    r.x = r.x | ((word >> (u32(i) & 31u)) & 1u);
+    if (!spiral_u64_lt(r, b)) {
+      r = spiral_w64_sub(r, b);
+      if (i >= 32i) { q.y = q.y | (1u << (u32(i) - 32u)); } else { q.x = q.x | (1u << u32(i)); }
+    }
+  }
+  return SpiralW64DivMod(q, r);
+}
+fn spiral_i64_negative(a: vec2<u32>) -> bool { return bitcast<i32>(a.y) < 0i; }
+fn spiral_i64_magnitude(a: vec2<u32>) -> vec2<u32> { return select(a, spiral_w64_neg(a), spiral_i64_negative(a)); }
+fn spiral_i64_div(a: vec2<u32>, b: vec2<u32>) -> vec2<u32> {
+  let q = spiral_u64_divmod(spiral_i64_magnitude(a), spiral_i64_magnitude(b)).q;
+  return select(q, spiral_w64_neg(q), spiral_i64_negative(a) != spiral_i64_negative(b));
+}
+fn spiral_i64_mod(a: vec2<u32>, b: vec2<u32>) -> vec2<u32> {
+  let r = spiral_u64_divmod(spiral_i64_magnitude(a), spiral_i64_magnitude(b)).r;
+  return select(r, spiral_w64_neg(r), spiral_i64_negative(a));
+}
+fn spiral_w64_of_f32(v: f32, is_signed: bool) -> vec2<u32> {
+  let m = abs(trunc(v));
+  let hi = floor(m / 4294967296.0f);
+  let magnitude = vec2<u32>(u32(m - hi * 4294967296.0f), u32(hi));
+  return select(magnitude, spiral_w64_neg(magnitude), is_signed && v < 0.0f);
+}
+fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
+  let negative = is_signed && spiral_i64_negative(a);
+  let m = select(a, spiral_w64_neg(a), negative);
+  let v = f32(m.y) * 4294967296.0f + f32(m.x);
+  return select(v, -v, negative);
+}
+"""
+
     /// ### codegenWgsl
     let codegenWgsl (env : PartEvalResult) (x : TypedBind []) =
         let functions = ResizeArray<string>()
@@ -170315,13 +171052,16 @@ end
         let union_layouts = Dictionary<obj, string * string [] []>(HashIdentity.Reference)
         let unions_being_laid_out = HashSet<obj>(HashIdentity.Reference)
         let uses_heap = ref false
+        let uses_w64 = ref false
         let rec tyv = function
             | YPrim Int32T | YPrim CharT -> "i32"
             | YPrim UInt32T -> "u32"
+            | YPrim (Int8T | Int16T) -> "i32"
+            | YPrim (UInt8T | UInt16T) -> "u32"
             | YPrim BoolT -> "bool"
             | YPrim Float32T -> "f32"
             | YPrim Float64T -> unsupported "f64 (WGSL has no 64-bit float)"
-            | YPrim (Int64T | UInt64T) -> unsupported "64-bit integers (WGSL has no i64)"
+            | YPrim (Int64T | UInt64T) -> uses_w64.Value <- true; "vec2<u32>"
             | YPrim t -> unsupported $"the primitive {t}"
             | YUnion h when is_tag_only_union h -> "u32"
             | YUnion h -> fst (union_layout h)
@@ -170346,6 +171086,7 @@ end
             | "u32" -> "0u"
             | "bool" -> "false"
             | "f32" -> "0.0f"
+            | "vec2<u32>" -> "vec2<u32>(0u, 0u)"
             | other when other.StartsWith "Spiral" -> $"{other}()"
             | other -> unsupported $"a zero value of {other}"
         let array_element_tys = function
@@ -170381,6 +171122,7 @@ end
                                             for path, scalar in element_words field_tys.[case].[field] do
                                                 yield (if path = "" then $"c{case}f{field}" else $"c{case}f{field}.{path}"), scalar ]
             | YNominal _ | YApply _ -> element_words (env.nominal_apply t)
+            | YPrim (Int64T | UInt64T) -> uses_w64.Value <- true; [("x", "u32"); ("y", "u32")]
             | t -> [("", tyv t)]
         let rec element_value (t : Ty) (word_at : int -> string) (offset : int) : string * int =
             match t with
@@ -170395,6 +171137,7 @@ end
                                     yield value ]
                 $"""{name}({String.concat ", " (from_heap_word "u32" (word_at offset) :: fields)})""", next.Value
             | YNominal _ | YApply _ -> element_value (env.nominal_apply t) word_at offset
+            | YPrim (Int64T | UInt64T) -> uses_w64.Value <- true; $"vec2<u32>({word_at offset}, {word_at (offset + 1)})", offset + 2
             | t -> from_heap_word (tyv t) (word_at offset), offset + 1
         let heap_word_at array index stride k = $"spiral_heap[{array} + 1u + bitcast<u32>({index}) * {stride}u + {k}u]"
         let element_stride (tys : Ty []) = tys |> Array.sumBy (fun t -> (element_words t).Length)
@@ -170419,6 +171162,12 @@ end
             | LitUInt32 x -> $"{x}u"
             | LitBool x -> if x then "true" else "false"
             | LitChar x -> $"{int x}i"
+            | LitInt8 x -> $"{int x}i"
+            | LitInt16 x -> $"{int x}i"
+            | LitUInt8 x -> $"{int x}u"
+            | LitUInt16 x -> $"{int x}u"
+            | LitInt64 x -> uses_w64.Value <- true; $"vec2<u32>({uint64 x &&& 0xFFFFFFFFUL}u, {uint64 x >>> 32}u)"
+            | LitUInt64 x -> uses_w64.Value <- true; $"vec2<u32>({x &&& 0xFFFFFFFFUL}u, {x >>> 32}u)"
             | LitFloat32 x when Single.IsNaN x -> "(0.0f / 0.0f)"
             | LitFloat32 x when Single.IsPositiveInfinity x -> "(1.0f / 0.0f)"
             | LitFloat32 x when Single.IsNegativeInfinity x -> "(-1.0f / 0.0f)"
@@ -170431,6 +171180,18 @@ end
         let prim_of = function
             | DV(L(_,YPrim t)) -> Some t
             | DLit l -> Some (lit_to_primitive_type l)
+            | _ -> None
+        let narrow t (x : string) =
+            match t with
+            | Int8T -> $"(({x} << 24u) >> 24u)"
+            | Int16T -> $"(({x} << 16u) >> 16u)"
+            | UInt8T -> $"({x} & 0xFFu)"
+            | UInt16T -> $"({x} & 0xFFFFu)"
+            | _ -> x
+        let is_subword = function Int8T | Int16T | UInt8T | UInt16T -> true | _ -> false
+        let integer_word = function
+            | Int8T | Int16T | Int32T | CharT -> Some "i32"
+            | UInt8T | UInt16T | UInt32T -> Some "u32"
             | _ -> None
         let wgsl_of d =
             match prim_of d with
@@ -170574,12 +171335,15 @@ end
             | TyJoinPoint(JPMethod(a,c), arguments) when is_self (a, c) ->
                 let _, parameters = self_loop.Value.Value
                 if arguments.Length <> parameters.Length then raise_codegen_error "Compiler error: A tail call has the wrong number of arguments."
-                let temps =
-                    arguments |> Array.map (fun (L(i,t)) ->
-                        let name = $"spiral_t{fresh_id ()}"
-                        line s $"let {name}: {tyv t} = v{i};"
-                        name)
-                Array.iter2 (fun (L(i,_)) temp -> line s $"v{i} = {temp};") parameters temps
+                let types = parameters |> Array.map (fun (L(i,t)) -> i, t) |> dict
+                let temps = System.Collections.Generic.Dictionary<int, string> ()
+                for step in parallelMoves (Array.map2 (fun (L(target,_)) (L(source,_)) -> target, source) parameters arguments) do
+                    match step with
+                    | MoveVar (target, source) -> line s $"v{target} = v{source};"
+                    | SaveTemp (slot, source) ->
+                        temps.[slot] <- $"spiral_t{fresh_id ()}"
+                        line s $"let {temps.[slot]}: {tyv types.[source]} = v{source};"
+                    | MoveTemp (target, slot) -> line s $"v{target} = {temps.[slot]};"
                 line s "continue;"
             | TyJoinPoint(jp, args) -> return' (jp_text (jp, args))
             | TyBackend(_,_,r) -> raise_codegen_error_backend r "The WGSL backend does not support nesting other backends."
@@ -170641,6 +171405,21 @@ end
                     if same then text
                     else
                         match source, target with
+                        | Some (Int64T | UInt64T), (Int64T | UInt64T) -> text
+                        | Some (Int64T | UInt64T), t when (integer_word t).IsSome -> narrow t (if integer_word t = Some "i32" then $"bitcast<i32>({text}.x)" else $"{text}.x")
+                        | Some s, (Int64T | UInt64T) when integer_word s = Some "i32" -> $"vec2<u32>(bitcast<u32>({text}), select(0u, 0xFFFFFFFFu, {text} < 0i))"
+                        | Some s, (Int64T | UInt64T) when integer_word s = Some "u32" -> $"vec2<u32>({text}, 0u)"
+                        | Some Float32T, (Int64T | UInt64T) -> $"spiral_w64_of_f32({text}, {(target = Int64T).ToString().ToLowerInvariant()})"
+                        | Some (Int64T | UInt64T as s), Float32T -> $"spiral_f32_of_w64({text}, {(s = Int64T).ToString().ToLowerInvariant()})"
+                        | Some BoolT, (Int64T | UInt64T) -> $"vec2<u32>(select(0u, 1u, {text}), 0u)"
+                        | Some s, t when (is_subword s || is_subword t) && (integer_word s).IsSome && (integer_word t).IsSome ->
+                            let from_word, to_word = (integer_word s).Value, (integer_word t).Value
+                            narrow t (if from_word = to_word then text else $"bitcast<{to_word}>({text})")
+                        | Some Float32T, (Int8T | Int16T) -> narrow target $"i32({text})"
+                        | Some Float32T, (UInt8T | UInt16T) -> narrow target $"u32({text})"
+                        | Some (Int8T | Int16T | UInt8T | UInt16T), Float32T -> $"f32({text})"
+                        | Some BoolT, (Int8T | Int16T) -> $"select(0i, 1i, {text})"
+                        | Some BoolT, (UInt8T | UInt16T) -> $"select(0u, 1u, {text})"
                         | Some (Int32T | CharT), UInt32T | Some UInt32T, (Int32T | CharT) -> $"bitcast<{tyv (YPrim target)}>({text})"
                         | Some (Int32T | UInt32T | CharT), Float32T -> $"f32({text})"
                         | Some Float32T, (Int32T | CharT) -> $"i32({text})"
@@ -170674,8 +171453,34 @@ end
                 let shift symbol a b =
                     let count = if wgsl_of b = "u32" then tup b else $"bitcast<u32>({tup b})"
                     $"({tup a} {symbol} {count})"
+                let subword_of a = match prim_of a with Some t when is_subword t -> Some t | _ -> None
+                let wide_of a = match prim_of a with Some (Int64T | UInt64T as t) -> Some t | _ -> None
+                let wide_count b = match prim_of b with Some (Int64T | UInt64T) -> $"{tup b}.x" | _ -> (if wgsl_of b = "u32" then tup b else $"bitcast<u32>({tup b})")
                 let expr =
                     match operation, l with
+                    | (Add | Sub | Mult | Div | Mod | LT | LTE | GT | GTE | EQ | NEQ | ShiftLeft | ShiftRight), [a;b] when (wide_of a).IsSome ->
+                        let signed = wide_of a = Some Int64T
+                        let lt x y = if signed then $"spiral_i64_lt({x}, {y})" else $"spiral_u64_lt({x}, {y})"
+                        match operation with
+                        | Add -> $"spiral_w64_add({tup a}, {tup b})"
+                        | Sub -> $"spiral_w64_sub({tup a}, {tup b})"
+                        | Mult -> $"spiral_w64_mul({tup a}, {tup b})"
+                        | Div -> if signed then $"spiral_i64_div({tup a}, {tup b})" else $"spiral_u64_divmod({tup a}, {tup b}).q"
+                        | Mod -> if signed then $"spiral_i64_mod({tup a}, {tup b})" else $"spiral_u64_divmod({tup a}, {tup b}).r"
+                        | LT -> lt (tup a) (tup b)
+                        | LTE -> $"(!{lt (tup b) (tup a)})"
+                        | GT -> lt (tup b) (tup a)
+                        | GTE -> $"(!{lt (tup a) (tup b)})"
+                        | EQ -> $"all({tup a} == {tup b})"
+                        | NEQ -> $"any({tup a} != {tup b})"
+                        | ShiftLeft -> $"spiral_w64_shl({tup a}, {wide_count b})"
+                        | _ -> if signed then $"spiral_i64_shr({tup a}, {wide_count b})" else $"spiral_u64_shr({tup a}, {wide_count b})"
+                    | Neg, [a] when (wide_of a).IsSome -> $"spiral_w64_neg({tup a})"
+                    | (Add | Sub | Mult | Div | ShiftLeft), [a;b] when (subword_of a).IsSome ->
+                        let wide = match operation with Add -> binary "+" a b | Sub -> binary "-" a b | Mult -> binary "*" a b | Div -> binary "/" a b | _ -> shift "<<" a b
+                        narrow (subword_of a).Value wide
+                    | (Neg | BitwiseComplement), [a] when (subword_of a).IsSome ->
+                        narrow (subword_of a).Value (match operation with Neg -> $"(-{tup a})" | _ -> $"(~{tup a})")
                     | Dyn, [a] -> tup a
                     | TypeToVar, _ -> raise_codegen_error "The use of `` should never appear in generated code."
                     | Add, [a;b] -> binary "+" a b
@@ -170765,6 +171570,7 @@ end
             program.AppendLine("  spiral_heap_top = base + 1u + bitcast<u32>(length) * stride;") |> ignore
             program.AppendLine("  return base;") |> ignore
             program.AppendLine("}") |> ignore
+        if uses_w64.Value then program.Append(spiralWgslW64Helpers) |> ignore
         tuple_bodies |> Seq.iter (fun text -> program.Append(text) |> ignore)
         functions |> Seq.iter (fun fn -> program.Append(fn) |> ignore)
         program.AppendLine("@compute @workgroup_size(64)") |> ignore
@@ -171341,6 +172147,48 @@ end
         | KotlinTail of Ty
 
     /// ### codegenKotlin
+    /// ### valAtAssignment
+    let valAtAssignment (keyword : string) (generated : string) =
+        if not (generated.Contains("var v", System.StringComparison.Ordinal)) then generated
+        else
+            let lines = generated.Replace("\r\n", "\n").Split('\n')
+            let declaration = System.Text.RegularExpressions.Regex(@"^(?<indent>[ \t]+)var (?<name>v[0-9]+): (?<type>.+?) = (?<dummy>.+)$")
+            let assignment = System.Text.RegularExpressions.Regex(@"(?<![\w.])(v[0-9]+)\s*(?:\.\w+|\[[^\]\n]*\])*\s*(?:=(?![=>])|\+=|-=|\*=|/=|%=|<<=|>>=|&=|\|=|\^=)")
+            let counts = Dictionary<string, int>()
+            for line in lines do
+                for found in assignment.Matches line do
+                    let name = found.Groups.[1].Value
+                    counts.[name] <- (match counts.TryGetValue name with | true, n -> n + 1 | _ -> 1)
+            let output = System.Text.StringBuilder(generated.Length)
+            let mutable index = 0
+            let mutable first = true
+            let emit (text : string) =
+                if not first then output.Append('\n') |> ignore
+                first <- false
+                output.Append(text) |> ignore
+            while index < lines.Length do
+                let line = lines.[index]
+                let found = declaration.Match line
+                let fused =
+                    if found.Success && index + 1 < lines.Length then
+                        let name = found.Groups.["name"].Value
+                        let prefix = found.Groups.["indent"].Value + name + " = "
+                        let following = lines.[index + 1]
+                        let assignedOnce = match counts.TryGetValue name with | true, 1 -> true | _ -> false
+                        if following.StartsWith(prefix, System.StringComparison.Ordinal) && assignedOnce
+                           && not (System.Text.RegularExpressions.Regex.IsMatch(following.Substring prefix.Length, @"(?<![\w.])" + name + @"\b")) then
+                            Some (found.Groups.["indent"].Value + keyword + " " + name + ": " + found.Groups.["type"].Value + " = " + following.Substring prefix.Length)
+                        else None
+                    else None
+                match fused with
+                | Some text ->
+                    emit text
+                    index <- index + 2
+                | None ->
+                    emit line
+                    index <- index + 1
+            output.ToString()
+
     let codegenKotlin (env : PartEvalResult) (x : TypedBind []) =
         let globals = ResizeArray<string>()
         let globals_seen = HashSet<string>()
@@ -171511,7 +172359,7 @@ end
                 cases |> Array.iter (fun ((i, _), fields) ->
                     let case_name = $"{name}_{unionCaseSuffix rec_f i}"
                     match fields with
-                    | [||] -> text.AppendLine($"class {case_name} : {name} {{ override val tag: Int = {i} }}") |> ignore
+                    | [||] -> text.AppendLine($"object {case_name} : {name} {{ override val tag: Int = {i} }}") |> ignore
                     | _ ->
                         let formals = fields |> Array.mapi (fun f (L(_, t)) -> $"val f{f}: {tyv t}") |> String.concat ", "
                         text.AppendLine($"data class {case_name}({formals}) : {name} {{ override val tag: Int = {i} }}") |> ignore)
@@ -171519,7 +172367,7 @@ end
                 let case0 = $"{name}_{unionCaseSuffix rec_f i0}"
                 let first =
                     match fields0 with
-                    | [||] -> $"{case0}()"
+                    | [||] -> case0
                     | _ ->
                         let args = fields0 |> Array.map (fun (L(_, t)) -> zero (tyv t)) |> String.concat ", "
                         $"{case0}({args})"
@@ -171735,12 +172583,15 @@ end
             | TyJoinPoint(JPMethod(a,c), arguments) when is_self (a, c) ->
                 let _, parameters = self_loop.Value.Value
                 if arguments.Length <> parameters.Length then raise_codegen_error "Compiler error: A tail call has the wrong number of arguments."
-                let temps =
-                    arguments |> Array.map (fun (L(i,t)) ->
-                        let temp = $"t{s.text.Length}_{i}"
-                        line s $"val {temp}: {tyv t} = v{i}"
-                        temp)
-                Array.iter2 (fun (L(i,_)) temp -> line s $"v{i} = {temp}") parameters temps
+                let types = parameters |> Array.map (fun (L(i,t)) -> i, t) |> dict
+                let temps = System.Collections.Generic.Dictionary<int, string> ()
+                for step in parallelMoves (Array.map2 (fun (L(target,_)) (L(source,_)) -> target, source) parameters arguments) do
+                    match step with
+                    | MoveVar (target, source) -> line s $"v{target} = v{source}"
+                    | SaveTemp (slot, source) ->
+                        temps.[slot] <- $"t{s.text.Length}_{source}"
+                        line s $"val {temps.[slot]}: {tyv types.[source]} = v{source}"
+                    | MoveTemp (target, slot) -> line s $"v{target} = {temps.[slot]}"
                 line s "continue"
             | TyJoinPoint(jp, args) -> return' (jp_text (jp, args))
             | TyBackend(_,_,r) -> raise_codegen_error_backend r "The Kotlin backend does not support nesting other backends."
@@ -171932,7 +172783,7 @@ end
                 let i = union_case_tag rec_f tag_id
                 let case_name = $"{name}_{unionCaseSuffix rec_f i}"
                 let args = data_term_vars payload |> Array.map show_w |> String.concat ", "
-                return' $"{case_name}({args})"
+                return' (if args = "" then case_name else $"{case_name}({args})")
             | TyUnionUnbox(scrutinees, union_h, on_succs, on_fail) ->
                 let name, rec_f = union_ref union_h
                 let s' = indent s
@@ -172091,7 +172942,7 @@ end
         program.AppendLine("    spiral_thread.join()") |> ignore
         program.AppendLine("    System.exit(spiral_exit_code)") |> ignore
         program.AppendLine("}") |> ignore
-        program.ToString()
+        program.ToString() |> valAtAssignment "val"
 
     // Swift traps on overflowing Int arithmetic, so add, subtract, and multiply
     // of integers use the wrapping operators. The process exits with main's i32
@@ -172510,12 +173361,15 @@ end
             | TyJoinPoint(JPMethod(a,c), arguments) when is_self (a, c) ->
                 let _, parameters = self_loop.Value.Value
                 if arguments.Length <> parameters.Length then raise_codegen_error "Compiler error: A tail call has the wrong number of arguments."
-                let temps =
-                    arguments |> Array.map (fun (L(i,t)) ->
-                        let temp = $"t{s.text.Length}_{i}"
-                        line s $"let {temp}: {tyv t} = v{i}"
-                        temp)
-                Array.iter2 (fun (L(i,_)) temp -> line s $"v{i} = {temp}") parameters temps
+                let types = parameters |> Array.map (fun (L(i,t)) -> i, t) |> dict
+                let temps = System.Collections.Generic.Dictionary<int, string> ()
+                for step in parallelMoves (Array.map2 (fun (L(target,_)) (L(source,_)) -> target, source) parameters arguments) do
+                    match step with
+                    | MoveVar (target, source) -> line s $"v{target} = v{source}"
+                    | SaveTemp (slot, source) ->
+                        temps.[slot] <- $"t{s.text.Length}_{source}"
+                        line s $"let {temps.[slot]}: {tyv types.[source]} = v{source}"
+                    | MoveTemp (target, slot) -> line s $"v{target} = {temps.[slot]}"
                 line s "continue"
             | TyJoinPoint(jp, args) -> return' (jp_text (jp, args))
             | TyBackend(_,_,r) -> raise_codegen_error_backend r "The Swift backend does not support nesting other backends."
@@ -172838,7 +173692,7 @@ end
         if unit_main then program.AppendLine("let spiral_thread = CreateThread(nil, 1 << 30, { _ in spiral_main(); return 0 }, nil, DWORD(STACK_SIZE_PARAM_IS_A_RESERVATION), nil)") |> ignore
         else program.AppendLine("let spiral_thread = CreateThread(nil, 1 << 30, { _ in spiral_exit_code = spiral_main(); return 0 }, nil, DWORD(STACK_SIZE_PARAM_IS_A_RESERVATION), nil)") |> ignore
         program.AppendLine("WaitForSingleObject(spiral_thread, INFINITE)").AppendLine("exit(spiral_exit_code)") |> ignore
-        program.ToString()
+        program.ToString() |> valAtAssignment "let"
 
     // OpenQASM 3 classical subset. Fixed-width arithmetic wraps in the simulator.
     // There is no tuple return, and self-tail calls become while/continue.
@@ -173028,12 +173882,15 @@ end
             | TyJoinPoint(JPMethod(a,c), arguments) when is_self (a, c) ->
                 let _, parameters = self_loop.Value.Value
                 if arguments.Length <> parameters.Length then raise_codegen_error "Compiler error: A tail call has the wrong number of arguments."
-                let temps =
-                    arguments |> Array.map (fun (L(i,t)) ->
-                        let temp = $"t{s.text.Length}_{i}"
-                        statement s $"{tyv t} {temp} = v{i}"
-                        temp)
-                Array.iter2 (fun (L(i,_)) temp -> statement s $"v{i} = {temp}") parameters temps
+                let types = parameters |> Array.map (fun (L(i,t)) -> i, t) |> dict
+                let temps = System.Collections.Generic.Dictionary<int, string> ()
+                for step in parallelMoves (Array.map2 (fun (L(target,_)) (L(source,_)) -> target, source) parameters arguments) do
+                    match step with
+                    | MoveVar (target, source) -> statement s $"v{target} = v{source}"
+                    | SaveTemp (slot, source) ->
+                        temps.[slot] <- $"t{s.text.Length}_{source}"
+                        statement s $"{tyv types.[source]} {temps.[slot]} = v{source}"
+                    | MoveTemp (target, slot) -> statement s $"v{target} = {temps.[slot]}"
                 statement s "continue"
             | TyJoinPoint(jp, args) -> return' (jp_text (jp, args))
             | TyBackend(_,_,r) -> raise_codegen_error_backend r "The OpenQASM backend does not support nesting other backends."
@@ -173351,12 +174208,15 @@ end
             | TyJoinPoint(JPMethod(a,c), arguments) when is_self (a, c) ->
                 let _, parameters = self_loop.Value.Value
                 if arguments.Length <> parameters.Length then raise_codegen_error "Compiler error: A tail call has the wrong number of arguments."
-                let temps =
-                    arguments |> Array.map (fun (L(i,t)) ->
-                        let temp = $"t{s.text.Length}_{i}"
-                        statement s $"{tyv t} {temp} = v{i}"
-                        temp)
-                Array.iter2 (fun (L(i,_)) temp -> statement s $"v{i} = {temp}") parameters temps
+                let types = parameters |> Array.map (fun (L(i,t)) -> i, t) |> dict
+                let temps = System.Collections.Generic.Dictionary<int, string> ()
+                for step in parallelMoves (Array.map2 (fun (L(target,_)) (L(source,_)) -> target, source) parameters arguments) do
+                    match step with
+                    | MoveVar (target, source) -> statement s $"v{target} = v{source}"
+                    | SaveTemp (slot, source) ->
+                        temps.[slot] <- $"t{s.text.Length}_{source}"
+                        statement s $"{tyv types.[source]} {temps.[slot]} = v{source}"
+                    | MoveTemp (target, slot) -> statement s $"v{target} = {temps.[slot]}"
                 statement s "continue"
             | TyJoinPoint(jp, args) -> return' (jp_text (jp, args))
             | TyBackend(_,_,r) -> raise_codegen_error_backend r "The eBPF backend does not support nesting other backends."
@@ -173626,6 +174486,19 @@ end
         | TsReturnVoid
 
     /// ### codegenTypeScript
+    /// ### typeScriptConstLocals
+    let typeScriptConstLocals (generated : string) =
+        if not (generated.Contains("let v", System.StringComparison.Ordinal)) then generated
+        else
+            let binding = System.Text.RegularExpressions.Regex(@"\blet (v[0-9]+)\b(?=[^;\n]*=)")
+            let mutation = System.Text.RegularExpressions.Regex(@"(?<![\w.])(v[0-9]+)\s*(?:\.\w+|\[[^\]\n]*\])*\s*(?:=(?![=>])|\+=|-=|\*=|/=|%=|<<=|>>>=|>>=|&=|\|=|\^=|\*\*=|\+\+|--)|(?:\+\+|--)\s*(v[0-9]+)\b")
+            let body = binding.Replace(generated, "let BOUND")
+            let mutated = HashSet<string>(System.StringComparer.Ordinal)
+            for found in mutation.Matches body do
+                mutated.Add(if found.Groups.[1].Success then found.Groups.[1].Value else found.Groups.[2].Value) |> ignore
+            binding.Replace(generated, fun (found : System.Text.RegularExpressions.Match) ->
+                if mutated.Contains found.Groups.[1].Value then found.Value else "const " + found.Groups.[1].Value)
+
     let codegenTypeScript (env : PartEvalResult) (x : TypedBind []) =
         let method_names = Dictionary<int, string>()
         let closure_names = Dictionary<int, string>()
@@ -173635,6 +174508,14 @@ end
         let helpers = ResizeArray<string>()
         let helper_names = HashSet<string>()
         let closure_of_var = Dictionary<int, int>()
+        let falls_through (s : CodegenEnv) =
+            let text = s.text
+            let mutable stop = text.Length
+            while stop > 0 && System.Char.IsWhiteSpace text.[stop - 1] do stop <- stop - 1
+            let mutable start = stop
+            while start > 0 && text.[start - 1] <> '\n' do start <- start - 1
+            let last = text.ToString(start, stop - start).Trim()
+            not (last.StartsWith "return" || last.StartsWith "continue" || last.StartsWith "throw ")
         let export_names = HashSet<string>()
 
         let print is_type show r =
@@ -173913,15 +174794,15 @@ end
                 line s "}"
             | TyJoinPoint(JPMethod(a,c),args) when is_tail && (match self_loop with Some (tag, _) -> (method (a,c)).tag = tag | None -> false) ->
                 let parameters = snd self_loop.Value
-                let values = args |> Array.map (fun (L(j,_)) -> $"v{j}")
-                match parameters with
-                | [||] -> ()
-                | [|L(i,_)|] -> line s $"v{i} = {values.[0]};"
-                | _ ->
-                    line s "{"
-                    values |> Array.iteri (fun k v -> line (indent s) $"let t{k} = {v};")
-                    parameters |> Array.iteri (fun k (L(i,_)) -> line (indent s) $"v{i} = t{k};")
-                    line s "}"
+                let steps = parallelMoves (Array.map2 (fun (L(target,_)) (L(source,_)) -> target, source) parameters args)
+                let cyclic = steps |> List.exists (function SaveTemp _ -> true | _ -> false)
+                let s' = if cyclic then (line s "{"; indent s) else s
+                for step in steps do
+                    match step with
+                    | MoveVar (target, source) -> line s' $"v{target} = v{source};"
+                    | SaveTemp (slot, source) -> line s' $"const t{slot} = v{source};"
+                    | MoveTemp (target, slot) -> line s' $"v{target} = t{slot};"
+                if cyclic then line s "}"
                 line s "continue tail;"
             | TyJoinPoint(JPClosure(a,c) as a',args) ->
                 match ret with
@@ -173947,7 +174828,7 @@ end
                 on_succ |> Array.iteri (fun k b ->
                     line s' $"case {k}{suffix}: {{"
                     block s' ret b
-                    line (indent s') "break;"
+                    if falls_through s' then line (indent s') "break;"
                     line s' "}")
                 line s' "default: {"
                 block s' ret on_fail
@@ -173982,7 +174863,7 @@ end
                         data_free_vars a |> Array.iteri (fun f (L(i,t)) -> line s'' $"let v{i}: {tyv t} = {source}.f{f};")
                         ) is a
                     binds s'' ret b
-                    line s'' "break;"
+                    if falls_through s'' then line s'' "break;"
                     line s' "}")
                 match on_fail with
                 | Some b ->
@@ -174137,7 +175018,8 @@ end
             cases |> Array.iter (fun ((i,_),a) ->
                 let parameters = a |> Array.mapi (fun f (L(_,t)) -> $"f{f}: {tyv t}") |> String.concat ", "
                 let fields = a |> Array.mapi (fun f _ -> $", f{f}: f{f}") |> String.concat ""
-                line s $"function {name}_{unionCaseSuffix x i}({parameters}): {name} {{ return {{ tag: {i}{fields} }}; }}")
+                if a.Length = 0 then line s $"const {name}_{unionCaseSuffix x i}_shared: {name} = {{ tag: {i} }}; function {name}_{unionCaseSuffix x i}(): {name} {{ return {name}_{unionCaseSuffix x i}_shared; }}"
+                else line s $"function {name}_{unionCaseSuffix x i}({parameters}): {name} {{ return {{ tag: {i}{fields} }}; }}")
         and uheap : _ -> UnionRecFsharp = union (union_type "UH")
         and ustack : _ -> UnionRecFsharp = union (union_type "US")
         and method : _ -> MethodRecFsharp =
@@ -174218,7 +175100,7 @@ end
             match main_tys with
             | [|YPrim Int32T|] -> program.AppendLine("process.exitCode = main();") |> ignore
             | _ -> program.AppendLine("main();") |> ignore
-            program.ToString()
+            program.ToString() |> typeScriptConstLocals
 
 
     /// ## RefCounting
@@ -174372,7 +175254,7 @@ end
             | _ -> 8
         let order_argsC v = v |> Array.sortWith (fun (L(_,t)) (L(_,t')) -> compare (sizeof_tyvC t') (sizeof_tyvC t))
         let lineC x s = if s <> "" then x.text.Append(' ', x.indent).AppendLine s |> ignore
-        let line' x s = line x (String.concat " " s)
+        let line' x s = lineC x (String.concat " " s)
 
         let rec is_heap f x =
             Array.exists (fun (L(i,t)) ->
@@ -174417,6 +175299,51 @@ end
             strb.Append '"' |> ignore
             strb.ToString()
 
+        let cStaticFunctions (generated : string) =
+            let topFunction =
+                System.Text.RegularExpressions.Regex(
+                    @"^(?!static\b|typedef\b|struct\b|union\b|enum\b|extern\b|return\b|else\b|if\b|while\b|for\b|switch\b|case\b|default\b)[A-Za-z_][\w \*]*?[\s\*](?<name>[A-Za-z_]\w*)\([^;{}]*\)\s*(?<end>\{|;)(?=\r?$)",
+                    System.Text.RegularExpressions.RegexOptions.Multiline)
+            let defined =
+                topFunction.Matches generated
+                |> Seq.filter (fun found -> found.Groups.["end"].Value = "{")
+                |> Seq.map (fun found -> found.Groups.["name"].Value)
+                |> Set.ofSeq
+            let withStatic (found : System.Text.RegularExpressions.Match) =
+                let name = found.Groups.["name"].Value
+                if name <> "main" && defined.Contains name then "static " + found.Value else found.Value
+            topFunction.Replace(generated, System.Text.RegularExpressions.MatchEvaluator withStatic)
+
+
+        let fuseCDeclarations (generated : string) =
+            let declaration = System.Text.RegularExpressions.Regex(@"^(?<indent>[ \t]+)(?<type>[A-Za-z_][\w \*]*?[\w\*])\s+(?<name>v[0-9]+);$")
+            let storage = System.Text.RegularExpressions.Regex(@"\b(static|extern|typedef|return|goto|register)\b")
+            let lines = generated.Replace("\r\n", "\n").Split('\n')
+            let fused = StringBuilder(generated.Length)
+            let mutable index = 0
+            while index < lines.Length do
+                let line = lines.[index]
+                let found = declaration.Match line
+                let joined =
+                    if found.Success && index + 1 < lines.Length && not (storage.IsMatch found.Groups.["type"].Value) then
+                        let name = found.Groups.["name"].Value
+                        let prefix = found.Groups.["indent"].Value + name + " = "
+                        let following = lines.[index + 1]
+                        if following.StartsWith(prefix, System.StringComparison.Ordinal) && following.EndsWith(";", System.StringComparison.Ordinal) then
+                            let rest = following.Substring prefix.Length
+                            if System.Text.RegularExpressions.Regex.IsMatch(rest, @"\b" + name + @"\b") then None
+                            else Some (found.Groups.["indent"].Value + found.Groups.["type"].Value + " " + name + " = " + rest)
+                        else None
+                    else None
+                match joined with
+                | Some text ->
+                    fused.Append(text) |> ignore
+                    index <- index + 2
+                | None ->
+                    fused.Append(line) |> ignore
+                    index <- index + 1
+                if index < lines.Length then fused.Append('\n') |> ignore
+            fused.ToString()
         let codegenC (env : PartEvalResult) (x : TypedBind []) =
             let globals = ResizeArray()
             let fwd_dcls = ResizeArray()
@@ -174530,6 +175457,30 @@ end
                     dirty <- false
 
             let cstring_concat' show =
+                let mutable dirty = true
+                fun () ->
+                    if dirty then print show ()
+                    dirty <- false
+
+            let cstring_from_i64' show =
+                let mutable dirty = true
+                fun () ->
+                    if dirty then print show ()
+                    dirty <- false
+
+            let cstring_from_u64' show =
+                let mutable dirty = true
+                fun () ->
+                    if dirty then print show ()
+                    dirty <- false
+
+            let cstring_from_bool' show =
+                let mutable dirty = true
+                fun () ->
+                    if dirty then print show ()
+                    dirty <- false
+
+            let cstring_from_char' show =
                 let mutable dirty = true
                 fun () ->
                     if dirty then print show ()
@@ -174977,6 +175928,19 @@ end
                     | StringIndex, [a;b] -> sprintf "%s->ptr[%s]" (tup_data a) (tup_data b)
                     | StringSlice, [a;b;c] -> cstring(); cstring_slice(); sprintf "StringSlice(%s, %s, %s)" (tup_data a) (tup_data b) (tup_data c)
                     | StaticStringConcat, [a;b] -> cstring(); cstring_concat(); sprintf "StringConcat(%s, %s)" (tup_data a) (tup_data b)
+                    | PrimToString, [a] ->
+                        cstring()
+                        let ty =
+                            match a with
+                            | DV(L(_,t)) -> t
+                            | DLit l -> YPrim (lit_to_primitive_type l)
+                            | _ -> raise_codegen_error "PrimToString expects a primitive value."
+                        match ty with
+                        | YPrim (Int8T | Int16T | Int32T | Int64T) -> cstring_from_i64(); sprintf "StringFromI64((int64_t)%s)" (tup_data a)
+                        | YPrim (UInt8T | UInt16T | UInt32T | UInt64T) -> cstring_from_u64(); sprintf "StringFromU64((uint64_t)%s)" (tup_data a)
+                        | YPrim BoolT -> cstring_from_bool(); sprintf "StringFromBool(%s)" (tup_data a)
+                        | YPrim CharT -> cstring_from_char(); sprintf "StringFromChar(%s)" (tup_data a)
+                        | _ -> raise_codegen_error "PrimToString expects an integer, bool or char."
                     | ArrayIndex, [DV(L(_,YArray t)) & a;b] ->
                         match tup_ty t with
                         | "void" -> "/* void array index */"
@@ -175399,7 +176363,11 @@ end
                             line s_fun "}"
                         else
                             line s_fun (sprintf "UH%i * %s(%s) { // %s" i (generatedCaseNameOfTag (sprintf "UH%i" i) x.free_vars tag) args k)
-                            let _ =
+                            if v.Length = 0 then
+                                let s_fun = indent s_fun
+                                line s_fun $"static UH{i} x = {{ .refc = {System.Int32.MaxValue / 2}, .tag = {tag} }};"
+                                line s_fun "return &x;"
+                            else
                                 let s_fun = indent s_fun
                                 line s_fun $"UH{i} * x = {malloc}(sizeof(UH{i}));"
                                 line s_fun $"x->tag = {tag};"
@@ -175512,6 +176480,47 @@ end
                     line s_concat "return result;"
                     line s_fun "}"
                     )
+            and cstring_from_i64 : unit -> unit =
+                cstring_from_i64' (fun _ _ s_fun () ->
+                    let tag = (carray (YPrim CharT)).tag
+                    line s_fun "static inline String * StringFromI64(int64_t value){"
+                    let s_body = indent s_fun
+                    line s_body "char buffer[24];"
+                    line s_body "int length = snprintf(buffer, sizeof buffer, \"%lld\", (long long)value);"
+                    line s_body $"String * result = ArrayCreate{tag}((uint32_t)length + 1, false);"
+                    line s_body "memcpy(result->ptr, buffer, (size_t)length + 1);"
+                    line s_body "return result;"
+                    line s_fun "}"
+                    )
+            and cstring_from_u64 : unit -> unit =
+                cstring_from_u64' (fun _ _ s_fun () ->
+                    let tag = (carray (YPrim CharT)).tag
+                    line s_fun "static inline String * StringFromU64(uint64_t value){"
+                    let s_body = indent s_fun
+                    line s_body "char buffer[24];"
+                    line s_body "int length = snprintf(buffer, sizeof buffer, \"%llu\", (unsigned long long)value);"
+                    line s_body $"String * result = ArrayCreate{tag}((uint32_t)length + 1, false);"
+                    line s_body "memcpy(result->ptr, buffer, (size_t)length + 1);"
+                    line s_body "return result;"
+                    line s_fun "}"
+                    )
+            and cstring_from_bool : unit -> unit =
+                cstring_from_bool' (fun _ _ s_fun () ->
+                    line s_fun "static inline String * StringFromBool(bool value){"
+                    line (indent s_fun) "return value ? StringLit(5, \"true\") : StringLit(6, \"false\");"
+                    line s_fun "}"
+                    )
+            and cstring_from_char : unit -> unit =
+                cstring_from_char' (fun _ _ s_fun () ->
+                    let tag = (carray (YPrim CharT)).tag
+                    line s_fun "static inline String * StringFromChar(char value){"
+                    let s_body = indent s_fun
+                    line s_body $"String * result = ArrayCreate{tag}(2, false);"
+                    line s_body "result->ptr[0] = value;"
+                    line s_body "result->ptr[1] = '\\0';"
+                    line s_body "return result;"
+                    line s_fun "}"
+                    )
 
             match binds_last_dataC x |> data_term_vars |> term_vars_to_tysC with
             | [|YPrim Int32T|] ->
@@ -175530,10 +176539,11 @@ end
                 let program = StringBuilder()
 
                 Seq.append globals env.globals |> Seq.distinct |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
-                fwd_dcls |> Seq.iter (fun x -> program.Append(x) |> ignore)
-                types |> Seq.iter (fun x -> program.Append(x) |> ignore)
-                functions |> Seq.iter (fun x -> program.Append(x) |> ignore)
-                program.Append(main_defs.text).ToString()
+                let generated = StringBuilder()
+                fwd_dcls |> Seq.iter (fun x -> generated.Append(x) |> ignore)
+                types |> Seq.iter (fun x -> generated.Append(x) |> ignore)
+                functions |> Seq.iter (fun x -> generated.Append(x) |> ignore)
+                program.Append(cStaticFunctions (generated.ToString())).Append(main_defs.text).ToString() |> fuseCDeclarations
             | _ ->
                 raise_codegen_error "The return type of main in the C backend should be a 32-bit int."
 
@@ -176790,6 +177800,21 @@ end
                 "    cuda = False"
             ]
 
+        let pythonWithoutDels (text : string) =
+            let delLine = System.Text.RegularExpressions.Regex(@"^\s*del v[0-9]+(, v[0-9]+)*\s*$")
+            let lines = text.Replace("\r\n", "\n").Split('\n') |> Array.filter (fun line -> not (delLine.IsMatch line))
+            let indentOf (line : string) = line.Length - line.TrimStart(' ').Length
+            let output = ResizeArray<string>()
+            for index = 0 to lines.Length - 1 do
+                let line = lines.[index]
+                output.Add line
+                if line.TrimEnd().EndsWith(":") && not (line.TrimStart().StartsWith("#")) then
+                    let following = lines |> Seq.skip (index + 1) |> Seq.tryFind (fun next -> next.Trim() <> "")
+                    match following with
+                    | Some next when indentOf next > indentOf line -> ()
+                    | _ -> output.Add(System.String(' ', indentOf line + 4) + "pass")
+            System.String.Join("\n", output)
+
         let codegen' backend_handler (part_eval_env : PartEvalResult) (code_env : codegen_env) =
             let global' =
                 let has_added = HashSet()
@@ -177014,9 +178039,11 @@ end
                     let c = c'.Item
                     let i = c.tags.[a]
                     let vars = tup_data' b
+                    let pythonNullary (cases : Map<int * string, TyV[]>) (tag : int) = cases |> Map.exists (fun (j, _) fields -> j = tag && fields.Length = 0)
+                    let pythonConstruct (name : string) (nullary : bool) (args : string) = if nullary then name + "_shared" else sprintf "%s(%s)" name args
                     match c.layout with
-                    | UHeap -> let u = uheap c' in sprintf "%s(%s)" (generatedCaseNameOfTag (sprintf "UH%i" u.tag) u.free_vars i) vars
-                    | UStack -> let u = ustack c' in sprintf "%s(%s)" (generatedCaseNameOfTag (sprintf "US%i" u.tag) u.free_vars i) vars
+                    | UHeap -> let u = uheap c' in pythonConstruct (generatedCaseNameOfTag (sprintf "UH%i" u.tag) u.free_vars i) (pythonNullary u.free_vars i) vars
+                    | UStack -> let u = ustack c' in pythonConstruct (generatedCaseNameOfTag (sprintf "US%i" u.tag) u.free_vars i) (pythonNullary u.free_vars i) vars
                     |> return'
                 | TyToLayout(a,b) ->
                     match b with
@@ -177145,18 +178172,20 @@ end
                 x.free_vars |> Map.iter (fun ((i : int, _) as k) a ->
                     let case_name = generatedCaseNameOfTag (sprintf "UH%i" x.tag) x.free_vars i
                     line s $"class {case_name}(NamedTuple): # {snd k}" // ws: `snd k` (cases keyed `tag * name`)
-                    let s = indent s
-                    a |> Array.iter (fun (L(i,t)) -> line s $"v{i} : {annot t}")
-                    line s $"tag = {i}"
+                    let body = indent s
+                    a |> Array.iter (fun (L(i,t)) -> line body $"v{i} : {annot t}")
+                    line body $"tag = {i}"
+                    if a.Length = 0 then line s $"{case_name}_shared = {case_name}()"
                     )
                 )
             and ustack : _ -> UnionRec = union (fun s x ->
                 x.free_vars |> Map.iter (fun ((i : int, _) as k) a ->
                     let case_name = generatedCaseNameOfTag (sprintf "US%i" x.tag) x.free_vars i
                     line s $"class {case_name}(NamedTuple): # {snd k}" // ws: `snd k`
-                    let s = indent s
-                    a |> Array.iter (fun (L(i,t)) -> line s $"v{i} : {annot t}")
-                    line s $"tag = {i}"
+                    let body = indent s
+                    a |> Array.iter (fun (L(i,t)) -> line body $"v{i} : {annot t}")
+                    line body $"tag = {i}"
+                    if a.Length = 0 then line s $"{case_name}_shared = {case_name}()"
                     )
                 let cases = x.free_vars |> Map.toArray |> Array.map (fun ((i : int, _), _) -> generatedCaseNameOfTag (sprintf "US%i" x.tag) x.free_vars i) |> function [|x|] -> x | x -> x |> String.concat ", " |> sprintf "Union[%s]"
                 line s $"US{x.tag} = {cases}"
@@ -177228,7 +178257,6 @@ end
                     )
 
             fun (x : TypedBind []) ->
-                global' cupy_prelude // ws: upstream `import "cupy as cp"`; the CPU fallback (see cupy_prelude)
                 from "dataclasses import dataclass"
                 from "typing import NamedTuple, Union, Callable, Tuple"
                 part_eval_env.globals |> Seq.toArray |> Array.iter global' // ws: globals collected by the partial evaluator (PartEvalResult.globals), as in CodegenC
@@ -177249,6 +178277,11 @@ end
                     line s "if __name__ == '__main__': sys.exit(main())"
                 | _ -> line s "if __name__ == '__main__': main()"
                 code_env.main_defs.Add(s.text.ToString())
+                let reaches_arrays (texts : string ResizeArray) = texts |> Seq.exists (fun text -> System.Text.RegularExpressions.Regex.IsMatch(text, @"\bcp\.|\bcuda\b"))
+                if [code_env.globals; code_env.types; code_env.functions; code_env.main_defs] |> List.exists reaches_arrays then code_env.globals.Insert(0, cupy_prelude)
+                else
+                    for parts in [code_env.functions; code_env.main_defs] do
+                        for index = 0 to parts.Count - 1 do parts.[index] <- pythonWithoutDels parts.[index]
 
         let codegen (default_env : DefaultEnv) (file_path : string) part_eval_env (x : TypedBind[]) : GeneratedFile list = // ws: Startup. prefix and the annotation
             let g = codegenMemoTable HashIdentity.Structural // ws: CodegenAdapter's table (upstream's unused `cuda_kernels` builder is left out)
@@ -179482,31 +180515,49 @@ end
             | Converted of string
             | Rejected of attempted : string
 
+        let headerSpelling (target : Spelling) (lexeme : Lexeme) =
+            match target, lexeme.Text.Text with
+            | Symbols, "test" -> Some ":#"
+            | Words, ":#" -> Some "test"
+            | _ -> None
+
         let convertLine (target : Spelling) (line : Line<'phase>) =
             match line.Shape with
             | Code (_, lexemes, tail) ->
-                let pieces = lexemes |> Array.map (fun lexeme -> lexeme, respell target lexeme)
+                let header = lexemes.Length > 0 && lexemes.[0].Span.From = 0 && (lexemes.[0].Text.Text = "test" || lexemes.[0].Text.Text = ":#")
+                let spelledAt index lexeme =
+                    if not header then respell target lexeme
+                    elif index = 0 then headerSpelling target lexeme
+                    else None
+                let pieces = lexemes |> Array.mapi (fun index lexeme -> lexeme, spelledAt index lexeme)
                 if pieces |> Array.forall (fun (_, spelled) -> spelled.IsNone) then Unchanged
                 else
-                    let builder = System.Text.StringBuilder ()
-                    pieces
-                    |> Array.iteri (fun index (lexeme, spelled) ->
-                        let text = defaultArg spelled lexeme.Text.Text
-                        if index = 0 then builder.Append (' ', lexeme.Span.From) |> ignore
-                        else
-                            let previousEnd = (fst pieces.[index - 1]).Span.NearTo
-                            let gap = lexeme.Span.From - previousEnd
-                            let previousText = match snd pieces.[index - 1] with Some t -> t | None -> (fst pieces.[index - 1]).Text.Text
-                            let needsSpace = gap = 0 && (spelled.IsSome || (snd pieces.[index - 1]).IsSome) && fuses previousText text
-                            match lexeme.Before with
-                            | Embedded embedded -> builder.Append embedded.Text |> ignore
-                            | Whitespace width -> builder.Append (' ', (if needsSpace then max 1 width else width)) |> ignore
-                        builder.Append text |> ignore)
-                    builder.Append tail.Text |> ignore
-                    let attempted = builder.ToString ()
-                    match lexLine lex_state_init attempted with
-                    | Code (_, relexed, _), _ when (relexed |> Array.map (fun l -> tokenIdentity l.Token)) = (lexemes |> Array.map (fun l -> tokenIdentity l.Token)) -> Converted attempted
-                    | _ -> Rejected attempted
+                    let spell (guarded : bool) =
+                        let builder = System.Text.StringBuilder ()
+                        pieces
+                        |> Array.iteri (fun index (lexeme, spelled) ->
+                            let text = defaultArg spelled lexeme.Text.Text
+                            if index = 0 then builder.Append (' ', lexeme.Span.From) |> ignore
+                            else
+                                let previousEnd = (fst pieces.[index - 1]).Span.NearTo
+                                let gap = lexeme.Span.From - previousEnd
+                                let previousText = match snd pieces.[index - 1] with Some t -> t | None -> (fst pieces.[index - 1]).Text.Text
+                                let needsSpace = guarded && gap = 0 && (spelled.IsSome || (snd pieces.[index - 1]).IsSome) && fuses previousText text
+                                match lexeme.Before with
+                                | Embedded embedded -> builder.Append embedded.Text |> ignore
+                                | Whitespace width -> builder.Append (' ', (if needsSpace then max 1 width else width)) |> ignore
+                            builder.Append text |> ignore)
+                        builder.Append tail.Text |> ignore
+                        builder.ToString ()
+                    let keepsTokens (attempted : string) =
+                        match lexLine lex_state_init attempted with
+                        | Code (_, relexed, _), _ -> (relexed |> Array.map (fun l -> tokenIdentity l.Token)) = (lexemes |> Array.map (fun l -> tokenIdentity l.Token))
+                        | _ -> false
+                    let tight = spell false
+                    if keepsTokens tight then Converted tight
+                    else
+                        let spaced = spell true
+                        if keepsTokens spaced then Converted spaced else Rejected spaced
             | _ -> Unchanged
 
         let convert (target : Spelling) (source : Source<'phase>) =
@@ -179970,7 +181021,14 @@ end
                             match flattenBlock ((synthetic (-1) segmentHead :: run) @ [ synthetic (-2) ("    " + segmentTail) ]) with
                             | Flattened _ as block -> block
                             | Refused _ -> kept run
-                        let blocks = ResizeArray<FlatBlock> [ kept (leading @ head) ]
+                        let headFits = head |> List.forall (fun line -> displayWidth (render line) <= 120)
+                        let headBlock =
+                            if headFits then kept head
+                            else
+                                match flattenBlock (head @ [ synthetic (-2) ("    " + segmentTail) ]) with
+                                | Flattened _ as block -> block
+                                | Refused _ -> kept head
+                        let blocks = ResizeArray<FlatBlock> (if leading.IsEmpty then [ headBlock ] else [ kept leading; headBlock ])
                         let run = ResizeArray<Line<'phase>> ()
                         let flush () =
                             if run.Count > 0 then
@@ -182642,13 +183700,22 @@ end
                 0
             else
                 let check = List.contains "--check" arguments
+                let spelling =
+                    match option "--spelling" arguments with
+                    | Some "symbols" -> Some FormatterConvert.Symbols
+                    | Some "words" -> Some FormatterConvert.Words
+                    | _ -> None
                 let changed = ResizeArray<string> ()
                 let failed = ref 0
                 let examine (file : string) =
                     try
                         if File.Exists file then
                             let text = File.ReadAllText(file).Replace ("\r\n", "\n")
-                            Ok (Some (text, formatText file (editionOf file) text))
+                            match spelling with
+                            | Some target ->
+                                let lines, converted, _ = FormatterConvert.convert target (lexText file (editionOf file) text)
+                                Ok (Some (text, (if converted = 0 then text else joinLines lines)))
+                            | None -> Ok (Some (text, formatText file (editionOf file) text))
                         else Ok None
                     with error -> Error error.Message
                 let report (file : string, outcome : Result<(string * string) option, string>) =
@@ -183498,27 +184565,54 @@ end
         | Some (_, _, weight) -> weight
         | None -> profile.defaultWeight
 
+    /// ### xCompatDefusedAt
+    let xCompatDefusedAt (profile : PostabilityProfile) (text : string) (i : int) =
+        i > 0 && i + 1 < text.Length && text.[i] = '.'
+        && profile.defusedBefore.IsMatch (string text.[i - 1]) && profile.defusedAfter.IsMatch (string text.[i + 1])
+
+    /// ### xCompatPostedLink
+    let xCompatPostedLink (profile : PostabilityProfile) (text : string) (found : Text.RegularExpressions.Match) =
+        let undefusedDot = seq { found.Index .. found.Index + found.Length - 1 } |> Seq.exists (fun i -> text.[i] = '.' && not (xCompatDefusedAt profile text i))
+        undefusedDot && xCompatLinks profile found.Value (found.Groups.[1].Value.ToLowerInvariant ())
+
     /// ### xCompatPostWeight
     let xCompatPostWeight (profile : PostabilityProfile) (post : string) =
-        let links = [ for found in profile.domainPattern.Matches post do if xCompatLinks profile found.Value (found.Groups.[1].Value.ToLowerInvariant ()) then yield found ]
+        let links = [ for found in profile.domainPattern.Matches post do if xCompatPostedLink profile post found then yield found ]
         let unlinked = links |> List.rev |> List.fold (fun (rest : string) found -> rest.Remove (found.Index, found.Length)) post
         let characters = unlinked.EnumerateRunes () |> Seq.sumBy (fun rune -> xCompatCodePointWeight profile rune.Value)
         characters + profile.linkWeight * links.Length
 
     /// ### xCompatTopLevelBlocks
     let xCompatTopLevelBlocks (lines : string []) =
-        let starts = [ for index in 0 .. lines.Length - 1 do if lines.[index].Length > 0 && not (Char.IsWhiteSpace lines.[index].[0]) then yield index ]
-        starts
-        |> List.mapi (fun position start ->
-            let stop = if position + 1 < starts.Length then starts.[position + 1] else lines.Length
-            let body = lines.[start .. stop - 1] |> Array.toList |> List.rev |> List.skipWhile String.IsNullOrWhiteSpace |> List.rev
-            start + 1, String.Join ("\n", body))
+        let lines = if lines.Length > 0 && lines.[lines.Length - 1] = "" then lines.[.. lines.Length - 2] else lines
+        let cells = Collections.Generic.List<int * string> ()
+        let current = Collections.Generic.List<string> ()
+        let mutable start = 1
+        let mutable blanks = 0
+        let mutable seen = false
+        let finish () = if current.Count > 0 then cells.Add (start, String.Join("\n", current).TrimEnd ())
+        for index in 0 .. lines.Length - 1 do
+            let line = lines.[index]
+            if line = "" then blanks <- blanks + 1
+            elif blanks > 0 && seen && not (line.StartsWith " " || line.StartsWith "\t") then
+                finish ()
+                current.Clear ()
+                for _ in 2 .. blanks do current.Add ""
+                current.Add line
+                start <- index + 1
+                blanks <- 0
+            else
+                for _ in 1 .. blanks do current.Add ""
+                current.Add line
+                if not seen then start <- index + 1
+                blanks <- 0
+                seen <- true
+        finish ()
+        List.ofSeq cells
 
     /// ### xCompatDefusedDots
     let xCompatDefusedDots (profile : PostabilityProfile) (block : string) =
-        seq { 1 .. block.Length - 2 }
-        |> Seq.filter (fun i -> block.[i] = '.' && profile.defusedBefore.IsMatch (string block.[i - 1]) && profile.defusedAfter.IsMatch (string block.[i + 1]))
-        |> Seq.length
+        seq { 1 .. block.Length - 2 } |> Seq.filter (xCompatDefusedAt profile block) |> Seq.length
 
     /// ### xCompatPostableLimit
     let xCompatPostableLimit (profile : PostabilityProfile) (cell : int) (block : string) =
@@ -183537,7 +184631,7 @@ end
         let marks = profile.entityPatterns |> List.collect (fun (kind, pattern) -> [ for found in pattern.Matches line -> kind, found.Index, found.Value ])
         let links =
             [ for found in profile.domainPattern.Matches line do
-                if xCompatLinks profile found.Value (found.Groups.[1].Value.ToLowerInvariant ()) then yield XCompatAutolink, found.Index, found.Value ]
+                if xCompatPostedLink profile line found then yield XCompatAutolink, found.Index, found.Value ]
         marks @ links
         |> List.sortBy (fun (_, start, _) -> start)
         |> List.map (fun (kind, start, text) ->
@@ -185306,7 +186400,9 @@ end
                                         emitBuildFileInitializationStage BuildFileCodegenCompleted
                                         BuildDraft.Provisional generated
                                     let build codegen backend file_extension =
-                                        build_many (fun file b a -> [{|code = codegen b (DeadPureLetElision.block a) |> UnusedGlobals.prune b.globals; file_extension = file_extension|}]) backend
+                                        build_many (fun file b a ->
+                                            let code = codegen b (DeadPureLetElision.block a) |> UnusedGlobals.prune b.globals
+                                            [{|code = code; file_extension = file_extension|}]) backend
     
 
                                     let do_build () =
@@ -188014,7 +189110,9 @@ end
                                         trace Verbose (fun () -> $"Supervisor.supervisor_server.BuildFile.file_build.codegen_ready / backend: {backend} / files: {List.length generated}") _locals
                                         BuildOk generated
                                     let build codegen backend file_extension =
-                                        build_many (fun file b a -> [generated_file (codegen b (DeadPureLetElision.block a) |> UnusedGlobals.prune b.globals) file_extension]) backend
+                                        build_many (fun file b a ->
+                                            let code = codegen b (DeadPureLetElision.block a) |> UnusedGlobals.prune b.globals
+                                            [generated_file code file_extension]) backend
                                     match backend with
                                     | "Gleam" -> build codegenGleam "Gleam" ".gleam"
                                     | "Lua" -> build codegenLua "Lua" ".lua"

@@ -22,7 +22,7 @@ module.exports = grammar({
     ),
 
     test_header: $ => seq(
-      alias(token(prec(6, /test[ \t]+/)), $.test_keyword),
+      alias(token(prec(6, /(test|:#)[ \t]+/)), $.test_keyword),
       field('name', alias(token.immediate(/[^\s=]+/), $.test_name)),
       optional(alias(token.immediate(/[^\r\n]+/), $.test_signature)),
     ),

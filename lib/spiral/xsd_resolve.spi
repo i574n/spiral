@@ -16,6 +16,7 @@
 := merge (more : xsd_schema) (into : xsd_schema) : xsd_schema =
     {
         into ?|
+            target_namespace = ? into.target_namespace = "" ?> more.target_namespace |: into.target_namespace
             simple_types = listm.append more.simple_types into.simple_types
             complex_types = listm.append more.complex_types into.complex_types
             elements = listm.append more.elements into.elements
@@ -47,11 +48,156 @@
     | Some local => without_parent_steps local
     | None => without_parent_steps (directory ++# location)
 
+///> rust
+test catalog_maps_absolute_locations_to_local_files =
+    := site = "http://example.org/"
+    := catalog = (site ++# "cat.xsd", "C:/corpus/cat.xsd") :: (site ++# "types/", "C:/corpus/types/") :: Nil
+    := resolved location = resolved_location catalog "C:/corpus/" location
+    ? resolved (site ++# "cat.xsd") <> "C:/corpus/cat.xsd" ?> failwith "an exact entry"
+    ? resolved (site ++# "types/td.xsd") <> "C:/corpus/types/td.xsd" ?> failwith "a prefix entry"
+    ? resolved "local.xsd" <> "C:/corpus/local.xsd" ?> failwith "a relative location stays relative"
+    ? resolved_location Nil "C:/a/" "b.xsd" <> "C:/a/b.xsd" ?> failwith "an empty catalog changes nothing"
+    ? resolved_location Nil "C:/u/maindoc/" "../common/b.xsd" <> "C:/u/common/b.xsd"
+    ?> failwith "a parent step folds"
+    ? without_parent_steps "C:/a/b/../../c.xsd" <> "C:/c.xsd" ?> failwith "two parent steps fold"
+
+:~ ^ type_names (types : list xsd) (acc : list string) : list string =
+    ?= types ?|
+    | Simple (name, _, _) :: rest => type_names rest (name :: acc)
+    | Complex (name, _, _) :: rest => type_names rest (name :: acc)
+    | Derived (name, _, _, _) :: rest => type_names rest (name :: acc)
+    | _ :: rest => type_names rest acc
+    | Nil => acc
+
+:= is_builtin (reference : string) : bool =
+    := prefix = prefix_of reference
+    prefix = "xs" || prefix = "xsd"
+
+:~ ^ namespace_for (prefix : string) (namespaces : list (string * string)) : option string =
+    ?= namespaces ?|
+    | (key, uri) :: rest => ? key = prefix ?> Some uri |: namespace_for prefix rest
+    | Nil => None
+
+:~ ^ declared_namespaces (attributes : list (string * string)) (acc : list (string * string)) : list (string * string) =
+    ?= attributes ?|
+    | (key, value) :: rest =>
+        ? key = "xmlns"
+        ?> declared_namespaces rest (("", value) :: acc)
+        |? sm'.starts_with "xmlns:" key
+        ?> declared_namespaces rest ((sm'.substring 6i32 (sm'.length key - 6i32) key, value) :: acc)
+        |: declared_namespaces rest acc
+    | Nil => acc
+
+:= schema_namespaces (text : string) : list (string * string) =
+    ?= first_named "schema" (xml.read_xml text) ?|
+    | Some (attributes, _) => declared_namespaces attributes Nil
+    | None => Nil
+
+:= qualified (uri : string) (local : string) : string = ? local = "" ?> "" |: "{" ++# uri ++# "}" ++# local
+
+:= qualify_reference (namespaces : list (string * string)) (reference : string) : string =
+    ? reference = "" || is_builtin reference ?> reference
+    |:
+        ?= namespace_for (prefix_of reference) namespaces ?|
+        | Some uri => qualified uri (xml.local_name reference)
+        | None => reference
+
+:~ ^ rename_item (definition : string -> string) (reference : string -> string) (item : xsd) : xsd =
+    ?= item ?|
+    | Simple (name, base, facets) => Simple (definition name, reference base, facets)
+    | Complex (name, content, attributes) =>
+        Complex (
+            definition name,
+            rename_item definition reference content,
+            rename_items definition reference attributes Nil
+        )
+    | Derived (name, base, content, attributes) =>
+        := content = rename_item definition reference content
+        Derived (definition name, reference base, content, rename_items definition reference attributes Nil)
+    | Sequence (min, max, items) => Sequence (min, max, rename_items definition reference items Nil)
+    | Choice (min, max, items) => Choice (min, max, rename_items definition reference items Nil)
+    | Element (name, type_reference, min, max, inline) =>
+        Element (name, reference type_reference, min, max, rename_inline definition reference inline)
+    | Attribute (name, type_reference, required, fixed, inline) =>
+        Attribute (name, reference type_reference, required, fixed, rename_inline definition reference inline)
+    | AnyContent => AnyContent
+    | Empty => Empty
+
+:& :~ rename_items
+    (definition : string -> string) (reference : string -> string) (items : list xsd) (acc : list xsd)
+    : list xsd
+    =
+    ?= items ?|
+    | item :: rest => rename_items definition reference rest (rename_item definition reference item :: acc)
+    | Nil => listm.rev acc
+
+:& :~ rename_inline (definition : string -> string) (reference : string -> string) (inline : option xsd) : option xsd =
+    ?= inline ?|
+    | Some inner => Some (rename_item definition reference inner)
+    | None => None
+
+:= rename_schema (definition : string -> string) (reference : string -> string) (schema : xsd_schema) : xsd_schema =
+    {
+        schema ?|
+            simple_types = rename_items definition reference schema.simple_types Nil
+            complex_types = rename_items definition reference schema.complex_types Nil
+            elements = rename_items definition reference schema.elements Nil
+    }
+
+:= qualify_schema (namespaces : list (string * string)) (schema : xsd_schema) : xsd_schema =
+    rename_schema (qualified schema.target_namespace) (qualify_reference namespaces) schema
+
+:= qualified_local (name : string) : string =
+    := close = sm'.index_of "}" name
+    ? sm'.starts_with "{" name && close > 0i32
+    ?> sm'.substring (close + 1i32) (sm'.length name - close - 1i32) name
+    |: name
+
+:= qualified_uri (name : string) : string =
+    := close = sm'.index_of "}" name
+    ? sm'.starts_with "{" name && close > 0i32 ?> sm'.substring 1i32 (close - 1i32) name |: ""
+
+:~ ^ uri_of_local (local : string) (names : list string) : option string =
+    ?= names ?|
+    | name :: rest => ? qualified_local name = local ?> Some (qualified_uri name) |: uri_of_local local rest
+    | Nil => None
+
+:~ ^ colliding_locals (names : list string) (seen : list string) (acc : list string) : list string =
+    ?= names ?|
+    | name :: rest =>
+        := local = qualified_local name
+        := clash =
+            ?= uri_of_local local seen ?|
+            | Some uri => uri <> qualified_uri name
+            | None => !-
+        colliding_locals rest (name :: seen) (? clash && has_string local acc = !- ?> local :: acc |: acc)
+    | Nil => acc
+
+:= namespace_tag (uri : string) : string =
+    := trimmed = ? sm'.ends_with "/" uri ?> sm'.substring 0i32 (sm'.length uri - 1i32) uri |: uri
+    := cut = sm'.last_index_of "/" trimmed
+    := colon = sm'.last_index_of ":" trimmed
+    := at = ? colon > cut ?> colon |: cut
+    sm'.substring (at + 1i32) (sm'.length trimmed - at - 1i32) trimmed
+
+:= final_name (root : string) (collisions : list string) (name : string) : string =
+    ? sm'.starts_with "{" name = !- ?> name
+    |:
+        := local = qualified_local name
+        := uri = qualified_uri name
+        ? uri = root || has_string local collisions = !- ?> local |: namespace_tag uri ++# "_" ++# local
+
+:= finalize_names (schema : xsd_schema) : xsd_schema =
+    := names = type_names schema.simple_types (type_names schema.complex_types Nil)
+    := final = final_name schema.target_namespace (colliding_locals names Nil Nil)
+    rename_schema final final schema
+
 :~ ^ load_tree (catalog : schema_catalog) (path : string) (tree : loaded_tree) : loaded_tree =
     ? has_string path tree.paths ?> tree
     |? xml.is_file path = !- ?> { tree ?| missing = (path :: tree.missing) }
     |:
-        := schema = xml.read_text_replacing_invalid_utf8 path |> read_schema
+        := text = xml.read_text_replacing_invalid_utf8 path
+        := schema = text |> read_schema |> qualify_schema (schema_namespaces text)
         := loaded = { tree ?| paths = (path :: tree.paths); schema = merge schema tree.schema }
         load_includes catalog (directory_of path) schema.includes loaded
 
@@ -70,17 +216,10 @@
 
 := load_schema_tree_with (catalog : schema_catalog) (path : string) : loaded_tree =
     := empty = { target_namespace = ""; includes = Nil; simple_types = Nil; complex_types = Nil; elements = Nil }
-    load_tree catalog path { paths = Nil; missing = Nil; schema = empty }
+    := tree = load_tree catalog path { paths = Nil; missing = Nil; schema = empty }
+    { tree ?| schema = finalize_names tree.schema }
 
 := load_schema_tree (path : string) : loaded_tree = load_schema_tree_with Nil path
-
-:~ ^ type_names (types : list xsd) (acc : list string) : list string =
-    ?= types ?|
-    | Simple (name, _, _) :: rest => type_names rest (name :: acc)
-    | Complex (name, _, _) :: rest => type_names rest (name :: acc)
-    | Derived (name, _, _, _) :: rest => type_names rest (name :: acc)
-    | _ :: rest => type_names rest acc
-    | Nil => acc
 
 :~ ^ references_of (item : xsd) (acc : list string) : list string =
     ?= item ?|
@@ -114,9 +253,27 @@
     | _ :: rest => attribute_types rest acc
     | Nil => acc
 
-:= is_builtin (reference : string) : bool =
-    := prefix = prefix_of reference
-    prefix = "xs" || prefix = "xsd"
+///> rust
+test colliding_local_names_keep_both_namespaces =
+    := xs = "xmlns:xs=\"http://www.w3.org/2001/XMLSchema\""
+    := sequence one = "<xs:sequence><xs:element name=\"" ++# one ++# "\" type=\"xs:string\"/></xs:sequence>"
+    := root_text =
+        "<xs:schema " ++# xs ++# " xmlns:tns=\"urn:a\" xmlns:etd=\"urn:b/Defs/\" targetNamespace=\"urn:a\">"
+        ++# "<xs:complexType name=\"TAdres\">" ++# sequence "L1" ++# "</xs:complexType>"
+        ++# "<xs:complexType name=\"Root\"><xs:sequence><xs:element name=\"own\" type=\"tns:TAdres\"/>"
+        ++# "<xs:element name=\"their\" type=\"etd:TAdres\"/></xs:sequence></xs:complexType></xs:schema>"
+    := imported_text =
+        "<xs:schema " ++# xs ++# " xmlns:etd=\"urn:b/Defs/\" targetNamespace=\"urn:b/Defs/\">"
+        ++# "<xs:complexType name=\"TAdres\">" ++# sequence "Pol" ++# "</xs:complexType></xs:schema>"
+    := read text = text |> read_schema |> qualify_schema (schema_namespaces text)
+    := schema = finalize_names (merge (read imported_text) (read root_text))
+    := names = type_names schema.complex_types Nil
+    ? has_string "TAdres" names = !- ?> failwith "the root namespace keeps its name"
+    ? has_string "Defs_TAdres" names = !- ?> failwith "the imported namespace gets its tag"
+    := references = references_in schema.complex_types Nil
+    ? has_string "TAdres" references = !- || has_string "Defs_TAdres" references = !-
+    ?> failwith "each reference names its own namespace's type"
+    ? has_string "Root" names = !- ?> failwith "a name without a collision is unchanged"
 
 :~ ^ unresolved_in (names : list string) (references : list string) (acc : i32) : i32 =
     ?= references ?|
@@ -145,16 +302,3 @@ test unresolved_count_counts_dangling_type_references =
     ? unresolved_count (tree defined) <> 0i32 ?> failwith "a defined type resolves"
     ? is_builtin "xs:string" = !- ?> failwith "xs:string is built in"
     ? is_builtin "T" ?> failwith "a schema type is not built in"
-
-///> rust
-test catalog_maps_absolute_locations_to_local_files =
-    := site = "http://example.org/"
-    := catalog = (site ++# "cat.xsd", "C:/corpus/cat.xsd") :: (site ++# "types/", "C:/corpus/types/") :: Nil
-    := resolved location = resolved_location catalog "C:/corpus/" location
-    ? resolved (site ++# "cat.xsd") <> "C:/corpus/cat.xsd" ?> failwith "an exact entry"
-    ? resolved (site ++# "types/td.xsd") <> "C:/corpus/types/td.xsd" ?> failwith "a prefix entry"
-    ? resolved "local.xsd" <> "C:/corpus/local.xsd" ?> failwith "a relative location stays relative"
-    ? resolved_location Nil "C:/a/" "b.xsd" <> "C:/a/b.xsd" ?> failwith "an empty catalog changes nothing"
-    ? resolved_location Nil "C:/u/maindoc/" "../common/b.xsd" <> "C:/u/common/b.xsd"
-    ?> failwith "a parent step folds"
-    ? without_parent_steps "C:/a/b/../../c.xsd" <> "C:/c.xsd" ?> failwith "two parent steps fold"

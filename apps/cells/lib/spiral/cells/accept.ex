@@ -90,7 +90,7 @@ defmodule Spiral.Cells.Accept do
   end
 
   defp block(lines, name) do
-    header = ~r/^test #{Regex.escape(name)}[ =]/
+    header = ~r/^(?:test|:#) #{Regex.escape(name)}[ =]/
 
     case Enum.find_index(lines, &Regex.match?(header, &1)) do
       nil ->

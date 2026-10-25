@@ -77,8 +77,20 @@
 := capitalized (s : string) : string =
     ? sm'.length s > 0i32 && is_upper (xml.code_point_text s 0i32) ?> s |: "X" ++# s
 
+:= uri_tail (value : string) : string =
+    := length : i32 = sm'.length value
+    := hash = sm'.last_index_of "#" value
+    ? hash >= 0i32 ?> sm'.substring (hash + 1i32) (length - hash - 1i32) value
+    |:
+        := trimmed = ? sm'.ends_with "/" value ?> sm'.substring 0i32 (length - 1i32) value |: value
+        := trimmed_length : i32 = sm'.length trimmed
+        := slash = sm'.last_index_of "/" trimmed
+        sm'.substring (slash + 1i32) (trimmed_length - slash - 1i32) trimmed
+
+:= case_value (value : string) : string = ? sm'.contains "://" value ?> uri_tail value |: value
+
 := case_name (owner : string) (value : string) : string =
-    capitalized (case_from owner 0i32 "") ++# "_" ++# case_from value 0i32 ""
+    capitalized (case_from owner 0i32 "") ++# "_" ++# case_from (case_value value) 0i32 ""
 
 :~ ^ distinct_values (values : list string) (seen : list string) (acc : list string) : list string =
     ?= values ?|
@@ -152,14 +164,14 @@
     := pairs = value_cases name values Nil Nil
     := cases = case_lines pairs (\ _ case => "    | " ++# case) Nil
     := parse_arms =
-        case_lines pairs (\ v case => "    elif s = \"" ++# escape_text v ++# "\" then Some " ++# case) Nil
+        case_lines pairs (\ v case => "    | \"" ++# escape_text v ++# "\" => Some " ++# case) Nil
     := print_arms = case_lines pairs (\ v case => "    | " ++# case ++# " => \"" ++# escape_text v ++# "\"") Nil
     := union_part = join_lines ("union " ++# ty ++# " =" :: cases) ""
     := parse_part =
         join_lines
             (
                 "inl " ++# ty ++# "_of_string (s : string) : option " ++# ty ++# " ="
-                :: "    if false then None"
+                :: "    match s with"
                 :: parse_arms
             )
             ""
@@ -169,7 +181,7 @@
             ""
     := example_part =
         ?= pairs ?|
-        | Cons _ =>
+        | _ :: _ =>
             := variants = take_items 8i32 pairs
             := count = count_list variants
             := arms = variant_arms variants count 0i32 ""
@@ -193,7 +205,7 @@
             ++# ty
             ++# "_example k)\n"
         | Nil => ""
-    union_part ++# "\n" ++# parse_part ++# "    else None\n\n" ++# print_part ++# example_part
+    union_part ++# "\n" ++# parse_part ++# "    | _ => None\n\n" ++# print_part ++# example_part
 
 := union_value_limit () : i32 = 256i32
 
@@ -307,6 +319,7 @@
     ++# "        inl c = xml.code_point_at s i\n"
     ++# "        inl next = i + xml.code_point_width s i\n"
     ++# state_arms rows function_name 0i32 ""
+
 := direct_coded_state_limit () : i32 = 128i32
 
 := direct_coded_dfa (p : string) : option (list xsd_regex.dfa_state) =
@@ -473,6 +486,7 @@
     | MaxLength _ :: _ => !+
     | _ :: rest => has_length_facet rest
     | Nil => !-
+
 :~ ^ min_length (facets : list xsd_facet) : i32 =
     ?= facets ?|
     | Length n :: _ => n
@@ -941,7 +955,7 @@
                     ++# read
                     ++# ") else None"
                 |: read
-            |: "Cons (" ++# read ++# ", Nil)"
+            |: "[" ++# read ++# "]"
         {
             lines = field_assignment (field_name ("choice_" ++# first_element_name items)) expression :: acc.lines
             functions = listm.append (choice_reader kinds choice_name items) acc.functions
@@ -1094,7 +1108,7 @@
     ? max = 1i32 ?>
         ? min = 0i32
         ?> "xml.option_list (optionm.map (fun v => " ++# value_node kind t name "v" ++# ") " ++# source ++# ")"
-        |: "Cons (" ++# value_node kind t name source ++# ", Nil)"
+        |: "[" ++# value_node kind t name source ++# "]"
     |: "listm.map (fun v => " ++# value_node kind t name "v" ++# ") " ++# source
 
 := concat_parts (parts : list string) : string =
@@ -1266,7 +1280,7 @@
         := t, kind = attribute_type kinds owner name type_reference inline
         := source = "x." ++# field_name name
         := part =
-            ? required ?> "Cons ((\"" ++# name ++# "\", " ++# attribute_value_text kind t source ++# "), Nil)"
+            ? required ?> "[(\"" ++# name ++# "\", " ++# attribute_value_text kind t source ++# ")]"
             |:
                 "xml.option_list (optionm.map (fun v => (\""
                 ++# name
@@ -1302,14 +1316,12 @@
         |: t ++# "_example " ++# variant
     | _ => t ++# "_example " ++# variant
 
-:~ ^ repeated_cons (value : string -> string) (index : i32) (count : i32) : string =
-    ? index >= count ?> "Nil"
-    |:
-        "Cons ("
-        ++# value ("(k + " ++# int_text index ++# "i32)")
-        ++# ", "
-        ++# repeated_cons value (index + 1i32) count
-        ++# ")"
+:~ ^ repeated_items (value : string -> string) (index : i32) (count : i32) (acc : list string) : list string =
+    ? index >= count ?> reverse acc Nil
+    |: repeated_items value (index + 1i32) count (value ("(k + " ++# int_text index ++# "i32)") :: acc)
+
+:= repeated_list (value : string -> string) (count : i32) : string =
+    ? count <= 0i32 ?> "Nil" |: "[" ++# join_with "; " (repeated_items value 0i32 count Nil) "" ++# "]"
 
 := fixed_example (kind : type_kind) (t : string) (fixed : string) : string =
     ?= kind ?|
@@ -1318,7 +1330,7 @@
 
 := occurs_example (min : i32) (max : i32) (value : string -> string) : string =
     ? max = 1i32 ?> (? min = 0i32 ?> "None" |: value "k")
-    |: repeated_cons value 0i32 min
+    |: repeated_list value min
 
 :~ ^ example_named (kinds : list (string * type_kind)) (name : string) (item : xsd) : list string =
     ?= item ?|
@@ -1388,7 +1400,7 @@
     | AnyContent =>
         {
             lines =
-                "        any = Cons (xml.element \"modal\" (Cons ((\"xmlns\", \"urn:example:any\"), Nil)) Nil, Nil)"
+                "        any = [xml.element \"modal\" [(\"xmlns\", \"urn:example:any\")] Nil]"
                 :: acc.lines
             functions = acc.functions
         }
@@ -1805,6 +1817,19 @@ test names_follow_spiral_conventions =
     ? case_name "enviNFe_versao" "4.00" <> "XenviNFe_versao_4_00" ?> failwith "lowercase owner gets a capital prefix"
     ? field_name "type" <> "type_value" ?> failwith "keyword field"
     ? type_name "TNFe" <> "x_tn_fe" ?> failwith "an upper run splits before its last capital"
+    ? case_name "TTransformURI" "http://www.w3.org/2000/09/xmldsig#enveloped-signature"
+        <> "TTransformURI_enveloped_signature"
+    ?> failwith "a URI value is named by its fragment"
+    ? case_name "TTransformURI" "http://www.w3.org/TR/2001/REC-xml-c14n-20010315"
+        <> "TTransformURI_REC_xml_c14n_20010315"
+    ?> failwith "a URI value without a fragment is named by its last path segment"
+
+///> rust
+test enumerations_parse_through_one_match =
+    := text = union_text "TUf" ("SP" :: "RJ" :: Nil)
+    ? sm'.contains "    match s with\n    | \"SP\" => Some TUf_SP\n" text = !- ?> failwith "one arm per value"
+    ? sm'.contains "    | _ => None\n" text = !- ?> failwith "anything else is None"
+    ? sm'.contains "if false" text ?> failwith "no dead first branch"
 
 ///> rust
 test families_share_identical_closed_types_once =

@@ -1,0 +1,104 @@
+/// # erlang_term
+:< sm'_operators
+
+test erlang_term static =
+    :< testing
+
+:= erlang_term_imports () =
+    global "import gleam/dynamic.{type Dynamic}"
+    global "import gleam/erlang/atom"
+    global "import gleam/string"
+    global "@external(erlang, \"gleam_stdlib\", \"identity\") fn erlang_term_coerce(value: a) -> b"
+    global "@external(erlang, \"erlang\", \"apply\") fn erlang_term_apply(m: atom.Atom, f: atom.Atom, args: List(Dynamic)) -> Dynamic"
+    global "@external(erlang, \"erlang\", \"list_to_tuple\") fn erlang_term_tuple(items: List(Dynamic)) -> Dynamic"
+
+:! term = $'Dynamic'
+:! atom = $'atom.Atom'
+:! terms = $'List(Dynamic)'
+
+/// ## terms
+
+/// ### of
+:= of \* t. (value : t) : term =
+    erlang_term_imports ()
+    $'erlang_term_coerce(!value)'
+
+/// ### cast
+:= cast \* t. (value : term) : t =
+    erlang_term_imports ()
+    $'erlang_term_coerce(!value)' : t
+
+/// ### atom_named
+:= atom_named (name : string) : atom =
+    erlang_term_imports ()
+    $'atom.create(!name)'
+
+/// ### atom
+:= atom (name : string) : term = atom_named name |> of
+
+/// ### no_terms
+:= no_terms () : terms =
+    erlang_term_imports ()
+    $'[]'
+
+/// ### cons
+:= cons (head : term) (tail : terms) : terms =
+    erlang_term_imports ()
+    $'[!head, ..!tail]'
+
+/// ### terms_of
+:= terms_of (items : list term) : terms = listm.foldBack cons items (no_terms ())
+
+/// ### list_term
+:= list_term (items : list term) : term = terms_of items |> of
+
+/// ### tuple
+:= tuple (items : list term) : term =
+    erlang_term_imports ()
+    := host = terms_of items
+    $'erlang_term_tuple(!host)'
+
+/// ### inspect
+:= inspect (value : term) : string =
+    erlang_term_imports ()
+    $'string.inspect(!value)'
+
+/// ### equal
+:= equal (a : term) (b : term) : bool =
+    erlang_term_imports ()
+    $'!a == !b' : bool
+
+/// ## calls
+
+/// ### apply
+:= apply (module_name : string) (function_name : string) (args : list term) : term =
+    erlang_term_imports ()
+    := m = atom_named module_name
+    := f = atom_named function_name
+    := host = terms_of args
+    $'erlang_term_apply(!m, !f, !host)'
+
+/// ### charlist
+:= charlist (text : string) : term = apply "unicode" "characters_to_list" [ of text ]
+
+///> gleam
+test apply_calls_an_erlang_function =
+    apply "erlang" "abs" [ of -3i32 ] |> cast |> _assert_eq 3i32
+
+///> gleam
+test a_tuple_holds_its_items_in_order =
+    := t = tuple [ atom "ok"; of 7i32 ]
+    (apply "erlang" "tuple_size" [ t ] |> cast, apply "erlang" "element" [ of 2i32; t ] |> cast) |> _assert_eq (2i32, 7i32)
+
+///> gleam
+test a_map_from_pairs_answers_its_keys =
+    := m = apply "maps" "from_list" [ list_term [ tuple [ atom "a"; of 1i32 ] ] ]
+    apply "maps" "get" [ atom "a"; m; of 0i32 ] |> cast |> _assert_eq 1i32
+
+///> gleam
+test atoms_compare_by_name =
+    (equal (atom "ok") (atom "ok"), equal (atom "ok") (atom "error")) |> _assert_eq (!+, !-)
+
+///> gleam
+test a_charlist_round_trips =
+    charlist "ebin" |> \ c => apply "unicode" "characters_to_binary" [ c ] |> cast |> _assert_eq "ebin"

@@ -42,16 +42,16 @@ function Get-SourceBlocks([string[]] $Lines, [string[]] $Rows) {
     foreach ($block in $blocks) {
         $header = $block.Header
         switch -regex ($header) {
-            '^test\s+([^\s=]+)' { $block.Kind = 'test'; $block.Names = @($Matches[1]); break }
-            '^(?:and\s+)?(?:inl|let|inm|inb)(?:\s+rec)?\s+\(([^)\s]+)\)' { $block.Kind = 'definition'; $block.Operators = @($Matches[1]); $block.Names = @("($($Matches[1]))"); break }
-            '^(?:and\s+)?(?:inl|let|inm|inb)(?:\s+rec)?\s+([^\s(:=]+)' { $block.Kind = 'definition'; $block.Names = @($Matches[1]); break }
-            '^(?:and\s+)?(?:type|union|nominal|prototype)(?:\s+rec)?\s+([^\s=]+)' {
+            '^(?:test|:#)\s+([^\s=]+)' { $block.Kind = 'test'; $block.Names = @($Matches[1]); break }
+            '^(?:(?:and|:&)\s+)?(?:inl|let|inm|inb|:=|:~)(?:\s+(?:rec|\^))?\s+\(([^)\s]+)\)' { $block.Kind = 'definition'; $block.Operators = @($Matches[1]); $block.Names = @("($($Matches[1]))"); break }
+            '^(?:(?:and|:&)\s+)?(?:inl|let|inm|inb|:=|:~)(?:\s+(?:rec|\^))?\s+([^\s(:=]+)' { $block.Kind = 'definition'; $block.Names = @($Matches[1]); break }
+            '^(?:(?:and|:&)\s+)?(?:type|union|nominal|prototype|:==|:\||:!|:\?)(?:\s+(?:rec|\^))?\s+([^\s=]+)' {
                 $block.Kind = 'definition'
                 $cases = [regex]::Matches($block.Text.ToString(), "\|\s*([A-Z][A-Za-z0-9_']*)") | ForEach-Object { $_.Groups[1].Value }
                 $block.Names = @($Matches[1]) + @($cases)
                 break
             }
-            '^instance\s+([^\s]+)' { $block.Kind = 'definition'; $block.Names = @($Matches[1]); break }
+            '^(?:instance|:\+)\s+([^\s]+)' { $block.Kind = 'definition'; $block.Names = @($Matches[1]); break }
             default { $block.Kind = 'other' }
         }
     }
@@ -70,7 +70,7 @@ function Get-Reach($Blocks) {
             $definedBy[$name].Add($d)
         }
         foreach ($operator in $Blocks[$d].Operators) { $operators.Add(@($operator, $d)) }
-        if ($Blocks[$d].Header -match '^instance\s') { $instances.Add($d) }
+        if ($Blocks[$d].Header -match '^(?:instance|:\+)\s') { $instances.Add($d) }
     }
     $direct = @{}
     for ($b = 0; $b -lt $Blocks.Count; $b++) {

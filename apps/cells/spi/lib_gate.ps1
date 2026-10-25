@@ -7,7 +7,8 @@ param(
     [string] $RawOut,
     [ValidateSet('process', 'daemon')] [string] $Compiler = 'daemon',
     [string] $NotebookOut,
-    [string] $BuildPath = (Join-Path $env:LOCALAPPDATA 'spiral-bin/mix-builds/lib-gate')
+    [string] $BuildPath = (Join-Path $env:LOCALAPPDATA 'spiral-bin/mix-builds/lib-gate'),
+    [string[]] $Test = @()
 )
 $ErrorActionPreference = 'Continue'
 $libRoot = Get-Item (Resolve-Path $Lib).Path
@@ -24,7 +25,8 @@ Push-Location (Join-Path $PSScriptRoot '..')
 $metrics = Join-Path ([IO.Path]::GetTempPath()) "probe-lib-metrics-$PID"
 if (-not $NotebookOut -and $RawOut) { $NotebookOut = "$RawOut.ipynb" }
 $notebookArgs = if ($NotebookOut) { @('--output-path', $NotebookOut) } else { @() }
-try { $out = mix spiral.notebook --gate --metrics $metrics --path (Join-Path $Lib $File) @notebookArgs 2>&1 | Out-String }
+$testArgs = if ($Test.Count) { @('--test', ($Test -join ',')) } else { @() }
+try { $out = mix spiral.notebook --gate --metrics $metrics --path (Join-Path $Lib $File) @notebookArgs @testArgs 2>&1 | Out-String }
 finally { Pop-Location }
 $testRows = Join-Path $metrics 'tests.tsv'
 if (Test-Path $testRows) {

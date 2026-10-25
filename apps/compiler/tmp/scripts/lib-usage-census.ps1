@@ -29,7 +29,7 @@ function Get-LibModules([string] $root) {
 function Get-Definitions([string] $path) {
     $lines = [IO.File]::ReadAllLines($path)
     for ($i = 0; $i -lt $lines.Length; $i++) {
-        if ($lines[$i] -match "^(?:and\s+)?(?:inl|let)(?:\s+rec)?\s+(\([^)\s]+\)|[A-Za-z_][\w']*)") {
+        if ($lines[$i] -match "^(?:(?:and|:&)\s+)?(?:inl|let|:=|:~)(?:\s+(?:rec|\^))?\s+(\([^)\s]+\)|[A-Za-z_][\w']*)") {
             $name = $Matches[1]
             if ($name -ne 'main') { [pscustomobject]@{ Name = $name.Trim('(', ')'); Operator = $name.StartsWith('('); Line = $i + 1 } }
         }

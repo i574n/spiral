@@ -109,6 +109,7 @@ modules:
     schematron_run
     xsd_constraints
     erlang_process
+    erlang_term
     otp_actor
     channel
     otp_supervisor

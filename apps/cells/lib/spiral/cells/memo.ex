@@ -397,7 +397,7 @@ defmodule Spiral.Cells.Memo do
     end
   end
 
-  @test_header ~r/^test(?![\w'])/u
+  @test_header ~r/^(?:test|:#)(?![\w'])/u
 
   defp compiled_blocks(text, bounds) do
     case Map.fetch(bounds, text) do

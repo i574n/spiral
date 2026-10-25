@@ -192,7 +192,8 @@
         ?= rest ?|
         | NoCell => s ++ "\n"
         | Cell (next, _, _) =>
-            := brk = ? kind = "markdown" && next <> "markdown" ?> "" |: "\n"
+            := lone_directive = kind <> "markdown" && text.starts_with s "///- " && text.contains s "--package" && text.contains s "\n" = !-
+            := brk = ? (kind = "markdown" && next <> "markdown") || lone_directive ?> "" |: "\n"
             s ++ brk ++ "\n" ++ emit_spi rest
 
 :~ ^ read_cells (src : string) (i : i32) (n : i32) (acc : cells) : cells =
@@ -371,7 +372,7 @@
     | LineDone =>
         := head = cut_before options " --fails "
         := header =
-            "test "
+            (? text.contains (" " ++ options ++ " ") " --symbol " ?> ":# " |: "test ")
             ++ name
             ++ test_mode head "static" "static"
             ++ test_mode head "--print-code" "print_code"
@@ -530,12 +531,14 @@
     | Header : string * string
 
 := header_of (line : string) : test_header =
-    ? text.starts_with line "test " ?>
-        := n = text.take_unicode_ident line 5i32
+    := p = ? text.starts_with line "test " ?> 5i32 |? text.starts_with line ":# " ?> 3i32 |: 0i32
+    ? p > 0i32 ?>
+        := n = text.take_unicode_ident line p
         := rest = text.take (text.drop line n) (text.trim_end (text.drop line n) (text.length (text.drop line n)))
         := m = text.length rest
-        ? n > 5i32 && m >= 2i32 && text.starts_at rest (m - 2i32) " =" && modes_valid (text.take rest (m - 2i32))
-        ?> Header (text.slice_len line 5i32 (n - 5i32), text.take rest (m - 2i32))
+        := spelling = ? p = 3i32 ?> " symbol" |: ""
+        ? n > p && m >= 2i32 && text.starts_at rest (m - 2i32) " =" && modes_valid (text.take rest (m - 2i32))
+        ?> Header (text.slice_len line p (n - p), spelling ++ text.take rest (m - 2i32))
         |: NoHeader
     |: NoHeader
 
@@ -557,9 +560,10 @@
         ?> " --no-agree" ++ reason_after modes " no_agree"
         |: ""
     := build = ? text.contains padded " build_only " ?> " --build-only" |: ""
+    := symbol = ? text.contains (" " ++ padded) " symbol " ?> " --symbol" |: ""
     := target = word_after padded " reference "
     := reference = ? target = "" ?> "" |: " --reference " ++ target
-    base ++ stat ++ show ++ agree ++ reference ++ build ++ clause_after modes " fails " " --fails "
+    base ++ stat ++ show ++ agree ++ reference ++ build ++ symbol ++ clause_after modes " fails " " --fails "
 
 := test_cell_source (real_mode : bool) (modes : string) (targets : rows) (body : rows) : string =
     join_rows (Row ("///- " ++ test_options real_mode modes, append_rows targets (Row ("", body))))
@@ -571,12 +575,13 @@
 := comment_line (line : string) : bool = text.starts_with line "//" || text.starts_with line "(* "
 
 := test_like (line : string) : bool =
-    ? text.starts_with line "test" ?>
+    ? text.starts_with line ":# " ?> !+
+    |? text.starts_with line "test" ?>
         ? text.length line = 4i32 ?> !+ |: text.ident_char (text.index line 4i32) = !-
     |: !-
 
 := malformed_name (line : string) : string =
-    := start = lead_ws line 4i32
+    := start = lead_ws line (? text.starts_with line ":#" ?> 2i32 |: 4i32)
     := stop = text.take_unicode_ident line start
     ? stop > start ?> text.slice_len line start (stop - start) |: "test"
 

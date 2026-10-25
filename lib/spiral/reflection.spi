@@ -268,6 +268,27 @@ test union_cases_fold =
     union_cases_fold (\ found (target : reflection_test_target) => ? target = Contract ?> !+ |: found) !-
     |> _assert_eq !+
 
+/// ### union_cases_find
+:= union_cases_find \* union_type. (matches : union_type -> bool) : option union_type =
+    :~ ^ search (cases : list union_type) : option union_type =
+        ?= cases ?|
+        | case :: rest => ? matches case ?> Some case |: search rest
+        | Nil => None
+    search (union_cases_fold (\ acc (case : union_type) => case :: acc) Nil |> dyn)
+
+///> gleam
+///> lua
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test union_cases_find =
+    union_cases_find (\ (target : reflection_test_target) => target = Contract)
+    |> _assert_eq (Some Contract)
+
+    union_cases_find (\ (_ : reflection_test_target) => !-)
+    |> _assert_eq None
+
 /// ### union_to_string
 := union_to_string \* t. (x : t) : string =
     ~> get_union_fields_untag `t ()

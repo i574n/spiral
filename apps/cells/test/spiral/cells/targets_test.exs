@@ -113,6 +113,46 @@ defmodule Spiral.Cells.TargetsTest do
     end
   end
 
+  @tag timeout: 600_000
+  test "a Gleam cell runs from the notebook's directory, so relative fixture paths resolve" do
+    if is_binary(Toolchain.gleam([])) and is_binary(Toolchain.erl([])) do
+      root = Path.join(System.tmp_dir!(), "spiral_cells_root_#{System.unique_integer([:positive])}")
+      cell = Path.join(System.tmp_dir!(), "spiral_cells_cell_#{System.unique_integer([:positive])}")
+      source_dir = Path.join([cell, "gleam", "src"])
+      File.mkdir_p!(root)
+      File.mkdir_p!(source_dir)
+      File.write!(Path.join(root, "probe.txt"), "in-root")
+      path = Path.join(source_dir, "main.gleam")
+
+      File.write!(path, """
+      import gleam/bit_array
+      import gleam/dynamic.{type Dynamic}
+      import gleam/io
+
+      @external(erlang, "file", "read_file")
+      fn read_file(path: String) -> Result(BitArray, Dynamic)
+
+      pub fn main() {
+        case read_file("probe.txt") {
+          Ok(bytes) ->
+            case bit_array.to_string(bytes) {
+              Ok(text) -> io.println(text)
+              Error(_) -> io.println("not utf-8")
+            }
+          Error(_) -> io.println("missing")
+        }
+      }
+      """)
+
+      try do
+        assert {:ok, %{stdout: "in-root"}} = Targets.run(%{tool: :gleam, target: nil, deps: []}, path, [root: root], 300_000, deadline())
+      after
+        File.rm_rf(root)
+        File.rm_rf(cell)
+      end
+    end
+  end
+
   test "plain builder text stays as stdout" do
     assert {:ok, %{stdout: "contract"}} = run_target("contract\n")
   end

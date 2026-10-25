@@ -459,6 +459,12 @@ defmodule Spiral.Cells.DocumentTest do
     end
   end
 
+  test "an edition-3 :# test header round-trips as :#" do
+    spi = "///- --package .\n:= add (a : i32) (b : i32) : i32 = a + b\n\n///> rust\n:# adds static =\n    add 1i32 2i32 |> ignore\n"
+    doc = Document.parse_spi(spi, "")
+    assert Enum.any?(doc.cells, &(&1.kind == :spiral and &1.source =~ ~r/\A\/\/\/- --test static --symbol/))
+    assert spi |> Document.parse_spi("") |> Document.to_livemd() |> Document.parse_livemd() |> Document.to_spi_tested() == spi
+  end
   test "the spiral library .spi files load as notebooks, one test cell per test block" do
     lib = Path.expand("../../../../lib/spiral", __DIR__)
     sources = Enum.reject(Path.wildcard(Path.join(lib, "**/*.spi")), &String.contains?(&1, "/target/"))
@@ -472,7 +478,7 @@ defmodule Spiral.Cells.DocumentTest do
           spi_text = File.read!(path)
           spir_text = if File.regular?(spir), do: File.read!(spir), else: ""
           doc = Document.parse_spi(spi_text, spir_text)
-          expected = length(Regex.scan(~r/^test \w+/m, spi_text <> spir_text))
+          expected = length(Regex.scan(~r/^(?:test|:#) \w+/m, spi_text <> spir_text))
           found = Enum.count(doc.cells, &(&1.kind == :spiral and &1.source =~ ~r/\A\/\/\/- (--real )?--(test|ignore)/))
           assert found == expected, path
           through_livemd = &(&1 |> Document.parse_spi("") |> Document.to_livemd() |> Document.parse_livemd() |> Document.to_spi_tested())
@@ -500,10 +506,10 @@ defmodule Spiral.Cells.DocumentTest do
 
     spi = Document.to_spi(dice)
     assert spi =~ "/// # dice (Dice)"
-    assert spi =~ "inl sixth_power_sequence () ="
-    assert spi =~ "inl main (_args : array_base string) ="
+    assert spi =~ ~r/^(?:inl|:=) sixth_power_sequence \(\) =/m
+    assert spi =~ ~r/^(?:inl|:=) main \(_args : array_base string\) =/m
     refute spi =~ "_assert_eq"
-    refute spi =~ "open testing"
+    refute spi =~ ~r/^\s*(?:open|:<) testing$/m
 
     spi = Document.to_spi(contract)
     assert spi =~ "///- --package ../dice"
@@ -512,7 +518,7 @@ defmodule Spiral.Cells.DocumentTest do
     refute spi =~ "///> rust"
 
     assert spi =~ "/// ### main\n///> _\n"
-    assert spi =~ ~r/^inl main \(\) =/m
+    assert spi =~ ~r/^(?:inl|:=) main \(\) =/m
   end
 
   defp spiral_sources(doc) do

@@ -993,7 +993,7 @@ test find_parent_2 =
                 |: Ok () |> resultm.box
             ?= result |> resultm.map_error' sm'.format |> resultm.unbox ?|
             | Ok () => ()
-            | Error error' => trace Critical (\ () => "file_system.file_delete") \ () => { error' }
+            | Error error' => console.write_error_line (sm'.(++#) "file_system.file_delete: " error')
         | Gleam => \ () =>
             file_system_gleam_paths ()
             $'spiral_fs_delete(!path)' : ()

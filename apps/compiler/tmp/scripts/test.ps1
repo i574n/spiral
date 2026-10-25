@@ -229,12 +229,12 @@ foreach ($memoStore in @(@('compile-memo', 2), @('native-memo', 14))) {
 }
 $compiled = @{}
 $compileMemoDir = Join-Path $cache 'compile-memo'
-function Get-OutputParts([string]$output) {
-    $directory = Split-Path $output
-    if (-not (Test-Path -LiteralPath $directory)) { return @() }
-    $stem = [IO.Path]::GetFileNameWithoutExtension($output)
-    $extension = [IO.Path]::GetExtension($output)
-    @(Get-ChildItem -LiteralPath $directory -File | Where-Object { ($_.Name.StartsWith("${stem}_") -and $_.Extension -eq $extension) -or $_.Name -eq "$stem.spiral-parts" } | Sort-Object Name)
+$multiFileSuffixes = @{ 'Cpp + Cuda' = @('.corelib.hpp', '.hpp', '.cpp', '.cu'); 'Python + Cuda' = @('_auto.py', '.py') }
+function Get-OutputParts([string]$output, [string]$coreBackend) {
+    if (-not $coreBackend -or -not $multiFileSuffixes.ContainsKey($coreBackend)) { return @() }
+    $stem = Join-Path (Split-Path $output) ([IO.Path]::GetFileNameWithoutExtension($output))
+    $main = [IO.Path]::GetFullPath($output)
+    @($multiFileSuffixes[$coreBackend] | ForEach-Object { "$stem$_" } | Where-Object { [IO.Path]::GetFullPath($_) -ne $main -and (Test-Path -LiteralPath $_) } | ForEach-Object { Get-Item -LiteralPath $_ } | Sort-Object Name)
 }
 New-Item -ItemType Directory -Force $compileMemoDir | Out-Null
 $compileSignatureLines = [Collections.Generic.List[string]]::new()
@@ -333,7 +333,7 @@ foreach ($job in $jobsToCompile) {
             [IO.File]::Copy($job.Output, (Join-Path $compileMemoDir "$memoKey.out"), $true)
             $partsDir = Join-Path $compileMemoDir "$memoKey.parts"
             if (Test-Path -LiteralPath $partsDir) { Remove-Item -LiteralPath $partsDir -Recurse -Force }
-            $parts = Get-OutputParts $job.Output
+            $parts = Get-OutputParts $job.Output $job.CoreBackend
             if ($parts.Count) { New-Item -ItemType Directory -Force $partsDir | Out-Null; foreach ($part in $parts) { [IO.File]::Copy($part.FullName, (Join-Path $partsDir $part.Name), $true) } }
         }
         [IO.File]::WriteAllText((Join-Path $compileMemoDir "$memoKey.json"), ([ordered]@{ Status = $c.Status; Ms = [int64]$c.Ms; Detail = "$($c.Detail)" } | ConvertTo-Json -Compress))
@@ -474,7 +474,7 @@ function Get-NativeMemoKey($job, [string]$signature) {
     $ownShim = Join-Path (Split-Path $job.Input) 'c-shim.h'
     $ownShimHash = if ($job.Backend -eq 'C' -and (Test-Path -LiteralPath $ownShim)) { Get-FileSha256 $ownShim } else { '' }
     $backendSignature = if ($signature -is [hashtable]) { if ($signature.ContainsKey($job.Backend)) { $signature[$job.Backend] } else { $signature['*'] } } else { $signature }
-    $partsKey = (Get-OutputParts $job.Output | ForEach-Object { "$($_.Name)=$(Get-FileSha256 $_.FullName)" }) -join ';'
+    $partsKey = (Get-OutputParts $job.Output $job.CoreBackend | ForEach-Object { "$($_.Name)=$(Get-FileSha256 $_.FullName)" }) -join ';'
     Get-TextKey "$backendSignature`n$($job.Backend)`n$(Get-ShimKey $job.Backend)`n$(Get-FileSha256 $job.Output)`n$flags`n$ownShimHash$(if ($partsKey) { "`n$partsKey" })"
 }
 function Invoke-Native([string]$exe, [string[]]$arguments, [string]$workDir, [int]$timeoutSec, [string]$PathPrefix) {

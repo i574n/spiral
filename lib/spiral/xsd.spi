@@ -314,23 +314,6 @@
         canonical_schema (xml_schema_prefixes attributes Nil) model
     | None => empty
 
-:~ ^ count_list \* t. (items : list t) : i32 =
-    ?= items ?|
-    | _ :: rest => 1i32 + count_list rest
-    | Nil => 0i32
-
-:~ ^ enumeration_count (types : list xsd) : i32 =
-    ?= types ?|
-    | Simple (_, _, facets) :: rest => count_enumerations facets + enumeration_count rest
-    | _ :: rest => enumeration_count rest
-    | Nil => 0i32
-
-:& :~ count_enumerations (facets : list xsd_facet) : i32 =
-    ?= facets ?|
-    | Enumeration _ :: rest => 1i32 + count_enumerations rest
-    | _ :: rest => count_enumerations rest
-    | Nil => 0i32
-
 ///> rust
 test occurs_and_facets_parse =
     := text =
@@ -338,14 +321,12 @@ test occurs_and_facets_parse =
         ^^ "type=\"T\" minOccurs=\"0\" maxOccurs=\"unbounded\"/></xs:sequence><xs:attribute name=\"v\" "
         ^^ "type=\"xs:string\" use=\"required\"/></xs:complexType></xs:schema>"
     ?= (read_schema text).complex_types ?|
-    | Cons (
-            Complex (
-                name,
-                Sequence (_, _, Element (element_name, type_ref, min, max, _) :: Nil),
-                Attribute (attribute_name, _, required, _, _) :: Nil
-            ),
-            Nil
+    | Complex (
+            name,
+            Sequence (_, _, (Element (element_name, type_ref, min, max, _) :: Nil)),
+            (Attribute (attribute_name, _, required, _, _) :: Nil)
         )
+        :: Nil
         =>
             ? name <> "C" || element_name <> "a" || type_ref <> "T" ?> failwith "names"
             ? min <> 0i32 || max <> -1i32 ?> failwith "occurs 0..unbounded"
@@ -359,15 +340,13 @@ test complex_content_extension_keeps_its_base =
         ^^ "base=\"B\"><xs:sequence><xs:element name=\"e\" type=\"T\"/></xs:sequence><xs:attribute name=\"a\" "
         ^^ "type=\"xs:string\"/></xs:extension></xs:complexContent></xs:complexType></xs:schema>"
     ?= (read_schema text).complex_types ?|
-    | Cons (
-            Derived (
-                name,
-                base,
-                Sequence (_, _, Element (element_name, _, _, _, _) :: Nil),
-                Attribute (attribute_name, _, _, _, _) :: Nil
-            ),
-            Nil
+    | Derived (
+            name,
+            base,
+            Sequence (_, _, (Element (element_name, _, _, _, _) :: Nil)),
+            (Attribute (attribute_name, _, _, _, _) :: Nil)
         )
+        :: Nil
         => ? name <> "D" || base <> "B" || element_name <> "e" || attribute_name <> "a" ?> failwith "derived names"
     | _ => failwith "derived complex type shape"
 
@@ -400,17 +379,12 @@ test attribute_fixed_value_and_inline_type_are_kept =
         ^^ "fixed=\"urn:x\"/><xs:attribute name=\"Id\"><xs:simpleType><xs:restriction base=\"xs:ID\"><xs:pattern "
         ^^ "value=\"ID[0-9]{44}\"/></xs:restriction></xs:simpleType></xs:attribute></xs:complexType></xs:schema>"
     ?= (read_schema text).complex_types ?|
-    | Cons (
-            Complex (
-                _,
-                _,
-                Cons (
-                    Attribute (_, _, required, fixed, None),
-                    Attribute (_, _, _, _, Some (Simple (_, base, _))) :: Nil
-                )
-            ),
-            Nil
+    | Complex (
+            _,
+            _,
+            (Attribute (_, _, required, fixed, None) :: Attribute (_, _, _, _, Some (Simple (_, base, _))) :: Nil)
         )
+        :: Nil
         =>
             ? required = !- || fixed <> "urn:x" ?> failwith "the fixed value is kept"
             ? base <> "xs:ID" ?> failwith "the inline attribute type keeps its base"
@@ -443,3 +417,20 @@ test pattern_unions_become_alternative_patterns =
         | _ => failwith "a memberTypes union keeps a marker"
         ? first = "TNrREGON" && first_base <> "xs:string" ?> failwith "the lowered union is a string"
     | _ => failwith "two simple types"
+
+:~ ^ count_list \* t. (items : list t) : i32 =
+    ?= items ?|
+    | _ :: rest => 1i32 + count_list rest
+    | Nil => 0i32
+
+:~ ^ enumeration_count (types : list xsd) : i32 =
+    ?= types ?|
+    | Simple (_, _, facets) :: rest => count_enumerations facets + enumeration_count rest
+    | _ :: rest => enumeration_count rest
+    | Nil => 0i32
+
+:& :~ count_enumerations (facets : list xsd_facet) : i32 =
+    ?= facets ?|
+    | Enumeration _ :: rest => 1i32 + count_enumerations rest
+    | _ :: rest => count_enumerations rest
+    | Nil => 0i32

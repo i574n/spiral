@@ -92,7 +92,7 @@
               "value": 6,
               "content": {
                 "type": "PATTERN",
-                "value": "test[ \\t]+"
+                "value": "(test|:#)[ \\t]+"
               }
             }
           },
