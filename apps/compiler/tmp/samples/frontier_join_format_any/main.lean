@@ -32,37 +32,55 @@ mutual
 partial def method3 (p0 : (IO.Ref M0)) (p1 : String) : IO Unit := do
     let mut v0 : (IO.Ref M0) := p0
     let mut v1 : String := p1
-    let v2 : String := (← v0.get).l0
-    let v3 : String := (v2 ++ v1)
+    let mut v2 : String := default
+    let mut v3 : String := default
+    v2 := (← v0.get).l0
+    v3 := (v2 ++ v1)
     v0.modify (fun r => { r with l0 := v3 })
     return ()
 partial def format_real_2 (p0 : Int32) : IO String := do
     let mut v0 : Int32 := p0
+    let mut v1 : String := default
     let mut v2 : (IO.Ref M0) ← IO.mkRef default
-    let v1 : String := ""
+    let mut v3 : String := default
+    let mut v4 : String := default
+    v1 := ""
     v2 := (← IO.mkRef (M0.mk v1))
-    let v3 : String := toString v0 
+    v3 := toString v0 
     let _ := (← method3 v2 v3)
-    let v4 : String := (← v2.get).l0
+    v4 := (← v2.get).l0
     return v4
 partial def method1 : IO String := do
-    let v0 : String := "Some"
-    let v1 : String := "("
-    let v2 : String := (v0 ++ v1)
-    let v3 : Int32 := (1 : Int32)
-    let v4 : String := (← format_real_2 v3)
-    let v5 : String := (v2 ++ v4)
-    let v6 : String := ")"
-    let v7 : String := (v5 ++ v6)
+    let mut v0 : String := default
+    let mut v1 : String := default
+    let mut v2 : String := default
+    let mut v3 : Int32 := default
+    let mut v4 : String := default
+    let mut v5 : String := default
+    let mut v6 : String := default
+    let mut v7 : String := default
+    v0 := "Some"
+    v1 := "("
+    v2 := (v0 ++ v1)
+    v3 := (1 : Int32)
+    v4 := (← format_real_2 v3)
+    v5 := (v2 ++ v4)
+    v6 := ")"
+    v7 := (v5 ++ v6)
     return v7
 partial def method0 : IO String := do
-    let v0 : String := (← method1)
-    let v1 : String := "x: "
-    let v2 : String := (v1 ++ v0)
+    let mut v0 : String := default
+    let mut v1 : String := default
+    let mut v2 : String := default
+    v0 := (← method1)
+    v1 := "x: "
+    v2 := (v1 ++ v0)
     return v2
 partial def spiralMain : IO Int32 := do
-    let v0 : String := (← method0)
-    let v1 : Bool := (v0 == "")
+    let mut v0 : String := default
+    let mut v1 : Bool := default
+    v0 := (← method0)
+    v1 := (v0 == "")
     if v1 then
         return (1 : Int32)
     else

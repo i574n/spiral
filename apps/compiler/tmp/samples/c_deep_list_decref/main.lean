@@ -46,8 +46,10 @@ partial def build_0 (p0 : Int32) (p1 : U0) : IO U0 := do
         else
             v3 := (v0 - (1 : Int32))
             v4 := (U0.Link v0 v1)
-            v0 := v3
-            v1 := v4
+            let t3 := v3
+            let t4 := v4
+            v0 := t3
+            v1 := t4
             continue
 partial def sum_1 (p0 : U0) (p1 : Int32) : IO Int32 := do
     let mut v0 : U0 := p0
@@ -68,12 +70,18 @@ partial def sum_1 (p0 : U0) (p1 : Int32) : IO Int32 := do
         v6 := (v5 % (9973 : Int32))
         return (← sum_1 v3 v6)
 partial def spiralMain : IO Int32 := do
-    let v0 : Int32 := (1000000 : Int32)
-    let v1 : U0 := U0.End
-    let v2 : U0 := (← build_0 v0 v1)
-    let v3 : Int32 := (0 : Int32)
-    let v4 : Int32 := (← sum_1 v2 v3)
-    let v5 : Int32 := (v4 % (256 : Int32))
+    let mut v0 : Int32 := default
+    let mut v1 : U0 := default
+    let mut v2 : U0 := default
+    let mut v3 : Int32 := default
+    let mut v4 : Int32 := default
+    let mut v5 : Int32 := default
+    v0 := (1000000 : Int32)
+    v1 := U0.End
+    v2 := (← build_0 v0 v1)
+    v3 := (0 : Int32)
+    v4 := (← sum_1 v2 v3)
+    v5 := (v4 % (256 : Int32))
     return v5
 end
 def main : IO UInt32 := do

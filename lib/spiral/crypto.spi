@@ -239,13 +239,6 @@ inl crypto_gleam_sha1 () =
         @external(erlang, "crypto", "mac")
         fn spiral_crypto_mac(kind: atom.Atom, sub: atom.Atom, key: String, data: String) -> BitArray
 
-        fn spiral_crypto_sha1_hex(text: String) -> String {
-          string.lowercase(bit_array.base16_encode(spiral_crypto_hash_by(atom.create("sha"), text)))
-        }
-
-        fn spiral_crypto_hmac_sha1_base64(key: String, text: String) -> String {
-          spiral_crypto_mac(atom.create("hmac"), atom.create("sha"), key, text) |> bit_array.base64_encode(True)
-        }
         """
 
 /// ### sha1_hex
@@ -253,22 +246,31 @@ inl sha1_hex (text : string) : string =
     backend_switch {
         Gleam = fun () =>
             crypto_gleam_sha1 ()
-            $'spiral_crypto_sha1_hex(!text)' : string
+            $'string.lowercase(bit_array.base16_encode(spiral_crypto_hash_by(atom.create("sha"), !text)))' : string
         Rust = fun () =>
             $'Rc::<str>::from(<sha1::Sha1 as sha1::Digest>::digest(!text.as_bytes()).iter().map(|b| \
                 format\!("{:02x}", b)).collect::<String>())' : string
     }
+
+/// ### hmac_sha1
+nominal hmac_sha1 = $'hmac::Hmac<sha1::Sha1>'
+
+/// ### hmac_sha1_tag
+nominal hmac_sha1_tag = $'hmac::digest::Output<hmac::Hmac<sha1::Sha1>>'
 
 /// ### hmac_sha1_base64
 inl hmac_sha1_base64 (key : string) (text : string) : string =
     backend_switch {
         Gleam = fun () =>
             crypto_gleam_sha1 ()
-            $'spiral_crypto_hmac_sha1_base64(!key, !text)' : string
+            $'bit_array.base64_encode(spiral_crypto_mac(atom.create("hmac"), atom.create("sha"), !key, !text), True)'
+            : string
         Rust = fun () =>
-            $'{ let mut m = <hmac::Hmac<sha1::Sha1> as hmac::KeyInit>::new_from_slice(!key.as_bytes()).unwrap(); \
-                hmac::Mac::update(&mut m, !text.as_bytes()); Rc::<str>::from(base64::Engine::encode( \
-                &base64::engine::general_purpose::STANDARD, hmac::Mac::finalize(m).into_bytes())) }' : string
+            inl mac = $'<hmac::Hmac<sha1::Sha1> as hmac::KeyInit>::new_from_slice(!key.as_bytes()).unwrap()' : hmac_sha1
+            mac |> rust.to_mut
+            $'hmac::Mac::update(&mut !mac, !text.as_bytes())' : ()
+            inl tag = $'hmac::Mac::finalize(!mac).into_bytes()' : hmac_sha1_tag
+            $'Rc::<str>::from(base64::Engine::encode(&base64::engine::general_purpose::STANDARD, !tag))' : string
     }
 
 ///> rust -d sha1 hmac base64

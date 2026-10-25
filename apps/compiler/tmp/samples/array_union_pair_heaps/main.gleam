@@ -27,8 +27,17 @@ pub fn spiral_array_create(size: Int) -> SpiralArray(a) {
   list.repeat(option.None, size) |> array.from_list(option.None) |> spiral_array_from_storage(size)
 }
 
+pub fn spiral_array_create_filled(size: Int, value: a) -> SpiralArray(a) {
+  list.repeat(option.Some(value), size) |> array.from_list(option.None) |> spiral_array_from_storage(size)
+}
 
+pub fn spiral_array_from_list(values: List(a)) -> SpiralArray(a) {
+  values |> list.map(option.Some) |> array.from_list(option.None) |> spiral_array_from_storage(list.length(values))
+}
 
+pub fn spiral_array_to_list(xs: SpiralArray(a)) -> List(a) {
+  list.repeat(Nil, xs.size) |> list.index_map(fn(_, i) { spiral_array_get(xs, i) })
+}
 
 pub fn spiral_array_get(xs: SpiralArray(a), i: Int) -> a {
   case i >= 0 && i < xs.size {
@@ -108,24 +117,24 @@ pub fn score_0(v0: Us0) -> Int {
     }
 }
 pub fn main() {
-    let v0 = 7
-    let v1 = "hi"
-    let v2 = Heap0(l0: v0, l1: v1)
-    let v3 = 4
-    let v4 = "yo"
-    let v5 = Heap0(l0: v3, l1: v4)
-    let v6 = spiral_array_create(1)
-    let v7 = True
-    let v10 =
-        case v7 {
-            True -> {
-                Us0Held(v2, v5)
-            }
-            False -> {
-                Us0None
-            }
+let v0 = 7
+let v1 = "hi"
+let v2 = Heap0(l0: v0, l1: v1)
+let v3 = 4
+let v4 = "yo"
+let v5 = Heap0(l0: v3, l1: v4)
+let v6 = spiral_array_create(1)
+let v7 = True
+let v10 =
+    case v7 {
+        True -> {
+            Us0Held(v2, v5)
         }
-    spiral_array_set(v6, 0, v10)
-    let v11 = spiral_array_get(v6, 0)
-    score_0(v11)
+        False -> {
+            Us0None
+        }
+    }
+spiral_array_set(v6, 0, v10)
+let v11 = spiral_array_get(v6, 0)
+score_0(v11)
 }

@@ -50,22 +50,36 @@ partial def loop_0 (p0 : Int32) (p1 : (IO.Ref (Array Int32))) (p2 : Int32) (p3 :
             v10 := (v9 + v7)
             v11 := (v10 + v2)
             v12 := (v11 % (9973 : Int32))
-            v3 := v8
-            v4 := v12
+            let t0 := v0
+            let t1 := v1
+            let t2 := v2
+            let t8 := v8
+            let t12 := v12
+            v0 := t0
+            v1 := t1
+            v2 := t2
+            v3 := t8
+            v4 := t12
             continue
 partial def spiralMain : IO Int32 := do
     let mut v0 : (IO.Ref (Array Int32)) ← IO.mkRef #[]
+    let mut v1 : Int32 := default
+    let mut v2 : Int32 := default
+    let mut v3 : Int32 := default
+    let mut v4 : Int32 := default
+    let mut v5 : Int32 := default
+    let mut v6 : Int32 := default
     v0 := (← IO.mkRef (Array.replicate (spiralIdx (4 : Int32)) (default : Int32)))
     v0.modify (fun xs => xs.set! (spiralIdx (0 : Int32)) (1 : Int32))
     v0.modify (fun xs => xs.set! (spiralIdx (1 : Int32)) (2 : Int32))
     v0.modify (fun xs => xs.set! (spiralIdx (2 : Int32)) (3 : Int32))
     v0.modify (fun xs => xs.set! (spiralIdx (3 : Int32)) (4 : Int32))
-    let v1 : Int32 := (0 : Int32)
-    let v2 : Int32 := (1000000 : Int32)
-    let v3 : Int32 := (0 : Int32)
-    let v4 : Int32 := (0 : Int32)
-    let v5 : Int32 := (← loop_0 v2 v0 v1 v3 v4)
-    let v6 : Int32 := (v5 % (256 : Int32))
+    v1 := (0 : Int32)
+    v2 := (1000000 : Int32)
+    v3 := (0 : Int32)
+    v4 := (0 : Int32)
+    v5 := (← loop_0 v2 v0 v1 v3 v4)
+    v6 := (v5 % (256 : Int32))
     return v6
 end
 def main : IO UInt32 := do

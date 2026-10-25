@@ -1,0 +1,37 @@
+==================
+edition 3 symbol spellings carry their name
+==================
+
+:< testing
+:= ^ loop (n : i32) : i32 = n
+:& := format_real \* t. (x : t) : string = ""
+:~ main () = 0i32
+:= (~#) a b = a
+:! amount unit = i32
+
+---
+
+(source_file
+  (definition_line
+    (definition_keyword)
+    name: (definition_name))
+  (definition_line
+    (definition_keyword)
+    name: (definition_name)
+    (definition_rest))
+  (definition_line
+    (definition_keyword)
+    name: (definition_name)
+    (definition_rest))
+  (definition_line
+    (definition_keyword)
+    name: (definition_name)
+    (definition_rest))
+  (definition_line
+    (definition_keyword)
+    name: (definition_name)
+    (definition_rest))
+  (definition_line
+    (definition_keyword)
+    name: (definition_name)
+    (definition_rest)))

@@ -52,21 +52,30 @@ fun sp_choose_right_1(p0: Boolean): String {
     }
 }
 fun spiral_main(): Int {
-    val v0: Boolean = true
+    var v0: Boolean = false
+    v0 = true
     var v1: String = ""
     v1 = sp_choose_left_0(v0)
     var v2: Boolean = false
     v2 = false
-    val v3: String = sp_choose_right_1(v2)
-    val v4: String = (v1 + v3)
-    val v5: Int = spiralStringLength(v4)
-    val v6: Boolean = (v5 == 6)
+    var v3: String = ""
+    v3 = sp_choose_right_1(v2)
+    var v4: String = ""
+    v4 = (v1 + v3)
+    var v5: Int = 0
+    v5 = spiralStringLength(v4)
+    var v6: Boolean = false
+    v6 = (v5 == 6)
     if (v6) {
-        val v7: Int = spiralStringIndex(v4, 0)
-        val v8: Boolean = (v7 == 115)
+        var v7: Int = 0
+        v7 = spiralStringIndex(v4, 0)
+        var v8: Boolean = false
+        v8 = (v7 == 115)
         if (v8) {
-            val v9: Int = spiralStringIndex(v4, 5)
-            val v10: Boolean = (v9 == 108)
+            var v9: Int = 0
+            v9 = spiralStringIndex(v4, 5)
+            var v10: Boolean = false
+            v10 = (v9 == 108)
             if (v10) {
                 return 0
             } else {

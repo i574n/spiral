@@ -17,11 +17,9 @@ function UH0_Cons(a0: QWord; a1: TFun0): TUH0;
 begin
   Result := TUH0.Create; Result.tag := 0; Result.c0_0 := a0; Result.c0_1 := a1;
 end;
-var UH0_Nil_shared: TUH0 = nil;
 function UH0_Nil: TUH0;
 begin
-  if UH0_Nil_shared = nil then begin UH0_Nil_shared := TUH0.Create; UH0_Nil_shared.tag := 1; end;
-  Result := UH0_Nil_shared;
+  Result := TUH0.Create; Result.tag := 1; 
 end;
 function Tclosure0.Invoke: TUH0;
 var
@@ -55,6 +53,8 @@ var
   v3: TFun0;
   v4: TUH0;
   v5: QWord;
+  tmp4: TUH0;
+  tmp5: QWord;
 begin
   while True do begin
       case v0.tag of
@@ -63,8 +63,10 @@ begin
               v3 := v0.c0_1;
               v4 := v3.Invoke;
               v5 := v1 + v2;
-              v0 := v4;
-              v1 := v5;
+              tmp4 := v4;
+              tmp5 := v5;
+              v0 := tmp4;
+              v1 := tmp5;
               Continue;
           end;
           1: begin

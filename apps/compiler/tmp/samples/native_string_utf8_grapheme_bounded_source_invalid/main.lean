@@ -27,11 +27,14 @@ mutual
 partial def runtime_byte_1 (p0 : String) (p1 : Int32) : IO Char := do
     let mut v0 : String := p0
     let mut v1 : Int32 := p1
-    let v2 : Char := (Char.ofNat (v0.toUTF8.get! (spiralIdx v1)).toNat)
+    let mut v2 : Char := default
+    v2 := (Char.ofNat (v0.toUTF8.get! (spiralIdx v1)).toNat)
     return v2
 partial def utf8_scalar_at_byte_offset_0 (p0 : String) (p1 : Int32) : IO Int32 := do
     let mut v0 : String := p0
     let mut v1 : Int32 := p1
+    let mut v2 : Int32 := default
+    let mut v3 : Bool := default
     let mut v5 : Bool := default
     let mut v7 : Char := default
     let mut v8 : Int32 := default
@@ -105,8 +108,8 @@ partial def utf8_scalar_at_byte_offset_0 (p0 : String) (p1 : Int32) : IO Int32 :
     let mut v93 : Int32 := default
     let mut v94 : Bool := default
     let mut v96 : Bool := default
-    let v2 : Int32 := (Int32.ofNat v0.utf8ByteSize)
-    let v3 : Bool := (decide (v1 < (0 : Int32)))
+    v2 := (Int32.ofNat v0.utf8ByteSize)
+    v3 := (decide (v1 < (0 : Int32)))
     if v3 then
         spiralFail "UTF-8 byte offset is negative."
     else
@@ -390,10 +393,20 @@ partial def utf8_grapheme_count_bounded_loop_2 (p0 : String) (p1 : Int32) (p2 : 
                     v47 := (v2 + (1 : Int32))
                     v48 := v47
                 v49 := (v1 + v13)
-                v1 := v49
-                v2 := v48
+                let t0 := v0
+                let t49 := v49
+                let t48 := v48
+                let t3 := v3
+                v0 := t0
+                v1 := t49
+                v2 := t48
+                v3 := t3
                 continue
 partial def spiralMain : IO Int32 := do
+    let mut v0 : String := default
+    let mut v1 : Int32 := default
+    let mut v2 : Int32 := default
+    let mut v3 : Bool := default
     let mut v33 : Bool := default
     let mut v4 : Bool := default
     let mut v5 : Bool := default
@@ -413,10 +426,10 @@ partial def spiralMain : IO Int32 := do
     let mut v35 : Int32 := default
     let mut v36 : Int32 := default
     let mut v37 : Int32 := default
-    let v0 : String := "éZ"
-    let v1 : Int32 := (1 : Int32)
-    let v2 : Int32 := (← utf8_scalar_at_byte_offset_0 v0 v1)
-    let v3 : Bool := (decide (v2 >= (768 : Int32)))
+    v0 := "éZ"
+    v1 := (1 : Int32)
+    v2 := (← utf8_scalar_at_byte_offset_0 v0 v1)
+    v3 := (decide (v2 >= (768 : Int32)))
     if v3 then
         v4 := (decide (v2 <= (879 : Int32)))
         if v4 then

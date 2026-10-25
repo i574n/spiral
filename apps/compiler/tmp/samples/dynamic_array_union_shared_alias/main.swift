@@ -47,7 +47,8 @@ func sp_score_1(_ p0: US0) -> Int32 {
     }
 }
 func spiral_main() -> Int32 {
-    let v0: Int32 = 2
+    var v0: Int32 = 0
+    v0 = 2
     var v1: SpiralArray<Int32> = SpiralArray<Int32>([])
     v1 = SpiralArray<Int32>(Array(repeating: 0, count: Int(v0)))
     v1.items[Int(0)] = 4
@@ -62,7 +63,8 @@ func spiral_main() -> Int32 {
     v5 = sp_score_1(v4)
     var v6: Int32 = 0
     v6 = (v5 &+ v3)
-    let v7: Int32 = (v6 &- 12)
+    var v7: Int32 = 0
+    v7 = (v6 &- 12)
     return v7
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

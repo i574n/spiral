@@ -29,23 +29,36 @@ struct Closure0 {
 static inline void ClosureDecrefBody1(Closure1 * x){
     (void)x;
 }
-static void ClosureDecref1(Fun1 * self){
+void ClosureDecref1(Fun1 * self){
     Closure1 * x = (Closure1 *) self;
     if (x != NULL && --(x->base.refc) == 0) { ClosureDecrefBody1(x); free(x); }
 }
-static int32_t g_c1(Fun1 * self, int32_t v2){
+int32_t g_c1(Fun1 * self, int32_t v2){
     Closure1 * x = (Closure1 *) self;
     int32_t v0 = x->v0; int32_t v1 = x->v1;
+    
     ClosureDecref1(self);
-    bool v3 = v1 == 0l;
+    
+    
+    bool v3;
+    v3 = v1 == 0l;
+    
+    
     if (v3){
+        
+        
         return 0l;
     } else {
-        int32_t v4 = v2 + v0;
+        
+        
+        int32_t v4;
+        v4 = v2 + v0;
+        
+        
         return v4;
     }
 }
-static Fun1 * ClosureCreate1(int32_t v0, int32_t v1){
+Fun1 * ClosureCreate1(int32_t v0, int32_t v1){
     Closure1 * x = malloc(sizeof(Closure1));
     x->base.refc = 1;
     x->base.decref_fptr = ClosureDecref1;
@@ -56,17 +69,20 @@ static Fun1 * ClosureCreate1(int32_t v0, int32_t v1){
 static inline void ClosureDecrefBody0(Closure0 * x){
     (void)x;
 }
-static void ClosureDecref0(Fun0 * self){
+void ClosureDecref0(Fun0 * self){
     Closure0 * x = (Closure0 *) self;
     if (x != NULL && --(x->base.refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
-static Fun1 * f_c0(Fun0 * self, int32_t v1){
+Fun1 * f_c0(Fun0 * self, int32_t v1){
     Closure0 * x = (Closure0 *) self;
     int32_t v0 = x->v0;
+    
     ClosureDecref0(self);
+    
+    
     return ClosureCreate1(v0, v1);
 }
-static Fun0 * ClosureCreate0(int32_t v0){
+Fun0 * ClosureCreate0(int32_t v0){
     Closure0 * x = malloc(sizeof(Closure0));
     x->base.refc = 1;
     x->base.decref_fptr = ClosureDecref0;
@@ -75,18 +91,35 @@ static Fun0 * ClosureCreate0(int32_t v0){
     return &x->base;
 }
 int32_t main(){
-    int32_t v0 = 7l;
-    Fun0 * v1 = ClosureCreate0(v0);
+    
+    
+    int32_t v0;
+    v0 = 7l;
+    
+    
+    Fun0 * v1;
+    v1 = ClosureCreate0(v0);
     (v1)->refc++;
-    Fun1 * v2 = v1->fptr(v1, 1l);
+    
+    Fun1 * v2;
+    v2 = v1->fptr(v1, 1l);
     (v2)->refc++;
     (v1)->decref_fptr(v1);
-    int32_t v3 = v2->fptr(v2, 0l);
+    int32_t v3;
+    v3 = v2->fptr(v2, 0l);
+    
     (v2)->decref_fptr(v2);
-    bool v4 = v3 == 7l;
+    bool v4;
+    v4 = v3 == 7l;
+    
+    
     if (v4){
+        
+        
         return 0l;
     } else {
+        
+        
         return 1l;
     }
 }

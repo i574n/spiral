@@ -188,7 +188,7 @@ inl join_body body acc x =
 
 test join_body static =
     inl rec fold_list f s = function
-        | Cons (x, x') => fold_list f (f s x) x'
+        | x :: x' => fold_list f (f s x) x'
         | Nil => s
 
 ///> gleam
@@ -597,18 +597,96 @@ nominal exn = $'backend_switch `(exn_switch)'
 inl exn x =
     x |> $'`exn '
 
-/// ### try
-inl catch_unwind_rust forall t. (fn : () -> t) (ex_fn : exn -> t) : t =
-    inl fn = dyn fn
-    inl ex_fn = dyn ex_fn
-    $'{ thread_local\! { static QUIET: std::cell::Cell<u32> = std::cell::Cell::new(0); } static HOOK: std::sync::Once \
-        = std::sync::Once::new(); HOOK.call_once(|| { let prev = std::panic::take_hook(); \
-        std::panic::set_hook(Box::new(move |info| if cfg\!(panic = "abort") || QUIET.with(|q| q.get()) == 0 { \
-        prev(info) })) }); QUIET.with(|q| q.set(q.get() + 1)); let r = \
-        std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (!fn)())); QUIET.with(|q| q.set(q.get() - 1)); match \
-        r { Ok(x) => x, Err(e) => (!ex_fn)(Rc::<str>::from(e.downcast_ref::<String>().map(|s| s.as_str()).or_else(|| \
-        e.downcast_ref::<&str>().copied()).unwrap_or("panic"))) } }' : t
+/// ### rust_panic_payload
+nominal rust_panic_payload = $'Box<dyn std::any::Any + Send>'
 
+/// ### rust_panic_hook
+nominal rust_panic_hook = $'Box<dyn Fn(&std::panic::PanicHookInfo) + Sync + Send>'
+
+/// ### rust_caught
+nominal rust_caught t = $'std::thread::Result<`t>'
+
+/// ### rust_panic_aborts
+inl rust_panic_aborts () : bool =
+    $'cfg\!(panic = "abort")' : bool
+
+/// ### rust_panic_take_hook
+inl rust_panic_take_hook () : rust_panic_hook =
+    $'std::panic::take_hook()' : rust_panic_hook
+
+/// ### rust_panic_set_hook
+inl rust_panic_set_hook (hook : rust_panic_hook) : () =
+    $'std::panic::set_hook(!hook)' : ()
+
+/// ### rust_panic_silent_hook
+inl rust_panic_silent_hook () : rust_panic_hook =
+    $'Box::new(|_| ())' : rust_panic_hook
+
+/// ### rust_resume_unwind
+inl rust_resume_unwind (payload : rust_panic_payload) : () =
+    $'std::panic::resume_unwind(!payload)' : ()
+
+/// ### rust_catch_unwind
+inl rust_catch_unwind forall t. (fn : () -> t) : rust_caught t =
+    inl fn = dyn fn
+    $'std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (!fn)()))' : rust_caught t
+
+/// ### rust_quietly
+inl rust_quietly forall t. (catch : () -> t) : t =
+    if rust_panic_aborts () then catch ()
+    else
+        inl previous = rust_panic_take_hook ()
+        rust_panic_silent_hook () |> rust_panic_set_hook
+        inl caught = catch ()
+        rust_panic_set_hook previous
+        caught
+
+/// ### rust_caught_ok
+inl rust_caught_ok forall t. (caught : rust_caught t) : bool =
+    $'!caught.is_ok()' : bool
+
+/// ### rust_caught_value
+inl rust_caught_value forall t. (caught : rust_caught t) : t =
+    $'!caught.unwrap()' : t
+
+/// ### rust_caught_payload
+inl rust_caught_payload forall t. (caught : rust_caught t) : rust_panic_payload =
+    $'!caught.err().unwrap()' : rust_panic_payload
+
+/// ### rust_panic_holds_string
+inl rust_panic_holds_string (payload : rust_panic_payload) : bool =
+    $'!payload.downcast_ref::<String>().is_some()' : bool
+
+/// ### rust_panic_holds_str
+inl rust_panic_holds_str (payload : rust_panic_payload) : bool =
+    $'!payload.downcast_ref::<&str>().is_some()' : bool
+
+/// ### rust_panic_string
+inl rust_panic_string (payload : rust_panic_payload) : string =
+    $'Rc::<str>::from(!payload.downcast_ref::<String>().unwrap().as_str())' : string
+
+/// ### rust_panic_str
+inl rust_panic_str (payload : rust_panic_payload) : string =
+    $'Rc::<str>::from(*!payload.downcast_ref::<&str>().unwrap())' : string
+
+/// ### rust_panic_text
+inl rust_panic_text (payload : rust_panic_payload) : string =
+    if rust_panic_holds_string payload then rust_panic_string payload
+    elif rust_panic_holds_str payload then rust_panic_str payload
+    else "panic"
+
+/// ### rust_exn_of_text
+inl rust_exn_of_text (text : string) : exn =
+    $'!text' : exn
+
+/// ### catch_unwind_rust
+inl catch_unwind_rust forall t. (fn : () -> t) (ex_fn : exn -> t) : t =
+    rust_quietly fun () =>
+        inl caught = rust_catch_unwind fn
+        if rust_caught_ok caught then rust_caught_value caught
+        else caught |> rust_caught_payload |> rust_panic_text |> rust_exn_of_text |> ex_fn
+
+/// ### try
 inl try forall t. (fn : () -> t) (ex_fn : exn -> option t) : option t =
     inl some x : option t = Some x
     inl some = dyn some
@@ -695,14 +773,15 @@ inl try_unit forall t. (fn : () -> ()) (ex_fn : (() -> exn) -> ()) : t =
             $'std.mem.zeroes(`t)' : t
         | Gleam _ => fun () =>
             global "import exception"
+            global "import gleam/result"
             inl fn = dyn fn
-            inl ex_fn = dyn ex_fn
-            $'case exception.rescue(fn() { !fn(Nil) }) { Ok(_) -> Nil Error(_) -> !ex_fn(fn(_) { Nil }) }' : ()
+            inl rescued = $'exception.rescue(fn() { !fn(Nil) })' : $'Result(Nil, exception.Exception)'
+            if $'result.is_error(!rescued)' : bool then ex_fn (fun () => $'Nil' : exn) else ()
             $'Nil' : t
         | Lua => fun () =>
             inl fn = dyn fn
-            inl ex_fn = dyn ex_fn
-            $'if not pcall(!fn) then !ex_fn(function(dom) return nil end) end' : ()
+            inl ok = $'pcall(!fn)' : bool
+            if ok then () else ex_fn (fun () => $'nil' : exn)
             $'(function() return nil end)()' : t
         | _ => fun () =>
             if try_unit_fsharp_python ()
@@ -763,9 +842,9 @@ inl try_unit' forall t. (ex_fn : (() -> exn) -> ()) (fn : () -> ()) : t =
 inl try_finally forall t. (fn : () -> ()) (finally : () -> ()) : t =
     run_target function
         | Rust => fun () =>
-            inl fn = dyn fn
-            inl finally = dyn finally
-            $'{ let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (!fn)())); (!finally)(); if let Err(e) = r { std::panic::resume_unwind(e) } }' : ()
+            inl caught = rust_catch_unwind fn
+            finally ()
+            if rust_caught_ok caught then () else caught |> rust_caught_payload |> rust_resume_unwind
             $'()' : t
         | Zig => fun () =>
             fn ()
@@ -779,10 +858,9 @@ inl try_finally forall t. (fn : () -> ()) (finally : () -> ()) : t =
             $'Nil' : t
         | Lua => fun () =>
             inl fn = dyn fn
-            inl finally = dyn finally
-            $'local spiral_try_ok, spiral_try_error = pcall(!fn)' : ()
+            inl outcome = $'{pcall(!fn)}' : $'table'
             finally ()
-            $'if not spiral_try_ok then error(spiral_try_error, 0) end' : ()
+            if ($'!outcome[1]' : bool) then () else $'error(!outcome[2], 0)' : ()
             $'(function() return nil end)()' : t
         | _ => fun () =>
             if try_unit_fsharp_python ()

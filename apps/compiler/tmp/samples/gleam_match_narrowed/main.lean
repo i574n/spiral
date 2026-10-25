@@ -39,9 +39,10 @@ def U0.spiralTag : U0 → Int32
 mutual
 partial def pick_0 (p0 : Int32) : IO U0 := do
     let mut v0 : Int32 := p0
+    let mut v1 : Bool := default
     let mut v3 : Bool := default
     let mut v5 : Bool := default
-    let v1 : Bool := (v0 == (0 : Int32))
+    v1 := (v0 == (0 : Int32))
     if v1 then
         return (U0.Circle (5 : Int32))
     else
@@ -119,27 +120,48 @@ partial def measure_tri_2 (p0 : U0) (p1 : Int32) : IO Int32 := do
         | _ =>
             spiralFail "union unbox: unreachable case"
 partial def spiralMain : IO Int32 := do
-    let v0 : Int32 := (0 : Int32)
-    let v1 : U0 := (← pick_0 v0)
-    let v2 : Int32 := (← measure_1 v1 v0)
-    let v3 : Int32 := (v0 + (1 : Int32))
-    let v4 : U0 := (← pick_0 v3)
-    let v5 : Int32 := (← measure_1 v4 v3)
-    let v6 : Int32 := (v2 + v5)
-    let v7 : Int32 := (v0 + (2 : Int32))
-    let v8 : U0 := (← pick_0 v7)
-    let v9 : Int32 := (← measure_1 v8 v7)
-    let v10 : Int32 := (v6 + v9)
-    let v11 : Int32 := (v0 + (3 : Int32))
-    let v12 : U0 := (← pick_0 v11)
-    let v13 : Int32 := (← measure_1 v12 v11)
-    let v14 : Int32 := (v10 + v13)
-    let v15 : U0 := (← pick_0 v7)
-    let v16 : Int32 := (← measure_tri_2 v15 v0)
-    let v17 : Int32 := (v14 + v16)
-    let v18 : U0 := (← pick_0 v0)
-    let v19 : Int32 := (← measure_tri_2 v18 v0)
-    let v20 : Int32 := (v17 + v19)
+    let mut v0 : Int32 := default
+    let mut v1 : U0 := default
+    let mut v2 : Int32 := default
+    let mut v3 : Int32 := default
+    let mut v4 : U0 := default
+    let mut v5 : Int32 := default
+    let mut v6 : Int32 := default
+    let mut v7 : Int32 := default
+    let mut v8 : U0 := default
+    let mut v9 : Int32 := default
+    let mut v10 : Int32 := default
+    let mut v11 : Int32 := default
+    let mut v12 : U0 := default
+    let mut v13 : Int32 := default
+    let mut v14 : Int32 := default
+    let mut v15 : U0 := default
+    let mut v16 : Int32 := default
+    let mut v17 : Int32 := default
+    let mut v18 : U0 := default
+    let mut v19 : Int32 := default
+    let mut v20 : Int32 := default
+    v0 := (0 : Int32)
+    v1 := (← pick_0 v0)
+    v2 := (← measure_1 v1 v0)
+    v3 := (v0 + (1 : Int32))
+    v4 := (← pick_0 v3)
+    v5 := (← measure_1 v4 v3)
+    v6 := (v2 + v5)
+    v7 := (v0 + (2 : Int32))
+    v8 := (← pick_0 v7)
+    v9 := (← measure_1 v8 v7)
+    v10 := (v6 + v9)
+    v11 := (v0 + (3 : Int32))
+    v12 := (← pick_0 v11)
+    v13 := (← measure_1 v12 v11)
+    v14 := (v10 + v13)
+    v15 := (← pick_0 v7)
+    v16 := (← measure_tri_2 v15 v0)
+    v17 := (v14 + v16)
+    v18 := (← pick_0 v0)
+    v19 := (← measure_tri_2 v18 v0)
+    v20 := (v17 + v19)
     return v20
 end
 def main : IO UInt32 := do

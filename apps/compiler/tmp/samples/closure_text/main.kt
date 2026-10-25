@@ -13,8 +13,10 @@ fun f_c0(v0: String): (Int) -> String {
     return { p0: Int -> body(p0) }
 }
 fun spiral_main(): Int {
-    val v0: String = "hi"
-    val v1: (Int) -> String = f_c0(v0)
+    var v0: String = ""
+    v0 = "hi"
+    var v1: (Int) -> String = { _: Int -> throw RuntimeException() }
+    v1 = f_c0(v0)
     var v2: String = ""
     v2 = v1(1)
     var v3: Boolean = false

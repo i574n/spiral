@@ -3,12 +3,15 @@ import WinSDK
 func sp_count_0(_ p0: Int32) -> Int32 {
     var v0: Int32 = p0
     while true {
-        let v1: Bool = (v0 <= 0)
+        var v1: Bool = false
+        v1 = (v0 <= 0)
         if (v1) {
             return 0
         } else {
-            let v2: Int32 = (v0 &- 1)
-            v0 = v2
+            var v2: Int32 = 0
+            v2 = (v0 &- 1)
+            let t255_2: Int32 = v2
+            v0 = t255_2
             continue
         }
     }

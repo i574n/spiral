@@ -13,7 +13,8 @@ fun sp_method1(p0: Boolean, p1: Float, p2: Int): Int {
         var v3: Boolean = false
         v3 = (v1 >= 3.5f)
         if (v3) {
-            val v4: Int = (v2 - 7)
+            var v4: Int = 0
+            v4 = (v2 - 7)
             return v4
         } else {
             return 1
@@ -23,7 +24,8 @@ fun sp_method1(p0: Boolean, p1: Float, p2: Int): Int {
     }
 }
 fun spiral_main(): Int {
-    val v0: Float = 4.0f
+    var v0: Float = 0.0f
+    v0 = 4.0f
     var v1: Boolean = false
     var v2: Float = 0.0f
     var v3: Int = 0

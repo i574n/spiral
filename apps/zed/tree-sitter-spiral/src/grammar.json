@@ -182,7 +182,7 @@
               "value": 2,
               "content": {
                 "type": "PATTERN",
-                "value": "((and)[ \\t]+)?(inl|let|type|union|nominal|prototype|instance|open|and)[ \\t]+(rec[ \\t]+)?"
+                "value": "((and|:&)[ \\t]+)?(inl|let|type|union|nominal|prototype|instance|open|and|:=|:~|:==|:\\||:!|:\\?|:\\+|:<|:&)[ \\t]+((rec|\\^)[ \\t]+)?"
               }
             }
           },

@@ -34,10 +34,12 @@ fun sp_invalid_middle_0(p0: String): String {
     return v1
 }
 fun spiral_main(): Int {
-    val v0: String = "é"
+    var v0: String = ""
+    v0 = "é"
     var v1: String = ""
     v1 = sp_invalid_middle_0(v0)
-    val v2: Int = spiralStringLength(v1)
+    var v2: Int = 0
+    v2 = spiralStringLength(v1)
     return v2
 }
 fun main() {

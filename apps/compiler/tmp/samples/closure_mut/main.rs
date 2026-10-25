@@ -8,12 +8,12 @@ fn f_c0(mut v0: Rc<RefCell<Mut0>>) -> Rc<dyn Fn(i32) -> Rc<RefCell<Mut0>>> {
     })
 }
 fn spiral_main() -> i32 {
-    let v0: Rc<RefCell<Mut0>> = Rc::new(RefCell::new(Mut0 { l0: 1i32 }));
-    let mut v1: Rc<dyn Fn(i32) -> Rc<RefCell<Mut0>>> = f_c0(v0);
+    let mut v0: Rc<RefCell<Mut0>> = Rc::new(RefCell::new(Mut0 { l0: 1i32 }));
+    let mut v1: Rc<dyn Fn(i32) -> Rc<RefCell<Mut0>>> = f_c0(v0.clone());
     let mut v2: Rc<RefCell<Mut0>> = v1(1i32);
     v2.borrow_mut().l0 = 7i32;
-    let v3: i32 = v2.borrow().l0.clone();
-    let v4: bool = v3 == 7i32;
+    let mut v3: i32 = v2.borrow().l0.clone();
+    let mut v4: bool = v3 == 7i32;
     if v4 {
         0i32
     } else {

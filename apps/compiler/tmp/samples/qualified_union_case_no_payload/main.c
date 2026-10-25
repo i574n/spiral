@@ -33,33 +33,61 @@ US0 US0_Hold() { // Hold
     return x;
 }
 int32_t main(){
-    int32_t v0 = 3l;
-    US0 v1 = US0_Hit(v0);
-    US0 v2 = US0_Hold();
+    
+    
+    int32_t v0;
+    v0 = 3l;
+    
+    
+    US0 v1;
+    v1 = US0_Hit(v0);
+    
+    
+    US0 v2;
+    v2 = US0_Hold();
+    
+    
     int32_t v5;
     switch (v1.tag) {
         case 0: { // Hit
             int32_t v3 = v1.case0.v0;
+            
+            
             v5 = v3;
             break;
         }
         default: { // Hold
+            
+            
+            
             v5 = 40l;
             break;
         }
     }
+    
+    
     int32_t v8;
     switch (v2.tag) {
         case 0: { // Hit
             int32_t v6 = v2.case0.v0;
+            
+            
             v8 = v6;
             break;
         }
         default: { // Hold
+            
+            
+            
             v8 = 40l;
             break;
         }
     }
-    int32_t v9 = v5 + v8;
+    
+    
+    int32_t v9;
+    v9 = v5 + v8;
+    
+    
     return v9;
 }

@@ -18,8 +18,10 @@ fun sp_fast_b_2(): Int {
 fun spiral_main(): Int {
     var v0: Int = 0
     v0 = sp_slow_a_0()
-    val v1: Int = sp_fast_b_2()
-    val v2: Int = (v0 + v1)
+    var v1: Int = 0
+    v1 = sp_fast_b_2()
+    var v2: Int = 0
+    v2 = (v0 + v1)
     return v2
 }
 fun main() {

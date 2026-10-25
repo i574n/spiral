@@ -25,6 +25,22 @@ def spiralStringSlice (s : String) (a b : Int) : IO String := do
   else pure (String.Pos.Raw.extract s ⟨a.toNat⟩ ⟨(b + 1).toNat⟩)
 mutual
 partial def spiralMain : IO Int32 := do
+    let mut v0 : Int64 := default
+    let mut v1 : Int64 := default
+    let mut v2 : Int64 := default
+    let mut v3 : Int64 := default
+    let mut v4 : Int64 := default
+    let mut v5 : Int64 := default
+    let mut v6 : Int64 := default
+    let mut v7 : Int32 := default
+    let mut v8 : Int64 := default
+    let mut v9 : Int64 := default
+    let mut v10 : Int32 := default
+    let mut v11 : UInt64 := default
+    let mut v12 : UInt64 := default
+    let mut v13 : UInt64 := default
+    let mut v14 : UInt64 := default
+    let mut v15 : Bool := default
     let mut v17 : Bool := default
     let mut v16 : Bool := default
     let mut v19 : Bool := default
@@ -39,22 +55,22 @@ partial def spiralMain : IO Int32 := do
     let mut v26 : Bool := default
     let mut v29 : Bool := default
     let mut v28 : Bool := default
-    let v0 : Int64 := (5000000000 : Int64)
-    let v1 : Int64 := (-4 : Int64)
-    let v2 : Int64 := (v0 / v1)
-    let v3 : Int64 := (1000000 : Int64)
-    let v4 : Int64 := (v3 * v3)
-    let v5 : Int64 := (-8 : Int64)
-    let v6 : Int64 := (v5 >>> (Int64.ofInt (SpiralToInt.toI (1 : Int32))))
-    let v7 : Int32 := (7 : Int32)
-    let v8 : Int64 := (Int64.ofInt (SpiralToInt.toI v7))
-    let v9 : Int64 := (9 : Int64)
-    let v10 : Int32 := (Int32.ofInt (SpiralToInt.toI v9))
-    let v11 : UInt64 := (4294967296 : UInt64)
-    let v12 : UInt64 := (v11 + (1 : UInt64))
-    let v13 : UInt64 := (v11 >>> (UInt64.ofInt (SpiralToInt.toI (1 : Int32))))
-    let v14 : UInt64 := (UInt64.ofInt (SpiralToInt.toI v7))
-    let v15 : Bool := (v2 == (-1250000000 : Int64))
+    v0 := (5000000000 : Int64)
+    v1 := (-4 : Int64)
+    v2 := (v0 / v1)
+    v3 := (1000000 : Int64)
+    v4 := (v3 * v3)
+    v5 := (-8 : Int64)
+    v6 := (v5 >>> (Int64.ofInt (SpiralToInt.toI (1 : Int32))))
+    v7 := (7 : Int32)
+    v8 := (Int64.ofInt (SpiralToInt.toI v7))
+    v9 := (9 : Int64)
+    v10 := (Int32.ofInt (SpiralToInt.toI v9))
+    v11 := (4294967296 : UInt64)
+    v12 := (v11 + (1 : UInt64))
+    v13 := (v11 >>> (UInt64.ofInt (SpiralToInt.toI (1 : Int32))))
+    v14 := (UInt64.ofInt (SpiralToInt.toI v7))
+    v15 := (v2 == (-1250000000 : Int64))
     if v15 then
         v16 := (v4 == (1000000000000 : Int64))
         v17 := v16

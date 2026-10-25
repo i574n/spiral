@@ -21,22 +21,26 @@ func sp_walk_0(_ p0: Int32) -> Int32 {
             var v7: Int32 = (v6 as! US0_Step).f0
             var v8: Int32 = (v6 as! US0_Step).f1
             var v9: Int32 = (v6 as! US0_Step).f2
-            let v10: Int32 = (v8 &* v9)
-            let v11: Int32 = (v7 &+ v10)
+            var v10: Int32 = 0
+            v10 = (v8 &* v9)
+            var v11: Int32 = 0
+            v11 = (v7 &+ v10)
             return v11
         default:
             fatalError("unreachable union case")
     }
 }
 func spiral_main() -> Int32 {
-    let v0: Int32 = 5
+    var v0: Int32 = 0
+    v0 = 5
     var v1: Int32 = 0
     v1 = sp_walk_0(v0)
     var v2: Int32 = 0
     v2 = (v0 &- 4)
     var v3: Int32 = 0
     v3 = sp_walk_0(v2)
-    let v4: Int32 = (v1 &+ v3)
+    var v4: Int32 = 0
+    v4 = (v1 &+ v3)
     return v4
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

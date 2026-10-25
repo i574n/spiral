@@ -9,6 +9,10 @@ var
   v5: LongInt;
   v6: QWord;
   v7: QWord;
+  tmp4: QWord;
+  tmp5: QWord;
+  tmp6: LongInt;
+  tmp7: QWord;
 begin
   while True do begin
       v4 := v2 = 0;
@@ -19,8 +23,14 @@ begin
           v5 := v2 - 1;
           v6 := v3 * v0;
           v7 := v6 + v1;
-          v2 := v5;
-          v3 := v7;
+          tmp4 := v0;
+          tmp5 := v1;
+          tmp6 := v5;
+          tmp7 := v7;
+          v0 := tmp4;
+          v1 := tmp5;
+          v2 := tmp6;
+          v3 := tmp7;
           Continue;
       end;
   end;

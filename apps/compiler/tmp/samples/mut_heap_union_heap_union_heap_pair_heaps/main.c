@@ -55,10 +55,10 @@ typedef struct {
 static inline void ArrayDecrefBody0(Array0 * x){
     (void)x;
 }
-static void ArrayDecref0(Array0 * x){
+void ArrayDecref0(Array0 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody0(x); free(x); }
 }
-static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
+Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     uint32_t size = sizeof(Array0) + sizeof(char) * len;
     Array0 * x = malloc(size);
     if (init_at_zero) { memset(x,0,size); }
@@ -66,7 +66,7 @@ static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     x->len = len;
     return x;
 }
-static Array0 * ArrayLit0(uint32_t len, char * ptr){
+Array0 * ArrayLit0(uint32_t len, char * ptr){
     Array0 * x = ArrayCreate0(len, false);
     memcpy(x->ptr, ptr, sizeof(char) * len);
     return x;
@@ -80,10 +80,10 @@ static inline String * StringLit(uint32_t len, char * ptr){
 static inline void HeapDecrefBody0(Heap0 * x){
     StringDecref(x->v1);
 }
-static void HeapDecref0(Heap0 * x){
+void HeapDecref0(Heap0 * x){
     if (x != NULL && --(x->refc) == 0) { HeapDecrefBody0(x); free(x); }
 }
-static Heap0 * HeapCreate0(int32_t v0, String * v1){
+Heap0 * HeapCreate0(int32_t v0, String * v1){
     Heap0 * x = malloc(sizeof(Heap0));
     x->refc = 1;
     x->v0 = v0; x->v1 = v1;
@@ -92,10 +92,10 @@ static Heap0 * HeapCreate0(int32_t v0, String * v1){
 static inline void HeapDecrefBody1(Heap1 * x){
     HeapDecref0(x->v0); HeapDecref0(x->v1);
 }
-static void HeapDecref1(Heap1 * x){
+void HeapDecref1(Heap1 * x){
     if (x != NULL && --(x->refc) == 0) { HeapDecrefBody1(x); free(x); }
 }
-static Heap1 * HeapCreate1(Heap0 * v0, Heap0 * v1){
+Heap1 * HeapCreate1(Heap0 * v0, Heap0 * v1){
     Heap1 * x = malloc(sizeof(Heap1));
     x->refc = 1;
     x->v0 = v0; x->v1 = v1;
@@ -104,10 +104,10 @@ static Heap1 * HeapCreate1(Heap0 * v0, Heap0 * v1){
 static inline void HeapDecrefBody2(Heap2 * x){
     HeapDecref1(x->v0);
 }
-static void HeapDecref2(Heap2 * x){
+void HeapDecref2(Heap2 * x){
     if (x != NULL && --(x->refc) == 0) { HeapDecrefBody2(x); free(x); }
 }
-static Heap2 * HeapCreate2(Heap1 * v0, int32_t v1){
+Heap2 * HeapCreate2(Heap1 * v0, int32_t v1){
     Heap2 * x = malloc(sizeof(Heap2));
     x->refc = 1;
     x->v0 = v0; x->v1 = v1;
@@ -145,10 +145,10 @@ US0 US0_Held(Heap2 * v0) { // Held
 static inline void HeapDecrefBody3(Heap3 * x){
     USDecref0(&(x->v0));
 }
-static void HeapDecref3(Heap3 * x){
+void HeapDecref3(Heap3 * x){
     if (x != NULL && --(x->refc) == 0) { HeapDecrefBody3(x); free(x); }
 }
-static Heap3 * HeapCreate3(US0 v0){
+Heap3 * HeapCreate3(US0 v0){
     Heap3 * x = malloc(sizeof(Heap3));
     x->refc = 1;
     x->v0 = v0;
@@ -186,10 +186,10 @@ US1 US1_Box(Heap3 * v0) { // Box
 static inline void HeapDecrefBody4(Heap4 * x){
     USDecref1(&(x->v0));
 }
-static void HeapDecref4(Heap4 * x){
+void HeapDecref4(Heap4 * x){
     if (x != NULL && --(x->refc) == 0) { HeapDecrefBody4(x); free(x); }
 }
-static Heap4 * HeapCreate4(US1 v0){
+Heap4 * HeapCreate4(US1 v0){
     Heap4 * x = malloc(sizeof(Heap4));
     x->refc = 1;
     x->v0 = v0;
@@ -198,10 +198,10 @@ static Heap4 * HeapCreate4(US1 v0){
 static inline void MutDecrefBody0(Mut0 * x){
     HeapDecref4(x->v0);
 }
-static void MutDecref0(Mut0 * x){
+void MutDecref0(Mut0 * x){
     if (x != NULL && --(x->refc) == 0) { MutDecrefBody0(x); free(x); }
 }
-static Mut0 * MutCreate0(Heap4 * v0){
+Mut0 * MutCreate0(Heap4 * v0){
     Mut0 * x = malloc(sizeof(Mut0));
     x->refc = 1;
     x->v0 = v0;
@@ -212,9 +212,13 @@ static inline void AssignMut0(Heap4 * * a0, Heap4 * b0){
     HeapDecref4(*a0);
     *a0 = b0;
 }
-static int32_t score0(US1 v0){
+int32_t score0(US1 v0){
+    
+    
     switch (v0.tag) {
         case 0: { // Absent
+            
+            
             USDecref1(&(v0));
             return 1l;
             break;
@@ -223,7 +227,8 @@ static int32_t score0(US1 v0){
             Heap3 * v1 = v0.case1.v0;
             (v1)->refc++;
             USDecref1(&(v0));
-            US0 v2 = v1->v0;
+            US0 v2;
+            v2 = v1->v0;
             USIncref0(&(v2));
             HeapDecref3(v1);
             switch (v2.tag) {
@@ -247,45 +252,88 @@ static int32_t score0(US1 v0){
                     v10 = v7->v0; v11 = v7->v1;
                     (v11)->refc++;
                     HeapDecref0(v7);
-                    bool v12 = v8 == 7l;
+                    bool v12;
+                    v12 = v8 == 7l;
+                    
+                    
                     bool v14;
                     if (v12){
-                        bool v13 = strcmp(v9->ptr, "hi") == 0;
+                        
+                        
+                        bool v13;
+                        v13 = strcmp(v9->ptr, "hi") == 0;
+                        
+                        
                         v14 = v13;
                     } else {
+                        
+                        
                         v14 = false;
                     }
+                    
                     StringDecref(v9);
                     bool v16;
                     if (v14){
-                        bool v15 = v10 == 4l;
+                        
+                        
+                        bool v15;
+                        v15 = v10 == 4l;
+                        
+                        
                         v16 = v15;
                     } else {
+                        
+                        
                         v16 = false;
                     }
+                    
+                    
                     bool v18;
                     if (v16){
-                        bool v17 = strcmp(v11->ptr, "yo") == 0;
+                        
+                        
+                        bool v17;
+                        v17 = strcmp(v11->ptr, "yo") == 0;
+                        
+                        
                         v18 = v17;
                     } else {
+                        
+                        
                         v18 = false;
                     }
+                    
                     StringDecref(v11);
                     bool v20;
                     if (v18){
-                        bool v19 = v5 == 2l;
+                        
+                        
+                        bool v19;
+                        v19 = v5 == 2l;
+                        
+                        
                         v20 = v19;
                     } else {
+                        
+                        
                         v20 = false;
                     }
+                    
+                    
                     if (v20){
+                        
+                        
                         return 0l;
                     } else {
+                        
+                        
                         return 1l;
                     }
                     break;
                 }
                 default: { // None
+                    
+                    
                     USDecref0(&(v2));
                     return 1l;
                     break;
@@ -296,97 +344,174 @@ static int32_t score0(US1 v0){
     }
 }
 int32_t main(){
-    int32_t v0 = 1l;
-    String * v1 = StringLit(3, "no");
+    
+    
+    int32_t v0;
+    v0 = 1l;
+    
+    
+    String * v1;
+    v1 = StringLit(3, "no");
     (v1)->refc++;
-    Heap0 * v2 = HeapCreate0(v0, v1);
+    
+    Heap0 * v2;
+    v2 = HeapCreate0(v0, v1);
+    
     StringDecref(v1);
-    int32_t v3 = 2l;
-    String * v4 = StringLit(3, "zz");
+    int32_t v3;
+    v3 = 2l;
+    
+    
+    String * v4;
+    v4 = StringLit(3, "zz");
     (v4)->refc++;
-    Heap0 * v5 = HeapCreate0(v3, v4);
+    
+    Heap0 * v5;
+    v5 = HeapCreate0(v3, v4);
     (v2)->refc++; (v5)->refc++;
     StringDecref(v4);
-    Heap1 * v6 = HeapCreate1(v2, v5);
+    Heap1 * v6;
+    v6 = HeapCreate1(v2, v5);
+    
     HeapDecref0(v2); HeapDecref0(v5);
-    int32_t v7 = 3l;
+    int32_t v7;
+    v7 = 3l;
     (v6)->refc++;
-    Heap2 * v8 = HeapCreate2(v6, v7);
+    
+    Heap2 * v8;
+    v8 = HeapCreate2(v6, v7);
+    
     HeapDecref1(v6);
-    bool v9 = true;
+    bool v9;
+    v9 = true;
+    
+    
     US0 v12;
     if (v9){
         (v8)->refc++;
+        
         v12 = US0_Held(v8);
     } else {
+        
+        
         v12 = US0_None();
     }
     USIncref0(&(v12));
     HeapDecref2(v8);
-    Heap3 * v13 = HeapCreate3(v12);
+    Heap3 * v13;
+    v13 = HeapCreate3(v12);
+    
     USDecref0(&(v12));
-    bool v14 = true;
+    bool v14;
+    v14 = true;
+    
+    
     US1 v17;
     if (v14){
         (v13)->refc++;
+        
         v17 = US1_Box(v13);
     } else {
+        
+        
         v17 = US1_Absent();
     }
     USIncref1(&(v17));
     HeapDecref3(v13);
-    Heap4 * v18 = HeapCreate4(v17);
+    Heap4 * v18;
+    v18 = HeapCreate4(v17);
     (v18)->refc++;
     USDecref1(&(v17));
-    Mut0 * v19 = MutCreate0(v18);
+    Mut0 * v19;
+    v19 = MutCreate0(v18);
+    
     HeapDecref4(v18);
-    int32_t v20 = 7l;
-    String * v21 = StringLit(3, "hi");
+    int32_t v20;
+    v20 = 7l;
+    
+    
+    String * v21;
+    v21 = StringLit(3, "hi");
     (v21)->refc++;
-    Heap0 * v22 = HeapCreate0(v20, v21);
+    
+    Heap0 * v22;
+    v22 = HeapCreate0(v20, v21);
+    
     StringDecref(v21);
-    int32_t v23 = 4l;
-    String * v24 = StringLit(3, "yo");
+    int32_t v23;
+    v23 = 4l;
+    
+    
+    String * v24;
+    v24 = StringLit(3, "yo");
     (v24)->refc++;
-    Heap0 * v25 = HeapCreate0(v23, v24);
+    
+    Heap0 * v25;
+    v25 = HeapCreate0(v23, v24);
     (v22)->refc++; (v25)->refc++;
     StringDecref(v24);
-    Heap1 * v26 = HeapCreate1(v22, v25);
+    Heap1 * v26;
+    v26 = HeapCreate1(v22, v25);
+    
     HeapDecref0(v22); HeapDecref0(v25);
-    int32_t v27 = 2l;
+    int32_t v27;
+    v27 = 2l;
     (v26)->refc++;
-    Heap2 * v28 = HeapCreate2(v26, v27);
+    
+    Heap2 * v28;
+    v28 = HeapCreate2(v26, v27);
+    
     HeapDecref1(v26);
-    bool v29 = true;
+    bool v29;
+    v29 = true;
+    
+    
     US0 v32;
     if (v29){
         (v28)->refc++;
+        
         v32 = US0_Held(v28);
     } else {
+        
+        
         v32 = US0_None();
     }
     USIncref0(&(v32));
     HeapDecref2(v28);
-    Heap3 * v33 = HeapCreate3(v32);
+    Heap3 * v33;
+    v33 = HeapCreate3(v32);
+    
     USDecref0(&(v32));
-    bool v34 = true;
+    bool v34;
+    v34 = true;
+    
+    
     US1 v37;
     if (v34){
         (v33)->refc++;
+        
         v37 = US1_Box(v33);
     } else {
+        
+        
         v37 = US1_Absent();
     }
     USIncref1(&(v37));
     HeapDecref3(v33);
-    Heap4 * v38 = HeapCreate4(v37);
+    Heap4 * v38;
+    v38 = HeapCreate4(v37);
+    
     USDecref1(&(v37));
+    
     AssignMut0(&(v19->v0), v38);
+    
     HeapDecref4(v38);
-    Heap4 * v39 = v19->v0;
+    Heap4 * v39;
+    v39 = v19->v0;
     (v39)->refc++;
     MutDecref0(v19);
-    US1 v40 = v39->v0;
+    US1 v40;
+    v40 = v39->v0;
     USIncref1(&(v40));
     HeapDecref4(v39);
     return score0(v40);

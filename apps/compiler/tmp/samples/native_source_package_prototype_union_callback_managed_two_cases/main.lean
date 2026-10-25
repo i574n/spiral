@@ -37,9 +37,10 @@ def U0.spiralTag : U0 → Int32
 mutual
 partial def closure0 (p0 : Int32) : IO U0 := do
     let mut v0 : Int32 := p0
+    let mut v1 : Bool := default
     let mut v2 : String := default
     let mut v4 : String := default
-    let v1 : Bool := (v0 == (1 : Int32))
+    v1 := (v0 == (1 : Int32))
     if v1 then
         v2 := "alpha"
         return (U0.Text v2)
@@ -53,14 +54,19 @@ partial def method1 (p0 : (Int32 → IO U0)) : IO U0 := do
     let mut v0 : (Int32 → IO U0) := p0
     return (← v0 (2 : Int32))
 partial def spiralMain : IO Int32 := do
+    let mut v0 : (Int32 → IO U0) := default
+    let mut v1 : U0 := default
     let mut v6 : Int32 := default
     let mut v3 : String := default
     let mut v2 : String := default
+    let mut v7 : U0 := default
     let mut v12 : Int32 := default
     let mut v9 : String := default
     let mut v8 : String := default
-    let v0 : (Int32 → IO U0) := closure0
-    let v1 : U0 := (← method0 v0)
+    let mut v13 : Int32 := default
+    let mut v14 : Int32 := default
+    v0 := closure0
+    v1 := (← method0 v0)
     match v1 with
     | U0.Idle =>
         v6 := (3 : Int32)
@@ -70,7 +76,7 @@ partial def spiralMain : IO Int32 := do
     | U0.Text f2 =>
         v2 := f2
         v6 := (5 : Int32)
-    let v7 : U0 := (← method1 v0)
+    v7 := (← method1 v0)
     match v7 with
     | U0.Idle =>
         v12 := (3 : Int32)
@@ -80,8 +86,8 @@ partial def spiralMain : IO Int32 := do
     | U0.Text f8 =>
         v8 := f8
         v12 := (5 : Int32)
-    let v13 : Int32 := (v6 + v12)
-    let v14 : Int32 := (v13 + (31 : Int32))
+    v13 := (v6 + v12)
+    v14 := (v13 + (31 : Int32))
     return v14
 end
 def main : IO UInt32 := do

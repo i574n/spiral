@@ -1,6 +1,6 @@
 function f_c0(v0: boolean): ((a0: number) => [boolean, boolean]) {
     return (v1: number): [boolean, boolean] => {
-        const v2: boolean = v1 === 0;
+        let v2: boolean = v1 === 0;
         if (v2) {
             return [false, false];
         } else {
@@ -9,10 +9,10 @@ function f_c0(v0: boolean): ((a0: number) => [boolean, boolean]) {
     };
 }
 export function main(): number {
-    const v0: boolean = true;
-    const v1: ((a0: number) => [boolean, boolean]) = f_c0(v0);
+    let v0: boolean = true;
+    let v1: ((a0: number) => [boolean, boolean]) = f_c0(v0);
     let [v2, v3]: [boolean, boolean] = v1(1);
-    const v4: boolean = v2 && v3;
+    let v4: boolean = v2 && v3;
     if (v4) {
         return 0;
     } else {

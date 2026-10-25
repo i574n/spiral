@@ -3,11 +3,11 @@ use std::cell::RefCell;
 use std::rc::Rc;
 fn method2(mut v0: i32, mut v1: i32, mut v2: i32, mut v3: i32) -> (i32, i32, i32) {
     loop {
-        let v4: i32 = v0.wrapping_sub(1i32);
-        let v5: i32 = v1.wrapping_add(1i32);
-        let v6: i32 = v2.wrapping_add(2i32);
-        let v7: i32 = v3.wrapping_add(3i32);
-        let v8: bool = v4 == 0i32;
+        let mut v4: i32 = v0.wrapping_sub(1i32);
+        let mut v5: i32 = v1.wrapping_add(1i32);
+        let mut v6: i32 = v2.wrapping_add(2i32);
+        let mut v7: i32 = v3.wrapping_add(3i32);
+        let mut v8: bool = v4 == 0i32;
         if v8 {
             return (v5, v6, v7);
         } else {
@@ -17,10 +17,10 @@ fn method2(mut v0: i32, mut v1: i32, mut v2: i32, mut v3: i32) -> (i32, i32, i32
     }
 }
 fn method1(mut v0: i32) -> (i32, i32, i32) {
-    let v1: i32 = 0i32;
-    let v2: i32 = 0i32;
-    let v3: i32 = 0i32;
-    let v4: bool = v0 == 0i32;
+    let mut v1: i32 = 0i32;
+    let mut v2: i32 = 0i32;
+    let mut v3: i32 = 0i32;
+    let mut v4: bool = v0 == 0i32;
     if v4 {
         (v1, v2, v3)
     } else {
@@ -29,15 +29,15 @@ fn method1(mut v0: i32) -> (i32, i32, i32) {
 }
 fn method0(mut v0: i32) -> i32 {
     let (mut v1, mut v2, mut v3): (i32, i32, i32) = method1(v0);
-    let v4: bool = v1 == 3i32;
-    let v6: bool = if v4 {
-        let v5: bool = v2 == 6i32;
+    let mut v4: bool = v1 == 3i32;
+    let mut v6: bool = if v4 {
+        let mut v5: bool = v2 == 6i32;
         v5
     } else {
         false
     };
-    let v8: bool = if v6 {
-        let v7: bool = v3 == 9i32;
+    let mut v8: bool = if v6 {
+        let mut v7: bool = v3 == 9i32;
         v7
     } else {
         false
@@ -49,7 +49,7 @@ fn method0(mut v0: i32) -> i32 {
     }
 }
 fn spiral_main() -> i32 {
-    let v0: i32 = 3i32;
+    let mut v0: i32 = 3i32;
     method0(v0)
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }

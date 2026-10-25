@@ -5,6 +5,9 @@ pub fn spiral_string_length(text: String) -> Int {
   bit_array.byte_size(bit_array.from_string(text))
 }
 
+@external(erlang, "erlang", "halt")
+@external(javascript, "node:process", "exit")
+pub fn spiral_halt(code: Int) -> a
 
 pub fn spiral_string_index(text: String, index: Int) -> String {
   case bit_array.slice(bit_array.from_string(text), index, 1) {
@@ -32,12 +35,35 @@ fn spiral_string_starts_character(bytes: BitArray, at: Int) -> Bool {
   }
 }
 
+pub fn spiral_string_slice(text: String, from: Int, to: Int) -> String {
+  let bytes = bit_array.from_string(text)
+  let length = bit_array.byte_size(bytes)
+  case from < 0 || from > length || to < from - 1 || to >= length {
+    True -> panic as "spiral string slice: out of range"
+    False ->
+      case to < from {
+        True -> ""
+        False ->
+          case spiral_string_starts_character(bytes, from) && spiral_string_starts_character(bytes, to + 1) {
+            False -> panic as "spiral string slice: splits a character"
+            True ->
+              case bit_array.slice(bytes, from, to - from + 1) {
+                Ok(part) -> spiral_string_of_checked_bytes(part)
+                Error(_) -> panic as "spiral string slice: out of range"
+              }
+          }
+      }
+  }
+}
 
 pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
   let half = int.bitwise_shift_left(1, bits - 1)
   int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
 }
 
+pub fn spiral_wrap_unsigned(value: Int, bits: Int) -> Int {
+  int.bitwise_and(value, int.bitwise_shift_left(1, bits) - 1)
+}
 
 pub fn runtime_byte_2(v0: String, v1: Int) -> String {
     let v2 = spiral_string_index(v0, v1)
@@ -713,124 +739,123 @@ pub fn utf8_canonical_equal_bounded_loop_0(v0: String, v1: String, v2: Int, v3: 
     }
 }
 pub fn main() {
-    let v0 = "plain"
-    let v1 = 0
-    let v2 = 0
-    let v3 = -1
-    let v4 = -1
-    let v5 = 5
-    let v6 = 5
-    let v7 = utf8_canonical_equal_bounded_loop_0(v0, v0, v1, v2, v3, v4, v5, v6)
-    let v8 = ""
-    let v9 = 0
-    let v10 = 0
-    let v11 = -1
-    let v12 = -1
-    let v13 = 0
-    let v14 = 0
-    let v15 = utf8_canonical_equal_bounded_loop_0(v8, v8, v9, v10, v11, v12, v13, v14)
-    let v16 = "éõç"
-    let v17 = "éõç"
-    let v18 = 0
-    let v19 = 0
-    let v20 = -1
-    let v21 = -1
-    let v22 = 6
-    let v23 = 9
-    let v24 = utf8_canonical_equal_bounded_loop_0(v16, v17, v18, v19, v20, v21, v22, v23)
-    let v25 = "é̃"
-    let v26 = "é̃"
-    let v27 = 0
-    let v28 = 0
-    let v29 = -1
-    let v30 = -1
-    let v31 = 4
-    let v32 = 5
-    let v33 = utf8_canonical_equal_bounded_loop_0(v25, v26, v27, v28, v29, v30, v31, v32)
-    let v34 = "À"
-    let v35 = "À"
-    let v36 = 0
-    let v37 = 0
-    let v38 = -1
-    let v39 = -1
-    let v40 = 2
-    let v41 = 3
-    let v42 = utf8_canonical_equal_bounded_loop_0(v34, v35, v36, v37, v38, v39, v40, v41)
-    let v43 = "Ω"
-    let v44 = 0
-    let v45 = 0
-    let v46 = -1
-    let v47 = -1
-    let v48 = 2
-    let v49 = 2
-    let v50 = utf8_canonical_equal_bounded_loop_0(v43, v43, v44, v45, v46, v47, v48, v49)
-    let v51 = "ẽ́"
-    let v52 = 0
-    let v53 = 0
-    let v54 = -1
-    let v55 = -1
-    let v56 = 5
-    let v57 = 5
-    let v58 = utf8_canonical_equal_bounded_loop_0(v26, v51, v52, v53, v54, v55, v56, v57)
-    let v59 = "é"
-    let v60 = "á"
-    let v61 = 0
-    let v62 = 0
-    let v63 = -1
-    let v64 = -1
-    let v65 = 2
-    let v66 = 2
-    let v67 = utf8_canonical_equal_bounded_loop_0(v59, v60, v61, v62, v63, v64, v65, v66)
-    let v68 = "ω"
-    let v69 = 0
-    let v70 = 0
-    let v71 = -1
-    let v72 = -1
-    let v73 = 2
-    let v74 = 2
-    let v75 = utf8_canonical_equal_bounded_loop_0(v43, v68, v69, v70, v71, v72, v73, v74)
-    let v76 = "e"
-    let v77 = 0
-    let v78 = 0
-    let v79 = -1
-    let v80 = -1
-    let v81 = 2
-    let v82 = 1
-    let v83 = utf8_canonical_equal_bounded_loop_0(v59, v76, v77, v78, v79, v80, v81, v82)
-    case v7 {
-        True -> {
-            case v15 {
-                True -> {
-                    case v24 {
-                        True -> {
-                            case v33 {
-                                True -> {
-                                    case v42 {
-                                        True -> {
-                                            case v50 {
-                                                True -> {
-                                                    case v58 {
-                                                        True -> {
-                                                            7
-                                                        }
-                                                        False -> {
-                                                            case v67 {
-                                                                True -> {
-                                                                    8
-                                                                }
-                                                                False -> {
-                                                                    case v75 {
-                                                                        True -> {
-                                                                            9
-                                                                        }
-                                                                        False -> {
-                                                                            case v83 {
-                                                                                True -> {
-                                                                                    10
-                                                                                }
-                                                                                False -> {
-                                                                                    0
-                                                                                }
+let v0 = "plain"
+let v1 = 0
+let v2 = 0
+let v3 = -1
+let v4 = -1
+let v5 = 5
+let v6 = 5
+let v7 = utf8_canonical_equal_bounded_loop_0(v0, v0, v1, v2, v3, v4, v5, v6)
+let v8 = ""
+let v9 = 0
+let v10 = 0
+let v11 = -1
+let v12 = -1
+let v13 = 0
+let v14 = 0
+let v15 = utf8_canonical_equal_bounded_loop_0(v8, v8, v9, v10, v11, v12, v13, v14)
+let v16 = "éõç"
+let v17 = "éõç"
+let v18 = 0
+let v19 = 0
+let v20 = -1
+let v21 = -1
+let v22 = 6
+let v23 = 9
+let v24 = utf8_canonical_equal_bounded_loop_0(v16, v17, v18, v19, v20, v21, v22, v23)
+let v25 = "é̃"
+let v26 = "é̃"
+let v27 = 0
+let v28 = 0
+let v29 = -1
+let v30 = -1
+let v31 = 4
+let v32 = 5
+let v33 = utf8_canonical_equal_bounded_loop_0(v25, v26, v27, v28, v29, v30, v31, v32)
+let v34 = "À"
+let v35 = "À"
+let v36 = 0
+let v37 = 0
+let v38 = -1
+let v39 = -1
+let v40 = 2
+let v41 = 3
+let v42 = utf8_canonical_equal_bounded_loop_0(v34, v35, v36, v37, v38, v39, v40, v41)
+let v43 = "Ω"
+let v44 = 0
+let v45 = 0
+let v46 = -1
+let v47 = -1
+let v48 = 2
+let v49 = 2
+let v50 = utf8_canonical_equal_bounded_loop_0(v43, v43, v44, v45, v46, v47, v48, v49)
+let v51 = "ẽ́"
+let v52 = 0
+let v53 = 0
+let v54 = -1
+let v55 = -1
+let v56 = 5
+let v57 = 5
+let v58 = utf8_canonical_equal_bounded_loop_0(v26, v51, v52, v53, v54, v55, v56, v57)
+let v59 = "é"
+let v60 = "á"
+let v61 = 0
+let v62 = 0
+let v63 = -1
+let v64 = -1
+let v65 = 2
+let v66 = 2
+let v67 = utf8_canonical_equal_bounded_loop_0(v59, v60, v61, v62, v63, v64, v65, v66)
+let v68 = "ω"
+let v69 = 0
+let v70 = 0
+let v71 = -1
+let v72 = -1
+let v73 = 2
+let v74 = 2
+let v75 = utf8_canonical_equal_bounded_loop_0(v43, v68, v69, v70, v71, v72, v73, v74)
+let v76 = "e"
+let v77 = 0
+let v78 = 0
+let v79 = -1
+let v80 = -1
+let v81 = 2
+let v82 = 1
+let v83 = utf8_canonical_equal_bounded_loop_0(v59, v76, v77, v78, v79, v80, v81, v82)
+case v7 {
+    True -> {
+        case v15 {
+            True -> {
+                case v24 {
+                    True -> {
+                        case v33 {
+                            True -> {
+                                case v42 {
+                                    True -> {
+                                        case v50 {
+                                            True -> {
+                                                case v58 {
+                                                    True -> {
+                                                        7
+                                                    }
+                                                    False -> {
+                                                        case v67 {
+                                                            True -> {
+                                                                8
+                                                            }
+                                                            False -> {
+                                                                case v75 {
+                                                                    True -> {
+                                                                        9
+                                                                    }
+                                                                    False -> {
+                                                                        case v83 {
+                                                                            True -> {
+                                                                                10
+                                                                            }
+                                                                            False -> {
+                                                                                0
                                                                             }
                                                                         }
                                                                     }
@@ -839,33 +864,34 @@ pub fn main() {
                                                         }
                                                     }
                                                 }
-                                                False -> {
-                                                    6
-                                                }
+                                            }
+                                            False -> {
+                                                6
                                             }
                                         }
-                                        False -> {
-                                            5
-                                        }
+                                    }
+                                    False -> {
+                                        5
                                     }
                                 }
-                                False -> {
-                                    4
-                                }
+                            }
+                            False -> {
+                                4
                             }
                         }
-                        False -> {
-                            3
-                        }
+                    }
+                    False -> {
+                        3
                     }
                 }
-                False -> {
-                    2
-                }
+            }
+            False -> {
+                2
             }
         }
-        False -> {
-            1
-        }
     }
+    False -> {
+        1
+    }
+}
 }

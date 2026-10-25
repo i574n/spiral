@@ -1,13 +1,20 @@
 fun spiral_main(): Int {
-    val v0: UInt = 2147483647u
-    val v1: UInt = 2u
-    val v2: UInt = 1u
-    val v3: UInt = (v0 + v1)
-    val v4: UInt = (v0 + v2)
-    val v5: Boolean = (v3 == 2147483649u)
+    var v0: UInt = 0u
+    v0 = 2147483647u
+    var v1: UInt = 0u
+    v1 = 2u
+    var v2: UInt = 0u
+    v2 = 1u
+    var v3: UInt = 0u
+    v3 = (v0 + v1)
+    var v4: UInt = 0u
+    v4 = (v0 + v2)
+    var v5: Boolean = false
+    v5 = (v3 == 2147483649u)
     var v7: Boolean = false
     if (v5) {
-        val v6: Boolean = (v4 == 2147483648u)
+        var v6: Boolean = false
+        v6 = (v4 == 2147483648u)
         v7 = v6
     } else {
         v7 = false

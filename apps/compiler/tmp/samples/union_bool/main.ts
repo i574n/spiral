@@ -6,7 +6,7 @@ function US0_Yes(f0: number): US0 { return { tag: 1, f0: f0 }; }
 function score_0(v0: US0): number {
     switch (v0.tag) {
         case 0: {
-            const v1: boolean = v0.f0;
+            let v1: boolean = v0.f0;
             if (v1) {
                 return 1;
             } else {
@@ -17,12 +17,13 @@ function score_0(v0: US0): number {
         case 1: {
             let v3: number = v0.f0;
             return v3;
+            break;
         }
         default: throw new Error("Compiler error: unreachable union case.");
     }
 }
 export function main(): number {
-    const v0: boolean = true;
+    let v0: boolean = true;
     let v3: US0;
     if (v0) {
         v3 = US0_Yes(7);
@@ -35,12 +36,12 @@ export function main(): number {
     } else {
         v6 = US0_Yes(1);
     }
-    const v7: number = score_0(v3);
-    const v8: boolean = v7 === 7;
+    let v7: number = score_0(v3);
+    let v8: boolean = v7 === 7;
     let v11: boolean;
     if (v8) {
-        const v9: number = score_0(v6);
-        const v10: boolean = v9 === 1;
+        let v9: number = score_0(v6);
+        let v10: boolean = v9 === 1;
         v11 = v10;
     } else {
         v11 = false;

@@ -47,32 +47,51 @@ func sp_empty_source_2(_ p0: String) -> String {
     return v1
 }
 func spiral_main() -> Int32 {
-    let v0: String = "alpha"
+    var v0: String = ""
+    v0 = "alpha"
     var v1: String = ""
     v1 = sp_empty_middle_0(v0)
-    let v2: String = sp_empty_end_1(v0)
-    let v3: String = ""
-    let v4: String = sp_empty_source_2(v3)
-    let v5: String = (v1 + v2)
-    let v6: String = (v4 + "ok")
-    let v7: String = (v5 + v6)
-    let v8: Int32 = spiralStringLength(v1)
-    let v9: Bool = (v8 == 0)
+    var v2: String = ""
+    v2 = sp_empty_end_1(v0)
+    var v3: String = ""
+    v3 = ""
+    var v4: String = ""
+    v4 = sp_empty_source_2(v3)
+    var v5: String = ""
+    v5 = (v1 + v2)
+    var v6: String = ""
+    v6 = (v4 + "ok")
+    var v7: String = ""
+    v7 = (v5 + v6)
+    var v8: Int32 = 0
+    v8 = spiralStringLength(v1)
+    var v9: Bool = false
+    v9 = (v8 == 0)
     if (v9) {
-        let v10: Int32 = spiralStringLength(v2)
-        let v11: Bool = (v10 == 0)
+        var v10: Int32 = 0
+        v10 = spiralStringLength(v2)
+        var v11: Bool = false
+        v11 = (v10 == 0)
         if (v11) {
-            let v12: Int32 = spiralStringLength(v4)
-            let v13: Bool = (v12 == 0)
+            var v12: Int32 = 0
+            v12 = spiralStringLength(v4)
+            var v13: Bool = false
+            v13 = (v12 == 0)
             if (v13) {
-                let v14: Int32 = spiralStringLength(v7)
-                let v15: Bool = (v14 == 2)
+                var v14: Int32 = 0
+                v14 = spiralStringLength(v7)
+                var v15: Bool = false
+                v15 = (v14 == 2)
                 if (v15) {
-                    let v16: Int32 = spiralStringIndex(v7, 0)
-                    let v17: Bool = (v16 == 111)
+                    var v16: Int32 = 0
+                    v16 = spiralStringIndex(v7, 0)
+                    var v17: Bool = false
+                    v17 = (v16 == 111)
                     if (v17) {
-                        let v18: Int32 = spiralStringIndex(v7, 1)
-                        let v19: Bool = (v18 == 107)
+                        var v18: Int32 = 0
+                        v18 = spiralStringIndex(v7, 1)
+                        var v19: Bool = false
+                        v19 = (v18 == 107)
                         if (v19) {
                             return 0
                         } else {

@@ -15,8 +15,9 @@ local getv5 = function()
     end
 end
 local v5 = getv5()
-if v5 ~= nil and v5.tag == "Us0_Box" then
-    local v6 = v5._1
+local __v = { v5 }
+if __v[1] ~= nil and __v[1].tag == "Us0_Box" then
+    local v6 = __v[1]._1
     local v7 = v6 ~= nil and v6.l0
     local v8 = v7 == 7
     if v8 then
@@ -24,6 +25,6 @@ if v5 ~= nil and v5.tag == "Us0_Box" then
     else
         return 1
     end
-elseif v5 ~= nil and v5.tag == "Us0_Missing" then
+elseif __v[1] ~= nil and __v[1].tag == "Us0_Missing" then
     return 1
 end

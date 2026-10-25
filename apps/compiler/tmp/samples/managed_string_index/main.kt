@@ -28,9 +28,12 @@ fun spiralStringSlice(value: String, from: Int, to: Int): String {
     return bytes.copyOfRange(from, to + 1).toString(Charsets.UTF_8)
 }
 fun spiral_main(): Int {
-    val v0: String = "qwe"
-    val v1: Int = spiralStringIndex(v0, 1)
-    val v2: Boolean = (v1 == 119)
+    var v0: String = ""
+    v0 = "qwe"
+    var v1: Int = 0
+    v1 = spiralStringIndex(v0, 1)
+    var v2: Boolean = false
+    v2 = (v1 == 119)
     if (v2) {
         return 0
     } else {

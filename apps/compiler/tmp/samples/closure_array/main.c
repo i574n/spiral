@@ -22,10 +22,10 @@ struct Closure0 {
 static inline void ArrayDecrefBody0(Array0 * x){
     (void)x;
 }
-static void ArrayDecref0(Array0 * x){
+void ArrayDecref0(Array0 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody0(x); free(x); }
 }
-static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
+Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     uint32_t size = sizeof(Array0) + sizeof(int32_t) * len;
     Array0 * x = malloc(size);
     if (init_at_zero) { memset(x,0,size); }
@@ -33,31 +33,42 @@ static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     x->len = len;
     return x;
 }
-static Array0 * ArrayLit0(uint32_t len, int32_t * ptr){
+Array0 * ArrayLit0(uint32_t len, int32_t * ptr){
     Array0 * x = ArrayCreate0(len, false);
     memcpy(x->ptr, ptr, sizeof(int32_t) * len);
     return x;
 }
 static inline void AssignArray0(int32_t * a, int32_t b){
+    
+    
     *a = b;
 }
 static inline void ClosureDecrefBody0(Closure0 * x){
     (void)x;
 }
-static void ClosureDecref0(Fun0 * self){
+void ClosureDecref0(Fun0 * self){
     Closure0 * x = (Closure0 *) self;
     if (x != NULL && --(x->base.refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
-static Array0 * f_c0(Fun0 * self, int32_t v1){
+Array0 * f_c0(Fun0 * self, int32_t v1){
     Closure0 * x = (Closure0 *) self;
     int32_t v0 = x->v0;
+    
     ClosureDecref0(self);
     (void)v1;
-    Array0 * v2 = ArrayCreate0(1l, true);
+    
+    
+    Array0 * v2;
+    v2 = ArrayCreate0(1l, true);
+    
+    
+    
     AssignArray0(&(v2->ptr[0l]), v0);
+    
+    
     return v2;
 }
-static Fun0 * ClosureCreate0(int32_t v0){
+Fun0 * ClosureCreate0(int32_t v0){
     Closure0 * x = malloc(sizeof(Closure0));
     x->base.refc = 1;
     x->base.decref_fptr = ClosureDecref0;
@@ -66,17 +77,35 @@ static Fun0 * ClosureCreate0(int32_t v0){
     return &x->base;
 }
 int32_t main(){
-    int32_t v0 = 7l;
-    Fun0 * v1 = ClosureCreate0(v0);
+    
+    
+    int32_t v0;
+    v0 = 7l;
+    
+    
+    Fun0 * v1;
+    v1 = ClosureCreate0(v0);
     (v1)->refc++;
-    Array0 * v2 = v1->fptr(v1, 1l);
+    
+    Array0 * v2;
+    v2 = v1->fptr(v1, 1l);
+    
     (v1)->decref_fptr(v1);
-    int32_t v3 = v2->ptr[0l];
+    int32_t v3;
+    v3 = v2->ptr[0l];
+    
     ArrayDecref0(v2);
-    bool v4 = v3 == 7l;
+    bool v4;
+    v4 = v3 == 7l;
+    
+    
     if (v4){
+        
+        
         return 0l;
     } else {
+        
+        
         return 1l;
     }
 }

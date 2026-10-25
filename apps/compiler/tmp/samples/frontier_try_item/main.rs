@@ -2,8 +2,8 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 fn spiral_main() -> i32 {
-    let v1: i32 = 42i32;
-    let v3: i32 = v1.wrapping_sub(42i32);
+    let mut v1: i32 = 42i32;
+    let mut v3: i32 = v1.wrapping_sub(42i32);
     v3
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }

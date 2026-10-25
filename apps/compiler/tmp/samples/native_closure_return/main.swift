@@ -32,7 +32,8 @@ func closure1(_ v0: String) -> (Int32) -> Int32 {
     return { (v1: Int32) -> Int32 in
         var v2: Int32 = 0
         v2 = spiralStringLength(v0)
-        let v3: Int32 = (v2 &+ v1)
+        var v3: Int32 = 0
+        v3 = (v2 &+ v1)
         return v3
     }
 }
@@ -46,8 +47,10 @@ func sp_method0(_ p0: @escaping (Int32) -> Int32) -> Int32 {
     return v0(39)
 }
 func spiral_main() -> Int32 {
-    let v0: (String) -> (Int32) -> Int32 = make_c0()
-    let v1: String = "abc"
+    var v0: (String) -> (Int32) -> Int32 = { (_: String) -> (Int32) -> Int32 in fatalError("unreachable closure") }
+    v0 = make_c0()
+    var v1: String = ""
+    v1 = "abc"
     var v2: (Int32) -> Int32 = { (_: Int32) -> Int32 in fatalError("unreachable closure") }
     v2 = v0(v1)
     return sp_method0(v2)

@@ -1,8 +1,12 @@
 fun spiral_main(): Int {
-    val v0: Int = 60
-    val v1: Long = -9000000000L
-    val v2: UByte = (200).toUByte()
-    val v3: String = "cube"
+    var v0: Int = 0
+    v0 = 60
+    var v1: Long = 0L
+    v1 = -9000000000L
+    var v2: UByte = (0).toUByte()
+    v2 = (200).toUByte()
+    var v3: String = ""
+    v3 = "cube"
     System.out.write((v3 + ": " + (v0).toString() + " frames, checksum " + (970392).toString() + "\n").toByteArray(Charsets.UTF_8)); System.out.flush()
     System.out.write(("big " + (v1).toString() + ", small " + (-5).toString() + ", byte " + (v2).toString() + "\n").toByteArray(Charsets.UTF_8)); System.out.flush()
     System.out.write(("100% {braces} \"quoted\" \\ tab\tend\n").toByteArray(Charsets.UTF_8)); System.out.flush()

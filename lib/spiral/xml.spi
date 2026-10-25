@@ -4,16 +4,29 @@ union rec xml_node =
     | XmlElement : string * list (string * string) * list xml_node
     | XmlText : string
 
+inl rust_first_char (s : string) (i : i32) : optionm'.option' unicode.rust_scalar =
+    inl at : convert.unativeint = convert.convert i
+    $'(&*!s)[!at..].chars().next()' : optionm'.option' unicode.rust_scalar
+
+inl rust_char_width (c : unicode.rust_scalar) : convert.unativeint =
+    $'!c.len_utf8()' : convert.unativeint
+
+inl zig_sequence_width (s : string) (i : i32) : u8 =
+    inl at : u64 = conv i
+    $'std.unicode.utf8ByteSequenceLength((!s)[!at]) catch 1' : u8
+
 inl code_point_at (s : string) (i : i32) : u32 =
     run_target function
-        | Rust => fun () => $'(&*!s)[(!i as usize)..].chars().next().map(|c| c as u32).unwrap_or(0)' : u32
+        | Rust => fun () => rust_first_char s i |> optionm'.map unicode.rust_char_code |> optionm'.unwrap_or 0u32
         | _ => fun () => failwith "code_point_at: no arm for this backend"
 
 inl code_point_width (s : string) (i : i32) : i32 =
     run_target function
-        | Rust => fun () => $'(&*!s)[(!i as usize)..].chars().next().map(|c| c.len_utf8() as i32).unwrap_or(1)' : i32
-        | Zig => fun () => $'(if (\@as(usize, \@intCast(!i)) < (!s).len) \@as(i32, \
-            std.unicode.utf8ByteSequenceLength((!s)[\@intCast(!i)]) catch 1) else 1)' : i32
+        | Rust => fun () =>
+            rust_first_char s i
+            |> optionm'.map (fun c => convert.convert (rust_char_width c))
+            |> optionm'.unwrap_or 1i32
+        | Zig => fun () => if i < sm'.length s then conv (zig_sequence_width s i) else 1i32
         | _ => fun () => failwith "code_point_width: no arm for this backend"
 
 inl code_point_count (s : string) : i32 = unicode.code_point_count s
@@ -63,12 +76,12 @@ inl find_from (needle : string) (s : string) (pos : i32) : i32 =
 
 let rec reverse_nodes (rest : list xml_node) (acc : list xml_node) : list xml_node =
     match rest with
-    | Cons (x, xs) => reverse_nodes xs (Cons (x, acc))
+    | x :: xs => reverse_nodes xs (x :: acc)
     | Nil => acc
 
 let rec reverse_attributes (rest : list (string * string)) (acc : list (string * string)) : list (string * string) =
     match rest with
-    | Cons (x, xs) => reverse_attributes xs (Cons (x, acc))
+    | x :: xs => reverse_attributes xs (x :: acc)
     | Nil => acc
 
 let rec read_attributes (s : string) (pos : i32) (acc : list (string * string)) : list (string * string) * i32 =
@@ -83,7 +96,7 @@ let rec read_attributes (s : string) (pos : i32) (acc : list (string * string)) 
         inl quote = at s quote_at
         inl value_stop = find_from quote s (quote_at + 1i32)
         inl value = sm'.substring (quote_at + 1i32) (value_stop - quote_at - 1i32) s |> decode_entities
-        read_attributes s (value_stop + 1i32) (Cons ((name, value), acc))
+        read_attributes s (value_stop + 1i32) ((name, value) :: acc)
 
 let rec read_nodes (s : string) (pos : i32) (acc : list xml_node) : list xml_node * i32 =
     if pos >= sm'.length s then reverse_nodes acc Nil, pos
@@ -91,7 +104,7 @@ let rec read_nodes (s : string) (pos : i32) (acc : list xml_node) : list xml_nod
         inl stop = find_from "<" s pos
         inl stop = if stop < 0i32 then sm'.length s else stop
         inl text = sm'.substring pos (stop - pos) s |> sm'.trim |> decode_entities
-        read_nodes s stop (if text = "" then acc else Cons (XmlText text, acc))
+        read_nodes s stop (if text = "" then acc else XmlText text :: acc)
     elif sm'.substring pos 4i32 s = "<!--" then read_nodes s (find_from "-->" s pos + 3i32) acc
     elif sm'.substring pos 2i32 s = "<?" then read_nodes s (find_from "?>" s pos + 2i32) acc
     elif sm'.substring pos 2i32 s = "<!" then read_nodes s (find_from ">" s pos + 1i32) acc
@@ -100,10 +113,10 @@ let rec read_nodes (s : string) (pos : i32) (acc : list xml_node) : list xml_nod
         inl name_stop = name_end s (pos + 1i32)
         inl name = sm'.substring (pos + 1i32) (name_stop - pos - 1i32) s
         inl attributes, after = read_attributes s name_stop Nil
-        if at s after = "/" then read_nodes s (after + 2i32) (Cons (XmlElement (name, attributes, Nil), acc))
+        if at s after = "/" then read_nodes s (after + 2i32) (XmlElement (name, attributes, Nil) :: acc)
         else
             inl children, after_children = read_nodes s (after + 1i32) Nil
-            read_nodes s after_children (Cons (XmlElement (name, attributes, children), acc))
+            read_nodes s after_children (XmlElement (name, attributes, children) :: acc)
 
 inl read_xml (s : string) : list xml_node =
     inl nodes, _ = read_nodes s 0i32 Nil
@@ -115,26 +128,26 @@ inl local_name (name : string) : string =
 
 let rec count_named (target : string) (nodes : list xml_node) : i32 =
     match nodes with
-    | Cons (XmlElement (name, _, children), rest) =>
+    | XmlElement (name, _, children) :: rest =>
         (if local_name name = target then 1i32 else 0i32) + count_named target children + count_named target rest
-    | Cons (XmlText _, rest) => count_named target rest
+    | XmlText _ :: rest => count_named target rest
     | Nil => 0i32
 
 let rec attribute_of (key : string) (attributes : list (string * string)) : option string =
     match attributes with
-    | Cons ((k, v), rest) => if k = key then Some v else attribute_of key rest
+    | (k, v) :: rest => if k = key then Some v else attribute_of key rest
     | Nil => None
 
 type root_view = { name : string; attributes : list (string * string); children : list xml_node }
 
 inl single_root (nodes : list xml_node) : option root_view =
     match nodes with
-    | Cons (XmlElement (name, attributes, children), Nil) => Some { name; attributes; children }
+    | XmlElement (name, attributes, children) :: Nil => Some { name; attributes; children }
     | _ => None
 
 inl children_shape_is_b_then_c_text (children : list xml_node) : bool =
     match children with
-    | Cons (XmlElement ("b", Nil, Nil), Cons (XmlElement ("c", _, Cons (XmlText text, Nil)), Nil)) => text = "hi & bye"
+    | XmlElement ("b", Nil, Nil) :: XmlElement ("c", _, (XmlText text :: Nil)) :: Nil => text = "hi & bye"
     | _ => false
 
 inl attribute_is (key : string) (expected : string) (attributes : list (string * string)) : bool =
@@ -163,6 +176,47 @@ test counts_prefixed_schema_elements =
     if count_named "enumeration" nodes <> 2i32 then failwith "two enumerations"
     if count_named "simpleType" nodes <> 1i32 then failwith "one simpleType"
 
+/// ### element_names
+let rec element_names (nodes : list xml_node) (seen : list string) : list string =
+    match nodes with
+    | XmlElement (name, _, children) :: rest =>
+        inl name = local_name name
+        inl seen = if listm'.contains name seen then seen else name :: seen
+        element_names rest (element_names children seen)
+    | XmlText _ :: rest => element_names rest seen
+    | Nil => seen
+
+/// ### attributes_named
+let rec attributes_named (key : string) (attributes : list (string * string)) : i32 =
+    match attributes with
+    | (name, _) :: rest => (if local_name name = key then 1i32 else 0i32) + attributes_named key rest
+    | Nil => 0i32
+
+/// ### count_attribute
+let rec count_attribute (key : string) (nodes : list xml_node) : i32 =
+    match nodes with
+    | XmlElement (_, attributes, children) :: rest =>
+        attributes_named key attributes + count_attribute key children + count_attribute key rest
+    | XmlText _ :: rest => count_attribute key rest
+    | Nil => 0i32
+
+/// ### depth
+let rec depth (nodes : list xml_node) : i32 =
+    match nodes with
+    | XmlElement (_, _, children) :: rest => max (1i32 + depth children) (depth rest)
+    | XmlText _ :: rest => depth rest
+    | Nil => 0i32
+
+///> rust
+///> zig
+test measures_the_shape_of_a_schema =
+    inl doc =
+        "<xs:schema><xs:simpleType name=\"T\"><xs:restriction base=\"xs:string\"><xs:enumeration "
+        ^^ "value=\"1\"/><xs:enumeration value=\"2\"/></xs:restriction></xs:simpleType></xs:schema>"
+    inl nodes = read_xml doc
+    if listm.length (element_names nodes Nil) <> 4i32 then failwith "four element kinds"
+    if count_attribute "value" nodes <> 2i32 then failwith "two value attributes"
+    if depth nodes <> 4i32 then failwith "depth four"
 inl element_children (node : xml_node) : list xml_node =
     match node with
     | XmlElement (_, _, children) => children
@@ -175,21 +229,21 @@ inl element_attributes (node : xml_node) : list (string * string) =
 
 let rec text_in (nodes : list xml_node) : string =
     match nodes with
-    | Cons (XmlText text, rest) => text ++# text_in rest
-    | Cons (_, rest) => text_in rest
+    | XmlText text :: rest => text ++# text_in rest
+    | _ :: rest => text_in rest
     | Nil => ""
 
 let rec children_named (target : string) (nodes : list xml_node) : list xml_node =
     match nodes with
-    | Cons (XmlElement (name, attributes, children), rest) =>
-        if local_name name = target then Cons (XmlElement (name, attributes, children), children_named target rest)
+    | XmlElement (name, attributes, children) :: rest =>
+        if local_name name = target then XmlElement (name, attributes, children) :: children_named target rest
         else children_named target rest
-    | Cons (_, rest) => children_named target rest
+    | _ :: rest => children_named target rest
     | Nil => Nil
 
 inl first_child (target : string) (nodes : list xml_node) : option xml_node =
     match children_named target nodes with
-    | Cons (node, _) => Some node
+    | node :: _ => Some node
     | Nil => None
 
 inl has_child (target : string) (nodes : list xml_node) : bool =
@@ -199,7 +253,7 @@ inl has_child (target : string) (nodes : list xml_node) : bool =
 
 let rec has_any_child (targets : list string) (nodes : list xml_node) : bool =
     match targets with
-    | Cons (target, rest) => has_child target nodes || has_any_child rest nodes
+    | target :: rest => has_child target nodes || has_any_child rest nodes
     | Nil => false
 
 inl required_child (target : string) (nodes : list xml_node) : xml_node =
@@ -220,11 +274,11 @@ inl required_value forall t. (what : string) (value : option t) : t =
 inl element (name : string) (attributes : list (string * string)) (children : list xml_node) : xml_node =
     XmlElement (name, attributes, children)
 
-inl text_children (text : string) : list xml_node = if text = "" then Nil else Cons (XmlText text, Nil)
+inl text_children (text : string) : list xml_node = if text = "" then Nil else XmlText text :: Nil
 
 inl option_list forall t. (value : option t) : list t =
     match value with
-    | Some x => Cons (x, Nil)
+    | Some x => x :: Nil
     | None => Nil
 
 inl option_concat forall t. (value : option (list t)) : list t =
@@ -242,7 +296,7 @@ inl escape_attribute_xml (s : string) : string = escape_text_xml s |> sm'.replac
 
 let rec attributes_text (attributes : list (string * string)) : string =
     match attributes with
-    | Cons ((key, value), rest) =>
+    | (key, value) :: rest =>
         " " ++# key ++# "=\"" ++# escape_attribute_xml value ++# "\"" ++# attributes_text rest
     | Nil => ""
 
@@ -258,7 +312,7 @@ and let write_element (name : string) (attributes : list (string * string)) (chi
 
 and let write_nodes (nodes : list xml_node) : string =
     match nodes with
-    | Cons (node, rest) => write_node node ++# write_nodes rest
+    | node :: rest => write_node node ++# write_nodes rest
     | Nil => ""
 
 inl is_text_node (node : xml_node) : bool =
@@ -280,18 +334,18 @@ inl is_namespace_declaration (key : string) : bool = key = "xmlns" || sm'.starts
 
 let rec data_attributes (attributes : list (string * string)) : list (string * string) =
     match attributes with
-    | Cons ((key, value), rest) =>
-        if is_namespace_declaration key then data_attributes rest else Cons ((key, value), data_attributes rest)
+    | (key, value) :: rest =>
+        if is_namespace_declaration key then data_attributes rest else (key, value) :: data_attributes rest
     | Nil => Nil
 
 let rec has_pair (key : string) (value : string) (attributes : list (string * string)) : bool =
     match attributes with
-    | Cons ((k, v), rest) => (k = key && v = value) || has_pair key value rest
+    | (k, v) :: rest => (k = key && v = value) || has_pair key value rest
     | Nil => false
 
 let rec all_pairs_in (attributes : list (string * string)) (other : list (string * string)) : bool =
     match attributes with
-    | Cons ((key, value), rest) => has_pair key value other && all_pairs_in rest other
+    | (key, value) :: rest => has_pair key value other && all_pairs_in rest other
     | Nil => true
 
 inl same_attributes (a : list (string * string)) (b : list (string * string)) : bool =
@@ -301,8 +355,8 @@ inl same_attributes (a : list (string * string)) (b : list (string * string)) : 
 
 let rec significant (nodes : list xml_node) : list xml_node =
     match nodes with
-    | Cons (node, rest) =>
-        if is_text_node node && sm'.trim (node_text node) = "" then significant rest else Cons (node, significant rest)
+    | node :: rest =>
+        if is_text_node node && sm'.trim (node_text node) = "" then significant rest else node :: significant rest
     | Nil => Nil
 
 let rec same_node (a : xml_node) (b : xml_node) : bool =
@@ -314,32 +368,32 @@ let rec same_node (a : xml_node) (b : xml_node) : bool =
 
 and let same_nodes (a : list xml_node) (b : list xml_node) : bool =
     match a with
-    | Cons (x, rest) => same_first x rest b
+    | x :: rest => same_first x rest b
     | Nil => match b with Nil => true | _ => false
 
 and let same_first (x : xml_node) (rest : list xml_node) (b : list xml_node) : bool =
     match b with
-    | Cons (y, others) => same_node x y && same_nodes rest others
+    | y :: others => same_node x y && same_nodes rest others
     | Nil => false
 
 ///> rust
 test written_xml_reads_back_the_same =
     inl text = "<a x=\"1\" xmlns=\"n\"><b>t &amp; u</b><c/>  </a>"
     match read_xml text with
-    | Cons (original, Nil) =>
+    | original :: Nil =>
         match read_xml (write_node original) with
-        | Cons (again, Nil) => if same_node original again = false then failwith "write then read keeps the tree"
+        | again :: Nil => if same_node original again = false then failwith "write then read keeps the tree"
         | _ => failwith "one element after writing"
     | _ => failwith "one element"
 
 let rec with_namespace (target : string) (uri : string) (node : xml_node) : xml_node =
     match node with
     | XmlElement (name, attributes, children) =>
-        inl attributes = if local_name name = target then Cons (("xmlns", uri), attributes) else attributes
+        inl attributes = if local_name name = target then (("xmlns", uri) :: attributes) else attributes
         XmlElement (name, attributes, with_namespace_all target uri children)
     | XmlText _ => node
 
 and let with_namespace_all (target : string) (uri : string) (nodes : list xml_node) : list xml_node =
     match nodes with
-    | Cons (node, rest) => Cons (with_namespace target uri node, with_namespace_all target uri rest)
+    | node :: rest => with_namespace target uri node :: with_namespace_all target uri rest
     | Nil => Nil

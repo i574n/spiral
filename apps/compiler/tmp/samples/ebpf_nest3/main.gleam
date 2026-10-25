@@ -34,8 +34,8 @@ pub fn method0(v0: Int, v1: Int, v2: Float) -> Int {
     }
 }
 pub fn main() {
-    let v0 = 2
-    let v1 = 3
-    let v2 = 1.5
-    method0(v0, v1, v2)
+let v0 = 2
+let v1 = 3
+let v2 = 1.5
+method0(v0, v1, v2)
 }

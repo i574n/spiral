@@ -13,12 +13,15 @@ func spiral_main() -> Int32 {
     v1 = 0
     while true {
         if !(sp_method0(v0)) { break }
-        let v3: Int32 = (v1 &+ v0)
+        var v3: Int32 = 0
+        v3 = (v1 &+ v0)
         v1 = v3
-        let v4: Int32 = (v0 &+ 1)
+        var v4: Int32 = 0
+        v4 = (v0 &+ 1)
         v0 = v4
     }
-    let v5: Int32 = (v1 &- 45)
+    var v5: Int32 = 0
+    v5 = (v1 &- 45)
     return v5
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

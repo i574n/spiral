@@ -37,17 +37,23 @@ fun sp_method0(p0: Int, p1: Int): SpiralTuple0 {
     return SpiralTuple0(v2, v3)
 }
 fun spiral_main(): Int {
-    val v0: Int = 3
-    val v1: Int = 4
+    var v0: Int = 0
+    v0 = 3
+    var v1: Int = 0
+    v1 = 4
     var v2: (Int) -> Int = { _: Int -> throw RuntimeException() }
     var v3: (Int) -> Int = { _: Int -> throw RuntimeException() }
     val spiral_tuple226 = sp_method0(v0, v1)
     v2 = spiral_tuple226.v0
     v3 = spiral_tuple226.v1
-    val v4: Int = v2(0)
-    val v5: Int = v3(0)
-    val v6: Int = (v4 + v5)
-    val v7: Boolean = (v6 == 7)
+    var v4: Int = 0
+    v4 = v2(0)
+    var v5: Int = 0
+    v5 = v3(0)
+    var v6: Int = 0
+    v6 = (v4 + v5)
+    var v7: Boolean = false
+    v7 = (v6 == 7)
     if (v7) {
         return 0
     } else {

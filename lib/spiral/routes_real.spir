@@ -1,3 +1,6 @@
+/// # routes
+///- --real
+
 open real_core
 
 inl (++) a b = !!!!StaticStringConcat(a, b)
@@ -27,3 +30,5 @@ inl route path = forall params. =>
             `params
     if all_present && fields = colon_count path 0i32 n 0i32 then path
     else error_type ("the route " ++ path ++ " does not name exactly the handler's parameter fields")
+
+/// ### route

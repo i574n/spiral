@@ -2,26 +2,26 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 fn is_odd_1(mut v0: i32) -> bool {
-    let v1: bool = v0 == 0i32;
+    let mut v1: bool = v0 == 0i32;
     if v1 {
         false
     } else {
-        let v2: i32 = v0.wrapping_sub(1i32);
+        let mut v2: i32 = v0.wrapping_sub(1i32);
         is_even_0(v2)
     }
 }
 fn is_even_0(mut v0: i32) -> bool {
-    let v1: bool = v0 == 0i32;
+    let mut v1: bool = v0 == 0i32;
     if v1 {
         true
     } else {
-        let v2: i32 = v0.wrapping_sub(1i32);
+        let mut v2: i32 = v0.wrapping_sub(1i32);
         is_odd_1(v2)
     }
 }
 fn spiral_main() -> i32 {
-    let v0: i32 = 10i32;
-    let v1: bool = is_even_0(v0);
+    let mut v0: i32 = 10i32;
+    let mut v1: bool = is_even_0(v0);
     if v1 {
         0i32
     } else {

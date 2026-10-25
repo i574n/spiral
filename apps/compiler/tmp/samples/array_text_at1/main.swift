@@ -7,10 +7,13 @@ final class SpiralArray<T> {
 func spiral_main() -> Int32 {
     var v0: SpiralArray<String> = SpiralArray<String>([])
     v0 = SpiralArray<String>(Array(repeating: "", count: Int(2)))
-    let v1: String = "hi"
+    var v1: String = ""
+    v1 = "hi"
     v0.items[Int(1)] = v1
-    let v2: String = v0.items[Int(1)]
-    let v3: Bool = (v2 == "hi")
+    var v2: String = ""
+    v2 = v0.items[Int(1)]
+    var v3: Bool = false
+    v3 = (v2 == "hi")
     if (v3) {
         return 0
     } else {

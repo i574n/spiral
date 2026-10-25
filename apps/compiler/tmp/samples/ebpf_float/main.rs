@@ -2,16 +2,16 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 fn spiral_main() -> i32 {
-    let v0: f32 = -1.5f32;
-    let v1: f32 = 2.0f32;
-    let v2: f32 = v0 / v1;
-    let v3: f32 = -0.75f32;
-    let v4: f32 = v0 * v1;
-    let v5: f32 = v4 + 0.5f32;
-    let v6: f32 = -2.5f32;
-    let v7: bool = v2 == v3;
+    let mut v0: f32 = -1.5f32;
+    let mut v1: f32 = 2.0f32;
+    let mut v2: f32 = v0 / v1;
+    let mut v3: f32 = -0.75f32;
+    let mut v4: f32 = v0 * v1;
+    let mut v5: f32 = v4 + 0.5f32;
+    let mut v6: f32 = -2.5f32;
+    let mut v7: bool = v2 == v3;
     if v7 {
-        let v8: bool = v5 == v6;
+        let mut v8: bool = v5 == v6;
         if v8 {
             0i32
         } else {

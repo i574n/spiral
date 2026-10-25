@@ -1,10 +1,13 @@
 fun spiral_main(): Int {
     var v0: Array<Byte> = emptyArray<Byte>()
     v0 = Array(1) { (0).toByte() }
-    val v1: Byte = (100).toByte()
+    var v1: Byte = (0).toByte()
+    v1 = (100).toByte()
     v0[0] = v1
-    val v2: Byte = v0[0]
-    val v3: Boolean = (v2 == (100).toByte())
+    var v2: Byte = (0).toByte()
+    v2 = v0[0]
+    var v3: Boolean = false
+    v3 = (v2 == (100).toByte())
     if (v3) {
         return 0
     } else {

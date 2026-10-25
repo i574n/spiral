@@ -117,32 +117,42 @@ fun sp_utf8_scalar_at_byte_offset_1(p0: String, p1: Int): Int {
                         if (v28) {
                             var v29: Int = 0
                             v29 = (v1 + 2)
-                            val v30: Boolean = (v29 >= v2)
+                            var v30: Boolean = false
+                            v30 = (v29 >= v2)
                             if (v30) {
                                 System.err.println("UTF-8 sequence is truncated.")
                                 System.exit(1)
                                 throw RuntimeException()
                             } else {
-                                val v32: Int = (v1 + 1)
-                                val v33: Int = sp_runtime_byte_2(v0, v32)
-                                val v34: Int = (v33 and 255)
-                                val v35: Int = sp_runtime_byte_2(v0, v29)
-                                val v36: Int = (v35 and 255)
-                                val v37: Boolean = (v34 < 128)
+                                var v32: Int = 0
+                                v32 = (v1 + 1)
+                                var v33: Int = 0
+                                v33 = sp_runtime_byte_2(v0, v32)
+                                var v34: Int = 0
+                                v34 = (v33 and 255)
+                                var v35: Int = 0
+                                v35 = sp_runtime_byte_2(v0, v29)
+                                var v36: Int = 0
+                                v36 = (v35 and 255)
+                                var v37: Boolean = false
+                                v37 = (v34 < 128)
                                 var v39: Boolean = false
                                 if (v37) {
                                     v39 = false
                                 } else {
-                                    val v38: Boolean = (v34 < 192)
+                                    var v38: Boolean = false
+                                    v38 = (v34 < 192)
                                     v39 = v38
                                 }
                                 if (v39) {
-                                    val v40: Boolean = (v36 < 128)
+                                    var v40: Boolean = false
+                                    v40 = (v36 < 128)
                                     var v42: Boolean = false
                                     if (v40) {
                                         v42 = false
                                     } else {
-                                        val v41: Boolean = (v36 < 192)
+                                        var v41: Boolean = false
+                                        v41 = (v36 < 192)
                                         v42 = v41
                                     }
                                     if (v42) {
@@ -170,7 +180,8 @@ fun sp_utf8_scalar_at_byte_offset_1(p0: String, p1: Int): Int {
                                             var v52: Boolean = false
                                             v52 = (v49 >= 55296)
                                             if (v52) {
-                                                val v53: Boolean = (v49 <= 57343)
+                                                var v53: Boolean = false
+                                                v53 = (v49 <= 57343)
                                                 if (v53) {
                                                     System.err.println("UTF-8 sequence encodes a surrogate.")
                                                     System.exit(1)
@@ -194,67 +205,96 @@ fun sp_utf8_scalar_at_byte_offset_1(p0: String, p1: Int): Int {
                                 }
                             }
                         } else {
-                            val v63: Boolean = (v8 < 245)
+                            var v63: Boolean = false
+                            v63 = (v8 < 245)
                             if (v63) {
-                                val v64: Int = (v1 + 3)
-                                val v65: Boolean = (v64 >= v2)
+                                var v64: Int = 0
+                                v64 = (v1 + 3)
+                                var v65: Boolean = false
+                                v65 = (v64 >= v2)
                                 if (v65) {
                                     System.err.println("UTF-8 sequence is truncated.")
                                     System.exit(1)
                                     throw RuntimeException()
                                 } else {
-                                    val v67: Int = (v1 + 1)
-                                    val v68: Int = sp_runtime_byte_2(v0, v67)
-                                    val v69: Int = (v68 and 255)
-                                    val v70: Int = (v1 + 2)
-                                    val v71: Int = sp_runtime_byte_2(v0, v70)
-                                    val v72: Int = (v71 and 255)
-                                    val v73: Int = sp_runtime_byte_2(v0, v64)
-                                    val v74: Int = (v73 and 255)
-                                    val v75: Boolean = (v69 < 128)
+                                    var v67: Int = 0
+                                    v67 = (v1 + 1)
+                                    var v68: Int = 0
+                                    v68 = sp_runtime_byte_2(v0, v67)
+                                    var v69: Int = 0
+                                    v69 = (v68 and 255)
+                                    var v70: Int = 0
+                                    v70 = (v1 + 2)
+                                    var v71: Int = 0
+                                    v71 = sp_runtime_byte_2(v0, v70)
+                                    var v72: Int = 0
+                                    v72 = (v71 and 255)
+                                    var v73: Int = 0
+                                    v73 = sp_runtime_byte_2(v0, v64)
+                                    var v74: Int = 0
+                                    v74 = (v73 and 255)
+                                    var v75: Boolean = false
+                                    v75 = (v69 < 128)
                                     var v77: Boolean = false
                                     if (v75) {
                                         v77 = false
                                     } else {
-                                        val v76: Boolean = (v69 < 192)
+                                        var v76: Boolean = false
+                                        v76 = (v69 < 192)
                                         v77 = v76
                                     }
                                     if (v77) {
-                                        val v78: Boolean = (v72 < 128)
+                                        var v78: Boolean = false
+                                        v78 = (v72 < 128)
                                         var v80: Boolean = false
                                         if (v78) {
                                             v80 = false
                                         } else {
-                                            val v79: Boolean = (v72 < 192)
+                                            var v79: Boolean = false
+                                            v79 = (v72 < 192)
                                             v80 = v79
                                         }
                                         if (v80) {
-                                            val v81: Boolean = (v74 < 128)
+                                            var v81: Boolean = false
+                                            v81 = (v74 < 128)
                                             var v83: Boolean = false
                                             if (v81) {
                                                 v83 = false
                                             } else {
-                                                val v82: Boolean = (v74 < 192)
+                                                var v82: Boolean = false
+                                                v82 = (v74 < 192)
                                                 v83 = v82
                                             }
                                             if (v83) {
-                                                val v84: Int = (v8 - 240)
-                                                val v85: Int = (v84 * 262144)
-                                                val v86: Int = (v69 - 128)
-                                                val v87: Int = (v86 * 4096)
-                                                val v88: Int = (v85 + v87)
-                                                val v89: Int = (v72 - 128)
-                                                val v90: Int = (v89 * 64)
-                                                val v91: Int = (v88 + v90)
-                                                val v92: Int = (v74 - 128)
-                                                val v93: Int = (v91 + v92)
-                                                val v94: Boolean = (v93 < 65536)
+                                                var v84: Int = 0
+                                                v84 = (v8 - 240)
+                                                var v85: Int = 0
+                                                v85 = (v84 * 262144)
+                                                var v86: Int = 0
+                                                v86 = (v69 - 128)
+                                                var v87: Int = 0
+                                                v87 = (v86 * 4096)
+                                                var v88: Int = 0
+                                                v88 = (v85 + v87)
+                                                var v89: Int = 0
+                                                v89 = (v72 - 128)
+                                                var v90: Int = 0
+                                                v90 = (v89 * 64)
+                                                var v91: Int = 0
+                                                v91 = (v88 + v90)
+                                                var v92: Int = 0
+                                                v92 = (v74 - 128)
+                                                var v93: Int = 0
+                                                v93 = (v91 + v92)
+                                                var v94: Boolean = false
+                                                v94 = (v93 < 65536)
                                                 if (v94) {
                                                     System.err.println("UTF-8 sequence is overlong.")
                                                     System.exit(1)
                                                     throw RuntimeException()
                                                 } else {
-                                                    val v96: Boolean = (v93 > 1114111)
+                                                    var v96: Boolean = false
+                                                    v96 = (v93 > 1114111)
                                                     if (v96) {
                                                         System.err.println("UTF-8 scalar is above U+10FFFF.")
                                                         System.exit(1)
@@ -441,8 +481,14 @@ fun sp_utf8_grapheme_count_bounded_loop_0(p0: String, p1: Int, p2: Int, p3: Int)
                 }
                 var v49: Int = 0
                 v49 = (v1 + v13)
-                v1 = v49
-                v2 = v48
+                val t7474_0: String = v0
+                val t7516_49: Int = v49
+                val t7557_48: Int = v48
+                val t7598_3: Int = v3
+                v0 = t7474_0
+                v1 = t7516_49
+                v2 = t7557_48
+                v3 = t7598_3
                 continue
             }
         }
@@ -450,7 +496,8 @@ fun sp_utf8_grapheme_count_bounded_loop_0(p0: String, p1: Int, p2: Int, p3: Int)
     return 0
 }
 fun spiral_main(): Int {
-    val v0: String = "Aéé☕️👍🏽Z"
+    var v0: String = ""
+    v0 = "Aéé☕️👍🏽Z"
     var v1: Int = 0
     v1 = 0
     var v2: Int = 0
@@ -461,7 +508,8 @@ fun spiral_main(): Int {
     v4 = sp_utf8_grapheme_count_bounded_loop_0(v0, v1, v2, v3)
     var v5: String = ""
     v5 = "́̈A"
-    val v6: Int = 0
+    var v6: Int = 0
+    v6 = 0
     var v7: Int = 0
     v7 = 0
     var v8: Int = 0
@@ -470,7 +518,8 @@ fun spiral_main(): Int {
     v9 = sp_utf8_grapheme_count_bounded_loop_0(v5, v6, v7, v8)
     var v10: String = ""
     v10 = "Aé🙂Z"
-    val v11: Int = 4
+    var v11: Int = 0
+    v11 = 4
     var v12: Int = 0
     v12 = sp_utf8_scalar_at_byte_offset_1(v10, v11)
     var v13: Boolean = false
@@ -584,7 +633,8 @@ fun spiral_main(): Int {
     var v50: Boolean = false
     v50 = (v4 == 6)
     if (v50) {
-        val v51: Boolean = (v9 == 2)
+        var v51: Boolean = false
+        v51 = (v9 == 2)
         if (v51) {
             var v52: Boolean = false
             v52 = (v49 == 2)

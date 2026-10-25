@@ -4,10 +4,10 @@ class Heap2(val l0: Heap1, val l1: Int)
 class Heap3(val l0: US0)
 class Heap4(val l0: US1)
 sealed interface US0 { val tag: Int }
-object US0_None : US0 { override val tag: Int = 0 }
+class US0_None : US0 { override val tag: Int = 0 }
 data class US0_Held(val f0: Heap2) : US0 { override val tag: Int = 1 }
 sealed interface US1 { val tag: Int }
-object US1_Absent : US1 { override val tag: Int = 0 }
+class US1_Absent : US1 { override val tag: Int = 0 }
 data class US1_Box(val f0: Heap3) : US1 { override val tag: Int = 1 }
 fun sp_score_0(p0: US1): Int {
     var v0: US1 = p0
@@ -17,7 +17,7 @@ fun sp_score_0(p0: US1): Int {
         }
         1 -> {
             var v1: Heap3 = (v0 as US1_Box).f0
-            var v2: US0 = US0_None
+            var v2: US0 = US0_None()
             v2 = v1.l0
             when (v2.tag) {
                 1 -> {
@@ -95,7 +95,7 @@ fun sp_score_b_1(p0: US1): Int {
         }
         1 -> {
             var v1: Heap3 = (v0 as US1_Box).f0
-            var v2: US0 = US0_None
+            var v2: US0 = US0_None()
             v2 = v1.l0
             when (v2.tag) {
                 1 -> {
@@ -166,11 +166,14 @@ fun sp_score_b_1(p0: US1): Int {
     }
 }
 fun spiral_main(): Int {
-    val v0: Int = 7
-    val v1: String = "hi"
+    var v0: Int = 0
+    v0 = 7
+    var v1: String = ""
+    v1 = "hi"
     var v2: Heap0 = Heap0(0, "")
     v2 = Heap0(v0, v1)
-    val v3: Int = 4
+    var v3: Int = 0
+    v3 = 4
     var v4: String = ""
     v4 = "yo"
     var v5: Heap0 = Heap0(0, "")
@@ -181,13 +184,13 @@ fun spiral_main(): Int {
     v7 = 2
     var v8: Heap2 = Heap2(Heap1(Heap0(0, ""), Heap0(0, "")), 0)
     v8 = Heap2(v6, v7)
-    var v9: US0 = US0_None
+    var v9: US0 = US0_None()
     v9 = US0_Held(v8)
-    var v10: Heap3 = Heap3(US0_None)
+    var v10: Heap3 = Heap3(US0_None())
     v10 = Heap3(v9)
-    var v11: US1 = US1_Absent
+    var v11: US1 = US1_Absent()
     v11 = US1_Box(v10)
-    var v12: Heap4 = Heap4(US1_Absent)
+    var v12: Heap4 = Heap4(US1_Absent())
     v12 = Heap4(v11)
     var v13: Int = 0
     v13 = 8
@@ -205,25 +208,38 @@ fun spiral_main(): Int {
     v19 = Heap1(v15, v18)
     var v20: Int = 0
     v20 = 9
-    val v21: Heap2 = Heap2(v19, v20)
-    val v22: US0 = US0_Held(v21)
-    val v23: Heap3 = Heap3(v22)
-    val v24: US1 = US1_Box(v23)
-    val v25: Heap4 = Heap4(v24)
+    var v21: Heap2 = Heap2(Heap1(Heap0(0, ""), Heap0(0, "")), 0)
+    v21 = Heap2(v19, v20)
+    var v22: US0 = US0_None()
+    v22 = US0_Held(v21)
+    var v23: Heap3 = Heap3(US0_None())
+    v23 = Heap3(v22)
+    var v24: US1 = US1_Absent()
+    v24 = US1_Box(v23)
+    var v25: Heap4 = Heap4(US1_Absent())
+    v25 = Heap4(v24)
     var v26: Array<Heap4> = emptyArray<Heap4>()
-    v26 = Array(2) { Heap4(US1_Absent) }
+    v26 = Array(2) { Heap4(US1_Absent()) }
     v26[0] = v12
     v26[1] = v25
-    val v27: Heap4 = v26[0]
-    val v28: Heap4 = v26[1]
-    val v29: US1 = v27.l0
-    val v30: US1 = v28.l0
-    val v31: Int = sp_score_0(v29)
-    val v32: Int = sp_score_b_1(v30)
-    val v33: Boolean = (v31 == 0)
+    var v27: Heap4 = Heap4(US1_Absent())
+    v27 = v26[0]
+    var v28: Heap4 = Heap4(US1_Absent())
+    v28 = v26[1]
+    var v29: US1 = US1_Absent()
+    v29 = v27.l0
+    var v30: US1 = US1_Absent()
+    v30 = v28.l0
+    var v31: Int = 0
+    v31 = sp_score_0(v29)
+    var v32: Int = 0
+    v32 = sp_score_b_1(v30)
+    var v33: Boolean = false
+    v33 = (v31 == 0)
     var v35: Boolean = false
     if (v33) {
-        val v34: Boolean = (v32 == 0)
+        var v34: Boolean = false
+        v34 = (v32 == 0)
         v35 = v34
     } else {
         v35 = false

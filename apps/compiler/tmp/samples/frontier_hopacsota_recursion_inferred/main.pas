@@ -7,6 +7,7 @@ function count_0(v0: LongInt): LongInt;
 var
   v1: Boolean;
   v2: LongInt;
+  tmp2: LongInt;
 begin
   while True do begin
       v1 := v0 <= 0;
@@ -15,7 +16,8 @@ begin
           Exit;
       end else begin
           v2 := v0 - 1;
-          v0 := v2;
+          tmp2 := v2;
+          v0 := tmp2;
           Continue;
       end;
   end;

@@ -1,4 +1,4 @@
 pub fn main() {
-    let v0 = 305
-    v0
+let v0 = 305
+v0
 }

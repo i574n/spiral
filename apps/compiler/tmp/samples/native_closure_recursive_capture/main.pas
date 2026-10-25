@@ -12,11 +12,9 @@ type
   Tf_c0 = class(TFun0) v0: TUH0; function Invoke(v1: LongInt): LongInt; override; end;
 function sum_0(v0: TUH0): LongInt; forward;
 function ClosureCreate0(v0: TUH0): TFun0; forward;
-var UH0_Leaf_shared: TUH0 = nil;
 function UH0_Leaf: TUH0;
 begin
-  if UH0_Leaf_shared = nil then begin UH0_Leaf_shared := TUH0.Create; UH0_Leaf_shared.tag := 0; end;
-  Result := UH0_Leaf_shared;
+  Result := TUH0.Create; Result.tag := 0; 
 end;
 function UH0_Node(a0: LongInt; a1: TUH0; a2: TUH0): TUH0;
 begin

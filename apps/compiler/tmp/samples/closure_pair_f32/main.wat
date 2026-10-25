@@ -1,5 +1,9 @@
 (module
+  (import "wasi_snapshot_preview1" "fd_write" (func $fd_write (param i32 i32 i32 i32) (result i32)))
   (import "wasi_snapshot_preview1" "proc_exit" (func $proc_exit (param i32)))
+  (data (i32.const 48) "\04\00\00\00true")
+  (data (i32.const 56) "\05\00\00\00false")
+  (data (i32.const 64) "\01\00\00\00-")
   (func $alloc (param $n i32) (result i32) (local $p i32) (local $limit i32)
     (local.set $p (global.get $hp))
     (global.set $hp (i32.and (i32.add (i32.add (local.get $p) (local.get $n)) (i32.const 7)) (i32.const -8)))

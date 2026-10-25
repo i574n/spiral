@@ -31,13 +31,17 @@ func spiralStringSlice(_ value: String, _ from: Int32, _ to: Int32) -> String {
 func sp_f_0(_ p0: String, _ p1: Int32) -> Int32 {
     var v0: String = p0
     var v1: Int32 = p1
-    let v2: Int32 = spiralStringLength(v0)
-    let v3: Int32 = (v2 &+ v1)
+    var v2: Int32 = 0
+    v2 = spiralStringLength(v0)
+    var v3: Int32 = 0
+    v3 = (v2 &+ v1)
     return v3
 }
 func spiral_main() -> Int32 {
-    let v0: String = "abc"
-    let v1: Int32 = 1
+    var v0: String = ""
+    v0 = "abc"
+    var v1: Int32 = 0
+    v1 = 1
     return sp_f_0(v0, v1)
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

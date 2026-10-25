@@ -20,6 +20,7 @@ modules:
     mapm
     iter
     float_text
+    float_native
     sm'_prototypes-
     sm'_real*
     sm'
@@ -109,7 +110,9 @@ modules:
     xsd_constraints
     erlang_process
     otp_actor
+    channel
     otp_supervisor
     step_runtime
     cursor_walk
     oauth
+    dictm

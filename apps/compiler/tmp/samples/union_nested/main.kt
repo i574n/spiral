@@ -13,7 +13,8 @@ fun sp_score_inner_1(p0: US1): Int {
         }
         1 -> {
             var v2: Int = (v0 as US1_B).f0
-            val v3: Int = (-(v2))
+            var v3: Int = 0
+            v3 = (-(v2))
             return v3
         }
         else -> throw RuntimeException()
@@ -34,10 +35,12 @@ fun sp_score_0(p0: US0): Int {
     }
 }
 fun spiral_main(): Int {
-    val v0: Boolean = true
+    var v0: Boolean = false
+    v0 = true
     var v4: US0 = US0_Wrap(US1_A(0))
     if (v0) {
-        val v1: US1 = US1_A(7)
+        var v1: US1 = US1_A(0)
+        v1 = US1_A(7)
         v4 = US0_Wrap(v1)
     } else {
         v4 = US0_Other(1)
@@ -46,15 +49,20 @@ fun spiral_main(): Int {
     if (v0) {
         v8 = US0_Other(4)
     } else {
-        val v6: US1 = US1_B(2)
+        var v6: US1 = US1_A(0)
+        v6 = US1_B(2)
         v8 = US0_Wrap(v6)
     }
-    val v9: Int = sp_score_0(v4)
-    val v10: Boolean = (v9 == 7)
+    var v9: Int = 0
+    v9 = sp_score_0(v4)
+    var v10: Boolean = false
+    v10 = (v9 == 7)
     var v13: Boolean = false
     if (v10) {
-        val v11: Int = sp_score_0(v8)
-        val v12: Boolean = (v11 == 4)
+        var v11: Int = 0
+        v11 = sp_score_0(v8)
+        var v12: Boolean = false
+        v12 = (v11 == 4)
         v13 = v12
     } else {
         v13 = false

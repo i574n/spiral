@@ -8,12 +8,16 @@ fun f_c0(v0: Int): (Int) -> Array<Int> {
     return { p0: Int -> body(p0) }
 }
 fun spiral_main(): Int {
-    val v0: Int = 7
-    val v1: (Int) -> Array<Int> = f_c0(v0)
+    var v0: Int = 0
+    v0 = 7
+    var v1: (Int) -> Array<Int> = { _: Int -> throw RuntimeException() }
+    v1 = f_c0(v0)
     var v2: Array<Int> = emptyArray<Int>()
     v2 = v1(1)
-    val v3: Int = v2[0]
-    val v4: Boolean = (v3 == 7)
+    var v3: Int = 0
+    v3 = v2[0]
+    var v4: Boolean = false
+    v4 = (v3 == 7)
     if (v4) {
         return 0
     } else {

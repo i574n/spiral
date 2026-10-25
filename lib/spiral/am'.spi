@@ -508,8 +508,7 @@ inl average forall el {number}. (a : array el) : el =
 
 /// ### distinct
 inl distinct forall el. (a : array el) : array el =
-    if is_rust ()
-    then
+    if is_rust () then
         inl a = $'!a ' : array el
         inl r = $'Rc::new(RefCell::new(Vec::with_capacity(!a.borrow().len())))' : array el
         loop.for' { from = 0; nearTo = length a } fun i =>

@@ -7,20 +7,20 @@ enum US0 {
     US0_Held(Rc<RefCell<Vec<f64>>>),
 }
 fn spiral_main() -> i32 {
-    let v0: Rc<RefCell<Vec<f64>>> = Rc::new(RefCell::new(vec![<f64>::default(); 1i32 as usize]));
-    let v1: f64 = 1.5f64;
+    let mut v0: Rc<RefCell<Vec<f64>>> = Rc::new(RefCell::new(vec![<f64>::default(); 1i32 as usize]));
+    let mut v1: f64 = 1.5f64;
     v0.clone().borrow_mut()[0i32 as usize] = v1;
-    let v2: bool = true;
-    let v5: US0 = if v2 {
-        US0::US0_Held(v0)
+    let mut v2: bool = true;
+    let mut v5: US0 = if v2 {
+        US0::US0_Held(v0.clone())
     } else {
         US0::US0_Missing
     };
     match &v5 {
         US0::US0_Held(v6) => {
-            let v6: Rc<RefCell<Vec<f64>>> = v6.clone();
-            let v7: f64 = v6.borrow()[0i32 as usize].clone();
-            let v8: bool = v7 == 1.5f64;
+            let mut v6: Rc<RefCell<Vec<f64>>> = v6.clone();
+            let mut v7: f64 = v6.clone().borrow()[0i32 as usize].clone();
+            let mut v8: bool = v7 == 1.5f64;
             if v8 {
                 0i32
             } else {

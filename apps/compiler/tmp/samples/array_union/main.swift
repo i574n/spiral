@@ -8,24 +8,31 @@ final class SpiralArray<T> {
     init(_ items: [T]) { self.items = items }
 }
 func spiral_main() -> Int32 {
-    let v0: Int32 = 2
+    var v0: Int32 = 0
+    v0 = 2
     var v1: SpiralArray<US0> = SpiralArray<US0>([])
     v1 = SpiralArray<US0>(Array(repeating: US0_None(), count: Int(v0)))
-    let v2: Int32 = 7
-    let v3: US0 = US0_Some(f0: v2)
+    var v2: Int32 = 0
+    v2 = 7
+    var v3: US0 = US0_None()
+    v3 = US0_Some(f0: v2)
     v1.items[Int(0)] = v3
-    let v4: US0 = US0_None()
+    var v4: US0 = US0_None()
+    v4 = US0_None()
     v1.items[Int(1)] = v4
-    let v5: US0 = v1.items[Int(0)]
+    var v5: US0 = US0_None()
+    v5 = v1.items[Int(0)]
     switch v5.tag {
         case 0:
             return 1
         case 1:
             var v6: Int32 = (v5 as! US0_Some).f0
-            let v7: US0 = v1.items[Int(1)]
+            var v7: US0 = US0_None()
+            v7 = v1.items[Int(1)]
             switch v7.tag {
                 case 0:
-                    let v8: Bool = (v6 == 7)
+                    var v8: Bool = false
+                    v8 = (v6 == 7)
                     if (v8) {
                         return 0
                     } else {

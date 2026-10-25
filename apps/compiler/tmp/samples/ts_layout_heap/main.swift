@@ -9,10 +9,14 @@ class Heap0 {
     }
 }
 func spiral_main() -> Int32 {
-    let v0: Heap0 = Heap0(l0: 9, l1: 10)
-    let v1: Int32 = v0.l0
-    let v2: Int32 = v0.l1
-    let v3: Int32 = (v1 &+ v2)
+    var v0: Heap0 = Heap0(l0: 0, l1: 0)
+    v0 = Heap0(l0: 9, l1: 10)
+    var v1: Int32 = 0
+    v1 = v0.l0
+    var v2: Int32 = 0
+    v2 = v0.l1
+    var v3: Int32 = 0
+    v3 = (v1 &+ v2)
     return v3
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

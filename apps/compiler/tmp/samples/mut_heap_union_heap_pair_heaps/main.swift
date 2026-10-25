@@ -60,10 +60,12 @@ func sp_score_0(_ p0: US0) -> Int32 {
             var v9: String = ""
             v8 = v5.l0
             v9 = v5.l1
-            let v10: Bool = (v6 == 7)
+            var v10: Bool = false
+            v10 = (v6 == 7)
             var v12: Bool = false
             if (v10) {
-                let v11: Bool = (v7 == "hi")
+                var v11: Bool = false
+                v11 = (v7 == "hi")
                 v12 = v11
             } else {
                 v12 = false
@@ -104,8 +106,10 @@ func sp_score_0(_ p0: US0) -> Int32 {
     }
 }
 func spiral_main() -> Int32 {
-    let v0: Int32 = 1
-    let v1: String = "no"
+    var v0: Int32 = 0
+    v0 = 1
+    var v1: String = ""
+    v1 = "no"
     var v2: Heap0 = Heap0(l0: 0, l1: "")
     v2 = Heap0(l0: v0, l1: v1)
     var v3: Int32 = 0
@@ -140,22 +144,31 @@ func spiral_main() -> Int32 {
     v17 = Heap0(l0: v15, l1: v16)
     var v18: Int32 = 0
     v18 = 4
-    let v19: String = "yo"
-    let v20: Heap0 = Heap0(l0: v18, l1: v19)
-    let v21: Heap1 = Heap1(l0: v17, l1: v20)
-    let v22: Int32 = 2
-    let v23: Heap2 = Heap2(l0: v21, l1: v22)
-    let v24: Bool = true
+    var v19: String = ""
+    v19 = "yo"
+    var v20: Heap0 = Heap0(l0: 0, l1: "")
+    v20 = Heap0(l0: v18, l1: v19)
+    var v21: Heap1 = Heap1(l0: Heap0(l0: 0, l1: ""), l1: Heap0(l0: 0, l1: ""))
+    v21 = Heap1(l0: v17, l1: v20)
+    var v22: Int32 = 0
+    v22 = 2
+    var v23: Heap2 = Heap2(l0: Heap1(l0: Heap0(l0: 0, l1: ""), l1: Heap0(l0: 0, l1: "")), l1: 0)
+    v23 = Heap2(l0: v21, l1: v22)
+    var v24: Bool = false
+    v24 = true
     var v27: US0 = US0_None()
     if (v24) {
         v27 = US0_Held(f0: v23)
     } else {
         v27 = US0_None()
     }
-    let v28: Heap3 = Heap3(l0: v27)
+    var v28: Heap3 = Heap3(l0: US0_None())
+    v28 = Heap3(l0: v27)
     v14.l0 = v28
-    let v29: Heap3 = v14.l0
-    let v30: US0 = v29.l0
+    var v29: Heap3 = Heap3(l0: US0_None())
+    v29 = v14.l0
+    var v30: US0 = US0_None()
+    v30 = v29.l0
     return sp_score_0(v30)
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

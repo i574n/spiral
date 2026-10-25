@@ -4,6 +4,11 @@
 #include <stdlib.h>
 #include <string.h>
 int32_t main(){
-    int32_t v0 = 305l;
+    
+    
+    int32_t v0;
+    v0 = 305l;
+    
+    
     return v0;
 }

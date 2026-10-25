@@ -13,6 +13,8 @@ var
   v8: AnsiString;
   v6: AnsiString;
   v7: AnsiString;
+  tmp7: LongInt;
+  tmp8: AnsiString;
 begin
   while True do begin
       v2 := v0 - 1;
@@ -30,8 +32,10 @@ begin
               v7 := 'go';
               v8 := v7;
           end;
-          v0 := v2;
-          v1 := v8;
+          tmp7 := v2;
+          tmp8 := v8;
+          v0 := tmp7;
+          v1 := tmp8;
           Continue;
       end;
   end;

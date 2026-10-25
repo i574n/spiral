@@ -1,20 +1,26 @@
 class Heap0(val l0: Int, val l1: String)
 fun spiral_main(): Int {
-    val v0: Int = 7
-    val v1: String = "hi"
-    val v2: Heap0 = Heap0(v0, v1)
+    var v0: Int = 0
+    v0 = 7
+    var v1: String = ""
+    v1 = "hi"
+    var v2: Heap0 = Heap0(0, "")
+    v2 = Heap0(v0, v1)
     var v3: Array<Heap0> = emptyArray<Heap0>()
     v3 = Array(1) { Heap0(0, "") }
     v3[0] = v2
-    val v4: Heap0 = v3[0]
+    var v4: Heap0 = Heap0(0, "")
+    v4 = v3[0]
     var v5: Int = 0
     var v6: String = ""
     v5 = v4.l0
     v6 = v4.l1
-    val v7: Boolean = (v5 == 7)
+    var v7: Boolean = false
+    v7 = (v5 == 7)
     var v9: Boolean = false
     if (v7) {
-        val v8: Boolean = (v6 == "hi")
+        var v8: Boolean = false
+        v8 = (v6 == "hi")
         v9 = v8
     } else {
         v9 = false

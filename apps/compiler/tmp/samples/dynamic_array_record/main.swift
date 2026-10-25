@@ -16,11 +16,16 @@ func sp_method0() -> (SpiralArray<Int32>, Int32) {
 func sp_method1(_ p0: SpiralArray<Int32>, _ p1: Int32) -> Int32 {
     var v0: SpiralArray<Int32> = p0
     var v1: Int32 = p1
-    let v2: Int32 = v0.items[Int(0)]
-    let v3: Int32 = v0.items[Int(1)]
-    let v4: Int32 = (v2 &+ v3)
-    let v5: Int32 = (v4 &+ v1)
-    let v6: Int32 = (v5 &- 10)
+    var v2: Int32 = 0
+    v2 = v0.items[Int(0)]
+    var v3: Int32 = 0
+    v3 = v0.items[Int(1)]
+    var v4: Int32 = 0
+    v4 = (v2 &+ v3)
+    var v5: Int32 = 0
+    v5 = (v4 &+ v1)
+    var v6: Int32 = 0
+    v6 = (v5 &- 10)
     return v6
 }
 func spiral_main() -> Int32 {

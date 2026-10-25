@@ -2,7 +2,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 fn method0(mut v0: i8) -> i8 {
-    let v1: bool = v0 == 0i8;
+    let mut v1: bool = v0 == 0i8;
     if v1 {
         1i8
     } else {
@@ -10,9 +10,9 @@ fn method0(mut v0: i8) -> i8 {
     }
 }
 fn spiral_main() -> i32 {
-    let v0: i8 = 100i8;
-    let v1: i8 = method0(v0);
-    let v2: bool = v1 == 100i8;
+    let mut v0: i8 = 100i8;
+    let mut v1: i8 = method0(v0);
+    let mut v2: bool = v1 == 100i8;
     if v2 {
         0i32
     } else {

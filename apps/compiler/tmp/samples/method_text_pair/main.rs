@@ -2,22 +2,22 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 fn method0(mut v0: Rc<str>, mut v1: Rc<str>) -> (Rc<str>, Rc<str>) {
-    let v2: bool = &*v0 == "";
+    let mut v2: bool = v0.clone() == { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
     if v2 {
-        let v3: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("no"); } LIT.with(|lit| lit.clone()) };
-        let v4: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("nay"); } LIT.with(|lit| lit.clone()) };
-        (v3, v4)
+        let mut v3: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("no"); } LIT.with(|lit| lit.clone()) };
+        let mut v4: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("nay"); } LIT.with(|lit| lit.clone()) };
+        (v3.clone(), v4.clone())
     } else {
-        (v0, v1)
+        (v0.clone(), v1.clone())
     }
 }
 fn spiral_main() -> i32 {
-    let v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
-    let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("yo"); } LIT.with(|lit| lit.clone()) };
-    let (mut v2, mut v3): (Rc<str>, Rc<str>) = method0(v0, v1);
-    let v4: bool = &*v2 == "hi";
-    let v6: bool = if v4 {
-        let v5: bool = &*v3 == "yo";
+    let mut v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
+    let mut v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("yo"); } LIT.with(|lit| lit.clone()) };
+    let (mut v2, mut v3): (Rc<str>, Rc<str>) = method0(v0.clone(), v1.clone());
+    let mut v4: bool = v2.clone() == { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
+    let mut v6: bool = if v4 {
+        let mut v5: bool = v3.clone() == { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("yo"); } LIT.with(|lit| lit.clone()) };
         v5
     } else {
         false

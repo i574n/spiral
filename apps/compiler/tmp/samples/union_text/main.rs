@@ -9,12 +9,12 @@ enum US0 {
 fn score_0(mut v0: US0) -> i32 {
     match &v0 {
         US0::US0_Code(v4) => {
-            let v4: i32 = *v4;
+            let mut v4: i32 = *v4;
             v4
         }
         US0::US0_Text(v1) => {
-            let v1: Rc<str> = v1.clone();
-            let v2: bool = &*v1 == "hi";
+            let mut v1: Rc<str> = v1.clone();
+            let mut v2: bool = v1.clone() == { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
             if v2 {
                 2i32
             } else {
@@ -24,23 +24,23 @@ fn score_0(mut v0: US0) -> i32 {
     }
 }
 fn spiral_main() -> i32 {
-    let v0: bool = true;
-    let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
-    let v4: US0 = if v0 {
+    let mut v0: bool = true;
+    let mut v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
+    let mut v4: US0 = if v0 {
         US0::US0_Text(v1.clone())
     } else {
         US0::US0_Code(1i32)
     };
-    let v7: US0 = if v0 {
+    let mut v7: US0 = if v0 {
         US0::US0_Code(5i32)
     } else {
-        US0::US0_Text(v1)
+        US0::US0_Text(v1.clone())
     };
-    let v8: i32 = score_0(v4);
-    let v9: bool = v8 == 2i32;
-    let v12: bool = if v9 {
-        let v10: i32 = score_0(v7);
-        let v11: bool = v10 == 5i32;
+    let mut v8: i32 = score_0(v4.clone());
+    let mut v9: bool = v8 == 2i32;
+    let mut v12: bool = if v9 {
+        let mut v10: i32 = score_0(v7.clone());
+        let mut v11: bool = v10 == 5i32;
         v11
     } else {
         false

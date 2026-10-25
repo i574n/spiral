@@ -25,6 +25,22 @@ def spiralStringSlice (s : String) (a b : Int) : IO String := do
   else pure (String.Pos.Raw.extract s ⟨a.toNat⟩ ⟨(b + 1).toNat⟩)
 mutual
 partial def spiralMain : IO Int32 := do
+    let mut v0 : String := default
+    let mut v1 : Int32 := default
+    let mut v2 : Char := default
+    let mut v3 : Char := default
+    let mut v4 : String := default
+    let mut v5 : String := default
+    let mut v6 : Int32 := default
+    let mut v7 : String := default
+    let mut v8 : Char := default
+    let mut v9 : String := default
+    let mut v10 : Int32 := default
+    let mut v11 : String := default
+    let mut v12 : Int32 := default
+    let mut v13 : String := default
+    let mut v14 : Int32 := default
+    let mut v15 : Bool := default
     let mut v16 : Bool := default
     let mut v18 : Bool := default
     let mut v17 : Bool := default
@@ -36,22 +52,22 @@ partial def spiralMain : IO Int32 := do
     let mut v23 : Bool := default
     let mut v26 : Bool := default
     let mut v25 : Bool := default
-    let v0 : String := "é"
-    let v1 : Int32 := (Int32.ofNat v0.utf8ByteSize)
-    let v2 : Char := (Char.ofNat (v0.toUTF8.get! (spiralIdx (0 : Int32))).toNat)
-    let v3 : Char := (Char.ofNat (v0.toUTF8.get! (spiralIdx (1 : Int32))).toNat)
-    let v4 : String := "x"
-    let v5 : String := (v0 ++ v4)
-    let v6 : Int32 := (Int32.ofNat v5.utf8ByteSize)
-    let v7 : String := "ab"
-    let v8 : Char := (Char.ofNat (v7.toUTF8.get! (spiralIdx (0 : Int32))).toNat)
-    let v9 : String := (← spiralStringSlice v7 (SpiralToInt.toI (0 : Int32)) (SpiralToInt.toI (0 : Int32)))
-    let v10 : Int32 := (Int32.ofNat v9.utf8ByteSize)
-    let v11 : String := (← spiralStringSlice v7 (SpiralToInt.toI (1 : Int32)) (SpiralToInt.toI (0 : Int32)))
-    let v12 : Int32 := (Int32.ofNat v11.utf8ByteSize)
-    let v13 : String := (← spiralStringSlice v0 (SpiralToInt.toI (0 : Int32)) (SpiralToInt.toI (1 : Int32)))
-    let v14 : Int32 := (Int32.ofNat v13.utf8ByteSize)
-    let v15 : Bool := (v2 == v3)
+    v0 := "é"
+    v1 := (Int32.ofNat v0.utf8ByteSize)
+    v2 := (Char.ofNat (v0.toUTF8.get! (spiralIdx (0 : Int32))).toNat)
+    v3 := (Char.ofNat (v0.toUTF8.get! (spiralIdx (1 : Int32))).toNat)
+    v4 := "x"
+    v5 := (v0 ++ v4)
+    v6 := (Int32.ofNat v5.utf8ByteSize)
+    v7 := "ab"
+    v8 := (Char.ofNat (v7.toUTF8.get! (spiralIdx (0 : Int32))).toNat)
+    v9 := (← spiralStringSlice v7 (SpiralToInt.toI (0 : Int32)) (SpiralToInt.toI (0 : Int32)))
+    v10 := (Int32.ofNat v9.utf8ByteSize)
+    v11 := (← spiralStringSlice v7 (SpiralToInt.toI (1 : Int32)) (SpiralToInt.toI (0 : Int32)))
+    v12 := (Int32.ofNat v11.utf8ByteSize)
+    v13 := (← spiralStringSlice v0 (SpiralToInt.toI (0 : Int32)) (SpiralToInt.toI (1 : Int32)))
+    v14 := (Int32.ofNat v13.utf8ByteSize)
+    v15 := (v2 == v3)
     if v15 then
         return (1 : Int32)
     else

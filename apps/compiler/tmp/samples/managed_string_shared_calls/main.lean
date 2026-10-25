@@ -26,14 +26,20 @@ def spiralStringSlice (s : String) (a b : Int) : IO String := do
 mutual
 partial def measure_0 (p0 : String) : IO Int32 := do
     let mut v0 : String := p0
-    let v1 : Int32 := (Int32.ofNat v0.utf8ByteSize)
+    let mut v1 : Int32 := default
+    v1 := (Int32.ofNat v0.utf8ByteSize)
     return v1
 partial def spiralMain : IO Int32 := do
-    let v0 : String := "qwe"
-    let v1 : Int32 := (← measure_0 v0)
-    let v2 : Int32 := (← measure_0 v0)
-    let v3 : Int32 := (v1 + v2)
-    let v4 : Int32 := (v3 - (6 : Int32))
+    let mut v0 : String := default
+    let mut v1 : Int32 := default
+    let mut v2 : Int32 := default
+    let mut v3 : Int32 := default
+    let mut v4 : Int32 := default
+    v0 := "qwe"
+    v1 := (← measure_0 v0)
+    v2 := (← measure_0 v0)
+    v3 := (v1 + v2)
+    v4 := (v3 - (6 : Int32))
     return v4
 end
 def main : IO UInt32 := do

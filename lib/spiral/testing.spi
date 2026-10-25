@@ -281,8 +281,7 @@ test assert_contains_2 =
 inl _throws (fn : () -> ()) : option exn =
     inl none = None : option exn
     inl some (s : exn) = Some s
-    if is_rust ()
-    then
+    if is_rust () then
         catch_unwind_rust
             fun () =>
                 fn ()
@@ -319,7 +318,7 @@ inl counterexamples (limit : i32) (lo : i64) (hi : i64) (reference : i64 -> i64)
         if x > hi then found
         elif left <= 0i32 then found
         elif reference x = candidate x then go (x + 1i64) left found
-        else go (x + 1i64) (left - 1i32) (Cons (x, found))
+        else go (x + 1i64) (left - 1i32) (x :: found)
     go lo limit Nil |> listm.rev
 
 ///> zig

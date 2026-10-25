@@ -18,15 +18,18 @@ fun sp_score_0(p0: US0): Int {
     }
 }
 fun spiral_main(): Int {
-    val v0: Boolean = true
+    var v0: Boolean = false
+    v0 = true
     var v3: US0 = US0_Hit(0)
     if (v0) {
         v3 = US0_Hit(7)
     } else {
         v3 = US0_Miss(3)
     }
-    val v4: Int = sp_score_0(v3)
-    val v5: Int = (v4 - 7)
+    var v4: Int = 0
+    v4 = sp_score_0(v3)
+    var v5: Int = 0
+    v5 = (v4 - 7)
     return v5
 }
 fun main() {

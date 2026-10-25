@@ -35,16 +35,24 @@ partial def f_c0 (p0 : H0) (p1 : Int32) : IO H0 := do
     let mut v1 : Int32 := p1
     return v0
 partial def spiralMain : IO Int32 := do
+    let mut v0 : Float32 := default
+    let mut v1 : String := default
+    let mut v2 : H0 := default
+    let mut v3 : (Int32 → IO H0) := default
+    let mut v4 : H0 := default
+    let mut v5 : Float32 := default
+    let mut v6 : String := default
+    let mut v7 : Bool := default
     let mut v9 : Bool := default
     let mut v8 : Bool := default
-    let v0 : Float32 := (1.5 : Float32)
-    let v1 : String := "hi"
-    let v2 : H0 := (H0.mk v0 v1)
-    let v3 : (Int32 → IO H0) := (f_c0 v2)
-    let v4 : H0 := (← v3 (1 : Int32))
-    let v5 : Float32 := v4.l0
-    let v6 : String := v4.l1
-    let v7 : Bool := (v5 == (1.5 : Float32))
+    v0 := (1.5 : Float32)
+    v1 := "hi"
+    v2 := (H0.mk v0 v1)
+    v3 := (f_c0 v2)
+    v4 := (← v3 (1 : Int32))
+    v5 := v4.l0
+    v6 := v4.l1
+    v7 := (v5 == (1.5 : Float32))
     if v7 then
         v8 := (v6 == "hi")
         v9 := v8

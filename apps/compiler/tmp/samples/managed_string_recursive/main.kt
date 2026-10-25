@@ -1,5 +1,5 @@
 sealed interface UH0 { val tag: Int }
-object UH0_Empty : UH0 { override val tag: Int = 0 }
+class UH0_Empty : UH0 { override val tag: Int = 0 }
 data class UH0_Node(val f0: String, val f1: UH0, val f2: UH0) : UH0 { override val tag: Int = 1 }
 fun spiralUtf8(value: String): ByteArray = value.toByteArray(Charsets.UTF_8)
 fun spiralStringLength(value: String): Int = spiralUtf8(value).size
@@ -56,23 +56,30 @@ fun sp_score_0(p0: UH0): Int {
     }
 }
 fun spiral_main(): Int {
-    val v0: String = "ab"
-    val v1: String = "qwe"
-    val v2: UH0 = UH0_Empty
-    val v3: UH0 = UH0_Node(v1, v2, v2)
-    var v4: UH0 = UH0_Empty
+    var v0: String = ""
+    v0 = "ab"
+    var v1: String = ""
+    v1 = "qwe"
+    var v2: UH0 = UH0_Empty()
+    v2 = UH0_Empty()
+    var v3: UH0 = UH0_Empty()
+    v3 = UH0_Node(v1, v2, v2)
+    var v4: UH0 = UH0_Empty()
     v4 = UH0_Node(v0, v3, v3)
     var v5: Int = 0
     v5 = sp_score_0(v4)
-    var v6: UH0 = UH0_Empty
-    v6 = UH0_Empty
-    var v7: UH0 = UH0_Empty
+    var v6: UH0 = UH0_Empty()
+    v6 = UH0_Empty()
+    var v7: UH0 = UH0_Empty()
     v7 = UH0_Node(v1, v6, v6)
-    var v8: UH0 = UH0_Empty
+    var v8: UH0 = UH0_Empty()
     v8 = UH0_Node(v0, v7, v7)
-    val v9: Int = sp_score_0(v8)
-    val v10: Int = (v5 + v9)
-    val v11: Int = (v10 - 16)
+    var v9: Int = 0
+    v9 = sp_score_0(v8)
+    var v10: Int = 0
+    v10 = (v5 + v9)
+    var v11: Int = 0
+    v11 = (v10 - 16)
     return v11
 }
 fun main() {

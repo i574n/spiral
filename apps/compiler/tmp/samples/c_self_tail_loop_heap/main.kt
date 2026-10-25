@@ -12,14 +12,28 @@ fun sp_loop_0(p0: Int, p1: Array<Int>, p2: Int, p3: Int, p4: Int): Int {
         } else {
             var v6: Int = 0
             v6 = (v3 % 4)
-            val v7: Int = v1[v6]
-            val v8: Int = (v3 + 1)
-            val v9: Int = (v4 * 7)
-            val v10: Int = (v9 + v7)
-            val v11: Int = (v10 + v2)
-            val v12: Int = (v11 % 9973)
-            v3 = v8
-            v4 = v12
+            var v7: Int = 0
+            v7 = v1[v6]
+            var v8: Int = 0
+            v8 = (v3 + 1)
+            var v9: Int = 0
+            v9 = (v4 * 7)
+            var v10: Int = 0
+            v10 = (v9 + v7)
+            var v11: Int = 0
+            v11 = (v10 + v2)
+            var v12: Int = 0
+            v12 = (v11 % 9973)
+            val t732_0: Int = v0
+            val t766_1: Array<Int> = v1
+            val t807_2: Int = v2
+            val t841_8: Int = v8
+            val t875_12: Int = v12
+            v0 = t732_0
+            v1 = t766_1
+            v2 = t807_2
+            v3 = t841_8
+            v4 = t875_12
             continue
         }
     }
@@ -32,8 +46,10 @@ fun spiral_main(): Int {
     v0[1] = 2
     v0[2] = 3
     v0[3] = 4
-    val v1: Int = 0
-    val v2: Int = 1000000
+    var v1: Int = 0
+    v1 = 0
+    var v2: Int = 0
+    v2 = 1000000
     var v3: Int = 0
     v3 = 0
     var v4: Int = 0

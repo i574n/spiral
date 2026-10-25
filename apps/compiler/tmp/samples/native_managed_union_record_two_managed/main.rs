@@ -8,15 +8,15 @@ enum US0 {
 }
 fn closure0() -> Rc<dyn Fn(i32) -> US0> {
     thread_local!{ static CLOSURE: Rc<dyn Fn(i32) -> US0> = Rc::new(move |mut v0: i32| -> US0 {
-        let v1: bool = v0 == 0i32;
+        let mut v1: bool = v0 == 0i32;
         if v1 {
             US0::US0_Empty
         } else {
-            let v3: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); 2i32 as usize]));
+            let mut v3: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); 2i32 as usize]));
             v3.clone().borrow_mut()[0i32 as usize] = v0;
-            let v4: i32 = v0.wrapping_add(1i32);
+            let mut v4: i32 = v0.wrapping_add(1i32);
             v3.clone().borrow_mut()[1i32 as usize] = v4;
-            let v5: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
+            let mut v5: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
             US0::US0_Item(v5.clone(), v3.clone())
         }
     }); } CLOSURE.with(|closure| closure.clone())
@@ -29,44 +29,44 @@ fn method1(mut v0: Rc<dyn Fn(i32) -> US0>) -> US0 {
 }
 fn spiral_main() -> i32 {
     let mut v0: Rc<dyn Fn(i32) -> US0> = closure0();
-    let v1: US0 = method0(v0.clone());
-    let v12: i32 = match &v1 {
+    let mut v1: US0 = method0(v0.clone());
+    let mut v12: i32 = match &v1 {
         US0::US0_Empty => {
             3i32
         }
         US0::US0_Item(v2, v3) => {
-            let v2: Rc<str> = v2.clone();
-            let v3: Rc<RefCell<Vec<i32>>> = v3.clone();
-            let v4: i32 = (v2.len() as i32);
-            let v5: i32 = (v3.clone().borrow().len() as i32);
-            let v6: i32 = v4.wrapping_add(v5);
-            let v7: i32 = v3.clone().borrow()[0i32 as usize].clone();
-            let v8: i32 = v6.wrapping_add(v7);
-            let v9: i32 = v3.borrow()[1i32 as usize].clone();
-            let v10: i32 = v8.wrapping_add(v9);
+            let mut v2: Rc<str> = v2.clone();
+            let mut v3: Rc<RefCell<Vec<i32>>> = v3.clone();
+            let mut v4: i32 = (v2.clone().len() as i32);
+            let mut v5: i32 = (v3.clone().borrow().len() as i32);
+            let mut v6: i32 = v4.wrapping_add(v5);
+            let mut v7: i32 = v3.clone().borrow()[0i32 as usize].clone();
+            let mut v8: i32 = v6.wrapping_add(v7);
+            let mut v9: i32 = v3.clone().borrow()[1i32 as usize].clone();
+            let mut v10: i32 = v8.wrapping_add(v9);
             v10
         }
     };
-    let v13: US0 = method1(v0);
-    let v24: i32 = match &v13 {
+    let mut v13: US0 = method1(v0.clone());
+    let mut v24: i32 = match &v13 {
         US0::US0_Empty => {
             3i32
         }
         US0::US0_Item(v14, v15) => {
-            let v14: Rc<str> = v14.clone();
-            let v15: Rc<RefCell<Vec<i32>>> = v15.clone();
-            let v16: i32 = (v14.len() as i32);
-            let v17: i32 = (v15.clone().borrow().len() as i32);
-            let v18: i32 = v16.wrapping_add(v17);
-            let v19: i32 = v15.clone().borrow()[0i32 as usize].clone();
-            let v20: i32 = v18.wrapping_add(v19);
-            let v21: i32 = v15.borrow()[1i32 as usize].clone();
-            let v22: i32 = v20.wrapping_add(v21);
+            let mut v14: Rc<str> = v14.clone();
+            let mut v15: Rc<RefCell<Vec<i32>>> = v15.clone();
+            let mut v16: i32 = (v14.clone().len() as i32);
+            let mut v17: i32 = (v15.clone().borrow().len() as i32);
+            let mut v18: i32 = v16.wrapping_add(v17);
+            let mut v19: i32 = v15.clone().borrow()[0i32 as usize].clone();
+            let mut v20: i32 = v18.wrapping_add(v19);
+            let mut v21: i32 = v15.clone().borrow()[1i32 as usize].clone();
+            let mut v22: i32 = v20.wrapping_add(v21);
             v22
         }
     };
-    let v25: i32 = v12.wrapping_add(v24);
-    let v26: i32 = v25.wrapping_add(26i32);
+    let mut v25: i32 = v12.wrapping_add(v24);
+    let mut v26: i32 = v25.wrapping_add(26i32);
     v26
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }

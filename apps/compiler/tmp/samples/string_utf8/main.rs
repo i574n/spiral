@@ -11,52 +11,52 @@ fn string_slice(value: &str, from: i64, to: i64) -> Rc<str> {
     match std::str::from_utf8(slice) { Ok(text) => Rc::<str>::from(text), Err(error) => Rc::<str>::from(std::str::from_utf8(&slice[..error.valid_up_to()]).unwrap_or("")) }
 }
 fn spiral_main() -> i32 {
-    let v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("é"); } LIT.with(|lit| lit.clone()) };
-    let v1: i32 = (v0.clone().len() as i32);
-    let v2: u8 = v0.clone().as_bytes()[0i32 as usize];
-    let v3: u8 = v0.clone().as_bytes()[1i32 as usize];
-    let v4: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("x"); } LIT.with(|lit| lit.clone()) };
-    let v5: Rc<str> = Rc::<str>::from(format!("{}{}", v0.clone(), v4));
-    let v6: i32 = (v5.len() as i32);
-    let v7: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("ab"); } LIT.with(|lit| lit.clone()) };
-    let v8: u8 = v7.clone().as_bytes()[0i32 as usize];
-    let v9: Rc<str> = string_slice(&v7.clone(), 0i32 as i64, 0i32 as i64);
-    let v10: i32 = (v9.len() as i32);
-    let v11: Rc<str> = string_slice(&v7, 1i32 as i64, 0i32 as i64);
-    let v12: i32 = (v11.len() as i32);
-    let v13: Rc<str> = string_slice(&v0, 0i32 as i64, 1i32 as i64);
-    let v14: i32 = (v13.len() as i32);
-    let v15: bool = v2 == v3;
+    let mut v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("é"); } LIT.with(|lit| lit.clone()) };
+    let mut v1: i32 = (v0.clone().len() as i32);
+    let mut v2: u8 = v0.clone().as_bytes()[0i32 as usize];
+    let mut v3: u8 = v0.clone().as_bytes()[1i32 as usize];
+    let mut v4: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("x"); } LIT.with(|lit| lit.clone()) };
+    let mut v5: Rc<str> = Rc::<str>::from(format!("{}{}", v0.clone(), v4.clone()));
+    let mut v6: i32 = (v5.clone().len() as i32);
+    let mut v7: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("ab"); } LIT.with(|lit| lit.clone()) };
+    let mut v8: u8 = v7.clone().as_bytes()[0i32 as usize];
+    let mut v9: Rc<str> = string_slice(&v7.clone(), 0i32 as i64, 0i32 as i64);
+    let mut v10: i32 = (v9.clone().len() as i32);
+    let mut v11: Rc<str> = string_slice(&v7.clone(), 1i32 as i64, 0i32 as i64);
+    let mut v12: i32 = (v11.clone().len() as i32);
+    let mut v13: Rc<str> = string_slice(&v0.clone(), 0i32 as i64, 1i32 as i64);
+    let mut v14: i32 = (v13.clone().len() as i32);
+    let mut v15: bool = v2 == v3;
     if v15 {
         1i32
     } else {
-        let v16: bool = v1 == 2i32;
-        let v18: bool = if v16 {
-            let v17: bool = v8 == b'a';
+        let mut v16: bool = v1 == 2i32;
+        let mut v18: bool = if v16 {
+            let mut v17: bool = v8 == b'a';
             v17
         } else {
             false
         };
-        let v20: bool = if v18 {
-            let v19: bool = v6 == 3i32;
+        let mut v20: bool = if v18 {
+            let mut v19: bool = v6 == 3i32;
             v19
         } else {
             false
         };
-        let v22: bool = if v20 {
-            let v21: bool = v10 == 1i32;
+        let mut v22: bool = if v20 {
+            let mut v21: bool = v10 == 1i32;
             v21
         } else {
             false
         };
-        let v24: bool = if v22 {
-            let v23: bool = v12 == 0i32;
+        let mut v24: bool = if v22 {
+            let mut v23: bool = v12 == 0i32;
             v23
         } else {
             false
         };
-        let v26: bool = if v24 {
-            let v25: bool = v14 == 2i32;
+        let mut v26: bool = if v24 {
+            let mut v25: bool = v14 == 2i32;
             v25
         } else {
             false

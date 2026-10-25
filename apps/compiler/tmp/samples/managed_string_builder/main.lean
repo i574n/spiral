@@ -51,21 +51,27 @@ partial def method2 (p0 : Int32) (p1 : String) (p2 : String) : IO String := do
             else
                 v9 := "c"
                 v10 := v9
-            v0 := v3
-            v1 := v4
-            v2 := v10
+            let t3 := v3
+            let t4 := v4
+            let t10 := v10
+            v0 := t3
+            v1 := t4
+            v2 := t10
             continue
 partial def method1 (p0 : Int32) (p1 : String) : IO String := do
     let mut v0 : Int32 := p0
     let mut v1 : String := p1
+    let mut v2 : Int32 := default
+    let mut v3 : String := default
+    let mut v4 : Bool := default
     let mut v5 : Int32 := default
     let mut v6 : Bool := default
     let mut v9 : String := default
     let mut v7 : String := default
     let mut v8 : String := default
-    let v2 : Int32 := (v0 - (1 : Int32))
-    let v3 : String := ("" ++ v1)
-    let v4 : Bool := (v2 == (0 : Int32))
+    v2 := (v0 - (1 : Int32))
+    v3 := ("" ++ v1)
+    v4 := (v2 == (0 : Int32))
     if v4 then
         return v3
     else
@@ -79,14 +85,16 @@ partial def method1 (p0 : Int32) (p1 : String) : IO String := do
             v9 := v8
         return (← method2 v2 v3 v9)
 partial def method0 : IO String := do
+    let mut v0 : Int32 := default
+    let mut v1 : Bool := default
     let mut v2 : String := default
     let mut v3 : Int32 := default
     let mut v4 : Bool := default
     let mut v7 : String := default
     let mut v5 : String := default
     let mut v6 : String := default
-    let v0 : Int32 := (4 : Int32)
-    let v1 : Bool := (v0 == (0 : Int32))
+    v0 := (4 : Int32)
+    v1 := (v0 == (0 : Int32))
     if v1 then
         v2 := ""
         return v2
@@ -101,13 +109,16 @@ partial def method0 : IO String := do
             v7 := v6
         return (← method1 v0 v7)
 partial def spiralMain : IO Int32 := do
+    let mut v0 : String := default
+    let mut v1 : Int32 := default
+    let mut v2 : Bool := default
     let mut v3 : Char := default
     let mut v4 : Bool := default
     let mut v5 : Char := default
     let mut v6 : Bool := default
-    let v0 : String := (← method0)
-    let v1 : Int32 := (Int32.ofNat v0.utf8ByteSize)
-    let v2 : Bool := (v1 == (6 : Int32))
+    v0 := (← method0)
+    v1 := (Int32.ofNat v0.utf8ByteSize)
+    v2 := (v1 == (6 : Int32))
     if v2 then
         v3 := (Char.ofNat (v0.toUTF8.get! (spiralIdx (0 : Int32))).toNat)
         v4 := (v3 == 'a')

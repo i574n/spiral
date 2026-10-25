@@ -35,18 +35,27 @@ partial def fill_0 (p0 : Int32) (p1 : (IO.Ref (Array Int32))) (p2 : Int32) : IO 
         if v3 then
             v1.modify (fun xs => xs.set! (spiralIdx v2) v2)
             v4 := (v2 + (1 : Int32))
-            v2 := v4
+            let t0 := v0
+            let t1 := v1
+            let t4 := v4
+            v0 := t0
+            v1 := t1
+            v2 := t4
             continue
         else
             return ()
 partial def spiralMain : IO Int32 := do
+    let mut v0 : Int32 := default
     let mut v1 : (IO.Ref (Array Int32)) ← IO.mkRef #[]
-    let v0 : Int32 := (6 : Int32)
+    let mut v2 : Int32 := default
+    let mut v3 : Int32 := default
+    let mut v4 : Int32 := default
+    v0 := (6 : Int32)
     v1 := (← IO.mkRef (Array.replicate (spiralIdx (6 : Int32)) (default : Int32)))
-    let v2 : Int32 := (0 : Int32)
+    v2 := (0 : Int32)
     let _ := (← fill_0 v0 v1 v2)
-    let v3 : Int32 := (← spiralIndex (← v1.get) (spiralIdx (5 : Int32)))
-    let v4 : Int32 := (v3 + (2 : Int32))
+    v3 := (← spiralIndex (← v1.get) (spiralIdx (5 : Int32)))
+    v4 := (v3 + (2 : Int32))
     return v4
 end
 def main : IO UInt32 := do

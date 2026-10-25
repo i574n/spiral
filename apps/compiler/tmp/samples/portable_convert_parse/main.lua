@@ -1,8 +1,18 @@
+local function spiral_wrap_unsigned(value, bits)
+    return value % (2 ^ bits)
+end
 local function spiral_wrap_signed(value, bits)
     local modulus = 2 ^ bits
     value = value % modulus
     if value >= modulus / 2 then value = value - modulus end
     return value
+end
+local function spiral_mul_mod32(a, b)
+    a = a % 4294967296
+    b = b % 4294967296
+    local a_low = a % 65536
+    local a_high = (a - a_low) / 65536
+    return (a_low * b + ((a_high * b) % 65536) * 65536) % 4294967296
 end
 local function spiral_bit_combine(a, b, keep)
     a = a % 4294967296
@@ -270,11 +280,12 @@ local getv16 = function()
     end
 end
 local v16 = getv16()
-if v16 ~= nil and v16.tag == "Us0_None" then
+local __v = { v16 }
+if __v[1] ~= nil and __v[1].tag == "Us0_None" then
     local v18 = "none"
     print(v18)
-elseif v16 ~= nil and v16.tag == "Us0_Some" then
-    local v17 = v16._1
+elseif __v[1] ~= nil and __v[1].tag == "Us0_Some" then
+    local v17 = __v[1]._1
     print(v17)
 end
 local v19 = "12x"
@@ -303,11 +314,12 @@ local getv29 = function()
     end
 end
 local v29 = getv29()
-if v29 ~= nil and v29.tag == "Us0_None" then
+local __v = { v29 }
+if __v[1] ~= nil and __v[1].tag == "Us0_None" then
     local v31 = "none"
     print(v31)
-elseif v29 ~= nil and v29.tag == "Us0_Some" then
-    local v30 = v29._1
+elseif __v[1] ~= nil and __v[1].tag == "Us0_Some" then
+    local v30 = __v[1]._1
     print(v30)
 end
 local v32 = ""
@@ -336,11 +348,12 @@ local getv42 = function()
     end
 end
 local v42 = getv42()
-if v42 ~= nil and v42.tag == "Us0_None" then
+local __v = { v42 }
+if __v[1] ~= nil and __v[1].tag == "Us0_None" then
     local v44 = "none"
     print(v44)
-elseif v42 ~= nil and v42.tag == "Us0_Some" then
-    local v43 = v42._1
+elseif __v[1] ~= nil and __v[1].tag == "Us0_Some" then
+    local v43 = __v[1]._1
     print(v43)
 end
 local v45 = "+7"
@@ -369,11 +382,12 @@ local getv55 = function()
     end
 end
 local v55 = getv55()
-if v55 ~= nil and v55.tag == "Us0_None" then
+local __v = { v55 }
+if __v[1] ~= nil and __v[1].tag == "Us0_None" then
     local v57 = "none"
     print(v57)
-elseif v55 ~= nil and v55.tag == "Us0_Some" then
-    local v56 = v55._1
+elseif __v[1] ~= nil and __v[1].tag == "Us0_Some" then
+    local v56 = __v[1]._1
     print(v56)
 end
 return 0

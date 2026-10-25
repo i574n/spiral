@@ -21,17 +21,24 @@ func sp_sum_0(_ p0: UH0) -> Int32 {
     }
 }
 func spiral_main() -> Int32 {
-    let v0: Int32 = 1
-    let v1: Int32 = 2
-    let v2: Int32 = 3
+    var v0: Int32 = 0
+    v0 = 1
+    var v1: Int32 = 0
+    v1 = 2
+    var v2: Int32 = 0
+    v2 = 3
     var v3: UH0 = UH0_Nil()
     v3 = UH0_Nil()
     var v4: UH0 = UH0_Nil()
     v4 = UH0_Cons(f0: v2, f1: v3)
-    let v5: UH0 = UH0_Cons(f0: v1, f1: v4)
-    let v6: UH0 = UH0_Cons(f0: v0, f1: v5)
-    let v7: Int32 = sp_sum_0(v6)
-    let v8: Int32 = (v7 &- 6)
+    var v5: UH0 = UH0_Nil()
+    v5 = UH0_Cons(f0: v1, f1: v4)
+    var v6: UH0 = UH0_Nil()
+    v6 = UH0_Cons(f0: v0, f1: v5)
+    var v7: Int32 = 0
+    v7 = sp_sum_0(v6)
+    var v8: Int32 = 0
+    v8 = (v7 &- 6)
     return v8
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

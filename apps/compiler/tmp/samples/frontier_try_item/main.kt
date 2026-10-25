@@ -1,6 +1,8 @@
 fun spiral_main(): Int {
-    val v1: Int = 42
-    val v3: Int = (v1 - 42)
+    var v1: Int = 0
+    v1 = 42
+    var v3: Int = 0
+    v3 = (v1 - 42)
     return v3
 }
 fun main() {

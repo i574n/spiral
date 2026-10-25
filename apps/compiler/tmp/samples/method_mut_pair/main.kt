@@ -5,22 +5,28 @@ fun sp_method0(p0: Int, p1: String): Mut0 {
     return Mut0(v0, v1)
 }
 fun spiral_main(): Int {
-    val v0: Int = 3
-    val v1: String = "no"
+    var v0: Int = 0
+    v0 = 3
+    var v1: String = ""
+    v1 = "no"
     var v2: Mut0 = Mut0(0, "")
     v2 = sp_method0(v0, v1)
-    val v3: Int = 7
-    val v4: String = "hi"
+    var v3: Int = 0
+    v3 = 7
+    var v4: String = ""
+    v4 = "hi"
     v2.l0 = v3
     v2.l1 = v4
     var v5: Int = 0
     var v6: String = ""
     v5 = v2.l0
     v6 = v2.l1
-    val v7: Boolean = (v5 == 7)
+    var v7: Boolean = false
+    v7 = (v5 == 7)
     var v9: Boolean = false
     if (v7) {
-        val v8: Boolean = (v6 == "hi")
+        var v8: Boolean = false
+        v8 = (v6 == "hi")
         v9 = v8
     } else {
         v9 = false

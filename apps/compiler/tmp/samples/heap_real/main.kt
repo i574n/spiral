@@ -1,9 +1,13 @@
 class Heap0(val l0: Double)
 fun spiral_main(): Int {
-    val v0: Double = 1.5
-    val v1: Heap0 = Heap0(v0)
-    val v2: Double = v1.l0
-    val v3: Boolean = (v2 == 1.5)
+    var v0: Double = 0.0
+    v0 = 1.5
+    var v1: Heap0 = Heap0(0.0)
+    v1 = Heap0(v0)
+    var v2: Double = 0.0
+    v2 = v1.l0
+    var v3: Boolean = false
+    v3 = (v2 == 1.5)
     if (v3) {
         return 0
     } else {

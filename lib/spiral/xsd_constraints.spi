@@ -13,9 +13,9 @@ inl attribute_text (key : string) (attributes : list (string * string)) : string
 
 let rec field_paths (nodes : list xml_node) (acc : list xpath) : list xpath =
     match nodes with
-    | Cons (XmlElement (name, attributes, _), rest) when local_name name = "field" =>
-        field_paths rest (Cons (parse (attribute_text "xpath" attributes), acc))
-    | Cons (_, rest) => field_paths rest acc
+    | XmlElement (name, attributes, _) :: rest when local_name name = "field" =>
+        field_paths rest (parse (attribute_text "xpath" attributes) :: acc)
+    | _ :: rest => field_paths rest acc
     | Nil => listm.rev acc
 
 inl selector_path (nodes : list xml_node) : xpath =
@@ -28,7 +28,7 @@ let rec constraints_of
     : list identity_constraint
     =
     match nodes with
-    | Cons (XmlElement (name, attributes, children), rest) =>
+    | XmlElement (name, attributes, children) :: rest =>
         inl local = local_name name
         inl acc =
             if local = "unique" || local = "key" then
@@ -40,31 +40,31 @@ let rec constraints_of
                         selector = selector_path children
                         fields = field_paths children Nil
                     }
-                Cons (found, acc)
+                found :: acc
             else acc
         inl inner = if local = "element" then attribute_text "name" attributes else element
         constraints_of element rest (constraints_of inner children acc)
-    | Cons (_, rest) => constraints_of element rest acc
+    | _ :: rest => constraints_of element rest acc
     | Nil => acc
 
 inl read_constraints (text : string) : list identity_constraint = listm.rev (constraints_of "" (read_xml text) Nil)
 
 let rec field_values (s : scope) (fields : list xpath) (acc : list string) (complete : bool) : list string * bool =
     match fields with
-    | Cons (field, rest) =>
+    | field :: rest =>
         match eval s field with
         | VNodes (Nil) => field_values s rest acc false
-        | value => field_values s rest (Cons (atom_text value, acc)) complete
+        | value => field_values s rest (atom_text value :: acc) complete
     | Nil => listm.rev acc, complete
 
 let rec joined_key (values : list string) (acc : string) : string =
     match values with
-    | Cons (value, rest) => joined_key rest (if acc = "" then value else acc ++# "\n" ++# value)
+    | value :: rest => joined_key rest (if acc = "" then value else acc ++# "\n" ++# value)
     | Nil => acc
 
 let rec has_key (key : string) (seen : list string) : bool =
     match seen with
-    | Cons (x, rest) => x = key || has_key key rest
+    | x :: rest => x = key || has_key key rest
     | Nil => false
 
 let rec selected_violations
@@ -72,14 +72,14 @@ let rec selected_violations
     : list string
     =
     match items with
-    | Cons (item, rest) =>
+    | item :: rest =>
         inl values, complete = field_values { s with context = item } c.fields Nil true
         if complete = false
-        then selected_violations c s rest seen (if c.is_key then Cons (c.name ++# ": missing key field", acc) else acc)
+        then selected_violations c s rest seen (if c.is_key then (c.name ++# ": missing key field" :: acc) else acc)
         else
             inl key = joined_key values ""
-            if has_key key seen then selected_violations c s rest seen (Cons (c.name ++# ": duplicate " ++# key, acc))
-            else selected_violations c s rest (Cons (key, seen)) acc
+            if has_key key seen then selected_violations c s rest seen (c.name ++# ": duplicate " ++# key :: acc)
+            else selected_violations c s rest (key :: seen) acc
     | Nil => acc
 
 let rec owner_violations
@@ -87,17 +87,17 @@ let rec owner_violations
     : list string
     =
     match owners with
-    | Cons (owner, rest) =>
+    | owner :: rest =>
         match eval { s with context = owner } c.selector with
         | VNodes selected => owner_violations c s rest (selected_violations c s selected Nil acc)
-        | _ => owner_violations c s rest (Cons (c.name ++# ": selector did not select nodes", acc))
+        | _ => owner_violations c s rest (c.name ++# ": selector did not select nodes" :: acc)
     | Nil => acc
 
 let rec owners_named (name : string) (items : list located) (acc : list located) : list located =
     match items with
-    | Cons (item, rest) =>
+    | item :: rest =>
         inl matches = match item.node with XmlElement (n, _, _) => local_name n = name | XmlText _ => false
-        owners_named name rest (if matches then Cons (item, acc) else acc)
+        owners_named name rest (if matches then (item :: acc) else acc)
     | Nil => listm.rev acc
 
 let rec constraint_violations
@@ -105,7 +105,7 @@ let rec constraint_violations
     : list string
     =
     match constraints with
-    | Cons (c, rest) =>
+    | c :: rest =>
         constraint_violations rest s everything (owner_violations c s (owners_named c.element everything Nil) acc)
     | Nil => listm.rev acc
 
@@ -113,7 +113,7 @@ inl validate_constraints (constraints : list identity_constraint) (document : xm
     inl root = document_root document
     constraint_violations constraints
         { context = root; root = root; variables = Nil }
-        (listm.rev (descendants_of (Cons (root, Nil)) Nil))
+        (listm.rev (descendants_of (root :: Nil) Nil))
         Nil
 ///> rust
 test unique_items_are_checked_per_owner =
@@ -123,11 +123,11 @@ test unique_items_are_checked_per_owner =
         ++# "</xs:element></xs:schema>"
     inl constraints = read_constraints schema
     match constraints with
-    | Cons (c, Nil) => if c.name <> "pk_nItem" || c.element <> "det" || c.is_key then failwith "one unique on det"
+    | c :: Nil => if c.name <> "pk_nItem" || c.element <> "det" || c.is_key then failwith "one unique on det"
     | _ => failwith "one constraint"
     inl check (document : string) =
         match read_xml document with
-        | Cons (root, Nil) => listm.length (validate_constraints constraints root)
+        | root :: Nil => listm.length (validate_constraints constraints root)
         | _ => -1i32
     if check "<det><i nItem=\"1\"/><i nItem=\"2\"/></det>" <> 0i32 then failwith "distinct items pass"
     if check "<det><i nItem=\"1\"/><i nItem=\"1\"/></det>" <> 1i32 then failwith "a repeated nItem is one violation"

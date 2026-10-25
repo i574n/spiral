@@ -12,10 +12,10 @@ typedef Array0 String;
 static inline void ArrayDecrefBody0(Array0 * x){
     (void)x;
 }
-static void ArrayDecref0(Array0 * x){
+void ArrayDecref0(Array0 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody0(x); free(x); }
 }
-static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
+Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     uint32_t size = sizeof(Array0) + sizeof(char) * len;
     Array0 * x = malloc(size);
     if (init_at_zero) { memset(x,0,size); }
@@ -23,7 +23,7 @@ static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     x->len = len;
     return x;
 }
-static Array0 * ArrayLit0(uint32_t len, char * ptr){
+Array0 * ArrayLit0(uint32_t len, char * ptr){
     Array0 * x = ArrayCreate0(len, false);
     memcpy(x->ptr, ptr, sizeof(char) * len);
     return x;
@@ -34,21 +34,45 @@ static inline void StringDecref(String * x){
 static inline String * StringLit(uint32_t len, char * ptr){
     return ArrayLit0(len, ptr);
 }
-static String * choose_left0(bool v0){
+String * choose_left0(bool v0){
+    
+    
     if (v0){
-        String * v1 = StringLit(4, "spi");
+        
+        
+        String * v1;
+        v1 = StringLit(4, "spi");
+        
+        
         return v1;
     } else {
-        String * v2 = StringLit(4, "bad");
+        
+        
+        String * v2;
+        v2 = StringLit(4, "bad");
+        
+        
         return v2;
     }
 }
-static String * choose_right1(bool v0){
+String * choose_right1(bool v0){
+    
+    
     if (v0){
-        String * v1 = StringLit(4, "bad");
+        
+        
+        String * v1;
+        v1 = StringLit(4, "bad");
+        
+        
         return v1;
     } else {
-        String * v2 = StringLit(4, "ral");
+        
+        
+        String * v2;
+        v2 = StringLit(4, "ral");
+        
+        
         return v2;
     }
 }
@@ -61,31 +85,74 @@ static inline String * StringConcat(String * left, String * right){
     return result;
 }
 int32_t main(){
-    bool v0 = true;
-    String * v1 = choose_left0(v0);
-    bool v2 = false;
-    String * v3 = choose_right1(v2);
-    String * v4 = StringConcat(v1, v3);
+    
+    
+    bool v0;
+    v0 = true;
+    
+    
+    String * v1;
+    v1 = choose_left0(v0);
+    
+    
+    bool v2;
+    v2 = false;
+    
+    
+    String * v3;
+    v3 = choose_right1(v2);
+    
+    
+    String * v4;
+    v4 = StringConcat(v1, v3);
+    
     StringDecref(v1); StringDecref(v3);
-    int32_t v5 = v4->len-1;
-    bool v6 = v5 == 6l;
+    int32_t v5;
+    v5 = v4->len-1;
+    
+    
+    bool v6;
+    v6 = v5 == 6l;
+    
+    
     if (v6){
-        char v7 = v4->ptr[0l];
-        bool v8 = v7 == 's';
+        
+        
+        char v7;
+        v7 = v4->ptr[0l];
+        
+        
+        bool v8;
+        v8 = v7 == 's';
+        
+        
         if (v8){
-            char v9 = v4->ptr[5l];
+            
+            
+            char v9;
+            v9 = v4->ptr[5l];
+            
             StringDecref(v4);
-            bool v10 = v9 == 'l';
+            bool v10;
+            v10 = v9 == 'l';
+            
+            
             if (v10){
+                
+                
                 return 0l;
             } else {
+                
+                
                 return 1l;
             }
         } else {
+            
             StringDecref(v4);
             return 2l;
         }
     } else {
+        
         StringDecref(v4);
         return 3l;
     }

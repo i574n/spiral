@@ -35,10 +35,12 @@ func sp_invalid_middle_0(_ p0: String) -> String {
     return v1
 }
 func spiral_main() -> Int32 {
-    let v0: String = "é"
+    var v0: String = ""
+    v0 = "é"
     var v1: String = ""
     v1 = sp_invalid_middle_0(v0)
-    let v2: Int32 = spiralStringLength(v1)
+    var v2: Int32 = 0
+    v2 = spiralStringLength(v1)
     return v2
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

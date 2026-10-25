@@ -41,19 +41,28 @@ func sp_second_codepoint_1(_ p0: String) -> String {
     return v1
 }
 func spiral_main() -> Int32 {
-    let v0: String = "éλ"
+    var v0: String = ""
+    v0 = "éλ"
     var v1: String = ""
     v1 = sp_first_codepoint_0(v0)
-    let v2: String = sp_second_codepoint_1(v0)
-    let v3: String = (v1 + v2)
-    let v4: Int32 = spiralStringLength(v1)
-    let v5: Bool = (v4 == 2)
+    var v2: String = ""
+    v2 = sp_second_codepoint_1(v0)
+    var v3: String = ""
+    v3 = (v1 + v2)
+    var v4: Int32 = 0
+    v4 = spiralStringLength(v1)
+    var v5: Bool = false
+    v5 = (v4 == 2)
     if (v5) {
-        let v6: Int32 = spiralStringLength(v2)
-        let v7: Bool = (v6 == 2)
+        var v6: Int32 = 0
+        v6 = spiralStringLength(v2)
+        var v7: Bool = false
+        v7 = (v6 == 2)
         if (v7) {
-            let v8: Int32 = spiralStringLength(v3)
-            let v9: Bool = (v8 == 4)
+            var v8: Int32 = 0
+            v8 = spiralStringLength(v3)
+            var v9: Bool = false
+            v9 = (v8 == 4)
             if (v9) {
                 return 0
             } else {

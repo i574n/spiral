@@ -8,7 +8,7 @@ union step s =
     | Continue : s
     | Stop
 
-type actor s m = { init : s; handle : s -> m -> step s }
+type actor s m = { init : () -> s; handle : s -> m -> step s }
 
 type step_handle s m =
     {
@@ -22,7 +22,7 @@ type reply_cell t = mut (option t)
 
 /// ### spawn
 inl spawn forall s m. (spec : actor s m) : step_handle s m =
-    { state = mut (Some spec.init); mailbox = mut []; draining = mut false; handle = spec.handle }
+    { state = mut (Some (spec.init ())); mailbox = mut []; draining = mut false; handle = spec.handle }
 
 /// ### drain
 inl drain forall s m. (target : step_handle s m) : () =
@@ -70,7 +70,7 @@ union counter_message r =
 
 inl counter_actor forall r. (answer : r -> i32 -> ()) : actor i32 (counter_message r) =
     {
-        init = 0i32
+        init = fun () => 0i32
         handle = fun total message =>
             match message with
             | Add n => Continue (total + n)
@@ -92,7 +92,7 @@ inl counter_total forall h r.
     ask counter Read
 
 inl otp_start forall s m. (spec : actor s m) : erlang_process.subject m =
-    otp_actor.new spec.init
+    otp_actor.new_with_init 10000i32 spec.init
     |> otp_actor.on_message fun state message =>
         match spec.handle state message with
         | Continue next => otp_actor.continue next
@@ -110,15 +110,42 @@ test counter_counts_on_every_backend =
     run_target function
         | Gleam => fun () =>
             counter_total otp_start otp_actor.send
-                fun inbox request => otp_actor.call inbox 1000i32 request
+                fun inbox request => otp_actor.call inbox 10000i32 request
                 erlang_process.send
         | _ => fun () => counter_total spawn send call reply
     |> _assert_eq 7i32
 
 test stopped_actor_ignores_later_messages =
-    inl counter = spawn { init = 0i32; handle = fun total n => if n < 0i32 then Stop else Continue (total + n) }
+    inl counter =
+        spawn {
+            init = fun () => 0i32
+            handle = fun total n => if n < 0i32 then Stop else Continue (total + n)
+        }
     send counter 5i32
     send counter -1i32
     send counter 9i32
     *counter.state
     |> _assert_eq None
+
+/// ### reactor_actor
+inl reactor_actor forall s i o. (program : reactors.reactor s i o) (clock : () -> i64) (emit : o -> ()) : actor s i =
+    inl react_once (state : s) (message : i) : step s =
+        inl next, out = program.react state { time = clock (); micro = 0i32 } message
+        emit out
+        Continue next
+    { init = fun () => program.init; handle = react_once }
+
+///> c
+///> rust
+test reactor_actor_steps_each_message_at_the_clock_tag =
+    open reactors
+    inl last = mut (-1i64)
+    inl emit (out : signal i64) : () =
+        match out with
+        | Present v => last <- v
+        | Absent => ()
+    inl counter = spawn (reactor_actor (sink ()) (fun () => 0i64) emit)
+    send counter (Present 3i64)
+    send counter Absent
+    send counter (Present 4i64)
+    *last |> _assert_eq 7i64

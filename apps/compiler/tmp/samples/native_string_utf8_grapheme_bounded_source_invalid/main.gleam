@@ -5,6 +5,9 @@ pub fn spiral_string_length(text: String) -> Int {
   bit_array.byte_size(bit_array.from_string(text))
 }
 
+@external(erlang, "erlang", "halt")
+@external(javascript, "node:process", "exit")
+pub fn spiral_halt(code: Int) -> a
 
 pub fn spiral_string_index(text: String, index: Int) -> String {
   case bit_array.slice(bit_array.from_string(text), index, 1) {
@@ -32,12 +35,35 @@ fn spiral_string_starts_character(bytes: BitArray, at: Int) -> Bool {
   }
 }
 
+pub fn spiral_string_slice(text: String, from: Int, to: Int) -> String {
+  let bytes = bit_array.from_string(text)
+  let length = bit_array.byte_size(bytes)
+  case from < 0 || from > length || to < from - 1 || to >= length {
+    True -> panic as "spiral string slice: out of range"
+    False ->
+      case to < from {
+        True -> ""
+        False ->
+          case spiral_string_starts_character(bytes, from) && spiral_string_starts_character(bytes, to + 1) {
+            False -> panic as "spiral string slice: splits a character"
+            True ->
+              case bit_array.slice(bytes, from, to - from + 1) {
+                Ok(part) -> spiral_string_of_checked_bytes(part)
+                Error(_) -> panic as "spiral string slice: out of range"
+              }
+          }
+      }
+  }
+}
 
 pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
   let half = int.bitwise_shift_left(1, bits - 1)
   int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
 }
 
+pub fn spiral_wrap_unsigned(value: Int, bits: Int) -> Int {
+  int.bitwise_and(value, int.bitwise_shift_left(1, bits) - 1)
+}
 
 pub fn runtime_byte_1(v0: String, v1: Int) -> String {
     let v2 = spiral_string_index(v0, v1)
@@ -505,141 +531,141 @@ pub fn utf8_grapheme_count_bounded_loop_2(v0: String, v1: Int, v2: Int, v3: Int)
     }
 }
 pub fn main() {
-    let v0 = "éZ"
-    let v1 = 1
-    let v2 = utf8_scalar_at_byte_offset_0(v0, v1)
-    let v3 = v2 >= 768
-    let v33 =
-        case v3 {
-            True -> {
-                let v4 = v2 <= 879
-                case v4 {
-                    True -> {
-                        True
-                    }
-                    False -> {
-                        let v5 = v2 >= 6832
-                        case v5 {
-                            True -> {
-                                let v6 = v2 <= 6911
-                                case v6 {
-                                    True -> {
-                                        True
-                                    }
-                                    False -> {
-                                        let v7 = v2 >= 7616
-                                        case v7 {
-                                            True -> {
-                                                let v8 = v2 <= 7679
-                                                case v8 {
-                                                    True -> {
-                                                        True
-                                                    }
-                                                    False -> {
-                                                        let v9 = v2 >= 8400
-                                                        case v9 {
-                                                            True -> {
-                                                                let v10 = v2 <= 8447
-                                                                case v10 {
-                                                                    True -> {
-                                                                        True
-                                                                    }
-                                                                    False -> {
-                                                                        let v11 = v2 >= 65024
-                                                                        case v11 {
-                                                                            True -> {
-                                                                                let v12 = v2 <= 65039
-                                                                                case v12 {
-                                                                                    True -> {
-                                                                                        True
-                                                                                    }
-                                                                                    False -> {
-                                                                                        let v13 = v2 >= 65056
-                                                                                        case v13 {
-                                                                                            True -> {
-                                                                                                let v14 = v2 <= 65071
-                                                                                                case v14 {
-                                                                                                    True -> {
-                                                                                                        True
-                                                                                                    }
-                                                                                                    False -> {
-                                                                                                        let v15 = v2 >= 127995
-                                                                                                        case v15 {
-                                                                                                            True -> {
-                                                                                                                let v16 = v2 <= 127999
-                                                                                                                case v16 {
-                                                                                                                    True -> {
-                                                                                                                        True
-                                                                                                                    }
-                                                                                                                    False -> {
-                                                                                                                        let v17 = v2 >= 917760
-                                                                                                                        case v17 {
-                                                                                                                            True -> {
-                                                                                                                                let v18 = v2 <= 917999
-                                                                                                                                v18
-                                                                                                                            }
-                                                                                                                            False -> {
-                                                                                                                                False
-                                                                                                                            }
+let v0 = "éZ"
+let v1 = 1
+let v2 = utf8_scalar_at_byte_offset_0(v0, v1)
+let v3 = v2 >= 768
+let v33 =
+    case v3 {
+        True -> {
+            let v4 = v2 <= 879
+            case v4 {
+                True -> {
+                    True
+                }
+                False -> {
+                    let v5 = v2 >= 6832
+                    case v5 {
+                        True -> {
+                            let v6 = v2 <= 6911
+                            case v6 {
+                                True -> {
+                                    True
+                                }
+                                False -> {
+                                    let v7 = v2 >= 7616
+                                    case v7 {
+                                        True -> {
+                                            let v8 = v2 <= 7679
+                                            case v8 {
+                                                True -> {
+                                                    True
+                                                }
+                                                False -> {
+                                                    let v9 = v2 >= 8400
+                                                    case v9 {
+                                                        True -> {
+                                                            let v10 = v2 <= 8447
+                                                            case v10 {
+                                                                True -> {
+                                                                    True
+                                                                }
+                                                                False -> {
+                                                                    let v11 = v2 >= 65024
+                                                                    case v11 {
+                                                                        True -> {
+                                                                            let v12 = v2 <= 65039
+                                                                            case v12 {
+                                                                                True -> {
+                                                                                    True
+                                                                                }
+                                                                                False -> {
+                                                                                    let v13 = v2 >= 65056
+                                                                                    case v13 {
+                                                                                        True -> {
+                                                                                            let v14 = v2 <= 65071
+                                                                                            case v14 {
+                                                                                                True -> {
+                                                                                                    True
+                                                                                                }
+                                                                                                False -> {
+                                                                                                    let v15 = v2 >= 127995
+                                                                                                    case v15 {
+                                                                                                        True -> {
+                                                                                                            let v16 = v2 <= 127999
+                                                                                                            case v16 {
+                                                                                                                True -> {
+                                                                                                                    True
+                                                                                                                }
+                                                                                                                False -> {
+                                                                                                                    let v17 = v2 >= 917760
+                                                                                                                    case v17 {
+                                                                                                                        True -> {
+                                                                                                                            let v18 = v2 <= 917999
+                                                                                                                            v18
+                                                                                                                        }
+                                                                                                                        False -> {
+                                                                                                                            False
                                                                                                                         }
                                                                                                                     }
                                                                                                                 }
                                                                                                             }
-                                                                                                            False -> {
-                                                                                                                False
-                                                                                                            }
+                                                                                                        }
+                                                                                                        False -> {
+                                                                                                            False
                                                                                                         }
                                                                                                     }
                                                                                                 }
                                                                                             }
-                                                                                            False -> {
-                                                                                                False
-                                                                                            }
+                                                                                        }
+                                                                                        False -> {
+                                                                                            False
                                                                                         }
                                                                                     }
                                                                                 }
                                                                             }
-                                                                            False -> {
-                                                                                False
-                                                                            }
+                                                                        }
+                                                                        False -> {
+                                                                            False
                                                                         }
                                                                     }
                                                                 }
                                                             }
-                                                            False -> {
-                                                                False
-                                                            }
+                                                        }
+                                                        False -> {
+                                                            False
                                                         }
                                                     }
                                                 }
                                             }
-                                            False -> {
-                                                False
-                                            }
+                                        }
+                                        False -> {
+                                            False
                                         }
                                     }
                                 }
                             }
-                            False -> {
-                                False
-                            }
+                        }
+                        False -> {
+                            False
                         }
                     }
                 }
             }
-            False -> {
-                False
-            }
-        }
-    case v33 {
-        True -> {
-            panic as "UTF-8 grapheme byte offset is inside a bounded grapheme cluster."
         }
         False -> {
-            let v35 = 1
-            let v36 = 0
-            let v37 = 4
-            utf8_grapheme_count_bounded_loop_2(v0, v35, v36, v37)
+            False
         }
     }
+case v33 {
+    True -> {
+        panic as "UTF-8 grapheme byte offset is inside a bounded grapheme cluster."
+    }
+    False -> {
+        let v35 = 1
+        let v36 = 0
+        let v37 = 4
+        utf8_grapheme_count_bounded_loop_2(v0, v35, v36, v37)
+    }
+}
 }

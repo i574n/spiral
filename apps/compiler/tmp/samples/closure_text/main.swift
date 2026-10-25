@@ -14,8 +14,10 @@ func f_c0(_ v0: String) -> (Int32) -> String {
     }
 }
 func spiral_main() -> Int32 {
-    let v0: String = "hi"
-    let v1: (Int32) -> String = f_c0(v0)
+    var v0: String = ""
+    v0 = "hi"
+    var v1: (Int32) -> String = { (_: Int32) -> String in fatalError("unreachable closure") }
+    v1 = f_c0(v0)
     var v2: String = ""
     v2 = v1(1)
     var v3: Bool = false

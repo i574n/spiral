@@ -63,11 +63,15 @@ partial def score_0 (p0 : U0) : IO Int32 := do
         v1 := f1
         return v1
 partial def spiralMain : IO Int32 := do
+    let mut v0 : Bool := default
+    let mut v1 : Int32 := default
+    let mut v2 : String := default
+    let mut v3 : Bool := default
     let mut v6 : U0 := default
-    let v0 : Bool := true
-    let v1 : Int32 := (7 : Int32)
-    let v2 : String := "hi"
-    let v3 : Bool := true
+    v0 := true
+    v1 := (7 : Int32)
+    v2 := "hi"
+    v3 := true
     if v0 then
         v6 := (U0.All v1 v2 v3)
     else

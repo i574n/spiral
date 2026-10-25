@@ -4,21 +4,28 @@ func sp_target_global_0(_ p0: String) {
     var v0: String = p0
 }
 func spiral_main() -> Int32 {
-    let v0: String = "SPIRAL_TARGET_GLOBAL_RUST_PRELUDE_pos-p_B64:Ly9Q"
+    var v0: String = ""
+    v0 = "SPIRAL_TARGET_GLOBAL_RUST_PRELUDE_pos-p_B64:Ly9Q"
     sp_target_global_0(v0)
     sp_target_global_0(v0)
-    let v1: String = "SPIRAL_TARGET_GLOBAL_RUST_BEFORE_MAIN_pos-b_B64:Ly9C"
+    var v1: String = ""
+    v1 = "SPIRAL_TARGET_GLOBAL_RUST_BEFORE_MAIN_pos-b_B64:Ly9C"
     sp_target_global_0(v1)
-    let v2: String = "SPIRAL_TARGET_GLOBAL_RUST_AFTER_MAIN_test-item_B64:Zm4gc3BpcmFsX2F0dHJpYnV0ZV9zbW9rZSgpIHsKICAgIGFzc2VydF9lcSEoNiAqIDcsIDQyKTsKfQo="
+    var v2: String = ""
+    v2 = "SPIRAL_TARGET_GLOBAL_RUST_AFTER_MAIN_test-item_B64:Zm4gc3BpcmFsX2F0dHJpYnV0ZV9zbW9rZSgpIHsKICAgIGFzc2VydF9lcSEoNiAqIDcsIDQyKTsKfQo="
     sp_target_global_0(v2)
-    let v3: String = "SPIRAL_ITEM_METADATA_TEST_test-item"
+    var v3: String = ""
+    v3 = "SPIRAL_ITEM_METADATA_TEST_test-item"
     sp_target_global_0(v3)
-    let v4: String = "SPIRAL_TARGET_GLOBAL_DELPHI_PRELUDE_pos-p_B64:Ly9Q"
+    var v4: String = ""
+    v4 = "SPIRAL_TARGET_GLOBAL_DELPHI_PRELUDE_pos-p_B64:Ly9Q"
     sp_target_global_0(v4)
     sp_target_global_0(v4)
-    let v5: String = "SPIRAL_TARGET_GLOBAL_DELPHI_BEFORE_MAIN_pos-b_B64:Ly9C"
+    var v5: String = ""
+    v5 = "SPIRAL_TARGET_GLOBAL_DELPHI_BEFORE_MAIN_pos-b_B64:Ly9C"
     sp_target_global_0(v5)
-    let v6: String = "SPIRAL_TARGET_GLOBAL_DELPHI_AFTER_MAIN_test-item_B64:cHJvY2VkdXJlIFNwaXJhbFRhcmdldEdsb2JhbFNtb2tlOwpiZWdpbgogIGlmIDYgKiA3IDw+IDQyIHRoZW4gSGFsdCgxKTsKZW5kOwo="
+    var v6: String = ""
+    v6 = "SPIRAL_TARGET_GLOBAL_DELPHI_AFTER_MAIN_test-item_B64:cHJvY2VkdXJlIFNwaXJhbFRhcmdldEdsb2JhbFNtb2tlOwpiZWdpbgogIGlmIDYgKiA3IDw+IDQyIHRoZW4gSGFsdCgxKTsKZW5kOwo="
     sp_target_global_0(v6)
     return 0
 }

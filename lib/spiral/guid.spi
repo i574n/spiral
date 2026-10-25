@@ -77,6 +77,41 @@ inl zig_random_u64 () : u64 =
         """
     $'spiralRandomU64()' : u64
 
+/// ### guid_hex
+inl guid_hex (width : i32) (n : u64) : string =
+    let rec go (left : i32) (rest : u64) (acc : string) : string =
+        if left <= 0i32 then acc
+        else
+            inl digit : i32 = conv (rest &&& 15u64)
+            go (left - 1i32) (rest >>> 4i32) (sm'.slice digit digit "0123456789abcdef" ++# acc)
+    go width n ""
+
+/// ### guid_v4_text
+inl guid_v4_text (a : u64) (b : u64) : string =
+    guid_hex 8i32 (a &&& 4294967295u64)
+    ++# "-" ++# guid_hex 4i32 ((a >>> 32i32) &&& 65535u64)
+    ++# "-4" ++# guid_hex 3i32 ((a >>> 48i32) &&& 4095u64)
+    ++# "-" ++# guid_hex 4i32 ((b &&& 16383u64) ||| 32768u64)
+    ++# "-" ++# guid_hex 12i32 ((b >>> 16i32) &&& 281474976710655u64)
+
+/// ### rust_hasher
+nominal rust_hasher = $'std::collections::hash_map::DefaultHasher'
+
+/// ### rust_unix_nanos
+inl rust_unix_nanos () : rust.u128 =
+    $'std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_nanos()'
+
+/// ### rust_random_pair
+inl rust_random_pair () : u64 * u64 =
+    inl hasher = $'std::hash::BuildHasher::build_hasher(&std::collections::hash_map::RandomState::new())' : rust_hasher
+    hasher |> rust.to_mut
+    inl nanos = rust_unix_nanos ()
+    $'std::hash::Hasher::write_u128(&mut !hasher, !nanos)' : ()
+    inl a = $'std::hash::Hasher::finish(&!hasher)' : u64
+    $'std::hash::Hasher::write_u64(&mut !hasher, !a)' : ()
+    inl b = $'std::hash::Hasher::finish(&!hasher)' : u64
+    a, b
+
 /// ### new_raw_guid
 inl new_raw_guid () : guid =
     backend_switch {
@@ -92,16 +127,10 @@ inl new_raw_guid () : guid =
         Zig = fun () =>
             inl a = zig_random_u64 ()
             inl b = zig_random_u64 ()
-            $'(std.fmt.allocPrint(spiral_gpa, "{x:0>8}-{x:0>4}-4{x:0>3}-{x:0>4}-{x:0>12}", .{ !a & 0xffffffff, (!a >> \
-                32) & 0xffff, (!a >> 48) & 0xfff, (!b & 0x3fff) | 0x8000, (!b >> 16) & 0xffffffffffff }) catch \
-                \@panic("out of memory"))' : guid
-        Rust = fun () => $'{ use std::hash::{BuildHasher, Hasher}; let mut h = \
-            std::collections::hash_map::RandomState::new().build_hasher(); \
-            h.write_u128(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| \
-            d.as_nanos()).unwrap_or(0)); let a = h.finish(); h.write_u64(a); let b = h.finish(); let a = (a & \
-            0xffff_ffff_ffff_0fff) | 0x4000; let b = (b & 0x3fff_ffff_ffff_ffff) | 0x8000_0000_0000_0000; \
-            Rc::<str>::from(format\!("{:08x}-{:04x}-{:04x}-{:04x}-{:012x}", a >> 32, (a >> 16) & 0xffff, a & 0xffff, \
-            b >> 48, b & 0xffff_ffff_ffff)) }' : guid
+            guid_v4_text a b |> new_guid
+        Rust = fun () =>
+            inl a, b = rust_random_pair ()
+            guid_v4_text a b |> new_guid
     }
 
 /// ### hash_guid

@@ -96,7 +96,8 @@ func sp_score_0(_ p0: US1) -> Int32 {
                     v14 = (v10 == 7)
                     var v16: Bool = false
                     if (v14) {
-                        let v15: Bool = (v11 == "hi")
+                        var v15: Bool = false
+                        v15 = (v11 == "hi")
                         v16 = v15
                     } else {
                         v16 = false
@@ -143,9 +144,12 @@ func sp_score_0(_ p0: US1) -> Int32 {
     }
 }
 func spiral_main() -> Int32 {
-    let v0: Int32 = 7
-    let v1: String = "hi"
-    let v2: Heap0 = Heap0(l0: v0, l1: v1)
+    var v0: Int32 = 0
+    v0 = 7
+    var v1: String = ""
+    v1 = "hi"
+    var v2: Heap0 = Heap0(l0: 0, l1: "")
+    v2 = Heap0(l0: v0, l1: v1)
     var v3: Int32 = 0
     v3 = 4
     var v4: String = ""
@@ -186,34 +190,49 @@ func spiral_main() -> Int32 {
     v21 = Heap4(l0: v20)
     var v22: US1 = US1_Absent()
     v22 = v19(2)
-    let v23: Heap4 = Heap4(l0: v22)
-    let v24: US1 = v19(0)
-    let v25: Heap4 = Heap4(l0: v24)
+    var v23: Heap4 = Heap4(l0: US1_Absent())
+    v23 = Heap4(l0: v22)
+    var v24: US1 = US1_Absent()
+    v24 = v19(0)
+    var v25: Heap4 = Heap4(l0: US1_Absent())
+    v25 = Heap4(l0: v24)
     var v26: SpiralArray<Heap4> = SpiralArray<Heap4>([])
     v26 = SpiralArray<Heap4>(Array(repeating: Heap4(l0: US1_Absent()), count: Int(3)))
     v26.items[Int(0)] = v21
     v26.items[Int(1)] = v23
     v26.items[Int(2)] = v25
-    let v27: Heap4 = v26.items[Int(0)]
-    let v28: US1 = v27.l0
-    let v29: Heap4 = v26.items[Int(1)]
-    let v30: US1 = v29.l0
-    let v31: Heap4 = v26.items[Int(2)]
-    let v32: US1 = v31.l0
-    let v33: Int32 = sp_score_0(v28)
-    let v34: Int32 = sp_score_0(v30)
-    let v35: Int32 = sp_score_0(v32)
-    let v36: Bool = (v33 == 0)
+    var v27: Heap4 = Heap4(l0: US1_Absent())
+    v27 = v26.items[Int(0)]
+    var v28: US1 = US1_Absent()
+    v28 = v27.l0
+    var v29: Heap4 = Heap4(l0: US1_Absent())
+    v29 = v26.items[Int(1)]
+    var v30: US1 = US1_Absent()
+    v30 = v29.l0
+    var v31: Heap4 = Heap4(l0: US1_Absent())
+    v31 = v26.items[Int(2)]
+    var v32: US1 = US1_Absent()
+    v32 = v31.l0
+    var v33: Int32 = 0
+    v33 = sp_score_0(v28)
+    var v34: Int32 = 0
+    v34 = sp_score_0(v30)
+    var v35: Int32 = 0
+    v35 = sp_score_0(v32)
+    var v36: Bool = false
+    v36 = (v33 == 0)
     var v38: Bool = false
     if (v36) {
-        let v37: Bool = (v34 == 1)
+        var v37: Bool = false
+        v37 = (v34 == 1)
         v38 = v37
     } else {
         v38 = false
     }
     var v40: Bool = false
     if (v38) {
-        let v39: Bool = (v35 == 1)
+        var v39: Bool = false
+        v39 = (v35 == 1)
         v40 = v39
     } else {
         v40 = false

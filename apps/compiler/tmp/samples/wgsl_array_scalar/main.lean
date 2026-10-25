@@ -25,31 +25,45 @@ def spiralStringSlice (s : String) (a b : Int) : IO String := do
   else pure (String.Pos.Raw.extract s ⟨a.toNat⟩ ⟨(b + 1).toNat⟩)
 mutual
 partial def spiralMain : IO Int32 := do
+    let mut v0 : Int32 := default
     let mut v1 : (IO.Ref (Array Int32)) ← IO.mkRef #[]
+    let mut v2 : Int32 := default
+    let mut v3 : Int32 := default
     let mut v4 : (IO.Ref (Array Bool)) ← IO.mkRef #[]
+    let mut v5 : Int32 := default
+    let mut v6 : Int32 := default
+    let mut v7 : Int32 := default
+    let mut v8 : Int32 := default
+    let mut v9 : Int32 := default
+    let mut v10 : Int32 := default
+    let mut v11 : Int32 := default
+    let mut v12 : Bool := default
     let mut v15 : Int32 := default
     let mut v13 : Bool := default
-    let v0 : Int32 := (5 : Int32)
+    let mut v16 : Int32 := default
+    let mut v17 : Int32 := default
+    let mut v18 : Int32 := default
+    v0 := (5 : Int32)
     v1 := (← IO.mkRef (Array.replicate (spiralIdx v0) (default : Int32)))
     v1.modify (fun xs => xs.set! (spiralIdx (0 : Int32)) (0 : Int32))
     v1.modify (fun xs => xs.set! (spiralIdx (1 : Int32)) (1 : Int32))
     v1.modify (fun xs => xs.set! (spiralIdx (2 : Int32)) (4 : Int32))
-    let v2 : Int32 := (3 : Int32)
+    v2 := (3 : Int32)
     v1.modify (fun xs => xs.set! (spiralIdx v2) (9 : Int32))
-    let v3 : Int32 := (v2 + (1 : Int32))
+    v3 := (v2 + (1 : Int32))
     v1.modify (fun xs => xs.set! (spiralIdx v3) (16 : Int32))
     v4 := (← IO.mkRef (Array.replicate (spiralIdx (3 : Int32)) (default : Bool)))
     v4.modify (fun xs => xs.set! (spiralIdx (0 : Int32)) false)
     v4.modify (fun xs => xs.set! (spiralIdx (1 : Int32)) true)
     v4.modify (fun xs => xs.set! (spiralIdx (2 : Int32)) false)
-    let v5 : Int32 := (← spiralIndex (← v1.get) (spiralIdx (1 : Int32)))
-    let v6 : Int32 := (← spiralIndex (← v1.get) (spiralIdx (2 : Int32)))
-    let v7 : Int32 := (v5 + v6)
-    let v8 : Int32 := (← spiralIndex (← v1.get) (spiralIdx (3 : Int32)))
-    let v9 : Int32 := (v7 + v8)
-    let v10 : Int32 := (← spiralIndex (← v1.get) (spiralIdx (4 : Int32)))
-    let v11 : Int32 := (v9 + v10)
-    let v12 : Bool := (← spiralIndex (← v4.get) (spiralIdx (1 : Int32)))
+    v5 := (← spiralIndex (← v1.get) (spiralIdx (1 : Int32)))
+    v6 := (← spiralIndex (← v1.get) (spiralIdx (2 : Int32)))
+    v7 := (v5 + v6)
+    v8 := (← spiralIndex (← v1.get) (spiralIdx (3 : Int32)))
+    v9 := (v7 + v8)
+    v10 := (← spiralIndex (← v1.get) (spiralIdx (4 : Int32)))
+    v11 := (v9 + v10)
+    v12 := (← spiralIndex (← v4.get) (spiralIdx (1 : Int32)))
     if v12 then
         v13 := (← spiralIndex (← v4.get) (spiralIdx (0 : Int32)))
         if v13 then
@@ -58,9 +72,9 @@ partial def spiralMain : IO Int32 := do
             v15 := (100 : Int32)
     else
         v15 := (0 : Int32)
-    let v16 : Int32 := (v11 + v15)
-    let v17 : Int32 := (Int32.ofNat (← v1.get).size)
-    let v18 : Int32 := (v16 + v17)
+    v16 := (v11 + v15)
+    v17 := (Int32.ofNat (← v1.get).size)
+    v18 := (v16 + v17)
     return v18
 end
 def main : IO UInt32 := do

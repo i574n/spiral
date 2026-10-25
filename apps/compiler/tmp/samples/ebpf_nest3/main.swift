@@ -17,17 +17,20 @@ func sp_method0(_ p0: Int32, _ p1: UInt32, _ p2: Float) -> Int32 {
     v3 = spiral_tuple232.0
     v4 = spiral_tuple232.1
     v5 = spiral_tuple232.2
-    let v6: Bool = (v3 == 2)
+    var v6: Bool = false
+    v6 = (v3 == 2)
     var v8: Bool = false
     if (v6) {
-        let v7: Bool = (v4 == UInt32(3))
+        var v7: Bool = false
+        v7 = (v4 == UInt32(3))
         v8 = v7
     } else {
         v8 = false
     }
     var v10: Bool = false
     if (v8) {
-        let v9: Bool = (v5 == (1.5 as Float))
+        var v9: Bool = false
+        v9 = (v5 == (1.5 as Float))
         v10 = v9
     } else {
         v10 = false
@@ -39,9 +42,12 @@ func sp_method0(_ p0: Int32, _ p1: UInt32, _ p2: Float) -> Int32 {
     }
 }
 func spiral_main() -> Int32 {
-    let v0: Int32 = 2
-    let v1: UInt32 = UInt32(3)
-    let v2: Float = (1.5 as Float)
+    var v0: Int32 = 0
+    v0 = 2
+    var v1: UInt32 = UInt32(0)
+    v1 = UInt32(3)
+    var v2: Float = (0.0 as Float)
+    v2 = (1.5 as Float)
     return sp_method0(v0, v1, v2)
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

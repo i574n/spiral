@@ -8,17 +8,17 @@ function spiral_array_set<T>(array: T[], index: number, value: T): void {
 }
 function f_c0(v0: number): ((a0: number) => Array<number>) {
     return (v1: number): Array<number> => {
-        const v2: Array<number> = new Array<number>(1).fill(0);
+        let v2: Array<number> = new Array<number>(1).fill(0);
         spiral_array_set(v2, 0, v0);
         return v2;
     };
 }
 export function main(): number {
-    const v0: number = 7;
-    const v1: ((a0: number) => Array<number>) = f_c0(v0);
-    const v2: Array<number> = v1(1);
-    const v3: number = spiral_array_index(v2, 0);
-    const v4: boolean = v3 === 7;
+    let v0: number = 7;
+    let v1: ((a0: number) => Array<number>) = f_c0(v0);
+    let v2: Array<number> = v1(1);
+    let v3: number = spiral_array_index(v2, 0);
+    let v4: boolean = v3 === 7;
     if (v4) {
         return 0;
     } else {

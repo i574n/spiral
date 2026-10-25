@@ -6,12 +6,15 @@ fun sp_method1(p0: Int, p1: UInt): UInt {
         v2 = (v0 - 1)
         var v3: UInt = 0u
         v3 = (v1 + 3000000000u)
-        val v4: Boolean = (v2 == 0)
+        var v4: Boolean = false
+        v4 = (v2 == 0)
         if (v4) {
             return v3
         } else {
-            v0 = v2
-            v1 = v3
+            val t333_2: Int = v2
+            val t367_3: UInt = v3
+            v0 = t333_2
+            v1 = t367_3
             continue
         }
     }

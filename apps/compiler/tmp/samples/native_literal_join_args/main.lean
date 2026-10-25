@@ -27,12 +27,16 @@ mutual
 partial def f_0 (p0 : String) (p1 : Int32) : IO Int32 := do
     let mut v0 : String := p0
     let mut v1 : Int32 := p1
-    let v2 : Int32 := (Int32.ofNat v0.utf8ByteSize)
-    let v3 : Int32 := (v2 + v1)
+    let mut v2 : Int32 := default
+    let mut v3 : Int32 := default
+    v2 := (Int32.ofNat v0.utf8ByteSize)
+    v3 := (v2 + v1)
     return v3
 partial def spiralMain : IO Int32 := do
-    let v0 : String := "abc"
-    let v1 : Int32 := (1 : Int32)
+    let mut v0 : String := default
+    let mut v1 : Int32 := default
+    v0 := "abc"
+    v1 := (1 : Int32)
     return (← f_0 v0 v1)
 end
 def main : IO UInt32 := do

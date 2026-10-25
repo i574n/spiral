@@ -2,8 +2,8 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 fn spiral_main() -> i32 {
-    let v0: i64 = 3000000000i64;
-    let v1: bool = v0 > 2999999999i64;
+    let mut v0: i64 = 3000000000i64;
+    let mut v1: bool = v0 > 2999999999i64;
     if v1 {
         7i32
     } else {

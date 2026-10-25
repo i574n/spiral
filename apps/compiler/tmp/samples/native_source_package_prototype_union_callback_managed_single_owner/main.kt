@@ -1,5 +1,5 @@
 sealed interface US0 { val tag: Int }
-object US0_Idle : US0 { override val tag: Int = 0 }
+class US0_Idle : US0 { override val tag: Int = 0 }
 data class US0_Text(val f0: String) : US0 { override val tag: Int = 1 }
 fun closure0(): (Int) -> US0 {
     fun body(v0: Int): US0 {
@@ -14,8 +14,9 @@ fun sp_method0(p0: (Int) -> US0): US0 {
     return v0(2)
 }
 fun spiral_main(): Int {
-    val v0: (Int) -> US0 = closure0()
-    var v1: US0 = US0_Idle
+    var v0: (Int) -> US0 = { _: Int -> throw RuntimeException() }
+    v0 = closure0()
+    var v1: US0 = US0_Idle()
     v1 = sp_method0(v0)
     var v4: Int = 0
     when (v1.tag) {
@@ -28,7 +29,8 @@ fun spiral_main(): Int {
         }
         else -> throw RuntimeException()
     }
-    val v5: Int = (v4 + 31)
+    var v5: Int = 0
+    v5 = (v4 + 31)
     return v5
 }
 fun main() {

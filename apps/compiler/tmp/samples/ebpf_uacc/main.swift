@@ -8,12 +8,15 @@ func sp_method1(_ p0: Int32, _ p1: UInt32) -> UInt32 {
         v2 = (v0 &- 1)
         var v3: UInt32 = UInt32(0)
         v3 = (v1 &+ UInt32(3000000000))
-        let v4: Bool = (v2 == 0)
+        var v4: Bool = false
+        v4 = (v2 == 0)
         if (v4) {
             return v3
         } else {
-            v0 = v2
-            v1 = v3
+            let t365_2: Int32 = v2
+            let t401_3: UInt32 = v3
+            v0 = t365_2
+            v1 = t401_3
             continue
         }
     }

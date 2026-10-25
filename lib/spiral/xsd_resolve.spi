@@ -10,7 +10,7 @@ inl directory_of (path : string) : string =
 
 let rec has_string (target : string) (items : list string) : bool =
     match items with
-    | Cons (x, rest) => x = target || has_string target rest
+    | x :: rest => x = target || has_string target rest
     | Nil => false
 
 inl merge (more : xsd_schema) (into : xsd_schema) : xsd_schema =
@@ -25,7 +25,7 @@ type schema_catalog = list (string * string)
 
 let rec catalog_location (catalog : schema_catalog) (location : string) : option string =
     match catalog with
-    | Cons ((key, local), rest) =>
+    | (key, local) :: rest =>
         if key = location then Some local
         elif sm'.ends_with "/" key && sm'.starts_with key location then
             Some (local ++# sm'.substring (sm'.length key) (sm'.length location - sm'.length key) location)
@@ -49,10 +49,10 @@ inl resolved_location (catalog : schema_catalog) (directory : string) (location 
 
 let rec load_tree (catalog : schema_catalog) (path : string) (tree : loaded_tree) : loaded_tree =
     if has_string path tree.paths then tree
-    elif xml.is_file path = false then { tree with missing = Cons (path, tree.missing) }
+    elif xml.is_file path = false then { tree with missing = (path :: tree.missing) }
     else
         inl schema = xml.read_text_replacing_invalid_utf8 path |> read_schema
-        inl loaded = { tree with paths = Cons (path, tree.paths); schema = merge schema tree.schema }
+        inl loaded = { tree with paths = (path :: tree.paths); schema = merge schema tree.schema }
         load_includes catalog (directory_of path) schema.includes loaded
 
 and let load_includes
@@ -63,7 +63,7 @@ and let load_includes
     : loaded_tree
     =
     match locations with
-    | Cons (location, rest) =>
+    | location :: rest =>
         inl tree = if location = "" then tree else load_tree catalog (resolved_location catalog directory location) tree
         load_includes catalog directory rest tree
     | Nil => tree
@@ -76,30 +76,30 @@ inl load_schema_tree (path : string) : loaded_tree = load_schema_tree_with Nil p
 
 let rec type_names (types : list xsd) (acc : list string) : list string =
     match types with
-    | Cons (Simple (name, _, _), rest) => type_names rest (Cons (name, acc))
-    | Cons (Complex (name, _, _), rest) => type_names rest (Cons (name, acc))
-    | Cons (Derived (name, _, _, _), rest) => type_names rest (Cons (name, acc))
-    | Cons (_, rest) => type_names rest acc
+    | Simple (name, _, _) :: rest => type_names rest (name :: acc)
+    | Complex (name, _, _) :: rest => type_names rest (name :: acc)
+    | Derived (name, _, _, _) :: rest => type_names rest (name :: acc)
+    | _ :: rest => type_names rest acc
     | Nil => acc
 
 let rec references_of (item : xsd) (acc : list string) : list string =
     match item with
-    | Simple (_, base, _) => Cons (base, acc)
+    | Simple (_, base, _) => base :: acc
     | Complex (_, content, attributes) => references_of content (attribute_types attributes acc)
-    | Derived (_, base, content, attributes) => references_of content (attribute_types attributes (Cons (base, acc)))
+    | Derived (_, base, content, attributes) => references_of content (attribute_types attributes (base :: acc))
     | Sequence (_, _, items) => references_in items acc
     | Choice (_, _, items) => references_in items acc
     | Element (_, type_reference, _, _, inline) =>
         match inline with
-        | Some inner => references_of inner (Cons (type_reference, acc))
-        | None => Cons (type_reference, acc)
-    | Attribute (_, type_reference, _, _, inline) => inline_references inline (Cons (type_reference, acc))
+        | Some inner => references_of inner (type_reference :: acc)
+        | None => type_reference :: acc
+    | Attribute (_, type_reference, _, _, inline) => inline_references inline (type_reference :: acc)
     | AnyContent => acc
     | Empty => acc
 
 and let references_in (items : list xsd) (acc : list string) : list string =
     match items with
-    | Cons (item, rest) => references_in rest (references_of item acc)
+    | item :: rest => references_in rest (references_of item acc)
     | Nil => acc
 
 and let inline_references (inline : option xsd) (acc : list string) : list string =
@@ -109,9 +109,9 @@ and let inline_references (inline : option xsd) (acc : list string) : list strin
 
 and let attribute_types (attributes : list xsd) (acc : list string) : list string =
     match attributes with
-    | Cons (Attribute (_, type_reference, _, _, inline), rest) =>
-        attribute_types rest (inline_references inline (Cons (type_reference, acc)))
-    | Cons (_, rest) => attribute_types rest acc
+    | Attribute (_, type_reference, _, _, inline) :: rest =>
+        attribute_types rest (inline_references inline (type_reference :: acc))
+    | _ :: rest => attribute_types rest acc
     | Nil => acc
 
 inl is_builtin (reference : string) : bool =
@@ -120,7 +120,7 @@ inl is_builtin (reference : string) : bool =
 
 let rec unresolved_in (names : list string) (references : list string) (acc : i32) : i32 =
     match references with
-    | Cons (reference, rest) =>
+    | reference :: rest =>
         inl dangling =
             reference <> "" && is_builtin reference = false && has_string (xml.local_name reference) names = false
         unresolved_in names rest (if dangling then acc + 1i32 else acc)
@@ -149,7 +149,7 @@ test unresolved_count_counts_dangling_type_references =
 ///> rust
 test catalog_maps_absolute_locations_to_local_files =
     inl site = "http://example.org/"
-    inl catalog = Cons ((site ++# "cat.xsd", "C:/corpus/cat.xsd"), Cons ((site ++# "types/", "C:/corpus/types/"), Nil))
+    inl catalog = (site ++# "cat.xsd", "C:/corpus/cat.xsd") :: (site ++# "types/", "C:/corpus/types/") :: Nil
     inl resolved location = resolved_location catalog "C:/corpus/" location
     if resolved (site ++# "cat.xsd") <> "C:/corpus/cat.xsd" then failwith "an exact entry"
     if resolved (site ++# "types/td.xsd") <> "C:/corpus/types/td.xsd" then failwith "a prefix entry"

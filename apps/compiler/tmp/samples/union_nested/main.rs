@@ -14,12 +14,12 @@ enum US0 {
 fn score_inner_1(mut v0: US1) -> i32 {
     match &v0 {
         US1::US1_A(v1) => {
-            let v1: i32 = *v1;
+            let mut v1: i32 = *v1;
             v1
         }
         US1::US1_B(v2) => {
-            let v2: i32 = *v2;
-            let v3: i32 = v2.wrapping_neg();
+            let mut v2: i32 = *v2;
+            let mut v3: i32 = v2.wrapping_neg();
             v3
         }
     }
@@ -27,34 +27,34 @@ fn score_inner_1(mut v0: US1) -> i32 {
 fn score_0(mut v0: US0) -> i32 {
     match &v0 {
         US0::US0_Other(v3) => {
-            let v3: i32 = *v3;
+            let mut v3: i32 = *v3;
             v3
         }
         US0::US0_Wrap(v1) => {
-            let v1: US1 = v1.clone();
-            score_inner_1(v1)
+            let mut v1: US1 = v1.clone();
+            score_inner_1(v1.clone())
         }
     }
 }
 fn spiral_main() -> i32 {
-    let v0: bool = true;
-    let v4: US0 = if v0 {
-        let v1: US1 = US1::US1_A(7i32);
-        US0::US0_Wrap(v1)
+    let mut v0: bool = true;
+    let mut v4: US0 = if v0 {
+        let mut v1: US1 = US1::US1_A(7i32);
+        US0::US0_Wrap(v1.clone())
     } else {
         US0::US0_Other(1i32)
     };
-    let v8: US0 = if v0 {
+    let mut v8: US0 = if v0 {
         US0::US0_Other(4i32)
     } else {
-        let v6: US1 = US1::US1_B(2i32);
-        US0::US0_Wrap(v6)
+        let mut v6: US1 = US1::US1_B(2i32);
+        US0::US0_Wrap(v6.clone())
     };
-    let v9: i32 = score_0(v4);
-    let v10: bool = v9 == 7i32;
-    let v13: bool = if v10 {
-        let v11: i32 = score_0(v8);
-        let v12: bool = v11 == 4i32;
+    let mut v9: i32 = score_0(v4.clone());
+    let mut v10: bool = v9 == 7i32;
+    let mut v13: bool = if v10 {
+        let mut v11: i32 = score_0(v8.clone());
+        let mut v12: bool = v11 == 4i32;
         v12
     } else {
         false

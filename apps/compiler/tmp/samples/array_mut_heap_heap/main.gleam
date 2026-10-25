@@ -27,8 +27,17 @@ pub fn spiral_array_create(size: Int) -> SpiralArray(a) {
   list.repeat(option.None, size) |> array.from_list(option.None) |> spiral_array_from_storage(size)
 }
 
+pub fn spiral_array_create_filled(size: Int, value: a) -> SpiralArray(a) {
+  list.repeat(option.Some(value), size) |> array.from_list(option.None) |> spiral_array_from_storage(size)
+}
 
+pub fn spiral_array_from_list(values: List(a)) -> SpiralArray(a) {
+  values |> list.map(option.Some) |> array.from_list(option.None) |> spiral_array_from_storage(list.length(values))
+}
 
+pub fn spiral_array_to_list(xs: SpiralArray(a)) -> List(a) {
+  list.repeat(Nil, xs.size) |> list.index_map(fn(_, i) { spiral_array_get(xs, i) })
+}
 
 pub fn spiral_array_get(xs: SpiralArray(a), i: Int) -> a {
   case i >= 0 && i < xs.size {
@@ -81,51 +90,51 @@ pub type Heap0 { Heap0(l0 : Int, l1 : String) }
 pub type Heap1 { Heap1(l0 : Heap0, l1 : Int) }
 pub type Mut0 { Mut0(l0 : Heap1) }
 pub fn main() {
-    let v0 = 3
-    let v1 = "no"
-    let v2 = Heap0(l0: v0, l1: v1)
-    let v3 = 1
-    let v4 = Heap1(l0: v2, l1: v3)
-    let v5 = spiral_ref_new(Mut0(l0: v4))
-    let v6 = spiral_array_create(1)
-    spiral_array_set(v6, 0, v5)
-    let v7 = 7
-    let v8 = "hi"
-    let v9 = Heap0(l0: v7, l1: v8)
-    let v10 = 4
-    let v11 = Heap1(l0: v9, l1: v10)
-    let v12 = spiral_array_get(v6, 0)
-    spiral_ref_set(v12, Mut0(l0: v11))
-    let v13 = spiral_ref_get(v12).l0
-    let #(v14, v15) = #(v13.l0, v13.l1)
-    let #(v16, v17) = #(v14.l0, v14.l1)
-    let v18 = v16 == 7
-    let v20 =
-        case v18 {
-            True -> {
-                let v19 = v17 == "hi"
-                v19
-            }
-            False -> {
-                False
-            }
-        }
-    let v22 =
-        case v20 {
-            True -> {
-                let v21 = v15 == 4
-                v21
-            }
-            False -> {
-                False
-            }
-        }
-    case v22 {
+let v0 = 3
+let v1 = "no"
+let v2 = Heap0(l0: v0, l1: v1)
+let v3 = 1
+let v4 = Heap1(l0: v2, l1: v3)
+let v5 = spiral_ref_new(Mut0(l0: v4))
+let v6 = spiral_array_create(1)
+spiral_array_set(v6, 0, v5)
+let v7 = 7
+let v8 = "hi"
+let v9 = Heap0(l0: v7, l1: v8)
+let v10 = 4
+let v11 = Heap1(l0: v9, l1: v10)
+let v12 = spiral_array_get(v6, 0)
+spiral_ref_set(v12, Mut0(l0: v11))
+let v13 = spiral_ref_get(v12).l0
+let #(v14, v15) = #(v13.l0, v13.l1)
+let #(v16, v17) = #(v14.l0, v14.l1)
+let v18 = v16 == 7
+let v20 =
+    case v18 {
         True -> {
-            0
+            let v19 = v17 == "hi"
+            v19
         }
         False -> {
-            1
+            False
         }
     }
+let v22 =
+    case v20 {
+        True -> {
+            let v21 = v15 == 4
+            v21
+        }
+        False -> {
+            False
+        }
+    }
+case v22 {
+    True -> {
+        0
+    }
+    False -> {
+        1
+    }
+}
 }

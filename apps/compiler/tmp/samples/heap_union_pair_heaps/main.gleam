@@ -55,23 +55,23 @@ pub fn score_0(v0: Us0) -> Int {
     }
 }
 pub fn main() {
-    let v0 = 7
-    let v1 = "hi"
-    let v2 = Heap0(l0: v0, l1: v1)
-    let v3 = 4
-    let v4 = "yo"
-    let v5 = Heap0(l0: v3, l1: v4)
-    let v6 = True
-    let v9 =
-        case v6 {
-            True -> {
-                Us0Held(v2, v5)
-            }
-            False -> {
-                Us0None
-            }
+let v0 = 7
+let v1 = "hi"
+let v2 = Heap0(l0: v0, l1: v1)
+let v3 = 4
+let v4 = "yo"
+let v5 = Heap0(l0: v3, l1: v4)
+let v6 = True
+let v9 =
+    case v6 {
+        True -> {
+            Us0Held(v2, v5)
         }
-    let v10 = Heap1(l0: v9)
-    let v11 = v10.l0
-    score_0(v11)
+        False -> {
+            Us0None
+        }
+    }
+let v10 = Heap1(l0: v9)
+let v11 = v10.l0
+score_0(v11)
 }

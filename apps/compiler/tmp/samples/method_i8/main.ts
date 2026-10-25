@@ -1,5 +1,5 @@
 function method0(v0: number): number {
-    const v1: boolean = v0 === 0;
+    let v1: boolean = v0 === 0;
     if (v1) {
         return 1;
     } else {
@@ -7,9 +7,9 @@ function method0(v0: number): number {
     }
 }
 export function main(): number {
-    const v0: number = 100;
-    const v1: number = method0(v0);
-    const v2: boolean = v1 === 100;
+    let v0: number = 100;
+    let v1: number = method0(v0);
+    let v2: boolean = v1 === 100;
     if (v2) {
         return 0;
     } else {

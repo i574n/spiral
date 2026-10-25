@@ -15,8 +15,9 @@ local getv6 = function()
     end
 end
 local v6 = getv6()
-if v6 ~= nil and v6.tag == "Us0_Held" then
-    local v7 = v6._1
+local __v = { v6 }
+if __v[1] ~= nil and __v[1].tag == "Us0_Held" then
+    local v7 = __v[1]._1
     local v8 = (v7)[(0)+1]
     local v9 = v8 == 7
     if v9 then
@@ -24,6 +25,6 @@ if v6 ~= nil and v6.tag == "Us0_Held" then
     else
         return 1
     end
-elseif v6 ~= nil and v6.tag == "Us0_Missing" then
+elseif __v[1] ~= nil and __v[1].tag == "Us0_Missing" then
     return 1
 end

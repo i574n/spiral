@@ -28,23 +28,34 @@ partial def closure0 (p0 : Int32) (p1 : Int32) (p2 : Int32) : IO (Int32 × Int32
     let mut v0 : Int32 := p0
     let mut v1 : Int32 := p1
     let mut v2 : Int32 := p2
-    let v3 : Int32 := (v1 - (8 : Int32))
-    let v4 : Int32 := (v3 + v0)
-    let v5 : Int32 := (v2 - (18 : Int32))
+    let mut v3 : Int32 := default
+    let mut v4 : Int32 := default
+    let mut v5 : Int32 := default
+    v3 := (v1 - (8 : Int32))
+    v4 := (v3 + v0)
+    v5 := (v2 - (18 : Int32))
     return (v4, v5)
 partial def method0 (p0 : (Int32 → Int32 → IO (Int32 × Int32))) : IO (Int32 × Int32) := do
     let mut v0 : (Int32 → Int32 → IO (Int32 × Int32)) := p0
     return (← v0 (10 : Int32) (20 : Int32))
 partial def spiralMain : IO Int32 := do
-    let v0 : Int32 := (1 : Int32)
-    let v1 : (Int32 → Int32 → IO (Int32 × Int32)) := (closure0 v0)
+    let mut v0 : Int32 := default
+    let mut v1 : (Int32 → Int32 → IO (Int32 × Int32)) := default
+    let mut v2 : Int32 := default
+    let mut v3 : Int32 := default
+    let mut v4 : Int32 := default
+    let mut v5 : Int32 := default
+    let mut v6 : Int32 := default
+    let mut v7 : Int32 := default
+    v0 := (1 : Int32)
+    v1 := (closure0 v0)
     let (r1_0, r1_1) := (← method0 v1)
-    let v2 : Int32 := r1_0
-    let v3 : Int32 := r1_1
-    let v4 : Int32 := ((10 : Int32) + v2)
-    let v5 : Int32 := ((20 : Int32) + v3)
-    let v6 : Int32 := (v4 + v5)
-    let v7 : Int32 := (v6 + (7 : Int32))
+    v2 := r1_0
+    v3 := r1_1
+    v4 := ((10 : Int32) + v2)
+    v5 := ((20 : Int32) + v3)
+    v6 := (v4 + v5)
+    v7 := (v6 + (7 : Int32))
     return v7
 end
 def main : IO UInt32 := do

@@ -19,10 +19,11 @@ end
 local v0 = 7
 local v1 = f_c0({ v0 })
 local v2, v3 = (table.unpack or unpack)(v1(1))
-if v2 ~= nil and v2.tag == "Us0_None" then
+local __v = { v2 }
+if __v[1] ~= nil and __v[1].tag == "Us0_None" then
     return 1
-elseif v2 ~= nil and v2.tag == "Us0_Some" then
-    local v4 = v2._1
+elseif __v[1] ~= nil and __v[1].tag == "Us0_Some" then
+    local v4 = __v[1]._1
     local v5 = v4 == 7
     local getv7 = function()
         if v5 then

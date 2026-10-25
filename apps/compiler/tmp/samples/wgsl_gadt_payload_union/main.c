@@ -86,30 +86,64 @@ US0 US0_Slain(US2 v0) { // Slain
     return x;
 }
 int32_t main(){
-    int32_t v0 = 60l;
-    bool v1 = v0 > 0l;
+    
+    
+    int32_t v0;
+    v0 = 60l;
+    
+    
+    bool v1;
+    v1 = v0 > 0l;
+    
+    
     US0 v6;
     if (v1){
-        US1 v2 = US1_Living(v0, 100l);
+        
+        
+        US1 v2;
+        v2 = US1_Living(v0, 100l);
+        
+        
         v6 = US0_Survived(v2);
     } else {
-        US2 v4 = US2_Fallen(100l);
+        
+        
+        US2 v4;
+        v4 = US2_Fallen(100l);
+        
+        
         v6 = US0_Slain(v4);
     }
+    
+    
     switch (v6.tag) {
         case 1: { // Slain
+            
+            
+            
             return 2l;
             break;
         }
         default: { // Survived
             US1 v7 = v6.case0.v0;
+            
+            
             switch (v7.tag) {
                 default: { // Living
                     int32_t v8 = v7.case0.v0;
-                    bool v10 = v8 == 60l;
+                    
+                    
+                    bool v10;
+                    v10 = v8 == 60l;
+                    
+                    
                     if (v10){
+                        
+                        
                         return 0l;
                     } else {
+                        
+                        
                         return 1l;
                     }
                     break;

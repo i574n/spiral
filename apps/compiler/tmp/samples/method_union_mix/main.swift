@@ -15,18 +15,22 @@ func sp_method0(_ p0: Int32, _ p1: String) -> US0 {
     }
 }
 func spiral_main() -> Int32 {
-    let v0: Int32 = 3
-    let v1: String = "hi"
+    var v0: Int32 = 0
+    v0 = 3
+    var v1: String = ""
+    v1 = "hi"
     var v2: US0 = US0_One(f0: 0)
     v2 = sp_method0(v0, v1)
     switch v2.tag {
         case 1:
             var v4: Int32 = (v2 as! US0_Both).f0
             var v5: String = (v2 as! US0_Both).f1
-            let v6: Bool = (v4 == 3)
+            var v6: Bool = false
+            v6 = (v4 == 3)
             var v8: Bool = false
             if (v6) {
-                let v7: Bool = (v5 == "hi")
+                var v7: Bool = false
+                v7 = (v5 == "hi")
                 v8 = v7
             } else {
                 v8 = false

@@ -7,8 +7,10 @@ final class SpiralArray<T> {
     init(_ items: [T]) { self.items = items }
 }
 func spiral_main() -> Int32 {
-    let v0: Int32 = 3
-    let v1: SpiralArray<US0> = SpiralArray<US0>(Array(repeating: US0_Living(f0: 0, f1: 0), count: Int(v0)))
+    var v0: Int32 = 0
+    v0 = 3
+    var v1: SpiralArray<US0> = SpiralArray<US0>([])
+    v1 = SpiralArray<US0>(Array(repeating: US0_Living(f0: 0, f1: 0), count: Int(v0)))
     return 0
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

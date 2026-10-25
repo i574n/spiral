@@ -1,8 +1,10 @@
 import CRT
 import WinSDK
 func spiral_main() -> Int32 {
-    let v0: Int64 = (3000000000 as Int64)
-    let v1: Bool = (v0 > (2999999999 as Int64))
+    var v0: Int64 = (0 as Int64)
+    v0 = (3000000000 as Int64)
+    var v1: Bool = false
+    v1 = (v0 > (2999999999 as Int64))
     if (v1) {
         return 7
     } else {

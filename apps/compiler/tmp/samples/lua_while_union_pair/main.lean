@@ -50,13 +50,17 @@ def U0.spiralTag : U0 → Int32
 mutual
 partial def method0 (p0 : (IO.Ref M0)) : IO Bool := do
     let mut v0 : (IO.Ref M0) := p0
-    let v1 : Int32 := (← v0.get).l0
-    let v2 : Bool := (decide (v1 < (3 : Int32)))
+    let mut v1 : Int32 := default
+    let mut v2 : Bool := default
+    v1 := (← v0.get).l0
+    v2 := (decide (v1 < (3 : Int32)))
     return v2
 partial def method1 (p0 : (IO.Ref M1)) : IO Bool := do
     let mut v0 : (IO.Ref M1) := p0
-    let v1 : Int32 := (← v0.get).l0
-    let v2 : Bool := (decide (v1 < (4 : Int32)))
+    let mut v1 : Int32 := default
+    let mut v2 : Bool := default
+    v1 := (← v0.get).l0
+    v2 := (decide (v1 < (4 : Int32)))
     return v2
 partial def spiralMain : IO Int32 := do
     let mut v0 : (IO.Ref (Array Int32)) ← IO.mkRef #[]
@@ -66,6 +70,7 @@ partial def spiralMain : IO Int32 := do
     let mut v5 : Int32 := default
     let mut v6 : (IO.Ref M1) ← IO.mkRef default
     let mut v7 : (IO.Ref M1) ← IO.mkRef default
+    let mut v8 : U0 := default
     let mut v9 : (IO.Ref M2) ← IO.mkRef default
     let mut v11 : Int32 := default
     let mut v12 : Int32 := default
@@ -75,6 +80,7 @@ partial def spiralMain : IO Int32 := do
     let mut v16 : U0 := default
     let mut v17 : U0 := default
     let mut v18 : Int32 := default
+    let mut v19 : U0 := default
     let mut v38 : Int32 := default
     let mut v20 : Int32 := default
     let mut v21 : U0 := default
@@ -90,6 +96,12 @@ partial def spiralMain : IO Int32 := do
     let mut v31 : Int32 := default
     let mut v32 : Int32 := default
     let mut v33 : Int32 := default
+    let mut v39 : Int32 := default
+    let mut v40 : Int32 := default
+    let mut v41 : Int32 := default
+    let mut v42 : Int32 := default
+    let mut v43 : Int32 := default
+    let mut v44 : Int32 := default
     v0 := (← IO.mkRef (Array.replicate (spiralIdx (3 : Int32)) (default : Int32)))
     v1 := (← IO.mkRef (M0.mk (0 : Int32)))
     repeat
@@ -101,7 +113,7 @@ partial def spiralMain : IO Int32 := do
         v1.modify (fun r => { r with l0 := v5 })
     v6 := (← IO.mkRef (M1.mk (0 : Int32)))
     v7 := (← IO.mkRef (M1.mk (0 : Int32)))
-    let v8 : U0 := U0.Nil
+    v8 := U0.Nil
     v9 := (← IO.mkRef (M2.mk v8))
     repeat
         if !(← method1 v6) then break
@@ -119,7 +131,7 @@ partial def spiralMain : IO Int32 := do
         v9.modify (fun r => { r with l0 := v17 })
         v18 := (v11 + (1 : Int32))
         v6.modify (fun r => { r with l0 := v18 })
-    let v19 : U0 := (← v9.get).l0
+    v19 := (← v9.get).l0
     match v19 with
     | U0.Cons f20 f21 =>
         v20 := f20
@@ -155,12 +167,12 @@ partial def spiralMain : IO Int32 := do
             v38 := (-1 : Int32)
     | _ =>
         v38 := (-1 : Int32)
-    let v39 : Int32 := (← v7.get).l0
-    let v40 : Int32 := (v38 + v39)
-    let v41 : Int32 := (← spiralIndex (← v0.get) (spiralIdx (2 : Int32)))
-    let v42 : Int32 := (v40 + v41)
-    let v43 : Int32 := (← spiralIndex (← v0.get) (spiralIdx (1 : Int32)))
-    let v44 : Int32 := (v42 - v43)
+    v39 := (← v7.get).l0
+    v40 := (v38 + v39)
+    v41 := (← spiralIndex (← v0.get) (spiralIdx (2 : Int32)))
+    v42 := (v40 + v41)
+    v43 := (← spiralIndex (← v0.get) (spiralIdx (1 : Int32)))
+    v44 := (v42 - v43)
     return v44
 end
 def main : IO UInt32 := do

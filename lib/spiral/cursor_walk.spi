@@ -4,37 +4,37 @@ open sm'_operators
 test cursor_walk static =
     open testing
 
-type cursor_page = {next_token : string; body : string}
+type cursor_page = { next_token : string; body : string }
 
-type cursor_stop = {token : string; pages : i32}
+type cursor_stop = { token : string; pages : i32 }
 
 union cursor_halt =
     | CursorRepeated : cursor_stop
     | CursorBudget : cursor_stop
 
-type cursor_walker e = {halted : cursor_halt -> e; budget : i32; fetch : string -> result cursor_page e}
+type cursor_walker e = { halted : cursor_halt -> e; budget : i32; fetch : string -> result cursor_page e }
 
-type cursor_trail = {seen : list string; pages : i32; bodies : list string}
+type cursor_trail = { seen : list string; pages : i32; bodies : list string }
 
 inl cursor_stepped (w : cursor_trail) (p : cursor_page) : cursor_trail =
-    {seen = Cons (p.next_token, w.seen); pages = w.pages + 1i32; bodies = Cons (p.body, w.bodies)}
+    { seen = (p.next_token :: w.seen); pages = w.pages + 1i32; bodies = (p.body :: w.bodies) }
 
 inl cursor_repeats (w : cursor_trail) (p : cursor_page) : bool = listm'.exists' (fun t => t = p.next_token) w.seen
 
 /// ### walked_from
 let rec walked_from forall e. (k : cursor_walker e) (token : string) (w : cursor_trail) : result (list string) e =
-    if w.pages >= k.budget then Error (k.halted (CursorBudget {token pages = w.pages}))
+    if w.pages >= k.budget then Error (k.halted (CursorBudget { token pages = w.pages }))
     else
         match k.fetch token with
         | Error e => Error e
         | Ok p when p.next_token = "" => Ok (listm.rev (cursor_stepped w p).bodies)
         | Ok p when cursor_repeats w p =>
-            Error (k.halted (CursorRepeated {token = p.next_token; pages = w.pages + 1i32}))
+            Error (k.halted (CursorRepeated { token = p.next_token; pages = w.pages + 1i32 }))
         | Ok p => walked_from k p.next_token (cursor_stepped w p)
 
 /// ### all_pages
 inl all_pages forall e. (k : cursor_walker e) : result (list string) e =
-    walked_from k "" {seen = Nil; pages = 0i32; bodies = Nil}
+    walked_from k "" { seen = Nil; pages = 0i32; bodies = Nil }
 
 inl cursor_walk_text (r : result (list string) string) : string =
     match r with
@@ -47,11 +47,11 @@ inl cursor_walk_halt_text (h : cursor_halt) : string =
     | CursorBudget s => "budget at " ++# sm'.obj_to_string s.pages
 
 inl cursor_walk_with (budget : i32) (fetch : string -> result cursor_page string) : string =
-    all_pages {halted = cursor_walk_halt_text; budget; fetch} |> cursor_walk_text
+    all_pages { halted = cursor_walk_halt_text; budget; fetch } |> cursor_walk_text
 
 inl cursor_walk_two_pages (token : string) : result cursor_page string =
-    if token = "" then Ok {next_token = "t2"; body = "a"}
-    elif token = "t2" then Ok {next_token = ""; body = "b"}
+    if token = "" then Ok { next_token = "t2"; body = "a" }
+    elif token = "t2" then Ok { next_token = ""; body = "b" }
     else Error token
 
 ///> rust
@@ -60,7 +60,7 @@ test pages_follow_next_tokens_and_failures_stop =
     inl ~budget = 500i32
     (
         cursor_walk_with budget cursor_walk_two_pages,
-        cursor_walk_with budget (fun token => if token = "" then Ok {next_token = "bad"; body = "a"} else Error token)
+        cursor_walk_with budget (fun token => if token = "" then Ok { next_token = "bad"; body = "a" } else Error token)
     )
     |> _assert_eq ("a,b", "stopped at bad")
 
@@ -69,7 +69,7 @@ test pages_follow_next_tokens_and_failures_stop =
 test repeated_cursors_and_the_budget_stop_the_walk =
     inl ~budget = 3i32
     (
-        cursor_walk_with 500i32 (fun token => Ok {next_token = "t1"; body = token}),
-        cursor_walk_with budget (fun token => Ok {next_token = token ++# "x"; body = "b"})
+        cursor_walk_with 500i32 (fun token => Ok { next_token = "t1"; body = token }),
+        cursor_walk_with budget (fun token => Ok { next_token = token ++# "x"; body = "b" })
     )
     |> _assert_eq ("stopped at repeated t1 after 2", "stopped at budget at 3")

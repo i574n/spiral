@@ -45,7 +45,8 @@
         @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'Wgsl'; Oracle = 'Zig'; Reason = 'WGSL robust buffer access makes the out-of-bounds read unchecked (exits 0 like C); the Zig oracle traps the index with exit 3 as the fixture intends' }
         @{ Id = 'samples/native_float_infinity'; Backend = 'Gleam'; Reason = 'BEAM floats are never infinite or NaN: a 0x7FF0000000000000 float bit-pattern match fails and binary_to_term raises badarg, so !!!!Infinity has no Gleam residual that compiles' }
         @{ Id = 'samples/while_control'; Backend = 'Fsharp'; Reason = 'F# has no break or continue statements, and the sample''s break''/continue'' are raw break/continue macros' }
-        @{ Id = 'samples/mega_omniledger_erp_kernel/all_terminals'; Backend = 'Fsharp'; Reason = 'the F# residual starts /usr/bin/sync (POSIX-only), so it exits 1 on Windows, and its run sits near the 60 s fsi budget' }
+        @{ Id = 'samples/mega_omniledger_erp_kernel/all_terminals'; Backend = 'Fsharp'; Platform = 'Windows'; Reason = 'the F# residual starts /usr/bin/sync (POSIX-only), so it exits 1 on Windows, and its run sits near the 60 s fsi budget' }
+        @{ Id = 'samples/mega_omniledger_erp_kernel'; Backend = 'Fsharp'; Platform = 'Windows'; Reason = 'its F# macros spawn /bin/sh (main.fsx:14): exit 1 on Windows, 0 on Linux; the row has no oracle row, so the entry only marks it platform-bound for ci-classify' }
     )
 
     Mega = @(

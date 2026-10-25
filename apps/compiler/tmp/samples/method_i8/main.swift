@@ -11,10 +11,12 @@ func sp_method0(_ p0: Int8) -> Int8 {
     }
 }
 func spiral_main() -> Int32 {
-    let v0: Int8 = Int8(100)
+    var v0: Int8 = Int8(0)
+    v0 = Int8(100)
     var v1: Int8 = Int8(0)
     v1 = sp_method0(v0)
-    let v2: Bool = (v1 == Int8(100))
+    var v2: Bool = false
+    v2 = (v1 == Int8(100))
     if (v2) {
         return 0
     } else {

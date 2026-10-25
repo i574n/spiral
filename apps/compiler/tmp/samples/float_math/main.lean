@@ -27,14 +27,20 @@ mutual
 partial def method0 (p0 : Float32) (p1 : Float32) : IO Float32 := do
     let mut v0 : Float32 := p0
     let mut v1 : Float32 := p1
-    let v2 : Float32 := (v0 * v1)
-    let v3 : Float32 := (v2 + (0.5 : Float32))
+    let mut v2 : Float32 := default
+    let mut v3 : Float32 := default
+    v2 := (v0 * v1)
+    v3 := (v2 + (0.5 : Float32))
     return v3
 partial def spiralMain : IO Int32 := do
-    let v0 : Float32 := (1.5 : Float32)
-    let v1 : Float32 := (2.0 : Float32)
-    let v2 : Float32 := (← method0 v0 v1)
-    let v3 : Bool := (decide (v2 >= (3.5 : Float32)))
+    let mut v0 : Float32 := default
+    let mut v1 : Float32 := default
+    let mut v2 : Float32 := default
+    let mut v3 : Bool := default
+    v0 := (1.5 : Float32)
+    v1 := (2.0 : Float32)
+    v2 := (← method0 v0 v1)
+    v3 := (decide (v2 >= (3.5 : Float32)))
     if v3 then
         return (0 : Int32)
     else

@@ -199,11 +199,14 @@ func sp_score_b_1(_ p0: US1) -> Int32 {
     }
 }
 func spiral_main() -> Int32 {
-    let v0: Int32 = 7
-    let v1: String = "hi"
+    var v0: Int32 = 0
+    v0 = 7
+    var v1: String = ""
+    v1 = "hi"
     var v2: Heap0 = Heap0(l0: 0, l1: "")
     v2 = Heap0(l0: v0, l1: v1)
-    let v3: Int32 = 4
+    var v3: Int32 = 0
+    v3 = 4
     var v4: String = ""
     v4 = "yo"
     var v5: Heap0 = Heap0(l0: 0, l1: "")
@@ -238,25 +241,38 @@ func spiral_main() -> Int32 {
     v19 = Heap1(l0: v15, l1: v18)
     var v20: Int32 = 0
     v20 = 9
-    let v21: Heap2 = Heap2(l0: v19, l1: v20)
-    let v22: US0 = US0_Held(f0: v21)
-    let v23: Heap3 = Heap3(l0: v22)
-    let v24: US1 = US1_Box(f0: v23)
-    let v25: Heap4 = Heap4(l0: v24)
+    var v21: Heap2 = Heap2(l0: Heap1(l0: Heap0(l0: 0, l1: ""), l1: Heap0(l0: 0, l1: "")), l1: 0)
+    v21 = Heap2(l0: v19, l1: v20)
+    var v22: US0 = US0_None()
+    v22 = US0_Held(f0: v21)
+    var v23: Heap3 = Heap3(l0: US0_None())
+    v23 = Heap3(l0: v22)
+    var v24: US1 = US1_Absent()
+    v24 = US1_Box(f0: v23)
+    var v25: Heap4 = Heap4(l0: US1_Absent())
+    v25 = Heap4(l0: v24)
     var v26: SpiralArray<Heap4> = SpiralArray<Heap4>([])
     v26 = SpiralArray<Heap4>(Array(repeating: Heap4(l0: US1_Absent()), count: Int(2)))
     v26.items[Int(0)] = v12
     v26.items[Int(1)] = v25
-    let v27: Heap4 = v26.items[Int(0)]
-    let v28: Heap4 = v26.items[Int(1)]
-    let v29: US1 = v27.l0
-    let v30: US1 = v28.l0
-    let v31: Int32 = sp_score_0(v29)
-    let v32: Int32 = sp_score_b_1(v30)
-    let v33: Bool = (v31 == 0)
+    var v27: Heap4 = Heap4(l0: US1_Absent())
+    v27 = v26.items[Int(0)]
+    var v28: Heap4 = Heap4(l0: US1_Absent())
+    v28 = v26.items[Int(1)]
+    var v29: US1 = US1_Absent()
+    v29 = v27.l0
+    var v30: US1 = US1_Absent()
+    v30 = v28.l0
+    var v31: Int32 = 0
+    v31 = sp_score_0(v29)
+    var v32: Int32 = 0
+    v32 = sp_score_b_1(v30)
+    var v33: Bool = false
+    v33 = (v31 == 0)
     var v35: Bool = false
     if (v33) {
-        let v34: Bool = (v32 == 0)
+        var v34: Bool = false
+        v34 = (v32 == 0)
         v35 = v34
     } else {
         v35 = false

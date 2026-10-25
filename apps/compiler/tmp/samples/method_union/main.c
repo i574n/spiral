@@ -32,28 +32,57 @@ US0 US0_Some(int32_t v0) { // Some
     x.case1.v0 = v0;
     return x;
 }
-static US0 method0(int32_t v0){
-    bool v1 = v0 == 0l;
+US0 method0(int32_t v0){
+    
+    
+    bool v1;
+    v1 = v0 == 0l;
+    
+    
     if (v1){
+        
+        
         return US0_None();
     } else {
+        
+        
         return US0_Some(v0);
     }
 }
 int32_t main(){
-    int32_t v0 = 7l;
-    US0 v1 = method0(v0);
+    
+    
+    int32_t v0;
+    v0 = 7l;
+    
+    
+    US0 v1;
+    v1 = method0(v0);
+    
+    
     switch (v1.tag) {
         case 0: { // None
+            
+            
+            
             return 1l;
             break;
         }
         default: { // Some
             int32_t v2 = v1.case1.v0;
-            bool v3 = v2 == 7l;
+            
+            
+            bool v3;
+            v3 = v2 == 7l;
+            
+            
             if (v3){
+                
+                
                 return 0l;
             } else {
+                
+                
                 return 1l;
             }
             break;

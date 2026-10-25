@@ -410,10 +410,11 @@ defmodule Spiral.Cells.Memo do
     {index.project, full_deps_print(index.deps), blocks |> Map.keys() |> Enum.sort() |> Enum.map(&{&1, blocks[&1].print})}
   end
 
-  defp full_deps_print(deps), do: for({name, dep} <- deps, do: {name, package_print_for(dep, "", true)})
-
   defp package_print_for(index, program, false), do: reached_package_print(index, program)
   defp package_print_for(other, _program, true), do: other
+
+  defp full_deps_print(deps), do: for({name, dep} <- deps, do: {name, package_print_for(dep, "", true)})
+
   defp reached_package_print(%{blocks: _} = index, program) do
     code = program |> String.split("\n") |> Enum.map_join("\n", &strip_line_comment/1)
     {unqualified, qualified} = references(code, [])

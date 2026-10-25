@@ -70,10 +70,14 @@ partial def score_0 (p0 : U0) : IO Int32 := do
         v12 := (v10 + v11)
         return v12
 partial def spiralMain : IO Int32 := do
+    let mut v0 : Int32 := default
     let mut v1 : (IO.Ref (Array (IO.Ref (Array Int32)))) ← IO.mkRef #[]
     let mut v2 : (IO.Ref (Array Int32)) ← IO.mkRef #[]
     let mut v3 : (IO.Ref (Array Int32)) ← IO.mkRef #[]
-    let v0 : Int32 := (2 : Int32)
+    let mut v4 : U0 := default
+    let mut v5 : Int32 := default
+    let mut v6 : Int32 := default
+    v0 := (2 : Int32)
     v1 := (← IO.mkRef (← (Array.replicate (spiralIdx v0) ()).mapM (fun _ => IO.mkRef default)))
     v2 := (← IO.mkRef (Array.replicate (spiralIdx v0) (default : Int32)))
     v3 := (← IO.mkRef (Array.replicate (spiralIdx v0) (default : Int32)))
@@ -83,9 +87,9 @@ partial def spiralMain : IO Int32 := do
     v3.modify (fun xs => xs.set! (spiralIdx (1 : Int32)) (6 : Int32))
     v1.modify (fun xs => xs.set! (spiralIdx (0 : Int32)) v2)
     v1.modify (fun xs => xs.set! (spiralIdx (1 : Int32)) v3)
-    let v4 : U0 := (U0.Nested v1)
-    let v5 : Int32 := (← score_0 v4)
-    let v6 : Int32 := (v5 - (20 : Int32))
+    v4 := (U0.Nested v1)
+    v5 := (← score_0 v4)
+    v6 := (v5 - (20 : Int32))
     return v6
 end
 def main : IO UInt32 := do

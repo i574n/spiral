@@ -2,21 +2,21 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 fn method0(mut v0: i32) -> (i32, i32, bool) {
-    let v1: i32 = v0.wrapping_add(2i32);
-    let v2: bool = v0 > 0i32;
+    let mut v1: i32 = v0.wrapping_add(2i32);
+    let mut v2: bool = v0 > 0i32;
     (v0, v1, v2)
 }
 fn method1(mut v0: i32, mut v1: i32, mut v2: bool) -> i32 {
     if v2 {
-        let v3: i32 = v0.wrapping_add(v1);
-        let v4: i32 = v3.wrapping_sub(4i32);
+        let mut v3: i32 = v0.wrapping_add(v1);
+        let mut v4: i32 = v3.wrapping_sub(4i32);
         v4
     } else {
         1i32
     }
 }
 fn spiral_main() -> i32 {
-    let v0: i32 = 1i32;
+    let mut v0: i32 = 1i32;
     let (mut v1, mut v2, mut v3): (i32, i32, bool) = method0(v0);
     method1(v1, v2, v3)
 }

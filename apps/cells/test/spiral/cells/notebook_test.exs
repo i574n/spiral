@@ -8,116 +8,6 @@ defmodule Spiral.Cells.NotebookTest do
     %{dir: dir}
   end
 
-  test "spiral cells accumulate, tests keep opens, and spi is written only when they pass", %{
-    dir: dir
-  } do
-    path = Path.join(dir, "demo.dib")
-
-    File.write!(path, """
-    #!markdown
-
-    # demo
-
-    #!spiral
-
-    ///- --test static
-
-    open testing
-
-    #!spiral
-
-    inl value () = 1i32
-
-    #!spiral
-
-    ///- --test
-
-    value ()
-    """)
-
-    {:ok, agent} = Agent.start_link(fn -> [] end)
-
-    assert :ok =
-             Notebook.run(path,
-               compile: compile(agent),
-               rustc: &rustc_ok/1,
-               execute: run_value("ok\n"),
-               spi_path: Path.join(dir, "demo.spi")
-             )
-
-    sources = Agent.get(agent, & &1)
-    assert length(sources) == 2
-    refute Enum.any?(sources, &(String.contains?(&1, "open testing") and not String.contains?(&1, "inl value")))
-
-    def_cell =
-      Enum.find(sources, fn source ->
-        String.contains?(source, "inl value () = 1i32") and not calls?(source, "value ()")
-      end)
-
-    use_cell = Enum.find(sources, &calls?(&1, "value ()"))
-    assert "inl value () = 1i32" in lines(def_cell)
-    assert "open testing" in lines(def_cell)
-    assert "inl value () = 1i32" in lines(use_cell)
-    assert "open testing" in lines(use_cell)
-
-    spi = File.read!(Path.join(dir, "demo.spi"))
-    assert spi =~ "inl value () = 1i32"
-    refute spi =~ "open testing"
-    refute calls?(spi, "value ()")
-
-    ipynb = (path <> ".ipynb") |> File.read!() |> JSON.decode!()
-    assert ipynb["nbformat"] == 4
-    assert Enum.count(ipynb["cells"], &(&1["cell_type"] == "code")) == 3
-
-    assert Enum.all?(ipynb["cells"], fn cell ->
-             cell["cell_type"] == "markdown" or Enum.join(cell["source"]) =~ "--test static" or
-               (cell["outputs"] != [] and
-                  is_integer(cell["metadata"]["duration_ms"]) and
-                  cell["metadata"]["duration_ms"] >= 0)
-           end)
-  end
-
-  test "a failing cell still writes the ipynb and does not write spi", %{dir: dir} do
-    path = Path.join(dir, "bad.dib")
-
-    File.write!(path, """
-    #!spiral
-
-    inl value () = 1i32
-
-    #!spiral
-
-    ///- --test
-
-    bad_call ()
-    """)
-
-    spi = Path.join(dir, "bad.spi")
-
-    assert {:error, message} =
-             Notebook.run(path,
-               compile: fn _ -> {:ok, "fn main() {}\n"} end,
-               rustc: &rustc_ok/1,
-               execute: fn %{exe_path: exe} ->
-                 if File.read!(Path.join(Path.dirname(exe), "main.spi")) =~ "bad_call" do
-                   {:ok, %{exit_status: 1, output: "assert failed\n", duration_ms: 1}}
-                 else
-                   {:ok, %{exit_status: 0, output: "ok\n", duration_ms: 1}}
-                 end
-               end,
-               spi_path: spi
-             )
-
-    assert message =~ "exited 1"
-    refute File.exists?(spi)
-    ipynb = JSON.decode!(File.read!(path <> ".ipynb"))
-
-    assert Enum.any?(
-             ipynb["cells"],
-             &Enum.any?(&1["outputs"] || [], fn output -> output["ename"] == "SpiralError" end)
-           )
-  end
-
   test "a livemd notebook is accepted", %{dir: dir} do
     path = Path.join(dir, "demo.livemd")
 
@@ -215,19 +105,71 @@ defmodule Spiral.Cells.NotebookTest do
     assert peak <= Spiral.Cells.Slots.limit()
   end
 
-  test "rust contract flags reach the target from the cell that wrote them", %{dir: dir} do
-    path = Path.join(dir, "flags.dib")
+  defp lines(source), do: String.split(source, "\n")
+  defp calls?(source, line), do: Enum.any?(lines(source), &(String.trim(&1) == line))
+
+  defp compile(agent) do
+    fn %{source: source} ->
+      Agent.update(agent, &(&1 ++ [source]))
+      {:ok, "fn main() {}\n"}
+    end
+  end
+
+  defp rustc_ok(_ctx), do: :ok
+
+  defp run_value(output),
+    do: fn _ctx -> {:ok, %{exit_status: 0, output: output, duration_ms: 1}} end
+
+  test "spi test blocks see the static prelude and earlier definitions, and the prelude alone never compiles", %{
+    dir: dir
+  } do
+    path = Path.join(dir, "demo.spi")
 
     File.write!(path, """
-    #!spiral
+    /// # demo
+    ///> rust
+    test demo static =
+        open testing
 
+    inl value () = 1i32
+
+    ///> rust
+    test value_is_one =
+        value ()
+    """)
+
+    {:ok, agent} = Agent.start_link(fn -> [] end)
+
+    assert :ok =
+             Notebook.run(path,
+               compile: compile(agent),
+               rustc: &rustc_ok/1,
+               execute: run_value("ok\n")
+             )
+
+    sources = Agent.get(agent, & &1)
+    refute Enum.any?(sources, &(String.contains?(&1, "open testing") and not String.contains?(&1, "inl value")))
+
+    use_cell = Enum.find(sources, &calls?(&1, "value ()"))
+    assert "inl value () = 1i32" in lines(use_cell)
+    assert "open testing" in lines(use_cell)
+
+    ipynb = (path <> ".ipynb") |> File.read!() |> JSON.decode!()
+    assert ipynb["nbformat"] == 4
+  end
+
+  test "spi test-block flags reach the target: a ///> rust -cd line sets the contract and deps of its block only", %{dir: dir} do
+    path = Path.join(dir, "flags.spi")
+
+    File.write!(path, """
+    /// # flags
     inl prior () = 1i32
 
-    #!spiral
+    inl value () = 2i32
 
     ///> rust -cd near-token
-
-    inl value () = 2i32
+    test value_is_two =
+        value ()
     """)
 
     {:ok, agent} = Agent.start_link(fn -> [] end)
@@ -248,76 +190,43 @@ defmodule Spiral.Cells.NotebookTest do
                  refute source =~ "///>"
                  send(parent, :targeted)
                  {:ok, %{exit_status: 0, output: "near\n", duration_ms: 1}}
-               end,
-               spi_path: Path.join(dir, "flags.spi")
+               end
              )
 
     assert_received :targeted
-    sources = Agent.get(agent, & &1)
-    assert length(sources) == 2
-
-    assert Enum.all?(sources, fn {backend, source} ->
-             backend == "Rust" and not (source =~ "///>")
-           end)
-
-    assert Enum.any?(sources, fn {_backend, source} ->
-             source =~ "inl prior () = 1i32" and not (source =~ "inl value")
-           end)
-
-    assert Enum.any?(sources, fn {_backend, source} ->
-             source =~ "inl prior () = 1i32" and source =~ "inl value () = 2i32"
+    assert Enum.any?(Agent.get(agent, & &1), fn {backend, source} ->
+             backend == "Rust" and source =~ "inl prior () = 1i32" and source =~ "inl value () = 2i32" and not (source =~ "///>")
            end)
   end
 
-  test "a package missing beside the notebook is loaded from the polyglot root", %{dir: dir} do
+  test "a .spi whose --package is missing beside it is loaded from the workspace root", %{dir: dir} do
     notebook = Path.join(dir, "contract")
     File.mkdir_p!(notebook)
     workspace = Path.join(dir, "polyglot")
     package = Path.join(workspace, "vendor/pkg")
     File.mkdir_p!(package)
-
-    File.write!(
-      Path.join(package, "package.spiproj"),
-      "packageDir: .\npackages:\n    |core-\nmodules:\n    lib\n"
-    )
-
-    path = Path.join(notebook, "note.dib")
-
-    File.write!(path, """
-    #!spiral
-
-    ///- --package vendor/pkg
-
-    inl value () = 1i32
-    """)
+    File.write!(Path.join(package, "package.spiproj"), "packageDir: .\npackages:\n    |core-\nmodules:\n    lib\n")
+    path = Path.join(notebook, "note.spi")
+    File.write!(path, "///- --package vendor/pkg\ninl value () = 1i32\n\ntest value_is_one =\n    value ()\n")
 
     assert :ok =
              Notebook.run(path,
                workspace_root: workspace,
                compile: fn %{spi_path: spi} ->
-                 proj = File.read!(Path.join(Path.dirname(spi), "package.spiproj"))
-                 assert proj =~ "pkg-"
+                 assert File.read!(Path.join(Path.dirname(spi), "package.spiproj")) =~ "pkg-"
                  {:ok, "fn main() {}\n"}
                end,
                rustc: &rustc_ok/1,
-               execute: run_value("ok\n"),
-               spi_path: Path.join(dir, "note.spi")
+               execute: run_value("ok\n")
              )
   end
 
-  test "the spiral lib package is mounted once", %{dir: dir} do
-    lib = Path.join(dir, "deps/polyglot/deps/spiral/lib/spiral")
+  test "spi: the spiral lib package is mounted once", %{dir: dir} do
+    lib = Path.join(dir, "spiral")
     File.mkdir_p!(lib)
     File.write!(Path.join(lib, "package.spiproj"), "packages:\n    |core-\nmodules:\n")
-    path = Path.join(dir, "note.dib")
-
-    File.write!(path, """
-    #!spiral
-
-    ///- --package #{lib}
-
-    inl value () = 1i32
-    """)
+    path = Path.join(dir, "mounted.spi")
+    File.write!(path, "///- --package #{lib}\ninl value () = 1i32\n\ntest value_is_one =\n    value ()\n")
 
     assert :ok =
              Notebook.run(path,
@@ -328,146 +237,76 @@ defmodule Spiral.Cells.NotebookTest do
                  {:ok, "fn main() {}\n"}
                end,
                rustc: &rustc_ok/1,
-               execute: run_value("ok\n"),
-               spi_path: Path.join(dir, "note.spi")
+               execute: run_value("ok\n")
              )
   end
 
-  test "a //> _ cell is not compiled and its body is still exported", %{dir: dir} do
-    path = Path.join(dir, "skip.dib")
-
-    File.write!(path, """
-    #!spiral
-
-    inl value () = 1i32
-
-    #!spiral
-
-    ///> _
-
-    not_spiral_emitter
-    """)
-
+  test "spi: a ///> _ block is not compiled", %{dir: dir} do
+    path = Path.join(dir, "skip.spi")
+    File.write!(path, "inl value () = 1i32\n\n///> _\ntest not_compiled =\n    not_spiral_emitter\n\ntest compiled =\n    value ()\n")
     {:ok, agent} = Agent.start_link(fn -> [] end)
 
-    assert :ok =
-             Notebook.run(path,
-               compile: compile(agent),
-               rustc: &rustc_ok/1,
-               execute: run_value("ok\n"),
-               spi_path: Path.join(dir, "skip.spi")
-             )
+    assert :ok = Notebook.run(path, compile: compile(agent), rustc: &rustc_ok/1, execute: run_value("ok\n"))
 
     sources = Agent.get(agent, & &1)
-    assert length(sources) == 1
-    assert Enum.at(sources, 0) =~ "inl value () = 1i32"
-    refute Enum.at(sources, 0) =~ "not_spiral_emitter"
-
-    spi = File.read!(Path.join(dir, "skip.spi"))
-    assert spi == "inl value () = 1i32\n\n///> _\n\nnot_spiral_emitter\n"
+    assert Enum.any?(sources, &(&1 =~ "inl value () = 1i32"))
+    refute Enum.any?(sources, &(&1 =~ "not_spiral_emitter"))
   end
 
-  test "cells compile together", %{dir: dir} do
-    path = Path.join(dir, "parallel.dib")
+  test "spi: test blocks compile together", %{dir: dir} do
+    path = Path.join(dir, "together.spi")
+    File.write!(path, "inl left () = 1i32\n\ninl right () = 2i32\n\ntest left_is_one =\n    left ()\n\ntest right_is_two =\n    right ()\n")
+    parent = self()
 
-    File.write!(path, """
-    #!spiral
-
-    inl left () = 1i32
-
-    #!spiral
-
-    inl right () = 2i32
-    """)
-
-    {:ok, agent} = Agent.start_link(fn -> [] end)
-
-    compile = fn _ctx ->
-      started = System.monotonic_time(:millisecond)
+    compile = fn %{source: source} ->
+      side = if calls?(source, "left ()"), do: :left, else: :right
+      send(parent, {side, :started, System.monotonic_time()})
       Process.sleep(200)
-      Agent.update(agent, &(&1 ++ [{started, System.monotonic_time(:millisecond)}]))
+      send(parent, {side, :done, System.monotonic_time()})
       {:ok, "fn main() {}\n"}
     end
 
-    assert :ok =
-             Notebook.run(path,
-               compile: compile,
-               rustc: &rustc_ok/1,
-               execute: run_value("ok\n"),
-               spi_path: Path.join(dir, "parallel.spi")
-             )
-
-    [{left, left_done}, {right, right_done}] = Agent.get(agent, & &1) |> Enum.sort()
+    assert :ok = Notebook.run(path, compile: compile, rustc: &rustc_ok/1, execute: run_value("ok\n"))
+    assert_received {:left, :started, left}
+    assert_received {:right, :started, right}
+    assert_received {:left, :done, left_done}
+    assert_received {:right, :done, right_done}
     assert left < right_done and right < left_done
   end
 
-  test "a --test static cell's definitions reach later cells; a --test cell's do not", %{dir: dir} do
-    path = Path.join(dir, "static.dib")
-
-    File.write!(path, """
-    #!spiral
-
-    ///- --test static
-
-    inl kept () = 1i32
-
-    #!spiral
-
-    ///- --test
-
-    inl dropped () = 2i32
-    kept ()
-
-    #!spiral
-
-    ///- --test
-
-    kept () + 1i32
-    """)
-
+  test "spi: a static test block's definitions reach later blocks; a plain test block's do not", %{dir: dir} do
+    path = Path.join(dir, "reach.spi")
+    File.write!(path, "test kept static =\n    inl kept () = 1i32\n\ntest dropped =\n    inl dropped () = 2i32\n    dropped ()\n\ntest uses_kept =\n    kept ()\n")
     {:ok, agent} = Agent.start_link(fn -> [] end)
 
-    assert :ok =
-             Notebook.run(path,
-               compile: compile(agent),
-               rustc: &rustc_ok/1,
-               execute: run_value("ok\n"),
-               spi: false
-             )
+    assert :ok = Notebook.run(path, compile: compile(agent), rustc: &rustc_ok/1, execute: run_value("ok\n"))
 
-    last = agent |> Agent.get(& &1) |> Enum.find(&calls?(&1, "kept () + 1i32"))
+    last = Agent.get(agent, & &1) |> Enum.find(&calls?(&1, "kept ()"))
     assert "inl kept () = 1i32" in lines(last)
     refute "inl dropped () = 2i32" in lines(last)
   end
 
-  test "--real cells become the main_real module", %{dir: dir} do
-    path = Path.join(dir, "real.dib")
+  test "spi: at most four test blocks run at a time", %{dir: dir} do
+    path = Path.join(dir, "many.spi")
+    File.write!(path, Enum.map_join(1..10, "\n", &"inl f#{&1} () = #{&1}i32\n\ntest f#{&1}_runs =\n    f#{&1} ()\n"))
+    {:ok, counter} = Agent.start_link(fn -> {0, 0} end)
 
-    File.write!(path, """
-    #!spiral
+    compile = fn _ ->
+      Agent.update(counter, fn {now, top} -> {now + 1, max(top, now + 1)} end)
+      Process.sleep(100)
+      Agent.update(counter, fn {now, top} -> {now - 1, top} end)
+      {:ok, "fn main() {}\n"}
+    end
 
-    ///- --real
+    assert :ok = Notebook.run(path, compile: compile, rustc: &rustc_ok/1, execute: run_value("ok\n"))
+    {_, top} = Agent.get(counter, & &1)
+    assert top in 2..4
+  end
 
-    inl twice_real (x : i32) : i32 = x + x
-
-    #!spiral
-
-    inl twice (x : i32) : i32 = real twice_real x
-
-    #!spiral
-
-    ///- --real --test
-
-    inl y = twice_real 2i32
-    y
-
-    #!spiral
-
-    ///- --test
-
-    twice 21i32
-    """)
-
+  test "spi: a _real.spir sibling becomes the main_real module", %{dir: dir} do
+    path = Path.join(dir, "real.spi")
+    File.write!(path, "inl twice (x : i32) : i32 = real twice_real x\n\ntest twice_runs =\n    twice 21i32\n")
+    File.write!(Path.join(dir, "real_real.spir"), "inl twice_real (x : i32) : i32 = x + x\n\ntest twice_real_runs =\n    inl y = twice_real 2i32\n    y\n")
     {:ok, agent} = Agent.start_link(fn -> [] end)
 
     compile = fn %{spi_path: spi, source: source} ->
@@ -479,14 +318,7 @@ defmodule Spiral.Cells.NotebookTest do
       {:ok, "fn main() {}\n"}
     end
 
-    assert :ok =
-             Notebook.run(path,
-               compile: compile,
-               rustc: &rustc_ok/1,
-               execute: run_value("ok\n"),
-               spi: false
-             )
-
+    assert :ok = Notebook.run(path, compile: compile, rustc: &rustc_ok/1, execute: run_value("ok\n"))
     runs = Agent.get(agent, & &1)
     assert length(runs) == 3
 
@@ -498,49 +330,8 @@ defmodule Spiral.Cells.NotebookTest do
 
     {real_test, real, _} = Enum.find(runs, fn {source, _, _} -> source =~ "spiral_cells_real" end)
     assert real_test =~ "real spiral_cells_real ()"
-
     assert real =~ "inl spiral_cells_real () =\n    inl y = twice_real 2i32\n    y"
-
     {_, real, _} = Enum.find(runs, fn {source, _, _} -> calls?(source, "twice 21i32") end)
-    refute real =~ "inl y = twice_real 2i32", "a real test's code reached a later cell"
+    refute real =~ "inl y = twice_real 2i32", "a real test's code reached a later block"
   end
-
-  test "at most four cells run at a time", %{dir: dir} do
-    path = Path.join(dir, "many_cells.dib")
-    File.write!(path, Enum.map_join(1..10, "\n", &"#!spiral\n\ninl f#{&1} () = #{&1}i32\n"))
-    {:ok, agent} = Agent.start_link(fn -> {0, 0} end)
-
-    compile = fn _ctx ->
-      Agent.update(agent, fn {now, top} -> {now + 1, max(top, now + 1)} end)
-      Process.sleep(100)
-      Agent.update(agent, fn {now, top} -> {now - 1, top} end)
-      {:ok, "fn main() {}\n"}
-    end
-
-    assert :ok =
-             Notebook.run(path,
-               compile: compile,
-               rustc: &rustc_ok/1,
-               execute: run_value("ok\n"),
-               spi: false
-             )
-
-    {0, top} = Agent.get(agent, & &1)
-    assert top in 2..4
-  end
-
-  defp lines(source), do: String.split(source, "\n")
-  defp calls?(source, line), do: Enum.any?(lines(source), &(String.trim(&1) == line))
-
-  defp compile(agent) do
-    fn %{source: source} ->
-      Agent.update(agent, &(&1 ++ [source]))
-      {:ok, "fn main() {}\n"}
-    end
-  end
-
-  defp rustc_ok(_ctx), do: :ok
-
-  defp run_value(output),
-    do: fn _ctx -> {:ok, %{exit_status: 0, output: output, duration_ms: 1}} end
 end

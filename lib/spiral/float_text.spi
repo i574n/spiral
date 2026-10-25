@@ -6,20 +6,25 @@ inl text_length (s : string) : i32 = sm.length s
 
 inl char_at (s : string) (i : i32) : char = sm.index s i
 
-inl part (s : string) (from : i32) (count : i32) : string = if count <= 0i32 then "" else sm.slice s { from to = from + count - 1i32 }
+inl part (s : string) (from : i32) (count : i32) : string =
+    if count <= 0i32 then "" else sm.slice s { from to = from + count - 1i32 }
 
 let rec position_of (c : char) (s : string) (i : i32) : i32 =
     if i >= text_length s then -1i32 elif char_at s i = c then i else position_of c s (i + 1i32)
 
-let rec zeros_from (s : string) (i : i32) : i32 = if i < text_length s && char_at s i = '0' then zeros_from s (i + 1i32) else i
+let rec zeros_from (s : string) (i : i32) : i32 =
+    if i < text_length s && char_at s i = '0' then zeros_from s (i + 1i32) else i
 
-let rec zeros_before (s : string) (i : i32) : i32 = if i > 0i32 && char_at s (i - 1i32) = '0' then zeros_before s (i - 1i32) else i
+let rec zeros_before (s : string) (i : i32) : i32 =
+    if i > 0i32 && char_at s (i - 1i32) = '0' then zeros_before s (i - 1i32) else i
 
-let rec repeated_zeros (count : i32) (acc : string) : string = if count <= 0i32 then acc else repeated_zeros (count - 1i32) (concat acc "0")
+let rec repeated_zeros (count : i32) (acc : string) : string =
+    if count <= 0i32 then acc else repeated_zeros (count - 1i32) (concat acc "0")
 
 inl digit_value (c : char) : i32 = position_of c "0123456789" 0i32
 
-let rec digits_value (s : string) (i : i32) (acc : i32) : i32 = if i >= text_length s then acc else digits_value s (i + 1i32) (acc * 10i32 + digit_value (char_at s i))
+let rec digits_value (s : string) (i : i32) (acc : i32) : i32 =
+    if i >= text_length s then acc else digits_value s (i + 1i32) (acc * 10i32 + digit_value (char_at s i))
 
 inl signed_value (s : string) : i32 =
     if text_length s = 0i32 then 0i32
@@ -57,10 +62,13 @@ inl float_text_repr (text : string) : string =
         inl unsigned = if negative then part text 1i32 (text_length text - 1i32) else text
         inl marker = exponent_marker unsigned
         inl mantissa = if marker < 0i32 then unsigned else part unsigned 0i32 marker
-        inl exponent = if marker < 0i32 then 0i32 else signed_value (part unsigned (marker + 1i32) (text_length unsigned - marker - 1i32))
+        inl exponent =
+            if marker < 0i32 then 0i32
+            else signed_value (part unsigned (marker + 1i32) (text_length unsigned - marker - 1i32))
         inl point_at = position_of '.' mantissa 0i32
         inl whole = if point_at < 0i32 then mantissa else part mantissa 0i32 point_at
-        inl fraction = if point_at < 0i32 then "" else part mantissa (point_at + 1i32) (text_length mantissa - point_at - 1i32)
+        inl fraction =
+            if point_at < 0i32 then "" else part mantissa (point_at + 1i32) (text_length mantissa - point_at - 1i32)
         inl all_digits = concat whole fraction
         inl first = zeros_from all_digits 0i32
         inl last = zeros_before all_digits (text_length all_digits)
@@ -71,7 +79,8 @@ inl float_text_repr (text : string) : string =
 ///> typescript
 ///> gleam
 test float_text_repr_lays_out_any_shortest_text_like_python_repr =
-    inl check (given : string) (expected : string) = if float_text_repr given <> expected then failwith (concat given (concat " -> " (float_text_repr given)))
+    inl check (given : string) (expected : string) =
+        if float_text_repr given <> expected then failwith (concat given (concat " -> " (float_text_repr given)))
     check "1e+02" "100.0"
     check "100.0" "100.0"
     check "1e2" "100.0"

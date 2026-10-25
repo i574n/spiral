@@ -27,8 +27,17 @@ pub fn spiral_array_create(size: Int) -> SpiralArray(a) {
   list.repeat(option.None, size) |> array.from_list(option.None) |> spiral_array_from_storage(size)
 }
 
+pub fn spiral_array_create_filled(size: Int, value: a) -> SpiralArray(a) {
+  list.repeat(option.Some(value), size) |> array.from_list(option.None) |> spiral_array_from_storage(size)
+}
 
+pub fn spiral_array_from_list(values: List(a)) -> SpiralArray(a) {
+  values |> list.map(option.Some) |> array.from_list(option.None) |> spiral_array_from_storage(list.length(values))
+}
 
+pub fn spiral_array_to_list(xs: SpiralArray(a)) -> List(a) {
+  list.repeat(Nil, xs.size) |> list.index_map(fn(_, i) { spiral_array_get(xs, i) })
+}
 
 pub fn spiral_array_get(xs: SpiralArray(a), i: Int) -> a {
   case i >= 0 && i < xs.size {
@@ -162,84 +171,84 @@ pub fn score_0(v0: Us1) -> Int {
     }
 }
 pub fn main() {
-    let v0 = 7
-    let v1 = "hi"
-    let v2 = Heap0(l0: v0, l1: v1)
-    let v3 = 4
-    let v4 = "yo"
-    let v5 = Heap0(l0: v3, l1: v4)
-    let v6 = Heap1(l0: v2, l1: v5)
-    let v7 = 2
-    let v8 = Heap2(l0: v6, l1: v7)
-    let v9 = True
-    let v12 =
-        case v9 {
-            True -> {
-                Us0Held(v8)
-            }
-            False -> {
-                Us0None
-            }
-        }
-    let v13 = Heap3(l0: v12)
-    let v14 = True
-    let v17 =
-        case v14 {
-            True -> {
-                Us1Box(v13)
-            }
-            False -> {
-                Us1Mark(1)
-            }
-        }
-    let v18 = 3
-    let v19 = f_c0(#(v17, v18))
-    let v20 = v19(1)
-    let v21 = Heap4(l0: v20)
-    let v22 = v19(2)
-    let v23 = Heap4(l0: v22)
-    let v24 = v19(0)
-    let v25 = Heap4(l0: v24)
-    let v26 = spiral_array_create(3)
-    spiral_array_set(v26, 0, v21)
-    spiral_array_set(v26, 1, v23)
-    spiral_array_set(v26, 2, v25)
-    let v27 = spiral_array_get(v26, 0)
-    let v28 = v27.l0
-    let v29 = spiral_array_get(v26, 1)
-    let v30 = v29.l0
-    let v31 = spiral_array_get(v26, 2)
-    let v32 = v31.l0
-    let v33 = score_0(v28)
-    let v34 = score_0(v30)
-    let v35 = score_0(v32)
-    let v36 = v33 == 0
-    let v38 =
-        case v36 {
-            True -> {
-                let v37 = v34 == 1
-                v37
-            }
-            False -> {
-                False
-            }
-        }
-    let v40 =
-        case v38 {
-            True -> {
-                let v39 = v35 == 1
-                v39
-            }
-            False -> {
-                False
-            }
-        }
-    case v40 {
+let v0 = 7
+let v1 = "hi"
+let v2 = Heap0(l0: v0, l1: v1)
+let v3 = 4
+let v4 = "yo"
+let v5 = Heap0(l0: v3, l1: v4)
+let v6 = Heap1(l0: v2, l1: v5)
+let v7 = 2
+let v8 = Heap2(l0: v6, l1: v7)
+let v9 = True
+let v12 =
+    case v9 {
         True -> {
-            0
+            Us0Held(v8)
         }
         False -> {
-            1
+            Us0None
         }
     }
+let v13 = Heap3(l0: v12)
+let v14 = True
+let v17 =
+    case v14 {
+        True -> {
+            Us1Box(v13)
+        }
+        False -> {
+            Us1Mark(1)
+        }
+    }
+let v18 = 3
+let v19 = f_c0(#(v17, v18))
+let v20 = v19( 1  )
+let v21 = Heap4(l0: v20)
+let v22 = v19( 2  )
+let v23 = Heap4(l0: v22)
+let v24 = v19( 0  )
+let v25 = Heap4(l0: v24)
+let v26 = spiral_array_create(3)
+spiral_array_set(v26, 0, v21)
+spiral_array_set(v26, 1, v23)
+spiral_array_set(v26, 2, v25)
+let v27 = spiral_array_get(v26, 0)
+let v28 = v27.l0
+let v29 = spiral_array_get(v26, 1)
+let v30 = v29.l0
+let v31 = spiral_array_get(v26, 2)
+let v32 = v31.l0
+let v33 = score_0(v28)
+let v34 = score_0(v30)
+let v35 = score_0(v32)
+let v36 = v33 == 0
+let v38 =
+    case v36 {
+        True -> {
+            let v37 = v34 == 1
+            v37
+        }
+        False -> {
+            False
+        }
+    }
+let v40 =
+    case v38 {
+        True -> {
+            let v39 = v35 == 1
+            v39
+        }
+        False -> {
+            False
+        }
+    }
+case v40 {
+    True -> {
+        0
+    }
+    False -> {
+        1
+    }
+}
 }

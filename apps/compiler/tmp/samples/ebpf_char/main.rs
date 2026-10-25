@@ -2,13 +2,13 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 fn spiral_main() -> i32 {
-    let v0: u8 = b'A';
-    let v1: u8 = b'B';
-    let v2: bool = v0 == b'A';
+    let mut v0: u8 = b'A';
+    let mut v1: u8 = b'B';
+    let mut v2: bool = v0 == b'A';
     if v2 {
-        let v3: bool = v1 == b'B';
+        let mut v3: bool = v1 == b'B';
         if v3 {
-            let v4: bool = v0 == v1;
+            let mut v4: bool = v0 == v1;
             if v4 {
                 2i32
             } else {

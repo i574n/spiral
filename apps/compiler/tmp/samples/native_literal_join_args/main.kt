@@ -30,13 +30,17 @@ fun spiralStringSlice(value: String, from: Int, to: Int): String {
 fun sp_f_0(p0: String, p1: Int): Int {
     var v0: String = p0
     var v1: Int = p1
-    val v2: Int = spiralStringLength(v0)
-    val v3: Int = (v2 + v1)
+    var v2: Int = 0
+    v2 = spiralStringLength(v0)
+    var v3: Int = 0
+    v3 = (v2 + v1)
     return v3
 }
 fun spiral_main(): Int {
-    val v0: String = "abc"
-    val v1: Int = 1
+    var v0: String = ""
+    v0 = "abc"
+    var v1: Int = 0
+    v1 = 1
     return sp_f_0(v0, v1)
 }
 fun main() {

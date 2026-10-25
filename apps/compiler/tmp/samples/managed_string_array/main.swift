@@ -35,16 +35,24 @@ func spiralStringSlice(_ value: String, _ from: Int32, _ to: Int32) -> String {
 func spiral_main() -> Int32 {
     var v0: SpiralArray<String> = SpiralArray<String>([])
     v0 = SpiralArray<String>(Array(repeating: "", count: Int(2)))
-    let v1: String = "ab"
+    var v1: String = ""
+    v1 = "ab"
     v0.items[Int(0)] = v1
-    let v2: String = "cde"
+    var v2: String = ""
+    v2 = "cde"
     v0.items[Int(1)] = v2
-    let v3: String = v0.items[Int(0)]
-    let v4: String = v0.items[Int(1)]
-    let v5: Int32 = spiralStringLength(v3)
-    let v6: Int32 = spiralStringLength(v4)
-    let v7: Int32 = (v5 &+ v6)
-    let v8: Int32 = (v7 &- 5)
+    var v3: String = ""
+    v3 = v0.items[Int(0)]
+    var v4: String = ""
+    v4 = v0.items[Int(1)]
+    var v5: Int32 = 0
+    v5 = spiralStringLength(v3)
+    var v6: Int32 = 0
+    v6 = spiralStringLength(v4)
+    var v7: Int32 = 0
+    v7 = (v5 &+ v6)
+    var v8: Int32 = 0
+    v8 = (v7 &- 5)
     return v8
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

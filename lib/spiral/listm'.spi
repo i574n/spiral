@@ -504,6 +504,7 @@ inl rev' forall t. (items : list' t) : list' t =
 inl fold' forall t u. (fn : t -> u) (init : list u) (list : list' t) : list u =
     backend_switch {
         Gleam = fun () =>
+            global "import gleam/list"
             $'let listm_fold = !list |> list.fold (!init, fn (acc, x) {'
             $'!(Cons (fn $'x', $'acc'))' : ()
             $'})' : ()
@@ -617,8 +618,7 @@ inl filter' forall t. (fn : t -> bool) (list : list' t) : list' t =
                 then *result
                 else
                     inl item = $'!list[!i + 1]' : t
-                    if fn item
-                    then
+                    if fn item then
                         result <- cons' item (*result)
                         루프 (i + 1i32)
                     else 루프 (i + 1i32)
@@ -796,6 +796,27 @@ inl take_ forall t. (n : i32) (l : list t) : list t =
         | Cons (x, xs) when n > 0i32 => Cons (x, taken (n - 1i32) xs)
         | _ => Nil
     taken n l
+
+/// ### skip_
+let rec skip_ forall t. (n : i32) (items : list t) : list t =
+    match items with
+    | Cons (_, rest) when n > 0i32 => skip_ (n - 1i32) rest
+    | _ => items
+
+/// ### chunks_
+let rec chunks_ forall t. (n : i32) (items : list t) : list (list t) =
+    match items with
+    | Nil => Nil
+    | _ when n <= 0i32 => [items]
+    | _ => Cons (take_ n items, chunks_ n (skip_ n items))
+
+///> rust
+///> gleam
+test chunks_split_into_runs_of_at_most_n =
+    inl ~items = [1i32; 2; 3; 4; 5]
+    inl sizes (l : list (list i32)) : list i32 = l |> listm.map (fun (c : list i32) => listm.length c)
+    (sizes (chunks_ 2i32 items), skip_ 3i32 items, skip_ 9i32 items, sizes (chunks_ 0i32 items))
+    |> _assert_eq ([2i32; 2; 1], [4i32; 5], Nil, [5i32])
 
 ///> rust
 ///> gleam

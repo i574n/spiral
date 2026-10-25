@@ -26,7 +26,8 @@ def spiralStringSlice (s : String) (a b : Int) : IO String := do
 mutual
 partial def method1 (p0 : Int32) : IO Bool := do
     let mut v0 : Int32 := p0
-    let v1 : Bool := (decide (v0 < (7040 : Int32)))
+    let mut v1 : Bool := default
+    v1 := (decide (v0 < (7040 : Int32)))
     return v1
 partial def method0 : IO (IO.Ref (Array Int32)) := do
     let mut v0 : (IO.Ref (Array Int32)) ← IO.mkRef #[]
@@ -111,21 +112,40 @@ partial def frame_text_loop_5 (p0 : (IO.Ref (Array Int32))) (p1 : Int32) (p2 : I
                 v23 := false
             if v23 then
                 v24 := (v17 ++ "\n")
-                v3 := v18
-                v4 := v24
+                let t0 := v0
+                let t1 := v1
+                let t2 := v2
+                let t18 := v18
+                let t24 := v24
+                v0 := t0
+                v1 := t1
+                v2 := t2
+                v3 := t18
+                v4 := t24
                 continue
             else
-                v3 := v18
-                v4 := v17
+                let t0 := v0
+                let t1 := v1
+                let t2 := v2
+                let t18 := v18
+                let t17 := v17
+                v0 := t0
+                v1 := t1
+                v2 := t2
+                v3 := t18
+                v4 := t17
                 continue
 partial def runtime_byte_8 (p0 : String) (p1 : Int32) : IO Char := do
     let mut v0 : String := p0
     let mut v1 : Int32 := p1
-    let v2 : Char := (Char.ofNat (v0.toUTF8.get! (spiralIdx v1)).toNat)
+    let mut v2 : Char := default
+    v2 := (Char.ofNat (v0.toUTF8.get! (spiralIdx v1)).toNat)
     return v2
 partial def utf8_scalar_at_byte_offset_7 (p0 : String) (p1 : Int32) : IO Int32 := do
     let mut v0 : String := p0
     let mut v1 : Int32 := p1
+    let mut v2 : Int32 := default
+    let mut v3 : Bool := default
     let mut v5 : Bool := default
     let mut v7 : Char := default
     let mut v8 : Int32 := default
@@ -199,8 +219,8 @@ partial def utf8_scalar_at_byte_offset_7 (p0 : String) (p1 : Int32) : IO Int32 :
     let mut v93 : Int32 := default
     let mut v94 : Bool := default
     let mut v96 : Bool := default
-    let v2 : Int32 := (Int32.ofNat v0.utf8ByteSize)
-    let v3 : Bool := (decide (v1 < (0 : Int32)))
+    v2 := (Int32.ofNat v0.utf8ByteSize)
+    v3 := (decide (v1 < (0 : Int32)))
     if v3 then
         spiralFail "UTF-8 byte offset is negative."
     else
@@ -395,11 +415,46 @@ partial def loop_6 (p0 : String) (p1 : Int32) (p2 : Int32) (p3 : Int32) : IO Int
                             v13 := (4 : Int32)
                 v14 := (v2 + v13)
                 v15 := (v3 + v7)
-                v2 := v14
-                v3 := v15
+                let t0 := v0
+                let t1 := v1
+                let t14 := v14
+                let t15 := v15
+                v0 := t0
+                v1 := t1
+                v2 := t14
+                v3 := t15
                 continue
 partial def spiralMain : IO Int32 := do
     let mut v0 : (IO.Ref (Array Int32)) ← IO.mkRef #[]
+    let mut v1 : Int32 := default
+    let mut v2 : Int32 := default
+    let mut v3 : Int32 := default
+    let mut v4 : Int32 := default
+    let mut v5 : Int32 := default
+    let mut v6 : Int32 := default
+    let mut v7 : Int32 := default
+    let mut v8 : Int32 := default
+    let mut v9 : Int32 := default
+    let mut v10 : Int32 := default
+    let mut v11 : String := default
+    let mut v12 : String := default
+    let mut v13 : Int32 := default
+    let mut v14 : Int32 := default
+    let mut v15 : Int32 := default
+    let mut v16 : Int32 := default
+    let mut v17 : Int32 := default
+    let mut v18 : Int32 := default
+    let mut v19 : Int32 := default
+    let mut v20 : Int32 := default
+    let mut v21 : Int32 := default
+    let mut v22 : Int32 := default
+    let mut v23 : Int32 := default
+    let mut v24 : Int32 := default
+    let mut v25 : Int32 := default
+    let mut v26 : Int32 := default
+    let mut v27 : Int32 := default
+    let mut v28 : Int32 := default
+    let mut v29 : Bool := default
     let mut v31 : Bool := default
     let mut v30 : Bool := default
     let mut v33 : Bool := default
@@ -429,35 +484,35 @@ partial def spiralMain : IO Int32 := do
     let mut v57 : Bool := default
     let mut v56 : Bool := default
     v0 := (← method0)
-    let v1 : Int32 := (← method2 v0)
-    let v2 : Int32 := (← method3 v0)
-    let v3 : Int32 := (← method4 v0)
-    let v4 : Int32 := (← spiralIndex (← v0.get) (spiralIdx (0 : Int32)))
-    let v5 : Int32 := (← spiralIndex (← v0.get) (spiralIdx (5180 : Int32)))
-    let v6 : Int32 := (← spiralIndex (← v0.get) (spiralIdx (4258 : Int32)))
-    let v7 : Int32 := (← spiralIndex (← v0.get) (spiralIdx (3964 : Int32)))
-    let v8 : Int32 := (160 : Int32)
-    let v9 : Int32 := (7040 : Int32)
-    let v10 : Int32 := (0 : Int32)
-    let v11 : String := ""
-    let v12 : String := (← frame_text_loop_5 v0 v8 v9 v10 v11)
-    let v13 : Int32 := (Int32.ofNat v12.utf8ByteSize)
-    let v14 : Int32 := (0 : Int32)
-    let v15 : Int32 := (0 : Int32)
-    let v16 : Int32 := (← loop_6 v12 v13 v14 v15)
-    let v17 : Int32 := (0 : Int32)
-    let v18 : Int32 := (← utf8_scalar_at_byte_offset_7 v12 v17)
-    let v19 : Int32 := (160 : Int32)
-    let v20 : Int32 := (← utf8_scalar_at_byte_offset_7 v12 v19)
-    let v21 : Int32 := (3988 : Int32)
-    let v22 : Int32 := (← utf8_scalar_at_byte_offset_7 v12 v21)
-    let v23 : Int32 := (4284 : Int32)
-    let v24 : Int32 := (← utf8_scalar_at_byte_offset_7 v12 v23)
-    let v25 : Int32 := (5212 : Int32)
-    let v26 : Int32 := (← utf8_scalar_at_byte_offset_7 v12 v25)
-    let v27 : Int32 := (7082 : Int32)
-    let v28 : Int32 := (← utf8_scalar_at_byte_offset_7 v12 v27)
-    let v29 : Bool := (v1 == (5180 : Int32))
+    v1 := (← method2 v0)
+    v2 := (← method3 v0)
+    v3 := (← method4 v0)
+    v4 := (← spiralIndex (← v0.get) (spiralIdx (0 : Int32)))
+    v5 := (← spiralIndex (← v0.get) (spiralIdx (5180 : Int32)))
+    v6 := (← spiralIndex (← v0.get) (spiralIdx (4258 : Int32)))
+    v7 := (← spiralIndex (← v0.get) (spiralIdx (3964 : Int32)))
+    v8 := (160 : Int32)
+    v9 := (7040 : Int32)
+    v10 := (0 : Int32)
+    v11 := ""
+    v12 := (← frame_text_loop_5 v0 v8 v9 v10 v11)
+    v13 := (Int32.ofNat v12.utf8ByteSize)
+    v14 := (0 : Int32)
+    v15 := (0 : Int32)
+    v16 := (← loop_6 v12 v13 v14 v15)
+    v17 := (0 : Int32)
+    v18 := (← utf8_scalar_at_byte_offset_7 v12 v17)
+    v19 := (160 : Int32)
+    v20 := (← utf8_scalar_at_byte_offset_7 v12 v19)
+    v21 := (3988 : Int32)
+    v22 := (← utf8_scalar_at_byte_offset_7 v12 v21)
+    v23 := (4284 : Int32)
+    v24 := (← utf8_scalar_at_byte_offset_7 v12 v23)
+    v25 := (5212 : Int32)
+    v26 := (← utf8_scalar_at_byte_offset_7 v12 v25)
+    v27 := (7082 : Int32)
+    v28 := (← utf8_scalar_at_byte_offset_7 v12 v27)
+    v29 := (v1 == (5180 : Int32))
     if v29 then
         v30 := (v2 == (4258 : Int32))
         v31 := v30

@@ -43,8 +43,7 @@ inl to' forall t u. (fn : t -> option u) (x : t) : option u =
 
 /// ### to
 inl to forall t u. (x : t) : u =
-    if is_rust ()
-    then
+    if is_rust () then
         inl from_string : bool =
             real
                 typecase t with
@@ -153,8 +152,7 @@ inl convert_i32 forall t. (x : t) : int =
         C = fun () =>
             if is_string_type x
             then x |> convert_i32_base 10 : int
-            elif is_float_type x
-            then
+            elif is_float_type x then
                 global "#include <math.h>"
                 $'(int32_t)nearbyint(!x)' : int
             else $'(int32_t)(!x)' : int
@@ -267,8 +265,7 @@ inl try_convert forall t u. (x : t) : option u =
                     else None : _ u
                 else x |> to |> Some
             Lua = fun () =>
-                if is_string_type x
-                then
+                if is_string_type x then
                     parsed_integer
                         ($'(string.match(!x, "^%s*[+-]?%d+%s*$") ~= nil)' : bool)
                         ($'(tonumber(!x) or 0)' : i64)
@@ -288,13 +285,11 @@ inl try_convert forall t u. (x : t) : option u =
             Rust = fun () =>
                 if (real typecase u with string => true | _ => false)
                 then Some $'Rc::<str>::from(format\!("{}", !x))'
-                elif (real typecase t with string => true | _ => false)
-                then
+                elif (real typecase t with string => true | _ => false) then
                     ($'(!x).trim().parse::<`u>().ok()' : optionm'.option' u) |> optionm'.unbox
                 else Some $'((!x) as `u)'
             C = fun () =>
-                if is_string_type x
-                then
+                if is_string_type x then
                     global "#include <stdbool.h>"
                     global "#include <stdlib.h>"
                     global "#include <ctype.h>"
@@ -307,40 +302,34 @@ inl try_convert forall t u. (x : t) : option u =
                     parsed_integer ($'spiral_integer_text_ok((!x)->ptr)' : bool) ($'strtoll((!x)->ptr, NULL, 10)' : i64)
                 else x |> to |> Some : _ u
             Delphi = fun () =>
-                if is_string_type x
-                then
+                if is_string_type x then
                     parsed_integer
                         ($'(StrToInt64Def(Trim(!x), 0) = StrToInt64Def(Trim(!x), 1))' : bool)
                         ($'StrToInt64Def(Trim(!x), 0)' : i64)
                 else x |> to |> Some : _ u
             TypeScript = fun () =>
-                if is_string_type x
-                then
+                if is_string_type x then
                     inl ok : bool = $'/^\\s*[+-]?\\d+\\s*$/.test(!x)'
                     parsed_integer ok ($'(!ok ? BigInt(!x) : 0n)' : i64)
                 else x |> to |> Some : _ u
             Wasm = fun () =>
-                if is_string_type x
-                then
+                if is_string_type x then
                     parsed_integer ($'(call $integer_text_ok !x)' : bool) ($'(call $parse_i64 !x (i32.const 10))' : i64)
                 else x |> to |> Some : _ u
             Zig = fun () =>
-                if is_string_type x
-                then
+                if is_string_type x then
                     inl ok : bool = $'(if (std.fmt.parseInt(i64, std.mem.trim(u8, !x, " \\t\\r\\n"), 10)) |_| true \
                         else |_| false)'
                     parsed_integer ok ($'(std.fmt.parseInt(i64, std.mem.trim(u8, !x, " \\t\\r\\n"), 10) catch 0)' : i64)
                 else x |> to |> Some : _ u
             Lean = fun () =>
-                if is_string_type x
-                then
+                if is_string_type x then
                     lean_parse_helpers ()
                     parsed_integer ($'(spiralParseInt? !x).isSome' : bool) ($'(Int64.ofInt ((spiralParseInt? !x).getD \
                         0))' : i64)
                 else x |> to |> Some : _ u
             Kotlin = fun () =>
-                if is_string_type x
-                then
+                if is_string_type x then
                     parsed_integer
                         ($'((!x).trim().toLongOrNull() \!= null)' : bool)
                         ($'((!x).trim().toLongOrNull() ?: 0L)' : i64)

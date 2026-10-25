@@ -2,7 +2,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 fn f_0(mut v0: i32) -> i32 {
-    let v1: bool = v0 == 1i32;
+    let mut v1: bool = v0 == 1i32;
     if v1 {
         0i32
     } else {
@@ -10,7 +10,7 @@ fn f_0(mut v0: i32) -> i32 {
     }
 }
 fn spiral_main() -> i32 {
-    let v0: i32 = 1i32;
+    let mut v0: i32 = 1i32;
     f_0(v0)
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }

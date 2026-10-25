@@ -28,57 +28,79 @@ fun spiralStringSlice(value: String, from: Int, to: Int): String {
     return bytes.copyOfRange(from, to + 1).toString(Charsets.UTF_8)
 }
 fun spiral_main(): Int {
-    val v0: String = "é"
-    val v1: Int = spiralStringLength(v0)
-    val v2: Int = spiralStringIndex(v0, 0)
-    val v3: Int = spiralStringIndex(v0, 1)
-    val v4: String = "x"
-    val v5: String = (v0 + v4)
-    val v6: Int = spiralStringLength(v5)
-    val v7: String = "ab"
-    val v8: Int = spiralStringIndex(v7, 0)
-    val v9: String = spiralStringSlice(v7, 0, 0)
-    val v10: Int = spiralStringLength(v9)
-    val v11: String = spiralStringSlice(v7, 1, 0)
-    val v12: Int = spiralStringLength(v11)
-    val v13: String = spiralStringSlice(v0, 0, 1)
-    val v14: Int = spiralStringLength(v13)
-    val v15: Boolean = (v2 == v3)
+    var v0: String = ""
+    v0 = "é"
+    var v1: Int = 0
+    v1 = spiralStringLength(v0)
+    var v2: Int = 0
+    v2 = spiralStringIndex(v0, 0)
+    var v3: Int = 0
+    v3 = spiralStringIndex(v0, 1)
+    var v4: String = ""
+    v4 = "x"
+    var v5: String = ""
+    v5 = (v0 + v4)
+    var v6: Int = 0
+    v6 = spiralStringLength(v5)
+    var v7: String = ""
+    v7 = "ab"
+    var v8: Int = 0
+    v8 = spiralStringIndex(v7, 0)
+    var v9: String = ""
+    v9 = spiralStringSlice(v7, 0, 0)
+    var v10: Int = 0
+    v10 = spiralStringLength(v9)
+    var v11: String = ""
+    v11 = spiralStringSlice(v7, 1, 0)
+    var v12: Int = 0
+    v12 = spiralStringLength(v11)
+    var v13: String = ""
+    v13 = spiralStringSlice(v0, 0, 1)
+    var v14: Int = 0
+    v14 = spiralStringLength(v13)
+    var v15: Boolean = false
+    v15 = (v2 == v3)
     if (v15) {
         return 1
     } else {
-        val v16: Boolean = (v1 == 2)
+        var v16: Boolean = false
+        v16 = (v1 == 2)
         var v18: Boolean = false
         if (v16) {
-            val v17: Boolean = (v8 == 97)
+            var v17: Boolean = false
+            v17 = (v8 == 97)
             v18 = v17
         } else {
             v18 = false
         }
         var v20: Boolean = false
         if (v18) {
-            val v19: Boolean = (v6 == 3)
+            var v19: Boolean = false
+            v19 = (v6 == 3)
             v20 = v19
         } else {
             v20 = false
         }
         var v22: Boolean = false
         if (v20) {
-            val v21: Boolean = (v10 == 1)
+            var v21: Boolean = false
+            v21 = (v10 == 1)
             v22 = v21
         } else {
             v22 = false
         }
         var v24: Boolean = false
         if (v22) {
-            val v23: Boolean = (v12 == 0)
+            var v23: Boolean = false
+            v23 = (v12 == 0)
             v24 = v23
         } else {
             v24 = false
         }
         var v26: Boolean = false
         if (v24) {
-            val v25: Boolean = (v14 == 2)
+            var v25: Boolean = false
+            v25 = (v14 == 2)
             v26 = v25
         } else {
             v26 = false

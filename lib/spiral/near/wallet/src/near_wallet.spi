@@ -67,11 +67,11 @@ test tests =
     |> view
     |> to_html
     |> expect_html (
-           "<div style=\"display:flex;\"><div style=\"display:flex;flex-direction:column;\"><button "
-           ^^ "role=\"button\" tabindex=\"0\" class=\"lustre-ui-button\">+</button><p "
-           ^^ "style=\"text-align:center;\">1</p><button role=\"button\" tabindex=\"0\" "
-           ^^ "class=\"lustre-ui-button\">-</button></div></div>"
-       )
+        "<div style=\"display:flex;\"><div style=\"display:flex;flex-direction:column;\"><button "
+        ^^ "role=\"button\" tabindex=\"0\" class=\"lustre-ui-button\">+</button><p "
+        ^^ "style=\"text-align:center;\">1</p><button role=\"button\" tabindex=\"0\" "
+        ^^ "class=\"lustre-ui-button\">-</button></div></div>"
+    )
 
 ///> gleam -t javascript -d lustre=\">=4.6.0\" lustre_ui=\"1.0.0-rc.1\" gleam_json=\">=2.0.0\"
 test tests_2 =
@@ -81,11 +81,11 @@ test tests_2 =
     |> view
     |> to_html
     |> expect_html (
-           "<div style=\"display:flex;\"><div style=\"display:flex;flex-direction:column;\"><button "
-           ^^ "role=\"button\" tabindex=\"0\" class=\"lustre-ui-button\">+</button><p "
-           ^^ "style=\"text-align:center;\">3</p><button role=\"button\" tabindex=\"0\" "
-           ^^ "class=\"lustre-ui-button\">-</button></div></div>"
-       )
+        "<div style=\"display:flex;\"><div style=\"display:flex;flex-direction:column;\"><button "
+        ^^ "role=\"button\" tabindex=\"0\" class=\"lustre-ui-button\">+</button><p "
+        ^^ "style=\"text-align:center;\">3</p><button role=\"button\" tabindex=\"0\" "
+        ^^ "class=\"lustre-ui-button\">-</button></div></div>"
+    )
 
 /// ## main
 ///> _

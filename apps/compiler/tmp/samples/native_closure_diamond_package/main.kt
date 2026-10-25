@@ -61,15 +61,20 @@ fun sp_method2(p0: (Int) -> Int, p1: Int): Int {
     return v3
 }
 fun spiral_main(): Int {
-    val v0: String = "abc"
-    val v1: (Int) -> Int = f_c0(v0)
+    var v0: String = ""
+    v0 = "abc"
+    var v1: (Int) -> Int = { _: Int -> throw RuntimeException() }
+    v1 = f_c0(v0)
     var v2: Int = 0
     v2 = 16
     var v3: Int = 0
     v3 = sp_method0(v1, v2)
-    val v4: Int = 17
-    val v5: Int = sp_method2(v1, v4)
-    val v6: Int = (v3 + v5)
+    var v4: Int = 0
+    v4 = 17
+    var v5: Int = 0
+    v5 = sp_method2(v1, v4)
+    var v6: Int = 0
+    v6 = (v3 + v5)
     return v6
 }
 fun main() {

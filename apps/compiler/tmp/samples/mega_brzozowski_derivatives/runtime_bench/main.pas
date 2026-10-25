@@ -59,17 +59,13 @@ function US0_BitOne: TUS0;
 begin
   Result.tag := 1; 
 end;
-var UH0_RegexEmpty_shared: TUH0 = nil;
 function UH0_RegexEmpty: TUH0;
 begin
-  if UH0_RegexEmpty_shared = nil then begin UH0_RegexEmpty_shared := TUH0.Create; UH0_RegexEmpty_shared.tag := 0; end;
-  Result := UH0_RegexEmpty_shared;
+  Result := TUH0.Create; Result.tag := 0; 
 end;
-var UH0_RegexEpsilon_shared: TUH0 = nil;
 function UH0_RegexEpsilon: TUH0;
 begin
-  if UH0_RegexEpsilon_shared = nil then begin UH0_RegexEpsilon_shared := TUH0.Create; UH0_RegexEpsilon_shared.tag := 1; end;
-  Result := UH0_RegexEpsilon_shared;
+  Result := TUH0.Create; Result.tag := 1; 
 end;
 function UH0_RegexChar(a0: TUS0): TUH0;
 begin
@@ -87,11 +83,9 @@ function UH0_RegexStar(a0: TUH0): TUH0;
 begin
   Result := TUH0.Create; Result.tag := 5; Result.c5_0 := a0;
 end;
-var UH1_InputEmpty_shared: TUH1 = nil;
 function UH1_InputEmpty: TUH1;
 begin
-  if UH1_InputEmpty_shared = nil then begin UH1_InputEmpty_shared := TUH1.Create; UH1_InputEmpty_shared.tag := 0; end;
-  Result := UH1_InputEmpty_shared;
+  Result := TUH1.Create; Result.tag := 0; 
 end;
 function UH1_InputCons(a0: TUS0; a1: TUH1): TUH1;
 begin
@@ -115,6 +109,9 @@ var
   v11: TUS0;
   v12: TUS0;
   v14: TUH1;
+  tmp12: QWord;
+  tmp13: LongInt;
+  tmp14: TUH1;
 begin
   while True do begin
       v3 := 0 < v1;
@@ -134,9 +131,12 @@ begin
               v13 := v12;
           end;
           v14 := UH1_InputCons(v13, v2);
-          v0 := v6;
-          v1 := v7;
-          v2 := v14;
+          tmp12 := v6;
+          tmp13 := v7;
+          tmp14 := v14;
+          v0 := tmp12;
+          v1 := tmp13;
+          v2 := tmp14;
           Continue;
       end else begin
           Result := TupleCreate0(v2, v0);
@@ -163,11 +163,15 @@ var
   v55: TUH0;
   v56: TUH0;
   v57: TUS1;
+  tmp5: TUH0;
+  tmp6: TUH0;
   v28: TUH0;
   v29: TUH0;
   v34: TUH0;
   v35: TUH0;
   v36: TUS1;
+  tmp12: TUH0;
+  tmp13: TUH0;
   v32: TUS0;
   v10: TUS0;
   v13: TUS0;
@@ -175,6 +179,8 @@ var
   v45: TUH0;
   v46: TUH0;
   v48: TUH0;
+  tmp21: TUH0;
+  tmp22: TUH0;
 begin
   while True do begin
       case v0.tag of
@@ -188,8 +194,10 @@ begin
                       v57 := regex_compare_7(v53, v55);
                       case v57.tag of
                           1: begin
-                              v0 := v54;
-                              v1 := v56;
+                              tmp5 := v54;
+                              tmp6 := v56;
+                              v0 := tmp5;
+                              v1 := tmp6;
                               Continue;
                           end;
                           else begin
@@ -214,8 +222,10 @@ begin
                       v36 := regex_compare_7(v28, v34);
                       case v36.tag of
                           1: begin
-                              v0 := v29;
-                              v1 := v35;
+                              tmp12 := v29;
+                              tmp13 := v35;
+                              v0 := tmp12;
+                              v1 := tmp13;
                               Continue;
                           end;
                           else begin
@@ -328,8 +338,10 @@ begin
                   end;
                   5: begin
                       v48 := v1.c5_0;
-                      v0 := v44;
-                      v1 := v48;
+                      tmp21 := v44;
+                      tmp22 := v48;
+                      v0 := tmp21;
+                      v1 := tmp22;
                       Continue;
                   end;
                   else begin
@@ -391,6 +403,8 @@ var
   v2: TUH0;
   v3: TUH0;
   v4: TUH0;
+  tmp3: TUH0;
+  tmp4: TUH0;
 begin
   while True do begin
       case v0.tag of
@@ -398,8 +412,10 @@ begin
               v2 := v0.c3_0;
               v3 := v0.c3_1;
               v4 := alt_insert_sorted_6(v2, v1);
-              v0 := v3;
-              v1 := v4;
+              tmp3 := v3;
+              tmp4 := v4;
+              v0 := tmp3;
+              v1 := tmp4;
               Continue;
           end;
           0: begin
@@ -420,16 +436,22 @@ var
   v20: TUH0;
   v21: TUH0;
   v22: Boolean;
+  tmp5: TUH0;
+  tmp6: TUH0;
   v26: TUH0;
   v27: TUH0;
   v28: TUH0;
   v29: TUH0;
   v30: Boolean;
+  tmp12: TUH0;
+  tmp13: TUH0;
   v4: TUS0;
   v5: TUS0;
   v15: TUS1;
   v34: TUH0;
   v35: TUH0;
+  tmp19: TUH0;
+  tmp20: TUH0;
 begin
   while True do begin
       case v0.tag of
@@ -442,8 +464,10 @@ begin
                       v21 := v1.c3_1;
                       v22 := regex_equal_9(v18, v20);
                       if v22 then begin
-                          v0 := v19;
-                          v1 := v21;
+                          tmp5 := v19;
+                          tmp6 := v21;
+                          v0 := tmp5;
+                          v1 := tmp6;
                           Continue;
                       end else begin
                           Result := False;
@@ -465,8 +489,10 @@ begin
                       v29 := v1.c4_1;
                       v30 := regex_equal_9(v26, v28);
                       if v30 then begin
-                          v0 := v27;
-                          v1 := v29;
+                          tmp12 := v27;
+                          tmp13 := v29;
+                          v0 := tmp12;
+                          v1 := tmp13;
                           Continue;
                       end else begin
                           Result := False;
@@ -552,8 +578,10 @@ begin
               case v1.tag of
                   5: begin
                       v35 := v1.c5_0;
-                      v0 := v34;
-                      v1 := v35;
+                      tmp19 := v34;
+                      tmp20 := v35;
+                      v0 := tmp19;
+                      v1 := tmp20;
                       Continue;
                   end;
                   else begin
@@ -896,6 +924,8 @@ var
   v6: TUS0;
   v7: TUH1;
   v8: TUH0;
+  tmp3: TUH0;
+  tmp4: TUH1;
   v2: TUH0;
   v3: TUS2;
 begin
@@ -905,8 +935,10 @@ begin
               v6 := v1.c1_0;
               v7 := v1.c1_1;
               v8 := canonical_derivative_3(v0, v6);
-              v0 := v8;
-              v1 := v7;
+              tmp3 := v8;
+              tmp4 := v7;
+              v0 := tmp3;
+              v1 := tmp4;
               Continue;
           end;
           0: begin
@@ -937,6 +969,11 @@ var
   v11: LongInt;
   v10: LongInt;
   v12: LongInt;
+  tmp9: TUH0;
+  tmp10: LongInt;
+  tmp11: LongInt;
+  tmp12: QWord;
+  tmp13: LongInt;
 begin
   while True do begin
       v5 := 0 < v2;
@@ -953,9 +990,16 @@ begin
               v11 := v4;
           end;
           v12 := v2 - 1;
-          v2 := v12;
-          v3 := v8;
-          v4 := v11;
+          tmp9 := v0;
+          tmp10 := v1;
+          tmp11 := v12;
+          tmp12 := v8;
+          tmp13 := v11;
+          v0 := tmp9;
+          v1 := tmp10;
+          v2 := tmp11;
+          v3 := tmp12;
+          v4 := tmp13;
           Continue;
       end else begin
           Result := v4;
@@ -969,6 +1013,8 @@ var
   v3: LongInt;
   v4: TUS0;
   v5: TUH1;
+  tmp4: LongInt;
+  tmp5: TUH1;
 begin
   while True do begin
       v2 := 0 < v0;
@@ -976,8 +1022,10 @@ begin
           v3 := v0 - 1;
           v4 := US0_BitZero;
           v5 := UH1_InputCons(v4, v1);
-          v0 := v3;
-          v1 := v5;
+          tmp4 := v3;
+          tmp5 := v5;
+          v0 := tmp4;
+          v1 := tmp5;
           Continue;
       end else begin
           Result := v1;
@@ -1001,6 +1049,10 @@ var
   v16: LongInt;
   v15: LongInt;
   v17: LongInt;
+  tmp14: TUH0;
+  tmp15: LongInt;
+  tmp16: LongInt;
+  tmp17: LongInt;
 begin
   while True do begin
       v4 := v1 < v2;
@@ -1029,17 +1081,21 @@ begin
               v16 := v9;
           end;
           v17 := v2 + 1;
-          v2 := v17;
-          v3 := v16;
+          tmp14 := v0;
+          tmp15 := v1;
+          tmp16 := v17;
+          tmp17 := v16;
+          v0 := tmp14;
+          v1 := tmp15;
+          v2 := tmp16;
+          v3 := tmp17;
           Continue;
       end;
   end;
 end;
-var UH2_RegexListNil_shared: TUH2 = nil;
 function UH2_RegexListNil: TUH2;
 begin
-  if UH2_RegexListNil_shared = nil then begin UH2_RegexListNil_shared := TUH2.Create; UH2_RegexListNil_shared.tag := 0; end;
-  Result := UH2_RegexListNil_shared;
+  Result := TUH2.Create; Result.tag := 0; 
 end;
 function UH2_RegexListCons(a0: TUH0; a1: TUH2): TUH2;
 begin
@@ -1054,18 +1110,28 @@ var
   v29: TUH2;
   v30: Boolean;
   v31: TUH2;
+  tmp7: TUH2;
+  tmp8: TUH1;
   v34: TUH0;
   v35: TUH0;
   v36: TUH2;
   v37: TUH2;
+  tmp13: TUH2;
+  tmp14: TUH1;
   v9: TUS0;
   v10: TUS0;
   v11: TUH1;
   v21: TUS1;
   v22: Boolean;
+  tmp20: TUH2;
+  tmp21: TUH1;
+  tmp22: TUH2;
+  tmp23: TUH1;
   v39: TUH0;
   v40: TUH2;
   v41: Boolean;
+  tmp27: TUH2;
+  tmp28: TUH1;
   v2: TUS0;
   v3: TUH1;
 begin
@@ -1085,7 +1151,10 @@ begin
                           Exit;
                       end else begin
                           v31 := UH2_RegexListCons(v28, v7);
-                          v0 := v31;
+                          tmp7 := v31;
+                          tmp8 := v1;
+                          v0 := tmp7;
+                          v1 := tmp8;
                           Continue;
                       end;
                   end;
@@ -1094,7 +1163,10 @@ begin
                       v35 := v6.c4_1;
                       v36 := UH2_RegexListCons(v35, v7);
                       v37 := UH2_RegexListCons(v34, v36);
-                      v0 := v37;
+                      tmp13 := v37;
+                      tmp14 := v1;
+                      v0 := tmp13;
+                      v1 := tmp14;
                       Continue;
                   end;
                   2: begin
@@ -1134,8 +1206,10 @@ begin
                                   end;
                               end;
                               if v22 then begin
-                                  v0 := v7;
-                                  v1 := v11;
+                                  tmp20 := v7;
+                                  tmp21 := v11;
+                                  v0 := tmp20;
+                                  v1 := tmp21;
                                   Continue;
                               end else begin
                                   Result := False;
@@ -1153,7 +1227,10 @@ begin
                       Exit;
                   end;
                   1: begin
-                      v0 := v7;
+                      tmp22 := v7;
+                      tmp23 := v1;
+                      v0 := tmp22;
+                      v1 := tmp23;
                       Continue;
                   end;
                   5: begin
@@ -1164,7 +1241,10 @@ begin
                           Result := True;
                           Exit;
                       end else begin
-                          v0 := v7;
+                          tmp27 := v7;
+                          tmp28 := v1;
+                          v0 := tmp27;
+                          v1 := tmp28;
                           Continue;
                       end;
                   end;
@@ -1200,6 +1280,11 @@ var
   v13: LongInt;
   v12: LongInt;
   v14: LongInt;
+  tmp11: TUH0;
+  tmp12: LongInt;
+  tmp13: LongInt;
+  tmp14: QWord;
+  tmp15: LongInt;
 begin
   while True do begin
       v5 := 0 < v2;
@@ -1218,9 +1303,16 @@ begin
               v13 := v4;
           end;
           v14 := v2 - 1;
-          v2 := v14;
-          v3 := v8;
-          v4 := v13;
+          tmp11 := v0;
+          tmp12 := v1;
+          tmp13 := v14;
+          tmp14 := v8;
+          tmp15 := v13;
+          v0 := tmp11;
+          v1 := tmp12;
+          v2 := tmp13;
+          v3 := tmp14;
+          v4 := tmp15;
           Continue;
       end else begin
           Result := v4;
@@ -1248,6 +1340,10 @@ var
   v20: LongInt;
   v19: LongInt;
   v21: LongInt;
+  tmp18: TUH0;
+  tmp19: LongInt;
+  tmp20: LongInt;
+  tmp21: LongInt;
 begin
   while True do begin
       v4 := v1 < v2;
@@ -1280,8 +1376,14 @@ begin
               v20 := v11;
           end;
           v21 := v2 + 1;
-          v2 := v21;
-          v3 := v20;
+          tmp18 := v0;
+          tmp19 := v1;
+          tmp20 := v21;
+          tmp21 := v20;
+          v0 := tmp18;
+          v1 := tmp19;
+          v2 := tmp20;
+          v3 := tmp21;
           Continue;
       end;
   end;
@@ -1291,7 +1393,11 @@ var
   v3: TUS0;
   v4: TUH1;
   v9: LongInt;
+  tmp3: LongInt;
+  tmp4: TUH1;
   v6: LongInt;
+  tmp6: LongInt;
+  tmp7: TUH1;
   v2: Boolean;
 begin
   while True do begin
@@ -1302,14 +1408,18 @@ begin
               case v3.tag of
                   1: begin
                       v9 := 0;
-                      v0 := v9;
-                      v1 := v4;
+                      tmp3 := v9;
+                      tmp4 := v4;
+                      v0 := tmp3;
+                      v1 := tmp4;
                       Continue;
                   end;
                   0: begin
                       v6 := 1;
-                      v0 := v6;
-                      v1 := v4;
+                      tmp6 := v6;
+                      tmp7 := v4;
+                      v0 := tmp6;
+                      v1 := tmp7;
                       Continue;
                   end;
               end;
@@ -1334,6 +1444,10 @@ var
   v11: LongInt;
   v10: LongInt;
   v12: LongInt;
+  tmp10: LongInt;
+  tmp11: LongInt;
+  tmp12: QWord;
+  tmp13: LongInt;
 begin
   while True do begin
       v4 := 0 < v1;
@@ -1351,9 +1465,14 @@ begin
               v11 := v3;
           end;
           v12 := v1 - 1;
-          v1 := v12;
-          v2 := v7;
-          v3 := v11;
+          tmp10 := v0;
+          tmp11 := v12;
+          tmp12 := v7;
+          tmp13 := v11;
+          v0 := tmp10;
+          v1 := tmp11;
+          v2 := tmp12;
+          v3 := tmp13;
           Continue;
       end else begin
           Result := v3;
@@ -1381,6 +1500,8 @@ var
   v62: Boolean;
   v63: Boolean;
   v64: Boolean;
+  tmp18: LongInt;
+  tmp19: TUH1;
   v19: Boolean;
   v48: LongInt;
   v20: Boolean;
@@ -1397,6 +1518,8 @@ var
   v31: Boolean;
   v32: Boolean;
   v33: Boolean;
+  tmp36: LongInt;
+  tmp37: TUH1;
   v2: Boolean;
   v3: Boolean;
   v4: Boolean;
@@ -1489,8 +1612,10 @@ begin
                               end;
                           end;
                       end;
-                      v0 := v79;
-                      v1 := v18;
+                      tmp18 := v79;
+                      tmp19 := v18;
+                      v0 := tmp18;
+                      v1 := tmp19;
                       Continue;
                   end;
                   0: begin
@@ -1570,8 +1695,10 @@ begin
                               end;
                           end;
                       end;
-                      v0 := v48;
-                      v1 := v18;
+                      tmp36 := v48;
+                      tmp37 := v18;
+                      v0 := tmp36;
+                      v1 := tmp37;
                       Continue;
                   end;
               end;
@@ -1638,6 +1765,10 @@ var
   v11: LongInt;
   v10: LongInt;
   v12: LongInt;
+  tmp10: LongInt;
+  tmp11: LongInt;
+  tmp12: QWord;
+  tmp13: LongInt;
 begin
   while True do begin
       v4 := 0 < v1;
@@ -1655,9 +1786,14 @@ begin
               v11 := v3;
           end;
           v12 := v1 - 1;
-          v1 := v12;
-          v2 := v7;
-          v3 := v11;
+          tmp10 := v0;
+          tmp11 := v12;
+          tmp12 := v7;
+          tmp13 := v11;
+          v0 := tmp10;
+          v1 := tmp11;
+          v2 := tmp12;
+          v3 := tmp13;
           Continue;
       end else begin
           Result := v3;
@@ -1673,10 +1809,14 @@ var
   v19: LongInt;
   v14: Boolean;
   v15: Boolean;
+  tmp6: LongInt;
+  tmp7: TUH1;
   v5: Boolean;
   v11: LongInt;
   v6: Boolean;
   v7: Boolean;
+  tmp12: LongInt;
+  tmp13: TUH1;
   v2: Boolean;
 begin
   while True do begin
@@ -1702,8 +1842,10 @@ begin
                               end;
                           end;
                       end;
-                      v0 := v19;
-                      v1 := v4;
+                      tmp6 := v19;
+                      tmp7 := v4;
+                      v0 := tmp6;
+                      v1 := tmp7;
                       Continue;
                   end;
                   0: begin
@@ -1723,8 +1865,10 @@ begin
                               end;
                           end;
                       end;
-                      v0 := v11;
-                      v1 := v4;
+                      tmp12 := v11;
+                      tmp13 := v4;
+                      v0 := tmp12;
+                      v1 := tmp13;
                       Continue;
                   end;
               end;
@@ -1755,6 +1899,9 @@ var
   v17: LongInt;
   v16: LongInt;
   v18: LongInt;
+  tmp16: LongInt;
+  tmp17: LongInt;
+  tmp18: LongInt;
 begin
   while True do begin
       v3 := v0 < v1;
@@ -1785,8 +1932,12 @@ begin
               v17 := v9;
           end;
           v18 := v1 + 1;
-          v1 := v18;
-          v2 := v17;
+          tmp16 := v0;
+          tmp17 := v18;
+          tmp18 := v17;
+          v0 := tmp16;
+          v1 := tmp17;
+          v2 := tmp18;
           Continue;
       end;
   end;
@@ -1795,13 +1946,18 @@ procedure loop_24(v0: TArray0; v1: LongInt);
 var
   v2: Boolean;
   v3: LongInt;
+  tmp2: TArray0;
+  tmp3: LongInt;
 begin
   while True do begin
       v2 := v1 < 8192;
       if v2 then begin
           v0[v1] := 0;
           v3 := v1 + 1;
-          v1 := v3;
+          tmp2 := v0;
+          tmp3 := v3;
+          v0 := tmp2;
+          v1 := tmp3;
           Continue;
       end else begin
           Exit;
@@ -1812,13 +1968,18 @@ procedure loop_25(v0: TArray0; v1: LongInt);
 var
   v2: Boolean;
   v3: LongInt;
+  tmp2: TArray0;
+  tmp3: LongInt;
 begin
   while True do begin
       v2 := v1 < 1;
       if v2 then begin
           v0[v1] := 0;
           v3 := v1 + 1;
-          v1 := v3;
+          tmp2 := v0;
+          tmp3 := v3;
+          v0 := tmp2;
+          v1 := tmp3;
           Continue;
       end else begin
           Exit;
@@ -1857,6 +2018,17 @@ var
   v44: Boolean;
   v46: LongInt;
   v47: LongInt;
+  tmp30: TArray0;
+  tmp31: TArray0;
+  tmp32: TArray0;
+  tmp33: TArray0;
+  tmp34: TArray0;
+  tmp35: TArray0;
+  tmp36: TArray0;
+  tmp37: LongInt;
+  tmp38: LongInt;
+  tmp39: LongInt;
+  tmp40: LongInt;
 begin
   while True do begin
       v11 := v4[v10];
@@ -1943,7 +2115,28 @@ begin
           end else begin
               v46 := v10 + 1;
               v47 := v46 and 8191;
-              v10 := v47;
+              tmp30 := v0;
+              tmp31 := v1;
+              tmp32 := v2;
+              tmp33 := v3;
+              tmp34 := v4;
+              tmp35 := v5;
+              tmp36 := v6;
+              tmp37 := v7;
+              tmp38 := v8;
+              tmp39 := v9;
+              tmp40 := v47;
+              v0 := tmp30;
+              v1 := tmp31;
+              v2 := tmp32;
+              v3 := tmp33;
+              v4 := tmp34;
+              v5 := tmp35;
+              v6 := tmp36;
+              v7 := tmp37;
+              v8 := tmp38;
+              v9 := tmp39;
+              v10 := tmp40;
               Continue;
           end;
       end;
@@ -2029,6 +2222,15 @@ var
   v12: LongInt;
   v13: LongInt;
   v14: LongInt;
+  tmp6: TArray0;
+  tmp7: TArray0;
+  tmp8: TArray0;
+  tmp9: TArray0;
+  tmp10: TArray0;
+  tmp11: TArray0;
+  tmp12: TArray0;
+  tmp13: LongInt;
+  tmp14: LongInt;
 begin
   while True do begin
       v9 := v7 = 0;
@@ -2042,8 +2244,24 @@ begin
               v12 := v2[v7];
               v13 := v1[v7];
               v14 := interned_alt_insert_30(v0, v1, v2, v3, v4, v5, v6, v13, v8);
-              v7 := v12;
-              v8 := v14;
+              tmp6 := v0;
+              tmp7 := v1;
+              tmp8 := v2;
+              tmp9 := v3;
+              tmp10 := v4;
+              tmp11 := v5;
+              tmp12 := v6;
+              tmp13 := v12;
+              tmp14 := v14;
+              v0 := tmp6;
+              v1 := tmp7;
+              v2 := tmp8;
+              v3 := tmp9;
+              v4 := tmp10;
+              v5 := tmp11;
+              v6 := tmp12;
+              v7 := tmp13;
+              v8 := tmp14;
               Continue;
           end else begin
               Result := interned_alt_insert_30(v0, v1, v2, v3, v4, v5, v6, v7, v8);
@@ -2301,6 +2519,15 @@ var
   v13: TUH1;
   v15: LongInt;
   v16: LongInt;
+  tmp5: TArray0;
+  tmp6: TArray0;
+  tmp7: TArray0;
+  tmp8: TArray0;
+  tmp9: TArray0;
+  tmp10: TArray0;
+  tmp11: TArray0;
+  tmp12: LongInt;
+  tmp13: TUH1;
   v10: LongInt;
   v11: Boolean;
 begin
@@ -2323,8 +2550,24 @@ begin
                       end;
                   end;
                   v16 := interned_derivative_raw_35(v0, v1, v2, v3, v4, v5, v6, v7, v15);
-                  v7 := v16;
-                  v8 := v13;
+                  tmp5 := v0;
+                  tmp6 := v1;
+                  tmp7 := v2;
+                  tmp8 := v3;
+                  tmp9 := v4;
+                  tmp10 := v5;
+                  tmp11 := v6;
+                  tmp12 := v16;
+                  tmp13 := v13;
+                  v0 := tmp5;
+                  v1 := tmp6;
+                  v2 := tmp7;
+                  v3 := tmp8;
+                  v4 := tmp9;
+                  v5 := tmp10;
+                  v6 := tmp11;
+                  v7 := tmp12;
+                  v8 := tmp13;
                   Continue;
               end;
               0: begin
@@ -2352,6 +2595,18 @@ var
   v18: LongInt;
   v17: LongInt;
   v19: LongInt;
+  tmp9: TArray0;
+  tmp10: TArray0;
+  tmp11: TArray0;
+  tmp12: TArray0;
+  tmp13: TArray0;
+  tmp14: TArray0;
+  tmp15: TArray0;
+  tmp16: LongInt;
+  tmp17: LongInt;
+  tmp18: LongInt;
+  tmp19: QWord;
+  tmp20: LongInt;
 begin
   while True do begin
       v12 := 0 < v9;
@@ -2368,9 +2623,30 @@ begin
               v18 := v11;
           end;
           v19 := v9 - 1;
-          v9 := v19;
-          v10 := v15;
-          v11 := v18;
+          tmp9 := v0;
+          tmp10 := v1;
+          tmp11 := v2;
+          tmp12 := v3;
+          tmp13 := v4;
+          tmp14 := v5;
+          tmp15 := v6;
+          tmp16 := v7;
+          tmp17 := v8;
+          tmp18 := v19;
+          tmp19 := v15;
+          tmp20 := v18;
+          v0 := tmp9;
+          v1 := tmp10;
+          v2 := tmp11;
+          v3 := tmp12;
+          v4 := tmp13;
+          v5 := tmp14;
+          v6 := tmp15;
+          v7 := tmp16;
+          v8 := tmp17;
+          v9 := tmp18;
+          v10 := tmp19;
+          v11 := tmp20;
           Continue;
       end else begin
           Result := v11;
@@ -2394,6 +2670,17 @@ var
   v23: LongInt;
   v22: LongInt;
   v24: LongInt;
+  tmp14: TArray0;
+  tmp15: TArray0;
+  tmp16: TArray0;
+  tmp17: TArray0;
+  tmp18: TArray0;
+  tmp19: TArray0;
+  tmp20: TArray0;
+  tmp21: LongInt;
+  tmp22: LongInt;
+  tmp23: LongInt;
+  tmp24: LongInt;
 begin
   while True do begin
       v11 := v7 < v9;
@@ -2422,8 +2709,28 @@ begin
               v23 := v16;
           end;
           v24 := v9 + 1;
-          v9 := v24;
-          v10 := v23;
+          tmp14 := v0;
+          tmp15 := v1;
+          tmp16 := v2;
+          tmp17 := v3;
+          tmp18 := v4;
+          tmp19 := v5;
+          tmp20 := v6;
+          tmp21 := v7;
+          tmp22 := v8;
+          tmp23 := v24;
+          tmp24 := v23;
+          v0 := tmp14;
+          v1 := tmp15;
+          v2 := tmp16;
+          v3 := tmp17;
+          v4 := tmp18;
+          v5 := tmp19;
+          v6 := tmp20;
+          v7 := tmp21;
+          v8 := tmp22;
+          v9 := tmp23;
+          v10 := tmp24;
           Continue;
       end;
   end;

@@ -27,8 +27,17 @@ pub fn spiral_array_create(size: Int) -> SpiralArray(a) {
   list.repeat(option.None, size) |> array.from_list(option.None) |> spiral_array_from_storage(size)
 }
 
+pub fn spiral_array_create_filled(size: Int, value: a) -> SpiralArray(a) {
+  list.repeat(option.Some(value), size) |> array.from_list(option.None) |> spiral_array_from_storage(size)
+}
 
+pub fn spiral_array_from_list(values: List(a)) -> SpiralArray(a) {
+  values |> list.map(option.Some) |> array.from_list(option.None) |> spiral_array_from_storage(list.length(values))
+}
 
+pub fn spiral_array_to_list(xs: SpiralArray(a)) -> List(a) {
+  list.repeat(Nil, xs.size) |> list.index_map(fn(_, i) { spiral_array_get(xs, i) })
+}
 
 pub fn spiral_array_get(xs: SpiralArray(a), i: Int) -> a {
   case i >= 0 && i < xs.size {
@@ -80,90 +89,90 @@ pub fn spiral_ref_set(reference: SpiralRef(a), value: a) -> Nil {
 pub type Heap0 { Heap0(l0 : Int, l1 : String) }
 pub type Mut0 { Mut0(l0 : Heap0, l1 : Heap0, l2 : Heap0) }
 pub fn main() {
-    let v0 = 1
-    let v1 = "no"
-    let v2 = Heap0(l0: v0, l1: v1)
-    let v3 = 2
-    let v4 = "zz"
-    let v5 = Heap0(l0: v3, l1: v4)
-    let v6 = 3
-    let v7 = "aa"
-    let v8 = Heap0(l0: v6, l1: v7)
-    let v9 = spiral_ref_new(Mut0(l0: v2, l1: v5, l2: v8))
-    let v10 = spiral_array_create(1)
-    spiral_array_set(v10, 0, v9)
-    let v11 = 7
-    let v12 = "hi"
-    let v13 = Heap0(l0: v11, l1: v12)
-    let v14 = 4
-    let v15 = "yo"
-    let v16 = Heap0(l0: v14, l1: v15)
-    let v17 = 9
-    let v18 = "ok"
-    let v19 = Heap0(l0: v17, l1: v18)
-    let v20 = spiral_array_get(v10, 0)
-    spiral_ref_set(v20, Mut0(l0: v13, l1: v16, l2: v19))
-    let #(v21, v22, v23) = #(spiral_ref_get(v20).l0, spiral_ref_get(v20).l1, spiral_ref_get(v20).l2)
-    let #(v24, v25) = #(v21.l0, v21.l1)
-    let #(v26, v27) = #(v22.l0, v22.l1)
-    let #(v28, v29) = #(v23.l0, v23.l1)
-    let v30 = v24 == 7
-    let v32 =
-        case v30 {
-            True -> {
-                let v31 = v25 == "hi"
-                v31
-            }
-            False -> {
-                False
-            }
-        }
-    let v34 =
-        case v32 {
-            True -> {
-                let v33 = v26 == 4
-                v33
-            }
-            False -> {
-                False
-            }
-        }
-    let v36 =
-        case v34 {
-            True -> {
-                let v35 = v27 == "yo"
-                v35
-            }
-            False -> {
-                False
-            }
-        }
-    let v38 =
-        case v36 {
-            True -> {
-                let v37 = v28 == 9
-                v37
-            }
-            False -> {
-                False
-            }
-        }
-    let v40 =
-        case v38 {
-            True -> {
-                let v39 = v29 == "ok"
-                v39
-            }
-            False -> {
-                False
-            }
-        }
-    case v40 {
+let v0 = 1
+let v1 = "no"
+let v2 = Heap0(l0: v0, l1: v1)
+let v3 = 2
+let v4 = "zz"
+let v5 = Heap0(l0: v3, l1: v4)
+let v6 = 3
+let v7 = "aa"
+let v8 = Heap0(l0: v6, l1: v7)
+let v9 = spiral_ref_new(Mut0(l0: v2, l1: v5, l2: v8))
+let v10 = spiral_array_create(1)
+spiral_array_set(v10, 0, v9)
+let v11 = 7
+let v12 = "hi"
+let v13 = Heap0(l0: v11, l1: v12)
+let v14 = 4
+let v15 = "yo"
+let v16 = Heap0(l0: v14, l1: v15)
+let v17 = 9
+let v18 = "ok"
+let v19 = Heap0(l0: v17, l1: v18)
+let v20 = spiral_array_get(v10, 0)
+spiral_ref_set(v20, Mut0(l0: v13, l1: v16, l2: v19))
+let #(v21, v22, v23) = #(spiral_ref_get(v20).l0, spiral_ref_get(v20).l1, spiral_ref_get(v20).l2)
+let #(v24, v25) = #(v21.l0, v21.l1)
+let #(v26, v27) = #(v22.l0, v22.l1)
+let #(v28, v29) = #(v23.l0, v23.l1)
+let v30 = v24 == 7
+let v32 =
+    case v30 {
         True -> {
-            0
+            let v31 = v25 == "hi"
+            v31
         }
         False -> {
-            1
+            False
         }
     }
+let v34 =
+    case v32 {
+        True -> {
+            let v33 = v26 == 4
+            v33
+        }
+        False -> {
+            False
+        }
+    }
+let v36 =
+    case v34 {
+        True -> {
+            let v35 = v27 == "yo"
+            v35
+        }
+        False -> {
+            False
+        }
+    }
+let v38 =
+    case v36 {
+        True -> {
+            let v37 = v28 == 9
+            v37
+        }
+        False -> {
+            False
+        }
+    }
+let v40 =
+    case v38 {
+        True -> {
+            let v39 = v29 == "ok"
+            v39
+        }
+        False -> {
+            False
+        }
+    }
+case v40 {
+    True -> {
+        0
+    }
+    False -> {
+        1
+    }
+}
 }

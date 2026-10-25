@@ -27,11 +27,14 @@ mutual
 partial def runtime_byte_1 (p0 : String) (p1 : Int32) : IO Char := do
     let mut v0 : String := p0
     let mut v1 : Int32 := p1
-    let v2 : Char := (Char.ofNat (v0.toUTF8.get! (spiralIdx v1)).toNat)
+    let mut v2 : Char := default
+    v2 := (Char.ofNat (v0.toUTF8.get! (spiralIdx v1)).toNat)
     return v2
 partial def utf8_scalar_at_byte_offset_0 (p0 : String) (p1 : Int32) : IO Int32 := do
     let mut v0 : String := p0
     let mut v1 : Int32 := p1
+    let mut v2 : Int32 := default
+    let mut v3 : Bool := default
     let mut v5 : Bool := default
     let mut v7 : Char := default
     let mut v8 : Int32 := default
@@ -105,8 +108,8 @@ partial def utf8_scalar_at_byte_offset_0 (p0 : String) (p1 : Int32) : IO Int32 :
     let mut v93 : Int32 := default
     let mut v94 : Bool := default
     let mut v96 : Bool := default
-    let v2 : Int32 := (Int32.ofNat v0.utf8ByteSize)
-    let v3 : Bool := (decide (v1 < (0 : Int32)))
+    v2 := (Int32.ofNat v0.utf8ByteSize)
+    v3 := (decide (v1 < (0 : Int32)))
     if v3 then
         spiralFail "UTF-8 byte offset is negative."
     else
@@ -263,22 +266,34 @@ partial def utf8_scalar_at_byte_offset_0 (p0 : String) (p1 : Int32) : IO Int32 :
                             else
                                 spiralFail "UTF-8 scalar starts with an invalid lead byte."
 partial def spiralMain : IO Int32 := do
+    let mut v0 : String := default
+    let mut v1 : Int32 := default
+    let mut v2 : Int32 := default
+    let mut v3 : Int32 := default
+    let mut v4 : Int32 := default
+    let mut v5 : Int32 := default
+    let mut v6 : Int32 := default
+    let mut v7 : Int32 := default
+    let mut v8 : Int32 := default
+    let mut v9 : Int32 := default
+    let mut v10 : Int32 := default
+    let mut v11 : Bool := default
     let mut v12 : Bool := default
     let mut v13 : Bool := default
     let mut v14 : Bool := default
     let mut v15 : Bool := default
-    let v0 : String := "Aéλ🙂Z"
-    let v1 : Int32 := (0 : Int32)
-    let v2 : Int32 := (← utf8_scalar_at_byte_offset_0 v0 v1)
-    let v3 : Int32 := (1 : Int32)
-    let v4 : Int32 := (← utf8_scalar_at_byte_offset_0 v0 v3)
-    let v5 : Int32 := (3 : Int32)
-    let v6 : Int32 := (← utf8_scalar_at_byte_offset_0 v0 v5)
-    let v7 : Int32 := (5 : Int32)
-    let v8 : Int32 := (← utf8_scalar_at_byte_offset_0 v0 v7)
-    let v9 : Int32 := (9 : Int32)
-    let v10 : Int32 := (← utf8_scalar_at_byte_offset_0 v0 v9)
-    let v11 : Bool := (v2 == (65 : Int32))
+    v0 := "Aéλ🙂Z"
+    v1 := (0 : Int32)
+    v2 := (← utf8_scalar_at_byte_offset_0 v0 v1)
+    v3 := (1 : Int32)
+    v4 := (← utf8_scalar_at_byte_offset_0 v0 v3)
+    v5 := (3 : Int32)
+    v6 := (← utf8_scalar_at_byte_offset_0 v0 v5)
+    v7 := (5 : Int32)
+    v8 := (← utf8_scalar_at_byte_offset_0 v0 v7)
+    v9 := (9 : Int32)
+    v10 := (← utf8_scalar_at_byte_offset_0 v0 v9)
+    v11 := (v2 == (65 : Int32))
     if v11 then
         v12 := (v4 == (233 : Int32))
         if v12 then

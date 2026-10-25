@@ -44,14 +44,14 @@ pub fn sum_1(v0: Uh0, v1: Int) -> Int {
     }
 }
 pub fn main() {
-    let v0 = 10
-    let v1 = build_0(v0)
-    let v2 = 0
-    let v3 = sum_1(v1, v2)
-    let v4 = 5
-    let v5 = spiral_wrap_signed(v3, 32)
-    let v6 = spiral_wrap_signed(v4 * 2, 32)
-    let v7 = spiral_wrap_signed(v4 + v6, 32)
-    let v8 = spiral_wrap_signed(v5 + v7, 32)
-    v8
+let v0 = 10
+let v1 = build_0(v0)
+let v2 = 0
+let v3 = sum_1(v1, v2)
+let v4 = 5
+let v5 = spiral_wrap_signed(v3, 32)
+let v6 = spiral_wrap_signed(v4 * 2, 32)
+let v7 = spiral_wrap_signed(v4 + v6, 32)
+let v8 = spiral_wrap_signed(v5 + v7, 32)
+v8
 }

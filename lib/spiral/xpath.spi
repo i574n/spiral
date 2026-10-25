@@ -36,7 +36,7 @@ inl is_name_char (c : u32) : bool = is_name_start c || is_digit c || c = 45u32 |
 
 let rec has_text (target : string) (items : list string) : bool =
     match items with
-    | Cons (x, rest) => x = target || has_text target rest
+    | x :: rest => x = target || has_text target rest
     | Nil => false
 
 let rec name_end (s : string) (i : i32) : i32 =
@@ -54,7 +54,7 @@ let rec text_end (s : string) (quote : u32) (i : i32) : i32 =
         if i + 1i32 < sm'.length s && cp_at s (i + 1i32) = quote then text_end s quote (i + 2i32) else i
     else text_end s quote (i + xml.code_point_width s i)
 
-inl paired_symbols () : list string = Cons ("!=", Cons ("<=", Cons (">=", Cons ("//", Cons ("::", Cons ("..", Nil))))))
+inl paired_symbols () : list string = "!=" :: "<=" :: ">=" :: "//" :: "::" :: ".." :: Nil
 
 let rec tokens_from (s : string) (i : i32) (acc : list token) : list token =
     if i >= sm'.length s then listm.rev acc
@@ -65,38 +65,38 @@ let rec tokens_from (s : string) (i : i32) (acc : list token) : list token =
             inl quote = sm'.substring i 1i32 s
             inl stop = text_end s c (i + 1i32)
             inl text = sm'.substring (i + 1i32) (stop - i - 1i32) s |> sm'.replace (quote ++# quote) quote
-            tokens_from s (stop + 1i32) (Cons (TText text, acc))
+            tokens_from s (stop + 1i32) (TText text :: acc)
         elif is_digit c || (c = 46u32 && i + 1i32 < sm'.length s && is_digit (cp_at s (i + 1i32))) then
             inl whole = digits_end s i
             inl stop = if whole < sm'.length s && cp_at s whole = 46u32 then digits_end s (whole + 1i32) else whole
-            tokens_from s stop (Cons (TNumber (sm'.substring i (stop - i) s), acc))
+            tokens_from s stop (TNumber (sm'.substring i (stop - i) s) :: acc)
         elif c = 36u32 then
             inl stop = name_end s (i + 1i32)
-            tokens_from s stop (Cons (TVariable (sm'.substring (i + 1i32) (stop - i - 1i32) s), acc))
+            tokens_from s stop (TVariable (sm'.substring (i + 1i32) (stop - i - 1i32) s) :: acc)
         elif is_name_start c then
             inl stop = name_end s i
-            tokens_from s stop (Cons (TName (sm'.substring i (stop - i) s), acc))
+            tokens_from s stop (TName (sm'.substring i (stop - i) s) :: acc)
         else
             inl pair = if i + 1i32 < sm'.length s then sm'.substring i 2i32 s else ""
             inl width = xml.code_point_width s i
-            if has_text pair (paired_symbols ()) then tokens_from s (i + 2i32) (Cons (TSymbol pair, acc))
-            else tokens_from s (i + width) (Cons (TSymbol (sm'.substring i width s), acc))
+            if has_text pair (paired_symbols ()) then tokens_from s (i + 2i32) (TSymbol pair :: acc)
+            else tokens_from s (i + width) (TSymbol (sm'.substring i width s) :: acc)
 
 inl tokenize (s : string) : list token = tokens_from s 0i32 Nil
 
 inl is_symbol (symbol : string) (tokens : list token) : bool =
     match tokens with
-    | Cons (TSymbol x, _) => x = symbol
+    | TSymbol x :: _ => x = symbol
     | _ => false
 
 inl is_word (word : string) (tokens : list token) : bool =
     match tokens with
-    | Cons (TName x, _) => x = word
+    | TName x :: _ => x = word
     | _ => false
 
 inl after_first (tokens : list token) : list token =
     match tokens with
-    | Cons (_, rest) => rest
+    | _ :: rest => rest
     | Nil => Nil
 
 inl closed (symbol : string) (parsed : xpath) (tokens : list token) : xpath * list token =
@@ -115,8 +115,8 @@ inl is_level_operator (level : i32) (x : string) : bool =
 
 inl operator_at (level : i32) (tokens : list token) : option string =
     match tokens with
-    | Cons (TSymbol x, _) => if is_level_operator level x then Some x else None
-    | Cons (TName x, _) => if is_level_operator level x then Some x else None
+    | TSymbol x :: _ => if is_level_operator level x then Some x else None
+    | TName x :: _ => if is_level_operator level x then Some x else None
     | _ => None
 
 inl is_kind_test (name : string) : bool = name = "node" || name = "text" || name = "comment"
@@ -125,22 +125,22 @@ inl descendants (input : xpath) : xpath = XStep (input, "descendant-or-self", "n
 
 inl starts_step (tokens : list token) : bool =
     match tokens with
-    | Cons (TName _, _) => true
-    | Cons (TSymbol x, _) => x = "*" || x = "@" || x = "." || x = ".."
+    | TName _ :: _ => true
+    | TSymbol x :: _ => x = "*" || x = "@" || x = "." || x = ".."
     | _ => false
 
 inl starts_primary (tokens : list token) : bool =
     match tokens with
-    | Cons (TText _, _) => true
-    | Cons (TNumber _, _) => true
-    | Cons (TVariable _, _) => true
-    | Cons (TSymbol x, _) => x = "("
-    | Cons (TName x, Cons (TSymbol y, _)) => y = "(" && is_kind_test x = false
+    | TText _ :: _ => true
+    | TNumber _ :: _ => true
+    | TVariable _ :: _ => true
+    | TSymbol x :: _ => x = "("
+    | TName x :: TSymbol y :: _ => y = "(" && is_kind_test x = false
     | _ => false
 
 let rec parse_expr (tokens : list token) : xpath * list token =
     match tokens with
-    | Cons (TName q, Cons (TVariable v, Cons (TName word, rest))) when (q = "every" || q = "some") && word = "in" =>
+    | TName q :: TVariable v :: TName word :: rest when (q = "every" || q = "some") && word = "in" =>
         inl domain, rest = parse_level 0i32 rest
         if is_word "satisfies" rest then
             inl body, rest = parse_expr (after_first rest)
@@ -190,18 +190,18 @@ and let parse_step (input : xpath) (tokens : list token) : xpath * list token =
     else parse_axis_step input tokens
 and let parse_axis_step (input : xpath) (tokens : list token) : xpath * list token =
     match tokens with
-    | Cons (TSymbol x, rest) when x = "." => XStep (input, "self", "node()", Nil), rest
-    | Cons (TSymbol x, rest) when x = ".." => XStep (input, "parent", "node()", Nil), rest
-    | Cons (TSymbol x, Cons (TName name, rest)) when x = "@" => with_predicates input "attribute" name rest
-    | Cons (TSymbol x, Cons (TSymbol star, rest)) when x = "@" && star = "*" =>
+    | TSymbol x :: rest when x = "." => XStep (input, "self", "node()", Nil), rest
+    | TSymbol x :: rest when x = ".." => XStep (input, "parent", "node()", Nil), rest
+    | TSymbol x :: TName name :: rest when x = "@" => with_predicates input "attribute" name rest
+    | TSymbol x :: TSymbol star :: rest when x = "@" && star = "*" =>
         with_predicates input "attribute" "*" rest
-    | Cons (TName axis, Cons (TSymbol x, Cons (TName name, rest))) when x = "::" => with_predicates input axis name rest
-    | Cons (TName axis, Cons (TSymbol x, Cons (TSymbol star, rest))) when x = "::" && star = "*" =>
+    | TName axis :: TSymbol x :: TName name :: rest when x = "::" => with_predicates input axis name rest
+    | TName axis :: TSymbol x :: TSymbol star :: rest when x = "::" && star = "*" =>
         with_predicates input axis "*" rest
-    | Cons (TName kind, Cons (TSymbol x, Cons (TSymbol y, rest))) when x = "(" && y = ")" && is_kind_test kind =>
+    | TName kind :: TSymbol x :: TSymbol y :: rest when x = "(" && y = ")" && is_kind_test kind =>
         with_predicates input "child" (kind ++# "()") rest
-    | Cons (TName name, rest) => with_predicates input "child" name rest
-    | Cons (TSymbol star, rest) when star = "*" => with_predicates input "child" "*" rest
+    | TName name :: rest => with_predicates input "child" name rest
+    | TSymbol star :: rest when star = "*" => with_predicates input "child" "*" rest
     | _ => XInvalid "expected a step", tokens
 and let with_predicates (input : xpath) (axis : string) (test : string) (tokens : list token) : xpath * list token =
     inl predicates, rest = parse_predicates tokens Nil
@@ -210,17 +210,17 @@ and let parse_predicates (tokens : list token) (acc : list xpath) : list xpath *
     if is_symbol "[" tokens then
         inl predicate, rest = parse_expr (after_first tokens)
         inl predicate, rest = closed "]" predicate rest
-        parse_predicates rest (Cons (predicate, acc))
+        parse_predicates rest (predicate :: acc)
     else (listm.rev acc, tokens)
 and let parse_primary (tokens : list token) : xpath * list token =
     match tokens with
-    | Cons (TText text, rest) => XText text, rest
-    | Cons (TNumber number, rest) => XNumber number, rest
-    | Cons (TVariable name, rest) => XVariable name, rest
-    | Cons (TSymbol x, rest) when x = "(" =>
+    | TText text :: rest => XText text, rest
+    | TNumber number :: rest => XNumber number, rest
+    | TVariable name :: rest => XVariable name, rest
+    | TSymbol x :: rest when x = "(" =>
         inl inner, rest = parse_expr rest
         closed ")" inner rest
-    | Cons (TName name, Cons (_, rest)) =>
+    | TName name :: _ :: rest =>
         inl arguments, rest = parse_arguments rest Nil
         XCall (name, arguments), rest
     | _ => XInvalid "expected a primary expression", tokens
@@ -228,9 +228,9 @@ and let parse_arguments (tokens : list token) (acc : list xpath) : list xpath * 
     if is_symbol ")" tokens then (listm.rev acc, after_first tokens)
     else
         inl argument, rest = parse_expr tokens
-        if is_symbol "," rest then parse_arguments (after_first rest) (Cons (argument, acc))
-        elif is_symbol ")" rest then (listm.rev (Cons (argument, acc)), after_first rest)
-        else (listm.rev (Cons (XInvalid "expected , or )", Cons (argument, acc))), rest)
+        if is_symbol "," rest then parse_arguments (after_first rest) (argument :: acc)
+        elif is_symbol ")" rest then (listm.rev (argument :: acc), after_first rest)
+        else (listm.rev (XInvalid "expected , or )" :: argument :: acc), rest)
 
 inl parse (s : string) : xpath =
     inl parsed, rest = parse_expr (tokenize s)
@@ -240,7 +240,7 @@ inl parse (s : string) : xpath =
 
 let rec joined (items : list string) (acc : string) : string =
     match items with
-    | Cons (item, rest) => joined rest (if acc = "" then item else acc ++# " " ++# item)
+    | item :: rest => joined rest (if acc = "" then item else acc ++# " " ++# item)
     | Nil => acc
 
 let rec xpath_text (x : xpath) : string =
@@ -254,7 +254,7 @@ let rec xpath_text (x : xpath) : string =
     | XStep (input, axis, test, predicates) =>
         "(" ++# axis ++# "::" ++# test ++# " " ++# xpath_text input ++# predicates_text predicates ++# ")"
     | XFilter (input, predicates) => "(filter " ++# xpath_text input ++# predicates_text predicates ++# ")"
-    | XCall (name, arguments) => "(" ++# joined (Cons (name, texts_of arguments Nil)) "" ++# ")"
+    | XCall (name, arguments) => "(" ++# joined (name :: texts_of arguments Nil) "" ++# ")"
     | XBinary (op, left, right) => "(" ++# op ++# " " ++# xpath_text left ++# " " ++# xpath_text right ++# ")"
     | XNegate operand => "(- " ++# xpath_text operand ++# ")"
     | XQuantified (every, v, domain, body) =>
@@ -264,11 +264,11 @@ let rec xpath_text (x : xpath) : string =
     | XMember (probe, _, codes) => "(member " ++# xpath_text probe ++# " " ++# joined codes "" ++# ")"
 and let predicates_text (predicates : list xpath) : string =
     match predicates with
-    | Cons (p, rest) => " [" ++# xpath_text p ++# "]" ++# predicates_text rest
+    | p :: rest => " [" ++# xpath_text p ++# "]" ++# predicates_text rest
     | Nil => ""
 and let texts_of (items : list xpath) (acc : list string) : list string =
     match items with
-    | Cons (item, rest) => texts_of rest (Cons (xpath_text item, acc))
+    | item :: rest => texts_of rest (xpath_text item :: acc)
     | Nil => listm.rev acc
 
 let rec node_count (counted : xpath -> bool) (x : xpath) : i32 =
@@ -285,7 +285,7 @@ let rec node_count (counted : xpath -> bool) (x : xpath) : i32 =
     | _ => own
 and let node_counts (counted : xpath -> bool) (items : list xpath) : i32 =
     match items with
-    | Cons (item, rest) => node_count counted item + node_counts counted rest
+    | item :: rest => node_count counted item + node_counts counted rest
     | Nil => 0i32
 
 inl invalid_count (x : xpath) : i32 = node_count (function XInvalid _ => true | _ => false) x
@@ -295,22 +295,22 @@ inl member_count (x : xpath) : i32 = node_count (function XMember _ => true | _ 
 let rec spaced_words (s : string) (i : i32) (start : i32) (acc : list string) : list string =
     if i >= sm'.length s then listm.rev acc
     elif cp_at s i = 32u32 then
-        inl acc = if i > start && start > 0i32 then Cons (sm'.substring start (i - start) s, acc) else acc
+        inl acc = if i > start && start > 0i32 then (sm'.substring start (i - start) s :: acc) else acc
         spaced_words s (i + 1i32) (i + 1i32) acc
     else spaced_words s (i + 1i32) start acc
 
 inl padded_operand (x : xpath) : option xpath =
     match x with
-    | XCall (name, Cons (XText left, Cons (inner, Cons (XText right, Nil)))) when name = "concat" =>
+    | XCall (name, (XText left :: inner :: XText right :: Nil)) when name = "concat" =>
         if left = " " && right = " " then Some inner else None
     | _ => None
 
 let rec lift_code_lists (x : xpath) : xpath =
     match x with
-    | XCall (name, Cons (XText codes, Cons (probe, Nil))) when name = "contains" =>
+    | XCall (name, (XText codes :: probe :: Nil)) when name = "contains" =>
         match padded_operand probe with
         | Some inner => XMember (lift_code_lists inner, codes, spaced_words codes 0i32 0i32 Nil)
-        | None => XCall (name, Cons (XText codes, Cons (lift_code_lists probe, Nil)))
+        | None => XCall (name, XText codes :: lift_code_lists probe :: Nil)
     | XStep (input, axis, test, predicates) => XStep (lift_code_lists input, axis, test, lifted predicates)
     | XFilter (input, predicates) => XFilter (lift_code_lists input, lifted predicates)
     | XCall (name, arguments) => XCall (name, lifted arguments)
@@ -322,7 +322,7 @@ let rec lift_code_lists (x : xpath) : xpath =
     | _ => x
 and let lifted (items : list xpath) : list xpath =
     match items with
-    | Cons (item, rest) => Cons (lift_code_lists item, lifted rest)
+    | item :: rest => lift_code_lists item :: lifted rest
     | Nil => Nil
 ///> rust
 test parses_the_en16931_xpath_subset =

@@ -16,10 +16,11 @@ end
 local v4 = getv4()
 local v5 = { __tag = "Heap0", l0 = v4 }
 local v6 = v5 ~= nil and v5.l0
-if v6 ~= nil and v6.tag == "Us0_None" then
+local __v = { v6 }
+if __v[1] ~= nil and __v[1].tag == "Us0_None" then
     return 1
-elseif v6 ~= nil and v6.tag == "Us0_Some" then
-    local v7 = v6._1
+elseif __v[1] ~= nil and __v[1].tag == "Us0_Some" then
+    local v7 = __v[1]._1
     local v8 = v7 == 7
     if v8 then
         return 0

@@ -25,6 +25,14 @@ def spiralStringSlice (s : String) (a b : Int) : IO String := do
   else pure (String.Pos.Raw.extract s ⟨a.toNat⟩ ⟨(b + 1).toNat⟩)
 mutual
 partial def spiralMain : IO Int32 := do
+    let mut v0 : Float32 := default
+    let mut v1 : Float32 := default
+    let mut v2 : Float := default
+    let mut v3 : Float := default
+    let mut v4 : Float32 := default
+    let mut v5 : Float := default
+    let mut v6 : Float32 := default
+    let mut v7 : Bool := default
     let mut v10 : Bool := default
     let mut v8 : Float := default
     let mut v9 : Bool := default
@@ -36,14 +44,14 @@ partial def spiralMain : IO Int32 := do
     let mut v15 : Bool := default
     let mut v18 : Bool := default
     let mut v17 : Bool := default
-    let v0 : Float32 := (2.0 : Float32)
-    let v1 : Float32 := (3.0 : Float32)
-    let v2 : Float := (2.0 : Float)
-    let v3 : Float := (3.0 : Float)
-    let v4 : Float32 := (3.1415927 : Float32)
-    let v5 : Float := (3.141592653589793 : Float)
-    let v6 : Float32 := (Float32.pow v0 v1)
-    let v7 : Bool := (v6 == (8.0 : Float32))
+    v0 := (2.0 : Float32)
+    v1 := (3.0 : Float32)
+    v2 := (2.0 : Float)
+    v3 := (3.0 : Float)
+    v4 := (3.1415927 : Float32)
+    v5 := (3.141592653589793 : Float)
+    v6 := (Float32.pow v0 v1)
+    v7 := (v6 == (8.0 : Float32))
     if v7 then
         v8 := (Float.pow v2 v3)
         v9 := (v8 == (8.0 : Float))

@@ -17,34 +17,34 @@ pub fn f_c0(capt: #(Int, String)) -> fn(Int) -> Us0 {
     }
 }
 pub fn main() {
-    let v0 = 3
-    let v1 = "hi"
-    let v2 = f_c0(#(v0, v1))
-    let v3 = v2(1)
-    case v3  {
-        Us0Both(v5, v6) -> {
-            let v7 = v5 == 3
-            let v9 =
-                case v7 {
-                    True -> {
-                        let v8 = v6 == "hi"
-                        v8
-                    }
-                    False -> {
-                        False
-                    }
-                }
-            case v9 {
+let v0 = 3
+let v1 = "hi"
+let v2 = f_c0(#(v0, v1))
+let v3 = v2( 1  )
+case v3  {
+    Us0Both(v5, v6) -> {
+        let v7 = v5 == 3
+        let v9 =
+            case v7 {
                 True -> {
-                    0
+                    let v8 = v6 == "hi"
+                    v8
                 }
                 False -> {
-                    1
+                    False
                 }
             }
-        }
-        Us0One(v4) -> {
-            1
+        case v9 {
+            True -> {
+                0
+            }
+            False -> {
+                1
+            }
         }
     }
+    Us0One(v4) -> {
+        1
+    }
+}
 }

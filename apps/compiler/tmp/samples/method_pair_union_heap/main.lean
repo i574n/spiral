@@ -41,19 +41,25 @@ mutual
 partial def method0 (p0 : Int32) (p1 : H0) : IO (U0 × H0) := do
     let mut v0 : Int32 := p0
     let mut v1 : H0 := p1
-    let v2 : U0 := (U0.Some v0)
+    let mut v2 : U0 := default
+    v2 := (U0.Some v0)
     return (v2, v1)
 partial def spiralMain : IO Int32 := do
+    let mut v0 : Int32 := default
+    let mut v1 : Int32 := default
+    let mut v2 : H0 := default
+    let mut v3 : U0 := default
+    let mut v4 : H0 := default
     let mut v5 : Int32 := default
     let mut v6 : Int32 := default
     let mut v7 : Int32 := default
     let mut v8 : Bool := default
-    let v0 : Int32 := (3 : Int32)
-    let v1 : Int32 := (4 : Int32)
-    let v2 : H0 := (H0.mk v1)
+    v0 := (3 : Int32)
+    v1 := (4 : Int32)
+    v2 := (H0.mk v1)
     let (r1_0, r1_1) := (← method0 v0 v2)
-    let v3 : U0 := r1_0
-    let v4 : H0 := r1_1
+    v3 := r1_0
+    v4 := r1_1
     match v3 with
     | U0.None =>
         return (1 : Int32)

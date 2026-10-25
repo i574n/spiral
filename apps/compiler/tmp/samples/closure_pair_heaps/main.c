@@ -33,10 +33,10 @@ struct Closure0 {
 static inline void ArrayDecrefBody0(Array0 * x){
     (void)x;
 }
-static void ArrayDecref0(Array0 * x){
+void ArrayDecref0(Array0 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody0(x); free(x); }
 }
-static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
+Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     uint32_t size = sizeof(Array0) + sizeof(char) * len;
     Array0 * x = malloc(size);
     if (init_at_zero) { memset(x,0,size); }
@@ -44,7 +44,7 @@ static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     x->len = len;
     return x;
 }
-static Array0 * ArrayLit0(uint32_t len, char * ptr){
+Array0 * ArrayLit0(uint32_t len, char * ptr){
     Array0 * x = ArrayCreate0(len, false);
     memcpy(x->ptr, ptr, sizeof(char) * len);
     return x;
@@ -58,10 +58,10 @@ static inline String * StringLit(uint32_t len, char * ptr){
 static inline void HeapDecrefBody0(Heap0 * x){
     StringDecref(x->v1);
 }
-static void HeapDecref0(Heap0 * x){
+void HeapDecref0(Heap0 * x){
     if (x != NULL && --(x->refc) == 0) { HeapDecrefBody0(x); free(x); }
 }
-static Heap0 * HeapCreate0(int32_t v0, String * v1){
+Heap0 * HeapCreate0(int32_t v0, String * v1){
     Heap0 * x = malloc(sizeof(Heap0));
     x->refc = 1;
     x->v0 = v0; x->v1 = v1;
@@ -75,19 +75,21 @@ static inline Tuple0 TupleCreate0(Heap0 * v0, Heap0 * v1){
 static inline void ClosureDecrefBody0(Closure0 * x){
     HeapDecref0(x->v0); HeapDecref0(x->v1);
 }
-static void ClosureDecref0(Fun0 * self){
+void ClosureDecref0(Fun0 * self){
     Closure0 * x = (Closure0 *) self;
     if (x != NULL && --(x->base.refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
-static Tuple0 f_c0(Fun0 * self, int32_t v2){
+Tuple0 f_c0(Fun0 * self, int32_t v2){
     Closure0 * x = (Closure0 *) self;
     Heap0 * v0 = x->v0; Heap0 * v1 = x->v1;
     (v0)->refc++; (v1)->refc++;
     ClosureDecref0(self);
     (void)v2;
+    
+    
     return TupleCreate0(v0, v1);
 }
-static Fun0 * ClosureCreate0(Heap0 * v0, Heap0 * v1){
+Fun0 * ClosureCreate0(Heap0 * v0, Heap0 * v1){
     Closure0 * x = malloc(sizeof(Closure0));
     x->base.refc = 1;
     x->base.decref_fptr = ClosureDecref0;
@@ -96,23 +98,40 @@ static Fun0 * ClosureCreate0(Heap0 * v0, Heap0 * v1){
     return &x->base;
 }
 int32_t main(){
-    int32_t v0 = 7l;
-    String * v1 = StringLit(3, "hi");
+    
+    
+    int32_t v0;
+    v0 = 7l;
+    
+    
+    String * v1;
+    v1 = StringLit(3, "hi");
     (v1)->refc++;
-    Heap0 * v2 = HeapCreate0(v0, v1);
+    
+    Heap0 * v2;
+    v2 = HeapCreate0(v0, v1);
+    
     StringDecref(v1);
-    int32_t v3 = 4l;
-    String * v4 = StringLit(3, "yo");
+    int32_t v3;
+    v3 = 4l;
+    
+    
+    String * v4;
+    v4 = StringLit(3, "yo");
     (v4)->refc++;
-    Heap0 * v5 = HeapCreate0(v3, v4);
+    
+    Heap0 * v5;
+    v5 = HeapCreate0(v3, v4);
     (v2)->refc++; (v5)->refc++;
     StringDecref(v4);
-    Fun0 * v6 = ClosureCreate0(v2, v5);
+    Fun0 * v6;
+    v6 = ClosureCreate0(v2, v5);
     (v6)->refc++;
     HeapDecref0(v2); HeapDecref0(v5);
     Heap0 * v7; Heap0 * v8;
     Tuple0 tmp0 = v6->fptr(v6, 1l);
     v7 = tmp0.v0; v8 = tmp0.v1;
+    
     (v6)->decref_fptr(v6);
     int32_t v9; String * v10;
     v9 = v7->v0; v10 = v7->v1;
@@ -122,33 +141,65 @@ int32_t main(){
     v11 = v8->v0; v12 = v8->v1;
     (v12)->refc++;
     HeapDecref0(v8);
-    bool v13 = v9 == 7l;
+    bool v13;
+    v13 = v9 == 7l;
+    
+    
     bool v15;
     if (v13){
-        bool v14 = strcmp(v10->ptr, "hi") == 0;
+        
+        
+        bool v14;
+        v14 = strcmp(v10->ptr, "hi") == 0;
+        
+        
         v15 = v14;
     } else {
+        
+        
         v15 = false;
     }
+    
     StringDecref(v10);
     bool v17;
     if (v15){
-        bool v16 = v11 == 4l;
+        
+        
+        bool v16;
+        v16 = v11 == 4l;
+        
+        
         v17 = v16;
     } else {
+        
+        
         v17 = false;
     }
+    
+    
     bool v19;
     if (v17){
-        bool v18 = strcmp(v12->ptr, "yo") == 0;
+        
+        
+        bool v18;
+        v18 = strcmp(v12->ptr, "yo") == 0;
+        
+        
         v19 = v18;
     } else {
+        
+        
         v19 = false;
     }
+    
     StringDecref(v12);
     if (v19){
+        
+        
         return 0l;
     } else {
+        
+        
         return 1l;
     }
 }

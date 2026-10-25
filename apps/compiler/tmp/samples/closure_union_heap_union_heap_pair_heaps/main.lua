@@ -26,13 +26,15 @@ function f_c0(capt)
 end
 
 function score_0(v0)
-    if v0 ~= nil and v0.tag == "Us1_Absent" then
+    local __v = { v0 }
+    if __v[1] ~= nil and __v[1].tag == "Us1_Absent" then
         return 1
-    elseif v0 ~= nil and v0.tag == "Us1_Box" then
-        local v1 = v0._1
+    elseif __v[1] ~= nil and __v[1].tag == "Us1_Box" then
+        local v1 = __v[1]._1
         local v2 = v1 ~= nil and v1.l0
-        if v2 ~= nil and v2.tag == "Us0_Held" then
-            local v3 = v2._1
+        local __v = { v2 }
+        if __v[1] ~= nil and __v[1].tag == "Us0_Held" then
+            local v3 = __v[1]._1
             local v4, v5 = v3 ~= nil and v3.l0, v3 ~= nil and v3.l1
             local v6, v7 = v4 ~= nil and v4.l0, v4 ~= nil and v4.l1
             local v8, v9 = v6 ~= nil and v6.l0, v6 ~= nil and v6.l1
@@ -79,7 +81,7 @@ function score_0(v0)
             else
                 return 1
             end
-        elseif v2 ~= nil and v2.tag == "Us0_None" then
+        elseif __v[1] ~= nil and __v[1].tag == "Us0_None" then
             return 1
         end
     end

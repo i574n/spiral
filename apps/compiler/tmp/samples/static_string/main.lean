@@ -28,8 +28,10 @@ partial def method0 (p0 : String) : IO Bool := do
     let mut v0 : String := p0
     return true
 partial def spiralMain : IO Int32 := do
-    let v0 : String := "spiral"
-    let v1 : Bool := (← method0 v0)
+    let mut v0 : String := default
+    let mut v1 : Bool := default
+    v0 := "spiral"
+    v1 := (← method0 v0)
     if v1 then
         return (0 : Int32)
     else

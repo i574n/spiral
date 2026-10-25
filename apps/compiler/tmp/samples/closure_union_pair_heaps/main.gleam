@@ -68,13 +68,13 @@ pub fn score_0(v0: Us0) -> Int {
     }
 }
 pub fn main() {
-    let v0 = 7
-    let v1 = "hi"
-    let v2 = Heap0(l0: v0, l1: v1)
-    let v3 = 4
-    let v4 = "yo"
-    let v5 = Heap0(l0: v3, l1: v4)
-    let v6 = f_c0(#(v2, v5))
-    let v7 = v6(1)
-    score_0(v7)
+let v0 = 7
+let v1 = "hi"
+let v2 = Heap0(l0: v0, l1: v1)
+let v3 = 4
+let v4 = "yo"
+let v5 = Heap0(l0: v3, l1: v4)
+let v6 = f_c0(#(v2, v5))
+let v7 = v6( 1  )
+score_0(v7)
 }

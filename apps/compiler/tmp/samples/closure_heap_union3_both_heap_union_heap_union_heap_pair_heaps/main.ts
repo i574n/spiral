@@ -4,21 +4,21 @@ type Heap2 = { readonly l0: Heap1, readonly l1: number };
 type US0_None = { readonly tag: 0 };
 type US0_Held = { readonly tag: 1, readonly f0: Heap2 };
 type US0 = US0_None | US0_Held;
-const US0_None_shared: US0 = { tag: 0 }; function US0_None(): US0 { return US0_None_shared; }
+function US0_None(): US0 { return { tag: 0 }; }
 function US0_Held(f0: Heap2): US0 { return { tag: 1, f0: f0 }; }
 type Heap3 = { readonly l0: US0 };
 type US1_Absent = { readonly tag: 0 };
 type US1_Box = { readonly tag: 1, readonly f0: Heap3 };
 type US1_Mark = { readonly tag: 2, readonly f0: number };
 type US1 = US1_Absent | US1_Box | US1_Mark;
-const US1_Absent_shared: US1 = { tag: 0 }; function US1_Absent(): US1 { return US1_Absent_shared; }
+function US1_Absent(): US1 { return { tag: 0 }; }
 function US1_Box(f0: Heap3): US1 { return { tag: 1, f0: f0 }; }
 function US1_Mark(f0: number): US1 { return { tag: 2, f0: f0 }; }
 type Heap4 = { readonly l0: US1 };
 type Mut0 = { l0: Heap4 };
 function f_c0(v0: Heap4, v1: Heap4): ((a0: number) => Heap4) {
     return (v2: number): Heap4 => {
-        const v3: boolean = v2 === 0;
+        let v3: boolean = v2 === 0;
         if (v3) {
             return v1;
         } else {
@@ -30,25 +30,26 @@ function score_0(v0: US1): number {
     switch (v0.tag) {
         case 0: {
             return 1;
+            break;
         }
         case 1: {
-            const v3: Heap3 = v0.f0;
-            const v4: US0 = v3.l0;
+            let v3: Heap3 = v0.f0;
+            let v4: US0 = v3.l0;
             switch (v4.tag) {
                 case 1: {
-                    const v5: Heap2 = v4.f0;
-                    const v6: Heap1 = v5.l0;
-                    const v7: number = v5.l1;
-                    const v8: Heap0 = v6.l0;
-                    const v9: Heap0 = v6.l1;
-                    const v10: number = v8.l0;
-                    const v11: string = v8.l1;
+                    let v5: Heap2 = v4.f0;
+                    let v6: Heap1 = v5.l0;
+                    let v7: number = v5.l1;
+                    let v8: Heap0 = v6.l0;
+                    let v9: Heap0 = v6.l1;
+                    let v10: number = v8.l0;
+                    let v11: string = v8.l1;
                     let v12: number = v9.l0;
-                    const v13: string = v9.l1;
-                    const v14: boolean = v10 === 7;
+                    let v13: string = v9.l1;
+                    let v14: boolean = v10 === 7;
                     let v16: boolean;
                     if (v14) {
-                        const v15: boolean = v11 === "hi";
+                        let v15: boolean = v11 === "hi";
                         v16 = v15;
                     } else {
                         v16 = false;
@@ -62,14 +63,14 @@ function score_0(v0: US1): number {
                     }
                     let v20: boolean;
                     if (v18) {
-                        const v19: boolean = v13 === "yo";
+                        let v19: boolean = v13 === "yo";
                         v20 = v19;
                     } else {
                         v20 = false;
                     }
                     let v22: boolean;
                     if (v20) {
-                        const v21: boolean = v7 === 2;
+                        let v21: boolean = v7 === 2;
                         v22 = v21;
                     } else {
                         v22 = false;
@@ -83,37 +84,39 @@ function score_0(v0: US1): number {
                 }
                 case 0: {
                     return 1;
+                    break;
                 }
                 default: throw new Error("Compiler error: unreachable union case.");
             }
             break;
         }
         case 2: {
-            const v1: number = v0.f0;
+            let v1: number = v0.f0;
             return 1;
+            break;
         }
         default: throw new Error("Compiler error: unreachable union case.");
     }
 }
 export function main(): number {
-    const v0: number = 7;
-    const v1: string = "hi";
-    const v2: Heap0 = { l0: v0, l1: v1 };
-    const v3: number = 4;
-    const v4: string = "yo";
-    const v5: Heap0 = { l0: v3, l1: v4 };
-    const v6: Heap1 = { l0: v2, l1: v5 };
-    const v7: number = 2;
-    const v8: Heap2 = { l0: v6, l1: v7 };
-    const v9: boolean = true;
+    let v0: number = 7;
+    let v1: string = "hi";
+    let v2: Heap0 = { l0: v0, l1: v1 };
+    let v3: number = 4;
+    let v4: string = "yo";
+    let v5: Heap0 = { l0: v3, l1: v4 };
+    let v6: Heap1 = { l0: v2, l1: v5 };
+    let v7: number = 2;
+    let v8: Heap2 = { l0: v6, l1: v7 };
+    let v9: boolean = true;
     let v12: US0;
     if (v9) {
         v12 = US0_Held(v8);
     } else {
         v12 = US0_None();
     }
-    const v13: Heap3 = { l0: v12 };
-    const v14: boolean = true;
+    let v13: Heap3 = { l0: v12 };
+    let v14: boolean = true;
     let v17: US1;
     if (v14) {
         v17 = US1_Box(v13);
@@ -121,24 +124,24 @@ export function main(): number {
         v17 = US1_Mark(1);
     }
     let v18: number = 3;
-    const v19: Heap4 = { l0: v17 };
+    let v19: Heap4 = { l0: v17 };
     let v20: US1 = US1_Mark(v18);
-    const v21: Heap4 = { l0: v20 };
+    let v21: Heap4 = { l0: v20 };
     let v22: ((a0: number) => Heap4) = f_c0(v19, v21);
-    const v23: Heap4 = v22(1);
+    let v23: Heap4 = v22(1);
     let v24: Mut0 = { l0: v23 };
-    const v25: Heap4 = v24.l0;
-    const v26: US1 = v25.l0;
-    const v27: number = score_0(v26);
-    const v28: Heap4 = v22(0);
+    let v25: Heap4 = v24.l0;
+    let v26: US1 = v25.l0;
+    let v27: number = score_0(v26);
+    let v28: Heap4 = v22(0);
     v24.l0 = v28;
-    const v29: Heap4 = v24.l0;
-    const v30: US1 = v29.l0;
-    const v31: number = score_0(v30);
-    const v32: boolean = v27 === 0;
+    let v29: Heap4 = v24.l0;
+    let v30: US1 = v29.l0;
+    let v31: number = score_0(v30);
+    let v32: boolean = v27 === 0;
     let v34: boolean;
     if (v32) {
-        const v33: boolean = v31 === 1;
+        let v33: boolean = v31 === 1;
         v34 = v33;
     } else {
         v34 = false;

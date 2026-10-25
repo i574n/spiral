@@ -18,10 +18,10 @@ typedef struct {
 static inline void ArrayDecrefBody0(Array0 * x){
     (void)x;
 }
-static void ArrayDecref0(Array0 * x){
+void ArrayDecref0(Array0 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody0(x); free(x); }
 }
-static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
+Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     uint32_t size = sizeof(Array0) + sizeof(char) * len;
     Array0 * x = malloc(size);
     if (init_at_zero) { memset(x,0,size); }
@@ -29,7 +29,7 @@ static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     x->len = len;
     return x;
 }
-static Array0 * ArrayLit0(uint32_t len, char * ptr){
+Array0 * ArrayLit0(uint32_t len, char * ptr){
     Array0 * x = ArrayCreate0(len, false);
     memcpy(x->ptr, ptr, sizeof(char) * len);
     return x;
@@ -43,39 +43,69 @@ static inline String * StringLit(uint32_t len, char * ptr){
 static inline void HeapDecrefBody0(Heap0 * x){
     StringDecref(x->v1);
 }
-static void HeapDecref0(Heap0 * x){
+void HeapDecref0(Heap0 * x){
     if (x != NULL && --(x->refc) == 0) { HeapDecrefBody0(x); free(x); }
 }
-static Heap0 * HeapCreate0(uint32_t v0, String * v1, bool v2){
+Heap0 * HeapCreate0(uint32_t v0, String * v1, bool v2){
     Heap0 * x = malloc(sizeof(Heap0));
     x->refc = 1;
     x->v0 = v0; x->v1 = v1; x->v2 = v2;
     return x;
 }
 int32_t main(){
-    uint32_t v0 = 4000000000ul;
-    String * v1 = StringLit(3, "hi");
-    bool v2 = true;
+    
+    
+    uint32_t v0;
+    v0 = 4000000000ul;
+    
+    
+    String * v1;
+    v1 = StringLit(3, "hi");
+    
+    
+    bool v2;
+    v2 = true;
     (v1)->refc++;
-    Heap0 * v3 = HeapCreate0(v0, v1, v2);
+    
+    Heap0 * v3;
+    v3 = HeapCreate0(v0, v1, v2);
+    
     StringDecref(v1);
     uint32_t v4; String * v5; bool v6;
     v4 = v3->v0; v5 = v3->v1; v6 = v3->v2;
     (v5)->refc++;
     HeapDecref0(v3);
-    bool v7 = v4 == 4000000000ul;
+    bool v7;
+    v7 = v4 == 4000000000ul;
+    
+    
     bool v9;
     if (v7){
-        bool v8 = strcmp(v5->ptr, "hi") == 0;
+        
+        
+        bool v8;
+        v8 = strcmp(v5->ptr, "hi") == 0;
+        
+        
         v9 = v8;
     } else {
+        
+        
         v9 = false;
     }
+    
     StringDecref(v5);
-    bool v10 = v9 && v6;
+    bool v10;
+    v10 = v9 && v6;
+    
+    
     if (v10){
+        
+        
         return 0l;
     } else {
+        
+        
         return 1l;
     }
 }

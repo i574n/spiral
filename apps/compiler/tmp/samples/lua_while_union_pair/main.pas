@@ -31,11 +31,9 @@ function MutCreate1(a0: LongInt): TMut1;
 begin
   Result := TMut1.Create; Result.l0 := a0;
 end;
-var UH0_Nil_shared: TUH0 = nil;
 function UH0_Nil: TUH0;
 begin
-  if UH0_Nil_shared = nil then begin UH0_Nil_shared := TUH0.Create; UH0_Nil_shared.tag := 0; end;
-  Result := UH0_Nil_shared;
+  Result := TUH0.Create; Result.tag := 0; 
 end;
 function UH0_Cons(a0: LongInt; a1: TUH0): TUH0;
 begin

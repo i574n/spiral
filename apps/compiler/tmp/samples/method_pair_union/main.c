@@ -41,41 +41,87 @@ static inline Tuple0 TupleCreate0(US0 v0, US0 v1){
     x.v0 = v0; x.v1 = v1;
     return x;
 }
-static Tuple0 method0(int32_t v0){
-    bool v1 = v0 == 0l;
+Tuple0 method0(int32_t v0){
+    
+    
+    bool v1;
+    v1 = v0 == 0l;
+    
+    
     if (v1){
-        US0 v2 = US0_None();
-        US0 v3 = US0_None();
+        
+        
+        US0 v2;
+        v2 = US0_None();
+        
+        
+        US0 v3;
+        v3 = US0_None();
+        
+        
         return TupleCreate0(v2, v3);
     } else {
-        US0 v4 = US0_Some(v0);
-        US0 v5 = US0_None();
+        
+        
+        US0 v4;
+        v4 = US0_Some(v0);
+        
+        
+        US0 v5;
+        v5 = US0_None();
+        
+        
         return TupleCreate0(v4, v5);
     }
 }
 int32_t main(){
-    int32_t v0 = 7l;
+    
+    
+    int32_t v0;
+    v0 = 7l;
+    
+    
     US0 v1; US0 v2;
     Tuple0 tmp0 = method0(v0);
     v1 = tmp0.v0; v2 = tmp0.v1;
+    
+    
     switch (v1.tag) {
         case 0: { // None
+            
+            
+            
             return 1l;
             break;
         }
         default: { // Some
             int32_t v3 = v1.case1.v0;
+            
+            
             switch (v2.tag) {
                 case 0: { // None
-                    bool v4 = v3 == 7l;
+                    
+                    
+                    
+                    bool v4;
+                    v4 = v3 == 7l;
+                    
+                    
                     if (v4){
+                        
+                        
                         return 0l;
                     } else {
+                        
+                        
                         return 1l;
                     }
                     break;
                 }
                 default: { // Some
+                    
+                    
+                    
                     return 1l;
                     break;
                 }

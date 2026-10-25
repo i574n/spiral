@@ -11,16 +11,25 @@ func spiral_main() -> Int32 {
     v0.items[Int(1)] = 3
     v0.items[Int(2)] = 5
     v0.items[Int(3)] = 7
-    let v1: Int32 = 1
+    var v1: Int32 = 0
+    v1 = 1
     v0.items[Int(v1)] = 11
-    let v2: Int32 = v0.items[Int(0)]
-    let v3: Int32 = v0.items[Int(1)]
-    let v4: Int32 = v0.items[Int(2)]
-    let v5: Int32 = v0.items[Int(3)]
-    let v6: Int32 = (v2 &+ v3)
-    let v7: Int32 = (v6 &+ v4)
-    let v8: Int32 = (v7 &+ v5)
-    let v9: Int32 = (v8 &- 25)
+    var v2: Int32 = 0
+    v2 = v0.items[Int(0)]
+    var v3: Int32 = 0
+    v3 = v0.items[Int(1)]
+    var v4: Int32 = 0
+    v4 = v0.items[Int(2)]
+    var v5: Int32 = 0
+    v5 = v0.items[Int(3)]
+    var v6: Int32 = 0
+    v6 = (v2 &+ v3)
+    var v7: Int32 = 0
+    v7 = (v6 &+ v4)
+    var v8: Int32 = 0
+    v8 = (v7 &+ v5)
+    var v9: Int32 = 0
+    v9 = (v8 &- 25)
     return v9
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

@@ -34,17 +34,20 @@ partial def method1 (p0 : Int32) : IO Int32 := do
         if v2 then
             return (0 : Int32)
         else
-            v0 := v1
+            let t1 := v1
+            v0 := t1
             continue
 partial def method0 (p0 : Int32) : IO Int32 := do
     let mut v0 : Int32 := p0
-    let v1 : Bool := (v0 == (0 : Int32))
+    let mut v1 : Bool := default
+    v1 := (v0 == (0 : Int32))
     if v1 then
         return (0 : Int32)
     else
         return (← method1 v0)
 partial def spiralMain : IO Int32 := do
-    let v0 : Int32 := (1000000 : Int32)
+    let mut v0 : Int32 := default
+    v0 := (1000000 : Int32)
     return (← method0 v0)
 end
 def main : IO UInt32 := do

@@ -33,18 +33,28 @@ mutual
 partial def add_c0 (p0 : Int32) (p1 : Int32) : IO Int32 := do
     let mut v0 : Int32 := p0
     let mut v1 : Int32 := p1
-    let v2 : Int32 := (v1 + v0)
+    let mut v2 : Int32 := default
+    v2 := (v1 + v0)
     return v2
 partial def spiralMain : IO Int32 := do
-    let v0 : Int32 := (3 : Int32)
-    let v1 : Int32 := (4 : Int32)
-    let v2 : (Int32 → IO Int32) := (add_c0 v0)
-    let v3 : H0 := (H0.mk v2 v1)
-    let v4 : (Int32 → IO Int32) := v3.l0
-    let v5 : Int32 := v3.l1
-    let v6 : Int32 := (← v4 (0 : Int32))
-    let v7 : Int32 := (v6 + v5)
-    let v8 : Bool := (v7 == (7 : Int32))
+    let mut v0 : Int32 := default
+    let mut v1 : Int32 := default
+    let mut v2 : (Int32 → IO Int32) := default
+    let mut v3 : H0 := default
+    let mut v4 : (Int32 → IO Int32) := default
+    let mut v5 : Int32 := default
+    let mut v6 : Int32 := default
+    let mut v7 : Int32 := default
+    let mut v8 : Bool := default
+    v0 := (3 : Int32)
+    v1 := (4 : Int32)
+    v2 := (add_c0 v0)
+    v3 := (H0.mk v2 v1)
+    v4 := v3.l0
+    v5 := v3.l1
+    v6 := (← v4 (0 : Int32))
+    v7 := (v6 + v5)
+    v8 := (v7 == (7 : Int32))
     if v8 then
         return (0 : Int32)
     else

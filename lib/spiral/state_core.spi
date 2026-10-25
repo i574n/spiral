@@ -286,10 +286,8 @@ inl use_core_database forall core_state_data.
             ++# sm'.obj_to_string dark_mode_loading
         )
 
-        if not dark_mode_loading
-        then
-            if not loaded
-            then
+        if not dark_mode_loading then
+            if not loaded then
                 set_loaded
                 |> leptos.signal_update fun _ =>
                     leptos.log (

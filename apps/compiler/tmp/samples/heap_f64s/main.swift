@@ -13,12 +13,17 @@ final class SpiralArray<T> {
 func spiral_main() -> Int32 {
     var v0: SpiralArray<Double> = SpiralArray<Double>([])
     v0 = SpiralArray<Double>(Array(repeating: (0.0 as Double), count: Int(1)))
-    let v1: Double = (1.5 as Double)
+    var v1: Double = (0.0 as Double)
+    v1 = (1.5 as Double)
     v0.items[Int(0)] = v1
-    let v2: Heap0 = Heap0(l0: v0)
-    let v3: SpiralArray<Double> = v2.l0
-    let v4: Double = v3.items[Int(0)]
-    let v5: Bool = (v4 == (1.5 as Double))
+    var v2: Heap0 = Heap0(l0: SpiralArray<Double>([]))
+    v2 = Heap0(l0: v0)
+    var v3: SpiralArray<Double> = SpiralArray<Double>([])
+    v3 = v2.l0
+    var v4: Double = (0.0 as Double)
+    v4 = v3.items[Int(0)]
+    var v5: Bool = false
+    v5 = (v4 == (1.5 as Double))
     if (v5) {
         return 0
     } else {

@@ -33,7 +33,7 @@ inl is_assertion (name : string) : bool = local_name name = "assert" || local_na
 
 let rec assertions_in (nodes : list xml_node) (acc : list assertion) : list assertion =
     match nodes with
-    | Cons (XmlElement (name, attributes, children), rest) when is_assertion name =>
+    | XmlElement (name, attributes, children) :: rest when is_assertion name =>
         inl source = attribute_or "test" attributes
         inl assertion =
             {
@@ -44,24 +44,24 @@ let rec assertions_in (nodes : list xml_node) (acc : list assertion) : list asse
                 source = source
                 message = sm'.trim (xml.text_in children)
             }
-        assertions_in rest (Cons (assertion, acc))
-    | Cons (_, rest) => assertions_in rest acc
+        assertions_in rest (assertion :: acc)
+    | _ :: rest => assertions_in rest acc
     | Nil => listm.rev acc
 
 let rec rules_in (nodes : list xml_node) (acc : list rule) : list rule =
     match nodes with
-    | Cons (XmlElement (name, attributes, children), rest) when xml.local_name name = "rule" =>
+    | XmlElement (name, attributes, children) :: rest when xml.local_name name = "rule" =>
         inl source = attribute_or "context" attributes
         inl parsed = { context = xpath.parse source; context_source = source; assertions = assertions_in children Nil }
-        rules_in rest (Cons (parsed, acc))
-    | Cons (_, rest) => rules_in rest acc
+        rules_in rest (parsed :: acc)
+    | _ :: rest => rules_in rest acc
     | Nil => listm.rev acc
 
 let rec patterns_in (nodes : list xml_node) (acc : list pattern) : list pattern =
     match nodes with
-    | Cons (XmlElement (name, attributes, children), rest) when xml.local_name name = "pattern" =>
-        patterns_in rest (Cons ({ id = attribute_or "id" attributes; rules = rules_in children Nil }, acc))
-    | Cons (_, rest) => patterns_in rest acc
+    | XmlElement (name, attributes, children) :: rest when xml.local_name name = "pattern" =>
+        patterns_in rest ({ id = attribute_or "id" attributes; rules = rules_in children Nil } :: acc)
+    | _ :: rest => patterns_in rest acc
     | Nil => listm.rev acc
 
 inl read_schematron (text : string) : list pattern =
@@ -75,7 +75,7 @@ inl empty_census () : census = { rules = 0i32; assertions = 0i32; fatal = 0i32; 
 
 let rec assertions_census (assertions : list assertion) (acc : census) : census =
     match assertions with
-    | Cons (a, rest) =>
+    | a :: rest =>
         inl fatal = match a.severity with Fatal => 1i32 | _ => 0i32
         inl invalid = xpath.invalid_count a.test
         inl acc = { acc with assertions = acc.assertions + 1i32; fatal = acc.fatal + fatal }
@@ -85,14 +85,14 @@ let rec assertions_census (assertions : list assertion) (acc : census) : census 
 
 let rec rules_census (rules : list rule) (acc : census) : census =
     match rules with
-    | Cons (r, rest) =>
+    | r :: rest =>
         inl acc = { acc with rules = acc.rules + 1i32; invalid = acc.invalid + xpath.invalid_count r.context }
         rules_census rest (assertions_census r.assertions acc)
     | Nil => acc
 
 let rec schematron_census (patterns : list pattern) (acc : census) : census =
     match patterns with
-    | Cons (p, rest) => schematron_census rest (rules_census p.rules acc)
+    | p :: rest => schematron_census rest (rules_census p.rules acc)
     | Nil => acc
 ///> rust
 test reads_rules_and_typed_assertions =
@@ -102,13 +102,13 @@ test reads_rules_and_typed_assertions =
         ++# "<assert id=\"BR-21\" flag=\"fatal\" test=\"exists(cbc:ID)\">[BR-21] line id</assert>"
         ++# "<assert id=\"BR-X\" flag=\"warning\" test=\"cbc:Note != ''\">note</assert></rule></pattern></schema>"
     match read_schematron source with
-    | Cons (p, Nil) =>
+    | p :: Nil =>
         if p.id <> "model" then failwith "pattern id"
         match p.rules with
-        | Cons (r, Nil) =>
+        | r :: Nil =>
             if xpath.xpath_text r.context <> "(child::cac:InvoiceLine .)" then failwith "rule context"
             match r.assertions with
-            | Cons (first, Cons (second, Nil)) =>
+            | first :: second :: Nil =>
                 if first.id <> "BR-21" || first.message <> "[BR-21] line id" then failwith "first assertion"
                 if xpath.xpath_text first.test <> "(exists (child::cbc:ID .))" then failwith "parsed test"
                 match second.severity with Warning => () | _ => failwith "warning flag"

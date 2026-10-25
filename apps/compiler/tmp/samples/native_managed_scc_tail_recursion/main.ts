@@ -30,18 +30,18 @@ function spiral_string_slice(value: string, from: number, to: number): string {
     return spiral_utf8_decoder.decode(bytes.subarray(from, to + 1));
 }
 function method2(v0: number, v1: string): number {
-    const v2: number = (v0 - 1) | 0;
-    const v3: boolean = v2 === 0;
+    let v2: number = (v0 - 1) | 0;
+    let v3: boolean = v2 === 0;
     if (v3) {
-        const v4: number = spiral_string_length(v1);
+        let v4: number = spiral_string_length(v1);
         return v4;
     } else {
         return method1(v2, v1);
     }
 }
 function method1(v0: number, v1: string): number {
-    const v2: number = (v0 - 1) | 0;
-    const v3: boolean = v2 === 0;
+    let v2: number = (v0 - 1) | 0;
+    let v3: boolean = v2 === 0;
     if (v3) {
         return 99;
     } else {
@@ -49,27 +49,27 @@ function method1(v0: number, v1: string): number {
     }
 }
 function method0(v0: number, v1: string): number {
-    const v2: boolean = v0 === 0;
+    let v2: boolean = v0 === 0;
     let v5: number;
     if (v2) {
-        const v3: number = spiral_string_length(v1);
+        let v3: number = spiral_string_length(v1);
         v5 = v3;
     } else {
         v5 = method1(v0, v1);
     }
-    const v6: number = (v5 - 2) | 0;
+    let v6: number = (v5 - 2) | 0;
     return v6;
 }
 export function main(): number {
-    const v0: number = 1000000;
-    const v1: number = (v0 % 2) | 0;
-    const v2: boolean = v1 === 0;
+    let v0: number = 1000000;
+    let v1: number = (v0 % 2) | 0;
+    let v2: boolean = v1 === 0;
     let v5: string;
     if (v2) {
-        const v3: string = "ok";
+        let v3: string = "ok";
         v5 = v3;
     } else {
-        const v4: string = "go";
+        let v4: string = "go";
         v5 = v4;
     }
     return method0(v0, v5);

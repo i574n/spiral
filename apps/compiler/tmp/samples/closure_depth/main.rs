@@ -7,7 +7,7 @@ fn h_c2(mut v0: i32, mut v1: i32) -> Rc<dyn Fn(i32) -> i32> {
         if v3 {
             0i32
         } else {
-            let v4: i32 = v2.wrapping_add(v0);
+            let mut v4: i32 = v2.wrapping_add(v0);
             v4
         }
     })
@@ -23,12 +23,12 @@ fn f_c0(mut v0: i32) -> Rc<dyn Fn(i32) -> Rc<dyn Fn(i32) -> Rc<dyn Fn(i32) -> i3
     })
 }
 fn spiral_main() -> i32 {
-    let v0: i32 = 7i32;
+    let mut v0: i32 = 7i32;
     let mut v1: Rc<dyn Fn(i32) -> Rc<dyn Fn(i32) -> Rc<dyn Fn(i32) -> i32>>> = f_c0(v0);
     let mut v2: Rc<dyn Fn(i32) -> Rc<dyn Fn(i32) -> i32>> = v1(1i32);
     let mut v3: Rc<dyn Fn(i32) -> i32> = v2(0i32);
-    let v4: i32 = v3(0i32);
-    let v5: bool = v4 == 7i32;
+    let mut v4: i32 = v3(0i32);
+    let mut v5: bool = v4 == 7i32;
     if v5 {
         0i32
     } else {

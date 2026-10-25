@@ -1,23 +1,34 @@
+local function spiral_wrap_unsigned(value, bits)
+    return value % (2 ^ bits)
+end
 local function spiral_wrap_signed(value, bits)
     local modulus = 2 ^ bits
     value = value % modulus
     if value >= modulus / 2 then value = value - modulus end
     return value
 end
-local Uh0_Node, sum_0
-Uh0_Leaf = (function() local shared = { tag = "Uh0_Leaf" } return function() return shared end end)()
-Uh0_Marker = (function() local shared = { tag = "Uh0_Marker" } return function() return shared end end)()
+local function spiral_mul_mod32(a, b)
+    a = a % 4294967296
+    b = b % 4294967296
+    local a_low = a % 65536
+    local a_high = (a - a_low) / 65536
+    return (a_low * b + ((a_high * b) % 65536) * 65536) % 4294967296
+end
+local Uh0_Leaf, Uh0_Marker, Uh0_Node, sum_0
+function Uh0_Leaf() return { tag = "Uh0_Leaf" } end
+function Uh0_Marker() return { tag = "Uh0_Marker" } end
 function Uh0_Node(v0, v1, v2) return { tag = "Uh0_Node",  _1 = v0,  _2 = v1,  _3 = v2 } end
 
 function sum_0(v0)
-    if v0 ~= nil and v0.tag == "Uh0_Leaf" then
+    local __v = { v0 }
+    if __v[1] ~= nil and __v[1].tag == "Uh0_Leaf" then
         return 0
-    elseif v0 ~= nil and v0.tag == "Uh0_Marker" then
+    elseif __v[1] ~= nil and __v[1].tag == "Uh0_Marker" then
         return 0
-    elseif v0 ~= nil and v0.tag == "Uh0_Node" then
-        local v1 = v0._1
-        local v2 = v0._2
-        local v3 = v0._3
+    elseif __v[1] ~= nil and __v[1].tag == "Uh0_Node" then
+        local v1 = __v[1]._1
+        local v2 = __v[1]._2
+        local v3 = __v[1]._3
         local v4 = sum_0(v2)
         local v5 = sum_0(v3)
         local v6 = spiral_wrap_signed((v4 + v5), 32)

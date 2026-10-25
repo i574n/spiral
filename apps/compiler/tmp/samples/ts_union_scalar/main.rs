@@ -9,25 +9,25 @@ enum US0 {
 fn score_0(mut v0: US0) -> i32 {
     match &v0 {
         US0::US0_Hit(v1) => {
-            let v1: i32 = *v1;
+            let mut v1: i32 = *v1;
             v1
         }
         US0::US0_Miss(v2) => {
-            let v2: i32 = *v2;
-            let v3: i32 = v2.wrapping_neg();
+            let mut v2: i32 = *v2;
+            let mut v3: i32 = v2.wrapping_neg();
             v3
         }
     }
 }
 fn spiral_main() -> i32 {
-    let v0: bool = true;
-    let v3: US0 = if v0 {
+    let mut v0: bool = true;
+    let mut v3: US0 = if v0 {
         US0::US0_Hit(7i32)
     } else {
         US0::US0_Miss(3i32)
     };
-    let v4: i32 = score_0(v3);
-    let v5: i32 = v4.wrapping_sub(7i32);
+    let mut v4: i32 = score_0(v3.clone());
+    let mut v5: i32 = v4.wrapping_sub(7i32);
     v5
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }

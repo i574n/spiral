@@ -12,26 +12,26 @@ pub fn method0(v0: String, v1: String) -> #(String, String) {
     }
 }
 pub fn main() {
-    let v0 = "hi"
-    let v1 = "yo"
-    let #(v2, v3) = method0(v0, v1)
-    let v4 = v2 == "hi"
-    let v6 =
-        case v4 {
-            True -> {
-                let v5 = v3 == "yo"
-                v5
-            }
-            False -> {
-                False
-            }
-        }
-    case v6 {
+let v0 = "hi"
+let v1 = "yo"
+let #(v2, v3) = method0(v0, v1)
+let v4 = v2 == "hi"
+let v6 =
+    case v4 {
         True -> {
-            0
+            let v5 = v3 == "yo"
+            v5
         }
         False -> {
-            1
+            False
         }
     }
+case v6 {
+    True -> {
+        0
+    }
+    False -> {
+        1
+    }
+}
 }

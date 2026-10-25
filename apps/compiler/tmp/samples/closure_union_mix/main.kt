@@ -14,19 +14,24 @@ fun f_c0(v0: Int, v1: String): (Int) -> US0 {
     return { p0: Int -> body(p0) }
 }
 fun spiral_main(): Int {
-    val v0: Int = 3
-    val v1: String = "hi"
-    val v2: (Int) -> US0 = f_c0(v0, v1)
+    var v0: Int = 0
+    v0 = 3
+    var v1: String = ""
+    v1 = "hi"
+    var v2: (Int) -> US0 = { _: Int -> throw RuntimeException() }
+    v2 = f_c0(v0, v1)
     var v3: US0 = US0_One(0)
     v3 = v2(1)
     when (v3.tag) {
         1 -> {
             var v5: Int = (v3 as US0_Both).f0
             var v6: String = (v3 as US0_Both).f1
-            val v7: Boolean = (v5 == 3)
+            var v7: Boolean = false
+            v7 = (v5 == 3)
             var v9: Boolean = false
             if (v7) {
-                val v8: Boolean = (v6 == "hi")
+                var v8: Boolean = false
+                v8 = (v6 == "hi")
                 v9 = v8
             } else {
                 v9 = false

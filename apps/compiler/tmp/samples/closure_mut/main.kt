@@ -6,13 +6,17 @@ fun f_c0(v0: Mut0): (Int) -> Mut0 {
     return { p0: Int -> body(p0) }
 }
 fun spiral_main(): Int {
-    val v0: Mut0 = Mut0(1)
-    val v1: (Int) -> Mut0 = f_c0(v0)
+    var v0: Mut0 = Mut0(0)
+    v0 = Mut0(1)
+    var v1: (Int) -> Mut0 = { _: Int -> throw RuntimeException() }
+    v1 = f_c0(v0)
     var v2: Mut0 = Mut0(0)
     v2 = v1(1)
     v2.l0 = 7
-    val v3: Int = v2.l0
-    val v4: Boolean = (v3 == 7)
+    var v3: Int = 0
+    v3 = v2.l0
+    var v4: Boolean = false
+    v4 = (v3 == 7)
     if (v4) {
         return 0
     } else {

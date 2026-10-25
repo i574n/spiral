@@ -25,13 +25,16 @@ def spiralStringSlice (s : String) (a b : Int) : IO String := do
   else pure (String.Pos.Raw.extract s ⟨a.toNat⟩ ⟨(b + 1).toNat⟩)
 mutual
 partial def spiralMain : IO Int32 := do
+    let mut v0 : Int32 := default
     let mut v1 : (IO.Ref (Array Bool)) ← IO.mkRef #[]
-    let v0 : Int32 := (2 : Int32)
+    let mut v2 : Int32 := default
+    let mut v3 : Bool := default
+    v0 := (2 : Int32)
     v1 := (← IO.mkRef (Array.replicate (spiralIdx v0) (default : Bool)))
     v1.modify (fun xs => xs.set! (spiralIdx (0 : Int32)) true)
     v1.modify (fun xs => xs.set! (spiralIdx (1 : Int32)) false)
-    let v2 : Int32 := (0 : Int32)
-    let v3 : Bool := (← spiralIndex (← v1.get) (spiralIdx v2))
+    v2 := (0 : Int32)
+    v3 := (← spiralIndex (← v1.get) (spiralIdx v2))
     if v3 then
         return (0 : Int32)
     else

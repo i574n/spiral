@@ -2,12 +2,15 @@ fun sp_method0(p0: UInt): Boolean {
     var v0: UInt = p0
     var v1: UInt = 0u
     v1 = (v0 + 5u)
-    val v2: UInt = (v1 % 4u)
-    val v3: Boolean = (v2 == 0u)
+    var v2: UInt = 0u
+    v2 = (v1 % 4u)
+    var v3: Boolean = false
+    v3 = (v2 == 0u)
     return v3
 }
 fun spiral_main(): Int {
-    val v0: UInt = 7u
+    var v0: UInt = 0u
+    v0 = 7u
     var v1: Boolean = false
     v1 = sp_method0(v0)
     if (v1) {

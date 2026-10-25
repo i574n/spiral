@@ -32,15 +32,15 @@ function spiral_string_slice(value: string, from: number, to: number): string {
 type US0_Empty = { readonly tag: 0 };
 type US0_Item = { readonly tag: 1, readonly f0: string, readonly f1: number };
 type US0 = US0_Empty | US0_Item;
-const US0_Empty_shared: US0 = { tag: 0 }; function US0_Empty(): US0 { return US0_Empty_shared; }
+function US0_Empty(): US0 { return { tag: 0 }; }
 function US0_Item(f0: string, f1: number): US0 { return { tag: 1, f0: f0, f1: f1 }; }
 function closure0(): ((a0: number) => US0) {
     return (v0: number): US0 => {
-        const v1: boolean = v0 === 0;
+        let v1: boolean = v0 === 0;
         if (v1) {
             return US0_Empty();
         } else {
-            const v3: string = "managed";
+            let v3: string = "managed";
             return US0_Item(v3, 32);
         }
     };
@@ -52,8 +52,8 @@ function method1(v0: ((a0: number) => US0)): US0 {
     return v0(1);
 }
 export function main(): number {
-    const v0: ((a0: number) => US0) = closure0();
-    const v1: US0 = method0(v0);
+    let v0: ((a0: number) => US0) = closure0();
+    let v1: US0 = method0(v0);
     let v7: number;
     switch (v1.tag) {
         case 0: {
@@ -61,16 +61,16 @@ export function main(): number {
             break;
         }
         case 1: {
-            const v2: string = v1.f0;
-            const v3: number = v1.f1;
-            const v4: number = spiral_string_length(v2);
-            const v5: number = (v4 + v3) | 0;
+            let v2: string = v1.f0;
+            let v3: number = v1.f1;
+            let v4: number = spiral_string_length(v2);
+            let v5: number = (v4 + v3) | 0;
             v7 = v5;
             break;
         }
         default: throw new Error("Compiler error: unreachable union case.");
     }
-    const v8: US0 = method1(v0);
+    let v8: US0 = method1(v0);
     let v14: number;
     switch (v8.tag) {
         case 0: {
@@ -78,16 +78,16 @@ export function main(): number {
             break;
         }
         case 1: {
-            const v9: string = v8.f0;
-            const v10: number = v8.f1;
-            const v11: number = spiral_string_length(v9);
-            const v12: number = (v11 + v10) | 0;
+            let v9: string = v8.f0;
+            let v10: number = v8.f1;
+            let v11: number = spiral_string_length(v9);
+            let v12: number = (v11 + v10) | 0;
             v14 = v12;
             break;
         }
         default: throw new Error("Compiler error: unreachable union case.");
     }
-    const v15: number = (v7 + v14) | 0;
+    let v15: number = (v7 + v14) | 0;
     return v15;
 }
 process.exitCode = main();

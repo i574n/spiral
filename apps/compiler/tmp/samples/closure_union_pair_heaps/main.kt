@@ -1,13 +1,13 @@
 class Heap0(val l0: Int, val l1: String)
 sealed interface US0 { val tag: Int }
-object US0_None : US0 { override val tag: Int = 0 }
+class US0_None : US0 { override val tag: Int = 0 }
 data class US0_Held(val f0: Heap0, val f1: Heap0) : US0 { override val tag: Int = 1 }
 fun f_c0(v0: Heap0, v1: Heap0): (Int) -> US0 {
     fun body(v2: Int): US0 {
         var v3: Boolean = false
         v3 = (v2 == 0)
         if (v3) {
-            return US0_None
+            return US0_None()
         } else {
             return US0_Held(v0, v1)
         }
@@ -32,21 +32,24 @@ fun sp_score_0(p0: US0): Int {
             v7 = (v3 == 7)
             var v9: Boolean = false
             if (v7) {
-                val v8: Boolean = (v4 == "hi")
+                var v8: Boolean = false
+                v8 = (v4 == "hi")
                 v9 = v8
             } else {
                 v9 = false
             }
             var v11: Boolean = false
             if (v9) {
-                val v10: Boolean = (v5 == 4)
+                var v10: Boolean = false
+                v10 = (v5 == 4)
                 v11 = v10
             } else {
                 v11 = false
             }
             var v13: Boolean = false
             if (v11) {
-                val v12: Boolean = (v6 == "yo")
+                var v12: Boolean = false
+                v12 = (v6 == "yo")
                 v13 = v12
             } else {
                 v13 = false
@@ -64,9 +67,12 @@ fun sp_score_0(p0: US0): Int {
     }
 }
 fun spiral_main(): Int {
-    val v0: Int = 7
-    val v1: String = "hi"
-    val v2: Heap0 = Heap0(v0, v1)
+    var v0: Int = 0
+    v0 = 7
+    var v1: String = ""
+    v1 = "hi"
+    var v2: Heap0 = Heap0(0, "")
+    v2 = Heap0(v0, v1)
     var v3: Int = 0
     v3 = 4
     var v4: String = ""
@@ -75,7 +81,7 @@ fun spiral_main(): Int {
     v5 = Heap0(v3, v4)
     var v6: (Int) -> US0 = { _: Int -> throw RuntimeException() }
     v6 = f_c0(v2, v5)
-    var v7: US0 = US0_None
+    var v7: US0 = US0_None()
     v7 = v6(1)
     return sp_score_0(v7)
 }

@@ -36,12 +36,15 @@ func sp_method2(_ p0: Int32, _ p1: Int32, _ p2: Int32) -> Int32 {
     v5 = spiral_tuple208.2
     var v6: Int32 = 0
     v6 = (v3 &+ v4)
-    let v7: Int32 = (v6 &+ v5)
+    var v7: Int32 = 0
+    v7 = (v6 &+ v5)
     return v7
 }
 func spiral_main() -> Int32 {
-    let v0: Int32 = 1
-    let v1: Int32 = 2
+    var v0: Int32 = 0
+    v0 = 1
+    var v1: Int32 = 0
+    v1 = 2
     var v2: Int32 = 0
     v2 = 3
     var v3: Int32 = 0

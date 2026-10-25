@@ -26,4 +26,9 @@ defmodule Spiral.Cells.MountsRelativeTest do
     assert "src" in names
     assert "spiral" in names
   end
+
+  test "a package with a relative sibling shares the mounted deps, so it is shadowed", %{app: app} do
+    assert Mounts.share_mounted_deps?(app, ["arena", "spiral", "src"])
+    refute Mounts.share_mounted_deps?(app, ["arena", "spiral"])
+  end
 end

@@ -47,18 +47,26 @@ func sp_measure_1(_ p0: String) -> Int32 {
     return v1
 }
 func spiral_main() -> Int32 {
-    let v0: Bool = true
+    var v0: Bool = false
+    v0 = true
     var v1: String = ""
     v1 = sp_choose_0(v0)
     var v2: Bool = false
     v2 = false
-    let v3: String = sp_choose_0(v2)
-    let v4: Int32 = sp_measure_1(v1)
-    let v5: Int32 = sp_measure_1(v1)
-    let v6: Int32 = (v4 &+ v5)
-    let v7: Int32 = sp_measure_1(v3)
-    let v8: Int32 = (v6 &+ v7)
-    let v9: Int32 = (v8 &- 14)
+    var v3: String = ""
+    v3 = sp_choose_0(v2)
+    var v4: Int32 = 0
+    v4 = sp_measure_1(v1)
+    var v5: Int32 = 0
+    v5 = sp_measure_1(v1)
+    var v6: Int32 = 0
+    v6 = (v4 &+ v5)
+    var v7: Int32 = 0
+    v7 = sp_measure_1(v3)
+    var v8: Int32 = 0
+    v8 = (v6 &+ v7)
+    var v9: Int32 = 0
+    v9 = (v8 &- 14)
     return v9
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

@@ -4,7 +4,7 @@ open sm'_operators
 test oauth static =
     open testing
 
-type oauth1_credentials = {consumer_key : string; consumer_secret : string; token : string; token_secret : string}
+type oauth1_credentials = { consumer_key : string; consumer_secret : string; token : string; token_secret : string }
 
 type oauth1_pair = string * string
 
@@ -13,8 +13,8 @@ inl oauth1_before ((ka, va) : oauth1_pair) ((kb, vb) : oauth1_pair) : bool =
 
 let rec oauth1_inserted (x : oauth1_pair) (l : list oauth1_pair) : list oauth1_pair =
     match l with
-    | Cons (y, ys) when oauth1_before y x => Cons (y, oauth1_inserted x ys)
-    | _ => Cons (x, l)
+    | y :: ys when oauth1_before y x => y :: oauth1_inserted x ys
+    | _ => x :: l
 
 /// ### parameter_string
 inl parameter_string (params : list oauth1_pair) : string =
@@ -52,7 +52,7 @@ inl authorization_header
     : string
     =
     inl params = protocol_params c nonce stamp
-    inl signed = listm.append params [("oauth_signature", signature c method url params)]
+    inl signed = listm.append params [ ("oauth_signature", signature c method url params) ]
     "OAuth " ++# (signed |> listm.map oauth1_header_field |> sm'.concat_list ", ")
 
 inl oauth1_example_credentials () : oauth1_credentials =
@@ -67,7 +67,7 @@ inl oauth1_example_params () : list oauth1_pair =
     inl status = "Hello Ladies + Gentlemen, a signed OAuth request!"
     inl nonce = "kYjzVBB8Y0ZFabxSWbWovY3uYSQ2pTgmZeNu2VS4cg"
     inl c = oauth1_example_credentials ()
-    listm.append [("include_entities", "true"); ("status", status)] (protocol_params c nonce "1318622958")
+    listm.append [ ("include_entities", "true"); ("status", status) ] (protocol_params c nonce "1318622958")
 
 ///> rust -d hmac sha1 base64
 ///> gleam

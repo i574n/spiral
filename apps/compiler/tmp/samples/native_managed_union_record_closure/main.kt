@@ -1,5 +1,5 @@
 sealed interface US0 { val tag: Int }
-object US0_Empty : US0 { override val tag: Int = 0 }
+class US0_Empty : US0 { override val tag: Int = 0 }
 data class US0_Item(val f0: String, val f1: Int) : US0 { override val tag: Int = 1 }
 fun spiralUtf8(value: String): ByteArray = value.toByteArray(Charsets.UTF_8)
 fun spiralStringLength(value: String): Int = spiralUtf8(value).size
@@ -35,9 +35,10 @@ fun closure0(): (Int) -> US0 {
         var v1: Boolean = false
         v1 = (v0 == 0)
         if (v1) {
-            return US0_Empty
+            return US0_Empty()
         } else {
-            val v3: String = "managed"
+            var v3: String = ""
+            v3 = "managed"
             return US0_Item(v3, 32)
         }
     }
@@ -52,8 +53,9 @@ fun sp_method1(p0: (Int) -> US0): US0 {
     return v0(1)
 }
 fun spiral_main(): Int {
-    val v0: (Int) -> US0 = closure0()
-    var v1: US0 = US0_Empty
+    var v0: (Int) -> US0 = { _: Int -> throw RuntimeException() }
+    v0 = closure0()
+    var v1: US0 = US0_Empty()
     v1 = sp_method0(v0)
     var v7: Int = 0
     when (v1.tag) {
@@ -63,13 +65,16 @@ fun spiral_main(): Int {
         1 -> {
             var v2: String = (v1 as US0_Item).f0
             var v3: Int = (v1 as US0_Item).f1
-            val v4: Int = spiralStringLength(v2)
-            val v5: Int = (v4 + v3)
+            var v4: Int = 0
+            v4 = spiralStringLength(v2)
+            var v5: Int = 0
+            v5 = (v4 + v3)
             v7 = v5
         }
         else -> throw RuntimeException()
     }
-    val v8: US0 = sp_method1(v0)
+    var v8: US0 = US0_Empty()
+    v8 = sp_method1(v0)
     var v14: Int = 0
     when (v8.tag) {
         0 -> {
@@ -78,13 +83,16 @@ fun spiral_main(): Int {
         1 -> {
             var v9: String = (v8 as US0_Item).f0
             var v10: Int = (v8 as US0_Item).f1
-            val v11: Int = spiralStringLength(v9)
-            val v12: Int = (v11 + v10)
+            var v11: Int = 0
+            v11 = spiralStringLength(v9)
+            var v12: Int = 0
+            v12 = (v11 + v10)
             v14 = v12
         }
         else -> throw RuntimeException()
     }
-    val v15: Int = (v7 + v14)
+    var v15: Int = 0
+    v15 = (v7 + v14)
     return v15
 }
 fun main() {

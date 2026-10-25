@@ -1,5 +1,5 @@
 sealed interface US0 { val tag: Int }
-object US0_Missing : US0 { override val tag: Int = 0 }
+class US0_Missing : US0 { override val tag: Int = 0 }
 data class US0_Call(val f0: (Int) -> Int) : US0 { override val tag: Int = 1 }
 fun f_c0(v0: Int): (Int) -> Int {
     fun body(v1: Int): Int {
@@ -10,21 +10,25 @@ fun f_c0(v0: Int): (Int) -> Int {
     return { p0: Int -> body(p0) }
 }
 fun spiral_main(): Int {
-    val v0: Int = 3
-    val v1: (Int) -> Int = f_c0(v0)
+    var v0: Int = 0
+    v0 = 3
+    var v1: (Int) -> Int = { _: Int -> throw RuntimeException() }
+    v1 = f_c0(v0)
     var v2: Boolean = false
     v2 = true
-    var v5: US0 = US0_Missing
+    var v5: US0 = US0_Missing()
     if (v2) {
         v5 = US0_Call(v1)
     } else {
-        v5 = US0_Missing
+        v5 = US0_Missing()
     }
     when (v5.tag) {
         1 -> {
             var v6: (Int) -> Int = (v5 as US0_Call).f0
-            val v7: Int = v6(4)
-            val v8: Boolean = (v7 == 7)
+            var v7: Int = 0
+            v7 = v6(4)
+            var v8: Boolean = false
+            v8 = (v7 == 7)
             if (v8) {
                 return 0
             } else {

@@ -40,35 +40,65 @@ US0 US0_Some(int32_t v0) { // Some
 static inline void HeapDecrefBody0(Heap0 * x){
     (void)x;
 }
-static void HeapDecref0(Heap0 * x){
+void HeapDecref0(Heap0 * x){
     if (x != NULL && --(x->refc) == 0) { HeapDecrefBody0(x); free(x); }
 }
-static Heap0 * HeapCreate0(US0 v0, int32_t v1){
+Heap0 * HeapCreate0(US0 v0, int32_t v1){
     Heap0 * x = malloc(sizeof(Heap0));
     x->refc = 1;
     x->v0 = v0; x->v1 = v1;
     return x;
 }
 int32_t main(){
-    int32_t v0 = 3l;
-    int32_t v1 = 4l;
-    US0 v2 = US0_Some(v0);
-    Heap0 * v3 = HeapCreate0(v2, v1);
+    
+    
+    int32_t v0;
+    v0 = 3l;
+    
+    
+    int32_t v1;
+    v1 = 4l;
+    
+    
+    US0 v2;
+    v2 = US0_Some(v0);
+    
+    
+    Heap0 * v3;
+    v3 = HeapCreate0(v2, v1);
+    
+    
     US0 v4; int32_t v5;
     v4 = v3->v0; v5 = v3->v1;
+    
     HeapDecref0(v3);
     switch (v4.tag) {
         case 0: { // None
+            
+            
+            
             return 1l;
             break;
         }
         default: { // Some
             int32_t v6 = v4.case1.v0;
-            int32_t v7 = v6 + v5;
-            bool v8 = v7 == 7l;
+            
+            
+            int32_t v7;
+            v7 = v6 + v5;
+            
+            
+            bool v8;
+            v8 = v7 == 7l;
+            
+            
             if (v8){
+                
+                
                 return 0l;
             } else {
+                
+                
                 return 1l;
             }
             break;

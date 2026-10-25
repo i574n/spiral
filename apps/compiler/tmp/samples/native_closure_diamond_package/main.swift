@@ -61,15 +61,20 @@ func sp_method2(_ p0: @escaping (Int32) -> Int32, _ p1: Int32) -> Int32 {
     return v3
 }
 func spiral_main() -> Int32 {
-    let v0: String = "abc"
-    let v1: (Int32) -> Int32 = f_c0(v0)
+    var v0: String = ""
+    v0 = "abc"
+    var v1: (Int32) -> Int32 = { (_: Int32) -> Int32 in fatalError("unreachable closure") }
+    v1 = f_c0(v0)
     var v2: Int32 = 0
     v2 = 16
     var v3: Int32 = 0
     v3 = sp_method0(v1, v2)
-    let v4: Int32 = 17
-    let v5: Int32 = sp_method2(v1, v4)
-    let v6: Int32 = (v3 &+ v5)
+    var v4: Int32 = 0
+    v4 = 17
+    var v5: Int32 = 0
+    v5 = sp_method2(v1, v4)
+    var v6: Int32 = 0
+    v6 = (v3 &+ v5)
     return v6
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

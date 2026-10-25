@@ -21,17 +21,21 @@ func sp_score_0(_ p0: US0) -> Int32 {
     }
 }
 func spiral_main() -> Int32 {
-    let v0: Int32 = 3
-    let v1: Bool = (v0 == 0)
+    var v0: Int32 = 0
+    v0 = 3
+    var v1: Bool = false
+    v1 = (v0 == 0)
     var v10: US0 = US0_Cold()
     if (v1) {
         v10 = US0_Cold()
     } else {
-        let v3: Bool = (v0 == 1)
+        var v3: Bool = false
+        v3 = (v0 == 1)
         if (v3) {
             v10 = US0_Warm()
         } else {
-            let v5: Bool = (v0 == 2)
+            var v5: Bool = false
+            v5 = (v0 == 2)
             if (v5) {
                 v10 = US0_Hot()
             } else {
@@ -39,8 +43,10 @@ func spiral_main() -> Int32 {
             }
         }
     }
-    let v11: Int32 = sp_score_0(v10)
-    let v12: Int32 = (v11 &- 4)
+    var v11: Int32 = 0
+    v11 = sp_score_0(v10)
+    var v12: Int32 = 0
+    v12 = (v11 &- 4)
     return v12
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

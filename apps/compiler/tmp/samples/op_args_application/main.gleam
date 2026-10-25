@@ -10,6 +10,6 @@ pub fn f_0(v0: Int) -> Int {
     }
 }
 pub fn main() {
-    let v0 = 1
-    f_0(v0)
+let v0 = 1
+f_0(v0)
 }

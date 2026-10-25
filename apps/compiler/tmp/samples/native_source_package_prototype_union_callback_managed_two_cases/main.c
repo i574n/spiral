@@ -33,10 +33,10 @@ struct Closure0 {
 static inline void ArrayDecrefBody0(Array0 * x){
     (void)x;
 }
-static void ArrayDecref0(Array0 * x){
+void ArrayDecref0(Array0 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody0(x); free(x); }
 }
-static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
+Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     uint32_t size = sizeof(Array0) + sizeof(char) * len;
     Array0 * x = malloc(size);
     if (init_at_zero) { memset(x,0,size); }
@@ -44,7 +44,7 @@ static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     x->len = len;
     return x;
 }
-static Array0 * ArrayLit0(uint32_t len, char * ptr){
+Array0 * ArrayLit0(uint32_t len, char * ptr){
     Array0 * x = ArrayCreate0(len, false);
     memcpy(x->ptr, ptr, sizeof(char) * len);
     return x;
@@ -101,74 +101,130 @@ US0 US0_Note(String * v0) { // Note
 static inline void ClosureDecrefBody0(Closure0 * x){
     (void)x;
 }
-static void ClosureDecref0(Fun0 * self){
+void ClosureDecref0(Fun0 * self){
     Closure0 * x = (Closure0 *) self;
     if (x != NULL && --(x->base.refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
-static US0 closure0(Fun0 * self, int32_t v0){
+US0 closure0(Fun0 * self, int32_t v0){
+    
+    
     ClosureDecref0(self);
-    bool v1 = v0 == 1l;
+    
+    
+    bool v1;
+    v1 = v0 == 1l;
+    
+    
     if (v1){
-        String * v2 = StringLit(6, "alpha");
+        
+        
+        String * v2;
+        v2 = StringLit(6, "alpha");
+        
+        
         return US0_Text(v2);
     } else {
-        String * v4 = StringLit(5, "beta");
+        
+        
+        String * v4;
+        v4 = StringLit(5, "beta");
+        
+        
         return US0_Note(v4);
     }
 }
-static Fun0 * ClosureCreate0(){
+Fun0 * ClosureCreate0(){
     Closure0 * x = malloc(sizeof(Closure0));
     x->base.refc = 1;
     x->base.decref_fptr = ClosureDecref0;
     x->base.fptr = closure0;
+    
     return &x->base;
 }
-static US0 method0(Fun0 * v0){
+US0 method0(Fun0 * v0){
+    
+    
     return v0->fptr(v0, 1l);
 }
-static US0 method1(Fun0 * v0){
+US0 method1(Fun0 * v0){
+    
+    
     return v0->fptr(v0, 2l);
 }
 int32_t main(){
-    Fun0 * v0 = ClosureCreate0();
+    
+    
+    Fun0 * v0;
+    v0 = ClosureCreate0();
     (v0)->refc++;
-    US0 v1 = method0(v0);
+    
+    US0 v1;
+    v1 = method0(v0);
+    
+    
     int32_t v6;
     switch (v1.tag) {
         case 0: { // Idle
+            
+            
+            
             v6 = 3l;
             break;
         }
         case 2: { // Note
+            
+            
+            
             v6 = 6l;
             break;
         }
         default: { // Text
+            
+            
+            
             v6 = 5l;
             break;
         }
     }
     (v0)->refc++;
     USDecref0(&(v1));
-    US0 v7 = method1(v0);
+    US0 v7;
+    v7 = method1(v0);
+    
     (v0)->decref_fptr(v0);
     int32_t v12;
     switch (v7.tag) {
         case 0: { // Idle
+            
+            
+            
             v12 = 3l;
             break;
         }
         case 2: { // Note
+            
+            
+            
             v12 = 6l;
             break;
         }
         default: { // Text
+            
+            
+            
             v12 = 5l;
             break;
         }
     }
+    
     USDecref0(&(v7));
-    int32_t v13 = v6 + v12;
-    int32_t v14 = v13 + 31l;
+    int32_t v13;
+    v13 = v6 + v12;
+    
+    
+    int32_t v14;
+    v14 = v13 + 31l;
+    
+    
     return v14;
 }

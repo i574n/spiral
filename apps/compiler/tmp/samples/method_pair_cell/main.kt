@@ -6,17 +6,23 @@ fun sp_method0(p0: Int, p1: Heap0): SpiralTuple0 {
     return SpiralTuple0(v1, v0)
 }
 fun spiral_main(): Int {
-    val v0: Int = 3
-    val v1: Int = 4
-    val v2: Heap0 = Heap0(v0)
+    var v0: Int = 0
+    v0 = 3
+    var v1: Int = 0
+    v1 = 4
+    var v2: Heap0 = Heap0(0)
+    v2 = Heap0(v0)
     var v3: Heap0 = Heap0(0)
     var v4: Int = 0
     val spiral_tuple193 = sp_method0(v1, v2)
     v3 = spiral_tuple193.v0
     v4 = spiral_tuple193.v1
-    val v5: Int = v3.l0
-    val v6: Int = (v5 + v4)
-    val v7: Boolean = (v6 == 7)
+    var v5: Int = 0
+    v5 = v3.l0
+    var v6: Int = 0
+    v6 = (v5 + v4)
+    var v7: Boolean = false
+    v7 = (v6 == 7)
     if (v7) {
         return 0
     } else {

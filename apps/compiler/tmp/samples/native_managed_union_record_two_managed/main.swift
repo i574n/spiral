@@ -63,7 +63,8 @@ func sp_method1(_ p0: @escaping (Int32) -> US0) -> US0 {
     return v0(4)
 }
 func spiral_main() -> Int32 {
-    let v0: (Int32) -> US0 = closure0()
+    var v0: (Int32) -> US0 = { (_: Int32) -> US0 in fatalError("unreachable closure") }
+    v0 = closure0()
     var v1: US0 = US0_Empty()
     v1 = sp_method0(v0)
     var v12: Int32 = 0
@@ -77,16 +78,22 @@ func spiral_main() -> Int32 {
             v4 = spiralStringLength(v2)
             var v5: Int32 = 0
             v5 = Int32(v3.items.count)
-            let v6: Int32 = (v4 &+ v5)
-            let v7: Int32 = v3.items[Int(0)]
-            let v8: Int32 = (v6 &+ v7)
-            let v9: Int32 = v3.items[Int(1)]
-            let v10: Int32 = (v8 &+ v9)
+            var v6: Int32 = 0
+            v6 = (v4 &+ v5)
+            var v7: Int32 = 0
+            v7 = v3.items[Int(0)]
+            var v8: Int32 = 0
+            v8 = (v6 &+ v7)
+            var v9: Int32 = 0
+            v9 = v3.items[Int(1)]
+            var v10: Int32 = 0
+            v10 = (v8 &+ v9)
             v12 = v10
         default:
             fatalError("unreachable union case")
     }
-    let v13: US0 = sp_method1(v0)
+    var v13: US0 = US0_Empty()
+    v13 = sp_method1(v0)
     var v24: Int32 = 0
     switch v13.tag {
         case 0:
@@ -94,19 +101,28 @@ func spiral_main() -> Int32 {
         case 1:
             var v14: String = (v13 as! US0_Item).f0
             var v15: SpiralArray<Int32> = (v13 as! US0_Item).f1
-            let v16: Int32 = spiralStringLength(v14)
-            let v17: Int32 = Int32(v15.items.count)
-            let v18: Int32 = (v16 &+ v17)
-            let v19: Int32 = v15.items[Int(0)]
-            let v20: Int32 = (v18 &+ v19)
-            let v21: Int32 = v15.items[Int(1)]
-            let v22: Int32 = (v20 &+ v21)
+            var v16: Int32 = 0
+            v16 = spiralStringLength(v14)
+            var v17: Int32 = 0
+            v17 = Int32(v15.items.count)
+            var v18: Int32 = 0
+            v18 = (v16 &+ v17)
+            var v19: Int32 = 0
+            v19 = v15.items[Int(0)]
+            var v20: Int32 = 0
+            v20 = (v18 &+ v19)
+            var v21: Int32 = 0
+            v21 = v15.items[Int(1)]
+            var v22: Int32 = 0
+            v22 = (v20 &+ v21)
             v24 = v22
         default:
             fatalError("unreachable union case")
     }
-    let v25: Int32 = (v12 &+ v24)
-    let v26: Int32 = (v25 &+ 26)
+    var v25: Int32 = 0
+    v25 = (v12 &+ v24)
+    var v26: Int32 = 0
+    v26 = (v25 &+ 26)
     return v26
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

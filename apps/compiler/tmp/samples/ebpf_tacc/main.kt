@@ -10,13 +10,17 @@ fun sp_method2(p0: Int, p1: Int, p2: Int): SpiralTuple0 {
         v4 = (v1 + 1)
         var v5: Int = 0
         v5 = (v2 + 2)
-        val v6: Boolean = (v3 == 0)
+        var v6: Boolean = false
+        v6 = (v3 == 0)
         if (v6) {
             return SpiralTuple0(v4, v5)
         } else {
-            v0 = v3
-            v1 = v4
-            v2 = v5
+            val t424_3: Int = v3
+            val t458_4: Int = v4
+            val t492_5: Int = v5
+            v0 = t424_3
+            v1 = t458_4
+            v2 = t492_5
             continue
         }
     }

@@ -2,15 +2,15 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 fn is_answer_1(mut v0: i32) -> bool {
-    let v1: bool = v0 == 42i32;
+    let mut v1: bool = v0 == 42i32;
     v1
 }
 fn method0(mut v0: i32) -> bool {
     is_answer_1(v0)
 }
 fn spiral_main() -> i32 {
-    let v0: i32 = 42i32;
-    let v1: bool = method0(v0);
+    let mut v0: i32 = 42i32;
+    let mut v1: bool = method0(v0);
     if v1 {
         0i32
     } else {

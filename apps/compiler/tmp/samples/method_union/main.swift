@@ -14,7 +14,8 @@ func sp_method0(_ p0: Int32) -> US0 {
     }
 }
 func spiral_main() -> Int32 {
-    let v0: Int32 = 7
+    var v0: Int32 = 0
+    v0 = 7
     var v1: US0 = US0_None()
     v1 = sp_method0(v0)
     switch v1.tag {
@@ -22,7 +23,8 @@ func spiral_main() -> Int32 {
             return 1
         case 1:
             var v2: Int32 = (v1 as! US0_Some).f0
-            let v3: Bool = (v2 == 7)
+            var v3: Bool = false
+            v3 = (v2 == 7)
             if (v3) {
                 return 0
             } else {

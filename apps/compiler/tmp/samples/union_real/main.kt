@@ -5,7 +5,8 @@ fun sp_twice_1(p0: Double): Int {
     var v0: Double = p0
     var v1: Double = 0.0
     v1 = (v0 * 2.0)
-    val v2: Int = (v1).toInt()
+    var v2: Int = 0
+    v2 = (v1).toInt()
     return v2
 }
 fun sp_score_0(p0: US0): Int {
@@ -23,7 +24,8 @@ fun sp_score_0(p0: US0): Int {
     }
 }
 fun spiral_main(): Int {
-    val v0: Boolean = true
+    var v0: Boolean = false
+    v0 = true
     var v1: Double = 0.0
     v1 = 1.5
     var v4: US0 = US0_Real(0.0)
@@ -38,12 +40,16 @@ fun spiral_main(): Int {
     } else {
         v7 = US0_Real(v1)
     }
-    val v8: Int = sp_score_0(v4)
-    val v9: Boolean = (v8 == 3)
+    var v8: Int = 0
+    v8 = sp_score_0(v4)
+    var v9: Boolean = false
+    v9 = (v8 == 3)
     var v12: Boolean = false
     if (v9) {
-        val v10: Int = sp_score_0(v7)
-        val v11: Boolean = (v10 == 5)
+        var v10: Int = 0
+        v10 = sp_score_0(v7)
+        var v11: Boolean = false
+        v11 = (v10 == 5)
         v12 = v11
     } else {
         v12 = false

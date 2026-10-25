@@ -1,8 +1,18 @@
+local function spiral_wrap_unsigned(value, bits)
+    return value % (2 ^ bits)
+end
 local function spiral_wrap_signed(value, bits)
     local modulus = 2 ^ bits
     value = value % modulus
     if value >= modulus / 2 then value = value - modulus end
     return value
+end
+local function spiral_mul_mod32(a, b)
+    a = a % 4294967296
+    b = b % 4294967296
+    local a_low = a % 65536
+    local a_high = (a - a_low) / 65536
+    return (a_low * b + ((a_high * b) % 65536) * 65536) % 4294967296
 end
 local Us0_Missing, Us0_Call, f_c0
 function Us0_Missing() return { tag = "Us0_Missing" } end
@@ -27,8 +37,9 @@ local getv5 = function()
     end
 end
 local v5 = getv5()
-if v5 ~= nil and v5.tag == "Us0_Call" then
-    local v6 = v5._1
+local __v = { v5 }
+if __v[1] ~= nil and __v[1].tag == "Us0_Call" then
+    local v6 = __v[1]._1
     local v7 = v6(4)
     local v8 = v7 == 7
     if v8 then
@@ -36,6 +47,6 @@ if v5 ~= nil and v5.tag == "Us0_Call" then
     else
         return 1
     end
-elseif v5 ~= nil and v5.tag == "Us0_Missing" then
+elseif __v[1] ~= nil and __v[1].tag == "Us0_Missing" then
     return 1
 end

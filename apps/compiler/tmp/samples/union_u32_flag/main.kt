@@ -1,5 +1,5 @@
 sealed interface US0 { val tag: Int }
-object US0_None : US0 { override val tag: Int = 0 }
+class US0_None : US0 { override val tag: Int = 0 }
 data class US0_All(val f0: UInt, val f1: String, val f2: Boolean) : US0 { override val tag: Int = 1 }
 fun sp_score_0(p0: US0): Int {
     var v0: US0 = p0
@@ -8,15 +8,18 @@ fun sp_score_0(p0: US0): Int {
             var v1: UInt = (v0 as US0_All).f0
             var v2: String = (v0 as US0_All).f1
             var v3: Boolean = (v0 as US0_All).f2
-            val v4: Boolean = (v1 == 4000000000u)
+            var v4: Boolean = false
+            v4 = (v1 == 4000000000u)
             var v6: Boolean = false
             if (v4) {
-                val v5: Boolean = (v2 == "hi")
+                var v5: Boolean = false
+                v5 = (v2 == "hi")
                 v6 = v5
             } else {
                 v6 = false
             }
-            val v7: Boolean = (v6 && v3)
+            var v7: Boolean = false
+            v7 = (v6 && v3)
             if (v7) {
                 return 0
             } else {
@@ -30,15 +33,19 @@ fun sp_score_0(p0: US0): Int {
     }
 }
 fun spiral_main(): Int {
-    val v0: UInt = 4000000000u
-    val v1: String = "hi"
-    val v2: Boolean = true
-    val v3: Boolean = true
-    var v6: US0 = US0_None
+    var v0: UInt = 0u
+    v0 = 4000000000u
+    var v1: String = ""
+    v1 = "hi"
+    var v2: Boolean = false
+    v2 = true
+    var v3: Boolean = false
+    v3 = true
+    var v6: US0 = US0_None()
     if (v3) {
         v6 = US0_All(v0, v1, v2)
     } else {
-        v6 = US0_None
+        v6 = US0_None()
     }
     return sp_score_0(v6)
 }

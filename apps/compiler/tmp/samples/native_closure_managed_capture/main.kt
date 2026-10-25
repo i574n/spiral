@@ -29,15 +29,19 @@ fun spiralStringSlice(value: String, from: Int, to: Int): String {
 }
 fun f_c0(v0: String): (Int) -> Int {
     fun body(v1: Int): Int {
-        val v2: Int = spiralStringLength(v0)
-        val v3: Int = (v2 + v1)
+        var v2: Int = 0
+        v2 = spiralStringLength(v0)
+        var v3: Int = 0
+        v3 = (v2 + v1)
         return v3
     }
     return { p0: Int -> body(p0) }
 }
 fun spiral_main(): Int {
-    val v0: String = "abc"
-    val v1: (Int) -> Int = f_c0(v0)
+    var v0: String = ""
+    v0 = "abc"
+    var v1: (Int) -> Int = { _: Int -> throw RuntimeException() }
+    v1 = f_c0(v0)
     return v1(39)
 }
 fun main() {

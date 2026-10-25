@@ -29,10 +29,14 @@ func sp_sum_0(_ p0: UH0) -> Int32 {
     }
 }
 func spiral_main() -> Int32 {
-    let v0: Int32 = 1
-    let v1: Int32 = 2
-    let v2: UH0 = UH0_Leaf()
-    let v3: UH0 = UH0_Marker()
+    var v0: Int32 = 0
+    v0 = 1
+    var v1: Int32 = 0
+    v1 = 2
+    var v2: UH0 = UH0_Leaf()
+    v2 = UH0_Leaf()
+    var v3: UH0 = UH0_Leaf()
+    v3 = UH0_Marker()
     var v4: UH0 = UH0_Leaf()
     v4 = UH0_Node(f0: v1, f1: v2, f2: v3)
     var v5: UH0 = UH0_Leaf()

@@ -405,6 +405,12 @@ inl without_trailing_separator (path : string) : string =
     then sm'.substring 0i32 (sm'.length path - 1i32) path
     else path
 
+nominal gleam_dynamic = $'Dynamic'
+
+nominal gleam_atom = $'atom.Atom'
+
+nominal gleam_charlist = $'charlist.Charlist'
+
 inl file_system_gleam_env () =
     global "import gleam/dynamic.{type Dynamic}"
     global "import gleam/erlang/charlist"
@@ -415,22 +421,30 @@ inl file_system_gleam_env () =
         @external(erlang, "gleam_stdlib", "identity")
         fn spiral_fs_env_coerce(value: a) -> b
 
-        fn spiral_fs_temp_dir_from(names: List(String)) -> String {
-          case names {
-            [] -> "/tmp"
-            [name, ..rest] -> {
-              let value = spiral_fs_os_getenv(charlist.from_string(name))
-              case value == spiral_fs_env_coerce(False) {
-                True -> spiral_fs_temp_dir_from(rest)
-                False -> case charlist.to_string(spiral_fs_env_coerce(value)) {
-                  "" -> spiral_fs_temp_dir_from(rest)
-                  dir -> dir
-                }
-              }
-            }
-          }
-        }
         """
+
+inl gleam_env_value (name : string) : gleam_dynamic =
+    file_system_gleam_env ()
+    inl chars : gleam_charlist = $'charlist.from_string(!name)'
+    $'spiral_fs_os_getenv(!chars)'
+
+inl gleam_env_unset (value : gleam_dynamic) : bool =
+    inl unset : gleam_dynamic = $'spiral_fs_env_coerce(False)'
+    $'!value == !unset'
+
+inl gleam_env_text (value : gleam_dynamic) : string =
+    inl chars : gleam_charlist = $'spiral_fs_env_coerce(!value)'
+    $'charlist.to_string(!chars)'
+
+let rec gleam_temp_dir_from (names : list string) : string =
+    match names with
+    | Nil => "/tmp"
+    | Cons (name, rest) =>
+        inl value = gleam_env_value name
+        if gleam_env_unset value then gleam_temp_dir_from rest
+        else
+            inl dir = gleam_env_text value
+            if dir = "" then gleam_temp_dir_from rest else dir
 
 let get_temp_path () : string =
     run_target function
@@ -444,7 +458,7 @@ let get_temp_path () : string =
             $'System.IO.Path.GetTempPath' () |> without_trailing_separator
         | Gleam => fun () =>
             file_system_gleam_env ()
-            ($'spiral_fs_temp_dir_from(["TMPDIR", "TEMP", "TMP"])' : string) |> without_trailing_separator
+            gleam_temp_dir_from ["TMPDIR"; "TEMP"; "TMP"] |> without_trailing_separator
         | target => fun () => join "file_system.get_temp_path / target: " ++#? target |> failwith
 
 inl file_system_gleam_paths () =
@@ -473,38 +487,46 @@ inl file_system_gleam_paths () =
 
         @external(erlang, "filename", "absname")
         fn spiral_fs_absname(path: String) -> String
-
-        fn spiral_fs_lexical_full_path(path: String) -> String {
-          case string.split(spiral_fs_absname(path), "/") {
-            [root, ..segments] -> {
-              let kept = list.fold(segments, [], fn(acc, segment) {
-                case segment, acc {
-                  "", _ | ".", _ -> acc
-                  "..", [_, ..up] -> up
-                  "..", [] -> []
-                  name, _ -> [name, ..acc]
-                }
-              })
-              root <> "/" <> string.join(list.reverse(kept), "/")
-            }
-            [] -> path
-          }
-        }
-
-        fn spiral_fs_dotted_extension(path: String) -> String {
-          let base = spiral_fs_basename(path)
-          case string.starts_with(base, ".") {
-            True -> spiral_fs_extension(string.drop_start(base, 1))
-            False -> spiral_fs_extension(base)
-          }
-        }
-
-        fn spiral_fs_append_text(path: String, text: String) -> Nil {
-          let written = spiral_fs_write_file_modes(path, text, [atom.create("append")])
-          let assert True = written == spiral_fs_path_coerce(atom.create("ok"))
-          Nil
-        }
         """
+
+
+
+inl gleam_atom_named (name : string) : gleam_atom = $'atom.create(!name)'
+
+inl gleam_atoms_of (a : gleam_atom) : listm'.list' gleam_atom = $'[!a]'
+
+inl gleam_atom_of_dynamic (d : gleam_dynamic) : gleam_atom = $'spiral_fs_path_coerce(!d)'
+
+inl gleam_atoms_equal (a : gleam_atom) (b : gleam_atom) : bool = $'!a == !b'
+
+inl gleam_written (path : string) (text : string) (modes : listm'.list' gleam_atom) : gleam_dynamic =
+    $'spiral_fs_write_file_modes(!path, !text, !modes)'
+
+inl gleam_segment_step (acc : list string) (segment : string) : list string =
+    if segment = "" || segment = "." then acc
+    elif segment = ".." then
+        match acc with
+        | Cons (_, up) => up
+        | Nil => Nil
+    else Cons (segment, acc)
+
+inl gleam_lexical_full_path (path : string) : string =
+    file_system_gleam_paths ()
+    inl absolute : string = $'spiral_fs_absname(!path)'
+    match sm'.split_list "/" absolute with
+    | Cons (root, segments) => root ++# "/" ++# (segments |> listm.fold gleam_segment_step Nil |> listm.rev |> sm'.concat_list "/")
+    | Nil => path
+
+inl gleam_dotted_extension (path : string) : string =
+    file_system_gleam_paths ()
+    inl base : string = $'spiral_fs_basename(!path)'
+    inl rest = if sm'.starts_with "." base then sm'.substring 1i32 (sm'.length base - 1i32) base else base
+    $'spiral_fs_extension(!rest)' : string
+
+inl gleam_append_text (path : string) (text : string) : () =
+    file_system_gleam_paths ()
+    inl written = gleam_written path text (gleam_atoms_of (gleam_atom_named "append")) |> gleam_atom_of_dynamic
+    if gleam_atoms_equal written (gleam_atom_named "ok") |> not then failwith "file_system.append_all_text: the append failed"
 
 /// ### get_file_name
 let get_file_name (path : string) : string =
@@ -548,7 +570,7 @@ let get_extension (path : string) : string =
                 format\!(".{}", e.to_string_lossy())))' : string
         | Gleam => fun path =>
             file_system_gleam_paths ()
-            $'spiral_fs_dotted_extension(!path)' : string
+            gleam_dotted_extension path
         | Fsharp => fun path =>
             $'(let name = System.IO.Path.GetFileName (!path : string) in if name.StartsWith "." && name.IndexOf(\
                 ".", 1, System.StringComparison.Ordinal) < 0 then "" else System.IO.Path.GetExtension (!path : string))'
@@ -579,18 +601,23 @@ inl file_system_gleam_stat () =
         @external(erlang, "erlang", "element")
         fn spiral_fs_stat_element(index: Int, tuple: Dynamic) -> Int
 
-        fn spiral_fs_cwd() -> String {
-          let assert Ok(cwd) = spiral_fs_get_cwd()
-          charlist.to_string(cwd)
-        }
-
-        fn spiral_fs_mtime_ms(path: String) -> Int {
-          case spiral_fs_read_file_info(path, [#(atom.create("time"), atom.create("posix"))]) {
-            Ok(info) -> spiral_fs_stat_element(6, info) * 1000
-            Error(_) -> 0
-          }
-        }
         """
+
+inl gleam_cwd () : string =
+    file_system_gleam_stat ()
+    match ($'spiral_fs_get_cwd()' : resultm.result' gleam_charlist gleam_dynamic) |> resultm.unbox with
+    | Ok chars => $'charlist.to_string(!chars)' : string
+    | Error _ => failwith "file_system.get_current_directory: file:get_cwd failed"
+
+inl gleam_mtime_ms (path : string) : u64 =
+    file_system_gleam_stat ()
+    inl time = gleam_atom_named "time"
+    inl posix = gleam_atom_named "posix"
+    inl option : gleam_dynamic = $'##(!time, !posix)'
+    inl options : listm'.list' gleam_dynamic = $'[!option]'
+    match ($'spiral_fs_read_file_info(!path, !options)' : resultm.result' gleam_dynamic gleam_dynamic) |> resultm.unbox with
+    | Ok info => ($'spiral_fs_stat_element(6, !info)' : u64) * 1000u64
+    | Error _ => 0u64
 
 let get_current_directory () : string =
     run_target function
@@ -612,7 +639,7 @@ let get_current_directory () : string =
                 \@panic("file_system.get_current_directory failed"))' : string
         | Gleam => fun () =>
             file_system_gleam_stat ()
-            $'spiral_fs_cwd()' : string
+            gleam_cwd ()
         | _ => fun () => null ()
 
 test get_current_directory =
@@ -721,17 +748,24 @@ inl file_system_gleam_files () =
         @external(erlang, "gleam_stdlib", "identity")
         fn spiral_fs_coerce(value: a) -> b
 
-        fn spiral_fs_read_text(path: String) -> String {
-          let assert Ok(bytes) = spiral_fs_read_file(path)
-          let assert Ok(text) = bit_array.to_string(bytes)
-          text
-        }
-
-        fn spiral_fs_write_text(path: String, text: String) -> Nil {
-          let assert True = spiral_fs_write_file(path, text) == spiral_fs_coerce(atom.create("ok"))
-          Nil
-        }
         """
+
+nominal gleam_bytes = $'BitArray'
+
+inl gleam_read_text (path : string) : string =
+    file_system_gleam_files ()
+    match ($'spiral_fs_read_file(!path)' : resultm.result' gleam_bytes gleam_dynamic) |> resultm.unbox with
+    | Ok bytes =>
+        match ($'bit_array.to_string(!bytes)' : resultm.result' string ()) |> resultm.unbox with
+        | Ok text => text
+        | Error _ => failwith "file_system.read_all_text: the file is not UTF-8"
+    | Error _ => failwith "file_system.read_all_text: file:read_file failed"
+
+inl gleam_write_text (path : string) (text : string) : () =
+    file_system_gleam_files ()
+    inl raw : gleam_dynamic = $'spiral_fs_write_file(!path, !text)'
+    inl written : gleam_atom = $'spiral_fs_coerce(!raw)'
+    if gleam_atoms_equal written (gleam_atom_named "ok") |> not then failwith "file_system.write_all_text: the write failed"
 
 /// ### file_exists
 let file_exists (path : string) : bool =
@@ -788,7 +822,7 @@ inl write_all_text (path : string) (text : string) : () =
             !\\((path, text), $'"std::fs::write(&*$0, &*$1).unwrap()"')
         | Gleam => fun path, text =>
             file_system_gleam_files ()
-            $'spiral_fs_write_text(!path, !text)' : ()
+            gleam_write_text path text
         | _ => fun _ => ()
 
 /// ### read_all_bytes
@@ -812,7 +846,7 @@ inl read_all_text (path : string) : string =
             $'!path |> System.IO.File.ReadAllText'
         | Gleam => fun () =>
             file_system_gleam_files ()
-            $'spiral_fs_read_text(!path)' : string
+            gleam_read_text path
         | Rust => fun () =>
             path
             |> read_all_bytes
@@ -1025,7 +1059,10 @@ let normalize_path (path : string) : string =
             if result = ""
             then path
             else result
-        inl result' = result |> sm'.replace_regex @"^\\\\\?\\" ""
+        inl result' =
+            if result |> sm'.starts_with "\\\\?\\"
+            then result |> sm'.substring 4i32 ((sm'.length result : i32) - 4i32)
+            else result
         if ##result' < 2
         then path
         else
@@ -1033,6 +1070,11 @@ let normalize_path (path : string) : string =
                 (result' |> sm'.slice 0i32 0i32 |> sm'.to_lower)
                 (result' |> sm'.slice 1i32 ((sm'.length result' : i32) - 1i32))
             |> sm'.replace "\\" "/"
+
+///> rust
+test normalize_path_drops_the_verbatim_prefix =
+    inl ~path = "\\\\?\\C:\\x"
+    path |> normalize_path |> _assert_eq "c:/x"
 
 /// ### get_workspace_root
 inl get_workspace_root () =
@@ -1112,7 +1154,7 @@ let get_full_path (path : string) : string =
             |> sm'.concat (directory_separator_char () |> sm'.obj_to_string)
         | Gleam => fun path =>
             file_system_gleam_paths ()
-            $'spiral_fs_lexical_full_path(!path)' : string
+            gleam_lexical_full_path path
         | _ => fun _ => null ()
 
 ///> fsharp
@@ -1448,19 +1490,74 @@ test copy_list_canonicalize_and_remove_a_tree =
         (copied, names, canonical_ok, tree |> directory_exists) |> _assert_eq (1u64, 2i32, true, false)
         disposable |> use |> ignore
 
+nominal rust_metadata_found = $'std::io::Result<std::fs::Metadata>'
+
+nominal rust_metadata = $'std::fs::Metadata'
+
+nominal rust_modified_found = $'std::io::Result<std::time::SystemTime>'
+
+nominal rust_system_time = $'std::time::SystemTime'
+
+nominal rust_elapsed = $'std::time::Duration'
+
+nominal rust_file_opened = $'std::io::Result<std::fs::File>'
+
+nominal rust_open_file = $'std::fs::File'
+
+nominal rust_io_done = $'std::io::Result<()>'
+
+inl rust_metadata_of (path : string) : rust_metadata_found = $'std::fs::metadata(&*!path)'
+
+inl rust_metadata_ok (r : rust_metadata_found) : bool = $'!r.is_ok()'
+
+inl rust_metadata_value (r : rust_metadata_found) : rust_metadata = $'!r.unwrap()'
+
+inl rust_modified_of (m : rust_metadata) : rust_modified_found = $'!m.modified()'
+
+inl rust_modified_ok (r : rust_modified_found) : bool = $'!r.is_ok()'
+
+inl rust_modified_value (r : rust_modified_found) : rust_system_time = $'!r.unwrap()'
+
+inl rust_since_epoch (t : rust_system_time) : rust_elapsed = $'!t.duration_since(std::time::UNIX_EPOCH).unwrap_or_default()'
+
+inl rust_elapsed_ms (d : rust_elapsed) : u64 = ($'!d.as_secs()' : u64) * 1000u64 + conv ($'!d.subsec_millis()' : u32)
+
+inl rust_last_write_ms (path : string) : u64 =
+    inl found = rust_metadata_of path
+    if rust_metadata_ok found |> not then 0u64
+    else
+        inl modified = found |> rust_metadata_value |> rust_modified_of
+        if rust_modified_ok modified then modified |> rust_modified_value |> rust_since_epoch |> rust_elapsed_ms else 0u64
+
+inl rust_append_opened (path : string) : rust_file_opened = $'std::fs::OpenOptions::new().create(true).append(true).open(&*!path)'
+
+inl rust_file_opened_ok (r : rust_file_opened) : bool = $'!r.is_ok()'
+
+inl rust_file_of (r : rust_file_opened) : rust_open_file = $'!r.unwrap()'
+
+inl rust_written_all (f : rust_open_file) (text : string) : rust_io_done = $'std::io::Write::write_all(&mut !f, (!text).as_bytes())'
+
+inl rust_io_ok (r : rust_io_done) : bool = $'!r.is_ok()'
+
+inl rust_append_text (path : string) (text : string) : () =
+    inl opened = rust_append_opened path
+    if rust_file_opened_ok opened |> not then failwith "file_system.append_all_text: the file could not be opened"
+    inl file = rust_file_of opened
+    if rust_written_all file text |> rust_io_ok |> not then failwith "file_system.append_all_text: the write failed"
+
 /// ### last_write_ms
 let last_write_ms (path : string) : u64 =
     run_target_args' path function
         | Fsharp => fun path =>
             $'(if System.IO.File.Exists !path then uint64 ((System.IO.File.GetLastWriteTimeUtc !path) - System.DateTime.UnixEpoch).TotalMilliseconds else 0UL)' : u64
         | Rust => fun path =>
-            $'std::fs::metadata(&*!path).and_then(|meta| meta.modified()).ok().and_then(|time| time.duration_since(std::time::UNIX_EPOCH).ok()).map(|age| age.as_millis() as u64).unwrap_or(0)' : u64
+            rust_last_write_ms path
         | TypeScript => fun path =>
             global "import * as spiral_node_fs from 'node:fs';"
             $'(spiral_node_fs.existsSync(!path) ? Math.trunc(spiral_node_fs.statSync(!path).mtimeMs) : 0)' : u64
         | Gleam => fun path =>
             file_system_gleam_stat ()
-            $'spiral_fs_mtime_ms(!path)' : u64
+            gleam_mtime_ms path
         | _ => fun _ => null ()
 
 ///> rust
@@ -1480,10 +1577,10 @@ inl append_all_text (path : string) (text : string) : () =
         | Fsharp => fun path, text =>
             $'System.IO.File.AppendAllText (!path, !text)'
         | Rust => fun path, text =>
-            !\\((path, text), $'"std::io::Write::write_all(&mut std::fs::OpenOptions::new().create(true).append(true).open(&*$0).unwrap(), $1.as_bytes()).unwrap()"')
+            rust_append_text path text
         | Gleam => fun path, text =>
             file_system_gleam_paths ()
-            $'spiral_fs_append_text(!path, !text)' : ()
+            gleam_append_text path text
         | _ => fun _ => ()
 ///> rust
 ///> fsharp

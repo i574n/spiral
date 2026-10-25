@@ -9,9 +9,9 @@ enum US0 {
 }
 fn closure0(mut v0: US0) -> Rc<dyn Fn(i32) -> i32> {
     Rc::new(move |mut v1: i32| -> i32 {
-        let v7: i32 = match &v0 {
+        let mut v7: i32 = match &v0 {
             US0::US0_Flag(v3) => {
-                let v3: bool = *v3;
+                let mut v3: bool = *v3;
                 if v3 {
                     11i32
                 } else {
@@ -19,14 +19,14 @@ fn closure0(mut v0: US0) -> Rc<dyn Fn(i32) -> i32> {
                 }
             }
             US0::US0_Hit(v2) => {
-                let v2: i32 = *v2;
+                let mut v2: i32 = *v2;
                 v2
             }
             US0::US0_Idle => {
                 3i32
             }
         };
-        let v8: i32 = v7.wrapping_add(v1);
+        let mut v8: i32 = v7.wrapping_add(v1);
         v8
     })
 }
@@ -35,19 +35,19 @@ fn method0(mut v0: Rc<dyn Fn(i32) -> i32>) -> i32 {
 }
 fn spiral_main() -> i32 {
     let mut v0: i32 = 2i32;
-    let v1: bool = v0 == 0i32;
-    let v7: US0 = if v1 {
+    let mut v1: bool = v0 == 0i32;
+    let mut v7: US0 = if v1 {
         US0::US0_Idle
     } else {
-        let v3: bool = v0 == 1i32;
+        let mut v3: bool = v0 == 1i32;
         if v3 {
             US0::US0_Hit(7i32)
         } else {
             US0::US0_Flag(true)
         }
     };
-    let v8: Rc<dyn Fn(i32) -> i32> = closure0(v7);
-    method0(v8)
+    let mut v8: Rc<dyn Fn(i32) -> i32> = closure0(v7.clone());
+    method0(v8.clone())
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();

@@ -34,8 +34,9 @@ def U0.spiralTag : U0 → Int32
   | .One .. => 1
 mutual
 partial def spiralMain : IO Int32 := do
+    let mut v0 : U0 := default
     let mut v2 : Bool := default
-    let v0 : U0 := U0.Zero
+    v0 := U0.Zero
     match v0 with
     | U0.One =>
         v2 := false

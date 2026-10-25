@@ -17,8 +17,10 @@ func sp_method0(_ p0: Int32, _ p1: Heap0) -> (US0, Heap0) {
     return (v2, v1)
 }
 func spiral_main() -> Int32 {
-    let v0: Int32 = 3
-    let v1: Int32 = 4
+    var v0: Int32 = 0
+    v0 = 3
+    var v1: Int32 = 0
+    v1 = 4
     var v2: Heap0 = Heap0(l0: 0)
     v2 = Heap0(l0: v1)
     var v3: US0 = US0_None()
@@ -31,9 +33,12 @@ func spiral_main() -> Int32 {
             return 1
         case 1:
             var v5: Int32 = (v3 as! US0_Some).f0
-            let v6: Int32 = v4.l0
-            let v7: Int32 = (v5 &+ v6)
-            let v8: Bool = (v7 == 7)
+            var v6: Int32 = 0
+            v6 = v4.l0
+            var v7: Int32 = 0
+            v7 = (v5 &+ v6)
+            var v8: Bool = false
+            v8 = (v7 == 7)
             if (v8) {
                 return 0
             } else {

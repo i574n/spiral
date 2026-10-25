@@ -8,13 +8,13 @@ enum US0 {
 }
 fn closure0() -> Rc<dyn Fn(i32) -> US0> {
     thread_local!{ static CLOSURE: Rc<dyn Fn(i32) -> US0> = Rc::new(move |mut v0: i32| -> US0 {
-        let v1: bool = v0 == 0i32;
+        let mut v1: bool = v0 == 0i32;
         if v1 {
             US0::US0_Empty
         } else {
-            let v3: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); 2i32 as usize]));
+            let mut v3: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); 2i32 as usize]));
             v3.clone().borrow_mut()[0i32 as usize] = v0;
-            let v4: i32 = v0.wrapping_add(1i32);
+            let mut v4: i32 = v0.wrapping_add(1i32);
             v3.clone().borrow_mut()[1i32 as usize] = v4;
             US0::US0_Values(v3.clone())
         }
@@ -29,12 +29,12 @@ fn score_1(mut v0: US0) -> i32 {
             3i32
         }
         US0::US0_Values(v1) => {
-            let v1: Rc<RefCell<Vec<i32>>> = v1.clone();
-            let v2: i32 = (v1.clone().borrow().len() as i32);
-            let v3: i32 = v1.clone().borrow()[0i32 as usize].clone();
-            let v4: i32 = v2.wrapping_add(v3);
-            let v5: i32 = v1.borrow()[1i32 as usize].clone();
-            let v6: i32 = v4.wrapping_add(v5);
+            let mut v1: Rc<RefCell<Vec<i32>>> = v1.clone();
+            let mut v2: i32 = (v1.clone().borrow().len() as i32);
+            let mut v3: i32 = v1.clone().borrow()[0i32 as usize].clone();
+            let mut v4: i32 = v2.wrapping_add(v3);
+            let mut v5: i32 = v1.clone().borrow()[1i32 as usize].clone();
+            let mut v6: i32 = v4.wrapping_add(v5);
             v6
         }
     }
@@ -44,12 +44,12 @@ fn method2(mut v0: Rc<dyn Fn(i32) -> US0>) -> US0 {
 }
 fn spiral_main() -> i32 {
     let mut v0: Rc<dyn Fn(i32) -> US0> = closure0();
-    let v1: US0 = method0(v0.clone());
-    let v2: i32 = score_1(v1);
-    let v3: US0 = method2(v0);
-    let v4: i32 = score_1(v3);
-    let v5: i32 = v2.wrapping_add(v4);
-    let v6: i32 = v5.wrapping_add(28i32);
+    let mut v1: US0 = method0(v0.clone());
+    let mut v2: i32 = score_1(v1.clone());
+    let mut v3: US0 = method2(v0.clone());
+    let mut v4: i32 = score_1(v3.clone());
+    let mut v5: i32 = v2.wrapping_add(v4);
+    let mut v6: i32 = v5.wrapping_add(28i32);
     v6
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }

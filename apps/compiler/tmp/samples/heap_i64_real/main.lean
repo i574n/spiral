@@ -31,14 +31,20 @@ end
 deriving instance Inhabited for H0
 mutual
 partial def spiralMain : IO Int32 := do
+    let mut v0 : Int64 := default
+    let mut v1 : Float := default
+    let mut v2 : H0 := default
+    let mut v3 : Int64 := default
+    let mut v4 : Float := default
+    let mut v5 : Bool := default
     let mut v7 : Bool := default
     let mut v6 : Bool := default
-    let v0 : Int64 := (5000000000 : Int64)
-    let v1 : Float := (1.5 : Float)
-    let v2 : H0 := (H0.mk v0 v1)
-    let v3 : Int64 := v2.l0
-    let v4 : Float := v2.l1
-    let v5 : Bool := (v3 == (5000000000 : Int64))
+    v0 := (5000000000 : Int64)
+    v1 := (1.5 : Float)
+    v2 := (H0.mk v0 v1)
+    v3 := v2.l0
+    v4 := v2.l1
+    v5 := (v3 == (5000000000 : Int64))
     if v5 then
         v6 := (v4 == (1.5 : Float))
         v7 := v6

@@ -5,40 +5,40 @@ struct Heap0 { l0: i32, l1: Rc<str> }
 struct Heap1 { l0: Rc<Heap0>, l1: Rc<Heap0> }
 struct Heap2 { l0: Rc<Heap1>, l1: i32 }
 fn spiral_main() -> i32 {
-    let v0: i32 = 7i32;
-    let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
-    let v2: Rc<Heap0> = Rc::new(Heap0 { l0: v0, l1: v1 });
-    let v3: i32 = 4i32;
-    let v4: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("yo"); } LIT.with(|lit| lit.clone()) };
-    let v5: Rc<Heap0> = Rc::new(Heap0 { l0: v3, l1: v4 });
-    let v6: Rc<Heap1> = Rc::new(Heap1 { l0: v2, l1: v5 });
-    let v7: i32 = 2i32;
-    let v8: Rc<Heap2> = Rc::new(Heap2 { l0: v6, l1: v7 });
+    let mut v0: i32 = 7i32;
+    let mut v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
+    let mut v2: Rc<Heap0> = Rc::new(Heap0 { l0: v0, l1: v1.clone() });
+    let mut v3: i32 = 4i32;
+    let mut v4: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("yo"); } LIT.with(|lit| lit.clone()) };
+    let mut v5: Rc<Heap0> = Rc::new(Heap0 { l0: v3, l1: v4.clone() });
+    let mut v6: Rc<Heap1> = Rc::new(Heap1 { l0: v2.clone(), l1: v5.clone() });
+    let mut v7: i32 = 2i32;
+    let mut v8: Rc<Heap2> = Rc::new(Heap2 { l0: v6.clone(), l1: v7 });
     let (mut v9, mut v10): (Rc<Heap1>, i32) = (v8.l0.clone(), v8.l1.clone());
     let (mut v11, mut v12): (Rc<Heap0>, Rc<Heap0>) = (v9.l0.clone(), v9.l1.clone());
     let (mut v13, mut v14): (i32, Rc<str>) = (v11.l0.clone(), v11.l1.clone());
     let (mut v15, mut v16): (i32, Rc<str>) = (v12.l0.clone(), v12.l1.clone());
-    let v17: bool = v13 == 7i32;
-    let v19: bool = if v17 {
-        let v18: bool = &*v14 == "hi";
+    let mut v17: bool = v13 == 7i32;
+    let mut v19: bool = if v17 {
+        let mut v18: bool = v14.clone() == { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
         v18
     } else {
         false
     };
-    let v21: bool = if v19 {
-        let v20: bool = v15 == 4i32;
+    let mut v21: bool = if v19 {
+        let mut v20: bool = v15 == 4i32;
         v20
     } else {
         false
     };
-    let v23: bool = if v21 {
-        let v22: bool = &*v16 == "yo";
+    let mut v23: bool = if v21 {
+        let mut v22: bool = v16.clone() == { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("yo"); } LIT.with(|lit| lit.clone()) };
         v22
     } else {
         false
     };
-    let v25: bool = if v23 {
-        let v24: bool = v10 == 2i32;
+    let mut v25: bool = if v23 {
+        let mut v24: bool = v10 == 2i32;
         v24
     } else {
         false

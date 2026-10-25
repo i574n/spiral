@@ -1,8 +1,8 @@
 function f_c0(v0: string): ((a0: number) => string) {
     return (v1: number): string => {
-        const v2: boolean = v1 === 0;
+        let v2: boolean = v1 === 0;
         if (v2) {
-            const v3: string = "no";
+            let v3: string = "no";
             return v3;
         } else {
             return v0;
@@ -10,10 +10,10 @@ function f_c0(v0: string): ((a0: number) => string) {
     };
 }
 export function main(): number {
-    const v0: string = "hi";
-    const v1: ((a0: number) => string) = f_c0(v0);
-    const v2: string = v1(1);
-    const v3: boolean = v2 === "hi";
+    let v0: string = "hi";
+    let v1: ((a0: number) => string) = f_c0(v0);
+    let v2: string = v1(1);
+    let v3: boolean = v2 === "hi";
     if (v3) {
         return 0;
     } else {

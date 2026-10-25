@@ -40,9 +40,10 @@ def U0.spiralTag : U0 → Int32
 mutual
 partial def closure0 (p0 : Int32) : IO U0 := do
     let mut v0 : Int32 := p0
+    let mut v1 : Bool := default
     let mut v3 : (IO.Ref (Array Int32)) ← IO.mkRef #[]
     let mut v4 : Int32 := default
-    let v1 : Bool := (v0 == (0 : Int32))
+    v1 := (v0 == (0 : Int32))
     if v1 then
         return U0.Empty
     else
@@ -77,13 +78,20 @@ partial def method2 (p0 : (Int32 → IO U0)) : IO U0 := do
     let mut v0 : (Int32 → IO U0) := p0
     return (← v0 (4 : Int32))
 partial def spiralMain : IO Int32 := do
-    let v0 : (Int32 → IO U0) := closure0
-    let v1 : U0 := (← method0 v0)
-    let v2 : Int32 := (← score_1 v1)
-    let v3 : U0 := (← method2 v0)
-    let v4 : Int32 := (← score_1 v3)
-    let v5 : Int32 := (v2 + v4)
-    let v6 : Int32 := (v5 + (28 : Int32))
+    let mut v0 : (Int32 → IO U0) := default
+    let mut v1 : U0 := default
+    let mut v2 : Int32 := default
+    let mut v3 : U0 := default
+    let mut v4 : Int32 := default
+    let mut v5 : Int32 := default
+    let mut v6 : Int32 := default
+    v0 := closure0
+    v1 := (← method0 v0)
+    v2 := (← score_1 v1)
+    v3 := (← method2 v0)
+    v4 := (← score_1 v3)
+    v5 := (v2 + v4)
+    v6 := (v5 + (28 : Int32))
     return v6
 end
 def main : IO UInt32 := do

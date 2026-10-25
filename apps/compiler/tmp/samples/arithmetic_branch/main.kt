@@ -1,8 +1,12 @@
 fun spiral_main(): Int {
-    val v0: Int = 6
-    val v1: Int = 7
-    val v2: Int = (v0 * v1)
-    val v3: Boolean = (v2 == 42)
+    var v0: Int = 0
+    v0 = 6
+    var v1: Int = 0
+    v1 = 7
+    var v2: Int = 0
+    v2 = (v0 * v1)
+    var v3: Boolean = false
+    v3 = (v2 == 42)
     if (v3) {
         return 0
     } else {

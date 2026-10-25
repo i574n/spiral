@@ -1,12 +1,15 @@
 fun sp_count_0(p0: Int): Int {
     var v0: Int = p0
     while (true) {
-        val v1: Boolean = (v0 <= 0)
+        var v1: Boolean = false
+        v1 = (v0 <= 0)
         if (v1) {
             return 0
         } else {
-            val v2: Int = (v0 - 1)
-            v0 = v2
+            var v2: Int = 0
+            v2 = (v0 - 1)
+            val t246_2: Int = v2
+            v0 = t246_2
             continue
         }
     }

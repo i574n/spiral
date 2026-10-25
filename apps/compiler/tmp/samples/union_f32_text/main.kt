@@ -1,5 +1,5 @@
 sealed interface US0 { val tag: Int }
-object US0_None : US0 { override val tag: Int = 0 }
+class US0_None : US0 { override val tag: Int = 0 }
 data class US0_Both(val f0: Float, val f1: String) : US0 { override val tag: Int = 1 }
 fun sp_score_0(p0: US0): Int {
     var v0: US0 = p0
@@ -7,10 +7,12 @@ fun sp_score_0(p0: US0): Int {
         1 -> {
             var v1: Float = (v0 as US0_Both).f0
             var v2: String = (v0 as US0_Both).f1
-            val v3: Boolean = (v1 == 1.5f)
+            var v3: Boolean = false
+            v3 = (v1 == 1.5f)
             var v5: Boolean = false
             if (v3) {
-                val v4: Boolean = (v2 == "hi")
+                var v4: Boolean = false
+                v4 = (v2 == "hi")
                 v5 = v4
             } else {
                 v5 = false
@@ -28,14 +30,17 @@ fun sp_score_0(p0: US0): Int {
     }
 }
 fun spiral_main(): Int {
-    val v0: Float = 1.5f
-    val v1: String = "hi"
-    val v2: Boolean = true
-    var v5: US0 = US0_None
+    var v0: Float = 0.0f
+    v0 = 1.5f
+    var v1: String = ""
+    v1 = "hi"
+    var v2: Boolean = false
+    v2 = true
+    var v5: US0 = US0_None()
     if (v2) {
         v5 = US0_Both(v0, v1)
     } else {
-        v5 = US0_None
+        v5 = US0_None()
     }
     return sp_score_0(v5)
 }

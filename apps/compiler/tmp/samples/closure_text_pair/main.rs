@@ -3,10 +3,10 @@ use std::cell::RefCell;
 use std::rc::Rc;
 fn f_c0(mut v0: Rc<str>, mut v1: Rc<str>) -> Rc<dyn Fn(i32) -> (Rc<str>, Rc<str>)> {
     Rc::new(move |mut v2: i32| -> (Rc<str>, Rc<str>) {
-        let v3: bool = v2 == 0i32;
+        let mut v3: bool = v2 == 0i32;
         if v3 {
-            let v4: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("no"); } LIT.with(|lit| lit.clone()) };
-            let v5: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("nay"); } LIT.with(|lit| lit.clone()) };
+            let mut v4: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("no"); } LIT.with(|lit| lit.clone()) };
+            let mut v5: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("nay"); } LIT.with(|lit| lit.clone()) };
             (v4.clone(), v5.clone())
         } else {
             (v0.clone(), v1.clone())
@@ -14,13 +14,13 @@ fn f_c0(mut v0: Rc<str>, mut v1: Rc<str>) -> Rc<dyn Fn(i32) -> (Rc<str>, Rc<str>
     })
 }
 fn spiral_main() -> i32 {
-    let v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
-    let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("yo"); } LIT.with(|lit| lit.clone()) };
-    let mut v2: Rc<dyn Fn(i32) -> (Rc<str>, Rc<str>)> = f_c0(v0, v1);
+    let mut v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
+    let mut v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("yo"); } LIT.with(|lit| lit.clone()) };
+    let mut v2: Rc<dyn Fn(i32) -> (Rc<str>, Rc<str>)> = f_c0(v0.clone(), v1.clone());
     let (mut v3, mut v4): (Rc<str>, Rc<str>) = v2(1i32);
-    let v5: bool = &*v3 == "hi";
-    let v7: bool = if v5 {
-        let v6: bool = &*v4 == "yo";
+    let mut v5: bool = v3.clone() == { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
+    let mut v7: bool = if v5 {
+        let mut v6: bool = v4.clone() == { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("yo"); } LIT.with(|lit| lit.clone()) };
         v6
     } else {
         false

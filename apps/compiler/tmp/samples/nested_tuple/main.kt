@@ -16,13 +16,17 @@ fun sp_method1(p0: Int, p1: Int, p2: Int, p3: Int): Int {
     var v3: Int = p3
     var v4: Int = 0
     v4 = (v0 + v1)
-    val v5: Int = (v4 + v2)
-    val v6: Int = (v5 + v3)
-    val v7: Int = (v6 - 10)
+    var v5: Int = 0
+    v5 = (v4 + v2)
+    var v6: Int = 0
+    v6 = (v5 + v3)
+    var v7: Int = 0
+    v7 = (v6 - 10)
     return v7
 }
 fun spiral_main(): Int {
-    val v0: Int = 1
+    var v0: Int = 0
+    v0 = 1
     var v1: Int = 0
     var v2: Int = 0
     var v3: Int = 0

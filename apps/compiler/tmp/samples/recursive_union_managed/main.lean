@@ -56,14 +56,20 @@ partial def sum_0 (p0 : U0) : IO Int32 := do
     | U0.Nil =>
         return (0 : Int32)
 partial def spiralMain : IO Int32 := do
+    let mut v0 : Int32 := default
     let mut v1 : (IO.Ref (Array Int32)) ← IO.mkRef #[]
-    let v0 : Int32 := (2 : Int32)
+    let mut v2 : U0 := default
+    let mut v3 : U0 := default
+    let mut v4 : U0 := default
+    let mut v5 : Int32 := default
+    let mut v6 : Int32 := default
+    v0 := (2 : Int32)
     v1 := (← IO.mkRef (Array.replicate (spiralIdx v0) (default : Int32)))
-    let v2 : U0 := U0.Nil
-    let v3 : U0 := (U0.Cons v1 v2)
-    let v4 : U0 := (U0.Cons v1 v3)
-    let v5 : Int32 := (← sum_0 v4)
-    let v6 : Int32 := (v5 - (4 : Int32))
+    v2 := U0.Nil
+    v3 := (U0.Cons v1 v2)
+    v4 := (U0.Cons v1 v3)
+    v5 := (← sum_0 v4)
+    v6 := (v5 - (4 : Int32))
     return v6
 end
 def main : IO UInt32 := do

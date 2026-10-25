@@ -670,13 +670,13 @@ test none_of =
     |> run_parser (none_of [ 'a'; 'b'; 'c' ])
     |> resultm.map_error eval
     |> _assert_eq (
-           "parsing.none_of / unexpected char / "
-           ++# (
-               "{ first_char = a; chars' = [a, b, c]; s = { line_start = 0; position = { line = 1; col = 1 }; "
-               ^^ "text_length = 3 } }"
-           )
-           |> Error
-       )
+        "parsing.none_of / unexpected char / "
+        ++# (
+            "{ first_char = a; chars' = [a, b, c]; s = { line_start = 0; position = { line = 1; col = 1 }; "
+            ^^ "text_length = 3 } }"
+        )
+        |> Error
+    )
 
     "def"
     |> run_parser (none_of [ 'a'; 'b'; 'c' ])

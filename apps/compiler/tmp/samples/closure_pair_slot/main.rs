@@ -8,18 +8,18 @@ enum US0 {
 }
 fn f_c0(mut v0: i32) -> Rc<dyn Fn(i32) -> (US0, i32)> {
     Rc::new(move |mut v1: i32| -> (US0, i32) {
-        let v2: bool = v1 == 0i32;
+        let mut v2: bool = v1 == 0i32;
         if v2 {
-            let v3: US0 = US0::US0_None;
+            let mut v3: US0 = US0::US0_None;
             (v3.clone(), 0i32)
         } else {
-            let v4: US0 = US0::US0_Some(v0);
+            let mut v4: US0 = US0::US0_Some(v0);
             (v4.clone(), v0)
         }
     })
 }
 fn spiral_main() -> i32 {
-    let v0: i32 = 7i32;
+    let mut v0: i32 = 7i32;
     let mut v1: Rc<dyn Fn(i32) -> (US0, i32)> = f_c0(v0);
     let (mut v2, mut v3): (US0, i32) = v1(1i32);
     match &v2 {
@@ -27,10 +27,10 @@ fn spiral_main() -> i32 {
             1i32
         }
         US0::US0_Some(v4) => {
-            let v4: i32 = *v4;
-            let v5: bool = v4 == 7i32;
-            let v7: bool = if v5 {
-                let v6: bool = v3 == 7i32;
+            let mut v4: i32 = *v4;
+            let mut v5: bool = v4 == 7i32;
+            let mut v7: bool = if v5 {
+                let mut v6: bool = v3 == 7i32;
                 v6
             } else {
                 false

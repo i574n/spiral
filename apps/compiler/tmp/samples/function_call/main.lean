@@ -27,12 +27,16 @@ mutual
 partial def method0 (p0 : Int32) (p1 : Int32) : IO Int32 := do
     let mut v0 : Int32 := p0
     let mut v1 : Int32 := p1
-    let v2 : Int32 := (v0 + v1)
-    let v3 : Int32 := (v2 - (42 : Int32))
+    let mut v2 : Int32 := default
+    let mut v3 : Int32 := default
+    v2 := (v0 + v1)
+    v3 := (v2 - (42 : Int32))
     return v3
 partial def spiralMain : IO Int32 := do
-    let v0 : Int32 := (20 : Int32)
-    let v1 : Int32 := (22 : Int32)
+    let mut v0 : Int32 := default
+    let mut v1 : Int32 := default
+    v0 := (20 : Int32)
+    v1 := (22 : Int32)
     return (← method0 v0 v1)
 end
 def main : IO UInt32 := do

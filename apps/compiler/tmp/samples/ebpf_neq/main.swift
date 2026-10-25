@@ -1,19 +1,28 @@
 import CRT
 import WinSDK
 func spiral_main() -> Int32 {
-    let v0: Int32 = 3
-    let v1: Int32 = 4
-    let v2: UInt32 = UInt32(1)
-    let v3: UInt32 = UInt32(1)
-    let v4: Float = (1.5 as Float)
-    let v5: Float = (-(v4))
-    let v6: Bool = (v0 != v1)
+    var v0: Int32 = 0
+    v0 = 3
+    var v1: Int32 = 0
+    v1 = 4
+    var v2: UInt32 = UInt32(0)
+    v2 = UInt32(1)
+    var v3: UInt32 = UInt32(0)
+    v3 = UInt32(1)
+    var v4: Float = (0.0 as Float)
+    v4 = (1.5 as Float)
+    var v5: Float = (0.0 as Float)
+    v5 = (-(v4))
+    var v6: Bool = false
+    v6 = (v0 != v1)
     if (v6) {
-        let v7: Bool = (v2 != v3)
+        var v7: Bool = false
+        v7 = (v2 != v3)
         if (v7) {
             return 2
         } else {
-            let v8: Bool = (v5 == (-1.5 as Float))
+            var v8: Bool = false
+            v8 = (v5 == (-1.5 as Float))
             if (v8) {
                 return 0
             } else {

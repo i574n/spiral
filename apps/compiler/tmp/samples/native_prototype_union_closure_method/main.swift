@@ -33,13 +33,16 @@ func sp_method0(_ p0: @escaping (Int32) -> Int32) -> Int32 {
     return v0(31)
 }
 func spiral_main() -> Int32 {
-    let v0: Int32 = 2
-    let v1: Bool = (v0 == 0)
+    var v0: Int32 = 0
+    v0 = 2
+    var v1: Bool = false
+    v1 = (v0 == 0)
     var v7: US0 = US0_Idle()
     if (v1) {
         v7 = US0_Idle()
     } else {
-        let v3: Bool = (v0 == 1)
+        var v3: Bool = false
+        v3 = (v0 == 1)
         if (v3) {
             v7 = US0_Hit(f0: 7)
         } else {

@@ -1,8 +1,18 @@
+local function spiral_wrap_unsigned(value, bits)
+    return value % (2 ^ bits)
+end
 local function spiral_wrap_signed(value, bits)
     local modulus = 2 ^ bits
     value = value % modulus
     if value >= modulus / 2 then value = value - modulus end
     return value
+end
+local function spiral_mul_mod32(a, b)
+    a = a % 4294967296
+    b = b % 4294967296
+    local a_low = a % 65536
+    local a_high = (a - a_low) / 65536
+    return (a_low * b + ((a_high * b) % 65536) * 65536) % 4294967296
 end
 local Us0_Idle, Us0_Text, Us0_Note, closure0, method0, method1
 function Us0_Idle() return { tag = "Us0_Idle" } end
@@ -33,26 +43,28 @@ end
 local v0 = closure0(nil)
 local v1 = method0(v0)
 local getv6 = function()
-    if v1 ~= nil and v1.tag == "Us0_Idle" then
+    local __v = { v1 }
+    if __v[1] ~= nil and __v[1].tag == "Us0_Idle" then
         return 3
-    elseif v1 ~= nil and v1.tag == "Us0_Note" then
-        local v3 = v1._1
+    elseif __v[1] ~= nil and __v[1].tag == "Us0_Note" then
+        local v3 = __v[1]._1
         return 6
-    elseif v1 ~= nil and v1.tag == "Us0_Text" then
-        local v2 = v1._1
+    elseif __v[1] ~= nil and __v[1].tag == "Us0_Text" then
+        local v2 = __v[1]._1
         return 5
     end
 end
 local v6 = getv6()
 local v7 = method1(v0)
 local getv12 = function()
-    if v7 ~= nil and v7.tag == "Us0_Idle" then
+    local __v = { v7 }
+    if __v[1] ~= nil and __v[1].tag == "Us0_Idle" then
         return 3
-    elseif v7 ~= nil and v7.tag == "Us0_Note" then
-        local v9 = v7._1
+    elseif __v[1] ~= nil and __v[1].tag == "Us0_Note" then
+        local v9 = __v[1]._1
         return 6
-    elseif v7 ~= nil and v7.tag == "Us0_Text" then
-        local v8 = v7._1
+    elseif __v[1] ~= nil and __v[1].tag == "Us0_Text" then
+        local v8 = __v[1]._1
         return 5
     end
 end

@@ -42,29 +42,45 @@ end
 deriving instance Inhabited for M2
 mutual
 partial def spiralMain : IO Int32 := do
+    let mut v0 : Int32 := default
+    let mut v1 : String := default
+    let mut v2 : H0 := default
+    let mut v3 : Int32 := default
+    let mut v4 : H1 := default
     let mut v5 : (IO.Ref M2) ← IO.mkRef default
+    let mut v6 : Int32 := default
+    let mut v7 : String := default
+    let mut v8 : H0 := default
+    let mut v9 : Int32 := default
+    let mut v10 : H1 := default
+    let mut v11 : H1 := default
+    let mut v12 : H0 := default
+    let mut v13 : Int32 := default
+    let mut v14 : Int32 := default
+    let mut v15 : String := default
+    let mut v16 : Bool := default
     let mut v18 : Bool := default
     let mut v17 : Bool := default
     let mut v20 : Bool := default
     let mut v19 : Bool := default
-    let v0 : Int32 := (3 : Int32)
-    let v1 : String := "no"
-    let v2 : H0 := (H0.mk v0 v1)
-    let v3 : Int32 := (1 : Int32)
-    let v4 : H1 := (H1.mk v2 v3)
+    v0 := (3 : Int32)
+    v1 := "no"
+    v2 := (H0.mk v0 v1)
+    v3 := (1 : Int32)
+    v4 := (H1.mk v2 v3)
     v5 := (← IO.mkRef (M2.mk v4))
-    let v6 : Int32 := (7 : Int32)
-    let v7 : String := "hi"
-    let v8 : H0 := (H0.mk v6 v7)
-    let v9 : Int32 := (4 : Int32)
-    let v10 : H1 := (H1.mk v8 v9)
+    v6 := (7 : Int32)
+    v7 := "hi"
+    v8 := (H0.mk v6 v7)
+    v9 := (4 : Int32)
+    v10 := (H1.mk v8 v9)
     v5.modify (fun r => { r with l0 := v10 })
-    let v11 : H1 := (← v5.get).l0
-    let v12 : H0 := v11.l0
-    let v13 : Int32 := v11.l1
-    let v14 : Int32 := v12.l0
-    let v15 : String := v12.l1
-    let v16 : Bool := (v14 == (7 : Int32))
+    v11 := (← v5.get).l0
+    v12 := v11.l0
+    v13 := v11.l1
+    v14 := v12.l0
+    v15 := v12.l1
+    v16 := (v14 == (7 : Int32))
     if v16 then
         v17 := (v15 == "hi")
         v18 := v17

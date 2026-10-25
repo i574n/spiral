@@ -23,10 +23,10 @@ struct Closure0 {
 static inline void ArrayDecrefBody0(Array0 * x){
     (void)x;
 }
-static void ArrayDecref0(Array0 * x){
+void ArrayDecref0(Array0 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody0(x); free(x); }
 }
-static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
+Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     uint32_t size = sizeof(Array0) + sizeof(char) * len;
     Array0 * x = malloc(size);
     if (init_at_zero) { memset(x,0,size); }
@@ -34,7 +34,7 @@ static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     x->len = len;
     return x;
 }
-static Array0 * ArrayLit0(uint32_t len, char * ptr){
+Array0 * ArrayLit0(uint32_t len, char * ptr){
     Array0 * x = ArrayCreate0(len, false);
     memcpy(x->ptr, ptr, sizeof(char) * len);
     return x;
@@ -48,21 +48,28 @@ static inline String * StringLit(uint32_t len, char * ptr){
 static inline void ClosureDecrefBody0(Closure0 * x){
     StringDecref(x->v0);
 }
-static void ClosureDecref0(Fun0 * self){
+void ClosureDecref0(Fun0 * self){
     Closure0 * x = (Closure0 *) self;
     if (x != NULL && --(x->base.refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
-static int32_t f_c0(Fun0 * self, int32_t v1){
+int32_t f_c0(Fun0 * self, int32_t v1){
     Closure0 * x = (Closure0 *) self;
     String * v0 = x->v0;
     (v0)->refc++;
     ClosureDecref0(self);
-    int32_t v2 = v0->len-1;
+    
+    
+    int32_t v2;
+    v2 = v0->len-1;
+    
     StringDecref(v0);
-    int32_t v3 = v2 + v1;
+    int32_t v3;
+    v3 = v2 + v1;
+    
+    
     return v3;
 }
-static Fun0 * ClosureCreate0(String * v0){
+Fun0 * ClosureCreate0(String * v0){
     Closure0 * x = malloc(sizeof(Closure0));
     x->base.refc = 1;
     x->base.decref_fptr = ClosureDecref0;
@@ -71,18 +78,35 @@ static Fun0 * ClosureCreate0(String * v0){
     return &x->base;
 }
 int32_t main(){
-    String * v0 = StringLit(4, "abc");
+    
+    
+    String * v0;
+    v0 = StringLit(4, "abc");
     (v0)->refc++;
-    Fun0 * v1 = ClosureCreate0(v0);
+    
+    Fun0 * v1;
+    v1 = ClosureCreate0(v0);
     (v1)->refc++;
     StringDecref(v0);
-    int32_t v2 = v1->fptr(v1, 10l);
+    int32_t v2;
+    v2 = v1->fptr(v1, 10l);
     (v1)->refc++;
-    int32_t v3 = v1->fptr(v1, 20l);
+    
+    int32_t v3;
+    v3 = v1->fptr(v1, 20l);
     (v1)->refc++;
-    int32_t v4 = v1->fptr(v1, 3l);
+    
+    int32_t v4;
+    v4 = v1->fptr(v1, 3l);
+    
     (v1)->decref_fptr(v1);
-    int32_t v5 = v2 + v3;
-    int32_t v6 = v5 + v4;
+    int32_t v5;
+    v5 = v2 + v3;
+    
+    
+    int32_t v6;
+    v6 = v5 + v4;
+    
+    
     return v6;
 }

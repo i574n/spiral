@@ -24,21 +24,26 @@ func sp_score_0(_ p0: US0) -> Int32 {
     }
 }
 func spiral_main() -> Int32 {
-    let v0: Int32 = 2
-    let v1: Bool = (v0 == 0)
+    var v0: Int32 = 0
+    v0 = 2
+    var v1: Bool = false
+    v1 = (v0 == 0)
     var v7: US0 = US0_Idle()
     if (v1) {
         v7 = US0_Idle()
     } else {
-        let v3: Bool = (v0 == 1)
+        var v3: Bool = false
+        v3 = (v0 == 1)
         if (v3) {
             v7 = US0_Hit(f0: 7)
         } else {
             v7 = US0_Flag(f0: true)
         }
     }
-    let v8: Int32 = sp_score_0(v7)
-    let v9: Int32 = (v8 &- 11)
+    var v8: Int32 = 0
+    v8 = sp_score_0(v7)
+    var v9: Int32 = 0
+    v9 = (v8 &- 11)
     return v9
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

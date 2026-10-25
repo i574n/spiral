@@ -17,13 +17,20 @@ class Heap1 {
     }
 }
 func spiral_main() -> Int32 {
-    let v0: Int32 = 7
-    let v1: String = "hi"
-    let v2: Heap0 = Heap0(l0: v0, l1: v1)
-    let v3: Int32 = 4
-    let v4: String = "yo"
-    let v5: Heap0 = Heap0(l0: v3, l1: v4)
-    let v6: Heap1 = Heap1(l0: v2, l1: v5)
+    var v0: Int32 = 0
+    v0 = 7
+    var v1: String = ""
+    v1 = "hi"
+    var v2: Heap0 = Heap0(l0: 0, l1: "")
+    v2 = Heap0(l0: v0, l1: v1)
+    var v3: Int32 = 0
+    v3 = 4
+    var v4: String = ""
+    v4 = "yo"
+    var v5: Heap0 = Heap0(l0: 0, l1: "")
+    v5 = Heap0(l0: v3, l1: v4)
+    var v6: Heap1 = Heap1(l0: Heap0(l0: 0, l1: ""), l1: Heap0(l0: 0, l1: ""))
+    v6 = Heap1(l0: v2, l1: v5)
     var v7: Heap0 = Heap0(l0: 0, l1: "")
     var v8: Heap0 = Heap0(l0: 0, l1: "")
     v7 = v6.l0
@@ -36,24 +43,28 @@ func spiral_main() -> Int32 {
     var v12: String = ""
     v11 = v8.l0
     v12 = v8.l1
-    let v13: Bool = (v9 == 7)
+    var v13: Bool = false
+    v13 = (v9 == 7)
     var v15: Bool = false
     if (v13) {
-        let v14: Bool = (v10 == "hi")
+        var v14: Bool = false
+        v14 = (v10 == "hi")
         v15 = v14
     } else {
         v15 = false
     }
     var v17: Bool = false
     if (v15) {
-        let v16: Bool = (v11 == 4)
+        var v16: Bool = false
+        v16 = (v11 == 4)
         v17 = v16
     } else {
         v17 = false
     }
     var v19: Bool = false
     if (v17) {
-        let v18: Bool = (v12 == "yo")
+        var v18: Bool = false
+        v18 = (v12 == "yo")
         v19 = v18
     } else {
         v19 = false

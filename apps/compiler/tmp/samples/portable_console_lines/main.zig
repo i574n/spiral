@@ -65,18 +65,70 @@ fn spiralPrintAny(x: anytype) void {
     } catch @panic("out of memory");
     spiralPrint(s);
 }
+fn spiralFail(s: []const u8) noreturn {
+    spiralFlush();
+    spiralWrite(2, s);
+    spiralWrite(2, "\n");
+    std.process.exit(1);
+}
+fn spiralConv(comptime T: type, x: anytype) T {
+    const S = @TypeOf(x);
+    if (@typeInfo(T) == .float) {
+        if (@typeInfo(S) == .float) return @floatCast(x) else return @floatFromInt(x);
+    }
+    if (@typeInfo(S) == .float) return @intFromFloat(x);
+    const U = @Int(.unsigned, @bitSizeOf(T));
+    const wide: i128 = x;
+    return @bitCast(@as(U, @truncate(@as(u128, @bitCast(wide)))));
+}
+fn spiralConcat(a: []const u8, b: []const u8) []const u8 {
+    return std.mem.concat(spiral_gpa, u8, &.{ a, b }) catch @panic("out of memory");
+}
+fn spiralStringSlice(s: []const u8, from: i64, upto: i64) []const u8 {
+    const len: i64 = @intCast(s.len);
+    if (from < 0 or from > len or upto < from - 1 or upto >= len) std.process.exit(3);
+    if (upto < from) return "";
+    const a: usize = @intCast(from);
+    const b: usize = @intCast(upto + 1);
+    if ((s[a] & 0xC0) == 0x80 or (b < s.len and (s[b] & 0xC0) == 0x80)) std.process.exit(3);
+    return s[a..b];
+}
+fn spiralIndex(len: usize, i: anytype) usize {
+    if (i < 0 or i >= len) std.process.exit(3);
+    return @intCast(i);
+}
+fn spiralNewArray(comptime T: type, n: anytype) []T {
+    const len: usize = @intCast(n);
+    const a = spiral_gpa.alloc(T, len) catch @panic("out of memory");
+    switch (@typeInfo(T)) {
+        .int, .float, .bool => @memset(a, std.mem.zeroes(T)),
+        else => if (T == []const u8) @memset(a, ""),
+    }
+    return a;
+}
+fn spiralCreate(comptime T: type, v: T) *T {
+    const p = spiral_gpa.create(T) catch @panic("out of memory");
+    p.* = v;
+    return p;
+}
 fn spiralMain() i32 {
-    const v0: []const u8 = "hello";
+    var v0: []const u8 = undefined; _ = &v0;
+    var v1: i32 = undefined; _ = &v1;
+    var v2: []const u8 = undefined; _ = &v2;
+    var v3: []const u8 = undefined; _ = &v3;
+    var v4: []const u8 = undefined; _ = &v4;
+    var v5: i64 = undefined; _ = &v5;
+    v0 = "hello";
     { spiralPrintAny(v0); spiralPrint(&[_]u8{10}); }
-    const v1: i32 = @as(i32, 42);
+    v1 = @as(i32, 42);
     { spiralPrintAny(v1); spiralPrint(&[_]u8{10}); }
-    const v2: []const u8 = "a";
+    v2 = "a";
     spiralPrintAny(v2);
-    const v3: []const u8 = "b";
+    v3 = "b";
     spiralPrintAny(v3);
-    const v4: []const u8 = "";
+    v4 = "";
     { spiralPrintAny(v4); spiralPrint(&[_]u8{10}); }
-    const v5: i64 = @as(i64, -7);
+    v5 = @as(i64, -7);
     { spiralPrintAny(v5); spiralPrint(&[_]u8{10}); }
     return @as(i32, 0);
 }

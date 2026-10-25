@@ -37,8 +37,10 @@ func sp_consume_pair_0(_ p0: UH0, _ p1: UH0) -> Int32 {
     return v4
 }
 func spiral_main() -> Int32 {
-    let v0: Int32 = 1
-    let v1: Int32 = 2
+    var v0: Int32 = 0
+    v0 = 1
+    var v1: Int32 = 0
+    v1 = 2
     var v2: UH0 = UH0_Leaf()
     v2 = UH0_Leaf()
     var v3: UH0 = UH0_Leaf()
@@ -51,10 +53,14 @@ func spiral_main() -> Int32 {
     v6 = 2
     var v7: UH0 = UH0_Leaf()
     v7 = UH0_Leaf()
-    let v8: UH0 = UH0_Node(f0: v6, f1: v7, f2: v7)
-    let v9: UH0 = UH0_Node(f0: v5, f1: v8, f2: v8)
-    let v10: Int32 = sp_consume_pair_0(v4, v9)
-    let v11: Int32 = (v10 &- 10)
+    var v8: UH0 = UH0_Leaf()
+    v8 = UH0_Node(f0: v6, f1: v7, f2: v7)
+    var v9: UH0 = UH0_Leaf()
+    v9 = UH0_Node(f0: v5, f1: v8, f2: v8)
+    var v10: Int32 = 0
+    v10 = sp_consume_pair_0(v4, v9)
+    var v11: Int32 = 0
+    v11 = (v10 &- 10)
     return v11
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

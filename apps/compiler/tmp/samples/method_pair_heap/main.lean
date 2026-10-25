@@ -34,17 +34,27 @@ partial def method0 (p0 : H0) (p1 : H0) : IO (H0 × H0) := do
     let mut v1 : H0 := p1
     return (v0, v1)
 partial def spiralMain : IO Int32 := do
-    let v0 : Int32 := (3 : Int32)
-    let v1 : Int32 := (4 : Int32)
-    let v2 : H0 := (H0.mk v0)
-    let v3 : H0 := (H0.mk v1)
+    let mut v0 : Int32 := default
+    let mut v1 : Int32 := default
+    let mut v2 : H0 := default
+    let mut v3 : H0 := default
+    let mut v4 : H0 := default
+    let mut v5 : H0 := default
+    let mut v6 : Int32 := default
+    let mut v7 : Int32 := default
+    let mut v8 : Int32 := default
+    let mut v9 : Bool := default
+    v0 := (3 : Int32)
+    v1 := (4 : Int32)
+    v2 := (H0.mk v0)
+    v3 := (H0.mk v1)
     let (r1_0, r1_1) := (← method0 v2 v3)
-    let v4 : H0 := r1_0
-    let v5 : H0 := r1_1
-    let v6 : Int32 := v4.l0
-    let v7 : Int32 := v5.l0
-    let v8 : Int32 := (v6 + v7)
-    let v9 : Bool := (v8 == (7 : Int32))
+    v4 := r1_0
+    v5 := r1_1
+    v6 := v4.l0
+    v7 := v5.l0
+    v8 := (v6 + v7)
+    v9 := (v8 == (7 : Int32))
     if v9 then
         return (0 : Int32)
     else

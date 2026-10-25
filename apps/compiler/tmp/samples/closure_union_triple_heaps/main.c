@@ -40,10 +40,10 @@ struct Closure0 {
 static inline void ArrayDecrefBody0(Array0 * x){
     (void)x;
 }
-static void ArrayDecref0(Array0 * x){
+void ArrayDecref0(Array0 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody0(x); free(x); }
 }
-static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
+Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     uint32_t size = sizeof(Array0) + sizeof(char) * len;
     Array0 * x = malloc(size);
     if (init_at_zero) { memset(x,0,size); }
@@ -51,7 +51,7 @@ static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     x->len = len;
     return x;
 }
-static Array0 * ArrayLit0(uint32_t len, char * ptr){
+Array0 * ArrayLit0(uint32_t len, char * ptr){
     Array0 * x = ArrayCreate0(len, false);
     memcpy(x->ptr, ptr, sizeof(char) * len);
     return x;
@@ -65,10 +65,10 @@ static inline String * StringLit(uint32_t len, char * ptr){
 static inline void HeapDecrefBody0(Heap0 * x){
     StringDecref(x->v1);
 }
-static void HeapDecref0(Heap0 * x){
+void HeapDecref0(Heap0 * x){
     if (x != NULL && --(x->refc) == 0) { HeapDecrefBody0(x); free(x); }
 }
-static Heap0 * HeapCreate0(int32_t v0, String * v1){
+Heap0 * HeapCreate0(int32_t v0, String * v1){
     Heap0 * x = malloc(sizeof(Heap0));
     x->refc = 1;
     x->v0 = v0; x->v1 = v1;
@@ -106,24 +106,32 @@ US0 US0_Held(Heap0 * v0, Heap0 * v1, Heap0 * v2) { // Held
 static inline void ClosureDecrefBody0(Closure0 * x){
     HeapDecref0(x->v0); HeapDecref0(x->v1); HeapDecref0(x->v2);
 }
-static void ClosureDecref0(Fun0 * self){
+void ClosureDecref0(Fun0 * self){
     Closure0 * x = (Closure0 *) self;
     if (x != NULL && --(x->base.refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
-static US0 f_c0(Fun0 * self, int32_t v3){
+US0 f_c0(Fun0 * self, int32_t v3){
     Closure0 * x = (Closure0 *) self;
     Heap0 * v0 = x->v0; Heap0 * v1 = x->v1; Heap0 * v2 = x->v2;
     (v0)->refc++; (v1)->refc++; (v2)->refc++;
     ClosureDecref0(self);
-    bool v4 = v3 == 0l;
+    
+    
+    bool v4;
+    v4 = v3 == 0l;
+    
+    
     if (v4){
+        
         HeapDecref0(v0); HeapDecref0(v1); HeapDecref0(v2);
         return US0_None();
     } else {
+        
+        
         return US0_Held(v0, v1, v2);
     }
 }
-static Fun0 * ClosureCreate0(Heap0 * v0, Heap0 * v1, Heap0 * v2){
+Fun0 * ClosureCreate0(Heap0 * v0, Heap0 * v1, Heap0 * v2){
     Closure0 * x = malloc(sizeof(Closure0));
     x->base.refc = 1;
     x->base.decref_fptr = ClosureDecref0;
@@ -131,7 +139,9 @@ static Fun0 * ClosureCreate0(Heap0 * v0, Heap0 * v1, Heap0 * v2){
     x->v0 = v0; x->v1 = v1; x->v2 = v2;
     return &x->base;
 }
-static int32_t score0(US0 v0){
+int32_t score0(US0 v0){
+    
+    
     switch (v0.tag) {
         case 1: { // Held
             Heap0 * v1 = v0.case1.v0; Heap0 * v2 = v0.case1.v1; Heap0 * v3 = v0.case1.v2;
@@ -149,53 +159,104 @@ static int32_t score0(US0 v0){
             v8 = v3->v0; v9 = v3->v1;
             (v9)->refc++;
             HeapDecref0(v3);
-            bool v10 = v4 == 7l;
+            bool v10;
+            v10 = v4 == 7l;
+            
+            
             bool v12;
             if (v10){
-                bool v11 = strcmp(v5->ptr, "hi") == 0;
+                
+                
+                bool v11;
+                v11 = strcmp(v5->ptr, "hi") == 0;
+                
+                
                 v12 = v11;
             } else {
+                
+                
                 v12 = false;
             }
+            
             StringDecref(v5);
             bool v14;
             if (v12){
-                bool v13 = v6 == 4l;
+                
+                
+                bool v13;
+                v13 = v6 == 4l;
+                
+                
                 v14 = v13;
             } else {
+                
+                
                 v14 = false;
             }
+            
+            
             bool v16;
             if (v14){
-                bool v15 = strcmp(v7->ptr, "yo") == 0;
+                
+                
+                bool v15;
+                v15 = strcmp(v7->ptr, "yo") == 0;
+                
+                
                 v16 = v15;
             } else {
+                
+                
                 v16 = false;
             }
+            
             StringDecref(v7);
             bool v18;
             if (v16){
-                bool v17 = v8 == 9l;
+                
+                
+                bool v17;
+                v17 = v8 == 9l;
+                
+                
                 v18 = v17;
             } else {
+                
+                
                 v18 = false;
             }
+            
+            
             bool v20;
             if (v18){
-                bool v19 = strcmp(v9->ptr, "ok") == 0;
+                
+                
+                bool v19;
+                v19 = strcmp(v9->ptr, "ok") == 0;
+                
+                
                 v20 = v19;
             } else {
+                
+                
                 v20 = false;
             }
+            
             StringDecref(v9);
             if (v20){
+                
+                
                 return 0l;
             } else {
+                
+                
                 return 1l;
             }
             break;
         }
         default: { // None
+            
+            
             USDecref0(&(v0));
             return 1l;
             break;
@@ -203,26 +264,51 @@ static int32_t score0(US0 v0){
     }
 }
 int32_t main(){
-    int32_t v0 = 7l;
-    String * v1 = StringLit(3, "hi");
+    
+    
+    int32_t v0;
+    v0 = 7l;
+    
+    
+    String * v1;
+    v1 = StringLit(3, "hi");
     (v1)->refc++;
-    Heap0 * v2 = HeapCreate0(v0, v1);
+    
+    Heap0 * v2;
+    v2 = HeapCreate0(v0, v1);
+    
     StringDecref(v1);
-    int32_t v3 = 4l;
-    String * v4 = StringLit(3, "yo");
+    int32_t v3;
+    v3 = 4l;
+    
+    
+    String * v4;
+    v4 = StringLit(3, "yo");
     (v4)->refc++;
-    Heap0 * v5 = HeapCreate0(v3, v4);
+    
+    Heap0 * v5;
+    v5 = HeapCreate0(v3, v4);
+    
     StringDecref(v4);
-    int32_t v6 = 9l;
-    String * v7 = StringLit(3, "ok");
+    int32_t v6;
+    v6 = 9l;
+    
+    
+    String * v7;
+    v7 = StringLit(3, "ok");
     (v7)->refc++;
-    Heap0 * v8 = HeapCreate0(v6, v7);
+    
+    Heap0 * v8;
+    v8 = HeapCreate0(v6, v7);
     (v2)->refc++; (v5)->refc++; (v8)->refc++;
     StringDecref(v7);
-    Fun0 * v9 = ClosureCreate0(v2, v5, v8);
+    Fun0 * v9;
+    v9 = ClosureCreate0(v2, v5, v8);
     (v9)->refc++;
     HeapDecref0(v2); HeapDecref0(v5); HeapDecref0(v8);
-    US0 v10 = v9->fptr(v9, 1l);
+    US0 v10;
+    v10 = v9->fptr(v9, 1l);
+    
     (v9)->decref_fptr(v9);
     return score0(v10);
 }

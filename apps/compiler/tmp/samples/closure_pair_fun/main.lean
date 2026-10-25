@@ -28,8 +28,9 @@ partial def right_c1 (p0 : Int32) (p1 : Int32) (p2 : Int32) : IO Int32 := do
     let mut v0 : Int32 := p0
     let mut v1 : Int32 := p1
     let mut v2 : Int32 := p2
+    let mut v3 : Bool := default
     let mut v4 : Int32 := default
-    let v3 : Bool := (v1 == (0 : Int32))
+    v3 := (v1 == (0 : Int32))
     if v3 then
         return (0 : Int32)
     else
@@ -39,8 +40,9 @@ partial def left_c2 (p0 : Int32) (p1 : Int32) (p2 : Int32) : IO Int32 := do
     let mut v0 : Int32 := p0
     let mut v1 : Int32 := p1
     let mut v2 : Int32 := p2
+    let mut v3 : Bool := default
     let mut v4 : Int32 := default
-    let v3 : Bool := (v1 == (0 : Int32))
+    v3 := (v1 == (0 : Int32))
     if v3 then
         return (0 : Int32)
     else
@@ -50,11 +52,12 @@ partial def f_c0 (p0 : Int32) (p1 : Int32) (p2 : Int32) : IO ((Int32 → IO Int3
     let mut v0 : Int32 := p0
     let mut v1 : Int32 := p1
     let mut v2 : Int32 := p2
+    let mut v3 : Bool := default
     let mut v4 : (Int32 → IO Int32) := default
     let mut v5 : (Int32 → IO Int32) := default
     let mut v6 : (Int32 → IO Int32) := default
     let mut v7 : (Int32 → IO Int32) := default
-    let v3 : Bool := (v2 == (0 : Int32))
+    v3 := (v2 == (0 : Int32))
     if v3 then
         v4 := (right_c1 v1 v2)
         v5 := (left_c2 v0 v2)
@@ -64,16 +67,25 @@ partial def f_c0 (p0 : Int32) (p1 : Int32) (p2 : Int32) : IO ((Int32 → IO Int3
         v7 := (right_c1 v1 v2)
         return (v6, v7)
 partial def spiralMain : IO Int32 := do
-    let v0 : Int32 := (3 : Int32)
-    let v1 : Int32 := (4 : Int32)
-    let v2 : (Int32 → IO ((Int32 → IO Int32) × (Int32 → IO Int32))) := (f_c0 v0 v1)
+    let mut v0 : Int32 := default
+    let mut v1 : Int32 := default
+    let mut v2 : (Int32 → IO ((Int32 → IO Int32) × (Int32 → IO Int32))) := default
+    let mut v3 : (Int32 → IO Int32) := default
+    let mut v4 : (Int32 → IO Int32) := default
+    let mut v5 : Int32 := default
+    let mut v6 : Int32 := default
+    let mut v7 : Int32 := default
+    let mut v8 : Bool := default
+    v0 := (3 : Int32)
+    v1 := (4 : Int32)
+    v2 := (f_c0 v0 v1)
     let (r1_0, r1_1) := (← v2 (1 : Int32))
-    let v3 : (Int32 → IO Int32) := r1_0
-    let v4 : (Int32 → IO Int32) := r1_1
-    let v5 : Int32 := (← v3 (0 : Int32))
-    let v6 : Int32 := (← v4 (0 : Int32))
-    let v7 : Int32 := (v5 + v6)
-    let v8 : Bool := (v7 == (7 : Int32))
+    v3 := r1_0
+    v4 := r1_1
+    v5 := (← v3 (0 : Int32))
+    v6 := (← v4 (0 : Int32))
+    v7 := (v5 + v6)
+    v8 := (v7 == (7 : Int32))
     if v8 then
         return (0 : Int32)
     else

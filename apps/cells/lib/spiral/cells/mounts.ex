@@ -63,7 +63,7 @@ defmodule Spiral.Cells.Mounts do
 
     case Regex.run(~r/^packageDir:\s*(.+)$/m, text) do
       [_, _dir] ->
-        deps = local_package_names(text)
+        deps = local_package_names(text) |> Enum.map(&mount_name/1)
         deps != [] and Enum.all?(deps, &(&1 in sibling_names))
 
       _ ->

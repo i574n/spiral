@@ -8,25 +8,25 @@ fn spiral_main() -> i32 {
     let mut v0: i32 = 0i32;
     let mut v1: i32 = 0i32;
     while method0() {
-        let v3: i32 = v0.wrapping_add(1i32);
+        let mut v3: i32 = v0.wrapping_add(1i32);
         v0 = v3;
-        let v4: bool = v0 < 3i32;
+        let mut v4: bool = v0 < 3i32;
         if v4 {
             continue;
             ()
         } else {
-            let v5: bool = v0 >= 6i32;
+            let mut v5: bool = v0 >= 6i32;
             if v5 {
                 break;
                 ()
             } else {
-                let v6: i32 = v1.wrapping_add(v0);
+                let mut v6: i32 = v1.wrapping_add(v0);
                 v1 = v6;
                 ()
             }
         }
     };
-    let v7: i32 = v1.wrapping_sub(12i32);
+    let mut v7: i32 = v1.wrapping_sub(12i32);
     v7
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }

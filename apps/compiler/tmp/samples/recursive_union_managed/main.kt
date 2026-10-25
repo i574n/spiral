@@ -1,5 +1,5 @@
 sealed interface UH0 { val tag: Int }
-object UH0_Nil : UH0 { override val tag: Int = 0 }
+class UH0_Nil : UH0 { override val tag: Int = 0 }
 data class UH0_Cons(val f0: Array<Int>, val f1: UH0) : UH0 { override val tag: Int = 1 }
 fun sp_sum_0(p0: UH0): Int {
     var v0: UH0 = p0
@@ -22,16 +22,20 @@ fun sp_sum_0(p0: UH0): Int {
     }
 }
 fun spiral_main(): Int {
-    val v0: Int = 2
-    val v1: Array<Int> = Array(v0) { 0 }
-    val v2: UH0 = UH0_Nil
-    var v3: UH0 = UH0_Nil
+    var v0: Int = 0
+    v0 = 2
+    var v1: Array<Int> = emptyArray<Int>()
+    v1 = Array(v0) { 0 }
+    var v2: UH0 = UH0_Nil()
+    v2 = UH0_Nil()
+    var v3: UH0 = UH0_Nil()
     v3 = UH0_Cons(v1, v2)
-    var v4: UH0 = UH0_Nil
+    var v4: UH0 = UH0_Nil()
     v4 = UH0_Cons(v1, v3)
     var v5: Int = 0
     v5 = sp_sum_0(v4)
-    val v6: Int = (v5 - 4)
+    var v6: Int = 0
+    v6 = (v5 - 4)
     return v6
 }
 fun main() {

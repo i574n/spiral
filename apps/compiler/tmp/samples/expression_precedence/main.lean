@@ -27,12 +27,14 @@ mutual
 partial def method0 (p0 : Int32) (p1 : Int32) : IO Bool := do
     let mut v0 : Int32 := p0
     let mut v1 : Int32 := p1
+    let mut v2 : Int32 := default
+    let mut v3 : Bool := default
     let mut v4 : Int32 := default
     let mut v5 : Int32 := default
     let mut v6 : Bool := default
     let mut v7 : Bool := default
-    let v2 : Int32 := -v0 
-    let v3 : Bool := (decide (v2 <= (0 : Int32)))
+    v2 := -v0 
+    v3 := (decide (v2 <= (0 : Int32)))
     if v3 then
         v4 := (v1 * (2 : Int32))
         v5 := (v0 + v4)
@@ -45,9 +47,12 @@ partial def method0 (p0 : Int32) (p1 : Int32) : IO Bool := do
     else
         return false
 partial def spiralMain : IO Int32 := do
-    let v0 : Int32 := (3 : Int32)
-    let v1 : Int32 := (3 : Int32)
-    let v2 : Bool := (← method0 v0 v1)
+    let mut v0 : Int32 := default
+    let mut v1 : Int32 := default
+    let mut v2 : Bool := default
+    v0 := (3 : Int32)
+    v1 := (3 : Int32)
+    v2 := (← method0 v0 v1)
     if v2 then
         return (0 : Int32)
     else

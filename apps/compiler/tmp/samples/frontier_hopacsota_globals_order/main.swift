@@ -20,8 +20,10 @@ func sp_fast_b_2() -> Int32 {
 func spiral_main() -> Int32 {
     var v0: Int32 = 0
     v0 = sp_slow_a_0()
-    let v1: Int32 = sp_fast_b_2()
-    let v2: Int32 = (v0 &+ v1)
+    var v1: Int32 = 0
+    v1 = sp_fast_b_2()
+    var v2: Int32 = 0
+    v2 = (v0 &+ v1)
     return v2
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

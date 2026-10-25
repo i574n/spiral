@@ -14,10 +14,14 @@ func f_c0(_ v0: Int32, _ v1: String, _ v2: Bool) -> (Int32) -> (Int32, String, B
     }
 }
 func spiral_main() -> Int32 {
-    let v0: Int32 = 7
-    let v1: String = "hi"
-    let v2: Bool = true
-    let v3: (Int32) -> (Int32, String, Bool) = f_c0(v0, v1, v2)
+    var v0: Int32 = 0
+    v0 = 7
+    var v1: String = ""
+    v1 = "hi"
+    var v2: Bool = false
+    v2 = true
+    var v3: (Int32) -> (Int32, String, Bool) = { (_: Int32) -> (Int32, String, Bool) in fatalError("unreachable closure") }
+    v3 = f_c0(v0, v1, v2)
     var v4: Int32 = 0
     var v5: String = ""
     var v6: Bool = false
@@ -25,15 +29,18 @@ func spiral_main() -> Int32 {
     v4 = spiral_tuple373.0
     v5 = spiral_tuple373.1
     v6 = spiral_tuple373.2
-    let v7: Bool = (v4 == 7)
+    var v7: Bool = false
+    v7 = (v4 == 7)
     var v9: Bool = false
     if (v7) {
-        let v8: Bool = (v5 == "hi")
+        var v8: Bool = false
+        v8 = (v5 == "hi")
         v9 = v8
     } else {
         v9 = false
     }
-    let v10: Bool = (v9 && v6)
+    var v10: Bool = false
+    v10 = (v9 && v6)
     if (v10) {
         return 0
     } else {

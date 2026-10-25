@@ -31,23 +31,27 @@ function spiral_string_slice(value: string, from: number, to: number): string {
 }
 function method1(v0: number, v1: string): string {
     tail: while (true) {
-        const v2: number = (v0 - 1) | 0;
-        const v3: boolean = v2 === 0;
+        let v2: number = (v0 - 1) | 0;
+        let v3: boolean = v2 === 0;
         if (v3) {
             return v1;
         } else {
-            const v4: number = (v2 % 2) | 0;
-            const v5: boolean = v4 === 0;
+            let v4: number = (v2 % 2) | 0;
+            let v5: boolean = v4 === 0;
             let v8: string;
             if (v5) {
-                const v6: string = "ok";
+                let v6: string = "ok";
                 v8 = v6;
             } else {
                 let v7: string = "go";
                 v8 = v7;
             }
-            v0 = v2;
-            v1 = v8;
+            {
+                let t0 = v2;
+                let t1 = v8;
+                v0 = t0;
+                v1 = t1;
+            }
             continue tail;
         }
     }
@@ -56,17 +60,17 @@ function method0(): string {
     let v0: number = 1000000;
     let v1: boolean = v0 === 0;
     if (v1) {
-        const v2: string = "seed";
+        let v2: string = "seed";
         return v2;
     } else {
-        const v3: number = (v0 % 2) | 0;
-        const v4: boolean = v3 === 0;
+        let v3: number = (v0 % 2) | 0;
+        let v4: boolean = v3 === 0;
         let v7: string;
         if (v4) {
-            const v5: string = "ok";
+            let v5: string = "ok";
             v7 = v5;
         } else {
-            const v6: string = "go";
+            let v6: string = "go";
             v7 = v6;
         }
         return method1(v0, v7);
@@ -75,7 +79,7 @@ function method0(): string {
 export function main(): number {
     let v0: string = method0();
     let v1: number = spiral_string_length(v0);
-    const v2: boolean = v1 === 2;
+    let v2: boolean = v1 === 2;
     if (v2) {
         return 0;
     } else {

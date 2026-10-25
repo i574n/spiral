@@ -26,21 +26,28 @@ def spiralStringSlice (s : String) (a b : Int) : IO String := do
 mutual
 partial def spiralMain : IO Int32 := do
     let mut v0 : (IO.Ref (Array Int32)) ← IO.mkRef #[]
+    let mut v1 : Int32 := default
     let mut v2 : (IO.Ref (Array Int32)) ← IO.mkRef #[]
+    let mut v3 : Int32 := default
+    let mut v4 : Int32 := default
+    let mut v5 : Int32 := default
+    let mut v6 : Int32 := default
+    let mut v7 : Int32 := default
+    let mut v8 : Int32 := default
     v0 := (← IO.mkRef (Array.replicate (spiralIdx (4 : Int32)) (default : Int32)))
     v0.modify (fun xs => xs.set! (spiralIdx (0 : Int32)) (7 : Int32))
     v0.modify (fun xs => xs.set! (spiralIdx (1 : Int32)) (7 : Int32))
     v0.modify (fun xs => xs.set! (spiralIdx (2 : Int32)) (7 : Int32))
     v0.modify (fun xs => xs.set! (spiralIdx (3 : Int32)) (7 : Int32))
-    let v1 : Int32 := (← spiralIndex (← v0.get) (spiralIdx (3 : Int32)))
+    v1 := (← spiralIndex (← v0.get) (spiralIdx (3 : Int32)))
     v2 := (← IO.mkRef (Array.replicate (spiralIdx (4 : Int32)) (default : Int32)))
     v2.modify (fun xs => xs.set! (spiralIdx (0 : Int32)) (5 : Int32))
-    let v3 : Int32 := (← spiralIndex (← v2.get) (spiralIdx (3 : Int32)))
-    let v4 : Int32 := (← spiralIndex (← v2.get) (spiralIdx (0 : Int32)))
-    let v5 : Int32 := (v3 * (100 : Int32))
-    let v6 : Int32 := (v5 + v4)
-    let v7 : Int32 := (v1 - (7 : Int32))
-    let v8 : Int32 := (v6 + v7)
+    v3 := (← spiralIndex (← v2.get) (spiralIdx (3 : Int32)))
+    v4 := (← spiralIndex (← v2.get) (spiralIdx (0 : Int32)))
+    v5 := (v3 * (100 : Int32))
+    v6 := (v5 + v4)
+    v7 := (v1 - (7 : Int32))
+    v8 := (v6 + v7)
     return v8
 end
 def main : IO UInt32 := do

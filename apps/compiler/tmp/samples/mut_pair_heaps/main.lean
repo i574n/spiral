@@ -37,34 +37,53 @@ end
 deriving instance Inhabited for M1
 mutual
 partial def spiralMain : IO Int32 := do
+    let mut v0 : Int32 := default
+    let mut v1 : String := default
+    let mut v2 : H0 := default
+    let mut v3 : Int32 := default
+    let mut v4 : String := default
+    let mut v5 : H0 := default
     let mut v6 : (IO.Ref M1) ← IO.mkRef default
+    let mut v7 : Int32 := default
+    let mut v8 : String := default
+    let mut v9 : H0 := default
+    let mut v10 : Int32 := default
+    let mut v11 : String := default
+    let mut v12 : H0 := default
+    let mut v13 : H0 := default
+    let mut v14 : H0 := default
+    let mut v15 : Int32 := default
+    let mut v16 : String := default
+    let mut v17 : Int32 := default
+    let mut v18 : String := default
+    let mut v19 : Bool := default
     let mut v21 : Bool := default
     let mut v20 : Bool := default
     let mut v23 : Bool := default
     let mut v22 : Bool := default
     let mut v25 : Bool := default
     let mut v24 : Bool := default
-    let v0 : Int32 := (1 : Int32)
-    let v1 : String := "no"
-    let v2 : H0 := (H0.mk v0 v1)
-    let v3 : Int32 := (2 : Int32)
-    let v4 : String := "zz"
-    let v5 : H0 := (H0.mk v3 v4)
+    v0 := (1 : Int32)
+    v1 := "no"
+    v2 := (H0.mk v0 v1)
+    v3 := (2 : Int32)
+    v4 := "zz"
+    v5 := (H0.mk v3 v4)
     v6 := (← IO.mkRef (M1.mk v2 v5))
-    let v7 : Int32 := (7 : Int32)
-    let v8 : String := "hi"
-    let v9 : H0 := (H0.mk v7 v8)
-    let v10 : Int32 := (4 : Int32)
-    let v11 : String := "yo"
-    let v12 : H0 := (H0.mk v10 v11)
+    v7 := (7 : Int32)
+    v8 := "hi"
+    v9 := (H0.mk v7 v8)
+    v10 := (4 : Int32)
+    v11 := "yo"
+    v12 := (H0.mk v10 v11)
     v6.modify (fun r => { r with l0 := v9, l1 := v12 })
-    let v13 : H0 := (← v6.get).l0
-    let v14 : H0 := (← v6.get).l1
-    let v15 : Int32 := v13.l0
-    let v16 : String := v13.l1
-    let v17 : Int32 := v14.l0
-    let v18 : String := v14.l1
-    let v19 : Bool := (v15 == (7 : Int32))
+    v13 := (← v6.get).l0
+    v14 := (← v6.get).l1
+    v15 := v13.l0
+    v16 := v13.l1
+    v17 := v14.l0
+    v18 := v14.l1
+    v19 := (v15 == (7 : Int32))
     if v19 then
         v20 := (v16 == "hi")
         v21 := v20

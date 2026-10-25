@@ -41,25 +41,88 @@ fn spiralFlush() void {
     spiralWrite(1, spiral_out_buffer[0..spiral_out_len]);
     spiral_out_len = 0;
 }
+fn spiralPrint(s: []const u8) void {
+    if (s.len > spiral_out_buffer.len - spiral_out_len) spiralFlush();
+    if (s.len > spiral_out_buffer.len) {
+        spiralWrite(1, s);
+        return;
+    }
+    @memcpy(spiral_out_buffer[spiral_out_len..][0..s.len], s);
+    spiral_out_len += s.len;
+}
+fn spiralFloatText(x: anytype) []u8 {
+    var buffer: [std.fmt.float.bufferSize(.decimal, @TypeOf(x))]u8 = undefined;
+    const text = std.fmt.float.render(&buffer, x, .{ .mode = .decimal }) catch unreachable;
+    return spiral_gpa.dupe(u8, text) catch @panic("out of memory");
+}
+fn spiralPrintAny(x: anytype) void {
+    const T = @TypeOf(x);
+    if (T == []const u8) return spiralPrint(x);
+    if (@typeInfo(T) == .float) return spiralPrint(spiralFloatText(x));
+    const s = switch (@typeInfo(T)) {
+        .bool => std.fmt.allocPrint(spiral_gpa, "{}", .{x}),
+        else => std.fmt.allocPrint(spiral_gpa, "{d}", .{x}),
+    } catch @panic("out of memory");
+    spiralPrint(s);
+}
 fn spiralFail(s: []const u8) noreturn {
     spiralFlush();
     spiralWrite(2, s);
     spiralWrite(2, "\n");
     std.process.exit(1);
 }
+fn spiralConv(comptime T: type, x: anytype) T {
+    const S = @TypeOf(x);
+    if (@typeInfo(T) == .float) {
+        if (@typeInfo(S) == .float) return @floatCast(x) else return @floatFromInt(x);
+    }
+    if (@typeInfo(S) == .float) return @intFromFloat(x);
+    const U = @Int(.unsigned, @bitSizeOf(T));
+    const wide: i128 = x;
+    return @bitCast(@as(U, @truncate(@as(u128, @bitCast(wide)))));
+}
+fn spiralConcat(a: []const u8, b: []const u8) []const u8 {
+    return std.mem.concat(spiral_gpa, u8, &.{ a, b }) catch @panic("out of memory");
+}
+fn spiralStringSlice(s: []const u8, from: i64, upto: i64) []const u8 {
+    const len: i64 = @intCast(s.len);
+    if (from < 0 or from > len or upto < from - 1 or upto >= len) std.process.exit(3);
+    if (upto < from) return "";
+    const a: usize = @intCast(from);
+    const b: usize = @intCast(upto + 1);
+    if ((s[a] & 0xC0) == 0x80 or (b < s.len and (s[b] & 0xC0) == 0x80)) std.process.exit(3);
+    return s[a..b];
+}
 fn spiralIndex(len: usize, i: anytype) usize {
     if (i < 0 or i >= len) std.process.exit(3);
     return @intCast(i);
 }
+fn spiralNewArray(comptime T: type, n: anytype) []T {
+    const len: usize = @intCast(n);
+    const a = spiral_gpa.alloc(T, len) catch @panic("out of memory");
+    switch (@typeInfo(T)) {
+        .int, .float, .bool => @memset(a, std.mem.zeroes(T)),
+        else => if (T == []const u8) @memset(a, ""),
+    }
+    return a;
+}
+fn spiralCreate(comptime T: type, v: T) *T {
+    const p = spiral_gpa.create(T) catch @panic("out of memory");
+    p.* = v;
+    return p;
+}
 fn runtime_byte_2(p0: []const u8, p1: i32) u8 {
     var v0: []const u8 = p0; _ = &v0;
     var v1: i32 = p1; _ = &v1;
-    const v2: u8 = v0[spiralIndex(v0.len, v1)];
+    var v2: u8 = undefined; _ = &v2;
+    v2 = v0[spiralIndex(v0.len, v1)];
     return v2;
 }
 fn utf8_scalar_at_byte_offset_1(p0: []const u8, p1: i32) i32 {
     var v0: []const u8 = p0; _ = &v0;
     var v1: i32 = p1; _ = &v1;
+    var v2: i32 = undefined; _ = &v2;
+    var v3: bool = undefined; _ = &v3;
     var v5: bool = undefined; _ = &v5;
     var v7: u8 = undefined; _ = &v7;
     var v8: i32 = undefined; _ = &v8;
@@ -133,8 +196,8 @@ fn utf8_scalar_at_byte_offset_1(p0: []const u8, p1: i32) i32 {
     var v93: i32 = undefined; _ = &v93;
     var v94: bool = undefined; _ = &v94;
     var v96: bool = undefined; _ = &v96;
-    const v2: i32 = @as(i32, @intCast(v0.len));
-    const v3: bool = v1 < @as(i32, 0);
+    v2 = @as(i32, @intCast(v0.len));
+    v3 = v1 < @as(i32, 0);
     if (v3) {
         spiralFail("UTF-8 byte offset is negative.");
     } else {
@@ -391,6 +454,14 @@ fn utf8_canonical_equal_bounded_loop_0(p0: []const u8, p1: []const u8, p2: i32, 
     var v151: bool = undefined; _ = &v151;
     var v152: bool = undefined; _ = &v152;
     var v153: bool = undefined; _ = &v153;
+    var tmp64: []const u8 = undefined; _ = &tmp64;
+    var tmp65: []const u8 = undefined; _ = &tmp65;
+    var tmp66: i32 = undefined; _ = &tmp66;
+    var tmp67: i32 = undefined; _ = &tmp67;
+    var tmp68: i32 = undefined; _ = &tmp68;
+    var tmp69: i32 = undefined; _ = &tmp69;
+    var tmp70: i32 = undefined; _ = &tmp70;
+    var tmp71: i32 = undefined; _ = &tmp71;
     while (true) {
         v8 = v4 >= @as(i32, 0);
         if (v8) {
@@ -679,10 +750,22 @@ fn utf8_canonical_equal_bounded_loop_0(p0: []const u8, p1: []const u8, p2: i32, 
             } else {
                 v153 = v76 == v147;
                 if (v153) {
-                    v2 = v77;
-                    v3 = v148;
-                    v4 = v78;
-                    v5 = v149;
+                    tmp64 = v0;
+                    tmp65 = v1;
+                    tmp66 = v77;
+                    tmp67 = v148;
+                    tmp68 = v78;
+                    tmp69 = v149;
+                    tmp70 = v6;
+                    tmp71 = v7;
+                    v0 = tmp64;
+                    v1 = tmp65;
+                    v2 = tmp66;
+                    v3 = tmp67;
+                    v4 = tmp68;
+                    v5 = tmp69;
+                    v6 = tmp70;
+                    v7 = tmp71;
                     continue;
                 } else {
                     return false;
@@ -692,90 +775,174 @@ fn utf8_canonical_equal_bounded_loop_0(p0: []const u8, p1: []const u8, p2: i32, 
     }
 }
 fn spiralMain() i32 {
-    const v0: []const u8 = "plain";
-    const v1: i32 = @as(i32, 0);
-    const v2: i32 = @as(i32, 0);
-    const v3: i32 = @as(i32, -1);
-    const v4: i32 = @as(i32, -1);
-    const v5: i32 = @as(i32, 5);
-    const v6: i32 = @as(i32, 5);
-    const v7: bool = utf8_canonical_equal_bounded_loop_0(v0, v0, v1, v2, v3, v4, v5, v6);
-    const v8: []const u8 = "";
-    const v9: i32 = @as(i32, 0);
-    const v10: i32 = @as(i32, 0);
-    const v11: i32 = @as(i32, -1);
-    const v12: i32 = @as(i32, -1);
-    const v13: i32 = @as(i32, 0);
-    const v14: i32 = @as(i32, 0);
-    const v15: bool = utf8_canonical_equal_bounded_loop_0(v8, v8, v9, v10, v11, v12, v13, v14);
-    const v16: []const u8 = "\xc3\xa9\xc3\xb5\xc3\xa7";
-    const v17: []const u8 = "e\xcc\x81o\xcc\x83c\xcc\xa7";
-    const v18: i32 = @as(i32, 0);
-    const v19: i32 = @as(i32, 0);
-    const v20: i32 = @as(i32, -1);
-    const v21: i32 = @as(i32, -1);
-    const v22: i32 = @as(i32, 6);
-    const v23: i32 = @as(i32, 9);
-    const v24: bool = utf8_canonical_equal_bounded_loop_0(v16, v17, v18, v19, v20, v21, v22, v23);
-    const v25: []const u8 = "\xc3\xa9\xcc\x83";
-    const v26: []const u8 = "e\xcc\x81\xcc\x83";
-    const v27: i32 = @as(i32, 0);
-    const v28: i32 = @as(i32, 0);
-    const v29: i32 = @as(i32, -1);
-    const v30: i32 = @as(i32, -1);
-    const v31: i32 = @as(i32, 4);
-    const v32: i32 = @as(i32, 5);
-    const v33: bool = utf8_canonical_equal_bounded_loop_0(v25, v26, v27, v28, v29, v30, v31, v32);
-    const v34: []const u8 = "\xc3\x80";
-    const v35: []const u8 = "A\xcc\x80";
-    const v36: i32 = @as(i32, 0);
-    const v37: i32 = @as(i32, 0);
-    const v38: i32 = @as(i32, -1);
-    const v39: i32 = @as(i32, -1);
-    const v40: i32 = @as(i32, 2);
-    const v41: i32 = @as(i32, 3);
-    const v42: bool = utf8_canonical_equal_bounded_loop_0(v34, v35, v36, v37, v38, v39, v40, v41);
-    const v43: []const u8 = "\xce\xa9";
-    const v44: i32 = @as(i32, 0);
-    const v45: i32 = @as(i32, 0);
-    const v46: i32 = @as(i32, -1);
-    const v47: i32 = @as(i32, -1);
-    const v48: i32 = @as(i32, 2);
-    const v49: i32 = @as(i32, 2);
-    const v50: bool = utf8_canonical_equal_bounded_loop_0(v43, v43, v44, v45, v46, v47, v48, v49);
-    const v51: []const u8 = "e\xcc\x83\xcc\x81";
-    const v52: i32 = @as(i32, 0);
-    const v53: i32 = @as(i32, 0);
-    const v54: i32 = @as(i32, -1);
-    const v55: i32 = @as(i32, -1);
-    const v56: i32 = @as(i32, 5);
-    const v57: i32 = @as(i32, 5);
-    const v58: bool = utf8_canonical_equal_bounded_loop_0(v26, v51, v52, v53, v54, v55, v56, v57);
-    const v59: []const u8 = "\xc3\xa9";
-    const v60: []const u8 = "\xc3\xa1";
-    const v61: i32 = @as(i32, 0);
-    const v62: i32 = @as(i32, 0);
-    const v63: i32 = @as(i32, -1);
-    const v64: i32 = @as(i32, -1);
-    const v65: i32 = @as(i32, 2);
-    const v66: i32 = @as(i32, 2);
-    const v67: bool = utf8_canonical_equal_bounded_loop_0(v59, v60, v61, v62, v63, v64, v65, v66);
-    const v68: []const u8 = "\xcf\x89";
-    const v69: i32 = @as(i32, 0);
-    const v70: i32 = @as(i32, 0);
-    const v71: i32 = @as(i32, -1);
-    const v72: i32 = @as(i32, -1);
-    const v73: i32 = @as(i32, 2);
-    const v74: i32 = @as(i32, 2);
-    const v75: bool = utf8_canonical_equal_bounded_loop_0(v43, v68, v69, v70, v71, v72, v73, v74);
-    const v76: []const u8 = "e";
-    const v77: i32 = @as(i32, 0);
-    const v78: i32 = @as(i32, 0);
-    const v79: i32 = @as(i32, -1);
-    const v80: i32 = @as(i32, -1);
-    const v81: i32 = @as(i32, 2);
-    const v82: i32 = @as(i32, 1);
-    const v83: bool = utf8_canonical_equal_bounded_loop_0(v59, v76, v77, v78, v79, v80, v81, v82);
+    var v0: []const u8 = undefined; _ = &v0;
+    var v1: i32 = undefined; _ = &v1;
+    var v2: i32 = undefined; _ = &v2;
+    var v3: i32 = undefined; _ = &v3;
+    var v4: i32 = undefined; _ = &v4;
+    var v5: i32 = undefined; _ = &v5;
+    var v6: i32 = undefined; _ = &v6;
+    var v7: bool = undefined; _ = &v7;
+    var v8: []const u8 = undefined; _ = &v8;
+    var v9: i32 = undefined; _ = &v9;
+    var v10: i32 = undefined; _ = &v10;
+    var v11: i32 = undefined; _ = &v11;
+    var v12: i32 = undefined; _ = &v12;
+    var v13: i32 = undefined; _ = &v13;
+    var v14: i32 = undefined; _ = &v14;
+    var v15: bool = undefined; _ = &v15;
+    var v16: []const u8 = undefined; _ = &v16;
+    var v17: []const u8 = undefined; _ = &v17;
+    var v18: i32 = undefined; _ = &v18;
+    var v19: i32 = undefined; _ = &v19;
+    var v20: i32 = undefined; _ = &v20;
+    var v21: i32 = undefined; _ = &v21;
+    var v22: i32 = undefined; _ = &v22;
+    var v23: i32 = undefined; _ = &v23;
+    var v24: bool = undefined; _ = &v24;
+    var v25: []const u8 = undefined; _ = &v25;
+    var v26: []const u8 = undefined; _ = &v26;
+    var v27: i32 = undefined; _ = &v27;
+    var v28: i32 = undefined; _ = &v28;
+    var v29: i32 = undefined; _ = &v29;
+    var v30: i32 = undefined; _ = &v30;
+    var v31: i32 = undefined; _ = &v31;
+    var v32: i32 = undefined; _ = &v32;
+    var v33: bool = undefined; _ = &v33;
+    var v34: []const u8 = undefined; _ = &v34;
+    var v35: []const u8 = undefined; _ = &v35;
+    var v36: i32 = undefined; _ = &v36;
+    var v37: i32 = undefined; _ = &v37;
+    var v38: i32 = undefined; _ = &v38;
+    var v39: i32 = undefined; _ = &v39;
+    var v40: i32 = undefined; _ = &v40;
+    var v41: i32 = undefined; _ = &v41;
+    var v42: bool = undefined; _ = &v42;
+    var v43: []const u8 = undefined; _ = &v43;
+    var v44: i32 = undefined; _ = &v44;
+    var v45: i32 = undefined; _ = &v45;
+    var v46: i32 = undefined; _ = &v46;
+    var v47: i32 = undefined; _ = &v47;
+    var v48: i32 = undefined; _ = &v48;
+    var v49: i32 = undefined; _ = &v49;
+    var v50: bool = undefined; _ = &v50;
+    var v51: []const u8 = undefined; _ = &v51;
+    var v52: i32 = undefined; _ = &v52;
+    var v53: i32 = undefined; _ = &v53;
+    var v54: i32 = undefined; _ = &v54;
+    var v55: i32 = undefined; _ = &v55;
+    var v56: i32 = undefined; _ = &v56;
+    var v57: i32 = undefined; _ = &v57;
+    var v58: bool = undefined; _ = &v58;
+    var v59: []const u8 = undefined; _ = &v59;
+    var v60: []const u8 = undefined; _ = &v60;
+    var v61: i32 = undefined; _ = &v61;
+    var v62: i32 = undefined; _ = &v62;
+    var v63: i32 = undefined; _ = &v63;
+    var v64: i32 = undefined; _ = &v64;
+    var v65: i32 = undefined; _ = &v65;
+    var v66: i32 = undefined; _ = &v66;
+    var v67: bool = undefined; _ = &v67;
+    var v68: []const u8 = undefined; _ = &v68;
+    var v69: i32 = undefined; _ = &v69;
+    var v70: i32 = undefined; _ = &v70;
+    var v71: i32 = undefined; _ = &v71;
+    var v72: i32 = undefined; _ = &v72;
+    var v73: i32 = undefined; _ = &v73;
+    var v74: i32 = undefined; _ = &v74;
+    var v75: bool = undefined; _ = &v75;
+    var v76: []const u8 = undefined; _ = &v76;
+    var v77: i32 = undefined; _ = &v77;
+    var v78: i32 = undefined; _ = &v78;
+    var v79: i32 = undefined; _ = &v79;
+    var v80: i32 = undefined; _ = &v80;
+    var v81: i32 = undefined; _ = &v81;
+    var v82: i32 = undefined; _ = &v82;
+    var v83: bool = undefined; _ = &v83;
+    v0 = "plain";
+    v1 = @as(i32, 0);
+    v2 = @as(i32, 0);
+    v3 = @as(i32, -1);
+    v4 = @as(i32, -1);
+    v5 = @as(i32, 5);
+    v6 = @as(i32, 5);
+    v7 = utf8_canonical_equal_bounded_loop_0(v0, v0, v1, v2, v3, v4, v5, v6);
+    v8 = "";
+    v9 = @as(i32, 0);
+    v10 = @as(i32, 0);
+    v11 = @as(i32, -1);
+    v12 = @as(i32, -1);
+    v13 = @as(i32, 0);
+    v14 = @as(i32, 0);
+    v15 = utf8_canonical_equal_bounded_loop_0(v8, v8, v9, v10, v11, v12, v13, v14);
+    v16 = "\xc3\xa9\xc3\xb5\xc3\xa7";
+    v17 = "e\xcc\x81o\xcc\x83c\xcc\xa7";
+    v18 = @as(i32, 0);
+    v19 = @as(i32, 0);
+    v20 = @as(i32, -1);
+    v21 = @as(i32, -1);
+    v22 = @as(i32, 6);
+    v23 = @as(i32, 9);
+    v24 = utf8_canonical_equal_bounded_loop_0(v16, v17, v18, v19, v20, v21, v22, v23);
+    v25 = "\xc3\xa9\xcc\x83";
+    v26 = "e\xcc\x81\xcc\x83";
+    v27 = @as(i32, 0);
+    v28 = @as(i32, 0);
+    v29 = @as(i32, -1);
+    v30 = @as(i32, -1);
+    v31 = @as(i32, 4);
+    v32 = @as(i32, 5);
+    v33 = utf8_canonical_equal_bounded_loop_0(v25, v26, v27, v28, v29, v30, v31, v32);
+    v34 = "\xc3\x80";
+    v35 = "A\xcc\x80";
+    v36 = @as(i32, 0);
+    v37 = @as(i32, 0);
+    v38 = @as(i32, -1);
+    v39 = @as(i32, -1);
+    v40 = @as(i32, 2);
+    v41 = @as(i32, 3);
+    v42 = utf8_canonical_equal_bounded_loop_0(v34, v35, v36, v37, v38, v39, v40, v41);
+    v43 = "\xce\xa9";
+    v44 = @as(i32, 0);
+    v45 = @as(i32, 0);
+    v46 = @as(i32, -1);
+    v47 = @as(i32, -1);
+    v48 = @as(i32, 2);
+    v49 = @as(i32, 2);
+    v50 = utf8_canonical_equal_bounded_loop_0(v43, v43, v44, v45, v46, v47, v48, v49);
+    v51 = "e\xcc\x83\xcc\x81";
+    v52 = @as(i32, 0);
+    v53 = @as(i32, 0);
+    v54 = @as(i32, -1);
+    v55 = @as(i32, -1);
+    v56 = @as(i32, 5);
+    v57 = @as(i32, 5);
+    v58 = utf8_canonical_equal_bounded_loop_0(v26, v51, v52, v53, v54, v55, v56, v57);
+    v59 = "\xc3\xa9";
+    v60 = "\xc3\xa1";
+    v61 = @as(i32, 0);
+    v62 = @as(i32, 0);
+    v63 = @as(i32, -1);
+    v64 = @as(i32, -1);
+    v65 = @as(i32, 2);
+    v66 = @as(i32, 2);
+    v67 = utf8_canonical_equal_bounded_loop_0(v59, v60, v61, v62, v63, v64, v65, v66);
+    v68 = "\xcf\x89";
+    v69 = @as(i32, 0);
+    v70 = @as(i32, 0);
+    v71 = @as(i32, -1);
+    v72 = @as(i32, -1);
+    v73 = @as(i32, 2);
+    v74 = @as(i32, 2);
+    v75 = utf8_canonical_equal_bounded_loop_0(v43, v68, v69, v70, v71, v72, v73, v74);
+    v76 = "e";
+    v77 = @as(i32, 0);
+    v78 = @as(i32, 0);
+    v79 = @as(i32, -1);
+    v80 = @as(i32, -1);
+    v81 = @as(i32, 2);
+    v82 = @as(i32, 1);
+    v83 = utf8_canonical_equal_bounded_loop_0(v59, v76, v77, v78, v79, v80, v81, v82);
     if (v7) {
         if (v15) {
             if (v24) {

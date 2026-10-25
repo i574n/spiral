@@ -11,8 +11,10 @@ fun sp_method1(p0: Int, p1: Int): Int {
         if (v4) {
             return v3
         } else {
-            v0 = v2
-            v1 = v3
+            val t318_2: Int = v2
+            val t352_3: Int = v3
+            v0 = t318_2
+            v1 = t352_3
             continue
         }
     }
@@ -43,8 +45,10 @@ fun sp_method3(p0: Int, p1: Int): Int {
         if (v4) {
             return v3
         } else {
-            v0 = v2
-            v1 = v3
+            val t318_2: Int = v2
+            val t352_3: Int = v3
+            v0 = t318_2
+            v1 = t352_3
             continue
         }
     }

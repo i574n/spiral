@@ -28,8 +28,17 @@ pub fn spiral_array_create(size: Int) -> SpiralArray(a) {
   list.repeat(option.None, size) |> array.from_list(option.None) |> spiral_array_from_storage(size)
 }
 
+pub fn spiral_array_create_filled(size: Int, value: a) -> SpiralArray(a) {
+  list.repeat(option.Some(value), size) |> array.from_list(option.None) |> spiral_array_from_storage(size)
+}
 
+pub fn spiral_array_from_list(values: List(a)) -> SpiralArray(a) {
+  values |> list.map(option.Some) |> array.from_list(option.None) |> spiral_array_from_storage(list.length(values))
+}
 
+pub fn spiral_array_to_list(xs: SpiralArray(a)) -> List(a) {
+  list.repeat(Nil, xs.size) |> list.index_map(fn(_, i) { spiral_array_get(xs, i) })
+}
 
 pub fn spiral_array_get(xs: SpiralArray(a), i: Int) -> a {
   case i >= 0 && i < xs.size {
@@ -58,29 +67,32 @@ pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
   int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
 }
 
+pub fn spiral_wrap_unsigned(value: Int, bits: Int) -> Int {
+  int.bitwise_and(value, int.bitwise_shift_left(1, bits) - 1)
+}
 
 pub type Heap0 { Heap0(l0 : Int) }
 pub fn main() {
-    let v0 = 2
-    let v1 = spiral_array_create(v0)
-    let v2 = 4
-    let v3 = 6
-    let v4 = Heap0(l0: v2)
-    spiral_array_set(v1, 0, v4)
-    let v5 = Heap0(l0: v3)
-    spiral_array_set(v1, 1, v5)
-    let v6 = spiral_array_get(v1, 0)
-    let v7 = v6.l0
-    let v8 = spiral_array_get(v1, 1)
-    let v9 = v8.l0
-    let v10 = spiral_wrap_signed(v7 + v9, 32)
-    let v11 = v10 == 10
-    case v11 {
-        True -> {
-            0
-        }
-        False -> {
-            1
-        }
+let v0 = 2
+let v1 = spiral_array_create(v0)
+let v2 = 4
+let v3 = 6
+let v4 = Heap0(l0: v2)
+spiral_array_set(v1, 0, v4)
+let v5 = Heap0(l0: v3)
+spiral_array_set(v1, 1, v5)
+let v6 = spiral_array_get(v1, 0)
+let v7 = v6.l0
+let v8 = spiral_array_get(v1, 1)
+let v9 = v8.l0
+let v10 = spiral_wrap_signed(v7 + v9, 32)
+let v11 = v10 == 10
+case v11 {
+    True -> {
+        0
     }
+    False -> {
+        1
+    }
+}
 }

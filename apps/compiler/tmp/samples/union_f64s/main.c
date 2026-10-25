@@ -19,10 +19,10 @@ typedef struct {
 static inline void ArrayDecrefBody0(Array0 * x){
     (void)x;
 }
-static void ArrayDecref0(Array0 * x){
+void ArrayDecref0(Array0 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody0(x); free(x); }
 }
-static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
+Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     uint32_t size = sizeof(Array0) + sizeof(double) * len;
     Array0 * x = malloc(size);
     if (init_at_zero) { memset(x,0,size); }
@@ -30,12 +30,14 @@ static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     x->len = len;
     return x;
 }
-static Array0 * ArrayLit0(uint32_t len, double * ptr){
+Array0 * ArrayLit0(uint32_t len, double * ptr){
     Array0 * x = ArrayCreate0(len, false);
     memcpy(x->ptr, ptr, sizeof(double) * len);
     return x;
 }
 static inline void AssignArray0(double * a, double b){
+    
+    
     *a = b;
 }
 static inline void USIncrefBody0(US0 * x){
@@ -68,34 +70,63 @@ US0 US0_Held(Array0 * v0) { // Held
     return x;
 }
 int32_t main(){
-    Array0 * v0 = ArrayCreate0(1l, true);
-    double v1 = 1.5;
+    
+    
+    Array0 * v0;
+    v0 = ArrayCreate0(1l, true);
+    
+    
+    double v1;
+    v1 = 1.5;
+    
+    
+    
     AssignArray0(&(v0->ptr[0l]), v1);
-    bool v2 = true;
+    
+    
+    bool v2;
+    v2 = true;
+    
+    
     US0 v5;
     if (v2){
         (v0)->refc++;
+        
         v5 = US0_Held(v0);
     } else {
+        
+        
         v5 = US0_Missing();
     }
+    
     ArrayDecref0(v0);
     switch (v5.tag) {
         case 1: { // Held
             Array0 * v6 = v5.case1.v0;
             (v6)->refc++;
             USDecref0(&(v5));
-            double v7 = v6->ptr[0l];
+            double v7;
+            v7 = v6->ptr[0l];
+            
             ArrayDecref0(v6);
-            bool v8 = v7 == 1.5;
+            bool v8;
+            v8 = v7 == 1.5;
+            
+            
             if (v8){
+                
+                
                 return 0l;
             } else {
+                
+                
                 return 1l;
             }
             break;
         }
         default: { // Missing
+            
+            
             USDecref0(&(v5));
             return 1l;
             break;

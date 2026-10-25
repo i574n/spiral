@@ -28,21 +28,28 @@ partial def target_global_0 (p0 : String) : IO Unit := do
     let mut v0 : String := p0
     return ()
 partial def spiralMain : IO Int32 := do
-    let v0 : String := "SPIRAL_TARGET_GLOBAL_RUST_PRELUDE_pos-p_B64:Ly9Q"
+    let mut v0 : String := default
+    let mut v1 : String := default
+    let mut v2 : String := default
+    let mut v3 : String := default
+    let mut v4 : String := default
+    let mut v5 : String := default
+    let mut v6 : String := default
+    v0 := "SPIRAL_TARGET_GLOBAL_RUST_PRELUDE_pos-p_B64:Ly9Q"
     let _ := (← target_global_0 v0)
     let _ := (← target_global_0 v0)
-    let v1 : String := "SPIRAL_TARGET_GLOBAL_RUST_BEFORE_MAIN_pos-b_B64:Ly9C"
+    v1 := "SPIRAL_TARGET_GLOBAL_RUST_BEFORE_MAIN_pos-b_B64:Ly9C"
     let _ := (← target_global_0 v1)
-    let v2 : String := "SPIRAL_TARGET_GLOBAL_RUST_AFTER_MAIN_test-item_B64:Zm4gc3BpcmFsX2F0dHJpYnV0ZV9zbW9rZSgpIHsKICAgIGFzc2VydF9lcSEoNiAqIDcsIDQyKTsKfQo="
+    v2 := "SPIRAL_TARGET_GLOBAL_RUST_AFTER_MAIN_test-item_B64:Zm4gc3BpcmFsX2F0dHJpYnV0ZV9zbW9rZSgpIHsKICAgIGFzc2VydF9lcSEoNiAqIDcsIDQyKTsKfQo="
     let _ := (← target_global_0 v2)
-    let v3 : String := "SPIRAL_ITEM_METADATA_TEST_test-item"
+    v3 := "SPIRAL_ITEM_METADATA_TEST_test-item"
     let _ := (← target_global_0 v3)
-    let v4 : String := "SPIRAL_TARGET_GLOBAL_DELPHI_PRELUDE_pos-p_B64:Ly9Q"
+    v4 := "SPIRAL_TARGET_GLOBAL_DELPHI_PRELUDE_pos-p_B64:Ly9Q"
     let _ := (← target_global_0 v4)
     let _ := (← target_global_0 v4)
-    let v5 : String := "SPIRAL_TARGET_GLOBAL_DELPHI_BEFORE_MAIN_pos-b_B64:Ly9C"
+    v5 := "SPIRAL_TARGET_GLOBAL_DELPHI_BEFORE_MAIN_pos-b_B64:Ly9C"
     let _ := (← target_global_0 v5)
-    let v6 : String := "SPIRAL_TARGET_GLOBAL_DELPHI_AFTER_MAIN_test-item_B64:cHJvY2VkdXJlIFNwaXJhbFRhcmdldEdsb2JhbFNtb2tlOwpiZWdpbgogIGlmIDYgKiA3IDw+IDQyIHRoZW4gSGFsdCgxKTsKZW5kOwo="
+    v6 := "SPIRAL_TARGET_GLOBAL_DELPHI_AFTER_MAIN_test-item_B64:cHJvY2VkdXJlIFNwaXJhbFRhcmdldEdsb2JhbFNtb2tlOwpiZWdpbgogIGlmIDYgKiA3IDw+IDQyIHRoZW4gSGFsdCgxKTsKZW5kOwo="
     let _ := (← target_global_0 v6)
     return (0 : Int32)
 end

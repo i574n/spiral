@@ -2,8 +2,8 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 fn spiral_main() -> i32 {
-    let v0: i32 = 1i32;
-    let v1: bool = v0 == 1i32;
+    let mut v0: i32 = 1i32;
+    let mut v1: bool = v0 == 1i32;
     if v1 {
         std::panic::panic_any::<std::string::String>(format!("{}", { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("bo$om"); } LIT.with(|lit| lit.clone()) }))
     } else {

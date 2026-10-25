@@ -58,6 +58,10 @@ defmodule Spiral.Cells.NotebookReportTest do
     assert ipynb["cells"]
            |> Enum.flat_map(&List.wrap(&1["metadata"]["spiral_test"]))
            |> Enum.map(& &1["status"]) == ["passed", "failed", "skipped", "passed"]
+    assert Enum.any?(
+             ipynb["cells"],
+             &Enum.any?(&1["outputs"] || [], fn output -> output["ename"] == "SpiralError" end)
+           )
 
     assert [file, total] = Notebook.summary_lines([{path, report}])
     assert "spiral-tests file " <> json = file

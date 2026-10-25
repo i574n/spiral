@@ -10,11 +10,11 @@ enum US0 {
 fn score_0(mut v0: US0) -> i32 {
     match &v0 {
         US0::US0_Held(v1, v2) => {
-            let v1: Rc<Heap0> = v1.clone();
-            let v2: i32 = *v2;
-            let v3: i32 = v1.l0.clone();
-            let v4: i32 = v3.wrapping_add(v2);
-            let v5: bool = v4 == 7i32;
+            let mut v1: Rc<Heap0> = v1.clone();
+            let mut v2: i32 = *v2;
+            let mut v3: i32 = v1.l0.clone();
+            let mut v4: i32 = v3.wrapping_add(v2);
+            let mut v5: bool = v4 == 7i32;
             if v5 {
                 0i32
             } else {
@@ -27,16 +27,16 @@ fn score_0(mut v0: US0) -> i32 {
     }
 }
 fn spiral_main() -> i32 {
-    let v0: i32 = 3i32;
-    let v1: i32 = 4i32;
-    let v2: Rc<Heap0> = Rc::new(Heap0 { l0: v0 });
-    let v3: bool = true;
-    let v6: US0 = if v3 {
-        US0::US0_Held(v2, v1)
+    let mut v0: i32 = 3i32;
+    let mut v1: i32 = 4i32;
+    let mut v2: Rc<Heap0> = Rc::new(Heap0 { l0: v0 });
+    let mut v3: bool = true;
+    let mut v6: US0 = if v3 {
+        US0::US0_Held(v2.clone(), v1)
     } else {
         US0::US0_None
     };
-    score_0(v6)
+    score_0(v6.clone())
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();

@@ -10,7 +10,9 @@ function method1(v0: LongInt; v1: TArray0; v2: TArray0): TArray0;
 var
   v3: LongInt;
   v4: Boolean;
-  tmp2: TArray0;
+  tmp2: LongInt;
+  tmp3: TArray0;
+  tmp4: TArray0;
 begin
   while True do begin
       v3 := v0 - 1;
@@ -19,10 +21,12 @@ begin
           Result := v2;
           Exit;
       end else begin
-          v0 := v3;
-          tmp2 := v1;
-          v1 := v2;
-          v2 := tmp2;
+          tmp2 := v3;
+          tmp3 := v2;
+          tmp4 := v1;
+          v0 := tmp2;
+          v1 := tmp3;
+          v2 := tmp4;
           Continue;
       end;
   end;

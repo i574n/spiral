@@ -10,10 +10,12 @@ fun sp_method1(p0: Int, p1: Array<Int>, p2: Array<Int>): Array<Int> {
         if (v4) {
             return v2
         } else {
-            v0 = v3
-            val t357_1: Array<Int> = v1
-            v1 = v2
-            v2 = t357_1
+            val t336_3: Int = v3
+            val t370_2: Array<Int> = v2
+            val t411_1: Array<Int> = v1
+            v0 = t336_3
+            v1 = t370_2
+            v2 = t411_1
             continue
         }
     }
@@ -46,10 +48,13 @@ fun spiral_main(): Int {
     v3[0] = 13
     var v4: Int = 0
     v4 = v1[0]
-    val v5: Boolean = (v4 == 13)
+    var v5: Boolean = false
+    v5 = (v4 == 13)
     if (v5) {
-        val v6: Int = v2[0]
-        val v7: Boolean = (v6 == 11)
+        var v6: Int = 0
+        v6 = v2[0]
+        var v7: Boolean = false
+        v7 = (v6 == 11)
         if (v7) {
             return 0
         } else {

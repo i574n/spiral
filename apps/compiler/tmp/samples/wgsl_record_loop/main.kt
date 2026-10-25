@@ -27,10 +27,14 @@ fun sp_loop_0(p0: Int, p1: Int, p2: Int, p3: Int): SpiralTuple0 {
     return SpiralTuple0(v9, v10)
 }
 fun spiral_main(): Int {
-    val v0: Int = 5
-    val v1: Int = 0
-    val v2: Int = 1
-    val v3: Int = 2
+    var v0: Int = 0
+    v0 = 5
+    var v1: Int = 0
+    v1 = 0
+    var v2: Int = 0
+    v2 = 1
+    var v3: Int = 0
+    v3 = 2
     var v4: Int = 0
     var v5: Int = 0
     val spiral_tuple200 = sp_loop_0(v0, v1, v2, v3)

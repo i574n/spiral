@@ -9,12 +9,14 @@ func sp_method0(_ p0: Int32) -> String {
         v2 = "no"
         return v2
     } else {
-        let v3: String = "hi"
+        var v3: String = ""
+        v3 = "hi"
         return v3
     }
 }
 func spiral_main() -> Int32 {
-    let v0: Int32 = 7
+    var v0: Int32 = 0
+    v0 = 7
     var v1: String = ""
     v1 = sp_method0(v0)
     var v2: Bool = false

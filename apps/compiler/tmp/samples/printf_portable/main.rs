@@ -2,15 +2,15 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 fn spiral_main() -> i32 {
-    let v0: i32 = 60i32;
-    let v1: i64 = -9000000000i64;
-    let v2: u8 = 200u8;
-    let v3: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("cube"); } LIT.with(|lit| lit.clone()) };
+    let mut v0: i32 = 60i32;
+    let mut v1: i64 = -9000000000i64;
+    let mut v2: u8 = 200u8;
+    let mut v3: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("cube"); } LIT.with(|lit| lit.clone()) };
     print!("{}: {} frames, checksum {}\n", v3.clone(), v0, 970392i32);
     print!("big {}, small {}, byte {}\n", v1, -5i32, v2);
     print!("100% {{braces}} \"quoted\" \\ tab\tend\n");
     print!("{}\n", { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("literal"); } LIT.with(|lit| lit.clone()) });
-    print!("{}", v3);
+    print!("{}", v3.clone());
     print!("\n");
     0i32
 }

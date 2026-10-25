@@ -8,20 +8,20 @@ impl Default for Mut0 {
     }
 }
 fn spiral_main() -> i32 {
-    let v0: i32 = 3i32;
-    let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("no"); } LIT.with(|lit| lit.clone()) };
-    let v2: Rc<RefCell<Mut0>> = Rc::new(RefCell::new(Mut0 { l0: v0, l1: v1 }));
-    let v3: Rc<RefCell<Vec<Rc<RefCell<Mut0>>>>> = Rc::new(RefCell::new(vec![<Rc<RefCell<Mut0>>>::default(); 1i32 as usize]));
-    v3.clone().borrow_mut()[0i32 as usize] = v2;
-    let mut v4: Rc<RefCell<Mut0>> = v3.borrow()[0i32 as usize].clone();
-    let v5: i32 = 7i32;
-    let v6: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
+    let mut v0: i32 = 3i32;
+    let mut v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("no"); } LIT.with(|lit| lit.clone()) };
+    let mut v2: Rc<RefCell<Mut0>> = Rc::new(RefCell::new(Mut0 { l0: v0, l1: v1.clone() }));
+    let mut v3: Rc<RefCell<Vec<Rc<RefCell<Mut0>>>>> = Rc::new(RefCell::new(vec![<Rc<RefCell<Mut0>>>::default(); 1i32 as usize]));
+    v3.clone().borrow_mut()[0i32 as usize] = v2.clone();
+    let mut v4: Rc<RefCell<Mut0>> = v3.clone().borrow()[0i32 as usize].clone();
+    let mut v5: i32 = 7i32;
+    let mut v6: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
     v4.borrow_mut().l0 = v5;
-    v4.borrow_mut().l1 = v6;
+    v4.borrow_mut().l1 = v6.clone();
     let (mut v7, mut v8): (i32, Rc<str>) = (v4.borrow().l0.clone(), v4.borrow().l1.clone());
-    let v9: bool = v7 == 7i32;
-    let v11: bool = if v9 {
-        let v10: bool = &*v8 == "hi";
+    let mut v9: bool = v7 == 7i32;
+    let mut v11: bool = if v9 {
+        let mut v10: bool = v8.clone() == { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
         v10
     } else {
         false

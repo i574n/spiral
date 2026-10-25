@@ -7,7 +7,7 @@ enum US0 {
     US0_Some(i32),
 }
 fn method0(mut v0: i32) -> US0 {
-    let v1: bool = v0 == 0i32;
+    let mut v1: bool = v0 == 0i32;
     if v1 {
         US0::US0_None
     } else {
@@ -15,15 +15,15 @@ fn method0(mut v0: i32) -> US0 {
     }
 }
 fn spiral_main() -> i32 {
-    let v0: i32 = 7i32;
-    let v1: US0 = method0(v0);
+    let mut v0: i32 = 7i32;
+    let mut v1: US0 = method0(v0);
     match &v1 {
         US0::US0_None => {
             1i32
         }
         US0::US0_Some(v2) => {
-            let v2: i32 = *v2;
-            let v3: bool = v2 == 7i32;
+            let mut v2: i32 = *v2;
+            let mut v3: bool = v2 == 7i32;
             if v3 {
                 0i32
             } else {

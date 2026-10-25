@@ -14,14 +14,16 @@ fun sp_method1(p0: Int, p1: Int, p2: Boolean): Int {
     if (v2) {
         var v3: Int = 0
         v3 = (v0 + v1)
-        val v4: Int = (v3 - 4)
+        var v4: Int = 0
+        v4 = (v3 - 4)
         return v4
     } else {
         return 1
     }
 }
 fun spiral_main(): Int {
-    val v0: Int = 1
+    var v0: Int = 0
+    v0 = 1
     var v1: Int = 0
     var v2: Int = 0
     var v3: Boolean = false

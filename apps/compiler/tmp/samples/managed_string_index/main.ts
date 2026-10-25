@@ -30,9 +30,9 @@ function spiral_string_slice(value: string, from: number, to: number): string {
     return spiral_utf8_decoder.decode(bytes.subarray(from, to + 1));
 }
 export function main(): number {
-    const v0: string = "qwe";
-    const v1: number = spiral_string_index(v0, 1);
-    const v2: boolean = v1 === 119;
+    let v0: string = "qwe";
+    let v1: number = spiral_string_index(v0, 1);
+    let v2: boolean = v1 === 119;
     if (v2) {
         return 0;
     } else {

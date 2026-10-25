@@ -25,7 +25,6 @@ class Heap0(NamedTuple):
     v1 : string
 class US0_None(NamedTuple): # None
     tag = 0
-US0_None_shared = US0_None()
 class US0_Held(NamedTuple): # Held
     v0 : Heap0
     v1 : Heap0
@@ -103,7 +102,7 @@ def main():
     if v10:
         v13 = US0_Held(v2, v5, v8)
     else:
-        v13 = US0_None_shared
+        v13 = US0_None()
     del v2, v5, v8, v10
     v9[0] = v13
     del v13

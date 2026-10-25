@@ -16,8 +16,10 @@ func sp_method0(_ p0: String, _ p1: String) -> (String, String) {
     }
 }
 func spiral_main() -> Int32 {
-    let v0: String = "hi"
-    let v1: String = "yo"
+    var v0: String = ""
+    v0 = "hi"
+    var v1: String = ""
+    v1 = "yo"
     var v2: String = ""
     var v3: String = ""
     let spiral_tuple161 = sp_method0(v0, v1)
@@ -27,7 +29,8 @@ func spiral_main() -> Int32 {
     v4 = (v2 == "hi")
     var v6: Bool = false
     if (v4) {
-        let v5: Bool = (v3 == "yo")
+        var v5: Bool = false
+        v5 = (v3 == "yo")
         v6 = v5
     } else {
         v6 = false

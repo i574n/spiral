@@ -3,7 +3,7 @@ class Heap1(val l0: Heap0, val l1: Heap0)
 class Heap2(val l0: Heap1, val l1: Int)
 class Heap3(val l0: US0)
 sealed interface US0 { val tag: Int }
-object US0_None : US0 { override val tag: Int = 0 }
+class US0_None : US0 { override val tag: Int = 0 }
 data class US0_Held(val f0: Heap2) : US0 { override val tag: Int = 1 }
 fun f_c0(v0: Heap3): (Int) -> Heap3 {
     fun body(v1: Int): Heap3 {
@@ -32,10 +32,12 @@ fun sp_score_0(p0: US0): Int {
             var v9: String = ""
             v8 = v5.l0
             v9 = v5.l1
-            val v10: Boolean = (v6 == 7)
+            var v10: Boolean = false
+            v10 = (v6 == 7)
             var v12: Boolean = false
             if (v10) {
-                val v11: Boolean = (v7 == "hi")
+                var v11: Boolean = false
+                v11 = (v7 == "hi")
                 v12 = v11
             } else {
                 v12 = false
@@ -58,7 +60,8 @@ fun sp_score_0(p0: US0): Int {
             }
             var v18: Boolean = false
             if (v16) {
-                val v17: Boolean = (v3 == 2)
+                var v17: Boolean = false
+                v17 = (v3 == 2)
                 v18 = v17
             } else {
                 v18 = false
@@ -76,8 +79,10 @@ fun sp_score_0(p0: US0): Int {
     }
 }
 fun spiral_main(): Int {
-    val v0: Int = 7
-    val v1: String = "hi"
+    var v0: Int = 0
+    v0 = 7
+    var v1: String = ""
+    v1 = "hi"
     var v2: Heap0 = Heap0(0, "")
     v2 = Heap0(v0, v1)
     var v3: Int = 0
@@ -94,19 +99,19 @@ fun spiral_main(): Int {
     v8 = Heap2(v6, v7)
     var v9: Boolean = false
     v9 = true
-    var v12: US0 = US0_None
+    var v12: US0 = US0_None()
     if (v9) {
         v12 = US0_Held(v8)
     } else {
-        v12 = US0_None
+        v12 = US0_None()
     }
-    var v13: Heap3 = Heap3(US0_None)
+    var v13: Heap3 = Heap3(US0_None())
     v13 = Heap3(v12)
     var v14: (Int) -> Heap3 = { _: Int -> throw RuntimeException() }
     v14 = f_c0(v13)
-    var v15: Heap3 = Heap3(US0_None)
+    var v15: Heap3 = Heap3(US0_None())
     v15 = v14(1)
-    var v16: US0 = US0_None
+    var v16: US0 = US0_None()
     v16 = v15.l0
     return sp_score_0(v16)
 }

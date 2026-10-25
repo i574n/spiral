@@ -8,12 +8,12 @@ fn f_c0() -> Rc<dyn Fn(i32) -> (i32, i32)> {
     }); } CLOSURE.with(|closure| closure.clone())
 }
 fn spiral_main() -> i32 {
-    let v0: i32 = 3i32;
+    let mut v0: i32 = 3i32;
     let mut v1: Rc<dyn Fn(i32) -> (i32, i32)> = f_c0();
     let (mut v2, mut v3): (i32, i32) = v1(v0);
-    let v4: bool = v2 == 3i32;
-    let v6: bool = if v4 {
-        let v5: bool = v3 == 4i32;
+    let mut v4: bool = v2 == 3i32;
+    let mut v6: bool = if v4 {
+        let mut v5: bool = v3 == 4i32;
         v5
     } else {
         false

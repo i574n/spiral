@@ -27,28 +27,41 @@ mutual
 partial def method5 (p0 : Int32) (p1 : Int32) : IO Int32 := do
     let mut v0 : Int32 := p0
     let mut v1 : Int32 := p1
-    let v2 : Int32 := (v0 * v1)
-    let v3 : Int32 := (v2 + (5 : Int32))
-    let v4 : Int32 := (v3 / (3 : Int32))
+    let mut v2 : Int32 := default
+    let mut v3 : Int32 := default
+    let mut v4 : Int32 := default
+    v2 := (v0 * v1)
+    v3 := (v2 + (5 : Int32))
+    v4 := (v3 / (3 : Int32))
     return v4
 partial def method4 (p0 : Int32) : IO Int32 := do
     let mut v0 : Int32 := p0
-    let v1 : Int32 := (4 : Int32)
-    let v2 : Int32 := (4 : Int32)
-    let v3 : Int32 := (← method5 v1 v2)
-    let v4 : Int32 := (v0 + v3)
-    let v5 : Int32 := (v4 - (7 : Int32))
+    let mut v1 : Int32 := default
+    let mut v2 : Int32 := default
+    let mut v3 : Int32 := default
+    let mut v4 : Int32 := default
+    let mut v5 : Int32 := default
+    v1 := (4 : Int32)
+    v2 := (4 : Int32)
+    v3 := (← method5 v1 v2)
+    v4 := (v0 + v3)
+    v5 := (v4 - (7 : Int32))
     return v5
 partial def method6 (p0 : UInt32) : IO Bool := do
     let mut v0 : UInt32 := p0
-    let v1 : UInt32 := (v0 + (5 : UInt32))
-    let v2 : UInt32 := (v1 % (4 : UInt32))
-    let v3 : Bool := (v2 == (0 : UInt32))
+    let mut v1 : UInt32 := default
+    let mut v2 : UInt32 := default
+    let mut v3 : Bool := default
+    v1 := (v0 + (5 : UInt32))
+    v2 := (v1 % (4 : UInt32))
+    v3 := (v2 == (0 : UInt32))
     return v3
 partial def method3 (p0 : Int32) : IO Int32 := do
     let mut v0 : Int32 := p0
-    let v1 : UInt32 := (7 : UInt32)
-    let v2 : Bool := (← method6 v1)
+    let mut v1 : UInt32 := default
+    let mut v2 : Bool := default
+    v1 := (7 : UInt32)
+    v2 := (← method6 v1)
     if v2 then
         return (← method4 v0)
     else
@@ -56,19 +69,23 @@ partial def method3 (p0 : Int32) : IO Int32 := do
 partial def method7 (p0 : String) (p1 : String) : IO Bool := do
     let mut v0 : String := p0
     let mut v1 : String := p1
-    let v2 : Bool := (v0 == v1)
+    let mut v2 : Bool := default
+    v2 := (v0 == v1)
     return v2
 partial def method2 (p0 : Int32) : IO Int32 := do
     let mut v0 : Int32 := p0
-    let v1 : String := "spiral"
-    let v2 : Bool := (← method7 v1 v1)
+    let mut v1 : String := default
+    let mut v2 : Bool := default
+    v1 := "spiral"
+    v2 := (← method7 v1 v1)
     if v2 then
         return (← method3 v0)
     else
         return (1 : Int32)
 partial def method8 (p0 : Float32) : IO (Bool × Float32 × Int32) := do
     let mut v0 : Float32 := p0
-    let v1 : Bool := (decide (v0 >= (3.5 : Float32)))
+    let mut v1 : Bool := default
+    v1 := (decide (v0 >= (3.5 : Float32)))
     return (v1, v0, (7 : Int32))
 partial def method9 (p0 : Bool) (p1 : Float32) (p2 : Int32) : IO Int32 := do
     let mut v0 : Bool := p0
@@ -87,18 +104,26 @@ partial def method9 (p0 : Bool) (p1 : Float32) (p2 : Int32) : IO Int32 := do
         return (2 : Int32)
 partial def method1 (p0 : Int32) : IO Int32 := do
     let mut v0 : Int32 := p0
-    let v1 : Float32 := (4.0 : Float32)
+    let mut v1 : Float32 := default
+    let mut v2 : Bool := default
+    let mut v3 : Float32 := default
+    let mut v4 : Int32 := default
+    let mut v5 : Int32 := default
+    let mut v6 : Int32 := default
+    v1 := (4.0 : Float32)
     let (r1_0, r1_1, r1_2) := (← method8 v1)
-    let v2 : Bool := r1_0
-    let v3 : Float32 := r1_1
-    let v4 : Int32 := r1_2
-    let v5 : Int32 := (← method9 v2 v3 v4)
-    let v6 : Int32 := (v0 + v5)
+    v2 := r1_0
+    v3 := r1_1
+    v4 := r1_2
+    v5 := (← method9 v2 v3 v4)
+    v6 := (v0 + v5)
     return (← method2 v6)
 partial def method10 (p0 : Int32) : IO (Int32 × Int32 × Bool) := do
     let mut v0 : Int32 := p0
-    let v1 : Int32 := (v0 + (2 : Int32))
-    let v2 : Bool := (decide (v0 > (0 : Int32)))
+    let mut v1 : Int32 := default
+    let mut v2 : Bool := default
+    v1 := (v0 + (2 : Int32))
+    v2 := (decide (v0 > (0 : Int32)))
     return (v0, v1, v2)
 partial def method11 (p0 : Int32) (p1 : Int32) (p2 : Bool) : IO Int32 := do
     let mut v0 : Int32 := p0
@@ -114,16 +139,23 @@ partial def method11 (p0 : Int32) (p1 : Int32) (p2 : Bool) : IO Int32 := do
         return (1 : Int32)
 partial def method0 (p0 : Int32) : IO Int32 := do
     let mut v0 : Int32 := p0
-    let v1 : Int32 := (1 : Int32)
+    let mut v1 : Int32 := default
+    let mut v2 : Int32 := default
+    let mut v3 : Int32 := default
+    let mut v4 : Bool := default
+    let mut v5 : Int32 := default
+    let mut v6 : Int32 := default
+    v1 := (1 : Int32)
     let (r2_0, r2_1, r2_2) := (← method10 v1)
-    let v2 : Int32 := r2_0
-    let v3 : Int32 := r2_1
-    let v4 : Bool := r2_2
-    let v5 : Int32 := (← method11 v2 v3 v4)
-    let v6 : Int32 := (v0 + v5)
+    v2 := r2_0
+    v3 := r2_1
+    v4 := r2_2
+    v5 := (← method11 v2 v3 v4)
+    v6 := (v0 + v5)
     return (← method1 v6)
 partial def spiralMain : IO Int32 := do
-    let v0 : Int32 := (0 : Int32)
+    let mut v0 : Int32 := default
+    v0 := (0 : Int32)
     return (← method0 v0)
 end
 def main : IO UInt32 := do

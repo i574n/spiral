@@ -82,21 +82,29 @@ func sp_utf8_scalar_at_byte_offset_0(_ p0: String, _ p1: Int32) -> Int32 {
                             fputs("\n", stderr)
                             exit(1)
                         } else {
-                            let v16: Int32 = sp_runtime_byte_1(v0, v13)
-                            let v17: Int32 = (v16 & 255)
-                            let v18: Bool = (v17 < 128)
+                            var v16: Int32 = 0
+                            v16 = sp_runtime_byte_1(v0, v13)
+                            var v17: Int32 = 0
+                            v17 = (v16 & 255)
+                            var v18: Bool = false
+                            v18 = (v17 < 128)
                             var v20: Bool = false
                             if (v18) {
                                 v20 = false
                             } else {
-                                let v19: Bool = (v17 < 192)
+                                var v19: Bool = false
+                                v19 = (v17 < 192)
                                 v20 = v19
                             }
                             if (v20) {
-                                let v21: Int32 = (v8 &- 192)
-                                let v22: Int32 = (v21 &* 64)
-                                let v23: Int32 = (v17 &- 128)
-                                let v24: Int32 = (v22 &+ v23)
+                                var v21: Int32 = 0
+                                v21 = (v8 &- 192)
+                                var v22: Int32 = 0
+                                v22 = (v21 &* 64)
+                                var v23: Int32 = 0
+                                v23 = (v17 &- 128)
+                                var v24: Int32 = 0
+                                v24 = (v22 &+ v23)
                                 return v24
                             } else {
                                 "UTF-8 sequence has an invalid continuation byte.".withCString { ptr in _ = fputs(ptr, stderr) }
@@ -105,54 +113,76 @@ func sp_utf8_scalar_at_byte_offset_0(_ p0: String, _ p1: Int32) -> Int32 {
                             }
                         }
                     } else {
-                        let v28: Bool = (v8 < 240)
+                        var v28: Bool = false
+                        v28 = (v8 < 240)
                         if (v28) {
-                            let v29: Int32 = (v1 &+ 2)
-                            let v30: Bool = (v29 >= v2)
+                            var v29: Int32 = 0
+                            v29 = (v1 &+ 2)
+                            var v30: Bool = false
+                            v30 = (v29 >= v2)
                             if (v30) {
                                 "UTF-8 sequence is truncated.".withCString { ptr in _ = fputs(ptr, stderr) }
                                 fputs("\n", stderr)
                                 exit(1)
                             } else {
-                                let v32: Int32 = (v1 &+ 1)
-                                let v33: Int32 = sp_runtime_byte_1(v0, v32)
-                                let v34: Int32 = (v33 & 255)
-                                let v35: Int32 = sp_runtime_byte_1(v0, v29)
-                                let v36: Int32 = (v35 & 255)
-                                let v37: Bool = (v34 < 128)
+                                var v32: Int32 = 0
+                                v32 = (v1 &+ 1)
+                                var v33: Int32 = 0
+                                v33 = sp_runtime_byte_1(v0, v32)
+                                var v34: Int32 = 0
+                                v34 = (v33 & 255)
+                                var v35: Int32 = 0
+                                v35 = sp_runtime_byte_1(v0, v29)
+                                var v36: Int32 = 0
+                                v36 = (v35 & 255)
+                                var v37: Bool = false
+                                v37 = (v34 < 128)
                                 var v39: Bool = false
                                 if (v37) {
                                     v39 = false
                                 } else {
-                                    let v38: Bool = (v34 < 192)
+                                    var v38: Bool = false
+                                    v38 = (v34 < 192)
                                     v39 = v38
                                 }
                                 if (v39) {
-                                    let v40: Bool = (v36 < 128)
+                                    var v40: Bool = false
+                                    v40 = (v36 < 128)
                                     var v42: Bool = false
                                     if (v40) {
                                         v42 = false
                                     } else {
-                                        let v41: Bool = (v36 < 192)
+                                        var v41: Bool = false
+                                        v41 = (v36 < 192)
                                         v42 = v41
                                     }
                                     if (v42) {
-                                        let v43: Int32 = (v8 &- 224)
-                                        let v44: Int32 = (v43 &* 4096)
-                                        let v45: Int32 = (v34 &- 128)
-                                        let v46: Int32 = (v45 &* 64)
-                                        let v47: Int32 = (v44 &+ v46)
-                                        let v48: Int32 = (v36 &- 128)
-                                        let v49: Int32 = (v47 &+ v48)
-                                        let v50: Bool = (v49 < 2048)
+                                        var v43: Int32 = 0
+                                        v43 = (v8 &- 224)
+                                        var v44: Int32 = 0
+                                        v44 = (v43 &* 4096)
+                                        var v45: Int32 = 0
+                                        v45 = (v34 &- 128)
+                                        var v46: Int32 = 0
+                                        v46 = (v45 &* 64)
+                                        var v47: Int32 = 0
+                                        v47 = (v44 &+ v46)
+                                        var v48: Int32 = 0
+                                        v48 = (v36 &- 128)
+                                        var v49: Int32 = 0
+                                        v49 = (v47 &+ v48)
+                                        var v50: Bool = false
+                                        v50 = (v49 < 2048)
                                         if (v50) {
                                             "UTF-8 sequence is overlong.".withCString { ptr in _ = fputs(ptr, stderr) }
                                             fputs("\n", stderr)
                                             exit(1)
                                         } else {
-                                            let v52: Bool = (v49 >= 55296)
+                                            var v52: Bool = false
+                                            v52 = (v49 >= 55296)
                                             if (v52) {
-                                                let v53: Bool = (v49 <= 57343)
+                                                var v53: Bool = false
+                                                v53 = (v49 <= 57343)
                                                 if (v53) {
                                                     "UTF-8 sequence encodes a surrogate.".withCString { ptr in _ = fputs(ptr, stderr) }
                                                     fputs("\n", stderr)
@@ -176,67 +206,96 @@ func sp_utf8_scalar_at_byte_offset_0(_ p0: String, _ p1: Int32) -> Int32 {
                                 }
                             }
                         } else {
-                            let v63: Bool = (v8 < 245)
+                            var v63: Bool = false
+                            v63 = (v8 < 245)
                             if (v63) {
-                                let v64: Int32 = (v1 &+ 3)
-                                let v65: Bool = (v64 >= v2)
+                                var v64: Int32 = 0
+                                v64 = (v1 &+ 3)
+                                var v65: Bool = false
+                                v65 = (v64 >= v2)
                                 if (v65) {
                                     "UTF-8 sequence is truncated.".withCString { ptr in _ = fputs(ptr, stderr) }
                                     fputs("\n", stderr)
                                     exit(1)
                                 } else {
-                                    let v67: Int32 = (v1 &+ 1)
-                                    let v68: Int32 = sp_runtime_byte_1(v0, v67)
-                                    let v69: Int32 = (v68 & 255)
-                                    let v70: Int32 = (v1 &+ 2)
-                                    let v71: Int32 = sp_runtime_byte_1(v0, v70)
-                                    let v72: Int32 = (v71 & 255)
-                                    let v73: Int32 = sp_runtime_byte_1(v0, v64)
-                                    let v74: Int32 = (v73 & 255)
-                                    let v75: Bool = (v69 < 128)
+                                    var v67: Int32 = 0
+                                    v67 = (v1 &+ 1)
+                                    var v68: Int32 = 0
+                                    v68 = sp_runtime_byte_1(v0, v67)
+                                    var v69: Int32 = 0
+                                    v69 = (v68 & 255)
+                                    var v70: Int32 = 0
+                                    v70 = (v1 &+ 2)
+                                    var v71: Int32 = 0
+                                    v71 = sp_runtime_byte_1(v0, v70)
+                                    var v72: Int32 = 0
+                                    v72 = (v71 & 255)
+                                    var v73: Int32 = 0
+                                    v73 = sp_runtime_byte_1(v0, v64)
+                                    var v74: Int32 = 0
+                                    v74 = (v73 & 255)
+                                    var v75: Bool = false
+                                    v75 = (v69 < 128)
                                     var v77: Bool = false
                                     if (v75) {
                                         v77 = false
                                     } else {
-                                        let v76: Bool = (v69 < 192)
+                                        var v76: Bool = false
+                                        v76 = (v69 < 192)
                                         v77 = v76
                                     }
                                     if (v77) {
-                                        let v78: Bool = (v72 < 128)
+                                        var v78: Bool = false
+                                        v78 = (v72 < 128)
                                         var v80: Bool = false
                                         if (v78) {
                                             v80 = false
                                         } else {
-                                            let v79: Bool = (v72 < 192)
+                                            var v79: Bool = false
+                                            v79 = (v72 < 192)
                                             v80 = v79
                                         }
                                         if (v80) {
-                                            let v81: Bool = (v74 < 128)
+                                            var v81: Bool = false
+                                            v81 = (v74 < 128)
                                             var v83: Bool = false
                                             if (v81) {
                                                 v83 = false
                                             } else {
-                                                let v82: Bool = (v74 < 192)
+                                                var v82: Bool = false
+                                                v82 = (v74 < 192)
                                                 v83 = v82
                                             }
                                             if (v83) {
-                                                let v84: Int32 = (v8 &- 240)
-                                                let v85: Int32 = (v84 &* 262144)
-                                                let v86: Int32 = (v69 &- 128)
-                                                let v87: Int32 = (v86 &* 4096)
-                                                let v88: Int32 = (v85 &+ v87)
-                                                let v89: Int32 = (v72 &- 128)
-                                                let v90: Int32 = (v89 &* 64)
-                                                let v91: Int32 = (v88 &+ v90)
-                                                let v92: Int32 = (v74 &- 128)
-                                                let v93: Int32 = (v91 &+ v92)
-                                                let v94: Bool = (v93 < 65536)
+                                                var v84: Int32 = 0
+                                                v84 = (v8 &- 240)
+                                                var v85: Int32 = 0
+                                                v85 = (v84 &* 262144)
+                                                var v86: Int32 = 0
+                                                v86 = (v69 &- 128)
+                                                var v87: Int32 = 0
+                                                v87 = (v86 &* 4096)
+                                                var v88: Int32 = 0
+                                                v88 = (v85 &+ v87)
+                                                var v89: Int32 = 0
+                                                v89 = (v72 &- 128)
+                                                var v90: Int32 = 0
+                                                v90 = (v89 &* 64)
+                                                var v91: Int32 = 0
+                                                v91 = (v88 &+ v90)
+                                                var v92: Int32 = 0
+                                                v92 = (v74 &- 128)
+                                                var v93: Int32 = 0
+                                                v93 = (v91 &+ v92)
+                                                var v94: Bool = false
+                                                v94 = (v93 < 65536)
                                                 if (v94) {
                                                     "UTF-8 sequence is overlong.".withCString { ptr in _ = fputs(ptr, stderr) }
                                                     fputs("\n", stderr)
                                                     exit(1)
                                                 } else {
-                                                    let v96: Bool = (v93 > 1114111)
+                                                    var v96: Bool = false
+                                                    v96 = (v93 > 1114111)
                                                     if (v96) {
                                                         "UTF-8 scalar is above U+10FFFF.".withCString { ptr in _ = fputs(ptr, stderr) }
                                                         fputs("\n", stderr)
@@ -274,16 +333,20 @@ func sp_utf8_scalar_at_byte_offset_0(_ p0: String, _ p1: Int32) -> Int32 {
     }
 }
 func spiral_main() -> Int32 {
-    let v0: String = "Aéλ🙂Z"
-    let v1: Int32 = 0
+    var v0: String = ""
+    v0 = "Aéλ🙂Z"
+    var v1: Int32 = 0
+    v1 = 0
     var v2: Int32 = 0
     v2 = sp_utf8_scalar_at_byte_offset_0(v0, v1)
     var v3: Int32 = 0
     v3 = 1
-    let v4: Int32 = sp_utf8_scalar_at_byte_offset_0(v0, v3)
+    var v4: Int32 = 0
+    v4 = sp_utf8_scalar_at_byte_offset_0(v0, v3)
     var v5: Int32 = 0
     v5 = 3
-    let v6: Int32 = sp_utf8_scalar_at_byte_offset_0(v0, v5)
+    var v6: Int32 = 0
+    v6 = sp_utf8_scalar_at_byte_offset_0(v0, v5)
     var v7: Int32 = 0
     v7 = 5
     var v8: Int32 = 0
@@ -292,7 +355,8 @@ func spiral_main() -> Int32 {
     v9 = 9
     var v10: Int32 = 0
     v10 = sp_utf8_scalar_at_byte_offset_0(v0, v9)
-    let v11: Bool = (v2 == 65)
+    var v11: Bool = false
+    v11 = (v2 == 65)
     if (v11) {
         var v12: Bool = false
         v12 = (v4 == 233)
@@ -303,7 +367,8 @@ func spiral_main() -> Int32 {
                 var v14: Bool = false
                 v14 = (v8 == 128578)
                 if (v14) {
-                    let v15: Bool = (v10 == 90)
+                    var v15: Bool = false
+                    v15 = (v10 == 90)
                     if (v15) {
                         return 0
                     } else {

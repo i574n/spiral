@@ -27,19 +27,25 @@ mutual
 partial def method0 (p0 : (IO.Ref (Array Int32))) (p1 : Int32) : IO Int32 := do
     let mut v0 : (IO.Ref (Array Int32)) := p0
     let mut v1 : Int32 := p1
-    let v2 : Int32 := (← spiralIndex (← v0.get) (spiralIdx v1))
-    let v3 : Int32 := (Int32.ofNat (← v0.get).size)
-    let v4 : Int32 := (v2 + v3)
-    let v5 : Int32 := (v4 - (10 : Int32))
+    let mut v2 : Int32 := default
+    let mut v3 : Int32 := default
+    let mut v4 : Int32 := default
+    let mut v5 : Int32 := default
+    v2 := (← spiralIndex (← v0.get) (spiralIdx v1))
+    v3 := (Int32.ofNat (← v0.get).size)
+    v4 := (v2 + v3)
+    v5 := (v4 - (10 : Int32))
     return v5
 partial def spiralMain : IO Int32 := do
+    let mut v0 : Int32 := default
     let mut v1 : (IO.Ref (Array Int32)) ← IO.mkRef #[]
-    let v0 : Int32 := (3 : Int32)
+    let mut v2 : Int32 := default
+    v0 := (3 : Int32)
     v1 := (← IO.mkRef (Array.replicate (spiralIdx v0) (default : Int32)))
     v1.modify (fun xs => xs.set! (spiralIdx (0 : Int32)) (2 : Int32))
     v1.modify (fun xs => xs.set! (spiralIdx (1 : Int32)) (5 : Int32))
     v1.modify (fun xs => xs.set! (spiralIdx (2 : Int32)) (7 : Int32))
-    let v2 : Int32 := (2 : Int32)
+    v2 := (2 : Int32)
     return (← method0 v1 v2)
 end
 def main : IO UInt32 := do

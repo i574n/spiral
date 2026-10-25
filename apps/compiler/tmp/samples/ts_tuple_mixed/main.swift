@@ -14,7 +14,8 @@ func sp_method1(_ p0: Bool, _ p1: Float, _ p2: Int32) -> Int32 {
         var v3: Bool = false
         v3 = (v1 >= (3.5 as Float))
         if (v3) {
-            let v4: Int32 = (v2 &- 7)
+            var v4: Int32 = 0
+            v4 = (v2 &- 7)
             return v4
         } else {
             return 1
@@ -24,7 +25,8 @@ func sp_method1(_ p0: Bool, _ p1: Float, _ p2: Int32) -> Int32 {
     }
 }
 func spiral_main() -> Int32 {
-    let v0: Float = (4.0 as Float)
+    var v0: Float = (0.0 as Float)
+    v0 = (4.0 as Float)
     var v1: Bool = false
     var v2: Float = (0.0 as Float)
     var v3: Int32 = 0

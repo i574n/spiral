@@ -8,8 +8,10 @@ fun sp_method0(p0: Float, p1: Float): Float {
     return v3
 }
 fun spiral_main(): Int {
-    val v0: Float = 1.5f
-    val v1: Float = 2.0f
+    var v0: Float = 0.0f
+    v0 = 1.5f
+    var v1: Float = 0.0f
+    v1 = 2.0f
     var v2: Float = 0.0f
     v2 = sp_method0(v0, v1)
     var v3: Boolean = false

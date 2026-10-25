@@ -1,5 +1,5 @@
 sealed interface US0 { val tag: Int }
-object US0_Idle : US0 { override val tag: Int = 0 }
+class US0_Idle : US0 { override val tag: Int = 0 }
 data class US0_Hit(val f0: Int) : US0 { override val tag: Int = 1 }
 data class US0_Flag(val f0: Boolean) : US0 { override val tag: Int = 2 }
 fun sp_score_0(p0: US0): Int {
@@ -25,7 +25,8 @@ fun sp_score_0(p0: US0): Int {
 }
 fun closure0(v0: US0): (Int) -> Int {
     fun body(v1: Int): Int {
-        val v2: Int = sp_score_0(v0)
+        var v2: Int = 0
+        v2 = sp_score_0(v0)
         var v3: Int = 0
         v3 = (v2 + v1)
         return v3
@@ -37,11 +38,13 @@ fun sp_method1(p0: (Int) -> Int): Int {
     return v0(31)
 }
 fun spiral_main(): Int {
-    val v0: Int = 2
-    val v1: Boolean = (v0 == 0)
-    var v7: US0 = US0_Idle
+    var v0: Int = 0
+    v0 = 2
+    var v1: Boolean = false
+    v1 = (v0 == 0)
+    var v7: US0 = US0_Idle()
     if (v1) {
-        v7 = US0_Idle
+        v7 = US0_Idle()
     } else {
         var v3: Boolean = false
         v3 = (v0 == 1)
@@ -51,7 +54,8 @@ fun spiral_main(): Int {
             v7 = US0_Flag(true)
         }
     }
-    val v8: (Int) -> Int = closure0(v7)
+    var v8: (Int) -> Int = { _: Int -> throw RuntimeException() }
+    v8 = closure0(v7)
     return sp_method1(v8)
 }
 fun main() {

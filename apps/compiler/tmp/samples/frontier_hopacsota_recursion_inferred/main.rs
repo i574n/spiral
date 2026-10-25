@@ -3,11 +3,11 @@ use std::cell::RefCell;
 use std::rc::Rc;
 fn count_0(mut v0: i32) -> i32 {
     loop {
-        let v1: bool = v0 <= 0i32;
+        let mut v1: bool = v0 <= 0i32;
         if v1 {
             return 0i32;
         } else {
-            let v2: i32 = v0.wrapping_sub(1i32);
+            let mut v2: i32 = v0.wrapping_sub(1i32);
             v0 = v2;
             continue;
         }

@@ -46,18 +46,26 @@ fun sp_measure_1(p0: String): Int {
     return v1
 }
 fun spiral_main(): Int {
-    val v0: Boolean = true
+    var v0: Boolean = false
+    v0 = true
     var v1: String = ""
     v1 = sp_choose_0(v0)
     var v2: Boolean = false
     v2 = false
-    val v3: String = sp_choose_0(v2)
-    val v4: Int = sp_measure_1(v1)
-    val v5: Int = sp_measure_1(v1)
-    val v6: Int = (v4 + v5)
-    val v7: Int = sp_measure_1(v3)
-    val v8: Int = (v6 + v7)
-    val v9: Int = (v8 - 14)
+    var v3: String = ""
+    v3 = sp_choose_0(v2)
+    var v4: Int = 0
+    v4 = sp_measure_1(v1)
+    var v5: Int = 0
+    v5 = sp_measure_1(v1)
+    var v6: Int = 0
+    v6 = (v4 + v5)
+    var v7: Int = 0
+    v7 = sp_measure_1(v3)
+    var v8: Int = 0
+    v8 = (v6 + v7)
+    var v9: Int = 0
+    v9 = (v8 - 14)
     return v9
 }
 fun main() {

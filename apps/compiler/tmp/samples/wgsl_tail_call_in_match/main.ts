@@ -5,7 +5,7 @@ function US0_Done(f0: number): US0 { return { tag: 0, f0: f0 }; }
 function US0_More(f0: number): US0 { return { tag: 1, f0: f0 }; }
 function layers_0(v0: number): number {
     tail: while (true) {
-        const v1: boolean = v0 >= 5;
+        let v1: boolean = v0 >= 5;
         let v4: US0;
         if (v1) {
             v4 = US0_Done(v0);
@@ -14,15 +14,17 @@ function layers_0(v0: number): number {
         }
         switch (v4.tag) {
             case 0: {
-                const v8: number = v4.f0;
-                const v9: number = Math.imul(v8, 2);
+                let v8: number = v4.f0;
+                let v9: number = Math.imul(v8, 2);
                 return v9;
+                break;
             }
             case 1: {
-                const v5: number = v4.f0;
-                const v6: number = (v5 + 1) | 0;
+                let v5: number = v4.f0;
+                let v6: number = (v5 + 1) | 0;
                 v0 = v6;
                 continue tail;
+                break;
             }
             default: throw new Error("Compiler error: unreachable union case.");
         }

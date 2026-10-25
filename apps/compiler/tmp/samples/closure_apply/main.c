@@ -16,31 +16,52 @@ struct Closure0 {
 static inline void ClosureDecrefBody0(Closure0 * x){
     (void)x;
 }
-static void ClosureDecref0(Fun0 * self){
+void ClosureDecref0(Fun0 * self){
     Closure0 * x = (Closure0 *) self;
     if (x != NULL && --(x->base.refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
-static int32_t f_c0(Fun0 * self, int32_t v0){
+int32_t f_c0(Fun0 * self, int32_t v0){
+    
+    
     ClosureDecref0(self);
-    int32_t v1 = v0 + 1l;
+    
+    
+    int32_t v1;
+    v1 = v0 + 1l;
+    
+    
     return v1;
 }
-static Fun0 * ClosureCreate0(){
+Fun0 * ClosureCreate0(){
     Closure0 * x = malloc(sizeof(Closure0));
     x->base.refc = 1;
     x->base.decref_fptr = ClosureDecref0;
     x->base.fptr = f_c0;
+    
     return &x->base;
 }
 int32_t main(){
-    Fun0 * v0 = ClosureCreate0();
+    
+    
+    Fun0 * v0;
+    v0 = ClosureCreate0();
     (v0)->refc++;
-    int32_t v1 = v0->fptr(v0, 6l);
+    
+    int32_t v1;
+    v1 = v0->fptr(v0, 6l);
+    
     (v0)->decref_fptr(v0);
-    bool v2 = v1 == 7l;
+    bool v2;
+    v2 = v1 == 7l;
+    
+    
     if (v2){
+        
+        
         return 0l;
     } else {
+        
+        
         return 1l;
     }
 }

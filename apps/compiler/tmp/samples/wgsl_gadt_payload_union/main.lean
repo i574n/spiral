@@ -48,6 +48,8 @@ def U0.spiralTag : U0 → Int32
   | .Slain .. => 1
 mutual
 partial def spiralMain : IO Int32 := do
+    let mut v0 : Int32 := default
+    let mut v1 : Bool := default
     let mut v6 : U0 := default
     let mut v2 : U1 := default
     let mut v4 : U2 := default
@@ -56,8 +58,8 @@ partial def spiralMain : IO Int32 := do
     let mut v8 : Int32 := default
     let mut v9 : Int32 := default
     let mut v10 : Bool := default
-    let v0 : Int32 := (60 : Int32)
-    let v1 : Bool := (decide (v0 > (0 : Int32)))
+    v0 := (60 : Int32)
+    v1 := (decide (v0 > (0 : Int32)))
     if v1 then
         v2 := (U1.Living v0 (100 : Int32))
         v6 := (U0.Survived v2)

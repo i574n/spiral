@@ -4,10 +4,10 @@ class Heap2(val l0: Heap1, val l1: Int)
 class Heap3(val l0: US0)
 class Heap4(val l0: US1)
 sealed interface US0 { val tag: Int }
-object US0_None : US0 { override val tag: Int = 0 }
+class US0_None : US0 { override val tag: Int = 0 }
 data class US0_Held(val f0: Heap2) : US0 { override val tag: Int = 1 }
 sealed interface US1 { val tag: Int }
-object US1_Absent : US1 { override val tag: Int = 0 }
+class US1_Absent : US1 { override val tag: Int = 0 }
 data class US1_Box(val f0: Heap3) : US1 { override val tag: Int = 1 }
 data class US1_Mark(val f0: Int) : US1 { override val tag: Int = 2 }
 fun f_c0(v0: US1, v1: Int): (Int) -> US1 {
@@ -15,7 +15,7 @@ fun f_c0(v0: US1, v1: Int): (Int) -> US1 {
         var v3: Boolean = false
         v3 = (v2 == 0)
         if (v3) {
-            return US1_Absent
+            return US1_Absent()
         } else {
             var v5: Boolean = false
             v5 = (v2 == 1)
@@ -36,7 +36,7 @@ fun sp_score_0(p0: US1): Int {
         }
         1 -> {
             var v3: Heap3 = (v0 as US1_Box).f0
-            var v4: US0 = US0_None
+            var v4: US0 = US0_None()
             v4 = v3.l0
             when (v4.tag) {
                 1 -> {
@@ -61,7 +61,8 @@ fun sp_score_0(p0: US1): Int {
                     v14 = (v10 == 7)
                     var v16: Boolean = false
                     if (v14) {
-                        val v15: Boolean = (v11 == "hi")
+                        var v15: Boolean = false
+                        v15 = (v11 == "hi")
                         v16 = v15
                     } else {
                         v16 = false
@@ -110,9 +111,12 @@ fun sp_score_0(p0: US1): Int {
     }
 }
 fun spiral_main(): Int {
-    val v0: Int = 7
-    val v1: String = "hi"
-    val v2: Heap0 = Heap0(v0, v1)
+    var v0: Int = 0
+    v0 = 7
+    var v1: String = ""
+    v1 = "hi"
+    var v2: Heap0 = Heap0(0, "")
+    v2 = Heap0(v0, v1)
     var v3: Int = 0
     v3 = 4
     var v4: String = ""
@@ -127,17 +131,17 @@ fun spiral_main(): Int {
     v8 = Heap2(v6, v7)
     var v9: Boolean = false
     v9 = true
-    var v12: US0 = US0_None
+    var v12: US0 = US0_None()
     if (v9) {
         v12 = US0_Held(v8)
     } else {
-        v12 = US0_None
+        v12 = US0_None()
     }
-    var v13: Heap3 = Heap3(US0_None)
+    var v13: Heap3 = Heap3(US0_None())
     v13 = Heap3(v12)
     var v14: Boolean = false
     v14 = true
-    var v17: US1 = US1_Absent
+    var v17: US1 = US1_Absent()
     if (v14) {
         v17 = US1_Box(v13)
     } else {
@@ -147,32 +151,44 @@ fun spiral_main(): Int {
     v18 = 3
     var v19: (Int) -> US1 = { _: Int -> throw RuntimeException() }
     v19 = f_c0(v17, v18)
-    var v20: US1 = US1_Absent
+    var v20: US1 = US1_Absent()
     v20 = v19(1)
-    var v21: Heap4 = Heap4(US1_Absent)
+    var v21: Heap4 = Heap4(US1_Absent())
     v21 = Heap4(v20)
-    var v22: US1 = US1_Absent
+    var v22: US1 = US1_Absent()
     v22 = v19(2)
-    val v23: Heap4 = Heap4(v22)
-    val v24: US1 = v19(0)
-    val v25: Heap4 = Heap4(v24)
-    val v26: US1 = v21.l0
-    val v27: US1 = v23.l0
-    val v28: US1 = v25.l0
-    val v29: Int = sp_score_0(v26)
-    val v30: Int = sp_score_0(v27)
-    val v31: Int = sp_score_0(v28)
-    val v32: Boolean = (v29 == 0)
+    var v23: Heap4 = Heap4(US1_Absent())
+    v23 = Heap4(v22)
+    var v24: US1 = US1_Absent()
+    v24 = v19(0)
+    var v25: Heap4 = Heap4(US1_Absent())
+    v25 = Heap4(v24)
+    var v26: US1 = US1_Absent()
+    v26 = v21.l0
+    var v27: US1 = US1_Absent()
+    v27 = v23.l0
+    var v28: US1 = US1_Absent()
+    v28 = v25.l0
+    var v29: Int = 0
+    v29 = sp_score_0(v26)
+    var v30: Int = 0
+    v30 = sp_score_0(v27)
+    var v31: Int = 0
+    v31 = sp_score_0(v28)
+    var v32: Boolean = false
+    v32 = (v29 == 0)
     var v34: Boolean = false
     if (v32) {
-        val v33: Boolean = (v30 == 1)
+        var v33: Boolean = false
+        v33 = (v30 == 1)
         v34 = v33
     } else {
         v34 = false
     }
     var v36: Boolean = false
     if (v34) {
-        val v35: Boolean = (v31 == 1)
+        var v35: Boolean = false
+        v35 = (v31 == 1)
         v36 = v35
     } else {
         v36 = false

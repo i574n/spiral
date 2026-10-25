@@ -12,10 +12,10 @@ typedef Array0 String;
 static inline void ArrayDecrefBody0(Array0 * x){
     (void)x;
 }
-static void ArrayDecref0(Array0 * x){
+void ArrayDecref0(Array0 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody0(x); free(x); }
 }
-static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
+Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     uint32_t size = sizeof(Array0) + sizeof(char) * len;
     Array0 * x = malloc(size);
     if (init_at_zero) { memset(x,0,size); }
@@ -23,7 +23,7 @@ static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     x->len = len;
     return x;
 }
-static Array0 * ArrayLit0(uint32_t len, char * ptr){
+Array0 * ArrayLit0(uint32_t len, char * ptr){
     Array0 * x = ArrayCreate0(len, false);
     memcpy(x->ptr, ptr, sizeof(char) * len);
     return x;
@@ -34,18 +34,29 @@ static inline void StringDecref(String * x){
 static inline String * StringLit(uint32_t len, char * ptr){
     return ArrayLit0(len, ptr);
 }
-static bool method0(String * v0){
+bool method0(String * v0){
+    
     StringDecref(v0);
     return true;
 }
 int32_t main(){
-    String * v0 = StringLit(7, "spiral");
+    
+    
+    String * v0;
+    v0 = StringLit(7, "spiral");
     (v0)->refc++;
-    bool v1 = method0(v0);
+    
+    bool v1;
+    v1 = method0(v0);
+    
     StringDecref(v0);
     if (v1){
+        
+        
         return 0l;
     } else {
+        
+        
         return 1l;
     }
 }

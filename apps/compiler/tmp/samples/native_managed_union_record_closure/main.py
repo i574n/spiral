@@ -2,6 +2,15 @@ kernels_main = r"""
 """
 from main_auto import *
 kernels = kernels_aux + kernels_main
+import os
+try: # CuPy when a CUDA device answers, otherwise numpy under the same name (SPIRAL_CUDA=0 forces numpy).
+    if os.environ.get('SPIRAL_CUDA', '1') == '0': raise ImportError('SPIRAL_CUDA=0')
+    import cupy as cp
+    if cp.cuda.runtime.getDeviceCount() < 1: raise RuntimeError('no CUDA device')
+    cuda = True
+except Exception:
+    import numpy as cp
+    cuda = False
 from dataclasses import dataclass
 from typing import NamedTuple, Union, Callable, Tuple
 i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 = int; f32 = float; f64 = float; char = str; string = str
@@ -26,7 +35,6 @@ def spiral_wrap(x, bits, signed):
     return x - (1 << bits) if signed and x >> (bits - 1) else x
 class US0_Empty(NamedTuple): # Empty
     tag = 0
-US0_Empty_shared = US0_Empty()
 class US0_Item(NamedTuple): # Item
     v0 : string
     v1 : i32
@@ -37,7 +45,7 @@ def closure0():
         v1 = v0 == 0
         if v1:
             del v1
-            return US0_Empty_shared
+            return US0_Empty()
         else:
             del v1
             v3 = "managed"
@@ -55,21 +63,29 @@ def main():
             v7 = 3
         case US0_Item(v2, v3): # Item
             v4 = spiral_string_length(v2)
+            del v2
             v5 = spiral_wrap(v4 + v3, 32, True)
+            del v3, v4
             v7 = v5
         case t:
             raise Exception(f'Pattern matching miss. Got: {t}')
+    del v1
     v8 = method1(v0)
+    del v0
     match v8:
         case US0_Empty(): # Empty
             v14 = 3
         case US0_Item(v9, v10): # Item
             v11 = spiral_string_length(v9)
+            del v9
             v12 = spiral_wrap(v11 + v10, 32, True)
+            del v10, v11
             v14 = v12
         case t:
             raise Exception(f'Pattern matching miss. Got: {t}')
+    del v8
     v15 = spiral_wrap(v7 + v14, 32, True)
+    del v7, v14
     return v15
 
 if __name__ == '__main__': sys.exit(main())

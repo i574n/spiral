@@ -45,17 +45,24 @@ partial def choose_right_1 (p0 : Bool) : IO String := do
         v2 := "ral"
         return v2
 partial def spiralMain : IO Int32 := do
+    let mut v0 : Bool := default
+    let mut v1 : String := default
+    let mut v2 : Bool := default
+    let mut v3 : String := default
+    let mut v4 : String := default
+    let mut v5 : Int32 := default
+    let mut v6 : Bool := default
     let mut v7 : Char := default
     let mut v8 : Bool := default
     let mut v9 : Char := default
     let mut v10 : Bool := default
-    let v0 : Bool := true
-    let v1 : String := (← choose_left_0 v0)
-    let v2 : Bool := false
-    let v3 : String := (← choose_right_1 v2)
-    let v4 : String := (v1 ++ v3)
-    let v5 : Int32 := (Int32.ofNat v4.utf8ByteSize)
-    let v6 : Bool := (v5 == (6 : Int32))
+    v0 := true
+    v1 := (← choose_left_0 v0)
+    v2 := false
+    v3 := (← choose_right_1 v2)
+    v4 := (v1 ++ v3)
+    v5 := (Int32.ofNat v4.utf8ByteSize)
+    v6 := (v5 == (6 : Int32))
     if v6 then
         v7 := (Char.ofNat (v4.toUTF8.get! (spiralIdx (0 : Int32))).toNat)
         v8 := (v7 == 's')

@@ -9,6 +9,8 @@ var
   v2: LongInt;
   v3: Single;
   v4: Boolean;
+  tmp3: LongInt;
+  tmp4: Single;
 begin
   while True do begin
       v2 := v0 - 1;
@@ -18,8 +20,10 @@ begin
           Result := v3;
           Exit;
       end else begin
-          v0 := v2;
-          v1 := v3;
+          tmp3 := v2;
+          tmp4 := v3;
+          v0 := tmp3;
+          v1 := tmp4;
           Continue;
       end;
   end;

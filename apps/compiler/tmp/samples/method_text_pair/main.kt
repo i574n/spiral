@@ -15,8 +15,10 @@ fun sp_method0(p0: String, p1: String): SpiralTuple0 {
     }
 }
 fun spiral_main(): Int {
-    val v0: String = "hi"
-    val v1: String = "yo"
+    var v0: String = ""
+    v0 = "hi"
+    var v1: String = ""
+    v1 = "yo"
     var v2: String = ""
     var v3: String = ""
     val spiral_tuple156 = sp_method0(v0, v1)
@@ -26,7 +28,8 @@ fun spiral_main(): Int {
     v4 = (v2 == "hi")
     var v6: Boolean = false
     if (v4) {
-        val v5: Boolean = (v3 == "yo")
+        var v5: Boolean = false
+        v5 = (v3 == "yo")
         v6 = v5
     } else {
         v6 = false

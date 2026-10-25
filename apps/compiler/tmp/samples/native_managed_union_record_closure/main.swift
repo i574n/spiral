@@ -38,7 +38,8 @@ func closure0() -> (Int32) -> US0 {
         if (v1) {
             return US0_Empty()
         } else {
-            let v3: String = "managed"
+            var v3: String = ""
+            v3 = "managed"
             return US0_Item(f0: v3, f1: 32)
         }
     }
@@ -52,7 +53,8 @@ func sp_method1(_ p0: @escaping (Int32) -> US0) -> US0 {
     return v0(1)
 }
 func spiral_main() -> Int32 {
-    let v0: (Int32) -> US0 = closure0()
+    var v0: (Int32) -> US0 = { (_: Int32) -> US0 in fatalError("unreachable closure") }
+    v0 = closure0()
     var v1: US0 = US0_Empty()
     v1 = sp_method0(v0)
     var v7: Int32 = 0
@@ -62,13 +64,16 @@ func spiral_main() -> Int32 {
         case 1:
             var v2: String = (v1 as! US0_Item).f0
             var v3: Int32 = (v1 as! US0_Item).f1
-            let v4: Int32 = spiralStringLength(v2)
-            let v5: Int32 = (v4 &+ v3)
+            var v4: Int32 = 0
+            v4 = spiralStringLength(v2)
+            var v5: Int32 = 0
+            v5 = (v4 &+ v3)
             v7 = v5
         default:
             fatalError("unreachable union case")
     }
-    let v8: US0 = sp_method1(v0)
+    var v8: US0 = US0_Empty()
+    v8 = sp_method1(v0)
     var v14: Int32 = 0
     switch v8.tag {
         case 0:
@@ -76,13 +81,16 @@ func spiral_main() -> Int32 {
         case 1:
             var v9: String = (v8 as! US0_Item).f0
             var v10: Int32 = (v8 as! US0_Item).f1
-            let v11: Int32 = spiralStringLength(v9)
-            let v12: Int32 = (v11 &+ v10)
+            var v11: Int32 = 0
+            v11 = spiralStringLength(v9)
+            var v12: Int32 = 0
+            v12 = (v11 &+ v10)
             v14 = v12
         default:
             fatalError("unreachable union case")
     }
-    let v15: Int32 = (v7 &+ v14)
+    var v15: Int32 = 0
+    v15 = (v7 &+ v14)
     return v15
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

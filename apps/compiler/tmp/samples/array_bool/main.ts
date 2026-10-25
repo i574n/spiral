@@ -7,10 +7,10 @@ function spiral_array_set<T>(array: T[], index: number, value: T): void {
     array[index] = value;
 }
 export function main(): number {
-    const v0: Array<boolean> = new Array<boolean>(1).fill(false);
-    const v1: boolean = true;
+    let v0: Array<boolean> = new Array<boolean>(1).fill(false);
+    let v1: boolean = true;
     spiral_array_set(v0, 0, v1);
-    const v2: boolean = spiral_array_index(v0, 0);
+    let v2: boolean = spiral_array_index(v0, 0);
     if (v2) {
         return 0;
     } else {

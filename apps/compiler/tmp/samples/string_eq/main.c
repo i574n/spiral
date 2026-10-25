@@ -12,10 +12,10 @@ typedef Array0 String;
 static inline void ArrayDecrefBody0(Array0 * x){
     (void)x;
 }
-static void ArrayDecref0(Array0 * x){
+void ArrayDecref0(Array0 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody0(x); free(x); }
 }
-static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
+Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     uint32_t size = sizeof(Array0) + sizeof(char) * len;
     Array0 * x = malloc(size);
     if (init_at_zero) { memset(x,0,size); }
@@ -23,7 +23,7 @@ static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     x->len = len;
     return x;
 }
-static Array0 * ArrayLit0(uint32_t len, char * ptr){
+Array0 * ArrayLit0(uint32_t len, char * ptr){
     Array0 * x = ArrayCreate0(len, false);
     memcpy(x->ptr, ptr, sizeof(char) * len);
     return x;
@@ -53,50 +53,111 @@ static inline String * StringSlice(String * value, int32_t from, int32_t to){
     return result;
 }
 int32_t main(){
-    String * v0 = StringLit(3, "é");
-    String * v1 = StringLit(2, "x");
-    String * v2 = StringConcat(v0, v1);
+    
+    
+    String * v0;
+    v0 = StringLit(3, "é");
+    
+    
+    String * v1;
+    v1 = StringLit(2, "x");
+    
+    
+    String * v2;
+    v2 = StringConcat(v0, v1);
+    
     StringDecref(v1);
-    String * v3 = StringLit(4, "éx");
-    String * v4 = StringLit(4, "éy");
-    String * v5 = StringLit(1, "");
-    String * v6 = StringSlice(v3, 1l, 0l);
-    bool v7 = strcmp(v2->ptr, v3->ptr) == 0;
+    String * v3;
+    v3 = StringLit(4, "éx");
+    
+    
+    String * v4;
+    v4 = StringLit(4, "éy");
+    
+    
+    String * v5;
+    v5 = StringLit(1, "");
+    
+    
+    String * v6;
+    v6 = StringSlice(v3, 1l, 0l);
+    
+    
+    bool v7;
+    v7 = strcmp(v2->ptr, v3->ptr) == 0;
+    
+    
     bool v9;
     if (v7){
-        bool v8 = strcmp(v2->ptr, v4->ptr) != 0;
+        
+        
+        bool v8;
+        v8 = strcmp(v2->ptr, v4->ptr) != 0;
+        
+        
         v9 = v8;
     } else {
+        
+        
         v9 = false;
     }
+    
     StringDecref(v2); StringDecref(v4);
     bool v11;
     if (v9){
-        bool v10 = strcmp(v0->ptr, v3->ptr) != 0;
+        
+        
+        bool v10;
+        v10 = strcmp(v0->ptr, v3->ptr) != 0;
+        
+        
         v11 = v10;
     } else {
+        
+        
         v11 = false;
     }
+    
     StringDecref(v3);
     bool v13;
     if (v11){
-        bool v12 = strcmp(v5->ptr, v6->ptr) == 0;
+        
+        
+        bool v12;
+        v12 = strcmp(v5->ptr, v6->ptr) == 0;
+        
+        
         v13 = v12;
     } else {
+        
+        
         v13 = false;
     }
+    
     StringDecref(v6);
     bool v15;
     if (v13){
-        bool v14 = strcmp(v5->ptr, v0->ptr) != 0;
+        
+        
+        bool v14;
+        v14 = strcmp(v5->ptr, v0->ptr) != 0;
+        
+        
         v15 = v14;
     } else {
+        
+        
         v15 = false;
     }
+    
     StringDecref(v0); StringDecref(v5);
     if (v15){
+        
+        
         return 0l;
     } else {
+        
+        
         return 1l;
     }
 }

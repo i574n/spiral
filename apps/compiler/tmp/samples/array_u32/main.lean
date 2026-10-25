@@ -25,18 +25,24 @@ def spiralStringSlice (s : String) (a b : Int) : IO String := do
   else pure (String.Pos.Raw.extract s ⟨a.toNat⟩ ⟨(b + 1).toNat⟩)
 mutual
 partial def spiralMain : IO Int32 := do
+    let mut v0 : Int32 := default
     let mut v1 : (IO.Ref (Array UInt32)) ← IO.mkRef #[]
+    let mut v2 : UInt32 := default
+    let mut v3 : UInt32 := default
+    let mut v4 : UInt32 := default
+    let mut v5 : Int32 := default
+    let mut v6 : Bool := default
     let mut v8 : Bool := default
     let mut v7 : Bool := default
-    let v0 : Int32 := (3 : Int32)
+    v0 := (3 : Int32)
     v1 := (← IO.mkRef (Array.replicate (spiralIdx v0) (default : UInt32)))
     v1.modify (fun xs => xs.set! (spiralIdx (0 : Int32)) (4000000000 : UInt32))
     v1.modify (fun xs => xs.set! (spiralIdx (1 : Int32)) (1 : UInt32))
-    let v2 : UInt32 := (← spiralIndex (← v1.get) (spiralIdx (0 : Int32)))
-    let v3 : UInt32 := (← spiralIndex (← v1.get) (spiralIdx (1 : Int32)))
-    let v4 : UInt32 := (v2 + v3)
-    let v5 : Int32 := (Int32.ofNat (← v1.get).size)
-    let v6 : Bool := (v5 == v0)
+    v2 := (← spiralIndex (← v1.get) (spiralIdx (0 : Int32)))
+    v3 := (← spiralIndex (← v1.get) (spiralIdx (1 : Int32)))
+    v4 := (v2 + v3)
+    v5 := (Int32.ofNat (← v1.get).size)
+    v6 := (v5 == v0)
     if v6 then
         v7 := (v4 == (4000000001 : UInt32))
         v8 := v7

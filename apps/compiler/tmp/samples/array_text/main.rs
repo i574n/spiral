@@ -2,14 +2,14 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 fn spiral_main() -> i32 {
-    let v0: i32 = 2i32;
-    let v1: Rc<RefCell<Vec<Rc<str>>>> = Rc::new(RefCell::new(vec![<Rc<str>>::default(); v0 as usize]));
-    let v2: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
-    v1.clone().borrow_mut()[0i32 as usize] = v2;
-    let v3: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("yo"); } LIT.with(|lit| lit.clone()) };
-    v1.clone().borrow_mut()[1i32 as usize] = v3;
-    let v4: Rc<str> = v1.borrow()[0i32 as usize].clone();
-    let v5: bool = &*v4 == "hi";
+    let mut v0: i32 = 2i32;
+    let mut v1: Rc<RefCell<Vec<Rc<str>>>> = Rc::new(RefCell::new(vec![<Rc<str>>::default(); v0 as usize]));
+    let mut v2: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
+    v1.clone().borrow_mut()[0i32 as usize] = v2.clone();
+    let mut v3: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("yo"); } LIT.with(|lit| lit.clone()) };
+    v1.clone().borrow_mut()[1i32 as usize] = v3.clone();
+    let mut v4: Rc<str> = v1.clone().borrow()[0i32 as usize].clone();
+    let mut v5: bool = v4.clone() == { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
     if v5 {
         0i32
     } else {

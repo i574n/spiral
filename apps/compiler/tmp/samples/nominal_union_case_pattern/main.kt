@@ -1,8 +1,9 @@
 sealed interface US0 { val tag: Int }
-object US0_Zero : US0 { override val tag: Int = 0 }
-object US0_One : US0 { override val tag: Int = 1 }
+class US0_Zero : US0 { override val tag: Int = 0 }
+class US0_One : US0 { override val tag: Int = 1 }
 fun spiral_main(): Int {
-    val v0: US0 = US0_Zero
+    var v0: US0 = US0_Zero()
+    v0 = US0_Zero()
     var v2: Boolean = false
     when (v0.tag) {
         1 -> {

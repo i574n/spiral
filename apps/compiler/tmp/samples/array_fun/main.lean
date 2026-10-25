@@ -27,18 +27,25 @@ mutual
 partial def f_c0 (p0 : Int32) (p1 : Int32) : IO Int32 := do
     let mut v0 : Int32 := p0
     let mut v1 : Int32 := p1
-    let v2 : Int32 := (v1 + v0)
+    let mut v2 : Int32 := default
+    v2 := (v1 + v0)
     return v2
 partial def spiralMain : IO Int32 := do
+    let mut v0 : Int32 := default
+    let mut v1 : (Int32 → IO Int32) := default
+    let mut v2 : Int32 := default
     let mut v3 : (IO.Ref (Array (Int32 → IO Int32))) ← IO.mkRef #[]
-    let v0 : Int32 := (3 : Int32)
-    let v1 : (Int32 → IO Int32) := (f_c0 v0)
-    let v2 : Int32 := (1 : Int32)
+    let mut v4 : (Int32 → IO Int32) := default
+    let mut v5 : Int32 := default
+    let mut v6 : Bool := default
+    v0 := (3 : Int32)
+    v1 := (f_c0 v0)
+    v2 := (1 : Int32)
     v3 := (← IO.mkRef (Array.replicate (spiralIdx v2) (default : (Int32 → IO Int32))))
     v3.modify (fun xs => xs.set! (spiralIdx (0 : Int32)) v1)
-    let v4 : (Int32 → IO Int32) := (← spiralIndex (← v3.get) (spiralIdx (0 : Int32)))
-    let v5 : Int32 := (← v4 (4 : Int32))
-    let v6 : Bool := (v5 == (7 : Int32))
+    v4 := (← spiralIndex (← v3.get) (spiralIdx (0 : Int32)))
+    v5 := (← v4 (4 : Int32))
+    v6 := (v5 == (7 : Int32))
     if v6 then
         return (0 : Int32)
     else

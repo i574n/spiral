@@ -5,16 +5,23 @@ fun spiral_main(): Int {
     v0[1] = 7
     v0[2] = 7
     v0[3] = 7
-    val v1: Int = v0[3]
+    var v1: Int = 0
+    v1 = v0[3]
     var v2: Array<Int> = emptyArray<Int>()
     v2 = Array(4) { 0 }
     v2[0] = 5
-    val v3: Int = v2[3]
-    val v4: Int = v2[0]
-    val v5: Int = (v3 * 100)
-    val v6: Int = (v5 + v4)
-    val v7: Int = (v1 - 7)
-    val v8: Int = (v6 + v7)
+    var v3: Int = 0
+    v3 = v2[3]
+    var v4: Int = 0
+    v4 = v2[0]
+    var v5: Int = 0
+    v5 = (v3 * 100)
+    var v6: Int = 0
+    v6 = (v5 + v4)
+    var v7: Int = 0
+    v7 = (v1 - 7)
+    var v8: Int = 0
+    v8 = (v6 + v7)
     return v8
 }
 fun main() {

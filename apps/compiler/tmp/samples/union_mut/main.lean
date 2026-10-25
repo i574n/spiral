@@ -45,12 +45,13 @@ def U0.spiralTag : U0 → Int32
 mutual
 partial def spiralMain : IO Int32 := do
     let mut v0 : (IO.Ref M0) ← IO.mkRef default
+    let mut v1 : Bool := default
     let mut v4 : U0 := default
     let mut v5 : (IO.Ref M0) ← IO.mkRef default
     let mut v6 : Int32 := default
     let mut v7 : Bool := default
     v0 := (← IO.mkRef (M0.mk (1 : Int32)))
-    let v1 : Bool := true
+    v1 := true
     if v1 then
         v4 := (U0.Held v0)
     else

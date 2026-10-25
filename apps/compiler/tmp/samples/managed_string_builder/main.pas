@@ -15,6 +15,9 @@ var
   v10: AnsiString;
   v8: AnsiString;
   v9: AnsiString;
+  tmp8: LongInt;
+  tmp9: AnsiString;
+  tmp10: AnsiString;
 begin
   while True do begin
       v3 := v0 - 1;
@@ -33,9 +36,12 @@ begin
               v9 := 'c';
               v10 := v9;
           end;
-          v0 := v3;
-          v1 := v4;
-          v2 := v10;
+          tmp8 := v3;
+          tmp9 := v4;
+          tmp10 := v10;
+          v0 := tmp8;
+          v1 := tmp9;
+          v2 := tmp10;
           Continue;
       end;
   end;

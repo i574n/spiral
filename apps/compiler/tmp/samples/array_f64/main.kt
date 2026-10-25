@@ -1,12 +1,16 @@
 fun spiral_main(): Int {
-    val v0: Int = 2
+    var v0: Int = 0
+    v0 = 2
     var v1: Array<Double> = emptyArray<Double>()
     v1 = Array(v0) { 0.0 }
-    val v2: Double = 1.5
+    var v2: Double = 0.0
+    v2 = 1.5
     v1[0] = v2
     v1[1] = 2.5
-    val v3: Double = v1[0]
-    val v4: Boolean = (v3 == 1.5)
+    var v3: Double = 0.0
+    v3 = v1[0]
+    var v4: Boolean = false
+    v4 = (v3 == 1.5)
     if (v4) {
         return 0
     } else {

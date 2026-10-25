@@ -1,10 +1,10 @@
 function count_0(v0: number): number {
     tail: while (true) {
-        const v1: boolean = v0 <= 0;
+        let v1: boolean = v0 <= 0;
         if (v1) {
             return 0;
         } else {
-            const v2: number = (v0 - 1) | 0;
+            let v2: number = (v0 - 1) | 0;
             v0 = v2;
             continue tail;
         }

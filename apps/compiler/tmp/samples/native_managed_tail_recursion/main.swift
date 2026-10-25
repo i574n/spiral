@@ -53,8 +53,10 @@ func sp_method1(_ p0: Int32, _ p1: String) -> String {
                 v7 = "go"
                 v8 = v7
             }
-            v0 = v2
-            v1 = v8
+            let t679_2: Int32 = v2
+            let t715_8: String = v8
+            v0 = t679_2
+            v1 = t715_8
             continue
         }
     }

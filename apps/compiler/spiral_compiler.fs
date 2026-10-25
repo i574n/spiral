@@ -181138,6 +181138,10 @@ end
                             match layoutExpression indent body with
                             | lambdaHead :: lambdaBody when fits indent ("| " + inlineText pattern + " " + lambdaHead.Text) && lambdaHead.Text.EndsWith "=>" ->
                                 { Indent = indent; Text = "| " + inlineText pattern + " " + lambdaHead.Text } :: lambdaBody
+                            | lambdaHead :: lambdaBody when lambdaHead.Text.EndsWith "=> {" && fits indent ("| " + inlineText pattern + " " + lambdaHead.Text.Substring(0, lambdaHead.Text.Length - 2)) ->
+                                { Indent = indent; Text = "| " + inlineText pattern + " " + lambdaHead.Text.Substring(0, lambdaHead.Text.Length - 2) }
+                                :: { Indent = indent + 4; Text = "{" }
+                                :: (lambdaBody |> List.map (fun laid -> { laid with Indent = laid.Indent + 4 }))
                             | _ -> { Indent = indent; Text = "| " + inlineText pattern } :: layoutExpression (indent + 4) body
                         | _ -> { Indent = indent; Text = "| " + inlineText pattern } :: layoutBlock (indent + 4) body
                 | None -> [ { Indent = indent; Text = "| " + inlineText armNodes } ]

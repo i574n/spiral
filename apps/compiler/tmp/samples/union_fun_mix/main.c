@@ -55,18 +55,24 @@ US0 US0_Call(Fun0 * v0, int32_t v1) { // Call
 static inline void ClosureDecrefBody0(Closure0 * x){
     (void)x;
 }
-static void ClosureDecref0(Fun0 * self){
+void ClosureDecref0(Fun0 * self){
     Closure0 * x = (Closure0 *) self;
     if (x != NULL && --(x->base.refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
-static int32_t add_c0(Fun0 * self, int32_t v1){
+int32_t add_c0(Fun0 * self, int32_t v1){
     Closure0 * x = (Closure0 *) self;
     int32_t v0 = x->v0;
+    
     ClosureDecref0(self);
-    int32_t v2 = v1 + v0;
+    
+    
+    int32_t v2;
+    v2 = v1 + v0;
+    
+    
     return v2;
 }
-static Fun0 * ClosureCreate0(int32_t v0){
+Fun0 * ClosureCreate0(int32_t v0){
     Closure0 * x = malloc(sizeof(Closure0));
     x->base.refc = 1;
     x->base.decref_fptr = ClosureDecref0;
@@ -74,24 +80,40 @@ static Fun0 * ClosureCreate0(int32_t v0){
     x->v0 = v0;
     return &x->base;
 }
-static int32_t score0(US0 v0){
+int32_t score0(US0 v0){
+    
+    
     switch (v0.tag) {
         case 1: { // Call
             Fun0 * v1 = v0.case1.v0; int32_t v2 = v0.case1.v1;
             (v1)->refc += 2;
             USDecref0(&(v0));
-            int32_t v3 = v1->fptr(v1, 0l);
+            int32_t v3;
+            v3 = v1->fptr(v1, 0l);
+            
             (v1)->decref_fptr(v1);
-            int32_t v4 = v3 + v2;
-            bool v5 = v4 == 7l;
+            int32_t v4;
+            v4 = v3 + v2;
+            
+            
+            bool v5;
+            v5 = v4 == 7l;
+            
+            
             if (v5){
+                
+                
                 return 0l;
             } else {
+                
+                
                 return 1l;
             }
             break;
         }
         default: { // None
+            
+            
             USDecref0(&(v0));
             return 1l;
             break;
@@ -99,15 +121,35 @@ static int32_t score0(US0 v0){
     }
 }
 int32_t main(){
-    int32_t v0 = 3l;
-    int32_t v1 = 4l;
-    bool v2 = true;
+    
+    
+    int32_t v0;
+    v0 = 3l;
+    
+    
+    int32_t v1;
+    v1 = 4l;
+    
+    
+    bool v2;
+    v2 = true;
+    
+    
     US0 v6;
     if (v2){
-        Fun0 * v3 = ClosureCreate0(v0);
+        
+        
+        Fun0 * v3;
+        v3 = ClosureCreate0(v0);
+        
+        
         v6 = US0_Call(v3, v1);
     } else {
+        
+        
         v6 = US0_None();
     }
+    
+    
     return score0(v6);
 }

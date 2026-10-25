@@ -5,6 +5,9 @@ pub fn spiral_string_length(text: String) -> Int {
   bit_array.byte_size(bit_array.from_string(text))
 }
 
+@external(erlang, "erlang", "halt")
+@external(javascript, "node:process", "exit")
+pub fn spiral_halt(code: Int) -> a
 
 pub fn spiral_string_index(text: String, index: Int) -> String {
   case bit_array.slice(bit_array.from_string(text), index, 1) {
@@ -32,12 +35,35 @@ fn spiral_string_starts_character(bytes: BitArray, at: Int) -> Bool {
   }
 }
 
+pub fn spiral_string_slice(text: String, from: Int, to: Int) -> String {
+  let bytes = bit_array.from_string(text)
+  let length = bit_array.byte_size(bytes)
+  case from < 0 || from > length || to < from - 1 || to >= length {
+    True -> panic as "spiral string slice: out of range"
+    False ->
+      case to < from {
+        True -> ""
+        False ->
+          case spiral_string_starts_character(bytes, from) && spiral_string_starts_character(bytes, to + 1) {
+            False -> panic as "spiral string slice: splits a character"
+            True ->
+              case bit_array.slice(bytes, from, to - from + 1) {
+                Ok(part) -> spiral_string_of_checked_bytes(part)
+                Error(_) -> panic as "spiral string slice: out of range"
+              }
+          }
+      }
+  }
+}
 
 pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
   let half = int.bitwise_shift_left(1, bits - 1)
   int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
 }
 
+pub fn spiral_wrap_unsigned(value: Int, bits: Int) -> Int {
+  int.bitwise_and(value, int.bitwise_shift_left(1, bits) - 1)
+}
 
 pub fn runtime_byte_2(v0: String, v1: Int) -> String {
     let v2 = spiral_string_index(v0, v1)
@@ -505,177 +531,177 @@ pub fn utf8_grapheme_count_bounded_loop_0(v0: String, v1: Int, v2: Int, v3: Int)
     }
 }
 pub fn main() {
-    let v0 = "Aéé☕️👍🏽Z"
-    let v1 = 0
-    let v2 = 0
-    let v3 = 21
-    let v4 = utf8_grapheme_count_bounded_loop_0(v0, v1, v2, v3)
-    let v5 = "́̈A"
-    let v6 = 0
-    let v7 = 0
-    let v8 = 5
-    let v9 = utf8_grapheme_count_bounded_loop_0(v5, v6, v7, v8)
-    let v10 = "Aé🙂Z"
-    let v11 = 4
-    let v12 = utf8_scalar_at_byte_offset_1(v10, v11)
-    let v13 = v12 >= 768
-    let v43 =
-        case v13 {
-            True -> {
-                let v14 = v12 <= 879
-                case v14 {
-                    True -> {
-                        True
-                    }
-                    False -> {
-                        let v15 = v12 >= 6832
-                        case v15 {
-                            True -> {
-                                let v16 = v12 <= 6911
-                                case v16 {
-                                    True -> {
-                                        True
-                                    }
-                                    False -> {
-                                        let v17 = v12 >= 7616
-                                        case v17 {
-                                            True -> {
-                                                let v18 = v12 <= 7679
-                                                case v18 {
-                                                    True -> {
-                                                        True
-                                                    }
-                                                    False -> {
-                                                        let v19 = v12 >= 8400
-                                                        case v19 {
-                                                            True -> {
-                                                                let v20 = v12 <= 8447
-                                                                case v20 {
-                                                                    True -> {
-                                                                        True
-                                                                    }
-                                                                    False -> {
-                                                                        let v21 = v12 >= 65024
-                                                                        case v21 {
-                                                                            True -> {
-                                                                                let v22 = v12 <= 65039
-                                                                                case v22 {
-                                                                                    True -> {
-                                                                                        True
-                                                                                    }
-                                                                                    False -> {
-                                                                                        let v23 = v12 >= 65056
-                                                                                        case v23 {
-                                                                                            True -> {
-                                                                                                let v24 = v12 <= 65071
-                                                                                                case v24 {
-                                                                                                    True -> {
-                                                                                                        True
-                                                                                                    }
-                                                                                                    False -> {
-                                                                                                        let v25 = v12 >= 127995
-                                                                                                        case v25 {
-                                                                                                            True -> {
-                                                                                                                let v26 = v12 <= 127999
-                                                                                                                case v26 {
-                                                                                                                    True -> {
-                                                                                                                        True
-                                                                                                                    }
-                                                                                                                    False -> {
-                                                                                                                        let v27 = v12 >= 917760
-                                                                                                                        case v27 {
-                                                                                                                            True -> {
-                                                                                                                                let v28 = v12 <= 917999
-                                                                                                                                v28
-                                                                                                                            }
-                                                                                                                            False -> {
-                                                                                                                                False
-                                                                                                                            }
+let v0 = "Aéé☕️👍🏽Z"
+let v1 = 0
+let v2 = 0
+let v3 = 21
+let v4 = utf8_grapheme_count_bounded_loop_0(v0, v1, v2, v3)
+let v5 = "́̈A"
+let v6 = 0
+let v7 = 0
+let v8 = 5
+let v9 = utf8_grapheme_count_bounded_loop_0(v5, v6, v7, v8)
+let v10 = "Aé🙂Z"
+let v11 = 4
+let v12 = utf8_scalar_at_byte_offset_1(v10, v11)
+let v13 = v12 >= 768
+let v43 =
+    case v13 {
+        True -> {
+            let v14 = v12 <= 879
+            case v14 {
+                True -> {
+                    True
+                }
+                False -> {
+                    let v15 = v12 >= 6832
+                    case v15 {
+                        True -> {
+                            let v16 = v12 <= 6911
+                            case v16 {
+                                True -> {
+                                    True
+                                }
+                                False -> {
+                                    let v17 = v12 >= 7616
+                                    case v17 {
+                                        True -> {
+                                            let v18 = v12 <= 7679
+                                            case v18 {
+                                                True -> {
+                                                    True
+                                                }
+                                                False -> {
+                                                    let v19 = v12 >= 8400
+                                                    case v19 {
+                                                        True -> {
+                                                            let v20 = v12 <= 8447
+                                                            case v20 {
+                                                                True -> {
+                                                                    True
+                                                                }
+                                                                False -> {
+                                                                    let v21 = v12 >= 65024
+                                                                    case v21 {
+                                                                        True -> {
+                                                                            let v22 = v12 <= 65039
+                                                                            case v22 {
+                                                                                True -> {
+                                                                                    True
+                                                                                }
+                                                                                False -> {
+                                                                                    let v23 = v12 >= 65056
+                                                                                    case v23 {
+                                                                                        True -> {
+                                                                                            let v24 = v12 <= 65071
+                                                                                            case v24 {
+                                                                                                True -> {
+                                                                                                    True
+                                                                                                }
+                                                                                                False -> {
+                                                                                                    let v25 = v12 >= 127995
+                                                                                                    case v25 {
+                                                                                                        True -> {
+                                                                                                            let v26 = v12 <= 127999
+                                                                                                            case v26 {
+                                                                                                                True -> {
+                                                                                                                    True
+                                                                                                                }
+                                                                                                                False -> {
+                                                                                                                    let v27 = v12 >= 917760
+                                                                                                                    case v27 {
+                                                                                                                        True -> {
+                                                                                                                            let v28 = v12 <= 917999
+                                                                                                                            v28
+                                                                                                                        }
+                                                                                                                        False -> {
+                                                                                                                            False
                                                                                                                         }
                                                                                                                     }
                                                                                                                 }
                                                                                                             }
-                                                                                                            False -> {
-                                                                                                                False
-                                                                                                            }
+                                                                                                        }
+                                                                                                        False -> {
+                                                                                                            False
                                                                                                         }
                                                                                                     }
                                                                                                 }
                                                                                             }
-                                                                                            False -> {
-                                                                                                False
-                                                                                            }
+                                                                                        }
+                                                                                        False -> {
+                                                                                            False
                                                                                         }
                                                                                     }
                                                                                 }
                                                                             }
-                                                                            False -> {
-                                                                                False
-                                                                            }
+                                                                        }
+                                                                        False -> {
+                                                                            False
                                                                         }
                                                                     }
                                                                 }
                                                             }
-                                                            False -> {
-                                                                False
-                                                            }
+                                                        }
+                                                        False -> {
+                                                            False
                                                         }
                                                     }
                                                 }
                                             }
-                                            False -> {
-                                                False
-                                            }
+                                        }
+                                        False -> {
+                                            False
                                         }
                                     }
                                 }
                             }
-                            False -> {
-                                False
-                            }
-                        }
-                    }
-                }
-            }
-            False -> {
-                False
-            }
-        }
-    let v49 =
-        case v43 {
-            True -> {
-                panic as "UTF-8 grapheme byte offset is inside a bounded grapheme cluster."
-            }
-            False -> {
-                let v45 = 4
-                let v46 = 0
-                let v47 = 9
-                utf8_grapheme_count_bounded_loop_0(v10, v45, v46, v47)
-            }
-        }
-    let v50 = v4 == 6
-    case v50 {
-        True -> {
-            let v51 = v9 == 2
-            case v51 {
-                True -> {
-                    let v52 = v49 == 2
-                    case v52 {
-                        True -> {
-                            0
                         }
                         False -> {
-                            4
+                            False
                         }
                     }
-                }
-                False -> {
-                    2
                 }
             }
         }
         False -> {
-            1
+            False
         }
     }
+let v49 =
+    case v43 {
+        True -> {
+            panic as "UTF-8 grapheme byte offset is inside a bounded grapheme cluster."
+        }
+        False -> {
+            let v45 = 4
+            let v46 = 0
+            let v47 = 9
+            utf8_grapheme_count_bounded_loop_0(v10, v45, v46, v47)
+        }
+    }
+let v50 = v4 == 6
+case v50 {
+    True -> {
+        let v51 = v9 == 2
+        case v51 {
+            True -> {
+                let v52 = v49 == 2
+                case v52 {
+                    True -> {
+                        0
+                    }
+                    False -> {
+                        4
+                    }
+                }
+            }
+            False -> {
+                2
+            }
+        }
+    }
+    False -> {
+        1
+    }
+}
 }

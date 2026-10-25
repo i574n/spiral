@@ -14,9 +14,10 @@ end
 local v0 = 3
 local v1 = "hi"
 local v2 = method0(v0, v1)
-if v2 ~= nil and v2.tag == "Us0_Both" then
-    local v4 = v2._1
-    local v5 = v2._2
+local __v = { v2 }
+if __v[1] ~= nil and __v[1].tag == "Us0_Both" then
+    local v4 = __v[1]._1
+    local v5 = __v[1]._2
     local v6 = v4 == 3
     local getv8 = function()
         if v6 then
@@ -32,7 +33,7 @@ if v2 ~= nil and v2.tag == "Us0_Both" then
     else
         return 1
     end
-elseif v2 ~= nil and v2.tag == "Us0_One" then
-    local v3 = v2._1
+elseif __v[1] ~= nil and __v[1].tag == "Us0_One" then
+    local v3 = __v[1]._1
     return 1
 end

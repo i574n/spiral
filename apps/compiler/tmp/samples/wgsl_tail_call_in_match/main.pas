@@ -21,6 +21,7 @@ var
   v9: LongInt;
   v5: LongInt;
   v6: LongInt;
+  tmp6: LongInt;
 begin
   while True do begin
       v1 := v0 >= 5;
@@ -39,7 +40,8 @@ begin
           1: begin
               v5 := v4.c1_0;
               v6 := v5 + 1;
-              v0 := v6;
+              tmp6 := v6;
+              v0 := tmp6;
               Continue;
           end;
       end;

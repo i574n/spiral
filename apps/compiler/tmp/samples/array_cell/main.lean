@@ -30,21 +30,32 @@ end
 deriving instance Inhabited for H0
 mutual
 partial def spiralMain : IO Int32 := do
+    let mut v0 : Int32 := default
     let mut v1 : (IO.Ref (Array H0)) ← IO.mkRef #[]
-    let v0 : Int32 := (2 : Int32)
+    let mut v2 : Int32 := default
+    let mut v3 : Int32 := default
+    let mut v4 : H0 := default
+    let mut v5 : H0 := default
+    let mut v6 : H0 := default
+    let mut v7 : Int32 := default
+    let mut v8 : H0 := default
+    let mut v9 : Int32 := default
+    let mut v10 : Int32 := default
+    let mut v11 : Bool := default
+    v0 := (2 : Int32)
     v1 := (← IO.mkRef (Array.replicate (spiralIdx v0) (default : H0)))
-    let v2 : Int32 := (4 : Int32)
-    let v3 : Int32 := (6 : Int32)
-    let v4 : H0 := (H0.mk v2)
+    v2 := (4 : Int32)
+    v3 := (6 : Int32)
+    v4 := (H0.mk v2)
     v1.modify (fun xs => xs.set! (spiralIdx (0 : Int32)) v4)
-    let v5 : H0 := (H0.mk v3)
+    v5 := (H0.mk v3)
     v1.modify (fun xs => xs.set! (spiralIdx (1 : Int32)) v5)
-    let v6 : H0 := (← spiralIndex (← v1.get) (spiralIdx (0 : Int32)))
-    let v7 : Int32 := v6.l0
-    let v8 : H0 := (← spiralIndex (← v1.get) (spiralIdx (1 : Int32)))
-    let v9 : Int32 := v8.l0
-    let v10 : Int32 := (v7 + v9)
-    let v11 : Bool := (v10 == (10 : Int32))
+    v6 := (← spiralIndex (← v1.get) (spiralIdx (0 : Int32)))
+    v7 := v6.l0
+    v8 := (← spiralIndex (← v1.get) (spiralIdx (1 : Int32)))
+    v9 := v8.l0
+    v10 := (v7 + v9)
+    v11 := (v10 == (10 : Int32))
     if v11 then
         return (0 : Int32)
     else

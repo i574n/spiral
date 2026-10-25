@@ -27,8 +27,9 @@ mutual
 partial def left_c0 (p0 : Int32) (p1 : Int32) : IO Int32 := do
     let mut v0 : Int32 := p0
     let mut v1 : Int32 := p1
+    let mut v2 : Bool := default
     let mut v3 : Int32 := default
-    let v2 : Bool := (v0 == (0 : Int32))
+    v2 := (v0 == (0 : Int32))
     if v2 then
         return (0 : Int32)
     else
@@ -37,8 +38,9 @@ partial def left_c0 (p0 : Int32) (p1 : Int32) : IO Int32 := do
 partial def right_c1 (p0 : Int32) (p1 : Int32) : IO Int32 := do
     let mut v0 : Int32 := p0
     let mut v1 : Int32 := p1
+    let mut v2 : Bool := default
     let mut v3 : Int32 := default
-    let v2 : Bool := (v0 == (0 : Int32))
+    v2 := (v0 == (0 : Int32))
     if v2 then
         return (0 : Int32)
     else
@@ -47,19 +49,29 @@ partial def right_c1 (p0 : Int32) (p1 : Int32) : IO Int32 := do
 partial def method0 (p0 : Int32) (p1 : Int32) : IO ((Int32 → IO Int32) × (Int32 → IO Int32)) := do
     let mut v0 : Int32 := p0
     let mut v1 : Int32 := p1
-    let v2 : (Int32 → IO Int32) := (left_c0 v0)
-    let v3 : (Int32 → IO Int32) := (right_c1 v1)
+    let mut v2 : (Int32 → IO Int32) := default
+    let mut v3 : (Int32 → IO Int32) := default
+    v2 := (left_c0 v0)
+    v3 := (right_c1 v1)
     return (v2, v3)
 partial def spiralMain : IO Int32 := do
-    let v0 : Int32 := (3 : Int32)
-    let v1 : Int32 := (4 : Int32)
+    let mut v0 : Int32 := default
+    let mut v1 : Int32 := default
+    let mut v2 : (Int32 → IO Int32) := default
+    let mut v3 : (Int32 → IO Int32) := default
+    let mut v4 : Int32 := default
+    let mut v5 : Int32 := default
+    let mut v6 : Int32 := default
+    let mut v7 : Bool := default
+    v0 := (3 : Int32)
+    v1 := (4 : Int32)
     let (r1_0, r1_1) := (← method0 v0 v1)
-    let v2 : (Int32 → IO Int32) := r1_0
-    let v3 : (Int32 → IO Int32) := r1_1
-    let v4 : Int32 := (← v2 (0 : Int32))
-    let v5 : Int32 := (← v3 (0 : Int32))
-    let v6 : Int32 := (v4 + v5)
-    let v7 : Bool := (v6 == (7 : Int32))
+    v2 := r1_0
+    v3 := r1_1
+    v4 := (← v2 (0 : Int32))
+    v5 := (← v3 (0 : Int32))
+    v6 := (v4 + v5)
+    v7 := (v6 == (7 : Int32))
     if v7 then
         return (0 : Int32)
     else

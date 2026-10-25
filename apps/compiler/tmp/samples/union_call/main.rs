@@ -8,24 +8,24 @@ enum US0 {
 }
 fn f_c0(mut v0: i32) -> Rc<dyn Fn(i32) -> i32> {
     Rc::new(move |mut v1: i32| -> i32 {
-        let v2: i32 = v1.wrapping_add(v0);
+        let mut v2: i32 = v1.wrapping_add(v0);
         v2
     })
 }
 fn spiral_main() -> i32 {
-    let v0: i32 = 3i32;
-    let v1: Rc<dyn Fn(i32) -> i32> = f_c0(v0);
-    let v2: bool = true;
-    let v5: US0 = if v2 {
-        US0::US0_Call(v1)
+    let mut v0: i32 = 3i32;
+    let mut v1: Rc<dyn Fn(i32) -> i32> = f_c0(v0);
+    let mut v2: bool = true;
+    let mut v5: US0 = if v2 {
+        US0::US0_Call(v1.clone())
     } else {
         US0::US0_Missing
     };
     match &v5 {
         US0::US0_Call(v6) => {
             let mut v6: Rc<dyn Fn(i32) -> i32> = v6.clone();
-            let v7: i32 = v6(4i32);
-            let v8: bool = v7 == 7i32;
+            let mut v7: i32 = v6(4i32);
+            let mut v8: bool = v7 == 7i32;
             if v8 {
                 0i32
             } else {

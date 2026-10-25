@@ -12,24 +12,24 @@ impl Default for US0 {
     }
 }
 fn spiral_main() -> i32 {
-    let v0: i32 = 2i32;
-    let v1: Rc<RefCell<Vec<US0>>> = Rc::new(RefCell::new(vec![<US0>::default(); v0 as usize]));
-    let v2: i32 = 7i32;
-    let v3: US0 = US0::US0_Some(v2);
-    v1.clone().borrow_mut()[0i32 as usize] = v3;
-    let v4: US0 = US0::US0_None;
-    v1.clone().borrow_mut()[1i32 as usize] = v4;
-    let v5: US0 = v1.clone().borrow()[0i32 as usize].clone();
+    let mut v0: i32 = 2i32;
+    let mut v1: Rc<RefCell<Vec<US0>>> = Rc::new(RefCell::new(vec![<US0>::default(); v0 as usize]));
+    let mut v2: i32 = 7i32;
+    let mut v3: US0 = US0::US0_Some(v2);
+    v1.clone().borrow_mut()[0i32 as usize] = v3.clone();
+    let mut v4: US0 = US0::US0_None;
+    v1.clone().borrow_mut()[1i32 as usize] = v4.clone();
+    let mut v5: US0 = v1.clone().borrow()[0i32 as usize].clone();
     match &v5 {
         US0::US0_None => {
             1i32
         }
         US0::US0_Some(v6) => {
-            let v6: i32 = *v6;
-            let v7: US0 = v1.borrow()[1i32 as usize].clone();
+            let mut v6: i32 = *v6;
+            let mut v7: US0 = v1.clone().borrow()[1i32 as usize].clone();
             match &v7 {
                 US0::US0_None => {
-                    let v8: bool = v6 == 7i32;
+                    let mut v8: bool = v6 == 7i32;
                     if v8 {
                         0i32
                     } else {
@@ -37,7 +37,7 @@ fn spiral_main() -> i32 {
                     }
                 }
                 US0::US0_Some(v10) => {
-                    let v10: i32 = *v10;
+                    let mut v10: i32 = *v10;
                     1i32
                 }
             }

@@ -117,15 +117,30 @@ inl some' forall t. (x : t) : option' t =
         Lean = fun () => $'(some !x)' : option' t
     }
 
+/// ### is_none'
+inl is_none' forall t. (x : option' t) : bool =
+    backend_switch {
+        Lua = fun () => $'!x == nil' : bool
+        Python = fun () => $'!x is None' : bool
+        Rust = fun () => $'!x.is_none()' : bool
+        TypeScript = fun () => $'!x === undefined' : bool
+    }
+
+/// ### nullable_value'
+inl nullable_value' forall t. (x : option' t) : t =
+    $'!x' : t
+
 /// ### default_value'
 inl default_value' forall t. (value : t) (x : option' t) : t =
     backend_switch {
         Gleam = fun () => $'!x |> option.unwrap(!value)' : t
-        Lua = fun () => $'(function() if !x ~= nil then return !x else return !value end end)()' : t
+        Lua = fun () => if is_none' x then value else nullable_value' x
         Fsharp = fun () => $'!x |> Option.defaultValue !value ' : t
-        Python = fun () => $'(!value if !x is None else !x)' : t
-        Rust = fun () => $'!x.unwrap_or(!value)' : t
-        TypeScript = fun () => $'(!x === undefined ? !value : !x)' : t
+        Python = fun () => if is_none' x then value else nullable_value' x
+        Rust = fun () =>
+            inl value = rust.clone value
+            $'!x.unwrap_or(!value)' : t
+        TypeScript = fun () => if is_none' x then value else nullable_value' x
         Zig = fun () => $'(!x orelse !value)' : t
         Lean = fun () => $'((!x).getD !value)' : t
     }

@@ -7,9 +7,12 @@ fun sp_count_down_0(p0: Int, p1: Int): Int {
         if (v2) {
             var v3: Int = 0
             v3 = (v0 - 1)
-            val v4: Int = (v1 + 1)
-            v0 = v3
-            v1 = v4
+            var v4: Int = 0
+            v4 = (v1 + 1)
+            val t297_3: Int = v3
+            val t331_4: Int = v4
+            v0 = t297_3
+            v1 = t331_4
             continue
         } else {
             return v1

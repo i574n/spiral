@@ -1,13 +1,18 @@
 fun spiral_main(): Int {
-    val v0: Int = 2
+    var v0: Int = 0
+    v0 = 2
     var v1: Array<String> = emptyArray<String>()
     v1 = Array(v0) { "" }
-    val v2: String = "hi"
+    var v2: String = ""
+    v2 = "hi"
     v1[0] = v2
-    val v3: String = "yo"
+    var v3: String = ""
+    v3 = "yo"
     v1[1] = v3
-    val v4: String = v1[0]
-    val v5: Boolean = (v4 == "hi")
+    var v4: String = ""
+    v4 = v1[0]
+    var v5: Boolean = false
+    v5 = (v4 == "hi")
     if (v5) {
         return 0
     } else {

@@ -36,6 +36,14 @@ def U0.spiralTag : U0 → Int32
   | .Empty .. => 2
 mutual
 partial def spiralMain : IO Int32 := do
+    let mut v0 : Int32 := default
+    let mut v1 : U0 := default
+    let mut v2 : Int32 := default
+    let mut v3 : Int32 := default
+    let mut v4 : U0 := default
+    let mut v5 : U0 := default
+    let mut v6 : Int32 := default
+    let mut v7 : U0 := default
     let mut v18 : Bool := default
     let mut v8 : Int32 := default
     let mut v9 : Int32 := default
@@ -61,6 +69,7 @@ partial def spiralMain : IO Int32 := do
     let mut v32 : Int32 := default
     let mut v33 : Int32 := default
     let mut v34 : Int32 := default
+    let mut v38 : Int32 := default
     let mut v47 : Int32 := default
     let mut v39 : Int32 := default
     let mut v40 : Int32 := default
@@ -68,14 +77,16 @@ partial def spiralMain : IO Int32 := do
     let mut v42 : Int32 := default
     let mut v43 : Int32 := default
     let mut v44 : Int32 := default
-    let v0 : Int32 := (2 : Int32)
-    let v1 : U0 := (U0.Circle v0)
-    let v2 : Int32 := (3 : Int32)
-    let v3 : Int32 := (4 : Int32)
-    let v4 : U0 := (U0.Rect v2 v3)
-    let v5 : U0 := U0.Empty
-    let v6 : Int32 := (2 : Int32)
-    let v7 : U0 := (U0.Circle v6)
+    let mut v48 : Int32 := default
+    let mut v49 : Int32 := default
+    v0 := (2 : Int32)
+    v1 := (U0.Circle v0)
+    v2 := (3 : Int32)
+    v3 := (4 : Int32)
+    v4 := (U0.Rect v2 v3)
+    v5 := U0.Empty
+    v6 := (2 : Int32)
+    v7 := (U0.Circle v6)
     match v1, v7 with
     | U0.Circle f8, U0.Circle f9 =>
         v8 := f8
@@ -127,7 +138,7 @@ partial def spiralMain : IO Int32 := do
         v33 := f33
         v34 := (v32 * v33)
         v37 := v34
-    let v38 : Int32 := (v28 + v37)
+    v38 := (v28 + v37)
     match v5 with
     | U0.Circle f39 =>
         v39 := f39
@@ -141,8 +152,8 @@ partial def spiralMain : IO Int32 := do
         v43 := f43
         v44 := (v42 * v43)
         v47 := v44
-    let v48 : Int32 := (v38 + v47)
-    let v49 : Int32 := (v48 + v19)
+    v48 := (v38 + v47)
+    v49 := (v48 + v19)
     return v49
 end
 def main : IO UInt32 := do

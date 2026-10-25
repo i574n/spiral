@@ -15,14 +15,16 @@ func sp_method1(_ p0: Int32, _ p1: Int32, _ p2: Bool) -> Int32 {
     if (v2) {
         var v3: Int32 = 0
         v3 = (v0 &+ v1)
-        let v4: Int32 = (v3 &- 4)
+        var v4: Int32 = 0
+        v4 = (v3 &- 4)
         return v4
     } else {
         return 1
     }
 }
 func spiral_main() -> Int32 {
-    let v0: Int32 = 1
+    var v0: Int32 = 0
+    v0 = 1
     var v1: Int32 = 0
     var v2: Int32 = 0
     var v3: Bool = false

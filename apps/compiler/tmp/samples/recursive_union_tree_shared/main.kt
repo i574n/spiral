@@ -1,5 +1,5 @@
 sealed interface UH0 { val tag: Int }
-object UH0_Leaf : UH0 { override val tag: Int = 0 }
+class UH0_Leaf : UH0 { override val tag: Int = 0 }
 data class UH0_Node(val f0: Int, val f1: UH0, val f2: UH0) : UH0 { override val tag: Int = 1 }
 fun sp_sum_0(p0: UH0): Int {
     var v0: UH0 = p0
@@ -17,18 +17,23 @@ fun sp_sum_0(p0: UH0): Int {
             v5 = sp_sum_0(v3)
             var v6: Int = 0
             v6 = (v4 + v5)
-            val v7: Int = (v1 + v6)
+            var v7: Int = 0
+            v7 = (v1 + v6)
             return v7
         }
         else -> throw RuntimeException()
     }
 }
 fun spiral_main(): Int {
-    val v0: Int = 1
-    val v1: Int = 2
-    val v2: UH0 = UH0_Leaf
-    val v3: UH0 = UH0_Node(v1, v2, v2)
-    var v4: UH0 = UH0_Leaf
+    var v0: Int = 0
+    v0 = 1
+    var v1: Int = 0
+    v1 = 2
+    var v2: UH0 = UH0_Leaf()
+    v2 = UH0_Leaf()
+    var v3: UH0 = UH0_Leaf()
+    v3 = UH0_Node(v1, v2, v2)
+    var v4: UH0 = UH0_Leaf()
     v4 = UH0_Node(v0, v3, v3)
     var v5: Int = 0
     v5 = sp_sum_0(v4)

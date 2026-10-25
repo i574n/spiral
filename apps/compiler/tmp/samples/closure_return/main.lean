@@ -28,8 +28,9 @@ partial def g_c1 (p0 : Int32) (p1 : Int32) (p2 : Int32) : IO Int32 := do
     let mut v0 : Int32 := p0
     let mut v1 : Int32 := p1
     let mut v2 : Int32 := p2
+    let mut v3 : Bool := default
     let mut v4 : Int32 := default
-    let v3 : Bool := (v1 == (0 : Int32))
+    v3 := (v1 == (0 : Int32))
     if v3 then
         return (0 : Int32)
     else
@@ -40,11 +41,16 @@ partial def f_c0 (p0 : Int32) (p1 : Int32) : IO (Int32 → IO Int32) := do
     let mut v1 : Int32 := p1
     return (g_c1 v0 v1)
 partial def spiralMain : IO Int32 := do
-    let v0 : Int32 := (7 : Int32)
-    let v1 : (Int32 → IO (Int32 → IO Int32)) := (f_c0 v0)
-    let v2 : (Int32 → IO Int32) := (← v1 (1 : Int32))
-    let v3 : Int32 := (← v2 (0 : Int32))
-    let v4 : Bool := (v3 == (7 : Int32))
+    let mut v0 : Int32 := default
+    let mut v1 : (Int32 → IO (Int32 → IO Int32)) := default
+    let mut v2 : (Int32 → IO Int32) := default
+    let mut v3 : Int32 := default
+    let mut v4 : Bool := default
+    v0 := (7 : Int32)
+    v1 := (f_c0 v0)
+    v2 := (← v1 (1 : Int32))
+    v3 := (← v2 (0 : Int32))
+    v4 := (v3 == (7 : Int32))
     if v4 then
         return (0 : Int32)
     else

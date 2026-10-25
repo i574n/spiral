@@ -234,7 +234,9 @@ inl channel_send forall t.
 inl sleep (n : i32) : () =
     run_target function
         | Fsharp => fun () => $'System.Threading.Thread.Sleep' n
-        | Rust => fun () => $'std::thread::sleep(std::time::Duration::from_millis(!n as u64))' : ()
+        | Rust => fun () =>
+            inl ms : u64 = conv n
+            $'std::thread::sleep(std::time::Duration::from_millis(!ms))' : ()
         | _ => fun () => ()
 
 /// ### thread

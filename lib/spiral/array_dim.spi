@@ -1,5 +1,4 @@
 /// ## array_dim
-
 test array_dim static =
     open testing
 

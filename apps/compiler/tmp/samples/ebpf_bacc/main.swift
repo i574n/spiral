@@ -8,17 +8,21 @@ func sp_method1(_ p0: Int32, _ p1: Bool) -> Bool {
         v2 = (v0 &- 1)
         var v4: Bool = false
         if (v1) {
-            let v3: Bool = (v0 > 0)
+            var v3: Bool = false
+            v3 = (v0 > 0)
             v4 = v3
         } else {
             v4 = false
         }
-        let v5: Bool = (v2 == 0)
+        var v5: Bool = false
+        v5 = (v2 == 0)
         if (v5) {
             return v4
         } else {
-            v0 = v2
-            v1 = v4
+            let t466_2: Int32 = v2
+            let t502_4: Bool = v4
+            v0 = t466_2
+            v1 = t502_4
             continue
         }
     }

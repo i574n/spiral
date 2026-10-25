@@ -582,14 +582,18 @@ func sp_loop_0(_ p0: UH0, _ p1: UInt64) -> UInt64 {
 func spiral_main() -> Int32 {
     var v0: UInt64 = (0 as UInt64)
     v0 = (80 as UInt64)
-    let v1: () -> UH0 = closure0()
-    let v2: UH0 = UH0_Cons(f0: v0, f1: v1)
-    let v3: UInt64 = (0 as UInt64)
+    var v1: () -> UH0 = { () -> UH0 in fatalError("unreachable closure") }
+    v1 = closure0()
+    var v2: UH0 = UH0_Cons(f0: (0 as UInt64), f1: { () -> UH0 in fatalError("unreachable closure") })
+    v2 = UH0_Cons(f0: v0, f1: v1)
+    var v3: UInt64 = (0 as UInt64)
+    v3 = (0 as UInt64)
     var v4: UInt64 = (0 as UInt64)
     v4 = sp_loop_0(v2, v3)
     var v5: UInt64 = (0 as UInt64)
     v5 = (v4 % (200 as UInt64))
-    let v6: Int32 = Int32(truncatingIfNeeded: v5)
+    var v6: Int32 = 0
+    v6 = Int32(truncatingIfNeeded: v5)
     return v6
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

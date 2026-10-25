@@ -39,12 +39,14 @@ def U0.spiralTag : U0 → Int32
 mutual
 partial def closure0 (p0 : UInt64) (_ : Unit) : IO U0 := do
     let mut v0 : UInt64 := p0
-    let v1 : UInt64 := (v0 - (1 : UInt64))
+    let mut v1 : UInt64 := default
+    v1 := (v0 - (1 : UInt64))
     return (← build_0 v1)
 partial def build_0 (p0 : UInt64) : IO U0 := do
     let mut v0 : UInt64 := p0
+    let mut v1 : Bool := default
     let mut v3 : (Unit → IO U0) := default
-    let v1 : Bool := (v0 == (0 : UInt64))
+    v1 := (v0 == (0 : UInt64))
     if v1 then
         return U0.Nil
     else
@@ -67,15 +69,24 @@ partial def sum_1 (p0 : U0) (p1 : UInt64) : IO UInt64 := do
     | U0.Nil =>
         return v1
 partial def spiralMain : IO Int32 := do
-    let v0 : UInt64 := (10 : UInt64)
-    let v1 : U0 := (← build_0 v0)
-    let v2 : UInt64 := (0 : UInt64)
-    let v3 : UInt64 := (← sum_1 v1 v2)
-    let v4 : Int32 := (5 : Int32)
-    let v5 : Int32 := (Int32.ofInt (SpiralToInt.toI v3))
-    let v6 : Int32 := (v4 * (2 : Int32))
-    let v7 : Int32 := (v4 + v6)
-    let v8 : Int32 := (v5 + v7)
+    let mut v0 : UInt64 := default
+    let mut v1 : U0 := default
+    let mut v2 : UInt64 := default
+    let mut v3 : UInt64 := default
+    let mut v4 : Int32 := default
+    let mut v5 : Int32 := default
+    let mut v6 : Int32 := default
+    let mut v7 : Int32 := default
+    let mut v8 : Int32 := default
+    v0 := (10 : UInt64)
+    v1 := (← build_0 v0)
+    v2 := (0 : UInt64)
+    v3 := (← sum_1 v1 v2)
+    v4 := (5 : Int32)
+    v5 := (Int32.ofInt (SpiralToInt.toI v3))
+    v6 := (v4 * (2 : Int32))
+    v7 := (v4 + v6)
+    v8 := (v5 + v7)
     return v8
 end
 def main : IO UInt32 := do

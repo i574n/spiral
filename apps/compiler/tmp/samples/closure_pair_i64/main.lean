@@ -28,23 +28,30 @@ partial def f_c0 (p0 : Int64) (p1 : String) (p2 : Int32) : IO (Int64 × String) 
     let mut v0 : Int64 := p0
     let mut v1 : String := p1
     let mut v2 : Int32 := p2
+    let mut v3 : Bool := default
     let mut v4 : String := default
-    let v3 : Bool := (v2 == (0 : Int32))
+    v3 := (v2 == (0 : Int32))
     if v3 then
         v4 := "no"
         return ((0 : Int64), v4)
     else
         return (v0, v1)
 partial def spiralMain : IO Int32 := do
+    let mut v0 : Int64 := default
+    let mut v1 : String := default
+    let mut v2 : (Int32 → IO (Int64 × String)) := default
+    let mut v3 : Int64 := default
+    let mut v4 : String := default
+    let mut v5 : Bool := default
     let mut v7 : Bool := default
     let mut v6 : Bool := default
-    let v0 : Int64 := (5000000000 : Int64)
-    let v1 : String := "hi"
-    let v2 : (Int32 → IO (Int64 × String)) := (f_c0 v0 v1)
+    v0 := (5000000000 : Int64)
+    v1 := "hi"
+    v2 := (f_c0 v0 v1)
     let (r1_0, r1_1) := (← v2 (1 : Int32))
-    let v3 : Int64 := r1_0
-    let v4 : String := r1_1
-    let v5 : Bool := (v3 == (5000000000 : Int64))
+    v3 := r1_0
+    v4 := r1_1
+    v5 := (v3 == (5000000000 : Int64))
     if v5 then
         v6 := (v4 == "hi")
         v7 := v6

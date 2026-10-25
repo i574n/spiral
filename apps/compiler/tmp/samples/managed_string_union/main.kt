@@ -47,7 +47,8 @@ fun sp_score_0(p0: US0): Int {
     }
 }
 fun spiral_main(): Int {
-    val v0: Boolean = false
+    var v0: Boolean = false
+    v0 = false
     var v4: US0 = US0_Text("")
     if (v0) {
         v4 = US0_Number(7)
@@ -56,10 +57,14 @@ fun spiral_main(): Int {
         v2 = "qwe"
         v4 = US0_Text(v2)
     }
-    val v5: Int = sp_score_0(v4)
-    val v6: Int = sp_score_0(v4)
-    val v7: Int = (v5 + v6)
-    val v8: Int = (v7 - 6)
+    var v5: Int = 0
+    v5 = sp_score_0(v4)
+    var v6: Int = 0
+    v6 = sp_score_0(v4)
+    var v7: Int = 0
+    v7 = (v5 + v6)
+    var v8: Int = 0
+    v8 = (v7 - 6)
     return v8
 }
 fun main() {

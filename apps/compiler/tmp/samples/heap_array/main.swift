@@ -11,15 +11,21 @@ final class SpiralArray<T> {
     init(_ items: [T]) { self.items = items }
 }
 func spiral_main() -> Int32 {
-    let v0: Int32 = 2
+    var v0: Int32 = 0
+    v0 = 2
     var v1: SpiralArray<Int32> = SpiralArray<Int32>([])
     v1 = SpiralArray<Int32>(Array(repeating: 0, count: Int(v0)))
-    let v2: Int32 = 7
+    var v2: Int32 = 0
+    v2 = 7
     v1.items[Int(0)] = v2
-    let v3: Heap0 = Heap0(l0: v1)
-    let v4: SpiralArray<Int32> = v3.l0
-    let v5: Int32 = v4.items[Int(0)]
-    let v6: Bool = (v5 == 7)
+    var v3: Heap0 = Heap0(l0: SpiralArray<Int32>([]))
+    v3 = Heap0(l0: v1)
+    var v4: SpiralArray<Int32> = SpiralArray<Int32>([])
+    v4 = v3.l0
+    var v5: Int32 = 0
+    v5 = v4.items[Int(0)]
+    var v6: Bool = false
+    v6 = (v5 == 7)
     if (v6) {
         return 0
     } else {

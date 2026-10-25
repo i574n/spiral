@@ -15,7 +15,7 @@ union rec xvalue =
 
 type scope = { context : located; root : located; variables : list (string * xvalue) }
 
-inl attribute_node (name : string) (value : string) : xml_node = XmlElement ("@" ++# name, Nil, Cons (XmlText value, Nil))
+inl attribute_node (name : string) (value : string) : xml_node = XmlElement ("@" ++# name, Nil, XmlText value :: Nil)
 
 inl is_attribute (node : xml_node) : bool = sm'.starts_with "@" (node_name node)
 
@@ -25,12 +25,15 @@ let rec string_value (node : xml_node) : string =
     | XmlElement (_, _, children) => children_text children ""
 and let children_text (children : list xml_node) (acc : string) : string =
     match children with
-    | Cons (child, rest) => children_text rest (acc ++# string_value child)
+    | child :: rest => children_text rest (acc ++# string_value child)
     | Nil => acc
 
 inl name_matches (test : string) (node : xml_node) : bool =
     match node with
-    | XmlElement (name, _, _) => test = "*" || local_name test = local_name (if is_attribute node then sm'.substring 1i32 (sm'.length name - 1i32) name else name)
+    | XmlElement (name, _, _) =>
+        test = "*"
+        || local_name test
+           = local_name (if is_attribute node then sm'.substring 1i32 (sm'.length name - 1i32) name else name)
     | XmlText _ => false
 
 inl kind_matches (test : string) (node : xml_node) : bool =
@@ -40,9 +43,9 @@ inl kind_matches (test : string) (node : xml_node) : bool =
 
 let rec children_of (parent : located) (nodes : list xml_node) (index : i32) (acc : list located) : list located =
     match nodes with
-    | Cons (child, rest) =>
-        inl located = { node = child; ancestors = Cons (parent.node, parent.ancestors); path = Cons (index, parent.path) }
-        children_of parent rest (index + 1i32) (Cons (located, acc))
+    | child :: rest =>
+        inl located = { node = child; ancestors = (parent.node :: parent.ancestors); path = (index :: parent.path) }
+        children_of parent rest (index + 1i32) (located :: acc)
     | Nil => acc
 
 inl child_nodes (item : located) : list located =
@@ -50,53 +53,63 @@ inl child_nodes (item : located) : list located =
     | XmlElement (_, _, children) => listm.rev (children_of item children 0i32 Nil)
     | XmlText _ => Nil
 
-let rec attributes_of (item : located) (attributes : list (string * string)) (index : i32) (acc : list located) : list located =
+let rec attributes_of
+    (item : located) (attributes : list (string * string)) (index : i32) (acc : list located)
+    : list located
+    =
     match attributes with
-    | Cons ((key, value), rest) =>
-        inl attribute = { node = attribute_node key value; ancestors = Cons (item.node, item.ancestors); path = Cons (index, item.path) }
-        inl acc = if is_namespace_declaration key then acc else Cons (attribute, acc)
+    | (key, value) :: rest =>
+        inl attribute =
+            { node = attribute_node key value; ancestors = (item.node :: item.ancestors); path = (index :: item.path) }
+        inl acc = if is_namespace_declaration key then acc else attribute :: acc
         attributes_of item rest (index - 1i32) acc
     | Nil => listm.rev acc
 
 let rec descendants_of (items : list located) (acc : list located) : list located =
     match items with
-    | Cons (item, rest) => descendants_of rest (descendants_of (child_nodes item) (Cons (item, acc)))
+    | item :: rest => descendants_of rest (descendants_of (child_nodes item) (item :: acc))
     | Nil => acc
 
 inl parent_of (item : located) : list located =
     match item.ancestors with
-    | Cons (parent, rest) => Cons ({ node = parent; ancestors = rest; path = (match item.path with Cons (_, up) => up | Nil => Nil) }, Nil)
+    | parent :: rest =>
+        { node = parent; ancestors = rest; path = (match item.path with (_ :: up) => up | Nil => Nil) } :: Nil
     | Nil => Nil
 
 let rec ancestors_of (item : located) (acc : list located) : list located =
     match parent_of item with
-    | Cons (parent, _) => ancestors_of parent (Cons (parent, acc))
+    | parent :: _ => ancestors_of parent (parent :: acc)
     | Nil => listm.rev acc
 
 inl axis_nodes (axis : string) (item : located) : option (list located) =
     if axis = "child" then Some (child_nodes item)
-    elif axis = "attribute" then Some (match item.node with XmlElement (_, attributes, _) => attributes_of item attributes (-1i32) Nil | _ => Nil)
-    elif axis = "self" then Some (Cons (item, Nil))
+    elif axis = "attribute" then
+        Some (
+            match item.node with
+            | XmlElement (_, attributes, _) => attributes_of item attributes (-1i32) Nil
+            | _ => Nil
+        )
+    elif axis = "self" then Some (item :: Nil)
     elif axis = "parent" then Some (parent_of item)
     elif axis = "ancestor" then Some (ancestors_of item Nil)
-    elif axis = "ancestor-or-self" then Some (Cons (item, ancestors_of item Nil))
-    elif axis = "descendant-or-self" then Some (listm.rev (descendants_of (Cons (item, Nil)) Nil))
+    elif axis = "ancestor-or-self" then Some (item :: ancestors_of item Nil)
+    elif axis = "descendant-or-self" then Some (listm.rev (descendants_of (item :: Nil) Nil))
     elif axis = "descendant" then Some (listm.rev (descendants_of (child_nodes item) Nil))
     else None
 
 let rec filtered_by_test (test : string) (items : list located) (acc : list located) : list located =
     match items with
-    | Cons (item, rest) => filtered_by_test test rest (if kind_matches test item.node then Cons (item, acc) else acc)
+    | item :: rest => filtered_by_test test rest (if kind_matches test item.node then (item :: acc) else acc)
     | Nil => listm.rev acc
 
 inl atom_text (value : xvalue) : string =
     match value with
-    | VNodes (Cons (first, _)) => string_value first.node
+    | VNodes ((first :: _)) => string_value first.node
     | VNodes (Nil) => ""
     | VText text => text
     | VNumber n => decimal.text n
     | VBool b => if b then "true" else "false"
-    | VSequence (Cons (first, _)) => (match first with VText text => text | VNumber n => decimal.text n | _ => "")
+    | VSequence ((first :: _)) => (match first with VText text => text | VNumber n => decimal.text n | _ => "")
     | VSequence (Nil) => ""
     | VError _ => ""
 
@@ -117,19 +130,19 @@ inl number_of (value : xvalue) : option decimal.decimal =
 
 let rec texts_of_value (items : list located) (acc : list string) : list string =
     match items with
-    | Cons (item, rest) => texts_of_value rest (Cons (string_value item.node, acc))
+    | item :: rest => texts_of_value rest (string_value item.node :: acc)
     | Nil => listm.rev acc
 
 let rec sequence_texts (items : list xvalue) (acc : list string) : list string =
     match items with
-    | Cons (item, rest) => sequence_texts rest (Cons (atom_text item, acc))
+    | item :: rest => sequence_texts rest (atom_text item :: acc)
     | Nil => listm.rev acc
 
 inl atoms (value : xvalue) : list string =
     match value with
     | VNodes items => texts_of_value items Nil
     | VSequence items => sequence_texts items Nil
-    | _ => Cons (atom_text value, Nil)
+    | _ => atom_text value :: Nil
 
 let rec text_order_from (a : string) (b : string) (i : i32) : i32 =
     if i >= sm'.length a && i >= sm'.length b then 0i32
@@ -159,11 +172,11 @@ inl compare_atoms (op : string) (numeric : bool) (a : string) (b : string) : boo
 
 let rec any_pair (op : string) (numeric : bool) (left : list string) (right : list string) : bool =
     match left with
-    | Cons (a, rest) => any_with op numeric a right || any_pair op numeric rest right
+    | a :: rest => any_with op numeric a right || any_pair op numeric rest right
     | Nil => false
 and let any_with (op : string) (numeric : bool) (a : string) (right : list string) : bool =
     match right with
-    | Cons (b, rest) => compare_atoms op numeric a b || any_with op numeric a rest
+    | b :: rest => compare_atoms op numeric a b || any_with op numeric a rest
     | Nil => false
 
 inl is_numeric_value (value : xvalue) : bool =
@@ -177,43 +190,45 @@ inl arithmetic (op : string) (left : xvalue) (right : xvalue) : xvalue =
         if op = "+" then VNumber (decimal.add a b)
         elif op = "-" then VNumber (decimal.subtract a b)
         elif op = "*" then VNumber (decimal.multiply a b)
-        elif op = "div" then (if decimal.compare b (decimal.of_int 0i64) = 0i32 then VError "division by zero" else VNumber (decimal.divide 9i32 a b))
+        elif op = "div" then
+            if decimal.compare b (decimal.of_int 0i64) = 0i32 then VError "division by zero"
+            else VNumber (decimal.divide 9i32 a b)
         else VError ("unsupported operator " ++# op)
     | _ => VError ("not a number for " ++# op)
 
 let rec same_path (a : list i32) (b : list i32) : bool =
     match a with
-    | Cons (x, a_rest) =>
+    | x :: a_rest =>
         match b with
-        | Cons (y, b_rest) => x = y && same_path a_rest b_rest
+        | y :: b_rest => x = y && same_path a_rest b_rest
         | Nil => false
     | Nil => match b with Nil => true | _ => false
 
 let rec has_located (item : located) (items : list located) : bool =
     match items with
-    | Cons (other, rest) => same_path item.path other.path || has_located item rest
+    | other :: rest => same_path item.path other.path || has_located item rest
     | Nil => false
 
 let rec unique_located (items : list located) (acc : list located) : list located =
     match items with
-    | Cons (item, rest) => unique_located rest (if has_located item acc then acc else Cons (item, acc))
+    | item :: rest => unique_located rest (if has_located item acc then acc else item :: acc)
     | Nil => listm.rev acc
 
 let rec path_before (a : list i32) (b : list i32) : bool =
     match a with
-    | Cons (x, a_rest) =>
+    | x :: a_rest =>
         match b with
-        | Cons (y, b_rest) => if x < y then true elif x > y then false else path_before a_rest b_rest
+        | y :: b_rest => if x < y then true elif x > y then false else path_before a_rest b_rest
         | Nil => false
     | Nil => false
 
 let rec preceding_in (items : list located) (target : list i32) (acc : list located) : list located =
     match items with
-    | Cons (item, rest) => preceding_in rest target (if path_before (listm.rev item.path) target then Cons (item, acc) else acc)
+    | item :: rest => preceding_in rest target (if path_before (listm.rev item.path) target then (item :: acc) else acc)
     | Nil => listm.rev acc
 
 inl preceding_of (root : located) (item : located) : list located =
-    preceding_in (listm.rev (descendants_of (Cons (root, Nil)) Nil)) (listm.rev item.path) Nil
+    preceding_in (listm.rev (descendants_of (root :: Nil) Nil)) (listm.rev item.path) Nil
 
 inl is_empty_value (value : xvalue) : bool =
     match value with
@@ -227,22 +242,22 @@ inl boolean_atom (text : string) : option bool =
 
 let rec booleans_of (texts : list string) (acc : list bool) : list bool =
     match texts with
-    | Cons (text, rest) => booleans_of rest (match boolean_atom text with Some b => Cons (b, acc) | None => acc)
+    | text :: rest => booleans_of rest (match boolean_atom text with Some b => (b :: acc) | None => acc)
     | Nil => acc
 
 inl as_booleans (value : xvalue) : list bool =
     match value with
-    | VBool b => Cons (b, Nil)
+    | VBool b => b :: Nil
     | _ => booleans_of (atoms value) Nil
 
 let rec any_boolean_with (equal : bool) (a : bool) (right : list bool) : bool =
     match right with
-    | Cons (b, rest) => (a = b) = equal || any_boolean_with equal a rest
+    | b :: rest => (a = b) = equal || any_boolean_with equal a rest
     | Nil => false
 
 let rec any_boolean_pair (equal : bool) (left : list bool) (right : list bool) : bool =
     match left with
-    | Cons (a, rest) => any_boolean_with equal a right || any_boolean_pair equal rest right
+    | a :: rest => any_boolean_with equal a right || any_boolean_pair equal rest right
     | Nil => false
 
 let rec collapsed (s : string) (i : i32) (pending : bool) (acc : string) : string =
@@ -277,17 +292,19 @@ inl substring_before (needle : string) (s : string) : string =
 
 let rec lookup (name : string) (variables : list (string * xvalue)) : xvalue =
     match variables with
-    | Cons ((key, value), rest) => if key = name then value else lookup name rest
+    | (key, value) :: rest => if key = name then value else lookup name rest
     | Nil => VError ("unbound $" ++# name)
 
 let rec distinct_texts (items : list string) (seen : list string) (acc : list xvalue) : list xvalue =
     match items with
-    | Cons (item, rest) => if has_text item seen then distinct_texts rest seen acc else distinct_texts rest (Cons (item, seen)) (Cons (VText item, acc))
+    | item :: rest =>
+        if has_text item seen then distinct_texts rest seen acc
+        else distinct_texts rest (item :: seen) (VText item :: acc)
     | Nil => listm.rev acc
 
 let rec sum_texts (items : list string) (acc : decimal.decimal) : xvalue =
     match items with
-    | Cons (item, rest) =>
+    | item :: rest =>
         match decimal.parse item with
         | Some n => sum_texts rest (decimal.add acc n)
         | None => VError ("sum over a non-number: " ++# item)
@@ -305,13 +322,13 @@ let rec eval (s : scope) (x : xpath) : xvalue =
     | XNumber n => match decimal.parse n with Some d => VNumber d | None => VError ("number " ++# n)
     | XText t => VText t
     | XVariable v => lookup v s.variables
-    | XContext => VNodes (Cons (s.context, Nil))
-    | XRoot => VNodes (Cons (s.root, Nil))
+    | XContext => VNodes (s.context :: Nil)
+    | XRoot => VNodes (s.root :: Nil)
     | XStep (input, axis, test, predicates) =>
         match eval s input with
         | VNodes items =>
             match step_nodes s axis test predicates items Nil with
-            | VNodes found => (match items with Cons (_, Cons _) => VNodes (unique_located found Nil) | _ => VNodes found)
+            | VNodes found => (match items with (_ :: Cons _) => VNodes (unique_located found Nil) | _ => VNodes found)
             | other => other
         | VError e => VError e
         | _ => VError ("the " ++# axis ++# " step needs nodes")
@@ -330,52 +347,63 @@ let rec eval (s : scope) (x : xpath) : xvalue =
         if is_empty_value value then VSequence (Nil)
         else match number_of value with Some n => VNumber (decimal.negate n) | None => VError "negate"
     | XQuantified (every, v, domain, body) =>
-        inl items = match eval s domain with VNodes nodes => node_values nodes Nil | VSequence values => values | other => Cons (other, Nil)
+        inl items = match eval s domain with VNodes nodes => node_values nodes Nil | VSequence values => values | other => other :: Nil
         VBool (quantified s every v body items)
     | XMember (probe, codes, words) =>
         inl text = atom_text (eval s probe)
         VBool (if text = "" || sm'.contains " " text then sm'.contains (" " ++# text ++# " ") codes else has_text text words)
 and let evaluated (s : scope) (arguments : list xpath) (acc : list xvalue) : list xvalue =
     match arguments with
-    | Cons (argument, rest) => evaluated s rest (Cons (eval s argument, acc))
+    | argument :: rest => evaluated s rest (eval s argument :: acc)
     | Nil => listm.rev acc
 and let node_values (nodes : list located) (acc : list xvalue) : list xvalue =
     match nodes with
-    | Cons (node, rest) => node_values rest (Cons (VNodes (Cons (node, Nil)), acc))
+    | node :: rest => node_values rest (VNodes (node :: Nil) :: acc)
     | Nil => listm.rev acc
 and let quantified (s : scope) (every : bool) (v : string) (body : xpath) (items : list xvalue) : bool =
     match items with
-    | Cons (item, rest) =>
-        inl holds = effective_boolean (eval { s with variables = Cons ((v, item), s.variables) } body)
+    | item :: rest =>
+        inl holds = effective_boolean (eval { s with variables = ((v, item) :: s.variables) } body)
         if every then holds && quantified s every v body rest else holds || quantified s every v body rest
     | Nil => every
-and let step_nodes (s : scope) (axis : string) (test : string) (predicates : list xpath) (items : list located) (acc : list located) : xvalue =
+and let step_nodes
+    (s : scope) (axis : string) (test : string) (predicates : list xpath) (items : list located) (acc : list located)
+    : xvalue
+    =
     match items with
-    | Cons (item, rest) =>
+    | item :: rest =>
         match (if axis = "preceding" then Some (preceding_of s.root item) else axis_nodes axis item) with
-        | Some found => step_nodes s axis test predicates rest (listm.append acc (kept_by s predicates (filtered_by_test test found Nil)))
+        | Some found =>
+            step_nodes s axis test predicates rest (listm.append acc (kept_by s predicates (
+                filtered_by_test test found Nil)))
         | None => VError ("unsupported axis " ++# axis)
     | Nil => VNodes acc
 and let kept_by (s : scope) (predicates : list xpath) (items : list located) : list located =
     match predicates with
-    | Cons (predicate, rest) => kept_by s rest (kept_at s predicate items 1i32 Nil)
+    | predicate :: rest => kept_by s rest (kept_at s predicate items 1i32 Nil)
     | Nil => items
-and let kept_at (s : scope) (predicate : xpath) (items : list located) (position : i32) (acc : list located) : list located =
+and let kept_at
+    (s : scope) (predicate : xpath) (items : list located) (position : i32) (acc : list located)
+    : list located
+    =
     match items with
-    | Cons (item, rest) =>
+    | item :: rest =>
         inl keep =
             match eval { s with context = item } predicate with
             | VNumber n => decimal.compare n (decimal.of_int (conv position : i64)) = 0i32
             | other => effective_boolean other
-        kept_at s predicate rest (position + 1i32) (if keep then Cons (item, acc) else acc)
+        kept_at s predicate rest (position + 1i32) (if keep then (item :: acc) else acc)
     | Nil => listm.rev acc
-and let mapped_each (s : scope) (mapped : xpath) (items : list located) (nodes : list located) (values : list xvalue) : xvalue =
+and let mapped_each
+    (s : scope) (mapped : xpath) (items : list located) (nodes : list located) (values : list xvalue)
+    : xvalue
+    =
     match items with
-    | Cons (item, rest) =>
+    | item :: rest =>
         match eval { s with context = item } mapped with
         | VNodes found => mapped_each s mapped rest (listm.append nodes found) values
         | VError e => VError e
-        | other => mapped_each s mapped rest nodes (Cons (other, values))
+        | other => mapped_each s mapped rest nodes (other :: values)
     | Nil => match values with Nil => VNodes nodes | _ => VSequence (listm.rev values)
 and let binary (s : scope) (op : string) (left : xpath) (right : xpath) : xvalue =
     if op = "or" then VBool (effective_boolean (eval s left) || effective_boolean (eval s right))
@@ -391,19 +419,20 @@ and let binary (s : scope) (op : string) (left : xpath) (right : xpath) : xvalue
                 match a, b with
                 | VNodes x, VNodes y => VNodes (unique_located (listm.append x y) Nil)
                 | _ => VError "union of non-nodes"
-            elif op = "+" || op = "-" || op = "*" || op = "div" then (if is_empty_value a || is_empty_value b then VSequence (Nil) else arithmetic op a b)
+            elif op = "+" || op = "-" || op = "*" || op = "div"
+            then if is_empty_value a || is_empty_value b then VSequence (Nil) else arithmetic op a b
             elif (match a with VBool _ => true | _ => false) || (match b with VBool _ => true | _ => false) then
                 VBool (any_boolean_pair (op = "=" || op = "eq") (as_booleans a) (as_booleans b))
             else VBool (any_pair op (is_numeric_value a || is_numeric_value b) (atoms a) (atoms b))
 and let call (s : scope) (name : string) (arguments : list xvalue) : xvalue =
-    inl first = match arguments with Cons (a, _) => a | Nil => VNodes (Cons (s.context, Nil))
-    inl second = match arguments with Cons (_, Cons (b, _)) => atom_text b | _ => ""
+    inl first = match arguments with (a :: _) => a | Nil => VNodes (s.context :: Nil)
+    inl second = match arguments with (_ :: b :: _) => atom_text b | _ => ""
     if name = "not" then VBool (effective_boolean first = false)
     elif name = "true" then VBool true
     elif name = "false" then VBool false
     elif name = "boolean" then VBool (effective_boolean first)
     elif name = "exists" then VBool (item_count first > 0i32 && (match first with VNodes (Nil) => false | _ => true))
-    elif name = "empty" then VBool ((match first with VNodes (Nil) => true | VSequence (Nil) => true | _ => false))
+    elif name = "empty" then VBool (match first with VNodes (Nil) => true | VSequence (Nil) => true | _ => false)
     elif name = "count" then VNumber (decimal.of_int (conv (item_count first) : i64))
     elif name = "sum" then sum_texts (atoms first) (decimal.of_int 0i64)
     elif name = "normalize-space" then VText (normalize_space (atom_text first))
@@ -417,59 +446,94 @@ and let call (s : scope) (name : string) (arguments : list xvalue) : xvalue =
     elif name = "substring-after" then VText (substring_after second (atom_text first))
     elif name = "substring-before" then VText (substring_before second (atom_text first))
     elif name = "concat" then VText (sm'.concat_balanced "" (sequence_texts arguments Nil))
-    elif (name = "round" || name = "abs" || name = "xs:decimal" || name = "number") && is_empty_value first then VSequence (Nil)
-    elif name = "round" then (match number_of first with Some n => VNumber (decimal.round n) | None => VError "round")
-    elif name = "abs" then (match number_of first with Some n => VNumber (if decimal.compare n (decimal.of_int 0i64) < 0i32 then decimal.negate n else n) | None => VError "abs")
-    elif name = "xs:decimal" || name = "number" then (match number_of first with Some n => VNumber n | None => VError (name ++# " of " ++# atom_text first))
+    elif (name = "round" || name = "abs" || name = "xs:decimal" || name = "number") && is_empty_value first
+    then VSequence (Nil)
+    elif name = "round" then
+        match number_of first with
+        | Some n => VNumber (decimal.round n)
+        | None => VError "round"
+    elif name = "abs" then
+        match number_of first with
+        | Some n => VNumber (if decimal.compare n (decimal.of_int 0i64) < 0i32 then decimal.negate n else n)
+        | None => VError "abs"
+    elif name = "xs:decimal" || name = "number" then
+        match number_of first with
+        | Some n => VNumber n
+        | None => VError (name ++# " of " ++# atom_text first)
     elif name = "xs:date" then VText (atom_text first)
     elif name = "name" || name = "local-name" then
         match first with
-        | VNodes (Cons (item, _)) =>
+        | VNodes ((item :: _)) =>
             inl full = node_name item.node
             VText (if name = "local-name" then local_name full else full)
         | _ => VText ""
     elif name = "distinct-values" then VSequence (distinct_texts (atoms first) Nil Nil)
     elif name = "substring" then
         match arguments with
-        | Cons (text, Cons (start, rest)) =>
+        | text :: start :: rest =>
             inl t = atom_text text
             inl from = match number_of start with Some n => decimal.round n | None => decimal.of_int 1i64
             inl begin = (conv from.units : i32) - 1i32
-            inl count = match rest with Cons (length, _) => (match number_of length with Some n => (conv (decimal.round n).units : i32) | None => 0i32) | Nil => code_point_count t
+            inl count =
+                match rest with
+                | (length :: _) =>
+                    match number_of length with
+                    | Some n => conv (decimal.round n).units : i32
+                    | None => 0i32
+                | Nil => code_point_count t
             VText (char_substring t begin count)
         | _ => VError "substring needs two arguments"
     else VError ("unsupported function " ++# name)
 
-inl document_root (document : xml_node) : located = { node = XmlElement ("#document", Nil, Cons (document, Nil)); ancestors = Nil; path = Nil }
+inl document_root (document : xml_node) : located =
+    { node = XmlElement ("#document", Nil, document :: Nil); ancestors = Nil; path = Nil }
 
 inl evaluate (document : xml_node) (context : located) (x : xpath) : xvalue =
     eval { context = context; root = document_root document; variables = Nil } x
 ///> rust
 test evaluates_en16931_style_rules =
-    inl lines = "<cac:InvoiceLine><cbc:LineExtensionAmount currencyID=\"EUR\">10.50</cbc:LineExtensionAmount></cac:InvoiceLine>"
-    inl more = "<cac:InvoiceLine><cbc:LineExtensionAmount currencyID=\"EUR\">2.25</cbc:LineExtensionAmount></cac:InvoiceLine>"
-    inl source = "<Invoice><cbc:ID>INV-1</cbc:ID>" ++# lines ++# more ++# "<cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode></Invoice>"
+    inl lines =
+        "<cac:InvoiceLine><cbc:LineExtensionAmount currencyID=\"EUR\">10.50</cbc:LineExtensionAmount></cac:InvoiceLine>"
+    inl more =
+        "<cac:InvoiceLine><cbc:LineExtensionAmount currencyID=\"EUR\">2.25</cbc:LineExtensionAmount></cac:InvoiceLine>"
+    inl source =
+        "<Invoice><cbc:ID>INV-1</cbc:ID>"
+        ++# lines
+        ++# more
+        ++# "<cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode></Invoice>"
     match read_xml source with
-    | Cons (document, Nil) =>
-        inl invoice = { node = document; ancestors = Cons ((document_root document).node, Nil); path = Cons (0i32, Nil) }
+    | document :: Nil =>
+        inl invoice = { node = document; ancestors = ((document_root document).node :: Nil); path = (0i32 :: Nil) }
         inl holds rule = effective_boolean (evaluate document invoice (lift_code_lists (parse rule)))
         if holds "exists(cbc:ID)" = false then failwith "exists"
         if holds "count(cac:InvoiceLine) = 2" = false then failwith "count"
         if holds "count(cac:InvoiceLine) = 3" then failwith "a false comparison"
         if holds "sum(cac:InvoiceLine/cbc:LineExtensionAmount) = 12.75" = false then failwith "exact sum"
-        if holds "contains(' EUR USD ', concat(' ', normalize-space(cbc:DocumentCurrencyCode), ' '))" = false then failwith "member"
-        if holds "every $l in cac:InvoiceLine satisfies xs:decimal($l/cbc:LineExtensionAmount) > 0" = false then failwith "every"
+        if holds "contains(' EUR USD ', concat(' ', normalize-space(cbc:DocumentCurrencyCode), ' '))" = false
+        then failwith "member"
+        if holds "every $l in cac:InvoiceLine satisfies xs:decimal($l/cbc:LineExtensionAmount) > 0" = false
+        then failwith "every"
         if holds "cac:InvoiceLine/cbc:LineExtensionAmount/@currencyID = 'EUR'" = false then failwith "attribute"
-        if holds "//cbc:LineExtensionAmount[. = '2.25']/../../cbc:ID = 'INV-1'" = false then failwith "descendant, predicate, parent"
+        if holds "//cbc:LineExtensionAmount[. = '2.25']/../../cbc:ID = 'INV-1'" = false
+        then failwith "descendant, predicate, parent"
         if holds "cac:InvoiceLine[2]/cbc:LineExtensionAmount = 2.25" = false then failwith "positional predicate"
-        if holds "xs:decimal(cbc:Missing) = 1 or not(cbc:Missing)" = false then failwith "an empty cast is an empty sequence"
+        if holds "xs:decimal(cbc:Missing) = 1 or not(cbc:Missing)" = false
+        then failwith "an empty cast is an empty sequence"
         if holds "'0' = false()" = false then failwith "untyped 0 compares as false"
-        if holds "count(//cbc:LineExtensionAmount[not(preceding::cbc:LineExtensionAmount/@currencyID = @currencyID)]) = 1" = false then failwith "preceding"
-        if holds "round(sum(cac:InvoiceLine/xs:decimal(cbc:LineExtensionAmount)) * 10 * 10) div 100 = 12.75" = false then failwith "rounding idiom"
+        if
+            holds (
+                "count(//cbc:LineExtensionAmount[not(preceding::cbc:LineExtensionAmount/@currencyID = "
+                ^^ "@currencyID)]) = 1"
+            )
+            = false
+        then failwith "preceding"
+        if holds "round(sum(cac:InvoiceLine/xs:decimal(cbc:LineExtensionAmount)) * 10 * 10) div 100 = 12.75" = false
+        then failwith "rounding idiom"
     | _ => failwith "one document"
 
 ///> rust
 test normalize_space_and_substring_count_characters =
-    if normalize_space "  Café   au  lait " <> "Café au lait" then failwith "normalize-space keeps multi-byte characters whole"
+    if normalize_space "  Café   au  lait " <> "Café au lait"
+    then failwith "normalize-space keeps multi-byte characters whole"
     if char_substring "Café crème" 2i32 2i32 <> "fé" then failwith "substring counts characters"
     if char_substring "Café crème" 5i32 100i32 <> "crème" then failwith "substring clamps at the character count"

@@ -18,14 +18,16 @@ local getv6 = function()
     end
 end
 local v6 = getv6()
-if v6 ~= nil and v6.tag == "Us1_Slain" then
-    local v13 = v6._1
+local __v = { v6 }
+if __v[1] ~= nil and __v[1].tag == "Us1_Slain" then
+    local v13 = __v[1]._1
     return 2
-elseif v6 ~= nil and v6.tag == "Us1_Survived" then
-    local v7 = v6._1
-    if v7 ~= nil and v7.tag == "Us0_Living" then
-        local v8 = v7._1
-        local v9 = v7._2
+elseif __v[1] ~= nil and __v[1].tag == "Us1_Survived" then
+    local v7 = __v[1]._1
+    local __v = { v7 }
+    if __v[1] ~= nil and __v[1].tag == "Us0_Living" then
+        local v8 = __v[1]._1
+        local v9 = __v[1]._2
         local v10 = v8 == 60
         if v10 then
             return 0

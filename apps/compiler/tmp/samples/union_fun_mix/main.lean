@@ -36,7 +36,8 @@ mutual
 partial def add_c0 (p0 : Int32) (p1 : Int32) : IO Int32 := do
     let mut v0 : Int32 := p0
     let mut v1 : Int32 := p1
-    let v2 : Int32 := (v1 + v0)
+    let mut v2 : Int32 := default
+    v2 := (v1 + v0)
     return v2
 partial def score_0 (p0 : U0) : IO Int32 := do
     let mut v0 : U0 := p0
@@ -59,11 +60,14 @@ partial def score_0 (p0 : U0) : IO Int32 := do
     | U0.None =>
         return (1 : Int32)
 partial def spiralMain : IO Int32 := do
+    let mut v0 : Int32 := default
+    let mut v1 : Int32 := default
+    let mut v2 : Bool := default
     let mut v6 : U0 := default
     let mut v3 : (Int32 → IO Int32) := default
-    let v0 : Int32 := (3 : Int32)
-    let v1 : Int32 := (4 : Int32)
-    let v2 : Bool := true
+    v0 := (3 : Int32)
+    v1 := (4 : Int32)
+    v2 := true
     if v2 then
         v3 := (add_c0 v0)
         v6 := (U0.Call v3 v1)

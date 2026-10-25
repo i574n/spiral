@@ -1,5 +1,9 @@
 (module
+  (import "wasi_snapshot_preview1" "fd_write" (func $fd_write (param i32 i32 i32 i32) (result i32)))
   (import "wasi_snapshot_preview1" "proc_exit" (func $proc_exit (param i32)))
+  (data (i32.const 48) "\04\00\00\00true")
+  (data (i32.const 56) "\05\00\00\00false")
+  (data (i32.const 64) "\01\00\00\00-")
   (func $math_scale2 (param $x f64) (param $k i32) (result f64)
     (if (i32.gt_s (local.get $k) (i32.const 1023))
       (then (return (call $math_scale2 (f64.mul (local.get $x) (f64.const 0x1p1023)) (i32.sub (local.get $k) (i32.const 1023))))))

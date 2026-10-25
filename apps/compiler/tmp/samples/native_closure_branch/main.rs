@@ -3,13 +3,13 @@ use std::cell::RefCell;
 use std::rc::Rc;
 fn a_c0() -> Rc<dyn Fn(i32) -> i32> {
     thread_local!{ static CLOSURE: Rc<dyn Fn(i32) -> i32> = Rc::new(move |mut v0: i32| -> i32 {
-        let v1: i32 = v0.wrapping_add(2i32);
+        let mut v1: i32 = v0.wrapping_add(2i32);
         v1
     }); } CLOSURE.with(|closure| closure.clone())
 }
 fn b_c1() -> Rc<dyn Fn(i32) -> i32> {
     thread_local!{ static CLOSURE: Rc<dyn Fn(i32) -> i32> = Rc::new(move |mut v0: i32| -> i32 {
-        let v1: i32 = v0.wrapping_add(3i32);
+        let mut v1: i32 = v0.wrapping_add(3i32);
         v1
     }); } CLOSURE.with(|closure| closure.clone())
 }
@@ -18,12 +18,12 @@ fn method0(mut v0: Rc<dyn Fn(i32) -> i32>) -> i32 {
 }
 fn spiral_main() -> i32 {
     let mut v0: bool = true;
-    let v3: Rc<dyn Fn(i32) -> i32> = if v0 {
+    let mut v3: Rc<dyn Fn(i32) -> i32> = if v0 {
         a_c0()
     } else {
         b_c1()
     };
-    method0(v3)
+    method0(v3.clone())
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();

@@ -4,7 +4,8 @@ protocol US0 { var tag: Int32 { get } }
 struct US0_Zero: US0 { var tag: Int32 { 0 } }
 struct US0_One: US0 { var tag: Int32 { 1 } }
 func spiral_main() -> Int32 {
-    let v0: US0 = US0_Zero()
+    var v0: US0 = US0_Zero()
+    v0 = US0_Zero()
     var v2: Bool = false
     switch v0.tag {
         case 1:

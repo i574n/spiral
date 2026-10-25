@@ -35,9 +35,11 @@ def U0.spiralTag : U0 → Int32
 mutual
 partial def method2 (p0 : Int32) : IO U0 := do
     let mut v0 : Int32 := p0
+    let mut v1 : Int32 := default
+    let mut v2 : Bool := default
     let mut v3 : U0 := default
-    let v1 : Int32 := (v0 - (1 : Int32))
-    let v2 : Bool := (v1 == (0 : Int32))
+    v1 := (v0 - (1 : Int32))
+    v2 := (v1 == (0 : Int32))
     if v2 then
         v3 := U0.Empty
         return (U0.Box (7 : Int32) v3)
@@ -45,28 +47,33 @@ partial def method2 (p0 : Int32) : IO U0 := do
         return (← method1 v1)
 partial def method1 (p0 : Int32) : IO U0 := do
     let mut v0 : Int32 := p0
+    let mut v1 : Int32 := default
+    let mut v2 : Bool := default
     let mut v3 : U0 := default
-    let v1 : Int32 := (v0 - (1 : Int32))
-    let v2 : Bool := (v1 == (0 : Int32))
+    v1 := (v0 - (1 : Int32))
+    v2 := (v1 == (0 : Int32))
     if v2 then
         v3 := U0.Empty
         return (U0.Box (11 : Int32) v3)
     else
         return (← method2 v1)
 partial def method0 : IO U0 := do
+    let mut v0 : Int32 := default
+    let mut v1 : Bool := default
     let mut v2 : U0 := default
-    let v0 : Int32 := (1000000 : Int32)
-    let v1 : Bool := (v0 == (0 : Int32))
+    v0 := (1000000 : Int32)
+    v1 := (v0 == (0 : Int32))
     if v1 then
         v2 := U0.Empty
         return (U0.Box (7 : Int32) v2)
     else
         return (← method1 v0)
 partial def spiralMain : IO Int32 := do
+    let mut v0 : U0 := default
     let mut v1 : Int32 := default
     let mut v2 : U0 := default
     let mut v3 : Bool := default
-    let v0 : U0 := (← method0)
+    v0 := (← method0)
     match v0 with
     | U0.Box f1 f2 =>
         v1 := f1

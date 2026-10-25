@@ -26,10 +26,10 @@ typedef struct {
 static inline void ArrayDecrefBody1(Array1 * x){
     (void)x;
 }
-static void ArrayDecref1(Array1 * x){
+void ArrayDecref1(Array1 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody1(x); free(x); }
 }
-static Array1 * ArrayCreate1(uint32_t len, bool init_at_zero){
+Array1 * ArrayCreate1(uint32_t len, bool init_at_zero){
     uint32_t size = sizeof(Array1) + sizeof(char) * len;
     Array1 * x = malloc(size);
     if (init_at_zero) { memset(x,0,size); }
@@ -37,7 +37,7 @@ static Array1 * ArrayCreate1(uint32_t len, bool init_at_zero){
     x->len = len;
     return x;
 }
-static Array1 * ArrayLit1(uint32_t len, char * ptr){
+Array1 * ArrayLit1(uint32_t len, char * ptr){
     Array1 * x = ArrayCreate1(len, false);
     memcpy(x->ptr, ptr, sizeof(char) * len);
     return x;
@@ -85,10 +85,10 @@ static inline void ArrayDecrefBody0(Array0 * x){
         USDecref0(&(v));
     }
 }
-static void ArrayDecref0(Array0 * x){
+void ArrayDecref0(Array0 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody0(x); free(x); }
 }
-static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
+Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     uint32_t size = sizeof(Array0) + sizeof(US0) * len;
     Array0 * x = malloc(size);
     if (init_at_zero) { memset(x,0,size); }
@@ -96,7 +96,7 @@ static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     x->len = len;
     return x;
 }
-static Array0 * ArrayLit0(uint32_t len, US0 * ptr){
+Array0 * ArrayLit0(uint32_t len, US0 * ptr){
     Array0 * x = ArrayCreate0(len, false);
     memcpy(x->ptr, ptr, sizeof(US0) * len);
         for (uint32_t i=0; i < len; i++){
@@ -110,30 +110,48 @@ static inline void AssignArray0(US0 * a, US0 b){
     USDecref0(&(*a));
     *a = b;
 }
-static int32_t score0(US0 v0){
+int32_t score0(US0 v0){
+    
+    
     switch (v0.tag) {
         case 1: { // Both
             String * v1 = v0.case1.v0; String * v2 = v0.case1.v1;
             (v1)->refc++; (v2)->refc++;
             USDecref0(&(v0));
-            bool v3 = strcmp(v1->ptr, "hi") == 0;
+            bool v3;
+            v3 = strcmp(v1->ptr, "hi") == 0;
+            
             StringDecref(v1);
             bool v5;
             if (v3){
-                bool v4 = strcmp(v2->ptr, "yo") == 0;
+                
+                
+                bool v4;
+                v4 = strcmp(v2->ptr, "yo") == 0;
+                
+                
                 v5 = v4;
             } else {
+                
+                
                 v5 = false;
             }
+            
             StringDecref(v2);
             if (v5){
+                
+                
                 return 0l;
             } else {
+                
+                
                 return 1l;
             }
             break;
         }
         default: { // None
+            
+            
             USDecref0(&(v0));
             return 1l;
             break;
@@ -141,21 +159,42 @@ static int32_t score0(US0 v0){
     }
 }
 int32_t main(){
-    Array0 * v0 = ArrayCreate0(1l, true);
-    String * v1 = StringLit(3, "hi");
-    String * v2 = StringLit(3, "yo");
-    bool v3 = true;
+    
+    
+    Array0 * v0;
+    v0 = ArrayCreate0(1l, true);
+    
+    
+    String * v1;
+    v1 = StringLit(3, "hi");
+    
+    
+    String * v2;
+    v2 = StringLit(3, "yo");
+    
+    
+    bool v3;
+    v3 = true;
+    
+    
     US0 v6;
     if (v3){
         (v1)->refc++; (v2)->refc++;
+        
         v6 = US0_Both(v1, v2);
     } else {
+        
+        
         v6 = US0_None();
     }
+    
     StringDecref(v1); StringDecref(v2);
+    
     AssignArray0(&(v0->ptr[0l]), v6);
+    
     USDecref0(&(v6));
-    US0 v7 = v0->ptr[0l];
+    US0 v7;
+    v7 = v0->ptr[0l];
     USIncref0(&(v7));
     ArrayDecref0(v0);
     return score0(v7);

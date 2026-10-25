@@ -6,12 +6,18 @@ fun f_c0(v0: Heap0): (Int) -> Heap0 {
     return { p0: Int -> body(p0) }
 }
 fun spiral_main(): Int {
-    val v0: Int = 7
-    val v1: Heap0 = Heap0(v0)
-    val v2: (Int) -> Heap0 = f_c0(v1)
-    val v3: Heap0 = v2(1)
-    val v4: Int = v3.l0
-    val v5: Boolean = (v4 == 7)
+    var v0: Int = 0
+    v0 = 7
+    var v1: Heap0 = Heap0(0)
+    v1 = Heap0(v0)
+    var v2: (Int) -> Heap0 = { _: Int -> throw RuntimeException() }
+    v2 = f_c0(v1)
+    var v3: Heap0 = Heap0(0)
+    v3 = v2(1)
+    var v4: Int = 0
+    v4 = v3.l0
+    var v5: Boolean = false
+    v5 = (v4 == 7)
     if (v5) {
         return 0
     } else {

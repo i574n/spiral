@@ -132,6 +132,7 @@ test decode_unescapes_strings =
     inl exact = if q.said = "say \"hi\"\n" && q.path = "a\\b" then 10000i32 else 0i32
     exact + q.days + sm.length q.said * 10i32 + sm.length q.path * 1000i32
     |> _assert_eq 13097i32
+
 type stamp = { span : i32 * string * i32; flag : bool }
 
 test decode_reads_tuples_longer_than_two =

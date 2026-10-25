@@ -1,23 +1,40 @@
 import CRT
 import WinSDK
 func spiral_main() -> Int32 {
-    let v0: Int32 = -3
-    let v1: Int32 = -4
-    let v2: Int32 = -3
-    let v3: UInt32 = UInt32(4294967295)
-    let v4: UInt32 = UInt32(0)
-    let v5: UInt32 = UInt32(4294967295)
-    let v6: Float = (-1.5 as Float)
-    let v7: Float = (-0.5 as Float)
-    let v8: Float = (-1.5 as Float)
-    let v9: Bool = (v0 != v1)
-    let v10: Bool = (v0 != v2)
-    let v11: Bool = (v3 != v4)
-    let v12: Bool = (v3 != v5)
-    let v13: Bool = (v6 != v7)
-    let v14: Bool = (v6 != v8)
-    let v15: Bool = (v9 && v11)
-    let v16: Bool = (v15 && v13)
+    var v0: Int32 = 0
+    v0 = -3
+    var v1: Int32 = 0
+    v1 = -4
+    var v2: Int32 = 0
+    v2 = -3
+    var v3: UInt32 = UInt32(0)
+    v3 = UInt32(4294967295)
+    var v4: UInt32 = UInt32(0)
+    v4 = UInt32(0)
+    var v5: UInt32 = UInt32(0)
+    v5 = UInt32(4294967295)
+    var v6: Float = (0.0 as Float)
+    v6 = (-1.5 as Float)
+    var v7: Float = (0.0 as Float)
+    v7 = (-0.5 as Float)
+    var v8: Float = (0.0 as Float)
+    v8 = (-1.5 as Float)
+    var v9: Bool = false
+    v9 = (v0 != v1)
+    var v10: Bool = false
+    v10 = (v0 != v2)
+    var v11: Bool = false
+    v11 = (v3 != v4)
+    var v12: Bool = false
+    v12 = (v3 != v5)
+    var v13: Bool = false
+    v13 = (v6 != v7)
+    var v14: Bool = false
+    v14 = (v6 != v8)
+    var v15: Bool = false
+    v15 = (v9 && v11)
+    var v16: Bool = false
+    v16 = (v15 && v13)
     if (v16) {
         if (v10) {
             return 1

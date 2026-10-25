@@ -2,13 +2,13 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 fn method0(mut v0: i32, mut v1: i32) -> i32 {
-    let v2: i32 = v0.wrapping_add(v1);
-    let v3: i32 = v2.wrapping_sub(42i32);
+    let mut v2: i32 = v0.wrapping_add(v1);
+    let mut v3: i32 = v2.wrapping_sub(42i32);
     v3
 }
 fn spiral_main() -> i32 {
-    let v0: i32 = 20i32;
-    let v1: i32 = 22i32;
+    let mut v0: i32 = 20i32;
+    let mut v1: i32 = 22i32;
     method0(v0, v1)
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }

@@ -41,8 +41,7 @@ inl get_union_fields forall union_type. () : list (string * union_type) =
                                                         Fsharp = (fun () => false) : () -> bool
                                                         Python = (fun () => true) : () -> bool
                                                     }
-                                                if is_python
-                                                then
+                                                if is_python then
                                                     typecase value with
                                                     | i8 => 0i8
                                                     | i16 => 0i16

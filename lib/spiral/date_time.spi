@@ -606,6 +606,15 @@ inl new_time_span (a : date_time) (b : date_time) : time_span =
             |> convert.convert
         | _ => fun () => $'!b - !a '
 
+/// ### rust_std_duration
+nominal rust_std_duration = $'std::time::Duration'
+
+/// ### rust_time_delta_ticks
+inl rust_time_delta_ticks (time_span : time_span) : i64 =
+    inl seconds : i64 = $'!time_span.num_seconds()'
+    inl nanos : i32 = $'!time_span.subsec_nanos()'
+    seconds * 10000000i64 + (conv nanos : i64) / 100i64
+
 /// ### total_seconds
 inl total_seconds (time_span : time_span) : f64 =
     inl n : i64 =
@@ -623,11 +632,9 @@ inl total_seconds (time_span : time_span) : f64 =
                 inl seconds = time_span |> convert.unbox : f64
                 seconds * 10000000 |> convert.convert : i64
             | Cuda => fun () => $'!time_span.total_seconds() * 10000000' : i64
-            | Rust => fun () =>
-                $'{ let t = !time_span; t.num_seconds() * 10000000 + (t - \
-                    chrono::TimeDelta::seconds(t.num_seconds())).num_nanoseconds().unwrap() / 100 }' : i64
+            | Rust => fun () => rust_time_delta_ticks time_span
             | _ => fun () => time_span |> $'_.Ticks' : i64
-    n / 10000000 |> convert.convert
+    (conv n : f64) / 10000000f64
 
 /// ### days
 inl days (time_span : time_span) : f64 =
@@ -645,10 +652,7 @@ inl days (time_span : time_span) : f64 =
             seconds / 86400 |> convert.convert : f64
         Fsharp = fun () => time_span |> $'_.TotalDays' : f64
         Python = fun () => $'!time_span.days' : f64
-        Rust = fun () =>
-            $'{ let t = !time_span; (t.num_seconds() * 10000000 + (t - \
-                chrono::TimeDelta::seconds(t.num_seconds())).num_nanoseconds().unwrap() / 100) as f64 / \
-                864000000000.0 }' : f64
+        Rust = fun () => (conv (rust_time_delta_ticks time_span) : f64) / 864000000000f64
     }
 
 /// ### to_timestamp
@@ -660,7 +664,9 @@ inl to_timestamp (date_time : date_time) : timestamp =
             ($'timestamp.to_unix_seconds_and_nanoseconds(!t).0 * 1000000 + \
                 timestamp.to_unix_seconds_and_nanoseconds(!t).1 / 1000' : i64) |> timestamp
         Lua = fun () => ($'!date_time * 1000000' : i64) |> timestamp
-        Fsharp = fun () => ($'(!date_time.Ticks - 621355968000000000L) / 10L' : i64) |> timestamp
+        Fsharp = fun () =>
+            inl ticks : i64 = $'!date_time.Ticks'
+            (ticks - 621355968000000000i64) / 10i64 |> timestamp
         Python = fun () =>
             global "import datetime"
             ($'(!date_time.replace(tzinfo=None) - datetime.datetime(1970, 1, 1)) // \
@@ -707,12 +713,20 @@ inl time_span_of_micros (micros : i64) : time_span =
     backend_switch {
         Gleam = fun () => micros / 1000000 |> convert.unbox : time_span
         Lua = fun () => $'!micros / 1000000' : time_span
-        Fsharp = fun () => $'System.TimeSpan.FromTicks(!micros * 10L)' : time_span
+        Fsharp = fun () =>
+            inl ticks = micros * 10i64
+            $'System.TimeSpan.FromTicks(!ticks)' : time_span
         Python = fun () =>
             global "import datetime"
             $'datetime.timedelta(microseconds=!micros)' : time_span
         Rust = fun () => $'chrono::TimeDelta::microseconds(!micros)' : time_span
     }
+
+///> fsharp
+///> rust -d chrono
+test spans_convert_to_seconds_and_days =
+    (total_seconds (time_span_of_micros 1500000i64), days (time_span_of_micros 86400000000i64))
+    |> _assert_eq (1.5, 1.0)
 
 /// ### hours
 inl hours (time_span : time_span) : i32 =
@@ -724,9 +738,13 @@ inl hours (time_span : time_span) : i32 =
             inl total_seconds = (time_span |> convert.to : i32) |> convert.convert : f64
             ((total_seconds / 3600.0) |> math.floor |> convert.unbox : i32) % 24
         Fsharp = fun () => time_span |> $'_.Hours' : i32
-        Python = fun () => $'!time_span.seconds // 3600' : i32
-        Rust = fun () => $'(!time_span.num_hours() % 24) as i32' : i32
-        TypeScript = fun () => $'(Math.trunc(!time_span / 3600000) % 24)' : i32
+        Python = fun () => ($'!time_span.seconds' : i32) / 3600i32
+        Rust = fun () =>
+            inl total : i64 = $'!time_span.num_hours()'
+            conv (total % 24i64) : i32
+        TypeScript = fun () =>
+            inl total : f64 = $'!time_span'
+            (conv (total / 3600000f64) : i32) % 24i32
     }
 
 ///> gleam
@@ -736,7 +754,7 @@ inl hours (time_span : time_span) : i32 =
 ///> rust -d chrono
 ///> typescript
 test hours =
-    (join date_time_milliseconds 2002 2 2 20 22 24 26)
+    join date_time_milliseconds 2002 2 2 20 22 24 26
     |> new_time_span (date_time_milliseconds 2001 1 1 10 11 12 13)
     |> hours
     |> _assert_eq 10
@@ -751,9 +769,13 @@ inl minutes (time_span : time_span) : i32 =
             inl total_seconds = (time_span |> convert.to : i32) |> convert.convert : f64
             ((total_seconds / 60.0) |> math.floor |> convert.unbox : i32) % 60
         Fsharp = fun () => time_span |> $'_.Minutes' : i32
-        Python = fun () => $'(!time_span.seconds // 60) % 60' : i32
-        Rust = fun () => $'(!time_span.num_minutes() % 60) as i32' : i32
-        TypeScript = fun () => $'(Math.trunc(!time_span / 60000) % 60)' : i32
+        Python = fun () => (($'!time_span.seconds' : i32) / 60i32) % 60i32
+        Rust = fun () =>
+            inl total : i64 = $'!time_span.num_minutes()'
+            conv (total % 60i64) : i32
+        TypeScript = fun () =>
+            inl total : f64 = $'!time_span'
+            (conv (total / 60000f64) : i32) % 60i32
     }
 
 ///> gleam
@@ -763,7 +785,7 @@ inl minutes (time_span : time_span) : i32 =
 ///> rust -d chrono
 ///> typescript
 test minutes =
-    (join date_time_milliseconds 2002 2 2 20 22 24 26)
+    join date_time_milliseconds 2002 2 2 20 22 24 26
     |> new_time_span (date_time_milliseconds 2001 1 1 10 11 12 13)
     |> minutes
     |> _assert_eq 11
@@ -778,9 +800,13 @@ inl seconds (time_span : time_span) : i32 =
             inl total_seconds = (time_span |> convert.to : i32) |> convert.convert : f64
             (total_seconds |> math.floor |> convert.unbox : i32) % 60
         Fsharp = fun () => time_span |> $'_.Seconds' : i32
-        Python = fun () => $'!time_span.seconds % 60' : i32
-        Rust = fun () => $'(!time_span.num_seconds() % 60) as i32' : i32
-        TypeScript = fun () => $'(Math.trunc(!time_span / 1000) % 60)' : i32
+        Python = fun () => ($'!time_span.seconds' : i32) % 60i32
+        Rust = fun () =>
+            inl total : i64 = $'!time_span.num_seconds()'
+            conv (total % 60i64) : i32
+        TypeScript = fun () =>
+            inl total : f64 = $'!time_span'
+            (conv (total / 1000f64) : i32) % 60i32
     }
 
 ///> gleam
@@ -790,7 +816,7 @@ inl seconds (time_span : time_span) : i32 =
 ///> rust -d chrono
 ///> typescript
 test seconds =
-    (join date_time_milliseconds 2002 2 2 20 22 24 26)
+    join date_time_milliseconds 2002 2 2 20 22 24 26
     |> new_time_span (date_time_milliseconds 2001 1 1 10 11 12 13)
     |> seconds
     |> _assert_eq 12
@@ -805,9 +831,14 @@ inl milliseconds (time_span : time_span) : i32 =
             inl total_seconds = (time_span |> convert.to : i32) |> convert.convert : f64
             ((total_seconds * 1000.0) |> math.floor |> convert.unbox : i32) % 1000
         Fsharp = fun () => time_span |> $'_.Milliseconds' : i32
-        Python = fun () => $'!time_span.microseconds // 1000' : i32
-        Rust = fun () => $'(!time_span.num_milliseconds() % 1000) as i32' : i32
-        TypeScript = fun () => $'(Math.trunc(!time_span) % 1000)' : i32
+        Python = fun () => ($'!time_span.microseconds' : i32) / 1000i32
+        Rust = fun () =>
+            inl total : i64 = $'!time_span.num_milliseconds()'
+            conv (total % 1000i64) : i32
+        TypeScript = fun () =>
+            inl total : f64 = $'!time_span'
+            inl whole : i64 = conv total
+            conv (whole % 1000i64) : i32
     }
 
 ///> fsharp
@@ -815,7 +846,7 @@ inl milliseconds (time_span : time_span) : i32 =
 ///> rust -d chrono
 ///> typescript
 test milliseconds =
-    (join date_time_milliseconds 2002 2 2 20 22 24 26)
+    join date_time_milliseconds 2002 2 2 20 22 24 26
     |> new_time_span (date_time_milliseconds 2001 1 1 10 11 12 13)
     |> milliseconds
     |> _assert_eq 13
@@ -899,7 +930,7 @@ inl time_span_format (format : string) (time_span : time_span) : string =
 ///> rust -d chrono
 ///> typescript
 test time_span_format =
-    (join date_time_milliseconds 2002 2 2 20 22 24 26)
+    join date_time_milliseconds 2002 2 2 20 22 24 26
     |> new_time_span (date_time_milliseconds 2001 1 1 10 11 12 13)
     |> time_span_format "c"
     |> _assert_eq "397.10:11:12.0130000"
@@ -909,7 +940,7 @@ test time_span_format =
 ///> rust -d chrono
 ///> typescript
 test time_span_format_2 =
-    (join date_time_milliseconds 2002 2 2 20 22 24 26)
+    join date_time_milliseconds 2002 2 2 20 22 24 26
     |> new_time_span (date_time_milliseconds 2002 2 2 10 11 12 26)
     |> time_span_format "c"
     |> _assert_eq "10:11:12"
@@ -919,7 +950,7 @@ test time_span_format_2 =
 ///> rust -d chrono
 ///> typescript
 test time_span_format_3 =
-    (join date_time_milliseconds 2002 2 2 20 22 24 999)
+    join date_time_milliseconds 2002 2 2 20 22 24 999
     |> new_time_span (date_time_milliseconds 2002 2 2 10 11 12 0)
     |> time_span_format "c"
     |> _assert_eq "10:11:12.9990000"
@@ -953,10 +984,21 @@ inl add_days (days : i32) (date_time : date_time) : date_time =
         Python = fun () =>
             global "import datetime"
             $'!date_time + datetime.timedelta(days=!days)' : date_time
-        Rust = fun () => $'!date_time + chrono::TimeDelta::days(!days as i64)' : date_time
+        Rust = fun () =>
+            inl days' : i64 = conv days
+            inl delta = $'chrono::TimeDelta::days(!days')' : time_span
+            $'!date_time + !delta' : date_time
         Zig = fun () =>
             (date_time |> zig_micros_of) + (days |> convert.convert : i64) * 86400000000i64 |> zig_date_time_of
     }
+
+///> fsharp
+///> rust -d chrono
+test add_days_moves_the_timestamp =
+    date_time_utc 2026 10 13 12 0 0
+    |> add_days 3
+    |> to_timestamp
+    |> _assert_eq' (1792152000000000i64 |> timestamp)
 
 /// ### to_calendar
 inl to_calendar_gleam (timestamp : timestamp_gleam) : date_time =
@@ -1031,8 +1073,11 @@ inl stopwatch () : stopwatch =
     }
 
 inl stopwatch_elapsed_milliseconds (stopwatch : stopwatch) : i64 =
-    if is_rust ()
-    then $'(!stopwatch.elapsed().as_millis() as i64)'
+    if is_rust () then
+        inl elapsed = $'!stopwatch.elapsed()' : rust_std_duration
+        inl seconds : u64 = $'!elapsed.as_secs()'
+        inl millis : u32 = $'!elapsed.subsec_millis()'
+        (conv seconds : i64) * 1000i64 + conv millis
     else $'!stopwatch.ElapsedMilliseconds'
 
 inl stopwatch_start (stopwatch : stopwatch) : () =

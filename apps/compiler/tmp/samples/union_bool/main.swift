@@ -21,7 +21,8 @@ func sp_score_0(_ p0: US0) -> Int32 {
     }
 }
 func spiral_main() -> Int32 {
-    let v0: Bool = true
+    var v0: Bool = false
+    v0 = true
     var v3: US0 = US0_No(f0: false)
     if (v0) {
         v3 = US0_Yes(f0: 7)
@@ -34,12 +35,16 @@ func spiral_main() -> Int32 {
     } else {
         v6 = US0_Yes(f0: 1)
     }
-    let v7: Int32 = sp_score_0(v3)
-    let v8: Bool = (v7 == 7)
+    var v7: Int32 = 0
+    v7 = sp_score_0(v3)
+    var v8: Bool = false
+    v8 = (v7 == 7)
     var v11: Bool = false
     if (v8) {
-        let v9: Int32 = sp_score_0(v6)
-        let v10: Bool = (v9 == 1)
+        var v9: Int32 = 0
+        v9 = sp_score_0(v6)
+        var v10: Bool = false
+        v10 = (v9 == 1)
         v11 = v10
     } else {
         v11 = false

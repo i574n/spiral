@@ -40,7 +40,6 @@ test an_answered_call_closes_the_transcript =
         Assistant ("Sunny, open the windows.", { model = "local"; tokens_out = tokens_out }, Done)))))
     weigh t |> _assert_eq 11118i32
 
-
 /// ### persist
 open sm'_operators
 
@@ -99,7 +98,7 @@ test exchanges_persist_as_json_lines =
         )
     exchange_lines log
     |> _assert_eq (
-           "{\"name\":\"getLocation\",\"arguments\":\"{}\",\"result\":\"{\\\"location\\\":\\\"Cincinnati\\\"}\"}\n"
-           ^^ "{\"name\":\"getWeather\",\"arguments\":\"{\\\"city\\\":\\\"Cincinnati\\\"}\",\"result\":\"sunny\\nwarm\""
-           ^^ "}\n"
-       )
+        "{\"name\":\"getLocation\",\"arguments\":\"{}\",\"result\":\"{\\\"location\\\":\\\"Cincinnati\\\"}\"}\n"
+        ^^ "{\"name\":\"getWeather\",\"arguments\":\"{\\\"city\\\":\\\"Cincinnati\\\"}\",\"result\":\"sunny\\nwarm\""
+        ^^ "}\n"
+    )

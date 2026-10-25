@@ -40,10 +40,10 @@ US0 US0_Some(int32_t v0) { // Some
 static inline void ArrayDecrefBody0(Array0 * x){
     (void)x;
 }
-static void ArrayDecref0(Array0 * x){
+void ArrayDecref0(Array0 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody0(x); free(x); }
 }
-static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
+Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     uint32_t size = sizeof(Array0) + sizeof(US0) * len;
     Array0 * x = malloc(size);
     if (init_at_zero) { memset(x,0,size); }
@@ -51,44 +51,91 @@ static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     x->len = len;
     return x;
 }
-static Array0 * ArrayLit0(uint32_t len, US0 * ptr){
+Array0 * ArrayLit0(uint32_t len, US0 * ptr){
     Array0 * x = ArrayCreate0(len, false);
     memcpy(x->ptr, ptr, sizeof(US0) * len);
     return x;
 }
 static inline void AssignArray0(US0 * a, US0 b){
+    
+    
     *a = b;
 }
 int32_t main(){
-    int32_t v0 = 2l;
-    Array0 * v1 = ArrayCreate0(v0, true);
-    int32_t v2 = 7l;
-    US0 v3 = US0_Some(v2);
+    
+    
+    int32_t v0;
+    v0 = 2l;
+    
+    
+    Array0 * v1;
+    v1 = ArrayCreate0(v0, true);
+    
+    
+    int32_t v2;
+    v2 = 7l;
+    
+    
+    US0 v3;
+    v3 = US0_Some(v2);
+    
+    
+    
     AssignArray0(&(v1->ptr[0l]), v3);
-    US0 v4 = US0_None();
+    
+    
+    US0 v4;
+    v4 = US0_None();
+    
+    
+    
     AssignArray0(&(v1->ptr[1l]), v4);
-    US0 v5 = v1->ptr[0l];
+    
+    
+    US0 v5;
+    v5 = v1->ptr[0l];
+    
+    
     switch (v5.tag) {
         case 0: { // None
+            
+            
             ArrayDecref0(v1);
             return 1l;
             break;
         }
         default: { // Some
             int32_t v6 = v5.case1.v0;
-            US0 v7 = v1->ptr[1l];
+            
+            
+            US0 v7;
+            v7 = v1->ptr[1l];
+            
             ArrayDecref0(v1);
             switch (v7.tag) {
                 case 0: { // None
-                    bool v8 = v6 == 7l;
+                    
+                    
+                    
+                    bool v8;
+                    v8 = v6 == 7l;
+                    
+                    
                     if (v8){
+                        
+                        
                         return 0l;
                     } else {
+                        
+                        
                         return 1l;
                     }
                     break;
                 }
                 default: { // Some
+                    
+                    
+                    
                     return 1l;
                     break;
                 }

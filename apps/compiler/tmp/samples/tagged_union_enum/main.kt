@@ -1,8 +1,8 @@
 sealed interface US0 { val tag: Int }
-object US0_Cold : US0 { override val tag: Int = 0 }
-object US0_Warm : US0 { override val tag: Int = 1 }
-object US0_Hot : US0 { override val tag: Int = 2 }
-object US0_Done : US0 { override val tag: Int = 3 }
+class US0_Cold : US0 { override val tag: Int = 0 }
+class US0_Warm : US0 { override val tag: Int = 1 }
+class US0_Hot : US0 { override val tag: Int = 2 }
+class US0_Done : US0 { override val tag: Int = 3 }
 fun sp_score_0(p0: US0): Int {
     var v0: US0 = p0
     when (v0.tag) {
@@ -22,26 +22,32 @@ fun sp_score_0(p0: US0): Int {
     }
 }
 fun spiral_main(): Int {
-    val v0: Int = 3
-    val v1: Boolean = (v0 == 0)
-    var v10: US0 = US0_Cold
+    var v0: Int = 0
+    v0 = 3
+    var v1: Boolean = false
+    v1 = (v0 == 0)
+    var v10: US0 = US0_Cold()
     if (v1) {
-        v10 = US0_Cold
+        v10 = US0_Cold()
     } else {
-        val v3: Boolean = (v0 == 1)
+        var v3: Boolean = false
+        v3 = (v0 == 1)
         if (v3) {
-            v10 = US0_Warm
+            v10 = US0_Warm()
         } else {
-            val v5: Boolean = (v0 == 2)
+            var v5: Boolean = false
+            v5 = (v0 == 2)
             if (v5) {
-                v10 = US0_Hot
+                v10 = US0_Hot()
             } else {
-                v10 = US0_Done
+                v10 = US0_Done()
             }
         }
     }
-    val v11: Int = sp_score_0(v10)
-    val v12: Int = (v11 - 4)
+    var v11: Int = 0
+    v11 = sp_score_0(v10)
+    var v12: Int = 0
+    v12 = (v11 - 4)
     return v12
 }
 fun main() {

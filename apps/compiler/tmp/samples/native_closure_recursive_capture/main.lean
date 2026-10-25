@@ -57,17 +57,26 @@ partial def sum_0 (p0 : U0) : IO Int32 := do
 partial def f_c0 (p0 : U0) (p1 : Int32) : IO Int32 := do
     let mut v0 : U0 := p0
     let mut v1 : Int32 := p1
-    let v2 : Int32 := (← sum_0 v0)
-    let v3 : Int32 := (v2 + v1)
+    let mut v2 : Int32 := default
+    let mut v3 : Int32 := default
+    v2 := (← sum_0 v0)
+    v3 := (v2 + v1)
     return v3
 partial def spiralMain : IO Int32 := do
-    let v0 : U0 := U0.Leaf
-    let v1 : Int32 := (2 : Int32)
-    let v2 : U0 := (U0.Node v1 v0 v0)
-    let v3 : (Int32 → IO Int32) := (f_c0 v2)
-    let v4 : Int32 := (← v3 (19 : Int32))
-    let v5 : Int32 := (← v3 (19 : Int32))
-    let v6 : Int32 := (v4 + v5)
+    let mut v0 : U0 := default
+    let mut v1 : Int32 := default
+    let mut v2 : U0 := default
+    let mut v3 : (Int32 → IO Int32) := default
+    let mut v4 : Int32 := default
+    let mut v5 : Int32 := default
+    let mut v6 : Int32 := default
+    v0 := U0.Leaf
+    v1 := (2 : Int32)
+    v2 := (U0.Node v1 v0 v0)
+    v3 := (f_c0 v2)
+    v4 := (← v3 (19 : Int32))
+    v5 := (← v3 (19 : Int32))
+    v6 := (v4 + v5)
     return v6
 end
 def main : IO UInt32 := do

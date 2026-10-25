@@ -20,7 +20,8 @@ fun sp_score_0(p0: US0): Int {
     }
 }
 fun spiral_main(): Int {
-    val v0: Boolean = true
+    var v0: Boolean = false
+    v0 = true
     var v3: US0 = US0_No(false)
     if (v0) {
         v3 = US0_Yes(7)
@@ -33,12 +34,16 @@ fun spiral_main(): Int {
     } else {
         v6 = US0_Yes(1)
     }
-    val v7: Int = sp_score_0(v3)
-    val v8: Boolean = (v7 == 7)
+    var v7: Int = 0
+    v7 = sp_score_0(v3)
+    var v8: Boolean = false
+    v8 = (v7 == 7)
     var v11: Boolean = false
     if (v8) {
-        val v9: Int = sp_score_0(v6)
-        val v10: Boolean = (v9 == 1)
+        var v9: Int = 0
+        v9 = sp_score_0(v6)
+        var v10: Boolean = false
+        v10 = (v9 == 1)
         v11 = v10
     } else {
         v11 = false

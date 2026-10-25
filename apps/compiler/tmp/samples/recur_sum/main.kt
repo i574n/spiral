@@ -7,13 +7,16 @@ fun sp_sum_0(p0: Int): Int {
     } else {
         var v2: Int = 0
         v2 = (v0 - 1)
-        val v3: Int = sp_sum_0(v2)
-        val v4: Int = (v0 + v3)
+        var v3: Int = 0
+        v3 = sp_sum_0(v2)
+        var v4: Int = 0
+        v4 = (v0 + v3)
         return v4
     }
 }
 fun spiral_main(): Int {
-    val v0: Int = 4
+    var v0: Int = 0
+    v0 = 4
     var v1: Int = 0
     v1 = sp_sum_0(v0)
     var v2: Boolean = false

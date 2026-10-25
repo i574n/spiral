@@ -69,64 +69,124 @@ US0 US0_Other(int32_t v0) { // Other
     x.case1.v0 = v0;
     return x;
 }
-static int32_t score_inner1(US1 v0){
+int32_t score_inner1(US1 v0){
+    
+    
     switch (v0.tag) {
         case 0: { // A
             int32_t v1 = v0.case0.v0;
+            
+            
             return v1;
             break;
         }
         default: { // B
             int32_t v2 = v0.case1.v0;
-            int32_t v3 = -v2;
+            
+            
+            int32_t v3;
+            v3 = -v2;
+            
+            
             return v3;
             break;
         }
     }
 }
-static int32_t score0(US0 v0){
+int32_t score0(US0 v0){
+    
+    
     switch (v0.tag) {
         case 1: { // Other
             int32_t v3 = v0.case1.v0;
+            
+            
             return v3;
             break;
         }
         default: { // Wrap
             US1 v1 = v0.case0.v0;
+            
+            
             return score_inner1(v1);
             break;
         }
     }
 }
 int32_t main(){
-    bool v0 = true;
+    
+    
+    bool v0;
+    v0 = true;
+    
+    
     US0 v4;
     if (v0){
-        US1 v1 = US1_A(7l);
+        
+        
+        US1 v1;
+        v1 = US1_A(7l);
+        
+        
         v4 = US0_Wrap(v1);
     } else {
+        
+        
         v4 = US0_Other(1l);
     }
+    
+    
     US0 v8;
     if (v0){
+        
+        
         v8 = US0_Other(4l);
     } else {
-        US1 v6 = US1_B(2l);
+        
+        
+        US1 v6;
+        v6 = US1_B(2l);
+        
+        
         v8 = US0_Wrap(v6);
     }
-    int32_t v9 = score0(v4);
-    bool v10 = v9 == 7l;
+    
+    
+    int32_t v9;
+    v9 = score0(v4);
+    
+    
+    bool v10;
+    v10 = v9 == 7l;
+    
+    
     bool v13;
     if (v10){
-        int32_t v11 = score0(v8);
-        bool v12 = v11 == 4l;
+        
+        
+        int32_t v11;
+        v11 = score0(v8);
+        
+        
+        bool v12;
+        v12 = v11 == 4l;
+        
+        
         v13 = v12;
     } else {
+        
+        
         v13 = false;
     }
+    
+    
     if (v13){
+        
+        
         return 0l;
     } else {
+        
+        
         return 1l;
     }
 }

@@ -30,14 +30,18 @@ func spiralStringSlice(_ value: String, _ from: Int32, _ to: Int32) -> String {
 }
 func f_c0(_ v0: String) -> (Int32) -> Int32 {
     return { (v1: Int32) -> Int32 in
-        let v2: Int32 = spiralStringLength(v0)
-        let v3: Int32 = (v2 &+ v1)
+        var v2: Int32 = 0
+        v2 = spiralStringLength(v0)
+        var v3: Int32 = 0
+        v3 = (v2 &+ v1)
         return v3
     }
 }
 func spiral_main() -> Int32 {
-    let v0: String = "abc"
-    let v1: (Int32) -> Int32 = f_c0(v0)
+    var v0: String = ""
+    v0 = "abc"
+    var v1: (Int32) -> Int32 = { (_: Int32) -> Int32 in fatalError("unreachable closure") }
+    v1 = f_c0(v0)
     return v1(39)
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

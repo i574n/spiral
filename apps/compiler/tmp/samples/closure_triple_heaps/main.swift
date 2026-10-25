@@ -14,16 +14,26 @@ func f_c0(_ v0: Heap0, _ v1: Heap0, _ v2: Heap0) -> (Int32) -> (Heap0, Heap0, He
     }
 }
 func spiral_main() -> Int32 {
-    let v0: Int32 = 7
-    let v1: String = "hi"
-    let v2: Heap0 = Heap0(l0: v0, l1: v1)
-    let v3: Int32 = 4
-    let v4: String = "yo"
-    let v5: Heap0 = Heap0(l0: v3, l1: v4)
-    let v6: Int32 = 9
-    let v7: String = "ok"
-    let v8: Heap0 = Heap0(l0: v6, l1: v7)
-    let v9: (Int32) -> (Heap0, Heap0, Heap0) = f_c0(v2, v5, v8)
+    var v0: Int32 = 0
+    v0 = 7
+    var v1: String = ""
+    v1 = "hi"
+    var v2: Heap0 = Heap0(l0: 0, l1: "")
+    v2 = Heap0(l0: v0, l1: v1)
+    var v3: Int32 = 0
+    v3 = 4
+    var v4: String = ""
+    v4 = "yo"
+    var v5: Heap0 = Heap0(l0: 0, l1: "")
+    v5 = Heap0(l0: v3, l1: v4)
+    var v6: Int32 = 0
+    v6 = 9
+    var v7: String = ""
+    v7 = "ok"
+    var v8: Heap0 = Heap0(l0: 0, l1: "")
+    v8 = Heap0(l0: v6, l1: v7)
+    var v9: (Int32) -> (Heap0, Heap0, Heap0) = { (_: Int32) -> (Heap0, Heap0, Heap0) in fatalError("unreachable closure") }
+    v9 = f_c0(v2, v5, v8)
     var v10: Heap0 = Heap0(l0: 0, l1: "")
     var v11: Heap0 = Heap0(l0: 0, l1: "")
     var v12: Heap0 = Heap0(l0: 0, l1: "")
@@ -43,38 +53,44 @@ func spiral_main() -> Int32 {
     var v18: String = ""
     v17 = v12.l0
     v18 = v12.l1
-    let v19: Bool = (v13 == 7)
+    var v19: Bool = false
+    v19 = (v13 == 7)
     var v21: Bool = false
     if (v19) {
-        let v20: Bool = (v14 == "hi")
+        var v20: Bool = false
+        v20 = (v14 == "hi")
         v21 = v20
     } else {
         v21 = false
     }
     var v23: Bool = false
     if (v21) {
-        let v22: Bool = (v15 == 4)
+        var v22: Bool = false
+        v22 = (v15 == 4)
         v23 = v22
     } else {
         v23 = false
     }
     var v25: Bool = false
     if (v23) {
-        let v24: Bool = (v16 == "yo")
+        var v24: Bool = false
+        v24 = (v16 == "yo")
         v25 = v24
     } else {
         v25 = false
     }
     var v27: Bool = false
     if (v25) {
-        let v26: Bool = (v17 == 9)
+        var v26: Bool = false
+        v26 = (v17 == 9)
         v27 = v26
     } else {
         v27 = false
     }
     var v29: Bool = false
     if (v27) {
-        let v28: Bool = (v18 == "ok")
+        var v28: Bool = false
+        v28 = (v18 == "ok")
         v29 = v28
     } else {
         v29 = false

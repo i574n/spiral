@@ -30,26 +30,26 @@ function spiral_string_slice(value: string, from: number, to: number): string {
     return spiral_utf8_decoder.decode(bytes.subarray(from, to + 1));
 }
 function first_codepoint_0(v0: string): string {
-    const v1: string = spiral_string_slice(v0, 0, 1);
+    let v1: string = spiral_string_slice(v0, 0, 1);
     return v1;
 }
 function second_codepoint_1(v0: string): string {
-    const v1: string = spiral_string_slice(v0, 2, 3);
+    let v1: string = spiral_string_slice(v0, 2, 3);
     return v1;
 }
 export function main(): number {
-    const v0: string = "éλ";
-    const v1: string = first_codepoint_0(v0);
-    const v2: string = second_codepoint_1(v0);
-    const v3: string = v1 + v2;
-    const v4: number = spiral_string_length(v1);
-    const v5: boolean = v4 === 2;
+    let v0: string = "éλ";
+    let v1: string = first_codepoint_0(v0);
+    let v2: string = second_codepoint_1(v0);
+    let v3: string = v1 + v2;
+    let v4: number = spiral_string_length(v1);
+    let v5: boolean = v4 === 2;
     if (v5) {
-        const v6: number = spiral_string_length(v2);
-        const v7: boolean = v6 === 2;
+        let v6: number = spiral_string_length(v2);
+        let v7: boolean = v6 === 2;
         if (v7) {
-            const v8: number = spiral_string_length(v3);
-            const v9: boolean = v8 === 4;
+            let v8: number = spiral_string_length(v3);
+            let v9: boolean = v8 === 4;
             if (v9) {
                 return 0;
             } else {

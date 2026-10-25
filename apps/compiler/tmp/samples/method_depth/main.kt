@@ -23,13 +23,16 @@ fun sp_method0(p0: Int): (Int) -> (Int) -> Int {
     return g_c0(v0)
 }
 fun spiral_main(): Int {
-    val v0: Int = 7
-    val v1: (Int) -> (Int) -> Int = sp_method0(v0)
+    var v0: Int = 0
+    v0 = 7
+    var v1: (Int) -> (Int) -> Int = { _: Int -> throw RuntimeException() }
+    v1 = sp_method0(v0)
     var v2: (Int) -> Int = { _: Int -> throw RuntimeException() }
     v2 = v1(0)
     var v3: Int = 0
     v3 = v2(0)
-    val v4: Boolean = (v3 == 7)
+    var v4: Boolean = false
+    v4 = (v3 == 7)
     if (v4) {
         return 0
     } else {

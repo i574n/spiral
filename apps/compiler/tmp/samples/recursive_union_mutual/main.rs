@@ -12,17 +12,17 @@ enum UH0 {
     UH0_StopA,
 }
 fn spiral_main() -> i32 {
-    let v0: bool = true;
-    let v5: Rc<UH0> = if v0 {
-        let v1: Rc<UH0> = { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_StopA); } CASE.with(|case| case.clone()) };
-        let v2: Rc<UH1> = Rc::new(UH1::UH1_B(v1));
-        Rc::new(UH0::UH0_A(v2))
+    let mut v0: bool = true;
+    let mut v5: Rc<UH0> = if v0 {
+        let mut v1: Rc<UH0> = { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_StopA); } CASE.with(|case| case.clone()) };
+        let mut v2: Rc<UH1> = Rc::new(UH1::UH1_B(v1.clone()));
+        Rc::new(UH0::UH0_A(v2.clone()))
     } else {
         { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_StopA); } CASE.with(|case| case.clone()) }
     };
     match &*v5 {
         UH0::UH0_A(v6) => {
-            let v6: Rc<UH1> = v6.clone();
+            let mut v6: Rc<UH1> = v6.clone();
             0i32
         }
         UH0::UH0_StopA => {

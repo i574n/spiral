@@ -22,7 +22,6 @@ def spiral_array_index(array, index):
     return value.item() if isinstance(array, cp.ndarray) and array.dtype.kind != 'O' else value
 class US0_Missing(NamedTuple): # Missing
     tag = 0
-US0_Missing_shared = US0_Missing()
 class US0_Held(NamedTuple): # Held
     v0 : cp.ndarray
     tag = 1
@@ -36,7 +35,7 @@ def main():
     if v2:
         v5 = US0_Held(v0)
     else:
-        v5 = US0_Missing_shared
+        v5 = US0_Missing()
     del v0, v2
     match v5:
         case US0_Held(v6): # Held

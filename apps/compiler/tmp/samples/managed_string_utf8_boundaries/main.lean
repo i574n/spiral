@@ -26,23 +26,31 @@ def spiralStringSlice (s : String) (a b : Int) : IO String := do
 mutual
 partial def first_codepoint_0 (p0 : String) : IO String := do
     let mut v0 : String := p0
-    let v1 : String := (← spiralStringSlice v0 (SpiralToInt.toI (0 : Int32)) (SpiralToInt.toI (1 : Int32)))
+    let mut v1 : String := default
+    v1 := (← spiralStringSlice v0 (SpiralToInt.toI (0 : Int32)) (SpiralToInt.toI (1 : Int32)))
     return v1
 partial def second_codepoint_1 (p0 : String) : IO String := do
     let mut v0 : String := p0
-    let v1 : String := (← spiralStringSlice v0 (SpiralToInt.toI (2 : Int32)) (SpiralToInt.toI (3 : Int32)))
+    let mut v1 : String := default
+    v1 := (← spiralStringSlice v0 (SpiralToInt.toI (2 : Int32)) (SpiralToInt.toI (3 : Int32)))
     return v1
 partial def spiralMain : IO Int32 := do
+    let mut v0 : String := default
+    let mut v1 : String := default
+    let mut v2 : String := default
+    let mut v3 : String := default
+    let mut v4 : Int32 := default
+    let mut v5 : Bool := default
     let mut v6 : Int32 := default
     let mut v7 : Bool := default
     let mut v8 : Int32 := default
     let mut v9 : Bool := default
-    let v0 : String := "éλ"
-    let v1 : String := (← first_codepoint_0 v0)
-    let v2 : String := (← second_codepoint_1 v0)
-    let v3 : String := (v1 ++ v2)
-    let v4 : Int32 := (Int32.ofNat v1.utf8ByteSize)
-    let v5 : Bool := (v4 == (2 : Int32))
+    v0 := "éλ"
+    v1 := (← first_codepoint_0 v0)
+    v2 := (← second_codepoint_1 v0)
+    v3 := (v1 ++ v2)
+    v4 := (Int32.ofNat v1.utf8ByteSize)
+    v5 := (v4 == (2 : Int32))
     if v5 then
         v6 := (Int32.ofNat v2.utf8ByteSize)
         v7 := (v6 == (2 : Int32))

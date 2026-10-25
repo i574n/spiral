@@ -4,8 +4,10 @@ protocol US0 { var tag: Int32 { get } }
 struct US0_Missing: US0 { var tag: Int32 { 0 } }
 struct US0_Held: US0 { var f0: Int8; var tag: Int32 { 1 } }
 func spiral_main() -> Int32 {
-    let v0: Int8 = Int8(100)
-    let v1: Bool = true
+    var v0: Int8 = Int8(0)
+    v0 = Int8(100)
+    var v1: Bool = false
+    v1 = true
     var v4: US0 = US0_Missing()
     if (v1) {
         v4 = US0_Held(f0: v0)
@@ -15,7 +17,8 @@ func spiral_main() -> Int32 {
     switch v4.tag {
         case 1:
             var v5: Int8 = (v4 as! US0_Held).f0
-            let v6: Bool = (v5 == Int8(100))
+            var v6: Bool = false
+            v6 = (v5 == Int8(100))
             if (v6) {
                 return 0
             } else {

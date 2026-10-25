@@ -27,7 +27,8 @@ inl read_state () =
     run_target function
         | Zig => fun () =>
             {
-                trace_level = "TRACE_LEVEL" |> env.get_environment_variable |> reflection.union_try_pick : option trace_level
+                trace_level =
+                    "TRACE_LEVEL" |> env.get_environment_variable |> reflection.union_try_pick : option trace_level
                 repl_start = None : option i64
             }
         | Rust => fun () =>
@@ -269,7 +270,8 @@ inl trace_raw level fn =
                                 elif text = ""
                                 then *acc
                                 else *acc ++\# text
-                            inl chunks_len : i32 = !\\(new_acc, $'"(($0.chars().count() + 14999) / 15000) as i32"')
+                            inl char_count : convert.unativeint = !\\(new_acc, $'"$0.chars().count()"')
+                            inl chunks_len : i32 = ((convert.convert char_count : i32) + 14999i32) / 15000i32
                             if text <>. "" && chunks_len <= 1i32
                             then acc <- new_acc
                             else
@@ -290,6 +292,10 @@ inl trace_raw level fn =
             Zig = id : () -> ()
         }
     |> exec_unit
+
+/// ### clock_two_digits
+inl clock_two_digits (n : i32) : string =
+    (if n < 10i32 then "0" else "") ++# sm'.obj_to_string n
 
 /// ### trace
 inl trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
@@ -323,7 +329,12 @@ inl trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
                                 inl two_digits (n : u64) : string = (if n < 10u64 then "0" else "") ++# sm'.obj_to_string n
                                 two_digits (seconds_of_day / 3600u64) ++# ":" ++# two_digits ((seconds_of_day / 60u64) % 60u64) ++# ":" ++# two_digits (seconds_of_day % 60u64)
                             | TypeScript => fun () =>
-                                $'(() => { const d = new Date(); const p = (n: number) => String(n).padStart(2, "0"); return p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds()); })()' : string
+                                inl now = $'new Date()' : $'Date'
+                                inl hours = $'!now.getHours()' : i32
+                                inl minutes = $'!now.getMinutes()' : i32
+                                inl seconds = $'!now.getSeconds()' : i32
+                                inl hours_minutes = clock_two_digits hours ++# ":" ++# clock_two_digits minutes
+                                hours_minutes ++# ":" ++# clock_two_digits seconds
                             | _ => fun () =>
                                 match trace_state.repl_start |> optionm'.unbox with
                                 | Some repl_start =>

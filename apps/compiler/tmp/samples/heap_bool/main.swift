@@ -7,9 +7,12 @@ class Heap0 {
     }
 }
 func spiral_main() -> Int32 {
-    let v0: Bool = true
-    let v1: Heap0 = Heap0(l0: v0)
-    let v2: Bool = v1.l0
+    var v0: Bool = false
+    v0 = true
+    var v1: Heap0 = Heap0(l0: false)
+    v1 = Heap0(l0: v0)
+    var v2: Bool = false
+    v2 = v1.l0
     if (v2) {
         return 0
     } else {

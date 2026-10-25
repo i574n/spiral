@@ -11,10 +11,10 @@ typedef struct {
 static inline void ArrayDecrefBody0(Array0 * x){
     (void)x;
 }
-static void ArrayDecref0(Array0 * x){
+void ArrayDecref0(Array0 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody0(x); free(x); }
 }
-static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
+Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     uint32_t size = sizeof(Array0) + sizeof(double) * len;
     Array0 * x = malloc(size);
     if (init_at_zero) { memset(x,0,size); }
@@ -22,26 +22,54 @@ static Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
     x->len = len;
     return x;
 }
-static Array0 * ArrayLit0(uint32_t len, double * ptr){
+Array0 * ArrayLit0(uint32_t len, double * ptr){
     Array0 * x = ArrayCreate0(len, false);
     memcpy(x->ptr, ptr, sizeof(double) * len);
     return x;
 }
 static inline void AssignArray0(double * a, double b){
+    
+    
     *a = b;
 }
 int32_t main(){
-    int32_t v0 = 2l;
-    Array0 * v1 = ArrayCreate0(v0, true);
-    double v2 = 1.5;
+    
+    
+    int32_t v0;
+    v0 = 2l;
+    
+    
+    Array0 * v1;
+    v1 = ArrayCreate0(v0, true);
+    
+    
+    double v2;
+    v2 = 1.5;
+    
+    
+    
     AssignArray0(&(v1->ptr[0l]), v2);
+    
+    
+    
     AssignArray0(&(v1->ptr[1l]), 2.5);
-    double v3 = v1->ptr[0l];
+    
+    
+    double v3;
+    v3 = v1->ptr[0l];
+    
     ArrayDecref0(v1);
-    bool v4 = v3 == 1.5;
+    bool v4;
+    v4 = v3 == 1.5;
+    
+    
     if (v4){
+        
+        
         return 0l;
     } else {
+        
+        
         return 1l;
     }
 }

@@ -27,11 +27,14 @@ mutual
 partial def runtime_byte_2 (p0 : String) (p1 : Int32) : IO Char := do
     let mut v0 : String := p0
     let mut v1 : Int32 := p1
-    let v2 : Char := (Char.ofNat (v0.toUTF8.get! (spiralIdx v1)).toNat)
+    let mut v2 : Char := default
+    v2 := (Char.ofNat (v0.toUTF8.get! (spiralIdx v1)).toNat)
     return v2
 partial def utf8_scalar_at_byte_offset_1 (p0 : String) (p1 : Int32) : IO Int32 := do
     let mut v0 : String := p0
     let mut v1 : Int32 := p1
+    let mut v2 : Int32 := default
+    let mut v3 : Bool := default
     let mut v5 : Bool := default
     let mut v7 : Char := default
     let mut v8 : Int32 := default
@@ -105,8 +108,8 @@ partial def utf8_scalar_at_byte_offset_1 (p0 : String) (p1 : Int32) : IO Int32 :
     let mut v93 : Int32 := default
     let mut v94 : Bool := default
     let mut v96 : Bool := default
-    let v2 : Int32 := (Int32.ofNat v0.utf8ByteSize)
-    let v3 : Bool := (decide (v1 < (0 : Int32)))
+    v2 := (Int32.ofNat v0.utf8ByteSize)
+    v3 := (decide (v1 < (0 : Int32)))
     if v3 then
         spiralFail "UTF-8 byte offset is negative."
     else
@@ -301,22 +304,39 @@ partial def utf8_validate_loop_0 (p0 : String) (p1 : Int32) (p2 : Int32) (p3 : I
                             v13 := (4 : Int32)
                 v14 := (v1 + v13)
                 v15 := (v2 + (1 : Int32))
-                v1 := v14
-                v2 := v15
+                let t0 := v0
+                let t14 := v14
+                let t15 := v15
+                let t3 := v3
+                v0 := t0
+                v1 := t14
+                v2 := t15
+                v3 := t3
                 continue
 partial def spiralMain : IO Int32 := do
+    let mut v0 : String := default
+    let mut v1 : Int32 := default
+    let mut v2 : Int32 := default
+    let mut v3 : Int32 := default
+    let mut v4 : Int32 := default
+    let mut v5 : String := default
+    let mut v6 : Int32 := default
+    let mut v7 : Int32 := default
+    let mut v8 : Int32 := default
+    let mut v9 : Int32 := default
+    let mut v10 : Bool := default
     let mut v11 : Bool := default
-    let v0 : String := "Aéλ🙂Z"
-    let v1 : Int32 := (0 : Int32)
-    let v2 : Int32 := (0 : Int32)
-    let v3 : Int32 := (10 : Int32)
-    let v4 : Int32 := (← utf8_validate_loop_0 v0 v1 v2 v3)
-    let v5 : String := ""
-    let v6 : Int32 := (0 : Int32)
-    let v7 : Int32 := (0 : Int32)
-    let v8 : Int32 := (0 : Int32)
-    let v9 : Int32 := (← utf8_validate_loop_0 v5 v6 v7 v8)
-    let v10 : Bool := (v4 == (5 : Int32))
+    v0 := "Aéλ🙂Z"
+    v1 := (0 : Int32)
+    v2 := (0 : Int32)
+    v3 := (10 : Int32)
+    v4 := (← utf8_validate_loop_0 v0 v1 v2 v3)
+    v5 := ""
+    v6 := (0 : Int32)
+    v7 := (0 : Int32)
+    v8 := (0 : Int32)
+    v9 := (← utf8_validate_loop_0 v5 v6 v7 v8)
+    v10 := (v4 == (5 : Int32))
     if v10 then
         v11 := (v9 == (0 : Int32))
         if v11 then

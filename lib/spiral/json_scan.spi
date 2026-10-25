@@ -1,5 +1,8 @@
 /// # json_scan
 
+test json_scan static =
+    open testing
+
 let rec matches_at (s : string) (needle : string) (at : i32) (i : i32) (m : i32) : bool =
     if i >= m then true
     elif sm.index s (at + i) = sm.index needle i then matches_at s needle at (i + 1i32) m
@@ -75,23 +78,61 @@ let rec closing_quote (s : string) (at : i32) (n : i32) : i32 =
 let text_between (s : string) (from : i32) (until : i32) : string =
     if until <= from then "" else sm.slice s { from = from; to = until - 1i32 }
 
-let unescaped (s : string) (at : i32) : string =
+let hex_digit (c : char) : i32 =
+    inl d = digit_of c
+    if d >= 0i32 then d
+    elif c = 'a' || c = 'A' then 10i32
+    elif c = 'b' || c = 'B' then 11i32
+    elif c = 'c' || c = 'C' then 12i32
+    elif c = 'd' || c = 'D' then 13i32
+    elif c = 'e' || c = 'E' then 14i32
+    elif c = 'f' || c = 'F' then 15i32
+    else -1i32
+
+let hex4 (s : string) (at : i32) (n : i32) : i32 =
+    if at + 4i32 > n then -1i32
+    else
+        inl a = hex_digit (sm.index s at)
+        inl b = hex_digit (sm.index s (at + 1i32))
+        inl c = hex_digit (sm.index s (at + 2i32))
+        inl d = hex_digit (sm.index s (at + 3i32))
+        if a < 0i32 || b < 0i32 || c < 0i32 || d < 0i32 then -1i32 else ((a * 16i32 + b) * 16i32 + c) * 16i32 + d
+
+let unicode_escape (s : string) (at : i32) : string * i32 =
+    inl n = sm.length s
+    inl code = hex4 s (at + 1i32) n
+    if code < 0i32 then text_between s (at - 1i32) (at + 1i32), 1i32
+    elif code >= 55296i32 && code <= 56319i32 then
+        inl paired = at + 11i32 <= n && sm.index s (at + 5i32) = '\\' && sm.index s (at + 6i32) = 'u'
+        inl low = if paired then hex4 s (at + 7i32) n else -1i32
+        if low >= 56320i32 && low <= 57343i32 then
+            unicode.char_of (65536i32 + (code - 55296i32) * 1024i32 + (low - 56320i32)), 11i32
+        else unicode.char_of 65533i32, 5i32
+    elif code >= 56320i32 && code <= 57343i32 then unicode.char_of 65533i32, 5i32
+    else unicode.char_of code, 5i32
+
+let unescaped (s : string) (at : i32) : string * i32 =
     inl c = sm.index s at
-    if c = 'n' then "\n"
-    elif c = 't' then "\t"
-    elif c = 'r' then "\r"
-    elif c = '"' then "\""
-    elif c = '\\' then "\\"
-    elif c = '/' then "/"
-    else text_between s (at - 1i32) (at + 1i32)
+    if c = 'n' then "\n", 1i32
+    elif c = 't' then "\t", 1i32
+    elif c = 'r' then "\r", 1i32
+    elif c = '"' then "\"", 1i32
+    elif c = '\\' then "\\", 1i32
+    elif c = '/' then "/", 1i32
+    elif c = 'b' then unicode.char_of 8i32, 1i32
+    elif c = 'f' then unicode.char_of 12i32, 1i32
+    elif c = 'u' then unicode_escape s at
+    else text_between s (at - 1i32) (at + 1i32), 1i32
 
 let rec unescape_from (s : string) (start : i32) (at : i32) (close : i32) (prefix : string) : string =
     if at >= close then !!!!StaticStringConcat(prefix, text_between s start close)
     elif sm.index s at = '\\' then
         inl kept = !!!!StaticStringConcat(prefix, text_between s start at)
-        inl piece = unescaped s (at + 1i32)
-        unescape_from s (at + 2i32) (at + 2i32) close (!!!!StaticStringConcat(kept, piece))
+        inl piece, width = unescaped s (at + 1i32)
+        inl next = at + 1i32 + width
+        unescape_from s next next close (!!!!StaticStringConcat(kept, piece))
     else unescape_from s start (at + 1i32) close prefix
+
 
 let parse_string (s : string) (at : i32) : string =
     if at < 0i32 then ""
@@ -218,3 +259,20 @@ let union_payload_at (s : string) (at : i32) : i32 =
         inl key_at = skip_spaces s (at + 1i32)
         inl close = closing_quote s (key_at + 1i32) (sm.length s)
         skip_spaces s (close + 2i32)
+
+///> rust
+///> gleam
+///> c
+test parse_string_decodes_unicode_escapes =
+    inl ~s = "\"caf\\u00e9 \\ud83d\\ude00 \\ud800 x\\n\""
+    inl a = !!!!StaticStringConcat("caf", unicode.char_of 233i32)
+    inl b = !!!!StaticStringConcat(!!!!StaticStringConcat(a, " "), unicode.char_of 128512i32)
+    inl c = !!!!StaticStringConcat(!!!!StaticStringConcat(b, " "), unicode.char_of 65533i32)
+    parse_string s 0i32 |> _assert_eq (!!!!StaticStringConcat(c, " x\n"))
+
+///> rust
+///> gleam
+///> c
+test parse_string_keeps_a_malformed_unicode_escape =
+    inl ~s = "\"a\\u12zz\""
+    parse_string s 0i32 |> _assert_eq "a\\u12zz"

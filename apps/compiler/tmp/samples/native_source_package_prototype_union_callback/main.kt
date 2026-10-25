@@ -1,5 +1,5 @@
 sealed interface US0 { val tag: Int }
-object US0_Idle : US0 { override val tag: Int = 0 }
+class US0_Idle : US0 { override val tag: Int = 0 }
 data class US0_Hit(val f0: Int) : US0 { override val tag: Int = 1 }
 data class US0_Flag(val f0: Boolean) : US0 { override val tag: Int = 2 }
 fun closure0(v0: Int): (Int) -> US0 {
@@ -16,9 +16,11 @@ fun sp_method0(p0: (Int) -> US0, p1: Int): US0 {
     return v0(v1)
 }
 fun spiral_main(): Int {
-    val v0: Int = 2
-    val v1: (Int) -> US0 = closure0(v0)
-    var v2: US0 = US0_Idle
+    var v0: Int = 0
+    v0 = 2
+    var v1: (Int) -> US0 = { _: Int -> throw RuntimeException() }
+    v1 = closure0(v0)
+    var v2: US0 = US0_Idle()
     v2 = sp_method0(v1, v0)
     var v8: Int = 0
     when (v2.tag) {
@@ -39,7 +41,8 @@ fun spiral_main(): Int {
         }
         else -> throw RuntimeException()
     }
-    val v9: Int = (v8 + 31)
+    var v9: Int = 0
+    v9 = (v8 + 31)
     return v9
 }
 fun main() {

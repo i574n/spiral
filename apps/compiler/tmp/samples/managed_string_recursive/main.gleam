@@ -10,6 +10,9 @@ pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {
   int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half
 }
 
+pub fn spiral_wrap_unsigned(value: Int, bits: Int) -> Int {
+  int.bitwise_and(value, int.bitwise_shift_left(1, bits) - 1)
+}
 
 pub type Uh0 {
     Uh0Empty
@@ -31,17 +34,17 @@ pub fn score_0(v0: Uh0) -> Int {
     }
 }
 pub fn main() {
-    let v0 = "ab"
-    let v1 = "qwe"
-    let v2 = Uh0Empty
-    let v3 = Uh0Node(v1, v2, v2)
-    let v4 = Uh0Node(v0, v3, v3)
-    let v5 = score_0(v4)
-    let v6 = Uh0Empty
-    let v7 = Uh0Node(v1, v6, v6)
-    let v8 = Uh0Node(v0, v7, v7)
-    let v9 = score_0(v8)
-    let v10 = spiral_wrap_signed(v5 + v9, 32)
-    let v11 = spiral_wrap_signed(v10 - 16, 32)
-    v11
+let v0 = "ab"
+let v1 = "qwe"
+let v2 = Uh0Empty
+let v3 = Uh0Node(v1, v2, v2)
+let v4 = Uh0Node(v0, v3, v3)
+let v5 = score_0(v4)
+let v6 = Uh0Empty
+let v7 = Uh0Node(v1, v6, v6)
+let v8 = Uh0Node(v0, v7, v7)
+let v9 = score_0(v8)
+let v10 = spiral_wrap_signed(v5 + v9, 32)
+let v11 = spiral_wrap_signed(v10 - 16, 32)
+v11
 }

@@ -7,8 +7,7 @@ open rust.rust_operators
 /// ### run_tests'
 inl run_tests' tests =
     inl fields = reflection.get_record_fields tests
-    if is_rust ()
-    then
+    if is_rust () then
         global (
             "thread_local! { static SPIRAL_TEST: std::cell::RefCell<Option<&'static str>> = const { "
             ^^ "std::cell::RefCell::new(None) }; }"
@@ -16,8 +15,7 @@ inl run_tests' tests =
     fields
     |> listm.iter fun name, (fn : string -> ()) =>
         inl (++) (a : string) (b : string) : string = !!!!StaticStringConcat(a, b)
-        if is_rust ()
-        then
+        if is_rust () then
             global (
                 "#[test] fn "
                 ++ name
@@ -33,8 +31,7 @@ inl run_tests' tests =
 
 test run_tests static =
     inl run test =
-        if env.get_environment_variable "TEST" = "1"
-        then
+        if env.get_environment_variable "TEST" = "1" then
             if is_rust () then test () else ()
         else
             runtime.execution_options fun x => { x with

@@ -1,3 +1,6 @@
+/// # json
+///- --real
+
 open real_core
 
 inl (++) a b = !!!!StaticStringConcat(a, b)
@@ -119,3 +122,7 @@ and inl decode s = forall t. =>
             forall value. =>
                 decode_at `value s (json_scan.value_at s !!!!SymbolToString(key))
         `t
+
+/// ### decode
+
+/// ### tool_schema

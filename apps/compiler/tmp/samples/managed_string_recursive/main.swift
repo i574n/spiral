@@ -56,10 +56,14 @@ func sp_score_0(_ p0: UH0) -> Int32 {
     }
 }
 func spiral_main() -> Int32 {
-    let v0: String = "ab"
-    let v1: String = "qwe"
-    let v2: UH0 = UH0_Empty()
-    let v3: UH0 = UH0_Node(f0: v1, f1: v2, f2: v2)
+    var v0: String = ""
+    v0 = "ab"
+    var v1: String = ""
+    v1 = "qwe"
+    var v2: UH0 = UH0_Empty()
+    v2 = UH0_Empty()
+    var v3: UH0 = UH0_Empty()
+    v3 = UH0_Node(f0: v1, f1: v2, f2: v2)
     var v4: UH0 = UH0_Empty()
     v4 = UH0_Node(f0: v0, f1: v3, f2: v3)
     var v5: Int32 = 0
@@ -70,9 +74,12 @@ func spiral_main() -> Int32 {
     v7 = UH0_Node(f0: v1, f1: v6, f2: v6)
     var v8: UH0 = UH0_Empty()
     v8 = UH0_Node(f0: v0, f1: v7, f2: v7)
-    let v9: Int32 = sp_score_0(v8)
-    let v10: Int32 = (v5 &+ v9)
-    let v11: Int32 = (v10 &- 16)
+    var v9: Int32 = 0
+    v9 = sp_score_0(v8)
+    var v10: Int32 = 0
+    v10 = (v5 &+ v9)
+    var v11: Int32 = 0
+    v11 = (v10 &- 16)
     return v11
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

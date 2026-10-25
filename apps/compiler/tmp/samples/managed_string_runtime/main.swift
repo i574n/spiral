@@ -29,10 +29,14 @@ func spiralStringSlice(_ value: String, _ from: Int32, _ to: Int32) -> String {
     return String(decoding: bytes[f...t], as: UTF8.self)
 }
 func spiral_main() -> Int32 {
-    let v0: String = "qwe"
-    let v1: Int32 = spiralStringLength(v0)
-    let v2: Int32 = (v1 &+ v1)
-    let v3: Int32 = (v2 &- 6)
+    var v0: String = ""
+    v0 = "qwe"
+    var v1: Int32 = 0
+    v1 = spiralStringLength(v0)
+    var v2: Int32 = 0
+    v2 = (v1 &+ v1)
+    var v3: Int32 = 0
+    v3 = (v2 &- 6)
     return v3
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

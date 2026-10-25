@@ -20,15 +20,18 @@ fun sp_score_0(p0: US0): Int {
     }
 }
 fun spiral_main(): Int {
-    val v0: Boolean = false
+    var v0: Boolean = false
+    v0 = false
     var v3: US0 = US0_Hit(0)
     if (v0) {
         v3 = US0_Hit(7)
     } else {
         v3 = US0_Flag(true)
     }
-    val v4: Int = sp_score_0(v3)
-    val v5: Int = (v4 - 9)
+    var v4: Int = 0
+    v4 = sp_score_0(v3)
+    var v5: Int = 0
+    v5 = (v4 - 9)
     return v5
 }
 fun main() {

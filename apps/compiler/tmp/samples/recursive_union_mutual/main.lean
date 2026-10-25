@@ -41,11 +41,12 @@ def U0.spiralTag : U0 → Int32
   | .StopA .. => 1
 mutual
 partial def spiralMain : IO Int32 := do
+    let mut v0 : Bool := default
     let mut v5 : U0 := default
     let mut v1 : U0 := default
     let mut v2 : U1 := default
     let mut v6 : U1 := default
-    let v0 : Bool := true
+    v0 := true
     if v0 then
         v1 := U0.StopA
         v2 := (U1.B v1)

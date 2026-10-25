@@ -18,6 +18,10 @@ var
   v6: LongInt;
   v7: LongInt;
   v8: Boolean;
+  tmp5: LongInt;
+  tmp6: LongInt;
+  tmp7: LongInt;
+  tmp8: LongInt;
 begin
   while True do begin
       v4 := v0 - 1;
@@ -29,10 +33,14 @@ begin
           Result := TupleCreate0(v5, v6, v7);
           Exit;
       end else begin
-          v0 := v4;
-          v1 := v5;
-          v2 := v6;
-          v3 := v7;
+          tmp5 := v4;
+          tmp6 := v5;
+          tmp7 := v6;
+          tmp8 := v7;
+          v0 := tmp5;
+          v1 := tmp6;
+          v2 := tmp7;
+          v3 := tmp8;
           Continue;
       end;
   end;

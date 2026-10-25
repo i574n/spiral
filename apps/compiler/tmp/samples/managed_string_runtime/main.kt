@@ -28,10 +28,14 @@ fun spiralStringSlice(value: String, from: Int, to: Int): String {
     return bytes.copyOfRange(from, to + 1).toString(Charsets.UTF_8)
 }
 fun spiral_main(): Int {
-    val v0: String = "qwe"
-    val v1: Int = spiralStringLength(v0)
-    val v2: Int = (v1 + v1)
-    val v3: Int = (v2 - 6)
+    var v0: String = ""
+    v0 = "qwe"
+    var v1: Int = 0
+    v1 = spiralStringLength(v0)
+    var v2: Int = 0
+    v2 = (v1 + v1)
+    var v3: Int = 0
+    v3 = (v2 - 6)
     return v3
 }
 fun main() {

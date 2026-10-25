@@ -34,17 +34,24 @@ fun sp_middle_0(p0: String): String {
     return v1
 }
 fun spiral_main(): Int {
-    val v0: String = "alpha"
+    var v0: String = ""
+    v0 = "alpha"
     var v1: String = ""
     v1 = sp_middle_0(v0)
-    val v2: Int = spiralStringLength(v1)
-    val v3: Boolean = (v2 == 3)
+    var v2: Int = 0
+    v2 = spiralStringLength(v1)
+    var v3: Boolean = false
+    v3 = (v2 == 3)
     if (v3) {
-        val v4: Int = spiralStringIndex(v1, 0)
-        val v5: Boolean = (v4 == 108)
+        var v4: Int = 0
+        v4 = spiralStringIndex(v1, 0)
+        var v5: Boolean = false
+        v5 = (v4 == 108)
         if (v5) {
-            val v6: Int = spiralStringIndex(v1, 2)
-            val v7: Boolean = (v6 == 104)
+            var v6: Int = 0
+            v6 = spiralStringIndex(v1, 2)
+            var v7: Boolean = false
+            v7 = (v6 == 104)
             if (v7) {
                 return 0
             } else {

@@ -14,7 +14,8 @@ func sp_score_inner_1(_ p0: US1) -> Int32 {
             return v1
         case 1:
             var v2: Int32 = (v0 as! US1_B).f0
-            let v3: Int32 = (-(v2))
+            var v3: Int32 = 0
+            v3 = (-(v2))
             return v3
         default:
             fatalError("unreachable union case")
@@ -34,10 +35,12 @@ func sp_score_0(_ p0: US0) -> Int32 {
     }
 }
 func spiral_main() -> Int32 {
-    let v0: Bool = true
+    var v0: Bool = false
+    v0 = true
     var v4: US0 = US0_Wrap(f0: US1_A(f0: 0))
     if (v0) {
-        let v1: US1 = US1_A(f0: 7)
+        var v1: US1 = US1_A(f0: 0)
+        v1 = US1_A(f0: 7)
         v4 = US0_Wrap(f0: v1)
     } else {
         v4 = US0_Other(f0: 1)
@@ -46,15 +49,20 @@ func spiral_main() -> Int32 {
     if (v0) {
         v8 = US0_Other(f0: 4)
     } else {
-        let v6: US1 = US1_B(f0: 2)
+        var v6: US1 = US1_A(f0: 0)
+        v6 = US1_B(f0: 2)
         v8 = US0_Wrap(f0: v6)
     }
-    let v9: Int32 = sp_score_0(v4)
-    let v10: Bool = (v9 == 7)
+    var v9: Int32 = 0
+    v9 = sp_score_0(v4)
+    var v10: Bool = false
+    v10 = (v9 == 7)
     var v13: Bool = false
     if (v10) {
-        let v11: Int32 = sp_score_0(v8)
-        let v12: Bool = (v11 == 4)
+        var v11: Int32 = 0
+        v11 = sp_score_0(v8)
+        var v12: Bool = false
+        v12 = (v11 == 4)
         v13 = v12
     } else {
         v13 = false

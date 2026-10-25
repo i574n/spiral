@@ -5,13 +5,13 @@ fn method2() -> i32 {
     14i32
 }
 fn method1() -> i32 {
-    let v0: i32 = method2();
-    let v1: i32 = 14i32.wrapping_add(v0);
+    let mut v0: i32 = method2();
+    let mut v1: i32 = 14i32.wrapping_add(v0);
     v1
 }
 fn method0() -> i32 {
-    let v0: i32 = method1();
-    let v1: i32 = 14i32.wrapping_add(v0);
+    let mut v0: i32 = method1();
+    let mut v1: i32 = 14i32.wrapping_add(v0);
     v1
 }
 fn spiral_main() -> i32 {

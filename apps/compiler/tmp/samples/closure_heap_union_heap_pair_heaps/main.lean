@@ -119,25 +119,39 @@ partial def score_0 (p0 : U0) : IO Int32 := do
     | U0.None =>
         return (1 : Int32)
 partial def spiralMain : IO Int32 := do
+    let mut v0 : Int32 := default
+    let mut v1 : String := default
+    let mut v2 : H0 := default
+    let mut v3 : Int32 := default
+    let mut v4 : String := default
+    let mut v5 : H0 := default
+    let mut v6 : H1 := default
+    let mut v7 : Int32 := default
+    let mut v8 : H2 := default
+    let mut v9 : Bool := default
     let mut v12 : U0 := default
-    let v0 : Int32 := (7 : Int32)
-    let v1 : String := "hi"
-    let v2 : H0 := (H0.mk v0 v1)
-    let v3 : Int32 := (4 : Int32)
-    let v4 : String := "yo"
-    let v5 : H0 := (H0.mk v3 v4)
-    let v6 : H1 := (H1.mk v2 v5)
-    let v7 : Int32 := (2 : Int32)
-    let v8 : H2 := (H2.mk v6 v7)
-    let v9 : Bool := true
+    let mut v13 : H3 := default
+    let mut v14 : (Int32 → IO H3) := default
+    let mut v15 : H3 := default
+    let mut v16 : U0 := default
+    v0 := (7 : Int32)
+    v1 := "hi"
+    v2 := (H0.mk v0 v1)
+    v3 := (4 : Int32)
+    v4 := "yo"
+    v5 := (H0.mk v3 v4)
+    v6 := (H1.mk v2 v5)
+    v7 := (2 : Int32)
+    v8 := (H2.mk v6 v7)
+    v9 := true
     if v9 then
         v12 := (U0.Held v8)
     else
         v12 := U0.None
-    let v13 : H3 := (H3.mk v12)
-    let v14 : (Int32 → IO H3) := (f_c0 v13)
-    let v15 : H3 := (← v14 (1 : Int32))
-    let v16 : U0 := v15.l0
+    v13 := (H3.mk v12)
+    v14 := (f_c0 v13)
+    v15 := (← v14 (1 : Int32))
+    v16 := v15.l0
     return (← score_0 v16)
 end
 def main : IO UInt32 := do

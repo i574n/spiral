@@ -3,8 +3,8 @@ use std::cell::RefCell;
 use std::rc::Rc;
 fn closure1(mut v0: i32) -> Rc<dyn Fn(i32) -> i32> {
     Rc::new(move |mut v1: i32| -> i32 {
-        let v2: i32 = v0.wrapping_mul(10i32);
-        let v3: i32 = v2.wrapping_add(v1);
+        let mut v2: i32 = v0.wrapping_mul(10i32);
+        let mut v3: i32 = v2.wrapping_add(v1);
         v3
     })
 }
@@ -16,8 +16,8 @@ fn f_c0() -> Rc<dyn Fn(i32) -> Rc<dyn Fn(i32) -> i32>> {
 fn spiral_main() -> i32 {
     let mut v0: Rc<dyn Fn(i32) -> Rc<dyn Fn(i32) -> i32>> = f_c0();
     let mut v1: Rc<dyn Fn(i32) -> i32> = v0(3i32);
-    let v2: i32 = v1(4i32);
-    let v3: bool = v2 == 34i32;
+    let mut v2: i32 = v1(4i32);
+    let mut v3: bool = v2 == 34i32;
     if v3 {
         0i32
     } else {

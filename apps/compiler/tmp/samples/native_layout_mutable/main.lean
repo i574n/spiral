@@ -32,11 +32,14 @@ deriving instance Inhabited for M0
 mutual
 partial def spiralMain : IO Int32 := do
     let mut v0 : (IO.Ref M0) ← IO.mkRef default
+    let mut v1 : Int32 := default
+    let mut v2 : Int32 := default
+    let mut v3 : Int32 := default
     v0 := (← IO.mkRef (M0.mk (1 : Int32) (2 : Int32)))
     v0.modify (fun r => { r with l0 := (3 : Int32), l1 := (4 : Int32) })
-    let v1 : Int32 := (← v0.get).l0
-    let v2 : Int32 := (← v0.get).l1
-    let v3 : Int32 := (v1 + v2)
+    v1 := (← v0.get).l0
+    v2 := (← v0.get).l1
+    v3 := (v1 + v2)
     return v3
 end
 def main : IO UInt32 := do

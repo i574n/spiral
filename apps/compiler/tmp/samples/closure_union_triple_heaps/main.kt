@@ -1,13 +1,13 @@
 class Heap0(val l0: Int, val l1: String)
 sealed interface US0 { val tag: Int }
-object US0_None : US0 { override val tag: Int = 0 }
+class US0_None : US0 { override val tag: Int = 0 }
 data class US0_Held(val f0: Heap0, val f1: Heap0, val f2: Heap0) : US0 { override val tag: Int = 1 }
 fun f_c0(v0: Heap0, v1: Heap0, v2: Heap0): (Int) -> US0 {
     fun body(v3: Int): US0 {
         var v4: Boolean = false
         v4 = (v3 == 0)
         if (v4) {
-            return US0_None
+            return US0_None()
         } else {
             return US0_Held(v0, v1, v2)
         }
@@ -37,35 +37,40 @@ fun sp_score_0(p0: US0): Int {
             v10 = (v4 == 7)
             var v12: Boolean = false
             if (v10) {
-                val v11: Boolean = (v5 == "hi")
+                var v11: Boolean = false
+                v11 = (v5 == "hi")
                 v12 = v11
             } else {
                 v12 = false
             }
             var v14: Boolean = false
             if (v12) {
-                val v13: Boolean = (v6 == 4)
+                var v13: Boolean = false
+                v13 = (v6 == 4)
                 v14 = v13
             } else {
                 v14 = false
             }
             var v16: Boolean = false
             if (v14) {
-                val v15: Boolean = (v7 == "yo")
+                var v15: Boolean = false
+                v15 = (v7 == "yo")
                 v16 = v15
             } else {
                 v16 = false
             }
             var v18: Boolean = false
             if (v16) {
-                val v17: Boolean = (v8 == 9)
+                var v17: Boolean = false
+                v17 = (v8 == 9)
                 v18 = v17
             } else {
                 v18 = false
             }
             var v20: Boolean = false
             if (v18) {
-                val v19: Boolean = (v9 == "ok")
+                var v19: Boolean = false
+                v19 = (v9 == "ok")
                 v20 = v19
             } else {
                 v20 = false
@@ -83,10 +88,14 @@ fun sp_score_0(p0: US0): Int {
     }
 }
 fun spiral_main(): Int {
-    val v0: Int = 7
-    val v1: String = "hi"
-    val v2: Heap0 = Heap0(v0, v1)
-    val v3: Int = 4
+    var v0: Int = 0
+    v0 = 7
+    var v1: String = ""
+    v1 = "hi"
+    var v2: Heap0 = Heap0(0, "")
+    v2 = Heap0(v0, v1)
+    var v3: Int = 0
+    v3 = 4
     var v4: String = ""
     v4 = "yo"
     var v5: Heap0 = Heap0(0, "")
@@ -99,7 +108,7 @@ fun spiral_main(): Int {
     v8 = Heap0(v6, v7)
     var v9: (Int) -> US0 = { _: Int -> throw RuntimeException() }
     v9 = f_c0(v2, v5, v8)
-    var v10: US0 = US0_None
+    var v10: US0 = US0_None()
     v10 = v9(1)
     return sp_score_0(v10)
 }

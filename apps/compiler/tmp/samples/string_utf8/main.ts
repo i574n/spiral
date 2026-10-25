@@ -30,57 +30,57 @@ function spiral_string_slice(value: string, from: number, to: number): string {
     return spiral_utf8_decoder.decode(bytes.subarray(from, to + 1));
 }
 export function main(): number {
-    const v0: string = "é";
-    const v1: number = spiral_string_length(v0);
-    const v2: number = spiral_string_index(v0, 0);
-    const v3: number = spiral_string_index(v0, 1);
-    const v4: string = "x";
-    const v5: string = v0 + v4;
-    const v6: number = spiral_string_length(v5);
-    const v7: string = "ab";
-    const v8: number = spiral_string_index(v7, 0);
-    const v9: string = spiral_string_slice(v7, 0, 0);
-    const v10: number = spiral_string_length(v9);
-    const v11: string = spiral_string_slice(v7, 1, 0);
-    const v12: number = spiral_string_length(v11);
-    const v13: string = spiral_string_slice(v0, 0, 1);
-    const v14: number = spiral_string_length(v13);
-    const v15: boolean = v2 === v3;
+    let v0: string = "é";
+    let v1: number = spiral_string_length(v0);
+    let v2: number = spiral_string_index(v0, 0);
+    let v3: number = spiral_string_index(v0, 1);
+    let v4: string = "x";
+    let v5: string = v0 + v4;
+    let v6: number = spiral_string_length(v5);
+    let v7: string = "ab";
+    let v8: number = spiral_string_index(v7, 0);
+    let v9: string = spiral_string_slice(v7, 0, 0);
+    let v10: number = spiral_string_length(v9);
+    let v11: string = spiral_string_slice(v7, 1, 0);
+    let v12: number = spiral_string_length(v11);
+    let v13: string = spiral_string_slice(v0, 0, 1);
+    let v14: number = spiral_string_length(v13);
+    let v15: boolean = v2 === v3;
     if (v15) {
         return 1;
     } else {
-        const v16: boolean = v1 === 2;
+        let v16: boolean = v1 === 2;
         let v18: boolean;
         if (v16) {
-            const v17: boolean = v8 === 97;
+            let v17: boolean = v8 === 97;
             v18 = v17;
         } else {
             v18 = false;
         }
         let v20: boolean;
         if (v18) {
-            const v19: boolean = v6 === 3;
+            let v19: boolean = v6 === 3;
             v20 = v19;
         } else {
             v20 = false;
         }
         let v22: boolean;
         if (v20) {
-            const v21: boolean = v10 === 1;
+            let v21: boolean = v10 === 1;
             v22 = v21;
         } else {
             v22 = false;
         }
         let v24: boolean;
         if (v22) {
-            const v23: boolean = v12 === 0;
+            let v23: boolean = v12 === 0;
             v24 = v23;
         } else {
             v24 = false;
         }
         let v26: boolean;
         if (v24) {
-            const v25: boolean = v14 === 2;
+            let v25: boolean = v14 === 2;
             v26 = v25;
         } else {
             v26 = false;

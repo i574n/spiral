@@ -36,33 +36,60 @@ US0 US0_Flag(bool v0) { // Flag
     x.case1.v0 = v0;
     return x;
 }
-static int32_t score0(US0 v0){
+int32_t score0(US0 v0){
+    
+    
     switch (v0.tag) {
         case 1: { // Flag
             bool v2 = v0.case1.v0;
+            
+            
             if (v2){
+                
+                
                 return 9l;
             } else {
+                
+                
                 return 4l;
             }
             break;
         }
         default: { // Hit
             int32_t v1 = v0.case0.v0;
+            
+            
             return v1;
             break;
         }
     }
 }
 int32_t main(){
-    bool v0 = false;
+    
+    
+    bool v0;
+    v0 = false;
+    
+    
     US0 v3;
     if (v0){
+        
+        
         v3 = US0_Hit(7l);
     } else {
+        
+        
         v3 = US0_Flag(true);
     }
-    int32_t v4 = score0(v3);
-    int32_t v5 = v4 - 9l;
+    
+    
+    int32_t v4;
+    v4 = score0(v3);
+    
+    
+    int32_t v5;
+    v5 = v4 - 9l;
+    
+    
     return v5;
 }

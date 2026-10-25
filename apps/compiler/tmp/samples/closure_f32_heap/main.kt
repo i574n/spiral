@@ -6,19 +6,26 @@ fun f_c0(v0: Heap0): (Int) -> Heap0 {
     return { p0: Int -> body(p0) }
 }
 fun spiral_main(): Int {
-    val v0: Float = 1.5f
-    val v1: String = "hi"
-    val v2: Heap0 = Heap0(v0, v1)
-    val v3: (Int) -> Heap0 = f_c0(v2)
-    val v4: Heap0 = v3(1)
+    var v0: Float = 0.0f
+    v0 = 1.5f
+    var v1: String = ""
+    v1 = "hi"
+    var v2: Heap0 = Heap0(0.0f, "")
+    v2 = Heap0(v0, v1)
+    var v3: (Int) -> Heap0 = { _: Int -> throw RuntimeException() }
+    v3 = f_c0(v2)
+    var v4: Heap0 = Heap0(0.0f, "")
+    v4 = v3(1)
     var v5: Float = 0.0f
     var v6: String = ""
     v5 = v4.l0
     v6 = v4.l1
-    val v7: Boolean = (v5 == 1.5f)
+    var v7: Boolean = false
+    v7 = (v5 == 1.5f)
     var v9: Boolean = false
     if (v7) {
-        val v8: Boolean = (v6 == "hi")
+        var v8: Boolean = false
+        v8 = (v6 == "hi")
         v9 = v8
     } else {
         v9 = false

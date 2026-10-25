@@ -8,7 +8,8 @@ fun spiral_main(): Int {
     var v2: Int = 0
     v1 = v0.l0
     v2 = v0.l1
-    val v3: Int = (v1 + v2)
+    var v3: Int = 0
+    v3 = (v1 + v2)
     return v3
 }
 fun main() {

@@ -1,10 +1,13 @@
 fun spiral_main(): Int {
     var v0: Array<UShort> = emptyArray<UShort>()
     v0 = Array(1) { (0).toUShort() }
-    val v1: UShort = (40000).toUShort()
+    var v1: UShort = (0).toUShort()
+    v1 = (40000).toUShort()
     v0[0] = v1
-    val v2: UShort = v0[0]
-    val v3: Boolean = (v2 == (40000).toUShort())
+    var v2: UShort = (0).toUShort()
+    v2 = v0[0]
+    var v3: Boolean = false
+    v3 = (v2 == (40000).toUShort())
     if (v3) {
         return 0
     } else {

@@ -26,12 +26,16 @@ def spiralStringSlice (s : String) (a b : Int) : IO String := do
 mutual
 partial def f_c0 (p0 : Int32) : IO Int32 := do
     let mut v0 : Int32 := p0
-    let v1 : Int32 := (v0 + (1 : Int32))
+    let mut v1 : Int32 := default
+    v1 := (v0 + (1 : Int32))
     return v1
 partial def spiralMain : IO Int32 := do
-    let v0 : (Int32 → IO Int32) := f_c0
-    let v1 : Int32 := (← v0 (6 : Int32))
-    let v2 : Bool := (v1 == (7 : Int32))
+    let mut v0 : (Int32 → IO Int32) := default
+    let mut v1 : Int32 := default
+    let mut v2 : Bool := default
+    v0 := f_c0
+    v1 := (← v0 (6 : Int32))
+    v2 := (v1 == (7 : Int32))
     if v2 then
         return (0 : Int32)
     else

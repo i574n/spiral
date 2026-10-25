@@ -15,8 +15,10 @@ func f_c0() -> (Int32) -> (Int32) -> Int32 {
     }
 }
 func spiral_main() -> Int32 {
-    let v0: (Int32) -> (Int32) -> Int32 = f_c0()
-    let v1: (Int32) -> Int32 = v0(3)
+    var v0: (Int32) -> (Int32) -> Int32 = { (_: Int32) -> (Int32) -> Int32 in fatalError("unreachable closure") }
+    v0 = f_c0()
+    var v1: (Int32) -> Int32 = { (_: Int32) -> Int32 in fatalError("unreachable closure") }
+    v1 = v0(3)
     var v2: Int32 = 0
     v2 = v1(4)
     var v3: Bool = false

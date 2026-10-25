@@ -86,7 +86,8 @@ func sp_score_0(_ p0: US1) -> Int32 {
                     }
                     var v16: Bool = false
                     if (v14) {
-                        let v15: Bool = (v10 == 4)
+                        var v15: Bool = false
+                        v15 = (v10 == 4)
                         v16 = v15
                     } else {
                         v16 = false
@@ -122,11 +123,14 @@ func sp_score_0(_ p0: US1) -> Int32 {
     }
 }
 func spiral_main() -> Int32 {
-    let v0: Int32 = 7
-    let v1: String = "hi"
+    var v0: Int32 = 0
+    v0 = 7
+    var v1: String = ""
+    v1 = "hi"
     var v2: Heap0 = Heap0(l0: 0, l1: "")
     v2 = Heap0(l0: v0, l1: v1)
-    let v3: Int32 = 4
+    var v3: Int32 = 0
+    v3 = 4
     var v4: String = ""
     v4 = "yo"
     var v5: Heap0 = Heap0(l0: 0, l1: "")
@@ -162,7 +166,8 @@ func spiral_main() -> Int32 {
     v19.items[Int(0)] = v18
     var v20: Heap4 = Heap4(l0: US1_Absent())
     v20 = v19.items[Int(0)]
-    let v21: US1 = v20.l0
+    var v21: US1 = US1_Absent()
+    v21 = v20.l0
     return sp_score_0(v21)
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

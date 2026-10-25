@@ -35,17 +35,24 @@ func sp_middle_0(_ p0: String) -> String {
     return v1
 }
 func spiral_main() -> Int32 {
-    let v0: String = "alpha"
+    var v0: String = ""
+    v0 = "alpha"
     var v1: String = ""
     v1 = sp_middle_0(v0)
-    let v2: Int32 = spiralStringLength(v1)
-    let v3: Bool = (v2 == 3)
+    var v2: Int32 = 0
+    v2 = spiralStringLength(v1)
+    var v3: Bool = false
+    v3 = (v2 == 3)
     if (v3) {
-        let v4: Int32 = spiralStringIndex(v1, 0)
-        let v5: Bool = (v4 == 108)
+        var v4: Int32 = 0
+        v4 = spiralStringIndex(v1, 0)
+        var v5: Bool = false
+        v5 = (v4 == 108)
         if (v5) {
-            let v6: Int32 = spiralStringIndex(v1, 2)
-            let v7: Bool = (v6 == 104)
+            var v6: Int32 = 0
+            v6 = spiralStringIndex(v1, 2)
+            var v7: Bool = false
+            v7 = (v6 == 104)
             if (v7) {
                 return 0
             } else {

@@ -230,10 +230,136 @@ inl await_task forall t. (a : task t) : async t =
             a |> $'Async.AwaitTask'
         | _ => fun () => null ()
 
+/// ### future_of_async
+inl future_of_async forall t. (a : async t) : future_pin t =
+    $'!a' : future_pin t
+
+/// ### async_of_future
+inl async_of_future forall t. (f : future_pin t) : async t =
+    $'!f' : async t
+
+/// ### poll
+nominal poll t =
+    `(
+        rust.rust_type
+            `($'std_task_Poll<`t>')
+            `($'std::task::Poll<`t>')
+            "type std_task_Poll<'T> = class end"
+    )
+
+/// ### context
+nominal context =
+    `(
+        rust.rust_type
+            `($'std_task_Context')
+            `($'std::task::Context')
+            "type std_task_Context = class end"
+    )
+
+/// ### waker
+nominal waker =
+    `(
+        rust.rust_type
+            `($'std_task_Waker')
+            `($'std::task::Waker')
+            "type std_task_Waker = class end"
+    )
+
+/// ### thread_handle
+nominal thread_handle =
+    `(
+        rust.rust_type
+            `($'std_thread_Thread')
+            `($'std::thread::Thread')
+            "type std_thread_Thread = class end"
+    )
+
+/// ### current_thread
+inl current_thread () : thread_handle =
+    $'std::thread::current()' : thread_handle
+
+/// ### thread_park
+inl thread_park () : () =
+    $'std::thread::park()' : ()
+
+/// ### thread_waker_types
+inl thread_waker_types () =
+    global "struct SpiralThreadWaker(std::thread::Thread);"
+    global "impl std::task::Wake for SpiralThreadWaker { fn wake(self: std::sync::Arc<Self>) { self.0.unpark() } }"
+
+/// ### thread_waker
+inl thread_waker (thread : thread_handle) : waker =
+    thread_waker_types ()
+    $'std::task::Waker::from(std::sync::Arc::new(SpiralThreadWaker(!thread)))' : waker
+
+/// ### context_of_waker
+inl context_of_waker (w : rust.ref waker) : context =
+    $'std::task::Context::from_waker(!w)' : context
+
+/// ### poll_once
+inl poll_once forall t. (f : rust.ref (rust.mut' (future_pin t))) (cx : rust.ref (rust.mut' context)) : poll t =
+    $'std::future::Future::poll((!f).as_mut(), !cx)' : poll t
+
+/// ### poll_ready
+inl poll_ready forall t. (x : t) : poll t =
+    $'std::task::Poll::Ready(!x)' : poll t
+
+/// ### poll_pending
+inl poll_pending forall t. () : poll t =
+    $'std::task::Poll::Pending' : poll t
+
+/// ### poll_option
+inl poll_option forall t. (p : poll t) : optionm'.option' t =
+    $'match !p { std::task::Poll::Ready(v) => Some(v), std::task::Poll::Pending => None }' : optionm'.option' t
+
+/// ### poll_fn
+inl poll_fn forall t. (body : rust.ref (rust.mut' context) -> poll t) : future_pin t =
+    (!\($'"true; let __poll_fn = Box::pin(std::future::poll_fn(move |__poll_cx: &mut std::task::Context| { //"') : bool)
+    |> ignore
+    (!\\(body ($'__poll_cx' : rust.ref (rust.mut' context)), $'"true; $0 }))"') : bool) |> ignore
+    !\($'"__poll_fn"')
+
+/// ### catch_unwind_poll
+inl catch_unwind_poll forall t.
+    (f : rust.ref (rust.mut' (future_pin t)))
+    (cx : rust.ref (rust.mut' context))
+    : rust_caught (poll t)
+    =
+    $'std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| std::future::Future::poll((!f).as_mut(), !cx)))'
+    : rust_caught (poll t)
+
+/// ### run_synchronously_rust
+inl run_synchronously_rust forall t. (a : async t) : t =
+    inl waker = current_thread () |> thread_waker
+    inl context = waker |> rust.to_ref |> context_of_waker
+    inl future = a |> future_of_async
+    future |> rust.to_mut
+    context |> rust.to_mut
+    inl result = mut (optionm'.none' ())
+    rust.loop 0 fun () =>
+        inl polled = poll_once (rust.to_ref_mut future) (rust.to_ref_mut context) |> poll_option
+        result <- polled
+        inl _ =
+            if optionm'.is_none' polled then
+                thread_park ()
+                false
+            else
+                rust.break ()
+                true
+        ()
+    *result |> optionm'.unwrap
+
+/// ### caught_poll
+inl caught_poll forall t. (caught : rust_caught (poll t)) : poll (resultm.result' t exn) =
+    if rust_caught_ok caught then
+        inl polled = caught |> rust_caught_value |> poll_option
+        if optionm'.is_none' polled then poll_pending () else polled |> optionm'.unwrap |> resultm.ok'' |> poll_ready
+    else caught |> rust_caught_payload |> rust_panic_text |> rust_exn_of_text |> resultm.err |> poll_ready
+
 /// ### ignore
 inl ignore forall t. (a : async t) : async () =
     if is_rust ()
-    then $'Box::pin(async move { let _ = !a.await; })' : async ()
+    then new_future_move (fun () => a |> future_of_async |> await |> ignore) |> async_of_future
     else
         run_target function
             | Fsharp _
@@ -248,48 +374,14 @@ inl run_synchronously forall t. (a : async t) : t =
             a |> $'Async.RunSynchronously'
         | Cuda => fun () =>
             $'asyncio.run(!a())'
-        | Rust => fun () =>
-            $'{ struct SpiralThreadWaker(std::thread::Thread); impl std::task::Wake for SpiralThreadWaker { fn \
-                wake(self: std::sync::Arc<Self>) { self.0.unpark(); } } let waker = \
-                std::task::Waker::from(std::sync::Arc::new(SpiralThreadWaker(std::thread::current()))); let mut cx = \
-                std::task::Context::from_waker(&waker); let mut f = !a; loop { match \
-                std::future::Future::poll(f.as_mut(), &mut cx) { std::task::Poll::Ready(v) => break v, \
-                std::task::Poll::Pending => std::thread::park() } } }' : t
+        | Rust => fun () => run_synchronously_rust a
         | _ => fun () => null ()
 
 inl catch_rust forall t. (a : async t) : async (resultm.result' t exn) =
-    $'Box::pin({ thread_local\! { static QUIET: std::cell::Cell<u32> = std::cell::Cell::new(0); } static HOOK: \
-        std::sync::Once = std::sync::Once::new(); HOOK.call_once(|| { let prev = std::panic::take_hook(); \
-        std::panic::set_hook(Box::new(move |info| if cfg\!(panic = "abort") || QUIET.with(|q| q.get()) == 0 { \
-        prev(info) })) }); let mut f = !a; std::future::poll_fn(move |cx| { QUIET.with(|q| q.set(q.get() + 1)); let r \
-        = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| std::future::Future::poll(f.as_mut(), cx))); \
-        QUIET.with(|q| q.set(q.get() - 1)); match r { Ok(std::task::Poll::Ready(v)) => std::task::Poll::Ready(Ok(v)), \
-        Ok(std::task::Poll::Pending) => std::task::Poll::Pending, Err(e) => \
-        std::task::Poll::Ready(Err(Rc::<str>::from(e.downcast_ref::<String>().map(|s| s.as_str()).or_else(|| \
-        e.downcast_ref::<&str>().copied()).unwrap_or("panic")))) } }) })' : async (resultm.result' t exn)
-
-inl start_child_rust forall t. (timeout : i32) (a : async t) : async (async t) =
-    $'Box::pin({ thread_local\! { static QUIET: std::cell::Cell<u32> = std::cell::Cell::new(0); } static HOOK: \
-        std::sync::Once = std::sync::Once::new(); HOOK.call_once(|| { let prev = std::panic::take_hook(); \
-        std::panic::set_hook(Box::new(move |info| if cfg\!(panic = "abort") || QUIET.with(|q| q.get()) == 0 { \
-        prev(info) })) }); let mut f = !a; let timeout_ms: i32 = !timeout; async move { let deadline = if timeout_ms \
-        >= 0 { Some(std::time::Instant::now() + std::time::Duration::from_millis(timeout_ms as u64)) } else { None }; \
-        let first = std::future::poll_fn(|cx| { QUIET.with(|q| q.set(q.get() + 1)); let r = \
-        std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| std::future::Future::poll(f.as_mut(), cx))); \
-        QUIET.with(|q| q.set(q.get() - 1)); std::task::Poll::Ready(r) }).await; let mut done = match first { \
-        Ok(std::task::Poll::Ready(v)) => Some(Ok((v, std::time::Instant::now()))), Ok(std::task::Poll::Pending) => \
-        None, Err(e) => Some(Err(e)) }; let mut timer: Option<std::sync::Arc<std::sync::Mutex<std::task::Waker>>> = \
-        None; let h: std::pin::Pin<Box<dyn std::future::Future<Output = `t>>> = Box::pin(std::future::poll_fn(move \
-        |cx| { if done.is_none() { if let std::task::Poll::Ready(v) = std::future::Future::poll(f.as_mut(), cx) { \
-        done = Some(Ok((v, std::time::Instant::now()))) } } match done.take() { Some(Err(e)) => \
-        std::panic::resume_unwind(e), Some(Ok((v, at))) => if deadline.map_or(false, |d| at > d) { panic\!("The \
-        operation has timed out.") } else { std::task::Poll::Ready(v) }, None => match deadline { Some(d) if \
-        std::time::Instant::now() >= d => panic\!("The operation has timed out."), Some(d) => { match &timer { \
-        Some(w) => *w.lock().unwrap() = cx.waker().clone(), None => { let w = \
-        std::sync::Arc::new(std::sync::Mutex::new(cx.waker().clone())); let w2 = w.clone(); std::thread::spawn(move \
-        || { let now = std::time::Instant::now(); if d > now { std::thread::sleep(d - now) } \
-        w2.lock().unwrap().wake_by_ref() }); timer = Some(w) } } std::task::Poll::Pending }, None => \
-        std::task::Poll::Pending } } })); h } })' : async (async t)
+    inl future = a |> future_of_async
+    future |> rust.to_mut
+    poll_fn (fun cx => rust_quietly (fun () => catch_unwind_poll (rust.to_ref_mut future) cx |> caught_poll))
+    |> async_of_future
 
 /// ### start
 inl start (a : async ()) : () =
@@ -314,7 +406,7 @@ inl sleep (ms : i32) : async () =
         | Cuda _ => fun () =>
             $'asyncio.sleep(!ms / 1000)'
         | Rust => fun () =>
-            $'Box::pin(async move { std::thread::sleep(std::time::Duration::from_millis((!ms as u64))) })' : async ()
+            new_future_move (fun () => threading.sleep ms) |> async_of_future
         | _ => fun () => null ()
 
 /// ### do
@@ -365,3 +457,29 @@ inl value_task_as_task (task : value_task) : task () =
 /// ## main
 inl main () =
     ()
+
+///> rust
+test run_synchronously_drives_a_future_to_its_value =
+    inl ~n = 41i32
+    new_future_move (fun () => n + 1i32) |> async_of_future |> run_synchronously |> _assert_eq 42i32
+
+///> rust
+test sleep_then_ignore_completes =
+    inl ~ms = 1i32
+    inl ~n = 3i32
+    sleep ms |> ignore |> run_synchronously
+    n |> _assert_eq 3i32
+
+inl async_outcome (r : resultm.result' i32 exn) : string =
+    match r |> resultm.unbox with
+    | Ok v => sm'.obj_to_string v
+    | Error _ => "error"
+
+///> rust
+test catch_rust_turns_a_panic_into_an_error =
+    inl ~ok = 7i32
+    inl ~message = "boom"
+    inl fine = new_future_move (fun () => ok) |> async_of_future |> catch_rust |> run_synchronously
+    inl failed =
+        new_future_move (fun () => failwith message : i32) |> async_of_future |> catch_rust |> run_synchronously
+    (async_outcome fine, async_outcome failed) |> _assert_eq ("7", "error")

@@ -24,10 +24,10 @@ inl rx_tag (r : rx) : i32 =
 let rec ranges_compare (a : list (u32 * u32)) (b : list (u32 * u32)) : i32 =
     match a with
     | Nil => match b with Nil => 0i32 | _ => -1i32
-    | Cons ((a_low, a_high), a_rest) =>
+    | (a_low, a_high) :: a_rest =>
         match b with
         | Nil => 1i32
-        | Cons ((b_low, b_high), b_rest) =>
+        | (b_low, b_high) :: b_rest =>
             if a_low < b_low then -1i32
             elif a_low > b_low then 1i32
             elif a_high < b_high then -1i32
@@ -90,25 +90,25 @@ let rec alt_leaves (r : rx) (leaves : list rx) : list rx =
     match r with
     | RxAlt (first, rest) => alt_leaves first (alt_leaves rest leaves)
     | RxNone => leaves
-    | _ => Cons (r, leaves)
+    | _ => r :: leaves
 
 let rec insert_leaf (leaf : rx) (sorted : list rx) : list rx =
     match sorted with
-    | Cons (head, rest) =>
+    | head :: rest =>
         inl order = rx_compare leaf head
         if order = 0i32 then sorted
-        elif order < 0i32 then Cons (leaf, sorted)
-        else Cons (head, insert_leaf leaf rest)
+        elif order < 0i32 then leaf :: sorted
+        else head :: insert_leaf leaf rest
     | Nil => [ leaf ]
 
 let rec sort_leaves (leaves : list rx) (sorted : list rx) : list rx =
     match leaves with
-    | Cons (leaf, rest) => sort_leaves rest (insert_leaf leaf sorted)
+    | leaf :: rest => sort_leaves rest (insert_leaf leaf sorted)
     | Nil => sorted
 
 let rec alt_of_sorted (leaves : list rx) : rx =
     match leaves with
-    | Cons (leaf, rest) =>
+    | leaf :: rest =>
         match rest with
         | Nil => leaf
         | _ => RxAlt (leaf, alt_of_sorted rest)
@@ -134,7 +134,7 @@ let rec nullable (r : rx) : bool =
 
 let rec in_ranges (c : u32) (ranges : list (u32 * u32)) : bool =
     match ranges with
-    | Cons ((low, high), rest) => (low <= c && c <= high) || in_ranges c rest
+    | (low, high) :: rest => (low <= c && c <= high) || in_ranges c rest
     | Nil => false
 
 union derivative_form =
@@ -199,8 +199,8 @@ let rec class_items (p : string) (i : i32) (acc : list (u32 * u32)) : list (u32 
             inl next = i + cp_width p i
             if cp_at p next = 45u32 && cp_at p (next + 1i32) <> 93u32 && next + 1i32 < sm'.length p then
                 inl high = cp_at p (next + 1i32)
-                class_items p (next + 1i32 + cp_width p (next + 1i32)) (Cons ((c, high), acc))
-            else class_items p next (Cons ((c, c), acc))
+                class_items p (next + 1i32 + cp_width p (next + 1i32)) ((c, high) :: acc)
+            else class_items p next ((c, c) :: acc)
 
 let rec parse_alt (p : string) (i : i32) : rx * i32 =
     inl left, after_left = parse_seq p i RxEps
@@ -252,7 +252,7 @@ and let parse_quant (p : string) (i : i32) (atom : rx) : rx * i32 =
 
 let rec first_outside (ranges : list (u32 * u32)) (candidates : list u32) : u32 =
     match candidates with
-    | Cons (c, rest) => if in_ranges c ranges then first_outside ranges rest else c
+    | c :: rest => if in_ranges c ranges then first_outside ranges rest else c
     | Nil => 126u32
 
 let rec repeated (text : string) (count : i32) : string =
@@ -262,7 +262,7 @@ inl class_example (negated : bool) (ranges : list (u32 * u32)) : string =
     if negated then xml.code_point_string (first_outside ranges [ 65u32; 97u32; 49u32; 90u32; 122u32 ])
     else
         match ranges with
-        | Cons ((low, _), _) => xml.code_point_string low
+        | (low, _) :: _ => xml.code_point_string low
         | Nil => ""
 
 let rec example_with (stars : i32) (r : rx) : string =
@@ -294,15 +294,15 @@ inl last_code_point () : u32 = 1114111u32
 
 let rec insert_point (point : u32) (sorted : list u32) : list u32 =
     match sorted with
-    | Cons (head, rest) =>
+    | head :: rest =>
         if point = head then sorted
-        elif point < head then Cons (point, sorted)
-        else Cons (head, insert_point point rest)
+        elif point < head then point :: sorted
+        else head :: insert_point point rest
     | Nil => [ point ]
 
 let rec range_points (ranges : list (u32 * u32)) (points : list u32) : list u32 =
     match ranges with
-    | Cons ((low, high), rest) =>
+    | (low, high) :: rest =>
         inl points = insert_point low points
         range_points rest (if high < last_code_point () then insert_point (high + 1u32) points else points)
     | Nil => points
@@ -322,29 +322,29 @@ type dfa_state = { accepting : bool; moves : list dfa_move }
 
 let rec state_index (r : rx) (states : list rx) (index : i32) : i32 =
     match states with
-    | Cons (head, rest) => if rx_compare r head = 0i32 then index else state_index r rest (index + 1i32)
+    | head :: rest => if rx_compare r head = 0i32 then index else state_index r rest (index + 1i32)
     | Nil => -1i32
 
 let rec with_state (r : rx) (states : list rx) : list rx =
     match states with
-    | Cons (head, rest) => Cons (head, with_state r rest)
+    | head :: rest => head :: with_state r rest
     | Nil => [ r ]
 
 let rec state_rx (states : list rx) (index : i32) : rx =
     match states with
-    | Cons (head, rest) => if index = 0i32 then head else state_rx rest (index - 1i32)
+    | head :: rest => if index = 0i32 then head else state_rx rest (index - 1i32)
     | Nil => RxNone
 
 let rec add_move (move : dfa_move) (moves : list dfa_move) : list dfa_move =
     match moves with
-    | Cons (last, rest) =>
-        if last.target = move.target && last.high + 1u32 = move.low then Cons ({ last with high = move.high }, rest)
-        else Cons (move, moves)
+    | last :: rest =>
+        if last.target = move.target && last.high + 1u32 = move.low then { last with high = move.high } :: rest
+        else move :: moves
     | Nil => [ move ]
 
 let rec reverse_moves (moves : list dfa_move) (reversed : list dfa_move) : list dfa_move =
     match moves with
-    | Cons (move, rest) => reverse_moves rest (Cons (move, reversed))
+    | move :: rest => reverse_moves rest (move :: reversed)
     | Nil => reversed
 
 let rec state_moves
@@ -352,8 +352,8 @@ let rec state_moves
     : list rx * i32 * list dfa_move
     =
     match starts with
-    | Cons (low, rest) =>
-        inl high = match rest with Cons (next, _) => next - 1u32 | Nil => last_code_point ()
+    | low :: rest =>
+        inl high = match rest with (next :: _) => next - 1u32 | Nil => last_code_point ()
         inl next_rx = derive_similar low r
         match next_rx with
         | RxNone => state_moves r rest states count moves
@@ -370,7 +370,7 @@ let rec state_moves
 
 let rec reverse_states (rows : list dfa_state) (reversed : list dfa_state) : list dfa_state =
     match rows with
-    | Cons (row, rest) => reverse_states rest (Cons (row, reversed))
+    | row :: rest => reverse_states rest (row :: reversed)
     | Nil => reversed
 
 let rec build_states
@@ -382,7 +382,7 @@ let rec build_states
     else
         inl r = state_rx states index
         inl states, count, moves = state_moves r (interval_starts r [ 0u32 ]) states count Nil
-        build_states (index + 1i32) states count limit (Cons ({ accepting = nullable r; moves = moves }, rows))
+        build_states (index + 1i32) states count limit ({ accepting = nullable r; moves = moves } :: rows)
 
 inl dfa_state_limit () : i32 = 4096i32
 
@@ -395,12 +395,12 @@ inl dfa_of_pattern (p : string) : option (list dfa_state) = dfa_of_pattern_withi
 
 let rec move_target (c : u32) (moves : list dfa_move) : i32 =
     match moves with
-    | Cons (move, rest) => if c < move.low then -1i32 elif c <= move.high then move.target else move_target c rest
+    | move :: rest => if c < move.low then -1i32 elif c <= move.high then move.target else move_target c rest
     | Nil => -1i32
 
 let rec dfa_row (rows : list dfa_state) (index : i32) : dfa_state =
     match rows with
-    | Cons (row, rest) => if index = 0i32 then row else dfa_row rest (index - 1i32)
+    | row :: rest => if index = 0i32 then row else dfa_row rest (index - 1i32)
     | Nil => { accepting = false; moves = Nil }
 
 let rec dfa_run (rows : list dfa_state) (state : i32) (s : string) (i : i32) : bool =
@@ -414,7 +414,7 @@ inl dfa_matches (rows : list dfa_state) (s : string) : bool = dfa_run rows 0i32 
 
 let rec states_in (rows : list dfa_state) (count : i32) : i32 =
     match rows with
-    | Cons (_, rest) => states_in rest (count + 1i32)
+    | _ :: rest => states_in rest (count + 1i32)
     | Nil => count
 
 let rec count_compiled (text : string) (pos : i32) (acc : i32 * i32) : i32 * i32 =
@@ -437,7 +437,7 @@ let rec lines_of (text : string) (pos : i32) (acc : list string) : list string =
     else
         inl stop = xml.find_from "\n" text pos
         inl stop = if stop < 0i32 then sm'.length text else stop
-        lines_of text (stop + 1i32) (Cons (sm'.substring pos (stop - pos) text, acc))
+        lines_of text (stop + 1i32) (sm'.substring pos (stop - pos) text :: acc)
 
 type disagreement = { count : i32; first : string }
 
@@ -446,7 +446,7 @@ let rec row_disagreements
     : disagreement
     =
     match probes with
-    | Cons (probe, rest) =>
+    | probe :: rest =>
         inl expected = sm'.substring j 1i32 row = "1"
         inl actual = matches probe
         inl acc =
@@ -481,9 +481,9 @@ let rec all_disagreements
     : disagreement
     =
     match patterns with
-    | Cons (pattern, rest) =>
+    | pattern :: rest =>
         match rows with
-        | Cons (row, more_rows) => all_disagreements check rest more_rows probes (check pattern row probes acc)
+        | row :: more_rows => all_disagreements check rest more_rows probes (check pattern row probes acc)
         | Nil => { acc with count = acc.count + 1000000i32 }
     | Nil => acc
 
@@ -504,7 +504,7 @@ type state_census =
 
 let rec census_of (patterns : list string) (acc : state_census) : state_census =
     match patterns with
-    | Cons (pattern, rest) =>
+    | pattern :: rest =>
         if pattern = "" then census_of rest acc
         else
             inl states = match dfa_of_pattern pattern with Some rows => states_in rows 0i32 | None => 0i32
@@ -522,35 +522,35 @@ let rec census_of (patterns : list string) (acc : state_census) : state_census =
 
 let rec first_points (values : list string) (points : list u32) : list u32 =
     match values with
-    | Cons (value, rest) =>
+    | value :: rest =>
         first_points rest (if sm'.length value = 0i32 then points else insert_point (cp_at value 0i32) points)
     | Nil => points
 
 let rec tails_after (point : u32) (values : list string) (acc : list string) : list string =
     match values with
-    | Cons (value, rest) =>
+    | value :: rest =>
         if sm'.length value > 0i32 && cp_at value 0i32 = point then
             inl width = cp_width value 0i32
-            tails_after point rest (Cons (sm'.substring width (sm'.length value - width) value, acc))
+            tails_after point rest (sm'.substring width (sm'.length value - width) value :: acc)
         else tails_after point rest acc
     | Nil => acc
 
 let rec has_empty (values : list string) : bool =
     match values with
-    | Cons (value, rest) => sm'.length value = 0i32 || has_empty rest
+    | value :: rest => sm'.length value = 0i32 || has_empty rest
     | Nil => false
 
 let rec moves_equal (a : list dfa_move) (b : list dfa_move) : bool =
     match a with
-    | Cons (x, a_rest) =>
+    | x :: a_rest =>
         match b with
-        | Cons (y, b_rest) => x.low = y.low && x.high = y.high && x.target = y.target && moves_equal a_rest b_rest
+        | y :: b_rest => x.low = y.low && x.high = y.high && x.target = y.target && moves_equal a_rest b_rest
         | Nil => false
     | Nil => match b with Nil => true | _ => false
 
 let rec registered (row : dfa_state) (register : list (dfa_state * i32)) : i32 =
     match register with
-    | Cons ((known, id), rest) =>
+    | (known, id) :: rest =>
         if known.accepting = row.accepting && moves_equal known.moves row.moves then id else registered row rest
     | Nil => -1i32
 
@@ -563,7 +563,7 @@ and let value_moves
     : i32 * value_dfa
     =
     match points with
-    | Cons (point, rest) =>
+    | point :: rest =>
         inl target, built = value_state (tails_after point values Nil) built
         value_moves rest values (add_move { low = point; high = point; target = target } moves) accepting built
     | Nil =>
@@ -573,20 +573,20 @@ and let value_moves
         else
             built.count,
             {
-                register = Cons ((row, built.count), built.register)
-                rows = Cons (row, built.rows)
+                register = (row, built.count) :: built.register
+                rows = row :: built.rows
                 count = built.count + 1i32
             }
 
 let rec renumbered_moves (last : i32) (moves : list dfa_move) (acc : list dfa_move) : list dfa_move =
     match moves with
-    | Cons (move, rest) => renumbered_moves last rest (Cons ({ move with target = last - move.target }, acc))
+    | move :: rest => renumbered_moves last rest ({ move with target = last - move.target } :: acc)
     | Nil => reverse_moves acc Nil
 
 let rec renumbered_rows (last : i32) (rows : list dfa_state) (acc : list dfa_state) : list dfa_state =
     match rows with
-    | Cons (row, rest) =>
-        renumbered_rows last rest (Cons ({ row with moves = renumbered_moves last row.moves Nil }, acc))
+    | row :: rest =>
+        renumbered_rows last rest ({ row with moves = renumbered_moves last row.moves Nil } :: acc)
     | Nil => reverse_states acc Nil
 
 inl dfa_of_values (values : list string) : list dfa_state =
@@ -604,12 +604,12 @@ inl move_prefix (move : dfa_move) : string =
 
 let rec row_length (moves : list dfa_move) (width : i32) (acc : i32) : i32 =
     match moves with
-    | Cons (move, rest) => row_length rest width (acc + sm'.length (move_prefix move) + width)
+    | move :: rest => row_length rest width (acc + sm'.length (move_prefix move) + width)
     | Nil => acc + 2i32
 
 let rec row_offsets (rows : list dfa_state) (width : i32) (offset : i32) (acc : list i32) : list i32 * i32 =
     match rows with
-    | Cons (row, rest) => row_offsets rest width (offset + row_length row.moves width 0i32) (Cons (offset, acc))
+    | row :: rest => row_offsets rest width (offset + row_length row.moves width 0i32) (offset :: acc)
     | Nil => listm.rev acc, offset
 
 let rec fitting_width (rows : list dfa_state) (width : i32) (limit : i32) : i32 * list i32 =
@@ -618,18 +618,18 @@ let rec fitting_width (rows : list dfa_state) (width : i32) (limit : i32) : i32 
 
 let rec offset_at (offsets : list i32) (index : i32) : i32 =
     match offsets with
-    | Cons (offset, rest) => if index = 0i32 then offset else offset_at rest (index - 1i32)
+    | offset :: rest => if index = 0i32 then offset else offset_at rest (index - 1i32)
     | Nil => -1i32
 
 let rec offset_moves (moves : list dfa_move) (offsets : list i32) (width : i32) (acc : string) : string =
     match moves with
-    | Cons (move, rest) =>
+    | move :: rest =>
         offset_moves rest offsets width (acc ++# move_prefix move ++# padded (offset_at offsets move.target) width)
     | Nil => acc
 
 let rec offset_lines (rows : list dfa_state) (offsets : list i32) (width : i32) (acc : string) : string =
     match rows with
-    | Cons (row, rest) =>
+    | row :: rest =>
         offset_lines rest offsets width (
             acc ++# (if row.accepting then "1" else "0") ++# offset_moves row.moves offsets width "" ++# "\n"
         )
@@ -681,7 +681,7 @@ test dfa_keeps_xsd_semantics =
 
 ///> rust
 test value_sets_become_minimal_dfas =
-    inl rows = dfa_of_values (Cons ("01001", Cons ("01002", Cons ("02001", Cons ("02002", Cons ("A", Nil))))))
+    inl rows = dfa_of_values ("01001" :: "01002" :: "02001" :: "02002" :: "A" :: Nil)
     if states_in rows 0i32 <> 6i32 then failwith "shared suffixes merge into six states"
     if dfa_matches rows "02002" = false then failwith "listed code"
     if dfa_matches rows "A" = false then failwith "short code"
@@ -691,7 +691,7 @@ test value_sets_become_minimal_dfas =
 
 ///> rust
 test dfa_tables_match_in_place =
-    inl rows = dfa_of_values (Cons ("01001", Cons ("01002", Cons ("02001", Cons ("A", Nil)))))
+    inl rows = dfa_of_values ("01001" :: "01002" :: "02001" :: "A" :: Nil)
     inl table = dfa_table_text rows
     if table_matches table "02001" = false then failwith "listed code"
     if table_matches table "A" = false then failwith "short code"

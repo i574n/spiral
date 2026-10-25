@@ -4,9 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 typedef struct UH1 UH1;
-static void UHDecref1(UH1 * x);
+void UHDecref1(UH1 * x);
 typedef struct UH0 UH0;
-static void UHDecref0(UH0 * x);
+void UHDecref0(UH0 * x);
 struct UH1 {
     int refc;
     int tag;
@@ -33,7 +33,7 @@ static inline void UHDecrefBody1(UH1 * x){
         }
     }
 }
-static void UHDecref1(UH1 * x){
+void UHDecref1(UH1 * x){
     if (x != NULL && --(x->refc) == 0) { UHDecrefBody1(x); free(x); }
 }
 UH1 * UH1_B(UH0 * v0) { // B
@@ -44,8 +44,10 @@ UH1 * UH1_B(UH0 * v0) { // B
     return x;
 }
 UH1 * UH1_StopB() { // StopB
-    static UH1 x = { .refc = 1073741823, .tag = 1 };
-    return &x;
+    UH1 * x = malloc(sizeof(UH1));
+    x->tag = 1;
+    x->refc = 1;
+    return x;
 }
 static inline void UHDecrefBody0(UH0 * x){
     switch (x->tag) {
@@ -55,7 +57,7 @@ static inline void UHDecrefBody0(UH0 * x){
         }
     }
 }
-static void UHDecref0(UH0 * x){
+void UHDecref0(UH0 * x){
     if (x != NULL && --(x->refc) == 0) { UHDecrefBody0(x); free(x); }
 }
 UH0 * UH0_A(UH1 * v0) { // A
@@ -66,28 +68,49 @@ UH0 * UH0_A(UH1 * v0) { // A
     return x;
 }
 UH0 * UH0_StopA() { // StopA
-    static UH0 x = { .refc = 1073741823, .tag = 1 };
-    return &x;
+    UH0 * x = malloc(sizeof(UH0));
+    x->tag = 1;
+    x->refc = 1;
+    return x;
 }
 int32_t main(){
-    bool v0 = true;
+    
+    
+    bool v0;
+    v0 = true;
+    
+    
     UH0 * v5;
     if (v0){
-        UH0 * v1 = UH0_StopA();
+        
+        
+        UH0 * v1;
+        v1 = UH0_StopA();
         (v1)->refc++;
-        UH1 * v2 = UH1_B(v1);
+        
+        UH1 * v2;
+        v2 = UH1_B(v1);
+        
         UHDecref0(v1);
         v5 = UH0_A(v2);
     } else {
+        
+        
         v5 = UH0_StopA();
     }
+    
+    
     switch (v5->tag) {
         case 0: { // A
+            
+            
             UHDecref0(v5);
             return 0l;
             break;
         }
         default: { // StopA
+            
+            
             UHDecref0(v5);
             return 0l;
             break;

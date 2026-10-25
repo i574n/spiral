@@ -1,12 +1,18 @@
 fun spiral_main(): Int {
-    val v0: Int = -1
-    val v1: Int = -8
-    val v2: Int = (v0.inv())
-    val v3: Int = (v1.inv())
-    val v4: Boolean = (v2 == 0)
+    var v0: Int = 0
+    v0 = -1
+    var v1: Int = 0
+    v1 = -8
+    var v2: Int = 0
+    v2 = (v0.inv())
+    var v3: Int = 0
+    v3 = (v1.inv())
+    var v4: Boolean = false
+    v4 = (v2 == 0)
     var v6: Boolean = false
     if (v4) {
-        val v5: Boolean = (v3 == 7)
+        var v5: Boolean = false
+        v5 = (v3 == 7)
         v6 = v5
     } else {
         v6 = false

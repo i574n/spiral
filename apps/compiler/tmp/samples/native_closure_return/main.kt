@@ -31,7 +31,8 @@ fun closure1(v0: String): (Int) -> Int {
     fun body(v1: Int): Int {
         var v2: Int = 0
         v2 = spiralStringLength(v0)
-        val v3: Int = (v2 + v1)
+        var v3: Int = 0
+        v3 = (v2 + v1)
         return v3
     }
     return { p0: Int -> body(p0) }
@@ -47,8 +48,10 @@ fun sp_method0(p0: (Int) -> Int): Int {
     return v0(39)
 }
 fun spiral_main(): Int {
-    val v0: (String) -> (Int) -> Int = make_c0()
-    val v1: String = "abc"
+    var v0: (String) -> (Int) -> Int = { _: String -> throw RuntimeException() }
+    v0 = make_c0()
+    var v1: String = ""
+    v1 = "abc"
     var v2: (Int) -> Int = { _: Int -> throw RuntimeException() }
     v2 = v0(v1)
     return sp_method0(v2)

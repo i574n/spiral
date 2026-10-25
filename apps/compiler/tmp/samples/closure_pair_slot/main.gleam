@@ -19,33 +19,33 @@ pub fn f_c0(capt: #(Int)) -> fn(Int) -> #(Us0, Int) {
     }
 }
 pub fn main() {
-    let v0 = 7
-    let v1 = f_c0(#(v0))
-    let #(v2, v3) = v1(1)
-    case v2  {
-        Us0None -> {
-            1
-        }
-        Us0Some(v4) -> {
-            let v5 = v4 == 7
-            let v7 =
-                case v5 {
-                    True -> {
-                        let v6 = v3 == 7
-                        v6
-                    }
-                    False -> {
-                        False
-                    }
-                }
-            case v7 {
+let v0 = 7
+let v1 = f_c0(#(v0))
+let #(v2, v3) = v1( 1  )
+case v2  {
+    Us0None -> {
+        1
+    }
+    Us0Some(v4) -> {
+        let v5 = v4 == 7
+        let v7 =
+            case v5 {
                 True -> {
-                    0
+                    let v6 = v3 == 7
+                    v6
                 }
                 False -> {
-                    1
+                    False
                 }
+            }
+        case v7 {
+            True -> {
+                0
+            }
+            False -> {
+                1
             }
         }
     }
+}
 }

@@ -3,11 +3,11 @@ use std::cell::RefCell;
 use std::rc::Rc;
 #[derive(Clone)] struct Outcome(i32); impl Outcome { fn json(self) -> i32 { self.0 + 1 } fn borsh(self) -> i32 { self.0 * 2 } }
 fn spiral_main() -> i32 {
-    let v0: i32 = 7i32;
+    let mut v0: i32 = 7i32;
     let mut v1: Outcome = Outcome(v0);
-    let v2: i32 = v1.clone().json();
-    let v3: i32 = v1.borsh();
-    let v4: i32 = v2.wrapping_add(v3);
+    let mut v2: i32 = v1.clone().json();
+    let mut v3: i32 = v1.borsh();
+    let mut v4: i32 = v2.wrapping_add(v3);
     v4
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }

@@ -9,22 +9,28 @@ class Mut0 {
     }
 }
 func spiral_main() -> Int32 {
-    let v0: String = "no"
-    let v1: String = "nay"
+    var v0: String = ""
+    v0 = "no"
+    var v1: String = ""
+    v1 = "nay"
     var v2: Mut0 = Mut0(l0: "", l1: "")
     v2 = Mut0(l0: v0, l1: v1)
-    let v3: String = "hi"
-    let v4: String = "yo"
+    var v3: String = ""
+    v3 = "hi"
+    var v4: String = ""
+    v4 = "yo"
     v2.l0 = v3
     v2.l1 = v4
     var v5: String = ""
     var v6: String = ""
     v5 = v2.l0
     v6 = v2.l1
-    let v7: Bool = (v5 == "hi")
+    var v7: Bool = false
+    v7 = (v5 == "hi")
     var v9: Bool = false
     if (v7) {
-        let v8: Bool = (v6 == "yo")
+        var v8: Bool = false
+        v8 = (v6 == "yo")
         v9 = v8
     } else {
         v9 = false

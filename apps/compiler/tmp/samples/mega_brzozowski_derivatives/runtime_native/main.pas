@@ -49,11 +49,9 @@ function US0_BitOne: TUS0;
 begin
   Result.tag := 1; 
 end;
-var UH0_InputEmpty_shared: TUH0 = nil;
 function UH0_InputEmpty: TUH0;
 begin
-  if UH0_InputEmpty_shared = nil then begin UH0_InputEmpty_shared := TUH0.Create; UH0_InputEmpty_shared.tag := 0; end;
-  Result := UH0_InputEmpty_shared;
+  Result := TUH0.Create; Result.tag := 0; 
 end;
 function UH0_InputCons(a0: TUS0; a1: TUH0): TUH0;
 begin
@@ -71,27 +69,21 @@ function US1_TriC: TUS1;
 begin
   Result.tag := 2; 
 end;
-var UH1_InputEmpty_shared: TUH1 = nil;
 function UH1_InputEmpty: TUH1;
 begin
-  if UH1_InputEmpty_shared = nil then begin UH1_InputEmpty_shared := TUH1.Create; UH1_InputEmpty_shared.tag := 0; end;
-  Result := UH1_InputEmpty_shared;
+  Result := TUH1.Create; Result.tag := 0; 
 end;
 function UH1_InputCons(a0: TUS1; a1: TUH1): TUH1;
 begin
   Result := TUH1.Create; Result.tag := 1; Result.c1_0 := a0; Result.c1_1 := a1;
 end;
-var UH2_RegexEmpty_shared: TUH2 = nil;
 function UH2_RegexEmpty: TUH2;
 begin
-  if UH2_RegexEmpty_shared = nil then begin UH2_RegexEmpty_shared := TUH2.Create; UH2_RegexEmpty_shared.tag := 0; end;
-  Result := UH2_RegexEmpty_shared;
+  Result := TUH2.Create; Result.tag := 0; 
 end;
-var UH2_RegexEpsilon_shared: TUH2 = nil;
 function UH2_RegexEpsilon: TUH2;
 begin
-  if UH2_RegexEpsilon_shared = nil then begin UH2_RegexEpsilon_shared := TUH2.Create; UH2_RegexEpsilon_shared.tag := 1; end;
-  Result := UH2_RegexEpsilon_shared;
+  Result := TUH2.Create; Result.tag := 1; 
 end;
 function UH2_RegexChar(a0: TUS0): TUH2;
 begin
@@ -128,11 +120,15 @@ var
   v55: TUH2;
   v56: TUH2;
   v57: TUS2;
+  tmp5: TUH2;
+  tmp6: TUH2;
   v28: TUH2;
   v29: TUH2;
   v34: TUH2;
   v35: TUH2;
   v36: TUS2;
+  tmp12: TUH2;
+  tmp13: TUH2;
   v32: TUS0;
   v10: TUS0;
   v13: TUS0;
@@ -140,6 +136,8 @@ var
   v45: TUH2;
   v46: TUH2;
   v48: TUH2;
+  tmp21: TUH2;
+  tmp22: TUH2;
 begin
   while True do begin
       case v0.tag of
@@ -153,8 +151,10 @@ begin
                       v57 := regex_compare_5(v53, v55);
                       case v57.tag of
                           1: begin
-                              v0 := v54;
-                              v1 := v56;
+                              tmp5 := v54;
+                              tmp6 := v56;
+                              v0 := tmp5;
+                              v1 := tmp6;
                               Continue;
                           end;
                           else begin
@@ -179,8 +179,10 @@ begin
                       v36 := regex_compare_5(v28, v34);
                       case v36.tag of
                           1: begin
-                              v0 := v29;
-                              v1 := v35;
+                              tmp12 := v29;
+                              tmp13 := v35;
+                              v0 := tmp12;
+                              v1 := tmp13;
                               Continue;
                           end;
                           else begin
@@ -293,8 +295,10 @@ begin
                   end;
                   5: begin
                       v48 := v1.c5_0;
-                      v0 := v44;
-                      v1 := v48;
+                      tmp21 := v44;
+                      tmp22 := v48;
+                      v0 := tmp21;
+                      v1 := tmp22;
                       Continue;
                   end;
                   else begin
@@ -356,6 +360,8 @@ var
   v2: TUH2;
   v3: TUH2;
   v4: TUH2;
+  tmp3: TUH2;
+  tmp4: TUH2;
 begin
   while True do begin
       case v0.tag of
@@ -363,8 +369,10 @@ begin
               v2 := v0.c3_0;
               v3 := v0.c3_1;
               v4 := alt_insert_sorted_4(v2, v1);
-              v0 := v3;
-              v1 := v4;
+              tmp3 := v3;
+              tmp4 := v4;
+              v0 := tmp3;
+              v1 := tmp4;
               Continue;
           end;
           0: begin
@@ -385,16 +393,22 @@ var
   v20: TUH2;
   v21: TUH2;
   v22: Boolean;
+  tmp5: TUH2;
+  tmp6: TUH2;
   v26: TUH2;
   v27: TUH2;
   v28: TUH2;
   v29: TUH2;
   v30: Boolean;
+  tmp12: TUH2;
+  tmp13: TUH2;
   v4: TUS0;
   v5: TUS0;
   v15: TUS2;
   v34: TUH2;
   v35: TUH2;
+  tmp19: TUH2;
+  tmp20: TUH2;
 begin
   while True do begin
       case v0.tag of
@@ -407,8 +421,10 @@ begin
                       v21 := v1.c3_1;
                       v22 := regex_equal_7(v18, v20);
                       if v22 then begin
-                          v0 := v19;
-                          v1 := v21;
+                          tmp5 := v19;
+                          tmp6 := v21;
+                          v0 := tmp5;
+                          v1 := tmp6;
                           Continue;
                       end else begin
                           Result := False;
@@ -430,8 +446,10 @@ begin
                       v29 := v1.c4_1;
                       v30 := regex_equal_7(v26, v28);
                       if v30 then begin
-                          v0 := v27;
-                          v1 := v29;
+                          tmp12 := v27;
+                          tmp13 := v29;
+                          v0 := tmp12;
+                          v1 := tmp13;
                           Continue;
                       end else begin
                           Result := False;
@@ -517,8 +535,10 @@ begin
               case v1.tag of
                   5: begin
                       v35 := v1.c5_0;
-                      v0 := v34;
-                      v1 := v35;
+                      tmp19 := v34;
+                      tmp20 := v35;
+                      v0 := tmp19;
+                      v1 := tmp20;
                       Continue;
                   end;
                   else begin
@@ -861,6 +881,8 @@ var
   v6: TUS0;
   v7: TUH0;
   v8: TUH2;
+  tmp3: TUH2;
+  tmp4: TUH0;
   v2: TUH2;
   v3: TUS3;
 begin
@@ -870,8 +892,10 @@ begin
               v6 := v1.c1_0;
               v7 := v1.c1_1;
               v8 := canonical_derivative_1(v0, v6);
-              v0 := v8;
-              v1 := v7;
+              tmp3 := v8;
+              tmp4 := v7;
+              v0 := tmp3;
+              v1 := tmp4;
               Continue;
           end;
           0: begin
@@ -891,17 +915,13 @@ begin
       end;
   end;
 end;
-var UH3_RegexEmpty_shared: TUH3 = nil;
 function UH3_RegexEmpty: TUH3;
 begin
-  if UH3_RegexEmpty_shared = nil then begin UH3_RegexEmpty_shared := TUH3.Create; UH3_RegexEmpty_shared.tag := 0; end;
-  Result := UH3_RegexEmpty_shared;
+  Result := TUH3.Create; Result.tag := 0; 
 end;
-var UH3_RegexEpsilon_shared: TUH3 = nil;
 function UH3_RegexEpsilon: TUH3;
 begin
-  if UH3_RegexEpsilon_shared = nil then begin UH3_RegexEpsilon_shared := TUH3.Create; UH3_RegexEpsilon_shared.tag := 1; end;
-  Result := UH3_RegexEpsilon_shared;
+  Result := TUH3.Create; Result.tag := 1; 
 end;
 function UH3_RegexChar(a0: TUS1): TUH3;
 begin
@@ -926,11 +946,15 @@ var
   v61: TUH3;
   v62: TUH3;
   v63: TUS2;
+  tmp5: TUH3;
+  tmp6: TUH3;
   v34: TUH3;
   v35: TUH3;
   v40: TUH3;
   v41: TUH3;
   v42: TUS2;
+  tmp12: TUH3;
+  tmp13: TUH3;
   v38: TUS1;
   v10: TUS1;
   v13: TUS1;
@@ -938,6 +962,8 @@ var
   v51: TUH3;
   v52: TUH3;
   v54: TUH3;
+  tmp21: TUH3;
+  tmp22: TUH3;
 begin
   while True do begin
       case v0.tag of
@@ -951,8 +977,10 @@ begin
                       v63 := regex_compare_16(v59, v61);
                       case v63.tag of
                           1: begin
-                              v0 := v60;
-                              v1 := v62;
+                              tmp5 := v60;
+                              tmp6 := v62;
+                              v0 := tmp5;
+                              v1 := tmp6;
                               Continue;
                           end;
                           else begin
@@ -977,8 +1005,10 @@ begin
                       v42 := regex_compare_16(v34, v40);
                       case v42.tag of
                           1: begin
-                              v0 := v35;
-                              v1 := v41;
+                              tmp12 := v35;
+                              tmp13 := v41;
+                              v0 := tmp12;
+                              v1 := tmp13;
                               Continue;
                           end;
                           else begin
@@ -1115,8 +1145,10 @@ begin
                   end;
                   5: begin
                       v54 := v1.c5_0;
-                      v0 := v50;
-                      v1 := v54;
+                      tmp21 := v50;
+                      tmp22 := v54;
+                      v0 := tmp21;
+                      v1 := tmp22;
                       Continue;
                   end;
                   else begin
@@ -1178,6 +1210,8 @@ var
   v2: TUH3;
   v3: TUH3;
   v4: TUH3;
+  tmp3: TUH3;
+  tmp4: TUH3;
 begin
   while True do begin
       case v0.tag of
@@ -1185,8 +1219,10 @@ begin
               v2 := v0.c3_0;
               v3 := v0.c3_1;
               v4 := alt_insert_sorted_15(v2, v1);
-              v0 := v3;
-              v1 := v4;
+              tmp3 := v3;
+              tmp4 := v4;
+              v0 := tmp3;
+              v1 := tmp4;
               Continue;
           end;
           0: begin
@@ -1207,16 +1243,22 @@ var
   v26: TUH3;
   v27: TUH3;
   v28: Boolean;
+  tmp5: TUH3;
+  tmp6: TUH3;
   v32: TUH3;
   v33: TUH3;
   v34: TUH3;
   v35: TUH3;
   v36: Boolean;
+  tmp12: TUH3;
+  tmp13: TUH3;
   v4: TUS1;
   v5: TUS1;
   v21: TUS2;
   v40: TUH3;
   v41: TUH3;
+  tmp19: TUH3;
+  tmp20: TUH3;
 begin
   while True do begin
       case v0.tag of
@@ -1229,8 +1271,10 @@ begin
                       v27 := v1.c3_1;
                       v28 := regex_equal_18(v24, v26);
                       if v28 then begin
-                          v0 := v25;
-                          v1 := v27;
+                          tmp5 := v25;
+                          tmp6 := v27;
+                          v0 := tmp5;
+                          v1 := tmp6;
                           Continue;
                       end else begin
                           Result := False;
@@ -1252,8 +1296,10 @@ begin
                       v35 := v1.c4_1;
                       v36 := regex_equal_18(v32, v34);
                       if v36 then begin
-                          v0 := v33;
-                          v1 := v35;
+                          tmp12 := v33;
+                          tmp13 := v35;
+                          v0 := tmp12;
+                          v1 := tmp13;
                           Continue;
                       end else begin
                           Result := False;
@@ -1360,8 +1406,10 @@ begin
               case v1.tag of
                   5: begin
                       v41 := v1.c5_0;
-                      v0 := v40;
-                      v1 := v41;
+                      tmp19 := v40;
+                      tmp20 := v41;
+                      v0 := tmp19;
+                      v1 := tmp20;
                       Continue;
                   end;
                   else begin
@@ -1717,6 +1765,8 @@ var
   v6: TUS1;
   v7: TUH1;
   v8: TUH3;
+  tmp3: TUH3;
+  tmp4: TUH1;
   v2: TUH3;
   v3: TUS3;
 begin
@@ -1726,8 +1776,10 @@ begin
               v6 := v1.c1_0;
               v7 := v1.c1_1;
               v8 := canonical_derivative_12(v0, v6);
-              v0 := v8;
-              v1 := v7;
+              tmp3 := v8;
+              tmp4 := v7;
+              v0 := tmp3;
+              v1 := tmp4;
               Continue;
           end;
           0: begin

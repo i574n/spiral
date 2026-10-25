@@ -3,15 +3,20 @@ fun sp_method0(p0: Int, p1: Int): Boolean {
     var v1: Int = p1
     var v2: Int = 0
     v2 = -v0 
-    val v3: Boolean = (v2 <= 0)
+    var v3: Boolean = false
+    v3 = (v2 <= 0)
     if (v3) {
-        val v4: Int = (v1 * 2)
-        val v5: Int = (v0 + v4)
-        val v6: Boolean = (v5 >= 9)
+        var v4: Int = 0
+        v4 = (v1 * 2)
+        var v5: Int = 0
+        v5 = (v0 + v4)
+        var v6: Boolean = false
+        v6 = (v5 >= 9)
         if (v6) {
             return true
         } else {
-            val v7: Boolean = (v1 == 0)
+            var v7: Boolean = false
+            v7 = (v1 == 0)
             return v7
         }
     } else {
@@ -19,8 +24,10 @@ fun sp_method0(p0: Int, p1: Int): Boolean {
     }
 }
 fun spiral_main(): Int {
-    val v0: Int = 3
-    val v1: Int = 3
+    var v0: Int = 0
+    v0 = 3
+    var v1: Int = 0
+    v1 = 3
     var v2: Boolean = false
     v2 = sp_method0(v0, v1)
     if (v2) {

@@ -35,12 +35,13 @@ def U0.spiralTag : U0 → Int32
 mutual
 partial def layers_0 (p0 : Int32) : IO Int32 := do
     let mut v0 : Int32 := p0
+    let mut v1 : Bool := default
     let mut v4 : U0 := default
     let mut v8 : Int32 := default
     let mut v9 : Int32 := default
     let mut v5 : Int32 := default
     let mut v6 : Int32 := default
-    let v1 : Bool := (decide (v0 >= (5 : Int32)))
+    v1 := (decide (v0 >= (5 : Int32)))
     if v1 then
         v4 := (U0.Done v0)
     else
@@ -55,7 +56,8 @@ partial def layers_0 (p0 : Int32) : IO Int32 := do
         v6 := (v5 + (1 : Int32))
         return (← layers_0 v6)
 partial def spiralMain : IO Int32 := do
-    let v0 : Int32 := (0 : Int32)
+    let mut v0 : Int32 := default
+    v0 := (0 : Int32)
     return (← layers_0 v0)
 end
 def main : IO UInt32 := do

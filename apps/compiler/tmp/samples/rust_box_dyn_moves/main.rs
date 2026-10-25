@@ -2,14 +2,14 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 fn method0(mut v0: Box<dyn Fn() -> i32>) -> i32 {
-    let v1: i32 = (v0)();
+    let mut v1: i32 = (v0)();
     v1
 }
 fn spiral_main() -> i32 {
-    let v0: i32 = 7i32;
-    let v1: Box<dyn Fn() -> i32> = Box::new(move || v0 * 3) as Box<dyn Fn() -> i32>;
-    let v2: i32 = method0(v1);
-    let v3: i32 = v2.wrapping_add(1i32);
+    let mut v0: i32 = 7i32;
+    let mut v1: Box<dyn Fn() -> i32> = Box::new(move || v0 * 3) as Box<dyn Fn() -> i32>;
+    let mut v2: i32 = method0(v1);
+    let mut v3: i32 = v2.wrapping_add(1i32);
     v3
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }

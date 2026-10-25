@@ -41,6 +41,58 @@ fn spiralFlush() void {
     spiralWrite(1, spiral_out_buffer[0..spiral_out_len]);
     spiral_out_len = 0;
 }
+fn spiralPrint(s: []const u8) void {
+    if (s.len > spiral_out_buffer.len - spiral_out_len) spiralFlush();
+    if (s.len > spiral_out_buffer.len) {
+        spiralWrite(1, s);
+        return;
+    }
+    @memcpy(spiral_out_buffer[spiral_out_len..][0..s.len], s);
+    spiral_out_len += s.len;
+}
+fn spiralFloatText(x: anytype) []u8 {
+    var buffer: [std.fmt.float.bufferSize(.decimal, @TypeOf(x))]u8 = undefined;
+    const text = std.fmt.float.render(&buffer, x, .{ .mode = .decimal }) catch unreachable;
+    return spiral_gpa.dupe(u8, text) catch @panic("out of memory");
+}
+fn spiralPrintAny(x: anytype) void {
+    const T = @TypeOf(x);
+    if (T == []const u8) return spiralPrint(x);
+    if (@typeInfo(T) == .float) return spiralPrint(spiralFloatText(x));
+    const s = switch (@typeInfo(T)) {
+        .bool => std.fmt.allocPrint(spiral_gpa, "{}", .{x}),
+        else => std.fmt.allocPrint(spiral_gpa, "{d}", .{x}),
+    } catch @panic("out of memory");
+    spiralPrint(s);
+}
+fn spiralFail(s: []const u8) noreturn {
+    spiralFlush();
+    spiralWrite(2, s);
+    spiralWrite(2, "\n");
+    std.process.exit(1);
+}
+fn spiralConv(comptime T: type, x: anytype) T {
+    const S = @TypeOf(x);
+    if (@typeInfo(T) == .float) {
+        if (@typeInfo(S) == .float) return @floatCast(x) else return @floatFromInt(x);
+    }
+    if (@typeInfo(S) == .float) return @intFromFloat(x);
+    const U = @Int(.unsigned, @bitSizeOf(T));
+    const wide: i128 = x;
+    return @bitCast(@as(U, @truncate(@as(u128, @bitCast(wide)))));
+}
+fn spiralConcat(a: []const u8, b: []const u8) []const u8 {
+    return std.mem.concat(spiral_gpa, u8, &.{ a, b }) catch @panic("out of memory");
+}
+fn spiralStringSlice(s: []const u8, from: i64, upto: i64) []const u8 {
+    const len: i64 = @intCast(s.len);
+    if (from < 0 or from > len or upto < from - 1 or upto >= len) std.process.exit(3);
+    if (upto < from) return "";
+    const a: usize = @intCast(from);
+    const b: usize = @intCast(upto + 1);
+    if ((s[a] & 0xC0) == 0x80 or (b < s.len and (s[b] & 0xC0) == 0x80)) std.process.exit(3);
+    return s[a..b];
+}
 fn spiralIndex(len: usize, i: anytype) usize {
     if (i < 0 or i >= len) std.process.exit(3);
     return @intCast(i);
@@ -155,49 +207,74 @@ fn score_0(p0: US0) i32 {
     }
 }
 fn spiralMain() i32 {
+    var v0: i32 = undefined; _ = &v0;
+    var v1: []const u8 = undefined; _ = &v1;
+    var v2: *Heap0 = undefined; _ = &v2;
+    var v3: i32 = undefined; _ = &v3;
+    var v4: []const u8 = undefined; _ = &v4;
+    var v5: *Heap0 = undefined; _ = &v5;
+    var v6: *Heap1 = undefined; _ = &v6;
+    var v7: i32 = undefined; _ = &v7;
+    var v8: *Heap2 = undefined; _ = &v8;
+    var v9: bool = undefined; _ = &v9;
     var v12: US0 = undefined; _ = &v12;
+    var v13: *Heap3 = undefined; _ = &v13;
+    var v14: *Mut4 = undefined; _ = &v14;
     var v15: []*Mut4 = undefined; _ = &v15;
+    var v16: i32 = undefined; _ = &v16;
+    var v17: []const u8 = undefined; _ = &v17;
+    var v18: *Heap0 = undefined; _ = &v18;
+    var v19: i32 = undefined; _ = &v19;
+    var v20: []const u8 = undefined; _ = &v20;
+    var v21: *Heap0 = undefined; _ = &v21;
+    var v22: *Heap1 = undefined; _ = &v22;
+    var v23: i32 = undefined; _ = &v23;
+    var v24: *Heap2 = undefined; _ = &v24;
+    var v25: bool = undefined; _ = &v25;
     var v28: US0 = undefined; _ = &v28;
+    var v29: *Heap3 = undefined; _ = &v29;
     var v30: *Mut4 = undefined; _ = &v30;
-    const v0: i32 = @as(i32, 1);
-    const v1: []const u8 = "no";
-    const v2: *Heap0 = heapCreate0(v0, v1);
-    const v3: i32 = @as(i32, 2);
-    const v4: []const u8 = "zz";
-    const v5: *Heap0 = heapCreate0(v3, v4);
-    const v6: *Heap1 = heapCreate1(v2, v5);
-    const v7: i32 = @as(i32, 3);
-    const v8: *Heap2 = heapCreate2(v6, v7);
-    const v9: bool = true;
+    var v31: *Heap3 = undefined; _ = &v31;
+    var v32: US0 = undefined; _ = &v32;
+    v0 = @as(i32, 1);
+    v1 = "no";
+    v2 = heapCreate0(v0, v1);
+    v3 = @as(i32, 2);
+    v4 = "zz";
+    v5 = heapCreate0(v3, v4);
+    v6 = heapCreate1(v2, v5);
+    v7 = @as(i32, 3);
+    v8 = heapCreate2(v6, v7);
+    v9 = true;
     if (v9) {
         v12 = US0_Held(v8);
     } else {
         v12 = US0_None();
     }
-    const v13: *Heap3 = heapCreate3(v12);
-    const v14: *Mut4 = mutCreate4(v13);
+    v13 = heapCreate3(v12);
+    v14 = mutCreate4(v13);
     v15 = spiralNewArray(*Mut4, @as(i32, 1));
     v15[spiralIndex(v15.len, @as(i32, 0))] = v14;
-    const v16: i32 = @as(i32, 7);
-    const v17: []const u8 = "hi";
-    const v18: *Heap0 = heapCreate0(v16, v17);
-    const v19: i32 = @as(i32, 4);
-    const v20: []const u8 = "yo";
-    const v21: *Heap0 = heapCreate0(v19, v20);
-    const v22: *Heap1 = heapCreate1(v18, v21);
-    const v23: i32 = @as(i32, 2);
-    const v24: *Heap2 = heapCreate2(v22, v23);
-    const v25: bool = true;
+    v16 = @as(i32, 7);
+    v17 = "hi";
+    v18 = heapCreate0(v16, v17);
+    v19 = @as(i32, 4);
+    v20 = "yo";
+    v21 = heapCreate0(v19, v20);
+    v22 = heapCreate1(v18, v21);
+    v23 = @as(i32, 2);
+    v24 = heapCreate2(v22, v23);
+    v25 = true;
     if (v25) {
         v28 = US0_Held(v24);
     } else {
         v28 = US0_None();
     }
-    const v29: *Heap3 = heapCreate3(v28);
+    v29 = heapCreate3(v28);
     v30 = v15[spiralIndex(v15.len, @as(i32, 0))];
     v30.l0 = v29;
-    const v31: *Heap3 = v30.l0;
-    const v32: US0 = v31.l0;
+    v31 = v30.l0;
+    v32 = v31.l0;
     return score_0(v32);
 }
 var spiral_exit_code: i32 = 0;

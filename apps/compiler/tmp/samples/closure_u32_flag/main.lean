@@ -29,31 +29,41 @@ partial def f_c0 (p0 : UInt32) (p1 : String) (p2 : Bool) (p3 : Int32) : IO (UInt
     let mut v1 : String := p1
     let mut v2 : Bool := p2
     let mut v3 : Int32 := p3
+    let mut v4 : Bool := default
     let mut v5 : String := default
-    let v4 : Bool := (v3 == (0 : Int32))
+    v4 := (v3 == (0 : Int32))
     if v4 then
         v5 := "no"
         return ((0 : UInt32), v5, false)
     else
         return (v0, v1, v2)
 partial def spiralMain : IO Int32 := do
+    let mut v0 : UInt32 := default
+    let mut v1 : String := default
+    let mut v2 : Bool := default
+    let mut v3 : (Int32 → IO (UInt32 × String × Bool)) := default
+    let mut v4 : UInt32 := default
+    let mut v5 : String := default
+    let mut v6 : Bool := default
+    let mut v7 : Bool := default
     let mut v9 : Bool := default
     let mut v8 : Bool := default
-    let v0 : UInt32 := (4000000000 : UInt32)
-    let v1 : String := "hi"
-    let v2 : Bool := true
-    let v3 : (Int32 → IO (UInt32 × String × Bool)) := (f_c0 v0 v1 v2)
+    let mut v10 : Bool := default
+    v0 := (4000000000 : UInt32)
+    v1 := "hi"
+    v2 := true
+    v3 := (f_c0 v0 v1 v2)
     let (r1_0, r1_1, r1_2) := (← v3 (1 : Int32))
-    let v4 : UInt32 := r1_0
-    let v5 : String := r1_1
-    let v6 : Bool := r1_2
-    let v7 : Bool := (v4 == (4000000000 : UInt32))
+    v4 := r1_0
+    v5 := r1_1
+    v6 := r1_2
+    v7 := (v4 == (4000000000 : UInt32))
     if v7 then
         v8 := (v5 == "hi")
         v9 := v8
     else
         v9 := false
-    let v10 : Bool := (v9 && v6)
+    v10 := (v9 && v6)
     if v10 then
         return (0 : Int32)
     else

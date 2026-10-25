@@ -1,25 +1,37 @@
 sealed interface US0 { val tag: Int }
 data class US0_Some(val f0: Int) : US0 { override val tag: Int = 0 }
-object US0_None : US0 { override val tag: Int = 1 }
+class US0_None : US0 { override val tag: Int = 1 }
 fun spiral_main(): Int {
-    val v0: String = "ff"
-    val v1: Int = ((v0).trim().toIntOrNull(16) ?: 0)
+    var v0: String = ""
+    v0 = "ff"
+    var v1: Int = 0
+    v1 = ((v0).trim().toIntOrNull(16) ?: 0)
     run { System.out.write((v1.toString() + "\n").toByteArray(Charsets.UTF_8)); System.out.flush() }
-    val v2: String = "1011"
-    val v3: Int = ((v2).trim().toIntOrNull(2) ?: 0)
+    var v2: String = ""
+    v2 = "1011"
+    var v3: Int = 0
+    v3 = ((v2).trim().toIntOrNull(2) ?: 0)
     run { System.out.write((v3.toString() + "\n").toByteArray(Charsets.UTF_8)); System.out.flush() }
-    val v4: String = "-42"
-    val v5: Int = ((v4).trim().toIntOrNull(10) ?: 0)
+    var v4: String = ""
+    v4 = "-42"
+    var v5: Int = 0
+    v5 = ((v4).trim().toIntOrNull(10) ?: 0)
     run { System.out.write((v5.toString() + "\n").toByteArray(Charsets.UTF_8)); System.out.flush() }
-    val v6: String = " 123 "
-    val v7: Boolean = ((v6).trim().toLongOrNull() != null)
-    val v8: Long = ((v6).trim().toLongOrNull() ?: 0L)
-    val v9: Int = (v8).toInt()
+    var v6: String = ""
+    v6 = " 123 "
+    var v7: Boolean = false
+    v7 = ((v6).trim().toLongOrNull() != null)
+    var v8: Long = 0L
+    v8 = ((v6).trim().toLongOrNull() ?: 0L)
+    var v9: Int = 0
+    v9 = (v8).toInt()
     var v13: Boolean = false
     if (v7) {
-        val v10: Boolean = (v8 >= -2147483648L)
+        var v10: Boolean = false
+        v10 = (v8 >= -2147483648L)
         if (v10) {
-            val v11: Boolean = (v8 <= 2147483647L)
+            var v11: Boolean = false
+            v11 = (v8 <= 2147483647L)
             v13 = v11
         } else {
             v13 = false
@@ -31,11 +43,12 @@ fun spiral_main(): Int {
     if (v13) {
         v16 = US0_Some(v9)
     } else {
-        v16 = US0_None
+        v16 = US0_None()
     }
     when (v16.tag) {
         1 -> {
-            val v18: String = "none"
+            var v18: String = ""
+            v18 = "none"
             run { System.out.write((v18.toString() + "\n").toByteArray(Charsets.UTF_8)); System.out.flush() }
         }
         0 -> {
@@ -44,15 +57,21 @@ fun spiral_main(): Int {
         }
         else -> throw RuntimeException()
     }
-    val v19: String = "12x"
-    val v20: Boolean = ((v19).trim().toLongOrNull() != null)
-    val v21: Long = ((v19).trim().toLongOrNull() ?: 0L)
-    val v22: Int = (v21).toInt()
+    var v19: String = ""
+    v19 = "12x"
+    var v20: Boolean = false
+    v20 = ((v19).trim().toLongOrNull() != null)
+    var v21: Long = 0L
+    v21 = ((v19).trim().toLongOrNull() ?: 0L)
+    var v22: Int = 0
+    v22 = (v21).toInt()
     var v26: Boolean = false
     if (v20) {
-        val v23: Boolean = (v21 >= -2147483648L)
+        var v23: Boolean = false
+        v23 = (v21 >= -2147483648L)
         if (v23) {
-            val v24: Boolean = (v21 <= 2147483647L)
+            var v24: Boolean = false
+            v24 = (v21 <= 2147483647L)
             v26 = v24
         } else {
             v26 = false
@@ -64,11 +83,12 @@ fun spiral_main(): Int {
     if (v26) {
         v29 = US0_Some(v22)
     } else {
-        v29 = US0_None
+        v29 = US0_None()
     }
     when (v29.tag) {
         1 -> {
-            val v31: String = "none"
+            var v31: String = ""
+            v31 = "none"
             run { System.out.write((v31.toString() + "\n").toByteArray(Charsets.UTF_8)); System.out.flush() }
         }
         0 -> {
@@ -77,15 +97,21 @@ fun spiral_main(): Int {
         }
         else -> throw RuntimeException()
     }
-    val v32: String = ""
-    val v33: Boolean = ((v32).trim().toLongOrNull() != null)
-    val v34: Long = ((v32).trim().toLongOrNull() ?: 0L)
-    val v35: Int = (v34).toInt()
+    var v32: String = ""
+    v32 = ""
+    var v33: Boolean = false
+    v33 = ((v32).trim().toLongOrNull() != null)
+    var v34: Long = 0L
+    v34 = ((v32).trim().toLongOrNull() ?: 0L)
+    var v35: Int = 0
+    v35 = (v34).toInt()
     var v39: Boolean = false
     if (v33) {
-        val v36: Boolean = (v34 >= -2147483648L)
+        var v36: Boolean = false
+        v36 = (v34 >= -2147483648L)
         if (v36) {
-            val v37: Boolean = (v34 <= 2147483647L)
+            var v37: Boolean = false
+            v37 = (v34 <= 2147483647L)
             v39 = v37
         } else {
             v39 = false
@@ -97,11 +123,12 @@ fun spiral_main(): Int {
     if (v39) {
         v42 = US0_Some(v35)
     } else {
-        v42 = US0_None
+        v42 = US0_None()
     }
     when (v42.tag) {
         1 -> {
-            val v44: String = "none"
+            var v44: String = ""
+            v44 = "none"
             run { System.out.write((v44.toString() + "\n").toByteArray(Charsets.UTF_8)); System.out.flush() }
         }
         0 -> {
@@ -110,15 +137,21 @@ fun spiral_main(): Int {
         }
         else -> throw RuntimeException()
     }
-    val v45: String = "+7"
-    val v46: Boolean = ((v45).trim().toLongOrNull() != null)
-    val v47: Long = ((v45).trim().toLongOrNull() ?: 0L)
-    val v48: Int = (v47).toInt()
+    var v45: String = ""
+    v45 = "+7"
+    var v46: Boolean = false
+    v46 = ((v45).trim().toLongOrNull() != null)
+    var v47: Long = 0L
+    v47 = ((v45).trim().toLongOrNull() ?: 0L)
+    var v48: Int = 0
+    v48 = (v47).toInt()
     var v52: Boolean = false
     if (v46) {
-        val v49: Boolean = (v47 >= -2147483648L)
+        var v49: Boolean = false
+        v49 = (v47 >= -2147483648L)
         if (v49) {
-            val v50: Boolean = (v47 <= 2147483647L)
+            var v50: Boolean = false
+            v50 = (v47 <= 2147483647L)
             v52 = v50
         } else {
             v52 = false
@@ -130,11 +163,12 @@ fun spiral_main(): Int {
     if (v52) {
         v55 = US0_Some(v48)
     } else {
-        v55 = US0_None
+        v55 = US0_None()
     }
     when (v55.tag) {
         1 -> {
-            val v57: String = "none"
+            var v57: String = ""
+            v57 = "none"
             run { System.out.write((v57.toString() + "\n").toByteArray(Charsets.UTF_8)); System.out.flush() }
         }
         0 -> {

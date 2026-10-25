@@ -12,20 +12,20 @@ inl context_query (source : string) : xpath.xpath =
 
 let rec without_fired (items : list located) (fired : list located) (acc : list located) : list located =
     match items with
-    | Cons (item, rest) => without_fired rest fired (if has_located item fired then acc else Cons (item, acc))
+    | item :: rest => without_fired rest fired (if has_located item fired then acc else item :: acc)
     | Nil => listm.rev acc
 
 let rec check_assertions (s : scope) (assertions : list assertion) (acc : list failure) : list failure =
     match assertions with
-    | Cons (a, rest) =>
+    | a :: rest =>
         inl acc =
             match eval s a.test with
             | VError reason =>
-                Cons ({ id = a.id; severity = a.severity; path = s.context.path; detail = "error: " ++# reason }, acc)
+                { id = a.id; severity = a.severity; path = s.context.path; detail = "error: " ++# reason } :: acc
             | value =>
                 inl holds = effective_boolean value
                 if holds = a.reports
-                then Cons ({ id = a.id; severity = a.severity; path = s.context.path; detail = "" }, acc)
+                then { id = a.id; severity = a.severity; path = s.context.path; detail = "" } :: acc
                 else acc
         check_assertions s rest acc
     | Nil => acc
@@ -35,13 +35,13 @@ let rec check_contexts
     : list failure
     =
     match contexts with
-    | Cons (context, rest) =>
+    | context :: rest =>
         check_contexts s rest assertions (check_assertions { s with context = context } assertions acc)
     | Nil => acc
 
 let rec check_rules (s : scope) (rules : list rule) (fired : list located) (acc : list failure) : list failure =
     match rules with
-    | Cons (r, rest) =>
+    | r :: rest =>
         match eval s (context_query r.context_source) with
         | VNodes found =>
             inl contexts = without_fired found fired Nil
@@ -58,7 +58,7 @@ let rec check_rules (s : scope) (rules : list rule) (fired : list located) (acc 
 
 let rec check_patterns (s : scope) (patterns : list pattern) (acc : list failure) : list failure =
     match patterns with
-    | Cons (p, rest) => check_patterns s rest (check_rules s p.rules Nil acc)
+    | p :: rest => check_patterns s rest (check_rules s p.rules Nil acc)
     | Nil => listm.rev acc
 
 inl validate (patterns : list pattern) (document : xml_node) : list failure =
@@ -67,7 +67,7 @@ inl validate (patterns : list pattern) (document : xml_node) : list failure =
 
 let rec fatal_count (failures : list failure) (acc : i32) : i32 =
     match failures with
-    | Cons (f, rest) => fatal_count rest (match f.severity with Fatal => acc + 1i32 | _ => acc)
+    | f :: rest => fatal_count rest (match f.severity with Fatal => acc + 1i32 | _ => acc)
     | Nil => acc
 ///> rust
 test fires_the_first_matching_rule_per_pattern =
@@ -81,7 +81,7 @@ test fires_the_first_matching_rule_per_pattern =
         ++# "</pattern></schema>"
     inl document = "<doc><line kind=\"charge\"><amount>0</amount></line><line><amount>5</amount></line><line/></doc>"
     match read_xml document with
-    | Cons (root, Nil) =>
+    | root :: Nil =>
         inl failures = validate (read_schematron rules) root
         if listm.length failures <> 2i32 then failwith "the zero charge and the line without amount fail, nothing else"
         if fatal_count failures 0i32 <> 2i32 then failwith "both are fatal"

@@ -25,8 +25,10 @@ def spiralStringSlice (s : String) (a b : Int) : IO String := do
   else pure (String.Pos.Raw.extract s ⟨a.toNat⟩ ⟨(b + 1).toNat⟩)
 mutual
 partial def spiralMain : IO Int32 := do
-    let v0 : Int32 := (1 : Int32)
-    let v1 : Bool := (v0 == (1 : Int32))
+    let mut v0 : Int32 := default
+    let mut v1 : Bool := default
+    v0 := (1 : Int32)
+    v1 := (v0 == (1 : Int32))
     if v1 then
         spiralFail "bo$om"
     else

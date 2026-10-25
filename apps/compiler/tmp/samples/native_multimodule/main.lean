@@ -28,14 +28,20 @@ partial def method0 (p0 : Int32) (p1 : Int32) (p2 : Int32) : IO Int32 := do
     let mut v0 : Int32 := p0
     let mut v1 : Int32 := p1
     let mut v2 : Int32 := p2
-    let v3 : Int32 := (v0 * v1)
-    let v4 : Int32 := (v3 + v2)
-    let v5 : Int32 := (v4 - (42 : Int32))
+    let mut v3 : Int32 := default
+    let mut v4 : Int32 := default
+    let mut v5 : Int32 := default
+    v3 := (v0 * v1)
+    v4 := (v3 + v2)
+    v5 := (v4 - (42 : Int32))
     return v5
 partial def spiralMain : IO Int32 := do
-    let v0 : Int32 := (5 : Int32)
-    let v1 : Int32 := (8 : Int32)
-    let v2 : Int32 := (2 : Int32)
+    let mut v0 : Int32 := default
+    let mut v1 : Int32 := default
+    let mut v2 : Int32 := default
+    v0 := (5 : Int32)
+    v1 := (8 : Int32)
+    v2 := (2 : Int32)
     return (← method0 v0 v1 v2)
 end
 def main : IO UInt32 := do

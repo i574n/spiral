@@ -6,11 +6,9 @@ type
   TUH0 = class;
   TUH0 = class tag: LongInt; c1_0: LongInt; c1_1: TUH0; end;
 function sum_0(v0: TUH0): LongInt; forward;
-var UH0_Nil_shared: TUH0 = nil;
 function UH0_Nil: TUH0;
 begin
-  if UH0_Nil_shared = nil then begin UH0_Nil_shared := TUH0.Create; UH0_Nil_shared.tag := 0; end;
-  Result := UH0_Nil_shared;
+  Result := TUH0.Create; Result.tag := 0; 
 end;
 function UH0_Cons(a0: LongInt; a1: TUH0): TUH0;
 begin

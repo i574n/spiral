@@ -1,5 +1,9 @@
 (module
+  (import "wasi_snapshot_preview1" "fd_write" (func $fd_write (param i32 i32 i32 i32) (result i32)))
   (import "wasi_snapshot_preview1" "proc_exit" (func $proc_exit (param i32)))
+  (data (i32.const 48) "\04\00\00\00true")
+  (data (i32.const 56) "\05\00\00\00false")
+  (data (i32.const 64) "\01\00\00\00-")
   (memory (export "memory") 2)
   (global $hp (mut i32) (i32.const 72))
   (func $method0 (param $v0 f32) (param $v1 f32) (result f32)

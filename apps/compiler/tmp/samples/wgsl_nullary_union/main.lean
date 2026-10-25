@@ -38,14 +38,21 @@ def U0.spiralTag : U0 → Int32
   | .West .. => 3
 mutual
 partial def spiralMain : IO Int32 := do
+    let mut v0 : U0 := default
     let mut v8 : U0 := default
     let mut v16 : U0 := default
+    let mut v17 : U0 := default
     let mut v18 : Bool := default
     let mut v19 : Int32 := default
     let mut v21 : Int32 := default
     let mut v23 : Int32 := default
+    let mut v24 : Int32 := default
+    let mut v25 : Int32 := default
     let mut v27 : Int32 := default
-    let v0 : U0 := U0.North
+    let mut v28 : Int32 := default
+    let mut v29 : Int32 := default
+    let mut v30 : Int32 := default
+    v0 := U0.North
     match v0 with
     | U0.East =>
         v8 := U0.South
@@ -64,7 +71,7 @@ partial def spiralMain : IO Int32 := do
         v16 := U0.West
     | U0.West =>
         v16 := U0.North
-    let v17 : U0 := U0.South
+    v17 := U0.South
     match v16, v17 with
     | U0.East, U0.East =>
         v18 := true
@@ -94,8 +101,8 @@ partial def spiralMain : IO Int32 := do
         v23 := (1 : Int32)
     | _ =>
         v23 := (7 : Int32)
-    let v24 : Int32 := (v23 * (3 : Int32))
-    let v25 : Int32 := (v21 + v24)
+    v24 := (v23 * (3 : Int32))
+    v25 := (v21 + v24)
     match v16 with
     | U0.East =>
         v27 := (2 : Int32)
@@ -103,9 +110,9 @@ partial def spiralMain : IO Int32 := do
         v27 := (1 : Int32)
     | _ =>
         v27 := (7 : Int32)
-    let v28 : Int32 := (v27 * (9 : Int32))
-    let v29 : Int32 := (v25 + v28)
-    let v30 : Int32 := (v29 + v19)
+    v28 := (v27 * (9 : Int32))
+    v29 := (v25 + v28)
+    v30 := (v29 + v19)
     return v30
 end
 def main : IO UInt32 := do

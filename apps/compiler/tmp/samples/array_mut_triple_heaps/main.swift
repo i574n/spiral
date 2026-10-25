@@ -23,28 +23,47 @@ final class SpiralArray<T> {
     init(_ items: [T]) { self.items = items }
 }
 func spiral_main() -> Int32 {
-    let v0: Int32 = 1
-    let v1: String = "no"
-    let v2: Heap0 = Heap0(l0: v0, l1: v1)
-    let v3: Int32 = 2
-    let v4: String = "zz"
-    let v5: Heap0 = Heap0(l0: v3, l1: v4)
-    let v6: Int32 = 3
-    let v7: String = "aa"
-    let v8: Heap0 = Heap0(l0: v6, l1: v7)
-    let v9: Mut1 = Mut1(l0: v2, l1: v5, l2: v8)
+    var v0: Int32 = 0
+    v0 = 1
+    var v1: String = ""
+    v1 = "no"
+    var v2: Heap0 = Heap0(l0: 0, l1: "")
+    v2 = Heap0(l0: v0, l1: v1)
+    var v3: Int32 = 0
+    v3 = 2
+    var v4: String = ""
+    v4 = "zz"
+    var v5: Heap0 = Heap0(l0: 0, l1: "")
+    v5 = Heap0(l0: v3, l1: v4)
+    var v6: Int32 = 0
+    v6 = 3
+    var v7: String = ""
+    v7 = "aa"
+    var v8: Heap0 = Heap0(l0: 0, l1: "")
+    v8 = Heap0(l0: v6, l1: v7)
+    var v9: Mut1 = Mut1(l0: Heap0(l0: 0, l1: ""), l1: Heap0(l0: 0, l1: ""), l2: Heap0(l0: 0, l1: ""))
+    v9 = Mut1(l0: v2, l1: v5, l2: v8)
     var v10: SpiralArray<Mut1> = SpiralArray<Mut1>([])
     v10 = SpiralArray<Mut1>(Array(repeating: Mut1(l0: Heap0(l0: 0, l1: ""), l1: Heap0(l0: 0, l1: ""), l2: Heap0(l0: 0, l1: "")), count: Int(1)))
     v10.items[Int(0)] = v9
-    let v11: Int32 = 7
-    let v12: String = "hi"
-    let v13: Heap0 = Heap0(l0: v11, l1: v12)
-    let v14: Int32 = 4
-    let v15: String = "yo"
-    let v16: Heap0 = Heap0(l0: v14, l1: v15)
-    let v17: Int32 = 9
-    let v18: String = "ok"
-    let v19: Heap0 = Heap0(l0: v17, l1: v18)
+    var v11: Int32 = 0
+    v11 = 7
+    var v12: String = ""
+    v12 = "hi"
+    var v13: Heap0 = Heap0(l0: 0, l1: "")
+    v13 = Heap0(l0: v11, l1: v12)
+    var v14: Int32 = 0
+    v14 = 4
+    var v15: String = ""
+    v15 = "yo"
+    var v16: Heap0 = Heap0(l0: 0, l1: "")
+    v16 = Heap0(l0: v14, l1: v15)
+    var v17: Int32 = 0
+    v17 = 9
+    var v18: String = ""
+    v18 = "ok"
+    var v19: Heap0 = Heap0(l0: 0, l1: "")
+    v19 = Heap0(l0: v17, l1: v18)
     var v20: Mut1 = Mut1(l0: Heap0(l0: 0, l1: ""), l1: Heap0(l0: 0, l1: ""), l2: Heap0(l0: 0, l1: ""))
     v20 = v10.items[Int(0)]
     v20.l0 = v13
@@ -68,38 +87,44 @@ func spiral_main() -> Int32 {
     var v29: String = ""
     v28 = v23.l0
     v29 = v23.l1
-    let v30: Bool = (v24 == 7)
+    var v30: Bool = false
+    v30 = (v24 == 7)
     var v32: Bool = false
     if (v30) {
-        let v31: Bool = (v25 == "hi")
+        var v31: Bool = false
+        v31 = (v25 == "hi")
         v32 = v31
     } else {
         v32 = false
     }
     var v34: Bool = false
     if (v32) {
-        let v33: Bool = (v26 == 4)
+        var v33: Bool = false
+        v33 = (v26 == 4)
         v34 = v33
     } else {
         v34 = false
     }
     var v36: Bool = false
     if (v34) {
-        let v35: Bool = (v27 == "yo")
+        var v35: Bool = false
+        v35 = (v27 == "yo")
         v36 = v35
     } else {
         v36 = false
     }
     var v38: Bool = false
     if (v36) {
-        let v37: Bool = (v28 == 9)
+        var v37: Bool = false
+        v37 = (v28 == 9)
         v38 = v37
     } else {
         v38 = false
     }
     var v40: Bool = false
     if (v38) {
-        let v39: Bool = (v29 == "ok")
+        var v39: Bool = false
+        v39 = (v29 == "ok")
         v40 = v39
     } else {
         v40 = false

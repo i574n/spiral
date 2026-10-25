@@ -19,7 +19,8 @@ func sp_method0(_ p0: @escaping (Int32) -> Int32) -> Int32 {
     return v0(40)
 }
 func spiral_main() -> Int32 {
-    let v0: Bool = true
+    var v0: Bool = false
+    v0 = true
     var v3: (Int32) -> Int32 = { (_: Int32) -> Int32 in fatalError("unreachable closure") }
     if (v0) {
         v3 = a_c0()

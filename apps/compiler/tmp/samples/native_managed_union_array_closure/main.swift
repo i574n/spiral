@@ -55,7 +55,8 @@ func sp_method2(_ p0: @escaping (Int32) -> US0) -> US0 {
     return v0(4)
 }
 func spiral_main() -> Int32 {
-    let v0: (Int32) -> US0 = closure0()
+    var v0: (Int32) -> US0 = { (_: Int32) -> US0 in fatalError("unreachable closure") }
+    v0 = closure0()
     var v1: US0 = US0_Empty()
     v1 = sp_method0(v0)
     var v2: Int32 = 0

@@ -9,7 +9,7 @@ enum US0 {
 }
 fn closure0(mut v0: i32) -> Rc<dyn Fn(i32) -> US0> {
     Rc::new(move |mut v1: i32| -> US0 {
-        let v2: bool = v1 == v0;
+        let mut v2: bool = v1 == v0;
         US0::US0_Flag(v2)
     })
 }
@@ -18,11 +18,11 @@ fn method0(mut v0: Rc<dyn Fn(i32) -> US0>, mut v1: i32) -> US0 {
 }
 fn spiral_main() -> i32 {
     let mut v0: i32 = 2i32;
-    let v1: Rc<dyn Fn(i32) -> US0> = closure0(v0);
-    let v2: US0 = method0(v1, v0);
-    let v8: i32 = match &v2 {
+    let mut v1: Rc<dyn Fn(i32) -> US0> = closure0(v0);
+    let mut v2: US0 = method0(v1.clone(), v0);
+    let mut v8: i32 = match &v2 {
         US0::US0_Flag(v4) => {
-            let v4: bool = *v4;
+            let mut v4: bool = *v4;
             if v4 {
                 11i32
             } else {
@@ -30,14 +30,14 @@ fn spiral_main() -> i32 {
             }
         }
         US0::US0_Hit(v3) => {
-            let v3: i32 = *v3;
+            let mut v3: i32 = *v3;
             v3
         }
         US0::US0_Idle => {
             3i32
         }
     };
-    let v9: i32 = v8.wrapping_add(31i32);
+    let mut v9: i32 = v8.wrapping_add(31i32);
     v9
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }

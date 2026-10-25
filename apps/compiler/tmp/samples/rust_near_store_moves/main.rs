@@ -4,16 +4,16 @@ use std::rc::Rc;
 struct SpiralNearVec<T>(std::vec::Vec<T>);
 mod near_sdk { pub mod store { pub struct LookupMap<K, V>(pub std::collections::BTreeMap<K, V>); } }
 fn method0(mut v0: u32) -> (u32, SpiralNearVec<u8>, near_sdk::store::LookupMap<u32, u8>) {
-    let v1: SpiralNearVec<u8> = SpiralNearVec(vec![1u8, 2, 3]);
-    let v2: near_sdk::store::LookupMap<u32, u8> = near_sdk::store::LookupMap(std::collections::BTreeMap::from([(1u32, 4u8)]));
+    let mut v1: SpiralNearVec<u8> = SpiralNearVec(vec![1u8, 2, 3]);
+    let mut v2: near_sdk::store::LookupMap<u32, u8> = near_sdk::store::LookupMap(std::collections::BTreeMap::from([(1u32, 4u8)]));
     (v0, v1, v2)
 }
 fn method1(mut v0: u32, mut v1: SpiralNearVec<u8>, mut v2: near_sdk::store::LookupMap<u32, u8>) -> i32 {
-    let v3: i32 = (v0 as i32) + (v1.0.len() as i32) + (*v2.0.get(&1u32).unwrap() as i32);
+    let mut v3: i32 = (v0 as i32) + (v1.0.len() as i32) + (*v2.0.get(&1u32).unwrap() as i32);
     v3
 }
 fn spiral_main() -> i32 {
-    let v0: u32 = 7u32;
+    let mut v0: u32 = 7u32;
     let (mut v1, mut v2, mut v3): (u32, SpiralNearVec<u8>, near_sdk::store::LookupMap<u32, u8>) = method0(v0);
     method1(v1, v2, v3)
 }

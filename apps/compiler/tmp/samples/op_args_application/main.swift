@@ -2,7 +2,8 @@ import CRT
 import WinSDK
 func sp_f_0(_ p0: Int32) -> Int32 {
     var v0: Int32 = p0
-    let v1: Bool = (v0 == 1)
+    var v1: Bool = false
+    v1 = (v0 == 1)
     if (v1) {
         return 0
     } else {
@@ -10,7 +11,8 @@ func sp_f_0(_ p0: Int32) -> Int32 {
     }
 }
 func spiral_main() -> Int32 {
-    let v0: Int32 = 1
+    var v0: Int32 = 0
+    v0 = 1
     return sp_f_0(v0)
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

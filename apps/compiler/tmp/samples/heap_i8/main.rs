@@ -3,10 +3,10 @@ use std::cell::RefCell;
 use std::rc::Rc;
 struct Heap0 { l0: i8 }
 fn spiral_main() -> i32 {
-    let v0: i8 = 100i8;
-    let v1: Rc<Heap0> = Rc::new(Heap0 { l0: v0 });
-    let v2: i8 = v1.l0.clone();
-    let v3: bool = v2 == 100i8;
+    let mut v0: i8 = 100i8;
+    let mut v1: Rc<Heap0> = Rc::new(Heap0 { l0: v0 });
+    let mut v2: i8 = v1.l0.clone();
+    let mut v3: bool = v2 == 100i8;
     if v3 {
         0i32
     } else {

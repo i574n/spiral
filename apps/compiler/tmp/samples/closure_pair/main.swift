@@ -8,7 +8,8 @@ func f_c0() -> (Int32) -> (Int32, Int32) {
     }
 }
 func spiral_main() -> Int32 {
-    let v0: Int32 = 3
+    var v0: Int32 = 0
+    v0 = 3
     var v1: (Int32) -> (Int32, Int32) = { (_: Int32) -> (Int32, Int32) in fatalError("unreachable closure") }
     v1 = f_c0()
     var v2: Int32 = 0
@@ -16,10 +17,12 @@ func spiral_main() -> Int32 {
     let spiral_tuple240 = v1(v0)
     v2 = spiral_tuple240.0
     v3 = spiral_tuple240.1
-    let v4: Bool = (v2 == 3)
+    var v4: Bool = false
+    v4 = (v2 == 3)
     var v6: Bool = false
     if (v4) {
-        let v5: Bool = (v3 == 4)
+        var v5: Bool = false
+        v5 = (v3 == 4)
         v6 = v5
     } else {
         v6 = false

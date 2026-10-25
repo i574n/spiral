@@ -27,16 +27,20 @@ func sp_sum_0(_ p0: UH0) -> Int32 {
     }
 }
 func spiral_main() -> Int32 {
-    let v0: Int32 = 2
-    let v1: SpiralArray<Int32> = SpiralArray<Int32>(Array(repeating: 0, count: Int(v0)))
-    let v2: UH0 = UH0_Nil()
+    var v0: Int32 = 0
+    v0 = 2
+    var v1: SpiralArray<Int32> = SpiralArray<Int32>([])
+    v1 = SpiralArray<Int32>(Array(repeating: 0, count: Int(v0)))
+    var v2: UH0 = UH0_Nil()
+    v2 = UH0_Nil()
     var v3: UH0 = UH0_Nil()
     v3 = UH0_Cons(f0: v1, f1: v2)
     var v4: UH0 = UH0_Nil()
     v4 = UH0_Cons(f0: v1, f1: v3)
     var v5: Int32 = 0
     v5 = sp_sum_0(v4)
-    let v6: Int32 = (v5 &- 4)
+    var v6: Int32 = 0
+    v6 = (v5 &- 4)
     return v6
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

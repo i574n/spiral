@@ -1,9 +1,9 @@
 sealed interface UH0 { val tag: Int }
 data class UH0_Cons(val f0: ULong, val f1: () -> UH0) : UH0 { override val tag: Int = 0 }
-object UH0_Nil : UH0 { override val tag: Int = 1 }
+class UH0_Nil : UH0 { override val tag: Int = 1 }
 fun closure79(): () -> UH0 {
     fun body(): UH0 {
-        return UH0_Nil
+        return UH0_Nil()
     }
     return { body() }
 }
@@ -661,14 +661,18 @@ fun sp_loop_0(p0: UH0, p1: ULong): ULong {
 fun spiral_main(): Int {
     var v0: ULong = 0uL
     v0 = 80uL
-    val v1: () -> UH0 = closure0()
-    val v2: UH0 = UH0_Cons(v0, v1)
-    val v3: ULong = 0uL
+    var v1: () -> UH0 = { throw RuntimeException() }
+    v1 = closure0()
+    var v2: UH0 = UH0_Cons(0uL, { throw RuntimeException() })
+    v2 = UH0_Cons(v0, v1)
+    var v3: ULong = 0uL
+    v3 = 0uL
     var v4: ULong = 0uL
     v4 = sp_loop_0(v2, v3)
     var v5: ULong = 0uL
     v5 = (v4 % 200uL)
-    val v6: Int = (v5).toInt()
+    var v6: Int = 0
+    v6 = (v5).toInt()
     return v6
 }
 fun main() {

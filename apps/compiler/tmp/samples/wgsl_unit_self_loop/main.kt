@@ -9,7 +9,12 @@ fun sp_fill_0(p0: Int, p1: Array<Int>, p2: Int) {
             v1[v2] = v2
             var v4: Int = 0
             v4 = (v2 + 1)
-            v2 = v4
+            val t301_0: Int = v0
+            val t335_1: Array<Int> = v1
+            val t376_4: Int = v4
+            v0 = t301_0
+            v1 = t335_1
+            v2 = t376_4
             continue
         } else {
             return
@@ -17,7 +22,8 @@ fun sp_fill_0(p0: Int, p1: Array<Int>, p2: Int) {
     }
 }
 fun spiral_main(): Int {
-    val v0: Int = 6
+    var v0: Int = 0
+    v0 = 6
     var v1: Array<Int> = emptyArray<Int>()
     v1 = Array(6) { 0 }
     var v2: Int = 0

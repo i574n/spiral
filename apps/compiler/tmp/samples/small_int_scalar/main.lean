@@ -25,6 +25,23 @@ def spiralStringSlice (s : String) (a b : Int) : IO String := do
   else pure (String.Pos.Raw.extract s ⟨a.toNat⟩ ⟨(b + 1).toNat⟩)
 mutual
 partial def spiralMain : IO Int32 := do
+    let mut v0 : Int8 := default
+    let mut v1 : Int8 := default
+    let mut v2 : UInt8 := default
+    let mut v3 : UInt8 := default
+    let mut v4 : UInt8 := default
+    let mut v5 : Int8 := default
+    let mut v6 : Int8 := default
+    let mut v7 : UInt8 := default
+    let mut v8 : Int16 := default
+    let mut v9 : Int16 := default
+    let mut v10 : UInt16 := default
+    let mut v11 : UInt16 := default
+    let mut v12 : Int32 := default
+    let mut v13 : Int8 := default
+    let mut v14 : Int8 := default
+    let mut v15 : Int32 := default
+    let mut v16 : Bool := default
     let mut v18 : Bool := default
     let mut v17 : Bool := default
     let mut v20 : Bool := default
@@ -39,23 +56,23 @@ partial def spiralMain : IO Int32 := do
     let mut v27 : Bool := default
     let mut v30 : Bool := default
     let mut v29 : Bool := default
-    let v0 : Int8 := (100 : Int8)
-    let v1 : Int8 := (v0 + v0)
-    let v2 : UInt8 := (200 : UInt8)
-    let v3 : UInt8 := (100 : UInt8)
-    let v4 : UInt8 := (v2 + v3)
-    let v5 : Int8 := (-8 : Int8)
-    let v6 : Int8 := (v5 >>> (Int8.ofInt (SpiralToInt.toI (1 : Int32))))
-    let v7 : UInt8 := (v2 >>> (UInt8.ofInt (SpiralToInt.toI (1 : Int32))))
-    let v8 : Int16 := (20000 : Int16)
-    let v9 : Int16 := (v8 + v8)
-    let v10 : UInt16 := (40000 : UInt16)
-    let v11 : UInt16 := (v10 + v10)
-    let v12 : Int32 := (7 : Int32)
-    let v13 : Int8 := (Int8.ofInt (SpiralToInt.toI v12))
-    let v14 : Int8 := (9 : Int8)
-    let v15 : Int32 := (Int32.ofInt (SpiralToInt.toI v14))
-    let v16 : Bool := (v1 == (-56 : Int8))
+    v0 := (100 : Int8)
+    v1 := (v0 + v0)
+    v2 := (200 : UInt8)
+    v3 := (100 : UInt8)
+    v4 := (v2 + v3)
+    v5 := (-8 : Int8)
+    v6 := (v5 >>> (Int8.ofInt (SpiralToInt.toI (1 : Int32))))
+    v7 := (v2 >>> (UInt8.ofInt (SpiralToInt.toI (1 : Int32))))
+    v8 := (20000 : Int16)
+    v9 := (v8 + v8)
+    v10 := (40000 : UInt16)
+    v11 := (v10 + v10)
+    v12 := (7 : Int32)
+    v13 := (Int8.ofInt (SpiralToInt.toI v12))
+    v14 := (9 : Int8)
+    v15 := (Int32.ofInt (SpiralToInt.toI v14))
+    v16 := (v1 == (-56 : Int8))
     if v16 then
         v17 := (v4 == (44 : UInt8))
         v18 := v17

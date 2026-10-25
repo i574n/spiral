@@ -15,19 +15,25 @@ final class SpiralArray<T> {
 func spiral_main() -> Int32 {
     var v0: SpiralArray<Float> = SpiralArray<Float>([])
     v0 = SpiralArray<Float>(Array(repeating: (0.0 as Float), count: Int(1)))
-    let v1: Float = (1.5 as Float)
+    var v1: Float = (0.0 as Float)
+    v1 = (1.5 as Float)
     v0.items[Int(0)] = v1
-    let v2: Int32 = 7
-    let v3: Heap0 = Heap0(l0: v0, l1: v2)
+    var v2: Int32 = 0
+    v2 = 7
+    var v3: Heap0 = Heap0(l0: SpiralArray<Float>([]), l1: 0)
+    v3 = Heap0(l0: v0, l1: v2)
     var v4: SpiralArray<Float> = SpiralArray<Float>([])
     var v5: Int32 = 0
     v4 = v3.l0
     v5 = v3.l1
-    let v6: Float = v4.items[Int(0)]
-    let v7: Bool = (v6 == (1.5 as Float))
+    var v6: Float = (0.0 as Float)
+    v6 = v4.items[Int(0)]
+    var v7: Bool = false
+    v7 = (v6 == (1.5 as Float))
     var v9: Bool = false
     if (v7) {
-        let v8: Bool = (v5 == 7)
+        var v8: Bool = false
+        v8 = (v5 == 7)
         v9 = v8
     } else {
         v9 = false

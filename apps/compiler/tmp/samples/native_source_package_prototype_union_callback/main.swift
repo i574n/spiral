@@ -17,8 +17,10 @@ func sp_method0(_ p0: @escaping (Int32) -> US0, _ p1: Int32) -> US0 {
     return v0(v1)
 }
 func spiral_main() -> Int32 {
-    let v0: Int32 = 2
-    let v1: (Int32) -> US0 = closure0(v0)
+    var v0: Int32 = 0
+    v0 = 2
+    var v1: (Int32) -> US0 = { (_: Int32) -> US0 in fatalError("unreachable closure") }
+    v1 = closure0(v0)
     var v2: US0 = US0_Idle()
     v2 = sp_method0(v1, v0)
     var v8: Int32 = 0
@@ -38,7 +40,8 @@ func spiral_main() -> Int32 {
         default:
             fatalError("unreachable union case")
     }
-    let v9: Int32 = (v8 &+ 31)
+    var v9: Int32 = 0
+    v9 = (v8 &+ 31)
     return v9
 }
 nonisolated(unsafe) var spiral_exit_code: Int32 = 0

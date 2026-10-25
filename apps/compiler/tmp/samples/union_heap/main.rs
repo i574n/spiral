@@ -8,19 +8,19 @@ enum US0 {
     US0_Box(Rc<Heap0>),
 }
 fn spiral_main() -> i32 {
-    let v0: i32 = 7i32;
-    let v1: Rc<Heap0> = Rc::new(Heap0 { l0: v0 });
-    let v2: bool = true;
-    let v5: US0 = if v2 {
-        US0::US0_Box(v1)
+    let mut v0: i32 = 7i32;
+    let mut v1: Rc<Heap0> = Rc::new(Heap0 { l0: v0 });
+    let mut v2: bool = true;
+    let mut v5: US0 = if v2 {
+        US0::US0_Box(v1.clone())
     } else {
         US0::US0_Missing
     };
     match &v5 {
         US0::US0_Box(v6) => {
-            let v6: Rc<Heap0> = v6.clone();
-            let v7: i32 = v6.l0.clone();
-            let v8: bool = v7 == 7i32;
+            let mut v6: Rc<Heap0> = v6.clone();
+            let mut v7: i32 = v6.l0.clone();
+            let mut v8: bool = v7 == 7i32;
             if v8 {
                 0i32
             } else {

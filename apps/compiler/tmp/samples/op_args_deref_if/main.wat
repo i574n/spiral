@@ -2,6 +2,8 @@
   (import "wasi_snapshot_preview1" "fd_write" (func $fd_write (param i32 i32 i32 i32) (result i32)))
   (import "wasi_snapshot_preview1" "proc_exit" (func $proc_exit (param i32)))
   (data (i32.const 48) "\04\00\00\00true")
+  (data (i32.const 56) "\05\00\00\00false")
+  (data (i32.const 64) "\01\00\00\00-")
   (func $write (param $fd i32) (param $ptr i32) (param $len i32)
     (i32.store (i32.const 0) (local.get $ptr))
     (i32.store (i32.const 4) (local.get $len))

@@ -8,22 +8,27 @@ fun spiral_main(): Int {
     v1 = 0
     while (true) {
         if (!(sp_method0())) break
-        val v3: Int = (v0 + 1)
+        var v3: Int = 0
+        v3 = (v0 + 1)
         v0 = v3
-        val v4: Boolean = (v0 < 3)
+        var v4: Boolean = false
+        v4 = (v0 < 3)
         if (v4) {
             continue
         } else {
-            val v5: Boolean = (v0 >= 6)
+            var v5: Boolean = false
+            v5 = (v0 >= 6)
             if (v5) {
                 break
             } else {
-                val v6: Int = (v1 + v0)
+                var v6: Int = 0
+                v6 = (v1 + v0)
                 v1 = v6
             }
         }
     }
-    val v7: Int = (v1 - 12)
+    var v7: Int = 0
+    v7 = (v1 - 12)
     return v7
 }
 fun main() {
