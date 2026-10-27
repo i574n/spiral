@@ -93,10 +93,10 @@ fn input_singletons_from_symbols_0(mut v0: Rc<UH0>) -> Rc<UH1> {
         UH0::UH0_SymbolListCons(v2, v3) => {
             let v2: US0 = v2.clone();
             let v3: Rc<UH0> = v3.clone();
-            let v4: Rc<UH1> = input_singletons_from_symbols_0(v3);
+            let v4: Rc<UH1> = input_singletons_from_symbols_0(v3.clone());
             let v5: Rc<UH2> = { thread_local!{ static CASE: Rc<UH2> = Rc::new(UH2::UH2_InputEmpty); } CASE.with(|case| case.clone()) };
-            let v6: Rc<UH2> = Rc::new(UH2::UH2_InputCons(v2, v5));
-            Rc::new(UH1::UH1_InputListCons(v6, v4))
+            let v6: Rc<UH2> = Rc::new(UH2::UH2_InputCons(v2.clone(), v5.clone()));
+            Rc::new(UH1::UH1_InputListCons(v6.clone(), v4.clone()))
         }
         UH0::UH0_SymbolListNil => {
             { thread_local!{ static CASE: Rc<UH1> = Rc::new(UH1::UH1_InputListNil); } CASE.with(|case| case.clone()) }
@@ -121,9 +121,9 @@ fn input_prepend_symbol_to_corpus_3(mut v0: US0, mut v1: Rc<UH1>) -> Rc<UH1> {
         UH1::UH1_InputListCons(v3, v4) => {
             let v3: Rc<UH2> = v3.clone();
             let v4: Rc<UH1> = v4.clone();
-            let v5: Rc<UH1> = input_prepend_symbol_to_corpus_3(v0.clone(), v4);
-            let v6: Rc<UH2> = Rc::new(UH2::UH2_InputCons(v0, v3));
-            Rc::new(UH1::UH1_InputListCons(v6, v5))
+            let v5: Rc<UH1> = input_prepend_symbol_to_corpus_3(v0.clone(), v4.clone());
+            let v6: Rc<UH2> = Rc::new(UH2::UH2_InputCons(v0.clone(), v3.clone()));
+            Rc::new(UH1::UH1_InputListCons(v6.clone(), v5.clone()))
         }
         UH1::UH1_InputListNil => {
             { thread_local!{ static CASE: Rc<UH1> = Rc::new(UH1::UH1_InputListNil); } CASE.with(|case| case.clone()) }
@@ -135,9 +135,9 @@ fn input_prepend_symbols_to_corpus_1(mut v0: Rc<UH0>, mut v1: Rc<UH1>) -> Rc<UH1
         UH0::UH0_SymbolListCons(v3, v4) => {
             let v3: US0 = v3.clone();
             let v4: Rc<UH0> = v4.clone();
-            let v5: Rc<UH1> = input_prepend_symbol_to_corpus_3(v3, v1.clone());
-            let v6: Rc<UH1> = input_prepend_symbols_to_corpus_1(v4, v1);
-            input_list_append_2(v5, v6)
+            let v5: Rc<UH1> = input_prepend_symbol_to_corpus_3(v3.clone(), v1.clone());
+            let v6: Rc<UH1> = input_prepend_symbols_to_corpus_1(v4.clone(), v1.clone());
+            input_list_append_2(v5.clone(), v6.clone())
         }
         UH0::UH0_SymbolListNil => {
             { thread_local!{ static CASE: Rc<UH1> = Rc::new(UH1::UH1_InputListNil); } CASE.with(|case| case.clone()) }
@@ -149,10 +149,10 @@ fn input_singletons_from_symbols_4(mut v0: Rc<UH3>) -> Rc<UH4> {
         UH3::UH3_SymbolListCons(v2, v3) => {
             let v2: US1 = v2.clone();
             let v3: Rc<UH3> = v3.clone();
-            let v4: Rc<UH4> = input_singletons_from_symbols_4(v3);
+            let v4: Rc<UH4> = input_singletons_from_symbols_4(v3.clone());
             let v5: Rc<UH5> = { thread_local!{ static CASE: Rc<UH5> = Rc::new(UH5::UH5_InputEmpty); } CASE.with(|case| case.clone()) };
-            let v6: Rc<UH5> = Rc::new(UH5::UH5_InputCons(v2, v5));
-            Rc::new(UH4::UH4_InputListCons(v6, v4))
+            let v6: Rc<UH5> = Rc::new(UH5::UH5_InputCons(v2.clone(), v5.clone()));
+            Rc::new(UH4::UH4_InputListCons(v6.clone(), v4.clone()))
         }
         UH3::UH3_SymbolListNil => {
             { thread_local!{ static CASE: Rc<UH4> = Rc::new(UH4::UH4_InputListNil); } CASE.with(|case| case.clone()) }
@@ -177,9 +177,9 @@ fn input_prepend_symbol_to_corpus_7(mut v0: US1, mut v1: Rc<UH4>) -> Rc<UH4> {
         UH4::UH4_InputListCons(v3, v4) => {
             let v3: Rc<UH5> = v3.clone();
             let v4: Rc<UH4> = v4.clone();
-            let v5: Rc<UH4> = input_prepend_symbol_to_corpus_7(v0.clone(), v4);
-            let v6: Rc<UH5> = Rc::new(UH5::UH5_InputCons(v0, v3));
-            Rc::new(UH4::UH4_InputListCons(v6, v5))
+            let v5: Rc<UH4> = input_prepend_symbol_to_corpus_7(v0.clone(), v4.clone());
+            let v6: Rc<UH5> = Rc::new(UH5::UH5_InputCons(v0.clone(), v3.clone()));
+            Rc::new(UH4::UH4_InputListCons(v6.clone(), v5.clone()))
         }
         UH4::UH4_InputListNil => {
             { thread_local!{ static CASE: Rc<UH4> = Rc::new(UH4::UH4_InputListNil); } CASE.with(|case| case.clone()) }
@@ -191,9 +191,9 @@ fn input_prepend_symbols_to_corpus_5(mut v0: Rc<UH3>, mut v1: Rc<UH4>) -> Rc<UH4
         UH3::UH3_SymbolListCons(v3, v4) => {
             let v3: US1 = v3.clone();
             let v4: Rc<UH3> = v4.clone();
-            let v5: Rc<UH4> = input_prepend_symbol_to_corpus_7(v3, v1.clone());
-            let v6: Rc<UH4> = input_prepend_symbols_to_corpus_5(v4, v1);
-            input_list_append_6(v5, v6)
+            let v5: Rc<UH4> = input_prepend_symbol_to_corpus_7(v3.clone(), v1.clone());
+            let v6: Rc<UH4> = input_prepend_symbols_to_corpus_5(v4.clone(), v1.clone());
+            input_list_append_6(v5.clone(), v6.clone())
         }
         UH3::UH3_SymbolListNil => {
             { thread_local!{ static CASE: Rc<UH4> = Rc::new(UH4::UH4_InputListNil); } CASE.with(|case| case.clone()) }
@@ -626,17 +626,17 @@ fn make_cat_16(mut v0: Rc<UH7>, mut v1: Rc<UH7>) -> Rc<UH7> {
                                         UH7::UH7_RegexCat(v12, v13) => {
                                             let v12: Rc<UH7> = v12.clone();
                                             let v13: Rc<UH7> = v13.clone();
-                                            let v14: Rc<UH7> = make_cat_16(v13, v1.clone());
-                                            Rc::new(UH7::UH7_RegexCat(v12, v14))
+                                            let v14: Rc<UH7> = make_cat_16(v13.clone(), v1.clone());
+                                            Rc::new(UH7::UH7_RegexCat(v12.clone(), v14.clone()))
                                         }
                                         UH7::UH7_RegexStar(v4) => {
                                             let v4: Rc<UH7> = v4.clone();
                                             match &*v1 {
                                                 UH7::UH7_RegexStar(v5) => {
                                                     let v5: Rc<UH7> = v5.clone();
-                                                    let v6: bool = regex_equal_17(v4.clone(), v5);
+                                                    let v6: bool = regex_equal_17(v4.clone(), v5.clone());
                                                     if v6 {
-                                                        Rc::new(UH7::UH7_RegexStar(v4))
+                                                        Rc::new(UH7::UH7_RegexStar(v4.clone()))
                                                     } else {
                                                         Rc::new(UH7::UH7_RegexCat(v0.clone(), v1.clone()))
                                                     }
@@ -647,7 +647,7 @@ fn make_cat_16(mut v0: Rc<UH7>, mut v1: Rc<UH7>) -> Rc<UH7> {
                                             }
                                         }
                                         _ => {
-                                            Rc::new(UH7::UH7_RegexCat(v0, v1))
+                                            Rc::new(UH7::UH7_RegexCat(v0.clone(), v1.clone()))
                                         }
                                     }
                                 }
@@ -669,10 +669,10 @@ fn make_star_18(mut v0: Rc<UH7>) -> Rc<UH7> {
         }
         UH7::UH7_RegexStar(v3) => {
             let v3: Rc<UH7> = v3.clone();
-            Rc::new(UH7::UH7_RegexStar(v3))
+            Rc::new(UH7::UH7_RegexStar(v3.clone()))
         }
         _ => {
-            Rc::new(UH7::UH7_RegexStar(v0))
+            Rc::new(UH7::UH7_RegexStar(v0.clone()))
         }
     }
 }
@@ -681,20 +681,20 @@ fn normalize_12(mut v0: Rc<UH7>) -> Rc<UH7> {
         UH7::UH7_RegexAlt(v5, v6) => {
             let v5: Rc<UH7> = v5.clone();
             let v6: Rc<UH7> = v6.clone();
-            let v7: Rc<UH7> = normalize_12(v5);
-            let v8: Rc<UH7> = normalize_12(v6);
-            make_alt_13(v7, v8)
+            let v7: Rc<UH7> = normalize_12(v5.clone());
+            let v8: Rc<UH7> = normalize_12(v6.clone());
+            make_alt_13(v7.clone(), v8.clone())
         }
         UH7::UH7_RegexCat(v10, v11) => {
             let v10: Rc<UH7> = v10.clone();
             let v11: Rc<UH7> = v11.clone();
-            let v12: Rc<UH7> = normalize_12(v10);
-            let v13: Rc<UH7> = normalize_12(v11);
-            make_cat_16(v12, v13)
+            let v12: Rc<UH7> = normalize_12(v10.clone());
+            let v13: Rc<UH7> = normalize_12(v11.clone());
+            make_cat_16(v12.clone(), v13.clone())
         }
         UH7::UH7_RegexChar(v3) => {
             let v3: US0 = v3.clone();
-            Rc::new(UH7::UH7_RegexChar(v3))
+            Rc::new(UH7::UH7_RegexChar(v3.clone()))
         }
         UH7::UH7_RegexEmpty => {
             { thread_local!{ static CASE: Rc<UH7> = Rc::new(UH7::UH7_RegexEmpty); } CASE.with(|case| case.clone()) }
@@ -704,8 +704,8 @@ fn normalize_12(mut v0: Rc<UH7>) -> Rc<UH7> {
         }
         UH7::UH7_RegexStar(v15) => {
             let v15: Rc<UH7> = v15.clone();
-            let v16: Rc<UH7> = normalize_12(v15);
-            make_star_18(v16)
+            let v16: Rc<UH7> = normalize_12(v15.clone());
+            make_star_18(v16.clone())
         }
     }
 }
@@ -784,9 +784,9 @@ fn derivative_19(mut v0: Rc<UH7>, mut v1: US0) -> Rc<UH7> {
         UH7::UH7_RegexAlt(v19, v20) => {
             let v19: Rc<UH7> = v19.clone();
             let v20: Rc<UH7> = v20.clone();
-            let v21: Rc<UH7> = derivative_19(v19, v1.clone());
-            let v22: Rc<UH7> = derivative_19(v20, v1.clone());
-            make_alt_13(v21, v22)
+            let v21: Rc<UH7> = derivative_19(v19.clone(), v1.clone());
+            let v22: Rc<UH7> = derivative_19(v20.clone(), v1.clone());
+            make_alt_13(v21.clone(), v22.clone())
         }
         UH7::UH7_RegexCat(v24, v25) => {
             let v24: Rc<UH7> = v24.clone();
@@ -795,13 +795,13 @@ fn derivative_19(mut v0: Rc<UH7>, mut v1: US0) -> Rc<UH7> {
             match &v26 {
                 US5::US5_NonNullable => {
                     let v31: Rc<UH7> = derivative_19(v24.clone(), v1.clone());
-                    make_cat_16(v31, v25.clone())
+                    make_cat_16(v31.clone(), v25.clone())
                 }
                 US5::US5_Nullable => {
-                    let v27: Rc<UH7> = derivative_19(v24, v1.clone());
-                    let v28: Rc<UH7> = make_cat_16(v27, v25.clone());
-                    let v29: Rc<UH7> = derivative_19(v25, v1.clone());
-                    make_alt_13(v28, v29)
+                    let v27: Rc<UH7> = derivative_19(v24.clone(), v1.clone());
+                    let v28: Rc<UH7> = make_cat_16(v27.clone(), v25.clone());
+                    let v29: Rc<UH7> = derivative_19(v25.clone(), v1.clone());
+                    make_alt_13(v28.clone(), v29.clone())
                 }
             }
         }
@@ -851,9 +851,9 @@ fn derivative_19(mut v0: Rc<UH7>, mut v1: US0) -> Rc<UH7> {
         }
         UH7::UH7_RegexStar(v35) => {
             let v35: Rc<UH7> = v35.clone();
-            let v36: Rc<UH7> = derivative_19(v35.clone(), v1);
-            let v37: Rc<UH7> = make_star_18(v35);
-            make_cat_16(v36, v37)
+            let v36: Rc<UH7> = derivative_19(v35.clone(), v1.clone());
+            let v37: Rc<UH7> = make_star_18(v35.clone());
+            make_cat_16(v36.clone(), v37.clone())
         }
     }
 }
@@ -1442,17 +1442,17 @@ fn make_cat_29(mut v0: Rc<UH8>, mut v1: Rc<UH8>) -> Rc<UH8> {
                                         UH8::UH8_RegexCat(v12, v13) => {
                                             let v12: Rc<UH8> = v12.clone();
                                             let v13: Rc<UH8> = v13.clone();
-                                            let v14: Rc<UH8> = make_cat_29(v13, v1.clone());
-                                            Rc::new(UH8::UH8_RegexCat(v12, v14))
+                                            let v14: Rc<UH8> = make_cat_29(v13.clone(), v1.clone());
+                                            Rc::new(UH8::UH8_RegexCat(v12.clone(), v14.clone()))
                                         }
                                         UH8::UH8_RegexStar(v4) => {
                                             let v4: Rc<UH8> = v4.clone();
                                             match &*v1 {
                                                 UH8::UH8_RegexStar(v5) => {
                                                     let v5: Rc<UH8> = v5.clone();
-                                                    let v6: bool = regex_equal_30(v4.clone(), v5);
+                                                    let v6: bool = regex_equal_30(v4.clone(), v5.clone());
                                                     if v6 {
-                                                        Rc::new(UH8::UH8_RegexStar(v4))
+                                                        Rc::new(UH8::UH8_RegexStar(v4.clone()))
                                                     } else {
                                                         Rc::new(UH8::UH8_RegexCat(v0.clone(), v1.clone()))
                                                     }
@@ -1463,7 +1463,7 @@ fn make_cat_29(mut v0: Rc<UH8>, mut v1: Rc<UH8>) -> Rc<UH8> {
                                             }
                                         }
                                         _ => {
-                                            Rc::new(UH8::UH8_RegexCat(v0, v1))
+                                            Rc::new(UH8::UH8_RegexCat(v0.clone(), v1.clone()))
                                         }
                                     }
                                 }
@@ -1485,10 +1485,10 @@ fn make_star_31(mut v0: Rc<UH8>) -> Rc<UH8> {
         }
         UH8::UH8_RegexStar(v3) => {
             let v3: Rc<UH8> = v3.clone();
-            Rc::new(UH8::UH8_RegexStar(v3))
+            Rc::new(UH8::UH8_RegexStar(v3.clone()))
         }
         _ => {
-            Rc::new(UH8::UH8_RegexStar(v0))
+            Rc::new(UH8::UH8_RegexStar(v0.clone()))
         }
     }
 }
@@ -1497,20 +1497,20 @@ fn normalize_25(mut v0: Rc<UH8>) -> Rc<UH8> {
         UH8::UH8_RegexAlt(v5, v6) => {
             let v5: Rc<UH8> = v5.clone();
             let v6: Rc<UH8> = v6.clone();
-            let v7: Rc<UH8> = normalize_25(v5);
-            let v8: Rc<UH8> = normalize_25(v6);
-            make_alt_26(v7, v8)
+            let v7: Rc<UH8> = normalize_25(v5.clone());
+            let v8: Rc<UH8> = normalize_25(v6.clone());
+            make_alt_26(v7.clone(), v8.clone())
         }
         UH8::UH8_RegexCat(v10, v11) => {
             let v10: Rc<UH8> = v10.clone();
             let v11: Rc<UH8> = v11.clone();
-            let v12: Rc<UH8> = normalize_25(v10);
-            let v13: Rc<UH8> = normalize_25(v11);
-            make_cat_29(v12, v13)
+            let v12: Rc<UH8> = normalize_25(v10.clone());
+            let v13: Rc<UH8> = normalize_25(v11.clone());
+            make_cat_29(v12.clone(), v13.clone())
         }
         UH8::UH8_RegexChar(v3) => {
             let v3: US1 = v3.clone();
-            Rc::new(UH8::UH8_RegexChar(v3))
+            Rc::new(UH8::UH8_RegexChar(v3.clone()))
         }
         UH8::UH8_RegexEmpty => {
             { thread_local!{ static CASE: Rc<UH8> = Rc::new(UH8::UH8_RegexEmpty); } CASE.with(|case| case.clone()) }
@@ -1520,8 +1520,8 @@ fn normalize_25(mut v0: Rc<UH8>) -> Rc<UH8> {
         }
         UH8::UH8_RegexStar(v15) => {
             let v15: Rc<UH8> = v15.clone();
-            let v16: Rc<UH8> = normalize_25(v15);
-            make_star_31(v16)
+            let v16: Rc<UH8> = normalize_25(v15.clone());
+            make_star_31(v16.clone())
         }
     }
 }
@@ -1600,9 +1600,9 @@ fn derivative_32(mut v0: Rc<UH8>, mut v1: US1) -> Rc<UH8> {
         UH8::UH8_RegexAlt(v25, v26) => {
             let v25: Rc<UH8> = v25.clone();
             let v26: Rc<UH8> = v26.clone();
-            let v27: Rc<UH8> = derivative_32(v25, v1.clone());
-            let v28: Rc<UH8> = derivative_32(v26, v1.clone());
-            make_alt_26(v27, v28)
+            let v27: Rc<UH8> = derivative_32(v25.clone(), v1.clone());
+            let v28: Rc<UH8> = derivative_32(v26.clone(), v1.clone());
+            make_alt_26(v27.clone(), v28.clone())
         }
         UH8::UH8_RegexCat(v30, v31) => {
             let v30: Rc<UH8> = v30.clone();
@@ -1611,13 +1611,13 @@ fn derivative_32(mut v0: Rc<UH8>, mut v1: US1) -> Rc<UH8> {
             match &v32 {
                 US5::US5_NonNullable => {
                     let v37: Rc<UH8> = derivative_32(v30.clone(), v1.clone());
-                    make_cat_29(v37, v31.clone())
+                    make_cat_29(v37.clone(), v31.clone())
                 }
                 US5::US5_Nullable => {
-                    let v33: Rc<UH8> = derivative_32(v30, v1.clone());
-                    let v34: Rc<UH8> = make_cat_29(v33, v31.clone());
-                    let v35: Rc<UH8> = derivative_32(v31, v1.clone());
-                    make_alt_26(v34, v35)
+                    let v33: Rc<UH8> = derivative_32(v30.clone(), v1.clone());
+                    let v34: Rc<UH8> = make_cat_29(v33.clone(), v31.clone());
+                    let v35: Rc<UH8> = derivative_32(v31.clone(), v1.clone());
+                    make_alt_26(v34.clone(), v35.clone())
                 }
             }
         }
@@ -1691,9 +1691,9 @@ fn derivative_32(mut v0: Rc<UH8>, mut v1: US1) -> Rc<UH8> {
         }
         UH8::UH8_RegexStar(v41) => {
             let v41: Rc<UH8> = v41.clone();
-            let v42: Rc<UH8> = derivative_32(v41.clone(), v1);
-            let v43: Rc<UH8> = make_star_31(v41);
-            make_cat_29(v42, v43)
+            let v42: Rc<UH8> = derivative_32(v41.clone(), v1.clone());
+            let v43: Rc<UH8> = make_star_31(v41.clone());
+            make_cat_29(v42.clone(), v43.clone())
         }
     }
 }
@@ -1846,78 +1846,78 @@ fn spiral_main() -> i32 {
     let v0: US0 = US0::US0_BitZero;
     let v1: US0 = US0::US0_BitOne;
     let v2: Rc<UH0> = { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_SymbolListNil); } CASE.with(|case| case.clone()) };
-    let v3: Rc<UH0> = Rc::new(UH0::UH0_SymbolListCons(v1, v2));
-    let v4: Rc<UH0> = Rc::new(UH0::UH0_SymbolListCons(v0, v3));
-    let v5: Rc<UH1> = input_singletons_from_symbols_0(v4);
+    let v3: Rc<UH0> = Rc::new(UH0::UH0_SymbolListCons(v1.clone(), v2.clone()));
+    let v4: Rc<UH0> = Rc::new(UH0::UH0_SymbolListCons(v0.clone(), v3.clone()));
+    let v5: Rc<UH1> = input_singletons_from_symbols_0(v4.clone());
     let v6: Rc<UH2> = { thread_local!{ static CASE: Rc<UH2> = Rc::new(UH2::UH2_InputEmpty); } CASE.with(|case| case.clone()) };
-    let v7: Rc<UH1> = Rc::new(UH1::UH1_InputListCons(v6, v5));
+    let v7: Rc<UH1> = Rc::new(UH1::UH1_InputListCons(v6.clone(), v5.clone()));
     let v8: US0 = US0::US0_BitZero;
     let v9: US0 = US0::US0_BitOne;
     let v10: Rc<UH0> = { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_SymbolListNil); } CASE.with(|case| case.clone()) };
-    let v11: Rc<UH0> = Rc::new(UH0::UH0_SymbolListCons(v9, v10));
-    let v12: Rc<UH0> = Rc::new(UH0::UH0_SymbolListCons(v8, v11));
+    let v11: Rc<UH0> = Rc::new(UH0::UH0_SymbolListCons(v9.clone(), v10.clone()));
+    let v12: Rc<UH0> = Rc::new(UH0::UH0_SymbolListCons(v8.clone(), v11.clone()));
     let v13: US0 = US0::US0_BitZero;
     let v14: US0 = US0::US0_BitOne;
     let v15: Rc<UH0> = { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_SymbolListNil); } CASE.with(|case| case.clone()) };
-    let v16: Rc<UH0> = Rc::new(UH0::UH0_SymbolListCons(v14, v15));
-    let v17: Rc<UH0> = Rc::new(UH0::UH0_SymbolListCons(v13, v16));
-    let v18: Rc<UH1> = input_singletons_from_symbols_0(v17);
-    let v19: Rc<UH1> = input_prepend_symbols_to_corpus_1(v12, v18);
-    let v20: Rc<UH1> = input_list_append_2(v7, v19);
+    let v16: Rc<UH0> = Rc::new(UH0::UH0_SymbolListCons(v14.clone(), v15.clone()));
+    let v17: Rc<UH0> = Rc::new(UH0::UH0_SymbolListCons(v13.clone(), v16.clone()));
+    let v18: Rc<UH1> = input_singletons_from_symbols_0(v17.clone());
+    let v19: Rc<UH1> = input_prepend_symbols_to_corpus_1(v12.clone(), v18.clone());
+    let v20: Rc<UH1> = input_list_append_2(v7.clone(), v19.clone());
     let v21: US1 = US1::US1_TriA;
     let v22: US1 = US1::US1_TriB;
     let v23: US1 = US1::US1_TriC;
     let v24: Rc<UH3> = { thread_local!{ static CASE: Rc<UH3> = Rc::new(UH3::UH3_SymbolListNil); } CASE.with(|case| case.clone()) };
-    let v25: Rc<UH3> = Rc::new(UH3::UH3_SymbolListCons(v23, v24));
-    let v26: Rc<UH3> = Rc::new(UH3::UH3_SymbolListCons(v22, v25));
-    let v27: Rc<UH3> = Rc::new(UH3::UH3_SymbolListCons(v21, v26));
-    let v28: Rc<UH4> = input_singletons_from_symbols_4(v27);
+    let v25: Rc<UH3> = Rc::new(UH3::UH3_SymbolListCons(v23.clone(), v24.clone()));
+    let v26: Rc<UH3> = Rc::new(UH3::UH3_SymbolListCons(v22.clone(), v25.clone()));
+    let v27: Rc<UH3> = Rc::new(UH3::UH3_SymbolListCons(v21.clone(), v26.clone()));
+    let v28: Rc<UH4> = input_singletons_from_symbols_4(v27.clone());
     let v29: Rc<UH5> = { thread_local!{ static CASE: Rc<UH5> = Rc::new(UH5::UH5_InputEmpty); } CASE.with(|case| case.clone()) };
-    let v30: Rc<UH4> = Rc::new(UH4::UH4_InputListCons(v29, v28));
+    let v30: Rc<UH4> = Rc::new(UH4::UH4_InputListCons(v29.clone(), v28.clone()));
     let v31: US1 = US1::US1_TriA;
     let v32: US1 = US1::US1_TriB;
     let v33: US1 = US1::US1_TriC;
     let v34: Rc<UH3> = { thread_local!{ static CASE: Rc<UH3> = Rc::new(UH3::UH3_SymbolListNil); } CASE.with(|case| case.clone()) };
-    let v35: Rc<UH3> = Rc::new(UH3::UH3_SymbolListCons(v33, v34));
-    let v36: Rc<UH3> = Rc::new(UH3::UH3_SymbolListCons(v32, v35));
-    let v37: Rc<UH3> = Rc::new(UH3::UH3_SymbolListCons(v31, v36));
+    let v35: Rc<UH3> = Rc::new(UH3::UH3_SymbolListCons(v33.clone(), v34.clone()));
+    let v36: Rc<UH3> = Rc::new(UH3::UH3_SymbolListCons(v32.clone(), v35.clone()));
+    let v37: Rc<UH3> = Rc::new(UH3::UH3_SymbolListCons(v31.clone(), v36.clone()));
     let v38: US1 = US1::US1_TriA;
     let v39: US1 = US1::US1_TriB;
     let v40: US1 = US1::US1_TriC;
     let v41: Rc<UH3> = { thread_local!{ static CASE: Rc<UH3> = Rc::new(UH3::UH3_SymbolListNil); } CASE.with(|case| case.clone()) };
-    let v42: Rc<UH3> = Rc::new(UH3::UH3_SymbolListCons(v40, v41));
-    let v43: Rc<UH3> = Rc::new(UH3::UH3_SymbolListCons(v39, v42));
-    let v44: Rc<UH3> = Rc::new(UH3::UH3_SymbolListCons(v38, v43));
-    let v45: Rc<UH4> = input_singletons_from_symbols_4(v44);
-    let v46: Rc<UH4> = input_prepend_symbols_to_corpus_5(v37, v45);
-    let v47: Rc<UH4> = input_list_append_6(v30, v46);
+    let v42: Rc<UH3> = Rc::new(UH3::UH3_SymbolListCons(v40.clone(), v41.clone()));
+    let v43: Rc<UH3> = Rc::new(UH3::UH3_SymbolListCons(v39.clone(), v42.clone()));
+    let v44: Rc<UH3> = Rc::new(UH3::UH3_SymbolListCons(v38.clone(), v43.clone()));
+    let v45: Rc<UH4> = input_singletons_from_symbols_4(v44.clone());
+    let v46: Rc<UH4> = input_prepend_symbols_to_corpus_5(v37.clone(), v45.clone());
+    let v47: Rc<UH4> = input_list_append_6(v30.clone(), v46.clone());
     let v48: US2 = US2::US2_ModelC;
     let v49: Rc<UH6> = { thread_local!{ static CASE: Rc<UH6> = Rc::new(UH6::UH6_InputEmpty); } CASE.with(|case| case.clone()) };
-    let v50: Rc<UH6> = Rc::new(UH6::UH6_InputCons(v48, v49));
+    let v50: Rc<UH6> = Rc::new(UH6::UH6_InputCons(v48.clone(), v49.clone()));
     let v51: US0 = US0::US0_BitZero;
-    let v52: Rc<UH7> = Rc::new(UH7::UH7_RegexChar(v51));
+    let v52: Rc<UH7> = Rc::new(UH7::UH7_RegexChar(v51.clone()));
     let v53: US0 = US0::US0_BitOne;
-    let v54: Rc<UH7> = Rc::new(UH7::UH7_RegexChar(v53));
-    let v55: Rc<UH7> = Rc::new(UH7::UH7_RegexAlt(v52, v54));
-    let v56: Rc<UH7> = Rc::new(UH7::UH7_RegexStar(v55));
+    let v54: Rc<UH7> = Rc::new(UH7::UH7_RegexChar(v53.clone()));
+    let v55: Rc<UH7> = Rc::new(UH7::UH7_RegexAlt(v52.clone(), v54.clone()));
+    let v56: Rc<UH7> = Rc::new(UH7::UH7_RegexStar(v55.clone()));
     let v57: US0 = US0::US0_BitZero;
-    let v58: Rc<UH7> = Rc::new(UH7::UH7_RegexChar(v57));
-    let v59: Rc<UH7> = Rc::new(UH7::UH7_RegexCat(v56, v58));
-    let v60: bool = loop_8(v59, v20);
+    let v58: Rc<UH7> = Rc::new(UH7::UH7_RegexChar(v57.clone()));
+    let v59: Rc<UH7> = Rc::new(UH7::UH7_RegexCat(v56.clone(), v58.clone()));
+    let v60: bool = loop_8(v59.clone(), v20.clone());
     let v75: bool = if v60 {
         let v61: US1 = US1::US1_TriA;
-        let v62: Rc<UH8> = Rc::new(UH8::UH8_RegexChar(v61));
+        let v62: Rc<UH8> = Rc::new(UH8::UH8_RegexChar(v61.clone()));
         let v63: US1 = US1::US1_TriB;
-        let v64: Rc<UH8> = Rc::new(UH8::UH8_RegexChar(v63));
-        let v65: Rc<UH8> = Rc::new(UH8::UH8_RegexAlt(v62, v64));
-        let v66: Rc<UH8> = Rc::new(UH8::UH8_RegexStar(v65));
+        let v64: Rc<UH8> = Rc::new(UH8::UH8_RegexChar(v63.clone()));
+        let v65: Rc<UH8> = Rc::new(UH8::UH8_RegexAlt(v62.clone(), v64.clone()));
+        let v66: Rc<UH8> = Rc::new(UH8::UH8_RegexStar(v65.clone()));
         let v67: US1 = US1::US1_TriC;
-        let v68: Rc<UH8> = Rc::new(UH8::UH8_RegexChar(v67));
-        let v69: Rc<UH8> = Rc::new(UH8::UH8_RegexCat(v66, v68));
-        let v70: bool = loop_21(v69, v47);
+        let v68: Rc<UH8> = Rc::new(UH8::UH8_RegexChar(v67.clone()));
+        let v69: Rc<UH8> = Rc::new(UH8::UH8_RegexCat(v66.clone(), v68.clone()));
+        let v70: bool = loop_21(v69.clone(), v47.clone());
         if v70 {
             let v71: i32 = 1i32;
-            let v72: US3 = loop_34(v71, v50);
+            let v72: US3 = loop_34(v71, v50.clone());
             match &v72 {
                 US3::US3_InventoryDfaInputOutsideInventory => {
                     true

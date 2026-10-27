@@ -18,6 +18,17 @@ defmodule Spiral.Cells.Document do
     %{cells: Spiral.Cells.Domain.decode_cells(Spiral.Cells.Domain.from_spi_bounded(spi, spir, spi_bounds, spir_bounds))}
   end
 
+  @spec target_gaps(String.t()) :: [{pos_integer(), String.t()}]
+  def target_gaps(spi) when is_binary(spi) do
+    spi
+    |> Spiral.Cells.Domain.target_gaps()
+    |> String.split("\n", trim: true)
+    |> Enum.map(fn row ->
+      [line, target] = String.split(row, "\t", parts: 2)
+      {String.to_integer(line), target}
+    end)
+  end
+
   @spec parse_livemd(String.t()) :: %{cells: [map()]}
   def parse_livemd(text) when is_binary(text) do
     text = String.replace(text, "\r\n", "\n")
@@ -178,6 +189,7 @@ defmodule Spiral.Cells.Document do
         kind: "Elixir.Spiral.Cells.SmartCell",
         livebook_object: "smart_cell"
       })
+      |> String.replace("-->", "--\\u003e")
 
     "<!-- livebook:#{attrs} -->\n\n```elixir\n#{elixir}\n```"
   end

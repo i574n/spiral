@@ -940,14 +940,21 @@ test many1 =
         ?= acc ?|
         | _ :: _ :: _ :: _ =>
             := total : i32 = (0i32, acc) ||> listm.fold \ n (x : string) => n + ##x
-            := buf : $'Rc<RefCell<Vec<u8>>>' = $'Rc::new(RefCell::new(vec\![0u8; !total as usize]))'
+            := size : convert.unativeint = convert.convert total
+            := buf : $'Rc<RefCell<Vec<u8>>>' = $'Rc::new(RefCell::new(vec\![0u8; !size]))'
             := _ : i32 = (total, acc) ||> listm.fold \ end (x : string) =>
                 := start = end - ##x
-                $'!buf.borrow_mut()[!start as usize..!end as usize].copy_from_slice(!x.as_bytes())' : ()
+                := from : convert.unativeint = convert.convert start
+                := upto : convert.unativeint = convert.convert end
+                $'!buf.borrow_mut()[!from..!upto].copy_from_slice(!x.as_bytes())' : ()
                 start
             $'unsafe { Rc::<str>::from(std::str::from_utf8_unchecked(&!buf.borrow())) }' : string
         | _ => 루프 !+ acc
     |: 루프 !+ acc
+
+///> rust
+test concat_rev_keeps_byte_order_past_three_pieces =
+    [ "d"; "c"; "é"; "a" ] |> concat_rev |> _assert_eq "aécd"
 
 /// ### string_of
 := string_of \* t. (x : t) : string =

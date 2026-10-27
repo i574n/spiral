@@ -4,8 +4,8 @@ use std::rc::Rc;
 fn spiral_main() -> i32 {
     let v0: Rc<RefCell<Vec<Rc<str>>>> = Rc::new(RefCell::new(vec![<Rc<str>>::default(); 2i32 as usize]));
     let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
-    v0.clone().borrow_mut()[1i32 as usize] = v1;
-    let v2: Rc<str> = v0.borrow()[1i32 as usize].clone();
+    v0.clone().borrow_mut()[1i32 as usize] = v1.clone();
+    let v2: Rc<str> = v0.clone().borrow()[1i32 as usize].clone();
     let v3: bool = &*v2 == "hi";
     if v3 {
         0i32

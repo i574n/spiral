@@ -200,7 +200,7 @@ fn utf8_scalar_at_byte_offset_7(mut v0: Rc<str>, mut v1: i32) -> i32 {
                                     let v70: i32 = v1.wrapping_add(2i32);
                                     let v71: u8 = runtime_byte_8(v0.clone(), v70);
                                     let v72: i32 = i32::from(v71);
-                                    let v73: u8 = runtime_byte_8(v0, v64);
+                                    let v73: u8 = runtime_byte_8(v0.clone(), v64);
                                     let v74: i32 = i32::from(v73);
                                     let v75: bool = v69 < 128i32;
                                     let v77: bool = if v75 {
@@ -315,7 +315,7 @@ fn spiral_main() -> i32 {
     let v9: i32 = 7040i32;
     let v10: i32 = 0i32;
     let v11: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
-    let v12: Rc<str> = frame_text_loop_5(v0, v8, v9, v10, v11);
+    let v12: Rc<str> = frame_text_loop_5(v0.clone(), v8, v9, v10, v11.clone());
     let v13: i32 = (v12.clone().len() as i32);
     let v14: i32 = 0i32;
     let v15: i32 = 0i32;
@@ -331,7 +331,7 @@ fn spiral_main() -> i32 {
     let v25: i32 = 5212i32;
     let v26: i32 = utf8_scalar_at_byte_offset_7(v12.clone(), v25);
     let v27: i32 = 7082i32;
-    let v28: i32 = utf8_scalar_at_byte_offset_7(v12, v27);
+    let v28: i32 = utf8_scalar_at_byte_offset_7(v12.clone(), v27);
     let v29: bool = v1 == 5180i32;
     let v31: bool = if v29 {
         let v30: bool = v2 == 4258i32;

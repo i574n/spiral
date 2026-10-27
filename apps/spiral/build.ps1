@@ -1,7 +1,6 @@
 param(
     $fast,
     $SkipNotebook,
-    $SkipPreBuild,
     $ScriptDir = $PSScriptRoot
 )
 $ScriptDir | Set-Location
@@ -22,10 +21,6 @@ function MoveExeAside {
     if (Test-Path $exe) { Move-Item $exe "$exe.old-$(Get-Date -Format yyyyMMddHHmmss)" }
 }
 
-if (!$SkipPreBuild) {
-    $livebook = Join-Path $ResolvedScriptDir "../cells/spi/run_notebook.ps1"
-    { pwsh -NoProfile -File $livebook --path "$ResolvedScriptDir/$projectName.livemd" --spi-path "$ResolvedScriptDir/$projectName.spi" --export-only } | Invoke-Block
-}
 
 $targetDir = GetTargetDir $projectName
 if (!(BuildSpiral "$projectName.spi" "$projectName.rs" "apps/spiral")) {

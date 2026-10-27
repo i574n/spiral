@@ -1,0 +1,20 @@
+///- --package .
+// TODO: BACKEND-COVERAGE-GAPS Zig Export arm regression. codegenZig has NO Export case (!!!!Export(name,f) falls
+//     through to the generic unsupported-op fallthrough at spiral_compiler.fs:166236); the proper fix mirrors
+//     codegenRust's export builder (163566 + decl/call tuple->params 164741-164784) and lands via
+//     apply-zig-opgap-pack. UNWIRED ON PURPOSE: this file is NOT in tests/families/package.spiproj modules yet,
+//     because the ///> zig row DISAGREEs until the arm lands and would break the green test-blocks baseline.
+//     WIRE IT (append `export_family` to package.spiproj modules) only after the Zig Export arm lands AND a build
+//     slot frees to run test-blocks.ps1 -Lib tests/families -Files export_family.spi. The ///> c row passes today
+//     (codegenC has full Export). Self-checking shape per SELF-CHECKING-SAMPLES / SAMPLES-TO-TEST-BLOCKS.
+:= export_add ((x, y) : i32 * i32) : i32 = x +. y
+
+///> c
+///> zig
+test export_add_returns_zero =
+    !!!!Export("spiral_add", export_add)
+    := program () : i32 =
+        := ~n = 40i32
+        := got = ~~ export_add (n, 2i32)
+        ? got =. 42i32 ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "export_add"

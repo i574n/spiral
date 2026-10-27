@@ -124,7 +124,7 @@ fn utf8_scalar_at_byte_offset_0(mut v0: Rc<str>, mut v1: i32) -> i32 {
                                     let v70: i32 = v1.wrapping_add(2i32);
                                     let v71: u8 = runtime_byte_1(v0.clone(), v70);
                                     let v72: i32 = i32::from(v71);
-                                    let v73: u8 = runtime_byte_1(v0, v64);
+                                    let v73: u8 = runtime_byte_1(v0.clone(), v64);
                                     let v74: i32 = i32::from(v73);
                                     let v75: bool = v69 < 128i32;
                                     let v77: bool = if v75 {
@@ -194,22 +194,22 @@ fn utf8_scalar_at_byte_offset_0(mut v0: Rc<str>, mut v1: i32) -> i32 {
 fn spiral_main() -> i32 {
     let v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("é"); } LIT.with(|lit| lit.clone()) };
     let v1: i32 = 0i32;
-    let v2: i32 = utf8_scalar_at_byte_offset_0(v0, v1);
+    let v2: i32 = utf8_scalar_at_byte_offset_0(v0.clone(), v1);
     let v3: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("õ"); } LIT.with(|lit| lit.clone()) };
     let v4: i32 = 0i32;
-    let v5: i32 = utf8_scalar_at_byte_offset_0(v3, v4);
+    let v5: i32 = utf8_scalar_at_byte_offset_0(v3.clone(), v4);
     let v6: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("ç"); } LIT.with(|lit| lit.clone()) };
     let v7: i32 = 0i32;
-    let v8: i32 = utf8_scalar_at_byte_offset_0(v6, v7);
+    let v8: i32 = utf8_scalar_at_byte_offset_0(v6.clone(), v7);
     let v9: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("́"); } LIT.with(|lit| lit.clone()) };
     let v10: i32 = 0i32;
-    let v11: i32 = utf8_scalar_at_byte_offset_0(v9, v10);
+    let v11: i32 = utf8_scalar_at_byte_offset_0(v9.clone(), v10);
     let v12: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("̃"); } LIT.with(|lit| lit.clone()) };
     let v13: i32 = 0i32;
-    let v14: i32 = utf8_scalar_at_byte_offset_0(v12, v13);
+    let v14: i32 = utf8_scalar_at_byte_offset_0(v12.clone(), v13);
     let v15: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("̧"); } LIT.with(|lit| lit.clone()) };
     let v16: i32 = 0i32;
-    let v17: i32 = utf8_scalar_at_byte_offset_0(v15, v16);
+    let v17: i32 = utf8_scalar_at_byte_offset_0(v15.clone(), v16);
     let v18: bool = v2 == 192i32;
     let (mut v64, mut v65): (i32, i32) = if v18 {
         (65i32, 768i32)

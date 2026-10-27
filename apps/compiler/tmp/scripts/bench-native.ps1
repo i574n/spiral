@@ -55,7 +55,7 @@ function Get-InterpretedRuns([string] $sample) {
     }
     $lean = Join-Path $source 'main.lean'
     if ($tools.Lean -and (Test-Path $lean)) {
-        [pscustomobject]@{ Backend = 'Lean'; Program = $tools.Lean; Arguments = @('+leanprover/lean4:v4.35.0-rc4', '--run', $lean); Directory = $source; PathPrefix = $null }
+        [pscustomobject]@{ Backend = 'Lean'; Program = $tools.Lean; Arguments = @('+leanprover/lean4:v4.35.0', '--run', $lean); Directory = $source; PathPrefix = $null }
     }
     $py = Join-Path $source 'main.py'
     if ($tools.Python -and (Test-Path $py)) {

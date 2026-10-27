@@ -40,9 +40,9 @@ fn sum_1(mut v0: Rc<UH0>, mut v1: i32) -> i32 {
 fn spiral_main() -> i32 {
     let v0: i32 = 1000000i32;
     let v1: Rc<UH0> = { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_End); } CASE.with(|case| case.clone()) };
-    let v2: Rc<UH0> = build_0(v0, v1);
+    let v2: Rc<UH0> = build_0(v0, v1.clone());
     let v3: i32 = 0i32;
-    let v4: i32 = sum_1(v2, v3);
+    let v4: i32 = sum_1(v2.clone(), v3);
     let v5: i32 = v4.wrapping_rem(256i32);
     v5
 }

@@ -34,7 +34,7 @@ test cursor_walk static =
 
 /// ### all_pages
 := all_pages \* e. (k : cursor_walker e) : result (list string) e =
-    walked_from k "" { seen = Nil; pages = 0i32; bodies = Nil }
+    walked_from k "" { seen = []; pages = 0i32; bodies = [] }
 
 := cursor_walk_text (r : result (list string) string) : string =
     ?= r ?|

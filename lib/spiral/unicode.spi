@@ -114,6 +114,68 @@ test unicode static =
             conv count : i32
     }
 
+/// ### gleam_codepoint
+:! gleam_codepoint = $'string.UtfCodepoint'
+
+/// ### gleam_codepoints
+:= gleam_codepoints (s : string) : listm'.list' gleam_codepoint =
+    unicode_types ()
+    $'string.to_utf_codepoints(!s)' : listm'.list' gleam_codepoint
+
+/// ### gleam_codepoint_code
+:= gleam_codepoint_code (c : gleam_codepoint) : i32 =
+    unicode_types ()
+    $'string.utf_codepoint_to_int(!c)' : i32
+
+/// ### rust_scalars
+:= rust_scalars (s : string) : listm'.list' rust_scalar =
+    $'Rc::new((&*!s).chars().collect())' : listm'.list' rust_scalar
+
+/// ### code_points
+:= code_points (s : string) : list i32 =
+    backend_switch {
+        Gleam = \ () => s |> gleam_codepoints |> listm'.rev' |> listm'.fold' gleam_codepoint_code Nil
+        Rust = \ () => s |> rust_scalars |> listm'.rev' |> listm'.fold' (\ c => (conv (rust_char_code c) : i32)) Nil
+    }
+
+/// ### is_white_space
+:= is_white_space (c : i32) : bool =
+    (c >= 9i32 && c <= 13i32) || c = 32i32 || c = 133i32 || c = 160i32 || c = 5760i32 || (c >= 8192i32 && c <= 8202i32)
+    || c = 8232i32 || c = 8233i32 || c = 8239i32 || c = 8287i32 || c = 12288i32
+
+///> rust
+///> gleam
+test code_points_list_scalars_in_order =
+    "a" ++# char_of 228i32 ++# char_of 128077i32 |> code_points |> _assert_eq [ 97i32; 228i32; 128077i32 ]
+
+///> rust
+///> gleam
+test white_space_is_the_unicode_property =
+    [ 32i32; 9i32; 12288i32; 8203i32; 65i32 ] |> listm.map is_white_space |> _assert_eq [ !+; !+; !+; !-; !- ]
+
+/// ### rust_scalar_is_alphanumeric
+:= rust_scalar_is_alphanumeric (c : rust_scalar) : bool = $'!c.is_alphanumeric()' : bool
+
+/// ### is_alphanumeric
+:= is_alphanumeric (c : i32) : bool =
+    run_target \|
+        | Rust => \ () =>
+            (conv c : u32) |> rust_char_of_u32 |> optionm'.map rust_scalar_is_alphanumeric |> optionm'.default_value' !-
+        | _ => \ () => failwith "unicode.is_alphanumeric: no arm for this backend"
+
+///> rust
+test is_alphanumeric_is_the_unicode_property_of_code_points =
+    [ 97i32; 55i32; 233i32; 1488i32; 45i32; 8203i32; 55296i32 ]
+    |> listm.map is_alphanumeric
+    |> _assert_eq [ !+; !+; !+; !+; !-; !-; !- ]
+
+///> rust
+test is_alphanumeric_reads_every_scalar_of_a_text =
+    "a7" ++# char_of 233i32 ++# char_of 1488i32
+    |> code_points
+    |> listm.map is_alphanumeric
+    |> _assert_eq [ !+; !+; !+; !+ ]
+
 /// ### nfc
 := nfc (s : string) : string =
     backend_switch {
@@ -133,7 +195,7 @@ test unicode static =
 
 := unicode_first (l : list string) : string =
     ?= l ?|
-    | Cons (g, _) => g
+    | g :: _ => g
     | Nil => ""
 
 ///> rust -d unicode-segmentation

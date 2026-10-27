@@ -50,6 +50,27 @@
         Delphi = \ () => $'IsInfinite(!v)' : bool
     }
 
+/// ### rust_f64_parses
+:= rust_f64_parses (s : string) : bool = $'(!s).trim().parse::<f64>().is_ok()' : bool
+
+/// ### rust_f64_or_zero
+:= rust_f64_or_zero (s : string) : f64 = $'(!s).trim().parse::<f64>().unwrap_or(0.0)' : f64
+
+/// ### try_parse_f64
+:= try_parse_f64 (s : string) : option f64 =
+    backend_switch {
+        Rust = \ () => ? rust_f64_parses s ?> Some (rust_f64_or_zero s) |: None
+    }
+
+///> rust
+test try_parse_f64_reads_trimmed_numbers_and_refuses_text =
+    (try_parse_f64 "12.5", try_parse_f64 " 3 ", try_parse_f64 "", try_parse_f64 "abc")
+    |> testing._assert_eq (Some 12.5, Some 3.0, None, None)
+
+///> rust
+test try_parse_f64_keeps_infinity_a_number =
+    (?= try_parse_f64 "inf" ?| Some x => is_infinite x | None => !-) |> testing._assert_eq !+
+
 /// ### precision_format
 := precision_format (p : i32) : string =
     float_text.concat "%." (float_text.concat (float_text.digits_text p "") "g")

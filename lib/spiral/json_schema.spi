@@ -1,4 +1,4 @@
-///- --package .
+///- --package . --timeout 900000
 :< sm'_operators
 :< xsd
 
@@ -58,8 +58,8 @@
 :~ ^ json_value_at (s : string) (start : i32) : json_value * i32 =
     := pos = skip_json_spaces s start
     := c = char_at s pos
-    ? c = "{" ?> json_members s (pos + 1i32) Nil
-    |? c = "[" ?> json_items s (pos + 1i32) Nil
+    ? c = "{" ?> json_members s (pos + 1i32) []
+    |? c = "[" ?> json_items s (pos + 1i32) []
     |? c = "\"" ?>
         := text, next = json_string_from s (pos + 1i32) ""
         JsonText text, next
@@ -73,7 +73,7 @@
 :& :~ json_members (s : string) (start : i32) (acc : list (string * json_value)) : json_value * i32 =
     := pos = skip_json_spaces s start
     := c = char_at s pos
-    ? c = "}" || c = "" ?> JsonObject (reverse acc Nil), pos + 1i32
+    ? c = "}" || c = "" ?> JsonObject (reverse acc []), pos + 1i32
     |? c = "," ?> json_members s (pos + 1i32) acc
     |:
         := key, after_key = json_string_from s (pos + 1i32) ""
@@ -84,7 +84,7 @@
 :& :~ json_items (s : string) (start : i32) (acc : list json_value) : json_value * i32 =
     := pos = skip_json_spaces s start
     := c = char_at s pos
-    ? c = "]" || c = "" ?> JsonArray (reverse acc Nil), pos + 1i32
+    ? c = "]" || c = "" ?> JsonArray (reverse acc []), pos + 1i32
     |? c = "," ?> json_items s (pos + 1i32) acc
     |:
         := value, next = json_value_at s pos
@@ -97,7 +97,7 @@
 :~ ^ member (key : string) (members : list (string * json_value)) : option json_value =
     ?= members ?|
     | (name, value) :: rest => ? name = key ?> Some value |: member key rest
-    | Nil => None
+    | [] => None
 
 := field (key : string) (value : json_value) : option json_value =
     ?= value ?|
@@ -119,12 +119,12 @@
     | JsonText text :: rest => texts_of rest (text :: acc)
     | JsonNumber digits :: rest => texts_of rest (digits :: acc)
     | _ :: rest => texts_of rest acc
-    | Nil => reverse acc Nil
+    | [] => reverse acc []
 
 := text_list (key : string) (value : json_value) : list string =
     ?= field key value ?|
-    | Some (JsonArray items) => texts_of items Nil
-    | _ => Nil
+    | Some (JsonArray items) => texts_of items []
+    | _ => []
 
 := unanchored (pattern : string) : string =
     := head = ? sm'.starts_with "^" pattern ?> sm'.substring 1i32 (sm'.length pattern - 1i32) pattern |: pattern
@@ -133,16 +133,16 @@
 :~ ^ enumeration_facets (values : list string) (acc : list xsd_facet) : list xsd_facet =
     ?= values ?|
     | value :: rest => enumeration_facets rest (Enumeration value :: acc)
-    | Nil => acc
+    | [] => acc
 
 := string_facets (schema : json_value) : list xsd_facet =
     := pattern = text_field "pattern" schema
-    := with_pattern = ? pattern = "" ?> Nil |: Pattern (unanchored pattern) :: Nil
+    := with_pattern = ? pattern = "" ?> [] |: Pattern (unanchored pattern) :: []
     := min_length = count_field "minLength" schema (0i32 - 1i32)
     := max_length = count_field "maxLength" schema (0i32 - 1i32)
     := with_min = ? min_length >= 0i32 ?> (MinLength min_length :: with_pattern) |: with_pattern
     := with_max = ? max_length >= 0i32 ?> (MaxLength max_length :: with_min) |: with_min
-    reverse (enumeration_facets (text_list "enum" schema) Nil) with_max
+    reverse (enumeration_facets (text_list "enum" schema) []) with_max
 
 := reference_name (reference : string) : string =
     := slash = sm'.last_index_of "/" reference
@@ -157,50 +157,65 @@
 :~ ^ has_text (target : string) (items : list string) : bool =
     ?= items ?|
     | item :: rest => item = target || has_text target rest
-    | Nil => !-
+    | [] => !-
 
-:~ ^ object_type (name : string) (schema : json_value) : xsd =
+:= single (min : i32) : occurs = { min = min; max = Bounded 1i32 }
+
+:= element_particle
+    (name : string) (type_ref : option (type_reference written)) (occurs : occurs)
+    (inline : option (xsd type_def written))
+    : xsd particle written
+    =
+    Element { name = tag_name name; type_ref = type_ref; occurs = occurs; inline = inline }
+
+:~ ^ object_type (name : string) (schema : json_value) : xsd type_def written =
     := required = text_list "required" schema
     := properties =
         ?= field "properties" schema ?|
         | Some (JsonObject members) => members
-        | _ => Nil
-    Complex (name, Sequence (1i32, 1i32, property_elements name properties required Nil), Nil)
+        | _ => []
+    := content = Sequence { occurs = single 1i32; items = property_elements name properties required [] }
+    Complex { name = definition_name name; content = content; attributes = [] }
 
 :& :~ property_elements
-    (owner : string) (properties : list (string * json_value)) (required : list string) (acc : list xsd)
-    : list xsd
+    (owner : string) (properties : list (string * json_value)) (required : list string)
+    (acc : list (xsd particle written))
+    : list (xsd particle written)
     =
     ?= properties ?|
     | (key, schema) :: rest =>
         := min = ? has_text key required ?> 1i32 |: 0i32
         property_elements owner rest required (property_element owner key schema min :: acc)
-    | Nil => reverse acc Nil
+    | [] => reverse acc []
 
-:& :~ property_element (owner : string) (key : string) (schema : json_value) (min : i32) : xsd =
+:& :~ property_element (owner : string) (key : string) (schema : json_value) (min : i32) : xsd particle written =
     := reference = text_field "$ref" schema
     := kind = text_field "type" schema
-    ? reference <> "" ?> Element (key, reference_name reference, min, 1i32, None)
+    ? reference <> "" ?> element_particle key (Some (type_reference (reference_name reference))) (single min) None
     |? kind = "array" ?>
         := items =
             ?= field "items" schema ?|
             | Some item => item
-            | None => JsonObject Nil
+            | None => JsonObject []
         := least = count_field "minItems" schema min
         := most = count_field "maxItems" schema (0i32 - 1i32)
+        := bound = ? most < 0i32 ?> Unbounded |: Bounded most
         ?= property_element owner key items least ?|
-        | Element (name, type_reference, _, _, inline) => Element (name, type_reference, least, most, inline)
+        | Element e => Element { e ?| occurs = { min = least; max = bound } }
         | other => other
-    |? kind = "object" ?> Element (key, "", min, 1i32, Some (object_type "" schema))
+    |? kind = "object" ?> element_particle key None (single min) (Some (object_type "" schema))
     |:
         := facets = string_facets schema
         ?= facets ?|
-        | Nil => Element (key, builtin_of kind, min, 1i32, None)
-        | _ => Element (key, "", min, 1i32, Some (Simple ("", builtin_of kind, facets)))
+        | [] => element_particle key (Some (type_reference (builtin_of kind))) (single min) None
+        | _ =>
+            := inline = simple "" (builtin_of kind) facets
+            element_particle key None (single min) (Some inline)
 
 :~ ^ definition_types
-    (definitions : list (string * json_value)) (simple : list xsd) (complex : list xsd)
-    : list xsd * list xsd
+    (definitions : list (string * json_value)) (simple : list (xsd type_def written))
+    (complex : list (xsd type_def written))
+    : list (xsd type_def written) * list (xsd type_def written)
     =
     ?= definitions ?|
     | (name, schema) :: rest =>
@@ -209,9 +224,12 @@
         ?> definition_types rest simple (object_type name schema :: complex)
         |:
             definition_types rest
-                (Simple (name, builtin_of (text_field "type" schema), string_facets schema) :: simple)
+                (
+                    xsd.simple name (builtin_of (text_field "type" schema)) (string_facets schema)
+                    :: simple
+                )
                 complex
-    | Nil => reverse simple Nil, reverse complex Nil
+    | [] => reverse simple [], reverse complex []
 
 := definitions_of (schema : json_value) : list (string * json_value) =
     ?= field "$defs" schema ?|
@@ -219,42 +237,42 @@
     | _ =>
         ?= field "definitions" schema ?|
         | Some (JsonObject members) => members
-        | _ => Nil
+        | _ => []
 
-:= schema_of_json_schema (root_name : string) (text : string) : xsd_schema =
+:= schema_of_json_schema (root_name : string) (text : string) : xsd_schema written =
     := schema = read_json text
-    := simple, complex = definition_types (definitions_of schema) Nil Nil
+    := simple, complex = definition_types (definitions_of schema) [] []
     {
-        target_namespace = text_field "$id" schema
-        includes = Nil
+        target_namespace = namespace_uri (text_field "$id" schema)
+        includes = []
         simple_types = simple
-        complex_types = listm.append complex (object_type root_name schema :: Nil)
-        elements = Element (root_name, root_name, 1i32, 1i32, None) :: Nil
+        complex_types = listm.append complex (object_type root_name schema :: [])
+        elements = element_particle root_name (Some (type_reference root_name)) (single 1i32) None :: []
     }
 
 :~ ^ prepend_reversed \* t. (items : list t) (acc : list t) : list t =
     ?= items ?|
     | item :: rest => prepend_reversed rest (item :: acc)
-    | Nil => acc
+    | [] => acc
 
 :~ ^ json_nodes (name : string) (value : json_value) : list xml.xml_node =
     ?= value ?|
-    | JsonNull => Nil
-    | JsonBool flag => xml.element name Nil (xml.text_children (? flag ?> "true" |: "false")) :: Nil
-    | JsonNumber digits => xml.element name Nil (xml.text_children digits) :: Nil
-    | JsonText text => xml.element name Nil (xml.text_children text) :: Nil
-    | JsonArray items => array_nodes name items Nil
-    | JsonObject members => xml.element name Nil (member_nodes members Nil) :: Nil
+    | JsonNull => []
+    | JsonBool flag => xml.element name [] (xml.text_children (? flag ?> "true" |: "false")) :: []
+    | JsonNumber digits => xml.element name [] (xml.text_children digits) :: []
+    | JsonText text => xml.element name [] (xml.text_children text) :: []
+    | JsonArray items => array_nodes name items []
+    | JsonObject members => xml.element name [] (member_nodes members []) :: []
 
 :& :~ array_nodes (name : string) (items : list json_value) (acc : list xml.xml_node) : list xml.xml_node =
     ?= items ?|
     | item :: rest => array_nodes name rest (prepend_reversed (json_nodes name item) acc)
-    | Nil => reverse acc Nil
+    | [] => reverse acc []
 
 :& :~ member_nodes (members : list (string * json_value)) (acc : list xml.xml_node) : list xml.xml_node =
     ?= members ?|
     | (key, value) :: rest => member_nodes rest (prepend_reversed (json_nodes key value) acc)
-    | Nil => reverse acc Nil
+    | [] => reverse acc []
 
 := json_document (root_name : string) (text : string) : list xml.xml_node = json_nodes root_name (read_json text)
 
@@ -274,6 +292,7 @@ test json_values_parse_with_escapes_and_nesting =
         ? text_field "c" inner <> ("x\"y" ++# xml.code_point_string 233u32 ++# "\n")
         ?> failwith "string escapes decode"
     | None => failwith "b is an object"
+
 ///> rust
 test json_documents_become_element_trees_the_xsd_readers_already_read =
     ?=
@@ -281,7 +300,7 @@ test json_documents_become_element_trees_the_xsd_readers_already_read =
             "Invoice"
             "{ \"Version\": \"1.1\", \"ItemList\": [ { \"SlNo\": \"1\" }, { \"SlNo\": \"2\" } ], \"Note\": null }"
     ?|
-    | root :: Nil =>
+    | root :: [] =>
         := children = xml.element_children root
         ? xml.node_name root <> "Invoice" ?> failwith "the root element takes the document name"
         ? xml.count_named "ItemList" children <> 2i32 ?> failwith "an array repeats its element"
@@ -304,9 +323,9 @@ test json_schemas_map_onto_the_xsd_model_and_generate =
         ^^ "\"^[a-zA-Z1-9][a-zA-Z0-9/-]{0,15}$\" } } }, \"item\": { \"type\": \"object\", \"required\": [\"SlNo\"], "
         ^^ "\"properties\": { \"SlNo\": { \"type\": \"string\" }, \"Qty\": { \"type\": \"number\" } } } } }"
     := model = schema_of_json_schema "Invoice" schema
-    ? model.target_namespace <> "urn:gst:einvoice" ?> failwith "$id is the namespace"
+    ? namespace_text model.target_namespace <> "urn:gst:einvoice" ?> failwith "$id is the namespace"
     ? listm.length model.complex_types <> 3i32 ?> failwith "doc, item and the root are complex types"
-    := text = xsd_emit.generate_module model
+    := text = xsd_emit.generate_module (xsd_resolve.finalize_names (xsd_resolve.qualify_schema [] model))
     ? sm'.contains "type x_invoice" text = !- ?> failwith "the root type is emitted"
     ? sm'.contains "x_doc" text = !- || sm'.contains "x_item" text = !- ?> failwith "definitions are emitted"
     ? sm'.contains "INV" text = !- ?> failwith "an enum becomes a coded type"

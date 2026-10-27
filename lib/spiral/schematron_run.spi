@@ -4,7 +4,7 @@
 :< xpath_eval
 :< schematron
 
-:== failure = { id : string; severity : severity; path : list i32; detail : string }
+:== failure = { id : rule_id; severity : severity; path : list i32; detail : string }
 
 := context_query (source : string) : xpath.xpath =
     := trimmed = sm'.trim source
@@ -13,22 +13,22 @@
 :~ ^ without_fired (items : list located) (fired : list located) (acc : list located) : list located =
     ?= items ?|
     | item :: rest => without_fired rest fired (? has_located item fired ?> acc |: item :: acc)
-    | Nil => listm.rev acc
+    | [] => listm.rev acc
 
 :~ ^ check_assertions (s : scope) (assertions : list assertion) (acc : list failure) : list failure =
     ?= assertions ?|
     | a :: rest =>
         := acc =
-            ?= eval s a.test ?|
-            | VError reason =>
+            ?= test_outcome s a.test ?|
+            | Broken reason =>
                 { id = a.id; severity = a.severity; path = s.context.path; detail = "error: " ++# reason } :: acc
-            | value =>
-                := holds = effective_boolean value
-                ? holds = a.reports
+            | Evaluated holds =>
+                := fires = ?= a.kind ?| Asserts => holds = !- | Reports => holds
+                ? fires
                 ?> { id = a.id; severity = a.severity; path = s.context.path; detail = "" } :: acc
                 |: acc
         check_assertions s rest acc
-    | Nil => acc
+    | [] => acc
 
 :~ ^ check_contexts
     (s : scope) (contexts : list located) (assertions : list assertion) (acc : list failure)
@@ -37,38 +37,36 @@
     ?= contexts ?|
     | context :: rest =>
         check_contexts s rest assertions (check_assertions { s ?| context = context } assertions acc)
-    | Nil => acc
+    | [] => acc
 
 :~ ^ check_rules (s : scope) (rules : list rule) (fired : list located) (acc : list failure) : list failure =
     ?= rules ?|
     | r :: rest =>
         ?= eval s (context_query r.context_source) ?|
         | VNodes found =>
-            := contexts = without_fired found fired Nil
+            := contexts = without_fired found fired []
             check_rules s rest (listm.append fired contexts) (check_contexts s contexts r.assertions acc)
         | VError reason =>
-            check_rules s rest fired (
-                Cons (
-                    { id = "context"; severity = Fatal; path = Nil; detail = r.context_source ++# ": " ++# reason },
-                    acc
-                )
-            )
+            := detail = r.context_source ++# ": " ++# reason
+            := failure = { id = rule_id "context"; severity = Fatal; path = []; detail = detail }
+            check_rules s rest fired (failure :: acc)
         | _ => check_rules s rest fired acc
-    | Nil => acc
+    | [] => acc
 
 :~ ^ check_patterns (s : scope) (patterns : list pattern) (acc : list failure) : list failure =
     ?= patterns ?|
-    | p :: rest => check_patterns s rest (check_rules s p.rules Nil acc)
-    | Nil => listm.rev acc
+    | p :: rest => check_patterns s rest (check_rules s p.rules [] acc)
+    | [] => listm.rev acc
 
 := validate (patterns : list pattern) (document : xml_node) : list failure =
     := root = document_root document
-    check_patterns { context = root; root = root; variables = Nil } patterns Nil
+    check_patterns { context = root; root = root; variables = [] } patterns []
 
 :~ ^ fatal_count (failures : list failure) (acc : i32) : i32 =
     ?= failures ?|
     | f :: rest => fatal_count rest (?= f.severity ?| Fatal => acc + 1i32 | _ => acc)
-    | Nil => acc
+    | [] => acc
+
 ///> rust
 test fires_the_first_matching_rule_per_pattern =
     := rules =
@@ -81,7 +79,7 @@ test fires_the_first_matching_rule_per_pattern =
         ++# "</pattern></schema>"
     := document = "<doc><line kind=\"charge\"><amount>0</amount></line><line><amount>5</amount></line><line/></doc>"
     ?= read_xml document ?|
-    | root :: Nil =>
+    | root :: [] =>
         := failures = validate (read_schematron rules) root
         ? listm.length failures <> 2i32 ?> failwith "the zero charge and the line without amount fail, nothing else"
         ? fatal_count failures 0i32 <> 2i32 ?> failwith "both are fatal"

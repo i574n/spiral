@@ -18,7 +18,7 @@ fn build_0(mut v0: u64) -> Rc<UH0> {
         { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_Nil); } CASE.with(|case| case.clone()) }
     } else {
         let mut v3: Rc<dyn Fn() -> Rc<UH0>> = closure0(v0);
-        Rc::new(UH0::UH0_Cons(v0, v3))
+        Rc::new(UH0::UH0_Cons(v0, v3.clone()))
     }
 }
 fn sum_1(mut v0: Rc<UH0>, mut v1: u64) -> u64 {

@@ -2,7 +2,7 @@
 :< sm'_operators
 :< xsd
 
-:== loaded_tree = { paths : list string; missing : list string; schema : xsd_schema }
+:== loaded_tree form = { paths : list string; missing : list string; schema : xsd_schema form }
 
 := directory_of (path : string) : string =
     := slash = sm'.last_index_of "/" path
@@ -11,12 +11,13 @@
 :~ ^ has_string (target : string) (items : list string) : bool =
     ?= items ?|
     | x :: rest => x = target || has_string target rest
-    | Nil => !-
+    | [] => !-
 
-:= merge (more : xsd_schema) (into : xsd_schema) : xsd_schema =
+:= merge \* form. (more : xsd_schema form) (into : xsd_schema form) : xsd_schema form =
+    := target = ? namespace_text into.target_namespace = "" ?> more.target_namespace |: into.target_namespace
     {
         into ?|
-            target_namespace = ? into.target_namespace = "" ?> more.target_namespace |: into.target_namespace
+            target_namespace = target
             simple_types = listm.append more.simple_types into.simple_types
             complex_types = listm.append more.complex_types into.complex_types
             elements = listm.append more.elements into.elements
@@ -31,7 +32,7 @@
         |? sm'.ends_with "/" key && sm'.starts_with key location ?>
             Some (local ++# sm'.substring (sm'.length key) (sm'.length location - sm'.length key) location)
         |: catalog_location rest location
-    | Nil => None
+    | [] => None
 
 :~ ^ without_parent_steps (path : string) : string =
     := marker = sm'.index_of "/../" path
@@ -51,23 +52,26 @@
 ///> rust
 test catalog_maps_absolute_locations_to_local_files =
     := site = "http://example.org/"
-    := catalog = (site ++# "cat.xsd", "C:/corpus/cat.xsd") :: (site ++# "types/", "C:/corpus/types/") :: Nil
+    := catalog = (site ++# "cat.xsd", "C:/corpus/cat.xsd") :: (site ++# "types/", "C:/corpus/types/") :: []
     := resolved location = resolved_location catalog "C:/corpus/" location
     ? resolved (site ++# "cat.xsd") <> "C:/corpus/cat.xsd" ?> failwith "an exact entry"
     ? resolved (site ++# "types/td.xsd") <> "C:/corpus/types/td.xsd" ?> failwith "a prefix entry"
     ? resolved "local.xsd" <> "C:/corpus/local.xsd" ?> failwith "a relative location stays relative"
-    ? resolved_location Nil "C:/a/" "b.xsd" <> "C:/a/b.xsd" ?> failwith "an empty catalog changes nothing"
-    ? resolved_location Nil "C:/u/maindoc/" "../common/b.xsd" <> "C:/u/common/b.xsd"
+    ? resolved_location [] "C:/a/" "b.xsd" <> "C:/a/b.xsd" ?> failwith "an empty catalog changes nothing"
+    ? resolved_location [] "C:/u/maindoc/" "../common/b.xsd" <> "C:/u/common/b.xsd"
     ?> failwith "a parent step folds"
     ? without_parent_steps "C:/a/b/../../c.xsd" <> "C:/c.xsd" ?> failwith "two parent steps fold"
 
-:~ ^ type_names (types : list xsd) (acc : list string) : list string =
+:= type_name_of \* form. (item : xsd type_def form) : string =
+    ?= item ?|
+    | Simple s => definition_text s.name
+    | Complex c => definition_text c.name
+    | Derived d => definition_text d.name
+
+:~ ^ type_names \* form. (types : list (xsd type_def form)) (acc : list string) : list string =
     ?= types ?|
-    | Simple (name, _, _) :: rest => type_names rest (name :: acc)
-    | Complex (name, _, _) :: rest => type_names rest (name :: acc)
-    | Derived (name, _, _, _) :: rest => type_names rest (name :: acc)
-    | _ :: rest => type_names rest acc
-    | Nil => acc
+    | item :: rest => type_names rest (type_name_of item :: acc)
+    | [] => acc
 
 := is_builtin (reference : string) : bool =
     := prefix = prefix_of reference
@@ -76,7 +80,7 @@ test catalog_maps_absolute_locations_to_local_files =
 :~ ^ namespace_for (prefix : string) (namespaces : list (string * string)) : option string =
     ?= namespaces ?|
     | (key, uri) :: rest => ? key = prefix ?> Some uri |: namespace_for prefix rest
-    | Nil => None
+    | [] => None
 
 :~ ^ declared_namespaces (attributes : list (string * string)) (acc : list (string * string)) : list (string * string) =
     ?= attributes ?|
@@ -86,12 +90,12 @@ test catalog_maps_absolute_locations_to_local_files =
         |? sm'.starts_with "xmlns:" key
         ?> declared_namespaces rest ((sm'.substring 6i32 (sm'.length key - 6i32) key, value) :: acc)
         |: declared_namespaces rest acc
-    | Nil => acc
+    | [] => acc
 
 := schema_namespaces (text : string) : list (string * string) =
     ?= first_named "schema" (xml.read_xml text) ?|
-    | Some (attributes, _) => declared_namespaces attributes Nil
-    | None => Nil
+    | Some (attributes, _) => declared_namespaces attributes []
+    | None => []
 
 := qualified (uri : string) (local : string) : string = ? local = "" ?> "" |: "{" ++# uri ++# "}" ++# local
 
@@ -102,50 +106,96 @@ test catalog_maps_absolute_locations_to_local_files =
         | Some uri => qualified uri (xml.local_name reference)
         | None => reference
 
-:~ ^ rename_item (definition : string -> string) (reference : string -> string) (item : xsd) : xsd =
-    ?= item ?|
-    | Simple (name, base, facets) => Simple (definition name, reference base, facets)
-    | Complex (name, content, attributes) =>
-        Complex (
-            definition name,
-            rename_item definition reference content,
-            rename_items definition reference attributes Nil
-        )
-    | Derived (name, base, content, attributes) =>
-        := content = rename_item definition reference content
-        Derived (definition name, reference base, content, rename_items definition reference attributes Nil)
-    | Sequence (min, max, items) => Sequence (min, max, rename_items definition reference items Nil)
-    | Choice (min, max, items) => Choice (min, max, rename_items definition reference items Nil)
-    | Element (name, type_reference, min, max, inline) =>
-        Element (name, reference type_reference, min, max, rename_inline definition reference inline)
-    | Attribute (name, type_reference, required, fixed, inline) =>
-        Attribute (name, reference type_reference, required, fixed, rename_inline definition reference inline)
-    | AnyContent => AnyContent
-    | Empty => Empty
-
-:& :~ rename_items
-    (definition : string -> string) (reference : string -> string) (items : list xsd) (acc : list xsd)
-    : list xsd
+:= renamed_definition \* a b.
+    (rename : string -> string) ((definition_name name) : definition_name a)
+    : definition_name b
     =
-    ?= items ?|
-    | item :: rest => rename_items definition reference rest (rename_item definition reference item :: acc)
-    | Nil => listm.rev acc
+    definition_name (rename name)
 
-:& :~ rename_inline (definition : string -> string) (reference : string -> string) (inline : option xsd) : option xsd =
-    ?= inline ?|
-    | Some inner => Some (rename_item definition reference inner)
+:= renamed_reference \* a b.
+    (rename : string -> string) ((type_reference reference) : type_reference a)
+    : type_reference b
+    =
+    type_reference (rename reference)
+
+:= rename_ref \* a b.
+    (reference : type_reference a -> type_reference b) (r : option (type_reference a))
+    : option (type_reference b)
+    =
+    ?= r ?|
+    | Some x => Some (reference x)
     | None => None
 
-:= rename_schema (definition : string -> string) (reference : string -> string) (schema : xsd_schema) : xsd_schema =
+:~ ^ renamed
+    \* k a b.
+    (definition : definition_name a -> definition_name b) (reference : type_reference a -> type_reference b)
+    (item : xsd k a)
+    : xsd k b
+    =
+    ?= item ?|
+    | Simple s => Simple { s ?| name = definition s.name; base = reference s.base }
+    | Complex c =>
+        Complex { c ?|
+            name = definition c.name
+            content = renamed definition reference c.content
+            attributes = renamed_all definition reference c.attributes []
+        }
+    | Derived d =>
+        Derived { d ?|
+            name = definition d.name
+            base = reference d.base
+            content = renamed definition reference d.content
+            attributes = renamed_all definition reference d.attributes []
+        }
+    | Sequence s => Sequence { s ?| items = renamed_all definition reference s.items [] }
+    | Choice c => Choice { c ?| items = renamed_all definition reference c.items [] }
+    | Element e =>
+        Element { e ?|
+            type_ref = rename_ref reference e.type_ref
+            inline = renamed_inline definition reference e.inline
+        }
+    | AnyContent () => AnyContent ()
+    | Empty () => Empty ()
+    | Attribute a =>
+        Attribute { a ?|
+            type_ref = rename_ref reference a.type_ref
+            inline = renamed_inline definition reference a.inline
+        }
+
+:& :~ renamed_all
+    \* k a b.
+    (definition : definition_name a -> definition_name b) (reference : type_reference a -> type_reference b)
+    (items : list (xsd k a)) (acc : list (xsd k b))
+    : list (xsd k b)
+    =
+    ?= items ?|
+    | item :: rest => renamed_all definition reference rest (renamed definition reference item :: acc)
+    | [] => listm.rev acc
+
+:& :~ renamed_inline \* a b.
+    (definition : definition_name a -> definition_name b) (reference : type_reference a -> type_reference b)
+    (inline : option (xsd type_def a))
+    : option (xsd type_def b)
+    =
+    ?= inline ?|
+    | Some inner => Some (renamed definition reference inner)
+    | None => None
+
+:= rename_schema \* a b.
+    (definition : definition_name a -> definition_name b) (reference : type_reference a -> type_reference b)
+    (schema : xsd_schema a)
+    : xsd_schema b
+    =
     {
         schema ?|
-            simple_types = rename_items definition reference schema.simple_types Nil
-            complex_types = rename_items definition reference schema.complex_types Nil
-            elements = rename_items definition reference schema.elements Nil
+            simple_types = renamed_all definition reference schema.simple_types []
+            complex_types = renamed_all definition reference schema.complex_types []
+            elements = renamed_all definition reference schema.elements []
     }
 
-:= qualify_schema (namespaces : list (string * string)) (schema : xsd_schema) : xsd_schema =
-    rename_schema (qualified schema.target_namespace) (qualify_reference namespaces) schema
+:= qualify_schema (namespaces : list (string * string)) (schema : xsd_schema written) : xsd_schema qualified =
+    := definitions = renamed_definition (qualified (namespace_text schema.target_namespace))
+    rename_schema definitions (renamed_reference (qualify_reference namespaces)) schema
 
 := qualified_local (name : string) : string =
     := close = sm'.index_of "}" name
@@ -160,7 +210,7 @@ test catalog_maps_absolute_locations_to_local_files =
 :~ ^ uri_of_local (local : string) (names : list string) : option string =
     ?= names ?|
     | name :: rest => ? qualified_local name = local ?> Some (qualified_uri name) |: uri_of_local local rest
-    | Nil => None
+    | [] => None
 
 :~ ^ colliding_locals (names : list string) (seen : list string) (acc : list string) : list string =
     ?= names ?|
@@ -171,7 +221,7 @@ test catalog_maps_absolute_locations_to_local_files =
             | Some uri => uri <> qualified_uri name
             | None => !-
         colliding_locals rest (name :: seen) (? clash && has_string local acc = !- ?> local :: acc |: acc)
-    | Nil => acc
+    | [] => acc
 
 := namespace_tag (uri : string) : string =
     := trimmed = ? sm'.ends_with "/" uri ?> sm'.substring 0i32 (sm'.length uri - 1i32) uri |: uri
@@ -187,12 +237,12 @@ test catalog_maps_absolute_locations_to_local_files =
         := uri = qualified_uri name
         ? uri = root || has_string local collisions = !- ?> local |: namespace_tag uri ++# "_" ++# local
 
-:= finalize_names (schema : xsd_schema) : xsd_schema =
-    := names = type_names schema.simple_types (type_names schema.complex_types Nil)
-    := final = final_name schema.target_namespace (colliding_locals names Nil Nil)
-    rename_schema final final schema
+:= finalize_names (schema : xsd_schema qualified) : xsd_schema final =
+    := names = type_names schema.simple_types (type_names schema.complex_types [])
+    := final = final_name (namespace_text schema.target_namespace) (colliding_locals names [] [])
+    rename_schema (renamed_definition final) (renamed_reference final) schema
 
-:~ ^ load_tree (catalog : schema_catalog) (path : string) (tree : loaded_tree) : loaded_tree =
+:~ ^ load_tree (catalog : schema_catalog) (path : string) (tree : loaded_tree qualified) : loaded_tree qualified =
     ? has_string path tree.paths ?> tree
     |? xml.is_file path = !- ?> { tree ?| missing = (path :: tree.missing) }
     |:
@@ -205,53 +255,49 @@ test catalog_maps_absolute_locations_to_local_files =
     (catalog : schema_catalog)
     (directory : string)
     (locations : list string)
-    (tree : loaded_tree)
-    : loaded_tree
+    (tree : loaded_tree qualified)
+    : loaded_tree qualified
     =
     ?= locations ?|
     | location :: rest =>
         := tree = ? location = "" ?> tree |: load_tree catalog (resolved_location catalog directory location) tree
         load_includes catalog directory rest tree
-    | Nil => tree
+    | [] => tree
 
-:= load_schema_tree_with (catalog : schema_catalog) (path : string) : loaded_tree =
-    := empty = { target_namespace = ""; includes = Nil; simple_types = Nil; complex_types = Nil; elements = Nil }
-    := tree = load_tree catalog path { paths = Nil; missing = Nil; schema = empty }
+:= load_schema_tree_with (catalog : schema_catalog) (path : string) : loaded_tree final =
+    := empty =
+        { target_namespace = namespace_uri ""; includes = []; simple_types = []; complex_types = []; elements = [] }
+    := tree = load_tree catalog path { paths = []; missing = []; schema = empty }
     { tree ?| schema = finalize_names tree.schema }
 
-:= load_schema_tree (path : string) : loaded_tree = load_schema_tree_with Nil path
+:= load_schema_tree (path : string) : loaded_tree final = load_schema_tree_with [] path
 
-:~ ^ references_of (item : xsd) (acc : list string) : list string =
+:= reference_into \* form. (r : option (type_reference form)) (acc : list string) : list string =
+    ?= r ?|
+    | Some x => reference_text x :: acc
+    | None => acc
+
+:~ ^ references_of \* k form. (item : xsd k form) (acc : list string) : list string =
     ?= item ?|
-    | Simple (_, base, _) => base :: acc
-    | Complex (_, content, attributes) => references_of content (attribute_types attributes acc)
-    | Derived (_, base, content, attributes) => references_of content (attribute_types attributes (base :: acc))
-    | Sequence (_, _, items) => references_in items acc
-    | Choice (_, _, items) => references_in items acc
-    | Element (_, type_reference, _, _, inline) =>
-        ?= inline ?|
-        | Some inner => references_of inner (type_reference :: acc)
-        | None => type_reference :: acc
-    | Attribute (_, type_reference, _, _, inline) => inline_references inline (type_reference :: acc)
-    | AnyContent => acc
-    | Empty => acc
+    | Simple s => reference_text s.base :: acc
+    | Complex c => references_of c.content (references_all c.attributes acc)
+    | Derived d => references_of d.content (references_all d.attributes (reference_text d.base :: acc))
+    | Sequence s => references_all s.items acc
+    | Choice c => references_all c.items acc
+    | Element e => inline_references e.inline (reference_into e.type_ref acc)
+    | AnyContent () => acc
+    | Empty () => acc
+    | Attribute a => inline_references a.inline (reference_into a.type_ref acc)
 
-:& :~ references_in (items : list xsd) (acc : list string) : list string =
+:& :~ references_all \* k form. (items : list (xsd k form)) (acc : list string) : list string =
     ?= items ?|
-    | item :: rest => references_in rest (references_of item acc)
-    | Nil => acc
+    | item :: rest => references_all rest (references_of item acc)
+    | [] => acc
 
-:& :~ inline_references (inline : option xsd) (acc : list string) : list string =
+:& :~ inline_references \* form. (inline : option (xsd type_def form)) (acc : list string) : list string =
     ?= inline ?|
     | Some inner => references_of inner acc
     | None => acc
-
-:& :~ attribute_types (attributes : list xsd) (acc : list string) : list string =
-    ?= attributes ?|
-    | Attribute (_, type_reference, _, _, inline) :: rest =>
-        attribute_types rest (inline_references inline (type_reference :: acc))
-    | _ :: rest => attribute_types rest acc
-    | Nil => acc
 
 ///> rust
 test colliding_local_names_keep_both_namespaces =
@@ -267,10 +313,10 @@ test colliding_local_names_keep_both_namespaces =
         ++# "<xs:complexType name=\"TAdres\">" ++# sequence "Pol" ++# "</xs:complexType></xs:schema>"
     := read text = text |> read_schema |> qualify_schema (schema_namespaces text)
     := schema = finalize_names (merge (read imported_text) (read root_text))
-    := names = type_names schema.complex_types Nil
+    := names = type_names schema.complex_types []
     ? has_string "TAdres" names = !- ?> failwith "the root namespace keeps its name"
     ? has_string "Defs_TAdres" names = !- ?> failwith "the imported namespace gets its tag"
-    := references = references_in schema.complex_types Nil
+    := references = references_all schema.complex_types []
     ? has_string "TAdres" references = !- || has_string "Defs_TAdres" references = !-
     ?> failwith "each reference names its own namespace's type"
     ? has_string "Root" names = !- ?> failwith "a name without a collision is unchanged"
@@ -281,18 +327,18 @@ test colliding_local_names_keep_both_namespaces =
         := dangling =
             reference <> "" && is_builtin reference = !- && has_string (xml.local_name reference) names = !-
         unresolved_in names rest (? dangling ?> acc + 1i32 |: acc)
-    | Nil => acc
+    | [] => acc
 
-:= unresolved_count (tree : loaded_tree) : i32 =
+:= unresolved_count \* form. (tree : loaded_tree form) : i32 =
     := schema = tree.schema
-    := names = type_names schema.simple_types (type_names schema.complex_types Nil)
+    := names = type_names schema.simple_types (type_names schema.complex_types [])
     := references =
-        references_in schema.elements (references_in schema.complex_types (references_in schema.simple_types Nil))
+        references_all schema.elements (references_all schema.complex_types (references_all schema.simple_types []))
     unresolved_in names references 0i32
 
 ///> rust
 test unresolved_count_counts_dangling_type_references =
-    := tree text = { paths = Nil; missing = Nil; schema = read_schema text }
+    := tree text = { paths = []; missing = []; schema = read_schema text }
     := element = "<xs:sequence><xs:element name=\"a\" type=\"T\"/></xs:sequence>"
     := dangling = "<xs:schema><xs:complexType name=\"C\">" ++# element ++# "</xs:complexType></xs:schema>"
     := simple = "<xs:simpleType name=\"T\"><xs:restriction base=\"xs:string\"/></xs:simpleType>"

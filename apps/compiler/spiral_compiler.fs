@@ -10741,9 +10741,6 @@ module spiral_compiler =
             receiptTotal : int
         }
 
-        // openWorkUnits and creditDigest are built on first read: most deciders only ask whether credit is
-        // returned, and with thousands of open units building both was ~36% of mega_spiral_proves' CPU
-        // (FRONTIER.md fix 36).
         type SemanticWorkCreditOutstanding = private {
             openUnits : Lazy<SemanticWorkUnitKeyId list>
             openCount : int
@@ -15802,9 +15799,6 @@ module spiral_compiler =
 
     module DiagJson =
 
-        // SPIRAL_DIAG_QUIET=1 (scripts/test.ps1 sets it): batch builds nobody watches skip the diagnostic
-        // JSONL rows and console projections, which cost ~20% of a compile (FRONTIER.md fix 35). Durable
-        // terminal receipts, build errors and the result are unaffected. Direct compiles keep full telemetry.
         let quiet =
             System.String.Equals(System.Environment.GetEnvironmentVariable "SPIRAL_DIAG_QUIET", "1", System.StringComparison.Ordinal)
 
@@ -53603,7 +53597,7 @@ module spiral_compiler =
             member val Waiters : IVar<unit> list = [] with get, set
         type TableOp =
             | ClaimOp of lookup : (unit -> obj voption) * mark : (unit -> unit) * caller : int * ancestor : bool
-            | FillOp of fill_write : (unit -> unit)
+            | FillOp of fill_write : (unit -> unit) * filled_value : obj
             | AnnounceOp of announce_write : (unit -> unit) * usable : bool
             | AbandonOp
             | FamilyOp of create : (unit -> obj)
@@ -53620,11 +53614,15 @@ module spiral_compiler =
             let mutable named = 0
             let mutable conflicts = 0
             let mutable abandoned = 0
+            let mutable published = System.Collections.Immutable.ImmutableDictionary.Create<obj, struct (obj * string)>(HashIdentity.Structural)
+            let publish (id : obj) (value : obj) (marker : string) =
+                System.Threading.Volatile.Write(&published, published.SetItem(id, struct (value, marker)))
             let release (entry : Entry) (state : EntryState) =
                 let waiters = entry.Waiters
                 entry.State <- state
                 entry.Waiters <- []
                 waiters
+            member _.Published = System.Threading.Volatile.Read(&published)
             member _.Conflicts = conflicts
             member _.Abandoned = abandoned
             member _.Decide(id : obj, op : TableOp) : TableReply * IVar<unit> list =
@@ -53641,25 +53639,32 @@ module spiral_compiler =
                                 | state ->
                                     if state = Abandoned && caller <> entry.Owner then conflicts <- conflicts + 1
                                     match lookup () with
-                                    | ValueSome value -> Present(value, (state = Filled), entry.Marker), []
+                                    | ValueSome value ->
+                                        if state = Filled then publish id value entry.Marker
+                                        Present(value, (state = Filled), entry.Marker), []
                                     | ValueNone -> Again, []
                             | false, _ ->
                                 match lookup () with
-                                | ValueSome value -> Present(value, true, ""), []
+                                | ValueSome value ->
+                                    publish id value ""
+                                    Present(value, true, ""), []
                                 | ValueNone ->
                                     mark ()
                                     named <- named + 1
                                     let marker = sprintf "\u0001hopacsota-key-%d" named
                                     entries.[id] <- Entry(caller, marker)
                                     Taken marker, []
-                        | FillOp write ->
+                        | FillOp(write, value) ->
                             write ()
                             match entries.TryGetValue id with
-                            | true, entry -> Written, release entry Filled
+                            | true, entry ->
+                                publish id value entry.Marker
+                                Written, release entry Filled
                             | false, _ ->
                                 let entry = Entry(-1, "")
                                 entry.State <- Filled
                                 entries.[id] <- entry
+                                publish id value ""
                                 Written, []
                         | AnnounceOp(write, usable) ->
                             write ()
@@ -53748,6 +53753,7 @@ module spiral_compiler =
             let contexts = ResizeArray<BodyContext> [root]
             let table = Table()
             let guard = MVar<Table>(table)
+            let published () = table.Published
             let graph = Graph()
             let edges = Ch<GraphRequest>()
             let work = Ch<WorkRequest>()
@@ -53853,18 +53859,26 @@ module spiral_compiler =
                     ctx.ReadyHits <- ctx.ReadyHits + 1
                     ValueSome (unbox<'v> value)
                 | _ ->
-                    let lookup () = match table.TryGetValue key with | true, value -> ValueSome (box value) | _ -> ValueNone
-                    match settle ctx id lookup (fun () -> table.[key] <- pending) with
-                    | Taken marker ->
-                        ctx.Marks.Keys.[id] <- marker
-                        ctx.Chain <- id :: ctx.Chain
-                        ValueNone
-                    | Present(value, filled, marker) ->
+                    match (published ()).TryGetValue id with
+                    | true, entry ->
+                        let struct (value, marker) = entry
+                        ctx.ReadyHits <- ctx.ReadyHits + 1
                         if marker <> "" then ctx.Marks.Keys.[id] <- marker
-                        if filled then ctx.Ready.[id] <- value
+                        ctx.Ready.[id] <- value
                         ValueSome (unbox<'v> value)
-                    | Failed error -> raise error
-                    | reply -> failwithf "Compiler error: a hopacsota claim got %A." reply
+                    | _ ->
+                        let lookup () = match table.TryGetValue key with | true, value -> ValueSome (box value) | _ -> ValueNone
+                        match settle ctx id lookup (fun () -> table.[key] <- pending) with
+                        | Taken marker ->
+                            ctx.Marks.Keys.[id] <- marker
+                            ctx.Chain <- id :: ctx.Chain
+                            ValueNone
+                        | Present(value, filled, marker) ->
+                            if marker <> "" then ctx.Marks.Keys.[id] <- marker
+                            if filled then ctx.Ready.[id] <- value
+                            ValueSome (unbox<'v> value)
+                        | Failed error -> raise error
+                        | reply -> failwithf "Compiler error: a hopacsota claim got %A." reply
             member _.Validated<'k, 'v>(table : Dictionary<'k, 'v>, key : 'k) : bool =
                 let ctx = context.Value
                 ctx.Claims <- ctx.Claims + 1
@@ -53893,7 +53907,7 @@ module spiral_compiler =
             member _.Fill<'k, 'v>(table : Dictionary<'k, 'v>, key : 'k, value : 'v) =
                 let ctx = context.Value
                 let id = box (table, key)
-                match ask id (FillOp (fun () -> table.[key] <- value)) with
+                match ask id (FillOp((fun () -> table.[key] <- value), box value)) with
                 | Failed error -> raise error
                 | _ ->
                     if ctx.Marks.Keys.ContainsKey id then ctx.Ready.[id] <- box value
@@ -55146,10 +55160,6 @@ module spiral_compiler =
             let value (EvaluatorProducerMaterialRevision value) = value
             let advanced beforeRevision afterRevision = value afterRevision > value beforeRevision
 
-        // Reference equality: evaluatorProducerGraph.AddOrUpdate compare-and-swaps the prior record with
-        // EqualityComparer.Default, which compared records structurally, deep into the boxed Data/Ty/LangEnv
-        // artifacts, on every replay registration (~23% of mega_lean_cic's CPU, FRONTIER.md fix 36). Every
-        // update mints a new record with a new revision, so content equality between records meant nothing.
         [<ReferenceEquality>]
         type EvaluatorProducerRecord = {
             key : EvaluatorNodeKey
@@ -57315,8 +57325,6 @@ module spiral_compiler =
             let mutable marker = null
             isDirectScopeActive scope || directOwnedScopes.TryGetValue(scope, &marker)
 
-        /// Replay code about to append to `scope`, a block an evaluation outside this replay started: refused,
-        /// since the direct evaluator emits (or emitted) that statement itself (FRONTIER.md fix 41).
         let replayEmitRefused (scope: obj) =
             let depth = replayDepth.Value
             if depth = 0 then false
@@ -83124,9 +83132,6 @@ module spiral_compiler =
     }
 
     type EvalKeyPath = private {
-        // An occurrence count per key, without scanning the path (FRONTIER.md fix 39). Each key is
-        // (node key id <<< 32) ||| dynamic-if depth, the id assigned once per range object (EvalSiteCache.nodeKeyId):
-        // string keys compared the long `<path>:<line>:<col>` texts in the Map on every term entry.
         keys : int64 list
         counts : Map<int64, int>
     }
@@ -87114,9 +87119,6 @@ module spiral_compiler =
                     terminalFlowNonEmptyEvidence TerminalFlowTerminationCreditNoSnapshot [])
             | Some evidence ->
                 let rootSettlement = terminalFlowQapRootSettlementEvidenceFor evidence
-                // The snapshot and the credit digest are only needed when credit is returned (no blockers);
-                // computing them on every call digested thousands of open units (~25% of
-                // mega_spiral_proves' CPU, FRONTIER.md fix 37).
                 let semanticLedger = lazy (DiagJson.semanticWorkLedgerSnapshot())
                 let semanticCreditDecision =
                     CompilerKernelV2.SemanticWorkLedgerAuthority.creditDecisionForScope
@@ -129886,10 +129888,6 @@ module spiral_compiler =
         let prepareCompletion (node:JpSpecializationWorkNode) (normalizedRef:CompilerIdentityKernel.ContentDigest option) (readbackRef:CompilerIdentityKernel.ContentDigest option) (promiseReceiptRef:CompilerIdentityKernel.ContentDigest option) : JpSpecializationWorkReceipt =
             let mutable registeredState = Unchecked.defaultof<JpSpecializationWorkState>
             if not (states.TryGetValue(node.nodeRef, &registeredState)) then
-                // A cache invalidation retires every registration up to its generation (retireGeneration) while
-                // work items of that generation may still be running; one finishing afterwards is a late, stale
-                // completion, not a broken invariant (apps/spiral, 36 min in: FatalError "specialization
-                // completion requires registration"; FRONTIER.md fix 47). Record it instead of aborting the build.
                 states.TryAdd(node.nodeRef, JpSpecializationWorkRegistered node) |> ignore
                 DiagJson.emit (
                     "{\"kind\":\"jp_specialization_late_completion_after_generation_retired\",\"node_ref\":"
@@ -135210,9 +135208,6 @@ module spiral_compiler =
         | JpDeclaredResumeSnapshotPeriodicPrune -> "Periodic256"
         | JpDeclaredResumeSnapshotPressurePrune -> "Pressure64"
 
-    // A prune scans every snapshot (all jobs), so its trigger must be geometric: prune once the live count has doubled
-    // since the last prune left it. Pruning every 64/256 continuations while most snapshots stayed reachable cost
-    // O(live x continuations): apps/spiral's declared bodies ground in this scan at under one core (FRONTIER.md 55).
     let mutable private jpDeclaredResumeSnapshotPruneHighWater = 0
 
     let jpDeclaredResumeSnapshotPruneBasis (_continuationOrdinal:int64) (liveSnapshotCount:int) : JpDeclaredResumeSnapshotPruneBasisId option =
@@ -137836,9 +137831,6 @@ module spiral_compiler =
     /// probe over its join-point tables (join points whose specialization is still pending, by name).
     module PevalStallProbe =
         let mutable pendingJoinPoints : unit -> string = fun () -> "not_started"
-        /// Set when a match ran into a join-point placeholder and the build switched to inline JP recompute
-        /// (FRONTIER.md fix 44). That recovery requests sequential mode, which the output write guard would
-        /// otherwise read as an unstable run. Reset at the start of each BuildFile transaction.
         type PevalRecoveryCause =
             | RecoveryPlaceholderPatternMiss of patternNodeId: int
             | RecoveryOrphanedCells
@@ -137860,9 +137852,6 @@ module spiral_compiler =
         /// Raised by peval's root when join-point cells stay orphaned after inline recovery: the BuildFile caller
         /// runs a fresh peval (fresh tables, a reset replay store) with inline recovery still on (fix 51).
         exception PevalInlineRestart of string
-        /// Codegen runs after peval's join-point graph is quiescent, so a body cell still pending then has no
-        /// producer left. Codegen used to wait on it without limit (and outside the build budget); it now waits
-        /// this long and then fails closed with the key (FRONTIER.md fix 46).
         let codegenPendingCellWaitMs =
             match System.Int32.TryParse(System.Environment.GetEnvironmentVariable "SPIRAL_CODEGEN_PENDING_CELL_WAIT_MS") with
             | true, ms when ms > 0 -> ms
@@ -137923,9 +137912,6 @@ module spiral_compiler =
         let join_point_closure = System.Collections.Concurrent.ConcurrentDictionary<_,_>(jp_body_key_comparer)
         let join_point_type = System.Collections.Concurrent.ConcurrentDictionary<_,_>(jp_type_body_comparer)
         let uninhabited_nesting = new System.Threading.ThreadLocal<int>(fun () -> 0)
-        /// Inline recompute for each owned JP body cell, keyed by the cell (its IVar object). A cell still pending once
-        /// the JP graph is quiescent has no producer left (its work unit was retired, e.g. as a control-only replay
-        /// sentinel); peval's root recomputes exactly those cells in place (FRONTIER.md fix 50).
         let jp_orphan_recompute = System.Collections.Concurrent.ConcurrentDictionary<obj, unit -> unit>(HashIdentity.Reference)
         let backend_strings = StripedHashConsTable(32)  // MIGRATION: striped for parallel access
         let backend_strings_lock = obj()
@@ -146878,12 +146864,6 @@ module spiral_compiler =
                             JpDeclaredBodyDefaultSlice, 96, 24
                     | JpRuntimeEffectPure ->
                         JpDeclaredBodyPureSlice, 256, 64
-                // Declared bodies don't time-slice by default: the budget is out of reach (2^24 operations,
-                // a checkpoint every 2^22 bindings; the recovery multiplier, at most 4, can't overflow it).
-                // Resuming a yielded body loses or repeats statements: a resume continues in the environments
-                // the earlier slice saved, and so in that slice's block, while prefix replay re-evaluates the
-                // body and re-emits it (lanes/gpt5parallel/FRONTIER.md, fix 22). The budgets above are what the resume
-                // path was designed for; SPIRAL_JP_SLICE_OPS=<max>,<interval> (256,64 or 96,24) brings them back.
                 let maxOperations, checkpointInterval =
                     match System.Environment.GetEnvironmentVariable "SPIRAL_JP_SLICE_OPS" with
                     | null | "" -> 1 <<< 24, 1 <<< 22
@@ -147686,9 +147666,6 @@ module spiral_compiler =
                                 s.bigStack
                         jp_orphan_recompute.[box jp_ivar] <- (fun () -> run () |> ignore)
                         if PevalStallProbe.recoveryActive () then
-                            // Placeholder recovery (FRONTIER.md fixes 44-45): evaluate the closure body inline, as
-                            // single-flight does. A spawned body can pattern-miss on a placeholder and be retired
-                            // with its cell unfilled, which codegen then waits on forever.
                             run () |> ignore
                         else
                             startHopacJob (
@@ -149232,19 +149209,11 @@ module spiral_compiler =
                     // The real apply function is installed later through EvalReplayValueStore after
                     // its definition.  Until then this thunk fails closed under tryTerm.
                     EvalReplayValueStore.putTerm nodeId (fun () ->
-                        // Re-applying runs the application's effects again; only replay what the direct
-                        // evaluator neither runs now nor has run (fails closed, like a missing apply).
-                        // Also refuse while a direct evaluation is building the block this application would emit
-                        // into: the node check alone raced with the direct evaluator under load and duplicated the
-                        // call (FRONTIER.md fix 41).
                         if EvalReplayValueStore.isDirectNodeOwned nodeId || EvalReplayValueStore.isDirectScopeOwned (box s.seq) then
                             failwith "replay_apply_spine_owned_by_direct_evaluation"
                         match EvalReplayValueStore.tryReplayAppliedValueIn nodeId (box s) with
                         | Some value -> value
                         | None ->
-                            // Simple heads and arguments come from this evaluation's own environment:
-                            // the store keeps one value per AST node, the latest registration's, which
-                            // can belong to another evaluation of the same node (FRONTIER.md fix 34).
                             let ownValue (e: E) =
                                 match e with
                                 | EB _ -> Some DB
@@ -152776,12 +152745,6 @@ module spiral_compiler =
                 DiagSidecar.emit (FastRuntimeFormat.format "[spiral_compiler] EJP0011 dynamic_join_apply replay placeholder ret=%s head=%s arg=%s" [| box (show_ty retTy); box (show_data head); box (show_data arg) |])
                 placeholder)
 
-            /// A match (or typecase) that ran into a join-point placeholder can never succeed while that join
-            /// point's specialization is pending: the requeued body gets the same placeholder back and spins
-            /// (apps/spiral: 96 join points stuck behind `++#?` -> format_real; FRONTIER.md fix 44). Marking a
-            /// suspect switches JP methods to the inline recompute path (`RecomputeSuspect`, the pending-cell
-            /// bypass) for the rest of the build, so the requeued attempt evaluates the callee directly, as the
-            /// single-flight core does.
             let jpPlaceholderPatternMissEntersRecovery (patternNodeId:int) (gotText:string) =
                 let mentionsPlaceholder =
                     gotText.Contains "JPMethodRecPlaceholder("
@@ -157440,8 +157403,6 @@ module spiral_compiler =
                                                 raise_type_error (add_trace s r) (sprintf "%s: JPMethod evaluation refused after BigStack exhaustion (tag=%d)" DiagnosticClassifier.EJP0010 join_point_key.tag)
                                         else compute_term ()
                                     jp_method_resolve_rec_placeholder join_point_key ty
-                                    // Publish the inline body as a ready cell: codegen reads JP method bodies from this
-                                    // table, and a recomputed key has no owner left to fill it (FRONTIER.md fix 44).
                                     dict.[join_point_key] <- Hopac.IVar<JpMethodBodyCellPayload>(JpMethodBodyCellReadyPayload(seq, ty, jp_name))
                                     ty
                                 finally
@@ -157528,8 +157489,6 @@ module spiral_compiler =
                                                 raise_type_error (add_trace s r) (sprintf "%s: JPMethod evaluation refused after BigStack exhaustion (tag=%d)" DiagnosticClassifier.EJP0010 join_point_key.tag)
                                         else compute_term ()
                                     jp_method_resolve_rec_placeholder join_point_key ty
-                                    // Publish the inline body as a ready cell: codegen reads JP method bodies from this
-                                    // table, and a recomputed key has no owner left to fill it (FRONTIER.md fix 44).
                                     dict.[join_point_key] <- Hopac.IVar<JpMethodBodyCellPayload>(JpMethodBodyCellReadyPayload(seq, ty, jp_name))
                                     ty
                                 finally
@@ -158923,8 +158882,6 @@ module spiral_compiler =
                         DiagJson.emit (
                             FastRuntimeFormat.format "{\"kind\":\"peval_main_inline_restart_requested\",\"why\":%s,\"next\":\"fresh_peval_inline_from_start\"}" [| box (DiagJson.esc why) |])
                         raise (PevalStallProbe.PevalInlineRestart ("placeholder recovery entered mid-evaluation: " + why))
-                // Root retry (FRONTIER.md fixes 44-45). Between attempts: let the abandoned attempt's join-point
-                // work settle, then start from a clean worklist, as the build-level retry does.
                 let awaitJpQuiescence site =
                     CompilerKernelV2.CompilerRuntimeKernel.runHostBoundary
                         site
@@ -186242,9 +186199,6 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                     BuildDiagnosticsLedger.typecheckProbe <- fun () ->
                         sprintf "entry_input=%b entry_output=%b" (Promise.Now.isFulfilled a.state) (Promise.Now.isFulfilled b)
                     emitBuildFileInitializationStage BuildFileTypecheckAwaitScheduled
-                    // SPIRAL_DEBUG_TYPECHECK_WAIT=<seconds>: if the type check is still pending then, print to stderr
-                    // which type-check promises (each file's input environment and output, each package's result)
-                    // are unfilled, in every package. For the multi-package stalls (NEXT.md).
                     match System.Int32.TryParse(System.Environment.GetEnvironmentVariable "SPIRAL_DEBUG_TYPECHECK_WAIT") with
                     | true, seconds when seconds > 0 ->
                         let states =
@@ -186276,11 +186230,6 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                         b >>= fun (has_error,_) ->
                         if has_error || has_error' then
                             BuildDiagnosticsLedger.note "typecheck_error_branch"
-                            // A batch build only gets this message, so it carries the typer's errors, from every
-                            // package (the entry's first): the error is often in a dependency.
-                            // A package state that was reset holds null slots in uids_file (Array.zeroCreate);
-                            // skip them. An exception here would be swallowed by the started job and the fatal
-                            // never sent (the stall of FRONTIER.md fix 33), so the listing is also guarded below.
                             let rec files (tc : ProjStateTC) x acc =
                                 match x with
                                 | ProjFilesTree.File(mid,path,_) ->
@@ -186292,10 +186241,6 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                 let seen = HashSet<obj>(HashIdentity.Reference)
                                 tc :: (Seq.append s.packages_infer.ok.Values s.packages_infer.error.Values |> List.ofSeq)
                                 |> List.filter (fun state -> seen.Add (box state))
-                            // Read only the part of each file's result stream that is already there: some
-                            // packages' streams (other versions in packages_infer, files the entry does not
-                            // reach) never end, and folding them to the end hung the build right here, after
-                            // type checking had finished (native_source_package_prototype_*, FRONTIER.md fix 33).
                             let rec availableErrors acc (stream : Stream<_>) =
                                 if Promise.Now.isFulfilled stream then
                                     match Promise.Now.get stream with
@@ -186337,13 +186282,6 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                             own_main || (match adds with AInclude small | AIncludePrivate (small, _) -> Map.containsKey (TermNameIdOps.create "main") small.term | AOpen _ -> false), env
                             ) (false,prepassTop_env_empty) x.result >>= fun (own_main,env) ->
                         emitBuildFileInitializationStage BuildFilePrepassReady
-                        // A block that fails to tokenize or parse is left out of its module and the build goes on, so a
-                        // broken `main` would be replaced by an opened module's `main` without a word. When the entry
-                        // does not define `main` itself, report its tokenizer and parser errors instead. The bundles are
-                        // the ones type checking consumed, so they are complete by now; read them without blocking all
-                        // the same (FRONTIER.md fix 33).
-                        // D47 (single-flight): the entry file's errors always end the build (a dropped block makes its
-                        // callers fail with a bare `Unbound variable`, or vanishes without a word when nothing calls it).
                         let entry_errors =
                                 let _,_,bundles = a.input
                                 let rec available acc (stream : BlockBundleState) =
@@ -188961,10 +188899,6 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                                         | None -> Map.tryFind uid s.packages_infer.error)
                                 tc :: (dependencies |> Seq.choose state_of |> List.ofSeq)
                                 |> List.filter (fun state -> seen.Add (box state))
-                            // Read only the part of each file's result stream that is already there: a stream can
-                            // never end (another version of a package, a file the entry does not reach), and folding
-                            // it to the end hung the build here after type checking had finished (polyglot Supervisor's
-                            // type-error tests, in a long session; the gpt5parallel core's FRONTIER.md fix 33).
                             let rec availableErrors acc (stream : Stream<_>) =
                                 if Promise.Now.isFulfilled stream then
                                     match Promise.Now.get stream with

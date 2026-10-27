@@ -22,7 +22,9 @@ test date_time static =
 
 := timestamp_gleam_of ((timestamp x) : timestamp) : timestamp_gleam =
     global "import gleam/time/timestamp"
-    $'timestamp.from_unix_seconds_and_nanoseconds(!x / 1000000, !x % 1000000 * 1000)'
+    := seconds = x / 1000000i64
+    := nanos = (x % 1000000i64) * 1000i64
+    $'timestamp.from_unix_seconds_and_nanoseconds(!seconds, !nanos)'
 
 /// ### timestamp_guid
 :== timestamp_guid = guid.guid
@@ -248,12 +250,12 @@ test test_guid static =
             ? format <> ""
             ?> $'os.date(!format, !date_time)' : string
             |:
-                := date =
-                    ? get_year date_time < 1000
-                    ?> $'(os.date("%m-%d-%y", !date_time) or ""):gsub("0(%d)", "%1")' : string
-                    |: $'(os.date("%m-%d-%Y", !date_time) or ""):gsub("0(%d)", "%1")' : string
-                := time =
-                    $'os.date("%I:%M:%S %p", !date_time) or ""' : string
+                := date_format = ? get_year date_time < 1000 ?> "%m-%d-%y" |: "%m-%d-%Y"
+                := dated : optionm'.option' string = $'os.date(!date_format, !date_time)'
+                := padded = dated |> optionm'.default_value' ""
+                := date = $'(!padded):gsub("0(%d)", "%1")' : string
+                := timed : optionm'.option' string = $'os.date("%I:%M:%S %p", !date_time)'
+                := time = timed |> optionm'.default_value' ""
                 date ++# " " ++# time
         Fsharp = \ () =>
             := format =
@@ -292,6 +294,25 @@ test test_guid static =
         Zig = \ () => date_time |> format "yyyy-MM-ddTHH-mm-ss.fff" : string
     }
 
+/// ### naive_date_rust
+:! naive_date_rust = $'chrono::NaiveDate'
+
+/// ### rust_naive_date
+:= rust_naive_date (year : i32) (month : u32) (day : u32) : naive_date_rust =
+    $'chrono::NaiveDate::from_ymd_opt(!year, !month, !day).unwrap()' : naive_date_rust
+
+/// ### rust_date_at
+:= rust_date_at (date : naive_date_rust) (hour : u32) (minute : u32) (second : u32) : date_time =
+    $'!date.and_hms_opt(!hour, !minute, !second).unwrap()' : date_time
+
+/// ### rust_date_at_milli
+:= rust_date_at_milli (date : naive_date_rust) (hour : u32) (minute : u32) (second : u32) (milli : u32) : date_time =
+    $'!date.and_hms_milli_opt(!hour, !minute, !second, !milli).unwrap()' : date_time
+
+/// ### rust_date_at_nano
+:= rust_date_at_nano (date : naive_date_rust) (hour : u32) (minute : u32) (second : u32) (nano : u32) : date_time =
+    $'!date.and_hms_nano_opt(!hour, !minute, !second, !nano).unwrap()' : date_time
+
 /// ### min_value
 := min_value () : date_time =
     backend_switch {
@@ -301,13 +322,14 @@ test test_guid static =
             := duration : duration_gleam = $'duration.seconds(0) ' : duration_gleam
             (date, time_of_day, duration) |> convert.to : date_time
         Lua = \ () =>
-            := date_time = $'os.time{year=1, month=1, day=1, hour=0, min=0, sec=0} or -62135596800' : date_time
+            := stamp : optionm'.option' date_time = $'os.time{year=1, month=1, day=1, hour=0, min=0, sec=0}'
+            := date_time = stamp |> optionm'.default_value' ($'-62135596800' : date_time)
             date_time
         Fsharp = \ () => $'System.DateTime.MinValue' : date_time
         Python = \ () =>
             global "import datetime"
             $'datetime.datetime.min' : date_time
-        Rust = \ () => $'chrono::NaiveDate::from_ymd_opt(1, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap()' : date_time
+        Rust = \ () => rust_date_at (rust_naive_date 1i32 1u32 1u32) 0u32 0u32 0u32
         Zig = \ () => -62135596800000000i64 |> zig_date_time_of
     }
 
@@ -327,14 +349,14 @@ test min_value =
             := duration : duration_gleam = $'duration.seconds(0)  ' : duration_gleam
             (date, time_of_day, duration) |> convert.to : date_time
         Lua = \ () =>
-            := date_time = $'os.time{year=9999, month=12, day=31, hour=23, min=59, sec=59} or 253402300799' : date_time
+            := stamp : optionm'.option' date_time = $'os.time{year=9999, month=12, day=31, hour=23, min=59, sec=59}'
+            := date_time = stamp |> optionm'.default_value' ($'253402300799' : date_time)
             date_time
         Fsharp = \ () => $'System.DateTime.MaxValue' : date_time
         Python = \ () =>
             global "import datetime"
             $'datetime.datetime.max' : date_time
-        Rust = fun () => $'chrono::NaiveDate::from_ymd_opt(9999, 12, 31).unwrap().and_hms_nano_opt(23, 59, 59, \
-            999999900).unwrap()' : date_time
+        Rust = \ () => rust_date_at_nano (rust_naive_date 9999i32 12u32 31u32) 23u32 59u32 59u32 999999900u32
         Zig = \ () => 253402300799999999i64 |> zig_date_time_of
     }
 
@@ -359,7 +381,7 @@ test max_value =
 := to_calendar_utc ((timestamp micros) &= timestamp : timestamp) : date_time =
     backend_switch {
         Gleam = \ () => timestamp |> timestamp_gleam_of |> to_calendar_utc_gleam
-        Lua = \ () => $'math.floor(!micros / 1000000)' : date_time
+        Lua = \ () => floor_div micros 1000000i64 |> convert.unbox : date_time
         Fsharp = \ () => $'System.DateTime.UnixEpoch.AddTicks(!micros * 10L)' : date_time
         Python = \ () =>
             global "import datetime"
@@ -385,14 +407,14 @@ test max_value =
         Gleam = \ () =>
             0i32 |> timestamp |> to_calendar_utc : date_time
         Lua = \ () =>
-            := date_time = $'os.time{year=1970, month=1, day=1, hour=0, min=0, sec=0} or 0' : date_time
+            := stamp : optionm'.option' date_time = $'os.time{year=1970, month=1, day=1, hour=0, min=0, sec=0}'
+            := date_time = stamp |> optionm'.default_value' ($'0' : date_time)
             date_time
         Fsharp = \ () => $'System.DateTime.UnixEpoch' : date_time
         Python = \ () =>
             global "import datetime"
             $'datetime.datetime(1970, 1, 1)' : date_time
-        Rust = \ () =>
-            $'chrono::NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap()' : date_time
+        Rust = \ () => rust_date_at (rust_naive_date 1970i32 1u32 1u32) 0u32 0u32 0u32
         Zig = \ () => 0i64 |> zig_date_time_of
     }
 
@@ -426,7 +448,8 @@ test unix_epoch =
             (date, time_of_day, duration) |> convert.to : date_time
         Lua = \ () =>
             := total_seconds = second + (minute * 60) + (hour * 3600)
-            := date_time = $'os.time{year=!year, month=!month, day=!day, hour=0, min=0, sec=0} or 0' : int
+            := stamp : optionm'.option' int = $'os.time{year=!year, month=!month, day=!day, hour=0, min=0, sec=0}'
+            := date_time = stamp |> optionm'.default_value' 0i32
             date_time + (total_seconds + (millisecond / 1000)) |> convert.unbox : date_time
         Fsharp = \ () =>
             $'System.DateTime (!year, !month, !day, !hour, !minute, !second, !millisecond)' : date_time
@@ -434,8 +457,8 @@ test unix_epoch =
             global "import datetime"
             $'datetime.datetime(!year, !month, !day, !hour, !minute, !second, !millisecond * 1000)' : date_time
         Rust = \ () =>
-            $'chrono::NaiveDate::from_ymd_opt(!year, !month as u32, !day as u32).unwrap().and_hms_milli_opt(!hour as \
-                u32, !minute as u32, !second as u32, !millisecond as u32).unwrap()' : date_time
+            := date = rust_naive_date (conv year) (conv month) (conv day)
+            rust_date_at_milli date (conv hour) (conv minute) (conv second) (conv millisecond)
         TypeScript = \ () => $'new Date(!year, !month - 1, !day, !hour, !minute, !second, !millisecond)' : date_time
     }
 
@@ -468,7 +491,8 @@ test date_time_milliseconds =
             (date, time_of_day, duration) |> convert.to : date_time
         Lua = \ () =>
             := total_seconds = second + (minute * 60) + (hour * 3600)
-            := date_time = $'os.time{year=!year, month=!month, day=!day, hour=0, min=0, sec=0} or 0' : int
+            := stamp : optionm'.option' int = $'os.time{year=!year, month=!month, day=!day, hour=0, min=0, sec=0}'
+            := date_time = stamp |> optionm'.default_value' 0i32
             date_time + total_seconds |> convert.unbox : date_time
         Fsharp = \ () =>
             $'System.DateTime (!year, !month, !day, !hour, !minute, !second, System.DateTimeKind.Utc)' : date_time
@@ -476,8 +500,8 @@ test date_time_milliseconds =
             global "import datetime"
             $'datetime.datetime(!year, !month, !day, !hour, !minute, !second, tzinfo=datetime.timezone.utc)' : date_time
         Rust = \ () =>
-            $'chrono::NaiveDate::from_ymd_opt(!year, !month as u32, !day as u32).unwrap().and_hms_opt(!hour as u32, \
-                !minute as u32, !second as u32).unwrap()' : date_time
+            := date = rust_naive_date (conv year) (conv month) (conv day)
+            rust_date_at date (conv hour) (conv minute) (conv second)
     }
 
 ///> lua
@@ -487,6 +511,16 @@ test date_time_utc =
     date_time_utc 1970 1 1 0 0 0
     |> format ""
     |> _assert_eq "1-1-70 12:00:00 AM"
+
+///> rust -d chrono
+test calendar_constructors_build_the_same_instants_on_rust =
+    := shown (d : date_time) : string = d |> format "%Y-%m-%d %H:%M:%S.%f"
+    := utc, milliseconds = shown (date_time_utc 1970 1 1 0 0 0), shown (date_time_milliseconds 1970 1 1 0 0 0 250)
+    (utc, milliseconds, shown (unix_epoch ()), shown (min_value ()), shown (max_value ()))
+    |> _assert_eq (
+        "1970-01-01 00:00:00.000000000", "1970-01-01 00:00:00.250000000", "1970-01-01 00:00:00.000000000",
+        "0001-01-01 00:00:00.000000000", "9999-12-31 23:59:59.999999900"
+    )
 
 /// ### date_time_kind
 :| date_time_kind =
@@ -580,6 +614,16 @@ test to_universal_time_4 =
     }
 :! time_span = $'backend_switch `(time_span_switch)'
 
+:= rust_time_delta_microseconds (n : i64) : time_span = $'chrono::TimeDelta::microseconds(!n)' : time_span
+
+:= rust_time_delta_nanoseconds (n : i64) : time_span = $'chrono::TimeDelta::nanoseconds(!n)' : time_span
+
+:= rust_time_delta_sum (a : time_span) (b : time_span) : time_span = $'!a + !b' : time_span
+
+:= rust_time_delta_of_ticks (ticks : i64) : time_span =
+    := whole_microseconds = rust_time_delta_microseconds (ticks / 10i64)
+    rust_time_delta_sum whole_microseconds (rust_time_delta_nanoseconds ((ticks % 10i64) * 100i64))
+
 := time_span x : time_span =
     backend_switch {
         Gleam = \ () => x |> convert.unbox : time_span
@@ -588,9 +632,7 @@ test to_universal_time_4 =
         Python = \ () =>
             global "import datetime"
             $'datetime.timedelta(!x)' : time_span
-        Rust = \ () =>
-            $'(chrono::TimeDelta::microseconds((!x as i64) / 10) + chrono::TimeDelta::nanoseconds(((!x as i64) % 10) \
-                * 100))' : time_span
+        Rust = \ () => rust_time_delta_of_ticks (conv x)
     }
 
 /// ### new_time_span
@@ -661,8 +703,9 @@ test to_universal_time_4 =
         Gleam = \ () =>
             global "import gleam/time/timestamp"
             := t : timestamp_gleam = date_time |> split_date_time |> new_timestamp_gleam
-            ($'timestamp.to_unix_seconds_and_nanoseconds(!t).0 * 1000000 + \
-                timestamp.to_unix_seconds_and_nanoseconds(!t).1 / 1000' : i64) |> timestamp
+            := seconds : i64 = $'timestamp.to_unix_seconds_and_nanoseconds(!t).0'
+            := nanos : i64 = $'timestamp.to_unix_seconds_and_nanoseconds(!t).1'
+            seconds * 1000000i64 + nanos / 1000i64 |> timestamp
         Lua = \ () => ($'!date_time * 1000000' : i64) |> timestamp
         Fsharp = \ () =>
             := ticks : i64 = $'!date_time.Ticks'
@@ -851,26 +894,33 @@ test milliseconds =
     |> milliseconds
     |> _assert_eq 13
 
+/// ### time_span_ticks_text
+:= time_span_ticks_text (format : string) (ticks : i64) : string =
+    := negative = ticks < 0i64
+    := a = ? negative ?> 0i64 - ticks |: ticks
+    := days, hours = a / 864000000000i64, (a / 36000000000i64) % 24i64
+    := minutes, seconds, fraction = (a / 600000000i64) % 60i64, (a / 10000000i64) % 60i64, a % 10000000i64
+    := two (n : i64) : string = sm'.pad_left 2 '0' ("" ++#? n)
+    ? format = "" || format = "c" ?>
+        := sign = ? negative ?> "-" |: ""
+        := day_part = ? days > 0i64 ?> "" ++#? days ++# "." |: ""
+        := fraction_part = ? fraction > 0i64 ?> "." ++# sm'.pad_left 7 '0' ("" ++#? fraction) |: ""
+        sign ++# day_part ++# two hours ++# ":" ++# two minutes ++# ":" ++# two seconds ++# fraction_part
+    |: format |> sm'.replace "hh" (two hours) |> sm'.replace "mm" (two minutes) |> sm'.replace "ss" (two seconds)
+
+/// ### rust_time_span_nanoseconds
+:= rust_time_span_nanoseconds (time_span : time_span) : i64 = $'!time_span.num_nanoseconds().unwrap()' : i64
+
+/// ### typescript_time_span_milliseconds
+:= typescript_time_span_milliseconds (time_span : time_span) : f64 = $'!time_span' : f64
+
 /// ### time_span_format
 := time_span_format (format : string) (time_span : time_span) : string =
     run_target_args (\ () => format, time_span) \|
         | TypeScript => \ format, time_span =>
-            $'(() => { const t = !time_span; const f = !format; const neg = t < 0; const a = Math.abs(t); const d = \
-                Math.floor(a / 86400000); const h = Math.floor(a / 3600000) % 24; const m = Math.floor(a / 60000) % \
-                60; const s = Math.floor(a / 1000) % 60; const ms = Math.round(a % 1000); const p = (n: number) => \
-                String(n).padStart(2, "0"); if (f === "" || f === "c") return (neg ? "-" : "") + (d > 0 ? d + "." : \
-                "") + p(h) + ":" + p(m) + ":" + p(s) + (ms > 0 ? "." + String(ms * 10000).padStart(7, "0") : ""); \
-                return f.replace("hh", p(h)).replace("mm", p(m)).replace("ss", p(s)); })()' : string
-        | Rust => \ format, time_span =>
-            $'{ let t = !time_span; let f: &str = &(!format); let neg = t < chrono::TimeDelta::zero(); let a = if neg \
-                { -t } else { t }; let n = a.num_seconds() * 10000000 + (a - \
-                chrono::TimeDelta::seconds(a.num_seconds())).num_nanoseconds().unwrap() / 100; let (d, h, m, s, x) = \
-                (n / 864000000000, (n / 36000000000) % 24, (n / 600000000) % 60, (n / 10000000) % 60, n % 10000000); \
-                if f.is_empty() || f == "c" { Rc::<str>::from(format\!("{}{}{:02}:{:02}:{:02}{}", if neg { "-" } else \
-                { "" }, if d > 0 { format\!("{}.", d) } else { std::string::String::new() }, h, m, s, if x > 0 { \
-                format\!(".{:07}", x) } else { std::string::String::new() })) } else { \
-                Rc::<str>::from(f.replace("hh", &format\!("{:02}", h)).replace("mm", &format\!("{:02}", \
-                m)).replace("ss", &format\!("{:02}", s))) } }' : string
+            := milliseconds : i64 = conv (typescript_time_span_milliseconds time_span)
+            time_span_ticks_text format (milliseconds * 10000i64)
+        | Rust => \ format, time_span => time_span_ticks_text format (rust_time_span_nanoseconds time_span / 100i64)
         | _ => \ format, time_span =>
             backend_switch {
                 Gleam = \ () =>
@@ -954,6 +1004,14 @@ test time_span_format_3 =
     |> new_time_span (date_time_milliseconds 2002 2 2 10 11 12 0)
     |> time_span_format "c"
     |> _assert_eq "10:11:12.9990000"
+
+///> rust -d chrono
+///> typescript
+test time_span_format_custom_and_negative =
+    := later = date_time_milliseconds 2002 2 2 20 22 24 26
+    := earlier = date_time_milliseconds 2002 2 2 10 11 12 26
+    := custom = later |> new_time_span earlier |> time_span_format "hh-mm-ss"
+    (custom, earlier |> new_time_span later |> time_span_format "c") |> _assert_eq ("10-11-12", "-10:11:12")
 
 /// ### time_zone_info
 :== time_zone_info_switch =
@@ -1080,9 +1138,32 @@ test add_days_moves_the_timestamp =
         (conv seconds : i64) * 1000i64 + conv millis
     |: $'!stopwatch.ElapsedMilliseconds'
 
+:= stopwatch_elapsed_microseconds (stopwatch : stopwatch) : i64 =
+    ? is_rust () ?>
+        := elapsed = $'!stopwatch.elapsed()' : rust_std_duration
+        := seconds : u64 = $'!elapsed.as_secs()'
+        := micros : u32 = $'!elapsed.subsec_micros()'
+        (conv seconds : i64) * 1000000i64 + conv micros
+    |:
+        := ticks : i64 = $'!stopwatch.Elapsed.Ticks'
+        ticks / 10i64
+
 := stopwatch_start (stopwatch : stopwatch) : () =
     ? is_rust () |> not
     ?> $'!stopwatch.Start' ()
+
+/// ### monotonic_milliseconds
+:= monotonic_milliseconds () : i64 =
+    run_target \|
+        | Gleam => \ () =>
+            erlang_term.apply "erlang" "monotonic_time" [ erlang_term.atom "millisecond" ] |> erlang_term.cast
+        | _ => \ () => failwith "monotonic_milliseconds: no arm for this backend"
+
+///> gleam
+test the_monotonic_clock_does_not_go_back =
+    := a = monotonic_milliseconds ()
+    := b = monotonic_milliseconds ()
+    (b >= a) |> _assert_eq !+
 
 /// ## rust
 
@@ -1186,8 +1267,11 @@ test add_days_moves_the_timestamp =
     run_target \|
         | Fsharp _ => \ () => date_time |> $'_.GetUtcOffset' (time_zone_local ())
         | Rust => \ () =>
-            $'chrono::TimeDelta::seconds(chrono::TimeZone::offset_from_local_datetime(&chrono::Local, \
-                &!date_time).earliest().map(|o| o.local_minus_utc()).unwrap_or(0) as i64)' : time_span
+            := offset : i32 =
+                $'chrono::TimeZone::offset_from_local_datetime(&chrono::Local, \
+                    &!date_time).earliest().map(|o| o.local_minus_utc()).unwrap_or(0)'
+            := seconds : i64 = conv offset
+            $'chrono::TimeDelta::seconds(!seconds)' : time_span
         | target => \ () =>
             backend_switch {
                 Gleam = \ () =>
@@ -1212,7 +1296,9 @@ test add_days_moves_the_timestamp =
 := guid_sub_micro_digit (date_time : date_time) : i64 =
     run_target \|
         | Fsharp => \ () => $'(!date_time.Ticks % 10L)' : i64
-        | Rust => \ () => $'((!date_time.and_utc().timestamp_subsec_nanos() / 100 % 10) as i64)' : i64
+        | Rust => \ () =>
+            := nanos : u32 = $'!date_time.and_utc().timestamp_subsec_nanos()'
+            conv (nanos / 100u32 % 10u32) : i64
         | _ => \ () => 0i64
 
 /// ### with_guid_sub_micro_digit
@@ -1475,3 +1561,21 @@ test zig_date_time_is_micros_since_the_unix_epoch =
     unix_epoch () |> add_days 1i32 |> format "yyyy-MM-dd" |> _assert_eq "1970-01-02"
     max_value () |> format "HH:mm:ss.ffffff" |> _assert_eq "23:59:59.999999"
     unix_epoch () |> add_days -1i32 |> format_iso8601 |> _assert_eq "1969-12-31T00-00-00.000"
+
+///> rust
+test stopwatch_microseconds_agree_with_milliseconds =
+    := watch = stopwatch ()
+    stopwatch_start watch
+    := before = stopwatch_elapsed_microseconds watch
+    := millis = stopwatch_elapsed_milliseconds watch
+    := after = stopwatch_elapsed_microseconds watch
+    ? before < 0i64 ?> failwith "elapsed microseconds are never negative"
+    ? after < before ?> failwith "elapsed microseconds never go back"
+    ? millis * 1000i64 > after ?> failwith "the millisecond reading never runs ahead of a later microsecond reading"
+
+///> lua
+test pre_epoch_micros_floor_to_the_second_below_on_lua =
+    timestamp -1i64
+    |> to_calendar_utc
+    |> to_timestamp
+    |> _assert_eq' (-1000000i64 |> timestamp)

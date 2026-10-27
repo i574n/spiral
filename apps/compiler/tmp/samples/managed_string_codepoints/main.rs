@@ -145,37 +145,37 @@ fn spiral_main() -> i32 {
     let v69: i32 = v68.wrapping_sub(1i32);
     let v70: Rc<str> = string_slice(&{ thread_local!{ static LIT: Rc<str> = Rc::<str>::from("Aéλ🙂Z"); } LIT.with(|lit| lit.clone()) }, v59 as i64, v69 as i64);
     let v71: i32 = 1i32;
-    let v72: u8 = runtime_byte_0(v0, v71);
+    let v72: u8 = runtime_byte_0(v0.clone(), v71);
     let v73: i32 = 0i32;
-    let v74: u8 = runtime_byte_0(v3, v73);
+    let v74: u8 = runtime_byte_0(v3.clone(), v73);
     let v75: i32 = 3i32;
     let v76: i32 = 0i32;
     let v77: i32 = 0i32;
     let v78: i32 = 10i32;
-    let v79: i32 = codepoint_byte_offset_loop_2(v6, v72, v74, v75, v76, v77, v78);
+    let v79: i32 = codepoint_byte_offset_loop_2(v6.clone(), v72, v74, v75, v76, v77, v78);
     let v80: i32 = 0i32;
     let v81: u8 = runtime_byte_0(v30.clone(), v80);
     let v82: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("é"); } LIT.with(|lit| lit.clone()) };
     let v83: i32 = 0i32;
-    let v84: u8 = runtime_byte_0(v82, v83);
+    let v84: u8 = runtime_byte_0(v82.clone(), v83);
     let v85: i32 = 3i32;
     let v86: u8 = runtime_byte_0(v50.clone(), v85);
     let v87: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("🙂"); } LIT.with(|lit| lit.clone()) };
     let v88: i32 = 3i32;
-    let v89: u8 = runtime_byte_0(v87, v88);
+    let v89: u8 = runtime_byte_0(v87.clone(), v88);
     let v90: bool = v10 == 5i32;
     if v90 {
-        let v91: i32 = (v30.len() as i32);
+        let v91: i32 = (v30.clone().len() as i32);
         let v92: bool = v91 == 2i32;
         if v92 {
             let v93: bool = v81 == v84;
             if v93 {
-                let v94: i32 = (v50.len() as i32);
+                let v94: i32 = (v50.clone().len() as i32);
                 let v95: bool = v94 == 4i32;
                 if v95 {
                     let v96: bool = v86 == v89;
                     if v96 {
-                        let v97: i32 = (v70.len() as i32);
+                        let v97: i32 = (v70.clone().len() as i32);
                         let v98: bool = v97 == 8i32;
                         if v98 {
                             let v99: bool = v79 == 5i32;

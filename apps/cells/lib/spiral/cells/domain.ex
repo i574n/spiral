@@ -84,6 +84,11 @@ defmodule Spiral.Cells.Domain do
     :spiral_cells@domain.from_spi(spi, spir)
   end
 
+  def target_gaps(spi) do
+    ensure!()
+    :spiral_cells@domain.target_gaps(spi)
+  end
+
   def test_index(wire) do
     ensure!()
     :spiral_cells@domain.test_index(wire)

@@ -465,6 +465,31 @@ defmodule Spiral.Cells.DocumentTest do
     assert Enum.any?(doc.cells, &(&1.kind == :spiral and &1.source =~ ~r/\A\/\/\/- --test static --symbol/))
     assert spi |> Document.parse_spi("") |> Document.to_livemd() |> Document.parse_livemd() |> Document.to_spi_tested() == spi
   end
+  test "a test name a heading cannot carry (trailing underscore) round-trips through an explicit --name" do
+    spi = "///- --package .\n/// ### map4\n:= map4 (a : i32) : i32 = a\n\n:= map4_ (a : i32) : i32 = a\n\n///> rust\ntest map4_ =\n    map4_ 1i32 |> ignore\n"
+    livemd = spi |> Document.parse_spi("") |> Document.to_livemd()
+    assert livemd =~ "--name map4_"
+    once = livemd |> Document.parse_livemd() |> Document.to_spi_tested()
+    assert once =~ "\ntest map4_ =\n"
+    refute once =~ "--name"
+    assert once |> Document.parse_spi("") |> Document.to_livemd() |> Document.parse_livemd() |> Document.to_spi_tested() == once
+  end
+  test "a test named by its heading with the trailing underscore stripped keeps the heading name, no --name" do
+    spi = "///- --package .\n/// ### take_\n:= take (a : i32) : i32 = a\n\n///> rust\ntest take =\n    take 1i32 |> ignore\n"
+    livemd = spi |> Document.parse_spi("") |> Document.to_livemd()
+    refute livemd =~ "--name"
+    once = livemd |> Document.parse_livemd() |> Document.to_spi_tested()
+    assert once =~ "\ntest take =\n"
+  end
+  test "a cell source holding --> stays inside its livebook comment through livemd" do
+    spi = "///- --package .\n:= arrow (s : string) : bool = s = \"-->\"\n"
+    livemd = spi |> Document.parse_spi("") |> Document.to_livemd()
+    refute livemd =~ ~r/livebook:\{[^\n]*-->[^\n]*-->/
+    once = livemd |> Document.parse_livemd() |> Document.to_spi_tested()
+    assert once =~ ~s|:= arrow (s : string) : bool = s = "-->"|
+    refute once =~ "chunks"
+    assert once |> Document.parse_spi("") |> Document.to_livemd() |> Document.parse_livemd() |> Document.to_spi_tested() == once
+  end
   test "the spiral library .spi files load as notebooks, one test cell per test block" do
     lib = Path.expand("../../../../lib/spiral", __DIR__)
     sources = Enum.reject(Path.wildcard(Path.join(lib, "**/*.spi")), &String.contains?(&1, "/target/"))
@@ -573,5 +598,13 @@ defmodule Spiral.Cells.DocumentTest do
     assert [bounded] = test_source.(Document.parse_spi(spi, "", {"multi\t3\t4\t6\ttest multi =\n", ""}))
     assert bounded =~ "inl s = \"\"\"a\nb\"\"\"\ns |> _assert_eq"
     assert Enum.any?(Document.parse_spi(spi, "", {"multi\t3\t4\t6\ttest multi =\n", ""}).cells, &(&1.source =~ "inl y () = 2i32"))
+  end
+
+  test "a doc comment that ends a target's cell before more code is reported as a target gap" do
+    gap = "/// ### main\n///> _\n\ninl run_main () = 0i32\n\n/// The entry.\n\ninl main () = run_main ()\n"
+    fixed = String.replace(gap, "/// The entry.\n", "/// The entry.\n///> _\n")
+    assert Document.target_gaps(gap) == [{8, "///> _"}]
+    assert Document.target_gaps(fixed) == []
+    assert Document.target_gaps("/// ### a\n///> _\n\ninl a () = 0i32\n\n/// ### b\n\ninl b () = 1i32\n") == []
   end
 end

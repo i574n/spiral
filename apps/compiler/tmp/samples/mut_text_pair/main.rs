@@ -5,11 +5,11 @@ struct Mut0 { l0: Rc<str>, l1: Rc<str> }
 fn spiral_main() -> i32 {
     let v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("no"); } LIT.with(|lit| lit.clone()) };
     let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("nay"); } LIT.with(|lit| lit.clone()) };
-    let mut v2: Rc<RefCell<Mut0>> = Rc::new(RefCell::new(Mut0 { l0: v0, l1: v1 }));
+    let mut v2: Rc<RefCell<Mut0>> = Rc::new(RefCell::new(Mut0 { l0: v0.clone(), l1: v1.clone() }));
     let v3: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
     let v4: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("yo"); } LIT.with(|lit| lit.clone()) };
-    v2.borrow_mut().l0 = v3;
-    v2.borrow_mut().l1 = v4;
+    v2.borrow_mut().l0 = v3.clone();
+    v2.borrow_mut().l1 = v4.clone();
     let (mut v5, mut v6): (Rc<str>, Rc<str>) = (v2.borrow().l0.clone(), v2.borrow().l1.clone());
     let v7: bool = &*v5 == "hi";
     let v9: bool = if v7 {

@@ -6,6 +6,7 @@ defmodule Mix.Tasks.Spiral.CellsServer do
   @impl Mix.Task
   def run(_args) do
     Mix.Task.run("loadpaths")
+    Spiral.Cells.MemoryGuard.start()
     Spiral.Cells.Domain.ensure!()
     Spiral.Cells.Server.serve()
   end

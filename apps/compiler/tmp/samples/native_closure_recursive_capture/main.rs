@@ -33,8 +33,8 @@ fn f_c0(mut v0: Rc<UH0>) -> Rc<dyn Fn(i32) -> i32> {
 fn spiral_main() -> i32 {
     let v0: Rc<UH0> = { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_Leaf); } CASE.with(|case| case.clone()) };
     let v1: i32 = 2i32;
-    let v2: Rc<UH0> = Rc::new(UH0::UH0_Node(v1, v0.clone(), v0));
-    let mut v3: Rc<dyn Fn(i32) -> i32> = f_c0(v2);
+    let v2: Rc<UH0> = Rc::new(UH0::UH0_Node(v1, v0.clone(), v0.clone()));
+    let mut v3: Rc<dyn Fn(i32) -> i32> = f_c0(v2.clone());
     let v4: i32 = v3(19i32);
     let v5: i32 = v3(19i32);
     let v6: i32 = v4.wrapping_add(v5);

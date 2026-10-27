@@ -348,7 +348,7 @@ test iterate_3 =
             $'!items |> list.length' : int
         Fsharp = \ () => items |> $'Seq.length' : int
         Python = \ () => $'len(!items)' : int
-        Rust = \ () => $'(!items.len() as `int)' : int
+        Rust = \ () => ($'!items.len()' : convert.unativeint) |> convert.convert : int
         TypeScript = \ () => $'!items.length' : int
         Zig = \ () => $'\@as(`int, \@intCast(!items.len))' : int
     }

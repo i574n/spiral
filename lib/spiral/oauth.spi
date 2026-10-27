@@ -20,7 +20,7 @@ test oauth static =
 := parameter_string (params : list oauth1_pair) : string =
     params
     |> listm.map (\ (k, v) => sm'.percent_encode k, sm'.percent_encode v)
-    |> listm.fold (\ acc x => oauth1_inserted x acc) Nil
+    |> listm.fold (\ acc x => oauth1_inserted x acc) []
     |> listm.map (\ (k, v) => k ++# "=" ++# v)
     |> sm'.concat_list "&"
 

@@ -584,6 +584,7 @@ defmodule Spiral.Cells.Targets do
                timeout: budget(deadline),
                cd:
                  cond do
+                   spiral? and notebook_dir?(opts[:root]) -> opts[:root]
                    spiral? -> nil
                    is_binary(opts[:cwd]) -> opts[:cwd]
                    true -> work_dir(args, exe)

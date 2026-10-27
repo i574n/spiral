@@ -1,0 +1,235 @@
+// # iggy  (LIB-IGGY-CLIENT M1 draft: GADT event family + byte-identical codec. compiler lane owns M1+M3.)
+// Home: lib/spiral/iggy.spi. Verify via the test blocks (///> rust) so the Cells gate runs the codec on the
+// real backend and asserts the committed bytes + round-trips + malformed refusals. Decode validates untrusted
+// bytes and returns decode_result (maps to rust Result<Event, DecodeError>); the Rust arm reads real strings,
+// the Gleam arm is an M1 stub ("" / M3 lands portable bytes->string). Matches kit's wire.rs reference exactly.
+
+test iggy static =
+    :< testing
+
+/// ### event_body
+:| event_body =
+    | JobStarted : { job : string; label : string }
+    | JobStep : { job : string; step : string; exit : i32; detail : string }
+    | JobDone : { job : string; exit : i32 }
+    | JobStop : { job : string; reason : string }
+    | LeaseAcquired : { tree : string; owner : string }
+    | LeaseReleased : { tree : string; owner : string }
+    | SlotAdmitted : { slot : i32; owner : string }
+    | SlotReleased : { slot : i32; owner : string }
+    | Health : { cpu : i32; free_mem_mb : i32; free_disk_gb : i32 }
+    | Toolchain : { tool : string; version : string; path : string; mtime : string }
+
+/// ### event
+:== event = { seq : u64; machine : string; body : event_body }
+
+// --- byte primitives: big-endian, built as `array u8` (runtime), joined with ++ (am' append instance) ---
+/// ### put_u32
+:~ cat (a : array u8) (b : array u8) : array u8 = a ++ b
+
+:~ put_u32 (n : u32) : array u8 =
+    ;[ conv ((n >>> 24i32) &&& 255u32) : u8; conv ((n >>> 16i32) &&& 255u32) : u8; conv ((n >>> 8i32) &&& 255u32) : u8; conv (n &&& 255u32) : u8 ]
+
+/// ### put_u64
+:~ put_u64 (n : u64) : array u8 =
+    ;[ conv ((n >>> 56i32) &&& 255u64) : u8; conv ((n >>> 48i32) &&& 255u64) : u8; conv ((n >>> 40i32) &&& 255u64) : u8; conv ((n >>> 32i32) &&& 255u64) : u8; conv ((n >>> 24i32) &&& 255u64) : u8; conv ((n >>> 16i32) &&& 255u64) : u8; conv ((n >>> 8i32) &&& 255u64) : u8; conv (n &&& 255u64) : u8 ]
+
+/// ### put_i32
+:~ put_i32 (n : i32) : array u8 = put_u32 (conv n)
+
+/// ### put_str
+// utf8_byte_list (gleam+rust) |> to_array' (gleam arm spiral_array_from_list) -> portable byte array,
+// unlike sm'.utf8_get_bytes which is rust + .NET-default only.
+:~ put_str (s : string) : array u8 =
+    inl bytes : array u8 = array (sm'.utf8_byte_list s |> listm'.to_array')
+    cat (put_u32 (conv (am'.length bytes))) bytes
+
+/// ### body_tag
+:~ body_tag (b : event_body) : u8 =
+    ?= b ?|
+    | JobStarted _ => 0u8  | JobStep _ => 1u8      | JobDone _ => 2u8      | JobStop _ => 3u8
+    | LeaseAcquired _ => 4u8 | LeaseReleased _ => 5u8 | SlotAdmitted _ => 6u8 | SlotReleased _ => 7u8
+    | Health _ => 8u8      | Toolchain _ => 9u8
+
+/// ### body_bytes
+:~ body_bytes (b : event_body) : array u8 =
+    ?= b ?|
+    | JobStarted r    => cat (put_str r.job) (put_str r.label)
+    | JobStep r       => cat (put_str r.job) (cat (put_str r.step) (cat (put_i32 r.exit) (put_str r.detail)))
+    | JobDone r       => cat (put_str r.job) (put_i32 r.exit)
+    | JobStop r       => cat (put_str r.job) (put_str r.reason)
+    | LeaseAcquired r => cat (put_str r.tree) (put_str r.owner)
+    | LeaseReleased r => cat (put_str r.tree) (put_str r.owner)
+    | SlotAdmitted r  => cat (put_i32 r.slot) (put_str r.owner)
+    | SlotReleased r  => cat (put_i32 r.slot) (put_str r.owner)
+    | Health r        => cat (put_i32 r.cpu) (cat (put_i32 r.free_mem_mb) (put_i32 r.free_disk_gb))
+    | Toolchain r     => cat (put_str r.tool) (cat (put_str r.version) (cat (put_str r.path) (put_str r.mtime)))
+
+/// ### encode
+:~ encode (e : event) : array u8 =
+    cat (put_u64 e.seq) (cat (put_str e.machine) (cat ;[ body_tag e.body ] (body_bytes e.body)))
+
+// Health{cpu=63,mem=7500,disk=84}, seq=1, machine="node" -> 29 bytes (hand-traced; matches kit fixtures.tsv).
+///- --timeout 600000
+///> rust
+test encode_health_fixture =
+    := ~ev : event = { seq = 1u64; machine = "node"; body = Health { cpu = 63i32; free_mem_mb = 7500i32; free_disk_gb = 84i32 } }
+    := ~expected : array u8 =
+        ;[ 0u8; 0u8; 0u8; 0u8; 0u8; 0u8; 0u8; 1u8; 0u8; 0u8; 0u8; 4u8; 110u8; 111u8; 100u8; 101u8; 8u8; 0u8; 0u8; 0u8; 63u8; 0u8; 0u8; 29u8; 76u8; 0u8; 0u8; 0u8; 84u8 ]
+    _assert_eq expected (encode ev)
+
+// --- decode: untrusted bytes -> decode_result. Big-endian raw readers + overflow-safe bounds. ------------
+/// ### read_u32  (raw; call only after a bounds check)
+:~ read_u32 (a : array u8) (i : i32) : u32 =
+    (conv (am'.index i a) <<< 24i32) ||| (conv (am'.index (i + 1i32) a) <<< 16i32) ||| (conv (am'.index (i + 2i32) a) <<< 8i32) ||| conv (am'.index (i + 3i32) a)
+
+/// ### read_u64  (raw)
+:~ read_u64 (a : array u8) (i : i32) : u64 =
+    (conv (read_u32 a i) <<< 32i32) ||| conv (read_u32 a (i + 4i32))
+
+/// ### read_i32  (raw)
+:~ read_i32 (a : array u8) (i : i32) : i32 = conv (read_u32 a i)
+
+/// ### rd  (one read: value + next offset, or a failure)
+:| rd t =
+    | RD : t * i32
+    | RTrunc
+    | RUtf8
+
+/// ### decode_result  (maps to rust Result<Event, DecodeError>; Decoded = Ok event)
+:| decode_result =
+    | Decoded : event
+    | Truncated
+    | UnknownTag : u8
+    | NotUtf8
+    | TrailingBytes : i32
+
+/// ### need  (overflow-safe: window i..i+w lies within 0..len, i and w non-negative)
+:= need (i : i32) (w : i32) (len : i32) : bool =
+    i >= 0i32 && w >= 0i32 && i <= len && w <= len - i
+
+/// ### rd_u64
+:~ rd_u64 (a : array u8) (i : i32) (len : i32) : rd u64 =
+    ? need i 8i32 len ?> RD (read_u64 a i, i + 8i32) |: RTrunc
+
+/// ### rd_i32
+:~ rd_i32 (a : array u8) (i : i32) (len : i32) : rd i32 =
+    ? need i 4i32 len ?> RD (read_i32 a i, i + 4i32) |: RTrunc
+
+/// ### rd_u8
+:~ rd_u8 (a : array u8) (i : i32) (len : i32) : rd u8 =
+    ? need i 1i32 len ?> RD (am'.index i a, i + 1i32) |: RTrunc
+
+/// ### rd_str_utf8  (n payload bytes at i+4 validated as utf8; Rust reads, Gleam stub for M3)
+// TODO: LIB-IGGY-CLIENT M3 Gleam arm of rd_str_utf8 returns "" (stub); read real utf8 (portable bytes->string)
+:~ rd_str_utf8 (a : array u8) (i : i32) (n : i32) : rd string =
+    backend_switch {
+        Rust = \ () =>
+            inl bytes = am'.init_base (conv n) (\ j => am'.index (conv i + 4i32 + j) a) |> am'.to_vec
+            ?= (sm'.string_from_utf8 bytes |> resultm.ok' |> optionm'.unbox) ?|
+            | Some s => RD (sm'.from_std_string s, i + 4i32 + n)
+            | None => RUtf8
+        Gleam = \ () => RD ("", i + 4i32 + n)
+    }
+
+/// ### rd_str  (u32 length prefix, bounds-checked both for the prefix and the payload, then utf8)
+:~ rd_str (a : array u8) (i : i32) (len : i32) : rd string =
+    inl have_len = need i 4i32 len
+    inl n = ? have_len ?> conv (read_u32 a i) |: 0i32
+    ? have_len && need (i + 4i32) n len ?> rd_str_utf8 a i n |: RTrunc
+
+/// ### rd_bind  (thread value+offset; short-circuit on failure. not an operator: parse-safe)
+:~ rd_bind \* t u. (m : rd t) (f : t -> i32 -> rd u) : rd u =
+    ?= m ?|
+    | RTrunc => RTrunc
+    | RUtf8 => RUtf8
+    | RD (x, i) => f x i
+
+/// ### finish  (whole frame consumed -> Decoded; leftover bytes -> TrailingBytes)
+:~ finish (e : event) (final : i32) (len : i32) : decode_result =
+    ? final = len ?> Decoded e |: TrailingBytes (len - final)
+
+/// ### complete  (turn a terminal body read into the event-level decode_result)
+:~ complete (seq : u64) (machine : string) (len : i32) (r : rd event_body) : decode_result =
+    ?= r ?|
+    | RTrunc => Truncated
+    | RUtf8 => NotUtf8
+    | RD (body, final) => finish { seq; machine; body } final len
+
+/// ### decode
+:~ decode (a : array u8) : decode_result =
+    inl len = conv (am'.length a) : i32
+    ?= rd_u64 a 0i32 len ?|
+    | RTrunc => Truncated
+    | RUtf8 => NotUtf8
+    | RD (seq, i0) =>
+        ?= rd_str a i0 len ?|
+        | RTrunc => Truncated
+        | RUtf8 => NotUtf8
+        | RD (machine, i1) =>
+            ?= rd_u8 a i1 len ?|
+            | RTrunc => Truncated
+            | RUtf8 => NotUtf8
+            | RD (tag, i2) =>
+                ?= tag ?|
+                | 0u8 => complete seq machine len (rd_bind (rd_str a i2 len) (\ job j1 => rd_bind (rd_str a j1 len) (\ label j2 => RD (JobStarted { job; label }, j2))))
+                | 1u8 => complete seq machine len (rd_bind (rd_str a i2 len) (\ job j1 => rd_bind (rd_str a j1 len) (\ step j2 => rd_bind (rd_i32 a j2 len) (\ ex j3 => rd_bind (rd_str a j3 len) (\ detail j4 => RD (JobStep { job; step; exit = ex; detail }, j4))))))
+                | 2u8 => complete seq machine len (rd_bind (rd_str a i2 len) (\ job j1 => rd_bind (rd_i32 a j1 len) (\ ex j2 => RD (JobDone { job; exit = ex }, j2))))
+                | 3u8 => complete seq machine len (rd_bind (rd_str a i2 len) (\ job j1 => rd_bind (rd_str a j1 len) (\ reason j2 => RD (JobStop { job; reason }, j2))))
+                | 4u8 => complete seq machine len (rd_bind (rd_str a i2 len) (\ tree j1 => rd_bind (rd_str a j1 len) (\ owner j2 => RD (LeaseAcquired { tree; owner }, j2))))
+                | 5u8 => complete seq machine len (rd_bind (rd_str a i2 len) (\ tree j1 => rd_bind (rd_str a j1 len) (\ owner j2 => RD (LeaseReleased { tree; owner }, j2))))
+                | 6u8 => complete seq machine len (rd_bind (rd_i32 a i2 len) (\ slot j1 => rd_bind (rd_str a j1 len) (\ owner j2 => RD (SlotAdmitted { slot; owner }, j2))))
+                | 7u8 => complete seq machine len (rd_bind (rd_i32 a i2 len) (\ slot j1 => rd_bind (rd_str a j1 len) (\ owner j2 => RD (SlotReleased { slot; owner }, j2))))
+                | 8u8 => complete seq machine len (rd_bind (rd_i32 a i2 len) (\ cpu j1 => rd_bind (rd_i32 a j1 len) (\ free_mem_mb j2 => rd_bind (rd_i32 a j2 len) (\ free_disk_gb j3 => RD (Health { cpu; free_mem_mb; free_disk_gb }, j3)))))
+                | 9u8 => complete seq machine len (rd_bind (rd_str a i2 len) (\ tool j1 => rd_bind (rd_str a j1 len) (\ version j2 => rd_bind (rd_str a j2 len) (\ path j3 => rd_bind (rd_str a j3 len) (\ mtime j4 => RD (Toolchain { tool; version; path; mtime }, j4))))))
+                | _ => UnknownTag tag
+
+// --- decode round-trip tests (rust only; gleam string read is an M1 stub). Split into 3 blocks so each test
+// cell (a full lib->Rust + rustc compile, memo off) fits the 300s per-cell budget under node contention; all 10
+// tags are still asserted. rt runs one round-trip assert; each block's final tuple evaluates its components.
+// JobDone's round-trip is covered by malformed_input_is_refused (passed), so it is omitted from block 1 to keep
+// each block at 3 events (the size that fits the 300s per-cell budget under node contention).
+///- --timeout 600000
+///> rust
+test codec_round_trip_1 =
+    := rt (ev : event) = _assert_eq (Decoded ev) (decode (encode ev))
+    := ~e0 : event = { seq = 1u64; machine = "node"; body = JobStarted { job = "j1"; label = "build" } }
+    := ~e1 : event = { seq = 1u64; machine = "node"; body = JobStep { job = "j1"; step = "compile"; exit = 0i32; detail = "ok" } }
+    := ~e3 : event = { seq = 1u64; machine = "node"; body = JobStop { job = "j1"; reason = "memory" } }
+    (rt e0, rt e1, rt e3)
+
+///- --timeout 600000
+///> rust
+test codec_round_trip_2 =
+    := rt (ev : event) = _assert_eq (Decoded ev) (decode (encode ev))
+    := ~e4 : event = { seq = 1u64; machine = "node"; body = LeaseAcquired { tree = "eoie"; owner = "compiler" } }
+    := ~e5 : event = { seq = 1u64; machine = "node"; body = LeaseReleased { tree = "eoie"; owner = "compiler" } }
+    := ~e6 : event = { seq = 1u64; machine = "node"; body = SlotAdmitted { slot = 1i32; owner = "compiler" } }
+    (rt e4, rt e5, rt e6)
+
+///- --timeout 600000
+///> rust
+test codec_round_trip_3 =
+    := rt (ev : event) = _assert_eq (Decoded ev) (decode (encode ev))
+    := ~e7 : event = { seq = 1u64; machine = "node"; body = SlotReleased { slot = 1i32; owner = "compiler" } }
+    := ~e8 : event = { seq = 1u64; machine = "node"; body = Health { cpu = 63i32; free_mem_mb = 7500i32; free_disk_gb = 84i32 } }
+    := ~e9 : event = { seq = 1u64; machine = "node"; body = Toolchain { tool = "perl"; version = "5.42.3"; path = "p"; mtime = "2026-10-26" } }
+    (rt e7, rt e8, rt e9)
+
+// JobDone{job=j1,exit=0} seq=1 machine=node -> 27 bytes. Malformed inputs must be refused, not misread
+// (mirrors kit wire.rs malformed_input_is_refused): drop last -> Truncated, append -> TrailingBytes 1,
+// tag byte (idx 16) = 42 -> UnknownTag 42. The 4-tuple runs all four asserts.
+///- --timeout 600000
+///> rust
+test malformed_input_is_refused =
+    := ~jd : event = { seq = 1u64; machine = "node"; body = JobDone { job = "j1"; exit = 0i32 } }
+    := ~truncated : array u8 =
+        ;[ 0u8; 0u8; 0u8; 0u8; 0u8; 0u8; 0u8; 1u8; 0u8; 0u8; 0u8; 4u8; 110u8; 111u8; 100u8; 101u8; 2u8; 0u8; 0u8; 0u8; 2u8; 106u8; 49u8; 0u8; 0u8; 0u8 ]
+    := ~tagged : array u8 =
+        ;[ 0u8; 0u8; 0u8; 0u8; 0u8; 0u8; 0u8; 1u8; 0u8; 0u8; 0u8; 4u8; 110u8; 111u8; 100u8; 101u8; 42u8; 0u8; 0u8; 0u8; 2u8; 106u8; 49u8; 0u8; 0u8; 0u8; 0u8 ]
+    (
+        _assert_eq (Decoded jd) (decode (encode jd)),
+        _assert_eq Truncated (decode truncated),
+        _assert_eq (TrailingBytes 1i32) (decode (encode jd ++ ;[ 0u8 ])),
+        _assert_eq (UnknownTag 42u8) (decode tagged)
+    )

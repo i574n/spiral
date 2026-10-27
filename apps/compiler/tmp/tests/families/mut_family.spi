@@ -1,0 +1,432 @@
+///- --package .
+///> c
+///> zig
+test mut_f32_text_returns_zero =
+    := program () : i32 =
+        := ~x = 1.5f32
+        := ~word = "no"
+        := pair = x, word
+        := box : mut { value : f32 * string } = !!!!LayoutToHeapMutable({ value = pair })
+        := ~y = 2.5f32
+        := ~next = "hi"
+        := replaced = y, next
+        box <- { value = replaced }
+        := opened = !!!!LayoutIndex(box)
+        := ~(left, right) = opened.value
+        ? left =. 2.5f32 && !!!!EQ(right, "hi") ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "mut_f32_text"
+
+///> c
+///> zig
+test mut_heap_heap_returns_zero =
+    := program () : i32 =
+        := ~n = 3i32
+        := ~word = "no"
+        := inner_pair = n, word
+        := inner = !!!!LayoutToHeap({ value = inner_pair })
+        := ~extra = 1i32
+        := outer_pair = inner, extra
+        := outer = !!!!LayoutToHeap({ value = outer_pair })
+        := slot : mut { value : heap { value : (heap { value : i32 * string }) * i32 } } =
+            !!!!LayoutToHeapMutable({ value = outer })
+        := ~m = 7i32
+        := ~next = "hi"
+        := next_pair = m, next
+        := next_inner = !!!!LayoutToHeap({ value = next_pair })
+        := ~count = 4i32
+        := next_outer_pair = next_inner, count
+        := next_outer = !!!!LayoutToHeap({ value = next_outer_pair })
+        slot <- { value = next_outer }
+        := opened = !!!!LayoutIndex(slot)
+        := held = opened.value
+        := outer_opened = !!!!LayoutIndex(held)
+        := ~(inner_held, seen) = outer_opened.value
+        := inner_opened = !!!!LayoutIndex(inner_held)
+        := ~(left, right) = inner_opened.value
+        ? left =. 7i32 && !!!!EQ(right, "hi") && seen =. 4i32 ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "mut_heap_heap"
+
+///> c
+///> zig
+test mut_heap_heap_heap_returns_zero =
+    := program () : i32 =
+        := ~n = 3i32
+        := ~word = "no"
+        := inner_pair = n, word
+        := inner = !!!!LayoutToHeap({ value = inner_pair })
+        := ~extra = 1i32
+        := mid_pair = inner, extra
+        := mid = !!!!LayoutToHeap({ value = mid_pair })
+        := ~mark = 2i32
+        := outer_pair = mid, mark
+        := outer = !!!!LayoutToHeap({ value = outer_pair })
+        := slot : mut { value : heap { value : (heap { value : (heap { value : i32 * string }) * i32 }) * i32 } } =
+            !!!!LayoutToHeapMutable({ value = outer })
+        := ~m = 7i32
+        := ~next = "hi"
+        := next_pair = m, next
+        := next_inner = !!!!LayoutToHeap({ value = next_pair })
+        := ~count = 4i32
+        := next_mid_pair = next_inner, count
+        := next_mid = !!!!LayoutToHeap({ value = next_mid_pair })
+        := ~flag = 5i32
+        := next_outer_pair = next_mid, flag
+        := next_outer = !!!!LayoutToHeap({ value = next_outer_pair })
+        slot <- { value = next_outer }
+        := opened = !!!!LayoutIndex(slot)
+        := held = opened.value
+        := outer_opened = !!!!LayoutIndex(held)
+        := ~(mid_held, seen) = outer_opened.value
+        := mid_opened = !!!!LayoutIndex(mid_held)
+        := ~(inner_held, count_seen) = mid_opened.value
+        := inner_opened = !!!!LayoutIndex(inner_held)
+        := ~(left, right) = inner_opened.value
+        ? left =. 7i32 && !!!!EQ(right, "hi") && count_seen =. 4i32 && seen =. 5i32 ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "mut_heap_heap_heap"
+
+///> c
+///> zig
+test mut_heap_heap_pair_returns_zero =
+    := program () : i32 =
+        := ~n = 1i32
+        := ~word = "no"
+        := left_pair = n, word
+        := left_heap = !!!!LayoutToHeap({ value = left_pair })
+        := ~m = 2i32
+        := ~other = "zz"
+        := right_pair = m, other
+        := right_heap = !!!!LayoutToHeap({ value = right_pair })
+        := pair = left_heap, right_heap
+        := inner = !!!!LayoutToHeap({ value = pair })
+        := ~mark = 3i32
+        := outer_pair = inner, mark
+        := outer = !!!!LayoutToHeap({ value = outer_pair })
+        := slot
+            : mut
+                {
+                    value :
+                        heap
+                            {
+                                value :
+                                    (heap { value : heap { value : i32 * string } * heap { value : i32 * string } }) *
+                                    i32
+                            }
+                }
+            =
+            !!!!LayoutToHeapMutable({ value = outer })
+        := ~a0 = 7i32
+        := ~b0 = "hi"
+        := next_left_pair = a0, b0
+        := next_left = !!!!LayoutToHeap({ value = next_left_pair })
+        := ~c0 = 4i32
+        := ~d0 = "yo"
+        := next_right_pair = c0, d0
+        := next_right = !!!!LayoutToHeap({ value = next_right_pair })
+        := next_pair = next_left, next_right
+        := next_inner = !!!!LayoutToHeap({ value = next_pair })
+        := ~flag = 2i32
+        := next_outer_pair = next_inner, flag
+        := next_outer = !!!!LayoutToHeap({ value = next_outer_pair })
+        slot <- { value = next_outer }
+        := opened = !!!!LayoutIndex(slot)
+        := held = opened.value
+        := outer_opened = !!!!LayoutIndex(held)
+        := ~(inner_held, seen) = outer_opened.value
+        := inner_opened = !!!!LayoutIndex(inner_held)
+        := ~(left, right) = inner_opened.value
+        := left_opened = !!!!LayoutIndex(left)
+        := ~(p, q) = left_opened.value
+        := right_opened = !!!!LayoutIndex(right)
+        := ~(r, s) = right_opened.value
+        ? p =. 7i32 && !!!!EQ(q, "hi") && r =. 4i32 && !!!!EQ(s, "yo") && seen =. 2i32 ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "mut_heap_heap_pair"
+
+:| mut_heap_union_heap_pair_heaps_slot =
+    | MutHeapUnionHeapPairHeapsNone
+    | MutHeapUnionHeapPairHeapsHeld :
+        (heap { value : (heap { value : heap { value : i32 * string } * heap { value : i32 * string } }) * i32 })
+
+:~ mut_heap_union_heap_pair_heaps_score x : i32 =
+    ?= x ?|
+    | MutHeapUnionHeapPairHeapsNone => 1i32
+    | MutHeapUnionHeapPairHeapsHeld box =>
+        := opened = !!!!LayoutIndex(box)
+        := ~(inner_held, flag) = opened.value
+        := inner_opened = !!!!LayoutIndex(inner_held)
+        := ~(left, right) = inner_opened.value
+        := left_opened = !!!!LayoutIndex(left)
+        := ~(a, b) = left_opened.value
+        := right_opened = !!!!LayoutIndex(right)
+        := ~(c, d) = right_opened.value
+        ? a =. 7i32 && !!!!EQ(b, "hi") && c =. 4i32 && !!!!EQ(d, "yo") && flag =. 2i32 ?> 0i32 |: 1i32
+
+///> c
+///> zig
+test mut_heap_union_heap_pair_heaps_returns_zero =
+    := program () : i32 =
+        := ~n = 1i32
+        := ~word = "no"
+        := left_pair = n, word
+        := left_heap = !!!!LayoutToHeap({ value = left_pair })
+        := ~m = 2i32
+        := ~other = "zz"
+        := right_pair = m, other
+        := right_heap = !!!!LayoutToHeap({ value = right_pair })
+        := pair = left_heap, right_heap
+        := inner = !!!!LayoutToHeap({ value = pair })
+        := ~mark = 3i32
+        := outer_pair = inner, mark
+        := outer = !!!!LayoutToHeap({ value = outer_pair })
+        := ~on = !+
+        := held0 = ? on ?> MutHeapUnionHeapPairHeapsHeld outer |: MutHeapUnionHeapPairHeapsNone
+        := box0 = !!!!LayoutToHeap({ value = held0 })
+        := cell : mut { value : heap { value : mut_heap_union_heap_pair_heaps_slot } } =
+            !!!!LayoutToHeapMutable({ value = box0 })
+        := ~a0 = 7i32
+        := ~b0 = "hi"
+        := next_left_pair = a0, b0
+        := next_left = !!!!LayoutToHeap({ value = next_left_pair })
+        := ~c0 = 4i32
+        := ~d0 = "yo"
+        := next_right_pair = c0, d0
+        := next_right = !!!!LayoutToHeap({ value = next_right_pair })
+        := next_pair = next_left, next_right
+        := next_inner = !!!!LayoutToHeap({ value = next_pair })
+        := ~flag = 2i32
+        := next_outer_pair = next_inner, flag
+        := next_outer = !!!!LayoutToHeap({ value = next_outer_pair })
+        := ~next_on = !+
+        := held1 = ? next_on ?> MutHeapUnionHeapPairHeapsHeld next_outer |: MutHeapUnionHeapPairHeapsNone
+        := box1 = !!!!LayoutToHeap({ value = held1 })
+        cell <- { value = box1 }
+        := opened = !!!!LayoutIndex(cell)
+        := heap_held = opened.value
+        := heap_opened = !!!!LayoutIndex(heap_held)
+        mut_heap_union_heap_pair_heaps_score heap_opened.value
+    ? program () <> 0i32 ?> failwith "mut_heap_union_heap_pair_heaps"
+
+:| mut_heap_union_heap_union_heap_pair_heaps_slot =
+    | MutHeapUnionHeapUnionHeapPairHeapsNone
+    | MutHeapUnionHeapUnionHeapPairHeapsHeld :
+        (heap { value : (heap { value : heap { value : i32 * string } * heap { value : i32 * string } }) * i32 })
+
+:| mut_heap_union_heap_union_heap_pair_heaps_wrap =
+    | MutHeapUnionHeapUnionHeapPairHeapsAbsent
+    | MutHeapUnionHeapUnionHeapPairHeapsBox : (heap { value : mut_heap_union_heap_union_heap_pair_heaps_slot })
+
+:~ mut_heap_union_heap_union_heap_pair_heaps_score x : i32 =
+    ?= x ?|
+    | MutHeapUnionHeapUnionHeapPairHeapsAbsent => 1i32
+    | MutHeapUnionHeapUnionHeapPairHeapsBox box =>
+        := opened = !!!!LayoutIndex(box)
+        ?= opened.value ?|
+        | MutHeapUnionHeapUnionHeapPairHeapsNone => 1i32
+        | MutHeapUnionHeapUnionHeapPairHeapsHeld inner =>
+            := inner_opened = !!!!LayoutIndex(inner)
+            := ~(inner_held, flag) = inner_opened.value
+            := deep_opened = !!!!LayoutIndex(inner_held)
+            := ~(left, right) = deep_opened.value
+            := left_opened = !!!!LayoutIndex(left)
+            := ~(a, b) = left_opened.value
+            := right_opened = !!!!LayoutIndex(right)
+            := ~(c, d) = right_opened.value
+            ? a =. 7i32 && !!!!EQ(b, "hi") && c =. 4i32 && !!!!EQ(d, "yo") && flag =. 2i32 ?> 0i32 |: 1i32
+
+///> c
+///> zig
+test mut_heap_union_heap_union_heap_pair_heaps_returns_zero =
+    := program () : i32 =
+        := ~n = 1i32
+        := ~word = "no"
+        := left_pair = n, word
+        := left_heap = !!!!LayoutToHeap({ value = left_pair })
+        := ~m = 2i32
+        := ~other = "zz"
+        := right_pair = m, other
+        := right_heap = !!!!LayoutToHeap({ value = right_pair })
+        := pair = left_heap, right_heap
+        := inner = !!!!LayoutToHeap({ value = pair })
+        := ~mark = 3i32
+        := outer_pair = inner, mark
+        := outer = !!!!LayoutToHeap({ value = outer_pair })
+        := ~on = !+
+        := held0 = ? on ?> MutHeapUnionHeapUnionHeapPairHeapsHeld outer |: MutHeapUnionHeapUnionHeapPairHeapsNone
+        := box0 = !!!!LayoutToHeap({ value = held0 })
+        := ~use0 = !+
+        := wrapped0 =
+            ? use0 ?> MutHeapUnionHeapUnionHeapPairHeapsBox box0 |: MutHeapUnionHeapUnionHeapPairHeapsAbsent
+        := cover0 = !!!!LayoutToHeap({ value = wrapped0 })
+        := cell : mut { value : heap { value : mut_heap_union_heap_union_heap_pair_heaps_wrap } } =
+            !!!!LayoutToHeapMutable({ value = cover0 })
+        := ~a0 = 7i32
+        := ~b0 = "hi"
+        := next_left_pair = a0, b0
+        := next_left = !!!!LayoutToHeap({ value = next_left_pair })
+        := ~c0 = 4i32
+        := ~d0 = "yo"
+        := next_right_pair = c0, d0
+        := next_right = !!!!LayoutToHeap({ value = next_right_pair })
+        := next_pair = next_left, next_right
+        := next_inner = !!!!LayoutToHeap({ value = next_pair })
+        := ~flag = 2i32
+        := next_outer_pair = next_inner, flag
+        := next_outer = !!!!LayoutToHeap({ value = next_outer_pair })
+        := ~next_on = !+
+        := held1 =
+            ? next_on
+            ?> MutHeapUnionHeapUnionHeapPairHeapsHeld next_outer
+            |: MutHeapUnionHeapUnionHeapPairHeapsNone
+        := box1 = !!!!LayoutToHeap({ value = held1 })
+        := ~use1 = !+
+        := wrapped1 =
+            ? use1 ?> MutHeapUnionHeapUnionHeapPairHeapsBox box1 |: MutHeapUnionHeapUnionHeapPairHeapsAbsent
+        := cover1 = !!!!LayoutToHeap({ value = wrapped1 })
+        cell <- { value = cover1 }
+        := opened = !!!!LayoutIndex(cell)
+        := heap_held = opened.value
+        := heap_opened = !!!!LayoutIndex(heap_held)
+        mut_heap_union_heap_union_heap_pair_heaps_score heap_opened.value
+    ? program () <> 0i32 ?> failwith "mut_heap_union_heap_union_heap_pair_heaps"
+
+:| mut_heap_union3_both_heap_union_heap_union_heap_pair_heaps_slot =
+    | MutHeapUnion3BothHeapUnionHeapUnionHeapPairHeapsNone
+    | MutHeapUnion3BothHeapUnionHeapUnionHeapPairHeapsHeld :
+        (heap { value : (heap { value : heap { value : i32 * string } * heap { value : i32 * string } }) * i32 })
+
+:| mut_heap_union3_both_heap_union_heap_union_heap_pair_heaps_wrap =
+    | MutHeapUnion3BothHeapUnionHeapUnionHeapPairHeapsAbsent
+    | MutHeapUnion3BothHeapUnionHeapUnionHeapPairHeapsBox :
+        (heap { value : mut_heap_union3_both_heap_union_heap_union_heap_pair_heaps_slot })
+    | MutHeapUnion3BothHeapUnionHeapUnionHeapPairHeapsMark : i32
+
+:~ mut_heap_union3_both_heap_union_heap_union_heap_pair_heaps_score x : i32 =
+    ?= x ?|
+    | MutHeapUnion3BothHeapUnionHeapUnionHeapPairHeapsAbsent => 1i32
+    | MutHeapUnion3BothHeapUnionHeapUnionHeapPairHeapsMark k => ? k =. 0i32 ?> 1i32 |: 1i32
+    | MutHeapUnion3BothHeapUnionHeapUnionHeapPairHeapsBox box =>
+        := opened = !!!!LayoutIndex(box)
+        ?= opened.value ?|
+        | MutHeapUnion3BothHeapUnionHeapUnionHeapPairHeapsNone => 1i32
+        | MutHeapUnion3BothHeapUnionHeapUnionHeapPairHeapsHeld inner =>
+            := inner_opened = !!!!LayoutIndex(inner)
+            := ~(inner_held, flag) = inner_opened.value
+            := deep_opened = !!!!LayoutIndex(inner_held)
+            := ~(left, right) = deep_opened.value
+            := left_opened = !!!!LayoutIndex(left)
+            := ~(a, b) = left_opened.value
+            := right_opened = !!!!LayoutIndex(right)
+            := ~(c, d) = right_opened.value
+            ? a =. 7i32 && !!!!EQ(b, "hi") && c =. 4i32 && !!!!EQ(d, "yo") && flag =. 2i32 ?> 0i32 |: 1i32
+
+///> c
+///> zig
+test mut_heap_union3_both_heap_union_heap_union_heap_pair_heaps_returns_zero =
+    := program () : i32 =
+        := ~n = 7i32
+        := ~word = "hi"
+        := left_pair = n, word
+        := left_heap = !!!!LayoutToHeap({ value = left_pair })
+        := ~m = 4i32
+        := ~other = "yo"
+        := right_pair = m, other
+        := right_heap = !!!!LayoutToHeap({ value = right_pair })
+        := pair = left_heap, right_heap
+        := inner = !!!!LayoutToHeap({ value = pair })
+        := ~mark = 2i32
+        := outer_pair = inner, mark
+        := outer = !!!!LayoutToHeap({ value = outer_pair })
+        := ~on = !+
+        := held =
+            ? on
+            ?> MutHeapUnion3BothHeapUnionHeapUnionHeapPairHeapsHeld outer
+            |: MutHeapUnion3BothHeapUnionHeapUnionHeapPairHeapsNone
+        := box = !!!!LayoutToHeap({ value = held })
+        := ~use_box = !+
+        := wrapped =
+            ? use_box
+            ?> MutHeapUnion3BothHeapUnionHeapUnionHeapPairHeapsBox box
+            |: MutHeapUnion3BothHeapUnionHeapUnionHeapPairHeapsMark 1i32
+        := ~tag = 3i32
+        := marked = MutHeapUnion3BothHeapUnionHeapUnionHeapPairHeapsMark tag
+        := cover_box = !!!!LayoutToHeap({ value = wrapped })
+        := cover_mark = !!!!LayoutToHeap({ value = marked })
+        := cell : mut { value : heap { value : mut_heap_union3_both_heap_union_heap_union_heap_pair_heaps_wrap } } =
+            !!!!LayoutToHeapMutable({ value = cover_box })
+        := before = !!!!LayoutIndex(cell)
+        := before_heap = before.value
+        := before_opened = !!!!LayoutIndex(before_heap)
+        := before_score = mut_heap_union3_both_heap_union_heap_union_heap_pair_heaps_score before_opened.value
+        cell <- { value = cover_mark }
+        := after = !!!!LayoutIndex(cell)
+        := after_heap = after.value
+        := after_opened = !!!!LayoutIndex(after_heap)
+        := after_score = mut_heap_union3_both_heap_union_heap_union_heap_pair_heaps_score after_opened.value
+        ? before_score =. 0i32 && after_score =. 1i32 ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "mut_heap_union3_both_heap_union_heap_union_heap_pair_heaps"
+
+///> c
+///> zig
+test mut_i64_text_returns_zero =
+    := program () : i32 =
+        := ~n = 3i64
+        := ~word = "no"
+        := pair = n, word
+        := box : mut { value : i64 * string } = !!!!LayoutToHeapMutable({ value = pair })
+        := ~m = 5000000000i64
+        := ~next = "hi"
+        := replaced = m, next
+        box <- { value = replaced }
+        := opened = !!!!LayoutIndex(box)
+        := ~(left, right) = opened.value
+        ? left =. 5000000000i64 && !!!!EQ(right, "hi") ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "mut_i64_text"
+
+///> c
+///> zig
+test mut_pair_returns_zero =
+    := program () : i32 =
+        := ~n = 3i32
+        := ~word = "no"
+        := pair = n, word
+        := box : mut { value : i32 * string } = !!!!LayoutToHeapMutable({ value = pair })
+        := ~m = 7i32
+        := ~next = "hi"
+        := replaced = m, next
+        box <- { value = replaced }
+        := opened = !!!!LayoutIndex(box)
+        := ~(left, right) = opened.value
+        ? left =. 7i32 && !!!!EQ(right, "hi") ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "mut_pair"
+
+///> c
+///> zig
+test mut_pair_heaps_returns_zero =
+    := program () : i32 =
+        := ~n = 1i32
+        := ~word = "no"
+        := left_pair = n, word
+        := left_heap = !!!!LayoutToHeap({ value = left_pair })
+        := ~m = 2i32
+        := ~other = "zz"
+        := right_pair = m, other
+        := right_heap = !!!!LayoutToHeap({ value = right_pair })
+        := slot : mut { value : heap { value : i32 * string } * heap { value : i32 * string } } =
+            !!!!LayoutToHeapMutable({ value = left_heap, right_heap })
+        := ~a0 = 7i32
+        := ~b0 = "hi"
+        := next_left_pair = a0, b0
+        := next_left = !!!!LayoutToHeap({ value = next_left_pair })
+        := ~c0 = 4i32
+        := ~d0 = "yo"
+        := next_right_pair = c0, d0
+        := next_right = !!!!LayoutToHeap({ value = next_right_pair })
+        := replaced = next_left, next_right
+        slot <- { value = replaced }
+        := opened = !!!!LayoutIndex(slot)
+        := ~(left, right) = opened.value
+        := left_opened = !!!!LayoutIndex(left)
+        := ~(a, b) = left_opened.value
+        := right_opened = !!!!LayoutIndex(right)
+        := ~(c, d) = right_opened.value
+        ? a =. 7i32 && !!!!EQ(b, "hi") && c =. 4i32 && !!!!EQ(d, "yo") ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "mut_pair_heaps"

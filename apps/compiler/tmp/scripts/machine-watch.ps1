@@ -1,7 +1,7 @@
 param([int] $SampleSeconds = 10, [int] $SilentMinutes = 60, [int] $RogueMinutes = 30, [double] $RogueCores = 0.8)
 $ErrorActionPreference = 'Continue'
-$eoie = Join-Path $PSScriptRoot '../../../../../eoie/eoie.exe'
-if (-not (Test-Path $eoie)) { $eoie = 'eoie' }
+$eoie = Join-Path $PSScriptRoot '../../../../../kit/kit.exe'
+if (-not (Test-Path $eoie)) { $eoie = 'kit' }
 $stateDir = Join-Path $env:LOCALAPPDATA 'machine-watch'
 New-Item -ItemType Directory -Force $stateDir | Out-Null
 $statePath = Join-Path $stateDir 'last.json'
@@ -97,7 +97,7 @@ foreach ($id in $jobs.Keys) {
     $snapshot.jobs[$id] = @{ out = $j.Out; quiet_since = $quietSince.ToString('o') }
     $quiet = [int]($now - $quietSince).TotalMinutes
     $treeCores = [math]::Round((@($busy | Where-Object Owner -eq "eoie:$id") | Measure-Object Cores -Sum).Sum, 2)
-    $lastLine = if ($quiet -ge $SilentMinutes -and $treeCores -lt 0.1 -and -not $liveBlock) { @(& $eoie job tail $id 3 2>$null | Where-Object { $_ -and $_ -notmatch '^(eoie job tail|--- )' }) | Select-Object -Last 1 } else { '' }
+    $lastLine = if ($quiet -ge $SilentMinutes -and $treeCores -lt 0.1 -and -not $liveBlock) { @(& $eoie job tail $id 3 2>$null | Where-Object { $_ -and $_ -notmatch '^(kit job tail|--- )' }) | Select-Object -Last 1 } else { '' }
     $flag = if ($quiet -lt $SilentMinutes) { '' } elseif ($treeCores -ge 0.1) { "  (quiet output, tree busy $treeCores cores: buffered)" } elseif ($liveBlock) { "  (quiet during a live block: waiting for a window is expected)" } elseif ($lastLine -match '(?i)waiting for') { "  (waiting by design, last line: $($lastLine.Trim()))" } elseif ($cellsCores -ge 0.5) { "  (quiet, tree idle, but detached Cells VMs use $cellsCores cores: likely this job's compiler daemon work)" } else { "  <- SILENT $quiet min, tree idle now: check the job's own progress files (Cells work can run in a shared compiler daemon outside the tree)" }
     "  $($j.Label) running $($j.ElapsedMin) min, output $($j.Out) bytes, unchanged $quiet min, tree $treeCores cores$flag"
 }
@@ -117,7 +117,7 @@ if (Test-Path $gateLog) {
 
 "== windows"
 foreach ($line in $windowLines) {
-    $m = [regex]::Match($line, '\(eoie job (job-\S+)\)')
+    $m = [regex]::Match($line, '\(kit job (job-\S+)\)')
     $stale = if ($m.Success -and $line -match ' held ' -and $jobs.ContainsKey($m.Groups[1].Value) -and $jobs[$m.Groups[1].Value].State -notin 'running', 'queued') { "  <- STALE: job is $($jobs[$m.Groups[1].Value].State)" } else { '' }
     "  $($line.Trim())$stale"
 }

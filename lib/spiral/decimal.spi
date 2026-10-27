@@ -89,6 +89,7 @@
         := digits = zero_padded (digits_text magnitude "") (a.scale + 1i32)
         := whole = sm'.length digits - a.scale
         sign ++# sm'.substring 0i32 whole digits ++# "." ++# sm'.substring whole a.scale digits
+
 ///> rust
 test decimals_are_exact =
     := d (s : string) = ?= parse s ?| Some x => x | None => failwith ("parses " ++# s)

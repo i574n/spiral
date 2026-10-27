@@ -106,7 +106,7 @@ defmodule Spiral.Cells.Toolchain do
       System.find_executable("dcc64")
   end
 
-  @lean_toolchain "leanprover/lean4:v4.35.0-rc4"
+  @lean_toolchain "leanprover/lean4:v4.35.0"
 
   @spec lean(keyword()) :: {String.t() | nil, [String.t()]}
   def lean(opts) do

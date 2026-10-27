@@ -1,0 +1,70 @@
+///- --package .
+///> c
+///> zig
+test arith_returns_zero =
+    := program () : i32 =
+        := ~h = 7i32
+        := ~k = 2i32
+        := ~e = 4294967295u32
+        := nh = 0i32 -. h
+        := ~neg3 = 0i32 -. 3i32
+        := ~neg12 = 0i32 -. 12i32
+        := ~neg4 = 0i32 -. 4i32
+        := ~neg1 = 0i32 -. 1i32
+        ? (nh /. k) =. neg3 ?>
+            ? (nh %. k) =. neg1 ?>
+                ? !!!!ShiftRight(nh, 1i32) =. neg4 ?>
+                    ? !!!!ShiftLeft(neg3, 2i32) =. neg12 ?>
+                        ? (e +. 1u32) =. 0u32 ?>
+                            ? (e *. e) =. 1u32 ?>
+                                ? !!!!ShiftRight(e, 28i32) =. 15u32 ?> 0i32
+                                |: 7i32
+                            |: 6i32
+                        |: 5i32
+                    |: 4i32
+                |: 3i32
+            |: 2i32
+        |: 1i32
+    ? program () <> 0i32 ?> failwith "ebpf_arith"
+
+///> c
+///> zig
+test shift_returns_zero =
+    := program () : i32 =
+        := ~n = 0i32 -. 8i32
+        := ~p = 3i32
+        := ~c = 1i32
+        := ~u = 4294967295u32
+        := ~k = 4i32
+        := a = !!!!ShiftRight(n, c)
+        := b = !!!!ShiftLeft(p, c)
+        := d = !!!!ShiftRight(u, k)
+        := e = !!!!ShiftLeft(u, c)
+        ? a =. (0i32 -. 4i32) ?>
+            ? b =. 6i32 ?>
+                ? d =. 268435455u32 ?>
+                    ? e =. 4294967294u32 ?> 0i32
+                    |: 4i32
+                |: 3i32
+            |: 2i32
+        |: 1i32
+    ? program () <> 0i32 ?> failwith "ebpf_shift"
+
+:= pick ~a ~b =
+    ? a && b ?> 1i32
+    |? a || b ?> 2i32
+    |: 3i32
+
+///> c
+///> zig
+test bool_returns_zero =
+    := program () : i32 =
+        := ~yes = !+
+        := ~no = !-
+        := both = ~~ pick yes yes
+        := one = ~~ pick yes no
+        := none = ~~ pick no no
+        := differ = ? yes =. no ?> !- |: !+
+        ? both =. 1i32 && one =. 2i32 && none =. 3i32 && differ ?> 0i32
+        |: 1i32
+    ? program () <> 0i32 ?> failwith "ebpf_bool"

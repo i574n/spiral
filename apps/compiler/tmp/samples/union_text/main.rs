@@ -34,12 +34,12 @@ fn spiral_main() -> i32 {
     let v7: US0 = if v0 {
         US0::US0_Code(5i32)
     } else {
-        US0::US0_Text(v1)
+        US0::US0_Text(v1.clone())
     };
-    let v8: i32 = score_0(v4);
+    let v8: i32 = score_0(v4.clone());
     let v9: bool = v8 == 2i32;
     let v12: bool = if v9 {
-        let v10: i32 = score_0(v7);
+        let v10: i32 = score_0(v7.clone());
         let v11: bool = v10 == 5i32;
         v11
     } else {

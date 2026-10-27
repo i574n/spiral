@@ -48,7 +48,8 @@ test runtime static =
     |> resultm.map (fst >> \ (args : list string) =>
         ? is_rust () ?>
             := n = (0i32, args) ||> listm.fold \ n _ => n + 1
-            := acc : array_base string = $'Rc::new(RefCell::new(Vec::with_capacity(!n as usize)))'
+            := capacity : convert.unativeint = convert.convert n
+            := acc : array_base string = $'Rc::new(RefCell::new(Vec::with_capacity(!capacity)))'
             := _ : i32 = (0i32, args) ||> listm.fold \ n (x : string) =>
                 $'!acc.borrow_mut().push(!x)' : ()
                 n + 1
@@ -633,10 +634,7 @@ test new_arg =
 
 /// ### arg_index
 := arg_index (value : i32) (arg : arg) : arg =
-    := index : convert.unativeint =
-        ? is_rust ()
-        ?> $'(!value as usize)'
-        |: $'!value |> `(convert.unativeint) '
+    := index : convert.unativeint = convert.convert value
     !\\((arg, index), $'"$0.index($1)"')
 
 /// ### arg_matches
@@ -1152,6 +1150,91 @@ test tests_2 =
         |> execute_with_options
     exit_code |> _assert_eq 0i32
     output |> _assert sm'.contains "Line4"
+
+/// ## shared commands
+
+:! shared_command = $'Rc<RefCell<std::process::Command>>'
+
+:! shared_child = $'Rc<RefCell<std::process::Child>>'
+
+:! log_file = $'std::fs::File'
+
+:! command_output = $'Rc<std::io::Result<std::process::Output>>'
+
+/// ## commands
+
+/// ### shared_command_new
+:= shared_command_new (program : string) : shared_command =
+    $'Rc::new(RefCell::new(std::process::Command::new(&*!program)))' : shared_command
+
+/// ### shared_command_arg
+:= shared_command_arg (command : shared_command) (arg : string) : () = $'drop(!command.borrow_mut().arg(&*!arg))' : ()
+
+/// ### shared_command_dir
+:= shared_command_dir (command : shared_command) (directory : string) : () =
+    $'drop(!command.borrow_mut().current_dir(&*!directory))' : ()
+
+/// ### shared_command_quiet
+:= shared_command_quiet (command : shared_command) : () =
+    $'drop(!command.borrow_mut().stdout(std::process::Stdio::null()).stderr(std::process::Stdio::null()))' : ()
+
+/// ### shared_command_no_input
+:= shared_command_no_input (command : shared_command) : () =
+    $'drop(!command.borrow_mut().stdin(std::process::Stdio::null()))' : ()
+
+/// ### log_file_create
+:= log_file_create (path : string) : log_file = $'std::fs::File::create(&*!path).unwrap()' : log_file
+
+/// ### shared_command_logging
+:= shared_command_logging (command : shared_command) (file : log_file) : () =
+    $'drop(!command.borrow_mut().stdout(!file.try_clone().unwrap()).stderr(!file.try_clone().unwrap()))' : ()
+
+/// ### shared_command_output
+:= shared_command_output (command : shared_command) : command_output =
+    $'Rc::new(!command.borrow_mut().output())' : command_output
+
+/// ### command_output_ran
+:= command_output_ran (output : command_output) : bool = $'!output.is_ok()' : bool
+
+/// ### command_output_code
+:= command_output_code (output : command_output) : i32 =
+    $'(&*!output).as_ref().unwrap().status.code().unwrap_or(-2)' : i32
+
+/// ### command_output_stdout
+:= command_output_stdout (output : command_output) : string =
+    $'Rc::<str>::from(String::from_utf8_lossy(&(&*!output).as_ref().unwrap().stdout).as_ref())' : string
+
+/// ### command_output_stderr
+:= command_output_stderr (output : command_output) : string =
+    $'Rc::<str>::from(String::from_utf8_lossy(&(&*!output).as_ref().unwrap().stderr).as_ref())' : string
+
+/// ## children
+
+/// ### shared_command_spawn
+:= shared_command_spawn (command : shared_command) : shared_child =
+    $'Rc::new(RefCell::new(!command.borrow_mut().spawn().unwrap()))' : shared_child
+
+/// ### shared_child_exited
+:= shared_child_exited (child : shared_child) : bool = $'!child.borrow_mut().try_wait().unwrap().is_some()' : bool
+
+/// ### shared_child_code
+:= shared_child_code (child : shared_child) : i32 = $'!child.borrow_mut().wait().unwrap().code().unwrap_or(-2)' : i32
+
+/// ### shared_child_kill
+:= shared_child_kill (child : shared_child) : () = $'drop(!child.borrow_mut().kill())' : ()
+
+/// ### shared_child_id
+:= shared_child_id (child : shared_child) : u32 = $'!child.borrow().id()' : u32
+
+///> rust
+test a_spawned_command_reports_its_exit_code =
+    := program, flag, script = ? platform.is_windows () ?> "cmd", "/C", "exit 4" |: "sh", "-c", "exit 4"
+    := command = shared_command_new program
+    shared_command_arg command flag
+    shared_command_arg command script
+    shared_command_quiet command
+    := child = shared_command_spawn command
+    (shared_child_id child > 0u32, shared_child_code child) |> _assert_eq (!+, 4i32)
 
 /// ## main
 ///> fsharp

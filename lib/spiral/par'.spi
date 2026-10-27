@@ -1,0 +1,138 @@
+/// # par'
+test par' static =
+    :< testing
+
+:< sm'_operators
+
+/// ### par_event
+:| par_event u =
+    | ChunkDone : i32 * list u
+    | WorkerEnded : erlang_process.exit_reason
+
+/// ### chunks
+:= chunks \* t. (count : i32) (items : list t) : list (list t) =
+    := size = (listm.length items + count - 1i32) / count
+    :~ ^ split (rest : list t) (taken : i32) (chunk : list t) (acc : list (list t)) : list (list t) =
+        ?= rest ?|
+        | [] => ? taken = 0i32 ?> listm.rev acc |: listm.rev (listm.rev chunk :: acc)
+        | x :: more =>
+            ? taken + 1i32 = size ?> split more 0i32 [] (listm.rev (x :: chunk) :: acc)
+            |: split more (taken + 1i32) (x :: chunk) acc
+    ? size < 1i32 ?> [] |: split items 0i32 [] []
+
+/// ### in_index_order
+:= in_index_order \* u. (count : i32) (finished : list (i32 * list u)) : list u =
+    :~ ^ find (index : i32) (rest : list (i32 * list u)) : list u =
+        ?= rest ?|
+        | [] => []
+        | (at, values) :: more => ? at = index ?> values |: find index more
+    listm.init count (\ index => find index finished) |> listm'.collect id
+
+/// ### map_on_processes
+:= map_on_processes \* t u. (fn : t -> u) (items : list t) : list u =
+    := parts = chunks (erlang_process.schedulers_online ()) items
+    := results : erlang_process.subject (i32 * list u) = erlang_process.new_subject ()
+    :~ ^ start (index : i32) (rest : list (list t)) (choices : erlang_process.selector (par_event u)) =
+        ?= rest ?|
+        | [] => choices
+        | chunk :: more =>
+            := worker = erlang_process.spawn_unlinked \ () => erlang_process.send results (index, listm.map fn chunk)
+            := watch = erlang_process.monitor worker
+            choices
+            |> erlang_process.select_specific_monitor watch (erlang_process.down_reason >> WorkerEnded)
+            |> start (index + 1i32) more
+    := count = listm.length parts
+    := choices = erlang_process.new_selector () |> erlang_process.select_map results ChunkDone |> start 0i32 parts
+    :~ ^ gather (results_left : i32) (ends_left : i32) (finished : list (i32 * list u)) (crashed : bool) : list u =
+        ? results_left + ends_left = 0i32 ?>
+            ? crashed ?> failwith "par'.map: a worker crashed" |: in_index_order count finished
+        |:
+            ?= erlang_process.selector_receive_forever choices ?|
+            | ChunkDone (index, values) => gather (results_left - 1i32) ends_left ((index, values) :: finished) crashed
+            | WorkerEnded reason =>
+                ? erlang_process.exited_normally reason ?> gather results_left (ends_left - 1i32) finished crashed
+                |: gather (results_left - 1i32) (ends_left - 1i32) finished !+
+    gather count count [] !-
+
+/// ### rust_available_parallelism
+:= rust_available_parallelism () : convert.unativeint =
+    $'std::thread::available_parallelism().map_or(1, |n| n.get())' : convert.unativeint
+
+/// ### rust_scoped_map
+:= rust_scoped_map \* t u. (fn : t -> u) (items : listm'.list' t) (chunk_size : convert.unativeint) : listm'.list' u =
+    global """
+        fn spiral_scope_map<T: Sync + Clone, U: Send>(
+            items: &[T], chunk_size: usize, make: fn() -> std::rc::Rc<dyn Fn(T) -> U>,
+        ) -> Vec<U> {
+            std::thread::scope(|scope| {
+                let workers: Vec<_> = items.chunks(chunk_size).map(|chunk| std::thread::Builder::new()
+                    .stack_size(64 << 20).spawn_scoped(scope, move || {
+                    let f = make();
+                    chunk.iter().map(|x| f(x.clone())).collect::<Vec<U>>()
+                }).unwrap()).collect();
+                workers.into_iter().flat_map(|worker| worker.join().unwrap()).collect()
+            })
+        }
+        """
+    $'std::rc::Rc::new(spiral_scope_map(&*!items, !chunk_size, __spiral_closure_factory !fn))' : listm'.list' u
+
+/// ### map_on_threads
+:= map_on_threads \* t u. (fn : t -> u) (items : list t) : list u =
+    := workers : i32 = rust_available_parallelism () |> convert.convert
+    := length = listm.length items
+    := chunk_size : i32 = ? length <= workers ?> 1i32 |: (length + workers - 1i32) / workers
+    rust_scoped_map fn (listm'.box items) (convert.convert chunk_size) |> listm'.unbox
+
+/// ### countdown
+:~ ^ countdown (n : i32) : list i32 = ? n <= 0i32 ?> [] |: n :: countdown (n - 1i32)
+
+/// ### map
+:= map \* t u. (fn : t -> u) (items : list t) : list u =
+    run_target \|
+        | Gleam => \ () => map_on_processes fn items
+        | Rust => \ () => map_on_threads fn items
+        | _ => \ () => items |> listm.map fn
+
+/// ### each
+:= each \* t. (fn : t -> ()) (items : list t) : () =
+    items |> map fn |> ignore
+
+test chunks_split_evenly =
+    listm.init 10i32 id
+    |> chunks 4i32
+    |> listm.map listm.length
+    |> _assert_eq [ 3i32; 3; 3; 1 ]
+
+test chunks_empty =
+    ([] : list i32)
+    |> chunks 4i32
+    |> listm.length
+    |> _assert_eq 0i32
+
+///> rust
+test map_workers_have_room_for_deep_recursion =
+    listm.init 4i32 id |> map (\ _ => listm.length (countdown 100000i32)) |> testing._assert_eq [100000i32; 100000i32; 100000i32; 100000i32]
+
+///> gleam
+///> fsharp
+///> rust
+test map_keeps_order =
+    listm.init 100i32 (\ i => i + 1i32)
+    |> map (\ x => x * x)
+    |> listm.fold (+) 0i32
+    |> _assert_eq 338350i32
+
+///> gleam
+///> rust
+test map_empty =
+    ([] : list i32)
+    |> map (\ x => x + 1i32)
+    |> listm.length
+    |> _assert_eq 0i32
+
+///> gleam
+test map_strings =
+    [ "a"; "bb"; "ccc" ]
+    |> map (\ x => "<" ++# x ++# ">")
+    |> sm'.concat_list ","
+    |> _assert_eq "<a>,<bb>,<ccc>"

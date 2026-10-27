@@ -506,7 +506,7 @@ fn utf8_scalar_at_byte_offset_8(mut v0: Rc<str>, mut v1: i32) -> i32 {
                                     let v70: i32 = v1.wrapping_add(2i32);
                                     let v71: u8 = runtime_byte_9(v0.clone(), v70);
                                     let v72: i32 = i32::from(v71);
-                                    let v73: u8 = runtime_byte_9(v0, v64);
+                                    let v73: u8 = runtime_byte_9(v0.clone(), v64);
                                     let v74: i32 = i32::from(v73);
                                     let v75: bool = v69 < 128i32;
                                     let v77: bool = if v75 {

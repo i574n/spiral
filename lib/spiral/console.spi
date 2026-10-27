@@ -75,7 +75,9 @@ test console static =
         Python = \ () => $'print(!obj)' : ()
         Rust = \ () => $'println\!("{}", !obj)' : ()
         TypeScript = \ () => $'process.stdout.write(String(!obj) + "\\n")' : ()
-        Zig = \ () => $'{ spiralPrintAny(!obj); spiralPrint(&[_]u8{10}); }' : ()
+        Zig = \ () =>
+            $'spiralPrintAny(!obj)' : ()
+            $'spiralPrint(&[_]u8{10})' : ()
         Lean = \ () => $'IO.println (toString !obj)' : ()
         C = \ () => write_line_c obj
         Delphi = \ () => $'Writeln(!obj)' : ()
@@ -144,7 +146,9 @@ test write_error_line_writes_without_failing =
         Lua = \ () => write_lua x
         Fsharp = \ () => $'!x |> System.Console.Write' : ()
         Python = \ () => $'print(!x, end="")' : ()
-        Rust = \ () => $'{ use std::io::Write; print\!("{}", !x); std::io::stdout().flush().unwrap(); }' : ()
+        Rust = \ () =>
+            $'print\!("{}", !x)' : ()
+            $'std::io::Write::flush(&mut std::io::stdout()).unwrap()' : ()
         TypeScript = \ () => $'process.stdout.write(String(!x))' : ()
         Zig = \ () => $'spiralPrintAny(!x)' : ()
         Lean = \ () => $'IO.print (toString !x)' : ()
@@ -155,6 +159,12 @@ test write_error_line_writes_without_failing =
         Swift = \ () => $'print(!x, terminator: "")' : ()
         Wasm = \ () => write_wasm x
     }
+
+///> rust
+///> zig
+test write_and_write_line_print_without_failing =
+    write "a"
+    write_line "b"
 
 /// ### write_ln
 := write_ln l : () =

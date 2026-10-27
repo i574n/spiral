@@ -6,6 +6,7 @@ defmodule Mix.Tasks.Spiral.Notebook do
   @impl Mix.Task
   def run(args) do
     Mix.Task.run("loadpaths")
+    Spiral.Cells.MemoryGuard.start()
     Spiral.Cells.Domain.ensure!()
     gate? = "--gate" in args
     gate_report_dir = Path.join(System.tmp_dir!(), "spiral-cells-gate-#{System.unique_integer([:positive])}")

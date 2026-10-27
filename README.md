@@ -56,7 +56,7 @@ Samples
 <td>
 
 - Spiral CLI notebook  
-<https://i574n.github.io/spiral/apps/spiral/spiral.livemd.html>
+<https://i574n.github.io/spiral/apps/spiral/spiral.spi.html>
 
 - Parsing library  
 <https://i574n.github.io/spiral/lib/spiral/parsing.spi.html>

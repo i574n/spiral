@@ -7,11 +7,23 @@
     | Warning
     | Information
 
+:! rule_id = string
+
+:! pattern_id = string
+
+:| assertion_kind =
+    | Asserts
+    | Reports
+
+:= rule_text (rule_id text) : string = text
+
+:= pattern_text (pattern_id text) : string = text
+
 :== assertion =
     {
-        id : string
+        id : rule_id
         severity : severity
-        reports : bool
+        kind : assertion_kind
         test : xpath.xpath
         source : string
         message : string
@@ -19,7 +31,7 @@
 
 :== rule = { context : xpath.xpath; context_source : string; assertions : list assertion }
 
-:== pattern = { id : string; rules : list rule }
+:== pattern = { id : pattern_id; rules : list rule }
 
 := attribute_or (key : string) (attributes : list (string * string)) : string =
     ?= xml.attribute_of key attributes ?|
@@ -37,37 +49,37 @@
         := source = attribute_or "test" attributes
         := assertion =
             {
-                id = attribute_or "id" attributes
+                id = rule_id (attribute_or "id" attributes)
                 severity = severity_of (attribute_or "flag" attributes)
-                reports = xml.local_name name = "report"
+                kind = ? xml.local_name name = "report" ?> Reports |: Asserts
                 test = xpath.lift_code_lists (xpath.parse source)
                 source = source
                 message = sm'.trim (xml.text_in children)
             }
         assertions_in rest (assertion :: acc)
     | _ :: rest => assertions_in rest acc
-    | Nil => listm.rev acc
+    | [] => listm.rev acc
 
 :~ ^ rules_in (nodes : list xml_node) (acc : list rule) : list rule =
     ?= nodes ?|
     | XmlElement (name, attributes, children) :: rest ?& xml.local_name name = "rule" =>
         := source = attribute_or "context" attributes
-        := parsed = { context = xpath.parse source; context_source = source; assertions = assertions_in children Nil }
+        := parsed = { context = xpath.parse source; context_source = source; assertions = assertions_in children [] }
         rules_in rest (parsed :: acc)
     | _ :: rest => rules_in rest acc
-    | Nil => listm.rev acc
+    | [] => listm.rev acc
 
 :~ ^ patterns_in (nodes : list xml_node) (acc : list pattern) : list pattern =
     ?= nodes ?|
     | XmlElement (name, attributes, children) :: rest ?& xml.local_name name = "pattern" =>
-        patterns_in rest ({ id = attribute_or "id" attributes; rules = rules_in children Nil } :: acc)
+        patterns_in rest ({ id = pattern_id (attribute_or "id" attributes); rules = rules_in children [] } :: acc)
     | _ :: rest => patterns_in rest acc
-    | Nil => listm.rev acc
+    | [] => listm.rev acc
 
 := read_schematron (text : string) : list pattern =
     ?= xml.single_root (xml.read_xml text) ?|
-    | Some root => patterns_in root.children Nil
-    | None => Nil
+    | Some root => patterns_in root.children []
+    | None => []
 
 :== census = { rules : i32; assertions : i32; fatal : i32; invalid : i32; members : i32 }
 
@@ -81,19 +93,20 @@
         := acc = { acc ?| assertions = acc.assertions + 1i32; fatal = acc.fatal + fatal }
         := acc = { acc ?| invalid = acc.invalid + invalid; members = acc.members + xpath.member_count a.test }
         assertions_census rest acc
-    | Nil => acc
+    | [] => acc
 
 :~ ^ rules_census (rules : list rule) (acc : census) : census =
     ?= rules ?|
     | r :: rest =>
         := acc = { acc ?| rules = acc.rules + 1i32; invalid = acc.invalid + xpath.invalid_count r.context }
         rules_census rest (assertions_census r.assertions acc)
-    | Nil => acc
+    | [] => acc
 
 :~ ^ schematron_census (patterns : list pattern) (acc : census) : census =
     ?= patterns ?|
     | p :: rest => schematron_census rest (rules_census p.rules acc)
-    | Nil => acc
+    | [] => acc
+
 ///> rust
 test reads_rules_and_typed_assertions =
     := source =
@@ -102,14 +115,14 @@ test reads_rules_and_typed_assertions =
         ++# "<assert id=\"BR-21\" flag=\"fatal\" test=\"exists(cbc:ID)\">[BR-21] line id</assert>"
         ++# "<assert id=\"BR-X\" flag=\"warning\" test=\"cbc:Note != ''\">note</assert></rule></pattern></schema>"
     ?= read_schematron source ?|
-    | p :: Nil =>
-        ? p.id <> "model" ?> failwith "pattern id"
+    | p :: [] =>
+        ? pattern_text p.id <> "model" ?> failwith "pattern id"
         ?= p.rules ?|
-        | r :: Nil =>
+        | r :: [] =>
             ? xpath.xpath_text r.context <> "(child::cac:InvoiceLine .)" ?> failwith "rule context"
             ?= r.assertions ?|
-            | first :: second :: Nil =>
-                ? first.id <> "BR-21" || first.message <> "[BR-21] line id" ?> failwith "first assertion"
+            | first :: second :: [] =>
+                ? rule_text first.id <> "BR-21" || first.message <> "[BR-21] line id" ?> failwith "first assertion"
                 ? xpath.xpath_text first.test <> "(exists (child::cbc:ID .))" ?> failwith "parsed test"
                 ?= second.severity ?| Warning => () | _ => failwith "warning flag"
             | _ => failwith "two assertions"

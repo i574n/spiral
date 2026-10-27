@@ -124,7 +124,7 @@ fn utf8_scalar_at_byte_offset_1(mut v0: Rc<str>, mut v1: i32) -> i32 {
                                     let v70: i32 = v1.wrapping_add(2i32);
                                     let v71: u8 = runtime_byte_2(v0.clone(), v70);
                                     let v72: i32 = i32::from(v71);
-                                    let v73: u8 = runtime_byte_2(v0, v64);
+                                    let v73: u8 = runtime_byte_2(v0.clone(), v64);
                                     let v74: i32 = i32::from(v73);
                                     let v75: bool = v69 < 128i32;
                                     let v77: bool = if v75 {
@@ -451,7 +451,7 @@ fn spiral_main() -> i32 {
     let v4: i32 = -1i32;
     let v5: i32 = 5i32;
     let v6: i32 = 5i32;
-    let v7: bool = utf8_canonical_equal_bounded_loop_0(v0.clone(), v0, v1, v2, v3, v4, v5, v6);
+    let v7: bool = utf8_canonical_equal_bounded_loop_0(v0.clone(), v0.clone(), v1, v2, v3, v4, v5, v6);
     let v8: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
     let v9: i32 = 0i32;
     let v10: i32 = 0i32;
@@ -459,7 +459,7 @@ fn spiral_main() -> i32 {
     let v12: i32 = -1i32;
     let v13: i32 = 0i32;
     let v14: i32 = 0i32;
-    let v15: bool = utf8_canonical_equal_bounded_loop_0(v8.clone(), v8, v9, v10, v11, v12, v13, v14);
+    let v15: bool = utf8_canonical_equal_bounded_loop_0(v8.clone(), v8.clone(), v9, v10, v11, v12, v13, v14);
     let v16: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("éõç"); } LIT.with(|lit| lit.clone()) };
     let v17: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("éõç"); } LIT.with(|lit| lit.clone()) };
     let v18: i32 = 0i32;
@@ -468,7 +468,7 @@ fn spiral_main() -> i32 {
     let v21: i32 = -1i32;
     let v22: i32 = 6i32;
     let v23: i32 = 9i32;
-    let v24: bool = utf8_canonical_equal_bounded_loop_0(v16, v17, v18, v19, v20, v21, v22, v23);
+    let v24: bool = utf8_canonical_equal_bounded_loop_0(v16.clone(), v17.clone(), v18, v19, v20, v21, v22, v23);
     let v25: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("é̃"); } LIT.with(|lit| lit.clone()) };
     let v26: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("é̃"); } LIT.with(|lit| lit.clone()) };
     let v27: i32 = 0i32;
@@ -477,7 +477,7 @@ fn spiral_main() -> i32 {
     let v30: i32 = -1i32;
     let v31: i32 = 4i32;
     let v32: i32 = 5i32;
-    let v33: bool = utf8_canonical_equal_bounded_loop_0(v25, v26.clone(), v27, v28, v29, v30, v31, v32);
+    let v33: bool = utf8_canonical_equal_bounded_loop_0(v25.clone(), v26.clone(), v27, v28, v29, v30, v31, v32);
     let v34: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("À"); } LIT.with(|lit| lit.clone()) };
     let v35: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("À"); } LIT.with(|lit| lit.clone()) };
     let v36: i32 = 0i32;
@@ -486,7 +486,7 @@ fn spiral_main() -> i32 {
     let v39: i32 = -1i32;
     let v40: i32 = 2i32;
     let v41: i32 = 3i32;
-    let v42: bool = utf8_canonical_equal_bounded_loop_0(v34, v35, v36, v37, v38, v39, v40, v41);
+    let v42: bool = utf8_canonical_equal_bounded_loop_0(v34.clone(), v35.clone(), v36, v37, v38, v39, v40, v41);
     let v43: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("Ω"); } LIT.with(|lit| lit.clone()) };
     let v44: i32 = 0i32;
     let v45: i32 = 0i32;
@@ -502,7 +502,7 @@ fn spiral_main() -> i32 {
     let v55: i32 = -1i32;
     let v56: i32 = 5i32;
     let v57: i32 = 5i32;
-    let v58: bool = utf8_canonical_equal_bounded_loop_0(v26, v51, v52, v53, v54, v55, v56, v57);
+    let v58: bool = utf8_canonical_equal_bounded_loop_0(v26.clone(), v51.clone(), v52, v53, v54, v55, v56, v57);
     let v59: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("é"); } LIT.with(|lit| lit.clone()) };
     let v60: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("á"); } LIT.with(|lit| lit.clone()) };
     let v61: i32 = 0i32;
@@ -511,7 +511,7 @@ fn spiral_main() -> i32 {
     let v64: i32 = -1i32;
     let v65: i32 = 2i32;
     let v66: i32 = 2i32;
-    let v67: bool = utf8_canonical_equal_bounded_loop_0(v59.clone(), v60, v61, v62, v63, v64, v65, v66);
+    let v67: bool = utf8_canonical_equal_bounded_loop_0(v59.clone(), v60.clone(), v61, v62, v63, v64, v65, v66);
     let v68: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("ω"); } LIT.with(|lit| lit.clone()) };
     let v69: i32 = 0i32;
     let v70: i32 = 0i32;
@@ -519,7 +519,7 @@ fn spiral_main() -> i32 {
     let v72: i32 = -1i32;
     let v73: i32 = 2i32;
     let v74: i32 = 2i32;
-    let v75: bool = utf8_canonical_equal_bounded_loop_0(v43, v68, v69, v70, v71, v72, v73, v74);
+    let v75: bool = utf8_canonical_equal_bounded_loop_0(v43.clone(), v68.clone(), v69, v70, v71, v72, v73, v74);
     let v76: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("e"); } LIT.with(|lit| lit.clone()) };
     let v77: i32 = 0i32;
     let v78: i32 = 0i32;
@@ -527,7 +527,7 @@ fn spiral_main() -> i32 {
     let v80: i32 = -1i32;
     let v81: i32 = 2i32;
     let v82: i32 = 1i32;
-    let v83: bool = utf8_canonical_equal_bounded_loop_0(v59, v76, v77, v78, v79, v80, v81, v82);
+    let v83: bool = utf8_canonical_equal_bounded_loop_0(v59.clone(), v76.clone(), v77, v78, v79, v80, v81, v82);
     if v7 {
         if v15 {
             if v24 {

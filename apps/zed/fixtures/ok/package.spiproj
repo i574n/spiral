@@ -1,5 +1,6 @@
-packageDir: ../../../compiler/tmp/samples
+packageDir: ../../../../lib
 packages:
-    core-
+    |core-
+    spiral-
 modules:
     main

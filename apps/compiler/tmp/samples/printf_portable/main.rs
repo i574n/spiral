@@ -10,7 +10,7 @@ fn spiral_main() -> i32 {
     print!("big {}, small {}, byte {}\n", v1, -5i32, v2);
     print!("100% {{braces}} \"quoted\" \\ tab\tend\n");
     print!("{}\n", { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("literal"); } LIT.with(|lit| lit.clone()) });
-    print!("{}", v3);
+    print!("{}", v3.clone());
     print!("\n");
     0i32
 }

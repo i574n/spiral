@@ -48,19 +48,19 @@ fn score_0(mut v0: US0) -> i32 {
 fn spiral_main() -> i32 {
     let v0: i32 = 7i32;
     let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
-    let v2: Rc<Heap0> = Rc::new(Heap0 { l0: v0, l1: v1 });
+    let v2: Rc<Heap0> = Rc::new(Heap0 { l0: v0, l1: v1.clone() });
     let v3: i32 = 4i32;
     let v4: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("yo"); } LIT.with(|lit| lit.clone()) };
-    let v5: Rc<Heap0> = Rc::new(Heap0 { l0: v3, l1: v4 });
+    let v5: Rc<Heap0> = Rc::new(Heap0 { l0: v3, l1: v4.clone() });
     let v6: bool = true;
     let v9: US0 = if v6 {
-        US0::US0_Held(v2, v5)
+        US0::US0_Held(v2.clone(), v5.clone())
     } else {
         US0::US0_None
     };
-    let v10: Rc<Heap1> = Rc::new(Heap1 { l0: v9 });
+    let v10: Rc<Heap1> = Rc::new(Heap1 { l0: v9.clone() });
     let v11: US0 = v10.l0.clone();
-    score_0(v11)
+    score_0(v11.clone())
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();

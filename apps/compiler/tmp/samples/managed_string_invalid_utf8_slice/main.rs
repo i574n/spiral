@@ -16,8 +16,8 @@ fn invalid_middle_0(mut v0: Rc<str>) -> Rc<str> {
 }
 fn spiral_main() -> i32 {
     let v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("é"); } LIT.with(|lit| lit.clone()) };
-    let v1: Rc<str> = invalid_middle_0(v0);
-    let v2: i32 = (v1.len() as i32);
+    let v1: Rc<str> = invalid_middle_0(v0.clone());
+    let v2: i32 = (v1.clone().len() as i32);
     v2
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }

@@ -16,6 +16,10 @@ if (Test-Path $elixir) { $env:PATH = "$elixir$sep$env:PATH" }
 $crashDumps = Join-Path ($env:LOCALAPPDATA ?? $homeDir) "spiral-bin/crash-dumps"
 New-Item -ItemType Directory -Force $crashDumps | Out-Null
 $env:ERL_CRASH_DUMP = Join-Path $crashDumps "erl_crash-$(Get-Date -Format yyyyMMdd-HHmmss)-$PID.dump"
+if ($IsWindows) {
+    . (Join-Path $PSScriptRoot "erl_memory_limit.ps1")
+    $erlMemoryLimit = Start-ErlMemoryLimit
+}
 $cwd = (Get-Location).Path
 $fixed = New-Object System.Collections.Generic.List[string]
 $key = $null

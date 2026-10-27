@@ -4,7 +4,20 @@
 :< xpath
 :< xpath_eval
 
-:== identity_constraint = { name : string; is_key : bool; element : string; selector : xpath; fields : list xpath }
+:! constraint_name = string
+
+:! owner_name = string
+
+:| constraint_kind =
+    | Unique
+    | Key
+
+:== identity_constraint =
+    { name : constraint_name; kind : constraint_kind; element : owner_name; selector : xpath; fields : list xpath }
+
+:= constraint_text (constraint_name text) : string = text
+
+:= owner_text (owner_name text) : string = text
 
 := attribute_text (key : string) (attributes : list (string * string)) : string =
     ?= attribute_of key attributes ?|
@@ -16,7 +29,7 @@
     | XmlElement (name, attributes, _) :: rest ?& local_name name = "field" =>
         field_paths rest (parse (attribute_text "xpath" attributes) :: acc)
     | _ :: rest => field_paths rest acc
-    | Nil => listm.rev acc
+    | [] => listm.rev acc
 
 := selector_path (nodes : list xml_node) : xpath =
     ?= first_child "selector" nodes ?|
@@ -34,38 +47,38 @@
             ? local = "unique" || local = "key" ?>
                 := found =
                     {
-                        name = attribute_text "name" attributes
-                        is_key = local = "key"
-                        element = element
+                        name = constraint_name (attribute_text "name" attributes)
+                        kind = ? local = "key" ?> Key |: Unique
+                        element = owner_name element
                         selector = selector_path children
-                        fields = field_paths children Nil
+                        fields = field_paths children []
                     }
                 found :: acc
             |: acc
         := inner = ? local = "element" ?> attribute_text "name" attributes |: element
         constraints_of element rest (constraints_of inner children acc)
     | _ :: rest => constraints_of element rest acc
-    | Nil => acc
+    | [] => acc
 
-:= read_constraints (text : string) : list identity_constraint = listm.rev (constraints_of "" (read_xml text) Nil)
+:= read_constraints (text : string) : list identity_constraint = listm.rev (constraints_of "" (read_xml text) [])
 
 :~ ^ field_values (s : scope) (fields : list xpath) (acc : list string) (complete : bool) : list string * bool =
     ?= fields ?|
     | field :: rest =>
         ?= eval s field ?|
-        | VNodes (Nil) => field_values s rest acc !-
+        | VNodes ([]) => field_values s rest acc !-
         | value => field_values s rest (atom_text value :: acc) complete
-    | Nil => listm.rev acc, complete
+    | [] => listm.rev acc, complete
 
 :~ ^ joined_key (values : list string) (acc : string) : string =
     ?= values ?|
     | value :: rest => joined_key rest (? acc = "" ?> value |: acc ++# "\n" ++# value)
-    | Nil => acc
+    | [] => acc
 
 :~ ^ has_key (key : string) (seen : list string) : bool =
     ?= seen ?|
     | x :: rest => x = key || has_key key rest
-    | Nil => !-
+    | [] => !-
 
 :~ ^ selected_violations
     (c : identity_constraint) (s : scope) (items : list located) (seen : list string) (acc : list string)
@@ -73,14 +86,20 @@
     =
     ?= items ?|
     | item :: rest =>
-        := values, complete = field_values { s ?| context = item } c.fields Nil !+
+        := values, complete = field_values { s ?| context = item } c.fields [] !+
         ? complete = !-
-        ?> selected_violations c s rest seen (? c.is_key ?> (c.name ++# ": missing key field" :: acc) |: acc)
+        ?>
+            := missing =
+                ?= c.kind ?|
+                | Key => constraint_text c.name ++# ": missing key field" :: acc
+                | Unique => acc
+            selected_violations c s rest seen missing
         |:
             := key = joined_key values ""
-            ? has_key key seen ?> selected_violations c s rest seen (c.name ++# ": duplicate " ++# key :: acc)
+            := duplicate = constraint_text c.name ++# ": duplicate " ++# key
+            ? has_key key seen ?> selected_violations c s rest seen (duplicate :: acc)
             |: selected_violations c s rest (key :: seen) acc
-    | Nil => acc
+    | [] => acc
 
 :~ ^ owner_violations
     (c : identity_constraint) (s : scope) (owners : list located) (acc : list string)
@@ -89,16 +108,16 @@
     ?= owners ?|
     | owner :: rest =>
         ?= eval { s ?| context = owner } c.selector ?|
-        | VNodes selected => owner_violations c s rest (selected_violations c s selected Nil acc)
-        | _ => owner_violations c s rest (c.name ++# ": selector did not select nodes" :: acc)
-    | Nil => acc
+        | VNodes selected => owner_violations c s rest (selected_violations c s selected [] acc)
+        | _ => owner_violations c s rest (constraint_text c.name ++# ": selector did not select nodes" :: acc)
+    | [] => acc
 
 :~ ^ owners_named (name : string) (items : list located) (acc : list located) : list located =
     ?= items ?|
     | item :: rest =>
         := matches = ?= item.node ?| XmlElement (n, _, _) => local_name n = name | XmlText _ => !-
         owners_named name rest (? matches ?> (item :: acc) |: acc)
-    | Nil => listm.rev acc
+    | [] => listm.rev acc
 
 :~ ^ constraint_violations
     (constraints : list identity_constraint) (s : scope) (everything : list located) (acc : list string)
@@ -106,15 +125,17 @@
     =
     ?= constraints ?|
     | c :: rest =>
-        constraint_violations rest s everything (owner_violations c s (owners_named c.element everything Nil) acc)
-    | Nil => listm.rev acc
+        := owners = owners_named (owner_text c.element) everything []
+        constraint_violations rest s everything (owner_violations c s owners acc)
+    | [] => listm.rev acc
 
 := validate_constraints (constraints : list identity_constraint) (document : xml_node) : list string =
     := root = document_root document
     constraint_violations constraints
-        { context = root; root = root; variables = Nil }
-        (listm.rev (descendants_of (root :: Nil) Nil))
-        Nil
+        { context = root; root = root; variables = [] }
+        (listm.rev (descendants_of (root :: []) []))
+        []
+
 ///> rust
 test unique_items_are_checked_per_owner =
     := schema =
@@ -123,11 +144,13 @@ test unique_items_are_checked_per_owner =
         ++# "</xs:element></xs:schema>"
     := constraints = read_constraints schema
     ?= constraints ?|
-    | c :: Nil => ? c.name <> "pk_nItem" || c.element <> "det" || c.is_key ?> failwith "one unique on det"
+    | c :: [] =>
+        := keyed = ?= c.kind ?| Key => !+ | Unique => !-
+        ? constraint_text c.name <> "pk_nItem" || owner_text c.element <> "det" || keyed ?> failwith "one unique on det"
     | _ => failwith "one constraint"
     := check (document : string) =
         ?= read_xml document ?|
-        | root :: Nil => listm.length (validate_constraints constraints root)
+        | root :: [] => listm.length (validate_constraints constraints root)
         | _ => -1i32
     ? check "<det><i nItem=\"1\"/><i nItem=\"2\"/></det>" <> 0i32 ?> failwith "distinct items pass"
     ? check "<det><i nItem=\"1\"/><i nItem=\"1\"/></det>" <> 1i32 ?> failwith "a repeated nItem is one violation"

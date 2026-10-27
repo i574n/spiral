@@ -8,7 +8,7 @@ fn measure_0(mut v0: Rc<str>) -> i32 {
 fn spiral_main() -> i32 {
     let v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("qwe"); } LIT.with(|lit| lit.clone()) };
     let v1: i32 = measure_0(v0.clone());
-    let v2: i32 = measure_0(v0);
+    let v2: i32 = measure_0(v0.clone());
     let v3: i32 = v1.wrapping_add(v2);
     let v4: i32 = v3.wrapping_sub(6i32);
     v4

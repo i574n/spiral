@@ -1,5 +1,4 @@
 ///- --package .
-
 := concat (a : string) (b : string) : string = !!!!StaticStringConcat(a, b)
 
 := text_length (s : string) : i32 = sm.length s
@@ -74,9 +73,13 @@
         := last = zeros_before all_digits (text_length all_digits)
         ? first >= last ?> concat sign "0.0"
         |: laid_out sign (part all_digits first (last - first)) (text_length whole + exponent - first)
+
 ///> rust
+
 ///> fsharp
+
 ///> typescript
+
 ///> gleam
 test float_text_repr_lays_out_any_shortest_text_like_python_repr =
     := check (given : string) (expected : string) =

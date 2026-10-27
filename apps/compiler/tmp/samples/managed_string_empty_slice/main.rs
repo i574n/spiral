@@ -25,19 +25,19 @@ fn empty_source_2(mut v0: Rc<str>) -> Rc<str> {
 fn spiral_main() -> i32 {
     let v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("alpha"); } LIT.with(|lit| lit.clone()) };
     let v1: Rc<str> = empty_middle_0(v0.clone());
-    let v2: Rc<str> = empty_end_1(v0);
+    let v2: Rc<str> = empty_end_1(v0.clone());
     let v3: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
-    let v4: Rc<str> = empty_source_2(v3);
+    let v4: Rc<str> = empty_source_2(v3.clone());
     let v5: Rc<str> = Rc::<str>::from(format!("{}{}", v1.clone(), v2.clone()));
     let v6: Rc<str> = Rc::<str>::from(format!("{}{}", v4.clone(), { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("ok"); } LIT.with(|lit| lit.clone()) }));
-    let v7: Rc<str> = Rc::<str>::from(format!("{}{}", v5, v6));
-    let v8: i32 = (v1.len() as i32);
+    let v7: Rc<str> = Rc::<str>::from(format!("{}{}", v5.clone(), v6.clone()));
+    let v8: i32 = (v1.clone().len() as i32);
     let v9: bool = v8 == 0i32;
     if v9 {
-        let v10: i32 = (v2.len() as i32);
+        let v10: i32 = (v2.clone().len() as i32);
         let v11: bool = v10 == 0i32;
         if v11 {
-            let v12: i32 = (v4.len() as i32);
+            let v12: i32 = (v4.clone().len() as i32);
             let v13: bool = v12 == 0i32;
             if v13 {
                 let v14: i32 = (v7.clone().len() as i32);
@@ -46,7 +46,7 @@ fn spiral_main() -> i32 {
                     let v16: u8 = v7.clone().as_bytes()[0i32 as usize];
                     let v17: bool = v16 == b'o';
                     if v17 {
-                        let v18: u8 = v7.as_bytes()[1i32 as usize];
+                        let v18: u8 = v7.clone().as_bytes()[1i32 as usize];
                         let v19: bool = v18 == b'k';
                         if v19 {
                             0i32

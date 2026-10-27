@@ -4,255 +4,251 @@
 test process static =
     :< testing
 
-:= process_gleam_prelude () =
-    global "import gleam/bit_array"
-    global "import gleam/dynamic.{type Dynamic}"
-    global "import gleam/erlang/atom"
-    global "import gleam/erlang/charlist"
-    global "import gleam/erlang/process"
-    global "import gleam/int"
-    global "import gleam/string"
-    global """
-        @external(erlang, "gleam_stdlib", "identity")
-        fn spiral_process_coerce(value: a) -> b
+/// ## arguments
 
-        @external(erlang, "erlang", "open_port")
-        fn spiral_process_open_port(name: Dynamic, options: List(Dynamic)) -> Dynamic
+/// ### present_arguments
+:= present_arguments (args : list string) : list string =
+    listm.fold (\ (kept : list string) (a : string) => ? a = "" ?> kept |: a :: kept) Nil args |> listm.rev
 
-        @external(erlang, "erlang", "element")
-        fn spiral_process_element(index: Int, tuple: Dynamic) -> Dynamic
+/// ### gleam_argv
+:= gleam_argv (args : list string) : erlang_term.term =
+    present_arguments args |> listm.map erlang_term.charlist |> erlang_term.list_term
 
-        @external(erlang, "os", "find_executable")
-        fn spiral_process_find_executable(name: charlist.Charlist) -> Dynamic
+/// ## ports
 
-        @external(erlang, "erlang", "halt")
-        fn spiral_process_halt(code: Int) -> a
+/// ### port_for
+:= port_for (program : string) (options : list erlang_term.term) : erlang_port.port =
+    := executable = erlang_term.apply "os" "find_executable" [ erlang_term.charlist program ]
+    := p = erlang_port.open_executable executable options
+    erlang_port.unlink p |> ignore
+    p
 
-        @external(erlang, "erlang", "port_info")
-        fn spiral_process_port_info(port: Dynamic, item: atom.Atom) -> Dynamic
+/// ### command_for
+:= command_for (program : string) (args : list string) : runtime.shared_command =
+    := command = runtime.shared_command_new program
+    listm.iter (\ (a : string) => runtime.shared_command_arg command a) (present_arguments args)
+    command
 
-        @external(erlang, "erlang", "port_close")
-        fn spiral_process_port_close(port: Dynamic) -> Bool
+/// ## kill
 
-        @external(erlang, "os", "cmd")
-        fn spiral_process_os_cmd(command: charlist.Charlist) -> charlist.Charlist
+/// ### kill_command
+:= kill_command (pid : i32) : string =
+    ? platform.is_windows () ?> "taskkill /F /T /PID " ++#? pid |: "kill -9 " ++#? pid
 
-        @external(erlang, "os", "type")
-        fn spiral_process_os_type() -> Dynamic
-
-        @external(erlang, "erlang", "monotonic_time")
-        fn spiral_process_monotonic(unit: atom.Atom) -> Int
-
-        fn spiral_process_open(program: String, args: String) -> Dynamic {
-          spiral_process_open_argv(program, args |> string.split(" ") |> spiral_process_without_empty)
-        }
-
-        fn spiral_process_open_argv(program: String, argv: List(String)) -> Dynamic {
-          spiral_process_open_with(program, argv, [])
-        }
-
-        fn spiral_process_open_with(program: String, argv: List(String), extra: List(Dynamic)) -> Dynamic {
-          let found: charlist.Charlist = spiral_process_coerce(spiral_process_find_executable(charlist.from_string(program)))
-          let name = spiral_process_coerce(#(atom.create("spawn_executable"), found))
-          let options = [
-            spiral_process_coerce(atom.create("binary")),
-            spiral_process_coerce(atom.create("exit_status")),
-            spiral_process_coerce(#(atom.create("args"), argv)),
-            ..extra
-          ]
-          spiral_process_open_port(name, options)
-        }
-
-        fn spiral_process_selector() -> process.Selector(Dynamic) {
-          process.new_selector() |> process.select_other(fn(message) { message })
-        }
-
-        fn spiral_process_event_kind(event: Dynamic) -> String {
-          let kind: atom.Atom = spiral_process_coerce(spiral_process_element(1, event))
-          atom.to_string(kind)
-        }
-
-        fn spiral_process_collect(selector: process.Selector(Dynamic), acc: BitArray) -> #(Int, BitArray) {
-          let event = spiral_process_element(2, process.selector_receive_forever(selector))
-          case spiral_process_event_kind(event) {
-            "data" -> spiral_process_collect(selector, bit_array.append(acc, spiral_process_coerce(spiral_process_element(2, event))))
-            "exit_status" -> #(spiral_process_coerce(spiral_process_element(2, event)), acc)
-            _ -> spiral_process_collect(selector, acc)
-          }
-        }
-
-        fn spiral_process_now() -> Int {
-          spiral_process_monotonic(atom.create("millisecond"))
-        }
-
-        fn spiral_process_wait(selector: process.Selector(Dynamic), deadline: Int) -> Result(Int, Nil) {
-          let left = deadline - spiral_process_now()
-          case left > 0 {
-            False -> Error(Nil)
-            True -> case process.selector_receive(selector, left) {
-              Error(Nil) -> Error(Nil)
-              Ok(message) -> {
-                let event = spiral_process_element(2, message)
-                case spiral_process_event_kind(event) {
-                  "exit_status" -> Ok(spiral_process_coerce(spiral_process_element(2, event)))
-                  _ -> spiral_process_wait(selector, deadline)
-                }
-              }
-            }
-          }
-        }
-
-        fn spiral_process_kill_tree(port: Dynamic) -> Nil {
-          let os_pid: Int = spiral_process_coerce(spiral_process_element(2, spiral_process_port_info(port, atom.create("os_pid"))))
-          let family: atom.Atom = spiral_process_coerce(spiral_process_element(1, spiral_process_os_type()))
-          let command = case atom.to_string(family) {
-            "win32" -> "taskkill /F /T /PID " <> int.to_string(os_pid)
-            _ -> "kill -9 " <> int.to_string(os_pid)
-          }
-          let _ = spiral_process_port_close(port)
-          let _ = spiral_process_os_cmd(charlist.from_string(command))
-          Nil
-        }
-
-        fn spiral_process_capture(program: String, args: String) -> String {
-          let _port = spiral_process_open(program, args)
-          spiral_process_captured()
-        }
-
-        fn spiral_process_capture_list(program: String, joined: String, separator: String) -> String {
-          let _port = spiral_process_open_argv(program, joined |> string.split(separator) |> spiral_process_without_empty)
-          spiral_process_captured()
-        }
-
-        fn spiral_process_capture_combined(program: String, joined: String, separator: String) -> String {
-          let argv = joined |> string.split(separator) |> spiral_process_without_empty
-          let _port = spiral_process_open_with(program, argv, [spiral_process_coerce(atom.create("stderr_to_stdout"))])
-          spiral_process_captured()
-        }
-
-        fn spiral_process_captured() -> String {
-          case spiral_process_collect(spiral_process_selector(), <<>>) {
-            #(0, bytes) -> case bit_array.to_string(bytes) {
-              Ok(text) -> text
-              Error(_) -> spiral_process_halt(3)
-            }
-            _ -> spiral_process_halt(3)
-          }
-        }
-
-        fn spiral_process_status_within(program: String, args: String, ms: Int) -> Int {
-          let port = spiral_process_open(program, args)
-          case spiral_process_wait(spiral_process_selector(), spiral_process_now() + ms) {
-            Ok(code) -> code
-            Error(Nil) -> {
-              spiral_process_kill_tree(port)
-              -1
-            }
-          }
-        }
-
-        fn spiral_process_try_capture_combined(program: String, joined: String, separator: String) -> #(Bool, String) {
-          let found = spiral_process_find_executable(charlist.from_string(program))
-          case found == spiral_process_coerce(False) {
-            True -> #(False, "")
-            False -> {
-              let argv = joined |> string.split(separator) |> spiral_process_without_empty
-              let merged = [spiral_process_coerce(atom.create("stderr_to_stdout"))]
-              let _port = spiral_process_open_with(program, argv, merged)
-              case spiral_process_collect(spiral_process_selector(), <<>>) {
-                #(0, bytes) -> case bit_array.to_string(bytes) {
-                  Ok(text) -> #(True, text)
-                  Error(_) -> #(False, "")
-                }
-                _ -> #(False, "")
-              }
-            }
-          }
-        }
-
-        fn spiral_process_without_empty(parts: List(String)) -> List(String) {
-          case parts {
-            [] -> []
-            ["", ..rest] -> spiral_process_without_empty(rest)
-            [part, ..rest] -> [part, ..spiral_process_without_empty(rest)]
-          }
-        }
-        """
-
-:= capture_stdout (program : string) (args : string) : string =
+/// ### kill_tree_of_pid
+:= kill_tree_of_pid (pid : i32) : () =
     run_target \|
         | Rust => \ () =>
-            $'Rc::<str>::from({ let out = std::process::Command::new(&*!program).args((&*!args).split_whitespace()).ou\
-                tput().unwrap(); if out.status.code() \!= Some(0) { std::process::exit(3) }; \
-                String::from_utf8_lossy(&out.stdout).into_owned() })' : string
-        | Gleam => \ () =>
-            process_gleam_prelude ()
-            $'spiral_process_capture(!program, !args)' : string
-        | _ => \ () => failwith "capture_stdout: no arm for this backend"
+            := command = runtime.shared_command_new (? platform.is_windows () ?> "taskkill" |: "kill")
+            := flags = ? platform.is_windows () ?> [ "/F"; "/T"; "/PID" ] |: [ "-9" ]
+            listm.iter (\ (a : string) => runtime.shared_command_arg command a) flags
+            runtime.shared_command_arg command ("" ++#? pid)
+            runtime.shared_command_output command |> ignore
+        | Gleam => \ () => platform.os_command_output (kill_command pid) |> ignore
+        | _ => \ () => failwith "kill_tree_of_pid: no arm for this backend"
 
-:= argument_separator () : string =
-    run_target \|
-        | Rust => \ () => $'Rc::<str>::from("\\u{1f}")' : string
-        | Gleam => \ () => $'"\\u{001f}"' : string
-        | _ => \ () => failwith "argument_separator: no arm for this backend"
+/// ## started
 
-:= capture_stdout_list (program : string) (args : list string) : string =
-    := separator = argument_separator ()
-    := joined = sm'.concat_list separator args
+/// ### started
+:== started_switch =
+    {
+        Rust : runtime.shared_child
+        Gleam : $'##(Dynamic, String)'
+    }
+:! started = $'backend_switch `(started_switch)'
+
+/// ### gleam_started
+:= gleam_started (p : erlang_port.port) (log : string) : started = $'##(!p, !log)' : started
+
+/// ### gleam_started_port
+:= gleam_started_port (s : started) : erlang_port.port = $'!s.0' : erlang_port.port
+
+/// ### gleam_started_log
+:= gleam_started_log (s : started) : string = $'!s.1' : string
+
+/// ### rust_child
+:= rust_child (s : started) : runtime.shared_child = $'!s' : runtime.shared_child
+
+/// ### exit_key
+:= exit_key (p : erlang_port.port) : erlang_term.term =
+    erlang_term.tuple [ erlang_term.atom "spiral_process_exit"; erlang_port.term_of p ]
+
+/// ## waiting
+
+/// ### gleam_waited
+:~ ^ gleam_waited (choices : erlang_port.selector) (log : string) (deadline : i64) : option i32 =
+    := left : i32 = conv (deadline - date_time.monotonic_milliseconds ())
+    := outcome = erlang_port.receive_within choices (? left > 0i32 ?> left |: 0i32)
+    ? erlang_port.received_some outcome ?>
+        := event = erlang_port.message_event (erlang_port.received_message outcome (erlang_term.atom "none"))
+        := kind = erlang_port.event_kind event
+        ? kind = "data" ?>
+            ? log <> "" ?> file_system.append_all_text log (erlang_port.event_value event |> erlang_term.cast)
+            gleam_waited choices log deadline
+        |? kind = "exit_status" ?> Some (erlang_port.event_value event |> erlang_term.cast)
+        |: gleam_waited choices log deadline
+    |: None
+
+/// ### rust_waited
+:~ ^ rust_waited (child : runtime.shared_child) (since : date_time.stopwatch) (ms : i32) : option i32 =
+    ? runtime.shared_child_exited child ?> Some (runtime.shared_child_code child)
+    |? date_time.stopwatch_elapsed_milliseconds since >= conv ms ?> None
+    |:
+        threading.sleep 5i32
+        rust_waited child since ms
+
+/// ## running
+
+/// ### capture_status_within
+:= capture_status_within (program : string) (args : list string) (ms : i32) : i32 =
     run_target \|
         | Rust => \ () =>
-            $'Rc::<str>::from({ let out = std::process::Command::new(&*!program).args((&*!joined).split(&*!separator).\
-                filter(|a| a.len() > 0)).output().unwrap(); if out.status.code() \!= Some(0) { std::process::exit(3) \
-                }; String::from_utf8_lossy(&out.stdout).into_owned() })' : string
+            := command = command_for program args
+            runtime.shared_command_quiet command
+            := child = runtime.shared_command_spawn command
+            ?= rust_waited child (date_time.stopwatch ()) ms ?|
+            | Some code => code
+            | None =>
+                runtime.shared_child_kill child
+                runtime.shared_child_code child |> ignore
+                -1i32
         | Gleam => \ () =>
-            process_gleam_prelude ()
-            $'spiral_process_capture_list(!program, !joined, !separator)' : string
-        | _ => \ () => failwith "capture_stdout_list: no arm for this backend"
-
-:= capture_combined_list (program : string) (args : list string) : string =
-    := separator = argument_separator ()
-    := joined = sm'.concat_list separator args
-    run_target \|
-        | Rust => \ () =>
-            $'Rc::<str>::from({ let out = std::process::Command::new(&*!program).args((&*!joined).split(&*!separator).\
-                filter(|a| a.len() > 0)).output().unwrap(); if out.status.code() \!= Some(0) { std::process::exit(3) \
-                }; let mut text = String::from_utf8_lossy(&out.stdout).into_owned(); \
-                text.push_str(&String::from_utf8_lossy(&out.stderr)); text })' : string
-        | Gleam => \ () =>
-            process_gleam_prelude ()
-            $'spiral_process_capture_combined(!program, !joined, !separator)' : string
-        | _ => \ () => failwith "capture_combined_list: no arm for this backend"
-
-:= try_capture_combined_list (program : string) (args : list string) : option string =
-    := separator = argument_separator ()
-    := joined = sm'.concat_list separator args
-    := succeeded, text =
-        run_target \|
-            | Rust => \ () =>
-                $'match std::process::Command::new(&*!program).args((&*!joined).split(&*!separator).filter(|a| a.len() \
-                    > 0)).output() { Ok(out) if out.status.success() => { let mut text = \
-                    String::from_utf8_lossy(&out.stdout).into_owned(); \
-                    text.push_str(&String::from_utf8_lossy(&out.stderr)); (true, Rc::<str>::from(text)) } _ => \
-                    (false, Rc::<str>::from("")) }' : bool * string
-            | Gleam => \ () =>
-                process_gleam_prelude ()
-                $'spiral_process_try_capture_combined(!program, !joined, !separator)' : bool * string
-            | _ => \ () => failwith "try_capture_combined_list: no arm for this backend"
-    ? succeeded ?> Some text |: None
-
-:= capture_status_within (program : string) (args : string) (ms : i32) : i32 =
-    run_target \|
-        | Rust => \ () =>
-            $'{ let mut child = std::process::Command::new(&*!program).args((&*!args).split_whitespace()).stdout(std::\
-                process::Stdio::null()).stderr(std::process::Stdio::null()).spawn().unwrap(); let deadline = \
-                std::time::Instant::now() + std::time::Duration::from_millis(!ms as u64); loop { if let Some(status) \
-                = child.try_wait().unwrap() { break status.code().unwrap_or(-2) } if std::time::Instant::now() >= \
-                deadline { let _ = child.kill(); let _ = child.wait(); break -1 } \
-                std::thread::sleep(std::time::Duration::from_millis(5)) } }' : i32
-        | Gleam => \ () =>
-            process_gleam_prelude ()
-            $'spiral_process_status_within(!program, !args, !ms)' : i32
+            := argv = erlang_term.tuple [ erlang_term.atom "args"; gleam_argv args ]
+            := p = port_for program [ erlang_term.atom "binary"; erlang_term.atom "exit_status"; argv ]
+            := deadline = date_time.monotonic_milliseconds () + conv ms
+            ?= gleam_waited (erlang_port.selector_of p) "" deadline ?|
+            | Some code => code
+            | None =>
+                := pid = erlang_port.os_pid p
+                erlang_port.close p |> ignore
+                kill_tree_of_pid pid
+                -1i32
         | _ => \ () => failwith "capture_status_within: no arm for this backend"
+
+/// ### start_logging
+:= start_logging (directory : string) (program : string) (args : list string) (log : string) : started =
+    run_target \|
+        | Rust => \ () =>
+            := command = command_for program args
+            runtime.shared_command_dir command directory
+            runtime.shared_command_no_input command
+            runtime.shared_command_logging command (runtime.log_file_create log)
+            $'!(runtime.shared_command_spawn command)' : started
+        | Gleam => \ () =>
+            file_system.write_all_text log ""
+            := argv = erlang_term.tuple [ erlang_term.atom "args"; gleam_argv args ]
+            := cd = erlang_term.tuple [ erlang_term.atom "cd"; erlang_term.of directory ]
+            := merged = erlang_term.atom "stderr_to_stdout"
+            := options = [ erlang_term.atom "binary"; erlang_term.atom "exit_status"; argv; merged; cd ]
+            gleam_started (port_for program options) log
+        | _ => \ () => failwith "start_logging: no arm for this backend"
+
+/// ### started_pid
+:= started_pid (s : started) : i32 =
+    run_target \|
+        | Rust => \ () => conv (runtime.shared_child_id (rust_child s))
+        | Gleam => \ () => erlang_port.os_pid (gleam_started_port s)
+        | _ => \ () => failwith "started_pid: no arm for this backend"
+
+/// ### await_exit_within
+:= await_exit_within (s : started) (ms : i32) : option i32 =
+    run_target \|
+        | Rust => \ () => rust_waited (rust_child s) (date_time.stopwatch ()) ms
+        | Gleam => \ () =>
+            := p = gleam_started_port s
+            := key = exit_key p
+            := kept = erlang_process.dictionary_get key
+            ? erlang_term.equal kept (erlang_term.atom "undefined") ?>
+                := deadline = date_time.monotonic_milliseconds () + conv ms
+                := outcome = gleam_waited (erlang_port.selector_of p) (gleam_started_log s) deadline
+                ?= outcome ?|
+                | Some code =>
+                    erlang_process.dictionary_put key (erlang_term.of code) |> ignore
+                    outcome
+                | None => None
+            |: Some (kept |> erlang_term.cast)
+        | _ => \ () => failwith "await_exit_within: no arm for this backend"
+
+/// ## capture
+
+/// ### exit_with
+:= exit_with (code : i32) : () =
+    run_target \|
+        | Rust => \ () => $'std::process::exit(!code)' : ()
+        | Gleam => \ () => erlang_term.apply "erlang" "halt" [ erlang_term.of code ] |> ignore
+        | _ => \ () => failwith "exit_with: no arm for this backend"
+
+/// ### captured
+:== captured = { ran : bool; code : i32; stdout : string }
+
+/// ### not_run
+:= not_run () : captured = { ran = !-; code = -1i32; stdout = "" }
+
+/// ### rust_captured
+:= rust_captured (program : string) (args : list string) (merged : bool) : captured =
+    := output = runtime.shared_command_output (command_for program args)
+    ? runtime.command_output_ran output ?>
+        := stderr = ? merged ?> runtime.command_output_stderr output |: ""
+        := stdout = runtime.command_output_stdout output ++# stderr
+        { ran = !+; code = runtime.command_output_code output; stdout = stdout }
+    |: not_run ()
+
+/// ### gleam_collected
+:~ ^ gleam_collected (choices : erlang_port.selector) (text : string) : i32 * string =
+    := outcome = erlang_port.receive_within choices 86400000i32
+    := event = erlang_port.message_event (erlang_port.received_message outcome (erlang_term.atom "none"))
+    := kind = erlang_port.event_kind event
+    ? kind = "data" ?> gleam_collected choices (text ++# (erlang_port.event_value event |> erlang_term.cast))
+    |? kind = "exit_status" ?> (erlang_port.event_value event |> erlang_term.cast), text
+    |: gleam_collected choices text
+
+/// ### gleam_captured
+:= gleam_captured (program : string) (args : list string) (merged : bool) : captured =
+    := found = erlang_term.apply "os" "find_executable" [ erlang_term.charlist program ]
+    ? erlang_term.equal found (erlang_term.atom "false") ?> not_run ()
+    |:
+        := argv = erlang_term.tuple [ erlang_term.atom "args"; gleam_argv args ]
+        := base = [ erlang_term.atom "binary"; erlang_term.atom "exit_status"; argv ]
+        := options = ? merged ?> erlang_term.atom "stderr_to_stdout" :: base |: base
+        := code, text = gleam_collected (erlang_port.selector_of (erlang_port.open_executable found options)) ""
+        { ran = !+; code = code; stdout = text }
+
+/// ### captured_by
+:= captured_by (program : string) (args : list string) (merged : bool) : captured =
+    run_target \|
+        | Rust => \ () => rust_captured program args merged
+        | Gleam => \ () => gleam_captured program args merged
+        | _ => \ () => failwith "captured_by: no arm for this backend"
+
+/// ### succeeded
+:= succeeded (c : captured) : bool = c.ran && c.code = 0i32
+
+/// ### required
+:= required (c : captured) : string =
+    ? succeeded c ?> c.stdout
+    |:
+        exit_with 3i32
+        ""
+
+/// ### words
+:~ ^ words (text : string) : list string =
+    := at : i32 = sm'.index_of " " text
+    ? at < 0i32 ?> [ text ]
+    |: sm'.substring 0i32 at text :: words (sm'.substring (at + 1i32) (sm'.length text - at - 1i32) text)
+
+/// ### capture_stdout_list
+:= capture_stdout_list (program : string) (args : list string) : string = captured_by program args !- |> required
+
+/// ### capture_stdout
+:= capture_stdout (program : string) (args : string) : string = capture_stdout_list program (words args)
+
+/// ### capture_combined_list
+:= capture_combined_list (program : string) (args : list string) : string = captured_by program args !+ |> required
+
+/// ### try_capture_combined_list
+:= try_capture_combined_list (program : string) (args : list string) : option string =
+    := c = captured_by program args !+
+    ? succeeded c ?> Some c.stdout |: None
 
 ///> rust
 ///> gleam
@@ -263,28 +259,61 @@ test hostname_prints_a_name =
 ///> rust
 ///> gleam
 test list_arguments_keep_their_spaces =
-    := args = Cons ("-c", Cons ("import sys; print(len(sys.argv) - 1, sys.argv[1])", Cons ("a b", Cons ("c", Nil))))
+    := args = [ "-c"; "import sys; print(len(sys.argv) - 1, sys.argv[1])"; "a b"; "c" ]
     capture_stdout_list "python" args |> sm'.trim |> _assert_eq "2 a b"
 
 ///> rust
 ///> gleam
 test combined_capture_includes_stderr =
-    := args = Cons ("-c", Cons ("import sys; sys.stderr.write('warned')", Nil))
+    := args = [ "-c"; "import sys; sys.stderr.write('warned')" ]
     capture_combined_list "python" args |> sm'.trim |> _assert_eq "warned"
 
 ///> rust
+///> gleam
 test a_missing_or_failing_program_captures_nothing =
     try_capture_combined_list "spiral-no-such-program" Nil |> _assert_eq None
-    try_capture_combined_list "python" (Cons ("-c", Cons ("import sys; sys.exit(4)", Nil))) |> _assert_eq None
-    := args = Cons ("-c", Cons ("import sys; sys.stderr.write('warned')", Nil))
+    try_capture_combined_list "python" [ "-c"; "import sys; sys.exit(4)" ] |> _assert_eq None
+    := args = [ "-c"; "import sys; sys.stderr.write('warned')" ]
     try_capture_combined_list "python" args |> optionm.map sm'.trim |> _assert_eq (Some "warned")
 
 ///> rust
 ///> gleam
 test a_quick_program_reports_its_exit_code =
-    capture_status_within "hostname" "" 10000i32 |> _assert_eq 0i32
+    capture_status_within "hostname" Nil 10000i32 |> _assert_eq 0i32
 
 ///> rust
 ///> gleam
 test a_program_past_its_deadline_is_killed =
-    capture_status_within "ping" "-n 30 127.0.0.1" 400i32 |> _assert_eq (-1i32)
+    capture_status_within "ping" [ "-n"; "30"; "127.0.0.1" ] 400i32 |> _assert_eq (-1i32)
+
+///> rust
+///> gleam
+test a_started_program_logs_and_reports_its_exit =
+    := s = start_logging "." "python" [ "-c"; "print('ready')" ] "process-started-quick.log"
+    (started_pid s > 0i32) |> _assert_eq !+
+    await_exit_within s 20000i32 |> _assert_eq (Some 0i32)
+    await_exit_within s 0i32 |> _assert_eq (Some 0i32)
+    file_system.read_all_text "process-started-quick.log" |> sm'.trim |> _assert_eq "ready"
+
+///> rust
+///> gleam
+test a_running_program_is_killed_by_its_pid =
+    := sleeper = [ "-c"; "import time; time.sleep(30)" ]
+    := s = start_logging "." "python" sleeper "process-started-slow.log"
+    await_exit_within s 300i32 |> _assert_eq None
+    kill_tree_of_pid (started_pid s)
+    := ended =
+        ?= await_exit_within s 10000i32 ?|
+        | Some _ => !+
+        | None => !-
+    ended |> _assert_eq !+
+
+///> rust
+///> gleam
+test a_program_runs_in_its_directory =
+    := marker = "process-started-directory-marker.txt"
+    := write = [ "-c"; "open('" ++# marker ++# "', 'w').write('here')" ]
+    := s = start_logging ".." "python" write "process-started-directory.log"
+    await_exit_within s 20000i32 |> _assert_eq (Some 0i32)
+    (file_system.file_exists ("../" ++# marker), file_system.file_exists marker) |> _assert_eq (!+, !-)
+    file_system.file_delete ("../" ++# marker)

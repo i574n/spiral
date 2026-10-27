@@ -27,11 +27,11 @@ fn spiral_main() -> i32 {
     println!("{}", v5);
     let v6: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(" 123 "); } LIT.with(|lit| lit.clone()) };
     let v7: Option<i32> = (v6).trim().parse::<i32>().ok();
-    let v8: Option<i32> = method0(v7);
+    let v8: Option<i32> = method0(v7.clone());
     let mut v9: Rc<dyn Fn((i32)) -> US0> = closure0();
     let mut v10: Option<US0> = v8.map(|x| v9(x));
     let v12: US0 = US0::US0_None;
-    let v13: US0 = v12;
+    let v13: US0 = v12.clone();
     let v14: US0 = v10.unwrap_or(v13);
     match &v14 {
         US0::US0_None => {
@@ -47,10 +47,10 @@ fn spiral_main() -> i32 {
     };
     let v17: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("12x"); } LIT.with(|lit| lit.clone()) };
     let v18: Option<i32> = (v17).trim().parse::<i32>().ok();
-    let v19: Option<i32> = method0(v18);
+    let v19: Option<i32> = method0(v18.clone());
     let mut v20: Option<US0> = v19.map(|x| v9(x));
     let v22: US0 = US0::US0_None;
-    let v23: US0 = v22;
+    let v23: US0 = v22.clone();
     let v24: US0 = v20.unwrap_or(v23);
     match &v24 {
         US0::US0_None => {
@@ -66,10 +66,10 @@ fn spiral_main() -> i32 {
     };
     let v27: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
     let v28: Option<i32> = (v27).trim().parse::<i32>().ok();
-    let v29: Option<i32> = method0(v28);
+    let v29: Option<i32> = method0(v28.clone());
     let mut v30: Option<US0> = v29.map(|x| v9(x));
     let v32: US0 = US0::US0_None;
-    let v33: US0 = v32;
+    let v33: US0 = v32.clone();
     let v34: US0 = v30.unwrap_or(v33);
     match &v34 {
         US0::US0_None => {
@@ -85,10 +85,10 @@ fn spiral_main() -> i32 {
     };
     let v37: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("+7"); } LIT.with(|lit| lit.clone()) };
     let v38: Option<i32> = (v37).trim().parse::<i32>().ok();
-    let v39: Option<i32> = method0(v38);
+    let v39: Option<i32> = method0(v38.clone());
     let mut v40: Option<US0> = v39.map(|x| v9(x));
     let v42: US0 = US0::US0_None;
-    let v43: US0 = v42;
+    let v43: US0 = v42.clone();
     let v44: US0 = v40.unwrap_or(v43);
     match &v44 {
         US0::US0_None => {

@@ -17,6 +17,11 @@
         'samples/contract_illegal_transition'
     )
 
+    FsharpContracts = @(
+        'samples/contract_effectful_forall_bottom'
+        'samples/mega_omniledger_erp_kernel/all_terminals'
+    )
+
     Fast = @{
         BudgetSeconds = 600
         MatureRuns = 5
@@ -81,6 +86,19 @@
         'samples/mega_lean_cic_bottom_up_kernel/runtime_native' = 180
         'samples/mega_spiral_proves_spiral_relative_consistency/runtime_native' = 180
     }
+
+    ZigShims = @(
+        @{ Pattern = 'abi_external_buffer_length_negative'; Shim = 'abi-external-mutable-buffer-zig-shim.zig' }
+        @{ Pattern = 'abi_external_callback'; Shim = 'abi-external-callback-zig-shim.zig' }
+        @{ Pattern = 'abi_external_struct_argument'; Shim = 'abi-external-struct-argument-zig-shim.zig' }
+        @{ Pattern = 'abi_external_struct_return_i64'; Shim = 'abi-external-struct-return-i64-zig-shim.zig' }
+        @{ Pattern = 'abi_external_struct_return'; Shim = 'abi-external-struct-return-zig-shim.zig' }
+        @{ Pattern = 'abi_external_const_buffer'; Shim = 'abi-external-const-buffer-zig-shim.zig' }
+        @{ Pattern = 'abi_external_mutable_buffer'; Shim = 'abi-external-mutable-buffer-zig-shim.zig' }
+        @{ Pattern = 'abi_external_string'; Shim = 'abi-external-string-zig-shim.zig' }
+        @{ Pattern = 'abi_external'; Shim = 'abi-external-zig-shim.zig' }
+        @{ Pattern = 'abi_external_i64'; Shim = 'abi-external-i64-zig-shim.zig' }
+    )
 
     CFlags = @(
         @{ Pattern = 'native_float_*'; Flags = '-lm' }
@@ -608,6 +626,9 @@
             'samples/native_package_closure_array_failure'
             'samples/native_package_closure_managed_branch'
             'samples/native_package_closure_managed_failure'
+        )
+        'C,Delphi' = @(
+            'samples/delphi_uses_units'
         )
         'Fsharp' = @(
             'samples/contract_atomic_flash_loan_clearing'
@@ -3466,6 +3487,15 @@
         'samples/small_int_scalar'
     )
     Zig = @(
+        'samples/abi_external'
+        'samples/abi_external_i64'
+        'samples/abi_external_callback'
+        'samples/abi_external_struct_argument'
+        'samples/abi_external_struct_return'
+        'samples/abi_external_struct_return_i64'
+        'samples/abi_external_const_buffer'
+        'samples/abi_external_mutable_buffer'
+        'samples/abi_external_string'
         'samples/ebpf_key'
         'samples/ebpf_map'
         'samples/ebpf_minkey'

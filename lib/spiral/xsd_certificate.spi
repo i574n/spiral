@@ -1,0 +1,66 @@
+///- --package .
+:< sm'_operators
+
+:! moves_zero = ()
+:! moves_succ n = ()
+
+:| ^ moves_witness n =
+    | MovesEnd :: moves_witness moves_zero
+    | MovesNext :: \* n. u32 * u32 * i32 * moves_witness n -> moves_witness (moves_succ n)
+
+:| packed_moves =
+    | PackedMoves : (\? n. moves_witness n)
+
+:| certified_row =
+    | CertifiedRow : bool * packed_moves
+
+:= ^ moves_sound \* n. (bound : i32) (above : u32) (moves : moves_witness n) : bool =
+    ?= moves ?|
+    | MovesEnd => !+
+    | MovesNext (low, high, target, rest) =>
+        ? low < above || high < low || target < 0i32 || target >= bound ?> error_type "a forged certificate row"
+        |: moves_sound bound (high + 1u32) rest
+
+:= ^ row_sound (bound : i32) (row : certified_row) : bool =
+    ?= row ?|
+    | CertifiedRow (_, PackedMoves packed) =>
+        := \? n. moves = packed
+        moves_sound bound 0u32 moves
+
+:= ^ certified_rows (bound : i32) (rows : list certified_row) (count : i32) : i32 =
+    ?= rows ?|
+    | [] => count
+    | row :: rest => ? row_sound bound row ?> certified_rows bound rest (count + 1i32) |: count
+
+:= ^ certified_table (rows : list certified_row) : i32 =
+    := bound = (listm.length rows : i32)
+    := count = certified_rows bound rows 0i32
+    ? count <> bound ?> error_type "a certificate covers fewer rows than its table" |: count
+
+///> rust
+test sound_rows_certify =
+    := rows =
+        [
+            CertifiedRow (!-, PackedMoves (\? (MovesNext (48u32, 57u32, 1i32, MovesEnd))))
+            CertifiedRow (
+                !+,
+                PackedMoves (\? (MovesNext (48u32, 57u32, 1i32, MovesNext (65u32, 90u32, 0i32, MovesEnd))))
+            )
+        ]
+    ? certified_table rows <> 2i32 ?> failwith "both rows are certified"
+
+///> rust
+test overlapping_moves_are_forged fails "a forged certificate row" =
+    := rows =
+        [
+            CertifiedRow (
+                !-,
+                PackedMoves (\? (MovesNext (48u32, 57u32, 0i32, MovesNext (50u32, 60u32, 0i32, MovesEnd))))
+            )
+        ]
+    certified_table rows |> ignore
+
+///> rust
+test targets_outside_the_table_are_forged fails "a forged certificate row" =
+    := rows = [ CertifiedRow (!-, PackedMoves (\? (MovesNext (48u32, 57u32, 7i32, MovesEnd)))) ]
+    certified_table rows |> ignore

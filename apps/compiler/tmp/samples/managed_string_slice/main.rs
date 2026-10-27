@@ -16,14 +16,14 @@ fn middle_0(mut v0: Rc<str>) -> Rc<str> {
 }
 fn spiral_main() -> i32 {
     let v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("alpha"); } LIT.with(|lit| lit.clone()) };
-    let v1: Rc<str> = middle_0(v0);
+    let v1: Rc<str> = middle_0(v0.clone());
     let v2: i32 = (v1.clone().len() as i32);
     let v3: bool = v2 == 3i32;
     if v3 {
         let v4: u8 = v1.clone().as_bytes()[0i32 as usize];
         let v5: bool = v4 == b'l';
         if v5 {
-            let v6: u8 = v1.as_bytes()[2i32 as usize];
+            let v6: u8 = v1.clone().as_bytes()[2i32 as usize];
             let v7: bool = v6 == b'h';
             if v7 {
                 0i32

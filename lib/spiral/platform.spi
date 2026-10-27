@@ -74,6 +74,18 @@ test platform static =
 test get_executable_suffix =
     get_executable_suffix ()
 
+/// ### os_command_output
+:= os_command_output (command : string) : string =
+    run_target \|
+        | Gleam => \ () =>
+            := output = erlang_term.apply "os" "cmd" [ erlang_term.charlist command ]
+            erlang_term.apply "unicode" "characters_to_binary" [ output ] |> erlang_term.cast
+        | _ => \ () => failwith "os_command_output: no arm for this backend"
+
+///> gleam
+test an_os_command_returns_its_output =
+    os_command_output "echo spiral" |> sm'.trim |> _assert_eq "spiral"
+
 /// ## main
 ///> fsharp
 

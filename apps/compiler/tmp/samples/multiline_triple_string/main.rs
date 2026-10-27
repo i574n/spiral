@@ -18,12 +18,12 @@ fn spiral_main() -> i32 {
     if v12 {
         1i32
     } else {
-        let v13: u8 = v6.as_bytes()[2i32 as usize];
+        let v13: u8 = v6.clone().as_bytes()[2i32 as usize];
         let v14: bool = v13 != b'"';
         if v14 {
             2i32
         } else {
-            let v15: i32 = (v7.len() as i32);
+            let v15: i32 = (v7.clone().len() as i32);
             let v16: bool = v15 != 0i32;
             if v16 {
                 3i32
@@ -33,7 +33,7 @@ fn spiral_main() -> i32 {
                 if v18 {
                     4i32
                 } else {
-                    let v19: u8 = v8.as_bytes()[1i32 as usize];
+                    let v19: u8 = v8.clone().as_bytes()[1i32 as usize];
                     let v20: bool = v19 != b'\\';
                     if v20 {
                         5i32
@@ -68,7 +68,7 @@ fn spiral_main() -> i32 {
                                             if v32 {
                                                 11i32
                                             } else {
-                                                let v33: u8 = v9.as_bytes()[82i32 as usize];
+                                                let v33: u8 = v9.clone().as_bytes()[82i32 as usize];
                                                 let v34: bool = v33 != b'd';
                                                 if v34 {
                                                     12i32
@@ -83,7 +83,7 @@ fn spiral_main() -> i32 {
                                                         if v38 {
                                                             14i32
                                                         } else {
-                                                            let v39: u8 = v10.as_bytes()[5i32 as usize];
+                                                            let v39: u8 = v10.clone().as_bytes()[5i32 as usize];
                                                             let v40: bool = v39 != b'\n';
                                                             if v40 {
                                                                 15i32
@@ -92,7 +92,7 @@ fn spiral_main() -> i32 {
                                                                 if v41 {
                                                                     16i32
                                                                 } else {
-                                                                    let v42: i32 = (v1.len() as i32);
+                                                                    let v42: i32 = (v1.clone().len() as i32);
                                                                     let v43: bool = v42 != 3i32;
                                                                     if v43 {
                                                                         17i32
@@ -102,7 +102,7 @@ fn spiral_main() -> i32 {
                                                                         if v45 {
                                                                             18i32
                                                                         } else {
-                                                                            let v46: u8 = v2.as_bytes()[7i32 as usize];
+                                                                            let v46: u8 = v2.clone().as_bytes()[7i32 as usize];
                                                                             let v47: bool = v46 != b'"';
                                                                             if v47 {
                                                                                 19i32
@@ -112,7 +112,7 @@ fn spiral_main() -> i32 {
                                                                                 if v49 {
                                                                                     20i32
                                                                                 } else {
-                                                                                    let v50: u8 = v3.as_bytes()[4i32 as usize];
+                                                                                    let v50: u8 = v3.clone().as_bytes()[4i32 as usize];
                                                                                     let v51: bool = v50 != b'"';
                                                                                     if v51 {
                                                                                         21i32
@@ -137,7 +137,7 @@ fn spiral_main() -> i32 {
                                                                                                     if v59 {
                                                                                                         25i32
                                                                                                     } else {
-                                                                                                        let v60: u8 = v4.as_bytes()[22i32 as usize];
+                                                                                                        let v60: u8 = v4.clone().as_bytes()[22i32 as usize];
                                                                                                         let v61: bool = v60 != b'd';
                                                                                                         if v61 {
                                                                                                             26i32
@@ -147,7 +147,7 @@ fn spiral_main() -> i32 {
                                                                                                             if v63 {
                                                                                                                 27i32
                                                                                                             } else {
-                                                                                                                let v64: u8 = v5.as_bytes()[3i32 as usize];
+                                                                                                                let v64: u8 = v5.clone().as_bytes()[3i32 as usize];
                                                                                                                 let v65: bool = v64 != b'c';
                                                                                                                 if v65 {
                                                                                                                     28i32

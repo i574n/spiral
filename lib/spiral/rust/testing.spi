@@ -14,7 +14,7 @@ test rust_testing static =
         )
     fields
     |> listm.iter \ name, (fn : string -> ()) =>
-        := (++) (a : string) (b : string) : string = !!!!StaticStringConcat(a, b)
+        := (++) (a : string) (b : string) : string = a ^^ b
         ? is_rust () ?>
             global (
                 "#[test] fn "

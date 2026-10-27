@@ -97,10 +97,10 @@ test dictm static =
     backend_switch {
         Gleam = \ () =>
             global "import gleam/list"
-            gleam_sorted_keys d |> listm'.fold' id Nil
+            gleam_sorted_keys d |> listm'.fold' id []
         Rust = \ () =>
             ($'!d.keys().cloned().collect::<Vec<_>>()' : am'.vec k)
-            |> am'.vec_fold' (\ (acc : list k) (key : k) => Cons (key, acc)) Nil
+            |> am'.vec_fold' (\ (acc : list k) (key : k) => (key :: acc)) []
     }
 
 := fold \* k v a. (f : a -> k -> v -> a) (init : a) (d : dict k v) : a =
@@ -165,8 +165,8 @@ test an_old_version_survives_an_insert =
 
 := dictm_first (l : list string) : string =
     ?= l ?|
-    | Cons (k, _) => k
-    | Nil => ""
+    | k :: _ => k
+    | [] => ""
 
 := dictm_last (l : list string) : string = listm.fold (\ _ s => s) "" l
 

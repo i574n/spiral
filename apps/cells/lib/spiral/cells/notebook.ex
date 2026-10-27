@@ -517,9 +517,20 @@ defmodule Spiral.Cells.Notebook do
   defp parse(path, text, bounded \\ false) do
     case Path.extname(path) do
       ".livemd" -> Document.parse_livemd(text)
-      ".spi" when bounded -> Document.parse_spi(text, real_sibling(path), {test_bounds(path), test_bounds(Path.rootname(path) <> "_real.spir")})
-      ".spi" -> Document.parse_spi(text, real_sibling(path))
+      ".spi" when bounded ->
+        warn_target_gaps(path, text)
+        Document.parse_spi(text, real_sibling(path), {test_bounds(path), test_bounds(Path.rootname(path) <> "_real.spir")})
+
+      ".spi" ->
+        warn_target_gaps(path, text)
+        Document.parse_spi(text, real_sibling(path))
       _ -> Document.parse_dib(text)
+    end
+  end
+
+  defp warn_target_gaps(path, text) do
+    for {line, target} <- Document.target_gaps(text) do
+      IO.puts(:stderr, "warning: #{path}:#{line}: a doc comment above ended the cell that #{target} targets, so this code runs untargeted; repeat the target line after the doc comment")
     end
   end
 

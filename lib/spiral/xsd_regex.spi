@@ -26,10 +26,10 @@
 
 :~ ^ ranges_compare (a : list (u32 * u32)) (b : list (u32 * u32)) : i32 =
     ?= a ?|
-    | Nil => ?= b ?| Nil => 0i32 | _ => -1i32
+    | [] => ?= b ?| [] => 0i32 | _ => -1i32
     | (a_low, a_high) :: a_rest =>
         ?= b ?|
-        | Nil => 1i32
+        | [] => 1i32
         | (b_low, b_high) :: b_rest =>
             ? a_low < b_low ?> -1i32
             |? a_low > b_low ?> 1i32
@@ -111,22 +111,22 @@
         ? order = 0i32 ?> sorted
         |? order < 0i32 ?> leaf :: sorted
         |: head :: insert_leaf leaf rest
-    | Nil => [ leaf ]
+    | [] => [ leaf ]
 
 :~ ^ sort_leaves (leaves : list rx) (sorted : list rx) : list rx =
     ?= leaves ?|
     | leaf :: rest => sort_leaves rest (insert_leaf leaf sorted)
-    | Nil => sorted
+    | [] => sorted
 
 :~ ^ alt_of_sorted (leaves : list rx) : rx =
     ?= leaves ?|
     | leaf :: rest =>
         ?= rest ?|
-        | Nil => leaf
+        | [] => leaf
         | _ => RxAlt (leaf, alt_of_sorted rest)
-    | Nil => RxNone
+    | [] => RxNone
 
-:= alt (a : rx) (b : rx) : rx = alt_of_sorted (sort_leaves (alt_leaves a (alt_leaves b Nil)) Nil)
+:= alt (a : rx) (b : rx) : rx = alt_of_sorted (sort_leaves (alt_leaves a (alt_leaves b [])) [])
 
 := star (a : rx) : rx =
     ?= a ?|
@@ -135,15 +135,83 @@
     | RxStar _ => a
     | _ => RxStar a
 
-:~ ^ nullable (r : rx) : bool =
+:! accepts_empty = ()
+:! rejects_empty = ()
+
+:| ^ nullable_evidence answer =
+    | EpsAccepts :: nullable_evidence accepts_empty
+    | StarAccepts :: nullable_evidence accepts_empty
+    | RepeatFromZero :: nullable_evidence accepts_empty
+    | RepeatOfNullable :: nullable_evidence accepts_empty -> nullable_evidence accepts_empty
+    | SeqAccepts :: nullable_evidence accepts_empty * nullable_evidence accepts_empty -> nullable_evidence accepts_empty
+    | AltLeftAccepts :: nullable_evidence accepts_empty -> nullable_evidence accepts_empty
+    | AltRightAccepts :: nullable_evidence accepts_empty -> nullable_evidence accepts_empty
+    | NoneRejects :: nullable_evidence rejects_empty
+    | ClassRejects :: nullable_evidence rejects_empty
+    | SeqLeftRejects :: nullable_evidence rejects_empty -> nullable_evidence rejects_empty
+    | SeqRightRejects :: nullable_evidence rejects_empty -> nullable_evidence rejects_empty
+    | AltRejects :: nullable_evidence rejects_empty * nullable_evidence rejects_empty -> nullable_evidence rejects_empty
+    | RepeatRejects :: nullable_evidence rejects_empty -> nullable_evidence rejects_empty
+
+:| ^ nullability =
+    | Accepts : nullable_evidence accepts_empty
+    | Rejects : nullable_evidence rejects_empty
+
+:~ ^ nullability_of (r : rx) : nullability =
     ?= r ?|
-    | RxNone => !-
-    | RxEps => !+
-    | RxClass _ => !-
-    | RxSeq (a, b) => nullable a && nullable b
-    | RxAlt (a, b) => nullable a || nullable b
-    | RxStar _ => !+
-    | RxRepeat (a, low, _) => low <= 0i32 || nullable a
+    | RxNone => Rejects NoneRejects
+    | RxEps => Accepts EpsAccepts
+    | RxClass _ => Rejects ClassRejects
+    | RxSeq (a, b) =>
+        ?= nullability_of a ?|
+        | Rejects left => Rejects (SeqLeftRejects left)
+        | Accepts left =>
+            ?= nullability_of b ?|
+            | Accepts right => Accepts (SeqAccepts (left, right))
+            | Rejects right => Rejects (SeqRightRejects right)
+    | RxAlt (a, b) =>
+        ?= nullability_of a ?|
+        | Accepts left => Accepts (AltLeftAccepts left)
+        | Rejects left =>
+            ?= nullability_of b ?|
+            | Accepts right => Accepts (AltRightAccepts right)
+            | Rejects right => Rejects (AltRejects (left, right))
+    | RxStar _ => Accepts StarAccepts
+    | RxRepeat (a, low, _) =>
+        ? low <= 0i32 ?> Accepts RepeatFromZero
+        |:
+            ?= nullability_of a ?|
+            | Accepts inner => Accepts (RepeatOfNullable inner)
+            | Rejects inner => Rejects (RepeatRejects inner)
+
+:= nullable (r : rx) : bool =
+    ?= nullability_of r ?|
+    | Accepts _ => !+
+    | Rejects _ => !-
+
+:~ ^ accept_reason (evidence : nullable_evidence accepts_empty) : string =
+    ?= evidence ?|
+    | EpsAccepts => "eps"
+    | StarAccepts => "star"
+    | RepeatFromZero => "repeat-from-zero"
+    | RepeatOfNullable inner => "repeat(" ++# accept_reason inner ++# ")"
+    | SeqAccepts (left, right) => "seq(" ++# accept_reason left ++# ", " ++# accept_reason right ++# ")"
+    | AltLeftAccepts inner => "left(" ++# accept_reason inner ++# ")"
+    | AltRightAccepts inner => "right(" ++# accept_reason inner ++# ")"
+
+:~ ^ reject_reason (evidence : nullable_evidence rejects_empty) : string =
+    ?= evidence ?|
+    | NoneRejects => "none"
+    | ClassRejects => "class"
+    | SeqLeftRejects inner => "seq-left(" ++# reject_reason inner ++# ")"
+    | SeqRightRejects inner => "seq-right(" ++# reject_reason inner ++# ")"
+    | AltRejects (left, right) => "alt(" ++# reject_reason left ++# ", " ++# reject_reason right ++# ")"
+    | RepeatRejects inner => "repeat(" ++# reject_reason inner ++# ")"
+
+:= nullability_text (r : rx) : string =
+    ?= nullability_of r ?|
+    | Accepts evidence => "accepts " ++# accept_reason evidence
+    | Rejects evidence => "rejects " ++# reject_reason evidence
 
 := counted (atom : rx) (low : i32) (high : i32) : rx =
     := low = ? low < 0i32 ?> 0i32 |: low
@@ -158,23 +226,26 @@
 :~ ^ in_ranges (c : u32) (ranges : list (u32 * u32)) : bool =
     ?= ranges ?|
     | (low, high) :: rest => (low <= c && c <= high) || in_ranges c rest
-    | Nil => !-
+    | [] => !-
 
-:| derivative_form =
-    | AsWritten
-    | Similar
+:! as_written = ()
+:! similar = ()
 
-:= alt_by (form : derivative_form) (a : rx) (b : rx) : rx =
+:| ^ derivative_form f =
+    | AsWritten :: derivative_form as_written
+    | Similar :: derivative_form similar
+
+:= alt_by \* f. (form : derivative_form f) (a : rx) (b : rx) : rx =
     ?= form ?|
     | AsWritten => alt_written a b
     | Similar => alt a b
 
-:= seq_by (form : derivative_form) (a : rx) (b : rx) : rx =
+:= seq_by \* f. (form : derivative_form f) (a : rx) (b : rx) : rx =
     ?= form ?|
     | AsWritten => seq a b
     | Similar => seq_similar a b
 
-:~ ^ derive_by (form : derivative_form) (c : u32) (r : rx) : rx =
+:~ ^ derive_by \* f. (form : derivative_form f) (c : u32) (r : rx) : rx =
     ?= r ?|
     | RxNone => RxNone
     | RxEps => RxNone
@@ -211,7 +282,7 @@
     |: None
 
 := outside_range (low : u32) (high : u32) : list (u32 * u32) =
-    := above = ? high < last_code_point () ?> [ (high + 1u32, last_code_point ()) ] |: Nil
+    := above = ? high < last_code_point () ?> [ (high + 1u32, last_code_point ()) ] |: []
     ? low > 0u32 ?> (0u32, low - 1u32) :: above |: above
 
 := unparsable (p : string) : i32 = sm'.length p + 1i32
@@ -223,7 +294,7 @@
         := block = ? close < 0i32 ?> None |: block_range (sm'.substring (i + 3i32) (close - i - 3i32) p)
         ?= block ?|
         | Some (low, high) => Some ((? kind = 80u32 ?> outside_range low high |: [ (low, high) ]), close + 1i32)
-        | None => Some (Nil, unparsable p)
+        | None => Some ([], unparsable p)
     |: None
 
 :~ ^ read_number (p : string) (i : i32) (acc : i32) : i32 * i32 =
@@ -270,10 +341,10 @@
         inner, after_inner + 1i32
     |? c = 91u32 ?>
         ? cp_at p (i + 1i32) = 94u32 ?>
-            := ranges, after = class_items p (i + 2i32) Nil
+            := ranges, after = class_items p (i + 2i32) []
             RxClass (!+, ranges), after
         |:
-            := ranges, after = class_items p (i + 1i32) Nil
+            := ranges, after = class_items p (i + 1i32) []
             RxClass (!-, ranges), after
     |? c = 46u32 ?> RxClass (!+, [ (10u32, 10u32); (13u32, 13u32) ]), i + 1i32
     |? c = 92u32 ?>
@@ -303,17 +374,27 @@
 :~ ^ first_outside (ranges : list (u32 * u32)) (candidates : list u32) : u32 =
     ?= candidates ?|
     | c :: rest => ? in_ranges c ranges ?> first_outside ranges rest |: c
-    | Nil => 126u32
+    | [] => 126u32
 
 :~ ^ repeated (text : string) (count : i32) : string =
     ? count <= 0i32 ?> "" |: text ++# repeated text (count - 1i32)
+
+:~ ^ first_inside (ranges : list (u32 * u32)) (candidates : list u32) : option u32 =
+    ?= candidates ?|
+    | c :: rest => ? in_ranges c ranges ?> Some c |: first_inside ranges rest
+    | [] => None
 
 := class_example (negated : bool) (ranges : list (u32 * u32)) : string =
     ? negated ?> xml.code_point_string (first_outside ranges [ 65u32; 97u32; 49u32; 90u32; 122u32 ])
     |:
         ?= ranges ?|
-        | (low, _) :: _ => xml.code_point_string low
-        | Nil => ""
+        | (low, _) :: _ =>
+            ? low >= 33u32 ?> xml.code_point_string low
+            |:
+                ?= first_inside ranges [ 65u32; 97u32; 49u32 ] ?|
+                | Some c => xml.code_point_string c
+                | None => xml.code_point_string low
+        | [] => ""
 
 :~ ^ example_with (stars : i32) (r : rx) : string =
     ?= r ?|
@@ -372,14 +453,14 @@ test block_escapes_read_code_point_ranges =
         ? point = head ?> sorted
         |? point < head ?> point :: sorted
         |: head :: insert_point point rest
-    | Nil => [ point ]
+    | [] => [ point ]
 
 :~ ^ range_points (ranges : list (u32 * u32)) (points : list u32) : list u32 =
     ?= ranges ?|
     | (low, high) :: rest =>
         := points = insert_point low points
         range_points rest (? high < last_code_point () ?> insert_point (high + 1u32) points |: points)
-    | Nil => points
+    | [] => points
 
 :~ ^ interval_starts (r : rx) (points : list u32) : list u32 =
     ?= r ?|
@@ -398,29 +479,29 @@ test block_escapes_read_code_point_ranges =
 :~ ^ state_index (r : rx) (states : list rx) (index : i32) : i32 =
     ?= states ?|
     | head :: rest => ? rx_compare r head = 0i32 ?> index |: state_index r rest (index + 1i32)
-    | Nil => -1i32
+    | [] => -1i32
 
 :~ ^ with_state (r : rx) (states : list rx) : list rx =
     ?= states ?|
     | head :: rest => head :: with_state r rest
-    | Nil => [ r ]
+    | [] => [ r ]
 
 :~ ^ state_rx (states : list rx) (index : i32) : rx =
     ?= states ?|
     | head :: rest => ? index = 0i32 ?> head |: state_rx rest (index - 1i32)
-    | Nil => RxNone
+    | [] => RxNone
 
 :~ ^ add_move (move : dfa_move) (moves : list dfa_move) : list dfa_move =
     ?= moves ?|
     | last :: rest =>
         ? last.target = move.target && last.high + 1u32 = move.low ?> { last ?| high = move.high } :: rest
         |: move :: moves
-    | Nil => [ move ]
+    | [] => [ move ]
 
 :~ ^ reverse_moves (moves : list dfa_move) (reversed : list dfa_move) : list dfa_move =
     ?= moves ?|
     | move :: rest => reverse_moves rest (move :: reversed)
-    | Nil => reversed
+    | [] => reversed
 
 :~ ^ state_moves
     (r : rx) (starts : list u32) (states : list rx) (count : i32) (moves : list dfa_move)
@@ -428,7 +509,7 @@ test block_escapes_read_code_point_ranges =
     =
     ?= starts ?|
     | low :: rest =>
-        := high = ?= rest ?| (next :: _) => next - 1u32 | Nil => last_code_point ()
+        := high = ?= rest ?| (next :: _) => next - 1u32 | [] => last_code_point ()
         := next_rx = derive_similar low r
         ?= next_rx ?|
         | RxNone => state_moves r rest states count moves
@@ -441,29 +522,29 @@ test block_escapes_read_code_point_ranges =
                     (with_state next_rx states)
                     (count + 1i32)
                     (add_move { low = low; high = high; target = count } moves)
-    | Nil => states, count, reverse_moves moves Nil
+    | [] => states, count, reverse_moves moves []
 
 :~ ^ reverse_states (rows : list dfa_state) (reversed : list dfa_state) : list dfa_state =
     ?= rows ?|
     | row :: rest => reverse_states rest (row :: reversed)
-    | Nil => reversed
+    | [] => reversed
 
 :~ ^ build_states
     (index : i32) (states : list rx) (count : i32) (limit : i32) (rows : list dfa_state)
     : option (list dfa_state)
     =
-    ? index >= count ?> Some (reverse_states rows Nil)
+    ? index >= count ?> Some (reverse_states rows [])
     |? count > limit ?> None
     |:
         := r = state_rx states index
-        := states, count, moves = state_moves r (interval_starts r [ 0u32 ]) states count Nil
+        := states, count, moves = state_moves r (interval_starts r [ 0u32 ]) states count []
         build_states (index + 1i32) states count limit ({ accepting = nullable r; moves = moves } :: rows)
 
 := dfa_state_limit () : i32 = 4096i32
 
 := dfa_of_pattern_within (limit : i32) (p : string) : option (list dfa_state) =
     ?= compile_pattern p ?|
-    | Some r => build_states 0i32 [ r ] 1i32 limit Nil
+    | Some r => build_states 0i32 [ r ] 1i32 limit []
     | None => None
 
 := dfa_of_pattern (p : string) : option (list dfa_state) = dfa_of_pattern_within (dfa_state_limit ()) p
@@ -471,12 +552,12 @@ test block_escapes_read_code_point_ranges =
 :~ ^ move_target (c : u32) (moves : list dfa_move) : i32 =
     ?= moves ?|
     | move :: rest => ? c < move.low ?> -1i32 |? c <= move.high ?> move.target |: move_target c rest
-    | Nil => -1i32
+    | [] => -1i32
 
 :~ ^ dfa_row (rows : list dfa_state) (index : i32) : dfa_state =
     ?= rows ?|
     | row :: rest => ? index = 0i32 ?> row |: dfa_row rest (index - 1i32)
-    | Nil => { accepting = !-; moves = Nil }
+    | [] => { accepting = !-; moves = [] }
 
 :~ ^ dfa_run (rows : list dfa_state) (state : i32) (s : string) (i : i32) : bool =
     ? state < 0i32 ?> !-
@@ -502,7 +583,7 @@ test dfa_keeps_xsd_semantics =
 :~ ^ states_in (rows : list dfa_state) (count : i32) : i32 =
     ?= rows ?|
     | _ :: rest => states_in rest (count + 1i32)
-    | Nil => count
+    | [] => count
 
 ///> rust
 test bounded_repeats_build_one_state_per_count =
@@ -554,7 +635,7 @@ test bounded_repeats_build_one_state_per_count =
                     first = ? acc.first = "" ?> pattern ++# " on [" ++# probe ++# "]" |: acc.first
                 }
         row_disagreements pattern matches rest row (j + 1i32) acc
-    | Nil => acc
+    | [] => acc
 
 := failed_pattern (reason : string) (pattern : string) (acc : disagreement) : disagreement =
     { count = acc.count + 1000000i32; first = ? acc.first = "" ?> reason ++# pattern |: acc.first }
@@ -581,8 +662,8 @@ test bounded_repeats_build_one_state_per_count =
     | pattern :: rest =>
         ?= rows ?|
         | row :: more_rows => all_disagreements check rest more_rows probes (check pattern row probes acc)
-        | Nil => { acc ?| count = acc.count + 1000000i32 }
-    | Nil => acc
+        | [] => { acc ?| count = acc.count + 1000000i32 }
+    | [] => acc
 
 := digit_text (d : i32) : string = sm'.substring d 1i32 "0123456789"
 
@@ -615,13 +696,13 @@ test bounded_repeats_build_one_state_per_count =
                 }
             := acc = ? states = 0i32 ?> { acc ?| without_dfa = acc.without_dfa + 1i32 } |: acc
             census_of rest (? larger ?> { acc ?| largest = states; largest_pattern = pattern } |: acc)
-    | Nil => acc
+    | [] => acc
 
 :~ ^ first_points (values : list string) (points : list u32) : list u32 =
     ?= values ?|
     | value :: rest =>
         first_points rest (? sm'.length value = 0i32 ?> points |: insert_point (cp_at value 0i32) points)
-    | Nil => points
+    | [] => points
 
 :~ ^ tails_after (point : u32) (values : list string) (acc : list string) : list string =
     ?= values ?|
@@ -630,41 +711,41 @@ test bounded_repeats_build_one_state_per_count =
             := width = cp_width value 0i32
             tails_after point rest (sm'.substring width (sm'.length value - width) value :: acc)
         |: tails_after point rest acc
-    | Nil => acc
+    | [] => acc
 
 :~ ^ has_empty (values : list string) : bool =
     ?= values ?|
     | value :: rest => sm'.length value = 0i32 || has_empty rest
-    | Nil => !-
+    | [] => !-
 
 :~ ^ moves_equal (a : list dfa_move) (b : list dfa_move) : bool =
     ?= a ?|
     | x :: a_rest =>
         ?= b ?|
         | y :: b_rest => x.low = y.low && x.high = y.high && x.target = y.target && moves_equal a_rest b_rest
-        | Nil => !-
-    | Nil => ?= b ?| Nil => !+ | _ => !-
+        | [] => !-
+    | [] => ?= b ?| [] => !+ | _ => !-
 
 :~ ^ registered (row : dfa_state) (register : list (dfa_state * i32)) : i32 =
     ?= register ?|
     | (known, id) :: rest =>
         ? known.accepting = row.accepting && moves_equal known.moves row.moves ?> id |: registered row rest
-    | Nil => -1i32
+    | [] => -1i32
 
 :== value_dfa = { register : list (dfa_state * i32); rows : list dfa_state; count : i32 }
 
 :~ ^ value_state (values : list string) (built : value_dfa) : i32 * value_dfa =
-    value_moves (first_points values Nil) values Nil (has_empty values) built
+    value_moves (first_points values []) values [] (has_empty values) built
 :& :~ value_moves
     (points : list u32) (values : list string) (moves : list dfa_move) (accepting : bool) (built : value_dfa)
     : i32 * value_dfa
     =
     ?= points ?|
     | point :: rest =>
-        := target, built = value_state (tails_after point values Nil) built
+        := target, built = value_state (tails_after point values []) built
         value_moves rest values (add_move { low = point; high = point; target = target } moves) accepting built
-    | Nil =>
-        := row = { accepting = accepting; moves = reverse_moves moves Nil }
+    | [] =>
+        := row = { accepting = accepting; moves = reverse_moves moves [] }
         := known = registered row built.register
         ? known >= 0i32 ?> known, built
         |:
@@ -678,21 +759,21 @@ test bounded_repeats_build_one_state_per_count =
 :~ ^ renumbered_moves (last : i32) (moves : list dfa_move) (acc : list dfa_move) : list dfa_move =
     ?= moves ?|
     | move :: rest => renumbered_moves last rest ({ move ?| target = last - move.target } :: acc)
-    | Nil => reverse_moves acc Nil
+    | [] => reverse_moves acc []
 
 :~ ^ renumbered_rows (last : i32) (rows : list dfa_state) (acc : list dfa_state) : list dfa_state =
     ?= rows ?|
     | row :: rest =>
-        renumbered_rows last rest ({ row ?| moves = renumbered_moves last row.moves Nil } :: acc)
-    | Nil => reverse_states acc Nil
+        renumbered_rows last rest ({ row ?| moves = renumbered_moves last row.moves [] } :: acc)
+    | [] => reverse_states acc []
 
 := dfa_of_values (values : list string) : list dfa_state =
-    := _, built = value_state values { register = Nil; rows = Nil; count = 0i32 }
-    renumbered_rows (built.count - 1i32) built.rows Nil
+    := _, built = value_state values { register = []; rows = []; count = 0i32 }
+    renumbered_rows (built.count - 1i32) built.rows []
 
 ///> rust
 test value_sets_become_minimal_dfas =
-    := rows = dfa_of_values ("01001" :: "01002" :: "02001" :: "02002" :: "A" :: Nil)
+    := rows = dfa_of_values ("01001" :: "01002" :: "02001" :: "02002" :: "A" :: [])
     ? states_in rows 0i32 <> 6i32 ?> failwith "shared suffixes merge into six states"
     ? dfa_matches rows "02002" = !- ?> failwith "listed code"
     ? dfa_matches rows "A" = !- ?> failwith "short code"
@@ -712,27 +793,27 @@ test value_sets_become_minimal_dfas =
 :~ ^ row_length (moves : list dfa_move) (width : i32) (acc : i32) : i32 =
     ?= moves ?|
     | move :: rest => row_length rest width (acc + sm'.length (move_prefix move) + width)
-    | Nil => acc + 2i32
+    | [] => acc + 2i32
 
 :~ ^ row_offsets (rows : list dfa_state) (width : i32) (offset : i32) (acc : list i32) : list i32 * i32 =
     ?= rows ?|
     | row :: rest => row_offsets rest width (offset + row_length row.moves width 0i32) (offset :: acc)
-    | Nil => listm.rev acc, offset
+    | [] => listm.rev acc, offset
 
 :~ ^ fitting_width (rows : list dfa_state) (width : i32) (limit : i32) : i32 * list i32 =
-    := offsets, total = row_offsets rows width 0i32 Nil
+    := offsets, total = row_offsets rows width 0i32 []
     ? total < limit || width >= 9i32 ?> width, offsets |: fitting_width rows (width + 1i32) (limit * 10i32)
 
 :~ ^ offset_at (offsets : list i32) (index : i32) : i32 =
     ?= offsets ?|
     | offset :: rest => ? index = 0i32 ?> offset |: offset_at rest (index - 1i32)
-    | Nil => -1i32
+    | [] => -1i32
 
 :~ ^ offset_moves (moves : list dfa_move) (offsets : list i32) (width : i32) (acc : string) : string =
     ?= moves ?|
     | move :: rest =>
         offset_moves rest offsets width (acc ++# move_prefix move ++# padded (offset_at offsets move.target) width)
-    | Nil => acc
+    | [] => acc
 
 :~ ^ offset_lines (rows : list dfa_state) (offsets : list i32) (width : i32) (acc : string) : string =
     ?= rows ?|
@@ -740,7 +821,7 @@ test value_sets_become_minimal_dfas =
         offset_lines rest offsets width (
             acc ++# (? row.accepting ?> "1" |: "0") ++# offset_moves row.moves offsets width "" ++# "\n"
         )
-    | Nil => acc
+    | [] => acc
 
 := dfa_table_text (rows : list dfa_state) : string =
     := width, offsets = fitting_width rows 1i32 10i32
@@ -764,7 +845,7 @@ test value_sets_become_minimal_dfas =
 
 ///> rust
 test dfa_tables_match_in_place =
-    := rows = dfa_of_values ("01001" :: "01002" :: "02001" :: "A" :: Nil)
+    := rows = dfa_of_values ("01001" :: "01002" :: "02001" :: "A" :: [])
     := table = dfa_table_text rows
     ? table_matches table "02001" = !- ?> failwith "listed code"
     ? table_matches table "A" = !- ?> failwith "short code"
@@ -772,3 +853,22 @@ test dfa_tables_match_in_place =
     ? table_matches table "0200" ?> failwith "prefix rejected"
     ? table_matches table "A0" ?> failwith "longer code rejected"
     ? table_matches table "" ?> failwith "empty rejected"
+
+///> rust
+test nullability_carries_its_evidence =
+    ?
+        nullability_text (RxSeq (RxStar RxEps, RxRepeat (single 97u32, 0i32, 3i32)))
+        <> "accepts seq(star, repeat-from-zero)"
+    ?> failwith "both halves accept the empty word, each with its own reason"
+    ? nullability_text (RxAlt (single 97u32, RxSeq (RxEps, RxNone))) <> "rejects alt(class, seq-right(none))"
+    ?> failwith "an alternative rejects only when both sides reject"
+    ? nullable (RxAlt (single 97u32, RxEps)) = !- ?> failwith "nullable reads the evidence"
+
+///> rust
+test broad_classes_pick_a_printable_example =
+    ? class_example !- [ (0u32, 127u32) ] <> "A"
+    ?> failwith "a class starting at a control character picks a printable example"
+    ? class_example !- [ (9u32, 10u32); (32u32, 32u32) ] <> "\t"
+    ?> failwith "a whitespace-only class keeps its own first character"
+    ? class_example !- [ (48u32, 57u32) ] <> "0"
+    ?> failwith "a printable class keeps its low bound"

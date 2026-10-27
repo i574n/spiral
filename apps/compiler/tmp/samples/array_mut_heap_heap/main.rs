@@ -22,19 +22,19 @@ impl Default for Mut0 {
 fn spiral_main() -> i32 {
     let v0: i32 = 3i32;
     let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("no"); } LIT.with(|lit| lit.clone()) };
-    let v2: Rc<Heap0> = Rc::new(Heap0 { l0: v0, l1: v1 });
+    let v2: Rc<Heap0> = Rc::new(Heap0 { l0: v0, l1: v1.clone() });
     let v3: i32 = 1i32;
-    let v4: Rc<Heap1> = Rc::new(Heap1 { l0: v2, l1: v3 });
-    let v5: Rc<RefCell<Mut0>> = Rc::new(RefCell::new(Mut0 { l0: v4 }));
+    let v4: Rc<Heap1> = Rc::new(Heap1 { l0: v2.clone(), l1: v3 });
+    let v5: Rc<RefCell<Mut0>> = Rc::new(RefCell::new(Mut0 { l0: v4.clone() }));
     let v6: Rc<RefCell<Vec<Rc<RefCell<Mut0>>>>> = Rc::new(RefCell::new(vec![<Rc<RefCell<Mut0>>>::default(); 1i32 as usize]));
-    v6.clone().borrow_mut()[0i32 as usize] = v5;
+    v6.clone().borrow_mut()[0i32 as usize] = v5.clone();
     let v7: i32 = 7i32;
     let v8: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
-    let v9: Rc<Heap0> = Rc::new(Heap0 { l0: v7, l1: v8 });
+    let v9: Rc<Heap0> = Rc::new(Heap0 { l0: v7, l1: v8.clone() });
     let v10: i32 = 4i32;
-    let v11: Rc<Heap1> = Rc::new(Heap1 { l0: v9, l1: v10 });
-    let mut v12: Rc<RefCell<Mut0>> = v6.borrow()[0i32 as usize].clone();
-    v12.borrow_mut().l0 = v11;
+    let v11: Rc<Heap1> = Rc::new(Heap1 { l0: v9.clone(), l1: v10 });
+    let mut v12: Rc<RefCell<Mut0>> = v6.clone().borrow()[0i32 as usize].clone();
+    v12.borrow_mut().l0 = v11.clone();
     let v13: Rc<Heap1> = v12.borrow().l0.clone();
     let (mut v14, mut v15): (Rc<Heap0>, i32) = (v13.l0.clone(), v13.l1.clone());
     let (mut v16, mut v17): (i32, Rc<str>) = (v14.l0.clone(), v14.l1.clone());

@@ -29,6 +29,22 @@ test am static =
 := index_base \* el. (i : int) (ar : array_base el) : el =
     ar |> array |> index i
 
+/// ### create_base
+:= create_base \* el. (n : int) : array_base el = !!!!ArrayCreate(`el, n)
+
+/// ### set_base
+:= set_base \* el. (ar : array_base el) (i : int) (v : el) : () = !!!!ArrayIndexSet(ar, i, v)
+
+/// ### length_base
+:= length_base \* el. (ar : array_base el) : int =
+    ar |> array |> length
+
+///> rust
+test base_wrappers_round_trip =
+    := a : array_base i32 = create_base 3i32
+    set_base a 1i32 7i32
+    (;[ length_base a; index_base 1i32 a ]) |> _assert_eq (;[ 3i32; 7i32 ])
+
 /// ### base
 := base \* el. ((array a) : array el) : array_base el =
     a
@@ -486,10 +502,7 @@ test any =
 /// ### new_vec
 := new_vec \* t. (items : list t) : vec t =
     backend_switch {
-        Rust = \ () =>
-            := v : vec t = $'Vec::new()'
-            items |> listm.iter \ x => $'!v.push(!x)' : ()
-            v
+        Rust = \ () => items |> listm.fold (\ v x => vec_push x v) ($'Vec::new()' : vec t)
     }
 
 ///> rust
@@ -499,6 +512,12 @@ test new_vec =
     |> sm'.format_debug'
     |> sm'.from_std_string
     |> _assert_eq "[0, 1]"
+
+///> rust
+test new_vec_keeps_a_list_built_at_runtime =
+    :~ ^ build (n : i32) (acc : list i32) : list i32 = ? n <= 0i32 ?> acc |: build (n - 1i32) (n :: acc)
+    := ~count = 3i32
+    build count Nil |> new_vec |> vec_len |> convert.i32 |> _assert_eq 3i32
 
 /// ## fsharp
 
@@ -717,7 +736,13 @@ test sort_orders_on_every_backend =
         Cuda = fsharp
         Zig = in_bounds_item
         Lean = in_bounds_item
-        Rust = \ () =>
-            := x : optionm'.option' el = $'(if !i < 0 { None } else { !a.borrow().get(!i as usize).cloned() })'
-            x |> optionm'.unbox
+        Rust = in_bounds_item
     }
+
+///> rust
+///> zig
+///> fsharp
+test try_item_is_none_out_of_bounds =
+    := a = ;[ 10i32; 20i32 ]
+    := code (i : i32) : i32 = ?= try_item i a ?| | Some x => x | None => -1i32
+    [ code (-1i32); code 0i32; code 1i32; code 2i32 ] |> _assert_eq [ -1i32; 10i32; 20i32; -1i32 ]

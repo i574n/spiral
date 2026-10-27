@@ -30,18 +30,15 @@
 := add_nb (xs : nb) (item : string) : nb =
     ? has_nb xs item ?> xs |: snoc xs item
 
-:~ ^ join_nb (xs : nb) : string =
-    ?= xs ?|
-    | NoNb => ""
-    | Nb (s, NoNb) => s
-    | Nb (s, rest) => s ++ "\n" ++ join_nb rest
-
-:~ ^ join_rev (xs : nb) (acc : string) (started : i32) : string =
+:~ ^ nb_joined_after (xs : nb) (acc : string) : string =
     ?= xs ?|
     | NoNb => acc
-    | Nb (s, rest) =>
-        ? started = 0i32 ?> join_rev rest s 1i32
-        |: join_rev rest (s ++ "\n" ++ acc) 1i32
+    | Nb (s, rest) => nb_joined_after rest (acc ++ "\n" ++ s)
+
+:~ join_nb (xs : nb) : string =
+    ?= xs ?|
+    | NoNb => ""
+    | Nb (s, rest) => nb_joined_after rest s
 
 :~ ^ rev_flags (xs : flags) (acc : flags) : flags =
     ?= xs ?|
@@ -99,7 +96,8 @@
     =
     ?= text.next_line src i ?|
     | LineDone =>
-        packages, test, is_real, timeout, text.trim_trailing_newlines (join_rev body "" 0i32), rev_nb opens NoNb, skip
+        := joined_body = text.trim_trailing_newlines (join_nb (rev_nb body NoNb))
+        packages, test, is_real, timeout, joined_body, rev_nb opens NoNb, skip
     | LineGot (line, next) =>
         := trimmed = text.trim line
         ? text.starts_with trimmed "///"

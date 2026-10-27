@@ -171,10 +171,30 @@ test get_file_hash_3 =
 
 /// ## crypto
 
+/// ### zig_sha256_hex
+:= zig_sha256_hex (input : string) : string =
+    global """
+        fn spiral_out_sha256_hex(input: []const u8) []const u8 {
+            var digest: [32]u8 = undefined;
+            std.crypto.hash.sha2.Sha256.hash(input, &digest, .{});
+            const hex = std.fmt.bytesToHex(digest, .lower);
+            return spiral_gpa.dupe(u8, &hex) catch @panic("out of memory");
+        }
+        """
+    $'spiral_out_sha256_hex(!input)' : string
+
+///> zig
+test zig_sha256_hex_matches_known_digests =
+    (zig_sha256_hex "", zig_sha256_hex "\n")
+    |> _assert_eq (
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    )
+
 /// ### hash_text
 :~ hash_text (~input : string) =
     run_target \|
-        | Zig => \ () => $'(blk: { var digest: [32]u8 = undefined; std.crypto.hash.sha2.Sha256.hash(!input, &digest, .{}); const hex = std.fmt.bytesToHex(digest, .lower); break :blk (spiral_gpa.dupe(u8, &hex) catch \@panic("out of memory")); })' : string
+        | Zig => \ () => zig_sha256_hex input
         | Fsharp => \ () =>
             := sha256 = sha256 () |> use
             input
@@ -279,6 +299,60 @@ test sha1_hex_and_hmac_sha1_base64 =
     := ~text = "abc"
     (sha1_hex text, hmac_sha1_base64 "key" "The quick brown fox jumps over the lazy dog")
     |> _assert_eq ("a9993e364706816aba3e25717850c26c9cd0d89d", "3nybhbi3iqa8ino29wqQcBydtNk=")
+
+/// ### decode_hex
+:= hex_nibble (c : string) : i32 = sm'.index_of c "0123456789abcdef"
+
+:~ ^ reverse_bytes (xs : list u8) (acc : list u8) : list u8 =
+    ?= xs ?|
+    | [] => acc
+    | x :: rest => reverse_bytes rest (x :: acc)
+
+:~ ^ hex_bytes (text : string) (size : i32) (i : i32) (acc : list u8) : option (list u8) =
+    ? i >= size ?> Some (reverse_bytes acc [])
+    |:
+        := hi = hex_nibble (sm'.slice i i text)
+        := lo = hex_nibble (sm'.slice (i + 1i32) (i + 1i32) text)
+        ? hi < 0i32 || lo < 0i32 ?> None
+        |:
+            := byte : u8 = convert.convert (hi * 16i32 + lo)
+            hex_bytes text size (i + 2i32) (byte :: acc)
+
+:= decode_hex (text : string) : option (list u8) =
+    := size : i32 = sm'.length text
+    ? size % 2i32 <> 0i32 ?> None |: hex_bytes text size 0i32 []
+
+/// ### ed25519_verify
+:= rust_ed25519_verify (key : array_base u8) (message : string) (signature : array_base u8) : bool =
+    $'ed25519_dalek::VerifyingKey::from_bytes(&<[u8; 32]>::try_from(&(*!key.borrow())[..]).unwrap()) \
+        .map(|k| k.verify_strict(!message.as_bytes(), &ed25519_dalek::Signature::from_bytes( \
+            &<[u8; 64]>::try_from(&(*!signature.borrow())[..]).unwrap())).is_ok()) \
+        .unwrap_or(false)'
+
+:= ed25519_verify (public_key : string) (message : string) (signature : string) : bool =
+    ?= decode_hex public_key ?|
+    | None => !-
+    | Some key =>
+        ?= decode_hex signature ?|
+        | None => !-
+        | Some sig =>
+            ? (listm.length key : i32) <> 32i32 || (listm.length sig : i32) <> 64i32 ?> !-
+            |:
+                := key_array = key |> listm'.box |> listm'.to_array'
+                := sig_array = sig |> listm'.box |> listm'.to_array'
+                rust_ed25519_verify key_array message sig_array
+
+///> rust -d ed25519-dalek
+test ed25519_verify_checks_rfc8032_vector_1 =
+    := ~key = "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a"
+    := ~head = "e5564300c360ac729086e2cc806e828a84877f1eb8e5d974d873e06522490155"
+    := ~signature = head ++# "5fb8821590a33bacc61e39701cf9b46bd25bf5f0595bbe24655141438e7a100b"
+    := ~flipped = head ++# "5fb8821590a33bacc61e39701cf9b46bd25bf5f0595bbe24655141438e7a100a"
+    := valid = ed25519_verify key "" signature
+    := tampered = ed25519_verify key "" flipped
+    := short_key = ed25519_verify "d75a98" "" signature
+    := decoded = decode_hex "0aff" = Some [ 10u8; 255u8 ]
+    (valid, tampered, short_key, decoded) |> _assert_eq (!+, !-, !-, !+)
 
 /// ### hash_to_port
 := hash_to_port (text : string) : u16 =

@@ -67,17 +67,21 @@ fn spiralPrintAny(x: anytype) void {
 }
 fn spiralMain() i32 {
     const v0: []const u8 = "hello";
-    { spiralPrintAny(v0); spiralPrint(&[_]u8{10}); }
+    spiralPrintAny(v0);
+    spiralPrint(&[_]u8{10});
     const v1: i32 = @as(i32, 42);
-    { spiralPrintAny(v1); spiralPrint(&[_]u8{10}); }
+    spiralPrintAny(v1);
+    spiralPrint(&[_]u8{10});
     const v2: []const u8 = "a";
     spiralPrintAny(v2);
     const v3: []const u8 = "b";
     spiralPrintAny(v3);
     const v4: []const u8 = "";
-    { spiralPrintAny(v4); spiralPrint(&[_]u8{10}); }
+    spiralPrintAny(v4);
+    spiralPrint(&[_]u8{10});
     const v5: i64 = @as(i64, -7);
-    { spiralPrintAny(v5); spiralPrint(&[_]u8{10}); }
+    spiralPrintAny(v5);
+    spiralPrint(&[_]u8{10});
     return @as(i32, 0);
 }
 var spiral_exit_code: i32 = 0;

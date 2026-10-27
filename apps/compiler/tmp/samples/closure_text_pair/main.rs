@@ -16,7 +16,7 @@ fn f_c0(mut v0: Rc<str>, mut v1: Rc<str>) -> Rc<dyn Fn(i32) -> (Rc<str>, Rc<str>
 fn spiral_main() -> i32 {
     let v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
     let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("yo"); } LIT.with(|lit| lit.clone()) };
-    let mut v2: Rc<dyn Fn(i32) -> (Rc<str>, Rc<str>)> = f_c0(v0, v1);
+    let mut v2: Rc<dyn Fn(i32) -> (Rc<str>, Rc<str>)> = f_c0(v0.clone(), v1.clone());
     let (mut v3, mut v4): (Rc<str>, Rc<str>) = v2(1i32);
     let v5: bool = &*v3 == "hi";
     let v7: bool = if v5 {

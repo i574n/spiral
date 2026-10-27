@@ -81,6 +81,18 @@ while ((Test-Path $holderPath) -and (Get-Process -Id $holder -ErrorAction Ignore
     catch { Start-Process pwsh -WindowStyle Hidden -ArgumentList @('-NoProfile', '-File', $script, $PID, $HolderPath, $deadline) | Out-Null }
 }
 
+function Get-HeavyHeldByAncestor {
+    if (-not $env:SPIRAL_HEAVY_HELD) { return }
+    $slot, $owner = $env:SPIRAL_HEAVY_HELD -split ':', 2
+    $recorded = ((Get-Content (Join-Path $script:HeavyQueue "holder-$slot.h") -Raw -ErrorAction Ignore) -split "`t", 3)[1]
+    if (-not $recorded -or $recorded -ne $owner) { return }
+    $process = Get-Process -Id $PID
+    for ($depth = 0; $process -and $depth -lt 32; $depth++) {
+        if ("$($process.Id)" -eq $owner) { return "slot $slot is already held by ancestor pid $owner" }
+        $process = $process.Parent
+    }
+}
+
 function Wait-HeavySlot($slots, [string] $ticket) {
     $held = $null
     $queuedAt = Get-Date
@@ -126,6 +138,8 @@ function Stop-IdleWsl {
 }
 
 function Invoke-Heavy([Parameter(Mandatory)] [scriptblock] $Command, [switch] $Wsl, [string] $Label, [int] $MaxMinutes = $(if ($env:SPIRAL_HEAVY_MAX_MINUTES) { [int]$env:SPIRAL_HEAVY_MAX_MINUTES } else { 240 })) {
+    $inherited = Get-HeavyHeldByAncestor
+    if ($inherited) { Write-Host "Invoke-Heavy: $inherited; running inside it"; & $Command; return }
     $ledgerQueued = Get-Date
     $ledgerFree = Get-HeavyFreeMB
     $slots = @([System.Threading.Mutex]::new($false, 'Global\spiral-heavy-job'), [System.Threading.Mutex]::new($false, 'Global\spiral-heavy-job-2'))
@@ -153,10 +167,13 @@ function Invoke-Heavy([Parameter(Mandatory)] [scriptblock] $Command, [switch] $W
     try { $self.PriorityClass = [System.Diagnostics.ProcessPriorityClass]::Normal } catch { }
     $ledgerStarted = Get-Date
     $ledgerOutcome = 'ok'
+    $heldBefore = $env:SPIRAL_HEAVY_HELD
+    $env:SPIRAL_HEAVY_HELD = "$($held + 1):$PID"
     $global:LASTEXITCODE = 0
     try { & $Command; if ($LASTEXITCODE) { $ledgerOutcome = "exit $LASTEXITCODE" } }
     catch { $ledgerOutcome = "threw: $($_.Exception.Message -replace '\s+', ' ')"; throw }
     finally {
+        if ($null -eq $heldBefore) { Remove-Item Env:SPIRAL_HEAVY_HELD -ErrorAction Ignore } else { $env:SPIRAL_HEAVY_HELD = $heldBefore }
         Write-RunLedger 'heavy' $Label $Command $ledgerQueued $ledgerStarted "$($held + 1)" $ledgerOutcome $ledgerFree
         try { $self.PriorityClass = $priority } catch { }
         Remove-Item $holderPath -Force -ErrorAction Ignore

@@ -5,11 +5,11 @@ struct Mut0 { l0: f64, l1: Rc<str> }
 fn spiral_main() -> i32 {
     let v0: f64 = 1.5f64;
     let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("no"); } LIT.with(|lit| lit.clone()) };
-    let mut v2: Rc<RefCell<Mut0>> = Rc::new(RefCell::new(Mut0 { l0: v0, l1: v1 }));
+    let mut v2: Rc<RefCell<Mut0>> = Rc::new(RefCell::new(Mut0 { l0: v0, l1: v1.clone() }));
     let v3: f64 = 2.5f64;
     let v4: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
     v2.borrow_mut().l0 = v3;
-    v2.borrow_mut().l1 = v4;
+    v2.borrow_mut().l1 = v4.clone();
     let (mut v5, mut v6): (f64, Rc<str>) = (v2.borrow().l0.clone(), v2.borrow().l1.clone());
     let v7: bool = v5 == 2.5f64;
     let v9: bool = if v7 {

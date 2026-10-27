@@ -36,18 +36,8 @@ test resultm static =
     := error (e : exn) = e |> Error : result t exn
     backend_switch {
         Lua = \ () =>
-            $'local resultm_fn = !fn '
-            $'local resultm_ok = !ok '
-            $'local resultm_error = !error '
-            $'local resultm_ex_fn = !ex_fn '
-            $'local status, result = pcall(resultm_fn)'
-            $'local r = nil'
-            $'if status then'
-            $'    r = resultm_ok(result)'
-            $'else'
-            $'    r = resultm_error(resultm_ex_fn(function() return result end))'
-            $'end'
-            $'r' : result t exn
+            := caught (ex : exn) : option (result t exn) = Some (Error (ex_fn \ () => ex))
+            try (\ () => Ok (fn ()) : result t exn) caught |> optionm.value
         Fsharp = \ () =>
             ~~ $'try !fn () |> !ok with ex -> (fun () -> ex) |> !ex_fn |> !error ' : result t exn
         Python = \ () =>
@@ -63,6 +53,43 @@ test resultm static =
         Zig = \ () => fn () |> ok
     }
 
+///> lua
+///> fsharp
+///> cuda
+///> typescript
+test from_try_keeps_values_and_catches_failures =
+    := settled (r : result i32 exn) : i32 =
+        ?= r ?|
+        | Ok x => x
+        | Error _ => 0i32
+    := ~n = 5i32
+    (from_try (\ () => n) eval |> settled, from_try (\ () => failwith "boom" : i32) eval |> settled)
+    |> _assert_eq (5i32, 0i32)
+
+/// ### rust_debug_message
+:= rust_debug_message \* t. (prefix : string) (x : t) : string =
+    global """
+        struct SpiralDebug<T>(T);
+        trait SpiralDebugShow {
+            fn show(&self) -> String;
+        }
+        impl<T: std::fmt::Debug> SpiralDebugShow for SpiralDebug<T> {
+            fn show(&self) -> String { format!("{:?}", self.0) }
+        }
+        trait SpiralTypeShow {
+            fn show(&self) -> String;
+        }
+        impl<T> SpiralTypeShow for &SpiralDebug<T> {
+            fn show(&self) -> String { String::from(std::any::type_name::<T>()) }
+        }
+        """
+    $'Rc::<str>::from(format\!("{}{}", !prefix, (&SpiralDebug(&!x)).show()))' : string
+
+///> rust
+test rust_debug_message_shows_debug_values =
+    (rust_debug_message "x: " 5i32, rust_debug_message "s: " "a")
+    |> _assert_eq ("x: 5", "s: \"a\"")
+
 /// ### get
 := get \* t e. (source : result t e) : t =
     ?= source ?|
@@ -76,12 +103,7 @@ test resultm static =
             Fsharp = \ () => $'$"resultm.get / Error x: {!x}"' : string
             Python = \ () => $'f"resultm.get / Error x: {!x}"' : string
             TypeScript = \ () => $'"resultm.get / Error x: " + String(!x)' : string
-            Rust = fun () => $'Rc::<str>::from({ struct SpiralDebug<T>(T); trait SpiralDebugShow { fn show(&self) -> \
-                String; } impl<T: std::fmt::Debug> SpiralDebugShow for SpiralDebug<T> { fn show(&self) -> String { \
-                format\!("{:?}", self.0) } } trait SpiralTypeShow { fn show(&self) -> String; } impl<T> \
-                SpiralTypeShow for &SpiralDebug<T> { fn show(&self) -> String { \
-                String::from(std::any::type_name::<T>()) } } format\!("resultm.get / Error x: {}", \
-                (&SpiralDebug(&!x)).show()) })' : string
+            Rust = \ () => rust_debug_message "resultm.get / Error x: " x
             Zig = fun () => $'(std.fmt.allocPrint(spiral_gpa, "resultm.get / Error x: {any}", .{ !x }) catch \
                 \@panic("out of memory"))' : string
         }
@@ -103,10 +125,10 @@ test resultm static =
 := collect_list \* t e. (items : list (result t e)) : result (list t) e =
     :~ ^ collected (items : list (result t e)) (acc : list t) : result (list t) e =
         ?= items ?|
-        | Nil => Ok (listm.rev acc)
+        | [] => Ok (listm.rev acc)
         | Error e :: _ => Error e
         | Ok x :: rest => collected rest (x :: acc)
-    collected items Nil
+    collected items []
 
 ///> rust
 ///> gleam
@@ -127,12 +149,7 @@ test collect_list_keeps_order_and_stops_at_the_first_error =
             Fsharp = \ () => $'$"resultm.unwrap_err / Ok x: {!x}"' : string
             Python = \ () => $'f"resultm.unwrap_err / Ok x: {!x}"' : string
             TypeScript = \ () => $'"resultm.unwrap_err / Ok x: " + String(!x)' : string
-            Rust = fun () => $'Rc::<str>::from({ struct SpiralDebug<T>(T); trait SpiralDebugShow { fn show(&self) -> \
-                String; } impl<T: std::fmt::Debug> SpiralDebugShow for SpiralDebug<T> { fn show(&self) -> String { \
-                format\!("{:?}", self.0) } } trait SpiralTypeShow { fn show(&self) -> String; } impl<T> \
-                SpiralTypeShow for &SpiralDebug<T> { fn show(&self) -> String { \
-                String::from(std::any::type_name::<T>()) } } format\!("resultm.unwrap_err / Ok x: {}", \
-                (&SpiralDebug(&!x)).show()) })' : string
+            Rust = \ () => rust_debug_message "resultm.unwrap_err / Ok x: " x
             Zig = fun () => $'(std.fmt.allocPrint(spiral_gpa, "resultm.unwrap_err / Ok x: {any}", .{ !x }) catch \
                 \@panic("out of memory"))' : string
         }
@@ -228,31 +245,14 @@ test collect_list_keeps_order_and_stops_at_the_first_error =
         backend_switch {
             Gleam = \ () =>
                 $'case !x { Ok(x) -> !ok(x) Error(x) -> !error(x) }' : result t u
-            Lua = \ () =>
-                $'local resultm_ok = !ok '
-                $'local resultm_error = !error '
-                $'local r = nil'
-                $'if !x ~= nil then'
-                $'    r = resultm_ok(!x)'
-                $'else'
-                $'    r = resultm_error(!x)'
-                $'end'
-                $'r' : result t u
+
             Fsharp = \ () =>
                 ~>
                     ?: t ?|
                     | () => $'match !x with Ok () -> !ok () | Error x -> !error x' : result t u
                     | _ => $'match !x with Ok x -> !ok x | Error x -> !error x' : result t u
                 : result t u
-            Python = \ () =>
-                $'ok = !ok '
-                $'error = !error '
-                $'r = None'
-                $'if !x is not None:'
-                $'    r = ok(!x)'
-                $'else:'
-                $'    r = error(!x)'
-                $'r' : result t u
+
             Rust = \ () =>
                 ~>
                     ?: t ?|
@@ -270,17 +270,13 @@ test collect_list_keeps_order_and_stops_at_the_first_error =
         | Ok x =>
             backend_switch {
                 Gleam = \ () => $'Ok(!x)' : result' t u
-                Lua = \ () => $'!x ' : result' t u
                 Fsharp = \ () => $'Ok !x ' : result' t u
-                Python = \ () => $'!x ' : result' t u
                 Rust = \ () => $'Ok::<`t, `u>(!x)' : result' t u
             }
         | Error err =>
             backend_switch {
                 Gleam = \ () => $'Error(!err)' : result' t u
-                Lua = \ () => $'!err ' : result' t u
                 Fsharp = \ () => $'Error !err ' : result' t u
-                Python = \ () => $'!err ' : result' t u
                 Rust = \ () => $'Err::<`t, `u>(!err)' : result' t u
             }
 

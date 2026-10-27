@@ -86,32 +86,32 @@ fn score_0(mut v0: US1) -> i32 {
 fn spiral_main() -> i32 {
     let v0: i32 = 7i32;
     let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
-    let v2: Rc<Heap0> = Rc::new(Heap0 { l0: v0, l1: v1 });
+    let v2: Rc<Heap0> = Rc::new(Heap0 { l0: v0, l1: v1.clone() });
     let v3: i32 = 4i32;
     let v4: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("yo"); } LIT.with(|lit| lit.clone()) };
-    let v5: Rc<Heap0> = Rc::new(Heap0 { l0: v3, l1: v4 });
-    let v6: Rc<Heap1> = Rc::new(Heap1 { l0: v2, l1: v5 });
+    let v5: Rc<Heap0> = Rc::new(Heap0 { l0: v3, l1: v4.clone() });
+    let v6: Rc<Heap1> = Rc::new(Heap1 { l0: v2.clone(), l1: v5.clone() });
     let v7: i32 = 2i32;
-    let v8: Rc<Heap2> = Rc::new(Heap2 { l0: v6, l1: v7 });
+    let v8: Rc<Heap2> = Rc::new(Heap2 { l0: v6.clone(), l1: v7 });
     let v9: bool = true;
     let v12: US0 = if v9 {
-        US0::US0_Held(v8)
+        US0::US0_Held(v8.clone())
     } else {
         US0::US0_None
     };
-    let v13: Rc<Heap3> = Rc::new(Heap3 { l0: v12 });
+    let v13: Rc<Heap3> = Rc::new(Heap3 { l0: v12.clone() });
     let v14: bool = true;
     let v17: US1 = if v14 {
-        US1::US1_Box(v13)
+        US1::US1_Box(v13.clone())
     } else {
         US1::US1_Mark(1i32)
     };
     let v18: i32 = 3i32;
-    let mut v19: Rc<dyn Fn(i32) -> US1> = f_c0(v17, v18);
+    let mut v19: Rc<dyn Fn(i32) -> US1> = f_c0(v17.clone(), v18);
     let v20: US1 = v19(1i32);
-    let v21: i32 = score_0(v20);
+    let v21: i32 = score_0(v20.clone());
     let v22: US1 = v19(0i32);
-    let v23: i32 = score_0(v22);
+    let v23: i32 = score_0(v22.clone());
     let v24: bool = v21 == 0i32;
     let v26: bool = if v24 {
         let v25: bool = v23 == 1i32;

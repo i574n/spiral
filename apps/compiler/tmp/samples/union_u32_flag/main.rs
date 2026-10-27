@@ -37,11 +37,11 @@ fn spiral_main() -> i32 {
     let v2: bool = true;
     let v3: bool = true;
     let v6: US0 = if v3 {
-        US0::US0_All(v0, v1, v2)
+        US0::US0_All(v0, v1.clone(), v2)
     } else {
         US0::US0_None
     };
-    score_0(v6)
+    score_0(v6.clone())
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();

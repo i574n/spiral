@@ -233,7 +233,7 @@ test assert_fn =
                             ?: u ?|
                             | string =>
                                 ?: t ?|
-                                | char => $'!a.contains(!b as char)' : bool
+                                | char => $'!a.contains(char::from(!b))' : bool
                                 | _ => $'!a.contains(&*!b)' : bool
                             | array_base _ => $'!a.borrow().contains(&!b)' : bool
                             | _ => $'!a.iter().any(|x| *x == !b)' : bool
@@ -273,6 +273,7 @@ test assert_contains =
     |> _assert_contains "b"
 
 ///> zig
+///> rust
 test assert_contains_2 =
     "abcd"
     |> _assert_contains 'b'
@@ -280,30 +281,13 @@ test assert_contains_2 =
 /// ### _throws
 := _throws (fn : () -> ()) : option exn =
     := none = None : option exn
-    := some (s : exn) = Some s
-    ? is_rust () ?>
-        catch_unwind_rust
-            \ () =>
-                fn ()
-                none
-            some
-    |:
-        backend_switch {
-            Fsharp = \ () =>
-                $'try !fn (); !none with ex -> ex |> !some ' : option exn
-            Python = \ () =>
-                $'fn = !fn '
-                $'none = !none '
-                $'some = !some '
-                $'try: fn(); x = none '
-                $'except Exception as ex: x = some(ex)'
-                $'x' : option exn
-            TypeScript = \ () =>
-                $'(() => { try { !fn(); return !none; } catch (ex) { return !some(ex); } })()' : option exn
-            Zig = \ () =>
-                fn ()
-                none
-        }
+    := caught (ex : exn) : option (option exn) = Some (Some ex)
+    try
+        \ () =>
+            fn ()
+            none
+        caught
+    |> optionm.value
 
 /// ### print_and_return
 := ^ print_and_return x =
@@ -319,7 +303,7 @@ test assert_contains_2 =
         |? left <= 0i32 ?> found
         |? reference x = candidate x ?> go (x + 1i64) left found
         |: go (x + 1i64) (left - 1i32) (x :: found)
-    go lo limit Nil |> listm.rev
+    go lo limit [] |> listm.rev
 
 ///> zig
 test counterexamples_find_where_multiply_shift_stops_dividing_by_three =

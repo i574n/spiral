@@ -12,6 +12,10 @@ test base static =
 := emit_unit \* t. (x : t) : () =
     $'!x '
 
+/// ### export
+:= export \* t. (name : string) (f : t) : () =
+    !!!!Export(name, f)
+
 /// ### use
 := use \* t. (x : t) : t =
     backend_switch {
@@ -686,6 +690,25 @@ test defaultof =
         ? rust_caught_ok caught ?> rust_caught_value caught
         |: caught |> rust_caught_payload |> rust_panic_text |> rust_exn_of_text |> ex_fn
 
+/// ### lua_attempt
+:! lua_attempt = $'table'
+
+/// ### lua_pcall
+:= lua_pcall \* t. (fn : () -> t) : lua_attempt =
+    $'{pcall(!fn)}' : lua_attempt
+
+/// ### lua_attempt_ok
+:= lua_attempt_ok (attempt : lua_attempt) : bool =
+    $'!attempt[1]' : bool
+
+/// ### lua_attempt_value
+:= lua_attempt_value \* t. (attempt : lua_attempt) : t =
+    $'!attempt[2]' : t
+
+/// ### lua_attempt_error
+:= lua_attempt_error (attempt : lua_attempt) : exn =
+    $'!attempt[2]' : exn
+
 /// ### try
 := try \* t. (fn : () -> t) (ex_fn : exn -> option t) : option t =
     := some x : option t = Some x
@@ -696,7 +719,9 @@ test defaultof =
         Gleam = \ () =>
             fn () |> some
         Lua = \ () =>
-            fn () |> some
+            := attempt = lua_pcall fn
+            ? lua_attempt_ok attempt ?> attempt |> lua_attempt_value |> some
+            |: attempt |> lua_attempt_error |> ex_fn
         Fsharp = \ () =>
             $'(try !fn () |> !some with ex -> !ex_fn ex)' : option t
         Python = \ () =>
@@ -715,6 +740,16 @@ test defaultof =
         Zig = \ () =>
             fn () |> some
     }
+
+///> lua
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test try_catches_failures_and_keeps_values =
+    := ~n = 5i32
+    (try (\ () => n) (\ _ => None), try (\ () => failwith "boom" : i32) (\ _ => Some 0i32))
+    |> _assert_eq (Some 5i32, Some 0i32)
 
 ///> fsharp
 ///> cuda

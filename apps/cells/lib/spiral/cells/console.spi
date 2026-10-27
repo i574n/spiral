@@ -35,7 +35,9 @@
                 | _ => $'print(!value)' : ()
         Gleam = \ () => gleam ()
         Cpp = \ () => cpp ()
-        Zig = \ () => $'{ spiralPrintAny(!value); spiralPrint(&[_]u8{10}); }' : ()
+        Zig = \ () =>
+            $'spiralPrintAny(!value)' : ()
+            $'spiralPrint(&[_]u8{10})' : ()
         Lean = \ () => $'IO.println (toString !value)' : ()
         CppHost = \ () => cpp ()
         C = \ () => $'backend_switch_has_no_C_arm_in_cells_console' : ()
@@ -46,11 +48,11 @@
 
 := write_line \* t. (text : t) : () =
     := rust () : () =
-        := _ : () =
-            !\\(text, $'"{ let mut out = std::io::stdout(); let _ = <std::io::Stdout as \
-                std::io::Write>::write_all(&mut out, ToString::to_string(&$0).as_bytes()); let _ = <std::io::Stdout \
-                as std::io::Write>::write_all(&mut out, &[10u8]); let _ = <std::io::Stdout as \
-                std::io::Write>::flush(&mut out); }"')
+        := _ : bool =
+            !\\(text, $'"std::io::Write::write_all(&mut std::io::stdout(), \
+                ToString::to_string(&$0).as_bytes()).is_ok()"')
+        := _ : bool = !\\((), $'"std::io::Write::write_all(&mut std::io::stdout(), &[10u8]).is_ok()"')
+        := _ : bool = !\\((), $'"std::io::Write::flush(&mut std::io::stdout()).is_ok()"')
         ()
     := gleam () : () =
         global "import gleam/io"
@@ -71,7 +73,9 @@
                 | _ => $'print(!text)' : ()
         Gleam = \ () => gleam ()
         Cpp = \ () => cpp ()
-        Zig = \ () => $'{ spiralPrintAny(!text); spiralPrint(&[_]u8{10}); }' : ()
+        Zig = \ () =>
+            $'spiralPrintAny(!text)' : ()
+            $'spiralPrint(&[_]u8{10})' : ()
         Lean = \ () => $'IO.println (toString !text)' : ()
         CppHost = \ () => cpp ()
         C = \ () => $'backend_switch_has_no_C_arm_in_cells_console' : ()

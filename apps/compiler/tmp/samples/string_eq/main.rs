@@ -13,7 +13,7 @@ fn string_slice(value: &str, from: i64, to: i64) -> Rc<str> {
 fn spiral_main() -> i32 {
     let v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("é"); } LIT.with(|lit| lit.clone()) };
     let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("x"); } LIT.with(|lit| lit.clone()) };
-    let v2: Rc<str> = Rc::<str>::from(format!("{}{}", v0.clone(), v1));
+    let v2: Rc<str> = Rc::<str>::from(format!("{}{}", v0.clone(), v1.clone()));
     let v3: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("éx"); } LIT.with(|lit| lit.clone()) };
     let v4: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("éy"); } LIT.with(|lit| lit.clone()) };
     let v5: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };

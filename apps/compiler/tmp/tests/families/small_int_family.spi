@@ -1,0 +1,105 @@
+///- --package .
+///> c
+///> zig
+test small_int_scalar_returns_zero =
+    := program () : i32 =
+        := ~a = 100i8
+        := s8 = a +. a
+        := ~b = 200u8
+        := ~c = 100u8
+        := u8s = b +. c
+        := ~n8 = 0i8 -. 8i8
+        := sh8 = !!!!ShiftRight(n8, 1i32)
+        := ush = !!!!ShiftRight(b, 1i32)
+        := ~p = 20000i16
+        := s16 = p +. p
+        := ~q = 40000u16
+        := u16s = q +. q
+        := ~n = 7i32
+        := from8 = !!!!Conv(`i8, n)
+        := ~z = 9i8
+        := as_i = !!!!Conv(`i32, z)
+        ?
+            s8 =. (0i8 -. 56i8)
+            && u8s =. 44u8
+            && sh8 =. (0i8 -. 4i8)
+            && ush =. 100u8
+            && s16 =. (0i16 -. 25536i16)
+            && u16s =. 14464u16
+            && from8 =. 7i8
+            && as_i =. 9i32
+        ?> 0i32
+        |: 1i32
+    ? program () <> 0i32 ?> failwith "small_int_scalar"
+
+///> c
+///> zig
+test small_int_ops_returns_zero =
+    := program () : i32 =
+        := ~a = 100i8
+        := ~three = 3i8
+        := mul = a *. three
+        := ~n = 0i8 -. 8i8
+        := ~two = 2i8
+        := dv = n /. two
+        := md = n %. three
+        := neg = !!!!Neg(three)
+        := sh = !!!!ShiftLeft(a, 1i32)
+        := ~b = 200u8
+        := ~c = 3u8
+        := ud = b /. c
+        := um = b %. c
+        := ~mask = 15u8
+        := band = !!!!BitwiseAnd(b, mask)
+        := bor = !!!!BitwiseOr(b, mask)
+        := bxor = !!!!BitwiseXor(b, mask)
+        := inv = !!!!BitwiseComplement(mask)
+        := ~p = 20000i16
+        := ~seven = 7i16
+        := d16 = p /. seven
+        := m16 = p %. seven
+        := n16 = !!!!Neg(p)
+        := ~q = 40000u16
+        := sh16 = !!!!ShiftLeft(q, 1i32)
+        ?
+            mul =. 44i8
+            && dv =. (0i8 -. 4i8)
+            && md =. (0i8 -. 2i8)
+            && neg =. (0i8 -. 3i8)
+            && sh =. (0i8 -. 56i8)
+            && ud =. 66u8
+            && um =. 2u8
+            && band =. 8u8
+            && bor =. 207u8
+            && bxor =. 199u8
+            && inv =. 240u8
+            && d16 =. 2857i16
+            && m16 =. 1i16
+            && n16 =. (0i16 -. 20000i16)
+            && sh16 =. 14464u16
+        ?> 0i32
+        |: 1i32
+    ? program () <> 0i32 ?> failwith "small_int_ops"
+
+:= valid ~(x : u32) =
+    (x +. 5u32) %. 4u32 =. 0u32
+
+///> c
+///> zig
+test unsigned_mod_returns_zero =
+    := program () : i32 =
+        := ~x = 7u32
+        ? ~~ valid x ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "unsigned_mod"
+
+:= pick (n : i8) : i8 =
+    ? n =. 0i8 ?> 1i8 |: n
+
+///> c
+///> zig
+test method_i8_returns_zero =
+    := program () : i32 =
+        := ~n = 100i8
+        := got = ~~ pick n
+        ? got =. 100i8 ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "method_i8"

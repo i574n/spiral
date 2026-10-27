@@ -25,10 +25,10 @@ fn spiral_main() -> i32 {
     let v1: i32 = 2i32;
     let v2: i32 = 3i32;
     let v3: Rc<UH0> = { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_Nil); } CASE.with(|case| case.clone()) };
-    let v4: Rc<UH0> = Rc::new(UH0::UH0_Cons(v2, v3));
-    let v5: Rc<UH0> = Rc::new(UH0::UH0_Cons(v1, v4));
-    let v6: Rc<UH0> = Rc::new(UH0::UH0_Cons(v0, v5));
-    let v7: i32 = sum_0(v6);
+    let v4: Rc<UH0> = Rc::new(UH0::UH0_Cons(v2, v3.clone()));
+    let v5: Rc<UH0> = Rc::new(UH0::UH0_Cons(v1, v4.clone()));
+    let v6: Rc<UH0> = Rc::new(UH0::UH0_Cons(v0, v5.clone()));
+    let v7: i32 = sum_0(v6.clone());
     let v8: i32 = v7.wrapping_sub(6i32);
     v8
 }

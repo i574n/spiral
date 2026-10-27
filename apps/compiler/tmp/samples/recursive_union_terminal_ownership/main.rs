@@ -33,14 +33,14 @@ fn spiral_main() -> i32 {
     let v0: i32 = 1i32;
     let v1: i32 = 2i32;
     let v2: Rc<UH0> = { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_Leaf); } CASE.with(|case| case.clone()) };
-    let v3: Rc<UH0> = Rc::new(UH0::UH0_Node(v1, v2.clone(), v2));
-    let v4: Rc<UH0> = Rc::new(UH0::UH0_Node(v0, v3.clone(), v3));
+    let v3: Rc<UH0> = Rc::new(UH0::UH0_Node(v1, v2.clone(), v2.clone()));
+    let v4: Rc<UH0> = Rc::new(UH0::UH0_Node(v0, v3.clone(), v3.clone()));
     let v5: i32 = 1i32;
     let v6: i32 = 2i32;
     let v7: Rc<UH0> = { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_Leaf); } CASE.with(|case| case.clone()) };
-    let v8: Rc<UH0> = Rc::new(UH0::UH0_Node(v6, v7.clone(), v7));
-    let v9: Rc<UH0> = Rc::new(UH0::UH0_Node(v5, v8.clone(), v8));
-    let v10: i32 = consume_pair_0(v4, v9);
+    let v8: Rc<UH0> = Rc::new(UH0::UH0_Node(v6, v7.clone(), v7.clone()));
+    let v9: Rc<UH0> = Rc::new(UH0::UH0_Node(v5, v8.clone(), v8.clone()));
+    let v10: i32 = consume_pair_0(v4.clone(), v9.clone());
     let v11: i32 = v10.wrapping_sub(10i32);
     v11
 }

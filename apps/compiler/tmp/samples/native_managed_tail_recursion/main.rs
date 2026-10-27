@@ -27,18 +27,18 @@ fn method0() -> Rc<str> {
     let v1: bool = v0 == 0i32;
     if v1 {
         let v2: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("seed"); } LIT.with(|lit| lit.clone()) };
-        v2
+        v2.clone()
     } else {
         let v3: i32 = v0.wrapping_rem(2i32);
         let v4: bool = v3 == 0i32;
         let v7: Rc<str> = if v4 {
             let v5: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("ok"); } LIT.with(|lit| lit.clone()) };
-            v5
+            v5.clone()
         } else {
             let v6: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("go"); } LIT.with(|lit| lit.clone()) };
-            v6
+            v6.clone()
         };
-        method1(v0, v7)
+        method1(v0, v7.clone())
     }
 }
 fn spiral_main() -> i32 {

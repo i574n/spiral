@@ -1,0 +1,82 @@
+///- --package .
+///> c
+///> zig
+test eq_returns_zero =
+    := program () : i32 =
+        := ~left = "é"
+        := ~right = "x"
+        := cat = !!!!StaticStringConcat(left, right)
+        := ~same = "éx"
+        := ~other = "éy"
+        := ~empty = ""
+        := blank = !!!!StringSlice(same, 1i32, 0i32)
+        ?
+            !!!!EQ(cat, same)
+            && !!!!NEQ(cat, other)
+            && !!!!NEQ(left, same)
+            && !!!!EQ(empty, blank)
+            && !!!!NEQ(empty, left)
+        ?> 0i32
+        |: 1i32
+    ? program () <> 0i32 ?> failwith "string_eq"
+
+///> c
+///> zig
+test ord_returns_zero =
+    := program () : i32 =
+        := ~a = "a"
+        := ~a2 = "a"
+        := ~b = "b"
+        := ~e = "é"
+        := ~ex = "éx"
+        := ~empty = ""
+        ? !!!!LT(a, a2)
+        ?> 1i32
+        |:
+            ?
+                !!!!LT(a, b)
+                && !!!!LT(b, e)
+                && !!!!LT(e, ex)
+                && !!!!LT(empty, a)
+                && !!!!LTE(a, a2)
+                && !!!!GTE(a2, a)
+                && !!!!GT(ex, e)
+                && !!!!GTE(b, a)
+            ?> 0i32
+            |: 1i32
+    ? program () <> 0i32 ?> failwith "string_ord"
+
+:= same_text ~x ~y = x =. y
+
+///> c
+///> zig
+test static_returns_zero =
+    := program () : i32 =
+        := ~text = "spiral"
+        ? ~~ same_text text text ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "static_string"
+
+///> c
+///> zig
+test utf8_returns_zero =
+    := program () : i32 =
+        := ~s = "é"
+        := n = !!!!StringLength(`i32, s)
+        := z0 = !!!!StringIndex(s, 0i32)
+        := z1 = !!!!StringIndex(s, 1i32)
+        := ~rest = "x"
+        := cat = !!!!StaticStringConcat(s, rest)
+        := cn = !!!!StringLength(`i32, cat)
+        := ~ascii = "ab"
+        := a0 = !!!!StringIndex(ascii, 0i32)
+        := slice = !!!!StringSlice(ascii, 0i32, 0i32)
+        := sn = !!!!StringLength(`i32, slice)
+        := empty = !!!!StringSlice(ascii, 1i32, 0i32)
+        := en = !!!!StringLength(`i32, empty)
+        := whole = !!!!StringSlice(s, 0i32, 1i32)
+        := wn = !!!!StringLength(`i32, whole)
+        ? !!!!EQ(z0, z1) ?> 1i32
+        |:
+            ? n =. 2i32 && !!!!EQ(a0, 'a') && cn =. 3i32 && sn =. 1i32 && en =. 0i32 && wn =. 2i32 ?> 0i32
+            |: 1i32
+    ? program () <> 0i32 ?> failwith "string_utf8"

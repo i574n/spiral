@@ -164,7 +164,7 @@ test trace static =
             := level' = trace_level |> optionm'.default_value Verbose
             := fresh = \ () => new_trace_state level'
             :< rust.rust_operators
-            !\\(fresh, $'"{ spiral_trace_hold(&$0) }"') : trace_state
+            !\\(fresh, $'"spiral_trace_hold(&$0)"') : trace_state
         Zig = \ () =>
             global """
                 fn spiralHold(comptime T: type, fresh: anytype) T {
@@ -297,6 +297,66 @@ test test_trace_level =
 := clock_two_digits (n : i32) : string =
     (? n < 10i32 ?> "0" |: "") ++# sm'.obj_to_string n
 
+/// ### local_seconds_of_day
+:! rust_clock_fields = $'[i64; 3]'
+
+:= rust_clock_shims () : () =
+    global """
+        #[cfg(target_arch = "wasm32")]
+        fn spiral_cfg_local_clock() -> Option<[i64; 3]> { None }
+        #[cfg(all(windows, not(target_arch = "wasm32")))]
+        fn spiral_cfg_local_clock() -> Option<[i64; 3]> {
+            #[repr(C)] struct St([u16; 8]);
+            unsafe extern "system" { fn GetLocalTime(t: *mut St); }
+            let mut t = St([0; 8]);
+            unsafe { GetLocalTime(&mut t) };
+            Some([i64::from(t.0[4]), i64::from(t.0[5]), i64::from(t.0[6])])
+        }
+        #[cfg(all(unix, not(target_arch = "wasm32")))]
+        fn spiral_cfg_local_clock() -> Option<[i64; 3]> {
+            #[repr(C, align(8))] struct Tm([i32; 16]);
+            unsafe extern "C" { fn localtime_r(t: *const std::os::raw::c_long, tm: *mut Tm) -> *mut Tm; }
+            let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs());
+            let secs = std::os::raw::c_long::try_from(now.unwrap_or(0)).unwrap_or(0);
+            let mut tm = Tm([0; 16]);
+            unsafe { localtime_r(&secs, &mut tm) };
+            Some([i64::from(tm.0[2]), i64::from(tm.0[1]), i64::from(tm.0[0])])
+        }
+        #[cfg(not(any(windows, unix, target_arch = "wasm32")))]
+        fn spiral_cfg_local_clock() -> Option<[i64; 3]> { None }
+        #[cfg(target_arch = "wasm32")]
+        fn spiral_cfg_epoch_nanos() -> u64 { near_sdk::env::block_timestamp() }
+        #[cfg(not(target_arch = "wasm32"))]
+        fn spiral_cfg_epoch_nanos() -> u64 {
+            let since = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH);
+            since.map(|d| u64::try_from(d.as_nanos()).unwrap_or(0)).unwrap_or(0)
+        }
+        """
+
+:= rust_local_clock () : optionm'.option' rust_clock_fields =
+    rust_clock_shims ()
+    $'spiral_cfg_local_clock()' : optionm'.option' rust_clock_fields
+
+:= rust_epoch_nanos () : u64 =
+    rust_clock_shims ()
+    $'spiral_cfg_epoch_nanos()' : u64
+
+:= rust_clock_hour (fields : rust_clock_fields) : i64 = $'!fields[0]' : i64
+
+:= rust_clock_minute (fields : rust_clock_fields) : i64 = $'!fields[1]' : i64
+
+:= rust_clock_second (fields : rust_clock_fields) : i64 = $'!fields[2]' : i64
+
+:= local_seconds_of_day () : u64 =
+    ?= rust_local_clock () |> optionm'.unbox ?|
+    | Some fields =>
+        conv (rust_clock_hour fields * 3600i64 + rust_clock_minute fields * 60i64 + rust_clock_second fields)
+    | None => rust_epoch_nanos () / 1000000000u64 % 86400u64
+
+///> rust
+test local_seconds_of_day_is_within_a_day =
+    (local_seconds_of_day () < 86400u64) |> _assert_eq !+
+
 /// ### trace
 := trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
     \ () =>
@@ -325,7 +385,7 @@ test test_trace_level =
                             ?= target ?|
                             | Rust => \ () =>
                                 :< rust.rust_operators
-                                := seconds_of_day : u64 = $'{ \#[cfg(target_arch = "wasm32")] let (h, m, s) = { let secs = near_sdk::env::block_timestamp() / 1_000_000_000; ((secs / 3600) % 24, (secs / 60) % 60, secs % 60) }; \#[cfg(all(windows, not(target_arch = "wasm32")))] let (h, m, s) = { \#[repr(C)] struct St([u16; 8]); unsafe extern "system" { fn GetLocalTime(t: *mut St); } let mut t = St([0; 8]); unsafe { GetLocalTime(&mut t) }; (t.0[4] as u64, t.0[5] as u64, t.0[6] as u64) }; \#[cfg(all(unix, not(target_arch = "wasm32")))] let (h, m, s) = { \#[repr(C, align(8))] struct Tm([i32; 16]); unsafe extern "C" { fn localtime_r(t: *const std::os::raw::c_long, tm: *mut Tm) -> *mut Tm; } let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0) as std::os::raw::c_long; let mut tm = Tm([0; 16]); unsafe { localtime_r(&secs, &mut tm) }; (tm.0[2] as u64, tm.0[1] as u64, tm.0[0] as u64) }; \#[cfg(not(any(windows, unix, target_arch = "wasm32")))] let (h, m, s) = { let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0); ((secs / 3600) % 24, (secs / 60) % 60, secs % 60) }; h * 3600 + m * 60 + s }'
+                                := seconds_of_day : u64 = local_seconds_of_day ()
                                 := two_digits (n : u64) : string = (? n < 10u64 ?> "0" |: "") ++# sm'.obj_to_string n
                                 two_digits (seconds_of_day / 3600u64) ++# ":" ++# two_digits ((seconds_of_day / 60u64) % 60u64) ++# ":" ++# two_digits (seconds_of_day % 60u64)
                             | TypeScript => \ () =>

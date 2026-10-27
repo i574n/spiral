@@ -221,9 +221,9 @@ so an assertion that exits 1 fails the test. `///> c` is built like the compiler
 `gcc -std=c11 -O2 -w -fwrapv [-include <notebook dir>/c-shim.h] -o cell main.c -lm` (`cl /O2` with MSVC). The Rust host is built like the matrix's Rust rows too: `rustc +1.99.0 -C opt-level=2 -A warnings --edition 2024`
 (`+1.99.0` only when `rustc` is rustup's proxy). `///> delphi` uses `dcc32` (`SPIRAL_DCC`) when present, else Free Pascal
 the way the matrix builds its Delphi rows: `fpc -O2 -Mdelphi` (`SPIRAL_FPC`, `fpc` on PATH, or scoop's freepascal).
-`///> lean` runs the `--backend Lean` output with `lean --run` on the matrix's toolchain `leanprover/lean4:v4.35.0-rc4`:
-`SPIRAL_LEAN` (an elan proxy, given `+leanprover/lean4:v4.35.0-rc4`), else that toolchain's own `lean` under `ELAN_HOME`,
-`~/.elan` or scoop's elan, else `lean` on PATH with `+leanprover/lean4:v4.35.0-rc4`.
+`///> lean` runs the `--backend Lean` output with `lean --run` on the matrix's toolchain `leanprover/lean4:v4.35.0`:
+`SPIRAL_LEAN` (an elan proxy, given `+leanprover/lean4:v4.35.0`), else that toolchain's own `lean` under `ELAN_HOME`,
+`~/.elan` or scoop's elan, else `lean` on PATH with `+leanprover/lean4:v4.35.0`.
 A cell's `///>` lines are its whole target list (no Rust run beside them).
 A test without `///>` lines runs on its file's default targets: the `///>` lines of the file's `static` prelude test
 (`///> c` above `test prelude static =`), else `SPIRAL_CELLS_DEFAULT_TARGET` (or `default_target:`, e.g. `fsharp`).

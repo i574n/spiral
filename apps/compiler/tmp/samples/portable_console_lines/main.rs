@@ -7,9 +7,11 @@ fn spiral_main() -> i32 {
     let v1: i32 = 42i32;
     println!("{}", v1);
     let v2: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("a"); } LIT.with(|lit| lit.clone()) };
-    { use std::io::Write; print!("{}", v2); std::io::stdout().flush().unwrap(); };
+    print!("{}", v2);
+    std::io::Write::flush(&mut std::io::stdout()).unwrap();
     let v3: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("b"); } LIT.with(|lit| lit.clone()) };
-    { use std::io::Write; print!("{}", v3); std::io::stdout().flush().unwrap(); };
+    print!("{}", v3);
+    std::io::Write::flush(&mut std::io::stdout()).unwrap();
     let v4: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
     println!("{}", v4);
     let v5: i64 = -7i64;

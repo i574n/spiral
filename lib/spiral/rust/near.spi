@@ -113,6 +113,12 @@ test near static =
         Rust = \ () => $'{ (!vector).extend((!vec).clone()); }' : ()
     }
 
+/// ### vector_drain_front
+:= vector_drain_front \* t. (count : u32) (vector : rust.ref (rust.mut' (vector t))) : am'.vec t =
+    backend_switch {
+        Rust = \ () => $'(!vector).drain(0..!count).collect::<std::vec::Vec<_>>()' : am'.vec t
+    }
+
 /// ### vector_to_vec
 := vector_to_vec \* (t : * -> *) u. (vector : t (vector u)) : am'.vec u =
     backend_switch {

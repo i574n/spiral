@@ -127,6 +127,9 @@ test retry_fn_2 =
 
 /// ## common
 
+/// ### lua_math_random
+:= lua_math_random (low : i32) (high : i32) : i32 = $'math.random(!low, !high)' : i32
+
 /// ### random'
 := random' \* t. (min : t) (max : t) : t =
     run_target \|
@@ -151,8 +154,20 @@ test retry_fn_2 =
         | TypeScript => \ () =>
             $'(() => { const a = Number(!min), b = Number(!max); const r = a + Math.floor(Math.random() * Math.max(0, \
                 b - a)); return (typeof !min === "bigint" ? BigInt(r) : r); })()' : t
+        | Lua => \ () =>
+            := low, high = convert.i32 min, convert.i32 max - 1i32
+            convert.convert (? high < low ?> low |: lua_math_random low high)
         | _ => \ () =>
             random () |> random_next (convert.i32 min) (convert.i32 max) |> convert.convert
+
+///> lua
+test random_draws_stay_in_their_half_open_range =
+    :~ ^ outside (draws : i32) : i32 =
+        ? draws = 0i32 ?> 0i32
+        |:
+            := x = random' 3i32 7i32
+            (? x < 3i32 || x >= 7i32 ?> 1i32 |: 0i32) + outside (draws - 1i32)
+    (outside 200i32, random' 5i32 5i32, random' 5i32 6i32) |> _assert_eq (0i32, 5i32, 5i32)
 
 /// ### new_disposable
 := new_disposable (fn : () -> ()) : disposable _ =

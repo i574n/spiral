@@ -110,6 +110,7 @@ test get_union_fields =
     |> am'.sort_by snd
     |> \ (array x : array _) => x
     |> _assert_eq' (am'.base ;[ "Some", Some 0i32; "None", None ])
+
 /// ### get_union_fields_untag
 := get_union_fields_untag \* union_type. () : list (string * union_type) =
     ~>
@@ -273,8 +274,8 @@ test union_cases_fold =
     :~ ^ search (cases : list union_type) : option union_type =
         ?= cases ?|
         | case :: rest => ? matches case ?> Some case |: search rest
-        | Nil => None
-    search (union_cases_fold (\ acc (case : union_type) => case :: acc) Nil |> dyn)
+        | [] => None
+    search (union_cases_fold (\ acc (case : union_type) => case :: acc) [] |> dyn)
 
 ///> gleam
 ///> lua

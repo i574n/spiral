@@ -2,7 +2,8 @@ param(
     [string] $Lib,
     [string[]] $Files = @(),
     [string] $Out = (Join-Path $env:LOCALAPPDATA "spiral-bin\runs\testblocks-$(Get-Date -Format yyyyMMdd-HHmmss)"),
-    [string[]] $Reports = @()
+    [string[]] $Reports = @(),
+    [ValidateSet('process', 'daemon')] [string] $Compiler = 'daemon'
 )
 $ErrorActionPreference = 'Stop'
 $Files = @($Files | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
@@ -11,7 +12,7 @@ if ($Files.Count) {
     if (-not $Lib) { throw '-Files needs -Lib, the package directory that holds them' }
     foreach ($file in $Files) {
         $raw = Join-Path $Out "$($file.Replace("'", '')).gate.txt"
-        & C:\home\git\spiral\apps\cells\spi\lib_gate.ps1 -Lib $Lib -File $file -RawOut $raw -Show 0 2>&1 | Out-Null
+        & C:\home\git\spiral\apps\cells\spi\lib_gate.ps1 -Lib $Lib -File $file -RawOut $raw -Show 0 -Compiler $Compiler 2>&1 | Out-Null
         $Reports += "$raw.tests.tsv"
     }
 }

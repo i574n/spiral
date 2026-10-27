@@ -109,13 +109,16 @@ fn spiralMain() i32 {
     var v56: i32 = undefined; _ = &v56;
     const v0: []const u8 = "ff";
     const v1: i32 = (std.fmt.parseInt(i32, std.mem.trim(u8, v0, " \t\r\n"), @intCast(@as(i32, 16))) catch 0);
-    { spiralPrintAny(v1); spiralPrint(&[_]u8{10}); }
+    spiralPrintAny(v1);
+    spiralPrint(&[_]u8{10});
     const v2: []const u8 = "1011";
     const v3: i32 = (std.fmt.parseInt(i32, std.mem.trim(u8, v2, " \t\r\n"), @intCast(@as(i32, 2))) catch 0);
-    { spiralPrintAny(v3); spiralPrint(&[_]u8{10}); }
+    spiralPrintAny(v3);
+    spiralPrint(&[_]u8{10});
     const v4: []const u8 = "-42";
     const v5: i32 = (std.fmt.parseInt(i32, std.mem.trim(u8, v4, " \t\r\n"), @intCast(@as(i32, 10))) catch 0);
-    { spiralPrintAny(v5); spiralPrint(&[_]u8{10}); }
+    spiralPrintAny(v5);
+    spiralPrint(&[_]u8{10});
     const v6: []const u8 = " 123 ";
     const v7: bool = (if (std.fmt.parseInt(i64, std.mem.trim(u8, v6, " \t\r\n"), 10)) |_| true else |_| false);
     const v8: i64 = (std.fmt.parseInt(i64, std.mem.trim(u8, v6, " \t\r\n"), 10) catch 0);
@@ -139,11 +142,13 @@ fn spiralMain() i32 {
     switch (v16.tag) {
         1 => {
             v18 = "none";
-            { spiralPrintAny(v18); spiralPrint(&[_]u8{10}); }
+            spiralPrintAny(v18);
+            spiralPrint(&[_]u8{10});
         },
         0 => {
             v17 = v16.c0_0;
-            { spiralPrintAny(v17); spiralPrint(&[_]u8{10}); }
+            spiralPrintAny(v17);
+            spiralPrint(&[_]u8{10});
         },
         else => unreachable,
     }
@@ -170,11 +175,13 @@ fn spiralMain() i32 {
     switch (v29.tag) {
         1 => {
             v31 = "none";
-            { spiralPrintAny(v31); spiralPrint(&[_]u8{10}); }
+            spiralPrintAny(v31);
+            spiralPrint(&[_]u8{10});
         },
         0 => {
             v30 = v29.c0_0;
-            { spiralPrintAny(v30); spiralPrint(&[_]u8{10}); }
+            spiralPrintAny(v30);
+            spiralPrint(&[_]u8{10});
         },
         else => unreachable,
     }
@@ -201,11 +208,13 @@ fn spiralMain() i32 {
     switch (v42.tag) {
         1 => {
             v44 = "none";
-            { spiralPrintAny(v44); spiralPrint(&[_]u8{10}); }
+            spiralPrintAny(v44);
+            spiralPrint(&[_]u8{10});
         },
         0 => {
             v43 = v42.c0_0;
-            { spiralPrintAny(v43); spiralPrint(&[_]u8{10}); }
+            spiralPrintAny(v43);
+            spiralPrint(&[_]u8{10});
         },
         else => unreachable,
     }
@@ -232,11 +241,13 @@ fn spiralMain() i32 {
     switch (v55.tag) {
         1 => {
             v57 = "none";
-            { spiralPrintAny(v57); spiralPrint(&[_]u8{10}); }
+            spiralPrintAny(v57);
+            spiralPrint(&[_]u8{10});
         },
         0 => {
             v56 = v55.c0_0;
-            { spiralPrintAny(v56); spiralPrint(&[_]u8{10}); }
+            spiralPrintAny(v56);
+            spiralPrint(&[_]u8{10});
         },
         else => unreachable,
     }

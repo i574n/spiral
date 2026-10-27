@@ -19,9 +19,14 @@ Push-Location (Join-Path $spiral 'apps/cells')
 try {
     for ($at = 0; $at -lt $Paths.Count; $at += $PathsPerRun) {
         $chunk = @($Paths[$at..([Math]::Min($at + $PathsPerRun, $Paths.Count) - 1)])
-        $mixArgs = @('spiral.notebook', '--gate', '--metrics', (Join-Path $Out "metrics-$at")) + ($chunk | ForEach-Object { '--path'; $_ })
-        $lines = & mix @mixArgs 2>&1 | ForEach-Object { "$_" }
+        $notebookArgs = @('--gate', '--metrics', (Join-Path $Out "metrics-$at")) + ($chunk | ForEach-Object { '--path'; $_ })
+        $lines = @(& pwsh -NoProfile -File (Join-Path $PSScriptRoot 'run_notebook.ps1') @notebookArgs 2>&1 | ForEach-Object { "$_" })
+        $mixExit = $LASTEXITCODE
         [IO.File]::AppendAllLines((Join-Path $Out 'gate.log'), [string[]]$lines)
+        if ($mixExit -ne 0 -and -not ($lines -match '^spiral-tests file ')) {
+            "run_notebook.ps1 exited $mixExit with no test report for paths $at..$($at + $chunk.Count - 1); its last lines:"
+            $lines | Select-Object -Last 30 | ForEach-Object { "  $_" }
+        }
         foreach ($line in $lines) {
             if ($line -notmatch '^spiral-tests file (\{.*\})\s*$') { continue }
             $report = $Matches[1] | ConvertFrom-Json
@@ -35,4 +40,7 @@ try {
     $env:SPIRAL_LIB = $null
 }
 [IO.File]::WriteAllText((Join-Path $Out 'cells-gate.tsv'), (($summary -join "`n") + "`n"))
-"cells gate: $($Paths.Count) files, $($summary.Count - 1) reports in $([int]$watch.Elapsed.TotalSeconds) s; artifact folder $Out (cells-gate.tsv, metrics-*/, gate.log)"
+$executed = 0
+foreach ($row in $summary | Select-Object -Skip 1) { $executed += [int]($row -split "`t")[2] }
+"cells gate: $($Paths.Count) files, $($summary.Count - 1) reports, $executed tests executed in $([int]$watch.Elapsed.TotalSeconds) s; artifact folder $Out (cells-gate.tsv, metrics-*/, gate.log)"
+if ($executed -eq 0) { throw "cells gate is VOID: $($Paths.Count) lib files with test blocks, but no test executed (see the mix output above and gate.log)" }

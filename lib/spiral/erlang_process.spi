@@ -277,3 +277,18 @@ test monitor_sees_normal_exit =
     global "import gleam/erlang/atom"
     global "@external(erlang, \"erlang\", \"system_info\") fn erlang_process_system_info(item: atom.Atom) -> Int"
     $'erlang_process_system_info(atom.create("schedulers_online"))'
+
+/// ### dictionary_get
+:= dictionary_get (key : erlang_term.term) : erlang_term.term = erlang_term.apply "erlang" "get" [ key ]
+
+/// ### dictionary_put
+:= dictionary_put (key : erlang_term.term) (value : erlang_term.term) : erlang_term.term =
+    erlang_term.apply "erlang" "put" [ key; value ]
+
+///> gleam
+test the_process_dictionary_keeps_a_value_by_key =
+    := key = erlang_term.tuple [ erlang_term.atom "spiral_process_dictionary_probe"; erlang_term.of 7i32 ]
+    := before = dictionary_get key
+    dictionary_put key (erlang_term.of 3i32) |> ignore
+    := after : i32 = dictionary_get key |> erlang_term.cast
+    (erlang_term.equal before (erlang_term.atom "undefined"), after) |> _assert_eq (!+, 3i32)

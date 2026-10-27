@@ -50,6 +50,7 @@
     | Token ("--test", Token ("static", rest)) => pair rest print_code timeout packages
     | Token ("--test", rest) => pair rest print_code timeout packages
     | Token ("--symbol", rest) => pair rest print_code timeout packages
+    | Token ("--name", Token (_, rest)) => pair rest print_code timeout packages
     | Token (flag, _) => ParseBad (text.err "flag" flag)
 
 := merge (args : string) (print_code : i32) (timeout : i32) (packages : string) : parsed =

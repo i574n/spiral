@@ -3,6 +3,8 @@
 test json_scan static =
     :< testing
 
+:< sm'_operators
+
 :~ ^ matches_at (s : string) (needle : string) (at : i32) (i : i32) (m : i32) : bool =
     ? i >= m ?> !+
     |? sm.index s (at + i) = sm.index needle i ?> matches_at s needle at (i + 1i32) m
@@ -29,7 +31,7 @@ test json_scan static =
         |: find_top s needle (at + 1i32) n m depth !-
 
 :~ value_at (s : string) (key : string) : i32 =
-    := needle = !!!!StaticStringConcat(!!!!StaticStringConcat("\"", key), "\":")
+    := needle = "\"" ++# key ++# "\":"
     find_top s needle 0i32 (sm.length s) (sm.length needle) 0i32 !-
 
 :~ digit_of (c : char) : i32 =
@@ -125,12 +127,12 @@ test json_scan static =
     |: text_between s (at - 1i32) (at + 1i32), 1i32
 
 :~ ^ unescape_from (s : string) (start : i32) (at : i32) (close : i32) (prefix : string) : string =
-    ? at >= close ?> !!!!StaticStringConcat(prefix, text_between s start close)
+    ? at >= close ?> prefix ++# text_between s start close
     |? sm.index s at = '\\' ?>
-        := kept = !!!!StaticStringConcat(prefix, text_between s start at)
+        := kept = prefix ++# text_between s start at
         := piece, width = unescaped s (at + 1i32)
         := next = at + 1i32 + width
-        unescape_from s next next close (!!!!StaticStringConcat(kept, piece))
+        unescape_from s next next close (kept ++# piece)
     |: unescape_from s start (at + 1i32) close prefix
 
 
@@ -158,8 +160,8 @@ test json_scan static =
     |: sm.slice s { from = at; to = object_end s at (sm.length s) 0i32 !- }
 
 :~ record_start (starts : array_base i32) (count : i32) (position : i32) : () =
-    := capacity = !!!!ArrayLength(`i32, starts)
-    ? count < capacity ?> !!!!ArrayIndexSet(starts, count, position)
+    := capacity = am'.length_base starts
+    ? count < capacity ?> am'.set_base starts count position
 
 :~ ^ item_starts
     (s : string) (at : i32) (n : i32) (depth : i32) (in_text : bool) (count : i32) (starts : array_base i32)
@@ -190,57 +192,57 @@ test json_scan static =
 
 :~ item_positions (s : string) (at : i32) : array_base i32 =
     := n = sm.length s
-    ? at < 0i32 ?> !!!!ArrayCreate(`i32, 0i32)
-    |? sm.index s at <> '[' ?> !!!!ArrayCreate(`i32, 0i32)
-    |? sm.index s (skip_spaces s (at + 1i32)) = ']' ?> !!!!ArrayCreate(`i32, 0i32)
+    ? at < 0i32 ?> am'.create_base 0i32
+    |? sm.index s at <> '[' ?> am'.create_base 0i32
+    |? sm.index s (skip_spaces s (at + 1i32)) = ']' ?> am'.create_base 0i32
     |:
-        := probe : array_base i32 = !!!!ArrayCreate(`i32, 0i32)
+        := probe : array_base i32 = am'.create_base 0i32
         := count = item_starts s at n 0i32 !- 0i32 probe
-        := starts : array_base i32 = !!!!ArrayCreate(`i32, count)
+        := starts : array_base i32 = am'.create_base count
         := _ = item_starts s at n 0i32 !- 0i32 starts
         starts
 
 :~ parse_i32_array (s : string) (at : i32) : array_base i32 =
     := starts = item_positions s at
-    := count = !!!!ArrayLength(`i32, starts)
-    := out : array_base i32 = !!!!ArrayCreate(`i32, count)
+    := count = am'.length_base starts
+    := out : array_base i32 = am'.create_base count
     :~ ^ fill (i : i32) : () =
         ? i < count ?>
-            := start = !!!!ArrayIndex(starts, i)
+            := start = am'.index_base i starts
             := value = parse_i32 s (skip_spaces s start)
-            !!!!ArrayIndexSet(out, i, value)
+            am'.set_base out i value
             fill (i + 1i32)
     fill 0i32
     out
 
 :~ parse_string_array (s : string) (at : i32) : array_base string =
     := starts = item_positions s at
-    := count = !!!!ArrayLength(`i32, starts)
-    := out : array_base string = !!!!ArrayCreate(`string, count)
+    := count = am'.length_base starts
+    := out : array_base string = am'.create_base count
     :~ ^ fill (i : i32) : () =
         ? i < count ?>
-            := start = !!!!ArrayIndex(starts, i)
+            := start = am'.index_base i starts
             := value = parse_string s (skip_spaces s start)
-            !!!!ArrayIndexSet(out, i, value)
+            am'.set_base out i value
             fill (i + 1i32)
     fill 0i32
     out
 
 :~ item_count (s : string) (at : i32) : i32 =
     := starts = item_positions s at
-    !!!!ArrayLength(`i32, starts)
+    am'.length_base starts
 
 :~ item_start (s : string) (at : i32) (i : i32) : i32 =
     := starts = item_positions s at
-    := start = !!!!ArrayIndex(starts, i)
+    := start = am'.index_base i starts
     skip_spaces s start
 
 := fill_array \* el. (count : i32) (item : i32 -> el) : array_base el =
-    := out : array_base el = !!!!ArrayCreate(`el, count)
+    := out : array_base el = am'.create_base count
     :~ ^ fill (i : i32) : () =
         ? i < count ?>
             := value = item i
-            !!!!ArrayIndexSet(out, i, value)
+            am'.set_base out i value
             fill (i + 1i32)
     fill 0i32
     out
@@ -265,10 +267,10 @@ test json_scan static =
 ///> c
 test parse_string_decodes_unicode_escapes =
     := ~s = "\"caf\\u00e9 \\ud83d\\ude00 \\ud800 x\\n\""
-    := a = !!!!StaticStringConcat("caf", unicode.char_of 233i32)
-    := b = !!!!StaticStringConcat(!!!!StaticStringConcat(a, " "), unicode.char_of 128512i32)
-    := c = !!!!StaticStringConcat(!!!!StaticStringConcat(b, " "), unicode.char_of 65533i32)
-    parse_string s 0i32 |> _assert_eq (!!!!StaticStringConcat(c, " x\n"))
+    := a = "caf" ++# unicode.char_of 233i32
+    := b = a ++# " " ++# unicode.char_of 128512i32
+    := c = b ++# " " ++# unicode.char_of 65533i32
+    parse_string s 0i32 |> _assert_eq (c ++# " x\n")
 
 ///> rust
 ///> gleam

@@ -68,12 +68,15 @@ fn spiralPrintAny(x: anytype) void {
 fn spiralMain() i32 {
     const v0: i32 = @as(i32, 41);
     const v1: []const u8 = (std.fmt.allocPrint(spiral_gpa, "{d}", .{ v0 }) catch @panic("out of memory"));
-    { spiralPrintAny(v1); spiralPrint(&[_]u8{10}); }
+    spiralPrintAny(v1);
+    spiralPrint(&[_]u8{10});
     const v2: []const u8 = "hi";
-    { spiralPrintAny(v2); spiralPrint(&[_]u8{10}); }
+    spiralPrintAny(v2);
+    spiralPrint(&[_]u8{10});
     const v3: bool = true;
     const v4: []const u8 = (if (v3) "true" else "false");
-    { spiralPrintAny(v4); spiralPrint(&[_]u8{10}); }
+    spiralPrintAny(v4);
+    spiralPrint(&[_]u8{10});
     const v5: i32 = v0 +% @as(i32, 1);
     const v6: bool = v5 == @as(i32, 42);
     if (v6) {

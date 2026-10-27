@@ -9,7 +9,7 @@ fn f_0(mut v0: Rc<str>, mut v1: i32) -> i32 {
 fn spiral_main() -> i32 {
     let v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("abc"); } LIT.with(|lit| lit.clone()) };
     let v1: i32 = 1i32;
-    f_0(v0, v1)
+    f_0(v0.clone(), v1)
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();

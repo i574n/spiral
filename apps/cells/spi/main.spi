@@ -22,6 +22,7 @@
             : string * string * string * string -> string
         )
     export "test_index" ((\ text => document.test_index text) : string -> string)
+    export "target_gaps" ((\ text => document.target_gaps text) : string -> string)
     export "target_backend" ((\ tool => targets.backend (targets.target_of tool)) : string -> string)
     export "target_extension" ((\ tool => targets.extension (targets.target_of tool)) : string -> string)
     export "plan" ((\ text => notebook.plan text) : string -> string)

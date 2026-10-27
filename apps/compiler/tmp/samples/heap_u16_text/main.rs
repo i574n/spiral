@@ -5,7 +5,7 @@ struct Heap0 { l0: u16, l1: Rc<str> }
 fn spiral_main() -> i32 {
     let v0: u16 = 40000u16;
     let v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
-    let v2: Rc<Heap0> = Rc::new(Heap0 { l0: v0, l1: v1 });
+    let v2: Rc<Heap0> = Rc::new(Heap0 { l0: v0, l1: v1.clone() });
     let (mut v3, mut v4): (u16, Rc<str>) = (v2.l0.clone(), v2.l1.clone());
     let v5: bool = v3 == 40000u16;
     let v7: bool = if v5 {

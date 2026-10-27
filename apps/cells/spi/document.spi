@@ -34,18 +34,15 @@
 := add_row (xs : rows) (item : string) : rows =
     ? has_row xs item ?> xs |: snoc xs item
 
-:~ ^ join_rows (xs : rows) : string =
-    ?= xs ?|
-    | NoRow => ""
-    | Row (s, NoRow) => s
-    | Row (s, rest) => s ++ "\n" ++ join_rows rest
-
-:~ ^ join_rev (xs : rows) (acc : string) (started : i32) : string =
+:~ ^ rows_joined_after (xs : rows) (acc : string) : string =
     ?= xs ?|
     | NoRow => acc
-    | Row (s, rest) =>
-        ? started = 0i32 ?> join_rev rest s 1i32
-        |: join_rev rest (s ++ "\n" ++ acc) 1i32
+    | Row (s, rest) => rows_joined_after rest (acc ++ "\n" ++ s)
+
+:~ join_rows (xs : rows) : string =
+    ?= xs ?|
+    | NoRow => ""
+    | Row (s, rest) => rows_joined_after rest s
 
 :~ ^ count_cells (xs : cells) : i32 =
     ?= xs ?|
@@ -192,7 +189,11 @@
         ?= rest ?|
         | NoCell => s ++ "\n"
         | Cell (next, _, _) =>
-            := lone_directive = kind <> "markdown" && text.starts_with s "///- " && text.contains s "--package" && text.contains s "\n" = !-
+            := lone_directive =
+                kind <> "markdown"
+                && text.starts_with s "///- "
+                && text.contains s "--package"
+                && text.contains s "\n" = !-
             := brk = ? (kind = "markdown" && next <> "markdown") || lone_directive ?> "" |: "\n"
             s ++ brk ++ "\n" ++ emit_spi rest
 
@@ -355,6 +356,21 @@
         := start = k + text.length marker
         text.slice_len s start (text.take_unicode_ident s start - start)
 
+:= head_and_tail (source : string) : string * string =
+    := k = text.find_char source 0i32 '\n'
+    ? k < 0i32 ?> source, "" |: text.take source k, text.drop source k
+
+:= explicit_name (source : string) (derived : string) : string =
+    := head, _ = head_and_tail source
+    := explicit = word_after (head ++ " ") " --name "
+    ? explicit = "" ?> derived |: explicit
+
+:= with_name (source : string) (name : string) : string =
+    := head, tail = head_and_tail source
+    := k = text.find_from head " --fails " 0i32
+    := named = ? k < 0i32 ?> head ++ " --name " ++ name |: text.take head k ++ " --name " ++ name ++ text.drop head k
+    named ++ tail
+
 := reference_mode (head : string) : string =
     := target = word_after (head ++ " ") " --reference "
     ? target = "" ?> "" |: " reference " ++ target
@@ -411,7 +427,8 @@
             := base = ? last = "" ?> "cell" |: last
             := n = count_row used base
             := name = ? n = 0i32 ?> base |: base ++ "_" ++ text.show_i32 (n + 1i32)
-            name_tests rest last (Row (base, used)) (Cell ("test", test_block (text.trim source) name, acc))
+            := named = explicit_name (text.trim source) name
+            name_tests rest last (Row (base, used)) (Cell ("test", test_block (text.trim source) named, acc))
         |: name_tests rest last used (Cell (kind, source, acc))
 
 := first_line (source : string) : string =
@@ -465,7 +482,7 @@
         ?>
             := base = ? last = "" ?> "cell" |: last
             := n = count_row used base
-            := name = ? n = 0i32 ?> base |: base ++ "_" ++ text.show_i32 (n + 1i32)
+            := name = explicit_name t (? n = 0i32 ?> base |: base ++ "_" ++ text.show_i32 (n + 1i32))
             := realm = ? real_wanted ?> "real" |: "spi"
             := shown = ? title = "" ?> name |: title
             := row =
@@ -769,6 +786,19 @@
             := mode2, targets2, acc2 = open_step line NoRow targets real_mode acc
             spi_walk src next (row + 1i32) bounds (bounded mode2 bounds row) targets2 real_mode acc2
 
+:~ ^ target_gaps_walk (src : string) (i : i32) (row : i32) (in_force : string) (after_doc : bool) (acc : rows) : rows =
+    ?= text.next_line src i ?|
+    | LineDone => acc
+    | LineGot (line, next) =>
+        ? text.starts_with line "/// #" ?> target_gaps_walk src next (row + 1i32) "" !- acc
+        |? text.starts_with line "///>" ?> target_gaps_walk src next (row + 1i32) line !- acc
+        |? doc_start line ?> target_gaps_walk src next (row + 1i32) in_force (after_doc || in_force <> "") acc
+        |? after_doc && indented line = !- && text.starts_with line "//" = !-
+        ?> target_gaps_walk src next (row + 1i32) in_force !- (Row (text.show_i32 row ++ "\t" ++ in_force, acc))
+        |: target_gaps_walk src next (row + 1i32) in_force after_doc acc
+
+:= target_gaps (src : string) : string = join_rows (rev_rows (target_gaps_walk src 0i32 1i32 "" !- NoRow) NoRow)
+
 :| test_realm =
     | SpiRealm
     | RealRealm
@@ -817,10 +847,11 @@
             |:
                 := heading_source = "#### " ++ name ++ " (test)"
                 := heading = heading_test_name heading_source
+                := shown = ? heading = name ?> source |: with_name source name
                 := spi_named = spi_row realm heading spi_used
                 := real_named = real_row realm heading real_used
                 name_tested rest heading spi_named real_named (
-                    Cell ("spiral", source, Cell ("markdown", heading_source, acc))
+                    Cell ("spiral", shown, Cell ("markdown", heading_source, acc))
                 )
         |: name_tested rest last spi_used real_used (Cell (kind, source, acc))
 

@@ -21,15 +21,15 @@ fn second_codepoint_1(mut v0: Rc<str>) -> Rc<str> {
 fn spiral_main() -> i32 {
     let v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("éλ"); } LIT.with(|lit| lit.clone()) };
     let v1: Rc<str> = first_codepoint_0(v0.clone());
-    let v2: Rc<str> = second_codepoint_1(v0);
+    let v2: Rc<str> = second_codepoint_1(v0.clone());
     let v3: Rc<str> = Rc::<str>::from(format!("{}{}", v1.clone(), v2.clone()));
-    let v4: i32 = (v1.len() as i32);
+    let v4: i32 = (v1.clone().len() as i32);
     let v5: bool = v4 == 2i32;
     if v5 {
-        let v6: i32 = (v2.len() as i32);
+        let v6: i32 = (v2.clone().len() as i32);
         let v7: bool = v6 == 2i32;
         if v7 {
-            let v8: i32 = (v3.len() as i32);
+            let v8: i32 = (v3.clone().len() as i32);
             let v9: bool = v8 == 4i32;
             if v9 {
                 0i32

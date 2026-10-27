@@ -103,6 +103,10 @@ function Get-ExampleBackends([string]$dir) {
     Add-ListedBackends $relative $backends
 }
 
+function Get-ContractBackends([string]$relative) {
+    if ($matrix.FsharpContracts -contains $relative) { @('Fsharp') } else { @('Zig') }
+}
+
 function Get-Samples([string]$suite) {
     switch ($suite) {
         'frontier' {
@@ -112,7 +116,7 @@ function Get-Samples([string]$suite) {
         'smoke' {
             $matrix.Smoke | ForEach-Object {
                 $dir = Join-Path $BundleRoot $_.Trim()
-                $backends = if (Test-ContractSample $_.Trim()) { @('Fsharp') } else { Get-ExampleBackends $dir }
+                $backends = if (Test-ContractSample $_.Trim()) { Get-ContractBackends $_.Trim() } else { Get-ExampleBackends $dir }
                 New-Sample 'smoke' (Get-Entry $dir) $backends }
         }
         'examples' {
@@ -122,11 +126,11 @@ function Get-Samples([string]$suite) {
         }
         'contracts' {
             Get-ChildItem (Join-Path $BundleRoot 'samples') -Directory -Filter 'contract_*' | Where-Object { Get-Entry $_.FullName } | ForEach-Object {
-                New-Sample 'contracts' (Get-Entry $_.FullName) @('Fsharp') }
+                New-Sample 'contracts' (Get-Entry $_.FullName) (Get-ContractBackends "samples/$($_.Name)") }
             Get-ChildItem (Join-Path $BundleRoot 'samples') -Directory -Filter 'mega_*' | ForEach-Object {
                 Get-ChildItem $_.FullName -Directory | Where-Object { (Test-Path (Join-Path $_.FullName 'package.spiproj')) -and (Get-Entry $_.FullName) } | ForEach-Object {
                     $relative = Get-Rel $_.FullName
-                    $backends = if ($sampleBackends.ContainsKey($relative)) { $sampleBackends[$relative] } else { @('Fsharp') }
+                    $backends = if ($sampleBackends.ContainsKey($relative)) { $sampleBackends[$relative] } else { Get-ContractBackends $relative }
                     New-Sample 'contracts' (Get-Entry $_.FullName) (Add-ListedBackends $relative $backends) } }
         }
         'mega' {
@@ -350,6 +354,7 @@ $zigCacheGen = 0
 $zigCache = Join-Path $scratch 'zig-cache-shared'
 $shimDir = Join-Path $BundleRoot 'tests/native-shims'
 $cFlagRules = @($matrix.CFlags | ForEach-Object { [pscustomobject]$_ })
+$zigShimRules = @($matrix.ZigShims | ForEach-Object { [pscustomobject]$_ })
 function Get-CFlags($job) {
     $name = Split-Path (Split-Path $job.Input) -Leaf
     $flags = @()
@@ -668,7 +673,7 @@ function Build-And-Run($job) {
         if (-not $tools.Lean) { return 'no-toolchain' }
         $elanBin = Split-Path $tools.Lean
         if (-not $env:ELAN_HOME -and (Split-Path $elanBin -Leaf) -eq 'bin' -and (Test-Path (Join-Path $elanBin 'elan*'))) { $env:ELAN_HOME = Split-Path $elanBin }
-        $run = Invoke-Native $tools.Lean @('+leanprover/lean4:v4.35.0-rc4', '--run', $job.Output) $binDir 180
+        $run = Invoke-Native $tools.Lean @('+leanprover/lean4:v4.35.0', '--run', $job.Output) $binDir 180
         if ("$($run.Exit)" -ne '0' -and ($run.Out + $run.Err) -match '\.lean:\d+:\d+: error') {
             $msg = ((($run.Out + "`n" + $run.Err) -split "`n" | Where-Object { $_ -match 'error' } | Select-Object -First 1) -replace '\s+', ' ').Trim()
             return [pscustomobject]@{ Status = 'build-fail'; Exit = ''; Stdout = ''; Detail = $msg.Substring(0, [Math]::Min(300, $msg.Length)) }
@@ -749,7 +754,10 @@ function Build-And-Run($job) {
         'Delphi' { if (-not $tools.Fpc) { return 'no-toolchain' }; Invoke-Native $tools.Fpc @('-O2', '-Mdelphi', "-FE$binDir", "-FU$binDir", "-o$exe", $job.Output) $dir 180 }
         'Zig' {
             if (-not $zigExe) { return 'no-toolchain' }
-            $b = Invoke-Native $zigExe @('build-exe', $job.Output, '-O', 'ReleaseFast', '--stack', '1073741824', '-fno-emit-implib', "-femit-bin=$exe", '--cache-dir', "$zigCache-local", '--global-cache-dir', $zigCache) $dir 120
+            $zigSource = $job.Output
+            $zigShim = $zigShimRules | Where-Object { (Split-Path (Split-Path $job.Input) -Leaf) -like $_.Pattern } | Select-Object -First 1
+            if ($zigShim) { $zigSource = Join-Path $dir 'main_shimmed.zig'; [IO.File]::WriteAllText($zigSource, [IO.File]::ReadAllText($job.Output) + "`n" + [IO.File]::ReadAllText((Join-Path $shimDir $zigShim.Shim))) }
+            $b = Invoke-Native $zigExe @('build-exe', $zigSource, '-O', 'ReleaseFast', '--stack', '1073741824', '-fno-emit-implib', "-femit-bin=$exe", '--cache-dir', "$zigCache-local", '--global-cache-dir', $zigCache) $dir 120
             if ($b.Exit -eq 'timeout') { $script:zigCacheGen++; $script:zigCache = Join-Path $scratch "zig-cache-$stamp-$($script:zigCacheGen)" }
             $b
         }
@@ -966,7 +974,7 @@ public static extern uint SetErrorMode(uint mode);
         $kotlinBuilds = $using:kotlinBuilds; $kotlinStdlib = $using:kotlinStdlib; $gleamBuilds = $using:gleamBuilds
         $swiftBatch = $using:swiftBatch; $swiftBatchExe = $using:swiftBatchExe
         $tools = $using:tools; $zigExe = $using:zigExe; $zigCacheGen = 0; $zigCache = "$($using:zigCache)-lane$nativeLane"
-        $scratch = $using:scratch; $shimDir = $using:shimDir; $cFlagRules = $using:cFlagRules; $stamp = $using:stamp
+        $scratch = $using:scratch; $shimDir = $using:shimDir; $cFlagRules = $using:cFlagRules; $zigShimRules = $using:zigShimRules; $stamp = $using:stamp
         $laneResult = @{}
         foreach ($job in $_.Jobs) {
             $jobWatch = [Diagnostics.Stopwatch]::StartNew()

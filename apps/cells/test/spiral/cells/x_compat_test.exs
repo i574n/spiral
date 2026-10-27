@@ -49,4 +49,29 @@ defmodule Spiral.Cells.XCompatTest do
       Mix.shell(Mix.Shell.IO)
     end
   end
+
+  test "a profile whose poster defuses link dots reports no autolink there, the default profile still does" do
+    dir = Spiral.Cells.TestHelpers.tmp_dir!("x_compat_defused")
+    File.write!(Path.join(dir, "tlds.txt"), "ai\n")
+
+    profile = %{
+      "profile" => "defusing",
+      "post" => %{"weight_limit" => 280, "link_weight" => 23},
+      "code_point_weight" => %{"default" => 2, "ranges" => [[0, 4351, 1]]},
+      "links" => %{
+        "domain_pattern" => "(?<![\\p{L}\\p{N}@\\-_./])(?:[A-Za-z0-9](?:[A-Za-z0-9\\-_]*[A-Za-z0-9])?\\.)+([A-Za-z]{2,63})(?![\\p{L}\\p{N}_\\-])",
+        "top_level_domains_file" => "tlds.txt",
+        "short_domains_always_linked" => [],
+        "two_letter_tld_needs_second_label_longer_than" => 2
+      },
+      "entities" => %{"hashtag" => "#\\w+", "mention" => "@\\w+", "cashtag" => "\\$[A-Za-z]+"},
+      "posting" => %{"defused_dot" => %{"before" => "[A-Za-z0-9_-]", "after" => "[A-Za-z]", "extra_weight" => 1}}
+    }
+
+    path = Path.join(dir, "defusing.json")
+    File.write!(path, JSON.encode!(profile))
+
+    assert XCompat.rewrites("inl c = cell.ai", XCompat.load_profile(path)) == []
+    assert [%{kind: :autolink}] = XCompat.rewrites("inl c = cell.ai")
+  end
 end

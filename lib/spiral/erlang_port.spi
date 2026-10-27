@@ -1,0 +1,88 @@
+/// # erlang_port
+:< sm'_operators
+
+test erlang_port static =
+    :< testing
+
+:= erlang_port_imports () =
+    global "import gleam/erlang/process"
+    global "import gleam/result"
+
+:! port = $'Dynamic'
+
+:! selector = $'process.Selector(Dynamic)'
+
+:! received = $'Result(Dynamic, Nil)'
+
+/// ## ports
+
+/// ### open_executable
+:= open_executable (executable : erlang_term.term) (options : list erlang_term.term) : port =
+    := name = erlang_term.tuple [ erlang_term.atom "spawn_executable"; executable ]
+    erlang_term.apply "erlang" "open_port" [ name; erlang_term.list_term options ] |> erlang_term.cast
+
+/// ### term_of
+:= term_of (p : port) : erlang_term.term = erlang_term.of p
+
+/// ### os_pid
+:= os_pid (p : port) : i32 =
+    := info = erlang_term.apply "erlang" "port_info" [ term_of p; erlang_term.atom "os_pid" ]
+    erlang_term.apply "erlang" "element" [ erlang_term.of 2i32; info ] |> erlang_term.cast
+
+/// ### close
+:= close (p : port) : bool = erlang_term.apply "erlang" "port_close" [ term_of p ] |> erlang_term.cast
+
+/// ### unlink
+:= unlink (p : port) : bool = erlang_term.apply "erlang" "unlink" [ term_of p ] |> erlang_term.cast
+
+/// ## messages
+
+/// ### selector_of
+:= selector_of (p : port) : selector =
+    erlang_port_imports ()
+    := keep = \ (message : erlang_term.term) => message
+    $'process.select_record(process.new_selector(), !p, 1, !keep)' : selector
+
+/// ### receive_within
+:= receive_within (choices : selector) (timeout_ms : i32) : received =
+    erlang_port_imports ()
+    $'process.selector_receive(!choices, !timeout_ms)' : received
+
+/// ### received_some
+:= received_some (outcome : received) : bool =
+    erlang_port_imports ()
+    $'result.is_ok(!outcome)' : bool
+
+/// ### received_message
+:= received_message (outcome : received) (otherwise : erlang_term.term) : erlang_term.term =
+    erlang_port_imports ()
+    $'result.unwrap(!outcome, !otherwise)' : erlang_term.term
+
+/// ### element
+:= element (index : i32) (tuple : erlang_term.term) : erlang_term.term =
+    erlang_term.apply "erlang" "element" [ erlang_term.of index; tuple ]
+
+/// ### message_event
+:= message_event (message : erlang_term.term) : erlang_term.term = element 2i32 message
+
+/// ### event_kind
+:= event_kind (event : erlang_term.term) : string =
+    erlang_term.apply "erlang" "atom_to_binary" [ element 1i32 event ] |> erlang_term.cast
+
+/// ### event_value
+:= event_value (event : erlang_term.term) : erlang_term.term = element 2i32 event
+
+///> gleam
+test an_executable_port_reports_its_os_pid_and_exit =
+    := found = erlang_term.apply "os" "find_executable" [ erlang_term.charlist "erl" ]
+    := args = [ "-noshell"; "-eval"; "halt(3)." ] |> listm.map erlang_term.charlist |> erlang_term.list_term
+    := p = open_executable found [ erlang_term.atom "exit_status"; erlang_term.tuple [ erlang_term.atom "args"; args ] ]
+    := pid = os_pid p
+    :~ ^ until_exit (left : i32) : string =
+        := outcome = receive_within (selector_of p) 30000i32
+        ? received_some outcome = !- || left <= 0i32 ?> "timeout"
+        |:
+            := event = message_event (received_message outcome (erlang_term.atom "none"))
+            ? event_kind event = "exit_status" ?> "exit " ++#? (event_value event |> erlang_term.cast : i32)
+            |: until_exit (left - 1i32)
+    (pid > 0i32, until_exit 50i32) |> _assert_eq (!+, "exit 3")

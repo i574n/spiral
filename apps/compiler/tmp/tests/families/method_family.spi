@@ -1,0 +1,174 @@
+///- --package .
+:! method_array_i32_array = array_base i32
+
+:= method_array_create (n : i32) : method_array_i32_array = method_array_i32_array !!!!ArrayCreate(`i32, n)
+:= method_array_get (array : method_array_i32_array) (i : i32) : i32 =
+    ?= array ?|
+    | method_array_i32_array values => !!!!ArrayIndex(values, i)
+:= method_array_set (array : method_array_i32_array) (i : i32) (value : i32) : () =
+    ?= array ?|
+    | method_array_i32_array values => !!!!ArrayIndexSet(values, i, value)
+
+:= method_array_pick (n : i32) : method_array_i32_array =
+    := a = method_array_create 1i32
+    method_array_set a 0i32 n
+    a
+
+///> c
+///> zig
+test method_array_returns_zero =
+    := program () : i32 =
+        := ~n = 7i32
+        := held = ~~ method_array_pick n
+        ? method_array_get held 0i32 =. 7i32 ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "method_array"
+
+:= method_depth_make (n : i32) : i32 -> i32 -> i32 =
+    := g (y : i32) : i32 -> i32 =
+        := h (x : i32) : i32 =
+            ? n =. 0i32 ?> 0i32 |: x +. n
+        h
+    g
+
+///> c
+///> zig
+test method_depth_returns_zero =
+    := program () : i32 =
+        := ~n = 7i32
+        := mid = ~~ method_depth_make n
+        := ~c = mid
+        := inner = c 0i32
+        := ~e = inner
+        ? e 0i32 =. 7i32 ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "method_depth"
+
+:= method_heap_pick (cell : heap { value : i32 }) : heap { value : i32 } = cell
+
+///> c
+///> zig
+test method_heap_returns_zero =
+    := program () : i32 =
+        := ~n = 7i32
+        := box = !!!!LayoutToHeap({ value = n })
+        := held = ~~ method_heap_pick box
+        := opened = !!!!LayoutIndex(held)
+        ? opened.value =. 7i32 ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "method_heap"
+
+:= method_i8_pick (n : i8) : i8 =
+    ? n =. 0i8 ?> 1i8 |: n
+
+///> c
+///> zig
+test method_i8_returns_zero =
+    := program () : i32 =
+        := ~n = 100i8
+        := got = ~~ method_i8_pick n
+        ? got =. 100i8 ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "method_i8"
+
+:= method_mut_pick (cell : mut { q : i32 }) : mut { q : i32 } = cell
+
+///> c
+///> zig
+test method_mut_returns_zero =
+    := program () : i32 =
+        := box = !!!!LayoutToHeapMutable({ q = 1i32 })
+        := held = ~~ method_mut_pick box
+        held <- { q = 7i32 }
+        := opened = !!!!LayoutIndex(held)
+        ? opened.q =. 7i32 ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "method_mut"
+
+:= method_mut_pair_pick (n : i32) (word : string) : mut { value : i32 * string } =
+    := pair = n, word
+    !!!!LayoutToHeapMutable({ value = pair })
+
+///> c
+///> zig
+test method_mut_pair_returns_zero =
+    := program () : i32 =
+        := ~n = 3i32
+        := ~word = "no"
+        := box : mut { value : i32 * string } = ~~ method_mut_pair_pick n word
+        := ~m = 7i32
+        := ~next = "hi"
+        := replaced = m, next
+        box <- { value = replaced }
+        := opened = !!!!LayoutIndex(box)
+        := ~(left, right) = opened.value
+        ? left =. 7i32 && !!!!EQ(right, "hi") ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "method_mut_pair"
+
+:= method_pair_cell_pick (cell : heap { value : i32 }) (extra : i32) : heap { value : i32 } * i32 =
+    cell, extra
+
+///> c
+///> zig
+test method_pair_cell_returns_zero =
+    := program () : i32 =
+        := ~a = 3i32
+        := ~b = 4i32
+        := cell = !!!!LayoutToHeap({ value = a })
+        := pair = ~~ method_pair_cell_pick cell b
+        := ~(left, right) = pair
+        := obj = !!!!LayoutIndex(left)
+        ? obj.value +. right =. 7i32 ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "method_pair_cell"
+
+:= method_pair_f64_pick (n : i32) : f64 * f64 =
+    ? n =. 0i32 ?>
+        0.0f64, 0.0f64
+    |:
+        1.5f64, 2.5f64
+
+///> c
+///> zig
+test method_pair_f64_returns_zero =
+    := program () : i32 =
+        := ~n = 7i32
+        := pair = ~~ method_pair_f64_pick n
+        := ~(left, right) = pair
+        ? !!!!EQ(left, 1.5f64) && !!!!EQ(right, 2.5f64) ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "method_pair_f64"
+
+:= method_pair_fun_make (n : i32) (m : i32) : (i32 -> i32) * (i32 -> i32) =
+    := left (x : i32) : i32 =
+        ? n =. 0i32 ?> 0i32 |: x +. n
+    := right (x : i32) : i32 =
+        ? m =. 0i32 ?> 0i32 |: x +. m
+    left, right
+
+///> c
+///> zig
+test method_pair_fun_returns_zero =
+    := program () : i32 =
+        := ~n = 3i32
+        := ~m = 4i32
+        := pair = ~~ method_pair_fun_make n m
+        := ~(a, b) = pair
+        := ~p = a
+        := ~q = b
+        ? p 0i32 +. q 0i32 =. 7i32 ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "method_pair_fun"
+
+:= method_pair_heap_pick
+    (left : heap { value : i32 }) (right : heap { value : i32 })
+    : heap { value : i32 } * heap { value : i32 }
+    =
+    left, right
+
+///> c
+///> zig
+test method_pair_heap_returns_zero =
+    := program () : i32 =
+        := ~a = 3i32
+        := ~b = 4i32
+        := left = !!!!LayoutToHeap({ value = a })
+        := right = !!!!LayoutToHeap({ value = b })
+        := pair = ~~ method_pair_heap_pick left right
+        := ~(x, y) = pair
+        := ox = !!!!LayoutIndex(x)
+        := oy = !!!!LayoutIndex(y)
+        ? ox.value +. oy.value =. 7i32 ?> 0i32 |: 1i32
+    ? program () <> 0i32 ?> failwith "method_pair_heap"

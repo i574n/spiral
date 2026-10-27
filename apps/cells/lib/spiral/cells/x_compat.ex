@@ -14,7 +14,9 @@ defmodule Spiral.Cells.XCompat do
               hashtag: nil,
               mention: nil,
               cashtag: nil,
-              domain: nil
+              domain: nil,
+              defused_before: nil,
+              defused_after: nil
   end
 
   @hashtag_source "(?<![\\p{L}\\p{N}_&#＃])[#＃](?=[\\p{L}\\p{N}_]*\\p{L})[\\p{L}\\p{N}_]+"
@@ -96,8 +98,17 @@ defmodule Spiral.Cells.XCompat do
       hashtag: Regex.compile!(entities["hashtag"], "u"),
       mention: Regex.compile!(entities["mention"], "u"),
       cashtag: Regex.compile!(entities["cashtag"], "u"),
-      domain: Regex.compile!(links["domain_pattern"], "u")
+      domain: Regex.compile!(links["domain_pattern"], "u"),
+      defused_before: defused_regex(json, "before"),
+      defused_after: defused_regex(json, "after")
     }
+  end
+
+  defp defused_regex(json, side) do
+    case get_in(json, ["posting", "defused_dot", side]) do
+      nil -> nil
+      source -> Regex.compile!("^" <> source <> "$", "u")
+    end
   end
 
   @spec rewrites(String.t(), %Profile{}) :: [finding()]
@@ -147,8 +158,22 @@ defmodule Spiral.Cells.XCompat do
     |> Enum.flat_map(fn [{start, length}, {tld_start, tld_length}] ->
       link = binary_part(text, start, length)
       tld = text |> binary_part(tld_start, tld_length) |> String.downcase()
-      if x_links?(link, tld, profile), do: [{start, link}], else: []
+      if x_links?(link, tld, profile) and not defused_link?(text, start, length, profile), do: [{start, link}], else: []
     end)
+  end
+
+  defp defused_link?(_text, _start, _length, %Profile{defused_before: nil}), do: false
+
+  defp defused_link?(text, start, length, profile) do
+    text
+    |> binary_part(start, length)
+    |> :binary.matches(".")
+    |> Enum.all?(fn {dot, 1} -> defused_dot?(text, start + dot, profile) end)
+  end
+
+  defp defused_dot?(text, at, profile) do
+    at > 0 and at + 1 < byte_size(text) and Regex.match?(profile.defused_before, binary_part(text, at - 1, 1)) and
+      Regex.match?(profile.defused_after, binary_part(text, at + 1, 1))
   end
 
   defp x_links?(link, tld, profile) do

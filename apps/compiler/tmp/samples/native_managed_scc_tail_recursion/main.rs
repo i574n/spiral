@@ -37,12 +37,12 @@ fn spiral_main() -> i32 {
     let v2: bool = v1 == 0i32;
     let v5: Rc<str> = if v2 {
         let v3: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("ok"); } LIT.with(|lit| lit.clone()) };
-        v3
+        v3.clone()
     } else {
         let v4: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("go"); } LIT.with(|lit| lit.clone()) };
-        v4
+        v4.clone()
     };
-    method0(v0, v5)
+    method0(v0, v5.clone())
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();

@@ -25,6 +25,10 @@ modules:
     sm'_real*
     sm'
     sm'_operators
+    erlang_term
+    erlang_process
+    par'
+    erlang_port
     console
     reflection
     guid
@@ -52,9 +56,9 @@ modules:
         near_workspaces
     stream
     runtime
-    process
     file_system
     file_system_operators
+    process
     crypto
     wasm
     networking
@@ -100,6 +104,7 @@ modules:
     xsd
     xsd_resolve
     xsd_regex
+    xsd_certificate
     xpath
     schematron
     xsd_emit
@@ -108,8 +113,6 @@ modules:
     xpath_eval
     schematron_run
     xsd_constraints
-    erlang_process
-    erlang_term
     otp_actor
     channel
     otp_supervisor
@@ -117,3 +120,5 @@ modules:
     cursor_walk
     oauth
     dictm
+    cli_args
+    iggy
