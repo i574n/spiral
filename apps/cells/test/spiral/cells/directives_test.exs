@@ -52,6 +52,10 @@ defmodule Spiral.Cells.DirectivesTest do
              Directives.prepare("///- --print-code --timeout 5000\n1i32")
   end
 
+  test "--import-types belongs to the compiler, so Cells reads past it and its value" do
+    assert %{timeout: 5_000, code: "inl main () : i32 =\n    1i32\n"} =
+             Directives.prepare("///- --import-types producer:list_event,event --timeout 5000\n1i32")
+  end
   test "a later ///- line is dropped" do
     assert %{timeout: 5, code: code} =
              Directives.prepare("///- --timeout 5\n1i32\n///- --timeout 9\n")

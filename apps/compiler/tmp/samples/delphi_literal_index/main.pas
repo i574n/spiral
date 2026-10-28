@@ -9,7 +9,7 @@ var
   v2: Boolean;
 begin
   v0 := 0;
-  v1 := 'z'[v0 + 1];
+  v1 := AnsiString('z')[v0 + 1];
   v2 := v1 = 'z';
   if v2 then begin
       Result := 42;

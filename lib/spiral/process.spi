@@ -8,7 +8,7 @@ test process static =
 
 /// ### present_arguments
 := present_arguments (args : list string) : list string =
-    listm.fold (\ (kept : list string) (a : string) => ? a = "" ?> kept |: a :: kept) Nil args |> listm.rev
+    listm.fold (\ (kept : list string) (a : string) => ? a = "" ?> kept |: a :: kept) [] args |> listm.rev
 
 /// ### gleam_argv
 := gleam_argv (args : list string) : erlang_term.term =
@@ -271,7 +271,7 @@ test combined_capture_includes_stderr =
 ///> rust
 ///> gleam
 test a_missing_or_failing_program_captures_nothing =
-    try_capture_combined_list "spiral-no-such-program" Nil |> _assert_eq None
+    try_capture_combined_list "spiral-no-such-program" [] |> _assert_eq None
     try_capture_combined_list "python" [ "-c"; "import sys; sys.exit(4)" ] |> _assert_eq None
     := args = [ "-c"; "import sys; sys.stderr.write('warned')" ]
     try_capture_combined_list "python" args |> optionm.map sm'.trim |> _assert_eq (Some "warned")
@@ -279,7 +279,7 @@ test a_missing_or_failing_program_captures_nothing =
 ///> rust
 ///> gleam
 test a_quick_program_reports_its_exit_code =
-    capture_status_within "hostname" Nil 10000i32 |> _assert_eq 0i32
+    capture_status_within "hostname" [] 10000i32 |> _assert_eq 0i32
 
 ///> rust
 ///> gleam

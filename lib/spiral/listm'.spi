@@ -60,7 +60,7 @@ test init_series =
 := ^ try_item i = \|
     | x :: _ ?& i = 0 => Some x
     | _ :: xs => try_item (i - 1) xs
-    | Nil => None
+    | [] => None
 
 test try_item =
     listm.init 10i32 id
@@ -95,7 +95,7 @@ test item_2 =
 :~ ^ try_item_ i = \|
     | x :: _ ?& i = 0 => Some x
     | _ :: xs => try_item_ (i - 1) xs
-    | Nil => None
+    | [] => None
 
 /// ### item_
 := item_ i =
@@ -262,7 +262,7 @@ test choose =
 
 /// ### filter
 := filter \* t. (fn : t -> bool) (list : list t) : list t =
-    (list, Nil)
+    (list, [])
     ||> listm.foldBack \ x acc =>
         ? fn x ?> x :: acc |: acc
 
@@ -508,7 +508,7 @@ test exists print_code =
             루프 (len - 1i32)
         Fsharp = \ () => items |> $'List.rev' : list' t
         Python = \ () => $'list(reversed(!items))' : list' t
-        Rust = \ () => $'Rc::new({ let mut v = (!items).as_ref().clone(); v.reverse(); v })' : list' t
+        Rust = \ () => $'Rc::new((!items).as_ref().iter().rev().cloned().collect::<Vec<_>>())' : list' t
         TypeScript = \ () => $'[...!items].reverse()' : list' t
         Zig = fun () => $'blk: { const r = spiral_gpa.dupe(`t, !items) catch \@panic("out of memory"); \
             std.mem.reverse(`t, r); break :blk r; }' : list' t
@@ -542,7 +542,7 @@ test exists print_code =
             $'r = !init '
             := list = list |> rev'
             $'for x in !list: r = [!fn(x)] + r'
-            := init : list u = Nil
+            := init : list u = []
             := cons (a : u) b = (a :: b)
             $'r_ = !init '
             $'for x in r: r_ = !cons (x)(r_)'
@@ -646,7 +646,7 @@ test exists print_code =
                 |:
                     := item : t = rust_list_item i list
                     루프 (i - 1i32) (? fn item ?> (item :: acc) |: acc)
-            루프 (len - 1i32) Nil |> box
+            루프 (len - 1i32) [] |> box
         TypeScript = \ () =>
             := len : i32 = $'!list.length'
             :~ ^ 루프 (i : i32) (acc : list t) : list t =
@@ -654,7 +654,7 @@ test exists print_code =
                 |:
                     := item : t = $'!list[!i]'
                     루프 (i - 1i32) (? fn item ?> (item :: acc) |: acc)
-            루프 (len - 1i32) Nil |> box
+            루프 (len - 1i32) [] |> box
         Zig = \ () =>
             := len : i32 = $'\@as(i32, \@intCast(!list.len))'
             :~ ^ 루프 (i : i32) (acc : list t) : list t =
@@ -662,7 +662,7 @@ test exists print_code =
                 |:
                     := item : t = $'!list[\@intCast(!i)]'
                     루프 (i - 1i32) (? fn item ?> (item :: acc) |: acc)
-            루프 (len - 1i32) Nil |> box
+            루프 (len - 1i32) [] |> box
     }
 
 /// ### map
@@ -682,14 +682,14 @@ test exists print_code =
             루프 0i32
         Fsharp = \ () => list |> $'List.map' fn : list' u
         Python = \ () => $'list(map(!fn, !list))' : list' u
-        Rust = \ () => fold_back' fn list Nil |> box
-        TypeScript = \ () => fold_back' fn list Nil |> box
-        Zig = \ () => fold_back' fn list Nil |> box
+        Rust = \ () => fold_back' fn list [] |> box
+        TypeScript = \ () => fold_back' fn list [] |> box
+        Zig = \ () => fold_back' fn list [] |> box
     }
 
 /// ### unbox
 := unbox \* t. (list : list' t) : list t =
-    (list, Nil)
+    (list, [])
     ||> fold_back' id
 
 /// ### distinct'
@@ -725,7 +725,7 @@ test exists print_code =
                 |:
                     := item : t = rust_list_item i list
                     루프 (i + 1i32) (? exists' (\ x => x = item) seen ?> seen |: (item :: seen))
-            루프 0i32 Nil |> box |> rev'
+            루프 0i32 [] |> box |> rev'
         TypeScript = \ () =>
             := len : i32 = $'!list.length'
             :~ ^ 루프 (i : i32) (seen : list t) : list t =
@@ -733,7 +733,7 @@ test exists print_code =
                 |:
                     := item : t = $'!list[!i]'
                     루프 (i + 1i32) (? exists' (\ x => x = item) seen ?> seen |: (item :: seen))
-            루프 0i32 Nil |> box |> rev'
+            루프 0i32 [] |> box |> rev'
         Zig = \ () =>
             := len : i32 = $'\@as(i32, \@intCast(!list.len))'
             :~ ^ 루프 (i : i32) (seen : list t) : list t =
@@ -741,7 +741,7 @@ test exists print_code =
                 |:
                     := item : t = $'!list[\@intCast(!i)]'
                     루프 (i + 1i32) (? exists' (\ x => x = item) seen ?> seen |: (item :: seen))
-            루프 0i32 Nil |> box |> rev'
+            루프 0i32 [] |> box |> rev'
     }
 
 ///> gleam
@@ -808,7 +808,7 @@ test distinct =
     :~ ^ taken (n : i32) (l : list t) : list t =
         ?= l ?|
         | x :: xs ?& n > 0i32 => x :: taken (n - 1i32) xs
-        | _ => Nil
+        | _ => []
     taken n l
 
 /// ### skip_
@@ -820,7 +820,7 @@ test distinct =
 /// ### chunks_
 :~ ^ chunks_ \* t. (n : i32) (items : list t) : list (list t) =
     ?= items ?|
-    | Nil => Nil
+    | [] => []
     | _ ?& n <= 0i32 => [ items ]
     | _ => take_ n items :: chunks_ n (skip_ n items)
 
@@ -830,7 +830,7 @@ test chunks_split_into_runs_of_at_most_n =
     := ~items = [ 1i32; 2; 3; 4; 5 ]
     := sizes (l : list (list i32)) : list i32 = l |> listm.map (\ (c : list i32) => listm.length c)
     (sizes (chunks_ 2i32 items), skip_ 3i32 items, skip_ 9i32 items, sizes (chunks_ 0i32 items))
-    |> _assert_eq ([ 2i32; 2; 1 ], [ 4i32; 5 ], Nil, [ 5i32 ])
+    |> _assert_eq ([ 2i32; 2; 1 ], [ 4i32; 5 ], [], [ 5i32 ])
 
 ///> rust
 ///> gleam

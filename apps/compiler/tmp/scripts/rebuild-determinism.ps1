@@ -7,7 +7,7 @@ if (-not (Test-Path $dir)) { throw "no build at $dir" }
 function Get-Prints { Get-ChildItem $dir -Filter 'SpiralCompiler*.dll' | Sort-Object Name | ForEach-Object { [pscustomobject]@{ name = $_.Name; sha = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.Substring(0, 16); bytes = $_.Length } } }
 $before = @(Get-Prints)
 $now = Get-Date
-foreach ($staged in Get-ChildItem (Join-Path (Get-SpiralCacheDir) "core-src/$mode") -Recurse -Filter spiral_compiler.fs -ErrorAction Ignore) { $staged.LastWriteTime = $now }
+foreach ($staged in Get-ChildItem (Join-Path (Get-SpiralDetRoot) "core-src/$mode") -Recurse -Filter spiral_compiler.fs -ErrorAction Ignore) { $staged.LastWriteTime = $now }
 $log = Join-Path (Get-SpiralCacheDir) "runs/rebuild-determinism-$mode-$Label.log"
 New-Item -ItemType Directory -Force (Split-Path $log) | Out-Null
 $watch = [Diagnostics.Stopwatch]::StartNew()

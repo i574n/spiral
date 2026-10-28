@@ -30,6 +30,7 @@ test ski =
     |> eval
     |> _assert_eq I
 
+test ski_identity_nested =
     App (App (I, I), I)
     |> eval
     |> _assert_eq I
@@ -38,6 +39,7 @@ test ski =
     |> eval
     |> _assert_eq I
 
+test ski_constant =
     eval K
     |> _assert_eq K
 
@@ -49,6 +51,7 @@ test ski =
     |> eval
     |> _assert_eq (App (K, K))
 
+test ski_constant_applied =
     App (App (K, I), K)
     |> eval
     |> _assert_eq I
@@ -61,6 +64,7 @@ test ski =
     |> eval
     |> _assert_eq S
 
+test ski_substitution =
     eval S
     |> _assert_eq S
 
@@ -72,6 +76,7 @@ test ski =
     |> eval
     |> _assert_eq I
 
+test ski_substitution_nested =
     App (App (App (S, K), I), (App (App (K, I), S)))
     |> eval
     |> _assert_eq I
@@ -80,6 +85,8 @@ test ski =
     |> eval
     |> _assert_eq S
 
+test ski_substitution_deep =
     App (App (App (S, K), I), K)
     |> eval
     |> _assert_eq K
+

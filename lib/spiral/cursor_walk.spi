@@ -58,18 +58,24 @@ test cursor_walk static =
 ///> gleam
 test pages_follow_next_tokens_and_failures_stop =
     := ~budget = 500i32
-    (
-        cursor_walk_with budget cursor_walk_two_pages,
-        cursor_walk_with budget (\ token => ? token = "" ?> Ok { next_token = "bad"; body = "a" } |: Error token)
-    )
-    |> _assert_eq ("a,b", "stopped at bad")
+    cursor_walk_with budget cursor_walk_two_pages |> _assert_eq "a,b"
+
+///> rust
+///> gleam
+test a_failed_fetch_stops_the_walk =
+    := ~budget = 500i32
+    cursor_walk_with budget (\ token => ? token = "" ?> Ok { next_token = "bad"; body = "a" } |: Error token)
+    |> _assert_eq "stopped at bad"
 
 ///> rust
 ///> gleam
 test repeated_cursors_and_the_budget_stop_the_walk =
+    cursor_walk_with 500i32 (\ token => Ok { next_token = "t1"; body = token })
+    |> _assert_eq "stopped at repeated t1 after 2"
+
+///> rust
+///> gleam
+test the_budget_stops_the_walk =
     := ~budget = 3i32
-    (
-        cursor_walk_with 500i32 (\ token => Ok { next_token = "t1"; body = token }),
-        cursor_walk_with budget (\ token => Ok { next_token = token ++# "x"; body = "b" })
-    )
-    |> _assert_eq ("stopped at repeated t1 after 2", "stopped at budget at 3")
+    cursor_walk_with budget (\ token => Ok { next_token = token ++# "x"; body = "b" })
+    |> _assert_eq "stopped at budget at 3"

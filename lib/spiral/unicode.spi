@@ -87,7 +87,7 @@ test unicode static =
 
 /// ### graphemes
 := graphemes (s : string) : list string =
-    s |> grapheme_list |> listm'.rev' |> listm'.fold' id Nil
+    s |> grapheme_list |> listm'.rev' |> listm'.fold' id []
 
 /// ### first_scalar
 := first_scalar (s : string) : optionm'.option' u32 =
@@ -134,8 +134,8 @@ test unicode static =
 /// ### code_points
 := code_points (s : string) : list i32 =
     backend_switch {
-        Gleam = \ () => s |> gleam_codepoints |> listm'.rev' |> listm'.fold' gleam_codepoint_code Nil
-        Rust = \ () => s |> rust_scalars |> listm'.rev' |> listm'.fold' (\ c => (conv (rust_char_code c) : i32)) Nil
+        Gleam = \ () => s |> gleam_codepoints |> listm'.rev' |> listm'.fold' gleam_codepoint_code []
+        Rust = \ () => s |> rust_scalars |> listm'.rev' |> listm'.fold' (\ c => (conv (rust_char_code c) : i32)) []
     }
 
 /// ### is_white_space
@@ -196,7 +196,7 @@ test is_alphanumeric_reads_every_scalar_of_a_text =
 := unicode_first (l : list string) : string =
     ?= l ?|
     | g :: _ => g
-    | Nil => ""
+    | [] => ""
 
 ///> rust -d unicode-segmentation
 ///> gleam

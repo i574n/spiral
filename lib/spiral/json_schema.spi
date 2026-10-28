@@ -135,6 +135,24 @@
     | value :: rest => enumeration_facets rest (Enumeration value :: acc)
     | [] => acc
 
+:= number_text (key : string) (schema : json_value) : string =
+    ?= field key schema ?|
+    | Some (JsonNumber digits) => digits
+    | _ => ""
+
+:~ ^ range_facets (bounds : list (string * string)) (schema : json_value) (acc : list xsd_facet) : list xsd_facet =
+    ?= bounds ?|
+    | (key, facet) :: rest =>
+        := digits = number_text key schema
+        range_facets rest schema (? digits = "" ?> acc |: OtherFacet (facet, digits) :: acc)
+    | [] => acc
+
+:= json_range_bounds () : list (string * string) =
+    [
+        ("minimum", "minInclusive"); ("maximum", "maxInclusive");
+        ("exclusiveMinimum", "minExclusive"); ("exclusiveMaximum", "maxExclusive")
+    ]
+
 := string_facets (schema : json_value) : list xsd_facet =
     := pattern = text_field "pattern" schema
     := with_pattern = ? pattern = "" ?> [] |: Pattern (unanchored pattern) :: []
@@ -142,7 +160,8 @@
     := max_length = count_field "maxLength" schema (0i32 - 1i32)
     := with_min = ? min_length >= 0i32 ?> (MinLength min_length :: with_pattern) |: with_pattern
     := with_max = ? max_length >= 0i32 ?> (MaxLength max_length :: with_min) |: with_min
-    reverse (enumeration_facets (text_list "enum" schema) []) with_max
+    := with_ranges = range_facets (json_range_bounds ()) schema with_max
+    reverse (enumeration_facets (text_list "enum" schema) []) with_ranges
 
 := reference_name (reference : string) : string =
     := slash = sm'.last_index_of "/" reference
@@ -152,6 +171,14 @@
     ? kind = "integer" ?> "xs:integer"
     |? kind = "number" ?> "xs:decimal"
     |? kind = "boolean" ?> "xs:boolean"
+    |: "xs:string"
+
+:= builtin_of_schema (schema : json_value) : string =
+    := format = text_field "format" schema
+    ? text_field "type" schema <> "string" ?> builtin_of (text_field "type" schema)
+    |? format = "date" ?> "xs:date"
+    |? format = "date-time" ?> "xs:dateTime"
+    |? format = "time" ?> "xs:time"
     |: "xs:string"
 
 :~ ^ has_text (target : string) (items : list string) : bool =
@@ -207,9 +234,9 @@
     |:
         := facets = string_facets schema
         ?= facets ?|
-        | [] => element_particle key (Some (type_reference (builtin_of kind))) (single min) None
+        | [] => element_particle key (Some (type_reference (builtin_of_schema schema))) (single min) None
         | _ =>
-            := inline = simple "" (builtin_of kind) facets
+            := inline = simple "" (builtin_of_schema schema) facets
             element_particle key None (single min) (Some inline)
 
 :~ ^ definition_types
@@ -225,7 +252,7 @@
         |:
             definition_types rest
                 (
-                    xsd.simple name (builtin_of (text_field "type" schema)) (string_facets schema)
+                    xsd.simple name (builtin_of_schema schema) (string_facets schema)
                     :: simple
                 )
                 complex
@@ -245,6 +272,7 @@
     {
         target_namespace = namespace_uri (text_field "$id" schema)
         includes = []
+        namespace_imports = []
         simple_types = simple
         complex_types = listm.append complex (object_type root_name schema :: [])
         elements = element_particle root_name (Some (type_reference root_name)) (single 1i32) None :: []
@@ -275,6 +303,91 @@
     | [] => reverse acc []
 
 := json_document (root_name : string) (text : string) : list xml.xml_node = json_nodes root_name (read_json text)
+
+:~ ^ escaped_json_from (s : string) (pos : i32) (acc : string) : string =
+    ? pos >= sm'.length s ?> acc
+    |:
+        := c = xml.code_point_text s pos
+        := piece =
+            ? c = "\"" ?> "\\\""
+            |? c = "\\" ?> "\\\\"
+            |? c = "\n" ?> "\\n"
+            |? c = "\r" ?> "\\r"
+            |? c = "\t" ?> "\\t"
+            |: c
+        escaped_json_from s (pos + sm'.length c) (acc ++# piece)
+
+:~ ^ json_text (value : json_value) : string =
+    ?= value ?|
+    | JsonNull => "null"
+    | JsonBool flag => ? flag ?> "true" |: "false"
+    | JsonNumber digits => digits
+    | JsonText text => "\"" ++# escaped_json_from text 0i32 "" ++# "\""
+    | JsonArray items => "[" ++# json_items_text items "" ++# "]"
+    | JsonObject members => "{" ++# json_members_text members "" ++# "}"
+
+:& :~ json_items_text (items : list json_value) (acc : string) : string =
+    ?= items ?|
+    | item :: rest => json_items_text rest (? acc = "" ?> json_text item |: acc ++# "," ++# json_text item)
+    | [] => acc
+
+:& :~ json_members_text (members : list (string * json_value)) (acc : string) : string =
+    ?= members ?|
+    | (key, value) :: rest =>
+        := pair = json_text (JsonText key) ++# ":" ++# json_text value
+        json_members_text rest (? acc = "" ?> pair |: acc ++# "," ++# pair)
+    | [] => acc
+
+:~ ^ resolved (root : json_value) (schema : json_value) : json_value =
+    := reference = text_field "$ref" schema
+    ? reference = "" ?> schema
+    |:
+        ?= member (reference_name reference) (definitions_of root) ?|
+        | Some target => resolved root target
+        | None => schema
+
+:~ ^ json_of_node (root : json_value) (schema : json_value) (node : xml.xml_node) : json_value =
+    := shape = resolved root schema
+    := kind = text_field "type" shape
+    := children = xml.element_children node
+    := properties =
+        ?= field "properties" shape ?|
+        | Some (JsonObject members) => members
+        | _ => []
+    ? kind = "object" || listm.length properties > 0i32 ?> JsonObject (json_members_of root properties children [])
+    |:
+        := text = xml.text_in children
+        ? kind = "integer" || kind = "number" ?> JsonNumber text
+        |? kind = "boolean" ?> JsonBool (text = "true")
+        |: JsonText text
+
+:& :~ json_members_of
+    (root : json_value) (properties : list (string * json_value)) (children : list xml.xml_node)
+    (acc : list (string * json_value))
+    : list (string * json_value)
+    =
+    ?= properties ?|
+    | (key, schema) :: rest =>
+        := shape = resolved root schema
+        := present = xml.children_named key children
+        ? text_field "type" shape = "array" ?>
+            := items =
+                ?= field "items" shape ?|
+                | Some item => item
+                | None => JsonObject []
+            ? listm.length present = 0i32 ?> json_members_of root rest children acc
+            |:
+                := values = listm.map (\ n => json_of_node root items n) present
+                json_members_of root rest children ((key, JsonArray values) :: acc)
+        |:
+            ?= present ?|
+            | node :: _ => json_members_of root rest children ((key, json_of_node root shape node) :: acc)
+            | [] => json_members_of root rest children acc
+    | [] => reverse acc []
+
+:= json_document_text (schema_text : string) (node : xml.xml_node) : string =
+    := root = read_json schema_text
+    json_text (json_of_node root root node)
 
 ///> rust
 test json_values_parse_with_escapes_and_nesting =
@@ -329,3 +442,35 @@ test json_schemas_map_onto_the_xsd_model_and_generate =
     ? sm'.contains "type x_invoice" text = !- ?> failwith "the root type is emitted"
     ? sm'.contains "x_doc" text = !- || sm'.contains "x_item" text = !- ?> failwith "definitions are emitted"
     ? sm'.contains "INV" text = !- ?> failwith "an enum becomes a coded type"
+
+///> rust
+test element_trees_write_back_to_the_json_their_schema_describes =
+    := schema =
+        "{ \"type\": \"object\", \"properties\": { \"Version\": { \"type\": \"string\" }, \"Qty\": { \"type\": "
+        ^^ "\"number\" }, \"Paid\": { \"type\": \"boolean\" }, \"ItemList\": { \"type\": \"array\", \"items\": { "
+        ^^ "\"$ref\": \"#/definitions/item\" } } }, \"definitions\": { \"item\": { \"type\": \"object\", "
+        ^^ "\"properties\": { \"SlNo\": { \"type\": \"string\" } } } } }"
+    := document =
+        "{\"Version\":\"1.1\",\"Qty\":2.5,\"Paid\":true,\"ItemList\":[{\"SlNo\":\"1\"},{\"SlNo\":\"2\\\"x\"}]}"
+    ?= json_document "Invoice" document ?|
+    | root :: [] =>
+        := written = json_document_text schema root
+        ? written <> document ?> failwith ("the document writes back unchanged: " ++# written)
+    | _ => failwith "one root"
+
+///> rust
+test number_bounds_and_string_formats_become_xsd_facets_and_builtins =
+    := schema = read_json "{ \"type\": \"number\", \"minimum\": 0, \"maximum\": 999999999999.99 }"
+    ?= string_facets schema ?|
+    | OtherFacet (high, high_value) :: OtherFacet (low, low_value) :: [] =>
+        ? high <> "maxInclusive" || high_value <> "999999999999.99"
+        ?> failwith "maximum keeps its digits as maxInclusive"
+        ? low <> "minInclusive" || low_value <> "0" ?> failwith "minimum is minInclusive"
+    | _ => failwith "exactly the two range facets"
+    ? builtin_of_schema (read_json "{ \"type\": \"string\", \"format\": \"date\" }") <> "xs:date" ?> failwith "date"
+    ? builtin_of_schema (read_json "{ \"type\": \"string\", \"format\": \"date-time\" }") <> "xs:dateTime"
+    ?> failwith "date-time"
+    ? builtin_of_schema (read_json "{ \"type\": \"string\", \"format\": \"email\" }") <> "xs:string"
+    ?> failwith "an unmapped format stays a string"
+    ? builtin_of_schema (read_json "{ \"type\": \"integer\", \"format\": \"int32\" }") <> "xs:integer"
+    ?> failwith "formats only refine strings"

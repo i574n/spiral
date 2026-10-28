@@ -74,12 +74,15 @@ test platform static =
 test get_executable_suffix =
     get_executable_suffix ()
 
+/// ### gleam_os_command_output
+:= gleam_os_command_output (command : string) : string =
+    := output = erlang_term.apply "os" "cmd" [ erlang_term.charlist command ]
+    erlang_term.apply "unicode" "characters_to_binary" [ output ] |> erlang_term.cast
+
 /// ### os_command_output
 := os_command_output (command : string) : string =
     run_target \|
-        | Gleam => \ () =>
-            := output = erlang_term.apply "os" "cmd" [ erlang_term.charlist command ]
-            erlang_term.apply "unicode" "characters_to_binary" [ output ] |> erlang_term.cast
+        | Gleam => \ () => gleam_os_command_output command
         | _ => \ () => failwith "os_command_output: no arm for this backend"
 
 ///> gleam

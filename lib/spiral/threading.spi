@@ -208,9 +208,14 @@ test threading static =
             "type std_sync_mpsc_Sender<'T> = class end"
     )
 
+/// ### mpsc_channel
+:= mpsc_channel () : channel_sender sm'.std_string * channel_receiver sm'.std_string =
+    !\($'"std::sync::mpsc::channel()"')
+
 /// ### new_channel
 := new_channel () : channel_sender sm'.std_string * arc (channel_receiver sm'.std_string) =
-    !\($'"{ let (sender, receiver) = std::sync::mpsc::channel(); (sender, std::sync::Arc::new(receiver)) }"')
+    := sender, receiver = mpsc_channel ()
+    sender, new_arc receiver
 
 /// ### send_error
 :! send_error t =

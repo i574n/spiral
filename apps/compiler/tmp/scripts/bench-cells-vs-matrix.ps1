@@ -3,34 +3,11 @@ param(
     [string] $Families = (Join-Path $PSScriptRoot '..\tests\families'),
     [string] $Out = (Join-Path $env:LOCALAPPDATA "spiral-bin\runs\bench-cells-vs-matrix-$(Get-Date -Format yyyyMMdd-HHmmss)"),
     [double] $Threshold = 2.0,
-    [int] $MinFreeMB = 1536
+    [int] $MinFreeMB = 1536,
+    [ValidateSet('process', 'private-daemon')] [string] $CellsCompiler = 'process'
 )
 $ErrorActionPreference = 'Stop'
-if (-not ('TreeCpu' -as [type])) {
-    Add-Type @'
-using System;
-using System.Runtime.InteropServices;
-public static class TreeCpu {
-    [StructLayout(LayoutKind.Sequential)]
-    struct BasicAccounting {
-        public long TotalUserTime, TotalKernelTime, ThisPeriodTotalUserTime, ThisPeriodTotalKernelTime;
-        public uint TotalPageFaultCount, TotalProcesses, ActiveProcesses, TotalTerminatedProcesses;
-    }
-    [DllImport("kernel32.dll", SetLastError = true)] static extern IntPtr CreateJobObject(IntPtr attributes, string name);
-    [DllImport("kernel32.dll", SetLastError = true)] static extern bool AssignProcessToJobObject(IntPtr job, IntPtr process);
-    [DllImport("kernel32.dll", SetLastError = true)] static extern bool QueryInformationJobObject(IntPtr job, int infoClass, out BasicAccounting info, int length, IntPtr returned);
-    [DllImport("kernel32.dll", SetLastError = true)] static extern bool CloseHandle(IntPtr handle);
-    public static IntPtr Create() { return CreateJobObject(IntPtr.Zero, null); }
-    public static bool Assign(IntPtr job, IntPtr process) { return AssignProcessToJobObject(job, process); }
-    public static double[] Query(IntPtr job) {
-        BasicAccounting info;
-        QueryInformationJobObject(job, 1, out info, Marshal.SizeOf(typeof(BasicAccounting)), IntPtr.Zero);
-        return new double[] { (info.TotalUserTime + info.TotalKernelTime) / 1e7, info.TotalProcesses };
-    }
-    public static void Close(IntPtr job) { CloseHandle(job); }
-}
-'@
-}
+. (Join-Path $PSScriptRoot 'tree-cpu.ps1')
 $Families = (Resolve-Path $Families).Path
 $familyFiles = @(Get-ChildItem $Families -Filter '*_family.spi' | Where-Object { (Get-Content (Join-Path $Families 'package.spiproj') -Raw) -match "(?m)^\s+$($_.BaseName)\s*$" } | ForEach-Object Name)
 $samples = @(foreach ($f in $familyFiles) { [regex]::Matches((Get-Content (Join-Path $Families $f) -Raw), 'failwith "([^"]+)"') | ForEach-Object { $_.Groups[1].Value } }) | Sort-Object -Unique
@@ -68,21 +45,59 @@ function Measure-Side([string] $Side, [int] $Round, [string[]] $ArgList, [hashta
 }
 
 $scripts = $PSScriptRoot
+$daemonSide = Join-Path $Out 'cells-private-daemon.ps1'
+[IO.File]::WriteAllText($daemonSide, @'
+param([int] $Port, [string] $TestBlocks, [string] $Lib, [string] $Files, [string] $Out)
+$ErrorActionPreference = 'Stop'
+$env:PATH = "$HOME\scoop\apps\erlang\current\bin;$HOME\scoop\apps\elixir\current\bin;$env:PATH"
+$env:SPIRAL_CELLS_COMPILER_PORT = "$Port"
+$env:SPIRAL_CELLS_DAEMON_OWNER = "bench-cells-vs-matrix private daemon port $Port"
+$daemon = Start-Process -FilePath 'cmd.exe' -ArgumentList '/d', '/c', 'mix spiral.compiler_daemon' -WorkingDirectory 'C:\home\git\spiral\apps\cells' -PassThru -NoNewWindow
+$deadline = (Get-Date).AddMinutes(10)
+$up = $false
+while (-not $up -and (Get-Date) -lt $deadline -and -not $daemon.HasExited) {
+    try { $c = [Net.Sockets.TcpClient]::new('127.0.0.1', $Port); $c.Close(); $up = $true } catch { Start-Sleep -Seconds 2 }
+}
+if (-not $up) { if (-not $daemon.HasExited) { taskkill /T /F /PID $daemon.Id | Out-Null }; Write-Host "private daemon on port $Port never listened"; exit 3 }
+Write-Host "private daemon pid $($daemon.Id) listening on $Port"
+pwsh -NoProfile -File $TestBlocks -Lib $Lib -Files $Files -Out $Out -Compiler daemon
+$code = $LASTEXITCODE
+if (-not $daemon.HasExited) { taskkill /T /F /PID $daemon.Id | Out-Null }
+Push-Location 'C:\home\git\spiral\apps\cells'
+$listed = @(mix spiral.compiler_daemon --list 2>$null | Where-Object { $_ -match '^\d+\t\d+\t' })
+Pop-Location
+foreach ($row in $listed) {
+    $cols = $row -split "`t"
+    if ([int]$cols[0] -ge $Port -and [int]$cols[0] -lt $Port + 100) { taskkill /T /F /PID ([int]$cols[1]) | Out-Null; Write-Host "stopped pool daemon port $($cols[0]) pid $($cols[1])" }
+}
+exit $code
+'@)
 $matrixArgs = @('-NoProfile', '-File', (Join-Path $scripts 'test.ps1'), '-Mode', 'single-flight', '-Suite', 'all', '-Filter', $filter, '-Backend', 'C,Zig', '-Native')
 $rows = foreach ($round in 1..$Rounds) {
     $freeMB = [int]((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory / 1KB)
     if ($freeMB -lt $MinFreeMB) {
         [pscustomobject]@{ Round = $round; Side = 'void'; Exit = -1; CpuS = 0; Processes = 0; WallS = 0; LoadPct = -1 }
-        "round $round VOID: $freeMB MB free < $MinFreeMB"
+        Write-Host "round $round VOID: $freeMB MB free < $MinFreeMB"
         continue
     }
     $cellsOut = Join-Path $Out "round$round-cells"
-    $cellsArgs = @('-NoProfile', '-File', (Join-Path $scripts 'test-blocks.ps1'), '-Lib', $Families, '-Files', ($familyFiles -join ','), '-Out', $cellsOut, '-Compiler', 'process')
+    $snap = Join-Path $Out "round$round-tree"
+    $spiralRoot = (Resolve-Path (Join-Path $scripts '..\..\..\..')).Path
+    robocopy (Join-Path $spiralRoot 'lib\spiral') (Join-Path $snap 'lib\spiral') /E /XD target _build .cache node_modules /NFL /NDL /NJH /NJS /NP | Out-Null
+    robocopy (Join-Path $spiralRoot 'apps\compiler\tmp\samples\core') (Join-Path $snap 'apps\compiler\tmp\samples\core') /E /NFL /NDL /NJH /NJS /NP | Out-Null
+    robocopy $Families (Join-Path $snap 'apps\compiler\tmp\tests\families') /E /NFL /NDL /NJH /NJS /NP | Out-Null
+    $roundFamilies = Join-Path $snap 'apps\compiler\tmp\tests\families'
+    Write-Host "round $round lib snapshot: $(@(Get-ChildItem (Join-Path $snap 'lib\spiral') -Recurse -File).Count) files at $snap"
+    $cellsArgs = if ($CellsCompiler -eq 'process') {
+        @('-NoProfile', '-File', (Join-Path $scripts 'test-blocks.ps1'), '-Lib', $roundFamilies, '-Files', ($familyFiles -join ','), '-Out', $cellsOut, '-Compiler', 'process')
+    } else {
+        @('-NoProfile', '-File', $daemonSide, '-Port', "$(14000 + 100 * $round)", '-TestBlocks', (Join-Path $scripts 'test-blocks.ps1'), '-Lib', $roundFamilies, '-Files', ($familyFiles -join ','), '-Out', $cellsOut)
+    }
     $order = if ($round % 2) { @('matrix', 'cells') } else { @('cells', 'matrix') }
     foreach ($side in $order) {
-        $r = if ($side -eq 'matrix') { Measure-Side 'matrix' $round $matrixArgs @{} } else { Measure-Side 'cells' $round $cellsArgs @{ SPIRAL_CELLS_MEMO = '0'; SPIRAL_CELLS_COMPILER = 'process' } }
+        $r = if ($side -eq 'matrix') { Measure-Side 'matrix' $round $matrixArgs @{} } else { Measure-Side 'cells' $round $cellsArgs @{ SPIRAL_CELLS_MEMO = '0'; SPIRAL_CELLS_COMPILER = $(if ($CellsCompiler -eq 'process') { 'process' } else { 'daemon' }); SPIRAL_COMPILER_PACKAGE_DIR = (Join-Path $spiralRoot 'deps\The-Spiral-Language\VS Code Plugin') } }
         $r
-        "round $round $side`: cpu $($r.CpuS) s over $($r.Processes) processes, wall $($r.WallS) s, box load $($r.LoadPct)%, exit $($r.Exit)"
+        Write-Host "$(Get-Date -Format 'HH:mm') round $round $side`: cpu $($r.CpuS) s over $($r.Processes) processes, wall $($r.WallS) s, box load $($r.LoadPct)%, exit $($r.Exit)"
     }
 }
 $measured = @($rows | Where-Object { $_ -is [pscustomobject] })

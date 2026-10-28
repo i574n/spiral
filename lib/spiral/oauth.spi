@@ -16,13 +16,16 @@ test oauth static =
     | y :: ys ?& oauth1_before y x => y :: oauth1_inserted x ys
     | _ => x :: l
 
+/// ### joined_pairs
+:= joined_pairs (pairs : list oauth1_pair) : string =
+    pairs |> listm.map (\ (k, v) => k ++# "=" ++# v) |> sm'.concat_list "&"
+
 /// ### parameter_string
 := parameter_string (params : list oauth1_pair) : string =
     params
     |> listm.map (\ (k, v) => sm'.percent_encode k, sm'.percent_encode v)
     |> listm.fold (\ acc x => oauth1_inserted x acc) []
-    |> listm.map (\ (k, v) => k ++# "=" ++# v)
-    |> sm'.concat_list "&"
+    |> joined_pairs
 
 /// ### signature_base
 := signature_base (method : string) (url : string) (params : list oauth1_pair) : string =
@@ -33,11 +36,14 @@ test oauth static =
     sm'.percent_encode c.consumer_secret ++# "&" ++# sm'.percent_encode c.token_secret
 
 /// ### protocol_params
+:= consumer_params (c : oauth1_credentials) (nonce : string) : list oauth1_pair =
+    [ ("oauth_consumer_key", c.consumer_key); ("oauth_nonce", nonce); ("oauth_signature_method", "HMAC-SHA1") ]
+
+:= token_params (c : oauth1_credentials) (stamp : string) : list oauth1_pair =
+    [ ("oauth_timestamp", stamp); ("oauth_token", c.token); ("oauth_version", "1.0") ]
+
 := protocol_params (c : oauth1_credentials) (nonce : string) (stamp : string) : list oauth1_pair =
-    [
-        ("oauth_consumer_key", c.consumer_key); ("oauth_nonce", nonce); ("oauth_signature_method", "HMAC-SHA1")
-        ("oauth_timestamp", stamp); ("oauth_token", c.token); ("oauth_version", "1.0")
-    ]
+    listm.append (consumer_params c nonce) (token_params c stamp)
 
 /// ### signature
 := signature (c : oauth1_credentials) (method : string) (url : string) (params : list oauth1_pair) : string =
@@ -46,40 +52,63 @@ test oauth static =
 := oauth1_header_field ((k, v) : oauth1_pair) : string =
     sm'.percent_encode k ++# "=\"" ++# sm'.percent_encode v ++# "\""
 
+/// ### with_signature
+:= with_signature (c : oauth1_credentials) (method : string) (url : string) (params : list oauth1_pair)
+    : list oauth1_pair
+    =
+    listm.append params [ ("oauth_signature", signature c method url params) ]
+
+/// ### header_text
+:= header_text (signed : list oauth1_pair) : string =
+    "OAuth " ++# (signed |> listm.map oauth1_header_field |> sm'.concat_list ", ")
+
 /// ### authorization_header
 := authorization_header
     (c : oauth1_credentials) (method : string) (url : string) (nonce : string) (stamp : string)
     : string
     =
-    := params = protocol_params c nonce stamp
-    := signed = listm.append params [ ("oauth_signature", signature c method url params) ]
-    "OAuth " ++# (signed |> listm.map oauth1_header_field |> sm'.concat_list ", ")
+    protocol_params c nonce stamp |> with_signature c method url |> header_text
+
+:= oauth1_example_consumer_secret () : string = "kAcSOqF21Fu85e7zjz7ZN2U4ZRhfV3WpwPAoE3Z7kBw"
+
+:= oauth1_example_token () : string = "370773112-GmHxMAgYyLbNEtIKZeRNFsMKPR9EyMZeS9weJAEb"
+
+:= oauth1_example_token_secret () : string = "LswwdoUaIvS8ltyTt5jkRh4J50vUPVVHtR2YPi5kE"
 
 := oauth1_example_credentials () : oauth1_credentials =
     {
         consumer_key = "xvz1evFS4wEEPTGEFPHBog"
-        consumer_secret = "kAcSOqF21Fu85e7zjz7ZN2U4ZRhfV3WpwPAoE3Z7kBw"
-        token = "370773112-GmHxMAgYyLbNEtIKZeRNFsMKPR9EyMZeS9weJAEb"
-        token_secret = "LswwdoUaIvS8ltyTt5jkRh4J50vUPVVHtR2YPi5kE"
+        consumer_secret = oauth1_example_consumer_secret ()
+        token = oauth1_example_token ()
+        token_secret = oauth1_example_token_secret ()
     }
 
+:= oauth1_example_status () : string = "Hello Ladies + Gentlemen, a signed OAuth request!"
+
+:= oauth1_example_nonce () : string = "kYjzVBB8Y0ZFabxSWbWovY3uYSQ2pTgmZeNu2VS4cg"
+
+:= oauth1_example_url () : string = "https://api.twitter.com/1.1/statuses/update.json"
+
 := oauth1_example_params () : list oauth1_pair =
-    := status = "Hello Ladies + Gentlemen, a signed OAuth request!"
-    := nonce = "kYjzVBB8Y0ZFabxSWbWovY3uYSQ2pTgmZeNu2VS4cg"
-    := c = oauth1_example_credentials ()
-    listm.append [ ("include_entities", "true"); ("status", status) ] (protocol_params c nonce "1318622958")
+    := query = [ ("include_entities", "true"); ("status", oauth1_example_status ()) ]
+    listm.append query (protocol_params (oauth1_example_credentials ()) (oauth1_example_nonce ()) "1318622958")
 
 ///> rust -d hmac sha1 base64
 ///> gleam
 test the_published_example_signs_to_its_documented_signature =
-    := ~url = "https://api.twitter.com/1.1/statuses/update.json"
+    := ~url = oauth1_example_url ()
     signature (oauth1_example_credentials ()) "POST" url (oauth1_example_params ())
     |> _assert_eq "hCtSmYh+iHYCEqBWrE7C7hYmtUk="
+
+:= oauth1_example_header_prefix () : string = "OAuth oauth_consumer_key=\"xvz1evFS4wEEPTGEFPHBog\", oauth_nonce=\"n\""
+
+:= oauth1_example_header (url : string) : string =
+    authorization_header (oauth1_example_credentials ()) "POST" url "n" "1"
 
 ///> rust -d hmac sha1 base64
 ///> gleam
 test the_header_lists_the_signed_protocol_params =
-    := ~url = "https://api.twitter.com/1.1/statuses/update.json"
-    authorization_header (oauth1_example_credentials ()) "POST" url "n" "1"
-    |> sm'.starts_with "OAuth oauth_consumer_key=\"xvz1evFS4wEEPTGEFPHBog\", oauth_nonce=\"n\""
+    := ~url = oauth1_example_url ()
+    oauth1_example_header url
+    |> sm'.starts_with (oauth1_example_header_prefix ())
     |> _assert_eq !+

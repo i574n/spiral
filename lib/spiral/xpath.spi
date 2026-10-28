@@ -176,6 +176,17 @@
     | FnContains :: builtin bool_result
     | FnStartsWith :: builtin bool_result
     | FnEndsWith :: builtin bool_result
+    | FnGln :: builtin bool_result
+    | FnMod11 :: builtin bool_result
+    | FnMod97 :: builtin bool_result
+    | FnSlack :: builtin bool_result
+    | FnMatches :: builtin bool_result
+    | FnAbn :: builtin bool_result
+    | FnSeOrgnr :: builtin bool_result
+    | FnTin :: builtin bool_result
+    | FnPivaIt :: builtin bool_result
+    | FnCf :: builtin bool_result
+    | FnCodiceIpa :: builtin bool_result
     | FnCount :: builtin value_result
     | FnSum :: builtin value_result
     | FnNormalizeSpace :: builtin value_result
@@ -195,6 +206,15 @@
     | FnLocalName :: builtin value_result
     | FnDistinctValues :: builtin value_result
     | FnSubstring :: builtin value_result
+    | FnCurrentDate :: builtin value_result
+    | FnFormatNumber :: builtin value_result
+    | FnDateTime :: builtin value_result
+    | FnDayTimeDuration :: builtin value_result
+    | FnCurrentDateTime :: builtin value_result
+    | FnTranslate :: builtin value_result
+    | FnTokenize :: builtin value_result
+    | FnReplace :: builtin value_result
+    | FnStringJoin :: builtin value_result
 
 :| ^ function_ref =
     | BoolFunction : builtin bool_result
@@ -212,6 +232,17 @@
     | FnContains => "contains"
     | FnStartsWith => "starts-with"
     | FnEndsWith => "ends-with"
+    | FnGln => "u:gln"
+    | FnMod11 => "u:mod11"
+    | FnMod97 => "u:mod97-0208"
+    | FnSlack => "u:slack"
+    | FnMatches => "matches"
+    | FnAbn => "u:abn"
+    | FnSeOrgnr => "u:checkSEOrgnr"
+    | FnTin => "u:TinVerification"
+    | FnPivaIt => "u:checkPIVAseIT"
+    | FnCf => "u:checkCF"
+    | FnCodiceIpa => "u:checkCodiceIPA"
 
 := value_function_text (f : builtin value_result) : string =
     ?= f ?|
@@ -234,6 +265,15 @@
     | FnLocalName => "local-name"
     | FnDistinctValues => "distinct-values"
     | FnSubstring => "substring"
+    | FnCurrentDate => "current-date"
+    | FnFormatNumber => "format-number"
+    | FnDateTime => "xs:dateTime"
+    | FnDayTimeDuration => "xs:dayTimeDuration"
+    | FnCurrentDateTime => "current-dateTime"
+    | FnTranslate => "translate"
+    | FnTokenize => "tokenize"
+    | FnReplace => "replace"
+    | FnStringJoin => "string-join"
 
 := function_text (f : function_ref) : string =
     ?= f ?|
@@ -251,6 +291,17 @@
     |? name = "contains" ?> BoolFunction FnContains
     |? name = "starts-with" ?> BoolFunction FnStartsWith
     |? name = "ends-with" ?> BoolFunction FnEndsWith
+    |? name = "u:gln" ?> BoolFunction FnGln
+    |? name = "u:mod11" ?> BoolFunction FnMod11
+    |? name = "u:mod97-0208" ?> BoolFunction FnMod97
+    |? name = "u:slack" ?> BoolFunction FnSlack
+    |? name = "matches" ?> BoolFunction FnMatches
+    |? name = "u:abn" ?> BoolFunction FnAbn
+    |? name = "u:checkSEOrgnr" ?> BoolFunction FnSeOrgnr
+    |? name = "u:TinVerification" ?> BoolFunction FnTin
+    |? name = "u:checkPIVAseIT" ?> BoolFunction FnPivaIt
+    |? name = "u:checkCF" ?> BoolFunction FnCf
+    |? name = "u:checkCodiceIPA" ?> BoolFunction FnCodiceIpa
     |? name = "count" ?> ValueFunction FnCount
     |? name = "sum" ?> ValueFunction FnSum
     |? name = "normalize-space" ?> ValueFunction FnNormalizeSpace
@@ -270,6 +321,16 @@
     |? name = "local-name" ?> ValueFunction FnLocalName
     |? name = "distinct-values" ?> ValueFunction FnDistinctValues
     |? name = "substring" ?> ValueFunction FnSubstring
+    |? name = "current-date" ?> ValueFunction FnCurrentDate
+    |? name = "format-number" ?> ValueFunction FnFormatNumber
+    |? name = "xs:dateTime" ?> ValueFunction FnDateTime
+    |? name = "xs:dayTimeDuration" ?> ValueFunction FnDayTimeDuration
+    |? name = "current-dateTime" ?> ValueFunction FnCurrentDateTime
+    |? name = "translate" ?> ValueFunction FnTranslate
+    |? name = "tokenize" ?> ValueFunction FnTokenize
+    |? name = "replace" ?> ValueFunction FnReplace
+    |? name = "string-join" ?> ValueFunction FnStringJoin
+    |? name = "xs:integer" ?> ValueFunction FnDecimal
     |: UnknownFunction name
 
 :| ^ xpath =
@@ -287,6 +348,8 @@
     | XQuantified : bool * string * xpath * xpath
     | XApply : xpath * xpath
     | XMember : xpath * string * list string
+    | XIf : xpath * xpath * xpath
+    | XSequence : list xpath
 
 :| ^ kinded r =
     | ByOperator :: \* r. operator r * xpath -> kinded r
@@ -446,6 +509,10 @@
     | TName x :: TSymbol y :: _ => y = "(" && is_kind_test x = !-
     | _ => !-
 
+:= sequence_of (parsed : list xpath * list token) : xpath * list token =
+    ?= parsed ?|
+    | items, rest => XSequence items, rest
+
 :~ ^ parse_expr (tokens : list token) : xpath * list token =
     ?= tokens ?|
     | TName q :: TVariable v :: TName word :: rest ?& (q = "every" || q = "some") && word = "in" =>
@@ -530,8 +597,23 @@
     | TNumber number :: rest => XNumber number, rest
     | TVariable name :: rest => XVariable name, rest
     | TSymbol x :: rest ?& x = "(" =>
-        := inner, rest = parse_expr rest
-        closed ")" inner rest
+        ? is_symbol ")" rest ?> (XSequence ([]), after_first rest)
+        |:
+            := inner, rest = parse_expr rest
+            ? is_symbol "," rest ?> sequence_of (parse_arguments (after_first rest) (inner :: []))
+            |: closed ")" inner rest
+    | TName word :: rest ?& word = "if" && is_symbol "(" rest =>
+        := condition, rest = parse_expr (after_first rest)
+        := condition, rest = closed ")" condition rest
+        ?= rest ?|
+        | TName then_word :: rest ?& then_word = "then" =>
+            := yes, rest = parse_expr rest
+            ?= rest ?|
+            | TName else_word :: rest ?& else_word = "else" =>
+                := no, rest = parse_expr rest
+                XIf (condition, yes, no), rest
+            | _ => XInvalid "expected else", rest
+        | _ => XInvalid "expected then", rest
     | TName name :: _ :: rest =>
         := arguments, rest = parse_arguments rest []
         XCall (function_of name, arguments), rest
@@ -575,6 +657,9 @@
         "(" ++# quantifier ++# " $" ++# v ++# " " ++# xpath_text domain ++# " " ++# xpath_text body ++# ")"
     | XApply (input, mapped) => "(apply " ++# xpath_text input ++# " " ++# xpath_text mapped ++# ")"
     | XMember (probe, _, codes) => "(member " ++# xpath_text probe ++# " " ++# joined codes "" ++# ")"
+    | XIf (condition, yes, no) =>
+        "(if " ++# xpath_text condition ++# " " ++# xpath_text yes ++# " " ++# xpath_text no ++# ")"
+    | XSequence items => "(" ++# joined ("sequence" :: texts_of items []) "" ++# ")"
 :& :~ predicates_text (predicates : list xpath) : string =
     ?= predicates ?|
     | p :: rest => " [" ++# xpath_text p ++# "]" ++# predicates_text rest
@@ -595,6 +680,8 @@
     | XQuantified (_, _, domain, body) => own + node_count counted domain + node_count counted body
     | XApply (input, mapped) => own + node_count counted input + node_count counted mapped
     | XMember (probe, _, _) => own + node_count counted probe
+    | XIf (condition, yes, no) => own + node_count counted condition + node_count counted yes + node_count counted no
+    | XSequence items => own + node_counts counted items
     | _ => own
 :& :~ node_counts (counted : xpath -> bool) (items : list xpath) : i32 =
     ?= items ?|
@@ -632,6 +719,8 @@
     | XQuantified (every, v, domain, body) => XQuantified (every, v, lift_code_lists domain, lift_code_lists body)
     | XApply (input, mapped) => XApply (lift_code_lists input, lift_code_lists mapped)
     | XMember (probe, codes, words) => XMember (lift_code_lists probe, codes, words)
+    | XIf (condition, yes, no) => XIf (lift_code_lists condition, lift_code_lists yes, lift_code_lists no)
+    | XSequence items => XSequence (lifted items)
     | _ => x
 :& :~ lifted (items : list xpath) : list xpath =
     ?= items ?|

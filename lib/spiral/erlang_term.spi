@@ -4,13 +4,25 @@
 test erlang_term static =
     :< testing
 
-:= erlang_term_imports () =
+:= erlang_term_gleam_imports () =
     global "import gleam/dynamic.{type Dynamic}"
     global "import gleam/erlang/atom"
     global "import gleam/string"
+
+:= erlang_term_coerce_external () =
     global "@external(erlang, \"gleam_stdlib\", \"identity\") fn erlang_term_coerce(value: a) -> b"
+
+:= erlang_term_apply_external () =
     global "@external(erlang, \"erlang\", \"apply\") fn erlang_term_apply(m: atom.Atom, f: atom.Atom, args: List(Dynamic)) -> Dynamic"
+
+:= erlang_term_tuple_external () =
     global "@external(erlang, \"erlang\", \"list_to_tuple\") fn erlang_term_tuple(items: List(Dynamic)) -> Dynamic"
+
+:= erlang_term_imports () =
+    erlang_term_gleam_imports ()
+    erlang_term_coerce_external ()
+    erlang_term_apply_external ()
+    erlang_term_tuple_external ()
 
 :! term = $'Dynamic'
 :! atom = $'atom.Atom'

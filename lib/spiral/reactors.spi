@@ -15,36 +15,44 @@ test reactors static =
 /// ### reactor
 :== reactor s i o = { init : s; react : s -> tag -> i -> s * o }
 
+:= chain_react \* sa sb i m o.
+    (a : reactor sa i m) (b : reactor sb m o) (state : sa * sb) (now : tag) (x : i)
+    : (sa * sb) * o
+    =
+    := sa, sb = state
+    := sa, mid = a.react sa now x
+    := sb, y = b.react sb now mid
+    (sa, sb), y
+
 /// ### chain
 := chain \* sa sb i m o. (a : reactor sa i m) (b : reactor sb m o) : reactor (sa * sb) i o =
-    {
-        init = a.init, b.init
-        react = \ (sa, sb) now x =>
-            := sa, mid = a.react sa now x
-            := sb, y = b.react sb now mid
-            (sa, sb), y
-    }
+    { init = (a.init, b.init); react = chain_react a b }
+
+:= both_react \* sa sb i oa ob.
+    (a : reactor sa i oa) (b : reactor sb i ob) (state : sa * sb) (now : tag) (x : i)
+    : (sa * sb) * (oa * ob)
+    =
+    := sa, sb = state
+    := sa, ya = a.react sa now x
+    := sb, yb = b.react sb now x
+    (sa, sb), (ya, yb)
 
 /// ### both
 := both \* sa sb i oa ob. (a : reactor sa i oa) (b : reactor sb i ob) : reactor (sa * sb) i (oa * ob) =
-    {
-        init = a.init, b.init
-        react = \ (sa, sb) now x =>
-            := sa, ya = a.react sa now x
-            := sb, yb = b.react sb now x
-            (sa, sb), (ya, yb)
-    }
+    { init = (a.init, b.init); react = both_react a b }
+
+:= deadline_react \* s o.
+    (deadline : i64) (body : reactor s i64 o) (on_violation : s -> tag -> s * o) (state : s) (now : tag) (lag : i64)
+    : s * o
+    =
+    ? lag > deadline ?> on_violation state now |: body.react state now lag
 
 /// ### with_deadline
 := with_deadline \* s o.
     (deadline : i64) (body : reactor s i64 o) (on_violation : s -> tag -> s * o)
     : reactor s i64 o
     =
-    {
-        init = body.init
-        react = \ state now lag =>
-            ? lag > deadline ?> on_violation state now |: body.react state now lag
-    }
+    { init = body.init; react = deadline_react deadline body on_violation }
 
 /// ### modal
 :| mode_entry =
@@ -55,32 +63,47 @@ test reactors static =
     | FirstMode
     | SecondMode
 
+:== modal_spec sa sb i o = { entry : mode_entry; first : reactor sa i o; second : reactor sb i o; leave : o -> bool }
+
+:== modal_state sa sb = reactor_mode * sa * sb
+
+:== modal_reactor sa sb i o = reactor (modal_state sa sb) i o
+
+:= entered \* s. (entry : mode_entry) (init : s) (kept : s) : s = ?= entry ?| | Reset => init | History => kept
+
+:= in_first \* sa sb i o. (m : modal_spec sa sb i o) (sa : sa) (sb : sb) (now : tag) (x : i) : modal_state sa sb * o =
+    := sa, y = m.first.react sa now x
+    ? m.leave y ?> (SecondMode, sa, entered m.entry m.second.init sb), y |: (FirstMode, sa, sb), y
+
+:= in_second \* sa sb i o. (m : modal_spec sa sb i o) (sa : sa) (sb : sb) (now : tag) (x : i) : modal_state sa sb * o =
+    := sb, y = m.second.react sb now x
+    ? m.leave y ?> (FirstMode, entered m.entry m.first.init sa, sb), y |: (SecondMode, sa, sb), y
+
+:= modal_react \* sa sb i o.
+    (m : modal_spec sa sb i o) (state : modal_state sa sb) (now : tag) (x : i)
+    : modal_state sa sb * o
+    =
+    := mode, sa, sb = state
+    ?= mode ?| | FirstMode => in_first m sa sb now x | SecondMode => in_second m sa sb now x
+
+:= modal_of \* sa sb i o. (m : modal_spec sa sb i o) : modal_reactor sa sb i o =
+    { init = (FirstMode, m.first.init, m.second.init); react = modal_react m }
+
 := modal \* sa sb i o.
     (entry : mode_entry) (first : reactor sa i o) (second : reactor sb i o) (leave : o -> bool)
-    : reactor (reactor_mode * sa * sb) i o
+    : modal_reactor sa sb i o
     =
-    := entered_second sb = ?= entry ?| | Reset => second.init | History => sb
-    := entered_first sa = ?= entry ?| | Reset => first.init | History => sa
-    {
-        init = FirstMode, first.init, second.init
-        react = \ (mode, sa, sb) now x =>
-            ?= mode ?|
-            | FirstMode =>
-                := sa, y = first.react sa now x
-                ? leave y ?> (SecondMode, sa, entered_second sb), y |: (FirstMode, sa, sb), y
-            | SecondMode =>
-                := sb, y = second.react sb now x
-                ? leave y ?> (FirstMode, entered_first sa, sb), y |: (SecondMode, sa, sb), y
-    }
+    modal_of { entry = entry; first = first; second = second; leave = leave }
+
+:= tick \* s i o. (program : reactor s i o) (input : tag -> i) (state : s) (time : i64) : s =
+    := now = { time = time; micro = 0i32 }
+    := state, _ = program.react state now (input now)
+    state
 
 /// ### run_ticks
 := run_ticks \* s i o. (program : reactor s i o) (input : tag -> i) (ticks : i64) : s =
     :~ ^ loop (state : s) (time : i64) : s =
-        ? time >= ticks ?> state
-        |:
-            := now = { time = time; micro = 0i32 }
-            := state, _ = program.react state now (input now)
-            loop state (time + 1i64)
+        ? time >= ticks ?> state |: loop (tick program input state time) (time + 1i64)
     loop program.init 0i64
 
 /// ### run_micro
@@ -125,100 +148,105 @@ test reactors static =
             | Absent => (sum, seen), Absent
     }
 
+:= held_one_tick () : reactor (signal i64) (signal i64) (signal i64) = { init = Absent; react = \ held _ x => x, held }
+
 test chain_delays_one_tick =
-    := after : reactor (signal i64) (signal i64) (signal i64) = { init = Absent; react = \ held _ x => x, held }
-    := program = chain (chain (chain (timer 4i64) (scale 3i64)) after) (sink ())
+    := program = chain (chain (chain (timer 4i64) (scale 3i64)) (held_one_tick ())) (sink ())
     := _, total = run_ticks program (\ _ => ()) 20i64
     total |> _assert_eq (45i64, 5i64)
 
+:= add_signals (a : signal i64) (b : signal i64) : signal i64 =
+    ?= a, b ?|
+    | Present x, Present y => Present (x + y)
+    | Present x, Absent => Present x
+    | Absent, Present y => Present y
+    | Absent, Absent => Absent
+
+:== four_signals = (signal i64 * signal i64) * (signal i64 * signal i64)
+
+:= merge_four () : reactor () four_signals (signal i64) =
+    { init = (); react = \ () _ ((a, b), (c, d)) => (), add_signals (add_signals a b) (add_signals c d) }
+
 test both_fans_out_and_joins =
-    := add (a : signal i64) (b : signal i64) : signal i64 =
-        ?= a, b ?|
-        | Present x, Present y => Present (x + y)
-        | Present x, Absent => Present x
-        | Absent, Present y => Present y
-        | Absent, Absent => Absent
-    := merge4 : reactor () ((signal i64 * signal i64) * (signal i64 * signal i64)) (signal i64) =
-        { init = (); react = \ () _ ((a, b), (c, d)) => (), add (add a b) (add c d) }
     := bank = both (both (scale 1i64) (scale 2i64)) (both (scale 3i64) (scale 4i64))
-    := _, total = run_ticks (chain (chain (chain (timer 3i64) bank) merge4) (sink ())) (\ _ => ()) 12i64
+    := _, total = run_ticks (chain (chain (chain (timer 3i64) bank) (merge_four ())) (sink ())) (\ _ => ()) 12i64
     total |> _assert_eq (100i64, 4i64)
 
+:= burst_start (period : i64) (burst : i32) (now : tag) : i32 * signal i32 =
+    ? now.time % period = 0i64 ?> burst - 1i32, Present burst |: 0i32, Absent
+
+:= countdown_step (period : i64) (burst : i32) (left : i32) (now : tag) (_ : ()) : i32 * signal i32 =
+    ? now.micro = 0i32 ?> burst_start period burst now
+    |? left > 0i32 ?> left - 1i32, Present left
+    |: 0i32, Absent
+
 := countdown (period : i64) (burst : i32) : reactor i32 () (signal i32) =
-    {
-        init = 0i32
-        react = \ left now () =>
-            ? now.micro = 0i32 ?>
-                ? now.time % period = 0i64 ?> burst - 1i32, Present burst |: 0i32, Absent
-            |? left > 0i32 ?> left - 1i32, Present left
-            |: 0i32, Absent
-    }
+    { init = 0i32; react = countdown_step period burst }
 
 test microsteps_run_until_absent =
     run_micro (countdown 5i64 3i32) (\ _ => ()) 10i64 100i32 (\ (sum : i64) (v : i32) => sum + conv v) 0i64
     |> _assert_eq (12i64, 6i64)
 
+:= stamped (now : tag) (v : i32) : i64 = now.time * 1000i64 + conv now.micro * 10i64 + conv v
+
+:= tick_stamp () : reactor () (signal i32) (signal i64) =
+    { init = (); react = \ () now x => ?= x ?| | Present v => (), Present (stamped now v) | Absent => (), Absent }
+
 test microsteps_share_the_tag_through_a_chain =
-    := stamp : reactor () (signal i32) (signal i64) =
-        {
-            init = ()
-            react = \ () now x =>
-                ?= x ?|
-                | Present v => (), Present (now.time * 1000i64 + conv now.micro * 10i64 + conv v)
-                | Absent => (), Absent
-        }
-    := program = chain (chain (countdown 5i64 3i32) stamp) (sink ())
+    := program = chain (chain (countdown 5i64 3i32) (tick_stamp ())) (sink ())
     run_micro program (\ _ => ()) 10i64 100i32 (\ _ (v : i64) => v) 0i64
     |> _assert_eq (15072i64, 6i64)
 
+:= sampling_tens () : reactor i64 i64 (signal i64) =
+    { init = 0i64; react = \ count now _ => count + 1i64, Present (now.time * 10i64) }
+
+:= tally_step (state : i64 * i64) (_ : tag) (x : signal i64) : (i64 * i64) * signal i64 =
+    := sum, violations = state
+    ?= x ?|
+    | Present v => ? v < 0i64 ?> (sum, violations + 1i64), x |: (sum + v, violations), x
+    | Absent => (sum, violations), x
+
+:= violation_tally () : reactor (i64 * i64) (signal i64) (signal i64) = { init = (0i64, 0i64); react = tally_step }
+
+:= lag_pattern (now : tag) : i64 = ? now.time % 4i64 = 3i64 ?> 9i64 |: now.time % 3i64
+
 test deadlines_run_the_violation_handler =
-    := sampler : reactor i64 i64 (signal i64) =
-        {
-            init = 0i64
-            react = \ count now _ => count + 1i64, Present (now.time * 10i64)
-        }
-    := guarded = with_deadline 5i64 sampler (\ count _ => count, Present -1i64)
-    := tally : reactor (i64 * i64) (signal i64) (signal i64) =
-        {
-            init = 0i64, 0i64
-            react = \ (sum, violations) _ x =>
-                ?= x ?|
-                | Present v => ? v < 0i64 ?> (sum, violations + 1i64), x |: (sum + v, violations), x
-                | Absent => (sum, violations), x
-        }
-    := lag (now : tag) : i64 = ? now.time % 4i64 = 3i64 ?> 9i64 |: now.time % 3i64
-    := _, result = run_ticks (chain guarded tally) lag 12i64
+    := guarded = with_deadline 5i64 (sampling_tens ()) (\ count _ => count, Present -1i64)
+    := _, result = run_ticks (chain guarded (violation_tally ())) lag_pattern 12i64
     result |> _assert_eq (450i64, 3i64)
+
+:= bump_member (states : array i64) (i : i32) (input : i64) : i64 =
+    := next = index states i + input * conv (i + 1i32)
+    set states i next
+    next
+
+:= bank_step (states : array i64) (members : i32) (input : i64) : i64 =
+    :~ ^ go (i : i32) (acc : i64) : i64 = ? i >= members ?> acc |: go (i + 1i32) (acc + bump_member states i input)
+    go 0i32 0i64
+
+:= bank_total (states : array i64) (members : i32) : i64 =
+    :~ ^ run (time : i64) (total : i64) : i64 =
+        ? time >= 5i64 ?> total |: run (time + 1i64) (total + bank_step states members (time + 1i64))
+    run 0i64 0i64
 
 test array_bank_keeps_member_state =
     := members = 4i32
     := states : array i64 = arraym.init members (\ _ => 0i64)
-    := step (input : i64) : i64 =
-        :~ ^ go (i : i32) (acc : i64) : i64 =
-            ? i >= members ?> acc
-            |:
-                := next = index states i + input * conv (i + 1i32)
-                set states i next
-                go (i + 1i32) (acc + next)
-        go 0i32 0i64
-    :~ ^ run (time : i64) (total : i64) : i64 =
-        ? time >= 5i64 ?> total |: run (time + 1i64) (total + step (time + 1i64))
-    run 0i64 0i64 |> _assert_eq 350i64
+    bank_total states members |> _assert_eq 350i64
+
+:= every_third (y : signal i64) : bool =
+    ?= y ?|
+    | Present v => v % 3i64 = 0i64
+    | Absent => !-
+
+:= modal_total (entry : mode_entry) : i64 =
+    := program = chain (modal entry (timer 1i64) (chain (timer 1i64) (scale 10i64)) every_third) (sink ())
+    := _, totals = run_ticks program (\ _ => ()) 9i64
+    := sum, _ = totals
+    sum
 
 test modal_reset_restarts_history_resumes =
-    := every_third (y : signal i64) : bool =
-        ?= y ?|
-        | Present v => v % 3i64 = 0i64
-        | Absent => !-
-    := total entry =
-        := _, totals =
-            run_ticks
-                (chain (modal entry (timer 1i64) (chain (timer 1i64) (scale 10i64)) every_third) (sink ()))
-                \ _ => ()
-                9i64
-        := sum, _ = totals
-        sum
-    (total Reset, total History) |> _assert_eq (72i64, 81i64)
+    (modal_total Reset, modal_total History) |> _assert_eq (72i64, 81i64)
 
 /// ### physical_micros
 := physical_micros () : i64 =

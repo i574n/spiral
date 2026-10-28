@@ -23,84 +23,87 @@ test decode_reads_a_flat_record =
 
 :== city_query = { city : string; days : option i32; units : option string }
 
-test decode_fills_missing_options_with_none =
-    := ~reply = "{\"city\":\"Recife\",\"days\":4}"
-    := q : city_query = decode reply
+:= city_query_score (q : city_query) : i32 =
     := days = ?= q.days ?| | Some d => d | None => 0i32
     := units = ?= q.units ?| | Some _ => 100i32 | None => 50i32
     days + units + sm.length q.city
-    |> _assert_eq 60i32
+
+test decode_fills_missing_options_with_none =
+    := ~reply = "{\"city\":\"Recife\",\"days\":4}"
+    city_query_score (decode reply) |> _assert_eq 60i32
 
 :== place = { city : string; days : i32 }
 :== forecast_query = { days : i32; where : place; metric : bool }
 
-test decode_reads_nested_records =
-    := ~reply = "{\"days\":3,\"where\":{\"city\":\"Cincinnati\",\"days\":40},\"metric\":true}"
-    := args : forecast_query = decode reply
+:= forecast_score (args : forecast_query) : i32 =
     := bonus = ? args.metric ?> 100i32 |: 0i32
     args.days + bonus + args.where.days + sm.length args.where.city
-    |> _assert_eq 153i32
+
+test decode_reads_nested_records =
+    := ~reply = "{\"days\":3,\"where\":{\"city\":\"Cincinnati\",\"days\":40},\"metric\":true}"
+    forecast_score (decode reply) |> _assert_eq 153i32
 
 test decode_matches_keys_at_their_own_depth =
     := ~reply =
         "{\"where\":{\"city\":\"Cincinnati\",\"days\":40},\"note\":\"\\\"days\\\":9\",\"days\":3,\"metric\":true}"
-    := args : forecast_query = decode reply
-    := bonus = ? args.metric ?> 100i32 |: 0i32
-    args.days + bonus + args.where.days + sm.length args.where.city
-    |> _assert_eq 153i32
+    forecast_score (decode reply) |> _assert_eq 153i32
 
 :== tagged_order = { customer : string; quantities : array_base i32; tags : array_base string }
 
+:= quantities_score (q : array i32) : i32 = length q * 1000i32 + index q 0i32 + index q 1i32 + index q 2i32
+
+:= tags_score (t : array string) : i32 = sm.length (index t 0i32) * 10000i32 + sm.length (index t 1i32) * 100000i32
+
+:= tagged_score (o : tagged_order) : i32 = quantities_score (array o.quantities) + tags_score (array o.tags)
+
 test decode_reads_arrays_of_scalars =
     := ~reply = "{\"customer\":\"ana\",\"quantities\":[3, 40, 200],\"tags\":[\"a,b\", \"]x\"]}"
-    := o : tagged_order = decode reply
-    := q : array i32 = array o.quantities
-    := t : array string = array o.tags
-    length q * 1000i32
-    + index q 0i32
-    + index q 1i32
-    + index q 2i32
-    + sm.length (index t 0i32) * 10000i32
-    + sm.length (index t 1i32) * 100000i32
-    |> _assert_eq 233243i32
+    tagged_score (decode reply) |> _assert_eq 233243i32
 
 :== order_line = { sku : string; qty : i32 }
 :== line_order = { customer : string; lines : array_base order_line }
 
+:= lines_score (count : i32) (first : order_line) (second : order_line) : i32 =
+    count * 1000i32 + first.qty + second.qty + sm.length first.sku * 100i32 + sm.length second.sku * 10000i32
+
+:= line_score (o : line_order) : i32 =
+    := lines : array order_line = array o.lines
+    lines_score (length lines) (index lines 0i32) (index lines 1i32)
+
 test decode_reads_arrays_of_records =
     := ~reply = "{\"customer\":\"ana\",\"lines\":[{\"sku\":\"p1\",\"qty\":2}, {\"sku\":\"p22\",\"qty\":30}]}"
-    := o : line_order = decode reply
-    := lines : array order_line = array o.lines
-    := first : order_line = index lines 0i32
-    := second : order_line = index lines 1i32
-    length lines * 1000i32 + first.qty + second.qty + sm.length first.sku * 100i32 + sm.length second.sku * 10000i32
-    |> _assert_eq 32232i32
+    line_score (decode reply) |> _assert_eq 32232i32
 
 :| units = Metric | Imperial
 :| target = TargetCity : string | TargetHere | TargetGrid : { row : i32; col : i32 }
 :== target_request = { units : units; where : target; other : target }
 
+:= where_score (where : target) : i32 =
+    ?= where ?| | TargetCity name => sm.length name * 10i32 | TargetHere => 0i32 | TargetGrid _ => 9i32
+
+:= other_score (other : target) : i32 = ?= other ?| | TargetGrid g => g.row * 1000i32 + g.col * 100i32 | _ => 0i32
+
+:= target_score (r : target_request) : i32 =
+    := u = ?= r.units ?| | Metric => 1i32 | Imperial => 2i32
+    u + where_score r.where + other_score r.other
+
 test decode_reads_unions_by_case_name =
     := ~reply =
         "{\"units\":\"Imperial\",\"where\":{\"TargetCity\":\"Recife\"},\"other\":{\"TargetGrid\":{\"row\":4,\"col\""
         ^^ ":7}}}"
-    := r : target_request = decode reply
-    := u = ?= r.units ?| | Metric => 1i32 | Imperial => 2i32
-    := w = ?= r.where ?| | TargetCity name => sm.length name * 10i32 | TargetHere => 0i32 | TargetGrid _ => 9i32
-    := o = ?= r.other ?| | TargetGrid g => g.row * 1000i32 + g.col * 100i32 | _ => 0i32
-    u + w + o
-    |> _assert_eq 4762i32
+    target_score (decode reply) |> _assert_eq 4762i32
 
 :| spot = SpotAt : i32 * i32 | SpotHere
 :== span_request = { span : i32 * string; where : spot }
 
-test decode_reads_tuples_as_pairs =
-    := ~reply = "{\"span\":[12, \"days\"],\"where\":{\"SpotAt\":[3, 9]}}"
-    := r : span_request = decode reply
+:= span_score (r : span_request) : i32 =
     := n, unit_name = r.span
     := w = ?= r.where ?| | SpotAt (x, y) => x * 1000i32 + y * 100i32 | SpotHere => 0i32
     n + sm.length unit_name * 10000i32 + w
-    |> _assert_eq 43912i32
+
+test decode_reads_tuples_as_pairs =
+    := ~reply = "{\"span\":[12, \"days\"],\"where\":{\"SpotAt\":[3, 9]}}"
+    span_score (decode reply) |> _assert_eq 43912i32
 
 :| region = RegionCity : string | RegionPoint : f64 * f64 | RegionHere
 :== forecast_args = { where : region; days : option i32; units : units; hours : array_base i32 }
@@ -126,12 +129,13 @@ test tool_schema_describes_records_unions_options_and_arrays =
 
 :== quote_query = { said : string; path : string; days : i32 }
 
-test decode_unescapes_strings =
-    := ~reply = "{\"said\":\"say \\\"hi\\\"\\n\",\"path\":\"a\\\\b\",\"days\":7}"
-    := q : quote_query = decode reply
+:= quote_score (q : quote_query) : i32 =
     := exact = ? q.said = "say \"hi\"\n" && q.path = "a\\b" ?> 10000i32 |: 0i32
     exact + q.days + sm.length q.said * 10i32 + sm.length q.path * 1000i32
-    |> _assert_eq 13097i32
+
+test decode_unescapes_strings =
+    := ~reply = "{\"said\":\"say \\\"hi\\\"\\n\",\"path\":\"a\\\\b\",\"days\":7}"
+    quote_score (decode reply) |> _assert_eq 13097i32
 
 :== stamp = { span : i32 * string * i32; flag : bool }
 

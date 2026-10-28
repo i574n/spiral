@@ -13,11 +13,143 @@
     | VSequence : list xvalue
     | VError : string
 
-:== scope = { context : located; root : located; variables : list (string * xvalue) }
+:== scope = { context : located; root : located; variables : list (string * xvalue); today : string }
 
 := attribute_node (name : string) (value : string) : xml_node = XmlElement ("@" ++# name, [], XmlText value :: [])
 
 := is_attribute (node : xml_node) : bool = sm'.starts_with "@" (node_name node)
+
+:~ ^ reversed_digits (text : string) (pos : i32) (acc : list i32) : option (list i32) =
+    ? pos >= sm'.length text ?> Some acc
+    |:
+        := digit = sm'.index_of (sm'.substring pos 1i32 text) "0123456789"
+        ? digit < 0i32 ?> None |: reversed_digits text (pos + 1i32) (digit :: acc)
+
+:~ ^ weighted_sum (digits : list i32) (index : i32) (weight : i32 -> i32) (acc : i32) : i32 =
+    ?= digits ?|
+    | digit :: rest => weighted_sum rest (index + 1i32) weight (acc + digit * weight index)
+    | [] => acc
+
+:= gln_valid (text : string) : bool =
+    ?= reversed_digits text 0i32 [] ?|
+    | Some (check :: body) =>
+        := sum = weighted_sum body 0i32 (\ index => 1i32 + ((index + 1i32) % 2i32) * 2i32) 0i32
+        (10i32 - sum % 10i32) % 10i32 = check
+    | _ => !-
+
+:= mod11_valid (text : string) : bool =
+    ?= reversed_digits text 0i32 [] ?|
+    | Some (check :: body) =>
+        := sum = weighted_sum body 0i32 (\ index => index % 6i32 + 2i32) 0i32
+        := positive = check > 0i32 || weighted_sum body 0i32 (\ _ => 1i32) 0i32 > 0i32
+        positive && (11i32 - sum % 11i32) % 11i32 = check
+    | _ => !-
+
+:~ ^ check_digits_value (digits : list i32) (acc : i32) : i32 =
+    ?= digits ?|
+    | digit :: rest => check_digits_value rest (acc * 10i32 + digit)
+    | [] => acc
+
+:= mod97_0208_valid (text : string) : bool =
+    ? sm'.length text < 10i32 ?> !-
+    |:
+        := base = reversed_digits (sm'.substring 0i32 8i32 text) 0i32 []
+        := check = reversed_digits (sm'.substring 8i32 2i32 text) 0i32 []
+        ?= base, check ?|
+        | Some base, Some check =>
+            97i32 - check_digits_value (listm.rev base) 0i32 % 97i32 = check_digits_value (listm.rev check) 0i32
+        | _ => !-
+
+:= digits_of (text : string) : option (list i32) =
+    ?= reversed_digits text 0i32 [] ?|
+    | Some reversed => Some (listm.rev reversed)
+    | None => None
+
+:= abn_valid (text : string) : bool =
+    ? sm'.length text < 11i32 ?> !-
+    |:
+        ?= digits_of (sm'.substring 0i32 11i32 text) ?|
+        | Some (first :: rest) =>
+            := sum = (first - 1i32) * 10i32 + weighted_sum rest 0i32 (\ index => 2i32 * index + 1i32) 0i32
+            sum % 89i32 = 0i32
+        | _ => !-
+
+:= luhn_term (index : i32) (digit : i32) : i32 =
+    ? index % 2i32 = 0i32 ?> (digit * 2i32) % 10i32 + (digit * 2i32) / 10i32 |: digit
+
+:~ ^ luhn_sum (reversed : list i32) (index : i32) (acc : i32) : i32 =
+    ?= reversed ?|
+    | digit :: rest => luhn_sum rest (index + 1i32) (acc + luhn_term index digit)
+    | [] => acc
+
+:= se_orgnr_valid (text : string) : bool =
+    ? sm'.length text < 10i32 ?> !-
+    |:
+        := whole = reversed_digits text 0i32 []
+        := main = reversed_digits (sm'.substring 0i32 9i32 text) 0i32 []
+        := check = reversed_digits (sm'.substring 9i32 1i32 text) 0i32 []
+        ?= whole, main, check ?|
+        | Some _, Some main, Some (check :: []) => (10i32 - luhn_sum main 0i32 0i32 % 10i32) % 10i32 = check
+        | _ => !-
+
+:~ ^ power_of_two (n : i32) : i32 = ? n <= 0i32 ?> 1i32 |: 2i32 * power_of_two (n - 1i32)
+
+:= tin_valid (text : string) : bool =
+    ? sm'.length text < 9i32 ?> !-
+    |:
+        := body = reversed_digits (sm'.substring 0i32 8i32 text) 0i32 []
+        := check = reversed_digits (sm'.substring 8i32 1i32 text) 0i32 []
+        ?= body, check ?|
+        | Some body, Some (check :: []) =>
+            := sum = weighted_sum body 0i32 (\ index => power_of_two (index + 1i32)) 0i32
+            (sum % 11i32) % 10i32 = check
+        | _ => !-
+
+:= piva_mapped (digit : i32) : i32 = ? digit < 5i32 ?> digit * 2i32 |: digit * 2i32 - 9i32
+
+:~ ^ piva_sum (digits : list i32) (doubled : bool) (acc : i32) : i32 =
+    ?= digits ?|
+    | digit :: rest => piva_sum rest (doubled = !-) (acc + ? doubled ?> piva_mapped digit |: digit)
+    | [] => acc
+
+:= piva_it_valid (text : string) : bool =
+    ? sm'.length text < 2i32 ?> !+
+    |:
+        := country = sm'.substring 0i32 2i32 text
+        ? country <> "IT" && country <> "it" ?> !+
+        |:
+            := code = sm'.substring 2i32 (sm'.length text - 2i32) text
+            ?= digits_of code ?|
+            | Some digits ?& sm'.length code = 11i32 => piva_sum digits !- 0i32 % 10i32 = 0i32
+            | _ => !-
+
+:~ ^ all_letters (text : string) (i : i32) : bool =
+    ? i >= sm'.length text ?> !+
+    |:
+        := c = code_point_at text i
+        ((c >= 65u32 && c <= 90u32) || (c >= 97u32 && c <= 122u32)) && all_letters text (i + 1i32)
+
+:~ ^ all_alnum (text : string) (i : i32) : bool =
+    ? i >= sm'.length text ?> !+
+    |:
+        := c = code_point_at text i
+        := letter = (c >= 65u32 && c <= 90u32) || (c >= 97u32 && c <= 122u32)
+        (letter || (c >= 48u32 && c <= 57u32)) && all_alnum text (i + 1i32)
+
+:= is_digit_text (text : string) : bool = text <> "" && (?= digits_of text ?| Some _ => !+ | None => !-)
+
+:= cf16_valid (text : string) : bool =
+    all_letters (sm'.substring 0i32 6i32 text) 0i32
+    && is_digit_text (sm'.substring 6i32 2i32 text)
+    && all_letters (sm'.substring 8i32 1i32 text) 0i32
+    && is_digit_text (sm'.substring 9i32 2i32 text)
+    && is_digit_text (sm'.substring 14i32 1i32 text)
+    && all_letters (sm'.substring 15i32 1i32 text) 0i32
+
+:= cf_valid (text : string) : bool =
+    ? sm'.length text = 16i32 ?> cf16_valid text |? sm'.length text = 11i32 ?> is_digit_text text |: !-
+
+:= codice_ipa_valid (text : string) : bool = sm'.length text = 6i32 && all_alnum text 0i32
 
 :~ ^ string_value (node : xml_node) : string =
     ?= node ?|
@@ -146,6 +278,14 @@
     | VBool b => Some (decimal.of_int (? b ?> 1i64 |: 0i64))
     | _ => decimal.parse (atom_text value)
 
+:= slack_holds (arguments : list xvalue) : bool =
+    ?= arguments ?|
+    | expected :: value :: slack :: [] =>
+        ?= number_of expected, number_of value, number_of slack ?|
+        | Some e, Some v, Some s =>
+            decimal.compare (decimal.add e s) v >= 0i32 && decimal.compare (decimal.subtract e s) v <= 0i32
+        | _ => !-
+    | _ => !-
 :~ ^ texts_of_value (items : list located) (acc : list string) : list string =
     ?= items ?|
     | item :: rest => texts_of_value rest (string_value item.node :: acc)
@@ -337,6 +477,255 @@
     | VSequence items => listm.length items
     | _ => 1i32
 
+:~ ^ greedy_from (p : string) (i : i32) (after_quantifier : bool) (acc : string) : string =
+    ? i >= sm'.length p ?> acc
+    |:
+        := c = code_point_at p i
+        ? c = 92u32 ?>
+            := e = xsd_regex.escape_end p i
+            greedy_from p e !- (acc ++# sm'.substring i (e - i) p)
+        |? c = 91u32 ?>
+            := e = xsd_regex.class_end p (i + 1i32) 0i32
+            greedy_from p e !- (acc ++# sm'.substring i (e - i) p)
+        |? c = 63u32 && after_quantifier ?> greedy_from p (i + 1i32) !- acc
+        |? c = 42u32 || c = 43u32 || c = 63u32 ?> greedy_from p (i + 1i32) !+ (acc ++# sm'.substring i 1i32 p)
+        |? c = 123u32 ?>
+            := e = xsd_regex.brace_end p i
+            greedy_from p e !+ (acc ++# sm'.substring i (e - i) p)
+        |:
+            := w = code_point_width p i
+            greedy_from p (i + w) !- (acc ++# sm'.substring i w p)
+
+:~ ^ has_bare_anchor (p : string) (i : i32) : bool =
+    ? i >= sm'.length p ?> !-
+    |:
+        := c = code_point_at p i
+        ? c = 92u32 ?> has_bare_anchor p (xsd_regex.escape_end p i)
+        |? c = 91u32 ?> has_bare_anchor p (xsd_regex.class_end p (i + 1i32) 0i32)
+        |? c = 94u32 || c = 36u32 ?> !+
+        |: has_bare_anchor p (i + code_point_width p i)
+
+:= search_pattern (p : string) : option string =
+    := greedy = greedy_from p 0i32 !- ""
+    := starts = sm'.starts_with "^" greedy
+    := after_start = ? starts ?> sm'.substring 1i32 (sm'.length greedy - 1i32) greedy |: greedy
+    := ends = sm'.ends_with "$" after_start && sm'.ends_with "\\$" after_start = !-
+    := body = ? ends ?> sm'.substring 0i32 (sm'.length after_start - 1i32) after_start |: after_start
+    := any = "(.|\\n|\\r)*"
+    ? has_bare_anchor body 0i32 ?> None
+    |: Some ((? starts ?> "" |: any) ++# "(" ++# body ++# ")" ++# (? ends ?> "" |: any))
+
+:= matches_value (arguments : list xvalue) : xvalue =
+    ?= arguments ?|
+    | input :: pattern :: rest =>
+        := flags = ?= rest ?| f :: _ => atom_text f | [] => ""
+        ? flags <> "" ?> VError ("matches flags are not supported: " ++# flags)
+        |:
+            := source = atom_text pattern
+            := refused = VError ("matches pattern is not supported: " ++# source)
+            ?= search_pattern source ?|
+            | Some search =>
+                ?= xsd_regex.compile_pattern search ?|
+                | Some r => VBool (xsd_regex.matches_from r (atom_text input) 0i32)
+                | None => refused
+            | None => refused
+    | _ => VError "matches takes an input and a pattern"
+
+:~ ^ code_point_index (c : string) (s : string) (i : i32) (n : i32) : i32 =
+    ? i >= sm'.length s ?> -1i32
+    |? code_point_text s i = c ?> n
+    |: code_point_index c s (i + code_point_width s i) (n + 1i32)
+
+:~ ^ code_point_nth (s : string) (i : i32) (n : i32) : string =
+    ? i >= sm'.length s ?> ""
+    |? n = 0i32 ?> code_point_text s i
+    |: code_point_nth s (i + code_point_width s i) (n - 1i32)
+
+:~ ^ translated_from (s : string) (from : string) (into : string) (i : i32) (acc : string) : string =
+    ? i >= sm'.length s ?> acc
+    |:
+        := c = code_point_text s i
+        := k = code_point_index c from 0i32 0i32
+        := mapped = ? k < 0i32 ?> c |: code_point_nth into 0i32 k
+        translated_from s from into (i + code_point_width s i) (acc ++# mapped)
+
+:= third_text (arguments : list xvalue) : string = ?= arguments ?| _ :: _ :: c :: _ => atom_text c | _ => ""
+:~ ^ split_tokens (r : xsd_regex.rx) (s : string) (start : i32) (i : i32) (acc : list xvalue) : list xvalue =
+    ? i >= sm'.length s ?> listm.rev (VText (sm'.substring start (sm'.length s - start) s) :: acc)
+    |:
+        := e = xsd_regex.longest_match r s i
+        ? e > i ?> split_tokens r s e e (VText (sm'.substring start (i - start) s) :: acc)
+        |: split_tokens r s start (i + code_point_width s i) acc
+
+:~ ^ replaced_from (r : xsd_regex.rx) (s : string) (into : string) (i : i32) (acc : string) : string =
+    ? i >= sm'.length s ?> acc
+    |:
+        := e = xsd_regex.longest_match r s i
+        ? e > i ?> replaced_from r s into e (acc ++# into)
+        |:
+            := w = code_point_width s i
+            replaced_from r s into (i + w) (acc ++# sm'.substring i w s)
+
+:= split_pattern (p : string) : option xsd_regex.rx =
+    := greedy = greedy_from p 0i32 !- ""
+    ? has_bare_anchor greedy 0i32 ?> None
+    |:
+        ?= xsd_regex.compile_pattern greedy ?|
+        | Some r => ? xsd_regex.nullable r ?> None |: Some r
+        | None => None
+
+:= tokenize_value (s : string) (p : string) : xvalue =
+    ? s = "" ?> VSequence ([])
+    |:
+        ?= split_pattern p ?|
+        | Some r => VSequence (split_tokens r s 0i32 0i32 [])
+        | None => VError ("tokenize pattern is not supported: " ++# p)
+
+:= replace_value (s : string) (p : string) (into : string) : xvalue =
+    ? sm'.contains "$" into || sm'.contains "\\" into ?> VError "replace with group references is not supported"
+    |:
+        ?= split_pattern p ?|
+        | Some r => VText (replaced_from r s into 0i32 "")
+        | None => VError ("replace pattern is not supported: " ++# p)
+
+:~ ^ values_at (n : decimal.decimal) (items : list xvalue) (position : i32) (acc : list xvalue) : list xvalue =
+    ?= items ?|
+    | item :: rest =>
+        := hit = decimal.compare n (decimal.of_int (conv position : i64)) = 0i32
+        values_at n rest (position + 1i32) (? hit ?> item :: acc |: acc)
+    | [] => listm.rev acc
+
+:~ ^ joined_with (items : list string) (separator : string) (acc : string) : string =
+    ?= items ?|
+    | item :: rest => joined_with rest separator (acc ++# separator ++# item)
+    | [] => acc
+:= round_half_even_cents (a : decimal.decimal) : i64 =
+    ? a.scale <= 2i32 ?> decimal.at_scale 2i32 a
+    |:
+        := step = decimal.power_of_ten (a.scale - 2i32) 1i64
+        := whole = decimal.floor_division a.units step
+        := rest = a.units - whole * step
+        ? rest * 2i64 > step ?> whole + 1i64
+        |? rest * 2i64 < step ?> whole
+        |: (? whole % 2i64 = 0i64 ?> whole |: whole + 1i64)
+
+:= cents_text (cents : i64) : string =
+    := negative = cents < 0i64
+    := magnitude = ? negative ?> 0i64 - cents |: cents
+    := whole = decimal.digits_text (magnitude / 100i64) ""
+    := fraction = decimal.zero_padded (decimal.digits_text (magnitude % 100i64) "") 2i32
+    (? negative ?> "-" |: "") ++# whole ++# "." ++# fraction
+
+:= format_number_value (value : xvalue) (picture : string) : xvalue =
+    ? picture <> "#0.00" ?> VError ("format-number picture is not supported: " ++# picture)
+    |:
+        ?= number_of value ?|
+        | Some n => VText (cents_text (round_half_even_cents n))
+        | None => VText "NaN"
+
+:= number_at (text : string) (start : i32) (length : i32) : option i64 =
+    ?= reversed_digits (sm'.substring start length text) 0i32 [] ?|
+    | Some (digit :: rest) => Some (conv (check_digits_value (listm.rev (digit :: rest)) 0i32) : i64)
+    | _ => None
+
+:= offset_seconds (zone : string) : option i64 =
+    ? zone = "" || zone = "Z" ?> Some 0i64
+    |? sm'.length zone = 6i32 && sm'.substring 3i32 1i32 zone = ":" ?>
+        := sign = sm'.substring 0i32 1i32 zone
+        ?= number_at zone 1i32 2i32, number_at zone 4i32 2i32 ?|
+        | Some hours, Some minutes =>
+            := magnitude = hours * 3600i64 + minutes * 60i64
+            ? sign = "+" ?> Some magnitude |? sign = "-" ?> Some (0i64 - magnitude) |: None
+        | _ => None
+    |: None
+
+:~ ^ fraction_end (text : string) (i : i32) : i32 =
+    := digit = i < sm'.length text && sm'.index_of (sm'.substring i 1i32 text) "0123456789" >= 0i32
+    ? digit ?> fraction_end text (i + 1i32) |: i
+
+:= datetime_seconds (text : string) : option i64 =
+    := t = sm'.trim text
+    := shaped = sm'.length t >= 19i32 && sm'.substring 4i32 1i32 t = "-" && sm'.substring 10i32 1i32 t = "T"
+    ? shaped = !- ?> None
+    |:
+        := zone_start = ? sm'.length t > 19i32 && sm'.substring 19i32 1i32 t = "." ?> fraction_end t 20i32 |: 19i32
+        := zone = sm'.substring zone_start (sm'.length t - zone_start) t
+        := y = number_at t 0i32 4i32
+        := mo = number_at t 5i32 2i32
+        := d = number_at t 8i32 2i32
+        := h = number_at t 11i32 2i32
+        := mi = number_at t 14i32 2i32
+        := se = number_at t 17i32 2i32
+        ?= y, mo, d, h, mi, se, offset_seconds zone ?|
+        | Some y, Some mo, Some d, Some h, Some mi, Some se, Some offset =>
+            := clock = h * 3600i64 + mi * 60i64 + se
+            Some (date_time.days_from_civil y mo d * 86400i64 + clock - offset)
+        | _ => None
+
+:~ ^ duration_from (text : string) (i : i32) (in_time : bool) (number : i64) (acc : i64) : option i64 =
+    ? i >= sm'.length text ?> Some acc
+    |:
+        := c = sm'.substring i 1i32 text
+        := digit = sm'.index_of c "0123456789"
+        ? digit >= 0i32 ?> duration_from text (i + 1i32) in_time (number * 10i64 + conv digit) acc
+        |? c = "T" ?> duration_from text (i + 1i32) !+ 0i64 acc
+        |? c = "D" && in_time = !- ?> duration_from text (i + 1i32) in_time 0i64 (acc + number * 86400i64)
+        |? c = "H" && in_time ?> duration_from text (i + 1i32) in_time 0i64 (acc + number * 3600i64)
+        |? c = "M" && in_time ?> duration_from text (i + 1i32) in_time 0i64 (acc + number * 60i64)
+        |? c = "S" && in_time ?> duration_from text (i + 1i32) in_time 0i64 (acc + number)
+        |: None
+
+:= duration_seconds (text : string) : option i64 =
+    := t = sm'.trim text
+    := negative = sm'.starts_with "-" t
+    := body = ? negative ?> sm'.substring 1i32 (sm'.length t - 1i32) t |: t
+    ? sm'.starts_with "P" body = !- ?> None
+    |:
+        ?= duration_from body 1i32 !- 0i64 0i64 ?|
+        | Some seconds => Some (? negative ?> 0i64 - seconds |: seconds)
+        | None => None
+
+:= datetime_value (value : xvalue) : xvalue =
+    ?= datetime_seconds (atom_text value) ?|
+    | Some seconds => VNumber (decimal.of_int seconds)
+    | None => VError ("not an xs:dateTime: " ++# atom_text value)
+
+:= duration_value (value : xvalue) : xvalue =
+    ?= duration_seconds (atom_text value) ?|
+    | Some seconds => VNumber (decimal.of_int seconds)
+    | None => VError ("not an xs:dayTimeDuration: " ++# atom_text value)
+
+:= string_joined (items : list string) (separator : string) : string =
+    ?= items ?|
+    | first :: rest => joined_with rest separator first
+    | [] => ""
+
+:~ ^ sequence_items (values : list xvalue) (acc : list xvalue) : list xvalue =
+    ?= values ?|
+    | VSequence inner :: rest => sequence_items rest (listm.append (listm.rev inner) acc)
+    | value :: rest => sequence_items rest (value :: acc)
+    | [] => listm.rev acc
+
+:~ ^ all_nodes (values : list xvalue) (acc : list located) : option (list located) =
+    ?= values ?|
+    | VNodes items :: rest => all_nodes rest (listm.append acc items)
+    | _ :: _ => None
+    | [] => Some acc
+
+:~ ^ first_error (values : list xvalue) : option string =
+    ?= values ?|
+    | VError reason :: _ => Some reason
+    | _ :: rest => first_error rest
+    | [] => None
+
+:= sequence_value (values : list xvalue) : xvalue =
+    ?= first_error values ?|
+    | Some reason => VError reason
+    | None =>
+    ?= all_nodes values [] ?|
+    | Some nodes => VNodes nodes
+    | None => VSequence (sequence_items values [])
+
 :~ ^ eval (s : scope) (x : xpath) : xvalue =
     ?= x ?|
     | XInvalid reason => VError reason
@@ -350,18 +739,23 @@
         | VNodes items =>
             ?= step_nodes s axis test predicates items [] ?|
             | VNodes found => (?= items ?| (_ :: Cons _) => VNodes (unique_located found []) | _ => VNodes found)
+            | VText _ | VNumber _ | VBool _ => VError "a path step or map needs nodes, not an atomic value"
             | other => other
         | VError e => VError e
         | _ => VError ("the " ++# axis_name axis ++# " step needs nodes")
     | XFilter (input, predicates) =>
         ?= eval s input ?|
         | VNodes items => VNodes (kept_by s predicates items)
+        | VSequence items => values_kept s predicates items
         | other => other
     | XApply (input, mapped) =>
         ?= eval s input ?|
         | VNodes items => mapped_each s mapped items [] []
+        | VText _ | VNumber _ | VBool _ => VError "a path step or map needs nodes, not an atomic value"
         | other => other
     | XCall (name, arguments) => call s name (evaluated s arguments [])
+    | XIf (condition, yes, no) => ? effective_boolean (eval s condition) ?> eval s yes |: eval s no
+    | XSequence items => sequence_value (evaluated s items [])
     | XBinary (op, left, right) => binary s op left right
     | XNegate operand =>
         := value = eval s operand
@@ -416,6 +810,13 @@
             | other => effective_boolean other
         kept_at s predicate rest (position + 1i32) (? keep ?> (item :: acc) |: acc)
     | [] => listm.rev acc
+:& :~ values_kept (s : scope) (predicates : list xpath) (items : list xvalue) : xvalue =
+    ?= predicates ?|
+    | predicate :: rest =>
+        ?= eval s predicate ?|
+        | VNumber n => values_kept s rest (values_at n items 1i32 [])
+        | _ => VError "only a positional predicate applies to a sequence of values"
+    | [] => VSequence items
 :& :~ mapped_each
     (s : scope) (mapped : xpath) (items : list located) (nodes : list located) (values : list xvalue)
     : xvalue
@@ -457,9 +858,23 @@
 :& :~ call (s : scope) (name : function_ref) (arguments : list xvalue) : xvalue =
     := first = ?= arguments ?| (a :: _) => a | [] => VNodes (s.context :: [])
     := second = ?= arguments ?| (_ :: b :: _) => atom_text b | _ => ""
+    ?= first_error arguments ?|
+    | Some reason => VError reason
+    | None =>
     ?= name ?|
-    | BoolFunction f => VBool (call_bool f first second)
-    | ValueFunction f => call_value f arguments first second
+    | BoolFunction f =>
+        ?= f ?|
+        | FnSlack => VBool (slack_holds arguments)
+        | FnMatches => matches_value arguments
+        | _ => VBool (call_bool f first second)
+    | ValueFunction f =>
+        ?= f ?|
+        | FnCurrentDate =>
+            ? s.today = "" ?> VError "current-date needs an evaluation date" |: VText (sm'.substring 0i32 10i32 s.today)
+        | FnCurrentDateTime =>
+            := instant = ? sm'.length s.today = 10i32 ?> s.today ++# "T00:00:00Z" |: s.today
+            ? s.today = "" ?> VError "current-dateTime needs an evaluation date" |: datetime_value (VText instant)
+        | _ => call_value f arguments first second
     | UnknownFunction text => VError ("unsupported function " ++# text)
 :& :~ call_bool (f : builtin bool_result) (first : xvalue) (second : string) : bool =
     ?= f ?|
@@ -472,6 +887,17 @@
     | FnContains => sm'.contains second (atom_text first)
     | FnStartsWith => sm'.starts_with second (atom_text first)
     | FnEndsWith => sm'.ends_with second (atom_text first)
+    | FnGln => gln_valid (atom_text first)
+    | FnMod11 => mod11_valid (atom_text first)
+    | FnMod97 => mod97_0208_valid (atom_text first)
+    | FnAbn => abn_valid (atom_text first)
+    | FnSeOrgnr => se_orgnr_valid (atom_text first)
+    | FnTin => tin_valid (atom_text first)
+    | FnPivaIt => piva_it_valid (atom_text first)
+    | FnCf => cf_valid (atom_text first)
+    | FnCodiceIpa => codice_ipa_valid (atom_text first)
+    | FnSlack => !-
+    | FnMatches => !-
 :& :~ call_value (f : builtin value_result) (arguments : list xvalue) (first : xvalue) (second : string) : xvalue =
     ?= f ?|
     | FnCount => VNumber (decimal.of_int (conv (item_count first) : i64))
@@ -503,6 +929,15 @@
     | FnLocalName => node_name_value !+ first
     | FnDistinctValues => VSequence (distinct_texts (atoms first) [] [])
     | FnSubstring => substring_value arguments
+    | FnCurrentDate => VError "current-date needs an evaluation date"
+    | FnFormatNumber => format_number_value first second
+    | FnDateTime => datetime_value first
+    | FnDayTimeDuration => duration_value first
+    | FnCurrentDateTime => VError "current-dateTime needs an evaluation date"
+    | FnTranslate => VText (translated_from (atom_text first) second (third_text arguments) 0i32 "")
+    | FnTokenize => tokenize_value (atom_text first) second
+    | FnReplace => replace_value (atom_text first) second (third_text arguments)
+    | FnStringJoin => VText (string_joined (atoms first) second)
 :& :~ numeric_value (f : builtin value_result) (first : xvalue) : xvalue =
     ? is_empty_value first ?> VSequence ([])
     |:
@@ -534,8 +969,10 @@
 := document_root (document : xml_node) : located =
     { node = XmlElement ("#document", [], document :: []); ancestors = []; path = [] }
 
-:= evaluate (document : xml_node) (context : located) (x : xpath) : xvalue =
-    eval { context = context; root = document_root document; variables = [] } x
+:= evaluate_on (today : string) (document : xml_node) (context : located) (x : xpath) : xvalue =
+    eval { context = context; root = document_root document; variables = []; today = today } x
+
+:= evaluate (document : xml_node) (context : located) (x : xpath) : xvalue = evaluate_on "" document context x
 
 :| ^ outcome r =
     | Evaluated :: bool -> outcome bool_result
@@ -606,7 +1043,7 @@ test typed_assertions_match_the_dynamic_outcome =
     ?= read_xml "<doc><a>1</a><a>2</a><b/></doc>" ?|
     | document :: [] =>
         := top = { node = document; ancestors = ((document_root document).node :: []); path = (0i32 :: []) }
-        := s = { context = top; root = document_root document; variables = [] }
+        := s = { context = top; root = document_root document; variables = []; today = "" }
         := shown (o : outcome bool_result) : string =
             ?= o ?|
             | Evaluated b => ? b ?> "true" |: "false"
@@ -630,3 +1067,84 @@ test typed_assertions_match_the_dynamic_outcome =
         check "unknown-fn(a)"
         ? shown (test_outcome s (parse "count(a) = 2")) <> "true" ?> failwith "a true comparison is evaluated"
     | _ => failwith "one document"
+
+///> rust
+test regional_functions_follow_their_definitions =
+    ?= read_xml "<r/>" ?|
+    | document :: [] =>
+        := root = { node = document; ancestors = ((document_root document).node :: []); path = (0i32 :: []) }
+        := holds rule = effective_boolean (evaluate document root (lift_code_lists (parse rule)))
+        ? holds "u:gln('7300010000001')" = !- ?> failwith "a valid GLN"
+        ? holds "u:gln('5790000435968')" = !- ?> failwith "a second valid GLN"
+        ? holds "u:gln('7300010000002')" ?> failwith "a wrong GLN check digit"
+        ? holds "u:mod11('123456785')" = !- ?> failwith "a valid mod 11"
+        ? holds "u:mod11('123456780')" ?> failwith "a wrong mod 11 check digit"
+        ? holds "u:mod11('912345670')" ?> failwith "a check value of 10 never matches a digit"
+        ? holds "u:mod97-0208('1234567894')" = !- ?> failwith "a valid mod 97"
+        ? holds "u:mod97-0208('1234567895')" ?> failwith "a wrong mod 97 check"
+        ? holds "u:slack(10, 10.004, 0.005)" = !- ?> failwith "a value within the slack"
+        ? holds "u:slack(10, 10.01, 0.005)" ?> failwith "a value beyond the slack"
+        ? holds "if (1 = 1) then true() else false()" = !- ?> failwith "if takes its then branch"
+        ? holds "if (1 = 2) then true() else false()" ?> failwith "if takes its else branch"
+        ? holds "u:slack(if (2 > 1) then 10 else 0, 10.004, 0.005)" = !-
+        ?> failwith "an if inside a call, as Peppol R040 writes it"
+        ? holds "matches('abc', 'b')" = !- ?> failwith "matches searches anywhere"
+        ? holds "matches('abc', '^b')" ?> failwith "a caret anchors to the start"
+        ? holds "matches('TR1234567ABCDEFGHIJKLMNOPQ', '^TR\\d{7}[A-Z0-9]{17}$')" = !- ?> failwith "UBL-TR's ETTN shape"
+        ? holds "matches(' 12.50 ', '^(\\s)*?[0-9][0-9]{0,16}(\\.[0-9]{1,2}(\\s)*?)?(\\s)*?$')" = !-
+        ?> failwith "reluctant quantifiers read as greedy, as UBL-TR writes amounts"
+        ? holds "matches('a', 'a', 'i')" ?> failwith "flags are refused, not ignored"
+        ? holds "translate('a-b-c', '-', '') = 'abc'" = !- ?> failwith "translate drops unmapped characters"
+        ? holds "translate('abc', 'abc', 'AB') = 'AB'" = !- ?> failwith "translate maps by position"
+        ? holds "count(tokenize('AE E S', '\\s')) = 3" = !- ?> failwith "tokenize splits Peppol code lists on spaces"
+        ? holds "string-join(tokenize('2026-10-27', '-'), '/') = '2026/10/27'" = !-
+        ?> failwith "tokenize keeps the tokens in order"
+        ? holds "tokenize('a-b-c', '-')[2] = 'b'" = !- ?> failwith "a position selects from a value sequence"
+        ? holds "count(tokenize('a-b', '-')[. = 'a']) = 2"
+        ?> failwith "a non-positional predicate on values is refused, not passed through"
+        ? holds "count('a'/x) = 1" ?> failwith "a path step on a text value is refused, not passed through"
+        ? holds "not('a'/x)" ?> failwith "an error inside a function call is an error, not a false argument"
+        ? holds "exists('a'/x)" ?> failwith "a function call propagates its argument's error"
+        ? holds "u:abn('51824753556')" = !- || holds "u:abn('51824753557')"
+        ?> failwith "the ATO example ABN, and a mutation"
+        ? holds "u:checkSEOrgnr('5560360793')" = !- || holds "u:checkSEOrgnr('5560360794')" ?> failwith "Swedish Luhn"
+        ? holds "u:TinVerification('094014298')" = !- || holds "u:TinVerification('094014299')" ?> failwith "Greek TIN"
+        ? holds "u:checkPIVAseIT('IT01234567897')" = !- || holds "u:checkPIVAseIT('IT01234567898')"
+        ?> failwith "IT P.IVA"
+        ? holds "u:checkPIVAseIT('DE123')" = !- ?> failwith "a non-Italian VAT number is not checked"
+        ? holds "u:checkCF('RSSMRA85T10A562S')" = !- || holds "u:checkCF('RSSMR185T10A562S')"
+        ?> failwith "codice fiscale"
+        ? holds "u:checkCF('12345678901')" = !- ?> failwith "an 11-digit codice fiscale"
+        ? holds "u:checkCodiceIPA('ABC123')" = !- || holds "u:checkCodiceIPA('ABC-12')" ?> failwith "codice IPA"
+        := on_day rule = effective_boolean (evaluate_on "2026-10-27" document root (lift_code_lists (parse rule)))
+        ? on_day "xs:date('2026-10-26') le xs:date(current-date())" = !-
+        ?> failwith "an earlier issue date passes, as UBL-TR checks"
+        ? on_day "xs:date('2026-10-28') le xs:date(current-date())" ?> failwith "a future issue date fails"
+        ? holds "current-date() = ''" ?> failwith "without an evaluation date current-date is refused, not empty"
+        ? holds "format-number(10.005, '#0.00') = '10.00'" = !- ?> failwith "format-number rounds half to even"
+        ? holds "format-number(10.015, '#0.00') = '10.02'" = !- ?> failwith "half to even rounds up to an even cent"
+        ? holds "format-number(7, '#0.00') = '7.00'" = !- ?> failwith "two decimals always"
+        ? holds "format-number(-0.5, '#0.00') = '-0.50'" = !- ?> failwith "a negative amount keeps its sign"
+        ? holds "xs:dateTime('2026-10-26T20:00:00-05:00') = xs:dateTime('2026-10-27T01:00:00Z')" = !-
+        ?> failwith "a zone offset is normalized to UTC"
+        ? holds "xs:dateTime('2024-03-01T00:00:00Z') - xs:dateTime('2024-02-28T00:00:00Z') = 172800" = !-
+        ?> failwith "2024 is a leap year"
+        ? on_day "xs:dateTime('2026-11-05T23:59:59Z') < current-dateTime() + xs:dayTimeDuration('P10DT0H')" = !-
+        ?> failwith "inside DIAN's ten-day window"
+        ? on_day "xs:dateTime('2026-11-06T00:00:01Z') < current-dateTime() + xs:dayTimeDuration('P10DT0H')"
+        ?> failwith "past DIAN's ten-day window"
+        ? on_day "xs:dateTime('2026-10-22T00:00:01Z') > current-dateTime() - xs:dayTimeDuration('P5DT0H')" = !-
+        ?> failwith "inside DIAN's five-day window"
+        ? holds "current-dateTime() = current-dateTime()"
+        ?> failwith "without an evaluation date current-dateTime is refused"
+        ? holds "replace('NO 12 3', '([ \\n\\r\\t\\s])', '') = 'NO123'" = !-
+        ?> failwith "replace drops the matched spaces"
+        ? holds "string-join(('a', 'b'), ' ') = 'a b'" = !- ?> failwith "string-join puts the separator between items"
+        ? holds "string-join(('', 'b'), '-') = '-b'" = !- ?> failwith "string-join keeps an empty first item"
+        ? holds "count(('a', 'b', 'c')) = 3" = !- ?> failwith "a sequence constructor counts its items"
+        ? holds "('A', 'B') = 'B'" = !- ?> failwith "a general comparison with a sequence matches any item"
+        ? holds "'C' = ('A', 'B')" ?> failwith "a general comparison with a sequence fails when no item matches"
+        ? holds "count(()) = 0" = !- ?> failwith "the empty sequence has no items"
+        ? holds "xs:integer('05') = 5" = !- ?> failwith "xs:integer reads digits as a number"
+        ? holds "count(tokenize('a', 'x*')) = 1" ?> failwith "a pattern that matches nothing is refused"
+    | _ => failwith "one root element"

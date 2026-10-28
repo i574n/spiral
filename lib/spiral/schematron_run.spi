@@ -15,6 +15,11 @@
     | item :: rest => without_fired rest fired (? has_located item fired ?> acc |: item :: acc)
     | [] => listm.rev acc
 
+:~ ^ bound (s : scope) (lets : list binding) : scope =
+    ?= lets ?|
+    | b :: rest => bound { s ?| variables = ((b.name, eval s b.value) :: s.variables) } rest
+    | [] => s
+
 :~ ^ check_assertions (s : scope) (assertions : list assertion) (acc : list failure) : list failure =
     ?= assertions ?|
     | a :: rest =>
@@ -31,12 +36,13 @@
     | [] => acc
 
 :~ ^ check_contexts
-    (s : scope) (contexts : list located) (assertions : list assertion) (acc : list failure)
+    (s : scope) (contexts : list located) (lets : list binding) (assertions : list assertion)
+    (acc : list failure)
     : list failure
     =
     ?= contexts ?|
     | context :: rest =>
-        check_contexts s rest assertions (check_assertions { s ?| context = context } assertions acc)
+        check_contexts s rest lets assertions (check_assertions (bound { s ?| context = context } lets) assertions acc)
     | [] => acc
 
 :~ ^ check_rules (s : scope) (rules : list rule) (fired : list located) (acc : list failure) : list failure =
@@ -45,7 +51,7 @@
         ?= eval s (context_query r.context_source) ?|
         | VNodes found =>
             := contexts = without_fired found fired []
-            check_rules s rest (listm.append fired contexts) (check_contexts s contexts r.assertions acc)
+            check_rules s rest (listm.append fired contexts) (check_contexts s contexts r.lets r.assertions acc)
         | VError reason =>
             := detail = r.context_source ++# ": " ++# reason
             := failure = { id = rule_id "context"; severity = Fatal; path = []; detail = detail }
@@ -55,18 +61,21 @@
 
 :~ ^ check_patterns (s : scope) (patterns : list pattern) (acc : list failure) : list failure =
     ?= patterns ?|
-    | p :: rest => check_patterns s rest (check_rules s p.rules [] acc)
+    | p :: rest => check_patterns s rest (check_rules (bound s p.lets) p.rules [] acc)
     | [] => listm.rev acc
 
-:= validate (patterns : list pattern) (document : xml_node) : list failure =
+:= validate_on (today : string) (patterns : list pattern) (document : xml_node) : list failure =
     := root = document_root document
-    check_patterns { context = root; root = root; variables = [] } patterns []
+    check_patterns { context = root; root = root; variables = []; today = today } patterns []
+
+:= validate (patterns : list pattern) (document : xml_node) : list failure = validate_on "" patterns document
 
 :~ ^ fatal_count (failures : list failure) (acc : i32) : i32 =
     ?= failures ?|
     | f :: rest => fatal_count rest (?= f.severity ?| Fatal => acc + 1i32 | _ => acc)
     | [] => acc
 
+///- --timeout 900000
 ///> rust
 test fires_the_first_matching_rule_per_pattern =
     := rules =
@@ -83,4 +92,42 @@ test fires_the_first_matching_rule_per_pattern =
         := failures = validate (read_schematron rules) root
         ? listm.length failures <> 2i32 ?> failwith "the zero charge and the line without amount fail, nothing else"
         ? fatal_count failures 0i32 <> 2i32 ?> failwith "both are fatal"
+    | _ => failwith "one document"
+
+///- --timeout 900000
+///> rust
+test lets_and_includes_assemble_the_schema =
+    := rules =
+        "<schema><let name=\"limit\" value=\"3\"/><pattern id=\"p\"><let name=\"floor\" value=\"0\"/>"
+        ++# "<rule context=\"line\"><let name=\"a\" value=\"number(amount)\"/>"
+        ++# "<assert id=\"R\" flag=\"fatal\" test=\"$a &gt; $floor and $a &lt; $limit\">range</assert></rule>"
+        ++# "</pattern></schema>"
+    := document =
+        "<doc><line><amount>1</amount></line><line><amount>5</amount></line><line><amount>0</amount></line></doc>"
+    ?= read_xml document ?|
+    | root :: [] =>
+        := failures = validate (read_schematron rules) root
+        ? listm.length failures <> 2i32 ?> failwith "the amounts outside the let-bound range fail, the one inside holds"
+        := main = "<schema><include href=\"part/rules.sch\"/></schema>"
+        := part =
+            "<?xml version=\"1.0\"?><pattern id=\"q\"><rule context=\"line\">"
+            ++# "<assert id=\"A\" flag=\"fatal\" test=\"exists(amount)\">amount</assert></rule></pattern>"
+        := load path = ? path = "dir/main.sch" ?> Some main |? path = "dir/part/rules.sch" ?> Some part |: None
+        := resolved = read_schematron_resolved load "dir/main.sch"
+        ? listm.length resolved <> 1i32 ?> failwith "the include brings in its pattern-rooted fragment"
+        ? listm.length (read_schematron main) <> 0i32 ?> failwith "the plain reader leaves the include unresolved"
+        ? listm.length (read_schematron_resolved load "dir/part/rules.sch") <> 1i32
+        ?> failwith "a fragment reads alone"
+        := unflagged =
+            "<schema><pattern><rule context=\"line\"><assert test=\"exists(amount)\">a</assert></rule>"
+            ++# "</pattern></schema>"
+        ?= read_xml "<doc><line/></doc>" ?|
+        | bare :: [] =>
+            ? listm.length (validate resolved bare) <> 1i32
+            ?> failwith "the included rule checks the line without amount"
+            ? fatal_count (validate (read_schematron unflagged) bare) 0i32 <> 0i32
+            ?> failwith "an unflagged assert defaults to information"
+            ? fatal_count (validate (read_schematron_with Fatal unflagged) bare) 0i32 <> 1i32
+            ?> failwith "a profile can make unflagged asserts fatal, as GIB requires"
+        | _ => failwith "one bare document"
     | _ => failwith "one document"

@@ -318,7 +318,7 @@ defmodule Spiral.Cells.Targets do
 
     cond do
       is_binary(dcc) and File.regular?(dcc) -> {dcc, "dcc32", []}
-      is_binary(fpc) and File.regular?(fpc) -> {fpc, "fpc", ["-O2", "-Mdelphi"]}
+      is_binary(fpc) and File.regular?(fpc) -> {fpc, "fpc", ["-O2", "-Mdelphi", "-l-", "-v0w"]}
       true -> nil
     end
   end

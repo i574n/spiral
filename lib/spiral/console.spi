@@ -115,6 +115,28 @@ test console static =
 test write_error_line_writes_without_failing =
     write_error_line "console.write_error_line probe"
 
+/// ### read_to_end
+:! stdin_handle = $'std::io::Stdin'
+
+:! stdin_error = $'std::io::Error'
+
+:= read_to_end () : string =
+    backend_switch {
+        Rust = \ () =>
+            := handle = $'std::io::stdin()' : stdin_handle
+            := read = $'std::io::read_to_string(!handle)' : resultm.result' sm'.std_string stdin_error
+            read |> resultm.unwrap_or' (sm'.to_std_string "") |> sm'.from_std_string
+        Fsharp = \ () => $'System.Console.In.ReadToEnd ()' : string
+        Python = \ () =>
+            global "import sys"
+            $'sys.stdin.read()' : string
+    }
+
+///> rust
+test read_to_end_types_without_reading =
+    := far = sm'.length "x" > 1i32
+    ? far ?> read_to_end () |> ignore |: ()
+
 /// ### write
 := write_c \* t. (x : t) : () =
     ~>

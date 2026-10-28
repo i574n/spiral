@@ -40,7 +40,7 @@ defmodule Spiral.Cells.TargetsTest do
     dcc = Path.join(dir, "dcc32.exe")
     fpc = Path.join(dir, "fpc.exe")
     File.write!(fpc, "")
-    assert {^fpc, "fpc", ["-O2", "-Mdelphi"]} = Targets.delphi_compiler(dcc: dcc, fpc: fpc)
+    assert {^fpc, "fpc", ["-O2", "-Mdelphi", "-l-", "-v0w"]} = Targets.delphi_compiler(dcc: dcc, fpc: fpc)
     File.write!(dcc, "")
     assert {^dcc, "dcc32", []} = Targets.delphi_compiler(dcc: dcc, fpc: fpc)
   end

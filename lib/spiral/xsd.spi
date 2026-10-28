@@ -86,6 +86,7 @@
     {
         target_namespace : namespace_uri
         includes : list string
+        namespace_imports : list string
         simple_types : list (xsd type_def form)
         complex_types : list (xsd type_def form)
         elements : list (xsd particle form)
@@ -311,8 +312,12 @@
                 ?= particle_of (XmlElement (name, attributes, children)) ?|
                 | Some e => { schema ?| elements = (e :: schema.elements) }
                 | None => schema
-            |? local = "include" || local = "import"
-            ?> { schema ?| includes = (attribute_or "schemaLocation" "" attributes :: schema.includes) }
+            |? local = "include" || local = "import" ?>
+                := location = attribute_or "schemaLocation" "" attributes
+                := namespace = attribute_or "namespace" "" attributes
+                ? location = "" && namespace <> ""
+                ?> { schema ?| namespace_imports = (namespace :: schema.namespace_imports) }
+                |: { schema ?| includes = (location :: schema.includes) }
             |: schema
         schema_items rest schema
     | XmlText _ :: rest => schema_items rest schema
@@ -396,6 +401,7 @@
     {
         target_namespace = schema.target_namespace
         includes = schema.includes
+        namespace_imports = schema.namespace_imports
         simple_types = canonical_all prefixes schema.simple_types []
         complex_types = canonical_all prefixes schema.complex_types []
         elements = canonical_all prefixes schema.elements []
@@ -403,7 +409,14 @@
 
 := read_schema (text : string) : xsd_schema written =
     := empty =
-        { target_namespace = namespace_uri ""; includes = []; simple_types = []; complex_types = []; elements = [] }
+        {
+            target_namespace = namespace_uri ""
+            includes = []
+            namespace_imports = []
+            simple_types = []
+            complex_types = []
+            elements = []
+        }
     ?= first_named "schema" (xml.read_xml text) ?|
     | Some (attributes, children) =>
         := target = namespace_uri (attribute_or "targetNamespace" "" attributes)
@@ -549,3 +562,14 @@ test occurs_bounds_are_typed =
     | Enumeration _ :: rest => 1i32 + count_enumerations rest
     | _ :: rest => count_enumerations rest
     | [] => 0i32
+
+///> rust
+test an_import_without_a_location_keeps_its_namespace =
+    := schema =
+        read_schema "<xs:schema><xs:import namespace=\"urn:common\"/><xs:include schemaLocation=\"a.xsd\"/></xs:schema>"
+    ?= schema.namespace_imports ?|
+    | only :: [] => ? only <> "urn:common" ?> failwith "the namespace is kept"
+    | _ => failwith "exactly one namespace-only import"
+    ?= schema.includes ?|
+    | only :: [] => ? only <> "a.xsd" ?> failwith "the located include is kept"
+    | _ => failwith "exactly one located include"

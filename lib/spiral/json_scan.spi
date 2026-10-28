@@ -15,47 +15,43 @@ test json_scan static =
     |? matches_at s needle at 0i32 m ?> at + m
     |: find_from s needle (at + 1i32) n m
 
-:~ ^ find_top (s : string) (needle : string) (at : i32) (n : i32) (m : i32) (depth : i32) (in_text : bool) : i32 =
-    ? at + m > n ?> -1i32
+:~ ^ closing_quote (s : string) (at : i32) (n : i32) : i32 =
+    ? at >= n ?> n
     |:
         := c = sm.index s at
-        ? in_text ?>
-            ? c = '"' ?> find_top s needle (at + 1i32) n m depth !-
-            |? c = '\\' ?> find_top s needle (at + 2i32) n m depth !+
-            |: find_top s needle (at + 1i32) n m depth !+
-        |? c = '"' ?>
-            ? depth = 1i32 && matches_at s needle at 0i32 m ?> at + m
-            |: find_top s needle (at + 1i32) n m depth !+
-        |? c = '{' || c = '[' ?> find_top s needle (at + 1i32) n m (depth + 1i32) !-
-        |? c = '}' || c = ']' ?> find_top s needle (at + 1i32) n m (depth - 1i32) !-
-        |: find_top s needle (at + 1i32) n m depth !-
+        ? c = '"' ?> at
+        |? c = '\\' ?> closing_quote s (at + 2i32) n
+        |: closing_quote s (at + 1i32) n
+
+:~ next_token (s : string) (at : i32) (n : i32) (c : char) : i32 =
+    ? c = '"' ?> closing_quote s (at + 1i32) n + 1i32 |: at + 1i32
+
+:~ bracket_depth (depth : i32) (c : char) : i32 =
+    ? c = '{' || c = '[' ?> depth + 1i32 |? c = '}' || c = ']' ?> depth - 1i32 |: depth
+
+:~ brace_depth (depth : i32) (c : char) : i32 = ? c = '{' ?> depth + 1i32 |? c = '}' ?> depth - 1i32 |: depth
+
+:== top_query = { s : string; needle : string; n : i32; m : i32 }
+
+:~ key_hit (q : top_query) (at : i32) (depth : i32) : bool =
+    depth = 1i32 && sm.index q.s at = '"' && matches_at q.s q.needle at 0i32 q.m
+
+:~ ^ find_top (q : top_query) (at : i32) (depth : i32) : i32 =
+    ? at + q.m > q.n ?> -1i32
+    |? key_hit q at depth ?> at + q.m
+    |:
+        := c = sm.index q.s at
+        find_top q (next_token q.s at q.n c) (bracket_depth depth c)
 
 :~ value_at (s : string) (key : string) : i32 =
     := needle = "\"" ++# key ++# "\":"
-    find_top s needle 0i32 (sm.length s) (sm.length needle) 0i32 !-
+    find_top { s = s; needle = needle; n = sm.length s; m = sm.length needle } 0i32 0i32
+
+:~ high_digit (c : char) : i32 =
+    ? c = '5' ?> 5i32 |? c = '6' ?> 6i32 |? c = '7' ?> 7i32 |? c = '8' ?> 8i32 |? c = '9' ?> 9i32 |: -1i32
 
 :~ digit_of (c : char) : i32 =
-    ? c = '0'
-    ?> 0i32
-    |? c = '1'
-    ?> 1i32
-    |? c = '2'
-    ?> 2i32
-    |? c = '3'
-    ?> 3i32
-    |? c = '4'
-    ?> 4i32
-    |? c = '5'
-    ?> 5i32
-    |? c = '6'
-    ?> 6i32
-    |? c = '7'
-    ?> 7i32
-    |? c = '8'
-    ?> 8i32
-    |? c = '9'
-    ?> 9i32
-    |: -1i32
+    ? c = '0' ?> 0i32 |? c = '1' ?> 1i32 |? c = '2' ?> 2i32 |? c = '3' ?> 3i32 |? c = '4' ?> 4i32 |: high_digit c
 
 :~ ^ digits (s : string) (at : i32) (n : i32) (acc : i32) : i32 =
     ? at >= n ?> acc
@@ -69,21 +65,11 @@ test json_scan static =
     |? sm.index s at = '-' ?> 0i32 - digits s (at + 1i32) (sm.length s) 0i32
     |: digits s at (sm.length s) 0i32
 
-:~ ^ closing_quote (s : string) (at : i32) (n : i32) : i32 =
-    ? at >= n ?> n
-    |:
-        := c = sm.index s at
-        ? c = '"' ?> at
-        |? c = '\\' ?> closing_quote s (at + 2i32) n
-        |: closing_quote s (at + 1i32) n
-
 :~ text_between (s : string) (from : i32) (until : i32) : string =
     ? until <= from ?> "" |: sm.slice s { from = from; to = until - 1i32 }
 
-:~ hex_digit (c : char) : i32 =
-    := d = digit_of c
-    ? d >= 0i32 ?> d
-    |? c = 'a' || c = 'A' ?> 10i32
+:~ hex_letter (c : char) : i32 =
+    ? c = 'a' || c = 'A' ?> 10i32
     |? c = 'b' || c = 'B' ?> 11i32
     |? c = 'c' || c = 'C' ?> 12i32
     |? c = 'd' || c = 'D' ?> 13i32
@@ -91,142 +77,141 @@ test json_scan static =
     |? c = 'f' || c = 'F' ?> 15i32
     |: -1i32
 
+:~ hex_digit (c : char) : i32 =
+    := d = digit_of c
+    ? d >= 0i32 ?> d |: hex_letter c
+
+:~ hex_pair (high : i32) (low : i32) (base : i32) : i32 = ? high < 0i32 || low < 0i32 ?> -1i32 |: high * base + low
+
+:~ hex2 (s : string) (at : i32) : i32 = hex_pair (hex_digit (sm.index s at)) (hex_digit (sm.index s (at + 1i32))) 16i32
+
 :~ hex4 (s : string) (at : i32) (n : i32) : i32 =
-    ? at + 4i32 > n ?> -1i32
-    |:
-        := a = hex_digit (sm.index s at)
-        := b = hex_digit (sm.index s (at + 1i32))
-        := c = hex_digit (sm.index s (at + 2i32))
-        := d = hex_digit (sm.index s (at + 3i32))
-        ? a < 0i32 || b < 0i32 || c < 0i32 || d < 0i32 ?> -1i32 |: ((a * 16i32 + b) * 16i32 + c) * 16i32 + d
+    ? at + 4i32 > n ?> -1i32 |: hex_pair (hex2 s at) (hex2 s (at + 2i32)) 256i32
+
+:~ is_high_surrogate (code : i32) : bool = code >= 55296i32 && code <= 56319i32
+
+:~ is_low_surrogate (code : i32) : bool = code >= 56320i32 && code <= 57343i32
+
+:~ low_surrogate_at (s : string) (at : i32) : i32 =
+    := n = sm.length s
+    := paired = at + 11i32 <= n && sm.index s (at + 5i32) = '\\' && sm.index s (at + 6i32) = 'u'
+    ? paired ?> hex4 s (at + 7i32) n |: -1i32
+
+:~ surrogate_pair (s : string) (at : i32) (code : i32) : string * i32 =
+    := low = low_surrogate_at s at
+    ? is_low_surrogate low ?> unicode.char_of (65536i32 + (code - 55296i32) * 1024i32 + (low - 56320i32)), 11i32
+    |: unicode.char_of 65533i32, 5i32
+
+:~ scalar_text (code : i32) : string = unicode.char_of (? is_low_surrogate code ?> 65533i32 |: code)
 
 :~ unicode_escape (s : string) (at : i32) : string * i32 =
-    := n = sm.length s
-    := code = hex4 s (at + 1i32) n
+    := code = hex4 s (at + 1i32) (sm.length s)
     ? code < 0i32 ?> text_between s (at - 1i32) (at + 1i32), 1i32
-    |? code >= 55296i32 && code <= 56319i32 ?>
-        := paired = at + 11i32 <= n && sm.index s (at + 5i32) = '\\' && sm.index s (at + 6i32) = 'u'
-        := low = ? paired ?> hex4 s (at + 7i32) n |: -1i32
-        ? low >= 56320i32 && low <= 57343i32 ?>
-            unicode.char_of (65536i32 + (code - 55296i32) * 1024i32 + (low - 56320i32)), 11i32
-        |: unicode.char_of 65533i32, 5i32
-    |? code >= 56320i32 && code <= 57343i32 ?> unicode.char_of 65533i32, 5i32
-    |: unicode.char_of code, 5i32
+    |? is_high_surrogate code ?> surrogate_pair s at code
+    |: scalar_text code, 5i32
+
+:~ control_escape (s : string) (at : i32) (c : char) : string =
+    ? c = 'b' ?> unicode.char_of 8i32
+    |? c = 'f' ?> unicode.char_of 12i32
+    |: text_between s (at - 1i32) (at + 1i32)
+
+:~ escaped_char (s : string) (at : i32) (c : char) : string =
+    ? c = 'n' ?> "\n"
+    |? c = 't' ?> "\t"
+    |? c = 'r' ?> "\r"
+    |? c = '"' ?> "\""
+    |? c = '\\' ?> "\\"
+    |? c = '/' ?> "/"
+    |: control_escape s at c
 
 :~ unescaped (s : string) (at : i32) : string * i32 =
     := c = sm.index s at
-    ? c = 'n' ?> "\n", 1i32
-    |? c = 't' ?> "\t", 1i32
-    |? c = 'r' ?> "\r", 1i32
-    |? c = '"' ?> "\"", 1i32
-    |? c = '\\' ?> "\\", 1i32
-    |? c = '/' ?> "/", 1i32
-    |? c = 'b' ?> unicode.char_of 8i32, 1i32
-    |? c = 'f' ?> unicode.char_of 12i32, 1i32
-    |? c = 'u' ?> unicode_escape s at
-    |: text_between s (at - 1i32) (at + 1i32), 1i32
+    ? c = 'u' ?> unicode_escape s at |: escaped_char s at c, 1i32
 
-:~ ^ unescape_from (s : string) (start : i32) (at : i32) (close : i32) (prefix : string) : string =
-    ? at >= close ?> prefix ++# text_between s start close
-    |? sm.index s at = '\\' ?>
-        := kept = prefix ++# text_between s start at
-        := piece, width = unescaped s (at + 1i32)
-        := next = at + 1i32 + width
-        unescape_from s next next close (kept ++# piece)
-    |: unescape_from s start (at + 1i32) close prefix
+:~ ^ backslash_from (s : string) (at : i32) (close : i32) : i32 =
+    ? at >= close || sm.index s at = '\\' ?> at |: backslash_from s (at + 1i32) close
 
+:~ unescape_once (s : string) (start : i32) (slash : i32) (prefix : string) : string * i32 =
+    := piece, width = unescaped s (slash + 1i32)
+    prefix ++# text_between s start slash ++# piece, slash + 1i32 + width
+
+:~ ^ unescape_from (s : string) (close : i32) (acc : string * i32) : string =
+    := text, start = acc
+    := slash = backslash_from s start close
+    ? slash >= close ?> text ++# text_between s start close |: unescape_from s close (unescape_once s start slash text)
 
 :~ parse_string (s : string) (at : i32) : string =
     ? at < 0i32 ?> ""
-    |: unescape_from s (at + 1i32) (at + 1i32) (closing_quote s (at + 1i32) (sm.length s)) ""
+    |: unescape_from s (closing_quote s (at + 1i32) (sm.length s)) ("", at + 1i32)
 
 :~ parse_bool (s : string) (at : i32) : bool = at >= 0i32 && sm.index s at = 't'
 
-:~ ^ object_end (s : string) (at : i32) (n : i32) (depth : i32) (in_text : bool) : i32 =
+:~ ^ object_end (s : string) (at : i32) (n : i32) (depth : i32) : i32 =
     ? at >= n ?> n - 1i32
     |:
         := c = sm.index s at
-        ? in_text ?>
-            ? c = '"' ?> object_end s (at + 1i32) n depth !-
-            |? c = '\\' ?> object_end s (at + 2i32) n depth !+
-            |: object_end s (at + 1i32) n depth !+
-        |? c = '"' ?> object_end s (at + 1i32) n depth !+
-        |? c = '{' ?> object_end s (at + 1i32) n (depth + 1i32) !-
-        |? c = '}' ?> (? depth = 1i32 ?> at |: object_end s (at + 1i32) n (depth - 1i32) !-)
-        |: object_end s (at + 1i32) n depth !-
+        ? c = '}' && depth = 1i32 ?> at |: object_end s (next_token s at n c) n (brace_depth depth c)
 
 :~ object_at (s : string) (at : i32) : string =
     ? at < 0i32 ?> "{}"
-    |: sm.slice s { from = at; to = object_end s at (sm.length s) 0i32 !- }
+    |: sm.slice s { from = at; to = object_end s at (sm.length s) 0i32 }
 
 :~ record_start (starts : array_base i32) (count : i32) (position : i32) : () =
     := capacity = am'.length_base starts
     ? count < capacity ?> am'.set_base starts count position
 
-:~ ^ item_starts
-    (s : string) (at : i32) (n : i32) (depth : i32) (in_text : bool) (count : i32) (starts : array_base i32)
-    : i32
-    =
-    ? at >= n ?> count
+:== item_scan = { s : string; n : i32; starts : array_base i32 }
+
+:~ splits_item (c : char) (depth : i32) : bool = (depth = 0i32 && c = '[') || (depth = 1i32 && c = ',')
+
+:~ counted (q : item_scan) (at : i32) (depth : i32) (count : i32) (c : char) : i32 =
+    ? splits_item c depth ?>
+        record_start q.starts count (at + 1i32)
+        count + 1i32
+    |: count
+
+:~ closes (c : char) (depth : i32) : bool = depth = 1i32 && (c = ']' || c = '}')
+
+:~ item_next (q : item_scan) (at : i32) (c : char) : i32 = next_token q.s at q.n c
+
+:~ ^ item_starts (q : item_scan) (at : i32) (depth : i32) (count : i32) : i32 =
+    ? at >= q.n ?> count
     |:
-        := c = sm.index s at
-        := next = at + 1i32
-        ? in_text ?>
-            ? c = '"' ?> item_starts s next n depth !- count starts
-            |? c = '\\' ?> item_starts s (at + 2i32) n depth !+ count starts
-            |: item_starts s next n depth !+ count starts
-        |? c = '"' ?> item_starts s next n depth !+ count starts
-        |? c = '[' || c = '{' ?>
-            ? depth = 0i32 && c = '[' ?>
-                record_start starts count next
-                item_starts s next n (depth + 1i32) !- (count + 1i32) starts
-            |: item_starts s next n (depth + 1i32) !- count starts
-        |? c = ']' || c = '}' ?>
-            ? depth = 1i32 ?> count |: item_starts s next n (depth - 1i32) !- count starts
-        |? c = ',' && depth = 1i32 ?>
-            record_start starts count next
-            item_starts s next n depth !- (count + 1i32) starts
-        |: item_starts s next n depth !- count starts
+        := c = sm.index q.s at
+        ? closes c depth ?> count
+        |: item_starts q (item_next q at c) (bracket_depth depth c) (counted q at depth count c)
 
 :~ ^ skip_spaces (s : string) (at : i32) : i32 = ? sm.index s at = ' ' ?> skip_spaces s (at + 1i32) |: at
 
+:~ has_items (s : string) (at : i32) : bool =
+    at >= 0i32 && sm.index s at = '[' && sm.index s (skip_spaces s (at + 1i32)) <> ']'
+
+:~ items_into (s : string) (at : i32) (starts : array_base i32) : i32 =
+    item_starts { s = s; n = sm.length s; starts = starts } at 0i32 0i32
+
 :~ item_positions (s : string) (at : i32) : array_base i32 =
-    := n = sm.length s
-    ? at < 0i32 ?> am'.create_base 0i32
-    |? sm.index s at <> '[' ?> am'.create_base 0i32
-    |? sm.index s (skip_spaces s (at + 1i32)) = ']' ?> am'.create_base 0i32
-    |:
-        := probe : array_base i32 = am'.create_base 0i32
-        := count = item_starts s at n 0i32 !- 0i32 probe
-        := starts : array_base i32 = am'.create_base count
-        := _ = item_starts s at n 0i32 !- 0i32 starts
+    ? has_items s at ?>
+        := starts : array_base i32 = am'.create_base (items_into s at (am'.create_base 0i32))
+        := _ = items_into s at starts
         starts
+    |: am'.create_base 0i32
+
+:= fill_array \* el. (count : i32) (item : i32 -> el) : array_base el =
+    := out : array_base el = am'.create_base count
+    :~ ^ fill (i : i32) : () =
+        ? i < count ?>
+            am'.set_base out i (item i)
+            fill (i + 1i32)
+    fill 0i32
+    out
 
 :~ parse_i32_array (s : string) (at : i32) : array_base i32 =
     := starts = item_positions s at
-    := count = am'.length_base starts
-    := out : array_base i32 = am'.create_base count
-    :~ ^ fill (i : i32) : () =
-        ? i < count ?>
-            := start = am'.index_base i starts
-            := value = parse_i32 s (skip_spaces s start)
-            am'.set_base out i value
-            fill (i + 1i32)
-    fill 0i32
-    out
+    fill_array (am'.length_base starts) (\ i => parse_i32 s (skip_spaces s (am'.index_base i starts)))
 
 :~ parse_string_array (s : string) (at : i32) : array_base string =
     := starts = item_positions s at
-    := count = am'.length_base starts
-    := out : array_base string = am'.create_base count
-    :~ ^ fill (i : i32) : () =
-        ? i < count ?>
-            := start = am'.index_base i starts
-            := value = parse_string s (skip_spaces s start)
-            am'.set_base out i value
-            fill (i + 1i32)
-    fill 0i32
-    out
+    fill_array (am'.length_base starts) (\ i => parse_string s (skip_spaces s (am'.index_base i starts)))
 
 :~ item_count (s : string) (at : i32) : i32 =
     := starts = item_positions s at
@@ -236,16 +221,6 @@ test json_scan static =
     := starts = item_positions s at
     := start = am'.index_base i starts
     skip_spaces s start
-
-:= fill_array \* el. (count : i32) (item : i32 -> el) : array_base el =
-    := out : array_base el = am'.create_base count
-    :~ ^ fill (i : i32) : () =
-        ? i < count ?>
-            := value = item i
-            am'.set_base out i value
-            fill (i + 1i32)
-    fill 0i32
-    out
 
 :~ union_case_name (s : string) (at : i32) : string =
     ? at < 0i32 ?> ""
@@ -262,15 +237,17 @@ test json_scan static =
         := close = closing_quote s (key_at + 1i32) (sm.length s)
         skip_spaces s (close + 2i32)
 
+:= unicode_escapes_decoded () : string =
+    := a = "caf" ++# unicode.char_of 233i32
+    := b = a ++# " " ++# unicode.char_of 128512i32
+    b ++# " " ++# unicode.char_of 65533i32 ++# " x\n"
+
 ///> rust
 ///> gleam
 ///> c
 test parse_string_decodes_unicode_escapes =
     := ~s = "\"caf\\u00e9 \\ud83d\\ude00 \\ud800 x\\n\""
-    := a = "caf" ++# unicode.char_of 233i32
-    := b = a ++# " " ++# unicode.char_of 128512i32
-    := c = b ++# " " ++# unicode.char_of 65533i32
-    parse_string s 0i32 |> _assert_eq (c ++# " x\n")
+    parse_string s 0i32 |> _assert_eq (unicode_escapes_decoded ())
 
 ///> rust
 ///> gleam

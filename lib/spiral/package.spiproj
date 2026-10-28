@@ -120,5 +120,7 @@ modules:
     cursor_walk
     oauth
     dictm
+    cli_flags
+    cli_args_real*
     cli_args
     iggy

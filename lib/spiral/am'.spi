@@ -517,7 +517,7 @@ test new_vec =
 test new_vec_keeps_a_list_built_at_runtime =
     :~ ^ build (n : i32) (acc : list i32) : list i32 = ? n <= 0i32 ?> acc |: build (n - 1i32) (n :: acc)
     := ~count = 3i32
-    build count Nil |> new_vec |> vec_len |> convert.i32 |> _assert_eq 3i32
+    build count [] |> new_vec |> vec_len |> convert.i32 |> _assert_eq 3i32
 
 /// ## fsharp
 
@@ -617,11 +617,15 @@ test to_list =
 
 /// ### parallel_map
 := parallel_map \* el el'. (fn : el -> el') (a : array el) : array el' =
-    $'!a |> Array.Parallel.map !fn '
+    run_target \|
+        | Fsharp => \ () => $'!a |> Array.Parallel.map !fn ' : array el'
+        | _ => \ () => arraym.map fn a
 
 /// ### map'
 := map' \* el el'. (fn : el -> el') (a : array el) : array el' =
-    $'!a |> Array.map !fn '
+    run_target \|
+        | Fsharp => \ () => $'!a |> Array.map !fn ' : array el'
+        | _ => \ () => arraym.map fn a
 
 /// ### sort_by
 := sort_by \* el key. (fn : el -> key) (a : array el) : array el =
@@ -716,7 +720,26 @@ test sort_orders_on_every_backend =
 
 /// ### transpose
 := transpose \* el. (a : array_base (array_base el)) : array_base (array_base el) =
-    $'!a |> Array.transpose'
+    run_target \|
+        | Fsharp => \ () => $'!a |> Array.transpose' : array_base (array_base el)
+        | _ => \ () =>
+            := rows : array (array_base el) = array a
+            := height : int = length rows
+            := width : int = ? height = 0 ?> 0 |: length (array (index 0 rows) : array el)
+            arraym.init width (\ (c : int) =>
+                arraym.init height (\ (r : int) => index c (array (index r rows) : array el))
+                |> \ (array column : array el) => column
+            )
+            |> \ (array result : array (array_base el)) => result
+
+///> fsharp
+///> rust
+test transpose_swaps_rows_and_columns =
+    := row = \ (cells : array i32) => cells |> \ (array x : array i32) => x
+    := rows : array (array_base i32) = ;[ row ;[ 1i32; 2i32; 3i32 ]; row ;[ 4i32; 5i32; 6i32 ] ]
+    := flipped : array (array_base i32) = array (rows |> \ (array x : array (array_base i32)) => x |> transpose)
+    := last : array i32 = array (index 2 flipped)
+    (length flipped, index 0 last, index 1 last) |> _assert_eq (3, 3i32, 6i32)
 
 /// ### try_item
 := try_item \* el. (i : i32) (a : array el) : option el =

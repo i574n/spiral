@@ -18,6 +18,7 @@ if ($Mode -in 'hopacsota', 'hs') {
 $dotnet = Resolve-SpiralDotnet
 $cache = Get-SpiralCacheDir
 $sharedCache = if ($IsWindows) { Join-Path $env:LOCALAPPDATA 'spiral-bin' } else { Join-Path $HOME '.cache/spiral-bin' }
+$detRoot = Get-SpiralDetRoot
 $project = Join-Path $BundleRoot 'compiler/host/SpiralCompiler.fsproj'
 $modes = if ($Mode -eq 'both') { 'single-flight', 'gpt5parallel' } else { ConvertTo-SpiralMode $Mode }
 $receipts = Join-Path $cache 'results/builds.tsv'
@@ -155,7 +156,7 @@ $failed = $false
 foreach ($m in $modes) {
     $core = if ($CoreSource) { (Resolve-Path $CoreSource).Path } else { Get-SpiralCoreSource $m }
     $coreSha = Get-FileSha256 $core
-    $staged = Join-Path $sharedCache "core-src/$m/$($coreSha.Substring(0, 16))/spiral_compiler.fs"
+    $staged = Join-Path $detRoot "core-src/$m/$($coreSha.Substring(0, 16))/spiral_compiler.fs"
     New-Item -ItemType Directory -Force (Split-Path $staged) | Out-Null
     if (-not (Test-Path $staged) -or (Get-FileSha256 $staged) -ne $coreSha) { Copy-Item -LiteralPath $core -Destination $staged -Force }
     (Get-Item -LiteralPath (Split-Path $staged)).LastWriteTime = Get-Date
@@ -165,9 +166,9 @@ foreach ($m in $modes) {
         (Get-Item -LiteralPath $staged).LastWriteTime = Get-Date
         [IO.File]::WriteAllText($lastStaged, $staged)
     }
-    Get-ChildItem (Join-Path $sharedCache "core-src/$m") -Directory -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -Skip 8 |
+    Get-ChildItem (Join-Path $detRoot "core-src/$m") -Directory -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -Skip 8 |
         ForEach-Object { try { [IO.Directory]::Delete($_.FullName, $true) } catch { } }
-    $args = @('build', $project, '-c', $Configuration, "-p:SpiralCore=$m", "-p:SpiralCacheDir=$cache", "-p:SpiralCoreSource=$staged", "-p:PathMap=$cache=$sharedCache", '-nologo', '-v:m')
+    $args = @('build', $project, '-c', $Configuration, "-p:SpiralCore=$m", "-p:SpiralCacheDir=$cache", "-p:SpiralCoreSource=$staged", "-p:PathMap=$cache=/_/%2c$BundleRoot=/_b/", '-nologo', '-v:m')
     Write-Host "== building $m ($Configuration) from $core"
     $sw = [Diagnostics.Stopwatch]::StartNew()
     $gcSaved = $env:DOTNET_gcServer, $env:DOTNET_GCConserveMemory, $env:MSBUILDDISABLENODEREUSE

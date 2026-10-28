@@ -525,7 +525,7 @@ test to_array_2 =
             $'!items |> list.reverse' : seq' t
         Fsharp = \ () => items |> $'Seq.rev' : seq' t
         Python = \ () => $'list(reversed(!items))' : seq' t
-        Rust = \ () => $'Rc::new({ let mut v = (!items).as_ref().clone(); v.reverse(); v })' : seq' t
+        Rust = \ () => $'Rc::new((!items).as_ref().iter().rev().cloned().collect::<Vec<_>>())' : seq' t
         TypeScript = \ () => $'[...!items].reverse()' : seq' t
         Zig = fun () => $'blk: { const r = spiral_gpa.dupe(`t, !items) catch \@panic("out of memory"); \
             std.mem.reverse(`t, r); break :blk r; }' : seq' t

@@ -193,7 +193,7 @@ test memoize =
 test join_body static =
     := ^ fold_list f s = \|
         | x :: x' => fold_list f (f s x) x'
-        | Nil => s
+        | [] => s
 
 ///> gleam
 ///> lua

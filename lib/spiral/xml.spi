@@ -35,6 +35,20 @@
 
 := code_point_text (s : string) (i : i32) : string = sm'.substring i (code_point_width s i) s
 
+:= is_space_character (c : string) : bool = c = " " || c = "\t" || c = "\n" || c = "\r"
+
+:= replaced_space (s : string) : string = s |> sm'.replace "\t" " " |> sm'.replace "\n" " " |> sm'.replace "\r" " "
+
+:~ ^ collapsed_from (s : string) (i : i32) (gap : bool) (acc : string) : string =
+    ? i >= sm'.length s ?> acc
+    |:
+        := c = code_point_text s i
+        := next = i + code_point_width s i
+        ? is_space_character c ?> collapsed_from s next (acc <> "") acc
+        |? gap ?> collapsed_from s next !- (acc ++# " " ++# c)
+        |: collapsed_from s next !- (acc ++# c)
+
+:= collapsed_space (s : string) : string = collapsed_from s 0i32 !- ""
 :~ ^ text_order_from (a : string) (b : string) (i : i32) : i32 =
     ? i >= sm'.length a && i >= sm'.length b ?> 0i32
     |? i >= sm'.length a ?> -1i32
@@ -283,6 +297,12 @@ test measures_the_shape_of_a_schema =
     | Some value => value
     | None => failwith ("missing attribute " ++# key)
 
+:= checked_fixed (key : string) (fixed : string) (attributes : list (string * string)) : list (string * string) =
+    ?= attribute_of key attributes ?|
+    | Some value ?& sm'.trim value <> fixed =>
+        failwith ("attribute " ++# key ++# " is fixed to " ++# fixed ++# " but reads " ++# value)
+    | _ => attributes
+
 := required_value \* t. (what : string) (value : option t) : t =
     ?= value ?|
     | Some x => x
@@ -302,6 +322,14 @@ test measures_the_shape_of_a_schema =
         ? named_in (local_name name) claimed ?> unclaimed_children claimed rest
         |: XmlElement (name, attributes, children) :: unclaimed_children claimed rest
     | _ :: rest => unclaimed_children claimed rest
+    | [] => []
+
+:~ ^ claimed_children (claimed : list string) (nodes : list xml_node) : list xml_node =
+    ?= nodes ?|
+    | XmlElement (name, attributes, children) :: rest =>
+        ? named_in (local_name name) claimed ?> XmlElement (name, attributes, children) :: claimed_children claimed rest
+        |: claimed_children claimed rest
+    | _ :: rest => claimed_children claimed rest
     | [] => []
 
 := text_children (text : string) : list xml_node = ? text = "" ?> [] |: XmlText text :: []
@@ -457,3 +485,105 @@ test a_prefixed_target_matches_the_same_local_element =
         ? has_child "cbc:ID" children = !- ?> failwith "a prefixed lookup finds the prefixed element"
         ? has_child "ID" children = !- ?> failwith "an unprefixed lookup still finds it"
     | _ => failwith "one root element"
+
+///> rust
+test claimed_children_keep_the_named_elements_in_order =
+    := nodes = read_xml "<r><b/><x/><a/><b/></r>"
+    ?= nodes ?|
+    | XmlElement (_, _, children) :: [] =>
+        ?= claimed_children [ "a"; "b" ] children ?|
+        | XmlElement (first, _, _) :: XmlElement (second, _, _) :: XmlElement (third, _, _) :: [] =>
+            ? first <> "b" || second <> "a" || third <> "b" ?> failwith "document order is kept"
+        | _ => failwith "exactly the three named elements are kept"
+    | _ => failwith "one root element"
+
+:~ ^ elements_of (nodes : list xml_node) (acc : list xml_node) : list xml_node =
+    ?= nodes ?|
+    | XmlElement (name, attributes, children) :: rest =>
+        elements_of rest (XmlElement (name, attributes, children) :: acc)
+    | _ :: rest => elements_of rest acc
+    | [] => listm.rev acc
+
+:~ ^ content_attributes (attributes : list (string * string)) (acc : list (string * string)) : list (string * string) =
+    ?= attributes ?|
+    | (key, value) :: rest =>
+        ? key = "xmlns" || sm'.starts_with "xmlns:" key || sm'.starts_with "xsi:" key
+        ?> content_attributes rest acc
+        |: content_attributes rest ((local_name key, value) :: acc)
+    | [] => acc
+
+:~ ^ has_attribute_pair (key : string) (value : string) (pairs : list (string * string)) : bool =
+    ?= pairs ?|
+    | (k, v) :: rest => (k = key && v = value) || has_attribute_pair key value rest
+    | [] => !-
+
+:~ ^ missing_attribute (from : list (string * string)) (into : list (string * string)) : option string =
+    ?= from ?|
+    | (key, value) :: rest =>
+        ? has_attribute_pair key value into ?> missing_attribute rest into |: Some (key ++# "=" ++# value)
+    | [] => None
+
+:~ ^ first_difference_at (path : string) (expected : xml_node) (actual : xml_node) : option string =
+    := name = local_name (node_name expected)
+    := here = path ++# "/" ++# name
+    ? name <> local_name (node_name actual) ?> Some (here ++# ": element " ++# local_name (node_name actual))
+    |:
+        := wanted = content_attributes (element_attributes expected) []
+        := got = content_attributes (element_attributes actual) []
+        ?= missing_attribute wanted got ?|
+        | Some a => Some (here ++# ": missing attribute " ++# a)
+        | None =>
+            ?= missing_attribute got wanted ?|
+            | Some a => Some (here ++# ": extra attribute " ++# a)
+            | None =>
+                := expected_children = elements_of (element_children expected) []
+                := actual_children = elements_of (element_children actual) []
+                ? listm.length expected_children = 0i32 && listm.length actual_children = 0i32
+                ?>
+                    := e = sm'.trim (text_in (element_children expected))
+                    := a = sm'.trim (text_in (element_children actual))
+                    ? e = a ?> None |: Some (here ++# ": text '" ++# e ++# "' vs '" ++# a ++# "'")
+                |: first_child_difference here expected_children actual_children
+
+:& :~ first_child_difference (path : string) (expected : list xml_node) (actual : list xml_node) : option string =
+    ?= expected ?|
+    | e :: rest_expected =>
+        ?= actual ?|
+        | a :: rest_actual =>
+            ?= first_difference_at path e a ?|
+            | Some d => Some d
+            | None => first_child_difference path rest_expected rest_actual
+        | [] => Some (path ++# ": missing " ++# local_name (node_name e))
+    | [] =>
+        ?= actual ?|
+        | a :: _ => Some (path ++# ": extra " ++# local_name (node_name a))
+        | [] => None
+
+:= first_difference (expected : xml_node) (actual : xml_node) : option string = first_difference_at "" expected actual
+
+///> rust
+test first_difference_ignores_prefixes_and_names_the_first_lost_content =
+    := root_of (text : string) : xml_node =
+        ?= read_xml text ?|
+        | node :: [] => node
+        | _ => failwith "one root element"
+    := plain = root_of "<r xmlns=\"urn:x\"><a k=\"1\">x</a><b> y </b></r>"
+    := prefixed = root_of "<p:r xmlns:p=\"urn:x\"><p:a k=\"1\">x</p:a><p:b>y</p:b></p:r>"
+    := changed = root_of "<r><a k=\"2\">x</a><b>y</b></r>"
+    ?= first_difference plain prefixed ?|
+    | Some d => failwith ("prefixes and surrounding whitespace are not differences: " ++# d)
+    | None => ()
+    ?= first_difference plain changed ?|
+    | Some d =>
+        ? sm'.contains "/r/a: missing attribute k=1" d = !- ?> failwith ("the changed attribute is named: " ++# d)
+    | None => failwith "a changed attribute is a difference"
+
+///> rust
+test white_space_and_fixed_attributes_follow_the_xsd_rules =
+    ? replaced_space "a\tb\nc\r" <> "a b c " ?> failwith "replace turns tab, newline and return into spaces"
+    ? collapsed_space "\n  12.00 \t" <> "12.00" ?> failwith "collapse trims"
+    ? collapsed_space " a  \n b   c " <> "a b c" ?> failwith "collapse joins inner runs into one space"
+    ? collapsed_space "  é  ü " <> "é ü" ?> failwith "collapse keeps non-ASCII code points whole"
+    ? collapsed_space " \n\t " <> "" ?> failwith "only spaces collapse to nothing"
+    ? listm.length (checked_fixed "Version" "4.0" [("Version", "4.0")]) <> 1i32 ?> failwith "the fixed value reads"
+    ? listm.length (checked_fixed "Version" "4.0" []) <> 0i32 ?> failwith "an absent fixed attribute stays absent"

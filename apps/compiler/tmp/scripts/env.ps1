@@ -12,6 +12,15 @@ function Get-SpiralCacheDir {
     (Resolve-Path $dir).Path
 }
 
+function Get-SpiralDetRoot {
+    $dir =
+        if ($env:SPIRAL_DET_ROOT) { $env:SPIRAL_DET_ROOT }
+        elseif ($IsWindows) { 'C:\home\spiral-cache' }
+        else { Join-Path $HOME 'spiral-cache' }
+    New-Item -ItemType Directory -Force $dir | Out-Null
+    (Resolve-Path $dir).Path
+}
+
 function ConvertTo-SpiralMode([string]$Mode) {
     switch -Regex ($Mode) {
         '^(sf|single|single-flight)$' { 'single-flight' }

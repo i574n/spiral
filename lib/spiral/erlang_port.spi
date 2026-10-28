@@ -16,9 +16,13 @@ test erlang_port static =
 
 /// ## ports
 
+/// ### spawn_executable_name
+:= spawn_executable_name (executable : erlang_term.term) : erlang_term.term =
+    erlang_term.tuple [ erlang_term.atom "spawn_executable"; executable ]
+
 /// ### open_executable
 := open_executable (executable : erlang_term.term) (options : list erlang_term.term) : port =
-    := name = erlang_term.tuple [ erlang_term.atom "spawn_executable"; executable ]
+    := name = spawn_executable_name executable
     erlang_term.apply "erlang" "open_port" [ name; erlang_term.list_term options ] |> erlang_term.cast
 
 /// ### term_of
@@ -72,17 +76,32 @@ test erlang_port static =
 /// ### event_value
 := event_value (event : erlang_term.term) : erlang_term.term = element 2i32 event
 
+/// ### halt_args
+:= halt_args () : erlang_term.term =
+    [ "-noshell"; "-eval"; "halt(3)." ] |> listm.map erlang_term.charlist |> erlang_term.list_term
+
+:= erl_halt_port () : port =
+    := found = erlang_term.apply "os" "find_executable" [ erlang_term.charlist "erl" ]
+    := args = erlang_term.tuple [ erlang_term.atom "args"; halt_args () ]
+    open_executable found [ erlang_term.atom "exit_status"; args ]
+
+/// ### exit_text
+:= exit_text (outcome : received) : option string =
+    := event = message_event (received_message outcome (erlang_term.atom "none"))
+    ? event_kind event = "exit_status" ?> Some ("exit " ++#? (event_value event |> erlang_term.cast : i32)) |: None
+
+:= exit_text_or (outcome : received) (next : () -> string) : string =
+    ?= exit_text outcome ?|
+    | Some text => text
+    | None => next ()
+
+:~ ^ exit_text_within (p : port) (left : i32) : string =
+    := outcome = receive_within (selector_of p) 30000i32
+    ? received_some outcome = !- || left <= 0i32 ?> "timeout"
+    |: exit_text_or outcome (\ () => exit_text_within p (left - 1i32))
+
 ///> gleam
 test an_executable_port_reports_its_os_pid_and_exit =
-    := found = erlang_term.apply "os" "find_executable" [ erlang_term.charlist "erl" ]
-    := args = [ "-noshell"; "-eval"; "halt(3)." ] |> listm.map erlang_term.charlist |> erlang_term.list_term
-    := p = open_executable found [ erlang_term.atom "exit_status"; erlang_term.tuple [ erlang_term.atom "args"; args ] ]
-    := pid = os_pid p
-    :~ ^ until_exit (left : i32) : string =
-        := outcome = receive_within (selector_of p) 30000i32
-        ? received_some outcome = !- || left <= 0i32 ?> "timeout"
-        |:
-            := event = message_event (received_message outcome (erlang_term.atom "none"))
-            ? event_kind event = "exit_status" ?> "exit " ++#? (event_value event |> erlang_term.cast : i32)
-            |: until_exit (left - 1i32)
-    (pid > 0i32, until_exit 50i32) |> _assert_eq (!+, "exit 3")
+    := p = erl_halt_port ()
+    (os_pid p > 0i32, exit_text_within p 50i32) |> _assert_eq (!+, "exit 3")
+

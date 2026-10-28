@@ -17,13 +17,13 @@ fn closure0() -> Rc<dyn Fn((i32)) -> US0> {
 }
 fn spiral_main() -> i32 {
     let v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("ff"); } LIT.with(|lit| lit.clone()) };
-    let v1: i32 = i32::from_str_radix(&*(v0), (16i32) as u32).unwrap();
+    let v1: i32 = i32::from_str_radix(&*(v0), 16u32).unwrap();
     println!("{}", v1);
     let v2: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("1011"); } LIT.with(|lit| lit.clone()) };
-    let v3: i32 = i32::from_str_radix(&*(v2), (2i32) as u32).unwrap();
+    let v3: i32 = i32::from_str_radix(&*(v2), 2u32).unwrap();
     println!("{}", v3);
     let v4: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("-42"); } LIT.with(|lit| lit.clone()) };
-    let v5: i32 = i32::from_str_radix(&*(v4), (10i32) as u32).unwrap();
+    let v5: i32 = i32::from_str_radix(&*(v4), 10u32).unwrap();
     println!("{}", v5);
     let v6: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(" 123 "); } LIT.with(|lit| lit.clone()) };
     let v7: Option<i32> = (v6).trim().parse::<i32>().ok();

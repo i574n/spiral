@@ -242,6 +242,14 @@ test catalog_maps_absolute_locations_to_local_files =
     := final = final_name (namespace_text schema.target_namespace) (colliding_locals names [] [])
     rename_schema (renamed_definition final) (renamed_reference final) schema
 
+:~ ^ catalogued_namespaces (catalog : schema_catalog) (namespaces : list string) (acc : list string) : list string =
+    ?= namespaces ?|
+    | namespace :: rest =>
+        ?= catalog_location catalog namespace ?|
+        | Some _ => catalogued_namespaces catalog rest (namespace :: acc)
+        | None => catalogued_namespaces catalog rest acc
+    | [] => acc
+
 :~ ^ load_tree (catalog : schema_catalog) (path : string) (tree : loaded_tree qualified) : loaded_tree qualified =
     ? has_string path tree.paths ?> tree
     |? xml.is_file path = !- ?> { tree ?| missing = (path :: tree.missing) }
@@ -249,7 +257,8 @@ test catalog_maps_absolute_locations_to_local_files =
         := text = xml.read_text_replacing_invalid_utf8 path
         := schema = text |> read_schema |> qualify_schema (schema_namespaces text)
         := loaded = { tree ?| paths = (path :: tree.paths); schema = merge schema tree.schema }
-        load_includes catalog (directory_of path) schema.includes loaded
+        := locations = listm.append schema.includes (catalogued_namespaces catalog schema.namespace_imports [])
+        load_includes catalog (directory_of path) locations loaded
 
 :& :~ load_includes
     (catalog : schema_catalog)
@@ -266,7 +275,14 @@ test catalog_maps_absolute_locations_to_local_files =
 
 := load_schema_tree_with (catalog : schema_catalog) (path : string) : loaded_tree final =
     := empty =
-        { target_namespace = namespace_uri ""; includes = []; simple_types = []; complex_types = []; elements = [] }
+        {
+            target_namespace = namespace_uri ""
+            includes = []
+            namespace_imports = []
+            simple_types = []
+            complex_types = []
+            elements = []
+        }
     := tree = load_tree catalog path { paths = []; missing = []; schema = empty }
     { tree ?| schema = finalize_names tree.schema }
 
@@ -348,3 +364,12 @@ test unresolved_count_counts_dangling_type_references =
     ? unresolved_count (tree defined) <> 0i32 ?> failwith "a defined type resolves"
     ? is_builtin "xs:string" = !- ?> failwith "xs:string is built in"
     ? is_builtin "T" ?> failwith "a schema type is not built in"
+
+///> rust
+test namespace_only_imports_resolve_through_the_catalog =
+    := catalog = ("urn:common", "C:/corpus/common.xsd") :: []
+    ?= catalogued_namespaces catalog [ "urn:common"; "urn:unknown" ] [] ?|
+    | only :: [] =>
+        ? resolved_location catalog "C:/x/" only <> "C:/corpus/common.xsd"
+        ?> failwith "a namespace key maps to its file"
+    | _ => failwith "only the catalogued namespace is kept"

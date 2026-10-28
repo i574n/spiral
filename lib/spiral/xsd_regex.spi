@@ -274,6 +274,30 @@
 
 := last_code_point () : u32 = 1114111u32
 
+:= is_negated_escape (c : u32) : bool = c = 83u32 || c = 68u32 || c = 87u32
+
+:= is_name_escape (c : u32) : bool = c = 105u32 || c = 99u32 || c = 73u32 || c = 67u32
+
+:~ ^ insert_range (r : u32 * u32) (sorted : list (u32 * u32)) : list (u32 * u32) =
+    ?= sorted ?|
+    | head :: rest =>
+        := low, _ = r
+        := head_low, _ = head
+        ? low <= head_low ?> r :: sorted |: head :: insert_range r rest
+    | [] => r :: []
+
+:~ ^ gaps_from (sorted : list (u32 * u32)) (next : u32) (acc : list (u32 * u32)) : list (u32 * u32) =
+    ?= sorted ?|
+    | (low, high) :: rest =>
+        := acc = ? low > next ?> (next, low - 1u32) :: acc |: acc
+        gaps_from rest (? high + 1u32 > next ?> high + 1u32 |: next) acc
+    | [] => ? next <= last_code_point () ?> (next, last_code_point ()) :: acc |: acc
+
+:= complement_ranges (ranges : list (u32 * u32)) : list (u32 * u32) =
+    gaps_from (listm.fold (\ sorted r => insert_range r sorted) [] ranges) 0u32 []
+
+:= escape_class (c : u32) : list (u32 * u32) =
+    ? is_negated_escape c ?> complement_ranges (escape_ranges (c + 32u32)) |: escape_ranges c
 := block_range (name : string) : option (u32 * u32) =
     ? name = "IsBasicLatin" ?> Some (0u32, 127u32)
     |? name = "IsLatin-1Supplement" ?> Some (128u32, 255u32)
@@ -312,7 +336,7 @@
             | Some (ranges, next) => class_items p next (listm.append ranges acc)
             | None =>
                 := e = cp_at p (i + 1i32)
-                class_items p (i + 1i32 + cp_width p (i + 1i32)) (listm.append (escape_ranges e) acc)
+                class_items p (i + 1i32 + cp_width p (i + 1i32)) (listm.append (escape_class e) acc)
         |:
             := next = i + cp_width p i
             ? cp_at p next = 45u32 && cp_at p (next + 1i32) <> 93u32 && next + 1i32 < sm'.length p ?>
@@ -350,7 +374,10 @@
     |? c = 92u32 ?>
         ?= property_at p i ?|
         | Some (ranges, next) => RxClass (!-, ranges), next
-        | None => RxClass (!-, escape_ranges (cp_at p (i + 1i32))), i + 1i32 + cp_width p (i + 1i32)
+        | None =>
+            := e = cp_at p (i + 1i32)
+            := negated = is_negated_escape e
+            RxClass (negated, escape_ranges (? negated ?> e + 32u32 |: e)), i + 1i32 + cp_width p (i + 1i32)
     |: single c, i + cp_width p i
 
 :& :~ parse_quant (p : string) (i : i32) (atom : rx) : rx * i32 =
@@ -406,9 +433,47 @@
     | RxStar a => repeated (example_with stars a) stars
     | RxRepeat (a, low, _) => repeated (example_with stars a) low
 
+:~ ^ brace_end (p : string) (i : i32) : i32 =
+    ? i >= sm'.length p ?> i
+    |? cp_at p i = 125u32 ?> i + 1i32
+    |: brace_end p (i + 1i32)
+
+:= escape_end (p : string) (i : i32) : i32 =
+    := letter = i + 1i32
+    ? letter >= sm'.length p ?> letter
+    |:
+        := after = letter + cp_width p letter
+        := c = cp_at p letter
+        := braced = after < sm'.length p && cp_at p after = 123u32
+        ? (c = 112u32 || c = 80u32) && braced ?> brace_end p after |: after
+
+:~ ^ class_end (p : string) (i : i32) (depth : i32) : i32 =
+    ? i >= sm'.length p ?> i
+    |:
+        := c = cp_at p i
+        ? c = 92u32 ?> class_end p (escape_end p i) depth
+        |? c = 91u32 ?> class_end p (i + cp_width p i) (depth + 1i32)
+        |? c = 93u32 ?> (? depth = 0i32 ?> i + 1i32 |: class_end p (i + 1i32) (depth - 1i32))
+        |: class_end p (i + cp_width p i) depth
+
+:~ ^ invalid_from (p : string) (i : i32) (atom : bool) (quant : bool) : bool =
+    ? i >= sm'.length p ?> !-
+    |:
+        := c = cp_at p i
+        ? c = 92u32 ?> (? is_name_escape (cp_at p (i + 1i32)) ?> !+ |: invalid_from p (escape_end p i) !+ !-)
+        |? c = 91u32 ?> invalid_from p (class_end p (i + 1i32) 0i32) !+ !-
+        |? c = 40u32 || c = 124u32 ?> invalid_from p (i + 1i32) !- !-
+        |? c = 63u32 || c = 42u32 || c = 43u32 || c = 123u32 ?>
+            ? atom = !- || quant ?> !+
+            |: invalid_from p (? c = 123u32 ?> brace_end p i |: i + 1i32) !- !+
+        |: invalid_from p (i + cp_width p i) !+ !-
+
+:= is_xsd_pattern (p : string) : bool = invalid_from p 0i32 !- !- = !-
 := compile_pattern (p : string) : option rx =
-    := r, stop = parse_alt p 0i32
-    ? stop = sm'.length p ?> Some r |: None
+    ? is_xsd_pattern p = !- ?> None
+    |:
+        := r, stop = parse_alt p 0i32
+        ? stop = sm'.length p ?> Some r |: None
 
 :~ ^ matches_from (r : rx) (s : string) (i : i32) : bool =
     ? i >= sm'.length s ?> nullable r
@@ -422,6 +487,15 @@
     | Some r => matches_from r s 0i32
     | None => !-
 
+:~ ^ longest_from (r : rx) (s : string) (i : i32) (last : i32) : i32 =
+    := last = ? nullable r ?> i |: last
+    ? i >= sm'.length s ?> last
+    |:
+        ?= derive (cp_at s i) r ?|
+        | RxNone => last
+        | next => longest_from next s (i + cp_width s i) last
+
+:= longest_match (r : rx) (s : string) (i : i32) : i32 = longest_from r s i (0i32 - 1i32)
 ///> rust
 test patterns_match_like_xsd =
     ? pattern_matches "[0-9]{8}" "12345678" = !- ?> failwith "eight digits"
@@ -434,7 +508,17 @@ test patterns_match_like_xsd =
     ? pattern_matches "[^@]+@[^\\.]+\\..+" "ab.c" ?> failwith "missing at rejected"
     ? pattern_matches "[!-ÿ]{1}[ -ÿ]{0,}[!-ÿ]{1}|[!-ÿ]{1}" "Ação Ltda" = !- ?> failwith "latin-1 text"
     ? pattern_matches "[!-ÿ]{1}[ -ÿ]{0,}[!-ÿ]{1}|[!-ÿ]{1}" " leading" ?> failwith "leading space rejected"
-
+    ? is_xsd_pattern "(?!0+$)([0-9]{1,2})" ?> failwith "lookaround is not XSD"
+    ? is_xsd_pattern "a*?" || is_xsd_pattern "a|*b" || is_xsd_pattern "\\p{L}{2}{3}"
+    ?> failwith "stacked or atomless quantifiers"
+    ? is_xsd_pattern "(\\p{IsBasicLatin}{1,60})" = !- ?> failwith "a block escape keeps its braces"
+    ? is_xsd_pattern "[a-z-[aeiou]]+" = !- || is_xsd_pattern "[?*]+" = !-
+    ?> failwith "classes hold quantifier characters"
+    ? pattern_matches "(?!0+$)([0-9]{1,2})" "?!00$0" ?> failwith "an invalid pattern matches nothing, not its own text"
+    ? pattern_matches "\\S+" "ab" = !- || pattern_matches "\\S+" "a b" ?> failwith "\\S is every code point but space"
+    ? pattern_matches "[\\D]" "x" = !- || pattern_matches "[\\D]" "5" ?> failwith "a negated escape inside a class"
+    ? pattern_matches "\\W" "!" = !- || pattern_matches "\\W" "a" ?> failwith "\\W excludes word characters"
+    ? is_xsd_pattern "\\i\\c*" ?> failwith "name escapes are refused until supported"
 ///> rust
 test block_escapes_read_code_point_ranges =
     := latin = "[\\p{IsBasicLatin}\\p{IsLatin-1Supplement}]{1,60}"

@@ -59,7 +59,7 @@ $lockHeld = $false
 try { $lockHeld = $lock.WaitOne(0) } catch [Threading.AbandonedMutexException] { $lockHeld = $true }
 if (-not $lockHeld) { throw "another scripts/test.ps1 run is compiling the samples in place (mutex $lockName)" }
 $staleLogs = (Get-Date).AddHours(-12)
-Get-ChildItem (Join-Path $cache 'core-src') -Filter '*.jsonl' -Recurse -File -ErrorAction SilentlyContinue |
+Get-ChildItem (Join-Path (Get-SpiralDetRoot) 'core-src') -Filter '*.jsonl' -Recurse -File -ErrorAction SilentlyContinue |
     Where-Object { $_.LastWriteTime -lt $staleLogs } | Remove-Item -Force -ErrorAction SilentlyContinue
 $env:SPIRAL_WORKSPACE_ROOT = if ($WorkspaceRoot) { (Resolve-Path $WorkspaceRoot).Path } else { $BundleRoot }
 $env:SPIRAL_COMPILER_PACKAGE_DIR = Get-SpiralPackageDir
@@ -364,7 +364,7 @@ function Get-CFlags($job) {
     if (Test-Path $own) { $flags += @('-include', $own) }
     $flags
 }
-function Get-FileSha256([string]$path) { [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([IO.File]::ReadAllBytes($path))).ToLowerInvariant() }
+
 function Get-TextKey([string]$text) { [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($text))).ToLowerInvariant() }
 function Get-ToolStamp([string]$path) {
     if (-not $path -or -not (Test-Path -LiteralPath $path)) { return "$path|missing" }
@@ -526,7 +526,7 @@ function Build-And-Run($job) {
         if (-not $tools.Dotnet) { return 'no-toolchain' }
         $script = Join-Path $binDir 'main.fsx'
         [IO.File]::WriteAllText($script, [IO.File]::ReadAllText($job.Output).TrimEnd() + "`n|> fun x -> match box x with :? int32 as code -> exit code | _ -> exit 0`n")
-        $run = Invoke-Native $tools.Dotnet @('fsi', '--quiet', '--exec', $script) $binDir 60
+        $run = Invoke-Native $tools.Dotnet @('fsi', '--quiet', '--exec', $script) $binDir ([Math]::Max(60, [int]$job.TimeoutSec))
         $fsiError = [regex]::Match("$($run.Err)`n$($run.Out)", 'error FS\d+:[^\r\n]{0,240}')
         if ($fsiError.Success) { return [pscustomobject]@{ Status = 'build-fail'; Exit = ''; Stdout = ''; Detail = $fsiError.Value } }
         $stdout = ($run.Out -replace "`r`n", "`n").TrimEnd()
@@ -818,7 +818,7 @@ if ($Native) {
         $fsharpResults = $fsharpChunks | ForEach-Object -ThrottleLimit $fsharpSessions -Parallel {
             $chunk = @($_)
             $work = Join-Path $using:scratch ("fsharp-warm-{0}-{1}" -f $using:stamp, [guid]::NewGuid().ToString('N').Substring(0, 8))
-            $warm = @(& $using:fsharpRunner -Dotnet ($using:tools).Dotnet -Scripts @($chunk | ForEach-Object Output) -TimeoutSec 60 -Work $work)
+            $warm = @(& $using:fsharpRunner -Dotnet ($using:tools).Dotnet -Scripts @($chunk | ForEach-Object Output) -TimeoutSec ([Math]::Max(60, [int](($chunk | Measure-Object TimeoutSec -Maximum).Maximum))) -Work $work)
             for ($i = 0; $i -lt $chunk.Count; $i++) { [pscustomobject]@{ Job = $chunk[$i]; Result = $warm[$i] } }
         }
         $fsharpColdKeys = [Collections.Generic.HashSet[string]]::new()

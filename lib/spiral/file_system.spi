@@ -438,7 +438,7 @@ test path_join_without_a_native_arm =
 
 :~ ^ gleam_temp_dir_from (names : list string) : string =
     ?= names ?|
-    | Nil => "/tmp"
+    | [] => "/tmp"
     | name :: rest =>
         := value = gleam_env_value name
         ? gleam_env_unset value ?> gleam_temp_dir_from rest
@@ -507,7 +507,7 @@ test path_join_without_a_native_arm =
     |? segment = ".." ?>
         ?= acc ?|
         | _ :: up => up
-        | Nil => Nil
+        | [] => []
     |: (segment :: acc)
 
 := gleam_lexical_full_path (path : string) : string =
@@ -515,8 +515,8 @@ test path_join_without_a_native_arm =
     := absolute : string = $'spiral_fs_absname(!path)'
     ?= sm'.split_list "/" absolute ?|
     | root :: segments =>
-        root ++# "/" ++# (segments |> listm.fold gleam_segment_step Nil |> listm.rev |> sm'.concat_list "/")
-    | Nil => path
+        root ++# "/" ++# (segments |> listm.fold gleam_segment_step [] |> listm.rev |> sm'.concat_list "/")
+    | [] => path
 
 := gleam_dotted_extension (path : string) : string =
     file_system_gleam_paths ()
@@ -568,8 +568,11 @@ test path_join_without_a_native_arm =
 :~ get_extension (path : string) : string =
     run_target_args' path \|
         | Rust => \ path =>
-            $'Rc::<str>::from(std::path::Path::new(&*!path).extension().map_or(String::new(), |e| \
-                format\!(".{}", e.to_string_lossy())))' : string
+            := path_buf = path |> sm'.to_std_string |> new_path_buf
+            := extension = !\\(path_buf, $'"$0.extension()"')
+            ?= extension |> optionm'.map' sm'.from_os_str_ref |> optionm'.unbox ?|
+            | Some extension => "." ++# extension
+            | None => ""
         | Gleam => \ path =>
             file_system_gleam_paths ()
             gleam_dotted_extension path
@@ -579,6 +582,12 @@ test path_join_without_a_native_arm =
             : string
         | _ => \ path =>
             path |> $'System.IO.Path.GetExtension'
+
+///> rust
+///> gleam
+test get_extension_keeps_the_dot_and_skips_dotfiles =
+    (get_extension "a/b.txt", get_extension "a/b", get_extension "a/.bashrc", get_extension "a.tar.gz")
+    |> _assert_eq (".txt", "", "", ".gz")
 
 /// ### directory_separator_char
 :~ directory_separator_char () : char =
@@ -826,11 +835,6 @@ test create_temp_path =
         | Delphi => \ path => $'FileExists(!path)' : bool
         | _ => \ _ => null ()
 
-///> gleam
-test file_exists_on_gleam_tells_files_from_missing_paths =
-    file_exists "gleam.toml" |> _assert_eq !+
-    file_exists "spiral-no-such-file.txt" |> _assert_eq !-
-
 /// ### directory_delete
 :~ directory_delete recursive (path : string) : () =
     run_target_args' (path, recursive) \|
@@ -975,8 +979,8 @@ test file_exists_on_gleam_tells_files_from_missing_paths =
                 std::fs::set_permissions(&*!path, p) }).is_ok()' : bool
         | _ => \ () => !-
 
-/// ### file_type
-:| file_type =
+/// ### entry_kind
+:| entry_kind =
     | File
     | Directory
 
@@ -1052,6 +1056,14 @@ test find_parent_2 =
             $'spiral_fs_delete(!path)' : ()
         | Lua => \ () => lua_file_remove path
         | _ => \ () => ()
+
+///> gleam
+test file_exists_on_gleam_tells_files_from_missing_paths =
+    := ~path = "spiral-file-exists-probe.txt"
+    write_all_text path "x"
+    := written = file_exists path
+    file_delete path
+    (written, file_exists path, file_exists "spiral-no-such-file.txt") |> _assert_eq (!+, !-, !-)
 
 /// ### read_link
 :~ read_link (path : string) : resultm.result' path_buf stream.io_error =
@@ -1770,3 +1782,23 @@ test lua_files_write_read_append_and_delete =
     path |> read_all_text |> _assert_eq "abc"
     file_delete path
     path |> file_exists |> _assert_eq !-
+
+:= rust_try_append_text (path : string) (text : string) : result () string =
+    := opened = rust_append_opened path
+    ? rust_file_opened_ok opened |> not ?> Error "the file could not be opened"
+    |:
+        := file = rust_file_of opened
+        ? rust_written_all file text |> rust_io_ok ?> Ok () |: Error "the write failed"
+
+/// ### try_append_all_text
+:= try_append_all_text (path : string) (text : string) : result () string =
+    run_target_args' (path, text) \|
+        | Rust => \ path, text => rust_try_append_text path text
+        | _ => \ path, text =>
+            append_all_text path text
+            Ok ()
+
+///> rust
+test try_append_all_text_reports_instead_of_failing =
+    := missing = get_temp_path () </> "eoie-no-such-folder-for-append" </> "x.txt"
+    (try_append_all_text missing "a" = Error "the file could not be opened") |> _assert_eq !+

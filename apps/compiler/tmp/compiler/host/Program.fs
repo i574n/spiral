@@ -734,7 +734,32 @@ module Program =
             if not (package.files.files.tree |> List.exists containsInput) then
                 failwith $"Check input is not declared in package: {inputPath}"
             let hasError, _ = Hopac.run package.result
-            if hasError then failwith $"Package typecheck rejected: {packageDir}"
+            if hasError then
+                let rec files (tc : ProjStateTC) node acc =
+                    match node with
+                    | ProjFilesTree.File(mid,path,_) ->
+                        let slot = if mid < tc.files.uids_file.Length then tc.files.uids_file.[mid] else Unchecked.defaultof<_>
+                        if isNull (box slot) || isNull (box (fst slot)) then acc
+                        else (path, (fst slot).result) :: acc
+                    | ProjFilesTree.Directory(_,_,l) -> List.foldBack (files tc) l acc
+                let rec availableErrors acc (stream : Stream<_>) =
+                    if Promise.Now.isFulfilled stream then
+                        match Promise.Now.get stream with
+                        | Cons((_, x : InferResult, _), next) -> availableErrors (acc @ x.errors) next
+                        | Nil -> acc
+                    else acc
+                let states =
+                    let seen = HashSet<obj>(HashIdentity.Reference)
+                    package :: (Seq.append state.packages_infer.ok.Values state.packages_infer.error.Values |> List.ofSeq)
+                    |> List.filter (fun tc -> seen.Add (box tc))
+                (try
+                    states |> List.collect (fun tc -> List.foldBack (files tc) tc.files.files.tree [])
+                    |> List.collect (fun (path,result) ->
+                        availableErrors [] result
+                        |> List.map (fun ((a,_),message) -> $"{path}:{a.line + 1}:{a.character + 1}: {message}"))
+                 with ex -> [$"(could not list the typer's errors: {ex.GetType().Name}: {ex.Message})"])
+                |> List.iter (eprintfn "%s")
+                failwith $"Package typecheck rejected: {packageDir}"
             printfn "checked package %s" packageDir
             0
         with error ->
@@ -1158,6 +1183,21 @@ module Program =
                         Error $"""{project}: {field} expects one of {String.concat ", " allowed}, got '{text}'"""
                     | Ok (), Some _ -> Ok ()) (Ok ())
 
+    let private applyEntryImports (input : string) =
+        let tokens =
+            File.ReadLines input
+            |> Seq.takeWhile (fun line -> line.StartsWith "///")
+            |> Seq.filter (fun line -> line.StartsWith "///-")
+            |> Seq.collect (fun line -> line.Substring(4).Split([| ' '; '\t' |], StringSplitOptions.RemoveEmptyEntries))
+            |> List.ofSeq
+        let rec imports (rest : string list) =
+            match rest with
+            | "--import-types" :: value :: tail -> value :: imports tail
+            | _ :: tail -> imports tail
+            | [] -> []
+        match imports tokens with
+        | [] -> ()
+        | found -> Environment.SetEnvironmentVariable("SPIRAL_IMPORT_TYPES", String.concat ";" found)
     let private takeDefaultTypeFlags (argv : string []) : Result<string [], string> =
         let flagOf (text : string) = defaultTypeFlags |> List.tryFind (fun (name, _, _) -> name = text)
         let rec go (rest : string list) (kept : string list) =
@@ -1273,6 +1313,7 @@ module Program =
             match applyPackageDefaults input with
             | Error message -> eprintfn "%s" message; exit 2
             | Ok () -> ()
+            applyEntryImports input
             let server = new_server<Job<unit>, obj, string option, Job<unit>, unit> ()
             let router = DiagnosticRouter()
             let revisions = SourceRevisionStore()

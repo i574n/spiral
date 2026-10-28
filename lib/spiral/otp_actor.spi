@@ -20,9 +20,9 @@ test otp_actor static =
     $'actor.new(!state)'
 
 /// ### new_with_init
-:= new_with_init \* s m. (timeout_ms : i32) (init : () -> s) : builder s m (erlang_process.subject m) =
+:= new_with_init \* s m. (ms : i32) (init : () -> s) : builder s m (erlang_process.subject m) =
     otp_actor_imports ()
-    $'actor.new_with_initialiser(!timeout_ms, fn(subject) { Ok(actor.initialised(!init(Nil)) |> \
+    $'actor.new_with_initialiser(!ms, fn(subject) { Ok(actor.initialised(!init(Nil)) |> \
         actor.returning(subject)) })'
 
 /// ### new_with_self
@@ -82,49 +82,62 @@ test otp_actor static =
     | Add : i32
     | Read : erlang_process.subject i32
 
+/// ### i32_inbox
+:== i32_inbox = erlang_process.subject i32
+
+/// ### self_inbox
+:== self_inbox = erlang_process.subject i32_inbox
+
+/// ### counter_step
+:= counter_step (total : i32) (message : counter_message) : next i32 counter_message =
+    ?= message ?|
+    | Add n => continue (total + n)
+    | Read reply =>
+        erlang_process.send reply total
+        continue total
+
+/// ### counter_inbox
+:= counter_inbox () = new 0i32 |> on_message counter_step |> start |> started_data
+
 ///> gleam
 test counter_actor_counts =
-    := counter =
-        new 0i32
-        |> on_message \ total message =>
-            ?= message ?|
-            | Add n => continue (total + n)
-            | Read reply =>
-                erlang_process.send reply total
-                continue total
-        |> start
-        |> started_data
-    ?= counter ?|
+    ?= counter_inbox () ?|
     | Some inbox =>
         send inbox (Add 3i32)
         send inbox (Add 4i32)
-        call inbox 10000i32 Read
-        |> _assert_eq 7i32
+        call inbox 10000i32 Read |> _assert_eq 7i32
     | None => failwith "counter actor did not start"
+
+/// ### ask_i32
+:= ask_i32 (subject : self_inbox) : i32 =
+    call subject 10000i32 (\ (reply_to : i32_inbox) => reply_to)
+
+/// ### length_reply
+:= length_reply (items : array i32) (reply_to : i32_inbox) : next (array i32) i32_inbox =
+    erlang_process.send reply_to (length items : i32)
+    continue items
+
+/// ### array_actor
+:= array_actor () =
+    new_with_init 10000i32 (\ () => ;[ 4i32; 5; 6 ]) |> on_message length_reply |> start |> started_data
 
 ///> gleam
 test array_state_is_built_inside_the_actor =
-    := started =
-        new_with_init 10000i32 (\ () => ;[ 4i32; 5; 6 ])
-        |> on_message (\ (items : array i32) (reply_to : erlang_process.subject i32) =>
-            erlang_process.send reply_to (length items : i32)
-            continue items)
-        |> start
-        |> started_data
-    ?= started ?|
-    | Some subject => call subject 10000i32 (\ (reply_to : erlang_process.subject i32) => reply_to) |> _assert_eq 3i32
+    ?= array_actor () ?|
+    | Some subject => ask_i32 subject |> _assert_eq 3i32
     | None => failwith "the actor did not start"
+
+/// ### self_reply
+:= self_reply (me : self_inbox) (reply_to : i32_inbox) : next self_inbox i32_inbox =
+    erlang_process.send reply_to 9i32
+    continue me
+
+/// ### self_actor
+:= self_actor () =
+    new_with_self 10000i32 (\ (me : self_inbox) => me) |> on_message self_reply |> start |> started_data
 
 ///> gleam
 test the_initialiser_receives_the_actors_own_subject =
-    := started =
-        new_with_self 10000i32 (\ (me : erlang_process.subject (erlang_process.subject i32)) => me)
-        |> on_message
-            \ (me : erlang_process.subject (erlang_process.subject i32)) (reply_to : erlang_process.subject i32) =>
-                erlang_process.send reply_to 9i32
-                continue me
-        |> start
-        |> started_data
-    ?= started ?|
-    | Some subject => call subject 10000i32 (\ (reply_to : erlang_process.subject i32) => reply_to) |> _assert_eq 9i32
+    ?= self_actor () ?|
+    | Some subject => ask_i32 subject |> _assert_eq 9i32
     | None => failwith "the actor did not start"

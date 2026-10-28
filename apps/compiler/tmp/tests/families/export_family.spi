@@ -1,15 +1,14 @@
 ///- --package .
-// TODO: BACKEND-COVERAGE-GAPS Zig Export arm regression. codegenZig has NO Export case (!!!!Export(name,f) falls
-//     through to the generic unsupported-op fallthrough at spiral_compiler.fs:166236); the proper fix mirrors
-//     codegenRust's export builder (163566 + decl/call tuple->params 164741-164784) and lands via
-//     apply-zig-opgap-pack. UNWIRED ON PURPOSE: this file is NOT in tests/families/package.spiproj modules yet,
-//     because the ///> zig row DISAGREEs until the arm lands and would break the green test-blocks baseline.
-//     WIRE IT (append `export_family` to package.spiproj modules) only after the Zig Export arm lands AND a build
-//     slot frees to run test-blocks.ps1 -Lib tests/families -Files export_family.spi. The ///> c row passes today
-//     (codegenC has full Export). Self-checking shape per SELF-CHECKING-SAMPLES / SAMPLES-TO-TEST-BLOCKS.
+// BACKEND-COVERAGE-GAPS Zig Export arm regression (pack 5o). codegenZig had NO Export case (fell through to the
+//     unsupported-op fallthrough); the fix mirrors codegenRust's export builder and lands via
+//     apps/compiler/packs/apply-zig-export-pack.ps1. ///> zig ONLY: Export is a library entry, so a native-RUN
+//     harness that links an exe fails on backends whose Export emits a library -- C has no Export arm at all (n54)
+//     and Rust's Export emits a crate (rustc E0601 "no main"). Zig's Export emit keeps spiralMain, so the program
+//     runs standalone and the zig target agrees (export_add(40,2)=42 -> exit 0; proven on the patched DLL, n56).
+//     UNWIRED in package.spiproj; the 5o review runs it as a REQUIRED Cells gate (test-blocks.ps1 -Lib tests/families
+//     -Files export_family.spi, memo off; zig must agree). Self-checking shape per SELF-CHECKING-SAMPLES.
 := export_add ((x, y) : i32 * i32) : i32 = x +. y
 
-///> c
 ///> zig
 test export_add_returns_zero =
     !!!!Export("spiral_add", export_add)

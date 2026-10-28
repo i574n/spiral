@@ -68,13 +68,16 @@ test otp_supervisor static =
     otp_supervisor_imports ()
     $'supervision.timeout(!spec, !shutdown_ms)'
 
+/// ### counting_worker
+:= counting_worker () =
+    worker \ () =>
+        otp_actor.new 0i32 |> otp_actor.on_message (\ total (_ : i32) => otp_actor.continue total) |> otp_actor.start
+
 ///> gleam
 test supervisor_starts_a_worker =
-    := worker_spec = worker \ () =>
-        otp_actor.new 0i32 |> otp_actor.on_message (\ total (_ : i32) => otp_actor.continue total) |> otp_actor.start
     new OneForOne
     |> restart_tolerance 3i32 5i32
-    |> add worker_spec
+    |> add (counting_worker ())
     |> start
     |> otp_actor.started_data
     |> \|

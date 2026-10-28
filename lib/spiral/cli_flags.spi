@@ -1,0 +1,83 @@
+/// # cli_flags
+:< sm'_operators
+
+/// ### cli_field
+:| cli_field =
+    | Text
+    | Number
+    | Switch
+    | Optional
+    | Repeated
+
+:= text_field () : cli_field = Text
+
+:= number_field () : cli_field = Number
+
+:= switch_field () : cli_field = Switch
+
+:= optional_field () : cli_field = Optional
+
+:= repeated_field () : cli_field = Repeated
+
+:= no_fields () : list (string * cli_field) = []
+
+:= with_field (name : string) (kind : cli_field) (fields : list (string * cli_field))
+    : list (string * cli_field)
+    =
+    (name, kind) :: fields
+
+:= no_verbs () : list string = []
+
+:= with_verb (name : string) (names : list string) : list string = sm'.to_lower name :: names
+
+:= no_cases () : list (string * list (string * cli_field)) = []
+
+:= with_case (name : string) (fields : list (string * cli_field)) (cases : list (string * list (string * cli_field)))
+    : list (string * list (string * cli_field))
+    =
+    (sm'.to_lower name, fields) :: cases
+
+:~ ^ value_after (flag : string) (rest : list string) : option string =
+    ?= rest ?|
+    | head :: value :: tail => ? head = flag ?> Some value |: value_after flag (value :: tail)
+    | _ => None
+
+/// ### flag_value
+:= flag_value (name : string) (args : list string) : option string = value_after ("--" ++# name) args
+
+/// ### has_switch
+:= has_switch (name : string) (args : list string) : bool =
+    := flag = "--" ++# name
+    :~ ^ walk (rest : list string) : bool =
+        ?= rest ?|
+        | head :: tail => head = flag || walk tail
+        | [] => !-
+    walk args
+
+/// ### required_text
+:= required_text (name : string) (args : list string) : string =
+    ?= flag_value name args ?|
+    | Some value => value
+    | None => failwith ("missing --" ++# name)
+
+/// ### required_i32
+:= required_i32 (name : string) (args : list string) : i32 =
+    ?= flag_value name args |> optionm.bind (\ text => convert.try_convert text) ?|
+    | Some value => value
+    | None => failwith ("--" ++# name ++# " needs an i32")
+
+:~ ^ values_after (flag : string) (rest : list string) (found : list string) : list string =
+    ?= rest ?|
+    | head :: value :: tail =>
+        ? head = flag ?> values_after flag tail (value :: found) |: values_after flag (value :: tail) found
+    | _ => listm.rev found
+
+/// ### flag_values
+:= flag_values (name : string) (args : list string) : list string = values_after ("--" ++# name) args []
+
+:= pick_verb \* command. (verb : string) (name : string) (make : () -> command) (found : option command)
+    : option command
+    =
+    ?= found ?|
+    | Some _ => found
+    | None => ? sm'.to_lower name = verb ?> Some (make ()) |: None

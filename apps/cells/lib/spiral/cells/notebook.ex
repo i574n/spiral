@@ -574,7 +574,7 @@ defmodule Spiral.Cells.Notebook do
   defp execute(doc, opts, root, selected) do
     workspace = Spiral.Cells.workspace_root(opts)
     cells = Enum.map(doc.cells, &canon_cell(&1, root, workspace))
-    lib = opts[:spiral_lib] || (opts[:path] && find_spiral_lib(opts[:path])) || "-"
+    lib = resolve_lib(opts)
 
     spiral =
       cells
@@ -1244,6 +1244,10 @@ defmodule Spiral.Cells.Notebook do
     end
   end
 
+  @doc false
+  def resolve_lib(opts) do
+    opts[:spiral_lib] || spiral_lib_from_env(System.get_env("SPIRAL_CELLS_LIB")) || (opts[:path] && find_spiral_lib(opts[:path])) || "-"
+  end
   @doc false
   def find_spiral_lib(path) do
     path

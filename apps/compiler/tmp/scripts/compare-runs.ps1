@@ -1,9 +1,6 @@
 param([Parameter(Mandatory)][string] $Left, [Parameter(Mandatory)][string] $Right, [string[]] $Fields = @('compile', 'residual', 'native', 'exit', 'stdout', 'oracle'), [int] $Show = 12)
 $ErrorActionPreference = 'Stop'
-function Resolve-Results([string] $run) {
-    if (Test-Path $run -PathType Container) { return Join-Path $run 'results.tsv' }
-    Join-Path $env:LOCALAPPDATA "spiral-bin\runs\$run\results.tsv"
-}
+. (Join-Path $PSScriptRoot 'results-path.ps1')
 $l = Import-Csv (Resolve-Results $Left) -Delimiter "`t"
 $r = Import-Csv (Resolve-Results $Right) -Delimiter "`t"
 $byKey = @{}; foreach ($row in $l) { $byKey["$($row.id)|$($row.backend)"] = $row }

@@ -261,15 +261,30 @@ test hash_text =
 
         """
 
+/// ### hex_byte
+:= hex_byte (b : u8) : string =
+    := high : i32 = conv (b >>> 4i32)
+    := low : i32 = conv (b &&& 15u8)
+    sm'.slice high high "0123456789abcdef" ++# sm'.slice low low "0123456789abcdef"
+
+/// ### hex_of_bytes
+:= hex_of_bytes (bytes : array_base u8) : string =
+    := size : i32 = am'.length_base bytes
+    :~ ^ go (i : i32) (acc : string) : string =
+        ? i >= size ?> acc |: go (i + 1i32) (acc ++# hex_byte (am'.index_base i bytes))
+    go 0i32 ""
+
+/// ### rust_sha1_digest
+:= rust_sha1_digest (text : string) : array_base u8 =
+    $'Rc::new(RefCell::new(<sha1::Sha1 as sha1::Digest>::digest(!text.as_bytes()).to_vec()))' : array_base u8
+
 /// ### sha1_hex
 := sha1_hex (text : string) : string =
     backend_switch {
         Gleam = \ () =>
             crypto_gleam_sha1 ()
             $'string.lowercase(bit_array.base16_encode(spiral_crypto_hash_by(atom.create("sha"), !text)))' : string
-        Rust = \ () =>
-            $'Rc::<str>::from(<sha1::Sha1 as sha1::Digest>::digest(!text.as_bytes()).iter().map(|b| \
-                format\!("{:02x}", b)).collect::<String>())' : string
+        Rust = \ () => text |> rust_sha1_digest |> hex_of_bytes
     }
 
 /// ### hmac_sha1

@@ -12,7 +12,10 @@
     <SpiralCacheDir Condition="'$(SpiralCacheDir)' == ''">$(HOME)/.cache/spiral-bin</SpiralCacheDir>
     <SpiralSharedCacheDir Condition="'$(LOCALAPPDATA)' != ''">$(LOCALAPPDATA)/spiral-bin</SpiralSharedCacheDir>
     <SpiralSharedCacheDir Condition="'$(SpiralSharedCacheDir)' == ''">$(HOME)/.cache/spiral-bin</SpiralSharedCacheDir>
-    <TargetFrameworkMonikerAssemblyAttributesPath>$(SpiralSharedCacheDir)/obj-shared/$(MSBuildProjectName)/$(TargetFramework).AssemblyAttributes.fs</TargetFrameworkMonikerAssemblyAttributesPath>
+    <SpiralDetRoot Condition="'$(SPIRAL_DET_ROOT)' != ''">$(SPIRAL_DET_ROOT)</SpiralDetRoot>
+    <SpiralDetRoot Condition="'$(SpiralDetRoot)' == '' and '$(LOCALAPPDATA)' != ''">C:\home\spiral-cache</SpiralDetRoot>
+    <SpiralDetRoot Condition="'$(SpiralDetRoot)' == ''">$(HOME)/spiral-cache</SpiralDetRoot>
+    <TargetFrameworkMonikerAssemblyAttributesPath>$(SpiralDetRoot)/obj-shared/$(MSBuildProjectName)/$(TargetFramework).AssemblyAttributes.fs</TargetFrameworkMonikerAssemblyAttributesPath>
     <BaseIntermediateOutputPath>$(SpiralCacheDir)/obj/$(SpiralCore)/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
     <MSBuildProjectExtensionsPath>$(BaseIntermediateOutputPath)</MSBuildProjectExtensionsPath>
     <BaseOutputPath>$(SpiralCacheDir)/bin/$(SpiralCore)/$(MSBuildProjectName)/</BaseOutputPath>
@@ -21,6 +24,12 @@
     <RollForward>Major</RollForward>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <!-- CCMR Phase-2: keep git/checkout-specific data out of the PDB so the dll debug dir is machine-independent. -->
+    <EnableSourceLink>false</EnableSourceLink>
+    <EnableSourceControlManagerQueries>false</EnableSourceControlManagerQueries>
+    <EmbedUntrackedSources>false</EmbedUntrackedSources>
+    <EmbedAllSources>false</EmbedAllSources>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <RestoreIgnoreFailedSources>true</RestoreIgnoreFailedSources>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>

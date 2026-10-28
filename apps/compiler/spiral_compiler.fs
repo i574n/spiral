@@ -42985,7 +42985,7 @@ module spiral_compiler =
         let from = s.from
         let ok x = Ok ({from=from; nearTo=s.from}, x)
         let body x _ =
-            if skip ':' s then error_char from ": is not allowed directly after a var."
+            if peek s = ':' && not (peek' s 1 = ':' && (is_var_char_starting (peek' s 2) || peek' s 2 = '(')) then (inc s; error_char from ": is not allowed directly after a var.")
             else
                 let f x = TokKeyword(x)
                 match x with
@@ -43091,7 +43091,10 @@ module spiral_compiler =
         let symbol x = TokSymbol(x,SemanticTokenLegend.symbol)
         let x = peek s
         let x' = peek' s 1
-        if x = '.' && x' = '(' then inc' 2 s; ((many1SatisfyL is_operator_char "operator") .>> skip_char ')' |>> (symbol >> f) .>> spaces) s
+        let x'' = peek' s 2
+        if x = ':' && x' = ':' && x'' = '(' then inc' 3 s; ((many1SatisfyL is_operator_char "operator") .>> skip_char ')' |>> (symbol >> f) .>> spaces) s
+        elif x = ':' && x' = ':' && is_var_char_starting x'' then inc' 2 s; ((many1SatisfyL is_var_char "variable") |>> (symbol >> f) .>> spaces) s
+        elif x = '.' && x' = '(' then inc' 2 s; ((many1SatisfyL is_operator_char "operator") .>> skip_char ')' |>> (symbol >> f) .>> spaces) s
         elif x = '.' && is_var_char_starting x' then inc s; ((many1SatisfyL is_var_char "variable") |>> (symbol >> f) .>> spaces) s
         else error_char from "symbol"
 
@@ -43370,6 +43373,18 @@ module spiral_compiler =
         let add (x : (TokenizerRange * SpiralToken) list, er' : (TokenizerRange * string) list) =
             List.iter ar.Add x
             er <- List.append er' er
+        let zwsp = char 0x200b
+        let hasZwsp = text.IndexOf zwsp >= 0
+        let text, zwspRemap =
+            if not hasZwsp then text, id
+            else
+                let sb = System.Text.StringBuilder text.Length
+                let map = System.Collections.Generic.List<int> (text.Length + 1)
+                for i in 0 .. text.Length - 1 do
+                    if text.[i] <> zwsp then map.Add i; sb.Append text.[i] |> ignore
+                map.Add text.Length
+                let g i = if i < map.Count then map.[i] else map.[map.Count - 1] + (i - map.Count + 1)
+                sb.ToString(), (fun (r : TokenizerRange) -> { from = g r.from; nearTo = g r.nearTo })
         let s = {from=0; text=text}
         if 0 < lx.CommentDepth then
             let struct (i, depth) = comment_scan text 0 lx.CommentDepth
@@ -43386,6 +43401,12 @@ module spiral_compiler =
             | Error er' -> add ([], er')
         let parser = spaces >>. many_iter add (token lx) .>> (tokenizeEol <|> tab)
         let er = match parser s with Ok() -> er | Error er' -> List.append er' er
+        let ar, er =
+            if not hasZwsp then ar, er
+            else
+                let ar2 = System.Collections.Generic.List<_> (ar.Count)
+                for kv in ar do ar2.Add (zwspRemap (fst kv), snd kv)
+                ar2, (er |> List.map (fun (r, m) -> zwspRemap r, m))
         PersistentVector.ofSeq ar, er, lx.State
     // Tokenizes one line on its own (a macro's expression): a string or comment it leaves open is an error.
     and tokenize text =
@@ -52718,6 +52739,10 @@ module spiral_compiler =
     let closureBindingNames = System.Runtime.CompilerServices.ConditionalWeakTable<E, string>()
     let unionSourceNames = System.Runtime.CompilerServices.ConditionalWeakTable<obj, string>()
     let noteUnionSourceName (node : obj) (name : string) = unionSourceNames.TryAdd(node, name) |> ignore
+    let noteUnionSourceNameOnce (node : obj) (name : unit -> string) =
+        match unionSourceNames.TryGetValue node with
+        | true, _ -> ()
+        | _ -> noteUnionSourceName node (name ())
     let noteClosureName (node : E) (name : string) =
         match closureBindingNames.TryGetValue node with
         | true, _ -> ()
@@ -54186,6 +54211,7 @@ module spiral_compiler =
         let read (session : Session<'env>) (table : Dictionary<'k, 'v>) (key : 'k) : 'v =
             let engine = engine_of session
             if isNull engine then table.[key] else engine.Read(table, key)
+        let active (session : Session<'env>) = not (isNull session)
 #else
     /// ## PartEvalSeams
     module PartEvalSeams =
@@ -54205,6 +54231,7 @@ module spiral_compiler =
         let inline root (_ : Session<'env>) (_ : ResizeArray<string>) (f : unit -> 'a) : 'a = f ()
         let inline key_hit (_ : Session<'env>) (_ : obj) (_ : 'env) = ()
         let inline key_body (_ : Session<'env>) (_ : obj) (_ : string) (s : 'env) : 'env = s
+        let inline active (_ : Session<'env>) = false
         let inline print (_ : Session<'env>) (_ : 'env) (text : string) = printfn "%s" text
         type Claim<'v> =
             | Found of 'v
@@ -147969,7 +147996,21 @@ module spiral_compiler =
                     applied <- ty applyEnv body
                 | invalid ->
                     raise_type_error s <| sprintf "Expected a type level function in nominal application.\nGot: %s" (show_ty invalid)
+            match applied with
+            | YUnion u -> noteUnionSourceNameOnce (box u) (fun () -> structural_ty_name x)
+            | _ -> ()
             applied
+
+        and structural_ty_name x =
+            match x with
+            | YNominal a -> a.node.name
+            | YApply(a,b) | YPair(a,b) -> structural_ty_name a + "_" + structural_ty_name b
+            | YPrim _ -> show_ty x
+            | YUnion u ->
+                match unionSourceNames.TryGetValue(box u) with
+                | true, name -> name
+                | _ -> "t"
+            | _ -> "t"
 
         // Replay installers: gpt5parallel's replay layer, kept out of term_core_impl / ty_core_impl. Each publishes the
         // thunks and child spines of a subtree into EvalReplayValueStore, so the replay worklist can re-run
@@ -159941,7 +159982,11 @@ module spiral_compiler =
                             env_stack_term = Array.zeroCreate<_> sz_term
                             }
                     s.env_stack_type.[0] <- b
-                    ty s body
+                    let applied = ty s body
+                    match applied with
+                    | YUnion u -> noteUnionSourceNameOnce (box u) (fun () -> structural_ty_name x)
+                    | _ -> ()
+                    applied
                 | a -> raise_type_error s <| sprintf "Expected a type level function in nominal application.\nGot: %s" (show_ty a)
             | YNominal a ->
                 let body = ty s a.node.body
@@ -159950,6 +159995,16 @@ module spiral_compiler =
                 | _ -> ()
                 body
             | _ -> raise_type_error s <| sprintf "Expected a nominal or a deferred type apply.\nGot: %s" (show_ty x)
+        and structural_ty_name x =
+            match x with
+            | YNominal a -> a.node.name
+            | YApply(a,b) | YPair(a,b) -> structural_ty_name a + "_" + structural_ty_name b
+            | YPrim _ -> show_ty x
+            | YUnion u ->
+                match unionSourceNames.TryGetValue(box u) with
+                | true, name -> name
+                | _ -> "t"
+            | _ -> "t"
         and ty_is_uninhabited s x =
             let rec loop depth x =
                 if depth <= 0 then false
@@ -160871,7 +160926,7 @@ module spiral_compiler =
                             | Some key when PartEvalSeams.validated hopacsota backend_switch_validated key -> PartEvalSeams.key_hit hopacsota (box key) s; validate_type (PartEvalSeams.read hopacsota backend_switch_validated key)
                             | _ ->
                                 let s = match key with Some key -> PartEvalSeams.key_body hopacsota (box key) "bsv" s | None -> s
-                                let s = {s with seq=ResizeArray(); cse=Dictionary HashIdentity.Structural :: s.cse; backend=backend_strings.Add backend; i=backend_switch_validation_tags (); globals=(match validation_root_globals.Value with Some root when backend = env.backend -> root | _ -> ResizeArray())}
+                                let s = {s with seq=ResizeArray(); cse=Dictionary HashIdentity.Structural :: s.cse; backend=backend_strings.Add backend; i=backend_switch_validation_tags (); globals=(if PartEvalSeams.active hopacsota then s.globals else (match validation_root_globals.Value with Some root when backend = env.backend -> root | _ -> ResizeArray()))}
                                 RustGapTrace.validating.Value <- RustGapTrace.validating.Value + 1
                                 try
                                     let t' = data_to_ty s (apply s (b, DB))
@@ -162464,6 +162519,44 @@ module spiral_compiler =
             | _ -> op
         let elided = System.Runtime.CompilerServices.ConditionalWeakTable<TypedBind [], TypedBind []>()
         let block (body : TypedBind []) : TypedBind [] = elided.GetValue(body, fun body -> elide body)
+
+    /// ### importedTypeUnits
+    let importedTypeUnits () : Map<string, string> =
+        match System.Environment.GetEnvironmentVariable "SPIRAL_IMPORT_TYPES" with
+        | null | "" -> Map.empty
+        | text ->
+            text.Split(';', System.StringSplitOptions.RemoveEmptyEntries)
+            |> Array.collect (fun entry ->
+                match entry.Split(':', 2) with
+                | [| unitName; names |] ->
+                    names.Split(',', System.StringSplitOptions.RemoveEmptyEntries) |> Array.map (fun name -> name.Trim(), unitName.Trim())
+                | _ -> [||])
+            |> Map.ofArray
+    /// ### exportedUnionNames
+    let exportedUnionNames (env : PartEvalResult) (x : TypedBind []) =
+        let names = Dictionary<obj, string>(HashIdentity.Reference)
+        let taken = HashSet<string>()
+        let visited = HashSet<obj>(HashIdentity.Reference)
+        let rec walk (t : Ty) =
+            match t with
+            | YUnion u when visited.Add(box u) ->
+                match unionSourceNames.TryGetValue(box u) with
+                | true, source ->
+                    let clean = source |> String.map (fun c -> if System.Char.IsLetterOrDigit c || c = '_' then c else '_')
+                    let name = if taken.Add clean then clean else $"{clean}_{taken.Count}"
+                    taken.Add name |> ignore
+                    names.[box u] <- name
+                | _ -> ()
+                u.Item.cases |> Map.iter (fun _ v -> walk v)
+            | YNominal _ | YApply _ -> walk (env.nominal_apply t)
+            | YPair(a,b) | YFun(a,b,_) -> walk a; walk b
+            | YRecord m -> m |> Map.iter (fun _ v -> walk v)
+            | YArray a | YLayout(a,_) -> walk a
+            | _ -> ()
+        x |> Array.iter (function
+            | TyLet(_,_,TyOp(Export, [_; DV(L(_,YFun(domain,range,_)))])) | TyLocalReturnOp(_,TyOp(Export, [_; DV(L(_,YFun(domain,range,_)))]),_) -> walk domain; walk range
+            | _ -> ())
+        names
 
 #if SPIRAL_CORE_GPT5PARALLEL
     /// ## CodegenAdapter
@@ -164181,29 +164274,7 @@ module spiral_compiler =
         let exported_record_names = HashSet<string>()
         let union_tag_impls = Dictionary<string, string>()
         let union_tags_used = HashSet<string>()
-        let exported_union_names = Dictionary<obj, string>(HashIdentity.Reference)
-        let () =
-            let taken = HashSet<string>()
-            let visited = HashSet<obj>(HashIdentity.Reference)
-            let rec walk (t : Ty) =
-                match t with
-                | YUnion u when visited.Add(box u) ->
-                    match unionSourceNames.TryGetValue(box u) with
-                    | true, source ->
-                        let clean = source |> String.map (fun c -> if System.Char.IsLetterOrDigit c || c = '_' then c else '_')
-                        let name = if taken.Add clean then clean else $"{clean}_{taken.Count}"
-                        taken.Add name |> ignore
-                        exported_union_names.[box u] <- name
-                    | _ -> ()
-                    u.Item.cases |> Map.iter (fun _ v -> walk v)
-                | YNominal _ | YApply _ -> walk (env.nominal_apply t)
-                | YPair(a,b) | YFun(a,b,_) -> walk a; walk b
-                | YRecord m -> m |> Map.iter (fun _ v -> walk v)
-                | YArray a | YLayout(a,_) -> walk a
-                | _ -> ()
-            x |> Array.iter (function
-                | TyLet(_,_,TyOp(Export, [_; DV(L(_,YFun(domain,range,_)))])) | TyLocalReturnOp(_,TyOp(Export, [_; DV(L(_,YFun(domain,range,_)))]),_) -> walk domain; walk range
-                | _ -> ())
+        let exported_union_names = exportedUnionNames env x
         let default_impls = Dictionary<string, string>()
 
         let print is_type show r =
@@ -165032,7 +165103,9 @@ module spiral_compiler =
         program.AppendLine("use std::cell::RefCell;").AppendLine("use std::rc::Rc;") |> ignore
         globals |> Array.iter (fun x -> program.AppendLine(x) |> ignore)
         types |> Seq.iter (fun x -> program.Append(x) |> ignore)
-        union_tag_impls |> Seq.iter (fun kv -> if union_tags_used.Contains kv.Key then program.Append(kv.Value) |> ignore)
+        let exported_generated = exported_union_names.Keys |> Seq.map (fun node -> union_name (unbox<Union> node).Item) |> HashSet
+        union_tag_impls |> Seq.iter (fun kv ->
+            if union_tags_used.Contains kv.Key || exported_generated.Contains kv.Key then program.Append(kv.Value) |> ignore)
         let default_uses = System.Text.RegularExpressions.Regex(@"(\w+)>+::default\(\)")
         let defaults_reached = HashSet<string>()
         let rec reach_defaults (text : string) =
@@ -165043,6 +165116,8 @@ module spiral_compiler =
         exports |> Seq.iter reach_defaults
         types |> Seq.iter reach_defaults
         reach_defaults (main.ToString())
+        exported_generated |> Seq.iter (fun name ->
+            if default_impls.ContainsKey name && defaults_reached.Add name then reach_defaults default_impls.[name])
         default_impls |> Seq.iter (fun kv -> if defaults_reached.Contains kv.Key then program.Append(kv.Value) |> ignore)
         functions |> Seq.iter (fun x -> program.Append(x) |> ignore)
         if exports.Count > 0 then
@@ -165071,10 +165146,46 @@ module spiral_compiler =
                 let u = (unbox<Union> node).Item
                 let generated = match u.layout with UHeap -> $"UH{(uheap u.cases).tag}" | UStack -> $"US{(ustack u.cases).tag}"
                 let renamed = System.Text.RegularExpressions.Regex.Replace(code, $@"\b{generated}(?=\b|_)", name)
-                renamed.Replace($"\nenum {name} ", $"\npub enum {name} ")
+                let renamed = renamed.Replace($"\nenum {name} ", $"\npub enum {name} ")
+                System.Text.RegularExpressions.Regex.Replace(renamed, $@"(\nimpl {name} \{{\r?\n    )fn tag\(", "${1}pub fn tag(")
                 ) code
+        let import_rust_unions (code : string) =
+            let imported = importedTypeUnits ()
+            if imported.IsEmpty then code
+            else
+                let candidates =
+                    [ for KeyValue(node, source) in unionSourceNames do
+                        match imported.TryFind source with
+                        | Some unitName -> yield union_name (unbox<Union> node).Item, source, unitName
+                        | None -> () ]
+                let renamed =
+                    candidates |> List.fold (fun (code : string) (generated, name, _) ->
+                        System.Text.RegularExpressions.Regex.Replace(code, $@"\b{generated}(?=\b|_)", name)) code
+                let local_definitions name =
+                    [
+                        $@"(?m)^#\[derive\(Clone\)\]\r?\n(?=(pub )?enum {name} \{{)"
+                        $@"(?ms)^(pub )?enum {name} \{{\r?\n.*?^\}}\r?\n"
+                        $@"(?ms)^impl {name} \{{\r?\n.*?^\}}\r?\n"
+                        $@"(?ms)^impl Default for {name} \{{\r?\n.*?^\}}\r?\n"
+                    ]
+                let dropped =
+                    candidates
+                    |> List.map (fun (_, name, _) -> name)
+                    |> List.distinct
+                    |> List.fold (fun (code : string) name ->
+                        local_definitions name |> List.fold (fun (code : string) pattern ->
+                            System.Text.RegularExpressions.Regex.Replace(code, pattern, "")) code) renamed
+                let uses =
+                    candidates
+                    |> List.map (fun (_, name, unitName) -> unitName, name)
+                    |> List.distinct
+                    |> List.groupBy fst
+                    |> List.map (fun (unitName, names) -> $"""use {unitName}::{{{names |> List.map snd |> String.concat ", "}}};""" + "\n")
+                    |> String.concat ""
+                System.Text.RegularExpressions.Regex("use std::rc::Rc;(\r?\n)").Replace(dropped, "use std::rc::Rc;${1}" + uses.Replace("$", "$$"), 1)
         program.ToString() |> translateFsharpInterpolations |> foldStringBindings |> inlineRustEmits
         |> rename_exported_unions
+        |> import_rust_unions
         |> cacheRustStringLiterals
         |> immutableRustLets
         |> rustMoveOnLastUse
@@ -165460,6 +165571,7 @@ module spiral_compiler =
                 match op, l with
                 | Dyn,[a] -> tup a
                 | TypeToVar, _ -> raise_codegen_error "The use of `` should never appear in generated code."
+                | StringIndex, [DLit (LitString _) as a; b] -> $"AnsiString({tup a})[{tup b} + 1]"
                 | StringIndex, [a;b] -> $"{tup a}[{tup b} + 1]"
                 | StringSlice, [a;b;c] -> string_slice (); $"StringSlice({tup a}, {tup b}, {tup c})"
                 | StaticStringConcat, _ -> bin (sprintf "%s + %s")
@@ -165619,12 +165731,14 @@ module spiral_compiler =
         emit_function "SpiralMain" [||] (YPrim Int32T) x false
 
         let program = StringBuilder()
-        program.AppendLine("program SpiralGenerated;").AppendLine("{$mode delphi}{$H+}").AppendLine("{$MAXSTACKSIZE $10000000}").AppendLine("uses SysUtils, Math;") |> ignore
+        let is_uses (x : string) = x.StartsWith("uses ", System.StringComparison.Ordinal)
+        let units = env.globals |> Seq.filter is_uses |> Seq.map (fun x -> x.Substring(5).Trim().TrimEnd(';').Trim()) |> Seq.filter (fun x -> x <> "") |> Seq.distinct |> Seq.filter (fun x -> x <> "SysUtils" && x <> "Math") |> List.ofSeq
+        program.AppendLine("program SpiralGenerated;").AppendLine("{$mode delphi}{$H+}").AppendLine("{$MAXSTACKSIZE $10000000}").AppendLine("uses " + String.concat ", " ("SysUtils" :: "Math" :: units) + ";") |> ignore
         if forwards.Count > 0 || types.Count > 0 then
             program.AppendLine("type") |> ignore
             forwards |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
             types |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
-        env.globals |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
+        env.globals |> Seq.filter (is_uses >> not) |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
         globals |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
         headers |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
         bodies |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
@@ -168215,6 +168329,7 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
         let exports = ResizeArray<string>()
         let closure_of_var = Dictionary<int, int>()
         let export_names = HashSet<string>()
+        let exported_union_names = exportedUnionNames env x
 
         let print is_type show r =
             let s = {text=StringBuilder(); indent=0}
@@ -168969,7 +169084,54 @@ def w64_xor(a: U32 & U32, b: U32 & U32) -> U32 & U32:
             let oddQuotes (line : string) = (line.Replace("\\\\", "").Replace("\\\"", "") |> Seq.filter (fun c -> c = '"') |> Seq.length) % 2 = 1
             if lines |> Array.exists oddQuotes then body
             else lines |> Array.map (fun line -> if line = "" then line else "    " + line) |> String.concat "\n"
-        program.Append($"pub fn main() {{\n{gleamIndentedMain (string main)}}}\n").ToString() |> silenceUnusedBindings |> gleamUsedHelpers
+        let gleamTypeName (name : string) =
+            name.Split('_', System.StringSplitOptions.RemoveEmptyEntries)
+            |> Array.map (fun part -> string (System.Char.ToUpperInvariant part.[0]) + part.Substring 1)
+            |> String.concat ""
+        let renameExportedUnions (code : string) =
+            exported_union_names |> Seq.fold (fun (code : string) (KeyValue(node, name)) ->
+                let u = (unbox<Union> node).Item
+                let generated = match u.layout with UHeap -> $"Uh{(uheap u.cases).tag}" | UStack -> $"Us{(ustack u.cases).tag}"
+                System.Text.RegularExpressions.Regex.Replace(code, $@"\b{generated}(?![0-9])", gleamTypeName name)
+                ) code
+        let importUnions (code : string) =
+            let imported = importedTypeUnits ()
+            if imported.IsEmpty then code
+            else
+                let candidates =
+                    [ for KeyValue(node, source) in unionSourceNames do
+                        match imported.TryFind source with
+                        | Some unitName ->
+                            let u = (unbox<Union> node).Item
+                            let generated = match u.layout with UHeap -> $"Uh{(uheap u.cases).tag}" | UStack -> $"Us{(ustack u.cases).tag}"
+                            yield generated, gleamTypeName source, unitName
+                        | None -> () ]
+                let renamed =
+                    candidates |> List.fold (fun (code : string) (generated, name, _) ->
+                        System.Text.RegularExpressions.Regex.Replace(code, $@"\b{generated}(?![0-9])", name)) code
+                let dropped, imports =
+                    candidates
+                    |> List.map (fun (_, name, unitName) -> name, unitName)
+                    |> List.distinct
+                    |> List.fold (fun ((code : string), imports) (name, unitName) ->
+                        let block = System.Text.RegularExpressions.Regex($@"(?ms)^pub type {name} \{{\n(.*?)^\}}\n")
+                        let found = block.Match code
+                        if not found.Success then code, imports
+                        else
+                            let constructors =
+                                found.Groups.[1].Value.Split('\n', System.StringSplitOptions.RemoveEmptyEntries)
+                                |> Array.map (fun line -> line.Trim())
+                                |> Array.filter (fun line -> line <> "")
+                                |> Array.map (fun line -> match line.IndexOf '(' with -1 -> line | at -> line.Substring(0, at))
+                                |> List.ofArray
+                            code.Remove(found.Index, found.Length), imports @ [ unitName, $"type {name}" :: constructors ]) (renamed, [])
+                let lines =
+                    imports
+                    |> List.groupBy fst
+                    |> List.map (fun (unitName, groups) -> $"""import {unitName}.{{{groups |> List.collect snd |> String.concat ", "}}}""" + "\n")
+                    |> String.concat ""
+                lines + dropped
+        program.Append($"pub fn main() {{\n{gleamIndentedMain (string main)}}}\n").ToString() |> silenceUnusedBindings |> gleamUsedHelpers |> renameExportedUnions |> importUnions
 
     /// ## CodegenLua
 
@@ -169959,6 +170121,7 @@ end
         types |> Seq.iteri (fun i x -> program.Append(x).Append("\n") |> ignore)
         functions |> Seq.iteri (fun i x -> program.Append(x).Append("\n") |> ignore)
         let spillChunkLocals (code : string) =
+            let code = code.Replace("\r\n", "\n")
             let declared =
                 System.Text.RegularExpressions.Regex.Matches(code, @"(?m)^local\s+([A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*)*)\s*=")
                 |> Seq.collect (fun m -> m.Groups.[1].Value.Split(',') |> Seq.map (fun s -> s.Trim()))
@@ -179508,8 +179671,64 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
     /// ### ConfigError
     type ConfigError = ResumableError of ConfigResumableError [] | ConfigFatalError of ConfigFatalError
 
+    /// ### tomlManifestText
+    let tomlManifestText (text : string) =
+        let lines = text.Replace("\r\n", "\n").Split '\n'
+        let unquote (value : string) =
+            let value = value.Trim ()
+            if value.Length >= 2 && (value.[0] = '"' || value.[0] = ''') && value.[value.Length - 1] = value.[0] then value.Substring (1, value.Length - 2)
+            else value
+        let items (value : string) =
+            value.Trim().TrimStart('[').TrimEnd(']').Split ',' |> Array.map unquote |> Array.filter (fun item -> item <> "")
+        let out = ResizeArray<string> ()
+        let mutable i = 0
+        while i < lines.Length do
+            let line = lines.[i]
+            let trimmed = line.Trim ()
+            let equals = trimmed.IndexOf '='
+            if trimmed = "" || trimmed.StartsWith "#" then
+                out.Add ""
+                i <- i + 1
+            elif equals <= 0 then
+                out.Add line
+                i <- i + 1
+            else
+                let key = trimmed.Substring(0, equals).Trim ()
+                let value = trimmed.Substring(equals + 1).Trim ()
+                if value.StartsWith "'''" then
+                    out.Add (key + ":")
+                    let rest = value.Substring 3
+                    if rest.Trim () <> "" then out.Add ("    " + rest)
+                    i <- i + 1
+                    while i < lines.Length && not (lines.[i].Trim().EndsWith "'''") do
+                        out.Add (if lines.[i].Trim () = "" then "" else "    " + lines.[i])
+                        i <- i + 1
+                    if i < lines.Length then
+                        let last = lines.[i].Substring(0, lines.[i].LastIndexOf "'''")
+                        if last.Trim () <> "" then out.Add ("    " + last)
+                        i <- i + 1
+                elif value.StartsWith "[" then
+                    let mutable collected = value
+                    while not (collected.TrimEnd().EndsWith "]") && i + 1 < lines.Length do
+                        i <- i + 1
+                        collected <- collected + " " + lines.[i].Trim ()
+                    out.Add (key + ":")
+                    for item in items collected do out.Add ("    " + item)
+                    i <- i + 1
+                else
+                    out.Add (key + ": " + unquote value)
+                    i <- i + 1
+        String.concat "\n" out
+
+    /// ### isTomlManifest
+    let isTomlManifest (text : string) =
+        text.Replace("\r\n", "\n").Split '\n'
+        |> Array.tryFind (fun line -> let t = line.Trim () in t <> "" && not (t.StartsWith "#"))
+        |> Option.exists (fun line -> System.Text.RegularExpressions.Regex.IsMatch (line, @"^\s*[A-Za-z][\w-]*\s*="))
+
     /// ### config
     let config text =
+        let text = if isTomlManifest text then tomlManifestText text else text
         try
             let _ = tab_positions text |> raise_if_not_empty Tabs
 
@@ -180445,13 +180664,18 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         let isWordText (text : string) = text.Length > 0 && (System.Char.IsLetterOrDigit text.[0] || text.[0] = '_')
 
         let respell (target : Spelling) (lexeme : Lexeme) =
-            if lexeme.InsideMacro then None
-            else
+            match target, lexeme.Token with
+            | Symbols, TokUnescapedChar c when (c = '@' || c = '#' || c = '$') && lexeme.Text.Text = "\\" + string c -> Some (string c + string c)
+            | Words, TokUnescapedChar c when (c = '@' || c = '#' || c = '$') && lexeme.Text.Text = string c + string c -> Some ("\\" + string c)
+            | _ when lexeme.InsideMacro -> None
+            | _ ->
                 match target, lexeme.Token with
                 | Symbols, TokKeyword keyword when isWordText lexeme.Text.Text -> symbolOf keyword
                 | Symbols, TokValue (LitBool value) when isWordText lexeme.Text.Text -> Some (if value then "!+" else "!-")
                 | Words, TokKeyword keyword when not (isWordText lexeme.Text.Text) -> Some (wordOf keyword)
                 | Words, TokValue (LitBool value) when not (isWordText lexeme.Text.Text) -> Some (if value then "true" else "false")
+                | Symbols, TokSymbol _ when lexeme.Text.Text.StartsWith "." -> Some ("::" + lexeme.Text.Text.Substring 1)
+                | Words, TokSymbol _ when lexeme.Text.Text.StartsWith "::" -> Some ("." + lexeme.Text.Text.Substring 2)
                 | _ -> None
 
         let tokenIdentity (token : SpiralToken) =
@@ -183599,9 +183823,10 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
             let rec search (dir : DirectoryInfo) =
                 if isNull dir then Edition3
                 else
-                    let project = Path.Combine (dir.FullName, "package.spiproj")
+                    let toml = Path.Combine (dir.FullName, "spiral.toml")
+                    let project = if File.Exists toml then toml else Path.Combine (dir.FullName, "package.spiproj")
                     if File.Exists project then
-                        let declares2 = File.ReadAllLines project |> Array.exists (fun line -> line.Trim().Replace(" ", "") = "edition:2")
+                        let declares2 = File.ReadAllLines project |> Array.exists (fun line -> let t = line.Trim().Replace(" ", "") in t = "edition:2" || t = "edition=2")
                         if declares2 then Edition2 else Edition3
                     else search dir.Parent
             search (DirectoryInfo (Path.GetDirectoryName (Path.GetFullPath path)))
@@ -183645,9 +183870,84 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
                 Array.iteri (fun index outcome -> report (chunk.[index], outcome)) outcomes
                 start <- start + chunkSize
 
+        let rec manifestsUnder (directory : string) : string seq =
+            seq {
+                let project = Path.Combine (directory, "package.spiproj")
+                if File.Exists project then yield project
+                for child in Directory.EnumerateDirectories directory do
+                    let info = DirectoryInfo child
+                    if not (generatedDirectories.Contains info.Name) && not (info.Attributes.HasFlag FileAttributes.ReparsePoint) then
+                        yield! manifestsUnder child
+            }
+
+        let tomlOfSpiproj (text : string) : Result<string, string> =
+            let lines = text.Replace("\r\n", "\n").TrimEnd('\n').Split '\n'
+            let out = ResizeArray<string> ()
+            let mutable problem = None
+            let quoted (value : string) =
+                if value.Contains "'" then problem <- Some (sprintf "a value holds a quote: %s" value)
+                "'" + value + "'"
+            let mutable i = 0
+            while i < lines.Length do
+                let line = lines.[i]
+                if line.Trim () = "" then i <- i + 1
+                else
+                    let colon = line.IndexOf ':'
+                    let key = if colon > 0 then line.Substring(0, colon).Trim () else line.Trim ()
+                    let value = if colon > 0 then line.Substring(colon + 1).Trim () else ""
+                    i <- i + 1
+                    let body = ResizeArray<string> ()
+                    while i < lines.Length && (lines.[i] = "" || Char.IsWhiteSpace lines.[i].[0]) do
+                        body.Add lines.[i]
+                        i <- i + 1
+                    while body.Count > 0 && body.[body.Count - 1].Trim () = "" do body.RemoveAt (body.Count - 1)
+                    if key = "modules" then
+                        out.Add "modules = '''"
+                        if value <> "" then out.Add value
+                        for b in body do out.Add (if b.StartsWith "    " then b.Substring 4 else b.TrimStart ())
+                        out.Add "'''"
+                    elif key = "packages" || key = "crates" then
+                        out.Add (key + " = [" + (Seq.append (value.Split (' ', StringSplitOptions.RemoveEmptyEntries)) (body |> Seq.map (fun b -> b.Trim ())) |> Seq.filter (fun b -> b <> "") |> Seq.map quoted |> String.concat ", ") + "]")
+                    elif value <> "" && value |> Seq.forall Char.IsDigit then out.Add (key + " = " + value)
+                    else out.Add (key + " = " + quoted value)
+            match problem with
+            | Some reason -> Error reason
+            | None -> Ok (String.concat "\n" out + "\n")
+
+        let manifestToml (arguments : string list) : int =
+            let significant (text : string) =
+                text.Replace("\r\n", "\n").Split '\n'
+                |> Array.collect (fun line ->
+                    let key = if line.IndexOf ':' > 0 then line.Substring(0, line.IndexOf ':') else ""
+                    let value = if key = "" then "" else line.Substring(key.Length + 1).Trim ()
+                    if value <> "" && (key = "packages" || key = "crates") then Array.append [| key + ":" |] (value.Split (' ', StringSplitOptions.RemoveEmptyEntries) |> Array.map (fun item -> "    " + item))
+                    elif value <> "" && key = "modules" then [| "modules:"; "    " + value |]
+                    else [| line |])
+                |> Array.map (fun line -> line.TrimEnd ())
+                |> Array.filter (fun line -> line <> "")
+            let mutable failures = 0
+            for directory in positional arguments do
+                for project in manifestsUnder directory |> Seq.sort do
+                    let target = Path.Combine (Path.GetDirectoryName project, "spiral.toml")
+                    if File.Exists target then printfn "kept: %s" target
+                    else
+                        let original = File.ReadAllText project
+                        match tomlOfSpiproj original with
+                        | Error reason ->
+                            failures <- failures + 1
+                            eprintfn "manifest error: %s: %s" project reason
+                        | Ok toml when significant (tomlManifestText toml) <> significant original ->
+                            failures <- failures + 1
+                            eprintfn "manifest error: %s: the spiral.toml would not read back as this manifest" project
+                        | Ok toml ->
+                            File.WriteAllText (target, toml)
+                            printfn "wrote: %s" target
+            if failures > 0 then 2 else 0
+
         let runOnThisStack (arguments : string list) : int =
             literalSplitting.Enabled <- not (List.contains "--no-split-literals" arguments)
-            if List.contains "--stdin" arguments then
+            if option "--manifest" arguments = Some "toml" then manifestToml arguments
+            elif List.contains "--stdin" arguments then
                 let path = defaultArg (option "--path" arguments) "stdin.spi"
                 use input = new StreamReader (Console.OpenStandardInput (), Text.UTF8Encoding false)
                 let text = input.ReadToEnd().Replace ("\r\n", "\n")
@@ -184240,7 +184540,9 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
     
 
     /// ### spiproj_suffix
-    let spiproj_suffix x = Path.Combine(x,"package.spiproj")
+    let spiproj_suffix x =
+        let toml = Path.Combine(x,"spiral.toml")
+        if File.Exists toml then toml else Path.Combine(x,"package.spiproj")
     
 
     /// ### loader_package
@@ -184612,10 +184914,11 @@ fn spiral_f32_of_w64(a: vec2<u32>, is_signed: bool) -> f32 {
         let rec nearest (directory : string) =
             if isNull directory then None
             else
-                let project = IO.Path.Combine (directory, "package.spiproj")
+                let toml = IO.Path.Combine (directory, "spiral.toml")
+                let project = if IO.File.Exists toml then toml else IO.Path.Combine (directory, "package.spiproj")
                 if IO.File.Exists project then Some project else nearest (IO.Path.GetDirectoryName directory)
         match nearest (IO.Path.GetDirectoryName (IO.Path.GetFullPath file)) with
-        | Some project -> IO.File.ReadAllLines project |> Array.exists (fun line -> line.Trim () = "edition: 3")
+        | Some project -> IO.File.ReadAllLines project |> Array.exists (fun line -> let t = line.Trim().Replace(" ", "") in t = "edition:3" || t = "edition=3")
         | None -> false
 
     /// ### xCompatEnabled

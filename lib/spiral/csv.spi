@@ -4,26 +4,46 @@ test csv static =
 
 :< sm'_operators
 
+/// ### quoted_cell_text
+:= quoted_cell_text (segment : string) : string =
+    segment |> sm'.replace "\t" " " |> sm'.replace "\r" " " |> sm'.replace "\n" " "
+
+/// ### bare_cells_text
+:= bare_cells_text (segment : string) : string = segment |> sm'.replace "\t" " " |> sm'.replace "," "\t"
+
+/// ### tsv_piece
+:= tsv_piece (segment : string) (at : i32) (count : i32) : string =
+    ? at % 2i32 = 1i32 ?> quoted_cell_text segment
+    |? segment = "" && at > 0i32 && at < count - 1i32 ?> "\""
+    |: bare_cells_text segment
+
 /// ### csv_line_as_tsv
 :~ ^ quoted_as_tsv (segments : array string) (at : i32) (count : i32) (acc : string) : string =
     ? at >= count ?> acc
-    |:
-        := segment = am'.index at segments
-        := piece =
-            ? at % 2i32 = 1i32 ?> segment |> sm'.replace "\t" " " |> sm'.replace "\r" " " |> sm'.replace "\n" " "
-            |? segment = "" && at > 0i32 && at < count - 1i32 ?> "\""
-            |: segment |> sm'.replace "\t" " " |> sm'.replace "," "\t"
-        quoted_as_tsv segments (at + 1i32) count (acc ++# piece)
+    |: quoted_as_tsv segments (at + 1i32) count (acc ++# tsv_piece (am'.index at segments) at count)
 
 :~ csv_line_as_tsv (line : string) : string =
     := segments = sm'.split "\"" line |> array
     quoted_as_tsv segments 0i32 (am'.length segments) ""
+
+/// ### tsv_line
+:= tsv_line (fields : list string) : string = sm'.concat_list "\t" fields
+
+///> rust
+///> fsharp
+test tsv_line_joins_fields_with_tabs =
+    (tsv_line [ "count"; "group" ], tsv_line [ "a"; ""; "c" ], tsv_line [ "only" ], tsv_line [])
+    |> _assert_eq ("count\tgroup", "a\t\tc", "only", "")
 
 ///> rust
 ///> fsharp
 test quoted_csv_cells_become_tab_separated =
     csv_line_as_tsv "\"Round\",\"Mode\",3" |> _assert_eq "Round\tMode\t3"
     csv_line_as_tsv "a,\"b,c\",\"say \"\"hi\"\"\"" |> _assert_eq "a\tb,c\tsay \"hi\""
+
+///> rust
+///> fsharp
+test empty_csv_cells_stay_empty =
     csv_line_as_tsv "x,,y" |> _assert_eq "x\t\ty"
     csv_line_as_tsv "x,\"\",y" |> _assert_eq "x\t\ty"
     csv_line_as_tsv "" |> _assert_eq ""
@@ -33,5 +53,9 @@ test quoted_csv_cells_become_tab_separated =
 test non_ascii_and_tabs_inside_cells_keep_the_columns =
     csv_line_as_tsv "\"Ação\",x" |> _assert_eq "Ação\tx"
     csv_line_as_tsv "\"a\tb\",c" |> _assert_eq "a b\tc"
+
+///> rust
+///> fsharp
+test unquoted_and_unclosed_cells_keep_their_text =
     csv_line_as_tsv "é,\"ü\"" |> _assert_eq "é\tü"
     csv_line_as_tsv "x,\"a,b" |> _assert_eq "x\ta,b"

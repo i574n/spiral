@@ -29,9 +29,17 @@
         message : string
     }
 
-:== rule = { context : xpath.xpath; context_source : string; assertions : list assertion }
+:== binding = { name : string; value : xpath.xpath }
 
-:== pattern = { id : pattern_id; rules : list rule }
+:== rule =
+    {
+        context : xpath.xpath
+        context_source : string
+        lets : list binding
+        assertions : list assertion
+    }
+
+:== pattern = { id : pattern_id; lets : list binding; rules : list rule }
 
 := attribute_or (key : string) (attributes : list (string * string)) : string =
     ?= xml.attribute_of key attributes ?|
@@ -41,45 +49,108 @@
 := severity_of (flag : string) : severity =
     ? flag = "fatal" || flag = "error" ?> Fatal |? flag = "warning" ?> Warning |: Information
 
+:= severity_or (default : severity) (flag : string) : severity = ? flag = "" ?> default |: severity_of flag
+
 := is_assertion (name : string) : bool = local_name name = "assert" || local_name name = "report"
 
-:~ ^ assertions_in (nodes : list xml_node) (acc : list assertion) : list assertion =
+:~ ^ assertions_in (default : severity) (nodes : list xml_node) (acc : list assertion) : list assertion =
     ?= nodes ?|
     | XmlElement (name, attributes, children) :: rest ?& is_assertion name =>
         := source = attribute_or "test" attributes
         := assertion =
             {
                 id = rule_id (attribute_or "id" attributes)
-                severity = severity_of (attribute_or "flag" attributes)
+                severity = severity_or default (attribute_or "flag" attributes)
                 kind = ? xml.local_name name = "report" ?> Reports |: Asserts
                 test = xpath.lift_code_lists (xpath.parse source)
                 source = source
                 message = sm'.trim (xml.text_in children)
             }
-        assertions_in rest (assertion :: acc)
-    | _ :: rest => assertions_in rest acc
+        assertions_in default rest (assertion :: acc)
+    | _ :: rest => assertions_in default rest acc
     | [] => listm.rev acc
 
-:~ ^ rules_in (nodes : list xml_node) (acc : list rule) : list rule =
+:~ ^ lets_in (nodes : list xml_node) (acc : list binding) : list binding =
+    ?= nodes ?|
+    | XmlElement (name, attributes, _) :: rest ?& xml.local_name name = "let" =>
+        := value = xpath.lift_code_lists (xpath.parse (attribute_or "value" attributes))
+        lets_in rest ({ name = attribute_or "name" attributes; value = value } :: acc)
+    | _ :: rest => lets_in rest acc
+    | [] => listm.rev acc
+
+:~ ^ rules_in (default : severity) (nodes : list xml_node) (acc : list rule) : list rule =
     ?= nodes ?|
     | XmlElement (name, attributes, children) :: rest ?& xml.local_name name = "rule" =>
         := source = attribute_or "context" attributes
-        := parsed = { context = xpath.parse source; context_source = source; assertions = assertions_in children [] }
-        rules_in rest (parsed :: acc)
-    | _ :: rest => rules_in rest acc
+        := parsed =
+            {
+                context = xpath.parse source
+                context_source = source
+                lets = lets_in children []
+                assertions = assertions_in default children []
+            }
+        rules_in default rest (parsed :: acc)
+    | _ :: rest => rules_in default rest acc
     | [] => listm.rev acc
 
-:~ ^ patterns_in (nodes : list xml_node) (acc : list pattern) : list pattern =
+:~ ^ patterns_in (default : severity) (nodes : list xml_node) (acc : list pattern) : list pattern =
     ?= nodes ?|
     | XmlElement (name, attributes, children) :: rest ?& xml.local_name name = "pattern" =>
-        patterns_in rest ({ id = pattern_id (attribute_or "id" attributes); rules = rules_in children [] } :: acc)
-    | _ :: rest => patterns_in rest acc
+        := parsed =
+            {
+                id = pattern_id (attribute_or "id" attributes)
+                lets = lets_in children []
+                rules = rules_in default children []
+            }
+        patterns_in default rest (parsed :: acc)
+    | _ :: rest => patterns_in default rest acc
     | [] => listm.rev acc
 
-:= read_schematron (text : string) : list pattern =
+:= patterns_of_children (default : severity) (children : list xml_node) : list pattern =
+    := schema_lets = lets_in children []
+    listm.map (\ (p : pattern) => { p ?| lets = listm.append schema_lets p.lets }) (patterns_in default children [])
+
+:= read_schematron_with (default : severity) (text : string) : list pattern =
     ?= xml.single_root (xml.read_xml text) ?|
-    | Some root => patterns_in root.children []
+    | Some root => patterns_of_children default root.children
     | None => []
+
+:= read_schematron (text : string) : list pattern = read_schematron_with Information text
+
+:= include_directory (path : string) : string =
+    := slash = sm'.last_index_of "/" path
+    ? slash < 0i32 ?> "" |: sm'.substring 0i32 (slash + 1i32) path
+
+:~ ^ expanded (load : string -> option string) (base : string) (depth : i32) (nodes : list xml_node) : list xml_node =
+    ?= nodes ?|
+    | XmlElement (name, attributes, _) :: rest ?& xml.local_name name = "include" && depth < 16i32 =>
+        := path = include_directory base ++# attribute_or "href" attributes
+        := included =
+            ?= load path ?|
+            | Some text =>
+                ?= xml.single_root (xml.read_xml text) ?|
+                | Some root ?& xml.local_name root.name = "schema" => expanded load path (depth + 1i32) root.children
+                | Some root =>
+                    XmlElement (root.name, root.attributes, expanded load path (depth + 1i32) root.children) :: []
+                | None => []
+            | None => []
+        listm.append included (expanded load base depth rest)
+    | node :: rest => node :: expanded load base depth rest
+    | [] => []
+
+:= read_schematron_resolved_with (default : severity) (load : string -> option string) (path : string) : list pattern =
+    ?= load path ?|
+    | Some text =>
+        ?= xml.single_root (xml.read_xml text) ?|
+        | Some root ?& xml.local_name root.name = "pattern" =>
+            := fragment = XmlElement (root.name, root.attributes, expanded load path 0i32 root.children)
+            patterns_of_children default (fragment :: [])
+        | Some root => patterns_of_children default (expanded load path 0i32 root.children)
+        | None => []
+    | None => []
+
+:= read_schematron_resolved (load : string -> option string) (path : string) : list pattern =
+    read_schematron_resolved_with Information load path
 
 :== census = { rules : i32; assertions : i32; fatal : i32; invalid : i32; members : i32 }
 

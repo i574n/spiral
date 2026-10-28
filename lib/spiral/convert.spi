@@ -115,7 +115,9 @@ test convert static =
         Lua = \ () => $'tonumber( !x, !base )' : i32
         Fsharp = \ () => $'System.Convert.ToInt32 (!x, !base)' : i32
         Python = \ () => $'int (!x, !base)' : i32
-        Rust = \ () => $'i32::from_str_radix(&*(!x), (!base) as u32).unwrap()' : i32
+        Rust = \ () =>
+            := radix : u32 = conv base
+            $'i32::from_str_radix(&*(!x), !radix).unwrap()' : i32
         TypeScript = \ () => $'parseInt(!x, !base)' : i32
         C = \ () => $'(int32_t)strtol((!x)->ptr, NULL, !base)' : i32
         Delphi = \ () =>
@@ -235,6 +237,19 @@ test convert static =
         ? ok && integer_fits converted value ?> Some converted |: None
     |: None
 
+:= narrow_parsed \* u. (ok : bool) (value : f64) : option u =
+    := low, high =
+        ~>
+            ?: u ?|
+            | i8 => -128.0f64, 127.0f64
+            | i16 => -32768.0f64, 32767.0f64
+            | i32 => -2147483648.0f64, 2147483647.0f64
+            | u8 => 0.0f64, 255.0f64
+            | u16 => 0.0f64, 65535.0f64
+            | _ => 0.0f64, 4294967295.0f64
+    := converted : u = ~> conv `f64 `u value
+    ? ok && value >= low && value <= high ?> Some converted |: None
+
 := try_convert \* t u. (x : t) : option u =
     x
     |> to' \ x =>
@@ -266,9 +281,20 @@ test convert static =
                 |: x |> to |> Some
             Lua = \ () =>
                 ? is_string_type x ?>
-                    parsed_integer
-                        ($'(string.match(!x, "^%s*[+-]?%d+%s*$") ~= nil)' : bool)
-                        ($'(tonumber(!x) or 0)' : i64)
+                    := ok = ($'(string.match(!x, "^%s*[+-]?%d+%s*$") ~= nil)' : bool)
+                    := narrow : bool =
+                        ~>
+                            ?: u ?|
+                            | i8 => !+
+                            | i16 => !+
+                            | i32 => !+
+                            | u8 => !+
+                            | u16 => !+
+                            | u32 => !+
+                            | _ => !-
+                    ? narrow
+                    ?> narrow_parsed ok ($'(tonumber(!x) or 0)' : f64)
+                    |: parsed_integer ok ($'(tonumber(!x) or 0)' : i64)
                 |: x |> to |> Some : _ u
             Fsharp = \ () =>
                 resultm.from_try
@@ -383,6 +409,17 @@ test try_convert_2 =
     !-
     |> try_convert
     |> _assert_eq (0i32 |> Some)
+
+///> lua
+test try_convert_reads_narrow_integers_natively =
+    := ~small = "3"
+    := ~negative = " -12 "
+    := ~wide = "2147483648"
+    := ~fraction = "1.5"
+    := ~byte = "300"
+    := a, b, c = (try_convert small : option i32), (try_convert negative : option i32), (try_convert wide : option i32)
+    := d, e = (try_convert fraction : option i32), (try_convert byte : option u8)
+    (a, b, c, d, e) |> _assert_eq (Some 3i32, Some (0i32 - 12i32), None, None, None)
 
 /// ### convert
 := convert \* t u. (x : t) : u =

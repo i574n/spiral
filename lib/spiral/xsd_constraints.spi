@@ -132,7 +132,7 @@
 := validate_constraints (constraints : list identity_constraint) (document : xml_node) : list string =
     := root = document_root document
     constraint_violations constraints
-        { context = root; root = root; variables = [] }
+        { context = root; root = root; variables = []; today = "" }
         (listm.rev (descendants_of (root :: []) []))
         []
 

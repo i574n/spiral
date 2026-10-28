@@ -170,7 +170,9 @@
     ++# "inl repeated_text_nodes forall t {to_text}. (name : string) (vs : list t) : list xml.xml_node =\n"
     ++# "    listm.map (text_node name) vs\n\n"
 
-:= union_text (name : string) (values : list string) : string =
+:= normalized_input (normalizer : string) : string = ? normalizer = "" ?> "" |: "    inl s = " ++# normalizer ++# " s\n"
+
+:= union_text (name : string) (values : list string) (normalizer : string) : string =
     := ty = type_name name
     := pairs = value_cases name values [] []
     := cases = case_lines pairs (\ _ case => "    | " ++# case) []
@@ -182,7 +184,8 @@
         join_lines
             (
                 "inl " ++# ty ++# "_of_string (s : string) : option " ++# ty ++# " ="
-                :: "    match s with"
+                :: normalized_input normalizer
+                ++# "    match s with"
                 :: parse_arms
             )
             ""
@@ -230,11 +233,11 @@
         example_pairs ty rest ((v, case) :: acc)
     | [] => reverse acc []
 
-:= coded_text (name : string) (table : string) (values : list string) : string =
+:= coded_text (name : string) (table : string) (values : list string) (normalizer : string) : string =
     := ty = type_name name
     := examples = example_pairs ty (take_items 8i32 values) []
     := count = count_list examples
-    "nominal "
+    "nominal private "
     ++# ty
     ++# " = string\n\n"
     ++# "inl "
@@ -247,6 +250,7 @@
     ++# "_of_string (s : string) : option "
     ++# ty
     ++# " =\n"
+    ++# normalized_input normalizer
     ++# "    if xsd_regex.table_matches ("
     ++# ty
     ++# "_table ()) s then Some ("
@@ -433,14 +437,14 @@
 := certificates_checked_text (items : list emitted) : string =
     "\ninl certificates_checked () : i32 = 0i32" ++# certificate_calls items "" ++# "\n"
 
-:= emit_enumeration (name : string) (values : list string) : list emitted =
+:= emit_enumeration (name : string) (values : list string) (normalizer : string) : list emitted =
     ? count_list values > union_value_limit () ?>
         := rows = xsd_regex.dfa_of_values values
         := table = xsd_regex.dfa_table_text rows
         {
             name = type_name name
             references = []
-            text = coded_text name table values
+            text = coded_text name table values normalizer
             value_set = DfaValueSet table
             role = PlainItem
         }
@@ -451,7 +455,7 @@
         {
             name = type_name name
             references = []
-            text = union_text name values
+            text = union_text name values normalizer
             value_set = UnionValueSet values
             role = PlainItem
         }
@@ -500,9 +504,12 @@
                     references = (table_name :: acc.references)
                 }
             | None =>
-                pattern_checks rest { acc ?|
-                    checks = (("xsd_regex.pattern_matches \"" ++# escape_text p ++# "\" s") :: acc.checks)
-                }
+                ? xsd_regex.is_xsd_pattern p = !-
+                ?> failwith ("an xs:pattern XSD forbids (lookaround, or a quantifier with nothing to repeat): " ++# p)
+                |:
+                    pattern_checks rest { acc ?|
+                        checks = (("xsd_regex.pattern_matches \"" ++# escape_text p ++# "\" s") :: acc.checks)
+                    }
     | _ :: rest => pattern_checks rest acc
     | [] => { acc ?| checks = reverse acc.checks [] }
 
@@ -515,21 +522,16 @@
     | [] => reverse acc []
 
 := validator_text (name : string) (code : pattern_code) (facets : list xsd_facet) : string =
-    := pattern_part =
+    := patterns =
         ?= code.checks ?|
+        | [] => []
+        | checks => ("(" ++# join_with " || " checks "" ++# ")") :: []
+    := conjuncts = listm.append patterns (length_checks facets [])
+    := body =
+        ?= conjuncts ?|
         | [] => "true"
-        | patterns => "(" ++# join_with " || " patterns "" ++# ")"
-    := length_part =
-        ?= length_checks facets [] ?|
-        | [] => "true"
-        | lengths => join_with " && " lengths ""
-    "inl "
-    ++# type_name name
-    ++# "_is_valid (s : string) : bool = "
-    ++# pattern_part
-    ++# " && "
-    ++# length_part
-    ++# "\n"
+        | _ => join_with " && " conjuncts ""
+    "inl " ++# type_name name ++# "_is_valid (s : string) : bool = " ++# body ++# "\n"
 
 :== collected = { fields : list string; references : list string; extra : list emitted }
 
@@ -568,6 +570,8 @@
     | Repeated => "list (" ++# t ++# ")"
 
 := field_line (name : string) (t : string) : string = "        " ++# field_name name ++# " : " ++# t
+
+:= choice_field_of (first : string) : string = field_name ("choice_" ++# xml.local_name first)
 
 := line_width () : i32 = 120i32
 
@@ -641,11 +645,15 @@
     := local = xml.local_name base
     base <> "" && is_builtin_reference base && (local = "date" || local = "dateTime")
 
+:= prefers_builtin_example (base : string) : bool =
+    is_calendar_builtin base || (is_builtin_reference base && xml.local_name base = "positiveInteger")
+
 := simple_example (base : string) (facets : list xsd_facet) : string =
     ?= first_pattern facets ?|
     | Some p =>
         := calendar = builtin_example base
-        ? is_calendar_builtin base && xsd_regex.pattern_matches p calendar && has_length_facet facets = !- ?> calendar
+        ? prefers_builtin_example base && xsd_regex.pattern_matches p calendar && has_length_facet facets = !-
+        ?> calendar
         |:
             ?= xsd_regex.compile_pattern p ?|
             | Some r => example_search facets r 0i32
@@ -672,12 +680,31 @@
 := is_constrained (facets : list xsd_facet) : bool =
     (?= first_pattern facets ?| Some _ => !+ | None => !-) || has_length_facet facets
 
-:= validated_text (ty : string) (name : string) (code : pattern_code) (facets : list xsd_facet) (example : string)
+:~ ^ explicit_white_space (facets : list xsd_facet) : option string =
+    ?= facets ?|
+    | WhiteSpace mode :: _ => Some mode
+    | _ :: rest => explicit_white_space rest
+    | [] => None
+
+:= builtin_white_space (base : string) : string =
+    := local = xml.local_name base
+    ? base = "" || is_builtin_reference base = !- || local = "string" ?> "preserve"
+    |? local = "normalizedString" ?> "replace"
+    |: "collapse"
+
+:= white_space_normalizer (base : string) (facets : list xsd_facet) : string =
+    := mode = ?= explicit_white_space facets ?| Some mode => mode | None => builtin_white_space base
+    ? mode = "collapse" ?> "xml.collapsed_space" |? mode = "replace" ?> "xml.replaced_space" |: ""
+
+:= validated_text
+    (ty : string) (name : string) (code : pattern_code) (facets : list xsd_facet) (normalizer : string)
+    (example : string)
     : string =
+    := checked = "if " ++# ty ++# "_is_valid s then Some (" ++# ty ++# " s) else None"
     := of_string =
         fitted_definition
             ("inl " ++# ty ++# "_of_string (s : string) : option " ++# ty ++# " =")
-            ("if " ++# ty ++# "_is_valid s then Some (" ++# ty ++# " s) else None")
+            (? normalizer = "" ?> checked |: "match " ++# normalizer ++# " s with s => " ++# checked)
     := to_string =
         fitted_definition
             ("inl " ++# ty ++# "_to_string (x : " ++# ty ++# ") : string =")
@@ -690,7 +717,7 @@
         fitted_definition
             ("inl " ++# ty ++# "_example_text (k : i32) : string =")
             (ty ++# "_to_string (" ++# ty ++# "_example k)")
-    "nominal "
+    "nominal private "
     ++# ty
     ++# " = string\n\n"
     ++# validator_text name code facets
@@ -731,7 +758,10 @@
                 references = references
                 text =
                     ? is_constrained s.facets
-                    ?> validated_text ty name code s.facets (simple_example (reference_text s.base) s.facets)
+                    ?>
+                        := normalizer = white_space_normalizer (reference_text s.base) s.facets
+                        := example = simple_example (reference_text s.base) s.facets
+                        validated_text ty name code s.facets normalizer example
                     |:
                         "type "
                         ++# ty
@@ -744,7 +774,7 @@
                 role = PlainItem
             }
             :: code.functions
-        | values => emit_enumeration name values
+        | values => emit_enumeration name values (white_space_normalizer (reference_text s.base) s.facets)
     | Complex c => emit_record name c.content c.attributes [] []
     | Derived d =>
         emit_record name d.content d.attributes
@@ -785,9 +815,10 @@
     | Choice c =>
         := choice_name = owner ++# "_choice_" ++# first_element_name c.items
         := union_emitted = emit_choice choice_name c.items
+        := field = choice_field_of (first_element_name c.items)
         {
             fields =
-                field_line ("choice_" ++# first_element_name c.items) (with_occurs c.occurs (type_name choice_name))
+                "        " ++# field ++# " : " ++# with_occurs c.occurs (type_name choice_name)
                 :: acc.fields
             references = type_name choice_name :: acc.references
             extra = listm.append union_emitted acc.extra
@@ -1066,7 +1097,12 @@
                 ?= root_element (xml.local_name (tag_text e.name)) roots ?|
                 | Some (Element root) => Element { root ?| occurs = e.occurs; name = e.name }
                 | _ => item
-    | Sequence s => Sequence { s ?| items = dereferenced_all roots s.items [] }
+    | Sequence s =>
+        := items = dereferenced_all roots s.items []
+        ?= items ?|
+        | (Choice c) :: [] ?& is_repeated s.occurs && is_repeated c.occurs = !- =>
+            Choice { c ?| occurs = { min = s.occurs.min * c.occurs.min; max = s.occurs.max } }
+        | _ => Sequence { s ?| items = items }
     | Choice c =>
         := items = dereferenced_all roots c.items []
         ? wildcard_choice items !- ?> AnyContent () |: Choice { c ?| items = items }
@@ -1229,6 +1265,13 @@
 
 := quoted_name (acc : string) (name : string) : string =
     ? acc = "" ?> "\"" ++# name ++# "\"" |: acc ++# "; \"" ++# name ++# "\""
+
+:~ ^ single_element_arms \* form. (items : list (xsd particle form)) : bool =
+    ?= items ?|
+    | (Element _) :: rest => single_element_arms rest
+    | (AnyContent ()) :: rest => single_element_arms rest
+    | _ :: _ => !-
+    | [] => !+
 
 :~ ^ choice_names \* form. (items : list (xsd particle form)) (acc : string) : string =
     ?= items ?|
@@ -1439,7 +1482,14 @@
 :? choice_witness f : f -> string -> occurs -> string -> string -> option witness
 :? any_witness f : f -> string -> option witness
 
-:= reader_attribute_value (name : string) (required : bool) (kind : type_kind) (t : string) : string =
+:= reader_attribute_value
+    (name : string) (required : bool) (fixed : option string) (kind : type_kind) (t : string)
+    : string
+    =
+    := attributes =
+        ?= fixed ?|
+        | Some value => "(xml.checked_fixed \"" ++# name ++# "\" \"" ++# escape_text value ++# "\" attributes)"
+        | None => "attributes"
     ?= kind ?|
     | KindEnum | KindValidated =>
         ? required
@@ -1450,7 +1500,9 @@
             ++# t
             ++# "_of_string (xml.required_attribute \""
             ++# name
-            ++# "\" attributes))"
+            ++# "\" "
+            ++# attributes
+            ++# "))"
         |:
             "optionm.map (fun v => xml.required_value \""
             ++# t
@@ -1458,10 +1510,12 @@
             ++# t
             ++# "_of_string v)) (xml.attribute_of \""
             ++# name
-            ++# "\" attributes)"
+            ++# "\" "
+            ++# attributes
+            ++# ")"
     | _ =>
-        ? required ?> "xml.required_attribute \"" ++# name ++# "\" attributes"
-        |: "xml.attribute_of \"" ++# name ++# "\" attributes"
+        ? required ?> "xml.required_attribute \"" ++# name ++# "\" " ++# attributes
+        |: "xml.attribute_of \"" ++# name ++# "\" " ++# attributes
 
 :+ derived_prefix reading =
     \ _ kinds base => { parts = plain (base_field kinds base) :: []; attribute_parts = []; functions = [] }
@@ -1490,13 +1544,21 @@
                 ++# read
                 ++# ") else None"
             | Required => read
-            | Repeated => "[" ++# read ++# "]"
+            | Repeated =>
+                ? single_element_arms items
+                ?>
+                    "listm.map (fun c => "
+                    ++# ty
+                    ++# "_of_children attributes [c]) (xml.claimed_children ["
+                    ++# choice_names items ""
+                    ++# "] children)"
+                |: "[" ++# read ++# "]"
         field_assignment field expression
 :+ element_part reading = \ _ _ v =>
     field_assignment (field_name v.name) (occurs_expression v.name v.occurs (node_expression v.kind v.t))
 :+ any_part reading = \ _ => "        any = Nil"
 :+ attribute_step reading = \ _ acc a =>
-    push (field_assignment (field_name a.name) (reader_attribute_value a.name a.required a.kind a.t)) [] acc
+    push (field_assignment (field_name a.name) (reader_attribute_value a.name a.required a.fixed a.kind a.t)) [] acc
 :+ element_arm reading = \ _ _ choice_name v =>
     "    elif xml.has_child \""
     ++# v.name
@@ -1752,7 +1814,7 @@
     | Choice c =>
         := first = first_element_name c.items
         := choice_name = owner ++# "_choice_" ++# first
-        := choice_field = field_name ("choice_" ++# xml.local_name first)
+        := choice_field = choice_field_of first
         := part = choice_part family c.occurs c.items (type_name choice_name) choice_field
         := witness = choice_witness family owner c.occurs (type_name choice_name) choice_field
         push_part { text = part; witness = witness } (choice_walk family kinds choice_name c.items) acc
@@ -1989,14 +2051,105 @@
     | FunctionText _ :: rest => item_parts rest acc
     | [] => reverse acc []
 
+:~ ^ simple_aliases \* form.
+    (types : list (xsd type_def form)) (known : list string) (acc : list (string * string))
+    : list (string * string)
+    =
+    ?= types ?|
+    | (Simple s) :: rest =>
+        := parent = reference_type s.base
+        := facet_free = listm.length (enumeration_values s.facets []) = 0i32 && is_constrained s.facets = !-
+        ? facet_free && is_builtin_reference (reference_text s.base) = !- && has_name parent known
+        ?> simple_aliases rest known ((type_name (definition_text s.name), parent) :: acc)
+        |: simple_aliases rest known acc
+    | _ :: rest => simple_aliases rest known acc
+    | [] => acc
+
+:~ ^ alias_parent (target : string) (aliases : list (string * string)) : option string =
+    ?= aliases ?|
+    | (name, parent) :: rest => ? name = target ?> Some parent |: alias_parent target rest
+    | [] => None
+
+:~ ^ resolved_kind
+    (aliases : list (string * string)) (kinds : list (string * type_kind)) (name : string) (depth : i32)
+    : type_kind
+    =
+    ?= alias_parent name aliases ?|
+    | Some parent => ? depth > 64i32 ?> KindText |: resolved_kind aliases kinds parent (depth + 1i32)
+    | None => kind_lookup name kinds
+
+:~ ^ inherited_kinds
+    (aliases : list (string * string)) (all : list (string * type_kind)) (kinds : list (string * type_kind))
+    (acc : list (string * type_kind))
+    : list (string * type_kind)
+    =
+    ?= kinds ?|
+    | (name, kind) :: rest =>
+        := inherited =
+            ?= alias_parent name aliases ?|
+            | Some _ => resolved_kind aliases all name 0i32
+            | None => kind
+        inherited_kinds aliases all rest ((name, inherited) :: acc)
+    | [] => reverse acc []
+
+:= alias_text (ty : string) (parent : string) (kind : type_kind) : string =
+    := codec =
+        ?= kind ?|
+        | KindEnum | KindValidated =>
+            "\ninl "
+            ++# ty
+            ++# "_of_string (s : string) : option "
+            ++# ty
+            ++# " = "
+            ++# parent
+            ++# "_of_string s\n\ninl "
+            ++# ty
+            ++# "_to_string (x : "
+            ++# ty
+            ++# ") : string = "
+            ++# parent
+            ++# "_to_string x\n"
+        | _ => ""
+    "type "
+    ++# ty
+    ++# " = "
+    ++# parent
+    ++# "\n\ninl "
+    ++# ty
+    ++# "_example (k : i32) = "
+    ++# parent
+    ++# "_example k\n\ninl "
+    ++# ty
+    ++# "_example_text (k : i32) : string = "
+    ++# parent
+    ++# "_example_text k\n"
+    ++# codec
+
+:~ ^ aliased_items
+    (aliases : list (string * string)) (kinds : list (string * type_kind)) (items : list emitted)
+    (acc : list emitted)
+    : list emitted
+    =
+    ?= items ?|
+    | item :: rest =>
+        ?= alias_parent item.name aliases ?|
+        | Some parent =>
+            := text = alias_text item.name parent (kind_lookup item.name kinds)
+            aliased_items aliases kinds rest ({ item ?| text = text; references = parent :: [] } :: acc)
+        | None => aliased_items aliases kinds rest (item :: acc)
+    | [] => reverse acc []
+
 :== module_parts = { items : list emitted; functions : list string; witness_items : list string }
 
 := module_parts \* form. (schema : xsd_schema form) : module_parts =
     := complex_types = dereferenced_all schema.elements schema.complex_types []
     := elements = dereferenced_all schema.elements schema.elements []
     := all = reverse (emit_roots elements (emit_types complex_types (emit_types schema.simple_types []))) []
-    := unique = share_unions (unique_emitted all [] []) [] []
-    := kinds = kinds_of schema.simple_types (kinds_of complex_types [])
+    := shared = share_unions (unique_emitted all [] []) [] []
+    := aliases = simple_aliases schema.simple_types (emitted_names shared []) []
+    := base_kinds = kinds_of schema.simple_types (kinds_of complex_types [])
+    := kinds = inherited_kinds aliases base_kinds base_kinds []
+    := unique = aliased_items aliases kinds shared []
     := known = emitted_names unique []
     := items, wrapped = order_emitted (with_known_references unique known []) known [] []
     := walked_texts = walk_texts (recursive_kinds kinds wrapped []) complex_types elements
@@ -2331,10 +2484,14 @@ test names_follow_spiral_conventions =
 
 ///> rust
 test enumerations_parse_through_one_match =
-    := text = union_text "TUf" ("SP" :: "RJ" :: [])
+    := text = union_text "TUf" ("SP" :: "RJ" :: []) ""
     ? sm'.contains "    match s with\n    | \"SP\" => Some TUf_SP\n" text = !- ?> failwith "one arm per value"
     ? sm'.contains "    | _ => None\n" text = !- ?> failwith "anything else is None"
     ? sm'.contains "if false" text ?> failwith "no dead first branch"
+    := token_text = union_text "TUf" ("SP" :: "RJ" :: []) "xml.collapsed_space"
+    ? sm'.contains "    inl s = xml.collapsed_space s\n    match s with\n" token_text = !-
+    ?> failwith "a token enumeration collapses whitespace before matching, as XSD does"
+    ? sm'.contains "inl s = " text ?> failwith "a string enumeration matches its text as written"
 
 ///> rust
 test families_share_identical_closed_types_once =
@@ -2354,13 +2511,13 @@ test families_share_identical_closed_types_once =
             "<xs:schema>" ++# shared ++# leaf "<xs:element name=\"extra\" type=\"Code\"/>" ++# root ++# "</xs:schema>"
         )
     := core, versions = generate_family (v1 :: v2 :: []) "generated_demo_core"
-    ? sm'.contains "nominal x_code = string" core = !- ?> failwith "the identical leaf type is in the core"
+    ? sm'.contains "nominal private x_code = string" core = !- ?> failwith "the identical leaf type is in the core"
     ? sm'.contains "type x_leaf" core ?> failwith "the changed type stays per version"
     ? sm'.contains "type x_root" core ?> failwith "a type over a changed type stays per version"
     ?= versions ?|
     | first :: second :: [] =>
         ? sm'.starts_with "open generated_demo_core" first = !- ?> failwith "a version opens its core"
-        ? sm'.contains "nominal x_code" second ?> failwith "the core type is not repeated"
+        ? sm'.contains "nominal private x_code" second ?> failwith "the core type is not repeated"
         ? sm'.contains "extra" first || sm'.contains "extra" second = !-
         ?> failwith "the version keeps its own shape"
     | _ => failwith "two version modules"
@@ -2492,7 +2649,7 @@ test constrained_strings_become_validated_nominals =
             ++# "<xs:restriction base=\"xs:string\"/></xs:simpleType></xs:schema>"
         )
     := text = generate_module (xsd_resolve.finalize_names (xsd_resolve.qualify_schema [] schema))
-    ? sm'.contains "nominal x_t_cnpj = string" text = !- ?> failwith "a constrained string is a nominal"
+    ? sm'.contains "nominal private x_t_cnpj = string" text = !- ?> failwith "a constrained string is a private nominal"
     ? sm'.contains "if x_t_cnpj_is_valid s then Some (x_t_cnpj s) else None" text = !-
     ?> failwith "the only way in is the validator"
     ? sm'.contains "type x_t_free = string" text = !- ?> failwith "an unconstrained string stays an alias"
@@ -2532,7 +2689,7 @@ test pattern_restricted_dates_keep_a_valid_date =
 
 ///> rust
 test coded_types_share_the_text_prototype =
-    := coded = union_text "TUf" [ "SP"; "RJ" ]
+    := coded = union_text "TUf" [ "SP"; "RJ" ] ""
     ? sm'.contains "instance to_text x_t_uf = fun x => x_t_uf_to_string x\n" coded = !-
     ?> failwith "an enum union gets its to_text instance"
     := schema =
@@ -2620,3 +2777,53 @@ test a_choice_of_emptiable_alternatives_reads_its_empty_content =
     ?> failwith "a choice whose alternatives can be empty reads its empty content"
     ? sm'.contains "x_pick_type_choice_a: no alternative present" main = !-
     ?> failwith "a choice of required alternatives still rejects missing content"
+
+///> rust
+test a_repeated_choice_reads_every_alternative_in_document_order =
+    := schema =
+        read_schema (
+            "<xs:schema><xs:complexType name=\"KeyInfoType\"><xs:choice maxOccurs=\"unbounded\">"
+            ++# "<xs:element name=\"KeyName\" type=\"xs:string\"/><xs:element name=\"MgmtData\" type=\"xs:string\"/>"
+            ++# "</xs:choice></xs:complexType><xs:complexType name=\"X509DataType\">"
+            ++# "<xs:sequence maxOccurs=\"unbounded\">"
+            ++# "<xs:choice><xs:element name=\"X509SKI\" type=\"xs:string\"/><xs:element name=\"X509SubjectName\" "
+            ++# "type=\"xs:string\"/></xs:choice></xs:sequence></xs:complexType>"
+            ++# "<xs:complexType name=\"RegistroFacturaType\"><xs:choice><xs:element name=\"sf:RegistroAlta\" "
+            ++# "type=\"xs:string\"/><xs:element name=\"sf:RegistroAnulacion\" "
+            ++# "type=\"xs:string\"/></xs:choice></xs:complexType></xs:schema>"
+        )
+    := main, _ = generated_units schema
+    ? sm'.contains "xml.claimed_children [\"KeyName\"; \"MgmtData\"] children" main = !-
+    ?> failwith "each claimed child is read on its own, in document order"
+    ? sm'.contains "xml.claimed_children [\"X509SKI\"; \"X509SubjectName\"] children" main = !-
+    ?> failwith "a repeated sequence around one choice repeats the choice (xmldsig X509Data)"
+    ? sm'.contains "        choice_registro_alta : x_registro_factura_type_choice" main = !-
+    ?> failwith "a prefixed choice keeps its choice_ field name in the type (VeriFactu sf:RegistroAlta)"
+    ? sm'.contains "        choice_registro_alta = x_registro_factura_type_choice" main = !-
+    ?> failwith "the reader fills the same field the type declares"
+
+///> rust
+test restrictions_alias_parents_and_readers_apply_white_space_and_fixed =
+    := schema =
+        read_schema (
+            "<xs:schema><xs:simpleType name=\"TString\"><xs:restriction base=\"xs:string\">"
+            ++# "<xs:pattern value=\"[A-Z]+\"/></xs:restriction></xs:simpleType>"
+            ++# "<xs:simpleType name=\"TServ\"><xs:restriction base=\"TString\"/></xs:simpleType>"
+            ++# "<xs:simpleType name=\"TCode\"><xs:restriction base=\"xs:token\"><xs:pattern value=\"[A-Z]+\"/>"
+            ++# "</xs:restriction></xs:simpleType><xs:simpleType name=\"TLine\"><xs:restriction base=\"xs:string\">"
+            ++# "<xs:whiteSpace value=\"replace\"/><xs:maxLength value=\"9\"/>"
+            ++# "</xs:restriction></xs:simpleType><xs:complexType name=\"TDoc\"><xs:attribute name=\"Version\" "
+            ++# "type=\"xs:string\" use=\"required\" fixed=\"4.0\"/></xs:complexType></xs:schema>"
+        )
+    := main, _ = generated_units schema
+    ? sm'.contains "type x_t_serv = x_t_string" main = !- ?> failwith "the restriction aliases its parent"
+    ? sm'.contains "x_t_serv_of_string (s : string) : option x_t_serv = x_t_string_of_string s" main = !-
+    ?> failwith "reading goes through the parent's validator"
+    ? sm'.contains "match xml.collapsed_space s with s => if x_t_code_is_valid s" main = !-
+    ?> failwith "a token restriction validates its collapsed value"
+    ? sm'.contains "match xml.replaced_space s with s => if x_t_line_is_valid s" main = !-
+    ?> failwith "an explicit whiteSpace facet wins over the base"
+    ? sm'.contains "match xml.collapsed_space s with s => if x_t_string_is_valid" main
+    ?> failwith "an xs:string restriction preserves its text"
+    ? sm'.contains "xml.required_attribute \"Version\" (xml.checked_fixed \"Version\" \"4.0\" attributes)" main = !-
+    ?> failwith "a fixed attribute reads through its check"

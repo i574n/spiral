@@ -316,14 +316,14 @@ test obj_to_string_prints_bools_lowercase =
 :~ ^ concat_pass (separator : string) (input : list string) (paired : list string) : list string =
     ?= input ?|
     | left :: right :: rest => concat_pass separator rest (left ++# separator ++# right :: paired)
-    | last :: Nil => listm.rev (last :: paired)
-    | Nil => listm.rev paired
+    | [ last ] => listm.rev (last :: paired)
+    | [] => listm.rev paired
 
 :~ ^ concat_balanced (separator : string) (input : list string) : string =
     ?= input ?|
-    | Nil => ""
-    | only :: Nil => only
-    | _ => concat_balanced separator (concat_pass separator input Nil)
+    | [] => ""
+    | [ only ] => only
+    | _ => concat_balanced separator (concat_pass separator input [])
 
 := concat_right_fold separator input =
     (input, { acc = ""; sep = "" })
@@ -1098,6 +1098,32 @@ test substring_cuts_by_start_and_length =
         Lean = \ () => $'(!input).toUpper' : char
     }
 
+/// ### char_code
+:= char_code (input : char) : u32 =
+    backend_switch {
+        Fsharp = \ () => $'uint32 !input ' : u32
+        Python = \ () => $'ord(!input)' : u32
+        Rust = \ () => $'u32::from(!input)' : u32
+        TypeScript = \ () => $'!input' : u32
+    }
+
+/// ### of_char
+:= of_char (input : char) : string =
+    backend_switch {
+        Fsharp = \ () => $'string !input ' : string
+        Python = \ () => $'!input' : string
+        Rust = \ () =>
+            := text = $'char::from(!input).to_string()' : std_string
+            from_std_string text
+        TypeScript = \ () => $'String.fromCharCode(!input)' : string
+    }
+
+///> rust
+test char_code_and_of_char =
+    char_code 'A' |> _assert_eq 65u32
+    char_code 'z' |> _assert_eq 122u32
+    of_char 'A' |> _assert_eq "A"
+
 /// ### builder_append
 := builder_append (item : string) (sb : string_builder) : string_builder =
     backend_switch {
@@ -1196,6 +1222,10 @@ test builder_clear =
     |> obj_to_string
     |> _assert_eq "gh"
 
+/// ### rust_char_offset
+:= rust_char_offset (text : string) (i : int) : int =
+    $'(!text.char_indices().nth(!i as usize).map_or(!text.len(), |(at, _)| at) as `int)' : int
+
 /// ### builder_insert
 := builder_insert (i : int) (s : string) (sb : string_builder) : string_builder =
     backend_switch {
@@ -1215,8 +1245,10 @@ test builder_clear =
         Python = \ () =>
             := sb = sb |> obj_to_string
             $'"".join([!sb[:!i], !s, !sb[!i:]])' |> string_builder
-        Rust = fun () => $'{ let mut r = !sb.clone(); let at = r.char_indices().nth(!i as usize).map(|(b, _)| \
-            b).unwrap_or(r.len()); r.insert_str(at, &*!s); r }' : string_builder
+        Rust = \ () =>
+            := text = sb |> obj_to_string
+            := at = rust_char_offset text i
+            [ text |> slice 0 (at - 1); s; text |> slice at (length text - 1) ] |> concat_list "" |> string_builder
         Zig = fun () => $'(std.mem.concat(spiral_gpa, u8, &.{ (!sb)[0..\@intCast(!i)], !s, (!sb)[\@intCast(!i)..] }) \
             catch \@panic("out of memory"))' : string_builder
     }
@@ -1224,12 +1256,18 @@ test builder_clear =
 ///> gleam
 ///> fsharp
 ///> cuda
+///> rust
 test builder_insert =
     "ab"
     |> string_builder
     |> builder_insert 1 "gh"
     |> obj_to_string
     |> _assert_eq "aghb"
+
+///> rust
+test builder_insert_counts_chars_not_bytes =
+    := ~text = "éb"
+    text |> string_builder |> builder_insert 1 "gh" |> obj_to_string |> _assert_eq "éghb"
 
 /// ### span_from
 := span_from pred str i0 =
@@ -1625,7 +1663,20 @@ test listed_compares_trimmed_parts =
 
 /// ### join'
 := join' (concat : string) (s : array string) : string =
-    $'System.String.Join (!concat, !s)'
+    run_target \|
+        | Fsharp => \ () => $'System.String.Join (!concat, !s)' : string
+        | _ => \ () => concat_array concat s
+
+///> fsharp
+///> rust
+test join'_joins_with_the_separator_on_every_backend =
+    ;[
+        "a"
+        "b"
+        "c"
+    ]
+    |> join' ", "
+    |> _assert_eq "a, b, c"
 
 /// ### encoding
 :! encoding = $'System.Text.Encoding'
@@ -2095,7 +2146,7 @@ test regex_captures =
 := percent_encode (s : string) : string =
     s
     |> utf8_byte_list
-    |> listm'.fold' percent_byte Nil
+    |> listm'.fold' percent_byte []
     |> listm.fold (\ acc piece => piece ++# acc) ""
 
 ///> rust
@@ -2387,6 +2438,27 @@ test range =
     "vwxyz"
     |> range (am'.End \ x => ~~ x () - 4i32) (am'.End \ _ => 4)
     |> _assert_eq "wxy"
+
+/// ### decimal_text
+:= decimal_text \* t {number}. (x : t) : string =
+    run_target \|
+        | Rust => \ () => $'std::rc::Rc::<str>::from((!x).to_string())' : string
+        | _ => \ () => format x
+
+/// ### char_text
+:= char_text (code : u8) : string =
+    run_target \|
+        | Rust => \ () => $'std::rc::Rc::<str>::from(char::from(!code).to_string())' : string
+        | Fsharp => \ () => $'string (char !code)' : string
+        | _ => \ () => failwith "sm'.char_text: no arm for this backend"
+
+///> fsharp
+///> rust
+test decimal_text_and_char_text_render_numbers_and_control_characters =
+    42i32 |> decimal_text |> _assert_eq "42"
+    18446744073709551615u64 |> decimal_text |> _assert_eq "18446744073709551615"
+    31u8 |> char_text |> length |> _assert_eq 1i32
+    65u8 |> char_text |> _assert_eq "A"
 
 /// ### ellipsis_end
 :~ ellipsis_end (max : i64) (s : string) =

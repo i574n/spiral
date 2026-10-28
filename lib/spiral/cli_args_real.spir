@@ -1,0 +1,71 @@
+/// # cli_args_real
+///- --real
+
+:< real_core
+:< cli_flags
+
+:= field_kind \* field. () =
+    ?: field ?|
+    | string => cli_flags.text_field ()
+    | i32 => cli_flags.number_field ()
+    | bool => cli_flags.switch_field ()
+    | option string => cli_flags.optional_field ()
+    | list string => cli_flags.repeated_field ()
+
+:= named_field \* field. key fields =
+    cli_flags.with_field (sm'_real.symbol_to_string_real `(`key)) (field_kind `field ()) fields
+
+:= field_kinds \* r. () =
+    record_type_fold_back (\ key => \* field. fields => named_field `field key fields) `r (cli_flags.no_fields ())
+
+:= case_names \* command. () =
+    union_type_to_record `command \* cases. =>
+        record_type_fold_back
+            \ key => \* payload. names => cli_flags.with_verb (sm'_real.symbol_to_string_real `(`key)) names
+            `cases
+            (cli_flags.no_verbs ())
+
+:= case_fields \* payload. () =
+    ?: payload ?|
+    | () => cli_flags.no_fields ()
+    | _ => field_kinds `payload ()
+
+:= named_case \* payload. key usages =
+    cli_flags.with_case (sm'_real.symbol_to_string_real `(`key)) (case_fields `payload ()) usages
+
+:= case_usages \* command. () =
+    union_type_to_record `command \* cases. =>
+        record_type_fold_back
+            \ key => \* payload. usages => named_case `payload key usages
+            `cases
+            (cli_flags.no_cases ())
+
+:= field_value \* field. name args =
+    ?: field ?|
+    | string => required_text name args
+    | i32 => required_i32 name args
+    | bool => has_switch name args
+    | option string => flag_value name args
+    | list string => flag_values name args
+
+:= operands_real \* r. (args : list string) =
+    record_type_map
+        \ key =>
+            \* field. => field_value `field (sm'_real.symbol_to_string_real `(`key)) args
+        `r
+
+:= case_value \* command payload. key (rest : list string) =
+    ?: payload ?|
+    | () => nominal_create `command (key, ())
+    | _ => nominal_create `command (key, operands_real `payload rest)
+
+:= picked \* command payload. (verb : string) key (rest : list string) found =
+    := make () = case_value `command `payload key rest
+    cli_flags.pick_verb `command verb (sm'_real.symbol_to_string_real `(`key)) make found
+
+:= command_of_real \* command. verb rest =
+    union_type_to_record `command \* cases. =>
+        record_type_fold
+            (\ found key => \* payload. => picked `command `payload verb key rest found)
+            (None `command)
+            `cases
